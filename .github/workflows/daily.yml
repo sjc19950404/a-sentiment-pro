@@ -2,7 +2,7 @@ name: daily-sentiment
 
 on:
   schedule:
-    - cron: '40 10 * * *'   # 北京 18:40（UTC 10:40）；盘后抓数据
+    - cron: '30 10 * * 1-5'   # 北京 18:30（UTC 10:30），仅周一至五；盘后抓数据
   workflow_dispatch:        # 手动触发
 
 permissions:
@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: 运行管道（live 模式，非交易日自动跳过）
         env:
           MODE: live

@@ -4,9 +4,8 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import config from './config.js';
 import { ThemeDenoiser, computeMomentum } from './themes.js';
-import { computeSentiment } from './sentiment.js';
 import { validateArchive } from './validate.js';
-import { fetchLive } from './sources.js';
+import { fetchLive, recalcRanks, LhbNotPublishedError } from './sources.js';
 import { todayBeijing, isTradingDay } from './util.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -84,36 +83,45 @@ export function runOffline(snapshotPath) {
   return archive;
 }
 
-// 线上模式：抓取真实数据后组装（sources.fetchLive 在云端有外网时工作）
+// 线上模式：抓取真实数据，合并进已存档历史 → 全档重算分位
+// fetchLive 返回 { newDays:[day], tradeDate }，day 结构与快照一致
 export async function runLive() {
-  const raw = await fetchLive();
-  // raw: { allDays:[{trade_date, raw:{netBuy,...}, hot:[{code,reason}]}], ... }
-  const allDays = raw.allDays.map((d) => {
-    const sent = computeSentiment(d.raw, config.weights);
-    return {
-      trade_date: d.trade_date,
-      emotion: { score: sent.score, factors: sent.factors, missing: sent.missing, imputedRatio: sent.imputedRatio },
-      hot: d.hot,
-    };
-  });
-  const { out, momObj } = enrich(allDays);
+  const { newDays, tradeDate } = await fetchLive();
+  // 载入历史（冷启动用快照种子）
+  let history = [];
+  const dataPath = path.join(DATA_DIR, 'archive.json');
+  if (existsSync(dataPath)) {
+    try { history = JSON.parse(readFileSync(dataPath, 'utf8')).all_days || []; } catch { history = []; }
+  }
+  if (!history.length) {
+    history = runOffline(path.join(ROOT, 'snapshot.html')).all_days || [];
+  }
+  // 合并新交易日（已存在则替换）
+  for (const nd of newDays) {
+    const i = history.findIndex((d) => d.trade_date === nd.trade_date);
+    if (i >= 0) history[i] = nd; else history.push(nd);
+  }
+  history.sort((a, b) => (a.trade_date < b.trade_date ? -1 : 1));
+  recalcRanks(history);
+  const { out, momObj } = enrich(history);
   const latest = out[out.length - 1];
   const archive = {
     meta: {
       generatedAt: new Date().toISOString(),
       formulaVersion: config.formulaVersion,
       source: 'live',
+      tradeDate,
     },
     all_days: out,
     signals: {
       version: config.formulaVersion,
       momentum: momObj,
       latestEmotion: latest.emotion,
-      imputedRatioLatest: latest.emotion.imputedRatio,
+      imputedRatioLatest: latest.emotion?.imputedRatio ?? 0,
       tradeDate: latest.trade_date,
     },
-    board_rank: raw.board_rank || [],
-    briefs: raw.briefs || [],
+    board_rank: out.map((d) => [d.trade_date, (d.industry || []).slice(0, 5).map((i) => [i.name, i.change_pct])]),
+    briefs: [],
   };
   return archive;
 }
@@ -146,6 +154,10 @@ export async function main() {
     try {
       archive = await runLive();
     } catch (e) {
+      if (e instanceof LhbNotPublishedError) {
+        console.log('[skip]', e.message, '· 等待龙虎榜公布，保留上次数据');
+        return null;
+      }
       console.error('[live] 抓取失败，回退:', e.message);
       archive = fallbackArchive(dataPath);
     }
