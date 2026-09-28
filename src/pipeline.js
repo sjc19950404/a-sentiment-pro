@@ -91,6 +91,15 @@ export function recalcAll(days) {
     const s = d.summary || {};
     const hasRaw = (s.ind_count > 0 || s.net_total_yi != null);
     if (!hasRaw) { if (d.emotion) d.emotion._legacy = true; return; }
+    // 净额统一去重个股口径（每票一笔）：历史天从 lhb_aggr 现算，避免同票多榜重复计入
+    let netBuy = s.net_total_yi ?? null;
+    if (Array.isArray(d.lhb_aggr) && d.lhb_aggr.length) {
+      netBuy = Math.round(d.lhb_aggr.reduce((a, l) => a + l.net_buy_wan, 0) / 1e4 * 100) / 100;
+      s.net_total_yi = netBuy;
+      s.net_pos = d.lhb_aggr.filter((l) => l.net_buy_wan > 0).length;
+      s.net_neg = d.lhb_aggr.filter((l) => l.net_buy_wan < 0).length;
+      if (d.emotion) d.emotion.net_total_yi = netBuy;
+    }
     // amount MA20：取当日之前最近 20 个有值交易日
     const hist = [];
     for (let j = i - 1; j >= 0 && hist.length < 20; j--) if (amts[j] != null) hist.unshift(amts[j]);
@@ -98,7 +107,7 @@ export function recalcAll(days) {
     const posRatio = (s.net_pos != null && s.net_neg != null && (s.net_pos + s.net_neg) > 0)
       ? s.net_pos / (s.net_pos + s.net_neg) : null;
     const sent = computeSentiment({
-      netBuy: s.net_total_yi ?? null,
+      netBuy,
       upCount: s.up_count ?? null,
       downCount: s.down_count ?? null,
       posRatio,

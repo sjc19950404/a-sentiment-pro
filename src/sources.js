@@ -272,9 +272,10 @@ function buildLhbPart(lhbRaw) {
     }
   }
   const lhb_aggr = [...byCode.values()];
-  const net_total_yi = r2(lhb.reduce((a, l) => a + l.net_buy_wan, 0) / 1e4);
-  const net_pos = lhb.filter((l) => l.net_buy_wan > 0).length;
-  const net_neg = lhb.filter((l) => l.net_buy_wan < 0).length;
+  // 净额口径：按去重个股加总（每票一笔，取绝对值最大榜），避免同票多榜重复计入
+  const net_total_yi = r2(lhb_aggr.reduce((a, l) => a + l.net_buy_wan, 0) / 1e4);
+  const net_pos = lhb_aggr.filter((l) => l.net_buy_wan > 0).length;
+  const net_neg = lhb_aggr.filter((l) => l.net_buy_wan < 0).length;
   return { lhb, lhb_aggr, net_total_yi, net_pos, net_neg };
 }
 

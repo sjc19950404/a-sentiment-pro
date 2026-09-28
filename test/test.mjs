@@ -110,6 +110,6 @@ test('applyLhb: 重抓数据刷进 day 原始层', () => {
   applyLhb(day, lhbRaw);
   assert.equal(day.lhb_aggr.length, 1); // 同股聚合
   assert.equal(day.summary.lhb_count, 2);
-  assert.equal(day.summary.net_total_yi, 0.8); // (5e7+3e7)/1e4 万 = 8000万 = 0.8 亿
-  assert.equal(day.emotion.net_total_yi, 0.8);
+  assert.equal(day.summary.net_total_yi, 0.5); // 去重口径：同票两榜取绝对值最大一笔 5e7 = 0.5 亿
+  assert.equal(day.emotion.net_total_yi, 0.5);
 });
