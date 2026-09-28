@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { computeSentiment } from '../src/sentiment.js';
 import { validateArchive } from '../src/validate.js';
 import { ThemeDenoiser, computeMomentum } from '../src/themes.js';
+import { recalcAll } from '../src/pipeline.js';
+import { applyLhb } from '../src/sources.js';
 
 test('sentiment: 全因子正常 -> 0-100', () => {
   const r = computeSentiment({
@@ -66,4 +68,48 @@ test('themes: 动量区分新晋/退潮', () => {
   const m = computeMomentum(byDay, 5, 5, 1);
   assert.ok(m.fresh.includes('新能源'));
   assert.ok(!m.fading.includes('AI算力')); // AI算力两窗都在 -> 延续
+});
+
+test('recalcAll: 有原始数据的天用统一公式重算, 输出 factors', () => {
+  const day = {
+    trade_date: '2026-09-28',
+    summary: { net_total_yi: 3, net_pos: 30, net_neg: 10, ind_up: 60, ind_count: 90, zt_count: 80, dt_count: 20, zb_count: 15, amount_yi: 1.8e4 },
+    emotion: { value: 99 },
+    hot: [],
+  };
+  recalcAll([day]);
+  assert.ok(day.emotion.value >= 0 && day.emotion.value <= 100);
+  assert.ok(day.emotion.factors && typeof day.emotion.factors.s_net === 'number');
+  assert.equal(typeof day.emotion.pct_rank, 'number');
+});
+
+test('recalcAll: 无原始数据的种子天标记 legacy 保留原值', () => {
+  const day = {
+    trade_date: '2026-08-01',
+    summary: {},
+    emotion: { value: 55.5 },
+    hot: [],
+  };
+  recalcAll([day]);
+  assert.equal(day.emotion.value, 55.5);
+  assert.equal(day.emotion._legacy, true);
+});
+
+test('applyLhb: 重抓数据刷进 day 原始层', () => {
+  const day = {
+    trade_date: '2026-09-25',
+    lhb: [], lhb_aggr: [],
+    summary: { net_total_yi: 0, net_pos: 0, net_neg: 0 },
+    emotion: { net_total_yi: 0 },
+    hot: [],
+  };
+  const lhbRaw = [
+    { SECURITY_CODE: '600000', SECURITY_NAME_ABBR: '浦发银行', EXPLANATION: '日涨幅偏离值达7%', CLOSE_PRICE: 10, CHANGE_RATE: 7.1, BILLBOARD_NET_AMT: 5e7, BILLBOARD_BUY_AMT: 8e7, BILLBOARD_SELL_AMT: 3e7, TURNOVERRATE: 3.2 },
+    { SECURITY_CODE: '600000', SECURITY_NAME_ABBR: '浦发银行', EXPLANATION: '换手率达20%', CLOSE_PRICE: 10, CHANGE_RATE: 7.1, BILLBOARD_NET_AMT: 3e7, BILLBOARD_BUY_AMT: 5e7, BILLBOARD_SELL_AMT: 2e7, TURNOVERRATE: 3.2 },
+  ];
+  applyLhb(day, lhbRaw);
+  assert.equal(day.lhb_aggr.length, 1); // 同股聚合
+  assert.equal(day.summary.lhb_count, 2);
+  assert.equal(day.summary.net_total_yi, 0.8); // (5e7+3e7)/1e4 万 = 8000万 = 0.8 亿
+  assert.equal(day.emotion.net_total_yi, 0.8);
 });

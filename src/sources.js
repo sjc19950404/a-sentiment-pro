@@ -7,7 +7,12 @@
 //   5. 腾讯指数 qt.gtimg.cn（三大指数涨跌幅）
 //   6. 东财涨跌停/炸板池 push2ex.eastmoney.com getTopic{ZT,ZB,DT}Pool
 //   7. 同花顺大盘日K zs_1A0001/zs_399001（两市成交额）
+//   8. 东财全市场涨跌家数 push2.eastmoney.com ulist.np f104/f105/f106
+// 情绪公式统一走 sentiment.js computeSentiment（唯一实现，勿在别处手搓公式）
 // 输出 day 对象结构与快照一致: {trade_date,lhb,hot,topics,industry,indexes,summary,emotion,lhb_aggr}
+
+import config from './config.js';
+import { computeSentiment } from './sentiment.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -193,6 +198,25 @@ async function fetchPools(date) {
   return any ? out : null;
 }
 
+// 源8: 东财全市场涨跌家数（沪深合计；f104=涨 f105=跌 f106=平）
+async function fetchBreadth() {
+  for (let att = 0; att < 2; att++) {
+    try {
+      const j = await fetchJSON('https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&secids=1.000001,0.399001&fields=f104,f105,f106&ut=fa5fd1943c7b386f172d6893dbfba10b',
+        { headers: { Referer: 'https://quote.eastmoney.com/' } });
+      const diff = j && j.data && Array.isArray(j.data.diff) ? j.data.diff : null;
+      if (!diff || !diff.length) throw new Error('breadth empty');
+      let up = 0, down = 0, flat = 0, ok = false;
+      for (const d of diff) {
+        if (d.f104 != null && d.f105 != null) { up += d.f104; down += d.f105; flat += d.f106 || 0; ok = true; }
+      }
+      if (ok) return { up, down, flat };
+    } catch (e) { /* 重试 */ }
+    await sleep(500);
+  }
+  return null;
+}
+
 // 源7: 同花顺大盘日K → 两市成交额 Map（YYYYMMDD → 亿）
 async function fetchAmountMap() {
   const map = {};
@@ -215,7 +239,8 @@ async function fetchAmountMap() {
 }
 
 // day 组装（七因子 + 题材原始计数）
-function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amountMap) {
+// lhb 原始数据 → 聚合结构（buildDay 与 applyLhb 补抓共用）
+function buildLhbPart(lhbRaw) {
   const lhb = lhbRaw.map((x) => ({
     code: x.SECURITY_CODE, name: x.SECURITY_NAME_ABBR, reason: x.EXPLANATION || '—',
     close: x.CLOSE_PRICE, change_pct: r2(x.CHANGE_RATE || 0),
@@ -237,6 +262,29 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
     }
   }
   const lhb_aggr = [...byCode.values()];
+  const net_total_yi = r2(lhb.reduce((a, l) => a + l.net_buy_wan, 0) / 1e4);
+  const net_pos = lhb.filter((l) => l.net_buy_wan > 0).length;
+  const net_neg = lhb.filter((l) => l.net_buy_wan < 0).length;
+  return { lhb, lhb_aggr, net_total_yi, net_pos, net_neg };
+}
+
+// 龙虎榜晚间分批披露：把重抓的 lhb 刷进已有 day（仅原始数据层，emotion 由 recalcAll 统一重算）
+export function applyLhb(day, lhbRaw) {
+  const p = buildLhbPart(lhbRaw);
+  day.lhb = p.lhb;
+  day.lhb_aggr = p.lhb_aggr;
+  const s = day.summary = day.summary || {};
+  s.lhb_count = p.lhb.length;
+  s.lhb_stocks = p.lhb_aggr.length;
+  s.net_total_yi = p.net_total_yi;
+  s.net_pos = p.net_pos;
+  s.net_neg = p.net_neg;
+  if (day.emotion) day.emotion.net_total_yi = p.net_total_yi;
+  return day;
+}
+
+function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amountMap, breadth) {
+  const { lhb, lhb_aggr, net_total_yi, net_pos, net_neg } = buildLhbPart(lhbRaw);
 
   const hot = hotRaw.map((x) => ({
     code: x.code, name: x.name, reason: x.reason || '',
@@ -246,9 +294,6 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
   hot.forEach((h) => (h.reason || '').split(/[+＋]/).forEach((w) => { w = w.trim(); if (w) freq[w] = (freq[w] || 0) + 1; }));
   const topics = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 15).map(([tag, count]) => ({ tag, count }));
 
-  const net_total_yi = r2(lhb.reduce((a, l) => a + l.net_buy_wan, 0) / 1e4);
-  const net_pos = lhb.filter((l) => l.net_buy_wan > 0).length;
-  const net_neg = lhb.filter((l) => l.net_buy_wan < 0).length;
   const ind_up = industry.filter((i) => i.change_pct > 0).length;
   const ind_down = industry.filter((i) => i.change_pct < 0).length;
 
@@ -262,21 +307,28 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
   const histAmts = amountMap ? Object.keys(amountMap).filter((k) => k < ymdNum && amountMap[k] > 0).sort().slice(-20) : [];
   const amt_ma = histAmts.length >= 10 ? histAmts.reduce((a, k) => a + amountMap[k], 0) / histAmts.length : null;
 
-  // 七因子
-  const s_net = clamp(r1(net_total_yi * 2 + 50), 0, 100);
-  const s_pos = r1((net_pos / (net_pos + net_neg || 1)) * 100);
-  const up_ratio = r1((ind_up / (industry.length || 1)) * 100);
-  const s_hot = clamp(r1((hot.length - 20) / 60 * 100), 0, 100);
-  const s_zdt = (zt != null && dt != null) ? clamp(r1((zt + 2) / (zt + dt + 4) * 100), 0, 100) : 50;
-  const s_zbl = (zbl_pct != null) ? clamp(r1(100 - zbl_pct * 2), 0, 100) : 50;
-  const s_amt = (amount_yi != null && amt_ma != null) ? clamp(r1((amount_yi / amt_ma) * 50), 0, 100) : 50;
-  const value = r1((s_net * 20 + s_pos * 10 + up_ratio * 20 + s_hot * 10 + s_zdt * 15 + s_zbl * 10 + s_amt * 15) / 100);
-
-  const imputed = (pools == null ? 2 : 0) + (amount_yi == null ? 1 : 0); // 缺维数
-  const imputedRatio = imputed / 7;
+  // 七因子：统一走 sentiment.js computeSentiment（唯一公式实现）
+  const pos_ratio_v = (net_pos + net_neg) > 0 ? net_pos / (net_pos + net_neg) : null;
+  const sent = computeSentiment({
+    netBuy: net_total_yi,
+    upCount: breadth ? breadth.up : null,
+    downCount: breadth ? breadth.down : null,
+    posRatio: pos_ratio_v,
+    industryUp: ind_up,
+    industryTotal: industry.length,
+    limitUp: zt, limitDown: dt, brokenCount: zb,
+    amount: amount_yi, amountMA20: amt_ma,
+  }, config.weights);
+  const FKEY = { s_net20: 's_net', s_pos10: 's_pos', s_brd20: 's_brd', s_hot10: 's_hot', s_zdt15: 's_zdt', s_zbl10: 's_zbl', s_amt15: 's_amt' };
+  const facPlain = {};
+  for (const [wk, pk] of Object.entries(FKEY)) facPlain[pk] = sent.factors[wk];
+  const value = sent.score;
+  const imputedRatio = sent.imputedRatio;
+  const factorMissing = sent.missing;
 
   const summary = {
     lhb_count: lhb.length, lhb_stocks: lhb_aggr.length, net_total_yi, net_pos, net_neg,
+    up_count: breadth ? breadth.up : null, down_count: breadth ? breadth.down : null, flat_count: breadth ? breadth.flat : null,
     hot_count: hot.length, topic_kinds: Object.keys(freq).length,
     ind_count: industry.length, ind_up, ind_down,
     top_industry: industry[0] ? industry[0].name : null,
@@ -290,13 +342,15 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
   if (missing.length) summary._missing = missing;
 
   const emotion = {
-    value, s_net, s_pos, s_brd: up_ratio, s_hot, s_zdt, s_zbl, s_amt,
-    net_total_yi, pos_ratio: s_pos, up_ratio,
+    value, ...facPlain,
+    factors: facPlain,
+    net_total_yi, pos_ratio: pos_ratio_v != null ? r1(pos_ratio_v * 100) : null,
+    up_ratio: industry.length ? r1((ind_up / industry.length) * 100) : null,
     hot_count: hot.length,
     topic_conc: r1(topics.length ? (topics[0].count / (hot.length || 1)) * 100 : 0),
     top_topic: topics.length ? topics[0].tag : '—',
     pct_rank: null, net_pct_rank: null, industryCount: industry.length,
-    imputedRatio, missing,
+    imputedRatio, missing: factorMissing,
   };
   return { trade_date: date, lhb, hot, topics, industry, summary, indexes, emotion, lhb_aggr };
 }
@@ -320,15 +374,16 @@ export async function fetchLive() {
   const date = hotRaw[0].date;
   const lhbRaw = await fetchLhb(date);
   const hotEnriched = await enrichHotQuotes(hotRaw);
-  const [industry, indexes, pools, amountMap] = await Promise.all([
+  const [industry, indexes, pools, amountMap, breadth] = await Promise.all([
     fetchBoards(date),
     fetchIndexes(date),
     fetchPools(date),
     fetchAmountMap(),
+    fetchBreadth(),
   ]);
   const amountYi = amountMap ? (amountMap[date.replace(/-/g, '')] || null) : null;
-  const day = buildDay(date, lhbRaw, hotEnriched, industry, indexes, pools, amountYi, amountMap);
+  const day = buildDay(date, lhbRaw, hotEnriched, industry, indexes, pools, amountYi, amountMap, breadth);
   return { newDays: [day], tradeDate: date };
 }
 
-export { LhbNotPublishedError };
+export { LhbNotPublishedError, fetchLhb };

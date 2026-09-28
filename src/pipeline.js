@@ -4,8 +4,9 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import config from './config.js';
 import { ThemeDenoiser, computeMomentum } from './themes.js';
+import { computeSentiment } from './sentiment.js';
 import { validateArchive } from './validate.js';
-import { fetchLive, recalcRanks, LhbNotPublishedError } from './sources.js';
+import { fetchLive, recalcRanks, LhbNotPublishedError, applyLhb, fetchLhb } from './sources.js';
 import { todayBeijing, isTradingDay } from './util.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -61,6 +62,7 @@ export function runOffline(snapshotPath) {
   const arc = extractArchive(html);
   const allDays = arc.all_days || [];
   const { out, momObj } = enrich(allDays);
+  recalcAll(out); // 统一公式重算（无原始数据的种子天自动 legacy 保留）
   const latest = out[out.length - 1];
   const archive = {
     meta: {
@@ -83,6 +85,48 @@ export function runOffline(snapshotPath) {
   return archive;
 }
 
+// 全档情绪重算：统一公式（computeSentiment）重跑所有交易日，再重算分位。
+// 历史天缺原始数据的因子走 proxy（posRatio/行业涨比），完全无原始数据的种子天标记 _legacy 保留原值。
+export function recalcAll(days) {
+  const amts = days.map((d) => (d.summary && d.summary.amount_yi != null) ? d.summary.amount_yi : null);
+  days.forEach((d, i) => {
+    const s = d.summary || {};
+    const hasRaw = (s.ind_count > 0 || s.net_total_yi != null);
+    if (!hasRaw) { if (d.emotion) d.emotion._legacy = true; return; }
+    // amount MA20：取当日之前最近 20 个有值交易日
+    const hist = [];
+    for (let j = i - 1; j >= 0 && hist.length < 20; j--) if (amts[j] != null) hist.unshift(amts[j]);
+    const ma = hist.length >= 10 ? hist.reduce((a, b) => a + b, 0) / hist.length : null;
+    const posRatio = (s.net_pos != null && s.net_neg != null && (s.net_pos + s.net_neg) > 0)
+      ? s.net_pos / (s.net_pos + s.net_neg) : null;
+    const sent = computeSentiment({
+      netBuy: s.net_total_yi ?? null,
+      upCount: s.up_count ?? null,
+      downCount: s.down_count ?? null,
+      posRatio,
+      industryUp: s.ind_up ?? null,
+      industryTotal: s.ind_count ?? null,
+      limitUp: s.zt_count ?? null,
+      limitDown: s.dt_count ?? null,
+      brokenCount: s.zb_count ?? null,
+      amount: s.amount_yi ?? null,
+      amountMA20: ma,
+    }, config.weights);
+    const FKEY = { s_net20: 's_net', s_pos10: 's_pos', s_brd20: 's_brd', s_hot10: 's_hot', s_zdt15: 's_zdt', s_zbl10: 's_zbl', s_amt15: 's_amt' };
+    const facPlain = {};
+    for (const [wk, pk] of Object.entries(FKEY)) facPlain[pk] = sent.factors[wk];
+    d.emotion = {
+      ...d.emotion,
+      value: sent.score,
+      ...facPlain,
+      factors: facPlain,
+      imputedRatio: sent.imputedRatio,
+      missing: sent.missing,
+    };
+  });
+  recalcRanks(days);
+}
+
 // 线上模式：抓取真实数据，合并进已存档历史 → 全档重算分位
 // fetchLive 返回 { newDays:[day], tradeDate }，day 结构与快照一致
 export async function runLive() {
@@ -102,7 +146,21 @@ export async function runLive() {
     if (i >= 0) history[i] = nd; else history.push(nd);
   }
   history.sort((a, b) => (a.trade_date < b.trade_date ? -1 : 1));
-  recalcRanks(history);
+
+  // 龙虎榜晚间分批披露：重抓上一交易日 lhb 刷原始数据（行业/涨跌停池收盘即定死，无需补抓）
+  const prevDays = history.filter((d) => d.trade_date < tradeDate).slice(-1);
+  for (const day of prevDays) {
+    try {
+      const lhbRaw = await fetchLhb(day.trade_date);
+      applyLhb(day, lhbRaw);
+      console.log('[refresh-lhb]', day.trade_date, '补抓成功, 榜单', lhbRaw.length, '条');
+    } catch (e) {
+      if (e instanceof LhbNotPublishedError) console.log('[refresh-lhb]', day.trade_date, '未公布，跳过');
+      else console.error('[refresh-lhb]', day.trade_date, '失败:', e.message);
+    }
+  }
+
+  recalcAll(history);
   const { out, momObj } = enrich(history);
   const latest = out[out.length - 1];
   const archive = {

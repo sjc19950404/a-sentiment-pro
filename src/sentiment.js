@@ -19,7 +19,7 @@ export function computeSentiment(raw = {}, weights) {
 
   const {
     netBuy, upCount, downCount, industryUp, industryTotal,
-    limitUp, limitDown, brokenCount, amount, amountMA20,
+    limitUp, limitDown, brokenCount, amount, amountMA20, posRatio,
   } = raw;
 
   const upRatio = (upCount != null && downCount != null && upCount + downCount > 0)
@@ -32,8 +32,11 @@ export function computeSentiment(raw = {}, weights) {
   const f_net = factor(
     netBuy != null ? Math.tanh(netBuy / 5) * 50 + 50 : null
   );
-  // s_pos10: 涨跌家数
-  const f_pos = factor(upRatio != null ? upRatio * 100 : null);
+  // s_pos10: 涨跌家数（缺则用龙虎榜正负占比 posRatio 代理）
+  const f_pos = factor(
+    upRatio != null ? upRatio * 100 : null,
+    () => (posRatio != null ? posRatio * 100 : null)
+  );
   // s_brd20: 行业涨比（缺则用品宽代理）
   const f_brd = factor(
     indRatio != null ? indRatio * 100 : null,
