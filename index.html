@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A股情绪系统 · PRO</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">A股情绪系统 <span class="ver">PRO</span></div>
+    <div class="meta">
+      <span id="tradeDate">--</span>
+      <span id="sourceTag" class="tag">--</span>
+      <span id="genTime" class="muted"></span>
+    </div>
+  </header>
+
+  <div id="alerts"></div>
+
+  <main class="grid">
+    <section class="card emotion">
+      <h2>综合情绪</h2>
+      <div class="score-row">
+        <div class="score" id="emScore">--</div>
+        <div class="pct">
+          <div>历史分位 <b id="emPct">--</b>%</div>
+          <div class="muted" id="emNet"></div>
+        </div>
+      </div>
+      <div id="factors" class="factors"></div>
+    </section>
+
+    <section class="card momentum">
+      <h2>题材动量</h2>
+      <div class="mom-group">
+        <div class="mom-title fresh">新晋 <span id="freshN">0</span></div>
+        <div id="freshList" class="chips"></div>
+      </div>
+      <div class="mom-group">
+        <div class="mom-title fade">退潮 <span id="fadeN">0</span></div>
+        <div id="fadeList" class="chips"></div>
+      </div>
+      <div class="mom-group">
+        <div class="mom-title cont">延续 <span id="contN">0</span></div>
+        <div id="contList" class="chips muted"></div>
+      </div>
+    </section>
+
+    <section class="card trend">
+      <h2>情绪趋势（近15日）</h2>
+      <svg id="trendSvg" viewBox="0 0 300 90" preserveAspectRatio="none"></svg>
+    </section>
+
+    <section class="card themes">
+      <h2>最新日题材（已去噪）</h2>
+      <div id="themeBars"></div>
+    </section>
+
+    <section class="card hot">
+      <h2>强势股 / 龙虎榜归因</h2>
+      <div class="table-wrap">
+        <table id="hotTable">
+          <thead><tr><th>代码</th><th>名称</th><th>诱因</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot muted">
+    七因子情绪模型 v5.0-pro · 题材去噪 + 缺失代理 + 多源容灾 · 数据仅供参考，非投资建议
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>

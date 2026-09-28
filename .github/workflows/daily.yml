@@ -1,0 +1,34 @@
+name: daily-sentiment
+
+on:
+  schedule:
+    - cron: '40 10 * * *'   # 北京 18:40（UTC 10:40）；盘后抓数据
+  workflow_dispatch:        # 手动触发
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 运行管道（live 模式，非交易日自动跳过）
+        env:
+          MODE: live
+        run: node src/pipeline.js
+      - name: 提交最新数据
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/archive.json
+          if git diff --cached --quiet; then
+            echo "无变化，跳过提交"
+          else
+            git commit -m "chore: 更新情绪数据 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi
