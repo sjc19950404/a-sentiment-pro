@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-09-28T14:41:13.438Z",
+    "generatedAt": "2026-09-28T14:48:23.970Z",
     "formulaVersion": "v5.0-pro",
     "source": "live",
     "tradeDate": "2026-09-28"
@@ -40729,7 +40729,7 @@
         "hot_count": 51,
         "topic_conc": 7.8,
         "top_topic": "业绩增长",
-        "pct_rank": 3.3,
+        "pct_rank": 6.7,
         "net_pct_rank": 3.3,
         "industryCount": 90,
         "factors": {
@@ -89609,9 +89609,9 @@
         "net_total_yi": -1.17,
         "net_pos": 30,
         "net_neg": 37,
-        "up_count": null,
-        "down_count": null,
-        "flat_count": null,
+        "up_count": 874,
+        "down_count": 4298,
+        "flat_count": 115,
         "hot_count": 35,
         "topic_kinds": 104,
         "ind_count": 90,
@@ -89703,9 +89703,9 @@
         "创业板指": -4.53
       },
       "emotion": {
-        "value": 36.3,
+        "value": 33.5,
         "s_net": 38.5,
-        "s_pos": 44.8,
+        "s_pos": 16.9,
         "s_brd": 4.4,
         "s_hot": 37.1,
         "s_zdt": 37.1,
@@ -89713,7 +89713,7 @@
         "s_amt": 43.1,
         "factors": {
           "s_net": 38.5,
-          "s_pos": 44.8,
+          "s_pos": 16.9,
           "s_brd": 4.4,
           "s_hot": 37.1,
           "s_zdt": 37.1,
@@ -89726,7 +89726,7 @@
         "hot_count": 35,
         "topic_conc": 5.7,
         "top_topic": "染料",
-        "pct_rank": 6.7,
+        "pct_rank": 3.3,
         "net_pct_rank": 10,
         "industryCount": 90,
         "imputedRatio": 0,
@@ -90705,9 +90705,9 @@
       ]
     },
     "latestEmotion": {
-      "value": 36.3,
+      "value": 33.5,
       "s_net": 38.5,
-      "s_pos": 44.8,
+      "s_pos": 16.9,
       "s_brd": 4.4,
       "s_hot": 37.1,
       "s_zdt": 37.1,
@@ -90715,7 +90715,7 @@
       "s_amt": 43.1,
       "factors": {
         "s_net": 38.5,
-        "s_pos": 44.8,
+        "s_pos": 16.9,
         "s_brd": 4.4,
         "s_hot": 37.1,
         "s_zdt": 37.1,
@@ -90728,7 +90728,7 @@
       "hot_count": 35,
       "topic_conc": 5.7,
       "top_topic": "染料",
-      "pct_rank": 6.7,
+      "pct_rank": 3.3,
       "net_pct_rank": 10,
       "industryCount": 90,
       "imputedRatio": 0,
