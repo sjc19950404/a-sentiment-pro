@@ -339,6 +339,7 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
   const summary = {
     lhb_count: lhb.length, lhb_stocks: lhb_aggr.length, net_total_yi, net_pos, net_neg,
     up_count: breadth ? breadth.up : null, down_count: breadth ? breadth.down : null, flat_count: breadth ? breadth.flat : null,
+    breadth_scope: '沪深两市A股（不含北交所/ST口径与各平台统计或有出入）',
     hot_count: hot.length, topic_kinds: Object.keys(freq).length,
     ind_count: industry.length, ind_up, ind_down,
     top_industry: industry[0] ? industry[0].name : null,
