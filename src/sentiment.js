@@ -57,9 +57,9 @@ export function computeSentiment(raw = {}, weights) {
     zblDen > 0 ? (limitUp / zblDen) * 100 : null,
     () => (ldDen > 0 ? (limitUp / ldDen) * 100 : null)
   );
-  // s_amt15: 量能 vs 20日均
+  // s_amt15: 量能 vs 20日均（tanh 平滑：平量50，1.2倍≈67，1.5倍≈86，2倍≈97 不硬封顶；缩量对称压低）
   const f_amt = factor(
-    (amount != null && amountMA20) ? clamp(50 + (amount / amountMA20 - 1) * 70) : null
+    (amount != null && amountMA20) ? Math.tanh((amount / amountMA20 - 1) * 1.8) * 50 + 50 : null
   );
 
   const factors = { s_net20: f_net, s_pos10: f_pos, s_brd20: f_brd, s_hot10: f_hot, s_zdt15: f_zdt, s_zbl10: f_zbl, s_amt15: f_amt };

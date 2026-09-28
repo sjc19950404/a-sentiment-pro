@@ -79,8 +79,6 @@ export function runOffline(snapshotPath) {
       imputedRatioLatest: latest.emotion?.imputedRatio ?? 0,
       tradeDate: latest.trade_date,
     },
-    board_rank: arc.board_rank || [],
-    briefs: arc.briefs || [],
   };
   return archive;
 }
@@ -178,8 +176,6 @@ export async function runLive() {
       imputedRatioLatest: latest.emotion?.imputedRatio ?? 0,
       tradeDate: latest.trade_date,
     },
-    board_rank: out.map((d) => [d.trade_date, (d.industry || []).slice(0, 5).map((i) => [i.name, i.change_pct])]),
-    briefs: [],
   };
   return archive;
 }

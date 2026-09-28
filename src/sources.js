@@ -118,24 +118,30 @@ async function fetchBoards(date) {
   const ymdNum = date.replace(/-/g, '');
   const year = date.slice(0, 4);
   const rows = []; let fail = 0;
-  for (let i = 0; i < boards.length; i++) {
-    const { code, name } = boards[i];
-    let got = null;
-    for (let att = 0; att < 2 && !got; att++) {
-      try {
-        const t = await (await fetch('http://d.10jqka.com.cn/v6/line/48_' + code + '/01/' + year + '.js',
-          { headers: { 'User-Agent': UA, Referer: 'https://q.10jqka.com.cn/' } })).text();
-        const s = t.slice(t.indexOf('(') + 1, t.lastIndexOf(')'));
-        const obj = JSON.parse(s);
-        const ks = (obj.data || '').split(';').filter(Boolean).map((l) => l.split(','));
-        const idx = ks.findIndex((k) => k[0] === ymdNum);
-        if (idx > 0) got = { close: +ks[idx][4], pre: +ks[idx - 1][4] };
-      } catch (e) { await sleep(500); }
+  // 4 路并发（worker 内限速），90 个行业 30s → ~10s
+  const WORKERS = 4;
+  let cursor = 0;
+  async function boardWorker() {
+    while (cursor < boards.length) {
+      const { code, name } = boards[cursor++];
+      let got = null;
+      for (let att = 0; att < 2 && !got; att++) {
+        try {
+          const t = await (await fetch('http://d.10jqka.com.cn/v6/line/48_' + code + '/01/' + year + '.js',
+            { headers: { 'User-Agent': UA, Referer: 'https://q.10jqka.com.cn/' } })).text();
+          const s = t.slice(t.indexOf('(') + 1, t.lastIndexOf(')'));
+          const obj = JSON.parse(s);
+          const ks = (obj.data || '').split(';').filter(Boolean).map((l) => l.split(','));
+          const idx = ks.findIndex((k) => k[0] === ymdNum);
+          if (idx > 0) got = { close: +ks[idx][4], pre: +ks[idx - 1][4] };
+        } catch (e) { await sleep(500); }
+      }
+      if (got && got.close && got.pre) rows.push({ name, change_pct: r2((got.close / got.pre - 1) * 100) });
+      else fail++;
+      await sleep(150);
     }
-    if (got && got.close && got.pre) rows.push({ name, change_pct: r2((got.close / got.pre - 1) * 100) });
-    else fail++;
-    await sleep(110);
   }
+  await Promise.all(Array.from({ length: WORKERS }, () => boardWorker()));
   if (rows.length < 50) throw new Error('行业日K 成功过少: ' + rows.length + '/' + boards.length);
   return rows.sort((a, b) => b.change_pct - a.change_pct);
 }
