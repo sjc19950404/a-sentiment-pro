@@ -3,7 +3,8 @@
     "generatedAt": "2026-09-28T12:11:49.606Z",
     "formulaVersion": "v5.0-pro",
     "source": "offline-replay",
-    "note": "离线回放：情绪分沿用快照，题材已去噪。生产环境请跑 live 模式。"
+    "note": "离线回放：情绪分沿用快照，题材已去噪。生产环境请跑 live 模式。",
+    "stale": true
   },
   "all_days": [
     {
