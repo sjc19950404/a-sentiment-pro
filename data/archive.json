@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-09-28T14:30:22.988Z",
+    "generatedAt": "2026-09-28T14:41:13.438Z",
     "formulaVersion": "v5.0-pro",
     "source": "live",
     "tradeDate": "2026-09-28"
@@ -40729,7 +40729,7 @@
         "hot_count": 51,
         "topic_conc": 7.8,
         "top_topic": "业绩增长",
-        "pct_rank": 6.7,
+        "pct_rank": 3.3,
         "net_pct_rank": 3.3,
         "industryCount": 90,
         "factors": {
@@ -89447,6 +89447,10 @@
           "change_pct": -2.02
         },
         {
+          "name": "化学纤维",
+          "change_pct": -2.1
+        },
+        {
           "name": "建筑材料",
           "change_pct": -2.11
         },
@@ -89491,6 +89495,10 @@
           "change_pct": -2.59
         },
         {
+          "name": "化学制品",
+          "change_pct": -2.6
+        },
+        {
           "name": "黑色家电",
           "change_pct": -2.68
         },
@@ -89523,6 +89531,10 @@
           "change_pct": -3.13
         },
         {
+          "name": "环保设备",
+          "change_pct": -3.15
+        },
+        {
           "name": "能源金属",
           "change_pct": -3.5
         },
@@ -89532,6 +89544,10 @@
         },
         {
           "name": "教育",
+          "change_pct": -3.71
+        },
+        {
+          "name": "自动化设备",
           "change_pct": -3.71
         },
         {
@@ -89593,28 +89609,93 @@
         "net_total_yi": -1.17,
         "net_pos": 30,
         "net_neg": 37,
-        "up_count": 874,
-        "down_count": 4298,
-        "flat_count": 115,
+        "up_count": null,
+        "down_count": null,
+        "flat_count": null,
         "hot_count": 35,
         "topic_kinds": 104,
-        "ind_count": 86,
+        "ind_count": 90,
         "ind_up": 4,
-        "ind_down": 82,
+        "ind_down": 86,
         "top_industry": "汽车整车",
         "bottom_industry": "元件",
-        "zt_count": null,
+        "zt_count": 33,
         "dt_count": 56,
         "zb_count": 11,
-        "zbl_pct": null,
-        "max_lb": null,
-        "lb2_count": null,
-        "zt_codes": null,
-        "zt_lb": null,
-        "amount_yi": 17028,
-        "_missing": [
-          "pools"
-        ]
+        "zbl_pct": 25,
+        "max_lb": 5,
+        "lb2_count": 7,
+        "zt_codes": [
+          "001330",
+          "600825",
+          "603949",
+          "603396",
+          "002912",
+          "601579",
+          "603278",
+          "000678",
+          "002640",
+          "000503",
+          "002242",
+          "000513",
+          "002962",
+          "600802",
+          "002347",
+          "000011",
+          "600032",
+          "000980",
+          "000020",
+          "002480",
+          "600241",
+          "600418",
+          "001201",
+          "002342",
+          "688244",
+          "002232",
+          "600488",
+          "002852",
+          "301190",
+          "601218",
+          "605366",
+          "603968",
+          "001368"
+        ],
+        "zt_lb": {
+          "301190": 1,
+          "600032": 1,
+          "600241": 1,
+          "600418": 1,
+          "600488": 1,
+          "600802": 3,
+          "600825": 5,
+          "601218": 2,
+          "601579": 1,
+          "603278": 2,
+          "603396": 3,
+          "603949": 3,
+          "603968": 1,
+          "605366": 1,
+          "688244": 1,
+          "001330": 1,
+          "002912": 1,
+          "000678": 2,
+          "002640": 1,
+          "000503": 1,
+          "002242": 1,
+          "000513": 1,
+          "002962": 1,
+          "002347": 1,
+          "000011": 1,
+          "000980": 1,
+          "000020": 1,
+          "002480": 1,
+          "001201": 1,
+          "002342": 1,
+          "002232": 1,
+          "002852": 1,
+          "001368": 1
+        },
+        "amount_yi": 17028
       },
       "indexes": {
         "上证指数": -1.67,
@@ -89622,37 +89703,34 @@
         "创业板指": -4.53
       },
       "emotion": {
-        "value": 31,
+        "value": 36.3,
         "s_net": 38.5,
-        "s_pos": 16.9,
-        "s_brd": 4.7,
-        "s_hot": 16.9,
-        "s_zdt": 50,
-        "s_zbl": 50,
+        "s_pos": 44.8,
+        "s_brd": 4.4,
+        "s_hot": 37.1,
+        "s_zdt": 37.1,
+        "s_zbl": 75,
         "s_amt": 43.1,
         "factors": {
           "s_net": 38.5,
-          "s_pos": 16.9,
-          "s_brd": 4.7,
-          "s_hot": 16.9,
-          "s_zdt": 50,
-          "s_zbl": 50,
+          "s_pos": 44.8,
+          "s_brd": 4.4,
+          "s_hot": 37.1,
+          "s_zdt": 37.1,
+          "s_zbl": 75,
           "s_amt": 43.1
         },
         "net_total_yi": -1.17,
         "pos_ratio": 44.8,
-        "up_ratio": 4.7,
+        "up_ratio": 4.4,
         "hot_count": 35,
         "topic_conc": 5.7,
         "top_topic": "染料",
-        "pct_rank": 3.3,
+        "pct_rank": 6.7,
         "net_pct_rank": 10,
-        "industryCount": 86,
-        "imputedRatio": 0.29,
-        "missing": [
-          "s_zdt15",
-          "s_zbl10"
-        ]
+        "industryCount": 90,
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -90627,39 +90705,36 @@
       ]
     },
     "latestEmotion": {
-      "value": 31,
+      "value": 36.3,
       "s_net": 38.5,
-      "s_pos": 16.9,
-      "s_brd": 4.7,
-      "s_hot": 16.9,
-      "s_zdt": 50,
-      "s_zbl": 50,
+      "s_pos": 44.8,
+      "s_brd": 4.4,
+      "s_hot": 37.1,
+      "s_zdt": 37.1,
+      "s_zbl": 75,
       "s_amt": 43.1,
       "factors": {
         "s_net": 38.5,
-        "s_pos": 16.9,
-        "s_brd": 4.7,
-        "s_hot": 16.9,
-        "s_zdt": 50,
-        "s_zbl": 50,
+        "s_pos": 44.8,
+        "s_brd": 4.4,
+        "s_hot": 37.1,
+        "s_zdt": 37.1,
+        "s_zbl": 75,
         "s_amt": 43.1
       },
       "net_total_yi": -1.17,
       "pos_ratio": 44.8,
-      "up_ratio": 4.7,
+      "up_ratio": 4.4,
       "hot_count": 35,
       "topic_conc": 5.7,
       "top_topic": "染料",
-      "pct_rank": 3.3,
+      "pct_rank": 6.7,
       "net_pct_rank": 10,
-      "industryCount": 86,
-      "imputedRatio": 0.29,
-      "missing": [
-        "s_zdt15",
-        "s_zbl10"
-      ]
+      "industryCount": 90,
+      "imputedRatio": 0,
+      "missing": []
     },
-    "imputedRatioLatest": 0.29,
+    "imputedRatioLatest": 0,
     "tradeDate": "2026-09-28"
   },
   "board_rank": [
