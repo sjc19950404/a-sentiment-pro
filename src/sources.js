@@ -203,7 +203,7 @@ async function fetchPools(date) {
 
 // 源8: 东财全市场涨跌家数（沪深合计；f104=涨 f105=跌 f106=平）
 async function fetchBreadth() {
-  for (let att = 0; att < 2; att++) {
+  for (let att = 0; att < 3; att++) {
     try {
       const j = await fetchJSON('https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&secids=1.000001,0.399001&fields=f104,f105,f106&ut=fa5fd1943c7b386f172d6893dbfba10b',
         { headers: { Referer: 'https://quote.eastmoney.com/' } });
@@ -214,8 +214,9 @@ async function fetchBreadth() {
         if (d.f104 != null && d.f105 != null) { up += d.f104; down += d.f105; flat += d.f106 || 0; ok = true; }
       }
       if (ok) return { up, down, flat };
-    } catch (e) { /* 重试 */ }
-    await sleep(500);
+      throw new Error('breadth fields missing');
+    } catch (e) { if (att === 2) console.error('[breadth] 连续失败:', e.message); }
+    await sleep(600);
   }
   return null;
 }
