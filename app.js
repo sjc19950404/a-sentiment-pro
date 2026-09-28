@@ -31,7 +31,7 @@ function renderEmotion(latest) {
   $('emPct').textContent = (e.pct_rank ?? '--');
   $('emNet').textContent = e.net_total_yi != null ? `龙虎榜净买 ${e.net_total_yi} 亿` : '';
 
-  const fac = e.factors || {};
+  const fac = e.factors || e; // 七因子可能直接挂在 emotion 根上
   const names = { s_net: '龙虎榜', s_pos: '涨跌家', s_brd: '行业涨', s_hot: '涨停', s_zdt: '涨跌停', s_zbl: '封板', s_amt: '量能' };
   const wrap = $('factors');
   wrap.innerHTML = '';
@@ -49,9 +49,11 @@ function chips(list, attr) {
   const wrap = $(attr);
   wrap.innerHTML = '';
   (list || []).forEach((t) => {
+    const label = typeof t === 'string' ? t : (t.theme || t.name || '');
+    if (!label) return;
     const c = document.createElement('span');
     c.className = 'chip';
-    c.textContent = t;
+    c.textContent = label;
     wrap.appendChild(c);
   });
 }
