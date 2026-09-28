@@ -174,26 +174,29 @@ async function fetchPools(date) {
   const out = { zt: null, zb: null, dt: null, max_lb: null, lb2: null, zt_codes: null, zt_lb: null, dt_detail: null, zb_detail: null };
   let any = false;
   for (const [api, key, sort] of apis) {
-    try {
-      const j = await fetchJSON('https://push2ex.eastmoney.com/' + api + '?' + base + '&sort=' + sort + '&date=' + ymd,
-        { headers: { Referer: 'https://quote.eastmoney.com/' } });
-      const pool = j && j.data && Array.isArray(j.data.pool) ? j.data.pool : null;
-      if (pool && pool.length) { out[key] = pool.length; any = true; }
-      else out[key] = (pool ? 0 : null);
-      if (api === 'getTopicZTPool' && pool && pool.length) {
-        out.max_lb = Math.max(...pool.map((p) => p.lbc || 1));
-        out.lb2 = pool.filter((p) => (p.lbc || 1) >= 2).length;
-        out.zt_codes = pool.map((p) => p.c);
-        out.zt_lb = {}; pool.forEach((p) => { out.zt_lb[p.c] = p.lbc || 1; });
-      }
-      if (api === 'getTopicDTPool' && pool) {
-        out.dt_detail = pool.map((p) => ({ c: p.c, fba: p.fba || 0, amount: p.amount || 0, days: p.days || 0 }));
-      }
-      if (api === 'getTopicZBPool' && pool) {
-        out.zb_detail = pool.map((p) => ({ c: p.c, amount: p.amount || 0 }));
-      }
-    } catch (e) { /* 单池失败保持 null */ }
-    await sleep(400);
+    for (let att = 0; att < 3; att++) {
+      try {
+        const j = await fetchJSON('https://push2ex.eastmoney.com/' + api + '?' + base + '&sort=' + sort + '&date=' + ymd,
+          { headers: { Referer: 'https://quote.eastmoney.com/' } });
+        const pool = j && j.data && Array.isArray(j.data.pool) ? j.data.pool : null;
+        if (pool && pool.length) { out[key] = pool.length; any = true; }
+        else out[key] = (pool ? 0 : null);
+        if (api === 'getTopicZTPool' && pool && pool.length) {
+          out.max_lb = Math.max(...pool.map((p) => p.lbc || 1));
+          out.lb2 = pool.filter((p) => (p.lbc || 1) >= 2).length;
+          out.zt_codes = pool.map((p) => p.c);
+          out.zt_lb = {}; pool.forEach((p) => { out.zt_lb[p.c] = p.lbc || 1; });
+        }
+        if (api === 'getTopicDTPool' && pool) {
+          out.dt_detail = pool.map((p) => ({ c: p.c, fba: p.fba || 0, amount: p.amount || 0, days: p.days || 0 }));
+        }
+        if (api === 'getTopicZBPool' && pool) {
+          out.zb_detail = pool.map((p) => ({ c: p.c, amount: p.amount || 0 }));
+        }
+        break; // 成功即跳出重试
+      } catch (e) { if (att === 2) console.error('[pools]', api, '连续失败:', e.message); }
+      await sleep(600);
+    }
   }
   return any ? out : null;
 }
