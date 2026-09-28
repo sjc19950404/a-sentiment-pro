@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-09-28T13:11:22.329Z",
+    "generatedAt": "2026-09-28T14:30:22.988Z",
     "formulaVersion": "v5.0-pro",
     "source": "live",
     "tradeDate": "2026-09-28"
@@ -1938,23 +1938,39 @@
         "创业板指": 1.12
       },
       "emotion": {
-        "value": 60.8,
+        "value": 59.4,
         "s_net": 100,
         "s_pos": 52.7,
         "s_brd": 45.6,
-        "s_hot": 71.7,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 44.7,
+        "s_amt": 50,
         "net_total_yi": 29.06,
         "pos_ratio": 52.7,
         "up_ratio": 45.6,
         "hot_count": 63,
         "topic_conc": 9.5,
         "top_topic": "CPO",
-        "pct_rank": 53.3,
+        "pct_rank": 30,
         "net_pct_rank": 80,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 52.7,
+          "s_brd": 45.6,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 50
+        },
+        "imputedRatio": 0.57,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10",
+          "s_amt15"
+        ]
       },
       "lhb_aggr": [
         {
@@ -5127,23 +5143,39 @@
         "创业板指": 3.14
       },
       "emotion": {
-        "value": 70.3,
-        "s_net": 83.6,
+        "value": 68.5,
+        "s_net": 99.9,
         "s_pos": 46.7,
         "s_brd": 94.4,
-        "s_hot": 100,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 50.3,
+        "s_amt": 50,
         "net_total_yi": 16.82,
         "pos_ratio": 46.7,
         "up_ratio": 94.4,
         "hot_count": 110,
         "topic_conc": 6.4,
         "top_topic": "国企改革",
-        "pct_rank": 80,
+        "pct_rank": 66.7,
         "net_pct_rank": 46.7,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 99.9,
+          "s_pos": 46.7,
+          "s_brd": 94.4,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 50
+        },
+        "imputedRatio": 0.57,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10",
+          "s_amt15"
+        ]
       },
       "lhb_aggr": [
         {
@@ -8263,23 +8295,39 @@
         "创业板指": -0.93
       },
       "emotion": {
-        "value": 64.2,
-        "s_net": 98.9,
+        "value": 59.5,
+        "s_net": 100,
         "s_pos": 56,
         "s_brd": 44.4,
-        "s_hot": 98.3,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 50.9,
+        "s_amt": 50,
         "net_total_yi": 24.44,
         "pos_ratio": 56,
         "up_ratio": 44.4,
         "hot_count": 79,
         "topic_conc": 15.2,
         "top_topic": "粮食概念",
-        "pct_rank": 63.3,
+        "pct_rank": 33.3,
         "net_pct_rank": 66.7,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 56,
+          "s_brd": 44.4,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 50
+        },
+        "imputedRatio": 0.57,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10",
+          "s_amt15"
+        ]
       },
       "lhb_aggr": [
         {
@@ -11213,14 +11261,14 @@
         "创业板指": -6.26
       },
       "emotion": {
-        "value": 28.1,
+        "value": 29.7,
         "s_net": 0,
         "s_pos": 36.1,
         "s_brd": 5.6,
-        "s_hot": 28.3,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 53.9,
+        "s_amt": 50,
         "net_total_yi": -32.96,
         "pos_ratio": 36.1,
         "up_ratio": 5.6,
@@ -11229,7 +11277,23 @@
         "top_topic": "创新药",
         "pct_rank": 0,
         "net_pct_rank": 0,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 0,
+          "s_pos": 36.1,
+          "s_brd": 5.6,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 50
+        },
+        "imputedRatio": 0.57,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10",
+          "s_amt15"
+        ]
       },
       "lhb_aggr": [
         {
@@ -14452,23 +14516,39 @@
         "创业板指": 0.64
       },
       "emotion": {
-        "value": 71.7,
-        "s_net": 98.2,
+        "value": 67.8,
+        "s_net": 100,
         "s_pos": 50.6,
         "s_brd": 88.9,
-        "s_hot": 100,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 44.8,
+        "s_amt": 50,
         "net_total_yi": 24.09,
         "pos_ratio": 50.6,
         "up_ratio": 88.9,
         "hot_count": 82,
         "topic_conc": 28,
         "top_topic": "创新药",
-        "pct_rank": 86.7,
+        "pct_rank": 63.3,
         "net_pct_rank": 63.3,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 50.6,
+          "s_brd": 88.9,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 50
+        },
+        "imputedRatio": 0.57,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10",
+          "s_amt15"
+        ]
       },
       "lhb_aggr": [
         {
@@ -17331,23 +17411,39 @@
         "创业板指": 1.43
       },
       "emotion": {
-        "value": 62.3,
+        "value": 62.5,
         "s_net": 100,
         "s_pos": 73.1,
         "s_brd": 51.1,
-        "s_hot": 61.7,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 40.5,
+        "s_amt": 50,
         "net_total_yi": 47.09,
         "pos_ratio": 73.1,
         "up_ratio": 51.1,
         "hot_count": 57,
         "topic_conc": 14,
         "top_topic": "半年报增长",
-        "pct_rank": 60,
+        "pct_rank": 46.7,
         "net_pct_rank": 93.3,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 73.1,
+          "s_brd": 51.1,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 50
+        },
+        "imputedRatio": 0.57,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10",
+          "s_amt15"
+        ]
       },
       "lhb_aggr": [
         {
@@ -19934,14 +20030,14 @@
         "创业板指": -3.21
       },
       "emotion": {
-        "value": 46.6,
-        "s_net": 68,
+        "value": 53.8,
+        "s_net": 97.3,
         "s_pos": 55.2,
         "s_brd": 18.9,
-        "s_hot": 46.7,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 43.4,
+        "s_amt": 50,
         "net_total_yi": 8.98,
         "pos_ratio": 55.2,
         "up_ratio": 18.9,
@@ -19950,7 +20046,23 @@
         "top_topic": "中报增长",
         "pct_rank": 16.7,
         "net_pct_rank": 26.7,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 97.3,
+          "s_pos": 55.2,
+          "s_brd": 18.9,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 50
+        },
+        "imputedRatio": 0.57,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10",
+          "s_amt15"
+        ]
       },
       "lhb_aggr": [
         {
@@ -22749,23 +22861,39 @@
         "创业板指": -1
       },
       "emotion": {
-        "value": 70.4,
-        "s_net": 99,
+        "value": 68.8,
+        "s_net": 100,
         "s_pos": 57.8,
         "s_brd": 90,
-        "s_hot": 83.3,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 39.6,
+        "s_amt": 50,
         "net_total_yi": 24.48,
         "pos_ratio": 57.8,
         "up_ratio": 90,
         "hot_count": 70,
         "topic_conc": 4.3,
         "top_topic": "中报增长",
-        "pct_rank": 83.3,
+        "pct_rank": 73.3,
         "net_pct_rank": 70,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 57.8,
+          "s_brd": 90,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 50
+        },
+        "imputedRatio": 0.57,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10",
+          "s_amt15"
+        ]
       },
       "lhb_aggr": [
         {
@@ -25514,23 +25642,39 @@
         "创业板指": 0.51
       },
       "emotion": {
-        "value": 56.2,
-        "s_net": 68.2,
+        "value": 62.6,
+        "s_net": 97.5,
         "s_pos": 47.8,
         "s_brd": 66.7,
-        "s_hot": 60,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 39.3,
+        "s_amt": 50,
         "net_total_yi": 9.11,
         "pos_ratio": 47.8,
         "up_ratio": 66.7,
         "hot_count": 56,
         "topic_conc": 8.9,
         "top_topic": "业绩增长",
-        "pct_rank": 33.3,
+        "pct_rank": 50,
         "net_pct_rank": 30,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 97.5,
+          "s_pos": 47.8,
+          "s_brd": 66.7,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 50
+        },
+        "imputedRatio": 0.57,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10",
+          "s_amt15"
+        ]
       },
       "lhb_aggr": [
         {
@@ -28376,23 +28520,39 @@
         "创业板指": 1.71
       },
       "emotion": {
-        "value": 69.9,
+        "value": 65.9,
         "s_net": 100,
         "s_pos": 60.6,
         "s_brd": 74.4,
-        "s_hot": 95,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 46.7,
+        "s_amt": 50,
         "net_total_yi": 35.29,
         "pos_ratio": 60.6,
         "up_ratio": 74.4,
         "hot_count": 77,
         "topic_conc": 11.7,
         "top_topic": "业绩增长",
-        "pct_rank": 76.7,
+        "pct_rank": 60,
         "net_pct_rank": 83.3,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 60.6,
+          "s_brd": 74.4,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 50
+        },
+        "imputedRatio": 0.57,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10",
+          "s_amt15"
+        ]
       },
       "lhb_aggr": [
         {
@@ -31245,23 +31405,38 @@
         "创业板指": -1.41
       },
       "emotion": {
-        "value": 62,
-        "s_net": 76.1,
+        "value": 62.1,
+        "s_net": 99.5,
         "s_pos": 48.4,
         "s_brd": 62.2,
-        "s_hot": 100,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 46.4,
+        "s_amt": 49.5,
         "net_total_yi": 13.07,
         "pos_ratio": 48.4,
         "up_ratio": 62.2,
         "hot_count": 81,
         "topic_conc": 13.6,
         "top_topic": "半年报增长",
-        "pct_rank": 56.7,
+        "pct_rank": 40,
         "net_pct_rank": 36.7,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 99.5,
+          "s_pos": 48.4,
+          "s_brd": 62.2,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 49.5
+        },
+        "imputedRatio": 0.43,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10"
+        ]
       },
       "lhb_aggr": [
         {
@@ -34314,23 +34489,38 @@
         "创业板指": 0.42
       },
       "emotion": {
-        "value": 60.2,
-        "s_net": 62.9,
+        "value": 61.7,
+        "s_net": 92.9,
         "s_pos": 56,
         "s_brd": 62.2,
-        "s_hot": 100,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 47.5,
+        "s_amt": 50.5,
         "net_total_yi": 6.43,
         "pos_ratio": 56,
         "up_ratio": 62.2,
         "hot_count": 87,
         "topic_conc": 9.2,
         "top_topic": "半年报增长",
-        "pct_rank": 50,
+        "pct_rank": 36.7,
         "net_pct_rank": 23.3,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 92.9,
+          "s_pos": 56,
+          "s_brd": 62.2,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 50.5
+        },
+        "imputedRatio": 0.43,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10"
+        ]
       },
       "lhb_aggr": [
         {
@@ -37552,23 +37742,38 @@
         "创业板指": -1.32
       },
       "emotion": {
-        "value": 59.3,
-        "s_net": 46.7,
+        "value": 52.1,
+        "s_net": 34.1,
         "s_pos": 55.7,
         "s_brd": 75.6,
-        "s_hot": 100,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 45.2,
+        "s_amt": 47.2,
         "net_total_yi": -1.65,
         "pos_ratio": 55.7,
         "up_ratio": 75.6,
         "hot_count": 83,
         "topic_conc": 9.6,
         "top_topic": "AI应用",
-        "pct_rank": 46.7,
+        "pct_rank": 13.3,
         "net_pct_rank": 6.7,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 34.1,
+          "s_pos": 55.7,
+          "s_brd": 75.6,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 47.2
+        },
+        "imputedRatio": 0.43,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10"
+        ]
       },
       "lhb_aggr": [
         {
@@ -40510,14 +40715,14 @@
         "创业板指": -2.39
       },
       "emotion": {
-        "value": 40.4,
-        "s_net": 43,
+        "value": 35.6,
+        "s_net": 19.9,
         "s_pos": 46.3,
         "s_brd": 17.8,
-        "s_hot": 51.7,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 39.9,
+        "s_amt": 39.4,
         "net_total_yi": -3.48,
         "pos_ratio": 46.3,
         "up_ratio": 17.8,
@@ -40526,7 +40731,22 @@
         "top_topic": "业绩增长",
         "pct_rank": 6.7,
         "net_pct_rank": 3.3,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 19.9,
+          "s_pos": 46.3,
+          "s_brd": 17.8,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 39.4
+        },
+        "imputedRatio": 0.43,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10"
+        ]
       },
       "lhb_aggr": [
         {
@@ -43267,23 +43487,38 @@
         "创业板指": 0.01
       },
       "emotion": {
-        "value": 51,
-        "s_net": 88,
+        "value": 53.8,
+        "s_net": 100,
         "s_pos": 54,
         "s_brd": 25.6,
-        "s_hot": 43.3,
+        "s_hot": 50,
         "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 40,
+        "s_amt": 39,
         "net_total_yi": 19.02,
         "pos_ratio": 54,
         "up_ratio": 25.6,
         "hot_count": 46,
         "topic_conc": 13,
         "top_topic": "人形机器人",
-        "pct_rank": 26.7,
+        "pct_rank": 16.7,
         "net_pct_rank": 50,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 54,
+          "s_brd": 25.6,
+          "s_hot": 50,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 39
+        },
+        "imputedRatio": 0.43,
+        "missing": [
+          "s_hot10",
+          "s_zdt15",
+          "s_zbl10"
+        ]
       },
       "lhb_aggr": [
         {
@@ -45831,23 +46066,34 @@
         "创业板指": -0.78
       },
       "emotion": {
-        "value": 58.7,
-        "s_net": 99.6,
+        "value": 68.7,
+        "s_net": 100,
         "s_pos": 63.6,
         "s_brd": 51.1,
-        "s_hot": 33.3,
-        "s_zdt": 78.8,
-        "s_zbl": 0,
-        "s_amt": 47,
+        "s_hot": 81.3,
+        "s_zdt": 81.3,
+        "s_zbl": 44.8,
+        "s_amt": 48.8,
         "net_total_yi": 24.82,
         "pos_ratio": 63.6,
         "up_ratio": 51.1,
         "hot_count": 40,
         "topic_conc": 12.5,
         "top_topic": "海峡两岸",
-        "pct_rank": 40,
+        "pct_rank": 70,
         "net_pct_rank": 73.3,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 63.6,
+          "s_brd": 51.1,
+          "s_hot": 81.3,
+          "s_zdt": 81.3,
+          "s_zbl": 44.8,
+          "s_amt": 48.8
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -49009,14 +49255,14 @@
         "创业板指": 3.41
       },
       "emotion": {
-        "value": 78.8,
+        "value": 80.6,
         "s_net": 100,
         "s_pos": 58.6,
         "s_brd": 75.6,
-        "s_hot": 100,
-        "s_zdt": 96,
-        "s_zbl": 66,
-        "s_amt": 45.7,
+        "s_hot": 97.9,
+        "s_zdt": 97.9,
+        "s_zbl": 83,
+        "s_amt": 46,
         "net_total_yi": 70.12,
         "pos_ratio": 58.6,
         "up_ratio": 75.6,
@@ -49025,7 +49271,18 @@
         "top_topic": "人形机器人",
         "pct_rank": 90,
         "net_pct_rank": 100,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 58.6,
+          "s_brd": 75.6,
+          "s_hot": 97.9,
+          "s_zdt": 97.9,
+          "s_zbl": 83,
+          "s_amt": 46
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -52044,13 +52301,13 @@
         "创业板指": -1.15
       },
       "emotion": {
-        "value": 68.7,
-        "s_net": 76.7,
+        "value": 78.2,
+        "s_net": 99.5,
         "s_pos": 47.5,
         "s_brd": 74.4,
-        "s_hot": 88.3,
-        "s_zdt": 97.4,
-        "s_zbl": 32.8,
+        "s_hot": 100,
+        "s_zdt": 100,
+        "s_zbl": 66.4,
         "s_amt": 46.7,
         "net_total_yi": 13.36,
         "pos_ratio": 47.5,
@@ -52058,9 +52315,20 @@
         "hot_count": 73,
         "topic_conc": 8.2,
         "top_topic": "AI应用",
-        "pct_rank": 73.3,
+        "pct_rank": 86.7,
         "net_pct_rank": 40,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 99.5,
+          "s_pos": 47.5,
+          "s_brd": 74.4,
+          "s_hot": 100,
+          "s_zdt": 100,
+          "s_zbl": 66.4,
+          "s_amt": 46.7
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -54739,23 +55007,34 @@
         "创业板指": -0.14
       },
       "emotion": {
-        "value": 50.5,
-        "s_net": 61.2,
+        "value": 64,
+        "s_net": 90.4,
         "s_pos": 45.5,
         "s_brd": 33.3,
-        "s_hot": 48.3,
-        "s_zdt": 84.7,
-        "s_zbl": 28,
-        "s_amt": 44.6,
+        "s_hot": 87.3,
+        "s_zdt": 87.3,
+        "s_zbl": 64,
+        "s_amt": 43.3,
         "net_total_yi": 5.62,
         "pos_ratio": 45.5,
         "up_ratio": 33.3,
         "hot_count": 49,
         "topic_conc": 16.3,
         "top_topic": "业绩增长",
-        "pct_rank": 23.3,
+        "pct_rank": 53.3,
         "net_pct_rank": 13.3,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 90.4,
+          "s_pos": 45.5,
+          "s_brd": 33.3,
+          "s_hot": 87.3,
+          "s_zdt": 87.3,
+          "s_zbl": 64,
+          "s_amt": 43.3
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -57357,23 +57636,34 @@
         "创业板指": -0.49
       },
       "emotion": {
-        "value": 41.5,
-        "s_net": 62,
+        "value": 55.6,
+        "s_net": 91.6,
         "s_pos": 43.8,
         "s_brd": 11.1,
-        "s_hot": 31.7,
-        "s_zdt": 74,
-        "s_zbl": 22.8,
-        "s_amt": 39.8,
+        "s_hot": 76.1,
+        "s_zdt": 76.1,
+        "s_zbl": 61.4,
+        "s_amt": 36.5,
         "net_total_yi": 5.98,
         "pos_ratio": 43.8,
         "up_ratio": 11.1,
         "hot_count": 39,
         "topic_conc": 15.4,
         "top_topic": "业绩增长",
-        "pct_rank": 10,
+        "pct_rank": 23.3,
         "net_pct_rank": 16.7,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 91.6,
+          "s_pos": 43.8,
+          "s_brd": 11.1,
+          "s_hot": 76.1,
+          "s_zdt": 76.1,
+          "s_zbl": 61.4,
+          "s_amt": 36.5
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -59942,23 +60232,34 @@
         "创业板指": -0.49
       },
       "emotion": {
-        "value": 48,
-        "s_net": 91.4,
+        "value": 56,
+        "s_net": 100,
         "s_pos": 44.1,
         "s_brd": 5.6,
-        "s_hot": 33.3,
-        "s_zdt": 64.6,
-        "s_zbl": 38,
-        "s_amt": 48.8,
+        "s_hot": 65.6,
+        "s_zdt": 65.6,
+        "s_zbl": 69,
+        "s_amt": 48.3,
         "net_total_yi": 20.68,
         "pos_ratio": 44.1,
         "up_ratio": 5.6,
         "hot_count": 40,
         "topic_conc": 7.5,
         "top_topic": "光伏玻璃",
-        "pct_rank": 20,
+        "pct_rank": 26.7,
         "net_pct_rank": 56.7,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 44.1,
+          "s_brd": 5.6,
+          "s_hot": 65.6,
+          "s_zdt": 65.6,
+          "s_zbl": 69,
+          "s_amt": 48.3
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -62926,23 +63227,34 @@
         "创业板指": -1.1
       },
       "emotion": {
-        "value": 66.7,
+        "value": 71.6,
         "s_net": 100,
         "s_pos": 60.7,
         "s_brd": 71.1,
-        "s_hot": 60,
-        "s_zdt": 76,
-        "s_zbl": 29.4,
-        "s_amt": 40.5,
+        "s_hot": 77.5,
+        "s_zdt": 77.5,
+        "s_zbl": 64.7,
+        "s_amt": 36.7,
         "net_total_yi": 54.63,
         "pos_ratio": 60.7,
         "up_ratio": 71.1,
         "hot_count": 56,
         "topic_conc": 7.1,
         "top_topic": "AI应用",
-        "pct_rank": 66.7,
+        "pct_rank": 76.7,
         "net_pct_rank": 96.7,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 60.7,
+          "s_brd": 71.1,
+          "s_hot": 77.5,
+          "s_zdt": 77.5,
+          "s_zbl": 64.7,
+          "s_amt": 36.7
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -65757,23 +66069,34 @@
         "创业板指": -1.15
       },
       "emotion": {
-        "value": 42.1,
-        "s_net": 89.4,
+        "value": 51.4,
+        "s_net": 100,
         "s_pos": 52.1,
         "s_brd": 6.7,
-        "s_hot": 20,
-        "s_zdt": 54,
-        "s_zbl": 14.2,
-        "s_amt": 40.8,
+        "s_hot": 54.2,
+        "s_zdt": 54.2,
+        "s_zbl": 57.1,
+        "s_amt": 37.2,
         "net_total_yi": 19.68,
         "pos_ratio": 52.1,
         "up_ratio": 6.7,
         "hot_count": 32,
         "topic_conc": 9.4,
         "top_topic": "网络安全",
-        "pct_rank": 13.3,
+        "pct_rank": 10,
         "net_pct_rank": 53.3,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 52.1,
+          "s_brd": 6.7,
+          "s_hot": 54.2,
+          "s_zdt": 54.2,
+          "s_zbl": 57.1,
+          "s_amt": 37.2
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -68949,23 +69272,34 @@
         "创业板指": 1.96
       },
       "emotion": {
-        "value": 82.6,
+        "value": 83.4,
         "s_net": 100,
         "s_pos": 63,
         "s_brd": 86.7,
-        "s_hot": 100,
-        "s_zdt": 93.8,
-        "s_zbl": 78,
-        "s_amt": 47.5,
+        "s_hot": 95.7,
+        "s_zdt": 95.7,
+        "s_zbl": 89,
+        "s_amt": 46.5,
         "net_total_yi": 45.36,
         "pos_ratio": 63,
         "up_ratio": 86.7,
         "hot_count": 91,
         "topic_conc": 5.5,
         "top_topic": "光通信",
-        "pct_rank": 100,
+        "pct_rank": 93.3,
         "net_pct_rank": 90,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 63,
+          "s_brd": 86.7,
+          "s_hot": 95.7,
+          "s_zdt": 95.7,
+          "s_zbl": 89,
+          "s_amt": 46.5
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -71716,23 +72050,34 @@
         "创业板指": -0.4
       },
       "emotion": {
-        "value": 59,
-        "s_net": 62.1,
+        "value": 73.4,
+        "s_net": 91.9,
         "s_pos": 64.5,
         "s_brd": 50,
-        "s_hot": 48.3,
-        "s_zdt": 94.2,
-        "s_zbl": 40.2,
-        "s_amt": 47.9,
+        "s_hot": 97.9,
+        "s_zdt": 97.9,
+        "s_zbl": 70.1,
+        "s_amt": 47.1,
         "net_total_yi": 6.06,
         "pos_ratio": 64.5,
         "up_ratio": 50,
         "hot_count": 49,
         "topic_conc": 10.2,
         "top_topic": "汽车零部件",
-        "pct_rank": 43.3,
+        "pct_rank": 80,
         "net_pct_rank": 20,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 91.9,
+          "s_pos": 64.5,
+          "s_brd": 50,
+          "s_hot": 97.9,
+          "s_zdt": 97.9,
+          "s_zbl": 70.1,
+          "s_amt": 47.1
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -74560,14 +74905,14 @@
         "创业板指": 2.25
       },
       "emotion": {
-        "value": 82.1,
+        "value": 85.5,
         "s_net": 100,
         "s_pos": 62.1,
         "s_brd": 91.1,
-        "s_hot": 96.7,
-        "s_zdt": 97.6,
-        "s_zbl": 51.4,
-        "s_amt": 55,
+        "s_hot": 100,
+        "s_zdt": 100,
+        "s_zbl": 75.7,
+        "s_amt": 57,
         "net_total_yi": 36.96,
         "pos_ratio": 62.1,
         "up_ratio": 91.1,
@@ -74576,7 +74921,18 @@
         "top_topic": "次新股",
         "pct_rank": 96.7,
         "net_pct_rank": 86.7,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 62.1,
+          "s_brd": 91.1,
+          "s_hot": 100,
+          "s_zdt": 100,
+          "s_zbl": 75.7,
+          "s_amt": 57
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -77754,23 +78110,34 @@
         "创业板指": 0.8
       },
       "emotion": {
-        "value": 79.8,
-        "s_net": 74.3,
+        "value": 87,
+        "s_net": 99.2,
         "s_pos": 66.2,
         "s_brd": 98.9,
-        "s_hot": 100,
-        "s_zdt": 96.3,
-        "s_zbl": 61,
-        "s_amt": 53.5,
+        "s_hot": 98.1,
+        "s_zdt": 98.1,
+        "s_zbl": 80.5,
+        "s_amt": 54.9,
         "net_total_yi": 12.17,
         "pos_ratio": 66.2,
         "up_ratio": 98.9,
         "hot_count": 103,
         "topic_conc": 6.8,
         "top_topic": "创新药",
-        "pct_rank": 93.3,
+        "pct_rank": 100,
         "net_pct_rank": 33.3,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 99.2,
+          "s_pos": 66.2,
+          "s_brd": 98.9,
+          "s_hot": 98.1,
+          "s_zdt": 98.1,
+          "s_zbl": 80.5,
+          "s_amt": 54.9
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -80816,23 +81183,34 @@
         "创业板指": 0.01
       },
       "emotion": {
-        "value": 67.7,
-        "s_net": 92.2,
+        "value": 74.6,
+        "s_net": 100,
         "s_pos": 57.1,
         "s_brd": 42.2,
-        "s_hot": 71.7,
-        "s_zdt": 92.9,
-        "s_zbl": 55.6,
-        "s_amt": 56.2,
+        "s_hot": 95.5,
+        "s_zdt": 95.5,
+        "s_zbl": 77.8,
+        "s_amt": 58.7,
         "net_total_yi": 21.1,
         "pos_ratio": 57.1,
         "up_ratio": 42.2,
         "hot_count": 63,
         "topic_conc": 15.9,
         "top_topic": "“华”字辈",
-        "pct_rank": 70,
+        "pct_rank": 83.3,
         "net_pct_rank": 60,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 57.1,
+          "s_brd": 42.2,
+          "s_hot": 95.5,
+          "s_zdt": 95.5,
+          "s_zbl": 77.8,
+          "s_amt": 58.7
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -83750,23 +84128,34 @@
         "创业板指": -0.6
       },
       "emotion": {
-        "value": 58.4,
+        "value": 64.6,
         "s_net": 100,
         "s_pos": 58.3,
         "s_brd": 27.8,
-        "s_hot": 51.7,
-        "s_zdt": 77.9,
-        "s_zbl": 32.4,
-        "s_amt": 46.1,
+        "s_hot": 79.7,
+        "s_zdt": 79.7,
+        "s_zbl": 66.2,
+        "s_amt": 44.5,
         "net_total_yi": 28.86,
         "pos_ratio": 58.3,
         "up_ratio": 27.8,
         "hot_count": 51,
         "topic_conc": 13.7,
         "top_topic": "“华”字辈",
-        "pct_rank": 36.7,
+        "pct_rank": 56.7,
         "net_pct_rank": 76.7,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 100,
+          "s_pos": 58.3,
+          "s_brd": 27.8,
+          "s_hot": 79.7,
+          "s_zdt": 79.7,
+          "s_zbl": 66.2,
+          "s_amt": 44.5
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -84880,7 +85269,7 @@
         {
           "code": "000504",
           "name": "南华生物",
-          "reason": "日振幅值达到15%的前5只证券",
+          "reason": "日换手率达到20%的前5只证券",
           "close": 13.73,
           "change_pct": 7.6,
           "net_buy_wan": 11707.9,
@@ -84891,7 +85280,7 @@
         {
           "code": "000504",
           "name": "南华生物",
-          "reason": "日换手率达到20%的前5只证券",
+          "reason": "日振幅值达到15%的前5只证券",
           "close": 13.73,
           "change_pct": 7.6,
           "net_buy_wan": 11707.9,
@@ -85166,7 +85555,7 @@
         {
           "code": "920229",
           "name": "世纪数码",
-          "reason": "当日收盘价跌幅达到-20%的前5只股票",
+          "reason": "当日换手率达到20%的前5只股票",
           "close": 64.68,
           "change_pct": -30,
           "net_buy_wan": 858.5,
@@ -85177,7 +85566,7 @@
         {
           "code": "920229",
           "name": "世纪数码",
-          "reason": "当日换手率达到20%的前5只股票",
+          "reason": "当日收盘价跌幅达到-20%的前5只股票",
           "close": 64.68,
           "change_pct": -30,
           "net_buy_wan": 858.5,
@@ -85595,7 +85984,7 @@
         {
           "code": "601086",
           "name": "国芳集团",
-          "reason": "有价格涨跌幅限制的日收盘价格跌幅偏离值达到7%的前五只证券",
+          "reason": "有价格涨跌幅限制的日价格振幅达到15%的前五只证券",
           "close": 15.32,
           "change_pct": -9.99,
           "net_buy_wan": -8530.6,
@@ -85606,7 +85995,7 @@
         {
           "code": "601086",
           "name": "国芳集团",
-          "reason": "有价格涨跌幅限制的日价格振幅达到15%的前五只证券",
+          "reason": "有价格涨跌幅限制的日收盘价格跌幅偏离值达到7%的前五只证券",
           "close": 15.32,
           "change_pct": -9.99,
           "net_buy_wan": -8530.6,
@@ -86793,23 +87182,34 @@
         "创业板指": -2.68
       },
       "emotion": {
-        "value": 54.6,
-        "s_net": 82.9,
+        "value": 62.3,
+        "s_net": 99.9,
         "s_pos": 54.3,
         "s_brd": 12.2,
-        "s_hot": 51.7,
-        "s_zdt": 78.3,
-        "s_zbl": 67.8,
-        "s_amt": 43.2,
+        "s_hot": 80,
+        "s_zdt": 80,
+        "s_zbl": 83.9,
+        "s_amt": 40.5,
         "net_total_yi": 16.45,
         "pos_ratio": 54.3,
         "up_ratio": 12.2,
         "hot_count": 51,
         "topic_conc": 19.6,
         "top_topic": "海峡两岸",
-        "pct_rank": 30,
+        "pct_rank": 43.3,
         "net_pct_rank": 43.3,
-        "industryCount": 90
+        "industryCount": 90,
+        "factors": {
+          "s_net": 99.9,
+          "s_pos": 54.3,
+          "s_brd": 12.2,
+          "s_hot": 80,
+          "s_zdt": 80,
+          "s_zbl": 83.9,
+          "s_amt": 40.5
+        },
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -86944,7 +87344,7 @@
         {
           "code": "000504",
           "name": "南华生物",
-          "reason": "日振幅值达到15%的前5只证券",
+          "reason": "日换手率达到20%的前5只证券",
           "close": 13.73,
           "change_pct": 7.6,
           "net_buy_wan": 11707.9,
@@ -86952,8 +87352,8 @@
           "sell_wan": 11732.5,
           "turnover_pct": 35,
           "reasons": [
-            "日振幅值达到15%的前5只证券",
             "日换手率达到20%的前5只证券",
+            "日振幅值达到15%的前5只证券",
             "连续三个交易日内，涨幅偏离值累计达到20%的证券"
           ]
         },
@@ -87216,7 +87616,7 @@
         {
           "code": "920229",
           "name": "世纪数码",
-          "reason": "当日收盘价跌幅达到-20%的前5只股票",
+          "reason": "当日换手率达到20%的前5只股票",
           "close": 64.68,
           "change_pct": -30,
           "net_buy_wan": 858.5,
@@ -87224,8 +87624,8 @@
           "sell_wan": 5215.7,
           "turnover_pct": 72.79,
           "reasons": [
-            "当日收盘价跌幅达到-20%的前5只股票",
             "当日换手率达到20%的前5只股票",
+            "当日收盘价跌幅达到-20%的前5只股票",
             "北交所股票连续3个交易日内日收盘价涨跌幅偏离值累计达到+40%(-40%)"
           ]
         },
@@ -87658,7 +88058,7 @@
         {
           "code": "601086",
           "name": "国芳集团",
-          "reason": "有价格涨跌幅限制的日收盘价格跌幅偏离值达到7%的前五只证券",
+          "reason": "有价格涨跌幅限制的日价格振幅达到15%的前五只证券",
           "close": 15.32,
           "change_pct": -9.99,
           "net_buy_wan": -8530.6,
@@ -87666,8 +88066,8 @@
           "sell_wan": 19947.9,
           "turnover_pct": 10.78,
           "reasons": [
-            "有价格涨跌幅限制的日收盘价格跌幅偏离值达到7%的前五只证券",
-            "有价格涨跌幅限制的日价格振幅达到15%的前五只证券"
+            "有价格涨跌幅限制的日价格振幅达到15%的前五只证券",
+            "有价格涨跌幅限制的日收盘价格跌幅偏离值达到7%的前五只证券"
           ]
         },
         {
@@ -89047,10 +89447,6 @@
           "change_pct": -2.02
         },
         {
-          "name": "化学纤维",
-          "change_pct": -2.1
-        },
-        {
           "name": "建筑材料",
           "change_pct": -2.11
         },
@@ -89095,10 +89491,6 @@
           "change_pct": -2.59
         },
         {
-          "name": "化学制品",
-          "change_pct": -2.6
-        },
-        {
           "name": "黑色家电",
           "change_pct": -2.68
         },
@@ -89131,10 +89523,6 @@
           "change_pct": -3.13
         },
         {
-          "name": "环保设备",
-          "change_pct": -3.15
-        },
-        {
           "name": "能源金属",
           "change_pct": -3.5
         },
@@ -89144,10 +89532,6 @@
         },
         {
           "name": "教育",
-          "change_pct": -3.71
-        },
-        {
-          "name": "自动化设备",
           "change_pct": -3.71
         },
         {
@@ -89209,90 +89593,28 @@
         "net_total_yi": -1.17,
         "net_pos": 30,
         "net_neg": 37,
+        "up_count": 874,
+        "down_count": 4298,
+        "flat_count": 115,
         "hot_count": 35,
         "topic_kinds": 104,
-        "ind_count": 90,
+        "ind_count": 86,
         "ind_up": 4,
-        "ind_down": 86,
+        "ind_down": 82,
         "top_industry": "汽车整车",
         "bottom_industry": "元件",
-        "zt_count": 33,
+        "zt_count": null,
         "dt_count": 56,
         "zb_count": 11,
-        "zbl_pct": 25,
-        "max_lb": 5,
-        "lb2_count": 7,
-        "zt_codes": [
-          "001330",
-          "600825",
-          "603949",
-          "603396",
-          "002912",
-          "601579",
-          "603278",
-          "000678",
-          "002640",
-          "000503",
-          "002242",
-          "000513",
-          "002962",
-          "600802",
-          "002347",
-          "000011",
-          "600032",
-          "000980",
-          "000020",
-          "002480",
-          "600241",
-          "600418",
-          "001201",
-          "002342",
-          "688244",
-          "002232",
-          "600488",
-          "002852",
-          "301190",
-          "601218",
-          "605366",
-          "603968",
-          "001368"
-        ],
-        "zt_lb": {
-          "301190": 1,
-          "600032": 1,
-          "600241": 1,
-          "600418": 1,
-          "600488": 1,
-          "600802": 3,
-          "600825": 5,
-          "601218": 2,
-          "601579": 1,
-          "603278": 2,
-          "603396": 3,
-          "603949": 3,
-          "603968": 1,
-          "605366": 1,
-          "688244": 1,
-          "001330": 1,
-          "002912": 1,
-          "000678": 2,
-          "002640": 1,
-          "000503": 1,
-          "002242": 1,
-          "000513": 1,
-          "002962": 1,
-          "002347": 1,
-          "000011": 1,
-          "000980": 1,
-          "000020": 1,
-          "002480": 1,
-          "001201": 1,
-          "002342": 1,
-          "002232": 1,
-          "002852": 1,
-          "001368": 1
-        },
-        "amount_yi": 17028
+        "zbl_pct": null,
+        "max_lb": null,
+        "lb2_count": null,
+        "zt_codes": null,
+        "zt_lb": null,
+        "amount_yi": 17028,
+        "_missing": [
+          "pools"
+        ]
       },
       "indexes": {
         "上证指数": -1.67,
@@ -89300,25 +89622,37 @@
         "创业板指": -4.53
       },
       "emotion": {
-        "value": 34.8,
-        "s_net": 47.7,
-        "s_pos": 44.8,
-        "s_brd": 4.4,
-        "s_hot": 25,
-        "s_zdt": 37.6,
+        "value": 31,
+        "s_net": 38.5,
+        "s_pos": 16.9,
+        "s_brd": 4.7,
+        "s_hot": 16.9,
+        "s_zdt": 50,
         "s_zbl": 50,
-        "s_amt": 45.1,
+        "s_amt": 43.1,
+        "factors": {
+          "s_net": 38.5,
+          "s_pos": 16.9,
+          "s_brd": 4.7,
+          "s_hot": 16.9,
+          "s_zdt": 50,
+          "s_zbl": 50,
+          "s_amt": 43.1
+        },
         "net_total_yi": -1.17,
         "pos_ratio": 44.8,
-        "up_ratio": 4.4,
+        "up_ratio": 4.7,
         "hot_count": 35,
         "topic_conc": 5.7,
         "top_topic": "染料",
         "pct_rank": 3.3,
         "net_pct_rank": 10,
-        "industryCount": 90,
-        "imputedRatio": 0,
-        "missing": []
+        "industryCount": 86,
+        "imputedRatio": 0.29,
+        "missing": [
+          "s_zdt15",
+          "s_zbl10"
+        ]
       },
       "lhb_aggr": [
         {
@@ -90293,27 +90627,39 @@
       ]
     },
     "latestEmotion": {
-      "value": 34.8,
-      "s_net": 47.7,
-      "s_pos": 44.8,
-      "s_brd": 4.4,
-      "s_hot": 25,
-      "s_zdt": 37.6,
+      "value": 31,
+      "s_net": 38.5,
+      "s_pos": 16.9,
+      "s_brd": 4.7,
+      "s_hot": 16.9,
+      "s_zdt": 50,
       "s_zbl": 50,
-      "s_amt": 45.1,
+      "s_amt": 43.1,
+      "factors": {
+        "s_net": 38.5,
+        "s_pos": 16.9,
+        "s_brd": 4.7,
+        "s_hot": 16.9,
+        "s_zdt": 50,
+        "s_zbl": 50,
+        "s_amt": 43.1
+      },
       "net_total_yi": -1.17,
       "pos_ratio": 44.8,
-      "up_ratio": 4.4,
+      "up_ratio": 4.7,
       "hot_count": 35,
       "topic_conc": 5.7,
       "top_topic": "染料",
       "pct_rank": 3.3,
       "net_pct_rank": 10,
-      "industryCount": 90,
-      "imputedRatio": 0,
-      "missing": []
+      "industryCount": 86,
+      "imputedRatio": 0.29,
+      "missing": [
+        "s_zdt15",
+        "s_zbl10"
+      ]
     },
-    "imputedRatioLatest": 0,
+    "imputedRatioLatest": 0.29,
     "tradeDate": "2026-09-28"
   },
   "board_rank": [
