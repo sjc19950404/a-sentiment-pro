@@ -8,7 +8,7 @@ python sentiment_gui.py
 
 Tkinter 一键平台【参数调优版】：鼠标选因子 CSV 与输出目录 → **界面直调权重 w1~w5 与四档阈值（开仓/减仓/清仓/过热），无需改源码** → 填风险标记（可选）→ 一键运行全流程（基准绩效 / 网格 / 阈值 / 鲁棒性 / 汇总报告 / 三栏图 / 末日日报 / Excel 三表），日志实时滚动，桌面弹窗提示完成。
 
-- **参数面板**：权重总和 ≠1 弹窗确认防误输；勾选「自定义权重」即按面板权重直接回测（跳过 3876 组网格）；阈值须满足 清仓 < 减仓 < 开仓 < 过热；「恢复默认」一键还原 V5 基准
+- **参数面板**：权重总和 ≠1 弹窗确认防误输；勾选「自定义权重」即按面板权重直接回测（跳过 3876 组网格）；阈值须满足 清仓 < 减仓 < 开仓 < 过热；**风控行可设最大仓位与单笔止损；勾选「滚动样本外验证」输出 rolling_test.csv 并写入报告（可选逐窗重寻优）**；「恢复默认」一键还原 V5 基准
 - 需要 `tkinter`（Python 自带；托管精简版 Python 可能没有，用系统版 Python 建的 venv 跑，并装 `openpyxl`）+ `pandas numpy matplotlib openpyxl`
 - 运行期间不卡界面（后台线程），重复点击自动忽略
 
@@ -70,6 +70,12 @@ python sentiment_backtest.py --factors factors.csv --fast --rf 0.02
 # 自定义权重与阈值调参（给出任一 wi 即跳过网格，需 sum=1）；--xlsx 导出回测结果 Excel
 python sentiment_backtest.py --factors factors.csv --fast --xlsx \
     --w1 0.3 --w2 0.2 --w3 0.2 --w4 0.2 --w5 0.1 --lo 60 --hi 40 --panic 20 --overheat 85
+
+# 风控约束：最大仓位 0.6 + 单笔止损 -8%（持仓期当日跌幅≤-8% 次日强制清仓）
+python sentiment_backtest.py --factors factors.csv --fast --max-pos 0.6 --stop-loss -0.08
+
+# 滚动窗口样本外验证（train 252 / test 63 切段）；--roll-refit 加逐窗重寻优（walk-forward，较慢）
+python sentiment_backtest.py --factors factors.csv --fast --roll --train-win 252 --test-win 63
 ```
 
 **依赖**：`pandas numpy`；`--plot`/GUI 另需 `matplotlib`；`--xlsx`/模板生成另需 `openpyxl`；GUI 需 `tkinter`。
@@ -90,11 +96,15 @@ python sentiment_backtest.py --factors factors.csv --fast --xlsx \
 | `weights_scan.csv` | 全部 3876 组权重绩效（回撤↑→夏普↓→年化↓ 排序） |
 | `threshold_scan.csv` | hi∈[20,30] × lo∈[60,70] 阈值扫描 |
 | `regime.csv` | 牛/熊/震荡分组信号错误率 |
-| `Sentiment_Backtest_Result_<日期>.xlsx`（`--xlsx`） | 三表：**每日因子与仓位**（f1~f5/综合分/仓位/策略收益/净值逐日明细）、**交易明细**（每次仓位变动的打分日→T+1 生效日、动作、当日收益、累计净值）、**汇总指标**（权重阈值参数 + 年化/回撤/夏普/胜率/盈亏比/空仓占比） |
+| `rolling_test.csv`（`--roll`） | 滚动窗口样本外验证：每段区间/寻优参数/绩效；`--roll-refit` 为真 walk-forward（训练窗阈值扫描选参 → 测试窗评估，训练段绝不参与测试） |
+| `Sentiment_Backtest_Result_<日期>.xlsx`（`--xlsx`） | 三表：**每日因子与仓位**（f1~f5/综合分/仓位/策略收益/净值逐日明细）、**交易明细**（每次仓位变动的打分日→T+1 生效日、动作、当日收益、累计净值）、**汇总指标**（权重/阈值/仓位/止损参数 + 年化/回撤/夏普/Calmar/Sortino/最大连亏天数/胜率/盈亏比/空仓占比/开仓次数） |
 
 ### 回测规则（对齐 V5 风险表）
 
 - 收盘打分，T+1 生效：score≥65 持有 / 44~65 减仓至 0.5 / ≤24 清仓 / ≥80 过热只减仓不新建
+- 风控约束（可选）：`--max-pos` 仓位上限（满仓=max_pos，减仓=0.5×max_pos）；`--stop-loss`（如 -0.08）持仓期当日收盘跌幅≤止损线则次日强制清仓，止损优先于信号
+- 滚动样本外验证：`--roll` 按 test_window 切段评估参数跨期稳定性；`--roll-refit` 每 63 日在训练窗（默认252日）阈值扫描重寻优、紧随测试窗评估——样本外均值显著低于全样本 ⇒ 过拟合，需降参数激进程度
+- 网格/阈值扫描/鲁棒性基于默认风控（max_pos=1、无止损）保证可比性；绩效新增 Calmar、Sortino、最大连续亏损天数
 - 优化目标优先级：**最大回撤最小 → 夏普最高 → 年化最高**（防回撤优先于收益）
 - 鲁棒性：±5 分均匀噪声 **200 次重复扰动**看平均衰减（单次噪声无统计意义）；70/30 训练验证分段防过拟合
 - 失效场景：单边牛市/熊市/震荡分组统计持仓踩错率；黑天鹅与强政策事件当日人工覆盖模型打分

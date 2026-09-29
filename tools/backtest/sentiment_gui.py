@@ -35,6 +35,13 @@ class SentimentGUI:
         self.th_vars = {k: tk.StringVar(value=str(v))
                         for k, v in (("lo", sb.BASE_LO), ("hi", sb.BASE_HI),
                                      ("panic", sb.PANIC), ("overheat", sb.OVERHEAT))}
+        # 风控与滚动验证
+        self.max_pos_var = tk.StringVar(value="1.0")
+        self.stop_loss_var = tk.StringVar(value="0")
+        self.roll_var = tk.BooleanVar(value=False)
+        self.roll_refit_var = tk.BooleanVar(value=False)
+        self.train_win_var = tk.StringVar(value="252")
+        self.test_win_var = tk.StringVar(value="63")
 
         tk.Label(root, text="Sentiment V5.0 情绪模型流水线【参数调优版】",
                  font=("Microsoft YaHei", 15, "bold")).pack(pady=6)
@@ -56,6 +63,18 @@ class SentimentGUI:
             tk.Label(ft, text=lab).grid(row=0, column=i * 2, padx=(10, 1))
             tk.Entry(ft, textvariable=self.th_vars[k], width=6).grid(row=0, column=i * 2 + 1, pady=2)
         tk.Button(ft, text="恢复默认", command=self._reset_params).grid(row=0, column=9, padx=10)
+        fr = tk.Frame(panel)
+        fr.pack(fill="x", padx=6, pady=2)
+        for c, (lab, var, w) in enumerate([("最大仓位", self.max_pos_var, 5),
+                                           ("单笔止损", self.stop_loss_var, 6)]):
+            tk.Label(fr, text=lab).grid(row=0, column=c * 2, padx=(10, 1))
+            tk.Entry(fr, textvariable=var, width=w).grid(row=0, column=c * 2 + 1, pady=2)
+        tk.Checkbutton(fr, text="滚动样本外验证", variable=self.roll_var).grid(row=0, column=4, padx=(16, 1))
+        tk.Label(fr, text="训练窗").grid(row=0, column=5, padx=(4, 1))
+        tk.Entry(fr, textvariable=self.train_win_var, width=5).grid(row=0, column=6)
+        tk.Label(fr, text="测试窗").grid(row=0, column=7, padx=(4, 1))
+        tk.Entry(fr, textvariable=self.test_win_var, width=5).grid(row=0, column=8)
+        tk.Checkbutton(fr, text="逐窗重寻优", variable=self.roll_refit_var).grid(row=0, column=9, padx=(8, 1))
 
         def file_row(label, var, cmd):
             f = tk.Frame(root)
@@ -93,14 +112,31 @@ class SentimentGUI:
             self.th_vars[k].set(str(v))
 
     def _read_params(self):
-        """读面板参数并校验。返回 (w或None, th_kw)；非法值抛 ValueError。"""
+        """读面板参数并校验。返回 (w或None, th_kw, roll_kw)；非法值抛 ValueError。"""
         w = [float(v.get()) for v in self.w_vars]
         th = {k: float(v.get()) for k, v in self.th_vars.items()}
         for k, v in th.items():
             if not 0 <= v <= 100:
                 raise ValueError(f"阈值 {k}={v} 超出 0~100")
         if not (th["panic"] < th["hi"] < th["lo"] < th["overheat"]):
-            raise ValueError(f"阈值需满足 清仓{th['panic']} < 减仓{th['hi']} < 开仓{th['lo']} < 过热{th['overheat']}")
+            raise ValueError(f"阈值需满足 清仓{th['panic']:g} < 减仓{th['hi']:g} < 开仓{th['lo']:g} < 过热{th['overheat']:g}")
+        max_pos = float(self.max_pos_var.get())
+        if not 0 < max_pos <= 1:
+            raise ValueError(f"最大仓位 {max_pos} 须在 (0,1]")
+        stop_loss = float(self.stop_loss_var.get())
+        if stop_loss > 0:
+            raise ValueError("单笔止损须 ≤ 0（负数启用，如 -0.08；0 关闭）")
+        th_kw = dict(hi=th["hi"], lo=th["lo"], panic=th["panic"], overheat=th["overheat"],
+                     max_pos=max_pos, stop_loss=stop_loss)
+        roll_kw = None
+        if self.roll_var.get():
+            try:
+                tw, ew = int(self.train_win_var.get()), int(self.test_win_var.get())
+            except ValueError:
+                raise ValueError("滚动窗口须为整数交易日")
+            if tw < 60 or ew < 10:
+                raise ValueError("滚动窗口过小：训练窗≥60、测试窗≥10")
+            roll_kw = dict(train_window=tw, test_window=ew, refit=self.roll_refit_var.get())
         use_custom = self.custom_w_var.get()
         if abs(sum(w) - 1) > 0.01:
             if not messagebox.askyesno("权重警告",
@@ -112,7 +148,7 @@ class SentimentGUI:
             if not messagebox.askyesno("提示", "已修改权重但未勾选「自定义权重」。\n"
                                               "确定仍使用 V5 基准权重跑网格扫描吗？"):
                 raise ValueError("用户取消：请勾选「自定义权重」后重试")
-        return (tuple(w) if use_custom else None), th
+        return (tuple(w) if use_custom else None), th_kw, roll_kw
 
     # ── 文件选择 ──
     def _select_factor(self):
@@ -143,7 +179,7 @@ class SentimentGUI:
             messagebox.showerror("错误", "请先选择因子 CSV（date,f1..f5,close）")
             return
         try:
-            self.w_custom, self.th_kw = self._read_params()
+            self.w_custom, self.th_kw, self.roll_kw = self._read_params()
         except ValueError as e:
             if str(e):
                 messagebox.showinfo("未运行", str(e))
@@ -161,7 +197,10 @@ class SentimentGUI:
             out = self.out_path.get() or "reports"
             os.makedirs(out, exist_ok=True)
             sb.RF = float(self.rf_var.get() or 0)
-            w_custom, th_kw = self.w_custom, self.th_kw
+            w_custom, th_kw, roll_kw = self.w_custom, self.th_kw, self.roll_kw
+            if th_kw["max_pos"] < 1 or th_kw["stop_loss"] < 0:
+                self.log(f"风控：最大仓位 {th_kw['max_pos']:g}｜单笔止损 {th_kw['stop_loss']:g}"
+                         + ("（关闭）" if th_kw["stop_loss"] == 0 else ""))
 
             self.log("读取因子数据…")
             df = pd.read_csv(fp)
@@ -180,7 +219,8 @@ class SentimentGUI:
                 self.log("基准绩效（V5 权重 0.25/0.25/0.20/0.20/0.10）…")
             base_p = sb.perf(df, base_w, **th_kw)
             self.log(f"  年化 {base_p.annual:.2%}｜最大回撤 {base_p.max_dd:.2%}｜夏普 {base_p.sharpe}｜"
-                     f"胜率 {base_p.win_rate:.2%}｜盈亏比 {base_p.profit_ratio}｜空仓占比 {base_p.empty_ratio:.2%}")
+                     f"Calmar {base_p.calmar}｜Sortino {base_p.sortino}｜最大连亏 {base_p.max_consec_loss}天")
+            self.log(f"  胜率 {base_p.win_rate:.2%}｜盈亏比 {base_p.profit_ratio}｜空仓占比 {base_p.empty_ratio:.2%}")
 
             if w_custom is not None:
                 best_w, best_p = w_custom, base_p
@@ -207,7 +247,19 @@ class SentimentGUI:
                 self.log(f"  {r['regime']:>7}: {r['days']}天 总收益{r['total_ret']:+.2%} 持仓踩错率{r['wrong_rate']:.2%}")
 
             self.log("汇总报告 / 图表 / 日报 / Excel …")
-            sb.write_report(out, base_p, best_w, best_p, th, noise, split, regime, **th_kw)
+            roll = None
+            if roll_kw:
+                self.log(f"滚动样本外验证（train={roll_kw['train_window']} test={roll_kw['test_window']}"
+                         f" refit={roll_kw['refit']}）…")
+                roll = sb.rolling_test(df, best_w, **roll_kw, **th_kw)
+                roll.attrs.update(train_window=roll_kw["train_window"],
+                                  test_window=roll_kw["test_window"], refit=roll_kw["refit"])
+                roll.to_csv(os.path.join(out, "rolling_test.csv"), index=False, encoding="utf-8-sig")
+                rs = sb.rolling_summary(roll)
+                self.log(f"  {len(roll)} 段样本外：夏普均值 {rs['sharpe_mean']}｜最差段回撤 {rs['dd_worst']:.2%}"
+                         f"｜正收益段 {rs['win_seg_pct']:.0%}")
+            sb.write_report(out, base_p, best_w, best_p, th, noise, split, regime,
+                            roll=roll, **th_kw)
             sb.plot_results(df, best_w, out, **th_kw)
             alerts = [a.strip() for a in self.alert_text.get().split(",") if a.strip()]
             rp = sb.generate_daily_report(df, best_w, alerts, out)

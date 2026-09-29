@@ -53,6 +53,9 @@ class Perf:
     long_days: int        # 持仓天数
     empty_ratio: float    # 空仓期占比
     trades: int           # 开仓次数
+    calmar: float = 0.0        # 年化/最大回撤
+    sortino: float = 0.0       # 下行波动夏普
+    max_consec_loss: int = 0   # 最大连续亏损天数
 
 
 # ────────────────────────── 打分与信号 ──────────────────────────
@@ -62,18 +65,24 @@ def score(df: pd.DataFrame, w) -> pd.Series:
 
 
 def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
-              panic: float = PANIC, overheat: float = OVERHEAT) -> pd.Series:
-    """收盘打分 → 次日仓位（T+1）。1 全仓 / 0.5 减仓 / 0 空仓。
-    过热区(≥overheat)不清仓但禁止新建仓：对已有持仓保持，对空仓者保持空仓。"""
+              panic: float = PANIC, overheat: float = OVERHEAT,
+              max_pos: float = 1.0, stop_loss: float = 0.0,
+              ret: pd.Series = None) -> pd.Series:
+    """收盘打分 → 次日仓位（T+1）。满仓 max_pos / 半仓 0.5*max_pos / 空仓 0。
+    过热区(≥overheat)不清仓但禁止新建仓：对已有持仓保持，对空仓者保持空仓。
+    止损（stop_loss<0 启用，如 -0.08）：持仓期当日标的收盘跌幅 ≤ 止损线，次日强制清仓。"""
     pos = pd.Series(np.nan, index=s.index)
     held = False
+    r = ret.values if ret is not None else None
     for i, v in enumerate(s.values):
-        if v >= overheat:
-            target = 1.0 if held else 0.0          # 只减仓不新建
+        if stop_loss < 0 and held and r is not None and r[i] <= stop_loss:
+            target = 0.0                           # 止损优先于信号：次日清仓
+        elif v >= overheat:
+            target = max_pos if held else 0.0      # 只减仓不新建
         elif v >= lo:
-            target = 1.0
+            target = max_pos
         elif v > panic:
-            target = 0.5
+            target = 0.5 * max_pos
         else:
             target = 0.0
         held = target > 0 or (held and target > 0)
@@ -83,9 +92,10 @@ def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
 
 # ────────────────────────── 绩效计算 ──────────────────────────
 def perf(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
-         panic: float = PANIC, overheat: float = OVERHEAT) -> Perf:
+         panic: float = PANIC, overheat: float = OVERHEAT,
+         max_pos: float = 1.0, stop_loss: float = 0.0) -> Perf:
     ret = df["close"].pct_change().fillna(0.0)
-    pos = positions(score(df, w), hi, lo, panic, overheat)
+    pos = positions(score(df, w), hi, lo, panic, overheat, max_pos, stop_loss, ret)
     strat = ret * pos
     equity = (1 + strat).cumprod()
     total = equity.iloc[-1] - 1
@@ -101,9 +111,20 @@ def perf(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
     loss = -strat[strat < 0].sum()
     pr = gain / loss if loss > 1e-12 else float("inf")
     opens = int(((pos > 0) & (pos.shift(1) == 0)).sum())
+    calmar = annual / float(dd) if dd > 1e-9 else 999.0
+    neg = strat[strat < 0]
+    sortino = (excess.mean() / neg.std(ddof=0) * math.sqrt(ANN)
+               if len(neg) > 1 and neg.std(ddof=0) > 1e-12 else 999.0)
+    is_loss = (strat < 0).astype(int).values
+    mcl = run_len = 0
+    for x in is_loss:                              # 最大连续亏损天数
+        run_len = run_len + 1 if x else 0
+        mcl = max(mcl, run_len)
     return Perf(round(total, 4), round(annual, 4), round(float(dd), 4),
                 round(sharpe, 3), round(win, 4), round(pr, 3) if math.isfinite(pr) else 999,
-                int((pos > 0).sum()), round(float((pos == 0).mean()), 4), opens)
+                int((pos > 0).sum()), round(float((pos == 0).mean()), 4), opens,
+                round(calmar, 3) if calmar < 999 else 999, round(sortino, 3) if sortino < 999 else 999,
+                mcl)
 
 
 def rank_key(p: Perf):
@@ -125,14 +146,35 @@ def weight_grid() -> list:
     return out
 
 
-def grid_search(df: pd.DataFrame, verbose=True) -> pd.DataFrame:
-    rows = []
+def _grid_chunk(df, chunk):
+    return [{"w1": w[0], "w2": w[1], "w3": w[2], "w4": w[3], "w5": w[4], **asdict(perf(df, w))}
+            for w in chunk]
+
+
+def grid_search(df: pd.DataFrame, verbose=True, workers: int = None) -> pd.DataFrame:
+    """3876 组权重网格。多进程分块并行（60 组/块），并行不可用时自动回退串行。
+    Windows spawn 安全：任务函数均为模块级，无 lambda/闭包。"""
     grids = weight_grid()
-    for i, w in enumerate(grids):
-        p = perf(df, w)
-        rows.append({"w1": w[0], "w2": w[1], "w3": w[2], "w4": w[3], "w5": w[4], **asdict(p)})
-        if verbose and (i + 1) % 500 == 0:
-            print(f"  grid {i + 1}/{len(grids)}")
+    rows = None
+    try:
+        from concurrent.futures import ProcessPoolExecutor
+        chunks = [grids[i:i + 60] for i in range(0, len(grids), 60)]
+        done = 0
+        with ProcessPoolExecutor(max_workers=workers) as ex:
+            for part in ex.map(_grid_chunk, [df] * len(chunks), chunks):
+                rows = part if rows is None else rows + part
+                done += len(part)
+                if verbose and done % 600 < 60:
+                    print(f"  grid {done}/{len(grids)}")
+    except Exception as e:  # noqa: BLE001  冻结环境/沙箱等场景回退串行
+        if verbose:
+            print(f"  并行不可用({e})，转串行")
+        rows = []
+        for i, w in enumerate(grids):
+            rows.append({"w1": w[0], "w2": w[1], "w3": w[2], "w4": w[3], "w5": w[4],
+                         **asdict(perf(df, w))})
+            if verbose and (i + 1) % 500 == 0:
+                print(f"  grid {i + 1}/{len(grids)}")
     res = pd.DataFrame(rows)
     res["_k"] = res.apply(lambda r: rank_key(Perf(**{k: r[k] for k in Perf.__dataclass_fields__})), axis=1)
     return res.sort_values("_k").drop(columns="_k").reset_index(drop=True)
@@ -174,6 +216,51 @@ def split_test(df: pd.DataFrame, w, train_frac=0.7) -> dict:
     return {"train": asdict(perf(df.iloc[:k], w)), "valid": asdict(perf(df.iloc[k:], w))}
 
 
+# ────────────────────────── 滚动样本外验证 ──────────────────────────
+def rolling_test(df: pd.DataFrame, w, train_window: int = 252, test_window: int = 63,
+                 refit: bool = False, **kw) -> pd.DataFrame:
+    """滚动窗口样本外验证（防过拟合）。
+    - refit=False：固定参数按 test_window 切段逐段评估——检验参数跨期稳定性（快速）。
+    - refit=True：真 walk-forward——训练窗 [start, start+train) 上阈值扫描选最优 (hi,lo)，
+      在紧随其后的 test_window 上评估（训练段绝不参与测试），start 每次前移 test_window。
+    外部稿 train_df 从未使用的"滚动"实为切段重命名；此处按语义诚实实现。"""
+    rows = []
+    start = 0
+    n = len(df)
+    while True:
+        if refit:
+            if start + train_window + test_window > n:
+                break
+            train_df = df.iloc[start:start + train_window]
+            test_df = df.iloc[start + train_window:start + train_window + test_window]
+            best = threshold_scan(train_df, w).iloc[0]
+            hi, lo = float(best["hi"]), float(best["lo"])
+        else:
+            if start + test_window > n:
+                break
+            train_df, hi, lo = None, kw.get("hi", BASE_HI), kw.get("lo", BASE_LO)
+            test_df = df.iloc[start:start + test_window]
+        if len(test_df) < 10:
+            break
+        p = perf(test_df, w, hi=hi, lo=lo,
+                 panic=kw.get("panic", PANIC), overheat=kw.get("overheat", OVERHEAT),
+                 max_pos=kw.get("max_pos", 1.0), stop_loss=kw.get("stop_loss", 0.0))
+        rows.append({"start": test_df["date"].iloc[0].strftime("%Y-%m-%d"),
+                     "end": test_df["date"].iloc[-1].strftime("%Y-%m-%d"),
+                     "train_hi": hi, "train_lo": lo, **asdict(p)})
+        start += test_window
+    return pd.DataFrame(rows)
+
+
+def rolling_summary(roll: pd.DataFrame) -> dict:
+    """滚动验证汇总：样本外均值/最差段"""
+    return {"segments": len(roll),
+            "ann_mean": round(float(roll["annual"].mean()), 4),
+            "sharpe_mean": round(float(roll["sharpe"].mean()), 3),
+            "dd_worst": round(float(roll["max_dd"].max()), 4),
+            "win_seg_pct": round(float((roll["total_ret"] > 0).mean()), 4)}
+
+
 # ────────────────────────── 失效场景 ──────────────────────────
 def label_regimes(df: pd.DataFrame) -> pd.DataFrame:
     """无 regime 列时：按标的60日收益自动标注 bull/bear/other"""
@@ -202,11 +289,24 @@ def regime_report(df: pd.DataFrame, w) -> pd.DataFrame:
 # ────────────────────────── 报告 ──────────────────────────
 def write_report(out, base_p, best_w, best_p, th, noise, split, regime,
                  hi: float = BASE_HI, lo: float = BASE_LO,
-                 panic: float = PANIC, overheat: float = OVERHEAT) -> str:
+                 panic: float = PANIC, overheat: float = OVERHEAT,
+                 max_pos: float = 1.0, stop_loss: float = 0.0,
+                 roll: pd.DataFrame = None) -> str:
     th_top = th.head(5).to_string(index=False) if th is not None else "（自定义权重，未做网格扫描）"
+    roll_sec = ""
+    if roll is not None:
+        rs = rolling_summary(roll)
+        roll_sec = f"""
+## 六、滚动窗口样本外验证（train={roll.attrs.get('train_window', '-')} test={roll.attrs.get('test_window', '-')} refit={roll.attrs.get('refit', False)}）
+{len(roll)} 段样本外：年化均值 {rs['ann_mean']:.2%}｜夏普均值 {rs['sharpe_mean']}｜最差段回撤 {rs['dd_worst']:.2%}｜正收益段占比 {rs['win_seg_pct']:.0%}
+```
+{roll.to_string(index=False)}
+```
+> 样本外均值显著低于全样本 ⇒ 存在过拟合，优先降低参数激进程度。
+"""
     md = f"""# Sentiment V5.0 权重敏感性回测报告
 
-## 一、基准权重绩效（w1~w5 = {best_w}，阈值 lo={lo} hi={hi} panic={panic} overheat={overheat}）
+## 一、基准权重绩效（w1~w5 = {best_w}，阈值 lo={lo} hi={hi} panic={panic} overheat={overheat}，max_pos={max_pos}，stop_loss={stop_loss}）
 ```
 {json.dumps(asdict(base_p), ensure_ascii=False, indent=2)}
 ```
@@ -237,7 +337,7 @@ valid: {json.dumps(split['valid'])}
 {regime.to_string(index=False)}
 ```
 > 人工干预规则：黑天鹅暴跌（单日跌停家数>100）/ 强政策事件当日，模型打分作废，人工覆盖仓位决策。
-
+{roll_sec}
 *本报告由离线规则回测自动生成，非投资建议。*
 """
     path = os.path.join(out, "report.md")
@@ -314,7 +414,8 @@ def generate_daily_report(df: pd.DataFrame, w, alerts, out: str) -> str:
 
 # ────────────────────────── 可视化 ──────────────────────────
 def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float = BASE_LO,
-                 panic: float = PANIC, overheat: float = OVERHEAT) -> str:
+                 panic: float = PANIC, overheat: float = OVERHEAT,
+                 max_pos: float = 1.0, stop_loss: float = 0.0) -> str:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -329,7 +430,7 @@ def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
 
     ret = df["close"].pct_change().fillna(0.0)
     sc = score(df, w)
-    pos = positions(sc, hi, lo, panic, overheat)
+    pos = positions(sc, hi, lo, panic, overheat, max_pos, stop_loss, ret)
     strat = ret * pos
     nav = (1 + strat).cumprod()
     x = pd.to_datetime(df["date"])
@@ -380,10 +481,12 @@ def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
 
 # ────────────────────────── Excel 导出 ──────────────────────────
 def daily_table(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
-                panic: float = PANIC, overheat: float = OVERHEAT) -> pd.DataFrame:
+                panic: float = PANIC, overheat: float = OVERHEAT,
+                max_pos: float = 1.0, stop_loss: float = 0.0) -> pd.DataFrame:
     """逐日明细：因子、综合分、仓位（T+1）、策略收益、净值"""
     sc = score(df, w)
-    pos = positions(sc, hi, lo, panic, overheat)
+    ret = df["close"].pct_change().fillna(0.0)
+    pos = positions(sc, hi, lo, panic, overheat, max_pos, stop_loss, ret)
     ret = df["close"].pct_change().fillna(0.0)
     strat = ret * pos
     dates = df["date"] if pd.api.types.is_datetime64_any_dtype(df["date"]) else pd.to_datetime(df["date"])
@@ -417,26 +520,29 @@ def trade_events(daily: pd.DataFrame) -> pd.DataFrame:
 
 
 def export_excel(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float = BASE_LO,
-                 panic: float = PANIC, overheat: float = OVERHEAT, rf: float = RF) -> str:
+                 panic: float = PANIC, overheat: float = OVERHEAT,
+                 max_pos: float = 1.0, stop_loss: float = 0.0, rf: float = RF) -> str:
     """回测结果三表打包：每日因子与仓位 / 交易明细 / 汇总指标"""
-    daily = daily_table(df, w, hi, lo, panic, overheat)
-    p = perf(df, w, hi, lo, panic, overheat)
+    daily = daily_table(df, w, hi, lo, panic, overheat, max_pos, stop_loss)
+    p = perf(df, w, hi, lo, panic, overheat, max_pos, stop_loss)
     date_str = df["date"].iloc[-1].strftime("%Y-%m-%d")
     path = os.path.join(out, f"Sentiment_Backtest_Result_{date_str}.xlsx")
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
         daily.to_excel(writer, sheet_name="每日因子与仓位", index=False)
         trade_events(daily).to_excel(writer, sheet_name="交易明细", index=False)
         summary = pd.DataFrame({
-            "类别": ["参数"] * 12 + ["指标"] * 9,
+            "类别": ["参数"] * 14 + ["指标"] * 12,
             "名称": ["w1 情绪定位", "w2 盈亏效应", "w3 广度量能", "w4 题材结构", "w5 主线结构",
                      "开仓阈值(≥持有)", "减仓阈值(<)", "清仓阈值(≤)", "过热阈值(≥禁新建)",
-                     "无风险利率", "样本天数", "样本区间",
-                     "总收益率", "年化收益", "最大回撤", "夏普比率", "持仓日胜率",
-                     "盈亏比(毛利/毛亏)", "持仓天数", "空仓占比", "开仓次数"],
-            "数值": [w[0], w[1], w[2], w[3], w[4], lo, hi, panic, overheat, rf, len(df),
-                     f"{df['date'].iloc[0]:%Y-%m-%d} ~ {date_str}",
-                     p.total_ret, p.annual, p.max_dd, p.sharpe, p.win_rate,
-                     p.profit_ratio, p.long_days, p.empty_ratio, p.trades],
+                     "最大仓位", "单笔止损", "无风险利率", "样本天数", "样本区间",
+                     "总收益率", "年化收益", "最大回撤", "夏普比率", "Calmar比率", "Sortino比率",
+                     "最大连续亏损天数", "持仓日胜率", "盈亏比(毛利/毛亏)", "持仓天数",
+                     "空仓占比", "开仓次数"],
+            "数值": [w[0], w[1], w[2], w[3], w[4], lo, hi, panic, overheat, max_pos,
+                     stop_loss, rf, len(df), f"{df['date'].iloc[0]:%Y-%m-%d} ~ {date_str}",
+                     p.total_ret, p.annual, p.max_dd, p.sharpe, p.calmar, p.sortino,
+                     p.max_consec_loss, p.win_rate, p.profit_ratio, p.long_days,
+                     p.empty_ratio, p.trades],
         })
         summary.to_excel(writer, sheet_name="汇总指标", index=False)
     return path
@@ -481,7 +587,19 @@ def main():
     ap.add_argument("--hi", type=float, default=BASE_HI, help="减仓阈值（默认44）")
     ap.add_argument("--panic", type=float, default=PANIC, help="清仓阈值（默认24）")
     ap.add_argument("--overheat", type=float, default=OVERHEAT, help="过热阈值（默认80，只减不新建）")
+    ap.add_argument("--max-pos", type=float, default=1.0, help="最大仓位上限 0~1（默认1）")
+    ap.add_argument("--stop-loss", type=float, default=0.0, help="单笔止损（如 -0.08 启用；0=关闭）")
+    ap.add_argument("--roll", action="store_true", help="滚动窗口样本外验证（rolling_test.csv）")
+    ap.add_argument("--roll-refit", action="store_true", help="滚动验证逐窗重寻优阈值（walk-forward，较慢）")
+    ap.add_argument("--train-win", type=int, default=252, help="滚动训练窗口（默认252交易日）")
+    ap.add_argument("--test-win", type=int, default=63, help="滚动测试窗口（默认63交易日）")
     args = ap.parse_args()
+
+    if not 0 < args.max_pos <= 1:
+        raise SystemExit("--max-pos 须在 (0,1]")
+    if args.stop_loss > 0:
+        raise SystemExit("--stop-loss 须 ≤ 0（负数启用止损，0 关闭）")
+    args.roll = args.roll or args.roll_refit   # refit 隐含启用滚动验证
 
     w_custom = [args.w1, args.w2, args.w3, args.w4, args.w5]
     if any(x is not None for x in w_custom):
@@ -490,6 +608,8 @@ def main():
         if abs(sum(w_custom) - 1) > 1e-6:
             raise SystemExit(f"权重总和 {sum(w_custom):.4f} ≠ 1")
         w_custom = tuple(w_custom)
+    else:
+        w_custom = None    # 全部未传 → 置 None（[None]*5 是 truthy，直接 or 会踩坑）
 
     df = demo_df() if args.demo else pd.read_csv(args.factors)
     df.columns = [str(c).strip().lower() for c in df.columns]   # 兼容 Excel 模板 F1/F1 大小写
@@ -500,7 +620,8 @@ def main():
     df = df.sort_values("date").reset_index(drop=True)
     os.makedirs(args.out, exist_ok=True)
     RF = args.rf
-    th_kw = dict(hi=args.hi, lo=args.lo, panic=args.panic, overheat=args.overheat)
+    th_kw = dict(hi=args.hi, lo=args.lo, panic=args.panic, overheat=args.overheat,
+                 max_pos=args.max_pos, stop_loss=args.stop_loss)
 
     print(f"[1/5] 基准绩效 …")
     base_p = perf(df, w_custom or BASE_W, **th_kw)
@@ -512,7 +633,7 @@ def main():
     elif args.fast:
         best_w, best_p, scan = BASE_W, base_p, None
     else:
-        print("[2/5] 权重网格扫描（3876 组）…")
+        print("[2/5] 权重网格扫描（3876 组，多进程并行）…")
         scan = grid_search(df)
         scan.to_csv(os.path.join(args.out, "weights_scan.csv"), index=False, encoding="utf-8-sig")
         bw = scan.iloc[0]
@@ -530,8 +651,21 @@ def main():
     regime = regime_report(df, best_w)
     regime.to_csv(os.path.join(args.out, "regime.csv"), index=False, encoding="utf-8-sig")
 
+    roll = None
+    if args.roll:
+        print("[4.5] 滚动样本外验证 …")
+        roll = rolling_test(df, best_w, args.train_win, args.test_win,
+                            refit=args.roll_refit, **th_kw)
+        roll.attrs.update(train_window=args.train_win, test_window=args.test_win,
+                          refit=args.roll_refit)
+        roll.to_csv(os.path.join(args.out, "rolling_test.csv"), index=False, encoding="utf-8-sig")
+        rs = rolling_summary(roll)
+        print(f"      {rs}")
+
     print("[5/5] 报告 …")
-    path = write_report(args.out, base_p, best_w, best_p, th, noise, split, regime)
+    path = write_report(args.out, base_p, best_w, best_p, th, noise, split, regime,
+                        hi=args.hi, lo=args.lo, panic=args.panic, overheat=args.overheat,
+                        max_pos=args.max_pos, stop_loss=args.stop_loss, roll=roll)
     print("完成 →", os.path.abspath(path))
 
     if args.plot:
