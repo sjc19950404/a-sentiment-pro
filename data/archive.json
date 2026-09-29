@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-09-29T13:11:41.858Z",
+    "generatedAt": "2026-09-29T13:33:34.438Z",
     "formulaVersion": "v5.0-pro",
     "source": "live",
     "tradeDate": "2026-09-29"
@@ -89674,7 +89674,38 @@
           "002852": 1,
           "001368": 1
         },
-        "amount_yi": 17028
+        "amount_yi": 17028,
+        "seats": {
+          "inst_buy": 32.06,
+          "inst_sell": 31.51,
+          "north_buy": 30.66,
+          "north_sell": 24.47,
+          "hot_buy": 48.66,
+          "hot_sell": 54.78,
+          "cover": 100,
+          "conc_top": [
+            [
+              "永信至诚",
+              90.7
+            ],
+            [
+              "华远控股",
+              85
+            ],
+            [
+              "跨境通",
+              84.9
+            ],
+            [
+              "众泰汽车",
+              84
+            ],
+            [
+              "优利德",
+              82.6
+            ]
+          ]
+        }
       },
       "indexes": {
         "上证指数": -1.67,
@@ -91953,8 +91984,16 @@
           "change_pct": 0.85
         },
         {
+          "name": "其他电源设备",
+          "change_pct": 0.79
+        },
+        {
           "name": "互联网电商",
           "change_pct": 0.74
+        },
+        {
+          "name": "物流",
+          "change_pct": 0.72
         },
         {
           "name": "汽车服务及其他",
@@ -91997,11 +92036,11 @@
           "change_pct": 0.51
         },
         {
-          "name": "电机",
+          "name": "风电设备",
           "change_pct": 0.5
         },
         {
-          "name": "风电设备",
+          "name": "电机",
           "change_pct": 0.5
         },
         {
@@ -92025,7 +92064,7 @@
           "change_pct": 0.36
         },
         {
-          "name": "塑料制品",
+          "name": "银行",
           "change_pct": 0.36
         },
         {
@@ -92073,10 +92112,6 @@
           "change_pct": 0.26
         },
         {
-          "name": "旅游及酒店",
-          "change_pct": 0.2
-        },
-        {
           "name": "家居用品",
           "change_pct": 0.19
         },
@@ -92094,6 +92129,10 @@
         },
         {
           "name": "化学纤维",
+          "change_pct": 0.11
+        },
+        {
+          "name": "通用设备",
           "change_pct": 0.11
         },
         {
@@ -92137,10 +92176,6 @@
           "change_pct": -0.17
         },
         {
-          "name": "食品加工制造",
-          "change_pct": -0.18
-        },
-        {
           "name": "小家电",
           "change_pct": -0.2
         },
@@ -92181,6 +92216,10 @@
           "change_pct": -0.67
         },
         {
+          "name": "油气开采及服务",
+          "change_pct": -0.74
+        },
+        {
           "name": "种植业与林业",
           "change_pct": -0.93
         }
@@ -92191,14 +92230,14 @@
         "net_total_yi": 15.53,
         "net_pos": 42,
         "net_neg": 24,
-        "up_count": null,
-        "down_count": null,
-        "flat_count": null,
+        "up_count": 3315,
+        "down_count": 1821,
+        "flat_count": 152,
         "breadth_scope": "沪深两市A股（不含北交所/ST口径与各平台统计或有出入）",
         "hot_count": 57,
         "topic_kinds": 153,
-        "ind_count": 84,
-        "ind_up": 66,
+        "ind_count": 86,
+        "ind_up": 68,
         "ind_down": 18,
         "top_industry": "元件",
         "bottom_industry": "种植业与林业",
@@ -92326,7 +92365,38 @@
           "002813": 1,
           "002303": 1
         },
-        "amount_yi": 14092
+        "amount_yi": 14092,
+        "seats": {
+          "inst_buy": 18.89,
+          "inst_sell": 19.98,
+          "north_buy": 17.42,
+          "north_sell": 15.96,
+          "hot_buy": 83.99,
+          "hot_sell": 71.75,
+          "cover": 100,
+          "conc_top": [
+            [
+              "世纪数码",
+              98
+            ],
+            [
+              "通达创智",
+              91.7
+            ],
+            [
+              "国轩高科",
+              90.3
+            ],
+            [
+              "尚水智能",
+              90
+            ],
+            [
+              "华茂股份",
+              88.6
+            ]
+          ]
+        }
       },
       "indexes": {
         "上证指数": 0.18,
@@ -92334,18 +92404,18 @@
         "创业板指": 0.09
       },
       "emotion": {
-        "value": 76.5,
+        "value": 76.6,
         "s_net": 99.8,
-        "s_pos": 63.6,
-        "s_brd": 78.6,
+        "s_pos": 64.5,
+        "s_brd": 79.1,
         "s_hot": 85.1,
         "s_zdt": 85.1,
         "s_zbl": 87.7,
         "s_amt": 29.2,
         "factors": {
           "s_net": 99.8,
-          "s_pos": 63.6,
-          "s_brd": 78.6,
+          "s_pos": 64.5,
+          "s_brd": 79.1,
           "s_hot": 85.1,
           "s_zdt": 85.1,
           "s_zbl": 87.7,
@@ -92353,13 +92423,13 @@
         },
         "net_total_yi": 15.53,
         "pos_ratio": 63.6,
-        "up_ratio": 78.6,
+        "up_ratio": 79.1,
         "hot_count": 57,
         "topic_conc": 12.3,
         "top_topic": "固态电池",
         "pct_rank": 83.9,
         "net_pct_rank": 45.2,
-        "industryCount": 84,
+        "industryCount": 86,
         "imputedRatio": 0,
         "missing": []
       },
@@ -93459,18 +93529,18 @@
       ]
     },
     "latestEmotion": {
-      "value": 76.5,
+      "value": 76.6,
       "s_net": 99.8,
-      "s_pos": 63.6,
-      "s_brd": 78.6,
+      "s_pos": 64.5,
+      "s_brd": 79.1,
       "s_hot": 85.1,
       "s_zdt": 85.1,
       "s_zbl": 87.7,
       "s_amt": 29.2,
       "factors": {
         "s_net": 99.8,
-        "s_pos": 63.6,
-        "s_brd": 78.6,
+        "s_pos": 64.5,
+        "s_brd": 79.1,
         "s_hot": 85.1,
         "s_zdt": 85.1,
         "s_zbl": 87.7,
@@ -93478,13 +93548,13 @@
       },
       "net_total_yi": 15.53,
       "pos_ratio": 63.6,
-      "up_ratio": 78.6,
+      "up_ratio": 79.1,
       "hot_count": 57,
       "topic_conc": 12.3,
       "top_topic": "固态电池",
       "pct_rank": 83.9,
       "net_pct_rank": 45.2,
-      "industryCount": 84,
+      "industryCount": 86,
       "imputedRatio": 0,
       "missing": []
     },
