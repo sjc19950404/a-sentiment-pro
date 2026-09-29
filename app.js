@@ -127,6 +127,55 @@ function calcLockNew(days) {
   return { n: used, pct: Math.round(nb / tb * 1000) / 10, lockYi: Math.round((tb - nb) / 1e4 * 100) / 100, win: prevs.length };
 }
 
+// ── 综合风险评分（规格：情绪25%/资金面30%/盈亏效应20%/广度量能15%/题材结构10%，0~100，分数越高风险越低）──
+const clamp100 = (x) => Math.max(0, Math.min(100, Math.round(x)));
+// 情绪：中性区间得分最高；狂热/冰点扣分；历史极端分位追加扣分
+function scoreEmotion(v, pct) {
+  if (v == null) return null;
+  let s = v >= 85 ? 45 : v >= 70 ? 68 : v >= 55 ? 90 : v >= 40 ? 72 : 50;
+  if (pct != null) { if (pct >= 90 || pct <= 10) s -= 12; else if (pct >= 80 || pct <= 20) s -= 6; }
+  return clamp100(s);
+}
+// 资金面：净买率定基线，主线占比/锁仓/集中度微调，抱团背离与新股扰动为扣分项
+function scoreCapital(nbRate, curNet, mt, lock, b3, disturb, hasDiv) {
+  if (curNet == null) return null;
+  let s;
+  if (curNet > 0) s = nbRate != null ? (nbRate >= 8 ? 88 : nbRate >= 4 ? 78 : 58) : 70;
+  else s = nbRate != null && nbRate >= 4 ? 48 : 40;
+  if (mt && mt.pct != null && curNet > 0) s += mt.pct >= 60 ? 5 : mt.pct >= 40 ? 0 : -8;
+  if (lock) s += lock.pct > 70 ? -8 : lock.pct >= 50 ? -2 : 4;
+  if (b3 != null) s += b3 > 50 ? -6 : b3 >= 30 ? 0 : 4;
+  if (disturb) s -= 8;
+  if (hasDiv) s -= 10;
+  return clamp100(s);
+}
+// 盈亏效应：涨停多跌停少定基线，炸板率/高标空间/梯队饱满度微调
+function scorePnl(zt, dt, zbl, mlb, lb2n) {
+  if (zt == null || dt == null) return null;
+  let s = (zt >= 50 && dt <= 10) ? 88 : (zt >= 30 && dt <= 20) ? 72 : 50;
+  if (zbl != null) s += zbl < 10 ? 6 : zbl <= 20 ? 0 : -8;
+  if (mlb != null) s += mlb >= 6 ? 5 : mlb >= 3 ? 2 : -5;
+  if (lb2n != null) s += lb2n >= 15 ? 4 : lb2n >= 8 ? 0 : -5;
+  return clamp100(s);
+}
+// 广度量能：红盘占比定基线，行业扩散/成交额环比微调
+function scoreBreadth(redPct, indPct, amtChg) {
+  if (redPct == null) return null;
+  let s = redPct >= 65 ? 85 : redPct >= 55 ? 72 : redPct >= 45 ? 60 : 45;
+  if (indPct != null) s += indPct >= 70 ? 5 : indPct >= 50 ? 0 : -6;
+  if (amtChg != null) s += amtChg >= 10 ? 5 : amtChg >= -10 ? 0 : -6;
+  return clamp100(s);
+}
+// 题材结构：聚焦vs发散定基线，主线强度/存活率微调
+function scoreTheme(contN, freshN, mainZt, surv) {
+  if (!contN && !freshN) return null;
+  let s = 70;
+  if (contN > freshN * 1.5) s += 10; else if (freshN > contN) s -= 10;
+  if (mainZt != null) s += mainZt >= 6 ? 8 : mainZt >= 3 ? 0 : -8;
+  if (surv) s += surv.pct >= 50 ? 5 : surv.pct >= 30 ? 0 : -8;
+  return clamp100(s);
+}
+
 function buildBrief(days, arc) {
   const d = days[days.length - 1] || {};
   const p = days[days.length - 2] || {};
@@ -145,7 +194,7 @@ function buildBrief(days, arc) {
   const v = e.value, pct = e.pct_rank;
   const delta = (v != null && pe.value != null) ? (v - pe.value) : null;
   const zone = v == null ? '' :
-    v < 35 ? '冰点区' : v < 50 ? '弱势区' : v < 65 ? '中性区' : v < 80 ? '偏热区' : '高热区';
+    v < 40 ? '冰点区' : v < 55 ? '偏冷区' : v < 70 ? '中性区' : v < 85 ? '偏热区' : '狂热区';
   let zoneNote = '';
   if (v != null && pct != null) {
     if (pct <= 10) zoneNote = '历史极端低位，统计上常见修复脉冲，但缩量阴跌需防钝化';
@@ -223,6 +272,7 @@ function buildBrief(days, arc) {
       // 抛压预警（规格：机构+北向合计净卖出 >5亿 = 高抛压预警）
       const instNorthNet = instN + northN;
       if (instNorthNet < -5) opp += ` <span class="bf-warn">⚠ 机构+北向合计净卖 ${num(-instNorthNet, 2)} 亿，高抛压预警</span>`;
+      else opp += `；对手盘分歧中等，无大规模机构砸盘`;
     }
     seatLines = li(`席位拆分: 机构${dirTxt2(instN)} / 北向${dirTxt2(northN)} / 游资${dirTxt2(hotN)} 亿（席位覆盖 ${seats.cover}%）${b3Txt}${conc}${opp}`);
   }
@@ -244,45 +294,51 @@ function buildBrief(days, arc) {
     divs.length ? li(`<span class="bf-warn">背离校验：${divs.join('；')}</span>`) : '',
   ].join('');
 
-  // 3. 盈亏效应（涨跌停结构）
-  const zt = s.zt_count, dt = s.dt_count, zbl = s.zbl_pct, mlb = s.max_lb;
+  // 3. 盈亏效应（涨跌停结构）——规格阈值：涨停≥50&跌停≤10强/30~49&11~20中等/<30或>20偏弱；炸板率<10优秀/10~20中等/>20弱；高标≥6板空间打开/3~5中等/≤2压制；2板以上≥15饱满/8~14一般/<8断层
+  const zt = s.zt_count, dt = s.dt_count, zbl = s.zbl_pct, mlb = s.max_lb, lb2n = s.lb2_count;
   let pnl = '';
   if (zt != null && dt != null) {
-    if (dt > zt) pnl = `跌停（${dt}）反超涨停（${zt}），亏钱效应主导`;
-    else if (dt >= zt * 0.6) pnl = `跌停 ${dt} 逼近涨停 ${zt}，分歧加剧`;
-    else pnl = `涨停 ${zt} / 跌停 ${dt}，赚钱效应${zt > 60 ? '活跃' : '温和'}`;
+    if (zt >= 50 && dt <= 10) pnl = `涨停 ${zt} / 跌停 ${dt}，赚钱效应强`;
+    else if (zt >= 30 && dt <= 20) pnl = `涨停 ${zt} / 跌停 ${dt}，赚钱效应中等`;
+    else pnl = `涨停 ${zt} / 跌停 ${dt}，赚钱效应偏弱`;
   }
   const sec3 = [
     pnl ? li(pnl + `（昨日 ${ps.zt_count ?? '—'}/${ps.dt_count ?? '—'}）`) : '',
-    zbl != null ? li(`炸板率 ${zbl}%（炸板 ${s.zb_count ?? '—'}，封板率 ${Math.round(100 - zbl)}%），${zbl <= 25 ? '封板质量高，接力意愿强' : zbl <= 40 ? '分歧加大，接力需挑核心' : '炸板潮，接飞刀危险'}`) : '',
-    mlb != null ? li(`连板高标 ${mlb} 板，2板以上 ${s.lb2_count ?? '—'} 只${mlb >= 5 ? '——空间标杆仍活，题材未崩' : ''}`) : '',
+    zbl != null ? li(`炸板率 ${zbl}%（炸板 ${s.zb_count ?? '—'}，封板率 ${Math.round(100 - zbl)}%），${zbl < 10 ? '封板质量优秀' : zbl <= 20 ? '封板质量中等' : '封板弱，接力意愿差'}`) : '',
+    mlb != null ? li(`连板高标 ${mlb} 板${mlb >= 6 ? '，空间打开' : mlb >= 3 ? '，空间中等' : '，空间压制，情绪偏弱'}；2板以上 ${lb2n ?? '—'} 只${lb2n != null ? (lb2n >= 15 ? '，梯队饱满' : lb2n >= 8 ? '，梯队一般' : '，梯队断层') : ''}`) : '',
   ].join('');
 
-  // 4. 广度与量能
+  // 4. 广度与量能——规格阈值：红盘占比≥65普涨/55~65结构性/45~55震荡分化/<45普跌；行业红盘≥70扩散好/50~70结构性/<50抱团；环比±10%放量/平稳/缩量；量能因子≥40高/20~40中/<20低
   const up = s.up_count, dn = s.down_count, amt = s.amount_yi, pamt = ps.amount_yi;
+  const redPct = (up != null && dn != null && up + dn > 0) ? up / (up + dn) * 100 : null;
+  const indPct = (s.ind_count && s.ind_up != null) ? s.ind_up / s.ind_count * 100 : null;
+  const amtChg = (amt != null && pamt != null && pamt > 0) ? (amt - pamt) / pamt * 100 : null;
   const sec4 = [
-    (up != null && dn != null) ? li(`涨跌家数 ${up} / ${dn}（沪深口径），红盘占比 ${(up / (up + dn) * 100).toFixed(0)}%`) : '',
-    s.ind_count ? li(`行业红盘 ${s.ind_up ?? '—'}/${s.ind_count}，最强 ${s.top_industry || '—'} / 最弱 ${s.bottom_industry || '—'}`) : '',
-    (amt != null && pamt != null && pamt > 0) ? li(`两市成交额 ${num(amt, 0)} 亿，较前一日${amt >= pamt ? '放量' : '缩量'} ${num(Math.abs(amt - pamt), 0)} 亿，量能因子 ${f.s_amt ?? '—'}：${f.s_amt >= 60 ? '放量' : f.s_amt >= 45 ? '平量' : '缩量'}`) : '',
+    redPct != null ? li(`涨跌家数 ${up} / ${dn}（沪深口径），红盘占比 ${redPct.toFixed(0)}%——${redPct >= 65 ? '普涨' : redPct >= 55 ? '结构性行情' : redPct >= 45 ? '震荡分化' : '普跌'}`) : '',
+    indPct != null ? li(`行业红盘 ${s.ind_up ?? '—'}/${s.ind_count}（${indPct.toFixed(0)}%）——${indPct >= 70 ? '板块扩散良好' : indPct >= 50 ? '结构性扩散' : '抱团行情，扩散不足'}；最强 ${s.top_industry || '—'} / 最弱 ${s.bottom_industry || '—'}`) : '',
+    amtChg != null ? li(`两市成交额 ${num(amt, 0)} 亿，环比 ${amtChg >= 0 ? '+' : ''}${amtChg.toFixed(1)}%${amt === pamt ? '' : `（${amt >= pamt ? '放量' : '缩量'} ${num(Math.abs(amt - pamt), 0)} 亿）`}——${amtChg >= 10 ? '放量' : amtChg <= -10 ? '缩量' : '量能平稳'}；量能因子 ${f.s_amt ?? '—'}（${f.s_amt >= 40 ? '高量能' : f.s_amt >= 20 ? '中等量能' : '低量能'}）`) : '',
   ].join('');
 
-  // 5. 题材结构
+  // 5. 题材结构——规格阈值：主线涨停≥6强/3~5中等/<3弱化；昨日新晋存活率≥50%延续性强/30~50中等/<30一日游
   const freshN = (mom.fresh || []).length, contN = (mom.continuing || []).length, fadeN = (mom.fading || []).length;
   const th = d.themes || {};
   const topTheme = Object.entries(th).sort((a, b) => b[1] - a[1])[0];
+  const mainZt = topTheme ? topTheme[1] : null;
   let focus = '';
   if (contN && freshN) focus = contN > freshN * 1.5 ? '延续远多于新晋——资金聚焦而非轮动，主线成色足' :
-    freshN > contN ? '新晋多于延续——一日游轮动快，追首板胜率低' : '新晋延续均衡——题材消化中';
-  const overlap = (() => {
-    if (!p.themes) return '';
+    freshN > contN ? '新晋多于延续——题材轮动发散，追首板胜率低' : '新晋延续均衡——题材消化中';
+  // 昨日新晋题材存活率（题材口径）
+  const surv = (() => {
+    if (!p.themes) return null;
     const fr = (mom.fresh || []).map((t) => (typeof t === 'string' ? t : t.theme)).filter(Boolean);
+    if (!fr.length) return null;
     const alive = fr.filter((t) => (p.themes[t] || 0) > 0);
-    return fr.length ? `昨日新晋题材存活 ${alive.length}/${fr.length}` : '';
+    return { n: fr.length, alive: alive.length, pct: Math.round(alive.length / fr.length * 100) };
   })();
   const sec5 = [
     li(`新晋 ${freshN} / 延续 ${contN} / 退潮 ${fadeN}。${focus}`),
-    topTheme ? li(`今日最强题材: ${topTheme[0]}（${topTheme[1]} 只涨停）`) : '',
-    overlap ? li(overlap + '，' + (fadeN > freshN ? '退潮面大于新生面' : '新生面尚可')) : '',
+    topTheme ? li(`今日最强题材: ${topTheme[0]}（${mainZt} 只涨停）——${mainZt >= 6 ? '主线强势' : mainZt >= 3 ? '主线强度中等' : '主线弱化'}`) : '',
+    surv ? li(`昨日新晋题材存活 ${surv.alive}/${surv.n}（${surv.pct}%）——${surv.pct >= 50 ? '题材延续性强' : surv.pct >= 30 ? '延续性中等' : '题材一日游风险高'}`) : '',
   ].join('');
 
   // 6. 综合研判（规则表决）
@@ -304,22 +360,35 @@ function buildBrief(days, arc) {
   else if (ev.includes('情绪修复') && ev.includes('龙虎榜资金进场') && ev.includes('赚钱效应')) verdict = '修复三要素齐（情绪回升+资金进场+赚钱效应），可逐步转进攻，主线优先。';
   else if (ev.includes('情绪走弱') && ev.includes('龙虎榜资金离场')) verdict = '情绪资金双弱，退潮期防守为主，新题材一律当反弹看。';
 
-  // 明日观测信号（动态）
+  // 明日观测（规格六：九条触发规则，触发才输出，非固定列表）
   const watch = [];
-  if (dt != null) watch.push(dt >= 40 ? `跌停能否从 ${dt} 压回 30 以内（亏钱效应是否出清）` : `跌停若回升超 ${Math.max(40, Math.round(dt * 1.5))} 则退潮未尽`);
-  if (netsC.length) watch.push(`净买能否守住${netsC[netsC.length - 1] > 0 ? '正' : '零'}轴（0 亿上方）`);
-  if (mlb != null) watch.push(`${mlb} 板高标能否晋级（断板无替补 = 空间坍塌）`);
-  if (freshN) watch.push(`今日 ${freshN} 个新晋题材明日存活率（≥50% = 聚焦，<30% = 一日游）`);
-  if (Number.isFinite(mainNet)) watch.push(`剔除新股后的主线净买（今日 ${mainNet >= 0 ? '+' : ''}${num(mainNet, 2)} 亿）能否维持正值`);
-  const mainTop = aggr.filter((l) => l.net_buy_wan > 0 && !isNewStock(l)).slice(0, 2).map((l) => l.name);
-  if (mainTop.length) watch.push(`头部主线标的（${mainTop.join('、')}）是否出现大额兑现`);
-  if (nbRate != null) watch.push(`龙虎榜净买率是否维持在 4% 以上（今日 ${num(nbRate, 1)}%），买方集中度是否出现极端抬升`);
-  if (seats && seats.cover) watch.push('卖方是否出现机构/北向集中大额砸盘（合计净卖 >5 亿为预警线）');
-  if (lock) watch.push(`头部标的资金留存: 新进资金（今日占比 ${lock.pct}%）是否大规模兑现`);
-  if (mt && mt.pct != null) watch.push(`主线题材龙虎资金占比是否维持在 60% 以上（今日 ${mt.pct}%）`);
-  const sec6 = li(`<b>${verdict}</b>`) + (watch.length ? `<div class="bf-h bf-h2">明日观测</div>` + watch.map((w) => li('· ' + w)).join('') : '');
+  if (v != null && v >= 70) watch.push('跌停若回升超 40 则退潮未尽'); // 1.情绪偏热/狂热触发
+  if (disturb) watch.push(`主线剔除新股后的净买（今日 ${mainNet >= 0 ? '+' : ''}${num(mainNet, 2)} 亿）能否守住正轴（0 亿上方）`); // 2.新股扰动触发
+  if (mlb != null && mlb >= 6) watch.push(`${mlb} 板高标能否晋级（断板无替补 = 空间坍塌）`); // 3.6板及以上高标触发
+  if (surv && surv.pct < 50) watch.push(`今日 ${freshN} 个新晋题材明日存活率（≥50% = 聚焦，<30% = 一日游）`); // 4.昨日存活率<50%触发
+  if (nbRate != null && nbRate >= 4 && nbRate < 8) watch.push(`龙虎榜净买率是否维持在 4% 以上（今日 ${num(nbRate, 1)}%），买方集中度是否出现极端抬升`); // 5.净买率4~8%中等区间触发
+  if (seats && seats.cover && (seats.inst_sell > 0 || seats.north_sell > 0)) watch.push('卖方是否出现机构/北向集中大额砸盘（合计净卖 >5 亿为预警线）'); // 6.机构/北向有卖出触发
+  if (divs.some((x) => x.includes('缩量'))) watch.push('缩量背离是否修复：主线板块成交额能否扩容'); // 7.抱团缩量背离触发
+  if (lock && lock.pct > 50) watch.push(`头部标的资金留存: 新进资金（今日占比 ${lock.pct}%）是否大规模兑现`); // 8.新进占比>50%触发
+  if (mt && mt.pct != null && mt.pct >= 60) watch.push(`主线题材龙虎资金占比是否维持在 60% 以上（今日 ${mt.pct}%）`); // 9.主线占比≥60%触发
 
-  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；净买为龙虎榜去重个股级口径；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股龙虎净买÷全榜单龙虎净买；席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
+  // 综合风险评分（规格七：五因子加权，分数越高风险越低）
+  const scE = scoreEmotion(v, pct);
+  const scC = scoreCapital(nbRate, curNet, mt, lock, seats ? seats.buy_top3_pct ?? null : null, disturb, divs.length > 0);
+  const scP = scorePnl(zt, dt, zbl, mlb, s.lb2_count);
+  const scB = scoreBreadth(redPct, indPct, amtChg);
+  const scT = scoreTheme(contN, freshN, mainZt, surv);
+  const mods = [['情绪', 25, scE], ['资金面', 30, scC], ['盈亏效应', 20, scP], ['广度量能', 15, scB], ['题材结构', 10, scT]].filter((m) => m[2] != null);
+  const wSum = mods.reduce((a, m) => a + m[1], 0);
+  const total = wSum ? Math.round(mods.reduce((a, m) => a + m[1] * m[2], 0) / wSum) : null;
+  const riskTxt = total == null ? '' : total >= 80 ? '低风险' : total >= 60 ? '中等风险' : total >= 40 ? '偏高风险' : '高风险';
+  const weak = mods.filter((m) => m[2] < 60).map((m) => m[0]);
+  const riskHint = weak.length ? `短板在${weak.join('与')}，注意对应风险` : '五大因子均衡，无明显短板';
+  const scoreLine = total != null ? li(`综合风险评分: 情绪 ${scE} · 资金面 ${scC} · 盈亏效应 ${scP} · 广度量能 ${scB} · 题材结构 ${scT} → 总分 <b>${total}</b>，${riskTxt}。<span class="bf-warn">${riskHint}</span>`) : '';
+  const sec6 = li(`<b>${verdict}</b>`) + scoreLine +
+    (watch.length ? `<div class="bf-h bf-h2">明日观测（引擎动态生成）</div>` + watch.map((w) => li('· ' + w)).join('') : '');
+
+  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；净买为龙虎榜去重个股级口径；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股龙虎净买÷全榜单龙虎净买；综合风险评分采用加权模型：情绪25%、资金面30%、盈亏效应20%、广度量能15%、题材结构10%，0~100分，分数越高风险越低；席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
 
   return seg('① 情绪定位', sec1) + seg('② 资金面（龙虎榜）', sec2) +
     seg('③ 盈亏效应', sec3) + seg('④ 广度与量能', sec4) +

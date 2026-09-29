@@ -172,6 +172,12 @@ export async function runLive() {
         nd.summary = nd.summary || {};
         nd.summary.seats = oldSeats;
       }
+      // 涨跌家数偶发抓取失败：新天缺失而旧档有值则回填，防重跑降级
+      if (old.summary?.up_count != null && nd.summary?.up_count == null) {
+        nd.summary = nd.summary || {};
+        for (const k of ['up_count', 'down_count', 'flat_count']) nd.summary[k] = old.summary[k];
+        console.log('[merge-breadth]', nd.trade_date, '回填涨跌家数', old.summary.up_count, '/', old.summary.down_count);
+      }
       history[i] = nd;
     } else history.push(nd);
   }
