@@ -266,10 +266,10 @@ async function fetchAmountTencentFallback(ymd) {
       let sum = 0, any = false;
       for (const p of t.split(';')) {
         if (!p.includes('~')) continue;
-        const amt = +p.split('~')[38];
+        const amt = +p.split('~')[37]; // f[37]=成交额(万元)；f[38] 盘后为 0，勿用
         if (Number.isFinite(amt) && amt > 0) { sum += amt / 1e4; any = true; }
       }
-      if (any) return { [ymd]: r1(sum) };
+      if (any && sum > 3000 && sum < 90000) return { [ymd]: r1(sum) }; // 两市额合理区间护栏
     } catch (e) { /* 重试 */ }
     await sleep(500);
   }
