@@ -1,8 +1,11 @@
 # Sentiment V5.0 离线工具集
 
-## 一、通达信副图指标（`tdx/SentimentV5_Lite.txt`）
+## 一、通达信副图指标
 
-**导入**：通达信 → 功能 → 公式系统 → 公式管理器 → 技术指标 → 其他类型 → 新建，粘贴 `SentimentV5_Lite.txt` 全部内容，命名 `SentimentV5_Lite`，测试通过后用于副图。
+- `tdx/SentimentV5_Lite.txt` —— **个股版**：相对大盘强弱代理，任意个股/板块指数副图可用
+- `tdx/SentimentV5_Market.txt` —— **大盘版**：F3 主力信号改用 `ADVANCE-DECLINE` 真实涨跌家数（5日平滑 ADL），**只能挂在指数 K 线副图**（如上证指数 999999）——ADVANCE/DECLINE 是大盘专用函数，个股图下无数据
+
+**导入**：通达信 → 功能 → 公式系统 → 公式管理器 → 技术指标 → 其他类型 → 新建，粘贴对应 txt 全部内容，命名同文件名，测试通过后用于副图。
 
 **口径说明（与网页原版 V5 的差异）**：
 
@@ -42,8 +45,8 @@ python sentiment_backtest.py --factors factors.csv --out reports
 # 合成数据自检
 python sentiment_backtest.py --demo --out reports_demo
 
-# 快速模式（跳过网格，仅基准/阈值/鲁棒性）
-python sentiment_backtest.py --factors factors.csv --fast
+# 快速模式（跳过网格，仅基准/阈值/鲁棒性）；--rf 夏普计入无风险利率
+python sentiment_backtest.py --factors factors.csv --fast --rf 0.02
 ```
 
 ### 输出（`--out` 目录）

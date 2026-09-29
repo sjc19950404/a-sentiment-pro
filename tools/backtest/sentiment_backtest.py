@@ -37,6 +37,7 @@ BASE_HI, BASE_LO = 44.0, 65.0             # 风险分界：≤hi 减仓，≥lo 
 PANIC = 24.0                              # 清仓线（固定）
 OVERHEAT = 80.0                           # 过热线（仅提示，不加新仓）
 ANN = 252                                 # 年化系数
+RF = 0.0                                  # 无风险利率年化（夏普用，CLI --rf 调整）
 
 
 @dataclass
@@ -88,7 +89,8 @@ def perf(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO) -> Perf:
     annual = (1 + total) ** (ANN / n) - 1 if n > 0 and total > -1 else -1.0
     dd = (1 - equity / equity.cummax()).max()
     sd = strat.std(ddof=0)
-    sharpe = strat.mean() / sd * math.sqrt(ANN) if sd > 1e-12 else 0.0
+    excess = strat - RF / ANN                      # 夏普计入无风险利率（--rf 可调，默认0）
+    sharpe = excess.mean() / sd * math.sqrt(ANN) if sd > 1e-12 else 0.0
     held = strat[pos > 0]
     win = (held > 0).mean() if len(held) else 0.0
     gain = strat[strat > 0].sum()
@@ -257,17 +259,20 @@ def demo_df(n=900, seed=7) -> pd.DataFrame:
 
 # ────────────────────────── 主流程 ──────────────────────────
 def main():
+    global RF
     ap = argparse.ArgumentParser()
     ap.add_argument("--factors", help="因子 CSV（date,f1..f5,close[,regime]）")
     ap.add_argument("--demo", action="store_true", help="合成数据自检")
     ap.add_argument("--out", default="reports", help="输出目录")
     ap.add_argument("--fast", action="store_true", help="跳过全网格（仅基准+阈值+鲁棒性）")
+    ap.add_argument("--rf", type=float, default=0.0, help="无风险利率年化（夏普计算，默认0）")
     args = ap.parse_args()
 
     df = demo_df() if args.demo else pd.read_csv(args.factors)
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values("date").reset_index(drop=True)
     os.makedirs(args.out, exist_ok=True)
+    RF = args.rf
 
     print(f"[1/5] 基准绩效 …")
     base_p = perf(df, BASE_W)
