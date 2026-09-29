@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-09-29T11:56:52.571Z",
+    "generatedAt": "2026-09-29T12:10:47.589Z",
     "formulaVersion": "v5.0-pro",
     "source": "live",
     "tradeDate": "2026-09-29"
@@ -50243,7 +50243,7 @@
         "光刻胶": 1,
         "PEEK材料": 1,
         "算力PCB": 2,
-        "高端HDI": 2,
+        "PCB": 6,
         "粮食储备": 1,
         "胶粘剂": 1,
         "光模块PCB": 3,
@@ -50251,7 +50251,6 @@
         "CPO": 4,
         "房地产开发": 1,
         "北京国资": 1,
-        "PCB": 4,
         "照明工程": 1,
         "小家电": 1,
         "海外产能": 1,
@@ -52318,7 +52317,7 @@
         "hot_count": 73,
         "topic_conc": 8.2,
         "top_topic": "AI应用",
-        "pct_rank": 87.1,
+        "pct_rank": 83.9,
         "net_pct_rank": 41.9,
         "industryCount": 90,
         "factors": {
@@ -70202,13 +70201,12 @@
       "themes": {
         "越南基地": 1,
         "炭黑": 1,
-        "PCB": 5,
+        "PCB": 6,
         "新能源": 6,
         "智能网": 1,
         "半导体": 7,
         "股权激励": 1,
         "半导体材料": 1,
-        "印制电路板": 1,
         "服务器电源": 1,
         "国企改革": 4,
         "氮化镓": 1,
@@ -82178,7 +82176,6 @@
         "高端装备": 1,
         "智能制造": 1,
         "PCB": 4,
-        "印制电路板": 1,
         "动物保健": 1,
         "智慧城市": 1,
         "精密零部件": 1,
@@ -91864,8 +91861,16 @@
           "change_pct": 3.79
         },
         {
+          "name": "文化传媒",
+          "change_pct": 3.16
+        },
+        {
           "name": "影视院线",
           "change_pct": 2.35
+        },
+        {
+          "name": "工业金属",
+          "change_pct": 2
         },
         {
           "name": "IT服务",
@@ -91890,6 +91895,14 @@
         {
           "name": "软件开发",
           "change_pct": 1.35
+        },
+        {
+          "name": "综合",
+          "change_pct": 1.28
+        },
+        {
+          "name": "建筑装饰",
+          "change_pct": 1.17
         },
         {
           "name": "计算机设备",
@@ -91960,6 +91973,10 @@
           "change_pct": 0.64
         },
         {
+          "name": "汽车零部件",
+          "change_pct": 0.62
+        },
+        {
           "name": "橡胶制品",
           "change_pct": 0.59
         },
@@ -91973,6 +91990,10 @@
         },
         {
           "name": "教育",
+          "change_pct": 0.54
+        },
+        {
+          "name": "小金属",
           "change_pct": 0.54
         },
         {
@@ -92004,6 +92025,10 @@
           "change_pct": 0.48
         },
         {
+          "name": "专用设备",
+          "change_pct": 0.4
+        },
+        {
           "name": "光学光电子",
           "change_pct": 0.38
         },
@@ -92026,6 +92051,10 @@
         {
           "name": "自动化设备",
           "change_pct": 0.33
+        },
+        {
+          "name": "饮料制造",
+          "change_pct": 0.32
         },
         {
           "name": "零售",
@@ -92068,6 +92097,10 @@
           "change_pct": 0.19
         },
         {
+          "name": "贸易",
+          "change_pct": 0.17
+        },
+        {
           "name": "医药商业",
           "change_pct": 0.15
         },
@@ -92098,6 +92131,10 @@
         {
           "name": "军工电子",
           "change_pct": 0.06
+        },
+        {
+          "name": "养殖业",
+          "change_pct": -0.05
         },
         {
           "name": "机场航运",
@@ -92132,6 +92169,10 @@
           "change_pct": -0.22
         },
         {
+          "name": "生物制品",
+          "change_pct": -0.24
+        },
+        {
           "name": "造纸",
           "change_pct": -0.25
         },
@@ -92160,6 +92201,10 @@
           "change_pct": -0.67
         },
         {
+          "name": "油气开采及服务",
+          "change_pct": -0.74
+        },
+        {
           "name": "种植业与林业",
           "change_pct": -0.93
         }
@@ -92170,15 +92215,15 @@
         "net_total_yi": 15.53,
         "net_pos": 42,
         "net_neg": 24,
-        "up_count": 3315,
-        "down_count": 1821,
-        "flat_count": 152,
+        "up_count": null,
+        "down_count": null,
+        "flat_count": null,
         "breadth_scope": "沪深两市A股（不含北交所/ST口径与各平台统计或有出入）",
         "hot_count": 57,
         "topic_kinds": 153,
-        "ind_count": 78,
-        "ind_up": 62,
-        "ind_down": 16,
+        "ind_count": 90,
+        "ind_up": 71,
+        "ind_down": 19,
         "top_industry": "元件",
         "bottom_industry": "种植业与林业",
         "zt_count": 57,
@@ -92305,7 +92350,10 @@
           "002813": 1,
           "002303": 1
         },
-        "amount_yi": 14092
+        "amount_yi": null,
+        "_missing": [
+          "amount"
+        ]
       },
       "indexes": {
         "上证指数": 0.18,
@@ -92313,34 +92361,36 @@
         "创业板指": 0.09
       },
       "emotion": {
-        "value": 76.7,
+        "value": 79.6,
         "s_net": 99.8,
-        "s_pos": 64.5,
-        "s_brd": 79.5,
+        "s_pos": 63.6,
+        "s_brd": 78.9,
         "s_hot": 85.1,
         "s_zdt": 85.1,
         "s_zbl": 87.7,
-        "s_amt": 29.2,
+        "s_amt": 50,
         "factors": {
           "s_net": 99.8,
-          "s_pos": 64.5,
-          "s_brd": 79.5,
+          "s_pos": 63.6,
+          "s_brd": 78.9,
           "s_hot": 85.1,
           "s_zdt": 85.1,
           "s_zbl": 87.7,
-          "s_amt": 29.2
+          "s_amt": 50
         },
         "net_total_yi": 15.53,
         "pos_ratio": 63.6,
-        "up_ratio": 79.5,
+        "up_ratio": 78.9,
         "hot_count": 57,
         "topic_conc": 12.3,
         "top_topic": "固态电池",
-        "pct_rank": 83.9,
+        "pct_rank": 87.1,
         "net_pct_rank": 45.2,
-        "industryCount": 78,
-        "imputedRatio": 0,
-        "missing": []
+        "industryCount": 90,
+        "imputedRatio": 0.14,
+        "missing": [
+          "s_amt15"
+        ]
       },
       "lhb_aggr": [
         {
@@ -93275,7 +93325,7 @@
         }
       ],
       "themes": {
-        "PCB": 7,
+        "PCB": 8,
         "并购重组": 3,
         "房地产": 1,
         "“华”字辈": 6,
@@ -93295,7 +93345,6 @@
         "新能源": 7,
         "文化传媒": 2,
         "AI漫剧": 1,
-        "高端HDI": 1,
         "人工智能": 1,
         "算力服务": 1,
         "航空航天": 1,
@@ -93439,36 +93488,38 @@
       ]
     },
     "latestEmotion": {
-      "value": 76.7,
+      "value": 79.6,
       "s_net": 99.8,
-      "s_pos": 64.5,
-      "s_brd": 79.5,
+      "s_pos": 63.6,
+      "s_brd": 78.9,
       "s_hot": 85.1,
       "s_zdt": 85.1,
       "s_zbl": 87.7,
-      "s_amt": 29.2,
+      "s_amt": 50,
       "factors": {
         "s_net": 99.8,
-        "s_pos": 64.5,
-        "s_brd": 79.5,
+        "s_pos": 63.6,
+        "s_brd": 78.9,
         "s_hot": 85.1,
         "s_zdt": 85.1,
         "s_zbl": 87.7,
-        "s_amt": 29.2
+        "s_amt": 50
       },
       "net_total_yi": 15.53,
       "pos_ratio": 63.6,
-      "up_ratio": 79.5,
+      "up_ratio": 78.9,
       "hot_count": 57,
       "topic_conc": 12.3,
       "top_topic": "固态电池",
-      "pct_rank": 83.9,
+      "pct_rank": 87.1,
       "net_pct_rank": 45.2,
-      "industryCount": 78,
-      "imputedRatio": 0,
-      "missing": []
+      "industryCount": 90,
+      "imputedRatio": 0.14,
+      "missing": [
+        "s_amt15"
+      ]
     },
-    "imputedRatioLatest": 0,
+    "imputedRatioLatest": 0.14,
     "tradeDate": "2026-09-29"
   }
 }
