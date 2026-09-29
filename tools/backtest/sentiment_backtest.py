@@ -327,7 +327,8 @@ def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
     nav = (1 + strat).cumprod()
     x = pd.to_datetime(df["date"])
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10), sharex=True, height_ratios=[2, 3])
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(14, 12), sharex=False,
+                                        height_ratios=[2, 3, 1.6])
     # 上：策略净值 vs 买入持有 + 仓位阴影
     ax1.plot(x, nav, color="#E63946", lw=2, label="策略净值")
     bh = (1 + ret).cumprod()
@@ -351,6 +352,18 @@ def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
     ax2.set_ylabel("分数 (0-100)")
     ax2.legend(loc="upper right", ncol=2, fontsize=9)
     ax2.grid(alpha=0.3)
+    # 下：持仓日策略收益分布（盈亏稳定性；换仓日口径样本太少且选择性偏差，弃用）
+    held = strat[pos > 0]
+    ax3.hist(held, bins=30, color="#577590", alpha=0.75)
+    ax3.axvline(x=0, color="red", ls="--", lw=1)
+    if len(held) and held.std() > 0:
+        ax3.axvline(x=held.mean(), color="orange", ls="-", lw=1.5,
+                    label=f"均值 {held.mean():.3%}")
+        ax3.legend(fontsize=9)
+    ax3.set_title("持仓日策略收益分布（盈亏稳定性）", fontsize=13)
+    ax3.set_xlabel("单日收益率")
+    ax3.set_ylabel("天数")
+    ax3.grid(alpha=0.3)
     plt.tight_layout()
     path = os.path.join(out, "nav_factors.png")
     plt.savefig(path, dpi=150)

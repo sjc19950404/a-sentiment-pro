@@ -1,5 +1,13 @@
 # Sentiment V5.0 离线工具集
 
+## 〇、图形界面（`sentiment_gui.py`）
+
+```bash
+python sentiment_gui.py
+```
+
+Tkinter 一键平台：鼠标选因子 CSV 与输出目录 → 填风险标记（可选）→ 一键运行全流程（基准绩效 / 网格 / 阈值 / 鲁棒性 / 汇总报告 / 三栏图 / 末日日报），日志实时滚动，桌面弹窗提示完成。需要 `tkinter`（Python 自带；托管精简版 Python 可能没有，用系统版 Python 建的 venv 跑）。运行期间不卡界面（后台线程），重复点击自动忽略。
+
 ## 一、通达信副图指标
 
 - `tdx/SentimentV5_Lite.txt` —— **个股版**：相对大盘强弱代理，任意个股/板块指数副图可用
@@ -56,11 +64,11 @@ python sentiment_backtest.py --demo --out reports_demo
 python sentiment_backtest.py --factors factors.csv --fast --rf 0.02
 ```
 
-**依赖**：`pandas numpy`；`--plot` 另需 `matplotlib`；模板生成另需 `openpyxl`。
+**依赖**：`pandas numpy`；`--plot`/GUI 另需 `matplotlib`；模板生成另需 `openpyxl`；GUI 需 `tkinter`。
 
 ### 可视化与日报
 
-- `--plot`：输出 `nav_factors.png`——上栏策略净值 vs 买入持有（阴影=超额收益区），下栏五因子+综合分时序+四条阈值线（开仓/减仓/清仓/过热）。中文字体自动探测（微软雅黑/黑体）
+- `--plot`：输出 `nav_factors.png` 三栏——①策略净值 vs 买入持有（阴影=超额收益区）②五因子+综合分时序+四条阈值线（开仓/减仓/清仓/过热）③**持仓日策略收益分布直方图**（盈亏稳定性，均值橙线标注；换仓日口径样本太少且有选择性偏差，弃用）。中文字体自动探测（微软雅黑/黑体）
 - `--report`：按 CSV 末日数据生成 `daily_report_<日期>.md`——五因子得分、综合分、V5 五档风险等级与操作建议
 - `--alerts`：传入当日辅助模块高风险信号（逗号分隔），每项对综合分扣 12 分生成**修正参考分**（原分不动仅报告参考）；命中 ≥2 项标记"模型失效预警，建议人工干预"——对齐 V5 总架构第六节人工覆盖规则。内置信号表：`P_突发黑天鹅 / P重大政策转向 / O宏观超预期冲击 / B北向大额恐慌流出 / D大规模量价背离 / E大面积高位杀跌`
 
