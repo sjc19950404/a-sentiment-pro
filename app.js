@@ -127,28 +127,10 @@ function calcLockNew(days) {
   return { n: used, pct: Math.round(nb / tb * 1000) / 10, lockYi: Math.round((tb - nb) / 1e4 * 100) / 100, win: prevs.length };
 }
 
-// ── 综合风险评分（规格：情绪25%/资金面30%/盈亏效应20%/广度量能15%/题材结构10%，0~100，分数越高风险越低）──
+// ── V5 综合评分（规格：情绪25%/盈亏25%/广度20%/题材20%/主线板块内部结构10%，0~100，分数越高市场越热越强；资金面移出打分，降为辅助模块B）──
 const clamp100 = (x) => Math.max(0, Math.min(100, Math.round(x)));
-// 情绪：中性区间得分最高；狂热/冰点扣分；历史极端分位追加扣分
-function scoreEmotion(v, pct) {
-  if (v == null) return null;
-  let s = v >= 85 ? 45 : v >= 70 ? 68 : v >= 55 ? 90 : v >= 40 ? 72 : 50;
-  if (pct != null) { if (pct >= 90 || pct <= 10) s -= 12; else if (pct >= 80 || pct <= 20) s -= 6; }
-  return clamp100(s);
-}
-// 资金面：净买率定基线，主线占比/锁仓/集中度微调，抱团背离与新股扰动为扣分项
-function scoreCapital(nbRate, curNet, mt, lock, b3, disturb, hasDiv) {
-  if (curNet == null) return null;
-  let s;
-  if (curNet > 0) s = nbRate != null ? (nbRate >= 8 ? 88 : nbRate >= 4 ? 78 : 58) : 70;
-  else s = nbRate != null && nbRate >= 4 ? 48 : 40;
-  if (mt && mt.pct != null && curNet > 0) s += mt.pct >= 60 ? 5 : mt.pct >= 40 ? 0 : -8;
-  if (lock) s += lock.pct > 70 ? -8 : lock.pct >= 50 ? -2 : 4;
-  if (b3 != null) s += b3 > 50 ? -6 : b3 >= 30 ? 0 : 4;
-  if (disturb) s -= 8;
-  if (hasDiv) s -= 10;
-  return clamp100(s);
-}
+// 因子1 情绪定位：分值即热度（80~100高潮/60~79偏强/40~59中性/20~39偏弱/0~19冰点），历史分位极端在文字区提示，不改动分数
+function scoreEmotion(v) { return v == null ? null : clamp100(Math.round(v)); }
 // 盈亏效应：涨停多跌停少定基线，炸板率/高标空间/梯队饱满度微调
 function scorePnl(zt, dt, zbl, mlb, lb2n) {
   if (zt == null || dt == null) return null;
@@ -173,6 +155,24 @@ function scoreTheme(contN, freshN, mainZt, surv) {
   if (contN > freshN * 1.5) s += 10; else if (freshN > contN) s -= 10;
   if (mainZt != null) s += mainZt >= 6 ? 8 : mainZt >= 3 ? 0 : -8;
   if (surv) s += surv.pct >= 50 ? 5 : surv.pct >= 30 ? 0 : -8;
+  return clamp100(s);
+}
+// 因子5 主线板块内部结构：主线涨停梯队定基线，内部红盘率/龙头强度微调，涨幅离散度大=跟风分化扣分
+// （规格采集指标中"板块成交额占比/板块内涨跌家数"暂无独立数据源，用热点榜主线成分票代理，口径见备注）
+function scoreMainStructure(mainTheme, hot, mainZt) {
+  if (!mainTheme || !Array.isArray(hot)) return null;
+  const ms = hot.filter((h) => String(h.reason || '').includes(mainTheme));
+  if (!ms.length) return null;
+  const n = ms.length;
+  const chgs = ms.map((h) => h.change_pct || 0);
+  const red = chgs.filter((c) => c > 0).length / n;
+  const top = Math.max(...chgs);
+  const avg = chgs.reduce((a, b) => a + b, 0) / n;
+  const sd = Math.sqrt(chgs.reduce((a, c) => a + (c - avg) * (c - avg), 0) / n);
+  let s = mainZt >= 6 ? 80 : mainZt >= 3 ? 62 : 45;
+  if (red >= 0.7) s += 8; else if (red < 0.5) s -= 8;
+  if (top >= 9.9) s += 5; else if (top >= 5) s += 2; else s -= 5;
+  if (sd > 6) s -= 4; else s += 2;
   return clamp100(s);
 }
 
@@ -372,27 +372,34 @@ function buildBrief(days, arc) {
   if (lock && lock.pct > 50) watch.push(`头部标的资金留存: 新进资金（今日占比 ${lock.pct}%）是否大规模兑现`); // 8.新进占比>50%触发
   if (mt && mt.pct != null && mt.pct >= 60) watch.push(`主线题材龙虎资金占比是否维持在 60% 以上（今日 ${mt.pct}%）`); // 9.主线占比≥60%触发
 
-  // 综合风险评分（规格七：五因子加权，分数越高风险越低）
-  const scE = scoreEmotion(v, pct);
-  const scC = scoreCapital(nbRate, curNet, mt, lock, seats ? seats.buy_top3_pct ?? null : null, disturb, divs.length > 0);
+  // 综合风险评分（V5：五因子加权，分数越高市场越热越强；资金面降为辅助模块不参与打分）
+  const scE = scoreEmotion(v);
   const scP = scorePnl(zt, dt, zbl, mlb, s.lb2_count);
   const scB = scoreBreadth(redPct, indPct, amtChg);
   const scT = scoreTheme(contN, freshN, mainZt, surv);
-  const mods = [['情绪', 25, scE], ['资金面', 30, scC], ['盈亏效应', 20, scP], ['广度量能', 15, scB], ['题材结构', 10, scT]].filter((m) => m[2] != null);
+  const scM = scoreMainStructure(topTheme ? topTheme[0] : null, d.hot || [], mainZt);
+  const mods = [['情绪定位', 25, scE], ['盈亏效应', 25, scP], ['广度量能', 20, scB], ['题材结构', 20, scT], ['主线结构', 10, scM]].filter((m) => m[2] != null);
   const wSum = mods.reduce((a, m) => a + m[1], 0);
-  const total = wSum ? Math.round(mods.reduce((a, m) => a + m[1] * m[2], 0) / wSum) : null;
-  const riskTxt = total == null ? '' : total >= 80 ? '低风险' : total >= 60 ? '中等风险' : total >= 40 ? '偏高风险' : '高风险';
+  const total = wSum ? Math.round(mods.reduce((a, m) => a + m[1] * m[2], 0) / wSum * 10) / 10 : null;
+  // V5 风险五档：高分=强市（80+ 反而要防过热见顶）
+  const riskTxt = total == null ? '' :
+    total >= 80 ? '极低风险（情绪过热）——高潮抱团，高位加速，警惕见顶' :
+    total >= 65 ? '低风险——行情强势，主线清晰，适合做主线' :
+    total >= 45 ? '中等风险——震荡分歧，结构性行情，控仓操作' :
+    total >= 25 ? '高风险——亏钱效应扩散，主线弱化，降低仓位' :
+    '极高风险——情绪冰点，大面积杀跌，空仓/轻仓防御';
   const weak = mods.filter((m) => m[2] < 60).map((m) => m[0]);
-  const riskHint = weak.length ? `短板在${weak.join('与')}，注意对应风险` : '五大因子均衡，无明显短板';
-  const scoreLine = total != null ? li(`综合风险评分: 情绪 ${scE} · 资金面 ${scC} · 盈亏效应 ${scP} · 广度量能 ${scB} · 题材结构 ${scT} → 总分 <b>${total}</b>，${riskTxt}。<span class="bf-warn">${riskHint}</span>`) : '';
+  const auxWarn = (disturb || divs.length) ? '；辅助资金面存在' + [disturb ? '新股扰动' : '', divs.length ? '量价背离' : ''].filter(Boolean).join('与') + '信号，热度分未计入' : '';
+  const riskHint = (weak.length ? `短板在${weak.join('与')}，注意对应风险` : '五大因子均衡，无明显短板') + auxWarn;
+  const scoreLine = total != null ? li(`综合风险评分（V5）: 情绪定位 ${scE} · 盈亏效应 ${scP} · 广度量能 ${scB} · 题材结构 ${scT} · 主线结构 ${scM} → 总分 <b>${total}</b>，${riskTxt}。<span class="bf-warn">${riskHint}</span>`) : '';
   const sec6 = li(`<b>${verdict}</b>`) + scoreLine +
     (watch.length ? `<div class="bf-h bf-h2">明日观测（引擎动态生成）</div>` + watch.map((w) => li('· ' + w)).join('') : '');
 
-  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；净买为龙虎榜去重个股级口径；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股龙虎净买÷全榜单龙虎净买；综合风险评分采用加权模型：情绪25%、资金面30%、盈亏效应20%、广度量能15%、题材结构10%，0~100分，分数越高风险越低；席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
+  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；净买为龙虎榜去重个股级口径；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股龙虎净买÷全榜单龙虎净买；综合风险评分采用 V5 加权模型：情绪定位25%、盈亏效应25%、广度量能20%、题材结构20%、主线板块内部结构10%（主线结构用热点榜主线成分票的涨停梯队/龙头强度/内部红盘率/分化度代理，板块成交额占比暂无数据源），0~100分，分数越高市场越热越强，80+警惕过热见顶；资金面（龙虎榜）为辅助观测，不参与打分；席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
 
-  return seg('① 情绪定位', sec1) + seg('② 资金面（龙虎榜）', sec2) +
-    seg('③ 盈亏效应', sec3) + seg('④ 广度与量能', sec4) +
-    seg('⑤ 题材结构', sec5) + seg('⑥ 综合研判', sec6) + foot;
+  return seg('① 情绪定位（核心因子·25%）', sec1) + seg('② 资金面（龙虎榜）· 辅助B 北向+机构行为（不参与打分）', sec2) +
+    seg('③ 盈亏效应（核心因子·25%）', sec3) + seg('④ 广度与量能（核心因子·20%）', sec4) +
+    seg('⑤ 题材结构（核心因子·20%）', sec5) + seg('⑥ 综合研判', sec6) + foot;
 }
 
 function renderBrief(days, arc) {
