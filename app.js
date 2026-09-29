@@ -106,6 +106,27 @@ function renderHot(latest) {
 // 新股/独立标的：上市首5日无涨跌幅限制（东财榜单诱因原话）
 const isNewStock = (l) => (l.reasons || [l.reason || '']).some((r) => String(r).includes('无价格涨跌幅限制'));
 
+// 锁仓/新进资金口径（规格阈值：新进占比 >70% 短线脉冲 / 50~70% 中等 / <50% 锁仓偏好强）
+// 当日买方席位与近2日同票买方席位比对，未重复出现=新进；样本=有席位明细的连续上榜股
+function calcLockNew(days) {
+  const cur = days[days.length - 1]?.summary?.seats?.detail;
+  const prevs = days.slice(-3, -1).map((d) => d.summary?.seats?.detail).filter(Boolean);
+  if (!cur || !prevs.length) return null;
+  const hist = {};
+  for (const pd of prevs) for (const [c, lst] of Object.entries(pd)) {
+    if (!hist[c]) hist[c] = new Set();
+    for (const [nm] of lst) hist[c].add(nm);
+  }
+  let nb = 0, tb = 0, used = 0;
+  for (const [c, lst] of Object.entries(cur)) {
+    if (!hist[c] || !hist[c].size) continue; // 无历史样本的票不计入
+    used++;
+    for (const [nm, buy] of lst) { tb += buy; if (!hist[c].has(nm)) nb += buy; }
+  }
+  if (!tb || !used) return null;
+  return { n: used, pct: Math.round(nb / tb * 1000) / 10, lockYi: Math.round((tb - nb) / 1e4 * 100) / 100, win: prevs.length };
+}
+
 function buildBrief(days, arc) {
   const d = days[days.length - 1] || {};
   const p = days[days.length - 2] || {};
@@ -190,15 +211,26 @@ function buildBrief(days, arc) {
   if (seats && seats.cover) {
     const dirTxt2 = (v) => v > 0 ? '净买 +' + num(v, 2) : v < 0 ? '净卖 ' + num(v, 2) : '持平';
     const instN = seats.inst_buy - seats.inst_sell, northN = seats.north_buy - seats.north_sell, hotN = seats.hot_buy - seats.hot_sell;
-    const conc = (seats.conc_top || []).length ? `；买方集中度（前三席位）: ${seats.conc_top.map((c) => `${c[0]} ${c[1]}%`).join('、')}` : '';
+    // 市场级买方头部3席位集中度（规格：>50% 高度集中 / 30~50% 中等 / <30% 分散）
+    const b3 = seats.buy_top3_pct;
+    const b3Txt = b3 != null ? `；买方头部3席位集中度 <b>${b3}%</b>（${b3 > 50 ? '高度集中——爆发力强，一日游风险高' : b3 >= 30 ? '中等' : '分散——持续性更好'}）` : '';
+    const conc = (seats.conc_top || []).length ? `；个股买方前三集中度TOP: ${seats.conc_top.map((c) => `${c[0]} ${c[1]}%`).join('、')}` : '';
     const totSell = seats.hot_sell + seats.inst_sell + seats.north_sell;
     let opp = '';
     if (totSell > 0) {
       const parts = [['游资', seats.hot_sell], ['机构', seats.inst_sell], ['北向', seats.north_sell]].sort((a, b) => b[1] - a[1]);
       opp = `；对手盘: 卖方以${parts[0][0]}为主（游资 ${num(seats.hot_sell, 1)} / 机构 ${num(seats.inst_sell, 1)} / 北向 ${num(seats.north_sell, 1)} 亿）`;
+      // 抛压预警（规格：机构+北向合计净卖出 >5亿 = 高抛压预警）
+      const instNorthNet = instN + northN;
+      if (instNorthNet < -5) opp += ` <span class="bf-warn">⚠ 机构+北向合计净卖 ${num(-instNorthNet, 2)} 亿，高抛压预警</span>`;
     }
-    seatLines = li(`席位拆分: 机构${dirTxt2(instN)} / 北向${dirTxt2(northN)} / 游资${dirTxt2(hotN)} 亿（席位覆盖 ${seats.cover}%）${conc}${opp}`);
+    seatLines = li(`席位拆分: 机构${dirTxt2(instN)} / 北向${dirTxt2(northN)} / 游资${dirTxt2(hotN)} 亿（席位覆盖 ${seats.cover}%）${b3Txt}${conc}${opp}`);
   }
+  // 锁仓/新进资金占比 + 主线题材龙虎资金占比（规格阈值）
+  const lock = calcLockNew(days);
+  const lockLine = lock ? li(`锁仓与资金留存（近${lock.win + 1}日连续上榜样本 ${lock.n} 只）: 锁仓金额 ${num(lock.lockYi, 2)} 亿，新进资金占当日买入 <b>${lock.pct}%</b>——${lock.pct > 70 ? '短线脉冲，兑现风险高' : lock.pct >= 50 ? '中等' : '锁仓偏好强，持续性更好'}`) : '';
+  const mt = s.main_theme;
+  const mtLine = (mt && mt.tot_yi > 0 && mt.pct != null) ? li(`资金-题材联动: 主线题材（${mt.name}）龙虎净买 ${mt.main_yi >= 0 ? '+' : ''}${num(mt.main_yi, 2)} 亿，占全部龙虎净买 <b>${mt.pct}%</b>——${mt.pct >= 60 ? '资金聚焦主线' : mt.pct >= 40 ? '资金分化' : '资金散乱，主线弱化'}`) : '';
   const sec2 = [
     li(`近5日净买（亿）: ${netTxt}`),
     totAmt > 0 ? li(`上榜总成交 ${num(totAmt, 0)} 亿，净买率 <b>${num(nbRate, 1)}%</b>（${rateTxt}）；近3日滚动净买 ${roll3Sum >= 0 ? '+' : ''}${num(roll3Sum)} 亿`) : '',
@@ -207,6 +239,8 @@ function buildBrief(days, arc) {
     newStocks.length ? li(`<span class="bf-warn">⚠ 备注：总龙虎榜净额含新股${newStocks.map((l) => l.name).join('、')}，主线资金需剔除该标的单独评估，规避净额虚高误判</span>`) : '',
     topBuy.length ? li('净买头部: ' + topBuy.join('、')) : '',
     seatLines,
+    lockLine,
+    mtLine,
     divs.length ? li(`<span class="bf-warn">背离校验：${divs.join('；')}</span>`) : '',
   ].join('');
 
@@ -279,9 +313,13 @@ function buildBrief(days, arc) {
   if (Number.isFinite(mainNet)) watch.push(`剔除新股后的主线净买（今日 ${mainNet >= 0 ? '+' : ''}${num(mainNet, 2)} 亿）能否维持正值`);
   const mainTop = aggr.filter((l) => l.net_buy_wan > 0 && !isNewStock(l)).slice(0, 2).map((l) => l.name);
   if (mainTop.length) watch.push(`头部主线标的（${mainTop.join('、')}）是否出现大额兑现`);
+  if (nbRate != null) watch.push(`龙虎榜净买率是否维持在 4% 以上（今日 ${num(nbRate, 1)}%），买方集中度是否出现极端抬升`);
+  if (seats && seats.cover) watch.push('卖方是否出现机构/北向集中大额砸盘（合计净卖 >5 亿为预警线）');
+  if (lock) watch.push(`头部标的资金留存: 新进资金（今日占比 ${lock.pct}%）是否大规模兑现`);
+  if (mt && mt.pct != null) watch.push(`主线题材龙虎资金占比是否维持在 60% 以上（今日 ${mt.pct}%）`);
   const sec6 = li(`<b>${verdict}</b>`) + (watch.length ? `<div class="bf-h bf-h2">明日观测</div>` + watch.map((w) => li('· ' + w)).join('') : '');
 
-  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；净买为龙虎榜去重个股级口径；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
+  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；净买为龙虎榜去重个股级口径；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股龙虎净买÷全榜单龙虎净买；席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
 
   return seg('① 情绪定位', sec1) + seg('② 资金面（龙虎榜）', sec2) +
     seg('③ 盈亏效应', sec3) + seg('④ 广度与量能', sec4) +

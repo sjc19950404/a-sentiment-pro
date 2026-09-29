@@ -345,9 +345,12 @@ async function fetchSeatRows(reportName, date, code, sortCol) {
 }
 
 // 抓全部榜单股的席位明细并聚合。cover=成功覆盖率（%）；席位明细分批发布，未发布视作无数据
+// 附加: buy_top3_pct=全市场买方头部3席位集中度（前3席位买入÷全部买方买入）; detail=逐票买方席位明细(万元)，供锁仓/新进资金跨日比对
 export async function fetchSeats(date, aggr) {
-  const agg = { inst_buy: 0, inst_sell: 0, north_buy: 0, north_sell: 0, hot_buy: 0, hot_sell: 0, cover: 0, conc_top: [] };
+  const agg = { inst_buy: 0, inst_sell: 0, north_buy: 0, north_sell: 0, hot_buy: 0, hot_sell: 0, cover: 0, conc_top: [], buy_top3_pct: null, detail: {} };
   const concAll = [];
+  const seatBuy = {}; // 席位名 -> 买入合计（元），全市场跨票聚合
+  let buyAll = 0;
   let got = 0;
   for (const a of aggr) {
     const [buyRows, sellRows] = await Promise.all([
@@ -356,7 +359,12 @@ export async function fetchSeats(date, aggr) {
     ]);
     if (buyRows == null && sellRows == null) continue;
     got++;
-    for (const r of buyRows || []) agg[classifySeat(r.OPERATEDEPT_NAME) + '_buy'] += (r.BUY || 0) / 1e8;
+    for (const r of buyRows || []) {
+      agg[classifySeat(r.OPERATEDEPT_NAME) + '_buy'] += (r.BUY || 0) / 1e8;
+      const nm = String(r.OPERATEDEPT_NAME || ''), buy = r.BUY || 0;
+      seatBuy[nm] = (seatBuy[nm] || 0) + buy;
+      buyAll += buy;
+    }
     for (const r of sellRows || []) agg[classifySeat(r.OPERATEDEPT_NAME) + '_sell'] += (r.SELL || 0) / 1e8;
     // 买方集中度：前三席位买入占该票榜上买入的比重
     if (buyRows && buyRows.length >= 3) {
@@ -364,10 +372,18 @@ export async function fetchSeats(date, aggr) {
       const tot = buys.reduce((x, y) => x + y, 0);
       if (tot > 0) concAll.push([a.name, r1(buys.slice(0, 3).reduce((x, y) => x + y, 0) / tot * 100)]);
     }
+    // 逐票买方席位明细（[席位名, 买入万元]）：锁仓/新进资金口径原料
+    if (buyRows && buyRows.length) {
+      agg.detail[a.code] = buyRows.map((r) => [String(r.OPERATEDEPT_NAME || ''), Math.round((r.BUY || 0) / 1e4)]);
+    }
     await sleep(120);
   }
   agg.cover = aggr.length ? r2((got / aggr.length) * 100) : 0;
   agg.conc_top = concAll.sort((x, y) => y[1] - x[1]).slice(0, 5);
+  if (buyAll > 0) {
+    const tops = Object.entries(seatBuy).sort((x, y) => y[1] - x[1]).slice(0, 3);
+    agg.buy_top3_pct = r1(tops.reduce((s, [, v]) => s + v, 0) / buyAll * 100);
+  }
   for (const k of ['inst_buy', 'inst_sell', 'north_buy', 'north_sell', 'hot_buy', 'hot_sell']) agg[k] = r2(agg[k]);
   return agg;
 }
