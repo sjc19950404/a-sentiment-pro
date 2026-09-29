@@ -1,10 +1,11 @@
 {
   "meta": {
-    "generatedAt": "2026-09-29T14:01:03.916Z",
+    "generatedAt": "2026-09-29T15:13:48.079Z",
     "formulaVersion": "v5.0-pro",
     "source": "live",
     "tradeDate": "2026-09-29",
-    "stale": true
+    "stale": true,
+    "note": "breadth 手工回填自 21:33 档（东财接口晚间间歇故障），情绪已离线重算"
   },
   "all_days": [
     {
@@ -93866,9 +93867,9 @@
         "net_total_yi": 15.53,
         "net_pos": 42,
         "net_neg": 24,
-        "up_count": null,
-        "down_count": null,
-        "flat_count": null,
+        "up_count": 3315,
+        "down_count": 1821,
+        "flat_count": 152,
         "breadth_scope": "沪深两市A股（不含北交所/ST口径与各平台统计或有出入）",
         "hot_count": 57,
         "topic_kinds": 153,
@@ -95617,9 +95618,9 @@
         "创业板指": 0.09
       },
       "emotion": {
-        "value": 76.7,
+        "value": 76.8,
         "s_net": 99.8,
-        "s_pos": 63.6,
+        "s_pos": 64.5,
         "s_brd": 80,
         "s_hot": 85.1,
         "s_zdt": 85.1,
@@ -95627,7 +95628,7 @@
         "s_amt": 29.2,
         "factors": {
           "s_net": 99.8,
-          "s_pos": 63.6,
+          "s_pos": 64.5,
           "s_brd": 80,
           "s_hot": 85.1,
           "s_zdt": 85.1,
@@ -96742,9 +96743,9 @@
       ]
     },
     "latestEmotion": {
-      "value": 76.7,
+      "value": 76.8,
       "s_net": 99.8,
-      "s_pos": 63.6,
+      "s_pos": 64.5,
       "s_brd": 80,
       "s_hot": 85.1,
       "s_zdt": 85.1,
@@ -96752,7 +96753,7 @@
       "s_amt": 29.2,
       "factors": {
         "s_net": 99.8,
-        "s_pos": 63.6,
+        "s_pos": 64.5,
         "s_brd": 80,
         "s_hot": 85.1,
         "s_zdt": 85.1,
