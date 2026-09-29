@@ -243,31 +243,62 @@ function renderBrief(days, arc) {
   $('briefBody').innerHTML = buildBrief(days, arc);
 }
 
-async function main() {
+let lastFp = '';
+
+function fingerprint(arc) {
+  return [(arc.meta && arc.meta.generatedAt) || '', (arc.signals && arc.signals.tradeDate) || '',
+    (arc.all_days || []).length, (arc.all_days || []).slice(-1)[0]?.emotion?.value ?? ''].join('|');
+}
+
+function renderAll(arc) {
+  const days = arc.all_days || [];
+  const latest = days[days.length - 1] || {};
+  const meta = arc.meta || {};
+
+  $('tradeDate').textContent = arc.signals?.tradeDate || latest.trade_date || '--';
+  const tag = $('sourceTag');
+  tag.textContent = meta.source === 'live' ? 'LIVE' : (meta.stale ? 'STALE' : 'DEMO');
+  tag.className = 'tag ' + (meta.source === 'live' ? 'live' : meta.stale ? 'stale' : '');
+  $('genTime').textContent = meta.generatedAt ? '更新 ' + meta.generatedAt.replace('T', ' ').slice(0, 16) : '';
+
+  renderAlerts(meta);
+  renderEmotion(latest);
+  renderMomentum(arc.signals?.momentum || {});
+  renderTrend(days);
+  renderThemes(latest);
+  renderHot(latest);
+  renderBrief(days, arc);
+}
+
+async function checkUpdate(manual) {
+  const btn = $('refreshBtn'), st = $('refreshState');
+  if (manual && btn) { btn.classList.add('busy'); btn.textContent = '↻ 拉取中…'; }
   try {
-    const res = await fetch('./data/archive.json', { cache: 'no-store' });
+    const res = await fetch('./data/archive.json?_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const arc = await res.json();
-    const days = arc.all_days || [];
-    const latest = days[days.length - 1] || {};
-    const meta = arc.meta || {};
-
-    $('tradeDate').textContent = arc.signals?.tradeDate || latest.trade_date || '--';
-    const tag = $('sourceTag');
-    tag.textContent = meta.source === 'live' ? 'LIVE' : (meta.stale ? 'STALE' : 'DEMO');
-    tag.className = 'tag ' + (meta.source === 'live' ? 'live' : meta.stale ? 'stale' : '');
-    $('genTime').textContent = meta.generatedAt ? '更新 ' + meta.generatedAt.replace('T', ' ').slice(0, 16) : '';
-
-    renderAlerts(meta);
-    renderEmotion(latest);
-    renderMomentum(arc.signals?.momentum || {});
-    renderTrend(days);
-    renderThemes(latest);
-    renderHot(latest);
-    renderBrief(days, arc);
+    const fp = fingerprint(arc);
+    const changed = lastFp !== '' && fp !== lastFp;
+    const first = lastFp === '';
+    renderAll(arc); // 先渲染，成功才更新指纹——渲染失败下次轮询自动重试
+    lastFp = fp;
+    const hhmm = new Date().toTimeString().slice(0, 5);
+    if (st) {
+      if (changed) { st.textContent = hhmm + ' 数据已更新'; st.className = 'ok'; }
+      else if (manual && !first) { st.textContent = hhmm + ' 已是最新'; st.className = 'ok'; }
+      else { st.textContent = ''; st.className = ''; }
+    }
   } catch (e) {
-    $('alerts').innerHTML = `<div class="alert">⚠ 加载失败：${e.message}。请确认 data/archive.json 已生成并部署。</div>`;
+    if (lastFp === '') {
+      $('alerts').innerHTML = `<div class="alert">⚠ 加载失败：${e.message}。请确认 data/archive.json 已生成并部署。</div>`;
+    }
+    if (st && manual) { st.textContent = '刷新失败: ' + e.message; st.className = 'err'; }
+  } finally {
+    if (btn) { btn.classList.remove('busy'); btn.textContent = '↻ 刷新'; }
   }
 }
 
-main();
+const POLL_MS = 5 * 60 * 1000; // 每 5 分钟自动检查一次云端档是否更新
+checkUpdate(false);
+setInterval(() => checkUpdate(false), POLL_MS);
+$('refreshBtn').addEventListener('click', () => checkUpdate(true));

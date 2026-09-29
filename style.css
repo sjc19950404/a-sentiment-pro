@@ -8,6 +8,12 @@ body { margin: 0; background: var(--bg); color: var(--txt); font-family: -apple-
 .brand { font-size: 18px; font-weight: 700; }
 .ver { color: var(--acc); font-size: 12px; border: 1px solid var(--acc); border-radius: 4px; padding: 1px 5px; margin-left: 4px; }
 .meta { display: flex; gap: 12px; align-items: center; font-size: 13px; }
+#refreshBtn { background: var(--card); color: var(--acc); border: 1px solid var(--line); border-radius: 6px; padding: 3px 10px; font-size: 12px; cursor: pointer; }
+#refreshBtn:hover { border-color: var(--acc); }
+#refreshBtn.busy { opacity: 0.6; pointer-events: none; }
+#refreshState { font-size: 11px; }
+#refreshState.ok { color: var(--down); }
+#refreshState.err { color: var(--up); }
 .muted { color: var(--muted); }
 .tag { padding: 1px 7px; border-radius: 10px; background: var(--line); font-size: 11px; }
 .tag.live { background: #1b3a2a; color: var(--down); }
