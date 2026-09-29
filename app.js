@@ -103,6 +103,9 @@ function renderHot(latest) {
 }
 
 // ── 研判报告：规则引擎，全部由当档数据推导，无手写文案 ──
+// 新股/独立标的：上市首5日无涨跌幅限制（东财榜单诱因原话）
+const isNewStock = (l) => (l.reasons || [l.reason || '']).some((r) => String(r).includes('无价格涨跌幅限制'));
+
 function buildBrief(days, arc) {
   const d = days[days.length - 1] || {};
   const p = days[days.length - 2] || {};
@@ -155,13 +158,39 @@ function buildBrief(days, arc) {
     else if (cur > 0) netVerdict = '净买连续为正，进攻意愿延续';
     else netVerdict = '净买连续为负，观望/出货氛围';
   }
-  const topBuy = (d.lhb_aggr || []).slice(0, 3)
-    .filter((l) => l.net_buy_wan > 0)
-    .map((l) => `${l.name} +${num(l.net_buy_wan / 1e4, 2)}亿`);
+  const topBuy = (d.lhb_aggr || []).filter((l) => l.net_buy_wan > 0).slice(0, 3)
+    .map((l) => `${l.name} +${num(l.net_buy_wan / 1e4, 2)}亿${isNewStock(l) ? '<span class="bf-warn">（独立新股，非主线）</span>' : ''}`);
+  // 体量/净买率：净额必须对照上榜成交额看强度
+  const lhbRows = d.lhb || [];
+  const totAmt = lhbRows.reduce((a, l) => a + (l.buy_wan || 0) + (l.sell_wan || 0), 0) / 1e4;
+  const curNet = nets[nets.length - 1];
+  const nbRate = (totAmt > 0 && curNet != null) ? curNet / totAmt * 100 : null;
+  let rateTxt = '';
+  if (nbRate != null) {
+    const ab = Math.abs(nbRate);
+    rateTxt = ab >= 8 ? '强进攻' : ab >= 4 ? '中等力度' : '脉冲级，可信度低';
+  }
+  // 3日滚动净额（与5日并行，抓资金转向拐点）
+  const roll3Sum = nets.slice(-3).reduce((a, b) => a + b, 0);
+  // 新股/独立标的识别与扰动过滤（诱因=无价格涨跌幅限制，上市5日内）
+  const aggr = d.lhb_aggr || [];
+  const newStocks = aggr.filter(isNewStock);
+  const totNetAggr = aggr.reduce((a, l) => a + (l.net_buy_wan || 0), 0) / 1e4;
+  const newNet = newStocks.reduce((a, l) => a + (l.net_buy_wan || 0), 0) / 1e4;
+  const mainNet = totNetAggr - newNet;
+  const disturb = curNet != null && curNet > 0 && totNetAggr > 0 && (newNet / totNetAggr) * 100 > 25;
+  // 资金-行情背离校验（有背离才写）
+  const divs = [];
+  if (curNet > 0 && s.amount_yi != null && ps.amount_yi != null && s.amount_yi < ps.amount_yi * 0.92) divs.push('两市缩量下净流入——资金集中抱团，扩散不足');
+  if (curNet > 0 && s.up_count != null && s.down_count != null && s.up_count < s.down_count) divs.push('净流入但红盘家数占少数——指数层面承接偏弱');
+  if (curNet > 0 && s.ind_up != null && s.ind_count && s.ind_up / s.ind_count < 0.4) divs.push('净流入但行业红盘不足四成——个股分化明显');
   const sec2 = [
     li(`近5日净买（亿）: ${netTxt}`),
+    totAmt > 0 ? li(`上榜总成交 ${num(totAmt, 0)} 亿，净买率 <b>${num(nbRate, 1)}%</b>（${rateTxt}）；近3日滚动净买 ${roll3Sum >= 0 ? '+' : ''}${num(roll3Sum)} 亿`) : '',
     netVerdict ? li(netVerdict + `（结构 ${s.net_pos ?? '—'} 买 / ${s.net_neg ?? '—'} 卖）`) : '',
+    (newStocks.length && totNetAggr > 0) ? li(`新股/独立标的（${newStocks.map((l) => l.name).join('、')}）净买 +${num(newNet, 2)} 亿，占当日净买 ${(newNet / totNetAggr * 100).toFixed(0)}%${disturb ? '，<span class="bf-warn">超 25% 扰动线——主线资金强度需剔除观察</span>' : ''}；剔除后主线净买 ${mainNet >= 0 ? '+' : ''}${num(mainNet, 2)} 亿`) : '',
     topBuy.length ? li('净买头部: ' + topBuy.join('、')) : '',
+    divs.length ? li(`<span class="bf-warn">背离校验：${divs.join('；')}</span>`) : '',
   ].join('');
 
   // 3. 盈亏效应（涨跌停结构）
@@ -230,9 +259,12 @@ function buildBrief(days, arc) {
   if (netsC.length) watch.push(`净买能否守住${netsC[netsC.length - 1] > 0 ? '正' : '零'}轴（0 亿上方）`);
   if (mlb != null) watch.push(`${mlb} 板高标能否晋级（断板无替补 = 空间坍塌）`);
   if (freshN) watch.push(`今日 ${freshN} 个新晋题材明日存活率（≥50% = 聚焦，<30% = 一日游）`);
+  if (Number.isFinite(mainNet)) watch.push(`剔除新股后的主线净买（今日 ${mainNet >= 0 ? '+' : ''}${num(mainNet, 2)} 亿）能否维持正值`);
+  const mainTop = aggr.filter((l) => l.net_buy_wan > 0 && !isNewStock(l)).slice(0, 2).map((l) => l.name);
+  if (mainTop.length) watch.push(`头部主线标的（${mainTop.join('、')}）是否出现大额兑现`);
   const sec6 = li(`<b>${verdict}</b>`) + (watch.length ? `<div class="bf-h bf-h2">明日观测</div>` + watch.map((w) => li('· ' + w)).join('') : '');
 
-  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；净买为龙虎榜去重个股级口径；情绪分七因子详见左上角因子条。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
+  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；净买为龙虎榜去重个股级口径；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；净买率=净买/上榜总成交。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
 
   return seg('① 情绪定位', sec1) + seg('② 资金面（龙虎榜）', sec2) +
     seg('③ 盈亏效应', sec3) + seg('④ 广度与量能', sec4) +
