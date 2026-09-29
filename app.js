@@ -204,6 +204,7 @@ function buildBrief(days, arc) {
     totAmt > 0 ? li(`上榜总成交 ${num(totAmt, 0)} 亿，净买率 <b>${num(nbRate, 1)}%</b>（${rateTxt}）；近3日滚动净买 ${roll3Sum >= 0 ? '+' : ''}${num(roll3Sum)} 亿`) : '',
     netVerdict ? li(netVerdict + `（结构 ${s.net_pos ?? '—'} 买 / ${s.net_neg ?? '—'} 卖）`) : '',
     (newStocks.length && totNetAggr > 0) ? li(`新股/独立标的（${newStocks.map((l) => l.name).join('、')}）净买 +${num(newNet, 2)} 亿，占当日净买 ${(newNet / totNetAggr * 100).toFixed(0)}%${disturb ? '，<span class="bf-warn">超 25% 扰动线——主线资金强度需剔除观察</span>' : ''}；剔除后主线净买 ${mainNet >= 0 ? '+' : ''}${num(mainNet, 2)} 亿`) : '',
+    newStocks.length ? li(`<span class="bf-warn">⚠ 备注：总龙虎榜净额含新股${newStocks.map((l) => l.name).join('、')}，主线资金需剔除该标的单独评估，规避净额虚高误判</span>`) : '',
     topBuy.length ? li('净买头部: ' + topBuy.join('、')) : '',
     seatLines,
     divs.length ? li(`<span class="bf-warn">背离校验：${divs.join('；')}</span>`) : '',
