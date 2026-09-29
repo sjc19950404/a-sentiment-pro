@@ -183,7 +183,7 @@ function buildBrief(days, arc) {
   const sec4 = [
     (up != null && dn != null) ? li(`涨跌家数 ${up} / ${dn}（沪深口径），红盘占比 ${(up / (up + dn) * 100).toFixed(0)}%`) : '',
     s.ind_count ? li(`行业红盘 ${s.ind_up ?? '—'}/${s.ind_count}，最强 ${s.top_industry || '—'} / 最弱 ${s.bottom_industry || '—'}`) : '',
-    (amt != null && pamt != null && pamt > 0) ? li(`两市额 ${num(amt, 0)} 亿（${arrow(amt, pamt)}），量能因子 ${f.s_amt ?? '—'}：${f.s_amt >= 60 ? '放量' : f.s_amt >= 45 ? '平量' : '缩量'}`) : '',
+    (amt != null && pamt != null && pamt > 0) ? li(`两市成交额 ${num(amt, 0)} 亿，较前一日${amt >= pamt ? '放量' : '缩量'} ${num(Math.abs(amt - pamt), 0)} 亿，量能因子 ${f.s_amt ?? '—'}：${f.s_amt >= 60 ? '放量' : f.s_amt >= 45 ? '平量' : '缩量'}`) : '',
   ].join('');
 
   // 5. 题材结构
