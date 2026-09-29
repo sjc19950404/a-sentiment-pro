@@ -322,7 +322,57 @@ export function applyLhb(day, lhbRaw) {
   return day;
 }
 
-function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amountMap, breadth) {
+// 源9: 东财席位明细（RPT_BILLBOARD_DAILYDETAILSBUY/SELL）→ 资金属性拆分/买方集中度
+// 分类: 机构专用=inst; 沪股通/深股通=north; 其余营业部=hot(游资)
+export function classifySeat(name) {
+  const s = String(name || '');
+  if (s.includes('机构专用')) return 'inst';
+  if (s.includes('沪股通') || s.includes('深股通')) return 'north';
+  return 'hot';
+}
+
+async function fetchSeatRows(reportName, date, code, sortCol) {
+  for (let att = 0; att < 2; att++) {
+    try {
+      const url = 'https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=' + reportName +
+        '&columns=ALL&filter=(TRADE_DATE%3D%27' + date + '%27)(SECURITY_CODE%3D%22' + code + '%22)' +
+        '&pageSize=50&pageNumber=1&sortColumns=' + sortCol + '&sortTypes=-1&source=WEB&client=WEB';
+      const j = await (await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://data.eastmoney.com/' } })).json();
+      return (j.result && j.result.data) || [];
+    } catch (e) { await sleep(400); }
+  }
+  return null; // 请求级失败（区别于"未发布"空数组）
+}
+
+// 抓全部榜单股的席位明细并聚合。cover=成功覆盖率（%）；席位明细分批发布，未发布视作无数据
+export async function fetchSeats(date, aggr) {
+  const agg = { inst_buy: 0, inst_sell: 0, north_buy: 0, north_sell: 0, hot_buy: 0, hot_sell: 0, cover: 0, conc_top: [] };
+  const concAll = [];
+  let got = 0;
+  for (const a of aggr) {
+    const [buyRows, sellRows] = await Promise.all([
+      fetchSeatRows('RPT_BILLBOARD_DAILYDETAILSBUY', date, a.code, 'BUY'),
+      fetchSeatRows('RPT_BILLBOARD_DAILYDETAILSSELL', date, a.code, 'SELL'),
+    ]);
+    if (buyRows == null && sellRows == null) continue;
+    got++;
+    for (const r of buyRows || []) agg[classifySeat(r.OPERATEDEPT_NAME) + '_buy'] += (r.BUY || 0) / 1e8;
+    for (const r of sellRows || []) agg[classifySeat(r.OPERATEDEPT_NAME) + '_sell'] += (r.SELL || 0) / 1e8;
+    // 买方集中度：前三席位买入占该票榜上买入的比重
+    if (buyRows && buyRows.length >= 3) {
+      const buys = buyRows.map((r) => r.BUY || 0).sort((x, y) => y - x);
+      const tot = buys.reduce((x, y) => x + y, 0);
+      if (tot > 0) concAll.push([a.name, r1(buys.slice(0, 3).reduce((x, y) => x + y, 0) / tot * 100)]);
+    }
+    await sleep(120);
+  }
+  agg.cover = aggr.length ? r2((got / aggr.length) * 100) : 0;
+  agg.conc_top = concAll.sort((x, y) => y[1] - x[1]).slice(0, 5);
+  for (const k of ['inst_buy', 'inst_sell', 'north_buy', 'north_sell', 'hot_buy', 'hot_sell']) agg[k] = r2(agg[k]);
+  return agg;
+}
+
+function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amountMap, breadth, seats) {
   const { lhb, lhb_aggr, net_total_yi, net_pos, net_neg } = buildLhbPart(lhbRaw);
 
   const hot = hotRaw.map((x) => ({
@@ -379,6 +429,7 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
     zt_lb: pools ? (pools.zt_lb || null) : null,
     amount_yi,
   };
+  if (seats) summary.seats = seats;
   if (missing.length) summary._missing = missing;
 
   const emotion = {
@@ -427,7 +478,8 @@ export async function fetchLive() {
     if (fb && amountMap) { Object.assign(amountMap, fb); amountYi = fb[date.replace(/-/g, '')] || null; }
     else if (fb) amountYi = fb[date.replace(/-/g, '')] || null;
   }
-  const day = buildDay(date, lhbRaw, hotEnriched, industry, indexes, pools, amountYi, amountMap, breadth);
+  const day = buildDay(date, lhbRaw, hotEnriched, industry, indexes, pools, amountYi, amountMap, breadth,
+    await fetchSeats(date, buildLhbPart(lhbRaw).lhb_aggr.map((l) => ({ code: l.code, name: l.name, net_buy_wan: l.net_buy_wan }))));
   return { newDays: [day], tradeDate: date };
 }
 

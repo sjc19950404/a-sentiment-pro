@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { computeSentiment } from '../src/sentiment.js';
 import { validateArchive } from '../src/validate.js';
 import { ThemeDenoiser, computeMomentum } from '../src/themes.js';
+import { classifySeat } from '../src/sources.js';
 import { recalcAll } from '../src/pipeline.js';
 import { applyLhb } from '../src/sources.js';
 
@@ -112,4 +113,12 @@ test('applyLhb: 重抓数据刷进 day 原始层', () => {
   assert.equal(day.summary.lhb_count, 2);
   assert.equal(day.summary.net_total_yi, 0.5); // 去重口径：同票两榜取绝对值最大一笔 5e7 = 0.5 亿
   assert.equal(day.emotion.net_total_yi, 0.5);
+});
+
+test('seats: 席位分类', () => {
+  assert.equal(classifySeat('机构专用'), 'inst');
+  assert.equal(classifySeat('深股通专用'), 'north');
+  assert.equal(classifySeat('沪股通专用'), 'north');
+  assert.equal(classifySeat('国盛证券股份有限公司宁波桑田路证券营业部'), 'hot');
+  assert.equal(classifySeat(null), 'hot');
 });

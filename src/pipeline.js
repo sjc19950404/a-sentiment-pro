@@ -6,7 +6,7 @@ import config from './config.js';
 import { ThemeDenoiser, computeMomentum } from './themes.js';
 import { computeSentiment } from './sentiment.js';
 import { validateArchive } from './validate.js';
-import { fetchLive, recalcRanks, LhbNotPublishedError, applyLhb, fetchLhb } from './sources.js';
+import { fetchLive, recalcRanks, LhbNotPublishedError, applyLhb, fetchLhb, fetchSeats } from './sources.js';
 import { todayBeijing, isTradingDay } from './util.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -147,10 +147,17 @@ export async function runLive() {
   if (!history.length) {
     history = runOffline(path.join(ROOT, 'snapshot.html')).all_days || [];
   }
-  // 合并新交易日（已存在则替换）
+  // 合并新交易日（已存在则替换；席位明细取覆盖率高的那份，防新抓批次倒退）
   for (const nd of newDays) {
     const i = history.findIndex((d) => d.trade_date === nd.trade_date);
-    if (i >= 0) history[i] = nd; else history.push(nd);
+    if (i >= 0) {
+      const oldSeats = history[i].summary?.seats, newSeats = nd.summary?.seats;
+      if (oldSeats && (!newSeats || oldSeats.cover > newSeats.cover)) {
+        nd.summary = nd.summary || {};
+        nd.summary.seats = oldSeats;
+      }
+      history[i] = nd;
+    } else history.push(nd);
   }
   history.sort((a, b) => (a.trade_date < b.trade_date ? -1 : 1));
 
@@ -164,6 +171,20 @@ export async function runLive() {
     } catch (e) {
       if (e instanceof LhbNotPublishedError) console.log('[refresh-lhb]', day.trade_date, '未公布，跳过');
       else console.error('[refresh-lhb]', day.trade_date, '失败:', e.message);
+    }
+    // 席位明细同样晚间分批发布：上一交易日覆盖率不满则补抓（取优）
+    if (Array.isArray(day.lhb_aggr) && day.lhb_aggr.length) {
+      const oldCover = day.summary?.seats?.cover ?? 0;
+      if (oldCover < 100) {
+        try {
+          const seats = await fetchSeats(day.trade_date, day.lhb_aggr.map((l) => ({ code: l.code, name: l.name, net_buy_wan: l.net_buy_wan })));
+          if (seats.cover > oldCover) {
+            day.summary = day.summary || {};
+            day.summary.seats = seats;
+            console.log('[refresh-seats]', day.trade_date, '补抓席位 cover', oldCover, '→', seats.cover + '%');
+          }
+        } catch (e) { console.error('[refresh-seats]', day.trade_date, '失败:', e.message); }
+      }
     }
   }
 
