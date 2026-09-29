@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-09-29T12:22:52.872Z",
+    "generatedAt": "2026-09-29T13:11:41.858Z",
     "formulaVersion": "v5.0-pro",
     "source": "live",
     "tradeDate": "2026-09-29"
@@ -91921,10 +91921,6 @@
           "change_pct": 0.99
         },
         {
-          "name": "建筑材料",
-          "change_pct": 0.99
-        },
-        {
           "name": "通信设备",
           "change_pct": 0.98
         },
@@ -91957,16 +91953,8 @@
           "change_pct": 0.85
         },
         {
-          "name": "其他电源设备",
-          "change_pct": 0.79
-        },
-        {
           "name": "互联网电商",
           "change_pct": 0.74
-        },
-        {
-          "name": "物流",
-          "change_pct": 0.72
         },
         {
           "name": "汽车服务及其他",
@@ -92041,10 +92029,6 @@
           "change_pct": 0.36
         },
         {
-          "name": "银行",
-          "change_pct": 0.36
-        },
-        {
           "name": "服装家纺",
           "change_pct": 0.35
         },
@@ -92110,10 +92094,6 @@
         },
         {
           "name": "化学纤维",
-          "change_pct": 0.11
-        },
-        {
-          "name": "通用设备",
           "change_pct": 0.11
         },
         {
@@ -92201,10 +92181,6 @@
           "change_pct": -0.67
         },
         {
-          "name": "油气开采及服务",
-          "change_pct": -0.74
-        },
-        {
           "name": "种植业与林业",
           "change_pct": -0.93
         }
@@ -92215,15 +92191,15 @@
         "net_total_yi": 15.53,
         "net_pos": 42,
         "net_neg": 24,
-        "up_count": 3315,
-        "down_count": 1821,
-        "flat_count": 152,
+        "up_count": null,
+        "down_count": null,
+        "flat_count": null,
         "breadth_scope": "沪深两市A股（不含北交所/ST口径与各平台统计或有出入）",
         "hot_count": 57,
         "topic_kinds": 153,
-        "ind_count": 90,
-        "ind_up": 71,
-        "ind_down": 19,
+        "ind_count": 84,
+        "ind_up": 66,
+        "ind_down": 18,
         "top_industry": "元件",
         "bottom_industry": "种植业与林业",
         "zt_count": 57,
@@ -92358,18 +92334,18 @@
         "创业板指": 0.09
       },
       "emotion": {
-        "value": 76.6,
+        "value": 76.5,
         "s_net": 99.8,
-        "s_pos": 64.5,
-        "s_brd": 78.9,
+        "s_pos": 63.6,
+        "s_brd": 78.6,
         "s_hot": 85.1,
         "s_zdt": 85.1,
         "s_zbl": 87.7,
         "s_amt": 29.2,
         "factors": {
           "s_net": 99.8,
-          "s_pos": 64.5,
-          "s_brd": 78.9,
+          "s_pos": 63.6,
+          "s_brd": 78.6,
           "s_hot": 85.1,
           "s_zdt": 85.1,
           "s_zbl": 87.7,
@@ -92377,13 +92353,13 @@
         },
         "net_total_yi": 15.53,
         "pos_ratio": 63.6,
-        "up_ratio": 78.9,
+        "up_ratio": 78.6,
         "hot_count": 57,
         "topic_conc": 12.3,
         "top_topic": "固态电池",
         "pct_rank": 83.9,
         "net_pct_rank": 45.2,
-        "industryCount": 90,
+        "industryCount": 84,
         "imputedRatio": 0,
         "missing": []
       },
@@ -93483,18 +93459,18 @@
       ]
     },
     "latestEmotion": {
-      "value": 76.6,
+      "value": 76.5,
       "s_net": 99.8,
-      "s_pos": 64.5,
-      "s_brd": 78.9,
+      "s_pos": 63.6,
+      "s_brd": 78.6,
       "s_hot": 85.1,
       "s_zdt": 85.1,
       "s_zbl": 87.7,
       "s_amt": 29.2,
       "factors": {
         "s_net": 99.8,
-        "s_pos": 64.5,
-        "s_brd": 78.9,
+        "s_pos": 63.6,
+        "s_brd": 78.6,
         "s_hot": 85.1,
         "s_zdt": 85.1,
         "s_zbl": 87.7,
@@ -93502,13 +93478,13 @@
       },
       "net_total_yi": 15.53,
       "pos_ratio": 63.6,
-      "up_ratio": 78.9,
+      "up_ratio": 78.6,
       "hot_count": 57,
       "topic_conc": 12.3,
       "top_topic": "固态电池",
       "pct_rank": 83.9,
       "net_pct_rank": 45.2,
-      "industryCount": 90,
+      "industryCount": 84,
       "imputedRatio": 0,
       "missing": []
     },
