@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-09-29T12:15:51.094Z",
+    "generatedAt": "2026-09-29T12:22:52.872Z",
     "formulaVersion": "v5.0-pro",
     "source": "live",
     "tradeDate": "2026-09-29"
@@ -52317,7 +52317,7 @@
         "hot_count": 73,
         "topic_conc": 8.2,
         "top_topic": "AI应用",
-        "pct_rank": 83.9,
+        "pct_rank": 87.1,
         "net_pct_rank": 41.9,
         "industryCount": 90,
         "factors": {
@@ -91901,6 +91901,10 @@
           "change_pct": 1.28
         },
         {
+          "name": "建筑装饰",
+          "change_pct": 1.17
+        },
+        {
           "name": "计算机设备",
           "change_pct": 1.16
         },
@@ -91994,6 +91998,10 @@
         },
         {
           "name": "多元金融",
+          "change_pct": 0.53
+        },
+        {
+          "name": "美容护理",
           "change_pct": 0.53
         },
         {
@@ -92213,8 +92221,8 @@
         "breadth_scope": "沪深两市A股（不含北交所/ST口径与各平台统计或有出入）",
         "hot_count": 57,
         "topic_kinds": 153,
-        "ind_count": 88,
-        "ind_up": 69,
+        "ind_count": 90,
+        "ind_up": 71,
         "ind_down": 19,
         "top_industry": "元件",
         "bottom_industry": "种植业与林业",
@@ -92342,10 +92350,7 @@
           "002813": 1,
           "002303": 1
         },
-        "amount_yi": null,
-        "_missing": [
-          "amount"
-        ]
+        "amount_yi": 14092
       },
       "indexes": {
         "上证指数": 0.18,
@@ -92353,36 +92358,34 @@
         "创业板指": 0.09
       },
       "emotion": {
-        "value": 79.6,
+        "value": 76.6,
         "s_net": 99.8,
         "s_pos": 64.5,
-        "s_brd": 78.4,
+        "s_brd": 78.9,
         "s_hot": 85.1,
         "s_zdt": 85.1,
         "s_zbl": 87.7,
-        "s_amt": 50,
+        "s_amt": 29.2,
         "factors": {
           "s_net": 99.8,
           "s_pos": 64.5,
-          "s_brd": 78.4,
+          "s_brd": 78.9,
           "s_hot": 85.1,
           "s_zdt": 85.1,
           "s_zbl": 87.7,
-          "s_amt": 50
+          "s_amt": 29.2
         },
         "net_total_yi": 15.53,
         "pos_ratio": 63.6,
-        "up_ratio": 78.4,
+        "up_ratio": 78.9,
         "hot_count": 57,
         "topic_conc": 12.3,
         "top_topic": "固态电池",
-        "pct_rank": 87.1,
+        "pct_rank": 83.9,
         "net_pct_rank": 45.2,
-        "industryCount": 88,
-        "imputedRatio": 0.14,
-        "missing": [
-          "s_amt15"
-        ]
+        "industryCount": 90,
+        "imputedRatio": 0,
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -93480,38 +93483,36 @@
       ]
     },
     "latestEmotion": {
-      "value": 79.6,
+      "value": 76.6,
       "s_net": 99.8,
       "s_pos": 64.5,
-      "s_brd": 78.4,
+      "s_brd": 78.9,
       "s_hot": 85.1,
       "s_zdt": 85.1,
       "s_zbl": 87.7,
-      "s_amt": 50,
+      "s_amt": 29.2,
       "factors": {
         "s_net": 99.8,
         "s_pos": 64.5,
-        "s_brd": 78.4,
+        "s_brd": 78.9,
         "s_hot": 85.1,
         "s_zdt": 85.1,
         "s_zbl": 87.7,
-        "s_amt": 50
+        "s_amt": 29.2
       },
       "net_total_yi": 15.53,
       "pos_ratio": 63.6,
-      "up_ratio": 78.4,
+      "up_ratio": 78.9,
       "hot_count": 57,
       "topic_conc": 12.3,
       "top_topic": "固态电池",
-      "pct_rank": 87.1,
+      "pct_rank": 83.9,
       "net_pct_rank": 45.2,
-      "industryCount": 88,
-      "imputedRatio": 0.14,
-      "missing": [
-        "s_amt15"
-      ]
+      "industryCount": 90,
+      "imputedRatio": 0,
+      "missing": []
     },
-    "imputedRatioLatest": 0.14,
+    "imputedRatioLatest": 0,
     "tradeDate": "2026-09-29"
   }
 }
