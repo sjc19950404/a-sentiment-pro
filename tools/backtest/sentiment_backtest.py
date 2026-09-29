@@ -67,39 +67,54 @@ def score(df: pd.DataFrame, w) -> pd.Series:
 def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
               panic: float = PANIC, overheat: float = OVERHEAT,
               max_pos: float = 1.0, stop_loss: float = 0.0,
-              ret: pd.Series = None) -> pd.Series:
+              ret: pd.Series = None, dd_trigger: float = 0.0) -> pd.Series:
     """收盘打分 → 次日仓位（T+1）。满仓 max_pos / 半仓 0.5*max_pos / 空仓 0。
     过热区(≥overheat)不清仓但禁止新建仓：对已有持仓保持，对空仓者保持空仓。
-    止损（stop_loss<0 启用，如 -0.08）：持仓期当日标的收盘跌幅 ≤ 止损线，次日强制清仓。"""
+    止损（stop_loss<0 启用，如 -0.08）：持仓期当日标的收盘跌幅 ≤ 止损线，次日强制清仓。
+    回撤动态降仓（dd_trigger<0 启用，如 -0.15）：以当日收盘回撤计——
+    回撤 ≥ |trigger| → 上限压至 0.4×max_pos；≥ 0.6×|trigger| → 0.7×max_pos；否则正常。
+    全部决策只用当日收盘已知信息（score[i]、ret[i]、截至 ret[i] 的净值），T+1 生效，无前视。"""
     pos = pd.Series(np.nan, index=s.index)
     held = False
     r = ret.values if ret is not None else None
+    eq = peak = 1.0
+    prev_target = 0.0
     for i, v in enumerate(s.values):
+        if r is not None:                      # 当日收盘：先结算昨日目标仓位的当日盈亏
+            eq *= (1.0 + prev_target * r[i])
+            peak = max(peak, eq)
+        if dd_trigger < 0 and r is not None:   # 回撤动态降仓（类凯利风控）
+            cur_dd = 1.0 - eq / peak
+            if cur_dd >= -dd_trigger:
+                cap = 0.4 * max_pos
+            elif cur_dd >= 0.6 * -dd_trigger:
+                cap = 0.7 * max_pos
+            else:
+                cap = max_pos
+        else:
+            cap = max_pos
         if stop_loss < 0 and held and r is not None and r[i] <= stop_loss:
             target = 0.0                           # 止损优先于信号：次日清仓
         elif v >= overheat:
-            target = max_pos if held else 0.0      # 只减仓不新建
+            target = cap if held else 0.0          # 只减仓不新建
         elif v >= lo:
-            target = max_pos
+            target = cap
         elif v > panic:
-            target = 0.5 * max_pos
+            target = 0.5 * cap
         else:
             target = 0.0
         held = target > 0 or (held and target > 0)
         pos.iloc[i] = target
+        prev_target = target
     return pos.shift(1).fillna(0.0)                # T+1 生效
 
 
 # ────────────────────────── 绩效计算 ──────────────────────────
-def perf(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
-         panic: float = PANIC, overheat: float = OVERHEAT,
-         max_pos: float = 1.0, stop_loss: float = 0.0) -> Perf:
-    ret = df["close"].pct_change().fillna(0.0)
-    pos = positions(score(df, w), hi, lo, panic, overheat, max_pos, stop_loss, ret)
-    strat = ret * pos
+def _metrics(strat: pd.Series, pos: pd.Series, opens: int) -> Perf:
+    """由策略日收益与仓位序列计算全部绩效指标（单标的与多标的组合共用）"""
     equity = (1 + strat).cumprod()
     total = equity.iloc[-1] - 1
-    n = len(df)
+    n = len(strat)
     annual = (1 + total) ** (ANN / n) - 1 if n > 0 and total > -1 else -1.0
     dd = (1 - equity / equity.cummax()).max()
     sd = strat.std(ddof=0)
@@ -110,14 +125,12 @@ def perf(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
     gain = strat[strat > 0].sum()
     loss = -strat[strat < 0].sum()
     pr = gain / loss if loss > 1e-12 else float("inf")
-    opens = int(((pos > 0) & (pos.shift(1) == 0)).sum())
     calmar = annual / float(dd) if dd > 1e-9 else 999.0
     neg = strat[strat < 0]
     sortino = (excess.mean() / neg.std(ddof=0) * math.sqrt(ANN)
                if len(neg) > 1 and neg.std(ddof=0) > 1e-12 else 999.0)
-    is_loss = (strat < 0).astype(int).values
-    mcl = run_len = 0
-    for x in is_loss:                              # 最大连续亏损天数
+    mcl = run_len = 0                              # 最大连续亏损天数（游程计数）
+    for x in (strat < 0).astype(int).values:
         run_len = run_len + 1 if x else 0
         mcl = max(mcl, run_len)
     return Perf(round(total, 4), round(annual, 4), round(float(dd), 4),
@@ -125,6 +138,51 @@ def perf(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
                 int((pos > 0).sum()), round(float((pos == 0).mean()), 4), opens,
                 round(calmar, 3) if calmar < 999 else 999, round(sortino, 3) if sortino < 999 else 999,
                 mcl)
+
+
+def perf(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
+         panic: float = PANIC, overheat: float = OVERHEAT,
+         max_pos: float = 1.0, stop_loss: float = 0.0, dd_trigger: float = 0.0) -> Perf:
+    ret = df["close"].pct_change().fillna(0.0)
+    pos = positions(score(df, w), hi, lo, panic, overheat, max_pos, stop_loss, ret, dd_trigger)
+    strat = ret * pos
+    opens = int(((pos > 0) & (pos.shift(1) == 0)).sum())
+    return _metrics(strat, pos, opens)
+
+
+def is_pool(df: pd.DataFrame) -> bool:
+    return "asset_id" in df.columns
+
+
+def pool_strat(df_pool: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
+               panic: float = PANIC, overheat: float = OVERHEAT,
+               max_pos: float = 1.0, stop_loss: float = 0.0,
+               dd_trigger: float = 0.0):
+    """多标的逐标的回测 → 等权合成组合 (strat, pos) 序列（按日期对齐，缺日跳过）"""
+    strats, poss, opens = [], [], 0
+    for _, g in df_pool.groupby("asset_id"):
+        g = g.sort_values("date")
+        ret = g["close"].pct_change().fillna(0.0)
+        p = positions(score(g, w), hi, lo, panic, overheat, max_pos, stop_loss, ret, dd_trigger)
+        strats.append(pd.Series((ret * p).values, index=g["date"].values))
+        poss.append(pd.Series(p.values, index=g["date"].values))
+        opens += int(((p > 0) & (p.shift(1) == 0)).sum())
+    strat = pd.concat(strats, axis=1).mean(axis=1).sort_index()   # 等权：日收益取均值
+    pos = pd.concat(poss, axis=1).mean(axis=1).sort_index()
+    return strat, pos, opens
+
+
+def perf_pool(df_pool: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
+              panic: float = PANIC, overheat: float = OVERHEAT,
+              max_pos: float = 1.0, stop_loss: float = 0.0, dd_trigger: float = 0.0) -> Perf:
+    strat, pos, opens = pool_strat(df_pool, w, hi, lo, panic, overheat,
+                                   max_pos, stop_loss, dd_trigger)
+    return _metrics(strat, pos, opens)
+
+
+def perf_auto(df: pd.DataFrame, w, **kw) -> Perf:
+    """单标的/多标的自动路由（CSV 含 asset_id 列即多标的等权轮动）"""
+    return perf_pool(df, w, **kw) if is_pool(df) else perf(df, w, **kw)
 
 
 def rank_key(p: Perf):
@@ -147,7 +205,7 @@ def weight_grid() -> list:
 
 
 def _grid_chunk(df, chunk):
-    return [{"w1": w[0], "w2": w[1], "w3": w[2], "w4": w[3], "w5": w[4], **asdict(perf(df, w))}
+    return [{"w1": w[0], "w2": w[1], "w3": w[2], "w4": w[3], "w5": w[4], **asdict(perf_auto(df, w))}
             for w in chunk]
 
 
@@ -172,7 +230,7 @@ def grid_search(df: pd.DataFrame, verbose=True, workers: int = None) -> pd.DataF
         rows = []
         for i, w in enumerate(grids):
             rows.append({"w1": w[0], "w2": w[1], "w3": w[2], "w4": w[3], "w5": w[4],
-                         **asdict(perf(df, w))})
+                         **asdict(perf_auto(df, w))})
             if verbose and (i + 1) % 500 == 0:
                 print(f"  grid {i + 1}/{len(grids)}")
     res = pd.DataFrame(rows)
@@ -185,7 +243,7 @@ def threshold_scan(df: pd.DataFrame, w) -> pd.DataFrame:
     rows = []
     for hi in range(20, 31):
         for lo in range(60, 71):
-            p = perf(df, w, hi=float(hi), lo=float(lo))
+            p = perf_auto(df, w, hi=float(hi), lo=float(lo))
             rows.append({"hi": hi, "lo": lo, **asdict(p)})
     res = pd.DataFrame(rows)
     res["_k"] = res.apply(lambda r: rank_key(Perf(**{k: r[k] for k in Perf.__dataclass_fields__})), axis=1)
@@ -202,7 +260,7 @@ def noise_test(df: pd.DataFrame, w, eps=5.0, n=200, seed=42) -> dict:
         noisy = df.copy()
         for c in ["f1", "f2", "f3", "f4", "f5"]:
             noisy[c] = np.clip(noisy[c] + rng.uniform(-eps, eps, len(noisy)), 0, 100)
-        p = perf(noisy, w)
+        p = perf_auto(noisy, w)
         dd.append(p.max_dd - base.max_dd)
         sh.append(p.sharpe - base.sharpe)
     return {"base": asdict(base),
@@ -213,7 +271,7 @@ def noise_test(df: pd.DataFrame, w, eps=5.0, n=200, seed=42) -> dict:
 
 def split_test(df: pd.DataFrame, w, train_frac=0.7) -> dict:
     k = int(len(df) * train_frac)
-    return {"train": asdict(perf(df.iloc[:k], w)), "valid": asdict(perf(df.iloc[k:], w))}
+    return {"train": asdict(perf_auto(df.iloc[:k], w)), "valid": asdict(perf_auto(df.iloc[k:], w))}
 
 
 # ────────────────────────── 滚动样本外验证 ──────────────────────────
@@ -242,7 +300,7 @@ def rolling_test(df: pd.DataFrame, w, train_window: int = 252, test_window: int 
             test_df = df.iloc[start:start + test_window]
         if len(test_df) < 10:
             break
-        p = perf(test_df, w, hi=hi, lo=lo,
+        p = perf_auto(test_df, w, hi=hi, lo=lo,
                  panic=kw.get("panic", PANIC), overheat=kw.get("overheat", OVERHEAT),
                  max_pos=kw.get("max_pos", 1.0), stop_loss=kw.get("stop_loss", 0.0))
         rows.append({"start": test_df["date"].iloc[0].strftime("%Y-%m-%d"),
@@ -272,6 +330,21 @@ def label_regimes(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def regime_report(df: pd.DataFrame, w) -> pd.DataFrame:
+    if is_pool(df):
+        # 多标的：按组合等权日收益分组统计
+        strat, pos, _ = pool_strat(df, w)
+        idx = strat.index
+        r60 = (1 + strat).cumprod().pct_change(60)
+        reg = np.where(r60 > 0.10, "bull", np.where(r60 < -0.10, "bear", "other"))
+        rows = []
+        for g in pd.unique(reg):
+            m = reg == g
+            s = strat[m]
+            rows.append({"regime": g, "days": int(m.sum()),
+                         "total_ret": round(float((1 + s).prod() - 1), 4),
+                         "sharpe": round(float(s.mean() / s.std(ddof=0) * math.sqrt(ANN)), 3) if s.std(ddof=0) > 1e-12 else 0.0,
+                         "wrong_rate": round(float(((pos[m] > 0) & (s < 0)).mean()), 4)})
+        return pd.DataFrame(rows)
     df = label_regimes(df)
     ret = df["close"].pct_change().fillna(0.0)
     pos = positions(score(df, w))
@@ -291,7 +364,7 @@ def write_report(out, base_p, best_w, best_p, th, noise, split, regime,
                  hi: float = BASE_HI, lo: float = BASE_LO,
                  panic: float = PANIC, overheat: float = OVERHEAT,
                  max_pos: float = 1.0, stop_loss: float = 0.0,
-                 roll: pd.DataFrame = None) -> str:
+                 dd_trigger: float = 0.0, roll: pd.DataFrame = None) -> str:
     th_top = th.head(5).to_string(index=False) if th is not None else "（自定义权重，未做网格扫描）"
     roll_sec = ""
     if roll is not None:
@@ -306,7 +379,7 @@ def write_report(out, base_p, best_w, best_p, th, noise, split, regime,
 """
     md = f"""# Sentiment V5.0 权重敏感性回测报告
 
-## 一、基准权重绩效（w1~w5 = {best_w}，阈值 lo={lo} hi={hi} panic={panic} overheat={overheat}，max_pos={max_pos}，stop_loss={stop_loss}）
+## 一、基准权重绩效（w1~w5 = {best_w}，阈值 lo={lo} hi={hi} panic={panic} overheat={overheat}，max_pos={max_pos}，stop_loss={stop_loss}，dd_trigger={dd_trigger}）
 ```
 {json.dumps(asdict(base_p), ensure_ascii=False, indent=2)}
 ```
@@ -381,7 +454,11 @@ def risk_tier(score: float):
 
 
 def generate_daily_report(df: pd.DataFrame, w, alerts, out: str) -> str:
-    """末日日报：五因子得分 + 综合分 + 失效预警修正 + 明日观测"""
+    """末日日报：五因子得分 + 综合分 + 失效预警修正 + 明日观测（多标的取末日各标的因子均值）"""
+    if is_pool(df):
+        last_date = df["date"].max()
+        df = df[df["date"] == last_date].groupby("date", as_index=False)[["f1", "f2", "f3", "f4", "f5"]].mean()
+        df["close"] = 1.0
     s = score(df, w)
     last = df.iloc[-1]
     date_str = pd.Timestamp(last["date"]).strftime("%Y-%m-%d")
@@ -415,7 +492,8 @@ def generate_daily_report(df: pd.DataFrame, w, alerts, out: str) -> str:
 # ────────────────────────── 可视化 ──────────────────────────
 def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float = BASE_LO,
                  panic: float = PANIC, overheat: float = OVERHEAT,
-                 max_pos: float = 1.0, stop_loss: float = 0.0) -> str:
+                 max_pos: float = 1.0, stop_loss: float = 0.0,
+                 dd_trigger: float = 0.0) -> str:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -430,7 +508,7 @@ def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
 
     ret = df["close"].pct_change().fillna(0.0)
     sc = score(df, w)
-    pos = positions(sc, hi, lo, panic, overheat, max_pos, stop_loss, ret)
+    pos = positions(sc, hi, lo, panic, overheat, max_pos, stop_loss, ret, dd_trigger)
     strat = ret * pos
     nav = (1 + strat).cumprod()
     x = pd.to_datetime(df["date"])
@@ -482,11 +560,12 @@ def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
 # ────────────────────────── Excel 导出 ──────────────────────────
 def daily_table(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
                 panic: float = PANIC, overheat: float = OVERHEAT,
-                max_pos: float = 1.0, stop_loss: float = 0.0) -> pd.DataFrame:
+                max_pos: float = 1.0, stop_loss: float = 0.0,
+                dd_trigger: float = 0.0) -> pd.DataFrame:
     """逐日明细：因子、综合分、仓位（T+1）、策略收益、净值"""
     sc = score(df, w)
     ret = df["close"].pct_change().fillna(0.0)
-    pos = positions(sc, hi, lo, panic, overheat, max_pos, stop_loss, ret)
+    pos = positions(sc, hi, lo, panic, overheat, max_pos, stop_loss, ret, dd_trigger)
     ret = df["close"].pct_change().fillna(0.0)
     strat = ret * pos
     dates = df["date"] if pd.api.types.is_datetime64_any_dtype(df["date"]) else pd.to_datetime(df["date"])
@@ -521,30 +600,164 @@ def trade_events(daily: pd.DataFrame) -> pd.DataFrame:
 
 def export_excel(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float = BASE_LO,
                  panic: float = PANIC, overheat: float = OVERHEAT,
-                 max_pos: float = 1.0, stop_loss: float = 0.0, rf: float = RF) -> str:
-    """回测结果三表打包：每日因子与仓位 / 交易明细 / 汇总指标"""
-    daily = daily_table(df, w, hi, lo, panic, overheat, max_pos, stop_loss)
-    p = perf(df, w, hi, lo, panic, overheat, max_pos, stop_loss)
-    date_str = df["date"].iloc[-1].strftime("%Y-%m-%d")
+                 max_pos: float = 1.0, stop_loss: float = 0.0, dd_trigger: float = 0.0,
+                 rf: float = RF) -> str:
+    """回测结果表打包。单标的：每日因子与仓位/交易明细/汇总指标；
+    多标的（asset_id）：组合每日/交易明细(标记asset_id)/每标的绩效/汇总指标"""
+    date_str = (df["date"].max() if is_pool(df) else df["date"].iloc[-1]).strftime("%Y-%m-%d")
+    start_str = (df["date"].min() if is_pool(df) else df["date"].iloc[0]).strftime("%Y-%m-%d")
     path = os.path.join(out, f"Sentiment_Backtest_Result_{date_str}.xlsx")
+    n_days = df["date"].nunique() if is_pool(df) else len(df)
+    summary = pd.DataFrame({
+        "类别": ["参数"] * 15,
+        "名称": ["w1 情绪定位", "w2 盈亏效应", "w3 广度量能", "w4 题材结构", "w5 主线结构",
+                 "开仓阈值(≥持有)", "减仓阈值(<)", "清仓阈值(≤)", "过热阈值(≥禁新建)",
+                 "最大仓位", "单笔止损", "动态降仓回撤阈值", "无风险利率", "样本天数", "样本区间"],
+        "数值": [w[0], w[1], w[2], w[3], w[4], lo, hi, panic, overheat, max_pos,
+                 stop_loss, dd_trigger, rf, n_days, f"{start_str} ~ {date_str}"],
+    })
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
-        daily.to_excel(writer, sheet_name="每日因子与仓位", index=False)
-        trade_events(daily).to_excel(writer, sheet_name="交易明细", index=False)
-        summary = pd.DataFrame({
-            "类别": ["参数"] * 14 + ["指标"] * 12,
-            "名称": ["w1 情绪定位", "w2 盈亏效应", "w3 广度量能", "w4 题材结构", "w5 主线结构",
-                     "开仓阈值(≥持有)", "减仓阈值(<)", "清仓阈值(≤)", "过热阈值(≥禁新建)",
-                     "最大仓位", "单笔止损", "无风险利率", "样本天数", "样本区间",
-                     "总收益率", "年化收益", "最大回撤", "夏普比率", "Calmar比率", "Sortino比率",
-                     "最大连续亏损天数", "持仓日胜率", "盈亏比(毛利/毛亏)", "持仓天数",
-                     "空仓占比", "开仓次数"],
-            "数值": [w[0], w[1], w[2], w[3], w[4], lo, hi, panic, overheat, max_pos,
-                     stop_loss, rf, len(df), f"{df['date'].iloc[0]:%Y-%m-%d} ~ {date_str}",
-                     p.total_ret, p.annual, p.max_dd, p.sharpe, p.calmar, p.sortino,
-                     p.max_consec_loss, p.win_rate, p.profit_ratio, p.long_days,
-                     p.empty_ratio, p.trades],
-        })
+        if is_pool(df):
+            p = perf_pool(df, w, hi, lo, panic, overheat, max_pos, stop_loss, dd_trigger)
+            strat, pos, _ = pool_strat(df, w, hi, lo, panic, overheat, max_pos, stop_loss, dd_trigger)
+            combo = pd.DataFrame({"date": strat.index, "pos": pos.round(2).values,
+                                  "strat_ret": strat.round(6).values,
+                                  "nav": (1 + strat).cumprod().round(4).values})
+            # 每日明细 + 各标的 nav 列
+            navs = {}
+            for a, g in df.groupby("asset_id"):
+                g = g.sort_values("date")
+                ret = g["close"].pct_change().fillna(0.0)
+                pa = positions(score(g, w), hi, lo, panic, overheat, max_pos, stop_loss, ret, dd_trigger)
+                navs[f"nav_{a}"] = pd.Series((1 + ret * pa).cumprod().round(4).values, index=g["date"].values)
+            combo = combo.merge(pd.DataFrame(navs), left_on="date", right_index=True, how="left")
+            combo.to_excel(writer, sheet_name="组合每日净值", index=False)
+            # 交易明细（逐标的，标记 asset_id）
+            ev_rows = []
+            for a, g in df.groupby("asset_id"):
+                g = g.sort_values("date").reset_index(drop=True)
+                ret = g["close"].pct_change().fillna(0.0)
+                pa = positions(score(g, w), hi, lo, panic, overheat, max_pos, stop_loss, ret, dd_trigger)
+                d = pd.DataFrame({"date": g["date"].values, "close": g["close"].values,
+                                  "score": score(g, w).round(2).values,
+                                  "pos": pa.values, "strat_ret": (ret * pa).values,
+                                  "nav": (1 + ret * pa).cumprod().values})
+                e = trade_events(d)
+                if len(e):
+                    e.insert(0, "asset_id", a)
+                    ev_rows.append(e)
+            (pd.concat(ev_rows, ignore_index=True) if ev_rows else pd.DataFrame()
+             ).to_excel(writer, sheet_name="交易明细", index=False)
+            # 每标的绩效
+            per = []
+            for a, g in df.groupby("asset_id"):
+                pa = g.sort_values("date").reset_index(drop=True)
+                per.append({"asset_id": a, **asdict(perf(pa, w, hi, lo, panic, overheat,
+                                                         max_pos, stop_loss, dd_trigger))})
+            pd.DataFrame(per).to_excel(writer, sheet_name="每标的绩效", index=False)
+            p_metrics = [("总收益率", p.total_ret), ("年化收益", p.annual), ("最大回撤", p.max_dd),
+                         ("夏普比率", p.sharpe), ("Calmar比率", p.calmar), ("Sortino比率", p.sortino),
+                         ("最大连续亏损天数", p.max_consec_loss), ("持仓日胜率", p.win_rate),
+                         ("盈亏比(毛利/毛亏)", p.profit_ratio), ("持仓天数", p.long_days),
+                         ("空仓占比", p.empty_ratio), ("开仓次数", p.trades)]
+            summary = pd.concat([summary, pd.DataFrame({"类别": ["指标"] * 12,
+                                                        "名称": [m[0] for m in p_metrics],
+                                                        "数值": [m[1] for m in p_metrics]})],
+                                 ignore_index=True)
+        else:
+            p = perf(df, w, hi, lo, panic, overheat, max_pos, stop_loss, dd_trigger)
+            daily = daily_table(df, w, hi, lo, panic, overheat, max_pos, stop_loss, dd_trigger)
+            daily.to_excel(writer, sheet_name="每日因子与仓位", index=False)
+            trade_events(daily).to_excel(writer, sheet_name="交易明细", index=False)
+            summary = pd.concat([summary, pd.DataFrame({
+                "类别": ["指标"] * 12,
+                "名称": ["总收益率", "年化收益", "最大回撤", "夏普比率", "Calmar比率", "Sortino比率",
+                         "最大连续亏损天数", "持仓日胜率", "盈亏比(毛利/毛亏)", "持仓天数",
+                         "空仓占比", "开仓次数"],
+                "数值": [p.total_ret, p.annual, p.max_dd, p.sharpe, p.calmar, p.sortino,
+                         p.max_consec_loss, p.win_rate, p.profit_ratio, p.long_days,
+                         p.empty_ratio, p.trades]})], ignore_index=True)
         summary.to_excel(writer, sheet_name="汇总指标", index=False)
+    return path
+
+
+# ────────────────────────── 热力图与批量净值 ──────────────────────────
+def plot_heatmap(res: pd.DataFrame, x: str, y: str, out: str,
+                 value: str = "sharpe", name: str = "threshold_heatmap.png") -> str:
+    """参数扫描热力图（纯 matplotlib，不引入 seaborn）：颜色=绩效，标注数值"""
+    pivot = res.pivot_table(index=y, columns=x, values=value, aggfunc="mean")
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    for font in ["Microsoft YaHei", "SimHei", "Noto Sans CJK SC"]:
+        try:
+            matplotlib.font_manager.findfont(font, fallback_to_default=False)
+            plt.rcParams["font.sans-serif"] = [font]
+            break
+        except Exception:
+            continue
+    plt.rcParams["axes.unicode_minus"] = False
+    fig, ax = plt.subplots(figsize=(max(8, len(pivot.columns) * 0.7), max(6, len(pivot.index) * 0.5)))
+    im = ax.imshow(pivot.values, cmap="RdYlGn", aspect="auto")
+    ax.set_xticks(range(len(pivot.columns)), [f"{c:g}" for c in pivot.columns])
+    ax.set_yticks(range(len(pivot.index)), [f"{i:g}" for i in pivot.index])
+    for i in range(len(pivot.index)):
+        for j in range(len(pivot.columns)):
+            v = pivot.values[i, j]
+            if pd.notna(v):
+                ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=7)
+    ax.set_title(f"{y} × {x} → {value} 热力图（颜色越绿越优，可看参数高原）")
+    ax.set_xlabel(x)
+    ax.set_ylabel(y)
+    fig.colorbar(im, ax=ax, label=value)
+    plt.tight_layout()
+    path = os.path.join(out, name)
+    plt.savefig(path, dpi=150)
+    plt.close(fig)
+    return path
+
+
+def batch_nav_plot(df: pd.DataFrame, rows: pd.DataFrame, out: str, w=None, top_n: int = 5,
+                   **kw) -> str:
+    """TopN 参数组合净值对比。rows 支持 weights_scan（w1~w5 列）与 threshold_scan（hi/lo 列）"""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    for font in ["Microsoft YaHei", "SimHei", "Noto Sans CJK SC"]:
+        try:
+            matplotlib.font_manager.findfont(font, fallback_to_default=False)
+            plt.rcParams["font.sans-serif"] = [font]
+            break
+        except Exception:
+            continue
+    plt.rcParams["axes.unicode_minus"] = False
+    fig, ax = plt.subplots(figsize=(14, 7))
+    for i, (_, r) in enumerate(rows.head(top_n).iterrows()):
+        if "w1" in rows.columns:
+            ww = (r["w1"], r["w2"], r["w3"], r["w4"], r["w5"])
+            kk = dict(kw)
+            label = f"P{i + 1} w=({ww[0]:g},{ww[1]:g},{ww[2]:g},{ww[3]:g},{ww[4]:g}) sharpe={r['sharpe']}"
+        else:
+            ww = w or BASE_W
+            kk = {**kw, "hi": float(r["hi"]), "lo": float(r["lo"])}
+            label = f"P{i + 1} lo={r['lo']:g}/hi={r['hi']:g} sharpe={r['sharpe']}"
+        if is_pool(df):
+            strat, pos, _ = pool_strat(df, ww, **kk)
+            nav = (1 + strat).cumprod()
+            x = pd.to_datetime(nav.index)
+        else:
+            d = daily_table(df, ww, **kk)
+            nav = d["nav"]
+            x = pd.to_datetime(d["date"])
+        ax.plot(x, nav, lw=1.6, label=label)
+    ax.set_title(f"Top{top_n} 参数组合净值对比（防单点过拟合，看参数高原）")
+    ax.set_ylabel("净值")
+    ax.legend(fontsize=8)
+    ax.grid(alpha=0.3)
+    plt.tight_layout()
+    path = os.path.join(out, "batch_nav_compare.png")
+    plt.savefig(path, dpi=150)
+    plt.close(fig)
     return path
 
 
@@ -589,6 +802,9 @@ def main():
     ap.add_argument("--overheat", type=float, default=OVERHEAT, help="过热阈值（默认80，只减不新建）")
     ap.add_argument("--max-pos", type=float, default=1.0, help="最大仓位上限 0~1（默认1）")
     ap.add_argument("--stop-loss", type=float, default=0.0, help="单笔止损（如 -0.08 启用；0=关闭）")
+    ap.add_argument("--dd-trigger", type=float, default=0.0, help="回撤动态降仓触发（如 -0.15 启用；0=关闭）")
+    ap.add_argument("--heatmap", action="store_true", help="阈值扫描热力图（lo×hi→夏普）")
+    ap.add_argument("--batch-nav", type=int, default=0, metavar="N", help="TopN 参数组合净值对比图")
     ap.add_argument("--roll", action="store_true", help="滚动窗口样本外验证（rolling_test.csv）")
     ap.add_argument("--roll-refit", action="store_true", help="滚动验证逐窗重寻优阈值（walk-forward，较慢）")
     ap.add_argument("--train-win", type=int, default=252, help="滚动训练窗口（默认252交易日）")
@@ -599,6 +815,8 @@ def main():
         raise SystemExit("--max-pos 须在 (0,1]")
     if args.stop_loss > 0:
         raise SystemExit("--stop-loss 须 ≤ 0（负数启用止损，0 关闭）")
+    if args.dd_trigger > 0:
+        raise SystemExit("--dd-trigger 须 ≤ 0（负数启用动态降仓，如 -0.15；0 关闭）")
     args.roll = args.roll or args.roll_refit   # refit 隐含启用滚动验证
 
     w_custom = [args.w1, args.w2, args.w3, args.w4, args.w5]
@@ -621,10 +839,13 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     RF = args.rf
     th_kw = dict(hi=args.hi, lo=args.lo, panic=args.panic, overheat=args.overheat,
-                 max_pos=args.max_pos, stop_loss=args.stop_loss)
+                 max_pos=args.max_pos, stop_loss=args.stop_loss, dd_trigger=args.dd_trigger)
+    if is_pool(df):
+        n_assets = df["asset_id"].nunique()
+        print(f"[0/5] 检测到 asset_id 列 → 多标的等权轮动模式（{n_assets} 个标的）")
 
     print(f"[1/5] 基准绩效 …")
-    base_p = perf(df, w_custom or BASE_W, **th_kw)
+    base_p = perf_auto(df, w_custom or BASE_W, **th_kw)
     print(f"      {asdict(base_p)}")
 
     if w_custom is not None:
@@ -665,9 +886,17 @@ def main():
     print("[5/5] 报告 …")
     path = write_report(args.out, base_p, best_w, best_p, th, noise, split, regime,
                         hi=args.hi, lo=args.lo, panic=args.panic, overheat=args.overheat,
-                        max_pos=args.max_pos, stop_loss=args.stop_loss, roll=roll)
+                        max_pos=args.max_pos, stop_loss=args.stop_loss,
+                        dd_trigger=args.dd_trigger, roll=roll)
     print("完成 →", os.path.abspath(path))
 
+    if args.heatmap:
+        p = plot_heatmap(th, "hi", "lo", args.out)
+        print("热力图 →", os.path.abspath(p))
+    if args.batch_nav:
+        src = scan if scan is not None else th
+        p = batch_nav_plot(df, src, args.out, w=best_w, top_n=args.batch_nav, **th_kw)
+        print(f"Top{args.batch_nav} 净值对比 →", os.path.abspath(p))
     if args.plot:
         p = plot_results(df, best_w, args.out, **th_kw)
         print("图表 →", os.path.abspath(p))

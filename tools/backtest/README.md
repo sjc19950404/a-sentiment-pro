@@ -74,6 +74,16 @@ python sentiment_backtest.py --factors factors.csv --fast --xlsx \
 # 风控约束：最大仓位 0.6 + 单笔止损 -8%（持仓期当日跌幅≤-8% 次日强制清仓）
 python sentiment_backtest.py --factors factors.csv --fast --max-pos 0.6 --stop-loss -0.08
 
+# 回撤动态降仓：组合回撤≥15% 仓位上限压至 40%，≥9% 压至 70%（类凯利风控，越亏越降杠杆）
+python sentiment_backtest.py --factors factors.csv --fast --dd-trigger -0.15
+
+# 网格绘图：阈值热力图（lo×hi→夏普，看参数高原）+ TopN 参数净值对比
+python sentiment_backtest.py --factors factors.csv --fast --heatmap --batch-nav 5
+
+# 多标的等权轮动：CSV 加 asset_id 列即自动启用（date,asset_id,f1..f5,close），逐标的回测后日收益等权合成；
+# Excel 变四表（组合每日净值含各标的 nav / 交易明细带 asset_id / 每标的绩效 / 汇总指标）
+python sentiment_backtest.py --factors multi_asset_factors.csv --fast --xlsx
+
 # 滚动窗口样本外验证（train 252 / test 63 切段）；--roll-refit 加逐窗重寻优（walk-forward，较慢）
 python sentiment_backtest.py --factors factors.csv --fast --roll --train-win 252 --test-win 63
 ```
@@ -96,13 +106,17 @@ python sentiment_backtest.py --factors factors.csv --fast --roll --train-win 252
 | `weights_scan.csv` | 全部 3876 组权重绩效（回撤↑→夏普↓→年化↓ 排序） |
 | `threshold_scan.csv` | hi∈[20,30] × lo∈[60,70] 阈值扫描 |
 | `regime.csv` | 牛/熊/震荡分组信号错误率 |
+| `threshold_heatmap.png`（`--heatmap`） | 阈值扫描热力图（lo×hi→夏普，纯 matplotlib 无 seaborn 依赖） |
+| `batch_nav_compare.png`（`--batch-nav N`） | TopN 参数组合净值对比（网格取权重 TopN，快速模式取阈值 TopN） |
 | `rolling_test.csv`（`--roll`） | 滚动窗口样本外验证：每段区间/寻优参数/绩效；`--roll-refit` 为真 walk-forward（训练窗阈值扫描选参 → 测试窗评估，训练段绝不参与测试） |
 | `Sentiment_Backtest_Result_<日期>.xlsx`（`--xlsx`） | 三表：**每日因子与仓位**（f1~f5/综合分/仓位/策略收益/净值逐日明细）、**交易明细**（每次仓位变动的打分日→T+1 生效日、动作、当日收益、累计净值）、**汇总指标**（权重/阈值/仓位/止损参数 + 年化/回撤/夏普/Calmar/Sortino/最大连亏天数/胜率/盈亏比/空仓占比/开仓次数） |
 
 ### 回测规则（对齐 V5 风险表）
 
 - 收盘打分，T+1 生效：score≥65 持有 / 44~65 减仓至 0.5 / ≤24 清仓 / ≥80 过热只减仓不新建
-- 风控约束（可选）：`--max-pos` 仓位上限（满仓=max_pos，减仓=0.5×max_pos）；`--stop-loss`（如 -0.08）持仓期当日收盘跌幅≤止损线则次日强制清仓，止损优先于信号
+- 风控约束（可选）：`--max-pos` 仓位上限（满仓=max_pos，减仓=0.5×max_pos）；`--stop-loss`（如 -0.08）持仓期当日收盘跌幅≤止损线则次日强制清仓；`--dd-trigger`（如 -0.15）回撤动态降仓——回撤≥15% 上限压至 40%、≥9% 压至 70%；止损优先于信号
+- 多标的轮动：CSV 含 `asset_id` 列自动启用，逐标的独立回测（T+1/止损/降仓同规则）后按日等权合成组合净值；滚动/网格/阈值扫描全兼容
+- GUI 日志同步持久化到 `输出目录/backtest_log.txt`（带时间戳，跨会话保留）
 - 滚动样本外验证：`--roll` 按 test_window 切段评估参数跨期稳定性；`--roll-refit` 每 63 日在训练窗（默认252日）阈值扫描重寻优、紧随测试窗评估——样本外均值显著低于全样本 ⇒ 过拟合，需降参数激进程度
 - 网格/阈值扫描/鲁棒性基于默认风控（max_pos=1、无止损）保证可比性；绩效新增 Calmar、Sortino、最大连续亏损天数
 - 优化目标优先级：**最大回撤最小 → 夏普最高 → 年化最高**（防回撤优先于收益）

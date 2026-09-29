@@ -38,6 +38,8 @@ class SentimentGUI:
         # 风控与滚动验证
         self.max_pos_var = tk.StringVar(value="1.0")
         self.stop_loss_var = tk.StringVar(value="0")
+        self.dd_trigger_var = tk.StringVar(value="0")
+        self.plot_grid_var = tk.BooleanVar(value=True)
         self.roll_var = tk.BooleanVar(value=False)
         self.roll_refit_var = tk.BooleanVar(value=False)
         self.train_win_var = tk.StringVar(value="252")
@@ -66,15 +68,22 @@ class SentimentGUI:
         fr = tk.Frame(panel)
         fr.pack(fill="x", padx=6, pady=2)
         for c, (lab, var, w) in enumerate([("最大仓位", self.max_pos_var, 5),
-                                           ("单笔止损", self.stop_loss_var, 6)]):
+                                           ("单笔止损", self.stop_loss_var, 6),
+                                           ("动态降仓回撤", self.dd_trigger_var, 6)]):
             tk.Label(fr, text=lab).grid(row=0, column=c * 2, padx=(10, 1))
             tk.Entry(fr, textvariable=var, width=w).grid(row=0, column=c * 2 + 1, pady=2)
-        tk.Checkbutton(fr, text="滚动样本外验证", variable=self.roll_var).grid(row=0, column=4, padx=(16, 1))
-        tk.Label(fr, text="训练窗").grid(row=0, column=5, padx=(4, 1))
-        tk.Entry(fr, textvariable=self.train_win_var, width=5).grid(row=0, column=6)
-        tk.Label(fr, text="测试窗").grid(row=0, column=7, padx=(4, 1))
-        tk.Entry(fr, textvariable=self.test_win_var, width=5).grid(row=0, column=8)
-        tk.Checkbutton(fr, text="逐窗重寻优", variable=self.roll_refit_var).grid(row=0, column=9, padx=(8, 1))
+        tk.Checkbutton(fr, text="网格后绘图(热力图+Top5净值)", variable=self.plot_grid_var
+                       ).grid(row=0, column=6, padx=(16, 1))
+        tk.Checkbutton(fr, text="滚动样本外验证", variable=self.roll_var).grid(row=0, column=7, padx=(8, 1))
+        fr2 = tk.Frame(panel)
+        fr2.pack(fill="x", padx=6, pady=2)
+        tk.Label(fr2, text="（动态降仓填负数启用如 -0.15；单笔止损/降仓填 0 关闭）"
+                 ).pack(side="left")
+        tk.Label(fr2, text="训练窗").pack(side="left", padx=(16, 1))
+        tk.Entry(fr2, textvariable=self.train_win_var, width=5).pack(side="left")
+        tk.Label(fr2, text="测试窗").pack(side="left", padx=(8, 1))
+        tk.Entry(fr2, textvariable=self.test_win_var, width=5).pack(side="left")
+        tk.Checkbutton(fr2, text="逐窗重寻优", variable=self.roll_refit_var).pack(side="left", padx=(8, 1))
 
         def file_row(label, var, cmd):
             f = tk.Frame(root)
@@ -126,8 +135,11 @@ class SentimentGUI:
         stop_loss = float(self.stop_loss_var.get())
         if stop_loss > 0:
             raise ValueError("单笔止损须 ≤ 0（负数启用，如 -0.08；0 关闭）")
+        dd_trigger = float(self.dd_trigger_var.get())
+        if dd_trigger > 0:
+            raise ValueError("动态降仓回撤阈值须 ≤ 0（负数启用，如 -0.15；0 关闭）")
         th_kw = dict(hi=th["hi"], lo=th["lo"], panic=th["panic"], overheat=th["overheat"],
-                     max_pos=max_pos, stop_loss=stop_loss)
+                     max_pos=max_pos, stop_loss=stop_loss, dd_trigger=dd_trigger)
         roll_kw = None
         if self.roll_var.get():
             try:
@@ -161,9 +173,17 @@ class SentimentGUI:
         if p:
             self.out_path.set(p)
 
-    # ── 线程安全日志 ──
+    # ── 线程安全日志（同步持久化到输出目录 backtest_log.txt，带时间戳） ──
     def log(self, msg):
-        self.root.after(0, self._append_log, msg)
+        line = f"{__import__('datetime').datetime.now():%Y-%m-%d %H:%M:%S} | {msg}"
+        self.root.after(0, self._append_log, line)
+        try:
+            out = self.out_path.get() or "reports"
+            os.makedirs(out, exist_ok=True)
+            with open(os.path.join(out, "backtest_log.txt"), "a", encoding="utf-8") as f:
+                f.write(line + "\n")
+        except Exception:
+            pass
 
     def _append_log(self, msg):
         self.log_box.configure(state="normal")
@@ -198,9 +218,11 @@ class SentimentGUI:
             os.makedirs(out, exist_ok=True)
             sb.RF = float(self.rf_var.get() or 0)
             w_custom, th_kw, roll_kw = self.w_custom, self.th_kw, self.roll_kw
-            if th_kw["max_pos"] < 1 or th_kw["stop_loss"] < 0:
+            if th_kw["max_pos"] < 1 or th_kw["stop_loss"] < 0 or th_kw["dd_trigger"] < 0:
                 self.log(f"风控：最大仓位 {th_kw['max_pos']:g}｜单笔止损 {th_kw['stop_loss']:g}"
-                         + ("（关闭）" if th_kw["stop_loss"] == 0 else ""))
+                         + ("（关闭）" if th_kw["stop_loss"] == 0 else "")
+                         + f"｜动态降仓 {th_kw['dd_trigger']:g}"
+                         + ("（关闭）" if th_kw["dd_trigger"] == 0 else ""))
 
             self.log("读取因子数据…")
             df = pd.read_csv(fp)
@@ -210,24 +232,27 @@ class SentimentGUI:
                 raise ValueError(f"因子 CSV 缺列: {missing}（Excel 模板导出即所需格式）")
             df["date"] = pd.to_datetime(df["date"])
             df = df.sort_values("date").reset_index(drop=True)
-            self.log(f"  {len(df)} 个交易日，{df['date'].iloc[0]:%Y-%m-%d} ~ {df['date'].iloc[-1]:%Y-%m-%d}")
+            if sb.is_pool(df):
+                self.log(f"  检测到 asset_id 列 → 多标的等权轮动模式（{df['asset_id'].nunique()} 个标的）")
+            self.log(f"  {df['date'].nunique()} 个交易日，{df['date'].min():%Y-%m-%d} ~ {df['date'].max():%Y-%m-%d}")
 
             base_w = w_custom or sb.BASE_W
             if w_custom:
                 self.log(f"自定义权重回测 w={w_custom}（跳过网格）…")
             else:
                 self.log("基准绩效（V5 权重 0.25/0.25/0.20/0.20/0.10）…")
-            base_p = sb.perf(df, base_w, **th_kw)
+            base_p = sb.perf_auto(df, base_w, **th_kw)
             self.log(f"  年化 {base_p.annual:.2%}｜最大回撤 {base_p.max_dd:.2%}｜夏普 {base_p.sharpe}｜"
                      f"Calmar {base_p.calmar}｜Sortino {base_p.sortino}｜最大连亏 {base_p.max_consec_loss}天")
             self.log(f"  胜率 {base_p.win_rate:.2%}｜盈亏比 {base_p.profit_ratio}｜空仓占比 {base_p.empty_ratio:.2%}")
 
             if w_custom is not None:
                 best_w, best_p = w_custom, base_p
+                scan = None
             elif self.fast_var.get():
-                best_w, best_p = sb.BASE_W, base_p
+                best_w, best_p, scan = sb.BASE_W, base_p, None
             else:
-                self.log("权重网格扫描（3876 组）…")
+                self.log("权重网格扫描（3876 组，多进程并行）…")
                 scan = sb.grid_search(df, verbose=False)
                 scan.to_csv(os.path.join(out, "weights_scan.csv"), index=False, encoding="utf-8-sig")
                 bw = scan.iloc[0]
@@ -260,13 +285,27 @@ class SentimentGUI:
                          f"｜正收益段 {rs['win_seg_pct']:.0%}")
             sb.write_report(out, base_p, best_w, best_p, th, noise, split, regime,
                             roll=roll, **th_kw)
-            sb.plot_results(df, best_w, out, **th_kw)
+            if not sb.is_pool(df):
+                sb.plot_results(df, best_w, out, **th_kw)
+            elif self.plot_grid_var.get() or True:
+                self.log("  多标的模式跳过单标的净值图，改出组合对比图")
+            if self.plot_grid_var.get():
+                self.log("  网格绘图：阈值热力图 + Top5 参数净值对比 …")
+                hm = sb.plot_heatmap(th, "hi", "lo", out)
+                src = scan if scan is not None else th
+                bn = sb.batch_nav_plot(df, src, out, w=best_w, top_n=5, **th_kw)
+                self.log(f"  {os.path.basename(hm)}｜{os.path.basename(bn)}")
             alerts = [a.strip() for a in self.alert_text.get().split(",") if a.strip()]
             rp = sb.generate_daily_report(df, best_w, alerts, out)
             xlsx = sb.export_excel(df, best_w, out, **th_kw, rf=sb.RF)
-            self.log(f"  Excel 三表已导出 → {os.path.basename(xlsx)}")
+            self.log(f"  Excel 回测结果已导出 → {os.path.basename(xlsx)}")
 
-            last_sc = float(sb.score(df, best_w).iloc[-1])
+            if sb.is_pool(df):
+                last_date = df["date"].max()
+                last_rows = df[df["date"] == last_date]
+                last_sc = float(sb.score(last_rows, best_w).mean())  # 各标的末日均值
+            else:
+                last_sc = float(sb.score(df, best_w).iloc[-1])
             risk, signal = sb.risk_tier(last_sc)
             warn = sb.model_fail_warning(last_sc, alerts)
             self.log(f"末日({df['date'].iloc[-1]:%Y-%m-%d}) 综合分 {last_sc:.1f}｜{risk}")
