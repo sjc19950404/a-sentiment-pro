@@ -6,7 +6,11 @@
 python sentiment_gui.py
 ```
 
-Tkinter 一键平台：鼠标选因子 CSV 与输出目录 → 填风险标记（可选）→ 一键运行全流程（基准绩效 / 网格 / 阈值 / 鲁棒性 / 汇总报告 / 三栏图 / 末日日报），日志实时滚动，桌面弹窗提示完成。需要 `tkinter`（Python 自带；托管精简版 Python 可能没有，用系统版 Python 建的 venv 跑）。运行期间不卡界面（后台线程），重复点击自动忽略。
+Tkinter 一键平台【参数调优版】：鼠标选因子 CSV 与输出目录 → **界面直调权重 w1~w5 与四档阈值（开仓/减仓/清仓/过热），无需改源码** → 填风险标记（可选）→ 一键运行全流程（基准绩效 / 网格 / 阈值 / 鲁棒性 / 汇总报告 / 三栏图 / 末日日报 / Excel 三表），日志实时滚动，桌面弹窗提示完成。
+
+- **参数面板**：权重总和 ≠1 弹窗确认防误输；勾选「自定义权重」即按面板权重直接回测（跳过 3876 组网格）；阈值须满足 清仓 < 减仓 < 开仓 < 过热；「恢复默认」一键还原 V5 基准
+- 需要 `tkinter`（Python 自带；托管精简版 Python 可能没有，用系统版 Python 建的 venv 跑，并装 `openpyxl`）+ `pandas numpy matplotlib openpyxl`
+- 运行期间不卡界面（后台线程），重复点击自动忽略
 
 ## 一、通达信副图指标
 
@@ -62,9 +66,13 @@ python sentiment_backtest.py --demo --out reports_demo
 
 # 快速模式（跳过网格，仅基准/阈值/鲁棒性）；--rf 夏普计入无风险利率
 python sentiment_backtest.py --factors factors.csv --fast --rf 0.02
+
+# 自定义权重与阈值调参（给出任一 wi 即跳过网格，需 sum=1）；--xlsx 导出回测结果 Excel
+python sentiment_backtest.py --factors factors.csv --fast --xlsx \
+    --w1 0.3 --w2 0.2 --w3 0.2 --w4 0.2 --w5 0.1 --lo 60 --hi 40 --panic 20 --overheat 85
 ```
 
-**依赖**：`pandas numpy`；`--plot`/GUI 另需 `matplotlib`；模板生成另需 `openpyxl`；GUI 需 `tkinter`。
+**依赖**：`pandas numpy`；`--plot`/GUI 另需 `matplotlib`；`--xlsx`/模板生成另需 `openpyxl`；GUI 需 `tkinter`。
 
 ### 可视化与日报
 
@@ -82,6 +90,7 @@ python sentiment_backtest.py --factors factors.csv --fast --rf 0.02
 | `weights_scan.csv` | 全部 3876 组权重绩效（回撤↑→夏普↓→年化↓ 排序） |
 | `threshold_scan.csv` | hi∈[20,30] × lo∈[60,70] 阈值扫描 |
 | `regime.csv` | 牛/熊/震荡分组信号错误率 |
+| `Sentiment_Backtest_Result_<日期>.xlsx`（`--xlsx`） | 三表：**每日因子与仓位**（f1~f5/综合分/仓位/策略收益/净值逐日明细）、**交易明细**（每次仓位变动的打分日→T+1 生效日、动作、当日收益、累计净值）、**汇总指标**（权重阈值参数 + 年化/回撤/夏普/胜率/盈亏比/空仓占比） |
 
 ### 回测规则（对齐 V5 风险表）
 

@@ -13,6 +13,8 @@ Sentiment V5.0 权重敏感性回测模块（离线）
   3. 鲁棒性：±5 分噪声扰动 / 训练-验证分段
   4. 失效场景：按 regime（或按指数60日趋势自动标注）分组统计信号错误率
   5. 输出 reports/ 下 CSV + Markdown 报告
+  6. --xlsx 导出回测结果 Excel（每日因子与仓位 / 交易明细 / 汇总指标 三表）
+  7. --w1~--w5 / --lo --hi --panic --overheat 支持自定义权重与阈值调参（跳过网格）
 
 优化目标优先级：① 最大回撤最小 ② 夏普最高 ③ 总收益最高
 
@@ -59,17 +61,18 @@ def score(df: pd.DataFrame, w) -> pd.Series:
             + df["f4"] * w[3] + df["f5"] * w[4])
 
 
-def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO) -> pd.Series:
+def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
+              panic: float = PANIC, overheat: float = OVERHEAT) -> pd.Series:
     """收盘打分 → 次日仓位（T+1）。1 全仓 / 0.5 减仓 / 0 空仓。
-    过热区(≥80)不清仓但禁止新建仓：对已有持仓保持，对空仓者保持空仓。"""
+    过热区(≥overheat)不清仓但禁止新建仓：对已有持仓保持，对空仓者保持空仓。"""
     pos = pd.Series(np.nan, index=s.index)
     held = False
     for i, v in enumerate(s.values):
-        if v >= OVERHEAT:
+        if v >= overheat:
             target = 1.0 if held else 0.0          # 只减仓不新建
         elif v >= lo:
             target = 1.0
-        elif v > PANIC:
+        elif v > panic:
             target = 0.5
         else:
             target = 0.0
@@ -79,9 +82,10 @@ def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO) -> pd.Seri
 
 
 # ────────────────────────── 绩效计算 ──────────────────────────
-def perf(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO) -> Perf:
+def perf(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
+         panic: float = PANIC, overheat: float = OVERHEAT) -> Perf:
     ret = df["close"].pct_change().fillna(0.0)
-    pos = positions(score(df, w), hi, lo)
+    pos = positions(score(df, w), hi, lo, panic, overheat)
     strat = ret * pos
     equity = (1 + strat).cumprod()
     total = equity.iloc[-1] - 1
@@ -196,11 +200,13 @@ def regime_report(df: pd.DataFrame, w) -> pd.DataFrame:
 
 
 # ────────────────────────── 报告 ──────────────────────────
-def write_report(out, base_p, best_w, best_p, th, noise, split, regime) -> str:
-    th_top = th.head(5).to_string(index=False)
+def write_report(out, base_p, best_w, best_p, th, noise, split, regime,
+                 hi: float = BASE_HI, lo: float = BASE_LO,
+                 panic: float = PANIC, overheat: float = OVERHEAT) -> str:
+    th_top = th.head(5).to_string(index=False) if th is not None else "（自定义权重，未做网格扫描）"
     md = f"""# Sentiment V5.0 权重敏感性回测报告
 
-## 一、基准权重绩效（w1~w5 = {BASE_W}，阈值 hi={BASE_HI} lo={BASE_LO}）
+## 一、基准权重绩效（w1~w5 = {best_w}，阈值 lo={lo} hi={hi} panic={panic} overheat={overheat}）
 ```
 {json.dumps(asdict(base_p), ensure_ascii=False, indent=2)}
 ```
@@ -210,7 +216,7 @@ def write_report(out, base_p, best_w, best_p, th, noise, split, regime) -> str:
 ```
 {json.dumps(asdict(best_p), ensure_ascii=False, indent=2)}
 ```
-（完整 3876 行见 weights_scan.csv；排序规则：最大回撤↑ → 夏普↓ → 年化↓）
+（完整网格见 weights_scan.csv；排序规则：最大回撤↑ → 夏普↓ → 年化↓）
 
 ## 三、最优风险阈值（固定最优权重，hi∈[20,30] × lo∈[60,70]）
 前 5 组（hi=减仓线，lo=持有线）：
@@ -307,7 +313,8 @@ def generate_daily_report(df: pd.DataFrame, w, alerts, out: str) -> str:
 
 
 # ────────────────────────── 可视化 ──────────────────────────
-def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float = BASE_LO) -> str:
+def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float = BASE_LO,
+                 panic: float = PANIC, overheat: float = OVERHEAT) -> str:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -322,7 +329,7 @@ def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
 
     ret = df["close"].pct_change().fillna(0.0)
     sc = score(df, w)
-    pos = positions(sc, hi, lo)
+    pos = positions(sc, hi, lo, panic, overheat)
     strat = ret * pos
     nav = (1 + strat).cumprod()
     x = pd.to_datetime(df["date"])
@@ -344,8 +351,8 @@ def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
     for i, (c, n) in enumerate(zip(colors, ["F1情绪", "F2盈亏", "F3广度", "F4题材", "F5主线"])):
         ax2.plot(x, df[f"f{i + 1}"], color=c, lw=1, alpha=0.75, label=n)
     ax2.plot(x, sc, lw=2.2, color="red", label="综合Score")
-    for y, c, n in ((lo, "green", f"开仓 {lo:g}"), (BASE_HI, "orange", f"减仓 {BASE_HI:g}"),
-                    (PANIC, "red", f"清仓 {PANIC:g}"), (OVERHEAT, "magenta", f"过热 {OVERHEAT:g}")):
+    for y, c, n in ((lo, "green", f"开仓 {lo:g}"), (hi, "orange", f"减仓 {hi:g}"),
+                    (panic, "red", f"清仓 {panic:g}"), (overheat, "magenta", f"过热 {overheat:g}")):
         ax2.axhline(y=y, ls="--", c=c, alpha=0.6, label=n)
     ax2.set_ylim(0, 100)
     ax2.set_title("五大因子与综合得分时序", fontsize=13)
@@ -368,6 +375,70 @@ def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
     path = os.path.join(out, "nav_factors.png")
     plt.savefig(path, dpi=150)
     plt.close(fig)
+    return path
+
+
+# ────────────────────────── Excel 导出 ──────────────────────────
+def daily_table(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
+                panic: float = PANIC, overheat: float = OVERHEAT) -> pd.DataFrame:
+    """逐日明细：因子、综合分、仓位（T+1）、策略收益、净值"""
+    sc = score(df, w)
+    pos = positions(sc, hi, lo, panic, overheat)
+    ret = df["close"].pct_change().fillna(0.0)
+    strat = ret * pos
+    dates = df["date"] if pd.api.types.is_datetime64_any_dtype(df["date"]) else pd.to_datetime(df["date"])
+    out = pd.DataFrame({"date": dates.dt.strftime("%Y-%m-%d")})
+    for i in range(5):
+        out[f"f{i + 1}"] = df[f"f{i + 1}"].round(2)
+    out["close"] = df["close"]
+    out["score"] = sc.round(2)
+    out["pos"] = pos
+    out["strat_ret"] = strat.round(6)
+    out["nav"] = (1 + strat).cumprod().round(4)
+    return out
+
+
+def trade_events(daily: pd.DataFrame) -> pd.DataFrame:
+    """仓位变动事件明细（T+1 生效口径）：打分日触发 → 次日生效"""
+    prev = daily["pos"].shift(1).fillna(0.0)       # 首日以前一仓位 0 计，避免 NaN 误判为事件
+    ev = daily[daily["pos"] != prev].copy()
+    rows = []
+    for i, r in ev.iterrows():
+        prev = daily["pos"].iloc[i - 1] if i > 0 else 0.0
+        if r["pos"] > prev:
+            action = "开仓" if prev == 0 else "加仓"
+        else:
+            action = "清仓" if r["pos"] == 0 else "减仓"
+        rows.append({"生效日期": r["date"], "打分日": daily["date"].iloc[i - 1] if i > 0 else "-",
+                     "综合分(前日)": daily["score"].iloc[i - 1] if i > 0 else "-",
+                     "仓位变化": f"{prev:g} → {r['pos']:g}", "动作": action,
+                     "close": r["close"], "当日策略收益": r["strat_ret"], "累计净值": r["nav"]})
+    return pd.DataFrame(rows)
+
+
+def export_excel(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float = BASE_LO,
+                 panic: float = PANIC, overheat: float = OVERHEAT, rf: float = RF) -> str:
+    """回测结果三表打包：每日因子与仓位 / 交易明细 / 汇总指标"""
+    daily = daily_table(df, w, hi, lo, panic, overheat)
+    p = perf(df, w, hi, lo, panic, overheat)
+    date_str = df["date"].iloc[-1].strftime("%Y-%m-%d")
+    path = os.path.join(out, f"Sentiment_Backtest_Result_{date_str}.xlsx")
+    with pd.ExcelWriter(path, engine="openpyxl") as writer:
+        daily.to_excel(writer, sheet_name="每日因子与仓位", index=False)
+        trade_events(daily).to_excel(writer, sheet_name="交易明细", index=False)
+        summary = pd.DataFrame({
+            "类别": ["参数"] * 12 + ["指标"] * 9,
+            "名称": ["w1 情绪定位", "w2 盈亏效应", "w3 广度量能", "w4 题材结构", "w5 主线结构",
+                     "开仓阈值(≥持有)", "减仓阈值(<)", "清仓阈值(≤)", "过热阈值(≥禁新建)",
+                     "无风险利率", "样本天数", "样本区间",
+                     "总收益率", "年化收益", "最大回撤", "夏普比率", "持仓日胜率",
+                     "盈亏比(毛利/毛亏)", "持仓天数", "空仓占比", "开仓次数"],
+            "数值": [w[0], w[1], w[2], w[3], w[4], lo, hi, panic, overheat, rf, len(df),
+                     f"{df['date'].iloc[0]:%Y-%m-%d} ~ {date_str}",
+                     p.total_ret, p.annual, p.max_dd, p.sharpe, p.win_rate,
+                     p.profit_ratio, p.long_days, p.empty_ratio, p.trades],
+        })
+        summary.to_excel(writer, sheet_name="汇总指标", index=False)
     return path
 
 
@@ -400,7 +471,25 @@ def main():
     ap.add_argument("--plot", action="store_true", help="输出净值+因子时序图 nav_factors.png")
     ap.add_argument("--report", action="store_true", help="按末日数据生成 Markdown 日报")
     ap.add_argument("--alerts", default="", help="当日辅助模块预警，逗号分隔（如 D大规模量价背离,P_突发黑天鹅）")
+    ap.add_argument("--xlsx", action="store_true", help="导出回测结果 Excel（每日明细/交易明细/汇总指标三表）")
+    ap.add_argument("--w1", type=float, default=None, help="自定义权重（给出任一 wi 即跳过网格，需 sum=1）")
+    ap.add_argument("--w2", type=float, default=None)
+    ap.add_argument("--w3", type=float, default=None)
+    ap.add_argument("--w4", type=float, default=None)
+    ap.add_argument("--w5", type=float, default=None)
+    ap.add_argument("--lo", type=float, default=BASE_LO, help="开仓/持有阈值（默认65）")
+    ap.add_argument("--hi", type=float, default=BASE_HI, help="减仓阈值（默认44）")
+    ap.add_argument("--panic", type=float, default=PANIC, help="清仓阈值（默认24）")
+    ap.add_argument("--overheat", type=float, default=OVERHEAT, help="过热阈值（默认80，只减不新建）")
     args = ap.parse_args()
+
+    w_custom = [args.w1, args.w2, args.w3, args.w4, args.w5]
+    if any(x is not None for x in w_custom):
+        if any(x is None for x in w_custom):
+            raise SystemExit("自定义权重需 --w1~--w5 五项齐全")
+        if abs(sum(w_custom) - 1) > 1e-6:
+            raise SystemExit(f"权重总和 {sum(w_custom):.4f} ≠ 1")
+        w_custom = tuple(w_custom)
 
     df = demo_df() if args.demo else pd.read_csv(args.factors)
     df.columns = [str(c).strip().lower() for c in df.columns]   # 兼容 Excel 模板 F1/F1 大小写
@@ -411,12 +500,16 @@ def main():
     df = df.sort_values("date").reset_index(drop=True)
     os.makedirs(args.out, exist_ok=True)
     RF = args.rf
+    th_kw = dict(hi=args.hi, lo=args.lo, panic=args.panic, overheat=args.overheat)
 
     print(f"[1/5] 基准绩效 …")
-    base_p = perf(df, BASE_W)
+    base_p = perf(df, w_custom or BASE_W, **th_kw)
     print(f"      {asdict(base_p)}")
 
-    if args.fast:
+    if w_custom is not None:
+        best_w, best_p, scan = w_custom, base_p, None
+        print(f"      使用自定义权重 w={w_custom}，跳过网格扫描")
+    elif args.fast:
         best_w, best_p, scan = BASE_W, base_p, None
     else:
         print("[2/5] 权重网格扫描（3876 组）…")
@@ -442,8 +535,11 @@ def main():
     print("完成 →", os.path.abspath(path))
 
     if args.plot:
-        p = plot_results(df, best_w, args.out)
+        p = plot_results(df, best_w, args.out, **th_kw)
         print("图表 →", os.path.abspath(p))
+    if args.xlsx:
+        p = export_excel(df, best_w, args.out, **th_kw, rf=args.rf)
+        print("Excel →", os.path.abspath(p))
     if args.report:
         alerts = [a.strip() for a in args.alerts.split(",") if a.strip()]
         p = generate_daily_report(df, best_w, alerts, args.out)
