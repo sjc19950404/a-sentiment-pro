@@ -229,9 +229,11 @@ async function fetchBreadth() {
 
 // 源7: 同花顺大盘日K → 两市成交额 Map（YYYYMMDD → 亿）
 async function fetchAmountMap() {
-  const map = {};
+  // 分指数抓取，合并时要求两市同日都有值——防单市缺数据被当全市（2026-09-29 事故：深证延迟只出上证 6617 亿）
+  const byCode = {};
   const years = [2025, 2026];
   for (const code of ['zs_1A0001', 'zs_399001']) {
+    const m = {};
     for (const year of years) {
       try {
         const t = await (await fetch('https://d.10jqka.com.cn/v6/line/' + code + '/01/' + year + '.js',
@@ -239,13 +241,39 @@ async function fetchAmountMap() {
         const obj = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
         (obj.data || '').split(';').filter(Boolean).forEach((l) => {
           const c = l.split(',');
-          if (c.length >= 7 && +c[6] > 0) map[c[0]] = (map[c[0]] || 0) + (+c[6]) / 1e8;
+          if (c.length >= 7 && +c[6] > 0) m[c[0]] = (+c[6]) / 1e8;
         });
       } catch (e) { /* 单年失败容错 */ }
       await sleep(300);
     }
+    byCode[code] = m;
+  }
+  const map = {};
+  const dates = new Set([...Object.keys(byCode.zs_1A0001), ...Object.keys(byCode.zs_399001)]);
+  for (const dt of dates) {
+    const a = byCode.zs_1A0001[dt], b = byCode.zs_399001[dt];
+    if (a > 0 && b > 0) map[dt] = a + b; // 单市缺 → 该日不收，交由兜底/missing 处理
   }
   return Object.keys(map).length ? map : null;
+}
+
+// 源7b(备): 腾讯指数实时成交额（万元→亿），同花顺日K当日延迟时兜底
+async function fetchAmountTencentFallback(ymd) {
+  for (let att = 0; att < 3; att++) {
+    try {
+      const t = await (await fetch('https://qt.gtimg.cn/q=sh000001,sz399001&r=' + Date.now(),
+        { headers: { 'User-Agent': UA } })).text();
+      let sum = 0, any = false;
+      for (const p of t.split(';')) {
+        if (!p.includes('~')) continue;
+        const amt = +p.split('~')[38];
+        if (Number.isFinite(amt) && amt > 0) { sum += amt / 1e4; any = true; }
+      }
+      if (any) return { [ymd]: r1(sum) };
+    } catch (e) { /* 重试 */ }
+    await sleep(500);
+  }
+  return null;
 }
 
 // day 组装（七因子 + 题材原始计数）
@@ -393,7 +421,12 @@ export async function fetchLive() {
     fetchAmountMap(),
     fetchBreadth(),
   ]);
-  const amountYi = amountMap ? (amountMap[date.replace(/-/g, '')] || null) : null;
+  let amountYi = amountMap ? (amountMap[date.replace(/-/g, '')] || null) : null;
+  if (amountYi == null) {
+    const fb = await fetchAmountTencentFallback(date.replace(/-/g, ''));
+    if (fb && amountMap) { Object.assign(amountMap, fb); amountYi = fb[date.replace(/-/g, '')] || null; }
+    else if (fb) amountYi = fb[date.replace(/-/g, '')] || null;
+  }
   const day = buildDay(date, lhbRaw, hotEnriched, industry, indexes, pools, amountYi, amountMap, breadth);
   return { newDays: [day], tradeDate: date };
 }

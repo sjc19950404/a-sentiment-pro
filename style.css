@@ -54,4 +54,17 @@ body { margin: 0; background: var(--bg); color: var(--txt); font-family: -apple-
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
 th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
 th { color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--card); }
+
+/* 研判报告卡 */
+.brief-body { font-size: 12.5px; line-height: 1.55; max-height: 420px; overflow-y: auto; }
+.bf-sec { margin-bottom: 12px; }
+.bf-h { font-size: 12px; color: var(--acc); font-weight: 600; margin-bottom: 4px; }
+.bf-h2 { margin-top: 6px; color: var(--warn); }
+.bf-li { margin-bottom: 3px; }
+.bf-li b { color: var(--txt); }
+.bf-up { color: var(--up); font-weight: 600; }
+.bf-dn { color: var(--down); font-weight: 600; }
+.bf-warn { color: var(--warn); }
+.bf-auto { font-size: 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 1px 6px; margin-left: 6px; font-weight: 400; }
+.bf-foot { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; font-size: 10.5px; color: var(--muted); }
 .foot { text-align: center; padding: 16px; font-size: 12px; }
