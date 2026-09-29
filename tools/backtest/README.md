@@ -45,12 +45,26 @@ date,f1,f2,f3,f4,f5,close[,regime]
 # 全流程（网格 3876 组 + 阈值 + 鲁棒性 + 场景）
 python sentiment_backtest.py --factors factors.csv --out reports
 
+# 一键：全流程 + 净值/因子图 + 末日日报（含失效预警修正）
+python sentiment_backtest.py --factors factors.csv --out reports --plot --report \
+    --alerts "D大规模量价背离,P_突发黑天鹅"
+
 # 合成数据自检
 python sentiment_backtest.py --demo --out reports_demo
 
 # 快速模式（跳过网格，仅基准/阈值/鲁棒性）；--rf 夏普计入无风险利率
 python sentiment_backtest.py --factors factors.csv --fast --rf 0.02
 ```
+
+**依赖**：`pandas numpy`；`--plot` 另需 `matplotlib`；模板生成另需 `openpyxl`。
+
+### 可视化与日报
+
+- `--plot`：输出 `nav_factors.png`——上栏策略净值 vs 买入持有（阴影=超额收益区），下栏五因子+综合分时序+四条阈值线（开仓/减仓/清仓/过热）。中文字体自动探测（微软雅黑/黑体）
+- `--report`：按 CSV 末日数据生成 `daily_report_<日期>.md`——五因子得分、综合分、V5 五档风险等级与操作建议
+- `--alerts`：传入当日辅助模块高风险信号（逗号分隔），每项对综合分扣 12 分生成**修正参考分**（原分不动仅报告参考）；命中 ≥2 项标记"模型失效预警，建议人工干预"——对齐 V5 总架构第六节人工覆盖规则。内置信号表：`P_突发黑天鹅 / P重大政策转向 / O宏观超预期冲击 / B北向大额恐慌流出 / D大规模量价背离 / E大面积高位杀跌`
+
+**列名兼容**：CSV 列名大小写不敏感（`F1`/`f1` 均可）；既支持 `close` 列（自动算日收益，Excel 模板导出即此格式），缺列会明确报错。
 
 ### 输出（`--out` 目录）
 

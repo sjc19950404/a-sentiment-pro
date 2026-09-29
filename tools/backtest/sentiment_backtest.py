@@ -240,6 +240,124 @@ valid: {json.dumps(split['valid'])}
     return path
 
 
+# ────────────────────────── 模型失效预警 ──────────────────────────
+HIGH_RISK_SIGNALS = [
+    "P_突发黑天鹅", "P重大政策转向", "O宏观超预期冲击",
+    "B北向大额恐慌流出", "D大规模量价背离", "E大面积高位杀跌",
+]
+
+
+def model_fail_warning(score: float, alerts, penalty: float = 12.0) -> dict:
+    """辅助模块高风险信号 → 修正参考分（原分不动，仅报告参考）。≥2 项共振标模型失效。"""
+    hits = [a for a in alerts if a in HIGH_RISK_SIGNALS]
+    modified = max(0.0, score - len(hits) * penalty)
+    if len(hits) >= 2:
+        flag = "【模型失效预警｜多维度风险共振，原始打分可靠性下降，建议人工干预】"
+    elif len(hits) == 1:
+        flag = "【单风险触发，适度降低预期】"
+    else:
+        flag = "模型状态正常"
+    return {"origin": round(score, 2), "modified": round(modified, 2),
+            "hits": hits, "flag": flag}
+
+
+def risk_tier(score: float):
+    """V5 五档：分数越高行情越强，80+ 过热警示"""
+    if score >= 80:
+        return "极低风险（情绪过热）", "高潮抱团，高位加速，禁止新开仓，仅可减仓兑现"
+    if score >= 65:
+        return "低风险", "行情强势，主线清晰，可参与主线"
+    if score >= 45:
+        return "中等风险", "震荡分歧，结构性行情，严格控仓"
+    if score >= 25:
+        return "高风险", "亏钱效应扩散，主线弱化，降低仓位"
+    return "极高风险（冰点）", "大面积杀跌，空仓/轻仓防御"
+
+
+def generate_daily_report(df: pd.DataFrame, w, alerts, out: str) -> str:
+    """末日日报：五因子得分 + 综合分 + 失效预警修正 + 明日观测"""
+    s = score(df, w)
+    last = df.iloc[-1]
+    date_str = pd.Timestamp(last["date"]).strftime("%Y-%m-%d")
+    sc = float(s.iloc[-1])
+    warn = model_fail_warning(sc, alerts)
+    risk, signal = risk_tier(sc)
+    names = ["F1 情绪定位", "F2 盈亏效应", "F3 广度量能", "F4 题材结构", "F5 主线板块内部结构"]
+    lines = [f"# Sentiment V5.0 市场情绪日报｜{date_str}", "",
+             "## 核心因子得分", ""]
+    lines += [f"- {n}：{float(last[f'f{i + 1}']):.2f}" for i, n in enumerate(names)]
+    lines += ["",
+              f"> 原始综合得分：**{sc:.2f}**｜修正参考分：{warn['modified']}"
+              f"（扣分项：{'、'.join(warn['hits']) if warn['hits'] else '无'}）",
+              f"> 风险等级：**{risk}**｜操作建议：{signal}",
+              f"> 模型状态：{warn['flag']}", "",
+              "## 明日观测预警清单", "",
+              "- 综合得分持续性监控",
+              "- 主线涨停梯队完整性",
+              "- 炸板率、高位大面数量变化",
+              "- 成交额环比变化，量价是否继续背离",
+              "- 北向资金、融资余额变动",
+              "- 政策、外围市场、地缘风险预警（--alerts 传入触发项）", "",
+              "> 免责声明：本模型仅为情绪观测复盘工具，不构成任何投资建议，市场存在黑天鹅，模型存在失效可能"]
+    md = "\n".join(lines)
+    path = os.path.join(out, f"daily_report_{date_str}.md")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(md)
+    return path
+
+
+# ────────────────────────── 可视化 ──────────────────────────
+def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float = BASE_LO) -> str:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    for font in ["Microsoft YaHei", "SimHei", "Noto Sans CJK SC"]:
+        try:
+            matplotlib.font_manager.findfont(font, fallback_to_default=False)
+            plt.rcParams["font.sans-serif"] = [font]
+            break
+        except Exception:
+            continue
+    plt.rcParams["axes.unicode_minus"] = False
+
+    ret = df["close"].pct_change().fillna(0.0)
+    sc = score(df, w)
+    pos = positions(sc, hi, lo)
+    strat = ret * pos
+    nav = (1 + strat).cumprod()
+    x = pd.to_datetime(df["date"])
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10), sharex=True, height_ratios=[2, 3])
+    # 上：策略净值 vs 买入持有 + 仓位阴影
+    ax1.plot(x, nav, color="#E63946", lw=2, label="策略净值")
+    bh = (1 + ret).cumprod()
+    ax1.plot(x, bh, color="#8D99AE", lw=1.2, alpha=0.8, label="买入持有")
+    ax1.fill_between(x, nav, bh, where=nav >= bh, color="#E63946", alpha=0.10)
+    ax1.fill_between(x, nav, bh, where=nav < bh, color="#2A9D8F", alpha=0.10)
+    ax1.set_title("Sentiment V5.0 策略净值 vs 买入持有（阴影=超额）", fontsize=13)
+    ax1.set_ylabel("净值")
+    ax1.legend()
+    ax1.grid(alpha=0.3)
+    # 下：五因子 + 综合分 + 阈值线
+    colors = ["#457B9D", "#2A9D8F", "#F4A261", "#E76F51", "#8D99AE"]
+    for i, (c, n) in enumerate(zip(colors, ["F1情绪", "F2盈亏", "F3广度", "F4题材", "F5主线"])):
+        ax2.plot(x, df[f"f{i + 1}"], color=c, lw=1, alpha=0.75, label=n)
+    ax2.plot(x, sc, lw=2.2, color="red", label="综合Score")
+    for y, c, n in ((lo, "green", f"开仓 {lo:g}"), (BASE_HI, "orange", f"减仓 {BASE_HI:g}"),
+                    (PANIC, "red", f"清仓 {PANIC:g}"), (OVERHEAT, "magenta", f"过热 {OVERHEAT:g}")):
+        ax2.axhline(y=y, ls="--", c=c, alpha=0.6, label=n)
+    ax2.set_ylim(0, 100)
+    ax2.set_title("五大因子与综合得分时序", fontsize=13)
+    ax2.set_ylabel("分数 (0-100)")
+    ax2.legend(loc="upper right", ncol=2, fontsize=9)
+    ax2.grid(alpha=0.3)
+    plt.tight_layout()
+    path = os.path.join(out, "nav_factors.png")
+    plt.savefig(path, dpi=150)
+    plt.close(fig)
+    return path
+
+
 # ────────────────────────── demo 数据 ──────────────────────────
 def demo_df(n=900, seed=7) -> pd.DataFrame:
     """合成因子：与未来收益正相关（ρ≈0.3），用于管线自检，非真实结论"""
@@ -266,9 +384,16 @@ def main():
     ap.add_argument("--out", default="reports", help="输出目录")
     ap.add_argument("--fast", action="store_true", help="跳过全网格（仅基准+阈值+鲁棒性）")
     ap.add_argument("--rf", type=float, default=0.0, help="无风险利率年化（夏普计算，默认0）")
+    ap.add_argument("--plot", action="store_true", help="输出净值+因子时序图 nav_factors.png")
+    ap.add_argument("--report", action="store_true", help="按末日数据生成 Markdown 日报")
+    ap.add_argument("--alerts", default="", help="当日辅助模块预警，逗号分隔（如 D大规模量价背离,P_突发黑天鹅）")
     args = ap.parse_args()
 
     df = demo_df() if args.demo else pd.read_csv(args.factors)
+    df.columns = [str(c).strip().lower() for c in df.columns]   # 兼容 Excel 模板 F1/F1 大小写
+    missing = [c for c in ["date", "f1", "f2", "f3", "f4", "f5", "close"] if c not in df.columns]
+    if missing:
+        raise SystemExit(f"因子 CSV 缺列: {missing}（Excel 模板导出应含 date,f1..f5,close）")
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values("date").reset_index(drop=True)
     os.makedirs(args.out, exist_ok=True)
@@ -302,6 +427,14 @@ def main():
     print("[5/5] 报告 …")
     path = write_report(args.out, base_p, best_w, best_p, th, noise, split, regime)
     print("完成 →", os.path.abspath(path))
+
+    if args.plot:
+        p = plot_results(df, best_w, args.out)
+        print("图表 →", os.path.abspath(p))
+    if args.report:
+        alerts = [a.strip() for a in args.alerts.split(",") if a.strip()]
+        p = generate_daily_report(df, best_w, alerts, args.out)
+        print("日报 →", os.path.abspath(p))
 
 
 if __name__ == "__main__":
