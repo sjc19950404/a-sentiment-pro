@@ -69,6 +69,42 @@
       </div>
     </section>
 
+    <section class="card bt">
+      <h2>策略回测（V5.2）<span class="bf-auto">交易成本 · 仓位平滑 · 多标的轮动 · 风控</span></h2>
+      <div id="btMetrics"></div>
+      <svg id="btNavSvg" viewBox="0 0 300 100" preserveAspectRatio="none"></svg>
+      <div class="bt-legend" id="btLegend"></div>
+      <div id="btParams" class="bt-params muted"></div>
+      <div id="btNote" class="bf-foot"></div>
+    </section>
+
+    <section class="card pareto">
+      <h2>网格寻优 · 帕累托双目标</h2>
+      <div id="paretoSummary" class="muted" style="font-size:12px;margin-bottom:8px"></div>
+      <div class="table-wrap">
+        <table id="paretoTable">
+          <thead><tr><th>夏普</th><th>最大回撤</th><th>Calmar</th><th>年化</th><th>非支配</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card roll">
+      <h2>滚动样本外（walk-forward）</h2>
+      <div id="rollSummary" class="muted" style="font-size:12px;margin-bottom:8px"></div>
+      <div class="table-wrap">
+        <table id="rollTable">
+          <thead><tr><th>口径</th><th>测试区间</th><th>总收益</th><th>夏普</th><th>回撤</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card mainline">
+      <h2>主线自动选股 <span class="bf-auto">逐日识别主线题材 → 当日标的清单</span></h2>
+      <div id="mainLineBody"></div>
+    </section>
+
     <section class="card brief">
       <h2>研判报告 <span class="bf-auto">规则引擎 · 每日随档生成</span></h2>
       <div id="briefBody" class="brief-body"></div>
@@ -76,7 +112,7 @@
   </main>
 
   <footer class="foot muted">
-    七因子情绪模型 v5.0-pro · 题材去噪 + 缺失代理 + 多源容灾 · 数据仅供参考，非投资建议
+    七因子情绪模型 v5.0-pro · 题材去噪 + 缺失代理 + 多源容灾 · 策略回测 V5.2（成本/平滑/风控/帕累托）· 数据仅供参考，非投资建议
   </footer>
 
   <script src="./app.js"></script>

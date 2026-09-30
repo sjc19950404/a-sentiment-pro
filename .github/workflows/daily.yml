@@ -22,11 +22,15 @@ jobs:
         env:
           MODE: live
         run: node src/pipeline.js
+      - name: 生成 V5.2 回测档（成本/平滑/风控/网格帕累托/滚动/主线选股）
+        run: node scripts/backtest.mjs
+      - name: 单元测试（含 Python↔JS 一致性夹具比对）
+        run: node --test
       - name: 提交最新数据
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json
+          git add data/archive.json data/backtest.json
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else

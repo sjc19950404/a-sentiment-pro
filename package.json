@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "pipeline": "node src/pipeline.js",
+    "backtest": "node scripts/backtest.mjs",
+    "check:frontend": "node scripts/check_frontend.mjs",
     "test": "node --test"
   },
   "license": "MIT"

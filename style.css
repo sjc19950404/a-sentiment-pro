@@ -61,6 +61,22 @@ table { width: 100%; border-collapse: collapse; font-size: 12px; }
 th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
 th { color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--card); }
 
+/* 策略回测 / 主线选股卡（V5.2） */
+.bt, .mainline { grid-column: span 2; }
+@media (max-width: 760px) { .bt, .mainline { grid-column: span 1; } }
+#btMetrics table { font-size: 12px; }
+#btMetrics td { white-space: nowrap; }
+#btNavSvg { width: 100%; height: 110px; margin-top: 10px; }
+#btNavSvg polyline { fill: none; stroke-width: 2; }
+#btNavSvg line { stroke: var(--line); }
+.bt-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11px; color: var(--muted); margin-top: 4px; }
+.bt-legend i { display: inline-block; width: 16px; height: 2px; vertical-align: middle; margin-right: 4px; }
+.bt-params { font-size: 11px; margin-top: 8px; line-height: 1.7; }
+.ml-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; font-size: 13px; }
+.ml-head .tag2 { background: var(--line); border-radius: 10px; padding: 2px 9px; font-size: 12px; }
+.ml-score { color: var(--acc); font-weight: 600; }
+.np-yes { color: var(--acc); font-weight: 600; }
+
 /* 研判报告卡 */
 .brief-body { font-size: 12.5px; line-height: 1.55; max-height: 420px; overflow-y: auto; }
 .bf-sec { margin-bottom: 12px; }

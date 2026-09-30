@@ -406,6 +406,137 @@ function renderBrief(days, arc) {
   $('briefBody').innerHTML = buildBrief(days, arc);
 }
 
+// ── V5.2 策略回测面板：读 data/backtest.json（由 node scripts/backtest.mjs 预生成）──
+// 数据文件缺失时只在卡片内提示，不影响其余区块渲染。
+const pctS = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—' : (+v * 100).toFixed(d) + '%';
+const numS = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—' : (+v).toFixed(d);
+
+function drawNav(svg, series) {
+  const W = 300, H = 100, pad = 8;
+  const all = series.flatMap((s) => s.values).filter((v) => Number.isFinite(v));
+  if (!all.length) { svg.innerHTML = ''; return; }
+  const min = Math.min(...all), max = Math.max(...all);
+  const n = Math.max(...series.map((s) => s.values.length));
+  const x = (i) => pad + (i * (W - 2 * pad)) / (n - 1 || 1);
+  const y = (v) => H - pad - ((v - min) / (max - min || 1)) * (H - 2 * pad);
+  let out = `<line x1="0" y1="${H / 2}" x2="${W}" y2="${H / 2}"></line>`;
+  for (const s of series) {
+    if (!s.values.length) continue;
+    const pts = s.values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+    out += `<polyline points="${pts}" style="stroke:${s.color}${s.dash ? ';stroke-dasharray:4 3' : ''}"></polyline>`;
+  }
+  svg.innerHTML = out;
+}
+
+function renderBacktest(bt) {
+  const m = bt.meta || {}, P = bt.params || {}, v52 = P.v52 || {};
+  const cmp = [
+    ['年化收益', bt.base.annual, bt.v52.annual],
+    ['最大回撤', bt.base.maxDd, bt.v52.maxDd],
+    ['夏普比率', bt.base.sharpe, bt.v52.sharpe],
+    ['Calmar', bt.base.calmar, bt.v52.calmar],
+    ['持仓日胜率', bt.base.winRate, bt.v52.winRate],
+    ['空仓占比', bt.base.emptyRatio, bt.v52.emptyRatio],
+  ];
+  const fmt = (v, i) => (i === 2 || i === 3) ? numS(v) : pctS(v, 1);
+  $('btMetrics').innerHTML = '<table><thead><tr><th>指标</th><th>V5 基准口径</th><th>V5.2 增强口径</th></tr></thead><tbody>'
+    + cmp.map((r, i) => `<tr><td class="muted">${r[0]}</td><td>${fmt(r[1], i)}</td><td>${fmt(r[2], i)}</td></tr>`).join('')
+    + '</tbody></table>';
+
+  const s = bt.series || {};
+  const series = [
+    { name: 'V5 基准（无成本/无风控）', values: s.navBase || [], color: 'var(--muted)', dash: true },
+    { name: 'V5.2 增强（成本+平滑+风控）', values: s.navV52 || [], color: 'var(--acc)' },
+    { name: '等权指数买入持有', values: s.navHold || [], color: 'var(--warn)', dash: true },
+  ];
+  drawNav($('btNavSvg'), series);
+  $('btLegend').innerHTML = series.map((x) => `<span><i style="background:${x.color}"></i>${x.name}</span>`).join('')
+    + `<span>样本 ${m.days || 0} 个交易日（${(s.dates || [])[0] || '—'} ~ ${(s.dates || []).slice(-1)[0] || '—'}）</span>`;
+
+  $('btParams').innerHTML = [
+    `信号：${m.signal || '—'}`,
+    `标的：${(m.assets || []).join(' / ')}（各自独立按同规则回测 → 日收益等权合成组合）`,
+    `成本：${m.costNote || '—'}`,
+    `风控：最大仓位 ${numS(v52.maxPos, 2)}｜单笔止损 ${pctS(v52.stopLoss, 0) || '—'}｜回撤降仓触发 ${pctS(v52.ddTrigger, 0) || '—'}｜单日仓位变动 ≤ ${numS(v52.maxPosChg, 2)}`,
+    `阈值：过热 ${numS(P.thresholds?.overheat, 0)} / 开仓 ${numS(P.thresholds?.lo, 0)} / 减仓 ${numS(P.thresholds?.hi, 0)} / 清仓 ${numS(P.thresholds?.panic, 0)}（收盘打分，T+1 生效）`,
+  ].join('<br>');
+  $('btNote').textContent = `口径备注：${m.caveat || ''}（情绪分口径自检偏差 ${m.weightDrift ?? '—'}，来自存档因子/总分的四舍五入）`;
+
+  const p = bt.pareto || {};
+  $('paretoSummary').textContent = `扫描 ${p.scanned || 0} 组权重 · 去重后 ${p.uniqueCount || 0} 个不同结果 · 非支配解 ${p.count ?? '—'} 个。${p.note || ''}`;
+  const ptb = $('paretoTable').querySelector('tbody');
+  ptb.innerHTML = '';
+  (p.rows || []).forEach((r) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${numS(r.sharpe)}</td><td>${pctS(r.maxDd, 2)}</td><td>${numS(r.calmar)}</td>`
+      + `<td>${pctS(r.annual, 2)}</td><td class="${r.np ? 'np-yes' : 'muted'}">${r.np ? '✓ 前沿' : '—'}</td>`;
+    ptb.appendChild(tr);
+  });
+
+  const R = bt.rolling || {};
+  const line = (label, x) => `${label}：夏普均值 ${numS(x?.sharpeMean)}｜最差段回撤 ${pctS(x?.ddWorst, 2)}｜正收益段 ${pctS(x?.winSegPct, 0)}`;
+  $('rollSummary').innerHTML = `${line('固定权重', R.base)}<br>${line('逐窗重寻优', R.refit)}`
+    + (R.refitChangedSegments != null ? `<br>重寻优实际换权重的段：${R.refitChangedSegments}/${(R.refit?.segments || []).length}` : '');
+  const rtb = $('rollTable').querySelector('tbody');
+  rtb.innerHTML = '';
+  [['固定', R.base], ['重寻优', R.refit]].forEach(([label, x]) => {
+    (x?.segments || []).forEach((sg) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="muted">${label}</td><td>${sg.testStart} ~ ${sg.testEnd}</td>`
+        + `<td>${pctS(sg.total, 2)}</td><td>${numS(sg.sharpe)}</td><td>${pctS(sg.maxDd, 2)}</td>`;
+      rtb.appendChild(tr);
+    });
+  });
+  if (!rtb.children.length) rtb.innerHTML = '<tr><td colspan="5" class="muted">样本不足，未切出滚动段</td></tr>';
+
+  const ml = bt.mainLine || {};
+  const box = $('mainLineBody');
+  box.innerHTML = '';
+  (ml.mains || []).forEach((mn) => {
+    const head = document.createElement('div');
+    head.className = 'ml-head';
+    head.innerHTML = `<span class="tag2">主线题材 ${mn.theme}</span>`
+      + `<span>涨停 <b>${mn.themeCount}</b> 只</span>`
+      + `<span>密集度 ${(mn.density * 100).toFixed(1)}%</span>`
+      + `<span>强度分 <span class="ml-score">${mn.mainScore}</span></span>`
+      + `<span class="muted">自动选出标的 ${mn.stockCount} 只</span>`;
+    box.appendChild(head);
+    if (mn.stocks?.length) {
+      const wrap = document.createElement('div');
+      wrap.className = 'chips';
+      wrap.style.marginBottom = '10px';
+      mn.stocks.forEach((st) => {
+        const c = document.createElement('span');
+        c.className = 'chip';
+        c.innerHTML = `${st.name} <span class="${(st.changePct || 0) >= 0 ? 'bf-up' : 'bf-dn'}">${numS(st.changePct, 2)}%</span>`;
+        wrap.appendChild(c);
+      });
+      box.appendChild(wrap);
+    }
+  });
+  const ind = document.createElement('div');
+  ind.className = 'ml-head';
+  ind.innerHTML = '<span class="muted">领涨行业：</span>'
+    + (ml.topIndustries || []).map((x) => `<span class="tag2">${x.name} <span class="bf-up">+${numS(x.change_pct, 2)}%</span></span>`).join('');
+  box.appendChild(ind);
+  const note = document.createElement('div');
+  note.className = 'bf-foot';
+  note.textContent = `口径：主线题材按当日题材榜涨停家数取前 N；标的清单取热点榜中诱因含该题材的强势股，按当日涨幅降序。`
+    + `强度分 = 主线涨停家数 × 密集度（该题材涨停数 ÷ 当日全题材涨停数），与离线 Python 版 find_main_line 的「涨停家数 × 涨停密度」同形，但数据源不同，绝对量级不可直接比较。数据截至 ${ml.tradeDate || '—'}。`;
+  box.appendChild(note);
+}
+
+async function loadBacktest() {
+  try {
+    const res = await fetch('./data/backtest.json?_=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    renderBacktest(await res.json());
+  } catch (e) {
+    const n = $('btNote');
+    if (n) n.textContent = `回测数据未生成或加载失败（生成命令：node scripts/backtest.mjs）：${e.message}`;
+  }
+}
+
 let lastFp = '';
 
 function fingerprint(arc) {
@@ -431,6 +562,7 @@ function renderAll(arc) {
   renderThemes(latest);
   renderHot(latest);
   renderBrief(days, arc);
+  loadBacktest(); // 回测/帕累托/滚动/主线选股四区块（独立数据文件，缺失不影响上述渲染）
 }
 
 async function checkUpdate(manual) {
