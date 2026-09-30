@@ -3,7 +3,10 @@
 ## 〇、图形界面（`sentiment_gui.py`）
 
 ```bash
-python sentiment_gui.py
+# 推荐：双击 run_gui.bat（自动选用带 tkinter 的 gui312 venv 解释器）
+# 或命令行指定解释器（PATH 上默认的 python 3.13 是精简构建，没有 tkinter，直接跑会报
+#   ModuleNotFoundError: No module named 'tkinter'，窗口不会出现）：
+C:/Users/Administrator/.workbuddy/binaries/python/envs/gui312/Scripts/python.exe sentiment_gui.py
 ```
 
 Tkinter 一键平台【V5.2 版】：鼠标选因子 CSV 与输出目录 → **界面直调权重 w1~w5 与四档阈值（开仓/减仓/清仓/过热），无需改源码** → 填风险标记（可选）→ 一键运行全流程（基准绩效 / 网格 / 阈值 / 鲁棒性 / 汇总报告 / 三栏图 / 末日日报 / Excel），日志实时滚动，桌面弹窗提示完成。

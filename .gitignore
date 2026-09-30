@@ -9,3 +9,7 @@ tools/backtest/_smoke_gui.py
 tools/backtest/_smoke_out.txt
 tools/backtest/reports*/
 tools/backtest/auto_pool_test*
+tools/backtest/_shot_gui.py
+tools/backtest/_shot_log.txt
+tools/backtest/_gui_shot.png
+tools/backtest/reports_dbg/
