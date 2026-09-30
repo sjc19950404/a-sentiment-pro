@@ -11,12 +11,23 @@ function renderAlerts(meta) {
   const box = $('alerts');
   box.innerHTML = '';
   const msgs = [];
-  if (meta.stale) msgs.push('数据滞后（最近一次云端抓取失败，当前展示上次成功数据）。');
-  if (meta.source === 'offline-replay') msgs.push('当前为离线演示数据，非实时行情。');
+  // 整体滞后：pipeline 走了回退档（数据非最新成功抓取）。原因优先用机器写入的 fallbackReason。
+  if (meta.stale) {
+    let t = '数据滞后：当前展示的是上次成功抓取的数据，非最新交易日结果。';
+    if (meta.fallbackReason) t += ` 回退原因：${meta.fallbackReason}。`;
+    else if (meta.note) t += ` ${meta.note}。`;
+    msgs.push({ cls: 'alert', icon: '⚠', text: t });
+  } else if (meta.note) {
+    // 数据本身是最新的，只是个别字段有人工/离线修补 → 提示而非告警
+    msgs.push({ cls: 'alert info', icon: 'ℹ', text: `数据说明：${meta.note}。` });
+  }
+  if (meta.source === 'offline-replay') {
+    msgs.push({ cls: 'alert', icon: '⚠', text: '当前为离线演示数据，非实时行情。' });
+  }
   for (const m of msgs) {
     const d = document.createElement('div');
-    d.className = 'alert';
-    d.textContent = '⚠ ' + m;
+    d.className = m.cls;
+    d.textContent = `${m.icon} ${m.text}`;
     box.appendChild(d);
   }
 }

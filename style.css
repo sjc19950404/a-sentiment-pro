@@ -21,6 +21,7 @@ body { margin: 0; background: var(--bg); color: var(--txt); font-family: -apple-
 
 #alerts { padding: 8px 20px 0; }
 .alert { background: #3a2a1b; border: 1px solid var(--warn); color: #f0c674; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; font-size: 13px; }
+.alert.info { background: #16293a; border-color: var(--acc); color: #9dc7f0; }
 
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 16px 20px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }

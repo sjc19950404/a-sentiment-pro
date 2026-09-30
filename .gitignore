@@ -13,3 +13,5 @@ tools/backtest/_shot_gui.py
 tools/backtest/_shot_log.txt
 tools/backtest/_gui_shot.png
 tools/backtest/reports_dbg/
+tools/backtest/_check*/
+tools/backtest/archive_*.csv

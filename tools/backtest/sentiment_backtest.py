@@ -46,6 +46,12 @@ STAMP = 0.0                               # 印花税率（仅卖出，如 0.000
 SLIP = 0.0                                # 单边滑点（如 0.0002 = 万2）
 MAX_POS_CHG = 0.0                         # 单日最大仓位变动（0=不限；如 0.2 = 单日最多 ±20%）
 
+# 因子列名（顺序即权重顺序）。默认 f1~f5 为 V5.0 五核心因子；
+# 可用 CLI --factor-cols 覆盖为任意列名（如网页模型的七因子 s_net,s_pos,s_brd,s_hot,s_zdt,s_zbl,s_amt）。
+# 权重维度必须与列数一致。多进程网格搜索时子进程不会继承 CLI 设置的全局值，
+# 故 _grid_chunk 显式接收 cols 并在子进程内就地设置本模块全局。
+FACTOR_COLS = ["f1", "f2", "f3", "f4", "f5"]
+
 
 @dataclass
 class Perf:
@@ -64,9 +70,16 @@ class Perf:
 
 
 # ────────────────────────── 打分与信号 ──────────────────────────
-def score(df: pd.DataFrame, w) -> pd.Series:
-    return (df["f1"] * w[0] + df["f2"] * w[1] + df["f3"] * w[2]
-            + df["f4"] * w[3] + df["f5"] * w[4])
+def score(df: pd.DataFrame, w, cols=None) -> pd.Series:
+    """因子加权综合分。cols 默认取模块全局 FACTOR_COLS（f1~f5；--factor-cols 可覆盖）。
+    维度校验前置：权重个数必须等于因子列数，否则显式报错而非静默算错。"""
+    cs = list(cols or FACTOR_COLS)
+    if len(cs) != len(w):
+        raise ValueError(f"权重维度 {len(w)} 与因子列数 {len(cs)} 不匹配（{cs}）")
+    s = df[cs[0]] * w[0]
+    for i in range(1, len(cs)):
+        s = s + df[cs[i]] * w[i]
+    return s
 
 
 def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
@@ -235,12 +248,14 @@ def rank_key(p: Perf):
 
 
 # ────────────────────────── 权重网格 ──────────────────────────
-def weight_grid() -> list:
-    """全部满足 sum=1、wi>=0.05、步进 0.05 的组合"""
+def weight_grid(n: int = None) -> list:
+    """全部满足 sum=1、wi>=W_MIN、步进 W_STEP 的 n 元权重组合。
+    n 默认取当前因子个数（5 因子 → 3876 组；7 因子 → 27132 组）。"""
+    n = n or len(FACTOR_COLS)
     units = int(round(1 / W_STEP))                 # 20
     lo = int(round(W_MIN / W_STEP))                # 1
     out = []
-    for c in itertools.combinations_with_replacement(range(lo, units + 1), 5):
+    for c in itertools.combinations_with_replacement(range(lo, units + 1), n):
         if sum(c) != units:
             continue
         for perm in set(itertools.permutations(c)):
@@ -248,18 +263,27 @@ def weight_grid() -> list:
     return out
 
 
-def _grid_chunk(df, chunk, cost_kw):
-    return [{"w1": w[0], "w2": w[1], "w3": w[2], "w4": w[3], "w5": w[4],
-             **asdict(perf_auto(df, w, **cost_kw))}
+def _weights_row(w) -> dict:
+    return {f"w{i + 1}": w[i] for i in range(len(w))}
+
+
+def _grid_chunk(df, chunk, cost_kw, cols=None):
+    # 子进程（Windows spawn）不继承父进程的全局设置，故在此就地设置因子列
+    global FACTOR_COLS
+    if cols:
+        FACTOR_COLS = list(cols)
+    return [{**_weights_row(w), **asdict(perf_auto(df, w, **cost_kw))}
             for w in chunk]
 
 
 def grid_search(df: pd.DataFrame, verbose=True, workers: int = None,
                 cost_kw: dict = None) -> pd.DataFrame:
-    """3876 组权重网格。多进程分块并行（60 组/块），并行不可用时自动回退串行。
+    """全权重网格（默认 5 因子 3876 组；--factor-cols 给 7 因子时 27132 组）。
+    多进程分块并行（60 组/块），并行不可用时自动回退串行。
     Windows spawn 安全：任务函数均为模块级，无 lambda/闭包。
     cost_kw（V5.2）：comm/stamp/slip/max_pos_chg 交易成本与仓位平滑口径随网格生效。"""
     grids = weight_grid()
+    cols = list(FACTOR_COLS)
     cost_kw = cost_kw or {}
     rows = None
     try:
@@ -268,7 +292,7 @@ def grid_search(df: pd.DataFrame, verbose=True, workers: int = None,
         done = 0
         with ProcessPoolExecutor(max_workers=workers) as ex:
             for part in ex.map(_grid_chunk, [df] * len(chunks), chunks,
-                               [cost_kw] * len(chunks)):
+                               [cost_kw] * len(chunks), [cols] * len(chunks)):
                 rows = part if rows is None else rows + part
                 done += len(part)
                 if verbose and done % 600 < 60:
@@ -278,8 +302,7 @@ def grid_search(df: pd.DataFrame, verbose=True, workers: int = None,
             print(f"  并行不可用({e})，转串行")
         rows = []
         for i, w in enumerate(grids):
-            rows.append({"w1": w[0], "w2": w[1], "w3": w[2], "w4": w[3], "w5": w[4],
-                         **asdict(perf_auto(df, w, **cost_kw))})
+            rows.append({**_weights_row(w), **asdict(perf_auto(df, w, **cost_kw))})
             if verbose and (i + 1) % 500 == 0:
                 print(f"  grid {i + 1}/{len(grids)}")
     res = pd.DataFrame(rows)
@@ -332,13 +355,13 @@ def threshold_scan(df: pd.DataFrame, w, cost_kw: dict = None) -> pd.DataFrame:
 
 # ────────────────────────── 鲁棒性 ──────────────────────────
 def noise_test(df: pd.DataFrame, w, eps=5.0, n=200, seed=42) -> dict:
-    """给 f1~f5 加 U(-eps,+eps) 噪声，看绩效衰减"""
+    """给全部因子列加 U(-eps,+eps) 噪声，看绩效衰减"""
     rng = np.random.default_rng(seed)
     base = perf_auto(df, w)                       # pool 模式（尤其 ret 列池无 close）必须走 perf_auto
     dd, sh = [], []
     for _ in range(n):
         noisy = df.copy()
-        for c in ["f1", "f2", "f3", "f4", "f5"]:
+        for c in FACTOR_COLS:
             noisy[c] = np.clip(noisy[c] + rng.uniform(-eps, eps, len(noisy)), 0, 100)
         p = perf_auto(noisy, w)
         dd.append(p.max_dd - base.max_dd)
@@ -450,6 +473,10 @@ def write_report(out, base_p, best_w, best_p, th, noise, split, regime,
                  dd_trigger: float = 0.0, comm: float = COMM, stamp: float = STAMP,
                  slip: float = SLIP, max_pos_chg: float = MAX_POS_CHG,
                  roll: pd.DataFrame = None, pareto: pd.DataFrame = None) -> str:
+    n_fac = len(best_w)
+    n_comb = math.comb(int(round(1 / W_STEP)) - 1, n_fac - 1) if n_fac > 1 else 0
+    # 预拼权重串，避免在 f-string 内嵌套同类引号（Python <3.12 不支持 PEP 701）
+    w_desc = " ".join(f"w{i + 1}={v}" for i, v in enumerate(best_w))
     th_top = th.head(5).to_string(index=False) if th is not None else "（自定义权重，未做网格扫描）"
     roll_sec = ""
     if roll is not None:
@@ -475,13 +502,13 @@ def write_report(out, base_p, best_w, best_p, th, noise, split, regime,
 """
     md = f"""# Sentiment V5.0 权重敏感性回测报告
 
-## 一、基准权重绩效（w1~w5 = {best_w}，阈值 lo={lo} hi={hi} panic={panic} overheat={overheat}，max_pos={max_pos}，stop_loss={stop_loss}，dd_trigger={dd_trigger}，佣金={comm} 印花税={stamp} 滑点={slip} 单日仓位变动≤{max_pos_chg}）
+## 一、基准权重绩效（{n_fac} 因子 {w_desc}，阈值 lo={lo} hi={hi} panic={panic} overheat={overheat}，max_pos={max_pos}，stop_loss={stop_loss}，dd_trigger={dd_trigger}，佣金={comm} 印花税={stamp} 滑点={slip} 单日仓位变动≤{max_pos_chg}）
 ```
 {json.dumps(asdict(base_p), ensure_ascii=False, indent=2)}
 ```
 
-## 二、最优权重组合（3876 组网格，步进 0.05，wi>=0.05）
-最优：w1={best_w[0]} w2={best_w[1]} w3={best_w[2]} w4={best_w[3]} w5={best_w[4]}
+## 二、最优权重组合（{n_comb} 组网格，步进 0.05，wi>=0.05）
+最优：{w_desc}
 ```
 {json.dumps(asdict(best_p), ensure_ascii=False, indent=2)}
 ```
@@ -555,7 +582,7 @@ def generate_daily_report(df: pd.DataFrame, w, alerts, out: str,
     main_line（V5.2 自动选股模式传入）：末日主线识别结果，输出主线板块与个股清单。"""
     if is_pool(df):
         last_date = df["date"].max()
-        df = df[df["date"] == last_date].groupby("date", as_index=False)[["f1", "f2", "f3", "f4", "f5"]].mean()
+        df = df[df["date"] == last_date].groupby("date", as_index=False)[FACTOR_COLS].mean()
         df["close"] = 1.0
     s = score(df, w)
     last = df.iloc[-1]
@@ -563,10 +590,10 @@ def generate_daily_report(df: pd.DataFrame, w, alerts, out: str,
     sc = float(s.iloc[-1])
     warn = model_fail_warning(sc, alerts)
     risk, signal = risk_tier(sc)
-    names = ["F1 情绪定位", "F2 盈亏效应", "F3 广度量能", "F4 题材结构", "F5 主线板块内部结构"]
+    names = [f"F{i + 1} {c}" for i, c in enumerate(FACTOR_COLS)]
     lines = [f"# Sentiment V5.0 市场情绪日报｜{date_str}", "",
              "## 核心因子得分", ""]
-    lines += [f"- {n}：{float(last[f'f{i + 1}']):.2f}" for i, n in enumerate(names)]
+    lines += [f"- {n}：{float(last[c]):.2f}" for n, c in zip(names, FACTOR_COLS)]
     lines += ["",
               f"> 原始综合得分：**{sc:.2f}**｜修正参考分：{warn['modified']}"
               f"（扣分项：{'、'.join(warn['hits']) if warn['hits'] else '无'}）",
@@ -632,16 +659,17 @@ def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
     ax1.set_ylabel("净值")
     ax1.legend()
     ax1.grid(alpha=0.3)
-    # 下：五因子 + 综合分 + 阈值线
-    colors = ["#457B9D", "#2A9D8F", "#F4A261", "#E76F51", "#8D99AE"]
-    for i, (c, n) in enumerate(zip(colors, ["F1情绪", "F2盈亏", "F3广度", "F4题材", "F5主线"])):
-        ax2.plot(x, df[f"f{i + 1}"], color=c, lw=1, alpha=0.75, label=n)
+    # 下：各因子 + 综合分 + 阈值线
+    palette = ["#457B9D", "#2A9D8F", "#F4A261", "#E76F51", "#8D99AE",
+               "#6A4C93", "#B5838D", "#264653", "#E9C46A"]
+    for i, col in enumerate(FACTOR_COLS):
+        ax2.plot(x, df[col], color=palette[i % len(palette)], lw=1, alpha=0.75, label=f"F{i + 1} {col}")
     ax2.plot(x, sc, lw=2.2, color="red", label="综合Score")
     for y, c, n in ((lo, "green", f"开仓 {lo:g}"), (hi, "orange", f"减仓 {hi:g}"),
                     (panic, "red", f"清仓 {panic:g}"), (overheat, "magenta", f"过热 {overheat:g}")):
         ax2.axhline(y=y, ls="--", c=c, alpha=0.6, label=n)
     ax2.set_ylim(0, 100)
-    ax2.set_title("五大因子与综合得分时序", fontsize=13)
+    ax2.set_title(f"{len(FACTOR_COLS)} 因子与综合得分时序", fontsize=13)
     ax2.set_ylabel("分数 (0-100)")
     ax2.legend(loc="upper right", ncol=2, fontsize=9)
     ax2.grid(alpha=0.3)
@@ -679,8 +707,8 @@ def daily_table(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
     strat = ret * pos - turnover_cost(pos, comm, stamp, slip)
     dates = df["date"] if pd.api.types.is_datetime64_any_dtype(df["date"]) else pd.to_datetime(df["date"])
     out = pd.DataFrame({"date": dates.dt.strftime("%Y-%m-%d")})
-    for i in range(5):
-        out[f"f{i + 1}"] = df[f"f{i + 1}"].round(2)
+    for c in FACTOR_COLS:
+        out[c] = df[c].round(2)
     out["close"] = df["close"]
     out["score"] = sc.round(2)
     out["pos"] = pos
@@ -719,17 +747,18 @@ def export_excel(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
     start_str = (df["date"].min() if is_pool(df) else df["date"].iloc[0]).strftime("%Y-%m-%d")
     path = os.path.join(out, f"Sentiment_Backtest_Result_{date_str}.xlsx")
     n_days = df["date"].nunique() if is_pool(df) else len(df)
-    n_params = 19
-    summary = pd.DataFrame({
-        "类别": ["参数"] * n_params,
-        "名称": ["w1 情绪定位", "w2 盈亏效应", "w3 广度量能", "w4 题材结构", "w5 主线结构",
-                 "开仓阈值(≥持有)", "减仓阈值(<)", "清仓阈值(≤)", "过热阈值(≥禁新建)",
-                 "最大仓位", "单笔止损", "动态降仓回撤阈值",
-                 "佣金率(双边)", "印花税率(卖出)", "滑点(单边)", "单日仓位最大变动",
-                 "无风险利率", "样本天数", "样本区间"],
-        "数值": [w[0], w[1], w[2], w[3], w[4], lo, hi, panic, overheat, max_pos,
+    w_names = [f"w{i + 1} {c}" for i, c in enumerate(FACTOR_COLS)]
+    tail_names = ["开仓阈值(≥持有)", "减仓阈值(<)", "清仓阈值(≤)", "过热阈值(≥禁新建)",
+                  "最大仓位", "单笔止损", "动态降仓回撤阈值",
+                  "佣金率(双边)", "印花税率(卖出)", "滑点(单边)", "单日仓位最大变动",
+                  "无风险利率", "样本天数", "样本区间"]
+    tail_vals = [lo, hi, panic, overheat, max_pos,
                  stop_loss, dd_trigger, comm, stamp, slip, max_pos_chg,
-                 rf, n_days, f"{start_str} ~ {date_str}"],
+                 rf, n_days, f"{start_str} ~ {date_str}"]
+    summary = pd.DataFrame({
+        "类别": ["参数"] * (len(w_names) + len(tail_names)),
+        "名称": w_names + tail_names,
+        "数值": [w[i] for i in range(len(w))] + tail_vals,
     })
     cost_kw = dict(comm=comm, stamp=stamp, slip=slip, max_pos_chg=max_pos_chg)
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
@@ -1000,7 +1029,7 @@ def demo_df(n=900, seed=7) -> pd.DataFrame:
 
 # ────────────────────────── 主流程 ──────────────────────────
 def main():
-    global RF
+    global RF, FACTOR_COLS
     ap = argparse.ArgumentParser()
     ap.add_argument("--factors", help="因子 CSV（date,f1..f5,close[,regime]）")
     ap.add_argument("--demo", action="store_true", help="合成数据自检")
@@ -1016,6 +1045,14 @@ def main():
     ap.add_argument("--w3", type=float, default=None)
     ap.add_argument("--w4", type=float, default=None)
     ap.add_argument("--w5", type=float, default=None)
+    ap.add_argument("--factor-cols", default="",
+                    help="因子列名（逗号分隔，默认 f1,f2,f3,f4,f5）。"
+                         "喂 web 模型七因子示例：--factor-cols s_net,s_pos,s_brd,s_hot,s_zdt,s_zbl,s_amt")
+    ap.add_argument("--weights", default="",
+                    help="逗号分隔权重，个数须等于因子列数；给出即跳过网格扫描。"
+                         "七因子示例：0.2,0.1,0.2,0.1,0.15,0.1,0.15")
+    ap.add_argument("--grid", action="store_true",
+                    help="即使给了 --weights 也执行权重网格扫描（--weights 仅作基准绩效）")
     ap.add_argument("--lo", type=float, default=BASE_LO, help="开仓/持有阈值（默认65）")
     ap.add_argument("--hi", type=float, default=BASE_HI, help="减仓阈值（默认44）")
     ap.add_argument("--panic", type=float, default=PANIC, help="清仓阈值（默认24）")
@@ -1054,10 +1091,28 @@ def main():
         raise SystemExit("--comm/--stamp/--slip 须 ≥ 0（0=关闭）")
     args.roll = args.roll or args.roll_refit   # refit 隐含启用滚动验证
 
-    w_custom = [args.w1, args.w2, args.w3, args.w4, args.w5]
+    # 先定因子列（--factor-cols 可换任意列名），再按列数校验权重维度
+    if args.factor_cols.strip():
+        cols = [c.strip().lower() for c in args.factor_cols.split(",") if c.strip()]
+        if len(cols) < 2:
+            raise SystemExit("--factor-cols 至少给出 2 个列名")
+        if len(set(cols)) != len(cols):
+            raise SystemExit("--factor-cols 存在重复列名")
+        FACTOR_COLS = cols
+    n_fac = len(FACTOR_COLS)
+
+    if args.weights.strip():
+        try:
+            w_custom = [float(x) for x in args.weights.split(",") if x.strip() != ""]
+        except ValueError:
+            raise SystemExit("--weights 须为逗号分隔的数字")
+    else:
+        w_custom = [args.w1, args.w2, args.w3, args.w4, args.w5]
     if any(x is not None for x in w_custom):
+        if len(w_custom) != n_fac:
+            raise SystemExit(f"权重个数 {len(w_custom)} 与因子列数 {n_fac} 不匹配（{FACTOR_COLS}）")
         if any(x is None for x in w_custom):
-            raise SystemExit("自定义权重需 --w1~--w5 五项齐全")
+            raise SystemExit(f"自定义权重需 {n_fac} 项齐全")
         if abs(sum(w_custom) - 1) > 1e-6:
             raise SystemExit(f"权重总和 {sum(w_custom):.4f} ≠ 1")
         w_custom = tuple(w_custom)
@@ -1066,10 +1121,10 @@ def main():
 
     df = demo_df() if args.demo else pd.read_csv(args.factors)
     df.columns = [str(c).strip().lower() for c in df.columns]   # 兼容 Excel 模板 F1/F1 大小写
-    need = ["date", "f1", "f2", "f3", "f4", "f5"] + ([] if args.stock_csv else ["close"])
+    need = ["date"] + list(FACTOR_COLS) + ([] if args.stock_csv else ["close"])
     missing = [c for c in need if c not in df.columns]
     if missing:
-        raise SystemExit(f"因子 CSV 缺列: {missing}（Excel 模板导出应含 date,f1..f5,close）")
+        raise SystemExit(f"因子 CSV 缺列: {missing}（应含 date,{','.join(FACTOR_COLS)},close）")
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values("date").reset_index(drop=True)
     os.makedirs(args.out, exist_ok=True)
@@ -1104,21 +1159,26 @@ def main():
         print(f"[0/5] 交易成本：佣金{args.comm} 印花税{args.stamp} 滑点{args.slip}｜"
               f"仓位平滑：单日变动≤{args.max_pos_chg or '不限'}")
 
+    if w_custom is None and n_fac != len(BASE_W):
+        raise SystemExit(
+            f"因子列数为 {n_fac}（{FACTOR_COLS}），与内置基准权重（{len(BASE_W)} 因子）不匹配；"
+            f"请用 --weights 显式给出 {n_fac} 个和为 1 的权重")
     print(f"[1/5] 基准绩效 …")
     base_p = perf_auto(df, w_custom or BASE_W, **th_kw)
     print(f"      {asdict(base_p)}")
 
-    if w_custom is not None:
+    if w_custom is not None and not args.grid:
         best_w, best_p, scan = w_custom, base_p, None
-        print(f"      使用自定义权重 w={w_custom}，跳过网格扫描")
-    elif args.fast:
+        print(f"      使用自定义权重 w={w_custom}，跳过网格扫描（需扫描请加 --grid）")
+    elif w_custom is None and args.fast:
         best_w, best_p, scan = BASE_W, base_p, None
     else:
-        print("[2/5] 权重网格扫描（3876 组，多进程并行）…")
+        n_comb = math.comb(int(round(1 / W_STEP)) - 1, n_fac - 1)
+        print(f"[2/5] 权重网格扫描（{n_comb} 组 / {n_fac} 因子，多进程并行）…")
         scan = grid_search(df, cost_kw=cost_kw)
         scan.to_csv(os.path.join(args.out, "weights_scan.csv"), index=False, encoding="utf-8-sig")
         bw = scan.iloc[0]
-        best_w = (bw.w1, bw.w2, bw.w3, bw.w4, bw.w5)
+        best_w = tuple(bw[f"w{i + 1}"] for i in range(n_fac))
         best_p = Perf(**{k: bw[k] for k in Perf.__dataclass_fields__})
         print(f"      最优 w={best_w} dd={best_p.max_dd} sharpe={best_p.sharpe}")
 

@@ -70,9 +70,28 @@ test/fixtures/parity_v52.json  Python↔JS 一致性夹具（由 tools/backtest/
 > 诚实说明：回测样本仅随存档累积（当前 32 个交易日），年化/夏普等指标的统计意义有限，
 > 仅用于管线自检与参数对比，**不构成投资建议**。样本短时两目标可能同向、前沿退化为单点，页面会显式标注。
 
+## 数据更新与故障排查
+
+- **生成链路**：Actions 定时（北京 18:30 / 21:00，周一至五）跑 `MODE=live node src/pipeline.js` →
+  抓多源数据 → 合并进历史 → 写出 `data/archive.json`。当日**重跑**（如 21:00 补抓）走 `pipeline.js`
+  的 `mergeNewDays(history, newDays)`：同日替换、涨跌家数缺失时用旧档回填、席位明细取覆盖率更高的一份。
+- **`meta.stale` 语义**：`true` = 本次写入走了**回退档**（`fallbackArchive`），即展示的不是最新成功抓取结果。
+  此时 `meta.fallbackReason` 是机器写入的回退原因，`meta.note` 是人工说明。页面顶部据此显示告警。
+- **告警排查顺序**：
+  1. 读 `data/archive.json` 的 `meta`：`stale` / `fallbackReason` / `note` / `generatedAt` / `tradeDate`
+  2. 拉最近一次 Actions 运行日志看真实报错：`python scripts/fetch_run_log.py <run_id>`
+     （run_id 从仓库 Actions 页面取；依赖 Windows 凭据管理器里的 GitHub token）
+  3. 怀疑某源不可达：`node scripts/probe_sources.mjs` —— 逐源打印 HTTP 状态与关键字段，
+     并对照「强制 IPv4 优先」前后差异以排除本机路由问题
+- **降级 ≠ 成功**：`fallbackArchive` 是容错设计、不会让 job 失败，所以 **Actions 显示 ✅ 不代表抓取成功**。
+  必须核对 `meta.stale` 与日志里的 `::warning::` 注解。
+- 教训（2026-09-29「数据滞后」告警）：根因不是网络故障，而是 `pipeline.js` 中一个**未定义变量**
+  （`old` 应为 `history[i]`）使 `runLive` 每次重跑当日数据都抛 `ReferenceError` → 整体回退 → `stale` 恒为 `true`、
+  数据永不更新，而 job 始终显示成功。已修复并加回归测试 `test/merge.test.mjs` 守护。
+
 ## 已知限制 / 诚实说明
 
 - **零 bug 不存在**：凡拉第三方行情（东财/同花顺/腾讯）的系统，源方限流、改格式、封 IP 都无法在代码层根除。本系统的优势是**失败可降级**（不崩页、不误导）。
-- **live 抓取需云端验证一次**：`src/sources.js` 在本地沙箱禁网，逻辑靠 unit test + 离线回放保证；真实字段解析要在 Actions 跑通一次（日志可见）。若某源解析有偏差，页面会标 `stale` 而非显示错误数据。
+- **live 抓取需云端验证一次**：`src/sources.js` 在本地沙箱禁网，逻辑靠 unit test + 离线回放保证；真实字段解析要在 Actions 跑通一次（日志可见）。解析失败时 pipeline 走回退档并标 `meta.stale`，页面显示滞后告警而不会展示错误数据——但注意**回退不会让 job 失败**，排查请按上面的「数据更新与故障排查」来。
 - 历史分位基于存档长度（默认窗口），样本越长越准；建议长期运行积累。
 - 数据仅供参考，**非投资建议**。

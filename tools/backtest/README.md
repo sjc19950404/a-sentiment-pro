@@ -50,9 +50,37 @@ date,f1,f2,f3,f4,f5,close[,regime]
 
 **手工采集用 Excel 模板**：`SentimentV5_factor_template.xlsx`（由 `make_template.py` 生成）——填 B~F 因子分（0~100 数据校验），G~I 自动算综合分/风险等级/交易信号，J 列填回测标的收盘（**回测必需**）。另存为 CSV 后表头即 `date,f1..f5,close`，直接 `--factors` 喂回测。
 
-- `f1~f5`：当日五大核心因子分（0~100）。f1 可直接取网页模型的情绪分；其余因子分可由离线规则引擎导出（导出脚本属后续工作，先手工/爬虫补齐历史段）
+- `f1~f5`：当日核心因子分（0~100）。**列名与个数可用 `--factor-cols` 覆盖**（配合 `--weights` 给等长权重）；
+  真实历史因子分现已由 `export_from_archive.py` 从网页存档一键导出，无需手工补齐（见下节）
 - `close`：回测标的收盘价（主线指数或等权主线篮子）
 - `regime`（可选）：`bull/bear/other`；缺省时按标的价格 60 日趋势自动标注
+
+### 从网页存档导出因子（`export_from_archive.py`）
+
+网页版模型每日收盘后把**七因子**情绪分（`s_net/s_pos/s_brd/s_hot/s_zdt/s_zbl/s_amt`）写入
+`data/archive.json`。本脚本把这批真实因子分导成回测 CSV，并附带标的收益/净值序列：
+
+```bash
+# 七因子（无损，推荐）：导出后直接回测
+python export_from_archive.py --archive ../../data/archive.json --out archive_factors.csv
+python sentiment_backtest.py --factors archive_factors.csv \
+    --factor-cols s_net,s_pos,s_brd,s_hot,s_zdt,s_zbl,s_amt \
+    --weights 0.2,0.1,0.2,0.1,0.15,0.1,0.15 --fast --xlsx
+
+# f1~f5 有损映射（仅兼容旧管线/旧报告模板，不推荐）
+python export_from_archive.py --legacy5 --out archive_f5.csv
+```
+
+- `--index` 标的口径：默认 `等权`（三大指数日收益等权合成），可选 `上证指数/深证成指/创业板指`
+- 存档 `indexes` 只有**当日涨跌幅**、无收盘价；回测只需收益序列，故脚本用涨跌幅还原净值（基准 100）
+  作 `close`，并额外输出精确 `ret` 列（`asset_ret` 优先取 `ret`，可保全首日收益）
+- 因子或指数缺失的交易日**直接跳过、不插值**（不让假数据进回测），跳过明细打印在终端
+- ⚠ `--legacy5` 的七→五映射是**语义近似、有损**：`f1=综合分`（与其余因子共线）、`f2=s_net`、
+  `f3=mean(s_pos,s_amt)`、`f4=mean(s_hot,s_zdt)`、`f5=mean(s_brd,s_zbl)`。除复用旧模板外请用七因子模式
+
+> **交叉验证**：同一份存档、同一组权重下，Python 侧与网页版 JS 引擎（`src/backtest.js`）的基准绩效
+> **逐位一致**（total_ret -0.0355 / annual -0.2477 / max_dd 0.0476 / sharpe -2.038 / win_rate 0.4516），
+> 说明两套实现真正等价，而非各算各的。
 
 ### 用法
 

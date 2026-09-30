@@ -149,6 +149,45 @@ export function recalcAll(days) {
   recalcRanks(days);
 }
 
+/**
+ * 把新抓交易日合并进历史（就地更新 history）：
+ *  - 同日已存在 → 替换；席位明细取覆盖率更高的一份（防新抓批次倒退）
+ *  - 新天涨跌家数缺失而旧档有值 → 用旧档回填，防重跑降级
+ * 返回 {replaced, appended, breadthFilled}，便于测试与日志。
+ *
+ * 注：此函数曾被 8853a17 引入的 `old is not defined` 打挂（引用未声明变量），
+ * 导致 runLive 每次重跑当日数据都抛 ReferenceError → 整体回退 → meta.stale 恒为 true。
+ * 抽为纯函数以便回归测试守护。
+ */
+export function mergeNewDays(history, newDays) {
+  let replaced = 0, appended = 0, breadthFilled = 0;
+  for (const nd of newDays) {
+    const i = history.findIndex((d) => d.trade_date === nd.trade_date);
+    if (i >= 0) {
+      const old = history[i];
+      const oldSeats = old.summary?.seats, newSeats = nd.summary?.seats;
+      const oldBetter = oldSeats && newSeats && oldSeats.detail && !newSeats.detail && oldSeats.cover > newSeats.cover;
+      if (oldSeats && oldBetter) {
+        nd.summary = nd.summary || {};
+        nd.summary.seats = oldSeats;
+      }
+      // 涨跌家数偶发抓取失败：新天缺失而旧档有值则回填，防重跑降级
+      if (old.summary?.up_count != null && nd.summary?.up_count == null) {
+        nd.summary = nd.summary || {};
+        for (const k of ['up_count', 'down_count', 'flat_count']) nd.summary[k] = old.summary[k];
+        breadthFilled++;
+        console.log('[merge-breadth]', nd.trade_date, '回填涨跌家数', old.summary.up_count, '/', old.summary.down_count);
+      }
+      history[i] = nd;
+      replaced++;
+    } else {
+      history.push(nd);
+      appended++;
+    }
+  }
+  return { replaced, appended, breadthFilled };
+}
+
 // 线上模式：抓取真实数据，合并进已存档历史 → 全档重算分位
 // fetchLive 返回 { newDays:[day], tradeDate }，day 结构与快照一致
 export async function runLive() {
@@ -162,25 +201,9 @@ export async function runLive() {
   if (!history.length) {
     history = runOffline(path.join(ROOT, 'snapshot.html')).all_days || [];
   }
-  // 合并新交易日（已存在则替换；席位明细取覆盖率高的那份，防新抓批次倒退；缺逐票明细的旧格式让位给新格式）
-  for (const nd of newDays) {
-    const i = history.findIndex((d) => d.trade_date === nd.trade_date);
-    if (i >= 0) {
-      const oldSeats = history[i].summary?.seats, newSeats = nd.summary?.seats;
-      const oldBetter = oldSeats && newSeats && oldSeats.detail && !newSeats.detail && oldSeats.cover > newSeats.cover;
-      if (oldSeats && oldBetter) {
-        nd.summary = nd.summary || {};
-        nd.summary.seats = oldSeats;
-      }
-      // 涨跌家数偶发抓取失败：新天缺失而旧档有值则回填，防重跑降级
-      if (old.summary?.up_count != null && nd.summary?.up_count == null) {
-        nd.summary = nd.summary || {};
-        for (const k of ['up_count', 'down_count', 'flat_count']) nd.summary[k] = old.summary[k];
-        console.log('[merge-breadth]', nd.trade_date, '回填涨跌家数', old.summary.up_count, '/', old.summary.down_count);
-      }
-      history[i] = nd;
-    } else history.push(nd);
-  }
+  const merged = mergeNewDays(history, newDays);
+  console.log('[merge] 替换', merged.replaced, '| 新增', merged.appended,
+    '| 涨跌家数回填', merged.breadthFilled);
   history.sort((a, b) => (a.trade_date < b.trade_date ? -1 : 1));
 
   // 龙虎榜晚间分批披露：重抓上一交易日 lhb 刷原始数据（行业/涨跌停池收盘即定死，无需补抓）
@@ -265,7 +288,8 @@ export async function main() {
         return null;
       }
       console.error('[live] 抓取失败，回退:', e.message);
-      archive = fallbackArchive(dataPath);
+      console.log('::warning::live 抓取失败，本次写入回退档（meta.stale=true）：' + e.message);
+      archive = fallbackArchive(dataPath, e.message);
     }
   } else {
     archive = runOffline(process.env.SNAPSHOT || path.join(ROOT, 'snapshot.html'));
@@ -279,17 +303,18 @@ export async function main() {
   return archive;
 }
 
-// 回退：优先用已提交的真实 archive.json（标记 stale），否则用快照演示数据
-function fallbackArchive(dataPath) {
-  if (existsSync(dataPath)) {
-    const a = JSON.parse(readFileSync(dataPath, 'utf8'));
+// 回退：优先用已提交的真实 archive.json（标记 stale 并记录原因），否则用快照演示数据
+function fallbackArchive(dataPath, reason) {
+  const mark = (a) => {
     a.meta = a.meta || {};
     a.meta.stale = true;
+    if (reason) a.meta.fallbackReason = reason;
     return a;
+  };
+  if (existsSync(dataPath)) {
+    return mark(JSON.parse(readFileSync(dataPath, 'utf8')));
   }
-  const a = runOffline(process.env.SNAPSHOT || path.join(ROOT, 'snapshot.html'));
-  a.meta.stale = true;
-  return a;
+  return mark(runOffline(process.env.SNAPSHOT || path.join(ROOT, 'snapshot.html')));
 }
 
 // 直接运行时执行
