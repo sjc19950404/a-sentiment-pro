@@ -61,7 +61,11 @@ try {
 await new Promise((r) => setTimeout(r, 400)); // 等异步 fetch/渲染落地
 
 const $ = (id) => window.document.getElementById(id);
-const rows = (id) => $(id)?.querySelectorAll('tbody tr').length ?? 0;
+// 统计数据行数——必须排除空态提示行：零匹配时 tbody 里会渲染
+// <tr><td class="empty">没有匹配的个股…</td></tr>，若把这一行算作数据行，
+// "搜索筛选"断言在零匹配时也会成立（1 > 0 && 1 < 56 假通过），两处搜索断言就会打架。
+const rows = (id) => [...($(id)?.querySelectorAll('tbody tr') || [])]
+  .filter((tr) => !tr.querySelector('td.empty')).length;
 const txt = (id) => ($(id)?.textContent || '').trim();
 
 check('原有区块未受影响：情绪分已渲染', txt('emScore') !== '' && txt('emScore') !== '--', `emScore=${txt('emScore')}`);
@@ -102,6 +106,35 @@ check(`研判报告·仓位档位与引擎一致（情绪分 ${lastEmo} → ${ex
   expectTier != null && tierSeg.includes(expectTier), tierSeg.slice(0, 80) || '缺「仓位档位」段');
 check('研判报告·档位阈值与引擎阈值同源',
   tierSeg.includes(`≥${th.overheat}`) && tierSeg.includes(`≥${th.lo}`) && tierSeg.includes(`≤${th.panic}`), '');
+
+// 龙虎榜口径：上榜总成交与净买率必须是同一个口径（当日榜 + 同票去重），
+// 不能把「连续N个交易日涨跌幅偏离值累计」这类区间累计榜混进来。
+// 2026-09-30 事故：旧口径把 84 条原始记录（含 23 条区间榜）不加区分地相加，得上榜总成交 511 亿，
+// 当日榜去重后真实仅 136.5 亿（3.7 倍差），净买率被稀释成 2.4%（真实 5.7%），
+// 定性从"中等力度"错判为"脉冲级、可信度低"——结论方向反了。区间榜记录的 BUY_AMT 还是区间累计
+// 成交额（近岸蛋白 10 日榜 BUY==SELL==ACCUM==116.97 亿、净额 0），根本不能当席位买卖用。
+const s0 = (arcAll.all_days || []).slice(-1)[0]?.summary || {};
+const d0lhb = (arcAll.all_days || []).slice(-1)[0]?.lhb || [];
+check('数据：龙虎榜已单列当日榜口径（成交/净额/家数/区间榜条数）',
+  s0.lhb_daily_amt != null && s0.lhb_daily_net != null
+  && s0.lhb_daily_stocks != null && s0.lhb_range_count != null,
+  `amt=${s0.lhb_daily_amt} net=${s0.lhb_daily_net} stocks=${s0.lhb_daily_stocks} range=${s0.lhb_range_count}`);
+const legacyTot = d0lhb.reduce((a, l) => a + (l.buy_wan || 0) + (l.sell_wan || 0), 0) / 1e4;
+check('数据：当日榜成交额明显小于「全部记录未去重」之和（区间累计榜不得混入）',
+  s0.lhb_daily_amt > 0 && s0.lhb_daily_amt < legacyTot * 0.7,
+  `当日榜 ${s0.lhb_daily_amt} 亿 vs 未去重 ${legacyTot.toFixed(1)} 亿`);
+if (s0.lhb_daily_amt > 0 && s0.lhb_daily_net != null) {
+  const rate = (s0.lhb_daily_net / s0.lhb_daily_amt * 100).toFixed(1);
+  const seg = brief.indexOf('上榜总成交');
+  check('研判报告·上榜总成交取当日榜口径',
+    brief.includes(`上榜总成交 ${Math.round(s0.lhb_daily_amt)} 亿`),
+    seg >= 0 ? brief.slice(seg, seg + 70) : '报告缺「上榜总成交」行');
+  check('研判报告·净买率与当日榜口径同源（不再被区间累计榜稀释）',
+    brief.includes(`净买率 ${rate}%`), `期望「净买率 ${rate}%」`);
+  check('研判报告·区间累计榜被单列且注明（口径透明）',
+    s0.lhb_range_count > 0 ? brief.includes('连续 N 个交易日累计') : true,
+    `range_count=${s0.lhb_range_count}`);
+}
 check('研判报告·因子分解已降级（标注不参与档位判定）',
   brief.includes('因子分解') && brief.includes('不参与档位判定'), '');
 check('研判报告·含 V5.2 实盘约束（止损/降仓/成本）',
@@ -239,11 +272,18 @@ escClose();
 // 8) 表格搜索 / 排序 / 视图切换
 const beforeRows = rows('hotTable');
 const inp = $('hotSearch');
-inp.value = 'PCB';
+// 搜索词从当日数据里动态取，不写死：曾固定用 'PCB'，而某些交易日强势股里根本没有该题材，
+// 零匹配时两个搜索断言结论相反（表格侧因空态行假通过、卡片侧正确失败）。
+const searchWord = (() => {
+  const h = (arcAll.all_days[arcAll.all_days.length - 1].hot || [])[0];
+  return String(h?.reason || '').split(/[+＋]/)[0].trim() || String(h?.code || '');
+})();
+inp.value = searchWord;
 inp.dispatchEvent(new window.Event('input', { bubbles: true }));
 await new Promise((r) => setTimeout(r, 280)); // 等搜索防抖
 const afterRows = rows('hotTable');
-check('交互：搜索框可筛选表格行', afterRows > 0 && afterRows < beforeRows, `${beforeRows} → ${afterRows} 行`);
+check('交互：搜索框可筛选表格行', afterRows > 0 && afterRows < beforeRows,
+  `「${searchWord}」${beforeRows} → ${afterRows} 行`);
 inp.value = '';
 inp.dispatchEvent(new window.Event('input', { bubbles: true }));
 await new Promise((r) => setTimeout(r, 280));
@@ -309,9 +349,16 @@ clickEl($('briefNav').querySelector('button[data-act="brsec"]'));
 check('交互：点报告目录跳转并展开该段', !sec1.classList.contains('collapsed'), '');
 
 // 10) 主线卡的题材与标的均可点
-check('交互：主线卡的题材标签与标的清单可点',
-  window.document.querySelectorAll('#mainLineBody [data-act="theme"]').length > 0
-  && window.document.querySelectorAll('#mainLineBody [data-act="stock"]').length > 0, '');
+// 主线题材的成分股 = 诱因文本里包含该题材名的票。某些交易日主线名与诱因用词并不一致，
+// 成分股会为空（例如 2026-09-30 主线「业绩线」，个股诱因里写的是「业绩改善」），
+// 故标的断言按当日实际数据条件化，不写死"必须存在"，否则数据一变就假失败。
+const mlThemeChips = window.document.querySelectorAll('#mainLineBody [data-act="theme"]').length;
+const mlStockChips = window.document.querySelectorAll('#mainLineBody [data-act="stock"]').length;
+const mlHasStocks = (bt.mainLine?.mains || []).some((m) => (m.stocks || []).length > 0);
+check('交互：主线卡的题材标签可点（可下钻题材成分）', mlThemeChips > 0, `${mlThemeChips} 个题材 chip`);
+check('交互：主线标的清单可点（当日主线确有成分股时）',
+  mlHasStocks ? mlStockChips > 0 : true,
+  mlHasStocks ? `${mlStockChips} 个标的` : '当日主线题材名未命中任何诱因文本 → 成分股为空，该项按数据跳过');
 
 // ── 双端适配层断言（手机 / PC 都常用）──
 // 宽表在窄屏不可用（10 列横滑），故同一份 rows 同时渲染表格与卡片两套 DOM，由 CSS 决定显示哪个。
@@ -359,13 +406,14 @@ check('回归：无涨跌幅限制的新股在涨幅列打「新股」标记',
   `${$('hotTable').querySelectorAll('.newb').length} 只`);
 clickEl($('hotTabs').querySelector('button[data-view="hot"]'));
 
-// 搜索联动
+// 搜索联动（与上方表格搜索用同一个动态词，两处结论必须一致）
 const cardsBefore = hcards().length;
-inp.value = 'PCB';
+inp.value = searchWord;
 inp.dispatchEvent(new window.Event('input', { bubbles: true }));
 await new Promise((r) => setTimeout(r, 280));
 check('双端：搜索同时筛选卡片列表',
-  hcards().length > 0 && hcards().length < cardsBefore, `${cardsBefore} → ${hcards().length} 张`);
+  hcards().length > 0 && hcards().length < cardsBefore,
+  `「${searchWord}」卡片 ${cardsBefore} → ${hcards().length} 张 / 表格 ${rows('hotTable')} 行 / 计数「${txt('hotCount')}」`);
 inp.value = '';
 inp.dispatchEvent(new window.Event('input', { bubbles: true }));
 await new Promise((r) => setTimeout(r, 280));

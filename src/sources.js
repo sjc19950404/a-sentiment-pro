@@ -293,6 +293,18 @@ async function fetchAmountTencentFallback(ymd) {
 }
 
 // day 组装（七因子 + 题材原始计数）
+//
+// 东财龙虎榜同一次披露里混装两类榜单，字段语义并不相同：
+//   ① 当日榜（"日涨幅偏离值达7%"、"日换手率达20%"、"日振幅达15%"、"无价格涨跌幅限制"等）
+//      —— 席位买卖与净额都是"当日"口径，BILLBOARD_DEAL_AMT == BUY_AMT + SELL_AMT；
+//   ② 区间累计榜（"连续3/10个交易日涨跌幅偏离值累计达X%"、"非S证券连续三个交易日…"）
+//      —— 统计的是整个区间的累计值，且 BILLBOARD_BUY_AMT 被填成区间累计成交额
+//      （实测 2026-09-30 近岸蛋白 688137 的 10 日榜：BUY == SELL == ACCUM_AMOUNT == 116.97 亿、净额 0）。
+// 两类不加区分地相加会得出量级错误的"上榜总成交"——2026-09-30 实测：全部 84 条未去重合计 511.1 亿，
+// 而当日榜去重后仅 136.5 亿（3.7 倍差），净买率因此被稀释成 2.4%（真实 5~6%）。
+// 故此处把两类分开：存全量供追溯，另出"当日榜去重"口径供报告使用。
+const RANGE_BOARD_RE = /连续[0-9一二三四五六七八九十]+个交易日/;
+
 // lhb 原始数据 → 聚合结构（buildDay 与 applyLhb 补抓共用）
 function buildLhbPart(lhbRaw) {
   const lhb = lhbRaw.map((x) => ({
@@ -301,26 +313,46 @@ function buildLhbPart(lhbRaw) {
     net_buy_wan: r1((x.BILLBOARD_NET_AMT || 0) / 1e4),
     buy_wan: r1((x.BILLBOARD_BUY_AMT || 0) / 1e4),
     sell_wan: r1((x.BILLBOARD_SELL_AMT || 0) / 1e4),
+    // 东财官方"龙虎榜成交额"：当日榜等于 买+卖；区间榜里它与被污染的 BUY_AMT 不同源，故单独取用
+    deal_wan: r1((x.BILLBOARD_DEAL_AMT || 0) / 1e4),
     turnover_pct: r2(x.TURNOVERRATE || 0),
+    is_range: RANGE_BOARD_RE.test(String(x.EXPLANATION || '')),
   })).sort((a, b) => b.net_buy_wan - a.net_buy_wan);
 
-  const byCode = new Map();
-  for (const l of lhb) {
-    if (!byCode.has(l.code)) byCode.set(l.code, { ...l, reasons: [l.reason] });
-    else {
-      const acc = byCode.get(l.code);
-      if (!acc.reasons.includes(l.reason)) acc.reasons.push(l.reason);
-      if (Math.abs(l.net_buy_wan || 0) > Math.abs(acc.net_buy_wan || 0)) {
-        acc.net_buy_wan = l.net_buy_wan; acc.buy_wan = l.buy_wan; acc.sell_wan = l.sell_wan;
+  // 同票多榜（同一只票因不同上榜原因出现多条）→ 每股一笔，取 |净额| 最大的那条为代表
+  const aggrOf = (rows) => {
+    const byCode = new Map();
+    for (const l of rows) {
+      if (!byCode.has(l.code)) byCode.set(l.code, { ...l, reasons: [l.reason] });
+      else {
+        const acc = byCode.get(l.code);
+        if (!acc.reasons.includes(l.reason)) acc.reasons.push(l.reason);
+        if (Math.abs(l.net_buy_wan || 0) > Math.abs(acc.net_buy_wan || 0)) {
+          acc.net_buy_wan = l.net_buy_wan; acc.buy_wan = l.buy_wan;
+          acc.sell_wan = l.sell_wan; acc.deal_wan = l.deal_wan;
+        }
       }
     }
-  }
-  const lhb_aggr = [...byCode.values()];
+    return [...byCode.values()];
+  };
+  const sumOf = (rows, f) => rows.reduce((a, l) => a + (f(l) || 0), 0);
+
+  const daily = lhb.filter((l) => !l.is_range);
+  const lhb_aggr = aggrOf(lhb);
+  const lhb_daily_aggr = aggrOf(daily);
+
   // 净额口径：按去重个股加总（每票一笔，取绝对值最大榜），避免同票多榜重复计入
-  const net_total_yi = r2(lhb_aggr.reduce((a, l) => a + l.net_buy_wan, 0) / 1e4);
+  const net_total_yi = r2(sumOf(lhb_aggr, (l) => l.net_buy_wan) / 1e4);
   const net_pos = lhb_aggr.filter((l) => l.net_buy_wan > 0).length;
   const net_neg = lhb_aggr.filter((l) => l.net_buy_wan < 0).length;
-  return { lhb, lhb_aggr, net_total_yi, net_pos, net_neg };
+  // 当日榜口径（报告展示用）：分子分母同源，净买率才不会被区间累计榜的巨额基数稀释
+  const daily_net_yi = r2(sumOf(lhb_daily_aggr, (l) => l.net_buy_wan) / 1e4);
+  const daily_amt_yi = r2(sumOf(lhb_daily_aggr, (l) => l.deal_wan) / 1e4);
+
+  return {
+    lhb, lhb_aggr, lhb_daily_aggr, net_total_yi, net_pos, net_neg,
+    daily_net_yi, daily_amt_yi, range_count: lhb.length - daily.length,
+  };
 }
 
 // 龙虎榜晚间分批披露：把重抓的 lhb 刷进已有 day（仅原始数据层，emotion 由 recalcAll 统一重算）
@@ -334,6 +366,10 @@ export function applyLhb(day, lhbRaw) {
   s.net_total_yi = p.net_total_yi;
   s.net_pos = p.net_pos;
   s.net_neg = p.net_neg;
+  s.lhb_daily_stocks = p.lhb_daily_aggr.length;
+  s.lhb_daily_net = p.daily_net_yi;
+  s.lhb_daily_amt = p.daily_amt_yi;
+  s.lhb_range_count = p.range_count;
   if (day.emotion) day.emotion.net_total_yi = p.net_total_yi;
   return day;
 }
@@ -405,7 +441,10 @@ export async function fetchSeats(date, aggr) {
 }
 
 function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amountMap, breadth, seats) {
-  const { lhb, lhb_aggr, net_total_yi, net_pos, net_neg } = buildLhbPart(lhbRaw);
+  const {
+    lhb, lhb_aggr, lhb_daily_aggr, net_total_yi, net_pos, net_neg,
+    daily_net_yi, daily_amt_yi, range_count,
+  } = buildLhbPart(lhbRaw);
 
   const hot = hotRaw.map((x) => ({
     code: x.code, name: x.name, reason: x.reason || '',
@@ -466,6 +505,9 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
 
   const summary = {
     lhb_count: lhb.length, lhb_stocks: lhb_aggr.length, net_total_yi, net_pos, net_neg,
+    // 当日榜口径（不含"连续N个交易日"区间累计榜）：报告里的上榜总成交/净买率用它，保证分子分母同源
+    lhb_daily_stocks: lhb_daily_aggr.length, lhb_daily_net: daily_net_yi,
+    lhb_daily_amt: daily_amt_yi, lhb_range_count: range_count,
     up_count: breadth ? breadth.up : null, down_count: breadth ? breadth.down : null, flat_count: breadth ? breadth.flat : null,
     breadth_scope: '沪深两市A股（不含北交所/ST口径与各平台统计或有出入）',
     hot_count: hot.length, topic_kinds: Object.keys(freq).length,

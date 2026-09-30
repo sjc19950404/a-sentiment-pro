@@ -19,7 +19,8 @@
       "at": "2026-09-30T10:43:58.774Z",
       "outcome": "ok",
       "reason": null
-    }
+    },
+    "note": "龙虎榜统计口径修正：历史 33 天补齐当日榜口径（剔除连续N日累计榜），2026-09-30"
   },
   "all_days": [
     {
@@ -1952,7 +1953,11 @@
           "main_yi": 12.05,
           "tot_yi": 22.43,
           "pct": 53.7
-        }
+        },
+        "lhb_daily_stocks": 58,
+        "lhb_daily_net": 22.71,
+        "lhb_daily_amt": 211.46,
+        "lhb_range_count": 14
       },
       "indexes": {
         "上证指数": 0.01,
@@ -5164,7 +5169,11 @@
           "main_yi": 1.07,
           "tot_yi": 17.89,
           "pct": 6
-        }
+        },
+        "lhb_daily_stocks": 52,
+        "lhb_daily_net": 13.91,
+        "lhb_daily_amt": 246.95,
+        "lhb_range_count": 7
       },
       "indexes": {
         "上证指数": 1.41,
@@ -8322,7 +8331,11 @@
           "main_yi": 1.44,
           "tot_yi": 19.42,
           "pct": 7.4
-        }
+        },
+        "lhb_daily_stocks": 57,
+        "lhb_daily_net": 5.33,
+        "lhb_daily_amt": 162.36,
+        "lhb_range_count": 24
       },
       "indexes": {
         "上证指数": 0.19,
@@ -11294,7 +11307,11 @@
           "main_yi": 0.31,
           "tot_yi": -26.44,
           "pct": -1.2
-        }
+        },
+        "lhb_daily_stocks": 58,
+        "lhb_daily_net": -25.11,
+        "lhb_daily_amt": 214.5,
+        "lhb_range_count": 19
       },
       "indexes": {
         "上证指数": -2.4,
@@ -14555,7 +14572,11 @@
           "main_yi": 12.9,
           "tot_yi": 21.25,
           "pct": 60.7
-        }
+        },
+        "lhb_daily_stocks": 56,
+        "lhb_daily_net": 19.2,
+        "lhb_daily_amt": 137.57,
+        "lhb_range_count": 15
       },
       "indexes": {
         "上证指数": 0.24,
@@ -17456,7 +17477,11 @@
           "main_yi": 12.53,
           "tot_yi": 39.88,
           "pct": 31.4
-        }
+        },
+        "lhb_daily_stocks": 46,
+        "lhb_daily_net": 26.97,
+        "lhb_daily_amt": 169.34,
+        "lhb_range_count": 15
       },
       "indexes": {
         "上证指数": 0.04,
@@ -20081,7 +20106,11 @@
           "main_yi": 2.61,
           "tot_yi": 8.94,
           "pct": 29.2
-        }
+        },
+        "lhb_daily_stocks": 48,
+        "lhb_daily_net": 2.75,
+        "lhb_daily_amt": 129.32,
+        "lhb_range_count": 16
       },
       "indexes": {
         "上证指数": -0.59,
@@ -22918,7 +22947,11 @@
           "main_yi": 0.77,
           "tot_yi": 23.21,
           "pct": 3.3
-        }
+        },
+        "lhb_daily_stocks": 52,
+        "lhb_daily_net": 22.86,
+        "lhb_daily_amt": 340.1,
+        "lhb_range_count": 9
       },
       "indexes": {
         "上证指数": 0.19,
@@ -25705,7 +25738,11 @@
           "main_yi": 7.7,
           "tot_yi": 5.31,
           "pct": 145
-        }
+        },
+        "lhb_daily_stocks": 48,
+        "lhb_daily_net": 0.86,
+        "lhb_daily_amt": 134.02,
+        "lhb_range_count": 16
       },
       "indexes": {
         "上证指数": 0.59,
@@ -28589,7 +28626,11 @@
           "main_yi": 7.81,
           "tot_yi": 34.07,
           "pct": 22.9
-        }
+        },
+        "lhb_daily_stocks": 52,
+        "lhb_daily_net": 29.09,
+        "lhb_daily_amt": 217.48,
+        "lhb_range_count": 10
       },
       "indexes": {
         "上证指数": 1.13,
@@ -31480,7 +31521,11 @@
           "main_yi": 1.26,
           "tot_yi": 9.35,
           "pct": 13.4
-        }
+        },
+        "lhb_daily_stocks": 43,
+        "lhb_daily_net": 9.47,
+        "lhb_daily_amt": 127.92,
+        "lhb_range_count": 13
       },
       "indexes": {
         "上证指数": -0.11,
@@ -34570,7 +34615,11 @@
           "main_yi": 8.77,
           "tot_yi": 8.5,
           "pct": 103.2
-        }
+        },
+        "lhb_daily_stocks": 58,
+        "lhb_daily_net": 5.05,
+        "lhb_daily_amt": 223.86,
+        "lhb_range_count": 18
       },
       "indexes": {
         "上证指数": 0.86,
@@ -37830,7 +37879,11 @@
           "main_yi": 0.95,
           "tot_yi": -5.11,
           "pct": -18.6
-        }
+        },
+        "lhb_daily_stocks": 50,
+        "lhb_daily_net": -9.03,
+        "lhb_daily_amt": 221.05,
+        "lhb_range_count": 18
       },
       "indexes": {
         "上证指数": -0.16,
@@ -40809,7 +40862,11 @@
           "main_yi": 0.25,
           "tot_yi": -1.92,
           "pct": -12.8
-        }
+        },
+        "lhb_daily_stocks": 57,
+        "lhb_daily_net": -4.01,
+        "lhb_daily_amt": 317.66,
+        "lhb_range_count": 20
       },
       "indexes": {
         "上证指数": -0.97,
@@ -43587,7 +43644,11 @@
           "main_yi": 8.18,
           "tot_yi": 13.08,
           "pct": 62.5
-        }
+        },
+        "lhb_daily_stocks": 47,
+        "lhb_daily_net": 8.04,
+        "lhb_daily_amt": 149.24,
+        "lhb_range_count": 11
       },
       "indexes": {
         "上证指数": 0.02,
@@ -46172,7 +46233,11 @@
           "main_yi": 4.53,
           "tot_yi": 25.45,
           "pct": 17.8
-        }
+        },
+        "lhb_daily_stocks": 45,
+        "lhb_daily_net": 19.43,
+        "lhb_daily_amt": 189.21,
+        "lhb_range_count": 12
       },
       "indexes": {
         "上证指数": -0.3,
@@ -49367,7 +49432,11 @@
           "main_yi": 29.17,
           "tot_yi": 69.52,
           "pct": 42
-        }
+        },
+        "lhb_daily_stocks": 51,
+        "lhb_daily_net": 49.21,
+        "lhb_daily_amt": 280.14,
+        "lhb_range_count": 16
       },
       "indexes": {
         "上证指数": 0.07,
@@ -52420,7 +52489,11 @@
           "main_yi": 2.42,
           "tot_yi": 13.42,
           "pct": 18
-        }
+        },
+        "lhb_daily_stocks": 40,
+        "lhb_daily_net": -0.11,
+        "lhb_daily_amt": 108.47,
+        "lhb_range_count": 16
       },
       "indexes": {
         "上证指数": 0.2,
@@ -55133,7 +55206,11 @@
           "main_yi": 8.5,
           "tot_yi": 8.56,
           "pct": 99.3
-        }
+        },
+        "lhb_daily_stocks": 44,
+        "lhb_daily_net": -0.28,
+        "lhb_daily_amt": 134.92,
+        "lhb_range_count": 19
       },
       "indexes": {
         "上证指数": 0.28,
@@ -57768,7 +57845,11 @@
           "main_yi": 7.04,
           "tot_yi": 7.71,
           "pct": 91.4
-        }
+        },
+        "lhb_daily_stocks": 45,
+        "lhb_daily_net": 6.29,
+        "lhb_daily_amt": 136.3,
+        "lhb_range_count": 15
       },
       "indexes": {
         "上证指数": -0.43,
@@ -60370,7 +60451,11 @@
           "main_yi": 2.58,
           "tot_yi": 21.93,
           "pct": 11.8
-        }
+        },
+        "lhb_daily_stocks": 47,
+        "lhb_daily_net": 11.58,
+        "lhb_daily_amt": 168.02,
+        "lhb_range_count": 16
       },
       "indexes": {
         "上证指数": -1.18,
@@ -63371,7 +63456,11 @@
           "main_yi": 13.19,
           "tot_yi": 48.71,
           "pct": 27.1
-        }
+        },
+        "lhb_daily_stocks": 53,
+        "lhb_daily_net": 34.38,
+        "lhb_daily_amt": 181.85,
+        "lhb_range_count": 22
       },
       "indexes": {
         "上证指数": -0.07,
@@ -66220,7 +66309,11 @@
           "main_yi": 2.78,
           "tot_yi": 16.79,
           "pct": 16.5
-        }
+        },
+        "lhb_daily_stocks": 45,
+        "lhb_daily_net": 13.92,
+        "lhb_daily_amt": 152.05,
+        "lhb_range_count": 19
       },
       "indexes": {
         "上证指数": -0.54,
@@ -69429,7 +69522,11 @@
           "main_yi": 9.14,
           "tot_yi": 46.08,
           "pct": 19.8
-        }
+        },
+        "lhb_daily_stocks": 53,
+        "lhb_daily_net": 25.36,
+        "lhb_daily_amt": 234.26,
+        "lhb_range_count": 20
       },
       "indexes": {
         "上证指数": 0.71,
@@ -72213,7 +72310,11 @@
           "main_yi": 3.7,
           "tot_yi": 4.85,
           "pct": 76.2
-        }
+        },
+        "lhb_daily_stocks": 49,
+        "lhb_daily_net": 2.19,
+        "lhb_daily_amt": 191.38,
+        "lhb_range_count": 9
       },
       "indexes": {
         "上证指数": -0.41,
@@ -75075,7 +75176,11 @@
           "main_yi": 4.09,
           "tot_yi": 32.71,
           "pct": 12.5
-        }
+        },
+        "lhb_daily_stocks": 45,
+        "lhb_daily_net": 27.99,
+        "lhb_daily_amt": 165.04,
+        "lhb_range_count": 10
       },
       "indexes": {
         "上证指数": 0.94,
@@ -78287,7 +78392,11 @@
           "main_yi": 6.13,
           "tot_yi": 7.98,
           "pct": 76.9
-        }
+        },
+        "lhb_daily_stocks": 52,
+        "lhb_daily_net": 5.42,
+        "lhb_daily_amt": 187.38,
+        "lhb_range_count": 14
       },
       "indexes": {
         "上证指数": 0.97,
@@ -81369,7 +81478,11 @@
           "main_yi": 10.63,
           "tot_yi": 15.87,
           "pct": 67
-        }
+        },
+        "lhb_daily_stocks": 53,
+        "lhb_daily_net": 3.74,
+        "lhb_daily_amt": 454.59,
+        "lhb_range_count": 21
       },
       "indexes": {
         "上证指数": 0.06,
@@ -84319,7 +84432,11 @@
           "main_yi": 1.95,
           "tot_yi": 27.29,
           "pct": 7.1
-        }
+        },
+        "lhb_daily_stocks": 55,
+        "lhb_daily_net": 5.95,
+        "lhb_daily_amt": 147.71,
+        "lhb_range_count": 14
       },
       "indexes": {
         "上证指数": -0.39,
@@ -87379,7 +87496,11 @@
           "main_yi": 9.12,
           "tot_yi": 15.74,
           "pct": 57.9
-        }
+        },
+        "lhb_daily_stocks": 49,
+        "lhb_daily_net": 6.09,
+        "lhb_daily_amt": 157.27,
+        "lhb_range_count": 23
       },
       "indexes": {
         "上证指数": -1.22,
@@ -91368,7 +91489,11 @@
           "main_yi": 0.51,
           "tot_yi": -0.61,
           "pct": -84.5
-        }
+        },
+        "lhb_daily_stocks": 48,
+        "lhb_daily_net": -1.83,
+        "lhb_daily_amt": 166.49,
+        "lhb_range_count": 13
       },
       "indexes": {
         "上证指数": -1.67,
@@ -95636,7 +95761,11 @@
           "tot_yi": 15.53,
           "pct": 4.4
         },
-        "hot_quote_missing": 0
+        "hot_quote_missing": 0,
+        "lhb_daily_stocks": 56,
+        "lhb_daily_net": 11.74,
+        "lhb_daily_amt": 148.38,
+        "lhb_range_count": 15
       },
       "indexes": {
         "上证指数": 0.18,
@@ -100427,7 +100556,11 @@
           "main_yi": 1.27,
           "tot_yi": 12.11,
           "pct": 10.5
-        }
+        },
+        "lhb_daily_stocks": 56,
+        "lhb_daily_net": 7.74,
+        "lhb_daily_amt": 136.48,
+        "lhb_range_count": 23
       },
       "indexes": {
         "上证指数": 0.31,

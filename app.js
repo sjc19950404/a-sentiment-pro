@@ -520,11 +520,13 @@ function buildBrief(days, arc) {
   }
   const topBuy = (d.lhb_aggr || []).filter((l) => l.net_buy_wan > 0).slice(0, 3)
     .map((l) => `${l.name} +${num(l.net_buy_wan / 1e4, 2)}亿${isNewStock(l) ? '<span class="bf-warn">（独立新股，非主线）</span>' : ''}`);
-  // 体量/净买率：净额必须对照上榜成交额看强度
-  const lhbRows = d.lhb || [];
-  const totAmt = lhbRows.reduce((a, l) => a + (l.buy_wan || 0) + (l.sell_wan || 0), 0) / 1e4;
+  // 体量/净买率：分子分母必须同源。东财龙虎榜原始记录混装两类榜单——当日榜（席位买卖即当日口径）
+  // 与"连续N个交易日区间累计榜"（字段是区间累计值，且 BUY_AMT 被填成区间累计成交额）。
+  // 两者不加区分地相加，曾把 2026-09-30 的上榜总成交算成 511 亿（当日榜去重后真实仅 136.5 亿），
+  // 净买率被稀释成 2.4%，定性从"中等力度"错判成"脉冲级、可信度低"。故统一取当日榜口径。
   const curNet = nets[nets.length - 1];
-  const nbRate = (totAmt > 0 && curNet != null) ? curNet / totAmt * 100 : null;
+  const dAmt = s.lhb_daily_amt, dNet = s.lhb_daily_net;
+  const nbRate = (dAmt > 0 && dNet != null) ? dNet / dAmt * 100 : null;
   let rateTxt = '';
   if (nbRate != null) {
     const ab = Math.abs(nbRate);
@@ -573,7 +575,8 @@ function buildBrief(days, arc) {
   const mtLine = (mt && mt.tot_yi > 0 && mt.pct != null) ? li(`资金-题材联动: 主线题材（${mt.name}）龙虎净买 ${mt.main_yi >= 0 ? '+' : ''}${num(mt.main_yi, 2)} 亿，占全部龙虎净买 <b>${mt.pct}%</b>——${mt.pct >= 60 ? '资金聚焦主线' : mt.pct >= 40 ? '资金分化' : '资金散乱，主线弱化'}`) : '';
   const sec2 = [
     li(`近5日净买（亿）: ${netTxt}`),
-    totAmt > 0 ? li(`上榜总成交 ${num(totAmt, 0)} 亿，净买率 <b>${num(nbRate, 1)}%</b>（${rateTxt}）；近3日滚动净买 ${roll3Sum >= 0 ? '+' : ''}${num(roll3Sum)} 亿`) : '',
+    dAmt > 0 ? li(`上榜总成交 ${num(dAmt, 0)} 亿（当日榜 ${nf(s.lhb_daily_stocks)} 只，净买 ${nf(s.lhb_daily_net)} 亿；分子分母同源），净买率 <b>${num(nbRate, 1)}%</b>（${rateTxt}）；近3日滚动净买 ${roll3Sum >= 0 ? '+' : ''}${num(roll3Sum)} 亿`) : '',
+    s.lhb_range_count > 0 ? li(`<span class="muted">口径说明：另有 ${s.lhb_range_count} 条「连续 N 个交易日累计」榜记录，其买卖额与净额都是区间累计值（非当日），已单列，不计入上方总成交与净买率。</span>`) : '',
     netVerdict ? li(netVerdict + `（结构 ${s.net_pos ?? '—'} 买 / ${s.net_neg ?? '—'} 卖）`) : '',
     (newStocks.length && totNetAggr > 0) ? li(`新股/独立标的（${newStocks.map((l) => l.name).join('、')}）净买 +${num(newNet, 2)} 亿，占当日净买 ${(newNet / totNetAggr * 100).toFixed(0)}%${disturb ? '，<span class="bf-warn">超 25% 扰动线——主线资金强度需剔除观察</span>' : ''}；剔除后主线净买 ${mainNet >= 0 ? '+' : ''}${num(mainNet, 2)} 亿`) : '',
     newStocks.length ? li(`<span class="bf-warn">⚠ 备注：总龙虎榜净额含新股${newStocks.map((l) => l.name).join('、')}，主线资金需剔除该标的单独评估，规避净额虚高误判</span>`) : '',
@@ -697,7 +700,7 @@ function buildBrief(days, arc) {
   const sec6 = li(`<b>${verdict}</b>`) + tierLine + decompLine + riskLine +
     (watch.length ? `<div class="bf-h bf-h2">明日观测（引擎动态生成）</div>` + watch.map((w) => li('· ' + w)).join('') : '');
 
-  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；净买为龙虎榜去重个股级口径；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股龙虎净买÷全榜单龙虎净买；主线强度分=涨停家数×密集度（该题材涨停数÷当日全题材涨停数），与引擎 selectMainLine 同式；仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额20%／涨跌家数10%／板块涨比20%／涨停强度10%／涨跌停对比15%／封板质量10%／量能15%，与页面情绪分、回测引擎同源），阈值 过热80／满仓65／半仓24~65／清仓24，收盘打分、T+1 生效，并叠加止损-8%、回撤≥15%动态降仓、单日仓位变动≤20%、佣金万3+印花税万5+滑点万2 的实盘约束；因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定；资金面（龙虎榜）为辅助观测，不参与打分；席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
+  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；上榜总成交与净买率仅取「当日榜」口径（剔除"连续N个交易日累计"类区间榜——其买卖额与净额都是区间累计值，混入会把总成交放大数倍、净买率稀释至失真），二者分子分母同源；净额（近5日序列/占比/主线资金）为龙虎榜去重个股级口径（同票多榜取 |净额| 最大一条，含区间累计榜的净额）；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股龙虎净买÷全榜单龙虎净买；主线强度分=涨停家数×密集度（该题材涨停数÷当日全题材涨停数），与引擎 selectMainLine 同式；仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额20%／涨跌家数10%／板块涨比20%／涨停强度10%／涨跌停对比15%／封板质量10%／量能15%，与页面情绪分、回测引擎同源），阈值 过热80／满仓65／半仓24~65／清仓24，收盘打分、T+1 生效，并叠加止损-8%、回撤≥15%动态降仓、单日仓位变动≤20%、佣金万3+印花税万5+滑点万2 的实盘约束；因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定；资金面（龙虎榜）为辅助观测，不参与打分；席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
 
   return stamp + seg('① 情绪定位（核心因子·25%）', sec1, 'bfsec1') + seg('② 资金面（龙虎榜）· 辅助B 北向+机构行为（不参与打分）', sec2, 'bfsec2') +
     seg('③ 盈亏效应（核心因子·25%）', sec3, 'bfsec3') + seg('④ 广度与量能（核心因子·20%）', sec4, 'bfsec4') +
@@ -1349,7 +1352,7 @@ function dayDetail(i) {
         ['连板高标', s.max_lb != null ? `${s.max_lb} 板（2 板以上 ${nf(s.lb2_count)} 只）` : '—'],
         ['涨跌家数', up != null ? `${up} / ${dn}（红盘 ${redPct != null ? redPct.toFixed(0) + '%' : '—'}）` : '—'],
         ['两市成交额', s.amount_yi != null ? `${s.amount_yi} 亿` : '—'],
-        ['龙虎榜', `上榜 ${nf(s.lhb_count)} 家 · 净买 ${nf(s.net_total_yi)} 亿`],
+        ['龙虎榜', `上榜 ${nf(s.lhb_stocks ?? s.lhb_count)} 只（${nf(s.lhb_count)} 条记录，含区间累计榜 ${nf(s.lhb_range_count)} 条）· 净买 ${nf(s.net_total_yi)} 亿`],
         ['领涨行业', esc(s.top_industry || '—')],
       ]))
       + dwSection('指数表现', dwKv(Object.entries(idx).map(([k, v]) => [k, `<span class="${trendCls(v)}">${pctOf2(v)}</span>`])))
