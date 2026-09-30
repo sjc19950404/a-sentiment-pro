@@ -140,6 +140,31 @@ function renderHot(latest) {
   });
 }
 
+// ── V5.2 报告口径：阈值单一真相源 ──
+// 报告结论不再用自算的五模块分套阈值，改为引擎口径的七因子情绪分（= archive.emotion.value，
+// 与「策略回测」「主线自动选股」卡、scripts/backtest.mjs 同源）——否则同一交易日会出现
+// 两个相反结论（实测：主体报告 83.8 →「过热」，引擎 76.8 →「满仓持有」）。
+let BT = null;      // data/backtest.json 缓存，loadBacktest 成功后赋值
+let lastArc = null; // 最近一次 archive.json：BT 就绪后用它重刷报告，让阈值/主线切到引擎口径
+const TH_DEFAULT = { panic: 24, hi: 44, lo: 65, overheat: 80 };
+function getThresholds() {
+  const t = BT && BT.params && BT.params.thresholds;
+  return (t && Number.isFinite(+t.overheat)) ? t : TH_DEFAULT;
+}
+// 仓位档位：严格对齐 src/backtest.js positions() 的**实际行为**（注意 hi 在引擎里是保留但
+// 未参与判档的参数，24~65 同属半仓）：
+//   score >= overheat → 过热（已持有保留上限仓位，空仓不新建）
+//   score >= lo       → 满仓（受回撤动态降仓 cap 限制）
+//   score >  panic    → 半仓
+//   else              → 清仓
+function posTier(score, t) {
+  if (score == null || !Number.isFinite(+score)) return null;
+  if (score >= t.overheat) return { key: 'overheat', label: '过热 · 只减仓不新建', pos: '不新建（已持有者保留）', note: '高位过热，兑现压力大于进攻价值，勿在新高追涨' };
+  if (score >= t.lo) return { key: 'hold', label: '满仓持有', pos: '满仓（上限 100%）', note: '行情强势，主线清晰，适合做主线' };
+  if (score > t.panic) return { key: 'half', label: '半仓', pos: '半仓（50%）', note: '震荡分歧，结构性行情，控仓操作' };
+  return { key: 'clear', label: '清仓', pos: '清仓（0%）', note: '亏钱效应扩散或情绪冰点，空仓防御' };
+}
+
 // ── 研判报告：规则引擎，全部由当档数据推导，无手写文案 ──
 // 新股/独立标的：上市首5日无涨跌幅限制（东财榜单诱因原话）
 const isNewStock = (l) => (l.reasons || [l.reason || '']).some((r) => String(r).includes('无价格涨跌幅限制'));
@@ -227,6 +252,20 @@ function buildBrief(days, arc) {
   const num = (v, fix = 1) => (v == null || !Number.isFinite(+v)) ? '—' : (+v).toFixed(fix);
   const arrow = (cur, pre) => (cur == null || pre == null) ? '' :
     (cur > pre ? `<span class="bf-up">↑${num(cur - pre)}</span>` : cur < pre ? `<span class="bf-dn">↓${num(pre - cur)}</span>` : '持平');
+
+  // 数据落款（V5.2）：报告"每日随档生成"，必须说清是哪一档、数据新不新，
+  // 状态口径与 src/freshness.js 三态一致（fresh / pending / behind）。
+  const meta = arc.meta || {};
+  const fresh = meta.freshness || {};
+  const freshLabel = { fresh: '最新', pending: '待更新（未到发布时刻）', behind: '滞后' }[fresh.state]
+    || (meta.stale ? '滞后' : '未判定');
+  const dataDate = meta.tradeDate || d.trade_date || '—';
+  const att = meta.lastAttempt || {};
+  const stamp = `<div class="bf-meta">数据日期 <b>${dataDate}</b> · 抓取状态 <b>${freshLabel}</b>`
+    + (fresh.behindSessions ? `（落后 ${fresh.behindSessions} 个交易日）` : '')
+    + (att.outcome === 'skipped' ? ' · 本次尝试跳过（当日数据未发布，属正常等待）' : '')
+    + (att.outcome === 'failed' ? ` · 本次抓取失败：${att.reason || '原因未记录'}` : '')
+    + ` · 样本 ${days.length} 个交易日 · 打分模型 ${(BT && BT.meta && BT.meta.formulaVersion) || meta.formulaVersion || '—'}</div>`;
 
   // 1. 情绪定位
   const v = e.value, pct = e.pct_rank;
@@ -362,6 +401,11 @@ function buildBrief(days, arc) {
   const th = d.themes || {};
   const topTheme = Object.entries(th).sort((a, b) => b[1] - a[1])[0];
   const mainZt = topTheme ? topTheme[1] : null;
+  // 主线强度分/密集度：与引擎 selectMainLine 同式（强度分 = 涨停家数 × 密集度），
+  // 让报告 §5 与「主线自动选股」卡说同一件事，而不是各报一个数。
+  const themeTotal = Object.values(th).reduce((a, b) => a + b, 0) || 1;
+  const mainDensity = topTheme ? topTheme[1] / themeTotal : null;
+  const mainScore = topTheme ? Math.round(topTheme[1] * mainDensity * 100) / 100 : null;
   let focus = '';
   if (contN && freshN) focus = contN > freshN * 1.5 ? '延续远多于新晋——资金聚焦而非轮动，主线成色足' :
     freshN > contN ? '新晋多于延续——题材轮动发散，追首板胜率低' : '新晋延续均衡——题材消化中';
@@ -376,6 +420,7 @@ function buildBrief(days, arc) {
   const sec5 = [
     li(`新晋 ${freshN} / 延续 ${contN} / 退潮 ${fadeN}。${focus}`),
     topTheme ? li(`今日最强题材: ${topTheme[0]}（${mainZt} 只涨停）——${mainZt >= 6 ? '主线强势' : mainZt >= 3 ? '主线强度中等' : '主线弱化'}`) : '',
+    (topTheme && mainDensity != null) ? li(`主线强度分 <b>${mainScore}</b>（涨停 ${mainZt} × 密集度 ${(mainDensity * 100).toFixed(1)}%，与引擎 selectMainLine 同式）——标的清单见「主线自动选股」卡`) : '',
     surv ? li(`昨日新晋题材存活 ${surv.alive}/${surv.n}（${surv.pct}%）——${surv.pct >= 50 ? '题材延续性强' : surv.pct >= 30 ? '延续性中等' : '题材一日游风险高'}`) : '',
   ].join('');
 
@@ -392,8 +437,8 @@ function buildBrief(days, arc) {
   if (fadeN > freshN * 1.5) ev.push('题材退潮主导');
   else if (contN > freshN * 1.5 && freshN > 0) ev.push('主线聚焦');
   let verdict = '中性震荡，控制仓位做结构。';
-  if (ev.includes('情绪与分位双高') && ev.includes('龙虎榜资金进场')) verdict = '情绪高潮 + 资金进场共振，但高位区追高性价比低，持仓者让利润奔跑、空仓者等分歧低吸。';
-  else if (ev.includes('情绪与分位双高')) verdict = '情绪过热区，兑现压力大于进攻价值，勿在新高追涨。';
+  if (ev.includes('情绪与分位双高') && ev.includes('龙虎榜资金进场')) verdict = '情绪与分位双高 + 资金进场共振，但分位已处高位，追高性价比下降，持仓者让利润奔跑、空仓者等分歧低吸。';
+  else if (ev.includes('情绪与分位双高')) verdict = '情绪与分位双高，兑现压力大于进攻价值，勿在新高追涨。';
   else if (ev.includes('情绪分位双冰')) verdict = ev.includes('龙虎榜资金进场') ? '冰点 + 资金试探进场，修复脉冲概率上升，轻仓试错、止损要快。' : '冰点区无资金承接，空仓等右侧，接飞刀是找死。';
   else if (ev.includes('情绪修复') && ev.includes('龙虎榜资金进场') && ev.includes('赚钱效应')) verdict = '修复三要素齐（情绪回升+资金进场+赚钱效应），可逐步转进攻，主线优先。';
   else if (ev.includes('情绪走弱') && ev.includes('龙虎榜资金离场')) verdict = '情绪资金双弱，退潮期防守为主，新题材一律当反弹看。';
@@ -419,25 +464,31 @@ function buildBrief(days, arc) {
   const mods = [['情绪定位', 25, scE], ['盈亏效应', 25, scP], ['广度量能', 20, scB], ['题材结构', 20, scT], ['主线结构', 10, scM]].filter((m) => m[2] != null);
   const wSum = mods.reduce((a, m) => a + m[1], 0);
   const total = wSum ? Math.round(mods.reduce((a, m) => a + m[1] * m[2], 0) / wSum * 10) / 10 : null;
-  // V5 风险五档：高分=强市（80+ 反而要防过热见顶）
-  const riskTxt = total == null ? '' :
-    total >= 80 ? '极低风险（情绪过热）——高潮抱团，高位加速，警惕见顶' :
-    total >= 65 ? '低风险——行情强势，主线清晰，适合做主线' :
-    total >= 45 ? '中等风险——震荡分歧，结构性行情，控仓操作' :
-    total >= 25 ? '高风险——亏钱效应扩散，主线弱化，降低仓位' :
-    '极高风险——情绪冰点，大面积杀跌，空仓/轻仓防御';
+  // V5.2：不再用 V5.0 的「极低风险/极高风险」五档措辞——它既与引擎语义相悖
+  // （≥80 引擎是"过热只减不新建"，说成"极低风险"会被读成可加仓），分界值也与
+  // 引擎阈值不一致（45/25 vs 44/24）。改由下方 posTier 按引擎阈值输出仓位档位。
   const weak = mods.filter((m) => m[2] < 60).map((m) => m[0]);
   const auxWarn = (disturb || divs.length) ? '；辅助资金面存在' + [disturb ? '新股扰动' : '', divs.length ? '量价背离' : ''].filter(Boolean).join('与') + '信号，热度分未计入' : '';
-  const riskHint = (weak.length ? `短板在${weak.join('与')}，注意对应风险` : '五大因子均衡，无明显短板') + auxWarn;
-  const scoreLine = total != null ? li(`综合风险评分（V5）: 情绪定位 ${scE} · 盈亏效应 ${scP} · 广度量能 ${scB} · 题材结构 ${scT} · 主线结构 ${scM} → 总分 <b>${total}</b>，${riskTxt}。<span class="bf-warn">${riskHint}</span>`) : '';
-  const sec6 = li(`<b>${verdict}</b>`) + scoreLine +
+  const riskHint = (weak.length ? `短板在${weak.join('与')}，注意对应风险` : '五模块均衡，无明显短板') + auxWarn;
+  // 主结论走引擎口径：七因子情绪分（= 页面情绪分，与回测引擎同源）套 V5.2 阈值 → 可执行的仓位档位；
+  // V5.0 五模块分降级为"因子分解"，只解释分位构成，不再作为结论依据（两套分套同一阈值会给出相反结论）。
+  const thr = getThresholds();
+  const mainScoreV = (e.value != null && Number.isFinite(+e.value)) ? +e.value : total;
+  const tier = posTier(mainScoreV, thr);
+  const v52p = (BT && BT.params && BT.params.v52) || {};
+  const pctOf = (x, d) => (x == null || !Number.isFinite(+x)) ? '—' : (Math.abs(+x) * 100).toFixed(d) + '%';
+  const bpOf = (x, dflt) => Math.round((x == null ? dflt : +x) * 1e4 * 10) / 10; // 小数 → ‱（万分之一），抹掉浮点尾差
+  const tierLine = tier ? li(`<b>仓位档位（V5.2 引擎口径）</b>：七因子情绪分 <b>${num(mainScoreV)}</b>（与页面情绪分、回测引擎同源）→ <b>${tier.label}</b>，建议仓位 <b>${tier.pos}</b>。${tier.note}。<br><span class="muted">档位阈值：≥${num(thr.overheat, 0)} 过热只减仓不新建 / ≥${num(thr.lo, 0)} 满仓 / ${num(thr.panic, 0)}~${num(thr.lo, 0)} 半仓 / ≤${num(thr.panic, 0)} 清仓（收盘打分、T+1 生效）</span>`) : '';
+  const decompLine = total != null ? li(`因子分解（V5.0 五模块，仅供结构解释，不参与档位判定）: 情绪定位 ${scE} · 盈亏效应 ${scP} · 广度量能 ${scB} · 题材结构 ${scT} · 主线结构 ${scM} → 复合 ${total}。<span class="bf-warn">${riskHint}</span>`) : '';
+  const riskLine = li(`V5.2 实盘约束：单笔止损 <b>-${pctOf(v52p.stopLoss ?? -0.08, 0)}</b>（优先于信号）｜回撤 ≥<b>${pctOf(v52p.ddTrigger ?? -0.15, 0)}</b> 动态降仓至 40%（0.6 倍阈值处降至 70%）｜单日仓位变动 ≤<b>${num(v52p.maxPosChg ?? 0.2, 2)}</b>｜换仓成本 佣金 ${bpOf(v52p.comm, 0.0003)}‱（双边）+ 印花税 ${bpOf(v52p.stamp, 0.0005)}‱（卖出）+ 滑点 ${bpOf(v52p.slip, 0.0002)}‱，按仓位变动幅度计提`);
+  const sec6 = li(`<b>${verdict}</b>`) + tierLine + decompLine + riskLine +
     (watch.length ? `<div class="bf-h bf-h2">明日观测（引擎动态生成）</div>` + watch.map((w) => li('· ' + w)).join('') : '');
 
-  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；净买为龙虎榜去重个股级口径；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股龙虎净买÷全榜单龙虎净买；综合风险评分采用 V5 加权模型：情绪定位25%、盈亏效应25%、广度量能20%、题材结构20%、主线板块内部结构10%（主线结构用热点榜主线成分票的涨停梯队/龙头强度/内部红盘率/分化度代理，板块成交额占比暂无数据源），0~100分，分数越高市场越热越强，80+警惕过热见顶；资金面（龙虎榜）为辅助观测，不参与打分；席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
+  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；净买为龙虎榜去重个股级口径；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股龙虎净买÷全榜单龙虎净买；主线强度分=涨停家数×密集度（该题材涨停数÷当日全题材涨停数），与引擎 selectMainLine 同式；仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额20%／涨跌家数10%／板块涨比20%／涨停强度10%／涨跌停对比15%／封板质量10%／量能15%，与页面情绪分、回测引擎同源），阈值 过热80／满仓65／半仓24~65／清仓24，收盘打分、T+1 生效，并叠加止损-8%、回撤≥15%动态降仓、单日仓位变动≤20%、佣金万3+印花税万5+滑点万2 的实盘约束；因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定；资金面（龙虎榜）为辅助观测，不参与打分；席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
 
-  return seg('① 情绪定位（核心因子·25%）', sec1) + seg('② 资金面（龙虎榜）· 辅助B 北向+机构行为（不参与打分）', sec2) +
+  return stamp + seg('① 情绪定位（核心因子·25%）', sec1) + seg('② 资金面（龙虎榜）· 辅助B 北向+机构行为（不参与打分）', sec2) +
     seg('③ 盈亏效应（核心因子·25%）', sec3) + seg('④ 广度与量能（核心因子·20%）', sec4) +
-    seg('⑤ 题材结构（核心因子·20%）', sec5) + seg('⑥ 综合研判', sec6) + foot;
+    seg('⑤ 题材结构（核心因子·20%）', sec5) + seg('⑥ 综合研判（含 V5.2 仓位档位）', sec6) + foot;
 }
 
 function renderBrief(days, arc) {
@@ -568,7 +619,11 @@ async function loadBacktest() {
   try {
     const res = await fetch('./data/backtest.json?_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    renderBacktest(await res.json());
+    BT = await res.json();
+    renderBacktest(BT);
+    // 阈值/主线就绪后按引擎口径重刷研判报告：首次渲染时 BT 尚为 null，
+    // 用的是与引擎同值的默认阈值（24/44/65/80），缺失时报告仍可读，不会空白。
+    if (lastArc) renderBrief(lastArc.all_days || [], lastArc);
   } catch (e) {
     const n = $('btNote');
     if (n) n.textContent = `回测数据未生成或加载失败（生成命令：node scripts/backtest.mjs）：${e.message}`;
@@ -583,6 +638,7 @@ function fingerprint(arc) {
 }
 
 function renderAll(arc) {
+  lastArc = arc; // 供 loadBacktest 完成后按引擎口径重刷报告
   const days = arc.all_days || [];
   const latest = days[days.length - 1] || {};
   const meta = arc.meta || {};

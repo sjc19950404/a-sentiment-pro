@@ -90,4 +90,6 @@ th { color: var(--muted); font-weight: 500; position: sticky; top: 0; background
 .bf-warn { color: var(--warn); }
 .bf-auto { font-size: 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 1px 6px; margin-left: 6px; font-weight: 400; }
 .bf-foot { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; font-size: 10.5px; color: var(--muted); }
+.bf-meta { font-size: 10.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; margin-bottom: 10px; background: rgba(127,127,127,.06); }
+.bf-meta b { color: var(--txt); }
 .foot { text-align: center; padding: 16px; font-size: 12px; }

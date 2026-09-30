@@ -162,3 +162,18 @@ test('默认参数：V5.2 增强口径只应在成本/风控维度区别于基�
   assert.equal(BASE_PARAMS.hi, 44);
   assert.equal(BASE_PARAMS.lo, 65);
 });
+
+test('阈值表 ↔ positions 行为一致：研判报告的仓位档位文案必须对应引擎实际仓位', () => {
+  const p = { ...BASE_PARAMS };
+  // 取「次日仓位」：喂两天同分序列，取 pos[1]（T+1 生效后），rets=null 以屏蔽回撤降仓
+  const at = (s) => positions([s, s], null, p)[1];
+  assert.equal(at(p.overheat), 0, '≥overheat：空仓不新建（过热只减不新建）');
+  assert.equal(at(p.overheat + 5), 0, '远超过热同样不新建');
+  assert.equal(at(p.lo), 1, '=lo：满仓');
+  assert.equal(at(p.lo - 1), 0.5, '略低于 lo：半仓');
+  assert.equal(at(p.panic + 1), 0.5, '略高于 panic：半仓（hi 不参与判档，24~65 同属半仓）');
+  assert.equal(at(p.panic), 0, '≤panic：清仓');
+  assert.equal(at(p.panic - 1), 0, '低于 panic：清仓');
+  // 已持有的过热场景：保留仓位而非清仓——这是「只减仓不新建」的关键语义
+  assert.equal(positions([p.lo, p.overheat], null, p)[1], 1, '持有中遇过热：保留仓位而非清仓');
+});

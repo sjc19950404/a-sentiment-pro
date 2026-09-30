@@ -1,6 +1,6 @@
 // 全局配置：权重、阈值、数据源、公式版本
 export default {
-  formulaVersion: 'v5.0-pro',
+  formulaVersion: 'v5.2-pro',
 
   // 七因子权重（和为 1）
   weights: {
@@ -21,7 +21,9 @@ export default {
 
   // ── 回测（V5.2）：阈值与风控/成本默认值，服务端 scripts/backtest.mjs 与前端展示共用 ──
   backtest: {
-    // 四档阈值：与页面五档风险分界一致（≥80 过热只减不新建 / ≥65 持有 / 44~65 半仓 / ≤24 清仓）
+    // 四档阈值（收盘打分、T+1 生效）：≥80 过热只减仓不新建 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓。
+    // 注意 hi=44 目前是保留参数：src/backtest.js 的 positions() 并未用它判档（实际 24~65 同属
+    // 半仓），仅用于历史口径展示；若确需独立"减仓档"，须同时改 positions() 并更新全部回归夹具。
     thresholds: { panic: 24, hi: 44, lo: 65, overheat: 80 },
     // 标的池：三大指数日涨跌幅（各自独立回测 → 日收益等权合成组合）
     assets: ['上证指数', '深证成指', '创业板指'],

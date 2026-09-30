@@ -79,6 +79,38 @@ check('新增·滚动样本外：分段表已填充', rows('rollTable') > 0, `${
 check('新增·主线选股：主线题材已渲染', txt('mainLineBody').includes('主线题材'), txt('mainLineBody').slice(0, 40));
 check('新增·主线选股：口径备注已渲染', txt('mainLineBody').includes('强度分'), '');
 
+// 研判报告与引擎同源（V5.2）：报告结论必须用引擎口径（七因子情绪分 = archive.emotion.value）
+// 套引擎阈值，不能再用自算的五模块分当结论——实测过两套分套同一阈值会给出相反结论
+// （83.8 →「过热」 vs 76.8 →「满仓持有」）。
+const bt = JSON.parse(readFileSync(join(ROOT, 'data/backtest.json'), 'utf8'));
+const arcAll = JSON.parse(readFileSync(join(ROOT, 'data/archive.json'), 'utf8'));
+const lastEmo = (arcAll.all_days || []).slice(-1)[0]?.emotion?.value;
+const th = bt.params?.thresholds || { panic: 24, hi: 44, lo: 65, overheat: 80 };
+const expectTier = lastEmo == null ? null
+  : lastEmo >= th.overheat ? '过热 · 只减仓不新建'
+    : lastEmo >= th.lo ? '满仓持有'
+      : lastEmo > th.panic ? '半仓' : '清仓';
+const brief = txt('briefBody');
+const tierSeg = (() => {
+  const i = brief.indexOf('仓位档位（V5.2 引擎口径）');
+  const j = brief.indexOf('因子分解');
+  return (i >= 0 && j > i) ? brief.slice(i, j) : '';
+})();
+check('研判报告·数据日期与抓取状态落款', brief.includes('数据日期') && brief.includes('抓取状态'), '');
+check(`研判报告·仓位档位与引擎一致（情绪分 ${lastEmo} → ${expectTier}）`,
+  expectTier != null && tierSeg.includes(expectTier), tierSeg.slice(0, 80) || '缺「仓位档位」段');
+check('研判报告·档位阈值与引擎阈值同源',
+  tierSeg.includes(`≥${th.overheat}`) && tierSeg.includes(`≥${th.lo}`) && tierSeg.includes(`≤${th.panic}`), '');
+check('研判报告·因子分解已降级（标注不参与档位判定）',
+  brief.includes('因子分解') && brief.includes('不参与档位判定'), '');
+check('研判报告·含 V5.2 实盘约束（止损/降仓/成本）',
+  brief.includes('实盘约束') && brief.includes('止损') && brief.includes('印花税'), '');
+check('研判报告·含主线强度分（与引擎 selectMainLine 同式）', /主线强度分\s*[\d.\u2014-]+/.test(brief), '');
+check('研判报告·不含与引擎冲突的 V5.0「极低/极高风险」措辞',
+  !brief.includes('极低风险') && !brief.includes('极高风险'), '');
+check(`研判报告·落款版本与回测档一致（${bt.meta?.formulaVersion}）`,
+  brief.includes(bt.meta?.formulaVersion || 'v5.2-pro'), '');
+
 // 告警口径：stale（或客户端已过预期更新时刻）才允许出现「告警」级别的条；
 // 仅「字段级修补 note / 跳过 / 非交易日」只能是 info，不能把正常等待说成抓取失败。
 const meta = JSON.parse(readFileSync(join(ROOT, 'data/archive.json'), 'utf8')).meta || {};
