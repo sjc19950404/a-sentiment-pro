@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Sentiment V5.0 一体化分析平台（Tkinter GUI）
+"""Sentiment V5.2 一体化分析平台（Tkinter GUI）
 薄封装 sentiment_backtest.py 全部能力：选 CSV → 一键跑全流程（回测/网格/阈值/鲁棒性/图/日报/Excel）。
+V5.2 新增：交易成本（佣金/印花税/滑点）、仓位平滑（单日变动上限）、主线自动选股（个股CSV→逐日
+主线板块→标的池）、帕累托多目标（夏普×回撤双目标非支配解集）。
 参数调参面板：w1~w5 权重 + 四档阈值（开仓/减仓/清仓/过热）界面直调，无需改源码；
 勾选"自定义权重"即按面板权重回测（跳过 3876 组网格）；权重总和不等于 1 弹窗确认。
 依赖：pandas numpy matplotlib openpyxl（tkinter 为 Python 自带）。CLI 用法见 sentiment_backtest.py。
@@ -19,8 +21,8 @@ import sentiment_backtest as sb
 class SentimentGUI:
     def __init__(self, root: tk.Tk):
         self.root = root
-        root.title("Sentiment V5.0 一体化分析平台｜参数调优版")
-        root.geometry("820x640")
+        root.title("Sentiment V5.2 一体化分析平台｜成本+平滑+自动选股+帕累托")
+        root.geometry("880x720")
 
         self.factor_path = tk.StringVar()
         self.out_path = tk.StringVar(value=os.path.join(os.getcwd(), "reports"))
@@ -39,14 +41,22 @@ class SentimentGUI:
         self.max_pos_var = tk.StringVar(value="1.0")
         self.stop_loss_var = tk.StringVar(value="0")
         self.dd_trigger_var = tk.StringVar(value="0")
+        # V5.2：交易成本与仓位平滑
+        self.comm_var = tk.StringVar(value="0")
+        self.stamp_var = tk.StringVar(value="0")
+        self.slip_var = tk.StringVar(value="0")
+        self.max_pos_chg_var = tk.StringVar(value="0")
+        self.stock_path = tk.StringVar()
+        self.main_topn_var = tk.StringVar(value="1")
+        self.demo_stocks_var = tk.BooleanVar(value=False)
         self.plot_grid_var = tk.BooleanVar(value=True)
         self.roll_var = tk.BooleanVar(value=False)
         self.roll_refit_var = tk.BooleanVar(value=False)
         self.train_win_var = tk.StringVar(value="252")
         self.test_win_var = tk.StringVar(value="63")
 
-        tk.Label(root, text="Sentiment V5.0 情绪模型流水线【参数调优版】",
-                 font=("Microsoft YaHei", 15, "bold")).pack(pady=6)
+        tk.Label(root, text="Sentiment V5.2 情绪模型流水线【交易成本+仓位平滑+主线自动选股+帕累托】",
+                 font=("Microsoft YaHei", 14, "bold")).pack(pady=6)
 
         # ── 参数面板 ──
         panel = tk.LabelFrame(root, text="权重与阈值设置（权重总和建议 = 1；调阈值即调仓规则）")
@@ -77,13 +87,21 @@ class SentimentGUI:
         tk.Checkbutton(fr, text="滚动样本外验证", variable=self.roll_var).grid(row=0, column=7, padx=(8, 1))
         fr2 = tk.Frame(panel)
         fr2.pack(fill="x", padx=6, pady=2)
-        tk.Label(fr2, text="（动态降仓填负数启用如 -0.15；单笔止损/降仓填 0 关闭）"
+        for c, (lab, var, w) in enumerate([("佣金率", self.comm_var, 7),
+                                           ("印花税", self.stamp_var, 7),
+                                           ("滑点", self.slip_var, 7),
+                                           ("单日仓位变动≤", self.max_pos_chg_var, 7)]):
+            tk.Label(fr2, text=lab).grid(row=0, column=c * 2, padx=(10, 1))
+            tk.Entry(fr2, textvariable=var, width=w).grid(row=0, column=c * 2 + 1, pady=2)
+        fr3 = tk.Frame(panel)
+        fr3.pack(fill="x", padx=6, pady=2)
+        tk.Label(fr3, text="（成本/平滑填 0 关闭；佣金如 0.0003=万3；平滑如 0.2=单日最多±20%）"
                  ).pack(side="left")
-        tk.Label(fr2, text="训练窗").pack(side="left", padx=(16, 1))
-        tk.Entry(fr2, textvariable=self.train_win_var, width=5).pack(side="left")
-        tk.Label(fr2, text="测试窗").pack(side="left", padx=(8, 1))
-        tk.Entry(fr2, textvariable=self.test_win_var, width=5).pack(side="left")
-        tk.Checkbutton(fr2, text="逐窗重寻优", variable=self.roll_refit_var).pack(side="left", padx=(8, 1))
+        tk.Label(fr3, text="训练窗").pack(side="left", padx=(16, 1))
+        tk.Entry(fr3, textvariable=self.train_win_var, width=5).pack(side="left")
+        tk.Label(fr3, text="测试窗").pack(side="left", padx=(8, 1))
+        tk.Entry(fr3, textvariable=self.test_win_var, width=5).pack(side="left")
+        tk.Checkbutton(fr3, text="逐窗重寻优", variable=self.roll_refit_var).pack(side="left", padx=(8, 1))
 
         def file_row(label, var, cmd):
             f = tk.Frame(root)
@@ -93,7 +111,17 @@ class SentimentGUI:
             tk.Button(f, text="选择", command=cmd, width=6).pack(side="left")
 
         file_row("因子CSV:", self.factor_path, self._select_factor)
+        file_row("个股CSV:", self.stock_path, self._select_stock)
         file_row("输出目录:", self.out_path, self._select_out)
+
+        f2 = tk.Frame(root)
+        f2.pack(pady=2, fill="x", padx=12)
+        tk.Label(f2, text="主线板块数:", width=10, anchor="w").pack(side="left")
+        tk.Entry(f2, textvariable=self.main_topn_var, width=4).pack(side="left", padx=3)
+        tk.Label(f2, text="（填个股CSV即启用主线自动选股：逐日识别主线板块→个股池）"
+                 ).pack(side="left")
+        tk.Checkbutton(f2, text="demo演示个股", variable=self.demo_stocks_var
+                       ).pack(side="left", padx=6)
 
         f3 = tk.Frame(root)
         f3.pack(pady=2, fill="x", padx=12)
@@ -138,8 +166,20 @@ class SentimentGUI:
         dd_trigger = float(self.dd_trigger_var.get())
         if dd_trigger > 0:
             raise ValueError("动态降仓回撤阈值须 ≤ 0（负数启用，如 -0.15；0 关闭）")
+        comm = float(self.comm_var.get() or 0)
+        stamp = float(self.stamp_var.get() or 0)
+        slip = float(self.slip_var.get() or 0)
+        if comm < 0 or stamp < 0 or slip < 0:
+            raise ValueError("佣金/印花税/滑点须 ≥ 0（0 关闭）")
+        max_pos_chg = float(self.max_pos_chg_var.get() or 0)
+        if not 0 <= max_pos_chg <= 1:
+            raise ValueError("单日仓位最大变动须在 [0,1]（0 不限；如 0.2）")
         th_kw = dict(hi=th["hi"], lo=th["lo"], panic=th["panic"], overheat=th["overheat"],
-                     max_pos=max_pos, stop_loss=stop_loss, dd_trigger=dd_trigger)
+                     max_pos=max_pos, stop_loss=stop_loss, dd_trigger=dd_trigger,
+                     comm=comm, stamp=stamp, slip=slip, max_pos_chg=max_pos_chg)
+        main_topn = int(self.main_topn_var.get() or 1)
+        if main_topn < 1:
+            raise ValueError("主线板块数须 ≥ 1")
         roll_kw = None
         if self.roll_var.get():
             try:
@@ -160,7 +200,7 @@ class SentimentGUI:
             if not messagebox.askyesno("提示", "已修改权重但未勾选「自定义权重」。\n"
                                               "确定仍使用 V5 基准权重跑网格扫描吗？"):
                 raise ValueError("用户取消：请勾选「自定义权重」后重试")
-        return (tuple(w) if use_custom else None), th_kw, roll_kw
+        return (tuple(w) if use_custom else None), th_kw, roll_kw, main_topn
 
     # ── 文件选择 ──
     def _select_factor(self):
@@ -168,10 +208,19 @@ class SentimentGUI:
         if p:
             self.factor_path.set(p)
 
+    def _select_stock(self):
+        p = filedialog.askopenfilename(filetypes=[("CSV", "*.csv"), ("全部文件", "*.*")])
+        if p:
+            self.stock_path.set(p)
+
     def _select_out(self):
         p = filedialog.askdirectory()
         if p:
             self.out_path.set(p)
+
+    def _auto_pool_on(self) -> bool:
+        """启用主线自动选股：勾选 demo 演示个股，或选择了个股 CSV"""
+        return bool(self.demo_stocks_var.get() or self.stock_path.get())
 
     # ── 线程安全日志（同步持久化到输出目录 backtest_log.txt，带时间戳） ──
     def log(self, msg):
@@ -199,7 +248,7 @@ class SentimentGUI:
             messagebox.showerror("错误", "请先选择因子 CSV（date,f1..f5,close）")
             return
         try:
-            self.w_custom, self.th_kw, self.roll_kw = self._read_params()
+            self.w_custom, self.th_kw, self.roll_kw, self.main_topn = self._read_params()
         except ValueError as e:
             if str(e):
                 messagebox.showinfo("未运行", str(e))
@@ -218,20 +267,51 @@ class SentimentGUI:
             os.makedirs(out, exist_ok=True)
             sb.RF = float(self.rf_var.get() or 0)
             w_custom, th_kw, roll_kw = self.w_custom, self.th_kw, self.roll_kw
+            main_topn = self.main_topn
             if th_kw["max_pos"] < 1 or th_kw["stop_loss"] < 0 or th_kw["dd_trigger"] < 0:
                 self.log(f"风控：最大仓位 {th_kw['max_pos']:g}｜单笔止损 {th_kw['stop_loss']:g}"
                          + ("（关闭）" if th_kw["stop_loss"] == 0 else "")
                          + f"｜动态降仓 {th_kw['dd_trigger']:g}"
                          + ("（关闭）" if th_kw["dd_trigger"] == 0 else ""))
+            if th_kw["comm"] or th_kw["stamp"] or th_kw["slip"]:
+                self.log(f"交易成本：佣金{th_kw['comm']:g} 印花税{th_kw['stamp']:g} 滑点{th_kw['slip']:g}"
+                         f"（买入{(th_kw['comm'] + th_kw['slip']):.4%}／卖出"
+                         f"{(th_kw['comm'] + th_kw['stamp'] + th_kw['slip']):.4%}）")
+            if th_kw["max_pos_chg"]:
+                self.log(f"仓位平滑：单日仓位变动 ≤ {th_kw['max_pos_chg']:g}")
 
             self.log("读取因子数据…")
             df = pd.read_csv(fp)
             df.columns = [str(c).strip().lower() for c in df.columns]
-            missing = [c for c in ["date", "f1", "f2", "f3", "f4", "f5", "close"] if c not in df.columns]
+            need = ["date", "f1", "f2", "f3", "f4", "f5"] + ([] if self._auto_pool_on() else ["close"])
+            missing = [c for c in need if c not in df.columns]
             if missing:
                 raise ValueError(f"因子 CSV 缺列: {missing}（Excel 模板导出即所需格式）")
             df["date"] = pd.to_datetime(df["date"])
             df = df.sort_values("date").reset_index(drop=True)
+
+            main_line_last = None
+            if self._auto_pool_on():
+                self.log(f"主线自动选股：逐日识别主线板块（top {main_topn}）→ 生成标的池…")
+                if self.demo_stocks_var.get():
+                    st = sb.demo_stocks(n_days=len(df), start=str(df["date"].iloc[0])[:10])
+                    self.log("  使用 demo 演示个股（合成数据，仅管线自检）")
+                else:
+                    sp = self.stock_path.get()
+                    if not sp:
+                        raise ValueError("已填个股CSV路径为空：请选择个股 CSV 或勾选 demo 演示个股")
+                    st = pd.read_csv(sp)
+                    st.columns = [str(c).strip().lower() for c in st.columns]
+                pool = sb.build_auto_pool(st, df, top_n=main_topn)
+                pool.to_csv(os.path.join(out, "auto_pool.csv"), index=False, encoding="utf-8-sig")
+                last_day = pool["date"].max()
+                mi = sb.find_main_line(st[pd.to_datetime(st["date"]) == last_day], top_n=main_topn)
+                main_line_last = mi
+                self.log(f"  {pool['date'].nunique()} 个交易日、{pool['asset_id'].nunique()} 只主线个股 → auto_pool.csv")
+                self.log(f"  末日({last_day:%Y-%m-%d}) 主线 {'、'.join(mi['main_sectors'])}"
+                         f" 强度 {mi['main_line_strength']:.2f}｜个股 {'、'.join(mi['main_stocks'][:8])}"
+                         + ("…" if len(mi["main_stocks"]) > 8 else ""))
+                df = pool
             if sb.is_pool(df):
                 self.log(f"  检测到 asset_id 列 → 多标的等权轮动模式（{df['asset_id'].nunique()} 个标的）")
             self.log(f"  {df['date'].nunique()} 个交易日，{df['date'].min():%Y-%m-%d} ~ {df['date'].max():%Y-%m-%d}")
@@ -253,7 +333,8 @@ class SentimentGUI:
                 best_w, best_p, scan = sb.BASE_W, base_p, None
             else:
                 self.log("权重网格扫描（3876 组，多进程并行）…")
-                scan = sb.grid_search(df, verbose=False)
+                scan = sb.grid_search(df, verbose=False, cost_kw={
+                    k: th_kw[k] for k in ("comm", "stamp", "slip", "max_pos_chg")})
                 scan.to_csv(os.path.join(out, "weights_scan.csv"), index=False, encoding="utf-8-sig")
                 bw = scan.iloc[0]
                 best_w = (bw.w1, bw.w2, bw.w3, bw.w4, bw.w5)
@@ -261,7 +342,8 @@ class SentimentGUI:
                 self.log(f"  最优权重 {best_w}｜回撤 {best_p.max_dd:.2%}｜夏普 {best_p.sharpe}")
 
             self.log("阈值扫描 / 鲁棒性 / 失效场景 …")
-            th = sb.threshold_scan(df, best_w)
+            cost_kw = {k: th_kw[k] for k in ("comm", "stamp", "slip", "max_pos_chg")}
+            th = sb.threshold_scan(df, best_w, cost_kw=cost_kw)
             th.to_csv(os.path.join(out, "threshold_scan.csv"), index=False, encoding="utf-8-sig")
             noise = sb.noise_test(df, best_w)
             split = sb.split_test(df, best_w)
@@ -283,8 +365,15 @@ class SentimentGUI:
                 rs = sb.rolling_summary(roll)
                 self.log(f"  {len(roll)} 段样本外：夏普均值 {rs['sharpe_mean']}｜最差段回撤 {rs['dd_worst']:.2%}"
                          f"｜正收益段 {rs['win_seg_pct']:.0%}")
+            pareto = None
+            if self.plot_grid_var.get() or scan is not None:
+                # 网格跑过用权重扫描，否则回落到阈值扫描（帕累托适用于任何含 sharpe/max_dd 的表）
+                src = scan if scan is not None else th
+                pareto = sb.pareto_frontier(src)
+                pareto.to_csv(os.path.join(out, "pareto_frontier.csv"), index=False, encoding="utf-8-sig")
+                self.log(f"  帕累托非支配解 {len(pareto)}/{len(src)} 组（夏普↑×回撤↓）→ pareto_frontier.csv")
             sb.write_report(out, base_p, best_w, best_p, th, noise, split, regime,
-                            roll=roll, **th_kw)
+                            roll=roll, pareto=pareto, **th_kw)
             if not sb.is_pool(df):
                 sb.plot_results(df, best_w, out, **th_kw)
             elif self.plot_grid_var.get() or True:
@@ -296,7 +385,7 @@ class SentimentGUI:
                 bn = sb.batch_nav_plot(df, src, out, w=best_w, top_n=5, **th_kw)
                 self.log(f"  {os.path.basename(hm)}｜{os.path.basename(bn)}")
             alerts = [a.strip() for a in self.alert_text.get().split(",") if a.strip()]
-            rp = sb.generate_daily_report(df, best_w, alerts, out)
+            rp = sb.generate_daily_report(df, best_w, alerts, out, main_line=main_line_last)
             xlsx = sb.export_excel(df, best_w, out, **th_kw, rf=sb.RF)
             self.log(f"  Excel 回测结果已导出 → {os.path.basename(xlsx)}")
 

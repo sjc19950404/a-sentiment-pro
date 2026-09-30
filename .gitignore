@@ -7,3 +7,5 @@ snapshot.html
 tools/backtest/demo_preview/
 tools/backtest/_smoke_gui.py
 tools/backtest/_smoke_out.txt
+tools/backtest/reports*/
+tools/backtest/auto_pool_test*

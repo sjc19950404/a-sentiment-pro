@@ -40,6 +40,11 @@ PANIC = 24.0                              # 清仓线（固定）
 OVERHEAT = 80.0                           # 过热线（仅提示，不加新仓）
 ANN = 252                                 # 年化系数
 RF = 0.0                                  # 无风险利率年化（夏普用，CLI --rf 调整）
+# V5.2 交易成本与仓位平滑（默认 0 = 关闭，向后兼容）
+COMM = 0.0                                # 佣金率（双边，如 0.0003 = 万3）
+STAMP = 0.0                               # 印花税率（仅卖出，如 0.0005 = 万5）
+SLIP = 0.0                                # 单边滑点（如 0.0002 = 万2）
+MAX_POS_CHG = 0.0                         # 单日最大仓位变动（0=不限；如 0.2 = 单日最多 ±20%）
 
 
 @dataclass
@@ -67,12 +72,15 @@ def score(df: pd.DataFrame, w) -> pd.Series:
 def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
               panic: float = PANIC, overheat: float = OVERHEAT,
               max_pos: float = 1.0, stop_loss: float = 0.0,
-              ret: pd.Series = None, dd_trigger: float = 0.0) -> pd.Series:
+              ret: pd.Series = None, dd_trigger: float = 0.0,
+              max_pos_chg: float = 0.0) -> pd.Series:
     """收盘打分 → 次日仓位（T+1）。满仓 max_pos / 半仓 0.5*max_pos / 空仓 0。
     过热区(≥overheat)不清仓但禁止新建仓：对已有持仓保持，对空仓者保持空仓。
     止损（stop_loss<0 启用，如 -0.08）：持仓期当日标的收盘跌幅 ≤ 止损线，次日强制清仓。
     回撤动态降仓（dd_trigger<0 启用，如 -0.15）：以当日收盘回撤计——
     回撤 ≥ |trigger| → 上限压至 0.4×max_pos；≥ 0.6×|trigger| → 0.7×max_pos；否则正常。
+    仓位平滑（max_pos_chg>0 启用，如 0.2）：单日仓位变动相对前日生效仓位最多 ±max_pos_chg，
+    避免满仓/空仓一夜跳变；止损不受平滑约束（风控立即执行优先于平滑）。
     全部决策只用当日收盘已知信息（score[i]、ret[i]、截至 ret[i] 的净值），T+1 生效，无前视。"""
     pos = pd.Series(np.nan, index=s.index)
     held = False
@@ -93,7 +101,8 @@ def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
                 cap = max_pos
         else:
             cap = max_pos
-        if stop_loss < 0 and held and r is not None and r[i] <= stop_loss:
+        stop_hit = stop_loss < 0 and held and r is not None and r[i] <= stop_loss
+        if stop_hit:
             target = 0.0                           # 止损优先于信号：次日清仓
         elif v >= overheat:
             target = cap if held else 0.0          # 只减仓不新建
@@ -103,10 +112,27 @@ def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
             target = 0.5 * cap
         else:
             target = 0.0
+        if max_pos_chg > 0 and not stop_hit:   # 仓位平滑：限制单日跳变（止损除外）
+            target = min(max(target, prev_target - max_pos_chg),
+                         prev_target + max_pos_chg)
         held = target > 0 or (held and target > 0)
         pos.iloc[i] = target
         prev_target = target
     return pos.shift(1).fillna(0.0)                # T+1 生效
+
+
+def turnover_cost(pos: pd.Series, comm: float = COMM, stamp: float = STAMP,
+                  slip: float = SLIP) -> pd.Series:
+    """换仓成本序列：买入收 佣金+滑点，卖出收 佣金+印花税+滑点（按仓位变动幅度计）。
+    成本计入当日策略收益（strat = ret*pos - cost），全序列输出、无变动处为 0。"""
+    chg = pos.diff()
+    chg.iloc[0] = pos.iloc[0]                      # 首日从 0 建仓
+    cost = pd.Series(0.0, index=pos.index)
+    buy = chg > 0
+    sell = chg < 0
+    cost[buy] = chg[buy] * (comm + slip)
+    cost[sell] = -chg[sell] * (comm + stamp + slip)
+    return cost
 
 
 # ────────────────────────── 绩效计算 ──────────────────────────
@@ -142,10 +168,13 @@ def _metrics(strat: pd.Series, pos: pd.Series, opens: int) -> Perf:
 
 def perf(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
          panic: float = PANIC, overheat: float = OVERHEAT,
-         max_pos: float = 1.0, stop_loss: float = 0.0, dd_trigger: float = 0.0) -> Perf:
-    ret = df["close"].pct_change().fillna(0.0)
-    pos = positions(score(df, w), hi, lo, panic, overheat, max_pos, stop_loss, ret, dd_trigger)
-    strat = ret * pos
+         max_pos: float = 1.0, stop_loss: float = 0.0, dd_trigger: float = 0.0,
+         comm: float = COMM, stamp: float = STAMP, slip: float = SLIP,
+         max_pos_chg: float = MAX_POS_CHG) -> Perf:
+    ret = asset_ret(df)     # 支持现成 ret 列（自动选股池/每标的绩效），否则按 close pct_change
+    pos = positions(score(df, w), hi, lo, panic, overheat, max_pos, stop_loss, ret,
+                    dd_trigger, max_pos_chg)
+    strat = ret * pos - turnover_cost(pos, comm, stamp, slip)
     opens = int(((pos > 0) & (pos.shift(1) == 0)).sum())
     return _metrics(strat, pos, opens)
 
@@ -154,17 +183,29 @@ def is_pool(df: pd.DataFrame) -> bool:
     return "asset_id" in df.columns
 
 
+def asset_ret(g: pd.DataFrame) -> pd.Series:
+    """标的日收益：优先用现成 ret 列（自动选股池直接携带涨跌幅），
+    否则按 close 组内 pct_change（首次出现日记 0，与原管线一致）。
+    ret 列方案可规避缺日标的 close 累计合成时 pct_change 跨日压 compounded 的口径污染。"""
+    if "ret" in g.columns:
+        return pd.to_numeric(g["ret"], errors="coerce").fillna(0.0)
+    return g["close"].pct_change().fillna(0.0)
+
+
 def pool_strat(df_pool: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
                panic: float = PANIC, overheat: float = OVERHEAT,
                max_pos: float = 1.0, stop_loss: float = 0.0,
-               dd_trigger: float = 0.0):
+               dd_trigger: float = 0.0, comm: float = COMM, stamp: float = STAMP,
+               slip: float = SLIP, max_pos_chg: float = MAX_POS_CHG):
     """多标的逐标的回测 → 等权合成组合 (strat, pos) 序列（按日期对齐，缺日跳过）"""
     strats, poss, opens = [], [], 0
     for _, g in df_pool.groupby("asset_id"):
         g = g.sort_values("date")
-        ret = g["close"].pct_change().fillna(0.0)
-        p = positions(score(g, w), hi, lo, panic, overheat, max_pos, stop_loss, ret, dd_trigger)
-        strats.append(pd.Series((ret * p).values, index=g["date"].values))
+        ret = asset_ret(g)
+        p = positions(score(g, w), hi, lo, panic, overheat, max_pos, stop_loss, ret,
+                      dd_trigger, max_pos_chg)
+        strats.append(pd.Series((ret * p - turnover_cost(p, comm, stamp, slip)).values,
+                                index=g["date"].values))
         poss.append(pd.Series(p.values, index=g["date"].values))
         opens += int(((p > 0) & (p.shift(1) == 0)).sum())
     strat = pd.concat(strats, axis=1).mean(axis=1).sort_index()   # 等权：日收益取均值
@@ -174,9 +215,12 @@ def pool_strat(df_pool: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_L
 
 def perf_pool(df_pool: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
               panic: float = PANIC, overheat: float = OVERHEAT,
-              max_pos: float = 1.0, stop_loss: float = 0.0, dd_trigger: float = 0.0) -> Perf:
+              max_pos: float = 1.0, stop_loss: float = 0.0, dd_trigger: float = 0.0,
+              comm: float = COMM, stamp: float = STAMP, slip: float = SLIP,
+              max_pos_chg: float = MAX_POS_CHG) -> Perf:
     strat, pos, opens = pool_strat(df_pool, w, hi, lo, panic, overheat,
-                                   max_pos, stop_loss, dd_trigger)
+                                   max_pos, stop_loss, dd_trigger, comm, stamp, slip,
+                                   max_pos_chg)
     return _metrics(strat, pos, opens)
 
 
@@ -204,22 +248,27 @@ def weight_grid() -> list:
     return out
 
 
-def _grid_chunk(df, chunk):
-    return [{"w1": w[0], "w2": w[1], "w3": w[2], "w4": w[3], "w5": w[4], **asdict(perf_auto(df, w))}
+def _grid_chunk(df, chunk, cost_kw):
+    return [{"w1": w[0], "w2": w[1], "w3": w[2], "w4": w[3], "w5": w[4],
+             **asdict(perf_auto(df, w, **cost_kw))}
             for w in chunk]
 
 
-def grid_search(df: pd.DataFrame, verbose=True, workers: int = None) -> pd.DataFrame:
+def grid_search(df: pd.DataFrame, verbose=True, workers: int = None,
+                cost_kw: dict = None) -> pd.DataFrame:
     """3876 组权重网格。多进程分块并行（60 组/块），并行不可用时自动回退串行。
-    Windows spawn 安全：任务函数均为模块级，无 lambda/闭包。"""
+    Windows spawn 安全：任务函数均为模块级，无 lambda/闭包。
+    cost_kw（V5.2）：comm/stamp/slip/max_pos_chg 交易成本与仓位平滑口径随网格生效。"""
     grids = weight_grid()
+    cost_kw = cost_kw or {}
     rows = None
     try:
         from concurrent.futures import ProcessPoolExecutor
         chunks = [grids[i:i + 60] for i in range(0, len(grids), 60)]
         done = 0
         with ProcessPoolExecutor(max_workers=workers) as ex:
-            for part in ex.map(_grid_chunk, [df] * len(chunks), chunks):
+            for part in ex.map(_grid_chunk, [df] * len(chunks), chunks,
+                               [cost_kw] * len(chunks)):
                 rows = part if rows is None else rows + part
                 done += len(part)
                 if verbose and done % 600 < 60:
@@ -230,7 +279,7 @@ def grid_search(df: pd.DataFrame, verbose=True, workers: int = None) -> pd.DataF
         rows = []
         for i, w in enumerate(grids):
             rows.append({"w1": w[0], "w2": w[1], "w3": w[2], "w4": w[3], "w5": w[4],
-                         **asdict(perf_auto(df, w))})
+                         **asdict(perf_auto(df, w, **cost_kw))})
             if verbose and (i + 1) % 500 == 0:
                 print(f"  grid {i + 1}/{len(grids)}")
     res = pd.DataFrame(rows)
@@ -238,12 +287,43 @@ def grid_search(df: pd.DataFrame, verbose=True, workers: int = None) -> pd.DataF
     return res.sort_values("_k").drop(columns="_k").reset_index(drop=True)
 
 
+# ────────────────────────── 帕累托多目标（V5.2） ──────────────────────────
+def pareto_frontier(res: pd.DataFrame, obj1: str = "sharpe", obj2: str = "max_dd") -> pd.DataFrame:
+    """双目标帕累托非支配解集：最大化 obj1（夏普）、最小化 obj2（最大回撤）。
+    点 i 被支配 iff ∃j: obj1_j > obj1_i 且 obj2_j < obj2_i（严格支配）。
+    O(n log n)：按 obj2 升序分组扫描，组内保留 obj1 严格大于此前各组 obj1 最大值的点
+    （同一 obj2 组内互不支配）。外部稿 O(n²) 双重循环（3 万组时 9 亿次比较）
+    与 seaborn/scipy 死引入均弃用。"""
+    d = res.reset_index(drop=True)
+    grp = d.sort_values([obj2, obj1], ascending=[True, False])
+    is_eff = np.zeros(len(d), dtype=bool)
+    idx_arr = grp.index.to_numpy()
+    v1_arr = grp[obj1].to_numpy(dtype=float)
+    v2_arr = grp[obj2].to_numpy(dtype=float)
+    running_max1 = -np.inf
+    i, n = 0, len(grp)
+    while i < n:
+        j = i
+        group_max1 = -np.inf
+        while j < n and v2_arr[j] == v2_arr[i]:    # 同一 obj2 组内互不支配
+            if v1_arr[j] >= running_max1:          # 无更小 obj2 的点 obj1 严格更大 → 非支配
+                is_eff[idx_arr[j]] = True          # （与 running_max1 打平也不被支配：支配要求严格更大）
+            group_max1 = max(group_max1, v1_arr[j])
+            j += 1
+        running_max1 = max(running_max1, group_max1)
+        i = j
+    out = d[is_eff]
+    # 帕累托解集内按 calmar（年化/回撤，兼顾双目标）降序作为主排序
+    return out.sort_values("calmar", ascending=False).reset_index(drop=True)
+
+
 # ────────────────────────── 阈值扫描 ──────────────────────────
-def threshold_scan(df: pd.DataFrame, w) -> pd.DataFrame:
+def threshold_scan(df: pd.DataFrame, w, cost_kw: dict = None) -> pd.DataFrame:
+    cost_kw = cost_kw or {}
     rows = []
     for hi in range(20, 31):
         for lo in range(60, 71):
-            p = perf_auto(df, w, hi=float(hi), lo=float(lo))
+            p = perf_auto(df, w, hi=float(hi), lo=float(lo), **cost_kw)
             rows.append({"hi": hi, "lo": lo, **asdict(p)})
     res = pd.DataFrame(rows)
     res["_k"] = res.apply(lambda r: rank_key(Perf(**{k: r[k] for k in Perf.__dataclass_fields__})), axis=1)
@@ -254,7 +334,7 @@ def threshold_scan(df: pd.DataFrame, w) -> pd.DataFrame:
 def noise_test(df: pd.DataFrame, w, eps=5.0, n=200, seed=42) -> dict:
     """给 f1~f5 加 U(-eps,+eps) 噪声，看绩效衰减"""
     rng = np.random.default_rng(seed)
-    base = perf(df, w)
+    base = perf_auto(df, w)                       # pool 模式（尤其 ret 列池无 close）必须走 perf_auto
     dd, sh = [], []
     for _ in range(n):
         noisy = df.copy()
@@ -301,8 +381,11 @@ def rolling_test(df: pd.DataFrame, w, train_window: int = 252, test_window: int 
         if len(test_df) < 10:
             break
         p = perf_auto(test_df, w, hi=hi, lo=lo,
-                 panic=kw.get("panic", PANIC), overheat=kw.get("overheat", OVERHEAT),
-                 max_pos=kw.get("max_pos", 1.0), stop_loss=kw.get("stop_loss", 0.0))
+                      panic=kw.get("panic", PANIC), overheat=kw.get("overheat", OVERHEAT),
+                      max_pos=kw.get("max_pos", 1.0), stop_loss=kw.get("stop_loss", 0.0),
+                      dd_trigger=kw.get("dd_trigger", 0.0), comm=kw.get("comm", COMM),
+                      stamp=kw.get("stamp", STAMP), slip=kw.get("slip", SLIP),
+                      max_pos_chg=kw.get("max_pos_chg", MAX_POS_CHG))
         rows.append({"start": test_df["date"].iloc[0].strftime("%Y-%m-%d"),
                      "end": test_df["date"].iloc[-1].strftime("%Y-%m-%d"),
                      "train_hi": hi, "train_lo": lo, **asdict(p)})
@@ -364,7 +447,9 @@ def write_report(out, base_p, best_w, best_p, th, noise, split, regime,
                  hi: float = BASE_HI, lo: float = BASE_LO,
                  panic: float = PANIC, overheat: float = OVERHEAT,
                  max_pos: float = 1.0, stop_loss: float = 0.0,
-                 dd_trigger: float = 0.0, roll: pd.DataFrame = None) -> str:
+                 dd_trigger: float = 0.0, comm: float = COMM, stamp: float = STAMP,
+                 slip: float = SLIP, max_pos_chg: float = MAX_POS_CHG,
+                 roll: pd.DataFrame = None, pareto: pd.DataFrame = None) -> str:
     th_top = th.head(5).to_string(index=False) if th is not None else "（自定义权重，未做网格扫描）"
     roll_sec = ""
     if roll is not None:
@@ -377,9 +462,20 @@ def write_report(out, base_p, best_w, best_p, th, noise, split, regime,
 ```
 > 样本外均值显著低于全样本 ⇒ 存在过拟合，优先降低参数激进程度。
 """
+    pareto_sec = ""
+    if pareto is not None:
+        pt_top = pareto.head(8).to_string(index=False)
+        pareto_sec = f"""
+## 七、帕累托多目标前沿（夏普↑ × 回撤↓ 双目标非支配解集，解集内按 Calmar 排序）
+{len(pareto)} 组非支配解（完整见 pareto_frontier.csv），前 8 组：
+```
+{pt_top}
+```
+> 不再仅按单一夏普排序：回撤厌恶型资金可在前沿上以少量夏普换显著更小的回撤。
+"""
     md = f"""# Sentiment V5.0 权重敏感性回测报告
 
-## 一、基准权重绩效（w1~w5 = {best_w}，阈值 lo={lo} hi={hi} panic={panic} overheat={overheat}，max_pos={max_pos}，stop_loss={stop_loss}，dd_trigger={dd_trigger}）
+## 一、基准权重绩效（w1~w5 = {best_w}，阈值 lo={lo} hi={hi} panic={panic} overheat={overheat}，max_pos={max_pos}，stop_loss={stop_loss}，dd_trigger={dd_trigger}，佣金={comm} 印花税={stamp} 滑点={slip} 单日仓位变动≤{max_pos_chg}）
 ```
 {json.dumps(asdict(base_p), ensure_ascii=False, indent=2)}
 ```
@@ -410,7 +506,7 @@ valid: {json.dumps(split['valid'])}
 {regime.to_string(index=False)}
 ```
 > 人工干预规则：黑天鹅暴跌（单日跌停家数>100）/ 强政策事件当日，模型打分作废，人工覆盖仓位决策。
-{roll_sec}
+{roll_sec}{pareto_sec}
 *本报告由离线规则回测自动生成，非投资建议。*
 """
     path = os.path.join(out, "report.md")
@@ -453,8 +549,10 @@ def risk_tier(score: float):
     return "极高风险（冰点）", "大面积杀跌，空仓/轻仓防御"
 
 
-def generate_daily_report(df: pd.DataFrame, w, alerts, out: str) -> str:
-    """末日日报：五因子得分 + 综合分 + 失效预警修正 + 明日观测（多标的取末日各标的因子均值）"""
+def generate_daily_report(df: pd.DataFrame, w, alerts, out: str,
+                          main_line: dict = None) -> str:
+    """末日日报：五因子得分 + 综合分 + 失效预警修正 + 明日观测（多标的取末日各标的因子均值）。
+    main_line（V5.2 自动选股模式传入）：末日主线识别结果，输出主线板块与个股清单。"""
     if is_pool(df):
         last_date = df["date"].max()
         df = df[df["date"] == last_date].groupby("date", as_index=False)[["f1", "f2", "f3", "f4", "f5"]].mean()
@@ -473,8 +571,15 @@ def generate_daily_report(df: pd.DataFrame, w, alerts, out: str) -> str:
               f"> 原始综合得分：**{sc:.2f}**｜修正参考分：{warn['modified']}"
               f"（扣分项：{'、'.join(warn['hits']) if warn['hits'] else '无'}）",
               f"> 风险等级：**{risk}**｜操作建议：{signal}",
-              f"> 模型状态：{warn['flag']}", "",
-              "## 明日观测预警清单", "",
+              f"> 模型状态：{warn['flag']}", ""]
+    if main_line is not None:
+        stocks = main_line["main_stocks"]
+        lines += ["## 主线自动选股（末日）", "",
+                  f"- 主线板块：{'、'.join(main_line['main_sectors'])}"
+                  f"｜主线强度分：{main_line['main_line_strength']:.2f}",
+                  f"- 主线个股（{len(stocks)} 只）：{'、'.join(stocks[:10])}"
+                  + ("…" if len(stocks) > 10 else ""), ""]
+    lines += ["## 明日观测预警清单", "",
               "- 综合得分持续性监控",
               "- 主线涨停梯队完整性",
               "- 炸板率、高位大面数量变化",
@@ -493,7 +598,8 @@ def generate_daily_report(df: pd.DataFrame, w, alerts, out: str) -> str:
 def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float = BASE_LO,
                  panic: float = PANIC, overheat: float = OVERHEAT,
                  max_pos: float = 1.0, stop_loss: float = 0.0,
-                 dd_trigger: float = 0.0) -> str:
+                 dd_trigger: float = 0.0, comm: float = COMM, stamp: float = STAMP,
+                 slip: float = SLIP, max_pos_chg: float = MAX_POS_CHG) -> str:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -508,8 +614,9 @@ def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
 
     ret = df["close"].pct_change().fillna(0.0)
     sc = score(df, w)
-    pos = positions(sc, hi, lo, panic, overheat, max_pos, stop_loss, ret, dd_trigger)
-    strat = ret * pos
+    pos = positions(sc, hi, lo, panic, overheat, max_pos, stop_loss, ret, dd_trigger,
+                    max_pos_chg)
+    strat = ret * pos - turnover_cost(pos, comm, stamp, slip)
     nav = (1 + strat).cumprod()
     x = pd.to_datetime(df["date"])
 
@@ -561,13 +668,15 @@ def plot_results(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
 def daily_table(df: pd.DataFrame, w, hi: float = BASE_HI, lo: float = BASE_LO,
                 panic: float = PANIC, overheat: float = OVERHEAT,
                 max_pos: float = 1.0, stop_loss: float = 0.0,
-                dd_trigger: float = 0.0) -> pd.DataFrame:
-    """逐日明细：因子、综合分、仓位（T+1）、策略收益、净值"""
+                dd_trigger: float = 0.0, comm: float = COMM, stamp: float = STAMP,
+                slip: float = SLIP, max_pos_chg: float = MAX_POS_CHG) -> pd.DataFrame:
+    """逐日明细：因子、综合分、仓位（T+1）、策略收益（含交易成本）、净值"""
     sc = score(df, w)
     ret = df["close"].pct_change().fillna(0.0)
-    pos = positions(sc, hi, lo, panic, overheat, max_pos, stop_loss, ret, dd_trigger)
+    pos = positions(sc, hi, lo, panic, overheat, max_pos, stop_loss, ret, dd_trigger,
+                    max_pos_chg)
     ret = df["close"].pct_change().fillna(0.0)
-    strat = ret * pos
+    strat = ret * pos - turnover_cost(pos, comm, stamp, slip)
     dates = df["date"] if pd.api.types.is_datetime64_any_dtype(df["date"]) else pd.to_datetime(df["date"])
     out = pd.DataFrame({"date": dates.dt.strftime("%Y-%m-%d")})
     for i in range(5):
@@ -601,25 +710,33 @@ def trade_events(daily: pd.DataFrame) -> pd.DataFrame:
 def export_excel(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float = BASE_LO,
                  panic: float = PANIC, overheat: float = OVERHEAT,
                  max_pos: float = 1.0, stop_loss: float = 0.0, dd_trigger: float = 0.0,
-                 rf: float = RF) -> str:
+                 comm: float = COMM, stamp: float = STAMP, slip: float = SLIP,
+                 max_pos_chg: float = MAX_POS_CHG, rf: float = RF) -> str:
     """回测结果表打包。单标的：每日因子与仓位/交易明细/汇总指标；
-    多标的（asset_id）：组合每日/交易明细(标记asset_id)/每标的绩效/汇总指标"""
+    多标的（asset_id）：组合每日/交易明细(标记asset_id)/每标的绩效/汇总指标。
+    V5.2：成本与平滑参数入汇总参数表；pool 明细收益经 asset_ret（支持 ret 列池）。"""
     date_str = (df["date"].max() if is_pool(df) else df["date"].iloc[-1]).strftime("%Y-%m-%d")
     start_str = (df["date"].min() if is_pool(df) else df["date"].iloc[0]).strftime("%Y-%m-%d")
     path = os.path.join(out, f"Sentiment_Backtest_Result_{date_str}.xlsx")
     n_days = df["date"].nunique() if is_pool(df) else len(df)
+    n_params = 19
     summary = pd.DataFrame({
-        "类别": ["参数"] * 15,
+        "类别": ["参数"] * n_params,
         "名称": ["w1 情绪定位", "w2 盈亏效应", "w3 广度量能", "w4 题材结构", "w5 主线结构",
                  "开仓阈值(≥持有)", "减仓阈值(<)", "清仓阈值(≤)", "过热阈值(≥禁新建)",
-                 "最大仓位", "单笔止损", "动态降仓回撤阈值", "无风险利率", "样本天数", "样本区间"],
+                 "最大仓位", "单笔止损", "动态降仓回撤阈值",
+                 "佣金率(双边)", "印花税率(卖出)", "滑点(单边)", "单日仓位最大变动",
+                 "无风险利率", "样本天数", "样本区间"],
         "数值": [w[0], w[1], w[2], w[3], w[4], lo, hi, panic, overheat, max_pos,
-                 stop_loss, dd_trigger, rf, n_days, f"{start_str} ~ {date_str}"],
+                 stop_loss, dd_trigger, comm, stamp, slip, max_pos_chg,
+                 rf, n_days, f"{start_str} ~ {date_str}"],
     })
+    cost_kw = dict(comm=comm, stamp=stamp, slip=slip, max_pos_chg=max_pos_chg)
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
         if is_pool(df):
-            p = perf_pool(df, w, hi, lo, panic, overheat, max_pos, stop_loss, dd_trigger)
-            strat, pos, _ = pool_strat(df, w, hi, lo, panic, overheat, max_pos, stop_loss, dd_trigger)
+            p = perf_pool(df, w, hi, lo, panic, overheat, max_pos, stop_loss, dd_trigger, **cost_kw)
+            strat, pos, _ = pool_strat(df, w, hi, lo, panic, overheat, max_pos, stop_loss,
+                                       dd_trigger, **cost_kw)
             combo = pd.DataFrame({"date": strat.index, "pos": pos.round(2).values,
                                   "strat_ret": strat.round(6).values,
                                   "nav": (1 + strat).cumprod().round(4).values})
@@ -627,21 +744,26 @@ def export_excel(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
             navs = {}
             for a, g in df.groupby("asset_id"):
                 g = g.sort_values("date")
-                ret = g["close"].pct_change().fillna(0.0)
-                pa = positions(score(g, w), hi, lo, panic, overheat, max_pos, stop_loss, ret, dd_trigger)
-                navs[f"nav_{a}"] = pd.Series((1 + ret * pa).cumprod().round(4).values, index=g["date"].values)
+                ret = asset_ret(g)
+                pa = positions(score(g, w), hi, lo, panic, overheat, max_pos, stop_loss,
+                               ret, dd_trigger, max_pos_chg)
+                navs[f"nav_{a}"] = pd.Series((1 + ret * pa
+                                              - turnover_cost(pa, comm, stamp, slip)
+                                              ).cumprod().round(4).values, index=g["date"].values)
             combo = combo.merge(pd.DataFrame(navs), left_on="date", right_index=True, how="left")
             combo.to_excel(writer, sheet_name="组合每日净值", index=False)
             # 交易明细（逐标的，标记 asset_id）
             ev_rows = []
             for a, g in df.groupby("asset_id"):
                 g = g.sort_values("date").reset_index(drop=True)
-                ret = g["close"].pct_change().fillna(0.0)
-                pa = positions(score(g, w), hi, lo, panic, overheat, max_pos, stop_loss, ret, dd_trigger)
-                d = pd.DataFrame({"date": g["date"].values, "close": g["close"].values,
+                ret = asset_ret(g)
+                pa = positions(score(g, w), hi, lo, panic, overheat, max_pos, stop_loss,
+                               ret, dd_trigger, max_pos_chg)
+                d = pd.DataFrame({"date": g["date"].values, "close": g["close"].values if "close" in g else np.nan,
                                   "score": score(g, w).round(2).values,
-                                  "pos": pa.values, "strat_ret": (ret * pa).values,
-                                  "nav": (1 + ret * pa).cumprod().values})
+                                  "pos": pa.values,
+                                  "strat_ret": (ret * pa - turnover_cost(pa, comm, stamp, slip)).values,
+                                  "nav": (1 + ret * pa - turnover_cost(pa, comm, stamp, slip)).cumprod().values})
                 e = trade_events(d)
                 if len(e):
                     e.insert(0, "asset_id", a)
@@ -653,7 +775,7 @@ def export_excel(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
             for a, g in df.groupby("asset_id"):
                 pa = g.sort_values("date").reset_index(drop=True)
                 per.append({"asset_id": a, **asdict(perf(pa, w, hi, lo, panic, overheat,
-                                                         max_pos, stop_loss, dd_trigger))})
+                                                         max_pos, stop_loss, dd_trigger, **cost_kw))})
             pd.DataFrame(per).to_excel(writer, sheet_name="每标的绩效", index=False)
             p_metrics = [("总收益率", p.total_ret), ("年化收益", p.annual), ("最大回撤", p.max_dd),
                          ("夏普比率", p.sharpe), ("Calmar比率", p.calmar), ("Sortino比率", p.sortino),
@@ -665,8 +787,9 @@ def export_excel(df: pd.DataFrame, w, out: str, hi: float = BASE_HI, lo: float =
                                                         "数值": [m[1] for m in p_metrics]})],
                                  ignore_index=True)
         else:
-            p = perf(df, w, hi, lo, panic, overheat, max_pos, stop_loss, dd_trigger)
-            daily = daily_table(df, w, hi, lo, panic, overheat, max_pos, stop_loss, dd_trigger)
+            p = perf(df, w, hi, lo, panic, overheat, max_pos, stop_loss, dd_trigger, **cost_kw)
+            daily = daily_table(df, w, hi, lo, panic, overheat, max_pos, stop_loss, dd_trigger,
+                                **cost_kw)
             daily.to_excel(writer, sheet_name="每日因子与仓位", index=False)
             trade_events(daily).to_excel(writer, sheet_name="交易明细", index=False)
             summary = pd.concat([summary, pd.DataFrame({
@@ -761,6 +884,103 @@ def batch_nav_plot(df: pd.DataFrame, rows: pd.DataFrame, out: str, w=None, top_n
     return path
 
 
+# ────────────────────────── 主线自动选股（V5.2 需求1） ──────────────────────────
+def find_main_line(day_df: pd.DataFrame, top_n: int = 1) -> dict:
+    """单日主线板块识别：main_score = 涨停家数 × 涨停密度（外部稿除零隐患已修）。
+    day_df 需含列：code, sector, is_limit_up(0/1) [, rise_pct 或 close]"""
+    sec = day_df.groupby("sector").agg(
+        limit_up_cnt=("is_limit_up", "sum"),
+        total_stock=("code", "count"),
+    ).reset_index()
+    sec["limit_density"] = np.where(sec["total_stock"] > 0,
+                                    sec["limit_up_cnt"] / sec["total_stock"], 0.0)
+    sec["main_score"] = sec["limit_up_cnt"] * sec["limit_density"]
+    sec = sec.sort_values(["main_score", "limit_up_cnt"], ascending=False).reset_index(drop=True)
+    main_sectors = sec.head(top_n)["sector"].tolist()
+    main_df = day_df[day_df["sector"].isin(main_sectors)]
+    return {"main_sectors": main_sectors,
+            "sector_stat": sec,
+            "main_stocks": main_df["code"].astype(str).unique().tolist(),
+            "main_line_strength": float(sec.iloc[0]["main_score"]) if len(sec) else 0.0}
+
+
+def build_auto_pool(stock_df: pd.DataFrame, factor_df: pd.DataFrame,
+                    top_n: int = 1, verbose: bool = False) -> pd.DataFrame:
+    """逐日主线识别 → 主线个股 × 当日市场因子 → 多日多标的回测池（V5.2 需求1 诚实实现）。
+    外部稿 build_asset_pool 只取因子 CSV 最后一行建 1 天数据（无法回测）、全局 F1~F5
+    硬塞个股，均弃用。此处：
+      - stock_df：date, code, sector, is_limit_up(0/1) + rise_pct(%，二选一) 或 close
+      - factor_df：date, f1..f5, close（市场情绪因子按日 merge，同日各标的共用）
+      - 个股日收益：优先 rise_pct/100；否则按全帧 close 组内 pct_change（先算后筛，
+        规避单日分组内 pct_change 恒 NaN 的坑）
+      - 输出列：date, asset_id, f1..f5, ret（日收益小数；pool 管线经 asset_ret 直接采用，
+        无需 close 累计合成——缺日标的合成 close 会令 pct_change 跨缺日把多日收益压成一天）
+    主线每日动态变化（今日 A 板块、明日 B 板块），等权合成时缺日自动跳过。"""
+    need = {"date", "code", "sector", "is_limit_up"}
+    miss = need - set(stock_df.columns)
+    if miss:
+        raise ValueError(f"个股 CSV 缺列: {sorted(miss)}（需 date,code,sector,is_limit_up 及 rise_pct 或 close）")
+    if "rise_pct" not in stock_df.columns and "close" not in stock_df.columns:
+        raise ValueError("个股 CSV 需含 rise_pct（当日涨跌幅%，如 3.5）或 close 列之一")
+    st = stock_df.copy()
+    st["date"] = pd.to_datetime(st["date"])
+    st = st.sort_values(["date", "code"]).reset_index(drop=True)
+    if "rise_pct" in st.columns:
+        st["ret"] = pd.to_numeric(st["rise_pct"], errors="coerce") / 100.0
+    else:
+        st["ret"] = st.groupby("code")["close"].pct_change().fillna(0.0)
+    fac = factor_df[["date", "f1", "f2", "f3", "f4", "f5"]].copy()
+    fac["date"] = pd.to_datetime(fac["date"])
+    rows, info = [], {}
+    for day, g in st.groupby("date"):
+        mi = find_main_line(g, top_n=top_n)
+        sub = g[g["code"].astype(str).isin(mi["main_stocks"])]
+        frow = fac[fac["date"] == day]
+        if frow.empty or sub.empty:                   # 因子缺失日 / 当日主线为空 → 跳过
+            continue
+        f = frow.iloc[0]
+        for code, r in zip(sub["code"].astype(str), sub["ret"]):
+            rows.append({"date": day, "asset_id": code,
+                         "f1": f["f1"], "f2": f["f2"], "f3": f["f3"], "f4": f["f4"], "f5": f["f5"],
+                         "ret": round(float(r), 6)})
+        info[day] = mi
+    pool = pd.DataFrame(rows).sort_values(["date", "asset_id"]).reset_index(drop=True)
+    if pool.empty:
+        raise ValueError("自动选股后标的池为空：请检查个股 CSV 与因子 CSV 的日期是否有重叠"
+                         "（个股日期须落在因子日期范围内）")
+    if verbose:
+        last_day = max(info) if info else None
+        if last_day is not None:
+            mi = info[last_day]
+            print(f"  末日({last_day:%Y-%m-%d}) 主线板块 {mi['main_sectors']}"
+                  f" 强度 {mi['main_line_strength']:.2f}｜主线个股 {len(mi['main_stocks'])} 只")
+    return pool
+
+
+def demo_stocks(n_days: int = 420, seed: int = 11, start: str = "2024-09-02") -> pd.DataFrame:
+    """合成个股日线（3 板块 × 8 只）：其中一板块周期性走强（涨停聚集），用于自动选股管线自检"""
+    rng = np.random.default_rng(seed)
+    dates = pd.bdate_range(start, periods=n_days).strftime("%Y-%m-%d")
+    rows = []
+    for si, sec in enumerate(["AI算力", "低空经济", "消费医药"]):
+        hot_phase = np.sin(np.linspace(0, 8 * np.pi, n_days) + si * 2.1) > 0.55   # 周期性走强段
+        for k in range(8):
+            code = f"{600000 + si * 100 + k:06d}"
+            for d, (dt, hot) in enumerate(zip(dates, hot_phase)):
+                if sec == "AI算力" and hot:
+                    limit = rng.random() < 0.45
+                    ret = 0.099 if limit else rng.normal(0.012, 0.02)
+                elif sec == "低空经济" and hot:
+                    limit = rng.random() < 0.30
+                    ret = 0.099 if limit else rng.normal(0.008, 0.018)
+                else:
+                    limit = rng.random() < 0.03
+                    ret = 0.099 if limit else rng.normal(0.0, 0.015)
+                rows.append({"date": dt, "code": code, "sector": sec,
+                             "rise_pct": round(ret * 100, 2), "is_limit_up": int(limit)})
+    return pd.DataFrame(rows)
+
+
 # ────────────────────────── demo 数据 ──────────────────────────
 def demo_df(n=900, seed=7) -> pd.DataFrame:
     """合成因子：与未来收益正相关（ρ≈0.3），用于管线自检，非真实结论"""
@@ -809,6 +1029,17 @@ def main():
     ap.add_argument("--roll-refit", action="store_true", help="滚动验证逐窗重寻优阈值（walk-forward，较慢）")
     ap.add_argument("--train-win", type=int, default=252, help="滚动训练窗口（默认252交易日）")
     ap.add_argument("--test-win", type=int, default=63, help="滚动测试窗口（默认63交易日）")
+    # ── V5.2：交易成本 / 仓位平滑 / 主线自动选股 / 帕累托 ──
+    ap.add_argument("--comm", type=float, default=COMM, help="佣金率双边（如 0.0003=万3；0=关闭）")
+    ap.add_argument("--stamp", type=float, default=STAMP, help="印花税率仅卖出（如 0.0005=万5；0=关闭）")
+    ap.add_argument("--slip", type=float, default=SLIP, help="单边滑点（如 0.0002=万2；0=关闭）")
+    ap.add_argument("--max-pos-chg", type=float, default=MAX_POS_CHG,
+                    help="单日最大仓位变动 0~1（如 0.2=单日最多±20%%；0=不限）")
+    ap.add_argument("--stock-csv", default="",
+                    help="个股日线 CSV（date,code,sector,is_limit_up,rise_pct 或 close），启用主线自动选股；"
+                         "demo 模式下传 demo 用合成个股演示")
+    ap.add_argument("--main-topn", type=int, default=1, help="每日入选主线板块数（默认1）")
+    ap.add_argument("--pareto", action="store_true", help="网格扫描后输出夏普×回撤双目标帕累托前沿（pareto_frontier.csv）")
     args = ap.parse_args()
 
     if not 0 < args.max_pos <= 1:
@@ -817,6 +1048,10 @@ def main():
         raise SystemExit("--stop-loss 须 ≤ 0（负数启用止损，0 关闭）")
     if args.dd_trigger > 0:
         raise SystemExit("--dd-trigger 须 ≤ 0（负数启用动态降仓，如 -0.15；0 关闭）")
+    if not 0 <= args.max_pos_chg <= 1:
+        raise SystemExit("--max-pos-chg 须在 [0,1]（0=不限；如 0.2）")
+    if args.comm < 0 or args.stamp < 0 or args.slip < 0:
+        raise SystemExit("--comm/--stamp/--slip 须 ≥ 0（0=关闭）")
     args.roll = args.roll or args.roll_refit   # refit 隐含启用滚动验证
 
     w_custom = [args.w1, args.w2, args.w3, args.w4, args.w5]
@@ -831,7 +1066,8 @@ def main():
 
     df = demo_df() if args.demo else pd.read_csv(args.factors)
     df.columns = [str(c).strip().lower() for c in df.columns]   # 兼容 Excel 模板 F1/F1 大小写
-    missing = [c for c in ["date", "f1", "f2", "f3", "f4", "f5", "close"] if c not in df.columns]
+    need = ["date", "f1", "f2", "f3", "f4", "f5"] + ([] if args.stock_csv else ["close"])
+    missing = [c for c in need if c not in df.columns]
     if missing:
         raise SystemExit(f"因子 CSV 缺列: {missing}（Excel 模板导出应含 date,f1..f5,close）")
     df["date"] = pd.to_datetime(df["date"])
@@ -839,10 +1075,34 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     RF = args.rf
     th_kw = dict(hi=args.hi, lo=args.lo, panic=args.panic, overheat=args.overheat,
-                 max_pos=args.max_pos, stop_loss=args.stop_loss, dd_trigger=args.dd_trigger)
+                 max_pos=args.max_pos, stop_loss=args.stop_loss, dd_trigger=args.dd_trigger,
+                 comm=args.comm, stamp=args.stamp, slip=args.slip, max_pos_chg=args.max_pos_chg)
+    main_line_last = None
+
+    if args.stock_csv:
+        print(f"[0/5] 主线自动选股：逐日识别主线板块（top {args.main_topn}）…")
+        st = (demo_stocks(n_days=len(df), start=str(df["date"].iloc[0].date()))
+              if args.stock_csv == "demo" else pd.read_csv(args.stock_csv))
+        st.columns = [str(c).strip().lower() for c in st.columns]
+        pool = build_auto_pool(st, df, top_n=args.main_topn)
+        pool.to_csv(os.path.join(args.out, "auto_pool.csv"), index=False, encoding="utf-8-sig")
+        last_day = pool["date"].max()
+        mi = find_main_line(st[pd.to_datetime(st["date"]) == last_day], top_n=args.main_topn)
+        main_line_last = mi
+        print(f"      {pool['date'].nunique()} 个交易日、{pool['asset_id'].nunique()} 只主线个股 → auto_pool.csv")
+        print(f"      末日({last_day:%Y-%m-%d}) 主线 {mi['main_sectors']} 强度 {mi['main_line_strength']:.2f}｜"
+              f"个股 {mi['main_stocks'][:8]}{'…' if len(mi['main_stocks']) > 8 else ''}")
+        df = pool
     if is_pool(df):
         n_assets = df["asset_id"].nunique()
         print(f"[0/5] 检测到 asset_id 列 → 多标的等权轮动模式（{n_assets} 个标的）")
+
+    cost_kw = dict(comm=args.comm, stamp=args.stamp, slip=args.slip,
+                   max_pos_chg=args.max_pos_chg)
+    has_cost = any(v != 0 for v in cost_kw.values())
+    if has_cost:
+        print(f"[0/5] 交易成本：佣金{args.comm} 印花税{args.stamp} 滑点{args.slip}｜"
+              f"仓位平滑：单日变动≤{args.max_pos_chg or '不限'}")
 
     print(f"[1/5] 基准绩效 …")
     base_p = perf_auto(df, w_custom or BASE_W, **th_kw)
@@ -855,7 +1115,7 @@ def main():
         best_w, best_p, scan = BASE_W, base_p, None
     else:
         print("[2/5] 权重网格扫描（3876 组，多进程并行）…")
-        scan = grid_search(df)
+        scan = grid_search(df, cost_kw=cost_kw)
         scan.to_csv(os.path.join(args.out, "weights_scan.csv"), index=False, encoding="utf-8-sig")
         bw = scan.iloc[0]
         best_w = (bw.w1, bw.w2, bw.w3, bw.w4, bw.w5)
@@ -863,8 +1123,16 @@ def main():
         print(f"      最优 w={best_w} dd={best_p.max_dd} sharpe={best_p.sharpe}")
 
     print("[3/5] 阈值扫描 …")
-    th = threshold_scan(df, best_w)
+    th = threshold_scan(df, best_w, cost_kw=cost_kw)
     th.to_csv(os.path.join(args.out, "threshold_scan.csv"), index=False, encoding="utf-8-sig")
+
+    pareto = None
+    if args.pareto:
+        # 网格跑过用权重扫描，快速/自定义权重模式回落到阈值扫描（帕累托适用于任何含 sharpe/max_dd 的表）
+        src = scan if scan is not None else th
+        pareto = pareto_frontier(src)
+        pareto.to_csv(os.path.join(args.out, "pareto_frontier.csv"), index=False, encoding="utf-8-sig")
+        print(f"      帕累托非支配解 {len(pareto)}/{len(src)} 组 → pareto_frontier.csv")
 
     print("[4/5] 鲁棒性 …")
     noise = noise_test(df, best_w)
@@ -887,7 +1155,9 @@ def main():
     path = write_report(args.out, base_p, best_w, best_p, th, noise, split, regime,
                         hi=args.hi, lo=args.lo, panic=args.panic, overheat=args.overheat,
                         max_pos=args.max_pos, stop_loss=args.stop_loss,
-                        dd_trigger=args.dd_trigger, roll=roll)
+                        dd_trigger=args.dd_trigger, comm=args.comm, stamp=args.stamp,
+                        slip=args.slip, max_pos_chg=args.max_pos_chg,
+                        roll=roll, pareto=pareto)
     print("完成 →", os.path.abspath(path))
 
     if args.heatmap:
@@ -905,7 +1175,7 @@ def main():
         print("Excel →", os.path.abspath(p))
     if args.report:
         alerts = [a.strip() for a in args.alerts.split(",") if a.strip()]
-        p = generate_daily_report(df, best_w, alerts, args.out)
+        p = generate_daily_report(df, best_w, alerts, args.out, main_line=main_line_last)
         print("日报 →", os.path.abspath(p))
 
 

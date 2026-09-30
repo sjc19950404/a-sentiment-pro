@@ -1,4 +1,4 @@
-# Sentiment V5.0 离线工具集
+# Sentiment V5.2 离线工具集
 
 ## 〇、图形界面（`sentiment_gui.py`）
 
@@ -6,9 +6,9 @@
 python sentiment_gui.py
 ```
 
-Tkinter 一键平台【参数调优版】：鼠标选因子 CSV 与输出目录 → **界面直调权重 w1~w5 与四档阈值（开仓/减仓/清仓/过热），无需改源码** → 填风险标记（可选）→ 一键运行全流程（基准绩效 / 网格 / 阈值 / 鲁棒性 / 汇总报告 / 三栏图 / 末日日报 / Excel 三表），日志实时滚动，桌面弹窗提示完成。
+Tkinter 一键平台【V5.2 版】：鼠标选因子 CSV 与输出目录 → **界面直调权重 w1~w5 与四档阈值（开仓/减仓/清仓/过热），无需改源码** → 填风险标记（可选）→ 一键运行全流程（基准绩效 / 网格 / 阈值 / 鲁棒性 / 汇总报告 / 三栏图 / 末日日报 / Excel），日志实时滚动，桌面弹窗提示完成。
 
-- **参数面板**：权重总和 ≠1 弹窗确认防误输；勾选「自定义权重」即按面板权重直接回测（跳过 3876 组网格）；阈值须满足 清仓 < 减仓 < 开仓 < 过热；**风控行可设最大仓位与单笔止损；勾选「滚动样本外验证」输出 rolling_test.csv 并写入报告（可选逐窗重寻优）**；「恢复默认」一键还原 V5 基准
+- **参数面板**：权重总和 ≠1 弹窗确认防误输；勾选「自定义权重」即按面板权重直接回测（跳过 3876 组网格）；阈值须满足 清仓 < 减仓 < 开仓 < 过热；**风控行可设最大仓位与单笔止损；成本行可设佣金/印花税/滑点与单日仓位变动上限；个股CSV行启用主线自动选股；勾选「滚动样本外验证」输出 rolling_test.csv 并写入报告（可选逐窗重寻优）**；「恢复默认」一键还原 V5 基准
 - 需要 `tkinter`（Python 自带；托管精简版 Python 可能没有，用系统版 Python 建的 venv 跑，并装 `openpyxl`）+ `pandas numpy matplotlib openpyxl`
 - 运行期间不卡界面（后台线程），重复点击自动忽略
 
@@ -80,9 +80,21 @@ python sentiment_backtest.py --factors factors.csv --fast --dd-trigger -0.15
 # 网格绘图：阈值热力图（lo×hi→夏普，看参数高原）+ TopN 参数净值对比
 python sentiment_backtest.py --factors factors.csv --fast --heatmap --batch-nav 5
 
-# 多标的等权轮动：CSV 加 asset_id 列即自动启用（date,asset_id,f1..f5,close），逐标的回测后日收益等权合成；
+# 多标的等权轮动：CSV 加 asset_id 列即自动启用（date,asset_id,f1..f5,close 或 ret），逐标的回测后日收益等权合成；
 # Excel 变四表（组合每日净值含各标的 nav / 交易明细带 asset_id / 每标的绩效 / 汇总指标）
 python sentiment_backtest.py --factors multi_asset_factors.csv --fast --xlsx
+
+# 【V5.2】交易成本 + 仓位平滑：买入收 佣金+滑点，卖出收 佣金+印花税+滑点；单日仓位变动 ≤20%
+python sentiment_backtest.py --factors factors.csv --fast \
+    --comm 0.0003 --stamp 0.0005 --slip 0.0002 --max-pos-chg 0.2
+
+# 【V5.2】主线自动选股：个股CSV（date,code,sector,is_limit_up,rise_pct 或 close）逐日识别主线板块
+# （main_score = 涨停家数×涨停密度，取 top N）→ 主线个股 × 当日市场因子 → 标的池（auto_pool.csv），
+# 日报输出末日主线板块与个股清单；demo 模式传 --stock-csv demo 用合成个股演示
+python sentiment_backtest.py --factors factors.csv --stock-csv stocks.csv --main-topn 1 --fast --report
+
+# 【V5.2】帕累托多目标寻优：网格后输出 夏普↑×回撤↓ 双目标非支配解集（解集内按 Calmar 排序）
+python sentiment_backtest.py --factors factors.csv --pareto
 
 # 滚动窗口样本外验证（train 252 / test 63 切段）；--roll-refit 加逐窗重寻优（walk-forward，较慢）
 python sentiment_backtest.py --factors factors.csv --fast --roll --train-win 252 --test-win 63
@@ -109,17 +121,21 @@ python sentiment_backtest.py --factors factors.csv --fast --roll --train-win 252
 | `threshold_heatmap.png`（`--heatmap`） | 阈值扫描热力图（lo×hi→夏普，纯 matplotlib 无 seaborn 依赖） |
 | `batch_nav_compare.png`（`--batch-nav N`） | TopN 参数组合净值对比（网格取权重 TopN，快速模式取阈值 TopN） |
 | `rolling_test.csv`（`--roll`） | 滚动窗口样本外验证：每段区间/寻优参数/绩效；`--roll-refit` 为真 walk-forward（训练窗阈值扫描选参 → 测试窗评估，训练段绝不参与测试） |
-| `Sentiment_Backtest_Result_<日期>.xlsx`（`--xlsx`） | 三表：**每日因子与仓位**（f1~f5/综合分/仓位/策略收益/净值逐日明细）、**交易明细**（每次仓位变动的打分日→T+1 生效日、动作、当日收益、累计净值）、**汇总指标**（权重/阈值/仓位/止损参数 + 年化/回撤/夏普/Calmar/Sortino/最大连亏天数/胜率/盈亏比/空仓占比/开仓次数） |
+| `auto_pool.csv`（`--stock-csv`） | 主线自动选股生成的多标的池：date, asset_id(个股代码), f1~f5(当日市场因子), ret(个股日收益) |
+| `pareto_frontier.csv`（`--pareto`） | 网格帕累托前沿：夏普↑×回撤↓ 双目标非支配解集（解集内按 Calmar 排序），回撤厌恶型资金可在此以少量夏普换更小回撤 |
+| `Sentiment_Backtest_Result_<日期>.xlsx`（`--xlsx`） | 三表：**每日因子与仓位**（f1~f5/综合分/仓位/策略收益/净值逐日明细）、**交易明细**（每次仓位变动的打分日→T+1 生效日、动作、当日收益、累计净值）、**汇总指标**（权重/阈值/仓位/止损/**成本与平滑**参数 + 年化/回撤/夏普/Calmar/Sortino/最大连亏天数/胜率/盈亏比/空仓占比/开仓次数）；多标的模式变四表 |
 
 ### 回测规则（对齐 V5 风险表）
 
 - 收盘打分，T+1 生效：score≥65 持有 / 44~65 减仓至 0.5 / ≤24 清仓 / ≥80 过热只减仓不新建
 - 风控约束（可选）：`--max-pos` 仓位上限（满仓=max_pos，减仓=0.5×max_pos）；`--stop-loss`（如 -0.08）持仓期当日收盘跌幅≤止损线则次日强制清仓；`--dd-trigger`（如 -0.15）回撤动态降仓——回撤≥15% 上限压至 40%、≥9% 压至 70%；止损优先于信号
-- 多标的轮动：CSV 含 `asset_id` 列自动启用，逐标的独立回测（T+1/止损/降仓同规则）后按日等权合成组合净值；滚动/网格/阈值扫描全兼容
+- 【V5.2】交易成本（可选）：`--comm` 佣金双边 / `--stamp` 印花税仅卖出 / `--slip` 单边滑点——按当日仓位变动幅度计，直接从策略日收益中扣除（strat = ret×pos − cost）；成本/平滑口径随网格与阈值扫描同步生效
+- 【V5.2】仓位平滑（可选）：`--max-pos-chg`（如 0.2）单日仓位变动相对前日生效仓位最多 ±20%，避免满仓/空仓一夜跳变；**止损立即清仓不受平滑约束**（风控优先）
+- 【V5.2】主线自动选股（可选）：`--stock-csv` 个股日线（date,code,sector,is_limit_up,rise_pct 或 close）逐日识别主线板块——main_score = 涨停家数 × 涨停密度（除零防护），取 `--main-topn` 名板块的全部个股为当日标的池，因子按日 merge（同日各标的共用市场情绪因子）；主线每日动态变化，等权合成时缺日自动跳过；个股日期须与因子日期有重叠
+- 多标的轮动：CSV 含 `asset_id` 列自动启用（支持 close 或 ret 列两种收益口径），逐标的独立回测（T+1/止损/降仓/成本同规则）后按日等权合成组合净值；滚动/网格/阈值扫描全兼容
 - GUI 日志同步持久化到 `输出目录/backtest_log.txt`（带时间戳，跨会话保留）
 - 滚动样本外验证：`--roll` 按 test_window 切段评估参数跨期稳定性；`--roll-refit` 每 63 日在训练窗（默认252日）阈值扫描重寻优、紧随测试窗评估——样本外均值显著低于全样本 ⇒ 过拟合，需降参数激进程度
-- 网格/阈值扫描/鲁棒性基于默认风控（max_pos=1、无止损）保证可比性；绩效新增 Calmar、Sortino、最大连续亏损天数
-- 优化目标优先级：**最大回撤最小 → 夏普最高 → 年化最高**（防回撤优先于收益）
+- 优化目标优先级：**最大回撤最小 → 夏普最高 → 年化最高**（防回撤优先于收益）；`--pareto` 另输出夏普×回撤双目标帕累托前沿
 - 鲁棒性：±5 分均匀噪声 **200 次重复扰动**看平均衰减（单次噪声无统计意义）；70/30 训练验证分段防过拟合
 - 失效场景：单边牛市/熊市/震荡分组统计持仓踩错率；黑天鹅与强政策事件当日人工覆盖模型打分
 
