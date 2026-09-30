@@ -1,9 +1,9 @@
 {
  "meta": {
-  "generatedAt": "2026-09-29T15:13:48.079Z",
+  "generatedAt": "2026-09-30T10:45:04.472Z",
   "formulaVersion": "v5.2-pro",
-  "tradeDate": "2026-09-29",
-  "days": 32,
+  "tradeDate": "2026-09-30",
+  "days": 33,
   "assets": [
    "上证指数",
    "深证成指",
@@ -11,7 +11,7 @@
   ],
   "signal": "七因子加权情绪分（权重取 src/config.js weights，与页面 emotion.value 同口径）",
   "costNote": "佣金 0.0003（双边）· 印花税 0.0005（卖出）· 滑点 0.0002；按仓位变动幅度计提",
-  "caveat": "样本仅 32 个交易日，年化/夏普等指标的统计意义有限，仅用于管线自检与参数对比，不构成投资建议。",
+  "caveat": "样本仅 33 个交易日，年化/夏普等指标的统计意义有限，仅用于管线自检与参数对比，不构成投资建议。",
   "weightDrift": 0.07
  },
  "params": {
@@ -102,7 +102,8 @@
    "2026-09-23",
    "2026-09-24",
    "2026-09-28",
-   "2026-09-29"
+   "2026-09-29",
+   "2026-09-30"
   ],
   "emotion": [
    59,
@@ -136,7 +137,8 @@
    64.3,
    61.7,
    34.4,
-   76.8
+   76.8,
+   69.5
   ],
   "navBase": [
    1,
@@ -170,7 +172,8 @@
    0.9895,
    0.9793,
    0.9635,
-   0.9645
+   0.9645,
+   0.9644
   ],
   "navV52": [
    1,
@@ -204,7 +207,8 @@
    0.9767,
    0.9603,
    0.9416,
-   0.9424
+   0.9424,
+   0.9423
   ],
   "navHold": [
    1.0053,
@@ -238,7 +242,8 @@
    0.9665,
    0.9464,
    0.916,
-   0.9179
+   0.9179,
+   0.9178
   ],
   "posV52": [
    0,
@@ -272,7 +277,8 @@
    1,
    0.8,
    0.6,
-   0.5
+   0.5,
+   0.7
   ]
  },
  "base": {
@@ -285,13 +291,13 @@
    "s_zbl": 0.1,
    "s_amt": 0.15
   },
-  "sharpe": -2.038,
+  "sharpe": -2.012,
   "maxDd": 0.0476,
-  "calmar": -5.207,
-  "annual": -0.2477,
-  "total": -0.0355,
-  "winRate": 0.4516,
-  "emptyRatio": 0.0313
+  "calmar": -5.082,
+  "annual": -0.2418,
+  "total": -0.0356,
+  "winRate": 0.4375,
+  "emptyRatio": 0.0303
  },
  "v52": {
   "w": {
@@ -303,13 +309,13 @@
    "s_zbl": 0.1,
    "s_amt": 0.15
   },
-  "sharpe": -3.478,
+  "sharpe": -3.433,
   "maxDd": 0.0627,
-  "calmar": -5.95,
-  "annual": -0.373,
-  "total": -0.0576,
-  "winRate": 0.4516,
-  "emptyRatio": 0.0313
+  "calmar": -5.82,
+  "annual": -0.3649,
+  "total": -0.0577,
+  "winRate": 0.4375,
+  "emptyRatio": 0.0303
  },
  "best": {
   "w": {
@@ -321,19 +327,19 @@
    "s_zbl": 0.0732,
    "s_amt": 0.2561
   },
-  "sharpe": -3.257,
+  "sharpe": -3.216,
   "maxDd": 0.0576,
-  "calmar": -6.001,
-  "annual": -0.3458,
-  "total": -0.0525,
-  "winRate": 0.4516,
-  "emptyRatio": 0.0313
+  "calmar": -5.869,
+  "annual": -0.3382,
+  "total": -0.0526,
+  "winRate": 0.4375,
+  "emptyRatio": 0.0303
  },
  "pareto": {
   "count": 1,
   "uniqueCount": 87,
   "scanned": 78125,
-  "note": "本样本内两目标同向：最小回撤组合同时是最高夏普组合，非支配解集退化为 1 个（样本 32 日，参数分辨力有限）",
+  "note": "本样本内两目标同向：最小回撤组合同时是最高夏普组合，非支配解集退化为 1 个（样本 33 日，参数分辨力有限）",
   "rows": [
    {
     "w": {
@@ -345,13 +351,13 @@
      "s_zbl": 0.0732,
      "s_amt": 0.2561
     },
-    "sharpe": -3.257,
+    "sharpe": -3.216,
     "maxDd": 0.0576,
-    "calmar": -6.001,
-    "annual": -0.3458,
-    "total": -0.0525,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "calmar": -5.869,
+    "annual": -0.3382,
+    "total": -0.0526,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": true
    },
    {
@@ -364,13 +370,13 @@
      "s_zbl": 0.0833,
      "s_amt": 0.2917
     },
-    "sharpe": -3.352,
+    "sharpe": -3.31,
     "maxDd": 0.0588,
-    "calmar": -5.99,
-    "annual": -0.3522,
-    "total": -0.0536,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "calmar": -5.858,
+    "annual": -0.3445,
+    "total": -0.0538,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": false
    },
    {
@@ -383,13 +389,13 @@
      "s_zbl": 0.0909,
      "s_amt": 0.2273
     },
-    "sharpe": -3.368,
+    "sharpe": -3.325,
     "maxDd": 0.0594,
-    "calmar": -5.984,
-    "annual": -0.3556,
-    "total": -0.0543,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "calmar": -5.853,
+    "annual": -0.3478,
+    "total": -0.0544,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": false
    },
    {
@@ -402,13 +408,13 @@
      "s_zbl": 0.1818,
      "s_amt": 0.1364
     },
-    "sharpe": -3.378,
+    "sharpe": -3.334,
     "maxDd": 0.061,
-    "calmar": -5.967,
-    "annual": -0.3642,
-    "total": -0.0559,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "calmar": -5.837,
+    "annual": -0.3562,
+    "total": -0.056,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": false
    },
    {
@@ -421,13 +427,13 @@
      "s_zbl": 0.1026,
      "s_amt": 0.2692
     },
-    "sharpe": -3.414,
+    "sharpe": -3.371,
     "maxDd": 0.0596,
-    "calmar": -5.982,
-    "annual": -0.3567,
-    "total": -0.0545,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "calmar": -5.851,
+    "annual": -0.3489,
+    "total": -0.0546,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": false
    },
    {
@@ -440,13 +446,13 @@
      "s_zbl": 0.137,
      "s_amt": 0.2466
     },
-    "sharpe": -3.464,
+    "sharpe": -3.42,
     "maxDd": 0.0606,
-    "calmar": -5.972,
-    "annual": -0.3619,
-    "total": -0.0554,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "calmar": -5.841,
+    "annual": -0.354,
+    "total": -0.0556,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": false
    },
    {
@@ -459,13 +465,13 @@
      "s_zbl": 0.1667,
      "s_amt": 0.1667
     },
-    "sharpe": -3.471,
+    "sharpe": -3.426,
     "maxDd": 0.0622,
-    "calmar": -5.955,
-    "annual": -0.3704,
-    "total": -0.0571,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "calmar": -5.825,
+    "annual": -0.3623,
+    "total": -0.0572,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": false
    },
    {
@@ -478,13 +484,13 @@
      "s_zbl": 0.0952,
      "s_amt": 0.1905
     },
-    "sharpe": -3.471,
+    "sharpe": -3.427,
     "maxDd": 0.0611,
-    "calmar": -5.967,
-    "annual": -0.3645,
-    "total": -0.0559,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "calmar": -5.837,
+    "annual": -0.3565,
+    "total": -0.0561,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": false
    },
    {
@@ -497,13 +503,13 @@
      "s_zbl": 0.1,
      "s_amt": 0.15
     },
-    "sharpe": -3.478,
+    "sharpe": -3.433,
     "maxDd": 0.0627,
-    "calmar": -5.95,
-    "annual": -0.373,
-    "total": -0.0576,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "calmar": -5.82,
+    "annual": -0.3649,
+    "total": -0.0577,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": false
    },
    {
@@ -516,13 +522,13 @@
      "s_zbl": 0.0952,
      "s_amt": 0.25
     },
-    "sharpe": -3.508,
+    "sharpe": -3.463,
     "maxDd": 0.0598,
-    "calmar": -5.98,
-    "annual": -0.3574,
-    "total": -0.0546,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "calmar": -5.849,
+    "annual": -0.3496,
+    "total": -0.0548,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": false
    },
    {
@@ -535,13 +541,13 @@
      "s_zbl": 0.0789,
      "s_amt": 0.2763
     },
-    "sharpe": -3.522,
+    "sharpe": -3.477,
     "maxDd": 0.0604,
-    "calmar": -5.974,
-    "annual": -0.3608,
-    "total": -0.0552,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "calmar": -5.843,
+    "annual": -0.3529,
+    "total": -0.0554,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": false
    },
    {
@@ -554,13 +560,13 @@
      "s_zbl": 0.1039,
      "s_amt": 0.2727
     },
-    "sharpe": -3.526,
+    "sharpe": -3.481,
     "maxDd": 0.0614,
-    "calmar": -5.963,
-    "annual": -0.3663,
-    "total": -0.0563,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "calmar": -5.833,
+    "annual": -0.3583,
+    "total": -0.0564,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": false
    },
    {
@@ -573,13 +579,13 @@
      "s_zbl": 0.1316,
      "s_amt": 0.1974
     },
-    "sharpe": -3.531,
+    "sharpe": -3.485,
     "maxDd": 0.063,
-    "calmar": -5.946,
-    "annual": -0.3748,
-    "total": -0.0579,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "calmar": -5.817,
+    "annual": -0.3667,
+    "total": -0.0581,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": false
    },
    {
@@ -592,13 +598,13 @@
      "s_zbl": 0.0822,
      "s_amt": 0.1644
     },
-    "sharpe": -3.556,
+    "sharpe": -3.505,
     "maxDd": 0.0661,
-    "calmar": -5.916,
-    "annual": -0.3911,
+    "calmar": -5.783,
+    "annual": -0.3823,
     "total": -0.0611,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": false
    },
    {
@@ -611,13 +617,13 @@
      "s_zbl": 0.0769,
      "s_amt": 0.1923
     },
-    "sharpe": -3.566,
+    "sharpe": -3.515,
     "maxDd": 0.0677,
-    "calmar": -5.897,
-    "annual": -0.3993,
+    "calmar": -5.765,
+    "annual": -0.3903,
     "total": -0.0627,
-    "winRate": 0.4516,
-    "emptyRatio": 0.0313,
+    "winRate": 0.4375,
+    "emptyRatio": 0.0303,
     "np": false
    }
   ]
@@ -712,101 +718,45 @@
   }
  },
  "mainLine": {
-  "tradeDate": "2026-09-29",
+  "tradeDate": "2026-09-30",
   "mains": [
    {
-    "theme": "PCB",
+    "theme": "业绩线",
     "themeCount": 8,
-    "density": 0.0889,
-    "mainScore": 0.71,
-    "stocks": [
-     {
-      "code": "000823",
-      "name": "超声电子",
-      "changePct": 10.01,
-      "reason": "PCB+高阶HDI+覆铜板"
-     },
-     {
-      "code": "605258",
-      "name": "协和电子",
-      "changePct": 10,
-      "reason": "PCB+高频通讯+新能源电池"
-     },
-     {
-      "code": "605058",
-      "name": "澳弘电子",
-      "changePct": 10,
-      "reason": "PCB+HDI板+AI服务器电源+具身智能"
-     },
-     {
-      "code": "002913",
-      "name": "奥士康",
-      "changePct": 10,
-      "reason": "高端PCB+AI服务器+可转债"
-     },
-     {
-      "code": "002815",
-      "name": "崇达技术",
-      "changePct": 9.99,
-      "reason": "高端PCB+服务器PCB+封装基板"
-     },
-     {
-      "code": "603328",
-      "name": "依顿电子",
-      "changePct": 9.98,
-      "reason": "高端PCB+AI算力+控股股东增持"
-     }
-    ],
-    "stockCount": 6
+    "density": 0.1026,
+    "mainScore": 0.82,
+    "stocks": [],
+    "stockCount": 0
    },
    {
-    "theme": "新能源",
-    "themeCount": 7,
-    "density": 0.0778,
-    "mainScore": 0.54,
-    "stocks": [
-     {
-      "code": "601238",
-      "name": "广汽集团",
-      "changePct": 10.02,
-      "reason": "拟购买一汽丰田50%股权+复牌+南北丰田+新能源车"
-     },
-     {
-      "code": "603949",
-      "name": "雪龙集团",
-      "changePct": 10.01,
-      "reason": "商用车热管理+新能源风扇+宇树科技投资"
-     },
-     {
-      "code": "605258",
-      "name": "协和电子",
-      "changePct": 10,
-      "reason": "PCB+高频通讯+新能源电池"
-     }
-    ],
-    "stockCount": 3
+    "theme": "国企改革",
+    "themeCount": 5,
+    "density": 0.0641,
+    "mainScore": 0.32,
+    "stocks": [],
+    "stockCount": 0
    }
   ],
   "topIndustries": [
    {
-    "name": "元件",
-    "change_pct": 4.42
+    "name": "生物制品",
+    "change_pct": 4.63
    },
    {
-    "name": "电池",
-    "change_pct": 3.79
+    "name": "医疗服务",
+    "change_pct": 3.11
    },
    {
-    "name": "文化传媒",
-    "change_pct": 3.16
+    "name": "白酒",
+    "change_pct": 2.82
    },
    {
-    "name": "影视院线",
-    "change_pct": 2.35
+    "name": "种植业与林业",
+    "change_pct": 2.43
    },
    {
-    "name": "工业金属",
-    "change_pct": 2
+    "name": "化学制药",
+    "change_pct": 2.11
    }
   ]
  }
