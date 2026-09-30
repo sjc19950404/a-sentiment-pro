@@ -18,102 +18,177 @@
     </div>
   </header>
 
+  <!-- 分区导航（sticky）：12 张卡片分 4 区，避免长页面里找不到内容 -->
+  <nav class="zonenav" id="zoneNav" aria-label="页面分区导航">
+    <a class="zn on" href="#zone-overview" data-zone="zone-overview">概览</a>
+    <a class="zn" href="#zone-detail" data-zone="zone-detail">个股与题材</a>
+    <a class="zn" href="#zone-backtest" data-zone="zone-backtest">策略回测 V5.2</a>
+    <a class="zn" href="#zone-brief" data-zone="zone-brief">研判报告</a>
+    <span class="zn-note">表格行 / 题材标签 / 图上数据点 / 权重行 均可点击查看详情</span>
+  </nav>
+
   <div id="alerts"></div>
 
-  <main class="grid">
-    <section class="card emotion">
-      <h2>综合情绪</h2>
-      <div class="score-row">
-        <div class="score" id="emScore">--</div>
-        <div class="pct">
-          <div>历史分位 <b id="emPct">--</b>%</div>
-          <div class="muted" id="emNet"></div>
-        </div>
+  <main>
+    <!-- ── 区一：概览 ── -->
+    <section class="zone" id="zone-overview">
+      <div class="zone-head">
+        <h3>概览 · 今日盘面</h3>
+        <span class="zone-sub">情绪分 / 题材动量 / 情绪趋势 / 题材分布</span>
       </div>
-      <div id="factors" class="factors"></div>
-    </section>
+      <div class="grid">
+        <section class="card emotion">
+          <h2>综合情绪 <span class="bf-auto">悬停因子条看口径</span></h2>
+          <div class="score-row">
+            <div class="score" id="emScore">--</div>
+            <div class="pct">
+              <div>历史分位 <b id="emPct">--</b>%</div>
+              <div class="muted" id="emNet"></div>
+              <div class="muted" id="emTier"></div>
+            </div>
+          </div>
+          <div id="factors" class="factors"></div>
+        </section>
 
-    <section class="card momentum">
-      <h2>题材动量</h2>
-      <div class="mom-group">
-        <div class="mom-title fresh">新晋 <span id="freshN">0</span></div>
-        <div id="freshList" class="chips"></div>
-      </div>
-      <div class="mom-group">
-        <div class="mom-title fade">退潮 <span id="fadeN">0</span></div>
-        <div id="fadeList" class="chips"></div>
-      </div>
-      <div class="mom-group">
-        <div class="mom-title cont">延续 <span id="contN">0</span></div>
-        <div id="contList" class="chips muted"></div>
-      </div>
-    </section>
+        <section class="card momentum">
+          <h2>题材动量 <span class="bf-auto">点标签看题材成分</span></h2>
+          <div class="mom-group">
+            <div class="mom-title fresh">新晋 <span id="freshN">0</span></div>
+            <div id="freshList" class="chips"></div>
+          </div>
+          <div class="mom-group">
+            <div class="mom-title fade">退潮 <span id="fadeN">0</span></div>
+            <div id="fadeList" class="chips"></div>
+          </div>
+          <div class="mom-group">
+            <div class="mom-title cont">延续 <span id="contN">0</span></div>
+            <div id="contList" class="chips muted"></div>
+          </div>
+        </section>
 
-    <section class="card trend">
-      <h2>情绪趋势（近15日）</h2>
-      <svg id="trendSvg" viewBox="0 0 300 90" preserveAspectRatio="none"></svg>
-    </section>
+        <section class="card trend">
+          <h2>情绪趋势（近15日）<span class="bf-auto">点数据点看当日盘面</span></h2>
+          <svg id="trendSvg" viewBox="0 0 300 90" preserveAspectRatio="none" role="img" aria-label="近15日情绪分趋势"></svg>
+          <div id="trendTip" class="trend-tip muted">共 -- 个交易日样本</div>
+        </section>
 
-    <section class="card themes">
-      <h2>最新日题材（已去噪）</h2>
-      <div id="themeBars"></div>
-    </section>
-
-    <section class="card hot">
-      <h2>强势股 / 龙虎榜归因</h2>
-      <div class="table-wrap">
-        <table id="hotTable">
-          <thead><tr><th>代码</th><th>名称</th><th>诱因</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="card bt">
-      <h2>策略回测（V5.2）<span class="bf-auto">交易成本 · 仓位平滑 · 多标的轮动 · 风控</span></h2>
-      <div id="btMetrics"></div>
-      <svg id="btNavSvg" viewBox="0 0 300 100" preserveAspectRatio="none"></svg>
-      <div class="bt-legend" id="btLegend"></div>
-      <div id="btParams" class="bt-params muted"></div>
-      <div id="btNote" class="bf-foot"></div>
-    </section>
-
-    <section class="card pareto">
-      <h2>网格寻优 · 帕累托双目标</h2>
-      <div id="paretoSummary" class="muted" style="font-size:12px;margin-bottom:8px"></div>
-      <div class="table-wrap">
-        <table id="paretoTable">
-          <thead><tr><th>夏普</th><th>最大回撤</th><th>Calmar</th><th>年化</th><th>非支配</th></tr></thead>
-          <tbody></tbody>
-        </table>
+        <section class="card themes">
+          <h2>最新日题材（已去噪）<span class="bf-auto">点条目看成分股</span></h2>
+          <div id="themeBars"></div>
+        </section>
       </div>
     </section>
 
-    <section class="card roll">
-      <h2>滚动样本外（walk-forward）</h2>
-      <div id="rollSummary" class="muted" style="font-size:12px;margin-bottom:8px"></div>
-      <div class="table-wrap">
-        <table id="rollTable">
-          <thead><tr><th>口径</th><th>测试区间</th><th>总收益</th><th>夏普</th><th>回撤</th></tr></thead>
-          <tbody></tbody>
-        </table>
+    <!-- ── 区二：个股与题材明细 ── -->
+    <section class="zone" id="zone-detail">
+      <div class="zone-head">
+        <h3>个股与题材 · 明细</h3>
+        <span class="zone-sub">支持搜索与点列头排序；点任意一行查看席位与资金详情</span>
+      </div>
+      <div class="grid">
+        <section class="card hot">
+          <h2>个股明细 <span class="bf-auto">双视图 · 点击行查看详情</span></h2>
+          <div class="tbar">
+            <div class="seg" id="hotTabs" role="tablist" aria-label="个股明细视图">
+              <button class="on" data-view="hot" role="tab" aria-selected="true">强势股归因</button>
+              <button data-view="lhb" role="tab" aria-selected="false">龙虎榜资金</button>
+            </div>
+            <input id="hotSearch" class="search" type="search" placeholder="搜索代码 / 名称 / 诱因…" aria-label="搜索个股" />
+            <span id="hotCount" class="muted"></span>
+          </div>
+          <div class="table-wrap tall">
+            <table id="hotTable">
+              <thead><tr id="hotHead"></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </section>
 
-    <section class="card mainline">
-      <h2>主线自动选股 <span class="bf-auto">逐日识别主线题材 → 当日标的清单</span></h2>
-      <div id="mainLineBody"></div>
+    <!-- ── 区三：策略回测 V5.2 ── -->
+    <section class="zone" id="zone-backtest">
+      <div class="zone-head">
+        <h3>策略回测 V5.2</h3>
+        <span class="zone-sub">交易成本 · 仓位平滑 · 多标的轮动 · 风控 · 权重寻优 · 滚动样本外</span>
+      </div>
+      <div class="grid">
+        <section class="card bt">
+          <h2>策略回测（V5.2）<span class="bf-auto">悬停净值曲线看日期</span></h2>
+          <div id="btMetrics"></div>
+          <svg id="btNavSvg" viewBox="0 0 300 100" preserveAspectRatio="none" role="img" aria-label="净值曲线对比"></svg>
+          <div class="bt-legend" id="btLegend"></div>
+          <div id="btParams" class="bt-params muted"></div>
+          <button id="btMore" class="mini" type="button" data-act="btmore" style="margin-top:8px">查看完整参数与口径</button>
+          <div id="btNote" class="bf-foot"></div>
+        </section>
+
+        <section class="card pareto">
+          <h2>网格寻优 · 帕累托双目标 <span class="bf-auto">点权重行看组合明细</span></h2>
+          <div id="paretoSummary" class="sum-line"></div>
+          <div class="table-wrap">
+            <table id="paretoTable">
+              <thead><tr><th>夏普</th><th>最大回撤</th><th>Calmar</th><th>年化</th><th>非支配</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card roll">
+          <h2>滚动样本外（walk-forward）<span class="bf-auto">点分段行看权重</span></h2>
+          <div id="rollSummary" class="sum-line"></div>
+          <div class="table-wrap">
+            <table id="rollTable">
+              <thead><tr><th>口径</th><th>测试区间</th><th>总收益</th><th>夏普</th><th>回撤</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card mainline">
+          <h2>主线自动选股 <span class="bf-auto">逐日识别主线题材 → 当日标的清单（点标的看详情）</span></h2>
+          <div id="mainLineBody"></div>
+        </section>
+      </div>
     </section>
 
-    <section class="card brief">
-      <h2>研判报告 <span class="bf-auto">规则引擎 · 每日随档生成 · 口径同回测引擎</span></h2>
-      <div id="briefBody" class="brief-body"></div>
+    <!-- ── 区四：研判报告 ── -->
+    <section class="zone" id="zone-brief">
+      <div class="zone-head">
+        <h3>研判报告</h3>
+        <span class="zone-sub">规则引擎 · 每日随档生成 · 口径同回测引擎</span>
+      </div>
+      <div class="grid">
+        <section class="card brief">
+          <h2>研判报告 <span class="bf-auto">可跳转段落 / 逐段折叠</span></h2>
+          <div class="bf-tools">
+            <div id="briefNav" class="bf-nav" role="tablist" aria-label="报告段落导航"></div>
+            <button id="briefToggle" class="mini" type="button">全部折叠</button>
+          </div>
+          <div id="briefBody" class="brief-body"></div>
+        </section>
+      </div>
     </section>
   </main>
 
   <footer class="foot muted">
     七因子情绪模型 v5.2-pro · 题材去噪 + 缺失代理 + 多源容灾 · 研判报告与回测引擎同源（阈值/仓位档位）· 策略回测 V5.2（成本/平滑/风控/帕累托）· 数据仅供参考，非投资建议
   </footer>
+
+  <button id="toTop" class="totop" type="button" title="回到顶部" aria-label="回到顶部">↑</button>
+
+  <!-- 详情抽屉：表格行 / 题材 / 权重 / 分段 / 交易日 共用 -->
+  <div id="drawerMask" class="drawer-mask"></div>
+  <aside id="drawer" class="drawer" role="dialog" aria-modal="true" aria-labelledby="dwTitle" aria-hidden="true">
+    <header class="dw-head">
+      <div class="dw-titles">
+        <div id="dwTitle" class="dw-title"></div>
+        <div id="dwSub" class="dw-sub"></div>
+      </div>
+      <button id="dwClose" class="dw-close" type="button" title="关闭（Esc）" aria-label="关闭详情">✕</button>
+    </header>
+    <div id="dwBody" class="dw-body"></div>
+  </aside>
 
   <script src="./app.js"></script>
 </body>
