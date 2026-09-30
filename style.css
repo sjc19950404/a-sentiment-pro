@@ -137,6 +137,9 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   color: var(--warn); font-size: 10px; font-weight: 400; vertical-align: 1px; white-space: nowrap; }
 /* 无行情：中性灰，避免与「新股」的橙色警告混淆；含义是"没有这个数据"，而非"这个数据是 0" */
 .nob { border-color: var(--line); color: var(--muted); }
+/* 区间累计榜：蓝色信息标（不是警告，是口径提示）——该值是区间累计值，不可与同列当日值直接比较 */
+.rngb { display: inline-block; margin-left: 5px; padding: 0 5px; border: 1px solid var(--acc); border-radius: 8px;
+  color: var(--acc); font-size: 10px; font-weight: 400; vertical-align: 1px; white-space: nowrap; }
 .hc-big { margin-left: auto; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .hc-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .hc-tag { display: inline-flex; align-items: baseline; gap: 5px; background: var(--line); border-radius: 6px;

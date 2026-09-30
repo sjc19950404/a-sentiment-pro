@@ -6,6 +6,7 @@ import { ThemeDenoiser, computeMomentum } from '../src/themes.js';
 import { classifySeat } from '../src/sources.js';
 import { recalcAll } from '../src/pipeline.js';
 import { applyLhb } from '../src/sources.js';
+import { isRangeBoard, aggregateByCode, summarizeCalibers } from '../src/lhb.js';
 
 test('sentiment: 全因子正常 -> 0-100', () => {
   const r = computeSentiment({
@@ -96,23 +97,76 @@ test('recalcAll: 无原始数据的种子天标记 legacy 保留原值', () => {
   assert.equal(day.emotion._legacy, true);
 });
 
-test('applyLhb: 重抓数据刷进 day 原始层', () => {
+test('lhb: 区间累计榜判定（含「严重异常期间」，早先正则漏判）', () => {
+  assert.equal(isRangeBoard('连续三个交易日内，涨幅偏离值累计达到20%的证券'), true);
+  assert.equal(isRangeBoard('有价格涨跌幅限制的连续3个交易日内收盘价格涨幅偏离值累计达到30%的证券'), true);
+  assert.equal(isRangeBoard('严重异常期间日收盘价格涨幅偏离值累计达到100%的证券'), true);
+  assert.equal(isRangeBoard('日涨幅偏离值达到7%的前5只证券'), false);
+  assert.equal(isRangeBoard('无价格涨跌幅限制的证券'), false);
+  assert.equal(isRangeBoard(undefined), false);
+});
+
+test('lhb: 同票多榜取 |净额| 最大一笔，且 reason 跟着一起换（诱因与数值必须同源）', () => {
+  const rows = [
+    { code: 'A', name: 'x', reason: '日涨幅偏离值达到7%', net_buy_wan: 100, buy_wan: 200, sell_wan: 100, deal_wan: 300, is_range: false },
+    { code: 'A', name: 'x', reason: '连续三个交易日内，涨幅偏离值累计达到20%', net_buy_wan: 500, buy_wan: 900, sell_wan: 400, deal_wan: 1300, is_range: true },
+  ];
+  const a = aggregateByCode(rows);
+  assert.equal(a.length, 1);
+  assert.equal(a[0].net_buy_wan, 500);
+  assert.equal(a[0].reason, '连续三个交易日内，涨幅偏离值累计达到20%'); // 换了代表就必须换诱因
+  assert.equal(a[0].caliber, 'range');
+  assert.equal(a[0].reasons.length, 2);                                  // 两条上榜原因都留痕
+});
+
+test('lhb: 双口径各自汇总（区间累计值绝不进入当日口径）', () => {
+  const recs = [
+    { code: 'D1', name: 'd1', reason: '日涨幅偏离值达到7%的前5只证券', net_buy_wan: 5000, buy_wan: 8000, sell_wan: 3000, deal_wan: 11000, is_range: false },
+    { code: 'D2', name: 'd2', reason: '日换手率达到20%的前5只证券', net_buy_wan: -2000, buy_wan: 3000, sell_wan: 5000, deal_wan: 8000, is_range: false },
+    { code: 'R1', name: 'r1', reason: '连续三个交易日内，涨幅偏离值累计达到30%的证券', net_buy_wan: 40000, buy_wan: 1.1e6, sell_wan: 1.1e6, deal_wan: 2.2e6, is_range: true },
+  ];
+  const c = summarizeCalibers(recs);
+  assert.equal(c.total_records, 3);
+  assert.equal(c.range_records, 1);
+  assert.equal(c.daily_stocks, 2);
+  assert.equal(c.daily_net_yi, 0.3);    // (5000 - 2000)/1e4
+  assert.equal(c.daily_amt_yi, 1.9);    // (11000 + 8000)/1e4
+  assert.equal(c.all_stocks, 3);
+  assert.equal(c.all_net_yi, 4.3);      // 含区间榜的 40000 → 45000-2000 = 43000 万 = 4.3 亿
+  // 关键：区间榜的巨额基数只出现在全量口径里，当日口径的成交额与净额都不受污染
+  assert.ok(c.daily_amt_yi < c.all_net_yi, `当日成交 ${c.daily_amt_yi} 应远小于被污染的全量净额 ${c.all_net_yi}`);
+});
+
+test('applyLhb: 重抓数据刷进 day 原始层（双口径各自落位）', () => {
   const day = {
     trade_date: '2026-09-25',
     lhb: [], lhb_aggr: [],
-    summary: { net_total_yi: 0, net_pos: 0, net_neg: 0 },
-    emotion: { net_total_yi: 0 },
+    summary: { net_pos: 0, net_neg: 0 },
+    emotion: {},
     hot: [],
   };
   const lhbRaw = [
-    { SECURITY_CODE: '600000', SECURITY_NAME_ABBR: '浦发银行', EXPLANATION: '日涨幅偏离值达7%', CLOSE_PRICE: 10, CHANGE_RATE: 7.1, BILLBOARD_NET_AMT: 5e7, BILLBOARD_BUY_AMT: 8e7, BILLBOARD_SELL_AMT: 3e7, TURNOVERRATE: 3.2 },
-    { SECURITY_CODE: '600000', SECURITY_NAME_ABBR: '浦发银行', EXPLANATION: '换手率达20%', CLOSE_PRICE: 10, CHANGE_RATE: 7.1, BILLBOARD_NET_AMT: 3e7, BILLBOARD_BUY_AMT: 5e7, BILLBOARD_SELL_AMT: 2e7, TURNOVERRATE: 3.2 },
+    // 当日榜：同票两榜，取 |净额| 最大一笔 5e7 = 0.5 亿
+    { SECURITY_CODE: '600000', SECURITY_NAME_ABBR: '浦发银行', EXPLANATION: '日涨幅偏离值达到7%的前5只证券', CLOSE_PRICE: 10, CHANGE_RATE: 7.1, BILLBOARD_NET_AMT: 5e7, BILLBOARD_BUY_AMT: 8e7, BILLBOARD_SELL_AMT: 3e7, BILLBOARD_DEAL_AMT: 1.1e8, TURNOVERRATE: 3.2 },
+    { SECURITY_CODE: '600000', SECURITY_NAME_ABBR: '浦发银行', EXPLANATION: '日换手率达到20%的前5只证券', CLOSE_PRICE: 10, CHANGE_RATE: 7.1, BILLBOARD_NET_AMT: 3e7, BILLBOARD_BUY_AMT: 5e7, BILLBOARD_SELL_AMT: 2e7, BILLBOARD_DEAL_AMT: 7e7, TURNOVERRATE: 3.2 },
+    // 区间累计榜：BUY 被填成区间累计成交额（实测形态），绝不能进当日口径
+    { SECURITY_CODE: '688137', SECURITY_NAME_ABBR: '近岸蛋白', EXPLANATION: '有价格涨跌幅限制的连续3个交易日内收盘价格涨幅偏离值累计达到30%的证券', CLOSE_PRICE: 50, CHANGE_RATE: 12.3, BILLBOARD_NET_AMT: 4e8, BILLBOARD_BUY_AMT: 1.1e10, BILLBOARD_SELL_AMT: 1.1e10, BILLBOARD_DEAL_AMT: 2.2e10, TURNOVERRATE: 20 },
   ];
   applyLhb(day, lhbRaw);
-  assert.equal(day.lhb_aggr.length, 1); // 同股聚合
-  assert.equal(day.summary.lhb_count, 2);
-  assert.equal(day.summary.net_total_yi, 0.5); // 去重口径：同票两榜取绝对值最大一笔 5e7 = 0.5 亿
-  assert.equal(day.emotion.net_total_yi, 0.5);
+  assert.equal(day.lhb_aggr.length, 2);            // 全量口径：2 只
+  assert.equal(day.summary.lhb_count, 3);          // 3 条记录
+  assert.equal(day.summary.lhb_stocks, 2);
+  assert.equal(day.summary.lhb_all_net, 4.5);      // 全量净额（含区间榜）——仅诊断
+  assert.equal(day.summary.net_pos, 2);
+  assert.equal(day.summary.lhb_daily_net, 0.5);    // 当日榜净额——权威
+  assert.equal(day.summary.lhb_daily_stocks, 1);
+  assert.equal(day.summary.lhb_daily_amt, 1.1);
+  assert.equal(day.summary.lhb_range_count, 1);
+  assert.equal(day.emotion.lhb_daily_net, 0.5);    // 因子入参＝当日榜，不能是 4.5
+  const byCode = Object.fromEntries(day.lhb_aggr.map((l) => [l.code, l]));
+  assert.equal(byCode['688137'].caliber, 'range');
+  assert.equal(byCode['600000'].caliber, 'daily');
+  assert.equal(byCode['600000'].reason, '日涨幅偏离值达到7%的前5只证券');
 });
 
 test('seats: 席位分类', () => {

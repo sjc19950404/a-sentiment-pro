@@ -22,9 +22,11 @@
 ## 本地开发
 
 ```bash
-node --test            # 跑单元测试（情绪/校验/题材去噪 + V5.2 回测引擎 + 新鲜度三态，含 Python↔JS 一致性夹具）
+node --test            # 跑单元测试（情绪/校验/题材去噪/龙虎榜双口径 + V5.2 回测引擎 + 新鲜度三态，含 Python↔JS 一致性夹具）
 node scripts/replay.mjs # 用 snapshot.html 离线重建 archive.json 并打印噪声对比
 node scripts/backtest.mjs   # 生成 data/backtest.json（回测/网格帕累托/滚动/主线选股）
+node scripts/audit_lhb_caliber.mjs  # 龙虎榜口径守卫（CI 门禁：双口径不混用 + 存档可重现 + 因子口径锁）
+node scripts/recalc_lhb_daily.mjs   # 存量全档重算（双口径字段 + 七因子；幂等，--dry 可预览）
 node scripts/freshness.mjs  # 数据新鲜度自查（--write 落盘刷新判定 / --require-fresh 滞后即退出码 1）
 NODE_PATH=<任意含 jsdom 的 node_modules> node scripts/check_frontend.mjs  # 前端渲染校验（可选）
 MODE=live node src/pipeline.js  # 线上模式（需外网）
@@ -37,12 +39,15 @@ src/config.js     权重/阈值/数据源/节假日 + 回测默认参数（阈�
 src/util.js       fetch 重试、时间、数学
 src/sources.js    多源抓取（东财/腾讯/同花顺），单源失败不影响整体
 src/sentiment.js  七因子情绪模型 v5（缺失走代理，记录 imputedRatio）
+src/lhb.js        龙虎榜口径唯一来源（当日榜/区间累计榜判定、同票去重、双口径汇总；别处只许 import）
 src/themes.js     题材去噪 + 动量
 src/validate.js   archive.json 结构/范围校验
 src/backtest.js   V5.2 回测引擎（仓位/成本/绩效/网格帕累托/滚动/主线选股，纯函数）
 src/freshness.js  数据新鲜度三态判定（fresh/pending/behind，按交易日历，纯函数）
 src/pipeline.js   编排：抓取→去噪→情绪→校验→写出
 scripts/backtest.mjs  读 archive.json → 预计算 data/backtest.json
+scripts/audit_lhb_caliber.mjs  口径守卫（源码卫生 + 存档不变量 + 因子口径锁，CI 门禁）
+scripts/recalc_lhb_daily.mjs   存量全档重算（幂等）
 scripts/freshness.mjs 新鲜度自查/落盘刷新/CI 门禁（--write / --require-fresh）
 index.html/app.js/style.css  前端看板（纯静态、零构建；分区导航 + 详情抽屉 + 报告折叠，见「界面与交互」）
 data/archive.json 生成数据（Actions 每日更新）
@@ -130,17 +135,37 @@ test/fixtures/parity_v52.json  Python↔JS 一致性夹具（由 tools/backtest/
   同一天同一只票的收盘价在两个独立源应当一致，故可安全借用而非编造。
   回归把守：`test/quote.test.mjs` 锁各代码段位；前端断言锁「无行情标记 / 真实 0% 不误标 /
   全历史不存在『缺失却落成 0』的条目」。存量档可用 `scripts/repair_hot_quotes.mjs` 回填。
-- **龙虎榜口径：分子与分母必须同源**。东财龙虎榜一次披露里混装两类榜单——
+- **龙虎榜口径：分子与分母必须同源，两套净额绝不混用**。东财龙虎榜一次披露里混装两类榜单——
   ① 当日榜（日涨幅偏离 7% / 换手 20% / 振幅 15% / 无涨跌幅限制）：席位买卖与净额都是「当日」口径；
-  ② **区间累计榜**（「连续 3/10 个交易日涨跌幅偏离值累计达 X%」）：统计的是区间累计值，
+  ② **区间累计榜**（「连续 3/10 个交易日涨跌幅偏离值累计达 X%」「严重异常期间…」）：统计的是区间累计值，
   且 `BILLBOARD_BUY_AMT` 被填成区间累计成交额（实测近岸蛋白 10 日榜 `BUY == SELL == ACCUM == 116.97 亿`、净额 0）。
   旧代码把两类不加区分地相加、并把「未去重的全部记录」当作上榜总成交：2026-09-30 得出 511 亿，
   而当日榜去重后真实仅 136.5 亿（3.7 倍差），净买率被稀释成 2.4%（真实 5.7%），
   定性从「中等力度」错判为「脉冲级、可信度低」——**结论方向反了**。
-  现口径：`lhb_daily_amt` / `lhb_daily_net`（当日榜 + 同票去重，取东财官方 `BILLBOARD_DEAL_AMT`），
-  报告的上榜总成交与净买率同用这一套；`lhb_range_count` 记录被单列的区间榜条数，报告中明确注明。
-  存量 33 天由 `scripts/recalc_lhb_daily.mjs` 重算（同日同票去重、剔除区间榜）。
-  回归断言锁「当日榜 < 全记录未去重 × 0.7」以及「报告数值与 `lhb_daily_*` 同源」。
+
+  口径规则集中在 `src/lhb.js`（唯一来源，别处只许 import）：判定式、同票去重、双口径汇总都在这里。
+  同票去重取 |净额| 最大一笔，**`reason` 随代表一起换**（否则会出现「诱因写着日涨幅偏离 7%、数值却是 3 日累计」的错配）。
+
+  | 字段 | 口径 | 用途 |
+  |---|---|---|
+  | `lhb_daily_net` / `lhb_daily_amt` / `lhb_daily_stocks` | 当日榜 + 同票去重（东财官方 `BILLBOARD_DEAL_AMT`） | **权威**：日度因子 `s_net`、净买率、新股扰动占比、近 5 日序列、主线资金占比 |
+  | `lhb_all_net` | 全量（含区间累计榜） | **仅诊断**，只在「完整参数」里单列，禁止参与任何计算 |
+  | `lhb_range_count` | 被单列的区间榜条数 | 报告显式注明口径 |
+
+  歧义字段名 `net_total_yi` 已从存档与代码中**彻底移除**——它不带口径后缀，正是混用的温床。
+  因子侧影响不小：改口径前 `s_net` 喂的是含区间榜的全量净额，等于把三天累计当成一天
+  （2026-09-08 当日榜净买 −0.11 亿、全量却 +13.42 亿 → `s_net` 从 48.9 被抬到 99.5 并 tanh 饱和；
+  33 天里 13 天被顶到 100，因子几乎失去分辨力）。修正后历史情绪分平均变动 1.68 分、最大 10.1 分。
+  `emotion.lhb_daily_net` 与 `summary.lhb_daily_net` 双写并互相校验，保证「因子入参」可追溯。
+
+  存量 33 天由 `scripts/recalc_lhb_daily.mjs` 全档重算（双口径字段 + 七因子 + 题材/主线占比，**幂等**：
+  无实际变化时不写盘、`meta.note` 按标记去重，不会产生噪音提交）。
+  守护方式：`scripts/audit_lhb_caliber.mjs`（已接入 CI，置于提交之前）拦三类回归——
+  ① 源码重新引入无后缀字段名、或在别处另写一份区间榜判别式；
+  ② 存档字段缺失/自相矛盾、或**无法用原始记录重现**（说明被手改或口径漂移）；
+  ③ `s_net` 与当日榜净额脱钩（口径又被换掉）。
+  前端另有断言锁「近 5 日序列与净买率同源」「新股扰动占比 = 新股当日净买 ÷ 当日榜净额」
+  「龙虎榜表格给区间榜行打「区间」标记」（该标记也在个股详情里说明榜单口径）。
 - **手机 / PC 双端**（手机与 PC 都按常用场景对待，不是「PC 优先、手机能看」）：
   - **≤820px 宽表切换为卡片列表**：个股 8~10 列在手机上横滑基本不可用，故同一份 rows 同时渲染
     表格与卡片两套 DOM（`#hotTable` / `#hotCards`，帕累托与滚动分段同理），由 CSS 决定显示哪个——

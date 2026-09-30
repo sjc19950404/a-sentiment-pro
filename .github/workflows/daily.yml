@@ -26,6 +26,10 @@ jobs:
         run: node scripts/freshness.mjs
       - name: 生成 V5.2 回测档（成本/平滑/风控/网格帕累托/滚动/主线选股）
         run: node scripts/backtest.mjs
+      # 口径守卫：两套龙虎榜净额（当日榜 / 含区间累计榜的全量）不得混用。
+      # 放在提交之前——口径一旦漂移，宁可本次运行失败，也不要把错数据推上线。
+      - name: 龙虎榜口径守卫（双口径不混用 + 存档可重现）
+        run: node scripts/audit_lhb_caliber.mjs
       - name: 单元测试（含 Python↔JS 一致性夹具比对）
         run: node --test
       - name: 提交最新数据

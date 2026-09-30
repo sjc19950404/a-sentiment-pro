@@ -79,7 +79,10 @@ def build_frame(arch):
         row.update({k: float(fac[k]) for k in FACTOR_COLS})
         row["score"] = float(e.get("value", e.get("score", 0.0)))
         row["emotion_pct_rank"] = e.get("pct_rank")
-        row["net_total_yi"] = e.get("net_total_yi")
+        # 口径必须带后缀：lhb_daily_net 是喂给 s_net 因子的当日榜净额（权威）；
+        # lhb_all_net 含「连续N个交易日」区间累计榜，是区间累计值，仅供对照，禁止当作日度净额使用。
+        row["lhb_daily_net"] = e.get("lhb_daily_net")
+        row["lhb_all_net"] = (day.get("summary") or {}).get("lhb_all_net")
 
         got = 0
         for cn, key in INDEX_MAP.items():
@@ -139,7 +142,7 @@ def main():
         df = add_legacy5(df)
 
     out_cols = (["date"] + FACTOR_COLS + ["score", "ret", "close"]
-                + list(INDEX_MAP.values()) + ["emotion_pct_rank", "net_total_yi"])
+                + list(INDEX_MAP.values()) + ["emotion_pct_rank", "lhb_daily_net", "lhb_all_net"])
     if args.legacy5:
         out_cols += list(LEGACY5.keys())
     df[out_cols].to_csv(args.out, index=False, encoding="utf-8-sig")

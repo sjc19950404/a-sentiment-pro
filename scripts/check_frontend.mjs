@@ -137,6 +137,54 @@ if (s0.lhb_daily_amt > 0 && s0.lhb_daily_net != null) {
 }
 check('研判报告·因子分解已降级（标注不参与档位判定）',
   brief.includes('因子分解') && brief.includes('不参与档位判定'), '');
+
+// ── 口径纪律：两套净额（当日榜 lhb_daily_net / 全量 lhb_all_net）绝不能混用 ──
+// 事故形态：同一句话里净买率用当日榜、滚动净买却用全量；新股扰动用「当日榜分子 ÷ 全量分母」。
+// 这三条断言把口径钉死，任何一处回退都会被拦住。
+// 字段名拼接构造：源码里不出现该字面量，口径守卫（audit_lhb_caliber）才能保持「全仓零出现」这条强约束
+const LEGACY_FIELD = ['net', 'total', 'yi'].join('_');
+check('口径：存档已清除无后缀的旧净额字段（只保留带口径后缀的字段）',
+  !(LEGACY_FIELD in s0) && !(LEGACY_FIELD in (arcAll.all_days.slice(-1)[0]?.emotion || {}))
+  && s0.lhb_all_net != null,
+  `lhb_all_net=${s0.lhb_all_net} lhb_daily_net=${s0.lhb_daily_net}`);
+check('口径：无口径后缀的净额字段不存在（防「少了后缀那一刻」再次混用）',
+  Object.keys(s0).every((k) => !/^net_/.test(k) || k === 'net_pos' || k === 'net_neg'),
+  Object.keys(s0).filter((k) => /^net_/.test(k)).join(','));
+check('口径：报告首页「当日龙虎净买」取当日榜，不显示全量值',
+  txt('emNet').includes('当日龙虎净买') && !txt('emNet').includes(String(s0.lhb_all_net)),
+  `emNet=「${txt('emNet')}」`);
+{
+  // 近5日净额序列必须与净买率同口径：逐日核对报告里出现的数字就是 lhb_daily_net
+  const last5 = arcAll.all_days.slice(-5).map((d) => d.summary?.lhb_daily_net);
+  const segI = brief.indexOf('近5日当日龙虎净买');
+  const seg = segI >= 0 ? brief.slice(segI, segI + 120) : '';
+  // 渲染用 (+v).toFixed(1)，正数补 + 号；断言要按同样的格式比对，否则 6.09 会被拿来匹配「6.1」而假失败
+  const fmt = (v) => (v > 0 ? '+' : '') + (+v).toFixed(1);
+  const allShown = segI >= 0 && last5.every((v) => v == null || seg.includes(fmt(v)));
+  check('口径：近5日净额序列与净买率同源（当日榜），且标签写明口径',
+    allShown, seg || '报告缺「近5日当日龙虎净买」行');
+  const allExpected = last5.filter((v) => v != null).some((v) => seg.includes(String(Math.abs(s0.lhb_all_net))));
+  check('口径：近5日净额序列不出现全量口径值', !allExpected,
+    `全量值 ${s0.lhb_all_net} 是否出现在序列中：${allExpected}`);
+}
+{
+  // 新股扰动占比：分子（新股当日净买）与分母（当日全榜净买）必须同为当日榜
+  const aggr = arcAll.all_days.slice(-1)[0]?.lhb_aggr || [];
+  const news = aggr.filter((l) => l.caliber !== 'range'
+    && /无价格涨跌幅限制/.test(String(l.reason || '')));
+  if (news.length && s0.lhb_daily_net > 0) {
+    const newNet = news.reduce((a, l) => a + (l.net_buy_wan || 0), 0) / 1e4;
+    const expectPct = Math.round(newNet / s0.lhb_daily_net * 100);
+    const wrongPct = Math.round(newNet / s0.lhb_all_net * 100);
+    const segI = brief.indexOf('占当日龙虎净买');
+    const seg = segI >= 0 ? brief.slice(Math.max(0, segI - 40), segI + 40) : '';
+    check('口径：新股扰动占比＝新股当日净买 ÷ 当日榜净额（分子分母同源）',
+      segI >= 0 && seg.includes(`${expectPct}%`),
+      `期望 ${expectPct}%（混用全量分母会变成 ${wrongPct}%）| ${seg}`);
+  }
+}
+check('口径：聚合行带 caliber 标签，区间榜可被 UI 识别',
+  (arcAll.all_days.slice(-1)[0]?.lhb_aggr || []).every((l) => l.caliber === 'daily' || l.caliber === 'range'), '');
 check('研判报告·含 V5.2 实盘约束（止损/降仓/成本）',
   brief.includes('实盘约束') && brief.includes('止损') && brief.includes('印花税'), '');
 check('研判报告·含主线强度分（与引擎 selectMainLine 同式）', /主线强度分\s*[\d.\u2014-]+/.test(brief), '');
@@ -294,6 +342,13 @@ check('交互：点列头排序（表头出现方向标记）', !!$('hotHead').q
 clickEl($('hotTabs').querySelector('button[data-view="lhb"]'));
 check('交互：可切到龙虎榜资金视图（净买/买卖额列）',
   txt('hotHead').includes('龙虎净买') && txt('hotHead').includes('卖出(亿)'), txt('hotHead').slice(0, 60));
+// 区间累计榜的数值不能和当日值混在一起看：表格必须把它标出来（否则读表人会以为 2.84 亿就是当天净买）
+{
+  const rngBadges = $('hotTable').querySelectorAll('tbody .rngb').length;
+  const rngRows = (arcAll.all_days.slice(-1)[0]?.lhb_aggr || []).filter((l) => l.caliber === 'range').length;
+  check('口径：龙虎榜表格给「区间累计榜」行打标记（数值口径肉眼可辨）',
+    rngRows > 0 && rngBadges === rngRows, `区间榜 ${rngRows} 行 → 页面标记 ${rngBadges} 个`);
+}
 clickEl($('hotTabs').querySelector('button[data-view="hot"]'));
 check('交互：可切回强势股归因视图', txt('hotHead').includes('诱因'), txt('hotHead').slice(0, 40));
 

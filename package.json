@@ -7,6 +7,8 @@
     "pipeline": "node src/pipeline.js",
     "backtest": "node scripts/backtest.mjs",
     "freshness": "node scripts/freshness.mjs",
+    "audit:lhb": "node scripts/audit_lhb_caliber.mjs",
+    "recalc:lhb": "node scripts/recalc_lhb_daily.mjs",
     "check:frontend": "node scripts/check_frontend.mjs",
     "test": "node --test"
   },

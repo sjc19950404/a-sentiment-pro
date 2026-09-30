@@ -7,6 +7,7 @@ import { ThemeDenoiser, computeMomentum } from './themes.js';
 import { computeSentiment } from './sentiment.js';
 import { validateArchive } from './validate.js';
 import { fetchLive, recalcRanks, LhbNotPublishedError, applyLhb, fetchLhb, fetchSeats } from './sources.js';
+import { caliberFromDay, dailyRowsOf } from './lhb.js';
 import { todayBeijing, isTradingDay } from './util.js';
 import { applyFreshnessMeta, freshnessKey } from './freshness.js';
 
@@ -33,8 +34,8 @@ export function extractArchive(html) {
   return JSON.parse(html.slice(start, end));
 }
 
-// 用题材去噪 + 动量 增强每一日
-function enrich(allDays) {
+// 用题材去噪 + 动量 增强每一日（离线可重跑：历史重算脚本复用同一实现，避免口径二次实现）
+export function enrich(allDays) {
   const dn = new ThemeDenoiser({ minGlobalStocks: config.minThemeStocksGlobal }).fit(allDays);
   const byDay = dn.themesAllDays(allDays);
   const mom = computeMomentum(byDay, config.momentumRecent, config.momentumPrev, config.minThemeStocksWindow);
@@ -46,17 +47,21 @@ function enrich(allDays) {
   const out = allDays.map((d, i) => {
     const o = { ...d, themes: Object.fromEntries(Object.entries(byDay[i]).map(([k, v]) => [k, v.size])) };
     // ⑨ 主线题材龙虎资金占比：主线题材（当日成分股最多）个股龙虎净买 ÷ 全榜单龙虎净买
-    if (o.summary && Array.isArray(o.lhb_aggr) && o.lhb_aggr.length) {
+    // 分子分母都必须取「当日榜」口径（口径守卫会核对本字段与 summary.lhb_daily_net 同源）；
+    // 早先误用含区间累计榜的全量数组，同一只票会出现 3 天累计额当日度额，占比随披露节奏跳动。
+    if (o.summary) {
+      const rows = dailyRowsOf(o);
       const entries = Object.entries(byDay[i]);
-      if (entries.length) {
+      if (rows.length && entries.length) {
         const [name, codes] = entries.sort((a, b) => b[1].size - a[1].size)[0];
         let main = 0, tot = 0;
-        for (const l of o.lhb_aggr) { tot += l.net_buy_wan || 0; if (codes.has(l.code)) main += l.net_buy_wan || 0; }
+        for (const l of rows) { tot += l.net_buy_wan || 0; if (codes.has(l.code)) main += l.net_buy_wan || 0; }
         o.summary.main_theme = {
           name,
           main_yi: Math.round(main / 1e4 * 100) / 100,
           tot_yi: Math.round(tot / 1e4 * 100) / 100,
           pct: tot !== 0 ? Math.round(main / tot * 1000) / 10 : null,
+          caliber: 'daily',
         };
       }
     }
@@ -105,17 +110,24 @@ export function recalcAll(days) {
   const amts = days.map((d) => (d.summary && d.summary.amount_yi != null) ? d.summary.amount_yi : null);
   days.forEach((d, i) => {
     const s = d.summary || {};
-    const hasRaw = (s.ind_count > 0 || s.net_total_yi != null);
+    const hasRaw = (s.ind_count > 0 || s.lhb_daily_net != null || s.lhb_all_net != null);
     if (!hasRaw) { if (d.emotion) d.emotion._legacy = true; return; }
-    // 净额统一去重个股口径（每票一笔）：历史天从 lhb_aggr 现算，避免同票多榜重复计入
-    let netBuy = s.net_total_yi ?? null;
-    if (Array.isArray(d.lhb_aggr) && d.lhb_aggr.length) {
-      netBuy = Math.round(d.lhb_aggr.reduce((a, l) => a + l.net_buy_wan, 0) / 1e4 * 100) / 100;
-      s.net_total_yi = netBuy;
-      s.net_pos = d.lhb_aggr.filter((l) => l.net_buy_wan > 0).length;
-      s.net_neg = d.lhb_aggr.filter((l) => l.net_buy_wan < 0).length;
-      if (d.emotion) d.emotion.net_total_yi = netBuy;
+    // 双口径统一从原始记录现算（每票一笔，取 |净额| 最大者），杜绝各自相加时把区间累计榜混进当日口径。
+    // 权威口径 lhb_daily_net 喂日度因子；lhb_all_net 只作诊断留痕，两者不共用任何中间量。
+    const c = caliberFromDay(d);
+    if (c.total_records) {
+      s.lhb_count = c.total_records;
+      s.lhb_stocks = c.all_stocks;
+      s.lhb_all_net = c.all_net_yi;
+      s.net_pos = c.all_pos;
+      s.net_neg = c.all_neg;
+      s.lhb_daily_stocks = c.daily_stocks;
+      s.lhb_daily_net = c.daily_net_yi;
+      s.lhb_daily_amt = c.daily_amt_yi;
+      s.lhb_range_count = c.range_records;
+      if (d.emotion) d.emotion.lhb_daily_net = c.daily_net_yi;
     }
+    const netBuy = s.lhb_daily_net ?? null;
     // amount MA20：取当日之前最近 20 个有值交易日
     const hist = [];
     for (let j = i - 1; j >= 0 && hist.length < 20; j--) if (amts[j] != null) hist.unshift(amts[j]);
