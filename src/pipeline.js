@@ -1,6 +1,6 @@
 // 管道：抓取(或离线回放) -> 题材去噪 -> 情绪 -> 校验 -> 写出 archive.json
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import path from 'path';
 import config from './config.js';
 import { ThemeDenoiser, computeMomentum } from './themes.js';
@@ -8,6 +8,7 @@ import { computeSentiment } from './sentiment.js';
 import { validateArchive } from './validate.js';
 import { fetchLive, recalcRanks, LhbNotPublishedError, applyLhb, fetchLhb, fetchSeats } from './sources.js';
 import { todayBeijing, isTradingDay } from './util.js';
+import { applyFreshnessMeta, freshnessKey } from './freshness.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -270,40 +271,84 @@ export function writeArchive(archive, filePath) {
 export async function main() {
   const mode = process.env.MODE || 'offline';
   const dataPath = path.join(DATA_DIR, 'archive.json');
+  const now = new Date();
 
-  // 非交易日：live 模式直接跳过，保留上一交易日数据
+  // 非交易日：live 模式不抓数据，但仍刷新 meta 的新鲜度判定（自愈可能粘着的旧标记）
   const today = todayBeijing();
   if (mode === 'live' && !isTradingDay(today, config.manualHolidays)) {
     console.log('[skip]', today, '非交易日，保留上次数据');
+    refreshMetaOnly(dataPath, now, { outcome: 'non-trading-day', reason: `${today} 非交易日` });
     return null;
   }
 
   let archive;
+  let attempt;
   if (mode === 'live') {
     try {
       archive = await runLive();
+      attempt = { outcome: 'ok', reason: null };
     } catch (e) {
       if (e instanceof LhbNotPublishedError) {
         console.log('[skip]', e.message, '· 等待龙虎榜公布，保留上次数据');
+        console.log('::warning::本次未抓取：' + e.message + '（保留上次数据；18:30 首抓 / 21:00 补抓）');
+        refreshMetaOnly(dataPath, now, { outcome: 'skipped', reason: e.message });
         return null;
       }
       console.error('[live] 抓取失败，回退:', e.message);
-      console.log('::warning::live 抓取失败，本次写入回退档（meta.stale=true）：' + e.message);
+      console.log('::warning::live 抓取失败，本次写入回退档（meta.lastAttempt.outcome=failed）：' + e.message);
       archive = fallbackArchive(dataPath, e.message);
+      attempt = { outcome: 'failed', reason: e.message };
     }
   } else {
     archive = runOffline(process.env.SNAPSHOT || path.join(ROOT, 'snapshot.html'));
+    attempt = { outcome: 'offline-replay', reason: null };
   }
+  applyFreshness(archive, now, attempt);
   const res = writeArchive(archive, dataPath);
   console.log('写入', res.path, '| 交易日', archive.signals.tradeDate,
     '| 新晋', archive.signals.momentum.fresh.length,
     '| 退潮', archive.signals.momentum.fading.length,
     '| 补位比', archive.signals.imputedRatioLatest,
     '| 情绪分', archive.signals.latestEmotion?.value ?? archive.signals.latestEmotion?.score);
+  console.log('[freshness]', archive.meta.freshness.state, '| stale =', archive.meta.stale,
+    archive.meta.staleReason ? '| ' + archive.meta.staleReason : '| 数据为最新已收盘会话');
   return archive;
 }
 
-// 回退：优先用已提交的真实 archive.json（标记 stale 并记录原因），否则用快照演示数据
+// 把新鲜度判定写进 meta（成功/回退/跳过三条路径统一口径）。
+// stale 不再表示「上次尝试失败」，而是「存档交易日落后于最近已收盘交易日且已过预期更新时刻」，
+// 由 assessFreshness 按交易日历算；抓取是否成功另记于 meta.lastAttempt。
+function applyFreshness(archive, now, attempt) {
+  archive.meta = archive.meta || {};
+  const tradeDate = archive.meta.tradeDate
+    || archive.signals?.tradeDate
+    || (archive.all_days || []).slice(-1)[0]?.trade_date
+    || null;
+  applyFreshnessMeta(archive.meta, tradeDate, now, config.manualHolidays, attempt);
+  return archive;
+}
+
+// 只刷新存档 meta 的判定字段（不碰数据）。用于「跳过 / 非交易日」：
+// 这些路径没有新数据，但新鲜度判定必须跟着时间走，否则旧标记会一直粘着页面。
+function refreshMetaOnly(dataPath, now, attempt) {
+  if (!existsSync(dataPath)) return null;
+  let a;
+  try { a = JSON.parse(readFileSync(dataPath, 'utf8')); } catch { return null; }
+  const before = freshnessKey(a.meta);
+  const f = applyFreshness(a, now, attempt).meta.freshness;
+  if (freshnessKey(a.meta) === before) {
+    console.log('[freshness] meta 未变化 |', f.state);
+    return a;
+  }
+  writeFileSync(dataPath, JSON.stringify(a, null, 2), 'utf8');
+  console.log('[freshness] meta 已刷新 |', f.state, '| stale =', a.meta.stale,
+    a.meta.staleReason ? '| ' + a.meta.staleReason : '');
+  return a;
+}
+
+// 回退：优先用已提交的真实 archive.json（记录原因），否则用快照演示数据。
+// 注：这里的 stale=true 只是保守默认值，随后 applyFreshness 会按日历重算——
+// 若回退档的数据本就是最新已收盘会话，不该继续误报滞后。
 function fallbackArchive(dataPath, reason) {
   const mark = (a) => {
     a.meta = a.meta || {};
@@ -317,7 +362,8 @@ function fallbackArchive(dataPath, reason) {
   return mark(runOffline(process.env.SNAPSHOT || path.join(ROOT, 'snapshot.html')));
 }
 
-// 直接运行时执行
-if (import.meta.url === `file://${process.argv[1]}`) {
+// 直接运行时执行（用 pathToFileURL 比较：Windows 下 argv[1] 是 C:\… 而 import.meta.url 是 file:///C:/…，
+// 直接拼 'file://' + argv[1] 恒不相等 → 本地直跑会静默什么都不做）
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((e) => { console.error(e); process.exit(1); });
 }

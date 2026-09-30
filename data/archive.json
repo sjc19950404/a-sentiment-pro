@@ -4,8 +4,23 @@
     "formulaVersion": "v5.0-pro",
     "source": "live",
     "tradeDate": "2026-09-29",
-    "stale": true,
-    "note": "breadth 手工回填自 21:33 档（东财接口晚间间歇故障），情绪已离线重算"
+    "stale": false,
+    "note": "breadth 手工回填自 21:33 档（东财接口晚间间歇故障），情绪已离线重算",
+    "staleReason": null,
+    "freshness": {
+      "state": "fresh",
+      "stale": false,
+      "tradeDate": "2026-09-29",
+      "latestClosed": "2026-09-29",
+      "behindSessions": 0,
+      "publishDeadline": "2026-09-30T11:30:00.000Z",
+      "checkedAt": "2026-09-30T05:13:56.786Z"
+    },
+    "lastAttempt": {
+      "at": "2026-09-30T05:13:56.786Z",
+      "outcome": "skipped",
+      "reason": "龙虎榜未公布: 2026-09-30"
+    }
   },
   "all_days": [
     {

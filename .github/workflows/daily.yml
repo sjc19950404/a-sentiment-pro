@@ -22,6 +22,8 @@ jobs:
         env:
           MODE: live
         run: node src/pipeline.js
+      - name: 数据新鲜度判定（按交易日历，输出可读结论）
+        run: node scripts/freshness.mjs
       - name: 生成 V5.2 回测档（成本/平滑/风控/网格帕累托/滚动/主线选股）
         run: node scripts/backtest.mjs
       - name: 单元测试（含 Python↔JS 一致性夹具比对）
@@ -37,3 +39,8 @@ jobs:
             git commit -m "chore: 更新情绪数据 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             git push
           fi
+      # 放在提交之后：数据已安全落库，再判定滞后。真滞后 → 本次运行标红（GitHub 会发失败通知），
+      # 避免「回退/跳过被容错吞掉、job 仍是绿」这种静默故障再次发生。
+      # 18:30 首抓常因龙虎榜未公布而跳过，此时判定为 pending（非滞后）不会误伤；21:00 补抓仍不成才会标红。
+      - name: 数据新鲜度门禁（真滞后则本次运行失败）
+        run: node scripts/freshness.mjs --require-fresh

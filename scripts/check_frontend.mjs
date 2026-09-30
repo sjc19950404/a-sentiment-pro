@@ -78,6 +78,18 @@ check('新增·帕累托：摘要含扫描组数', /扫描\s*\d+\s*组/.test(txt
 check('新增·滚动样本外：分段表已填充', rows('rollTable') > 0, `${rows('rollTable')} 行`);
 check('新增·主线选股：主线题材已渲染', txt('mainLineBody').includes('主线题材'), txt('mainLineBody').slice(0, 40));
 check('新增·主线选股：口径备注已渲染', txt('mainLineBody').includes('强度分'), '');
+
+// 告警口径：stale（或客户端已过预期更新时刻）才允许出现「告警」级别的条；
+// 仅「字段级修补 note / 跳过 / 非交易日」只能是 info，不能把正常等待说成抓取失败。
+const meta = JSON.parse(readFileSync(join(ROOT, 'data/archive.json'), 'utf8')).meta || {};
+const warns = window.document.querySelectorAll('#alerts .alert:not(.info)').length;
+const infos = window.document.querySelectorAll('#alerts .alert.info').length;
+const pastDeadline = !!(meta.freshness?.publishDeadline && Date.now() > Date.parse(meta.freshness.publishDeadline));
+const expectWarn = !!meta.stale || pastDeadline;
+check(`告警口径：stale=${!!meta.stale} / 已过预期更新时刻=${pastDeadline} → 告警条 ${warns} 条`,
+  expectWarn ? warns >= 1 : warns === 0, `告警 ${warns} 条、info ${infos} 条`);
+if (meta.note) check('告警口径：字段级修补 note 以 info 展示', infos >= 1, `${infos} 条 info`);
+
 check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' | '));
 
 dom.window.close();

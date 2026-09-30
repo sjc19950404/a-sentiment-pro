@@ -8,7 +8,7 @@
 |---|---|---|
 | 题材噪声 | 单只票专属诱因被当热门题材，新晋106/退潮155 | 标准词典归一 + 个股去重 + 全局孤点剔除 → 新晋24 / 退潮18 |
 | 缺失数据 | 静默填 50，不告诉你 | 用代理指标推算；推不出则中性50并**显式标记** `imputedRatio` + 页面告警 |
-| 单点故障 | 数据源挂就断更 | 多源容灾：主源失败自动回退已存档数据并标 `stale`；非交易日自动跳过 |
+| 单点故障 | 数据源挂就断更 | 多源容灾：主源失败自动回退已存档数据并记录原因；新鲜度按交易日历判定（不再粘滞误报）；非交易日自动跳过 |
 | 可维护性 | 公式/权重藏在页面里 | 权重/阈值集中在 `src/config.js`，七因子模型透明可审计，带单元测试 |
 
 ## 部署（3 步）
@@ -22,9 +22,10 @@
 ## 本地开发
 
 ```bash
-node --test            # 跑单元测试（情绪/校验/题材去噪 + V5.2 回测引擎，含 Python↔JS 一致性夹具）
+node --test            # 跑单元测试（情绪/校验/题材去噪 + V5.2 回测引擎 + 新鲜度三态，含 Python↔JS 一致性夹具）
 node scripts/replay.mjs # 用 snapshot.html 离线重建 archive.json 并打印噪声对比
 node scripts/backtest.mjs   # 生成 data/backtest.json（回测/网格帕累托/滚动/主线选股）
+node scripts/freshness.mjs  # 数据新鲜度自查（--write 落盘刷新判定 / --require-fresh 滞后即退出码 1）
 NODE_PATH=<任意含 jsdom 的 node_modules> node scripts/check_frontend.mjs  # 前端渲染校验（可选）
 MODE=live node src/pipeline.js  # 线上模式（需外网）
 ```
@@ -39,8 +40,10 @@ src/sentiment.js  七因子情绪模型 v5（缺失走代理，记录 imputedRat
 src/themes.js     题材去噪 + 动量
 src/validate.js   archive.json 结构/范围校验
 src/backtest.js   V5.2 回测引擎（仓位/成本/绩效/网格帕累托/滚动/主线选股，纯函数）
+src/freshness.js  数据新鲜度三态判定（fresh/pending/behind，按交易日历，纯函数）
 src/pipeline.js   编排：抓取→去噪→情绪→校验→写出
 scripts/backtest.mjs  读 archive.json → 预计算 data/backtest.json
+scripts/freshness.mjs 新鲜度自查/落盘刷新/CI 门禁（--write / --require-fresh）
 index.html/app.js/style.css  前端看板（纯静态，零构建）
 data/archive.json 生成数据（Actions 每日更新）
 data/backtest.json 回测档（Actions 每日更新）
@@ -75,23 +78,59 @@ test/fixtures/parity_v52.json  Python↔JS 一致性夹具（由 tools/backtest/
 - **生成链路**：Actions 定时（北京 18:30 / 21:00，周一至五）跑 `MODE=live node src/pipeline.js` →
   抓多源数据 → 合并进历史 → 写出 `data/archive.json`。当日**重跑**（如 21:00 补抓）走 `pipeline.js`
   的 `mergeNewDays(history, newDays)`：同日替换、涨跌家数缺失时用旧档回填、席位明细取覆盖率更高的一份。
-- **`meta.stale` 语义**：`true` = 本次写入走了**回退档**（`fallbackArchive`），即展示的不是最新成功抓取结果。
-  此时 `meta.fallbackReason` 是机器写入的回退原因，`meta.note` 是人工说明。页面顶部据此显示告警。
-- **告警排查顺序**：
-  1. 读 `data/archive.json` 的 `meta`：`stale` / `fallbackReason` / `note` / `generatedAt` / `tradeDate`
-  2. 拉最近一次 Actions 运行日志看真实报错：`python scripts/fetch_run_log.py <run_id>`
-     （run_id 从仓库 Actions 页面取；依赖 Windows 凭据管理器里的 GitHub token）
-  3. 怀疑某源不可达：`node scripts/probe_sources.mjs` —— 逐源打印 HTTP 状态与关键字段，
-     并对照「强制 IPv4 优先」前后差异以排除本机路由问题
-- **降级 ≠ 成功**：`fallbackArchive` 是容错设计、不会让 job 失败，所以 **Actions 显示 ✅ 不代表抓取成功**。
-  必须核对 `meta.stale` 与日志里的 `::warning::` 注解。
-- 教训（2026-09-29「数据滞后」告警）：根因不是网络故障，而是 `pipeline.js` 中一个**未定义变量**
+### 新鲜度口径（`meta.freshness`）——「滞后」不是一个粘滞的布尔标记
+
+旧口径把 `meta.stale` 当作「上一次尝试是否失败」的标记：只在回退路径置 `true`，成功路径重建 meta 时才会清掉。
+于是只要某次回退之后运行一直走「跳过」（龙虎榜未公布 → `main()` 直接 `return null`、不写存档），
+`stale` 就会一直粘着，**页面长期误报「数据滞后」，而数据其实已是最新收盘会话**。
+
+现在由 `src/freshness.js` 按交易日历算出三态（成功 / 回退 / 跳过三条路径统一口径）：
+
+| 状态 | 含义 | 页面表现 |
+|---|---|---|
+| `fresh` | 存档交易日 ≥ 最近一个已收盘交易日 | 无告警 |
+| `pending` | 落后 1 个交易日，但预期更新时刻（次交易日 19:30）未到 | 无告警（正常等待 18:30 首抓 / 21:00 补抓） |
+| `behind` | 已过预期更新时刻仍然落后 | ⚠ 滞后告警，带落后交易日数与最近已收盘交易日 |
+
+- 「抓取动作的结果」与「数据是否滞后」已解耦：失败/跳过记在 `meta.lastAttempt`（`outcome`/`reason`）。
+  即使这次抓取失败，只要数据仍是最新收盘会话就**不会**误报滞后；反之判为 `behind` 一定是真滞后。
+- `meta.stale` 保留为派生字段（`= state === 'behind'`）以兼容旧读法；`meta.staleReason` 是人读原因。
+- 前端另做一次**纯时间比较**：`meta.freshness.publishDeadline` 是绝对时间戳（带 `+08:00` 偏移），
+  客户端本地时钟一过该时刻就提示「尚未更新至最新交易日」。这样页面无需内置交易日历，也不受时区影响。
+- 自查：`npm run freshness`（只读；`--write` 落盘刷新判定字段，`--require-fresh` 滞后则退出码 1）。
+
+### 交易日历必须跟上交易所公告
+
+`src/config.js` 的 `manualHolidays` 是手动休市日清单（周末由星期判断）。**漏登记会把休市日误判为交易日**
+→ 抓不到数据 → 反复回退/误报滞后。已按沪深北交易所 2026-09-17 休市公告登记：
+中秋 9-25~9-27、**国庆 10-1~10-7**（10-8 起开市）。**新公告发布后请同步更新，否则假期会重演误报。**
+
+### 告警排查顺序
+
+1. `npm run freshness` —— 先看**判定**，而不是只看 `meta.stale` 字段（该字段可能是旧口径写入的）
+2. 读 `data/archive.json` 的 `meta`：`freshness.state` / `staleReason` / `lastAttempt` / `note` / `generatedAt` / `tradeDate`
+3. 拉最近一次 Actions 日志看真实报错：`python scripts/fetch_run_log.py <run_id>`
+   （run_id 从仓库 Actions 页面取；依赖 Windows 凭据管理器里的 GitHub token）
+4. 怀疑某源不可达：`node scripts/probe_sources.mjs` —— 逐源打印 HTTP 状态与关键字段，
+   并对照「强制 IPv4 优先」前后差异以排除本机路由问题
+
+### 三条硬规矩（都是被真实故障教出来的）
+
+- **降级 ≠ 成功**：`fallbackArchive` 是容错设计（不崩页、不误导），本身不会让 job 失败。
+  故 workflow 末尾加了**新鲜度门禁** `node scripts/freshness.mjs --require-fresh`：真滞后则本次运行标红
+  （GitHub 会发失败通知）。`pending` 不误伤——18:30 因龙虎榜未公布而跳过不会判红，21:00 补抓仍不成才会红。
+  另外「跳过」路径现在也会打 `::warning::` 注解，Actions 里不再静默。
+- **push 必须比对 SHA**：`git rev-parse HEAD` 与 `git ls-remote origin main` 必须一致，曾经出现「以为推上去了其实没有」。
+- **本机直跑要防静默**：`if (import.meta.url === 'file://' + argv[1])` 在 Windows 上恒不成立（`argv[1]` 是 `C:\…`），
+  会让 `node src/pipeline.js` 一行不输出地"成功退出"。已改用 `pathToFileURL(argv[1]).href` 比较。
+- 教训（2026-09-29「数据滞后」告警）：第一层根因不是网络故障，而是 `pipeline.js` 里一个**未定义变量**
   （`old` 应为 `history[i]`）使 `runLive` 每次重跑当日数据都抛 `ReferenceError` → 整体回退 → `stale` 恒为 `true`、
-  数据永不更新，而 job 始终显示成功。已修复并加回归测试 `test/merge.test.mjs` 守护。
+  数据永不更新，而 job 始终显示成功。第二层根因是 `stale` 本身是**粘滞标记**（见上），故在修 bug 之外重做了新鲜度口径。
+  回归测试：`test/merge.test.mjs`（合并语义）、`test/freshness.test.mjs`（三态判定与节假日）。
 
 ## 已知限制 / 诚实说明
 
 - **零 bug 不存在**：凡拉第三方行情（东财/同花顺/腾讯）的系统，源方限流、改格式、封 IP 都无法在代码层根除。本系统的优势是**失败可降级**（不崩页、不误导）。
-- **live 抓取需云端验证一次**：`src/sources.js` 在本地沙箱禁网，逻辑靠 unit test + 离线回放保证；真实字段解析要在 Actions 跑通一次（日志可见）。解析失败时 pipeline 走回退档并标 `meta.stale`，页面显示滞后告警而不会展示错误数据——但注意**回退不会让 job 失败**，排查请按上面的「数据更新与故障排查」来。
+- **live 抓取需云端验证一次**：`src/sources.js` 在本地沙箱禁网，逻辑靠 unit test + 离线回放保证；真实字段解析要在 Actions 跑通一次（日志可见）。解析失败时 pipeline 走回退档、本次抓取记入 `meta.lastAttempt`（不展示错误数据）；**只有因此落后于最近已收盘交易日且已过预期更新时刻**才显示滞后告警，并由 workflow 末尾的新鲜度门禁让该次运行标红（详见「数据更新与故障排查」）。
 - 历史分位基于存档长度（默认窗口），样本越长越准；建议长期运行积累。
 - 数据仅供参考，**非投资建议**。

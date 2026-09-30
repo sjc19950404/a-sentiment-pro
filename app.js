@@ -10,17 +10,44 @@ function scoreClass(v) {
 function renderAlerts(meta) {
   const box = $('alerts');
   box.innerHTML = '';
+  // 绝对时刻 → 北京 MM-DD HH:MM（meta.freshness.publishDeadline 带 +08:00 偏移，比较与时区无关）
+  const tz = (iso) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const b = new Date(d.getTime() + 8 * 3600e3).toISOString();
+    return `${b.slice(5, 10)} ${b.slice(11, 16)}`;
+  };
+  const f = meta.freshness || {};
+  const td = meta.tradeDate || f.tradeDate || '--';
+  const attempt = meta.lastAttempt || {};
   const msgs = [];
-  // 整体滞后：pipeline 走了回退档（数据非最新成功抓取）。原因优先用机器写入的 fallbackReason。
+
+  // ① 真滞后：服务端按交易日历判定「已过预期更新时刻仍落后于最近已收盘交易日」
   if (meta.stale) {
-    let t = '数据滞后：当前展示的是上次成功抓取的数据，非最新交易日结果。';
-    if (meta.fallbackReason) t += ` 回退原因：${meta.fallbackReason}。`;
-    else if (meta.note) t += ` ${meta.note}。`;
+    let t = `数据滞后：${meta.staleReason || '存档交易日落后于最近已收盘交易日'}。当前展示 ${td} 收盘数据。`;
+    if (attempt.reason) t += ` 最近一次抓取：${attempt.reason}。`;
+    else if (meta.fallbackReason) t += ` 回退原因：${meta.fallbackReason}。`;
     msgs.push({ cls: 'alert', icon: '⚠', text: t });
-  } else if (meta.note) {
-    // 数据本身是最新的，只是个别字段有人工/离线修补 → 提示而非告警
-    msgs.push({ cls: 'alert info', icon: 'ℹ', text: `数据说明：${meta.note}。` });
+  } else if (f.publishDeadline && Date.now() > Date.parse(f.publishDeadline)) {
+    // ② 服务端判定「生成时未滞后」，但客户端此刻已过预期更新时刻 → 说明此后一直没更新成功
+    msgs.push({ cls: 'alert', icon: '⚠', text:
+      `数据尚未更新至最新交易日：当前展示 ${td} 收盘数据，预期 ${tz(f.publishDeadline)} 前更新（18:30 首抓 / 21:00 补抓）。` });
   }
+
+  // ③ 抓取动作本身的结果——与「数据是否滞后」解耦，避免把正常等待说成抓取失败
+  if (attempt.outcome === 'failed') {
+    msgs.push({ cls: 'alert', icon: '⚠', text:
+      `最近一次抓取失败（${attempt.reason || '未给出原因'}），已保留 ${td} 收盘数据。` });
+  } else if (attempt.outcome === 'skipped') {
+    msgs.push({ cls: 'alert info', icon: 'ℹ', text:
+      `本次未抓取新数据：${attempt.reason || '数据源尚未发布'}；保留 ${td} 收盘数据。` });
+  } else if (attempt.outcome === 'non-trading-day') {
+    msgs.push({ cls: 'alert info', icon: 'ℹ', text: `${attempt.reason || '非交易日'}，保留 ${td} 收盘数据。` });
+  }
+
+  // ④ 字段级修补说明（与新鲜度正交，可同时出现）
+  if (meta.note) msgs.push({ cls: 'alert info', icon: 'ℹ', text: `数据说明：${meta.note}。` });
+
   if (meta.source === 'offline-replay') {
     msgs.push({ cls: 'alert', icon: '⚠', text: '当前为离线演示数据，非实时行情。' });
   }
@@ -562,8 +589,10 @@ function renderAll(arc) {
 
   $('tradeDate').textContent = arc.signals?.tradeDate || latest.trade_date || '--';
   const tag = $('sourceTag');
-  tag.textContent = meta.source === 'live' ? 'LIVE' : (meta.stale ? 'STALE' : 'DEMO');
-  tag.className = 'tag ' + (meta.source === 'live' ? 'live' : meta.stale ? 'stale' : '');
+  // 小标签按新口径：live 且未滞后 → LIVE；滞后 → STALE；离线回放 → DEMO
+  const tagText = meta.source === 'offline-replay' ? 'DEMO' : (meta.stale ? 'STALE' : 'LIVE');
+  tag.textContent = tagText;
+  tag.className = 'tag ' + (tagText === 'LIVE' ? 'live' : tagText === 'STALE' ? 'stale' : '');
   $('genTime').textContent = meta.generatedAt ? '更新 ' + meta.generatedAt.replace('T', ' ').slice(0, 16) : '';
 
   renderAlerts(meta);

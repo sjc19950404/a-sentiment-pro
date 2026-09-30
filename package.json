@@ -6,6 +6,7 @@
   "scripts": {
     "pipeline": "node src/pipeline.js",
     "backtest": "node scripts/backtest.mjs",
+    "freshness": "node scripts/freshness.mjs",
     "check:frontend": "node scripts/check_frontend.mjs",
     "test": "node --test"
   },
