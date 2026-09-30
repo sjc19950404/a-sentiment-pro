@@ -190,7 +190,10 @@ const HOT_COLS = {
   hot: [
     { key: 'code', t: '代码' },
     { key: 'name', t: '名称' },
-    { key: 'change_pct', t: '涨幅', num: true, hint: '当日涨跌幅', cell: (r) => `<span class="${trendCls(r.change_pct)}">${pctOf2(r.change_pct)}</span>`, raw: (r) => r.change_pct },
+    { key: 'change_pct', t: '涨幅', num: true, hint: '当日涨跌幅（新股无涨跌幅限制，涨幅不具可比性）',
+      cell: (r) => `<span class="${trendCls(r.change_pct)}">${pctOf2(r.change_pct)}</span>`
+        + (isNewStock(r) ? '<span class="newb" title="无价格涨跌幅限制（新股/次新），涨幅与普通个股不可比">新股</span>' : ''),
+      raw: (r) => r.change_pct },
     { key: 'close', t: '现价', num: true, hint: '收盘价（元）', raw: (r) => r.close },
     { key: 'huanshou', t: '换手%', num: true, hint: '当日换手率', raw: (r) => r.huanshou },
     { key: 'lb', t: '连板', num: true, hint: '连续涨停板数（来自当日涨停梯队）', cell: (r) => (r.lb == null ? '—' : `${r.lb}板`), raw: (r) => r.lb ?? 0 },
@@ -200,10 +203,15 @@ const HOT_COLS = {
   lhb: [
     { key: 'code', t: '代码' },
     { key: 'name', t: '名称' },
-    { key: 'change_pct', t: '涨幅', num: true, cell: (r) => `<span class="${trendCls(r.change_pct)}">${pctOf2(r.change_pct)}</span>`, raw: (r) => r.change_pct },
+    { key: 'change_pct', t: '涨幅', num: true, hint: '当日涨跌幅（新股无涨跌幅限制，涨幅不具可比性）',
+      cell: (r) => `<span class="${trendCls(r.change_pct)}">${pctOf2(r.change_pct)}</span>`
+        + (isNewStock(r) ? '<span class="newb" title="无价格涨跌幅限制（新股/次新），涨幅与普通个股不可比">新股</span>' : ''),
+      raw: (r) => r.change_pct },
     { key: 'net_buy_wan', t: '龙虎净买(亿)', num: true, hint: '龙虎榜净买入额（买−卖）', cell: (r) => `<span class="${trendCls(r.net_buy_wan)}">${yiOf(r.net_buy_wan)}</span>`, raw: (r) => r.net_buy_wan },
-    { key: 'buy_wan', t: '买入(亿)', num: true, raw: (r) => r.buy_wan },
-    { key: 'sell_wan', t: '卖出(亿)', num: true, raw: (r) => r.sell_wan },
+    // 数据源字段单位是「万元」（sources.js: BILLBOARD_*_AMT / 1e4），表头写的是「亿」，
+    // 必须过 yiOf 换算；否则 5.61 亿的买入额会被显示成 56133.2（差 1e4 倍）。
+    { key: 'buy_wan', t: '买入(亿)', num: true, hint: '龙虎榜买方合计', cell: (r) => yiOf(r.buy_wan), raw: (r) => r.buy_wan },
+    { key: 'sell_wan', t: '卖出(亿)', num: true, hint: '龙虎榜卖方合计', cell: (r) => yiOf(r.sell_wan), raw: (r) => r.sell_wan },
     { key: 'turnover_pct', t: '换手%', num: true, raw: (r) => r.turnover_pct },
     { key: 'lb', t: '连板', num: true, cell: (r) => (r.lb == null ? '—' : `${r.lb}板`), raw: (r) => r.lb ?? 0 },
     { key: 'seat', t: '席位', num: true, raw: (r) => r.seat ?? 0 },

@@ -288,6 +288,23 @@ clickEl($('hotTabs').querySelector('button[data-view="lhb"]'));
 const lhbTags = [...hcards()[0].querySelectorAll('.hc-tag > i')].map((x) => x.textContent);
 check('双端：切视图后卡片标签同步为龙虎榜字段',
   lhbTags.includes('龙虎净买(亿)') && lhbTags.includes('买入(亿)'), lhbTags.join(' / '));
+
+// 单位回归：买入/卖出列此前直接打印数据源的「万元」原值，却挂在「(亿)」表头下
+// （5.61 亿显示成 56133.2，差 1e4 倍）。用 buy − sell = net 这个恒等式把关：
+// 单位错了差 1e4 倍，等式必然崩。数据侧已核过 1958 行，买-卖-净最大偏差仅 0.1 万元。
+const lhbNum = [...$('hotTable').querySelectorAll('tbody tr')].slice(0, 8).map((tr) => {
+  const t = [...tr.querySelectorAll('td')].map((x) => x.textContent.trim());
+  return { net: parseFloat(t[3]), buy: parseFloat(t[4]), sell: parseFloat(t[5]) };
+});
+check('回归：龙虎榜买入/卖出与净买同为「亿」单位（buy − sell = net）',
+  lhbNum.length > 0 && lhbNum.every((r) => [r.net, r.buy, r.sell].every(Number.isFinite)
+    && Math.abs(r.buy - r.sell - r.net) <= 0.02),
+  lhbNum.slice(0, 2).map((r) => `买${r.buy}−卖${r.sell}=${(r.buy - r.sell).toFixed(2)} / 净${r.net}`).join(' ; '));
+
+// 新股无涨跌幅限制，龙虎榜里会出现 +653% 这类看着像错的涨幅，必须显式标注来源
+check('回归：无涨跌幅限制的新股在涨幅列打「新股」标记',
+  $('hotTable').querySelectorAll('.newb').length > 0,
+  `${$('hotTable').querySelectorAll('.newb').length} 只`);
 clickEl($('hotTabs').querySelector('button[data-view="hot"]'));
 
 // 搜索联动
