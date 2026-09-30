@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-09-30T10:45:04.472Z",
+    "generatedAt": "2026-09-30T13:13:24.127Z",
     "formulaVersion": "v5.2-pro",
     "source": "live",
     "tradeDate": "2026-09-30",
@@ -13,14 +13,13 @@
       "latestClosed": "2026-09-30",
       "behindSessions": 0,
       "publishDeadline": "2026-10-08T11:30:00.000Z",
-      "checkedAt": "2026-09-30T10:43:58.774Z"
+      "checkedAt": "2026-09-30T13:11:50.394Z"
     },
     "lastAttempt": {
-      "at": "2026-09-30T10:43:58.774Z",
+      "at": "2026-09-30T13:11:50.394Z",
       "outcome": "ok",
       "reason": null
-    },
-    "note": "龙虎榜统计口径修正：历史 33 天补齐当日榜口径（剔除连续N日累计榜），2026-09-30；龙虎榜双口径全档重算：当日榜口径写入 lhb_daily_*（权威）、全量口径改名 lhb_all_net（仅诊断）、清除歧义字段 net_total_yi，情绪因子 s_net 改为当日榜净额输入，33 天，2026-09-30"
+    }
   },
   "all_days": [
     {
@@ -24467,7 +24466,7 @@
         "hot_count": 70,
         "topic_conc": 4.3,
         "top_topic": "中报增长",
-        "pct_rank": 68.8,
+        "pct_rank": 71.9,
         "industryCount": 90,
         "factors": {
           "s_net": 100,
@@ -77087,7 +77086,7 @@
         "hot_count": 49,
         "topic_conc": 10.2,
         "top_topic": "汽车零部件",
-        "pct_rank": 68.8,
+        "pct_rank": 71.9,
         "industryCount": 90,
         "factors": {
           "s_net": 70.6,
@@ -98376,6 +98375,7 @@
           "net_buy_wan": 42004.1,
           "buy_wan": 56133.2,
           "sell_wan": 14129.1,
+          "deal_wan": 70262.3,
           "turnover_pct": 84.54,
           "is_range": false
         },
@@ -98388,6 +98388,7 @@
           "net_buy_wan": 36838.5,
           "buy_wan": 47401.4,
           "sell_wan": 10562.8,
+          "deal_wan": 57964.2,
           "turnover_pct": 2.66,
           "is_range": false
         },
@@ -98400,6 +98401,7 @@
           "net_buy_wan": 20781,
           "buy_wan": 56778.9,
           "sell_wan": 35997.9,
+          "deal_wan": 92776.8,
           "turnover_pct": 11.17,
           "is_range": true
         },
@@ -98412,6 +98414,7 @@
           "net_buy_wan": 20225.4,
           "buy_wan": 27568.7,
           "sell_wan": 7343.3,
+          "deal_wan": 34912,
           "turnover_pct": 29.02,
           "is_range": false
         },
@@ -98424,6 +98427,7 @@
           "net_buy_wan": 15960.8,
           "buy_wan": 46661.1,
           "sell_wan": 30700.2,
+          "deal_wan": 77361.3,
           "turnover_pct": 8.26,
           "is_range": false
         },
@@ -98436,6 +98440,7 @@
           "net_buy_wan": 10551.2,
           "buy_wan": 22124.9,
           "sell_wan": 11573.8,
+          "deal_wan": 33698.7,
           "turnover_pct": 17.1,
           "is_range": true
         },
@@ -98448,6 +98453,7 @@
           "net_buy_wan": 8923.4,
           "buy_wan": 16110.5,
           "sell_wan": 7187.1,
+          "deal_wan": 23297.6,
           "turnover_pct": 2.35,
           "is_range": true
         },
@@ -98460,6 +98466,7 @@
           "net_buy_wan": 8867.6,
           "buy_wan": 23152.1,
           "sell_wan": 14284.5,
+          "deal_wan": 37436.6,
           "turnover_pct": 25.46,
           "is_range": false
         },
@@ -98472,6 +98479,7 @@
           "net_buy_wan": 8355.8,
           "buy_wan": 27295.5,
           "sell_wan": 18939.7,
+          "deal_wan": 46235.2,
           "turnover_pct": 12.87,
           "is_range": true
         },
@@ -98484,6 +98492,7 @@
           "net_buy_wan": 6233.4,
           "buy_wan": 9647.2,
           "sell_wan": 3413.8,
+          "deal_wan": 13061,
           "turnover_pct": 12.1,
           "is_range": false
         },
@@ -98496,6 +98505,7 @@
           "net_buy_wan": 6233,
           "buy_wan": 8663.9,
           "sell_wan": 2431,
+          "deal_wan": 11094.9,
           "turnover_pct": 14.59,
           "is_range": false
         },
@@ -98508,6 +98518,7 @@
           "net_buy_wan": 5985.3,
           "buy_wan": 20502.8,
           "sell_wan": 14517.6,
+          "deal_wan": 35020.4,
           "turnover_pct": 39.12,
           "is_range": false
         },
@@ -98520,6 +98531,7 @@
           "net_buy_wan": 5886.8,
           "buy_wan": 21737.9,
           "sell_wan": 15851.1,
+          "deal_wan": 37589,
           "turnover_pct": 54.66,
           "is_range": false
         },
@@ -98532,6 +98544,7 @@
           "net_buy_wan": 5345.1,
           "buy_wan": 23151.3,
           "sell_wan": 17806.2,
+          "deal_wan": 40957.5,
           "turnover_pct": 10.19,
           "is_range": false
         },
@@ -98544,6 +98557,7 @@
           "net_buy_wan": 5182,
           "buy_wan": 16435.6,
           "sell_wan": 11253.7,
+          "deal_wan": 27689.3,
           "turnover_pct": 15.4,
           "is_range": false
         },
@@ -98556,6 +98570,7 @@
           "net_buy_wan": 5091.1,
           "buy_wan": 7167.1,
           "sell_wan": 2076,
+          "deal_wan": 9243.2,
           "turnover_pct": 13.77,
           "is_range": false
         },
@@ -98568,6 +98583,7 @@
           "net_buy_wan": 4856.4,
           "buy_wan": 20197.2,
           "sell_wan": 15340.8,
+          "deal_wan": 35538.1,
           "turnover_pct": 39.71,
           "is_range": false
         },
@@ -98580,6 +98596,7 @@
           "net_buy_wan": 4524.6,
           "buy_wan": 21301.2,
           "sell_wan": 16776.6,
+          "deal_wan": 38077.8,
           "turnover_pct": 31.36,
           "is_range": false
         },
@@ -98592,6 +98609,7 @@
           "net_buy_wan": 4328.7,
           "buy_wan": 20233.8,
           "sell_wan": 15905.1,
+          "deal_wan": 36138.9,
           "turnover_pct": 11.51,
           "is_range": true
         },
@@ -98604,6 +98622,7 @@
           "net_buy_wan": 4222.8,
           "buy_wan": 40347.9,
           "sell_wan": 36125,
+          "deal_wan": 76472.9,
           "turnover_pct": 19.56,
           "is_range": false
         },
@@ -98616,6 +98635,7 @@
           "net_buy_wan": 3898.3,
           "buy_wan": 7091.1,
           "sell_wan": 3192.8,
+          "deal_wan": 10283.9,
           "turnover_pct": 2.51,
           "is_range": true
         },
@@ -98628,6 +98648,7 @@
           "net_buy_wan": 3882.8,
           "buy_wan": 9791.6,
           "sell_wan": 5908.8,
+          "deal_wan": 15700.4,
           "turnover_pct": 24.46,
           "is_range": false
         },
@@ -98640,6 +98661,7 @@
           "net_buy_wan": 3778.2,
           "buy_wan": 10641.2,
           "sell_wan": 6863,
+          "deal_wan": 17504.3,
           "turnover_pct": 4.6,
           "is_range": false
         },
@@ -98652,6 +98674,7 @@
           "net_buy_wan": 3775.4,
           "buy_wan": 20525.9,
           "sell_wan": 16750.5,
+          "deal_wan": 37276.4,
           "turnover_pct": 31.49,
           "is_range": false
         },
@@ -98664,6 +98687,7 @@
           "net_buy_wan": 3286.2,
           "buy_wan": 7581.6,
           "sell_wan": 4295.4,
+          "deal_wan": 11877,
           "turnover_pct": 6.04,
           "is_range": false
         },
@@ -98676,6 +98700,7 @@
           "net_buy_wan": 2813.6,
           "buy_wan": 5484.5,
           "sell_wan": 2670.9,
+          "deal_wan": 8155.5,
           "turnover_pct": 4.34,
           "is_range": false
         },
@@ -98688,6 +98713,7 @@
           "net_buy_wan": 2724.4,
           "buy_wan": 5967,
           "sell_wan": 3242.6,
+          "deal_wan": 9209.6,
           "turnover_pct": 35.57,
           "is_range": false
         },
@@ -98700,6 +98726,7 @@
           "net_buy_wan": 2688.3,
           "buy_wan": 3124.9,
           "sell_wan": 436.6,
+          "deal_wan": 3561.5,
           "turnover_pct": 0,
           "is_range": false
         },
@@ -98712,6 +98739,7 @@
           "net_buy_wan": 2578.9,
           "buy_wan": 6869.1,
           "sell_wan": 4290.2,
+          "deal_wan": 11159.3,
           "turnover_pct": 2.67,
           "is_range": false
         },
@@ -98724,6 +98752,7 @@
           "net_buy_wan": 2498.6,
           "buy_wan": 4213.8,
           "sell_wan": 1715.3,
+          "deal_wan": 5929.1,
           "turnover_pct": 30.19,
           "is_range": false
         },
@@ -98736,6 +98765,7 @@
           "net_buy_wan": 2498.6,
           "buy_wan": 4213.8,
           "sell_wan": 1715.3,
+          "deal_wan": 5929.1,
           "turnover_pct": 30.19,
           "is_range": false
         },
@@ -98748,6 +98778,7 @@
           "net_buy_wan": 2344.2,
           "buy_wan": 11195.3,
           "sell_wan": 8851.1,
+          "deal_wan": 20046.5,
           "turnover_pct": 2.32,
           "is_range": false
         },
@@ -98760,6 +98791,7 @@
           "net_buy_wan": 2257.2,
           "buy_wan": 12490.3,
           "sell_wan": 10233.1,
+          "deal_wan": 22723.4,
           "turnover_pct": 11.51,
           "is_range": false
         },
@@ -98772,6 +98804,7 @@
           "net_buy_wan": 2214.6,
           "buy_wan": 5404.8,
           "sell_wan": 3190.2,
+          "deal_wan": 8595,
           "turnover_pct": 8.88,
           "is_range": false
         },
@@ -98784,6 +98817,7 @@
           "net_buy_wan": 1566.3,
           "buy_wan": 19944.6,
           "sell_wan": 18378.3,
+          "deal_wan": 38322.9,
           "turnover_pct": 24.46,
           "is_range": true
         },
@@ -98796,6 +98830,7 @@
           "net_buy_wan": 1257.2,
           "buy_wan": 10440,
           "sell_wan": 9182.8,
+          "deal_wan": 19622.8,
           "turnover_pct": 6.38,
           "is_range": false
         },
@@ -98808,6 +98843,7 @@
           "net_buy_wan": 1167.2,
           "buy_wan": 7371,
           "sell_wan": 6203.8,
+          "deal_wan": 13574.7,
           "turnover_pct": 7.53,
           "is_range": true
         },
@@ -98820,6 +98856,7 @@
           "net_buy_wan": 992.6,
           "buy_wan": 1752.7,
           "sell_wan": 760.1,
+          "deal_wan": 2512.8,
           "turnover_pct": 1.63,
           "is_range": false
         },
@@ -98832,6 +98869,7 @@
           "net_buy_wan": 669.1,
           "buy_wan": 3003.3,
           "sell_wan": 2334.2,
+          "deal_wan": 5337.5,
           "turnover_pct": 37.38,
           "is_range": false
         },
@@ -98844,6 +98882,7 @@
           "net_buy_wan": 496.4,
           "buy_wan": 7780.7,
           "sell_wan": 7284.3,
+          "deal_wan": 15065,
           "turnover_pct": 15.81,
           "is_range": true
         },
@@ -98856,6 +98895,7 @@
           "net_buy_wan": 414.7,
           "buy_wan": 3059.8,
           "sell_wan": 2645.1,
+          "deal_wan": 5705,
           "turnover_pct": 46.8,
           "is_range": false
         },
@@ -98868,6 +98908,7 @@
           "net_buy_wan": 361.5,
           "buy_wan": 8406,
           "sell_wan": 8044.5,
+          "deal_wan": 16450.5,
           "turnover_pct": 16.98,
           "is_range": false
         },
@@ -98880,6 +98921,7 @@
           "net_buy_wan": 349.1,
           "buy_wan": 2192.8,
           "sell_wan": 1843.6,
+          "deal_wan": 4036.4,
           "turnover_pct": 1.46,
           "is_range": false
         },
@@ -98892,6 +98934,7 @@
           "net_buy_wan": 178.3,
           "buy_wan": 3466.2,
           "sell_wan": 3287.9,
+          "deal_wan": 6754.1,
           "turnover_pct": 1.68,
           "is_range": true
         },
@@ -98904,6 +98947,7 @@
           "net_buy_wan": 33.1,
           "buy_wan": 7474.3,
           "sell_wan": 7441.2,
+          "deal_wan": 14915.6,
           "turnover_pct": 14.68,
           "is_range": false
         },
@@ -98916,6 +98960,7 @@
           "net_buy_wan": 0,
           "buy_wan": 127177.1,
           "sell_wan": 127177.1,
+          "deal_wan": 127177.1,
           "turnover_pct": 46.8,
           "is_range": true
         },
@@ -98928,6 +98973,7 @@
           "net_buy_wan": -150.8,
           "buy_wan": 34166.1,
           "sell_wan": 34317,
+          "deal_wan": 68483.1,
           "turnover_pct": 34.39,
           "is_range": false
         },
@@ -98940,6 +98986,7 @@
           "net_buy_wan": -262.2,
           "buy_wan": 3172.5,
           "sell_wan": 3434.7,
+          "deal_wan": 6607.2,
           "turnover_pct": 6.92,
           "is_range": false
         },
@@ -98952,6 +98999,7 @@
           "net_buy_wan": -343.7,
           "buy_wan": 2664.4,
           "sell_wan": 3008.1,
+          "deal_wan": 5672.5,
           "turnover_pct": 44.63,
           "is_range": false
         },
@@ -98964,6 +99012,7 @@
           "net_buy_wan": -350.3,
           "buy_wan": 3565.2,
           "sell_wan": 3915.5,
+          "deal_wan": 7480.7,
           "turnover_pct": 6.25,
           "is_range": true
         },
@@ -98976,6 +99025,7 @@
           "net_buy_wan": -357.6,
           "buy_wan": 16550.2,
           "sell_wan": 16907.9,
+          "deal_wan": 33458.1,
           "turnover_pct": 15.33,
           "is_range": false
         },
@@ -98988,6 +99038,7 @@
           "net_buy_wan": -363.3,
           "buy_wan": 188.1,
           "sell_wan": 551.4,
+          "deal_wan": 739.5,
           "turnover_pct": 1,
           "is_range": false
         },
@@ -99000,6 +99051,7 @@
           "net_buy_wan": -376.2,
           "buy_wan": 15452,
           "sell_wan": 15828.2,
+          "deal_wan": 31280.2,
           "turnover_pct": 29.39,
           "is_range": false
         },
@@ -99012,6 +99064,7 @@
           "net_buy_wan": -432.9,
           "buy_wan": 6852.9,
           "sell_wan": 7285.8,
+          "deal_wan": 14138.7,
           "turnover_pct": 37.82,
           "is_range": false
         },
@@ -99024,6 +99077,7 @@
           "net_buy_wan": -441.2,
           "buy_wan": 2010.8,
           "sell_wan": 2452.1,
+          "deal_wan": 4462.9,
           "turnover_pct": 6.25,
           "is_range": false
         },
@@ -99036,6 +99090,7 @@
           "net_buy_wan": -1377.8,
           "buy_wan": 3046.4,
           "sell_wan": 4424.3,
+          "deal_wan": 7470.7,
           "turnover_pct": 11.64,
           "is_range": false
         },
@@ -99048,6 +99103,7 @@
           "net_buy_wan": -1510,
           "buy_wan": 19611.3,
           "sell_wan": 21121.3,
+          "deal_wan": 40732.6,
           "turnover_pct": 13.72,
           "is_range": false
         },
@@ -99060,6 +99116,7 @@
           "net_buy_wan": -1951.7,
           "buy_wan": 15830.4,
           "sell_wan": 17782.1,
+          "deal_wan": 33612.5,
           "turnover_pct": 32.38,
           "is_range": false
         },
@@ -99072,6 +99129,7 @@
           "net_buy_wan": -1992.6,
           "buy_wan": 29326.8,
           "sell_wan": 31319.4,
+          "deal_wan": 60646.1,
           "turnover_pct": 8.43,
           "is_range": false
         },
@@ -99084,6 +99142,7 @@
           "net_buy_wan": -2385.8,
           "buy_wan": 8684.7,
           "sell_wan": 11070.5,
+          "deal_wan": 19755.2,
           "turnover_pct": 10.68,
           "is_range": false
         },
@@ -99096,6 +99155,7 @@
           "net_buy_wan": -2638.5,
           "buy_wan": 2607.7,
           "sell_wan": 5246.3,
+          "deal_wan": 7854,
           "turnover_pct": 30.43,
           "is_range": false
         },
@@ -99108,6 +99168,7 @@
           "net_buy_wan": -2686.6,
           "buy_wan": 2565,
           "sell_wan": 5251.5,
+          "deal_wan": 7816.5,
           "turnover_pct": 1.46,
           "is_range": false
         },
@@ -99120,6 +99181,7 @@
           "net_buy_wan": -4218.9,
           "buy_wan": 5743.1,
           "sell_wan": 9962,
+          "deal_wan": 15705.1,
           "turnover_pct": 5.83,
           "is_range": true
         },
@@ -99132,6 +99194,7 @@
           "net_buy_wan": -5382.6,
           "buy_wan": 19875.8,
           "sell_wan": 25258.4,
+          "deal_wan": 45134.2,
           "turnover_pct": 11.64,
           "is_range": true
         },
@@ -99144,6 +99207,7 @@
           "net_buy_wan": -5424.2,
           "buy_wan": 5806.7,
           "sell_wan": 11230.9,
+          "deal_wan": 17037.6,
           "turnover_pct": 21.91,
           "is_range": false
         },
@@ -99156,6 +99220,7 @@
           "net_buy_wan": -8412.5,
           "buy_wan": 7512.3,
           "sell_wan": 15924.8,
+          "deal_wan": 23437.1,
           "turnover_pct": 40.87,
           "is_range": false
         },
@@ -99168,6 +99233,7 @@
           "net_buy_wan": -10293.2,
           "buy_wan": 43579.6,
           "sell_wan": 53872.8,
+          "deal_wan": 97452.3,
           "turnover_pct": 10.5,
           "is_range": false
         },
@@ -99180,6 +99246,7 @@
           "net_buy_wan": -10321.4,
           "buy_wan": 14117.8,
           "sell_wan": 24439.2,
+          "deal_wan": 38557,
           "turnover_pct": 8,
           "is_range": true
         },
@@ -99192,6 +99259,7 @@
           "net_buy_wan": -11506.8,
           "buy_wan": 21706.2,
           "sell_wan": 33213,
+          "deal_wan": 54919.3,
           "turnover_pct": 40.32,
           "is_range": false
         },
@@ -99204,6 +99272,7 @@
           "net_buy_wan": -11630.4,
           "buy_wan": 9678.7,
           "sell_wan": 21309.1,
+          "deal_wan": 30987.8,
           "turnover_pct": 10.32,
           "is_range": false
         },
@@ -99216,6 +99285,7 @@
           "net_buy_wan": -11673.9,
           "buy_wan": 6823,
           "sell_wan": 18497,
+          "deal_wan": 25320,
           "turnover_pct": 5.88,
           "is_range": false
         },
@@ -99228,6 +99298,7 @@
           "net_buy_wan": -22745.1,
           "buy_wan": 13092,
           "sell_wan": 35837.1,
+          "deal_wan": 48929.1,
           "turnover_pct": 30.5,
           "is_range": false
         }
@@ -101897,6 +101968,7 @@
           "net_buy_wan": 42004.1,
           "buy_wan": 56133.2,
           "sell_wan": 14129.1,
+          "deal_wan": 70262.3,
           "turnover_pct": 84.54,
           "is_range": false,
           "reasons": [
@@ -101913,6 +101985,7 @@
           "net_buy_wan": 36838.5,
           "buy_wan": 47401.4,
           "sell_wan": 10562.8,
+          "deal_wan": 57964.2,
           "turnover_pct": 2.66,
           "is_range": false,
           "reasons": [
@@ -101929,6 +102002,7 @@
           "net_buy_wan": 20781,
           "buy_wan": 56778.9,
           "sell_wan": 35997.9,
+          "deal_wan": 92776.8,
           "turnover_pct": 11.17,
           "is_range": true,
           "reasons": [
@@ -101945,6 +102019,7 @@
           "net_buy_wan": 20225.4,
           "buy_wan": 27568.7,
           "sell_wan": 7343.3,
+          "deal_wan": 34912,
           "turnover_pct": 29.02,
           "is_range": false,
           "reasons": [
@@ -101961,6 +102036,7 @@
           "net_buy_wan": 15960.8,
           "buy_wan": 46661.1,
           "sell_wan": 30700.2,
+          "deal_wan": 77361.3,
           "turnover_pct": 8.26,
           "is_range": false,
           "reasons": [
@@ -101977,6 +102053,7 @@
           "net_buy_wan": 10551.2,
           "buy_wan": 22124.9,
           "sell_wan": 11573.8,
+          "deal_wan": 33698.7,
           "turnover_pct": 17.1,
           "is_range": true,
           "reasons": [
@@ -101993,6 +102070,7 @@
           "net_buy_wan": 8923.4,
           "buy_wan": 16110.5,
           "sell_wan": 7187.1,
+          "deal_wan": 23297.6,
           "turnover_pct": 2.35,
           "is_range": true,
           "reasons": [
@@ -102009,6 +102087,7 @@
           "net_buy_wan": 8867.6,
           "buy_wan": 23152.1,
           "sell_wan": 14284.5,
+          "deal_wan": 37436.6,
           "turnover_pct": 25.46,
           "is_range": false,
           "reasons": [
@@ -102025,6 +102104,7 @@
           "net_buy_wan": 8355.8,
           "buy_wan": 27295.5,
           "sell_wan": 18939.7,
+          "deal_wan": 46235.2,
           "turnover_pct": 12.87,
           "is_range": true,
           "reasons": [
@@ -102041,6 +102121,7 @@
           "net_buy_wan": 6233.4,
           "buy_wan": 9647.2,
           "sell_wan": 3413.8,
+          "deal_wan": 13061,
           "turnover_pct": 12.1,
           "is_range": false,
           "reasons": [
@@ -102057,6 +102138,7 @@
           "net_buy_wan": 6233,
           "buy_wan": 8663.9,
           "sell_wan": 2431,
+          "deal_wan": 11094.9,
           "turnover_pct": 14.59,
           "is_range": false,
           "reasons": [
@@ -102073,6 +102155,7 @@
           "net_buy_wan": 5985.3,
           "buy_wan": 20502.8,
           "sell_wan": 14517.6,
+          "deal_wan": 35020.4,
           "turnover_pct": 39.12,
           "is_range": false,
           "reasons": [
@@ -102089,6 +102172,7 @@
           "net_buy_wan": 5886.8,
           "buy_wan": 21737.9,
           "sell_wan": 15851.1,
+          "deal_wan": 37589,
           "turnover_pct": 54.66,
           "is_range": false,
           "reasons": [
@@ -102105,6 +102189,7 @@
           "net_buy_wan": 5345.1,
           "buy_wan": 23151.3,
           "sell_wan": 17806.2,
+          "deal_wan": 40957.5,
           "turnover_pct": 10.19,
           "is_range": false,
           "reasons": [
@@ -102121,6 +102206,7 @@
           "net_buy_wan": 5182,
           "buy_wan": 16435.6,
           "sell_wan": 11253.7,
+          "deal_wan": 27689.3,
           "turnover_pct": 15.4,
           "is_range": false,
           "reasons": [
@@ -102137,6 +102223,7 @@
           "net_buy_wan": 5091.1,
           "buy_wan": 7167.1,
           "sell_wan": 2076,
+          "deal_wan": 9243.2,
           "turnover_pct": 13.77,
           "is_range": false,
           "reasons": [
@@ -102153,6 +102240,7 @@
           "net_buy_wan": 4856.4,
           "buy_wan": 20197.2,
           "sell_wan": 15340.8,
+          "deal_wan": 35538.1,
           "turnover_pct": 39.71,
           "is_range": false,
           "reasons": [
@@ -102169,6 +102257,7 @@
           "net_buy_wan": 4524.6,
           "buy_wan": 21301.2,
           "sell_wan": 16776.6,
+          "deal_wan": 38077.8,
           "turnover_pct": 31.36,
           "is_range": false,
           "reasons": [
@@ -102185,6 +102274,7 @@
           "net_buy_wan": 4328.7,
           "buy_wan": 20233.8,
           "sell_wan": 15905.1,
+          "deal_wan": 36138.9,
           "turnover_pct": 11.51,
           "is_range": true,
           "reasons": [
@@ -102202,6 +102292,7 @@
           "net_buy_wan": 4222.8,
           "buy_wan": 40347.9,
           "sell_wan": 36125,
+          "deal_wan": 76472.9,
           "turnover_pct": 19.56,
           "is_range": false,
           "reasons": [
@@ -102218,6 +102309,7 @@
           "net_buy_wan": 3898.3,
           "buy_wan": 7091.1,
           "sell_wan": 3192.8,
+          "deal_wan": 10283.9,
           "turnover_pct": 2.51,
           "is_range": true,
           "reasons": [
@@ -102234,6 +102326,7 @@
           "net_buy_wan": 3882.8,
           "buy_wan": 9791.6,
           "sell_wan": 5908.8,
+          "deal_wan": 15700.4,
           "turnover_pct": 24.46,
           "is_range": false,
           "reasons": [
@@ -102251,6 +102344,7 @@
           "net_buy_wan": 3778.2,
           "buy_wan": 10641.2,
           "sell_wan": 6863,
+          "deal_wan": 17504.3,
           "turnover_pct": 4.6,
           "is_range": false,
           "reasons": [
@@ -102267,6 +102361,7 @@
           "net_buy_wan": 3775.4,
           "buy_wan": 20525.9,
           "sell_wan": 16750.5,
+          "deal_wan": 37276.4,
           "turnover_pct": 31.49,
           "is_range": false,
           "reasons": [
@@ -102283,6 +102378,7 @@
           "net_buy_wan": 3286.2,
           "buy_wan": 7581.6,
           "sell_wan": 4295.4,
+          "deal_wan": 11877,
           "turnover_pct": 6.04,
           "is_range": false,
           "reasons": [
@@ -102299,6 +102395,7 @@
           "net_buy_wan": 2813.6,
           "buy_wan": 5484.5,
           "sell_wan": 2670.9,
+          "deal_wan": 8155.5,
           "turnover_pct": 4.34,
           "is_range": false,
           "reasons": [
@@ -102315,6 +102412,7 @@
           "net_buy_wan": 2724.4,
           "buy_wan": 5967,
           "sell_wan": 3242.6,
+          "deal_wan": 9209.6,
           "turnover_pct": 35.57,
           "is_range": false,
           "reasons": [
@@ -102331,6 +102429,7 @@
           "net_buy_wan": 2688.3,
           "buy_wan": 3124.9,
           "sell_wan": 436.6,
+          "deal_wan": 3561.5,
           "turnover_pct": 0,
           "is_range": false,
           "reasons": [
@@ -102347,6 +102446,7 @@
           "net_buy_wan": 2578.9,
           "buy_wan": 6869.1,
           "sell_wan": 4290.2,
+          "deal_wan": 11159.3,
           "turnover_pct": 2.67,
           "is_range": false,
           "reasons": [
@@ -102363,6 +102463,7 @@
           "net_buy_wan": 2498.6,
           "buy_wan": 4213.8,
           "sell_wan": 1715.3,
+          "deal_wan": 5929.1,
           "turnover_pct": 30.19,
           "is_range": false,
           "reasons": [
@@ -102380,6 +102481,7 @@
           "net_buy_wan": 2344.2,
           "buy_wan": 11195.3,
           "sell_wan": 8851.1,
+          "deal_wan": 20046.5,
           "turnover_pct": 2.32,
           "is_range": false,
           "reasons": [
@@ -102396,6 +102498,7 @@
           "net_buy_wan": 2214.6,
           "buy_wan": 5404.8,
           "sell_wan": 3190.2,
+          "deal_wan": 8595,
           "turnover_pct": 8.88,
           "is_range": false,
           "reasons": [
@@ -102412,6 +102515,7 @@
           "net_buy_wan": 1257.2,
           "buy_wan": 10440,
           "sell_wan": 9182.8,
+          "deal_wan": 19622.8,
           "turnover_pct": 6.38,
           "is_range": false,
           "reasons": [
@@ -102428,6 +102532,7 @@
           "net_buy_wan": 1167.2,
           "buy_wan": 7371,
           "sell_wan": 6203.8,
+          "deal_wan": 13574.7,
           "turnover_pct": 7.53,
           "is_range": true,
           "reasons": [
@@ -102444,6 +102549,7 @@
           "net_buy_wan": 992.6,
           "buy_wan": 1752.7,
           "sell_wan": 760.1,
+          "deal_wan": 2512.8,
           "turnover_pct": 1.63,
           "is_range": false,
           "reasons": [
@@ -102460,6 +102566,7 @@
           "net_buy_wan": 669.1,
           "buy_wan": 3003.3,
           "sell_wan": 2334.2,
+          "deal_wan": 5337.5,
           "turnover_pct": 37.38,
           "is_range": false,
           "reasons": [
@@ -102476,6 +102583,7 @@
           "net_buy_wan": 496.4,
           "buy_wan": 7780.7,
           "sell_wan": 7284.3,
+          "deal_wan": 15065,
           "turnover_pct": 15.81,
           "is_range": true,
           "reasons": [
@@ -102492,6 +102600,7 @@
           "net_buy_wan": 414.7,
           "buy_wan": 3059.8,
           "sell_wan": 2645.1,
+          "deal_wan": 5705,
           "turnover_pct": 46.8,
           "is_range": false,
           "reasons": [
@@ -102509,6 +102618,7 @@
           "net_buy_wan": 361.5,
           "buy_wan": 8406,
           "sell_wan": 8044.5,
+          "deal_wan": 16450.5,
           "turnover_pct": 16.98,
           "is_range": false,
           "reasons": [
@@ -102525,6 +102635,7 @@
           "net_buy_wan": 349.1,
           "buy_wan": 2192.8,
           "sell_wan": 1843.6,
+          "deal_wan": 4036.4,
           "turnover_pct": 1.46,
           "is_range": false,
           "reasons": [
@@ -102541,6 +102652,7 @@
           "net_buy_wan": 178.3,
           "buy_wan": 3466.2,
           "sell_wan": 3287.9,
+          "deal_wan": 6754.1,
           "turnover_pct": 1.68,
           "is_range": true,
           "reasons": [
@@ -102557,6 +102669,7 @@
           "net_buy_wan": 33.1,
           "buy_wan": 7474.3,
           "sell_wan": 7441.2,
+          "deal_wan": 14915.6,
           "turnover_pct": 14.68,
           "is_range": false,
           "reasons": [
@@ -102573,6 +102686,7 @@
           "net_buy_wan": -150.8,
           "buy_wan": 34166.1,
           "sell_wan": 34317,
+          "deal_wan": 68483.1,
           "turnover_pct": 34.39,
           "is_range": false,
           "reasons": [
@@ -102589,6 +102703,7 @@
           "net_buy_wan": -262.2,
           "buy_wan": 3172.5,
           "sell_wan": 3434.7,
+          "deal_wan": 6607.2,
           "turnover_pct": 6.92,
           "is_range": false,
           "reasons": [
@@ -102605,6 +102720,7 @@
           "net_buy_wan": -343.7,
           "buy_wan": 2664.4,
           "sell_wan": 3008.1,
+          "deal_wan": 5672.5,
           "turnover_pct": 44.63,
           "is_range": false,
           "reasons": [
@@ -102621,6 +102737,7 @@
           "net_buy_wan": -441.2,
           "buy_wan": 2010.8,
           "sell_wan": 2452.1,
+          "deal_wan": 4462.9,
           "turnover_pct": 6.25,
           "is_range": false,
           "reasons": [
@@ -102638,6 +102755,7 @@
           "net_buy_wan": -357.6,
           "buy_wan": 16550.2,
           "sell_wan": 16907.9,
+          "deal_wan": 33458.1,
           "turnover_pct": 15.33,
           "is_range": false,
           "reasons": [
@@ -102654,6 +102772,7 @@
           "net_buy_wan": -363.3,
           "buy_wan": 188.1,
           "sell_wan": 551.4,
+          "deal_wan": 739.5,
           "turnover_pct": 1,
           "is_range": false,
           "reasons": [
@@ -102670,6 +102789,7 @@
           "net_buy_wan": -376.2,
           "buy_wan": 15452,
           "sell_wan": 15828.2,
+          "deal_wan": 31280.2,
           "turnover_pct": 29.39,
           "is_range": false,
           "reasons": [
@@ -102686,6 +102806,7 @@
           "net_buy_wan": -432.9,
           "buy_wan": 6852.9,
           "sell_wan": 7285.8,
+          "deal_wan": 14138.7,
           "turnover_pct": 37.82,
           "is_range": false,
           "reasons": [
@@ -102702,6 +102823,7 @@
           "net_buy_wan": -5382.6,
           "buy_wan": 19875.8,
           "sell_wan": 25258.4,
+          "deal_wan": 45134.2,
           "turnover_pct": 11.64,
           "is_range": true,
           "reasons": [
@@ -102719,6 +102841,7 @@
           "net_buy_wan": -1510,
           "buy_wan": 19611.3,
           "sell_wan": 21121.3,
+          "deal_wan": 40732.6,
           "turnover_pct": 13.72,
           "is_range": false,
           "reasons": [
@@ -102735,6 +102858,7 @@
           "net_buy_wan": -1951.7,
           "buy_wan": 15830.4,
           "sell_wan": 17782.1,
+          "deal_wan": 33612.5,
           "turnover_pct": 32.38,
           "is_range": false,
           "reasons": [
@@ -102751,6 +102875,7 @@
           "net_buy_wan": -1992.6,
           "buy_wan": 29326.8,
           "sell_wan": 31319.4,
+          "deal_wan": 60646.1,
           "turnover_pct": 8.43,
           "is_range": false,
           "reasons": [
@@ -102767,6 +102892,7 @@
           "net_buy_wan": -2385.8,
           "buy_wan": 8684.7,
           "sell_wan": 11070.5,
+          "deal_wan": 19755.2,
           "turnover_pct": 10.68,
           "is_range": false,
           "reasons": [
@@ -102783,6 +102909,7 @@
           "net_buy_wan": -2638.5,
           "buy_wan": 2607.7,
           "sell_wan": 5246.3,
+          "deal_wan": 7854,
           "turnover_pct": 30.43,
           "is_range": false,
           "reasons": [
@@ -102799,6 +102926,7 @@
           "net_buy_wan": -2686.6,
           "buy_wan": 2565,
           "sell_wan": 5251.5,
+          "deal_wan": 7816.5,
           "turnover_pct": 1.46,
           "is_range": false,
           "reasons": [
@@ -102815,6 +102943,7 @@
           "net_buy_wan": -4218.9,
           "buy_wan": 5743.1,
           "sell_wan": 9962,
+          "deal_wan": 15705.1,
           "turnover_pct": 5.83,
           "is_range": true,
           "reasons": [
@@ -102831,6 +102960,7 @@
           "net_buy_wan": -5424.2,
           "buy_wan": 5806.7,
           "sell_wan": 11230.9,
+          "deal_wan": 17037.6,
           "turnover_pct": 21.91,
           "is_range": false,
           "reasons": [
@@ -102847,6 +102977,7 @@
           "net_buy_wan": -8412.5,
           "buy_wan": 7512.3,
           "sell_wan": 15924.8,
+          "deal_wan": 23437.1,
           "turnover_pct": 40.87,
           "is_range": false,
           "reasons": [
@@ -102863,6 +102994,7 @@
           "net_buy_wan": -10293.2,
           "buy_wan": 43579.6,
           "sell_wan": 53872.8,
+          "deal_wan": 97452.3,
           "turnover_pct": 10.5,
           "is_range": false,
           "reasons": [
@@ -102879,6 +103011,7 @@
           "net_buy_wan": -10321.4,
           "buy_wan": 14117.8,
           "sell_wan": 24439.2,
+          "deal_wan": 38557,
           "turnover_pct": 8,
           "is_range": true,
           "reasons": [
@@ -102895,6 +103028,7 @@
           "net_buy_wan": -11506.8,
           "buy_wan": 21706.2,
           "sell_wan": 33213,
+          "deal_wan": 54919.3,
           "turnover_pct": 40.32,
           "is_range": false,
           "reasons": [
@@ -102911,6 +103045,7 @@
           "net_buy_wan": -11630.4,
           "buy_wan": 9678.7,
           "sell_wan": 21309.1,
+          "deal_wan": 30987.8,
           "turnover_pct": 10.32,
           "is_range": false,
           "reasons": [
@@ -102927,6 +103062,7 @@
           "net_buy_wan": -11673.9,
           "buy_wan": 6823,
           "sell_wan": 18497,
+          "deal_wan": 25320,
           "turnover_pct": 5.88,
           "is_range": false,
           "reasons": [
@@ -102943,6 +103079,7 @@
           "net_buy_wan": -22745.1,
           "buy_wan": 13092,
           "sell_wan": 35837.1,
+          "deal_wan": 48929.1,
           "turnover_pct": 30.5,
           "is_range": false,
           "reasons": [
@@ -103011,6 +103148,7 @@
           "net_buy_wan": 50412.7,
           "buy_wan": 74589.1,
           "sell_wan": 24176.4,
+          "deal_wan": 98765.4,
           "turnover_pct": 74.93,
           "is_range": false
         },
@@ -103023,6 +103161,7 @@
           "net_buy_wan": 28410.3,
           "buy_wan": 70283.3,
           "sell_wan": 41873,
+          "deal_wan": 112156.3,
           "turnover_pct": 33.75,
           "is_range": true
         },
@@ -103035,6 +103174,7 @@
           "net_buy_wan": 19265.5,
           "buy_wan": 56065.9,
           "sell_wan": 36800.4,
+          "deal_wan": 92866.3,
           "turnover_pct": 6.5,
           "is_range": true
         },
@@ -103047,6 +103187,7 @@
           "net_buy_wan": 17106,
           "buy_wan": 46530.5,
           "sell_wan": 29424.5,
+          "deal_wan": 75955,
           "turnover_pct": 32.84,
           "is_range": false
         },
@@ -103059,6 +103200,7 @@
           "net_buy_wan": 16261,
           "buy_wan": 39785.7,
           "sell_wan": 23524.7,
+          "deal_wan": 63310.4,
           "turnover_pct": 33.75,
           "is_range": false
         },
@@ -103071,6 +103213,7 @@
           "net_buy_wan": 15474.2,
           "buy_wan": 50064.9,
           "sell_wan": 34590.7,
+          "deal_wan": 84655.6,
           "turnover_pct": 14.92,
           "is_range": true
         },
@@ -103083,6 +103226,7 @@
           "net_buy_wan": 14614.9,
           "buy_wan": 26954.9,
           "sell_wan": 12340,
+          "deal_wan": 39294.9,
           "turnover_pct": 19.65,
           "is_range": true
         },
@@ -103095,6 +103239,7 @@
           "net_buy_wan": 13862,
           "buy_wan": 25697.2,
           "sell_wan": 11835.2,
+          "deal_wan": 37532.5,
           "turnover_pct": 19.65,
           "is_range": false
         },
@@ -103107,6 +103252,7 @@
           "net_buy_wan": 13862,
           "buy_wan": 25697.2,
           "sell_wan": 11835.2,
+          "deal_wan": 37532.5,
           "turnover_pct": 19.65,
           "is_range": false
         },
@@ -103119,6 +103265,7 @@
           "net_buy_wan": 9204.3,
           "buy_wan": 12907.7,
           "sell_wan": 3703.4,
+          "deal_wan": 16611,
           "turnover_pct": 1.34,
           "is_range": true
         },
@@ -103131,6 +103278,7 @@
           "net_buy_wan": 8620.4,
           "buy_wan": 19496.7,
           "sell_wan": 10876.2,
+          "deal_wan": 30372.9,
           "turnover_pct": 9.87,
           "is_range": false
         },
@@ -103143,6 +103291,7 @@
           "net_buy_wan": 8614,
           "buy_wan": 42008.2,
           "sell_wan": 33394.2,
+          "deal_wan": 75402.4,
           "turnover_pct": 9.32,
           "is_range": true
         },
@@ -103155,6 +103304,7 @@
           "net_buy_wan": 8162.9,
           "buy_wan": 21162.1,
           "sell_wan": 12999.2,
+          "deal_wan": 34161.3,
           "turnover_pct": 22.51,
           "is_range": false
         },
@@ -103167,6 +103317,7 @@
           "net_buy_wan": 8162.9,
           "buy_wan": 21162.1,
           "sell_wan": 12999.2,
+          "deal_wan": 34161.3,
           "turnover_pct": 22.51,
           "is_range": false
         },
@@ -103179,6 +103330,7 @@
           "net_buy_wan": 7138.5,
           "buy_wan": 68896.5,
           "sell_wan": 61758,
+          "deal_wan": 130654.5,
           "turnover_pct": 13.48,
           "is_range": false
         },
@@ -103191,6 +103343,7 @@
           "net_buy_wan": 7122.6,
           "buy_wan": 16927.9,
           "sell_wan": 9805.3,
+          "deal_wan": 26733.1,
           "turnover_pct": 13.87,
           "is_range": true
         },
@@ -103203,6 +103356,7 @@
           "net_buy_wan": 4665.8,
           "buy_wan": 16349.4,
           "sell_wan": 11683.6,
+          "deal_wan": 28033.1,
           "turnover_pct": 23.22,
           "is_range": false
         },
@@ -103215,6 +103369,7 @@
           "net_buy_wan": 4659.1,
           "buy_wan": 18645,
           "sell_wan": 13986,
+          "deal_wan": 32631,
           "turnover_pct": 10.89,
           "is_range": false
         },
@@ -103227,6 +103382,7 @@
           "net_buy_wan": 4612.7,
           "buy_wan": 20206,
           "sell_wan": 15593.3,
+          "deal_wan": 35799.3,
           "turnover_pct": 9.32,
           "is_range": false
         },
@@ -103239,6 +103395,7 @@
           "net_buy_wan": 4109.6,
           "buy_wan": 26665.9,
           "sell_wan": 22556.3,
+          "deal_wan": 49222.2,
           "turnover_pct": 7.05,
           "is_range": true
         },
@@ -103251,6 +103408,7 @@
           "net_buy_wan": 3670.9,
           "buy_wan": 16863.3,
           "sell_wan": 13192.5,
+          "deal_wan": 30055.8,
           "turnover_pct": 10.41,
           "is_range": false
         },
@@ -103263,6 +103421,7 @@
           "net_buy_wan": 3437.7,
           "buy_wan": 9124.3,
           "sell_wan": 5686.7,
+          "deal_wan": 14811,
           "turnover_pct": 2.48,
           "is_range": false
         },
@@ -103275,6 +103434,7 @@
           "net_buy_wan": 3327,
           "buy_wan": 28301.9,
           "sell_wan": 24974.9,
+          "deal_wan": 53276.8,
           "turnover_pct": 6.5,
           "is_range": false
         },
@@ -103287,6 +103447,7 @@
           "net_buy_wan": 3295.2,
           "buy_wan": 6972.4,
           "sell_wan": 3677.2,
+          "deal_wan": 10649.6,
           "turnover_pct": 23.59,
           "is_range": false
         },
@@ -103299,6 +103460,7 @@
           "net_buy_wan": 2464.1,
           "buy_wan": 10720.3,
           "sell_wan": 8256.2,
+          "deal_wan": 18976.5,
           "turnover_pct": 7.95,
           "is_range": false
         },
@@ -103311,6 +103473,7 @@
           "net_buy_wan": 2242.2,
           "buy_wan": 7017.8,
           "sell_wan": 4775.6,
+          "deal_wan": 11793.4,
           "turnover_pct": 35.5,
           "is_range": true
         },
@@ -103323,6 +103486,7 @@
           "net_buy_wan": 2064.9,
           "buy_wan": 6937.3,
           "sell_wan": 4872.5,
+          "deal_wan": 11809.8,
           "turnover_pct": 5.76,
           "is_range": true
         },
@@ -103335,6 +103499,7 @@
           "net_buy_wan": 2003.1,
           "buy_wan": 32130.8,
           "sell_wan": 30127.7,
+          "deal_wan": 62258.4,
           "turnover_pct": 23.62,
           "is_range": false
         },
@@ -103347,6 +103512,7 @@
           "net_buy_wan": 2003.1,
           "buy_wan": 32130.8,
           "sell_wan": 30127.7,
+          "deal_wan": 62258.4,
           "turnover_pct": 23.62,
           "is_range": false
         },
@@ -103359,6 +103525,7 @@
           "net_buy_wan": 1970.3,
           "buy_wan": 7794.5,
           "sell_wan": 5824.2,
+          "deal_wan": 13618.7,
           "turnover_pct": 9.84,
           "is_range": false
         },
@@ -103371,6 +103538,7 @@
           "net_buy_wan": 1797,
           "buy_wan": 13976.3,
           "sell_wan": 12179.3,
+          "deal_wan": 26155.5,
           "turnover_pct": 17.01,
           "is_range": true
         },
@@ -103383,6 +103551,7 @@
           "net_buy_wan": 1544.2,
           "buy_wan": 4859.1,
           "sell_wan": 3314.8,
+          "deal_wan": 8173.9,
           "turnover_pct": 3.06,
           "is_range": false
         },
@@ -103395,6 +103564,7 @@
           "net_buy_wan": 1471.3,
           "buy_wan": 10511,
           "sell_wan": 9039.7,
+          "deal_wan": 19550.6,
           "turnover_pct": 7.31,
           "is_range": false
         },
@@ -103407,6 +103577,7 @@
           "net_buy_wan": 1446.5,
           "buy_wan": 7346.8,
           "sell_wan": 5900.2,
+          "deal_wan": 13247,
           "turnover_pct": 8.61,
           "is_range": false
         },
@@ -103419,6 +103590,7 @@
           "net_buy_wan": 1091,
           "buy_wan": 4605.2,
           "sell_wan": 3514.2,
+          "deal_wan": 8119.4,
           "turnover_pct": 1.92,
           "is_range": true
         },
@@ -103431,6 +103603,7 @@
           "net_buy_wan": 970.5,
           "buy_wan": 1138.9,
           "sell_wan": 168.4,
+          "deal_wan": 1307.3,
           "turnover_pct": 0.11,
           "is_range": true
         },
@@ -103443,6 +103616,7 @@
           "net_buy_wan": 627.7,
           "buy_wan": 8092,
           "sell_wan": 7464.3,
+          "deal_wan": 15556.3,
           "turnover_pct": 24.29,
           "is_range": false
         },
@@ -103455,6 +103629,7 @@
           "net_buy_wan": 511,
           "buy_wan": 3380.7,
           "sell_wan": 2869.7,
+          "deal_wan": 6250.4,
           "turnover_pct": 66.59,
           "is_range": false
         },
@@ -103467,6 +103642,7 @@
           "net_buy_wan": 511,
           "buy_wan": 3380.7,
           "sell_wan": 2869.7,
+          "deal_wan": 6250.4,
           "turnover_pct": 66.59,
           "is_range": false
         },
@@ -103479,6 +103655,7 @@
           "net_buy_wan": 500.2,
           "buy_wan": 3993.2,
           "sell_wan": 3493,
+          "deal_wan": 7486.2,
           "turnover_pct": 1.77,
           "is_range": true
         },
@@ -103491,6 +103668,7 @@
           "net_buy_wan": 496.5,
           "buy_wan": 2347.1,
           "sell_wan": 1850.7,
+          "deal_wan": 4197.8,
           "turnover_pct": 3.64,
           "is_range": false
         },
@@ -103503,6 +103681,7 @@
           "net_buy_wan": 487.4,
           "buy_wan": 9118.5,
           "sell_wan": 8631.2,
+          "deal_wan": 17749.7,
           "turnover_pct": 8.95,
           "is_range": false
         },
@@ -103515,6 +103694,7 @@
           "net_buy_wan": 445.2,
           "buy_wan": 7219,
           "sell_wan": 6773.8,
+          "deal_wan": 13992.9,
           "turnover_pct": 17.01,
           "is_range": false
         },
@@ -103527,6 +103707,7 @@
           "net_buy_wan": 425.3,
           "buy_wan": 18235.8,
           "sell_wan": 17810.4,
+          "deal_wan": 36046.2,
           "turnover_pct": 23.57,
           "is_range": false
         },
@@ -103539,6 +103720,7 @@
           "net_buy_wan": 385.2,
           "buy_wan": 494.1,
           "sell_wan": 108.9,
+          "deal_wan": 603,
           "turnover_pct": 0.11,
           "is_range": false
         },
@@ -103551,6 +103733,7 @@
           "net_buy_wan": 302.8,
           "buy_wan": 2543.5,
           "sell_wan": 2240.7,
+          "deal_wan": 4784.2,
           "turnover_pct": 5.66,
           "is_range": false
         },
@@ -103563,6 +103746,7 @@
           "net_buy_wan": 299.6,
           "buy_wan": 501.7,
           "sell_wan": 202.1,
+          "deal_wan": 703.8,
           "turnover_pct": 43.2,
           "is_range": false
         },
@@ -103575,6 +103759,7 @@
           "net_buy_wan": 250,
           "buy_wan": 2458.7,
           "sell_wan": 2208.7,
+          "deal_wan": 4667.4,
           "turnover_pct": 24.62,
           "is_range": false
         },
@@ -103587,6 +103772,7 @@
           "net_buy_wan": 159.9,
           "buy_wan": 2416.6,
           "sell_wan": 2256.7,
+          "deal_wan": 4673.3,
           "turnover_pct": 33.07,
           "is_range": false
         },
@@ -103599,6 +103785,7 @@
           "net_buy_wan": 98.8,
           "buy_wan": 10739.7,
           "sell_wan": 10640.9,
+          "deal_wan": 21380.5,
           "turnover_pct": 18.65,
           "is_range": true
         },
@@ -103611,6 +103798,7 @@
           "net_buy_wan": 72.9,
           "buy_wan": 2688.2,
           "sell_wan": 2615.2,
+          "deal_wan": 5303.4,
           "turnover_pct": 27.45,
           "is_range": false
         },
@@ -103623,6 +103811,7 @@
           "net_buy_wan": 0,
           "buy_wan": 1169728.4,
           "sell_wan": 1169728.4,
+          "deal_wan": 1169728.4,
           "turnover_pct": 14.92,
           "is_range": true
         },
@@ -103635,6 +103824,7 @@
           "net_buy_wan": -97.3,
           "buy_wan": 1733.6,
           "sell_wan": 1831,
+          "deal_wan": 3564.6,
           "turnover_pct": 35.5,
           "is_range": false
         },
@@ -103647,6 +103837,7 @@
           "net_buy_wan": -178.8,
           "buy_wan": 165.1,
           "sell_wan": 344,
+          "deal_wan": 509.1,
           "turnover_pct": 0.76,
           "is_range": false
         },
@@ -103659,6 +103850,7 @@
           "net_buy_wan": -192.4,
           "buy_wan": 19139.5,
           "sell_wan": 19331.9,
+          "deal_wan": 38471.4,
           "turnover_pct": 39.19,
           "is_range": false
         },
@@ -103671,6 +103863,7 @@
           "net_buy_wan": -300.9,
           "buy_wan": 13658.1,
           "sell_wan": 13959,
+          "deal_wan": 27617,
           "turnover_pct": 8.61,
           "is_range": true
         },
@@ -103683,6 +103876,7 @@
           "net_buy_wan": -485.3,
           "buy_wan": 8317.6,
           "sell_wan": 8802.9,
+          "deal_wan": 17120.5,
           "turnover_pct": 37.29,
           "is_range": false
         },
@@ -103695,6 +103889,7 @@
           "net_buy_wan": -719.8,
           "buy_wan": 1422.6,
           "sell_wan": 2142.4,
+          "deal_wan": 3564.9,
           "turnover_pct": 14.25,
           "is_range": false
         },
@@ -103707,6 +103902,7 @@
           "net_buy_wan": -721.8,
           "buy_wan": 8548,
           "sell_wan": 9269.8,
+          "deal_wan": 17817.7,
           "turnover_pct": 9.29,
           "is_range": false
         },
@@ -103719,6 +103915,7 @@
           "net_buy_wan": -874.9,
           "buy_wan": 1891.6,
           "sell_wan": 2766.5,
+          "deal_wan": 4658.2,
           "turnover_pct": 7.35,
           "is_range": false
         },
@@ -103731,6 +103928,7 @@
           "net_buy_wan": -1063.3,
           "buy_wan": 6558,
           "sell_wan": 7621.3,
+          "deal_wan": 14179.3,
           "turnover_pct": 25.35,
           "is_range": false
         },
@@ -103743,6 +103941,7 @@
           "net_buy_wan": -1298.8,
           "buy_wan": 4667.7,
           "sell_wan": 5966.5,
+          "deal_wan": 10634.2,
           "turnover_pct": 46.7,
           "is_range": false
         },
@@ -103755,6 +103954,7 @@
           "net_buy_wan": -1501.7,
           "buy_wan": 1079.4,
           "sell_wan": 2581.1,
+          "deal_wan": 3660.5,
           "turnover_pct": 0.76,
           "is_range": true
         },
@@ -103767,6 +103967,7 @@
           "net_buy_wan": -1917.9,
           "buy_wan": 4132.8,
           "sell_wan": 6050.7,
+          "deal_wan": 10183.5,
           "turnover_pct": 10.93,
           "is_range": false
         },
@@ -103779,6 +103980,7 @@
           "net_buy_wan": -1967.2,
           "buy_wan": 10776.8,
           "sell_wan": 12743.9,
+          "deal_wan": 23520.7,
           "turnover_pct": 41.09,
           "is_range": true
         },
@@ -103791,6 +103993,7 @@
           "net_buy_wan": -2521.3,
           "buy_wan": 1932.5,
           "sell_wan": 4453.8,
+          "deal_wan": 6386.4,
           "turnover_pct": 12.03,
           "is_range": false
         },
@@ -103803,6 +104006,7 @@
           "net_buy_wan": -2747.5,
           "buy_wan": 8900,
           "sell_wan": 11647.5,
+          "deal_wan": 20547.5,
           "turnover_pct": 29.36,
           "is_range": false
         },
@@ -103815,6 +104019,7 @@
           "net_buy_wan": -2852.8,
           "buy_wan": 1892.9,
           "sell_wan": 4745.7,
+          "deal_wan": 6638.6,
           "turnover_pct": 10.54,
           "is_range": false
         },
@@ -103827,6 +104032,7 @@
           "net_buy_wan": -2951.1,
           "buy_wan": 2157,
           "sell_wan": 5108.2,
+          "deal_wan": 7265.2,
           "turnover_pct": 40.47,
           "is_range": false
         },
@@ -103839,6 +104045,7 @@
           "net_buy_wan": -3334.1,
           "buy_wan": 8173.9,
           "sell_wan": 11508,
+          "deal_wan": 19681.9,
           "turnover_pct": 40.82,
           "is_range": false
         },
@@ -103851,6 +104058,7 @@
           "net_buy_wan": -3345,
           "buy_wan": 6202.4,
           "sell_wan": 9547.4,
+          "deal_wan": 15749.8,
           "turnover_pct": 18.65,
           "is_range": false
         },
@@ -103863,6 +104071,7 @@
           "net_buy_wan": -3446.8,
           "buy_wan": 18416.4,
           "sell_wan": 21863.2,
+          "deal_wan": 40279.5,
           "turnover_pct": 17.06,
           "is_range": true
         },
@@ -103875,6 +104084,7 @@
           "net_buy_wan": -3852.9,
           "buy_wan": 195627.3,
           "sell_wan": 199480.2,
+          "deal_wan": 395107.5,
           "turnover_pct": 12.19,
           "is_range": true
         },
@@ -103887,6 +104097,7 @@
           "net_buy_wan": -4327.7,
           "buy_wan": 13787.5,
           "sell_wan": 18115.1,
+          "deal_wan": 31902.6,
           "turnover_pct": 36.33,
           "is_range": false
         },
@@ -103899,6 +104110,7 @@
           "net_buy_wan": -4632.4,
           "buy_wan": 16234.5,
           "sell_wan": 20866.9,
+          "deal_wan": 37101.4,
           "turnover_pct": 48.43,
           "is_range": false
         },
@@ -103911,6 +104123,7 @@
           "net_buy_wan": -5595,
           "buy_wan": 10751.6,
           "sell_wan": 16346.6,
+          "deal_wan": 27098.3,
           "turnover_pct": 17.07,
           "is_range": false
         },
@@ -103923,6 +104136,7 @@
           "net_buy_wan": -5595,
           "buy_wan": 10751.6,
           "sell_wan": 16346.6,
+          "deal_wan": 27098.3,
           "turnover_pct": 17.07,
           "is_range": false
         },
@@ -103935,6 +104149,7 @@
           "net_buy_wan": -6582,
           "buy_wan": 13580.3,
           "sell_wan": 20162.3,
+          "deal_wan": 33742.6,
           "turnover_pct": 36.5,
           "is_range": false
         },
@@ -103947,6 +104162,7 @@
           "net_buy_wan": -6743,
           "buy_wan": 3818,
           "sell_wan": 10561,
+          "deal_wan": 14378.9,
           "turnover_pct": 41.09,
           "is_range": false
         },
@@ -103959,6 +104175,7 @@
           "net_buy_wan": -6762.2,
           "buy_wan": 3837.9,
           "sell_wan": 10600.1,
+          "deal_wan": 14437.9,
           "turnover_pct": 16.8,
           "is_range": false
         },
@@ -103971,6 +104188,7 @@
           "net_buy_wan": -7128.2,
           "buy_wan": 13942.6,
           "sell_wan": 21070.8,
+          "deal_wan": 35013.5,
           "turnover_pct": 12.03,
           "is_range": true
         },
@@ -103983,6 +104201,7 @@
           "net_buy_wan": -12927,
           "buy_wan": 20165.9,
           "sell_wan": 33092.9,
+          "deal_wan": 53258.7,
           "turnover_pct": 35.15,
           "is_range": false
         },
@@ -103995,6 +104214,7 @@
           "net_buy_wan": -14311.2,
           "buy_wan": 7633.5,
           "sell_wan": 21944.7,
+          "deal_wan": 29578.2,
           "turnover_pct": 24.52,
           "is_range": false
         },
@@ -104007,6 +104227,7 @@
           "net_buy_wan": -19772.4,
           "buy_wan": 54906.9,
           "sell_wan": 74679.3,
+          "deal_wan": 129586.2,
           "turnover_pct": 8.46,
           "is_range": true
         }
@@ -104753,6 +104974,10 @@
           "change_pct": -0.4
         },
         {
+          "name": "白色家电",
+          "change_pct": -0.42
+        },
+        {
           "name": "游戏",
           "change_pct": -0.42
         },
@@ -104884,8 +105109,13 @@
       "summary": {
         "lhb_count": 84,
         "lhb_stocks": 66,
+        "lhb_all_net": 12.11,
         "net_pos": 40,
         "net_neg": 26,
+        "lhb_daily_stocks": 56,
+        "lhb_daily_net": 7.74,
+        "lhb_daily_amt": 136.48,
+        "lhb_range_count": 23,
         "up_count": 2393,
         "down_count": 2730,
         "flat_count": 167,
@@ -104893,9 +105123,9 @@
         "hot_count": 56,
         "topic_kinds": 155,
         "hot_quote_missing": 0,
-        "ind_count": 89,
+        "ind_count": 90,
         "ind_up": 48,
-        "ind_down": 41,
+        "ind_down": 42,
         "top_industry": "生物制品",
         "bottom_industry": "元件",
         "zt_count": 52,
@@ -106857,12 +107087,7 @@
           "tot_yi": 7.74,
           "pct": 13.7,
           "caliber": "daily"
-        },
-        "lhb_daily_stocks": 56,
-        "lhb_daily_net": 7.74,
-        "lhb_daily_amt": 136.48,
-        "lhb_range_count": 23,
-        "lhb_all_net": 12.11
+        }
       },
       "indexes": {
         "上证指数": 0.31,
@@ -106870,10 +107095,10 @@
         "创业板指": -0.23
       },
       "emotion": {
-        "value": 68.8,
+        "value": 68.6,
         "s_net": 95.7,
         "s_pos": 46.7,
-        "s_brd": 53.9,
+        "s_brd": 53.3,
         "s_hot": 85.2,
         "s_zdt": 85.2,
         "s_zbl": 81.3,
@@ -106881,23 +107106,23 @@
         "factors": {
           "s_net": 95.7,
           "s_pos": 46.7,
-          "s_brd": 53.9,
+          "s_brd": 53.3,
           "s_hot": 85.2,
           "s_zdt": 85.2,
           "s_zbl": 81.3,
           "s_amt": 31.5
         },
+        "lhb_daily_net": 7.74,
         "pos_ratio": 60.6,
-        "up_ratio": 53.9,
+        "up_ratio": 53.3,
         "hot_count": 56,
         "topic_conc": 12.5,
         "top_topic": "业绩增长",
         "pct_rank": 68.8,
-        "industryCount": 89,
+        "net_daily_pct_rank": 50,
+        "industryCount": 90,
         "imputedRatio": 0,
-        "missing": [],
-        "lhb_daily_net": 7.74,
-        "net_daily_pct_rank": 50
+        "missing": []
       },
       "lhb_aggr": [
         {
@@ -106909,6 +107134,7 @@
           "net_buy_wan": 50412.7,
           "buy_wan": 74589.1,
           "sell_wan": 24176.4,
+          "deal_wan": 98765.4,
           "turnover_pct": 74.93,
           "is_range": false,
           "reasons": [
@@ -106925,6 +107151,7 @@
           "net_buy_wan": 28410.3,
           "buy_wan": 70283.3,
           "sell_wan": 41873,
+          "deal_wan": 112156.3,
           "turnover_pct": 33.75,
           "is_range": true,
           "reasons": [
@@ -106942,6 +107169,7 @@
           "net_buy_wan": 19265.5,
           "buy_wan": 56065.9,
           "sell_wan": 36800.4,
+          "deal_wan": 92866.3,
           "turnover_pct": 6.5,
           "is_range": true,
           "reasons": [
@@ -106959,6 +107187,7 @@
           "net_buy_wan": 17106,
           "buy_wan": 46530.5,
           "sell_wan": 29424.5,
+          "deal_wan": 75955,
           "turnover_pct": 32.84,
           "is_range": false,
           "reasons": [
@@ -106975,6 +107204,7 @@
           "net_buy_wan": 15474.2,
           "buy_wan": 50064.9,
           "sell_wan": 34590.7,
+          "deal_wan": 84655.6,
           "turnover_pct": 14.92,
           "is_range": true,
           "reasons": [
@@ -106992,6 +107222,7 @@
           "net_buy_wan": 14614.9,
           "buy_wan": 26954.9,
           "sell_wan": 12340,
+          "deal_wan": 39294.9,
           "turnover_pct": 19.65,
           "is_range": true,
           "reasons": [
@@ -107010,6 +107241,7 @@
           "net_buy_wan": 9204.3,
           "buy_wan": 12907.7,
           "sell_wan": 3703.4,
+          "deal_wan": 16611,
           "turnover_pct": 1.34,
           "is_range": true,
           "reasons": [
@@ -107026,6 +107258,7 @@
           "net_buy_wan": 8620.4,
           "buy_wan": 19496.7,
           "sell_wan": 10876.2,
+          "deal_wan": 30372.9,
           "turnover_pct": 9.87,
           "is_range": false,
           "reasons": [
@@ -107042,6 +107275,7 @@
           "net_buy_wan": 8614,
           "buy_wan": 42008.2,
           "sell_wan": 33394.2,
+          "deal_wan": 75402.4,
           "turnover_pct": 9.32,
           "is_range": true,
           "reasons": [
@@ -107059,6 +107293,7 @@
           "net_buy_wan": 8162.9,
           "buy_wan": 21162.1,
           "sell_wan": 12999.2,
+          "deal_wan": 34161.3,
           "turnover_pct": 22.51,
           "is_range": false,
           "reasons": [
@@ -107076,6 +107311,7 @@
           "net_buy_wan": 7138.5,
           "buy_wan": 68896.5,
           "sell_wan": 61758,
+          "deal_wan": 130654.5,
           "turnover_pct": 13.48,
           "is_range": false,
           "reasons": [
@@ -107092,6 +107328,7 @@
           "net_buy_wan": 7122.6,
           "buy_wan": 16927.9,
           "sell_wan": 9805.3,
+          "deal_wan": 26733.1,
           "turnover_pct": 13.87,
           "is_range": true,
           "reasons": [
@@ -107108,6 +107345,7 @@
           "net_buy_wan": 4665.8,
           "buy_wan": 16349.4,
           "sell_wan": 11683.6,
+          "deal_wan": 28033.1,
           "turnover_pct": 23.22,
           "is_range": false,
           "reasons": [
@@ -107124,6 +107362,7 @@
           "net_buy_wan": 4659.1,
           "buy_wan": 18645,
           "sell_wan": 13986,
+          "deal_wan": 32631,
           "turnover_pct": 10.89,
           "is_range": false,
           "reasons": [
@@ -107140,6 +107379,7 @@
           "net_buy_wan": 4109.6,
           "buy_wan": 26665.9,
           "sell_wan": 22556.3,
+          "deal_wan": 49222.2,
           "turnover_pct": 7.05,
           "is_range": true,
           "reasons": [
@@ -107156,6 +107396,7 @@
           "net_buy_wan": 3670.9,
           "buy_wan": 16863.3,
           "sell_wan": 13192.5,
+          "deal_wan": 30055.8,
           "turnover_pct": 10.41,
           "is_range": false,
           "reasons": [
@@ -107172,6 +107413,7 @@
           "net_buy_wan": 3437.7,
           "buy_wan": 9124.3,
           "sell_wan": 5686.7,
+          "deal_wan": 14811,
           "turnover_pct": 2.48,
           "is_range": false,
           "reasons": [
@@ -107188,6 +107430,7 @@
           "net_buy_wan": 3295.2,
           "buy_wan": 6972.4,
           "sell_wan": 3677.2,
+          "deal_wan": 10649.6,
           "turnover_pct": 23.59,
           "is_range": false,
           "reasons": [
@@ -107204,6 +107447,7 @@
           "net_buy_wan": 2464.1,
           "buy_wan": 10720.3,
           "sell_wan": 8256.2,
+          "deal_wan": 18976.5,
           "turnover_pct": 7.95,
           "is_range": false,
           "reasons": [
@@ -107220,6 +107464,7 @@
           "net_buy_wan": 2242.2,
           "buy_wan": 7017.8,
           "sell_wan": 4775.6,
+          "deal_wan": 11793.4,
           "turnover_pct": 35.5,
           "is_range": true,
           "reasons": [
@@ -107237,6 +107482,7 @@
           "net_buy_wan": 2064.9,
           "buy_wan": 6937.3,
           "sell_wan": 4872.5,
+          "deal_wan": 11809.8,
           "turnover_pct": 5.76,
           "is_range": true,
           "reasons": [
@@ -107253,6 +107499,7 @@
           "net_buy_wan": 2003.1,
           "buy_wan": 32130.8,
           "sell_wan": 30127.7,
+          "deal_wan": 62258.4,
           "turnover_pct": 23.62,
           "is_range": false,
           "reasons": [
@@ -107270,6 +107517,7 @@
           "net_buy_wan": 1970.3,
           "buy_wan": 7794.5,
           "sell_wan": 5824.2,
+          "deal_wan": 13618.7,
           "turnover_pct": 9.84,
           "is_range": false,
           "reasons": [
@@ -107286,6 +107534,7 @@
           "net_buy_wan": 1797,
           "buy_wan": 13976.3,
           "sell_wan": 12179.3,
+          "deal_wan": 26155.5,
           "turnover_pct": 17.01,
           "is_range": true,
           "reasons": [
@@ -107303,6 +107552,7 @@
           "net_buy_wan": 1544.2,
           "buy_wan": 4859.1,
           "sell_wan": 3314.8,
+          "deal_wan": 8173.9,
           "turnover_pct": 3.06,
           "is_range": false,
           "reasons": [
@@ -107319,6 +107569,7 @@
           "net_buy_wan": 1471.3,
           "buy_wan": 10511,
           "sell_wan": 9039.7,
+          "deal_wan": 19550.6,
           "turnover_pct": 7.31,
           "is_range": false,
           "reasons": [
@@ -107335,6 +107586,7 @@
           "net_buy_wan": 1446.5,
           "buy_wan": 7346.8,
           "sell_wan": 5900.2,
+          "deal_wan": 13247,
           "turnover_pct": 8.61,
           "is_range": false,
           "reasons": [
@@ -107352,6 +107604,7 @@
           "net_buy_wan": 1091,
           "buy_wan": 4605.2,
           "sell_wan": 3514.2,
+          "deal_wan": 8119.4,
           "turnover_pct": 1.92,
           "is_range": true,
           "reasons": [
@@ -107368,6 +107621,7 @@
           "net_buy_wan": 970.5,
           "buy_wan": 1138.9,
           "sell_wan": 168.4,
+          "deal_wan": 1307.3,
           "turnover_pct": 0.11,
           "is_range": true,
           "reasons": [
@@ -107385,6 +107639,7 @@
           "net_buy_wan": 627.7,
           "buy_wan": 8092,
           "sell_wan": 7464.3,
+          "deal_wan": 15556.3,
           "turnover_pct": 24.29,
           "is_range": false,
           "reasons": [
@@ -107401,6 +107656,7 @@
           "net_buy_wan": 511,
           "buy_wan": 3380.7,
           "sell_wan": 2869.7,
+          "deal_wan": 6250.4,
           "turnover_pct": 66.59,
           "is_range": false,
           "reasons": [
@@ -107418,6 +107674,7 @@
           "net_buy_wan": 500.2,
           "buy_wan": 3993.2,
           "sell_wan": 3493,
+          "deal_wan": 7486.2,
           "turnover_pct": 1.77,
           "is_range": true,
           "reasons": [
@@ -107434,6 +107691,7 @@
           "net_buy_wan": 496.5,
           "buy_wan": 2347.1,
           "sell_wan": 1850.7,
+          "deal_wan": 4197.8,
           "turnover_pct": 3.64,
           "is_range": false,
           "reasons": [
@@ -107450,6 +107708,7 @@
           "net_buy_wan": 487.4,
           "buy_wan": 9118.5,
           "sell_wan": 8631.2,
+          "deal_wan": 17749.7,
           "turnover_pct": 8.95,
           "is_range": false,
           "reasons": [
@@ -107466,6 +107725,7 @@
           "net_buy_wan": 425.3,
           "buy_wan": 18235.8,
           "sell_wan": 17810.4,
+          "deal_wan": 36046.2,
           "turnover_pct": 23.57,
           "is_range": false,
           "reasons": [
@@ -107482,6 +107742,7 @@
           "net_buy_wan": 302.8,
           "buy_wan": 2543.5,
           "sell_wan": 2240.7,
+          "deal_wan": 4784.2,
           "turnover_pct": 5.66,
           "is_range": false,
           "reasons": [
@@ -107498,6 +107759,7 @@
           "net_buy_wan": 299.6,
           "buy_wan": 501.7,
           "sell_wan": 202.1,
+          "deal_wan": 703.8,
           "turnover_pct": 43.2,
           "is_range": false,
           "reasons": [
@@ -107514,6 +107776,7 @@
           "net_buy_wan": 250,
           "buy_wan": 2458.7,
           "sell_wan": 2208.7,
+          "deal_wan": 4667.4,
           "turnover_pct": 24.62,
           "is_range": false,
           "reasons": [
@@ -107530,6 +107793,7 @@
           "net_buy_wan": 159.9,
           "buy_wan": 2416.6,
           "sell_wan": 2256.7,
+          "deal_wan": 4673.3,
           "turnover_pct": 33.07,
           "is_range": false,
           "reasons": [
@@ -107546,6 +107810,7 @@
           "net_buy_wan": -3345,
           "buy_wan": 6202.4,
           "sell_wan": 9547.4,
+          "deal_wan": 15749.8,
           "turnover_pct": 18.65,
           "is_range": false,
           "reasons": [
@@ -107563,6 +107828,7 @@
           "net_buy_wan": 72.9,
           "buy_wan": 2688.2,
           "sell_wan": 2615.2,
+          "deal_wan": 5303.4,
           "turnover_pct": 27.45,
           "is_range": false,
           "reasons": [
@@ -107579,6 +107845,7 @@
           "net_buy_wan": -1501.7,
           "buy_wan": 1079.4,
           "sell_wan": 2581.1,
+          "deal_wan": 3660.5,
           "turnover_pct": 0.76,
           "is_range": true,
           "reasons": [
@@ -107596,6 +107863,7 @@
           "net_buy_wan": -192.4,
           "buy_wan": 19139.5,
           "sell_wan": 19331.9,
+          "deal_wan": 38471.4,
           "turnover_pct": 39.19,
           "is_range": false,
           "reasons": [
@@ -107612,6 +107880,7 @@
           "net_buy_wan": -485.3,
           "buy_wan": 8317.6,
           "sell_wan": 8802.9,
+          "deal_wan": 17120.5,
           "turnover_pct": 37.29,
           "is_range": false,
           "reasons": [
@@ -107628,6 +107897,7 @@
           "net_buy_wan": -719.8,
           "buy_wan": 1422.6,
           "sell_wan": 2142.4,
+          "deal_wan": 3564.9,
           "turnover_pct": 14.25,
           "is_range": false,
           "reasons": [
@@ -107644,6 +107914,7 @@
           "net_buy_wan": -721.8,
           "buy_wan": 8548,
           "sell_wan": 9269.8,
+          "deal_wan": 17817.7,
           "turnover_pct": 9.29,
           "is_range": false,
           "reasons": [
@@ -107660,6 +107931,7 @@
           "net_buy_wan": -874.9,
           "buy_wan": 1891.6,
           "sell_wan": 2766.5,
+          "deal_wan": 4658.2,
           "turnover_pct": 7.35,
           "is_range": false,
           "reasons": [
@@ -107676,6 +107948,7 @@
           "net_buy_wan": -1063.3,
           "buy_wan": 6558,
           "sell_wan": 7621.3,
+          "deal_wan": 14179.3,
           "turnover_pct": 25.35,
           "is_range": false,
           "reasons": [
@@ -107692,6 +107965,7 @@
           "net_buy_wan": -1298.8,
           "buy_wan": 4667.7,
           "sell_wan": 5966.5,
+          "deal_wan": 10634.2,
           "turnover_pct": 46.7,
           "is_range": false,
           "reasons": [
@@ -107708,6 +107982,7 @@
           "net_buy_wan": -1917.9,
           "buy_wan": 4132.8,
           "sell_wan": 6050.7,
+          "deal_wan": 10183.5,
           "turnover_pct": 10.93,
           "is_range": false,
           "reasons": [
@@ -107724,6 +107999,7 @@
           "net_buy_wan": -6743,
           "buy_wan": 3818,
           "sell_wan": 10561,
+          "deal_wan": 14378.9,
           "turnover_pct": 41.09,
           "is_range": false,
           "reasons": [
@@ -107741,6 +108017,7 @@
           "net_buy_wan": -7128.2,
           "buy_wan": 13942.6,
           "sell_wan": 21070.8,
+          "deal_wan": 35013.5,
           "turnover_pct": 12.03,
           "is_range": true,
           "reasons": [
@@ -107758,6 +108035,7 @@
           "net_buy_wan": -2747.5,
           "buy_wan": 8900,
           "sell_wan": 11647.5,
+          "deal_wan": 20547.5,
           "turnover_pct": 29.36,
           "is_range": false,
           "reasons": [
@@ -107774,6 +108052,7 @@
           "net_buy_wan": -2852.8,
           "buy_wan": 1892.9,
           "sell_wan": 4745.7,
+          "deal_wan": 6638.6,
           "turnover_pct": 10.54,
           "is_range": false,
           "reasons": [
@@ -107790,6 +108069,7 @@
           "net_buy_wan": -2951.1,
           "buy_wan": 2157,
           "sell_wan": 5108.2,
+          "deal_wan": 7265.2,
           "turnover_pct": 40.47,
           "is_range": false,
           "reasons": [
@@ -107806,6 +108086,7 @@
           "net_buy_wan": -3334.1,
           "buy_wan": 8173.9,
           "sell_wan": 11508,
+          "deal_wan": 19681.9,
           "turnover_pct": 40.82,
           "is_range": false,
           "reasons": [
@@ -107822,6 +108103,7 @@
           "net_buy_wan": -3446.8,
           "buy_wan": 18416.4,
           "sell_wan": 21863.2,
+          "deal_wan": 40279.5,
           "turnover_pct": 17.06,
           "is_range": true,
           "reasons": [
@@ -107838,6 +108120,7 @@
           "net_buy_wan": -3852.9,
           "buy_wan": 195627.3,
           "sell_wan": 199480.2,
+          "deal_wan": 395107.5,
           "turnover_pct": 12.19,
           "is_range": true,
           "reasons": [
@@ -107854,6 +108137,7 @@
           "net_buy_wan": -4327.7,
           "buy_wan": 13787.5,
           "sell_wan": 18115.1,
+          "deal_wan": 31902.6,
           "turnover_pct": 36.33,
           "is_range": false,
           "reasons": [
@@ -107870,6 +108154,7 @@
           "net_buy_wan": -4632.4,
           "buy_wan": 16234.5,
           "sell_wan": 20866.9,
+          "deal_wan": 37101.4,
           "turnover_pct": 48.43,
           "is_range": false,
           "reasons": [
@@ -107886,6 +108171,7 @@
           "net_buy_wan": -5595,
           "buy_wan": 10751.6,
           "sell_wan": 16346.6,
+          "deal_wan": 27098.3,
           "turnover_pct": 17.07,
           "is_range": false,
           "reasons": [
@@ -107903,6 +108189,7 @@
           "net_buy_wan": -6582,
           "buy_wan": 13580.3,
           "sell_wan": 20162.3,
+          "deal_wan": 33742.6,
           "turnover_pct": 36.5,
           "is_range": false,
           "reasons": [
@@ -107919,6 +108206,7 @@
           "net_buy_wan": -6762.2,
           "buy_wan": 3837.9,
           "sell_wan": 10600.1,
+          "deal_wan": 14437.9,
           "turnover_pct": 16.8,
           "is_range": false,
           "reasons": [
@@ -107935,6 +108223,7 @@
           "net_buy_wan": -12927,
           "buy_wan": 20165.9,
           "sell_wan": 33092.9,
+          "deal_wan": 53258.7,
           "turnover_pct": 35.15,
           "is_range": false,
           "reasons": [
@@ -107951,6 +108240,7 @@
           "net_buy_wan": -14311.2,
           "buy_wan": 7633.5,
           "sell_wan": 21944.7,
+          "deal_wan": 29578.2,
           "turnover_pct": 24.52,
           "is_range": false,
           "reasons": [
@@ -107967,6 +108257,7 @@
           "net_buy_wan": -19772.4,
           "buy_wan": 54906.9,
           "sell_wan": 74679.3,
+          "deal_wan": 129586.2,
           "turnover_pct": 8.46,
           "is_range": true,
           "reasons": [
@@ -108159,32 +108450,32 @@
       ]
     },
     "latestEmotion": {
-      "value": 69.5,
-      "s_net": 99.2,
+      "value": 68.6,
+      "s_net": 95.7,
       "s_pos": 46.7,
-      "s_brd": 53.9,
+      "s_brd": 53.3,
       "s_hot": 85.2,
       "s_zdt": 85.2,
       "s_zbl": 81.3,
       "s_amt": 31.5,
       "factors": {
-        "s_net": 99.2,
+        "s_net": 95.7,
         "s_pos": 46.7,
-        "s_brd": 53.9,
+        "s_brd": 53.3,
         "s_hot": 85.2,
         "s_zdt": 85.2,
         "s_zbl": 81.3,
         "s_amt": 31.5
       },
-      "net_total_yi": 12.11,
+      "lhb_daily_net": 7.74,
       "pos_ratio": 60.6,
-      "up_ratio": 53.9,
+      "up_ratio": 53.3,
       "hot_count": 56,
       "topic_conc": 12.5,
       "top_topic": "业绩增长",
-      "pct_rank": 71.9,
-      "net_pct_rank": 37.5,
-      "industryCount": 89,
+      "pct_rank": 68.8,
+      "net_daily_pct_rank": 50,
+      "industryCount": 90,
       "imputedRatio": 0,
       "missing": []
     },

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generatedAt": "2026-09-30T10:45:04.472Z",
+  "generatedAt": "2026-09-30T13:13:24.127Z",
   "formulaVersion": "v5.2-pro",
   "tradeDate": "2026-09-30",
   "days": 33,
@@ -12,7 +12,7 @@
   "signal": "七因子加权情绪分（权重取 src/config.js weights，与页面 emotion.value 同口径）",
   "costNote": "佣金 0.0003（双边）· 印花税 0.0005（卖出）· 滑点 0.0002；按仓位变动幅度计提",
   "caveat": "样本仅 33 个交易日，年化/夏普等指标的统计意义有限，仅用于管线自检与参数对比，不构成投资建议。",
-  "weightDrift": 0.055
+  "weightDrift": 0.05
  },
  "params": {
   "thresholds": {
@@ -138,7 +138,7 @@
    60.2,
    32.1,
    76.7,
-   68.8
+   68.6
   ],
   "navBase": [
    1,
