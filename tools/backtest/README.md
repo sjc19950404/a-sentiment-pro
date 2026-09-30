@@ -102,6 +102,12 @@ python sentiment_backtest.py --factors factors.csv --fast --rf 0.02
 python sentiment_backtest.py --factors factors.csv --fast --xlsx \
     --w1 0.3 --w2 0.2 --w3 0.2 --w4 0.2 --w5 0.1 --lo 60 --hi 40 --panic 20 --overheat 85
 
+# 因子列名/个数覆盖（例：网页模型七因子）：--weights 个数须等于 --factor-cols 列数；
+# 给了 --weights 默认跳过网格，想同时扫网格就加 --grid（此时 --weights 仅作基准绩效）
+python sentiment_backtest.py --factors archive_factors.csv \
+    --factor-cols s_net,s_pos,s_brd,s_hot,s_zdt,s_zbl,s_amt \
+    --weights 0.2,0.1,0.2,0.1,0.15,0.1,0.15 --grid --pareto --out reports
+
 # 风控约束：最大仓位 0.6 + 单笔止损 -8%（持仓期当日跌幅≤-8% 次日强制清仓）
 python sentiment_backtest.py --factors factors.csv --fast --max-pos 0.6 --stop-loss -0.08
 

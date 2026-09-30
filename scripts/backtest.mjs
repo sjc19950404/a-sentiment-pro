@@ -110,7 +110,9 @@ const nGrid = weightGrid(baseW, gridSteps).length;
 
 const payload = {
   meta: {
-    generatedAt: new Date().toISOString(),
+    // 取存档的数据生成时间，而非本次运行时间：archive 未变时 backtest.json 不因时间戳而变，
+    // 避免 Actions 每次运行都产生无意义的 chore 提交（噪音会掩盖真实变化）。
+    generatedAt: arch.meta?.generatedAt || new Date().toISOString(),
     formulaVersion: 'v5.2-pro',
     tradeDate: arch.meta?.tradeDate || dates[dates.length - 1],
     days: dates.length,
