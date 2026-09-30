@@ -19,6 +19,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const r2 = (v) => Math.round(v * 100) / 100;
 const r1 = (v) => Math.round(v * 10) / 10;
+// 缺失保持 null，绝不落成 0：0 是合法行情值（一字板换手可真为 0），
+// 一旦把"没取到"写成 0，前端既看不出数据缺失，下游的 ?? 兜底也会失效（0 不是 null）。
+const num2 = (v) => (v == null || !Number.isFinite(+v) ? null : r2(+v));
 
 // 龙虎榜未公布 → 优雅跳过（不报错、不回退）
 class LhbNotPublishedError extends Error {
@@ -54,10 +57,23 @@ async function fetchHot() {
   throw new Error('getharden 强势股接口连续失败: ' + lastErr.message);
 }
 
+// 腾讯行情代码前缀。历史上只判 sh/sz，把北交所（9/8/4 段）整段丢掉 —— 榜单里一旦出现北交所标的，
+// 它就拿不到任何行情字段（close/涨跌幅/换手），前端只能显示成 0。
+// 各段位均已实测：沪市 6xxxxx(A)/900xxx(B) → sh；深市 0xxxxx・3xxxxx(A)/200xxx(B) → sz；
+// 北交所 92xxxx・4xxxxx・8xxxxx → bj（错误前缀如 bj900939/bj200011 会返回 v_pv_none_match）。
+export function quoteSymbol(code) {
+  const c = String(code ?? '').trim();
+  if (!/^\d{6}$/.test(c)) return null;
+  if (c[0] === '6' || c.startsWith('900')) return 'sh' + c;
+  if (c[0] === '0' || c[0] === '3' || c[0] === '2') return 'sz' + c;
+  if (c[0] === '4' || c[0] === '8' || c.startsWith('92')) return 'bj' + c;
+  return null;
+}
+
 // 源2辅助: 腾讯批量行情（60只/批）补全强势股 close/涨跌幅/换手
 async function fetchHotQuotes(codes) {
   const out = {};
-  const sym = (c) => (/^6/.test(c) ? 'sh' + c : /^[03]/.test(c) ? 'sz' + c : null);
+  const sym = quoteSymbol;
   for (let i = 0; i < codes.length; i += 60) {
     const batch = codes.slice(i, i + 60).map(sym).filter(Boolean);
     if (!batch.length) continue;
@@ -393,8 +409,22 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
 
   const hot = hotRaw.map((x) => ({
     code: x.code, name: x.name, reason: x.reason || '',
-    close: x.close, change_pct: r2(x.zhangfu || 0), huanshou: r2(x.huanshou || 0),
+    close: x.close > 0 ? r2(+x.close) : null,
+    change_pct: num2(x.zhangfu),
+    huanshou: num2(x.huanshou),
   }));
+  // 行情兜底：腾讯行情没覆盖到的票（代码段未收录 / 该批请求失败），若同日龙虎榜明细里有它的行情就借过来，
+  // 并标注来源。同一天同一只票的收盘价/涨跌幅两个源应当一致，故可安全互备。
+  const lhbByCode = new Map((lhb_aggr || []).map((r) => [r.code, r]));
+  hot.forEach((h) => {
+    if (h.close != null) return;
+    const l = lhbByCode.get(h.code);
+    if (!l || l.close == null) return;
+    h.close = l.close;
+    h.change_pct = l.change_pct ?? null;
+    h.huanshou = l.turnover_pct ?? null;
+    h.quote_src = 'lhb';
+  });
   const freq = {};
   hot.forEach((h) => (h.reason || '').split(/[+＋]/).forEach((w) => { w = w.trim(); if (w) freq[w] = (freq[w] || 0) + 1; }));
   const topics = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 15).map(([tag, count]) => ({ tag, count }));
@@ -403,6 +433,9 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
   const ind_down = industry.filter((i) => i.change_pct < 0).length;
 
   const missing = [];
+  // 强势股行情补全缺口：数据源未覆盖该代码段 → 该票 close/涨跌幅/换手留空（前端显「—」而非 0）
+  const hot_quote_missing = hot.filter((h) => h.close == null).length;
+  if (hot_quote_missing) missing.push(`hot_quotes(${hot_quote_missing})`);
   const zt = pools ? pools.zt : null, dt = pools ? pools.dt : null, zb = pools ? pools.zb : null;
   if (zt == null || dt == null || zb == null) missing.push('pools');
   const zbl_pct = (zt != null && zb != null && (zb + zt) > 0) ? r1((zb / (zb + zt)) * 100) : null;
@@ -436,6 +469,7 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
     up_count: breadth ? breadth.up : null, down_count: breadth ? breadth.down : null, flat_count: breadth ? breadth.flat : null,
     breadth_scope: '沪深两市A股（不含北交所/ST口径与各平台统计或有出入）',
     hot_count: hot.length, topic_kinds: Object.keys(freq).length,
+    hot_quote_missing,
     ind_count: industry.length, ind_up, ind_down,
     top_industry: industry[0] ? industry[0].name : null,
     bottom_industry: industry[industry.length - 1] ? industry[industry.length - 1].name : null,

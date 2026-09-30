@@ -185,14 +185,22 @@ function renderThemes(latest) {
 }
 
 // ── 个股明细表：双视图（强势股归因 / 龙虎榜资金）+ 搜索 + 点列头排序 + 行点击详情 ──
+// 涨幅单元格：数值 + 新股标记 + 无行情标记。
+// 「无行情」与「0」必须区分开：0 是真实行情（如一字板当日换手可为 0），
+// 无行情是数据源没覆盖到这条代码，两者含义完全不同，混在一起会让人以为数据出错。
+function chgCell(r) {
+  return `<span class="${trendCls(r.change_pct)}">${pctOf2(r.change_pct)}</span>`
+    + (isNewStock(r) ? '<span class="newb" title="无价格涨跌幅限制（新股/次新），涨幅与普通个股不可比">新股</span>' : '')
+    + (r.close == null ? '<span class="newb nob" title="该代码段暂无行情源覆盖，现价 / 涨跌幅 / 换手为空值（不是 0）">无行情</span>' : '');
+}
+
 // 列定义：raw 供排序（数值），cell 供显示（缺省用原值），hint 是表头说明。
 const HOT_COLS = {
   hot: [
     { key: 'code', t: '代码' },
     { key: 'name', t: '名称' },
     { key: 'change_pct', t: '涨幅', num: true, hint: '当日涨跌幅（新股无涨跌幅限制，涨幅不具可比性）',
-      cell: (r) => `<span class="${trendCls(r.change_pct)}">${pctOf2(r.change_pct)}</span>`
-        + (isNewStock(r) ? '<span class="newb" title="无价格涨跌幅限制（新股/次新），涨幅与普通个股不可比">新股</span>' : ''),
+      cell: chgCell,
       raw: (r) => r.change_pct },
     { key: 'close', t: '现价', num: true, hint: '收盘价（元）', raw: (r) => r.close },
     { key: 'huanshou', t: '换手%', num: true, hint: '当日换手率', raw: (r) => r.huanshou },
@@ -204,8 +212,7 @@ const HOT_COLS = {
     { key: 'code', t: '代码' },
     { key: 'name', t: '名称' },
     { key: 'change_pct', t: '涨幅', num: true, hint: '当日涨跌幅（新股无涨跌幅限制，涨幅不具可比性）',
-      cell: (r) => `<span class="${trendCls(r.change_pct)}">${pctOf2(r.change_pct)}</span>`
-        + (isNewStock(r) ? '<span class="newb" title="无价格涨跌幅限制（新股/次新），涨幅与普通个股不可比">新股</span>' : ''),
+      cell: chgCell,
       raw: (r) => r.change_pct },
     { key: 'net_buy_wan', t: '龙虎净买(亿)', num: true, hint: '龙虎榜净买入额（买−卖）', cell: (r) => `<span class="${trendCls(r.net_buy_wan)}">${yiOf(r.net_buy_wan)}</span>`, raw: (r) => r.net_buy_wan },
     // 数据源字段单位是「万元」（sources.js: BILLBOARD_*_AMT / 1e4），表头写的是「亿」，

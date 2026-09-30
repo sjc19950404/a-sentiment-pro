@@ -5,7 +5,7 @@
     "source": "live",
     "tradeDate": "2026-09-29",
     "stale": false,
-    "note": "breadth 手工回填自 21:33 档（东财接口晚间间歇故障），情绪已离线重算",
+    "note": "breadth 手工回填自 21:33 档（东财接口晚间间歇故障），情绪已离线重算；强势股行情空值已按同日龙虎榜明细回填（1 条，2026-09-30）",
     "staleReason": null,
     "freshness": {
       "state": "fresh",
@@ -93164,8 +93164,10 @@
           "code": "920779",
           "name": "武汉蓝电",
           "reason": "固态电池检测+电池测试设备+订单充足",
-          "change_pct": 0,
-          "huanshou": 0
+          "change_pct": 29.98,
+          "huanshou": 30.19,
+          "close": 28.4,
+          "quote_src": "lhb"
         },
         {
           "code": "688655",
@@ -95625,7 +95627,8 @@
           "main_yi": 0.68,
           "tot_yi": 15.53,
           "pct": 4.4
-        }
+        },
+        "hot_quote_missing": 0
       },
       "indexes": {
         "上证指数": 0.18,

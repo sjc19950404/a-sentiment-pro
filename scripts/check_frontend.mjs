@@ -148,16 +148,44 @@ check('交互：个股详情含行情/龙虎资金/近5日记录段',
   txt('dwBody').includes('行情与状态') && txt('dwBody').includes('近 5 个交易日记录'), txt('dwBody').slice(0, 50));
 
 // 2) 抽屉内下钻（个股 → 题材）再返回
-const themeChip = $('dwBody').querySelector('[data-act="theme"]');
+// 首行不保证带题材 chip：诱因文本没命中当日题材库的票就没有（例如 2026-09-29 涨幅首位的
+// 920779，诱因「固态电池检测+电池测试设备+订单充足」都不在题材库里）。
+// 所以这里不依赖首行，先按代码搜出一只确定有题材的票，让表格只剩它一行再下钻，
+// 否则断言会随"谁排第一"随机假失败。
+const d0 = arcAll.all_days[arcAll.all_days.length - 1];
+const themeKeys = Object.keys(d0.themes || {});
+const withTheme = (d0.hot || []).find((h) =>
+  themeKeys.some((t) => t.length >= 2 && String(h.reason || '').includes(t)));
+check('前置：当日存在「诱因命中题材库」的个股（下钻用例前提）',
+  !!withTheme, withTheme ? `${withTheme.code} ${withTheme.name}` : '当日无此类个股');
+
+let themeChip = null;
+if (withTheme) {
+  escClose();
+  const sinp = $('hotSearch');
+  sinp.value = withTheme.code;
+  sinp.dispatchEvent(new window.Event('input', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 280)); // 等搜索防抖
+  const pickRow = $('hotTable').querySelector('tbody tr.clickable');
+  check('前置：按代码搜索恰好命中该股',
+    pickRow?.dataset.code === withTheme.code, pickRow?.dataset.code || '无匹配行');
+  clickEl(pickRow);
+  themeChip = $('dwBody').querySelector('[data-act="theme"]');
+  sinp.value = '';
+  sinp.dispatchEvent(new window.Event('input', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 280));
+}
+
 if (themeChip) {
   clickEl(themeChip);
   check('交互：抽屉内点题材可继续下钻', drawerOpen() && txt('dwTitle').includes('题材'), txt('dwTitle'));
   const backBtn = $('dwBody').querySelector('[data-act="dback"]');
   check('交互：下钻后提供返回上级按钮', !!backBtn, '');
   clickEl(backBtn);
-  check('交互：返回后回到个股详情', txt('dwTitle').includes(firstCode), txt('dwTitle'));
+  check('交互：返回后回到个股详情', txt('dwTitle').includes(withTheme?.code), txt('dwTitle'));
 } else {
-  check('交互：抽屉内点题材可继续下钻', false, '该股无匹配题材');
+  check('交互：抽屉内点题材可继续下钻', false,
+    `预筛 ${withTheme?.code || '—'} 应有题材 chip，但抽屉内没渲染（搜索/匹配口径不一致）`);
   check('交互：下钻后提供返回上级按钮', false, '');
   check('交互：返回后回到个股详情', false, '');
 }
@@ -228,6 +256,30 @@ check('交互：可切到龙虎榜资金视图（净买/买卖额列）',
   txt('hotHead').includes('龙虎净买') && txt('hotHead').includes('卖出(亿)'), txt('hotHead').slice(0, 60));
 clickEl($('hotTabs').querySelector('button[data-view="hot"]'));
 check('交互：可切回强势股归因视图', txt('hotHead').includes('诱因'), txt('hotHead').slice(0, 40));
+
+// 8b) 行情缺失 ≠ 行情为 0（武汉蓝电 920779 事故回归）
+// 北交所代码段曾漏在行情前缀之外 → close/涨跌幅/换手全空 → 旧代码把空写成 0，
+// 页面于是显示「涨幅 0.00%、换手 0」，看着像数据本身错了。语义必须锁死：缺失是 null 或「—」，
+// 0 只能表示真实的 0（例如一字板当日换手确实可为 0）。
+const nobHtml = String(window.chgCell?.({ change_pct: null, close: null, reason: '测试' }) ?? '');
+check('渲染：无行情个股标出「无行情」（而不是显示 0）',
+  nobHtml.includes('无行情') && nobHtml.includes('nob'), nobHtml.slice(0, 80));
+const zeroHtml = String(window.chgCell?.({ change_pct: 0, close: 10.5, huanshou: 0, reason: '一字板' }) ?? '');
+check('渲染：真实 0% 涨幅不会被误标为无行情',
+  !zeroHtml.includes('无行情') && zeroHtml.includes('0.00%'), zeroHtml.slice(0, 80));
+
+const fakeZeros = arcAll.all_days.flatMap((d) => (d.hot || [])
+  .filter((h) => h.close == null && h.change_pct === 0 && h.huanshou === 0));
+check('数据：全历史无「行情缺失却落成 0」的强势股条目（缺失必须是 null）',
+  fakeZeros.length === 0, fakeZeros.slice(0, 3).map((h) => `${h.code} ${h.name}`).join(' / '));
+
+// 920779 若在当日榜内，其行情必须已经补齐（北交所代码段前缀回归）
+const c779 = (d0.hot || []).find((h) => h.code === '920779');
+if (c779) {
+  check('数据：北交所个股行情已补齐（武汉蓝电 920779 不再是假 0）',
+    c779.close != null && c779.change_pct !== 0 && c779.huanshou !== 0,
+    `close=${c779.close} 涨幅=${c779.change_pct}% 换手=${c779.huanshou}%`);
+}
 
 // 9) 报告目录跳转与一键折叠
 check('布局：报告目录 chip 数 = 段落数（6）',
