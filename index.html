@@ -24,7 +24,7 @@
     <a class="zn" href="#zone-detail" data-zone="zone-detail">个股与题材</a>
     <a class="zn" href="#zone-backtest" data-zone="zone-backtest">策略回测 V5.2</a>
     <a class="zn" href="#zone-brief" data-zone="zone-brief">研判报告</a>
-    <span class="zn-note">表格行 / 题材标签 / 图上数据点 / 权重行 均可点击查看详情</span>
+    <span class="zn-note" id="navNote">表格行 / 题材标签 / 图上数据点 / 权重行 均可点击查看详情 · 快捷键 1-4 跳分区、/ 聚焦搜索</span>
   </nav>
 
   <div id="alerts"></div>
@@ -83,7 +83,7 @@
     <section class="zone" id="zone-detail">
       <div class="zone-head">
         <h3>个股与题材 · 明细</h3>
-        <span class="zone-sub">支持搜索与点列头排序；点任意一行查看席位与资金详情</span>
+        <span class="zone-sub" id="hotHint">支持搜索与排序；点任意一行（窄屏为卡片）查看席位与资金详情</span>
       </div>
       <div class="grid">
         <section class="card hot">
@@ -94,6 +94,9 @@
               <button data-view="lhb" role="tab" aria-selected="false">龙虎榜资金</button>
             </div>
             <input id="hotSearch" class="search" type="search" placeholder="搜索代码 / 名称 / 诱因…" aria-label="搜索个股" />
+            <!-- 窄屏（卡片模式）表头不可见 → 排序改由下拉 + 方向钮承担，宽屏自动隐藏 -->
+            <select id="hotSortSel" class="sortsel only-narrow" aria-label="排序字段"></select>
+            <button id="hotSortDir" class="mini only-narrow" type="button" aria-label="切换排序方向" title="切换升/降序">▼</button>
             <span id="hotCount" class="muted"></span>
           </div>
           <div class="table-wrap tall">
@@ -102,6 +105,8 @@
               <tbody></tbody>
             </table>
           </div>
+          <!-- 窄屏（≤720px）替代表格的卡片列表：同一份 rows 渲染，排序/搜索/视图切换全部同步 -->
+          <div class="cardlist" id="hotCards" aria-label="个股明细卡片列表"></div>
         </section>
       </div>
     </section>
@@ -132,6 +137,7 @@
               <tbody></tbody>
             </table>
           </div>
+          <div class="cardlist" id="paretoCards" aria-label="权重寻优结果卡片列表"></div>
         </section>
 
         <section class="card roll">
@@ -143,6 +149,7 @@
               <tbody></tbody>
             </table>
           </div>
+          <div class="cardlist" id="rollCards" aria-label="滚动样本外分段卡片列表"></div>
         </section>
 
         <section class="card mainline">

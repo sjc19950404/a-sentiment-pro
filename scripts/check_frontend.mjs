@@ -261,6 +261,99 @@ check('交互：主线卡的题材标签与标的清单可点',
   window.document.querySelectorAll('#mainLineBody [data-act="theme"]').length > 0
   && window.document.querySelectorAll('#mainLineBody [data-act="stock"]').length > 0, '');
 
+// ── 双端适配层断言（手机 / PC 都常用）──
+// 宽表在窄屏不可用（10 列横滑），故同一份 rows 同时渲染表格与卡片两套 DOM，由 CSS 决定显示哪个。
+const hcards = () => window.document.querySelectorAll('#hotCards .hcard');
+check('双端：窄屏卡片列表已渲染且与表格行数一致（同源同序）',
+  hcards().length > 0 && hcards().length === rows('hotTable'),
+  `卡片 ${hcards().length} / 表格 ${rows('hotTable')}`);
+check('双端：卡片含标题 / 大字 / 标签 / 触控结构',
+  !!hcards()[0]?.querySelector('.hc-name') && !!hcards()[0]?.querySelector('.hc-big')
+  && hcards()[0]?.querySelectorAll('.hc-tag').length >= 3, '');
+check('双端：卡片为可聚焦可点元素（键盘 Enter 也能进详情）',
+  hcards()[0]?.getAttribute('tabindex') === '0' && hcards()[0]?.dataset.act === 'stock', '');
+
+// 回归：此前 renderHotTable 的取值闭包捕获了「当前排序列」，导致所有无 cell 的列
+// （代码/名称/现价/换手/席位）都渲染成排序列的值——按涨幅排序时整行全是 20.01。
+const firstCells = [...$('hotTable').querySelector('tbody tr').querySelectorAll('td')].map((td) => td.textContent.trim());
+check('回归：表格每列渲染各自的值（此前全被渲染成排序列的值）',
+  /^\d{6}$/.test(firstCells[0]) && firstCells[1].length > 0 && firstCells[1] !== firstCells[2]
+  && firstCells[3] !== firstCells[2], firstCells.slice(0, 5).join(' | '));
+clickEl(hcards()[0]);
+check('双端：点卡片打开个股详情', drawerOpen() && txt('dwTitle').includes(firstCode), txt('dwTitle'));
+escClose();
+
+// 卡片必须跟随视图切换（龙虎榜视图要换成资金口径字段，否则卡片会显示过期数据）
+clickEl($('hotTabs').querySelector('button[data-view="lhb"]'));
+const lhbTags = [...hcards()[0].querySelectorAll('.hc-tag > i')].map((x) => x.textContent);
+check('双端：切视图后卡片标签同步为龙虎榜字段',
+  lhbTags.includes('龙虎净买(亿)') && lhbTags.includes('买入(亿)'), lhbTags.join(' / '));
+clickEl($('hotTabs').querySelector('button[data-view="hot"]'));
+
+// 搜索联动
+const cardsBefore = hcards().length;
+inp.value = 'PCB';
+inp.dispatchEvent(new window.Event('input', { bubbles: true }));
+await new Promise((r) => setTimeout(r, 280));
+check('双端：搜索同时筛选卡片列表',
+  hcards().length > 0 && hcards().length < cardsBefore, `${cardsBefore} → ${hcards().length} 张`);
+inp.value = '';
+inp.dispatchEvent(new window.Event('input', { bubbles: true }));
+await new Promise((r) => setTimeout(r, 280));
+
+// 窄屏排序控件：卡片模式下表头不可见，排序必须另有入口
+const selEl = $('hotSortSel');
+check('双端：窄屏排序控件选项数 = 表格列数',
+  !!selEl && selEl.querySelectorAll('option').length === $('hotHead').querySelectorAll('th').length,
+  `${selEl?.querySelectorAll('option').length} 项 / ${$('hotHead').querySelectorAll('th').length} 列`);
+const codesNow = () => [...$('hotTable').querySelectorAll('tbody tr')].map((tr) => tr.dataset.code).filter(Boolean);
+const mono = (arr, up) => arr.length > 1 && arr.every((v, i) => i === 0 || (up ? arr[i - 1] <= v : arr[i - 1] >= v));
+selEl.value = 'code';
+selEl.dispatchEvent(new window.Event('change', { bubbles: true }));
+check('双端：窄屏排序控件可改排序字段（新列默认降序，与表头行为一致）',
+  mono(codesNow().map(Number), false), codesNow().slice(0, 3).join(','));
+check('双端：卡片顺序与表格顺序一致',
+  hcards()[0]?.dataset.code === codesNow()[0], `${hcards()[0]?.dataset.code} / ${codesNow()[0]}`);
+const dirB = $('hotSortDir').textContent;
+clickEl($('hotSortDir'));
+check('双端：排序方向钮可翻转为升序',
+  $('hotSortDir').textContent === '▲' && mono(codesNow().map(Number), true),
+  `${dirB} → ${$('hotSortDir').textContent}，首三位 ${codesNow().slice(0, 3).join(',')}`);
+
+// 帕累托 / 滚动分段的窄屏卡片（与各自表格同源）
+check('双端：帕累托与滚动分段也各有卡片列表且与表格同数量',
+  window.document.querySelectorAll('#paretoCards .hcard').length === rows('paretoTable')
+  && window.document.querySelectorAll('#rollCards .hcard').length === rows('rollTable')
+  && rows('rollTable') > 0, '');
+clickEl(window.document.querySelector('#paretoCards .hcard'));
+check('双端：点帕累托卡片可看权重组合',
+  drawerOpen() && txt('dwTitle').includes('权重组合'), txt('dwTitle'));
+escClose();
+clickEl(window.document.querySelector('#rollCards .hcard'));
+check('双端：点滚动分段卡片可看训练窗与权重',
+  drawerOpen() && txt('dwTitle').includes('滚动段'), txt('dwTitle'));
+escClose();
+
+// PC 端快捷键（输入框内不抢键）；dispatchEvent 返回 false 表示事件被接管
+const keyOn = (key, target) => (target || window.document).dispatchEvent(
+  new window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+check('PC：数字键 1-4 跳分区（事件被接管）', keyOn('2') === false, '');
+$('hotSearch').value = '';
+check('PC：/ 聚焦个股搜索框', keyOn('/') === false && window.document.activeElement === $('hotSearch'), '');
+check('PC：在搜索框内打字不被快捷键抢键', keyOn('2', $('hotSearch')) === true, '');
+
+// 样式层的适配规则必须存在（否则以后误删，手机上又会退回横滑宽表 / 点不中的图表点）
+const htmlTxt = readFileSync(join(ROOT, 'index.html'), 'utf8');
+const cssTxt = readFileSync(join(ROOT, 'style.css'), 'utf8');
+check('样式：视口 meta 声明 device-width（手机上按设备宽度排版）',
+  /name="viewport"[^>]*width=device-width/.test(htmlTxt), '');
+check('样式：超宽屏版心居中变量（--maxw / --pad）',
+  cssTxt.includes('--maxw') && cssTxt.includes('--pad:'), '');
+check('样式：窄屏宽表切卡片 + 触屏放大命中区规则',
+  /@media \(max-width: 820px\)/.test(cssTxt) && cssTxt.includes('.cardlist {') && /@media \(hover: none\)/.test(cssTxt), '');
+check('样式：图表数据点扩大命中区（含触屏放大）',
+  /stroke-width: 8px/.test(cssTxt) && /stroke-width: 18px/.test(cssTxt), '');
+
 check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' | '));
 
 dom.window.close();

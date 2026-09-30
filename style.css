@@ -2,15 +2,19 @@
   --bg: #0d1117; --card: #161b22; --card2: #1b232c; --line: #21262d; --txt: #e6edf3; --muted: #8b949e;
   --up: #f0616d; --down: #3fb950; --acc: #58a6ff; --warn: #d29922; --fresh: #3fb950; --fade: #f0616d; --cont: #58a6ff;
   --focus: #58a6ff;
+  /* 版心：内容区在超宽屏居中（顶栏/导航/分区共用同一 padding-inline，保证左右对齐）
+     --gut 是手机上的安全边距，--pad 由两者算出——不需要额外包一层 wrapper */
+  --gut: 20px; --maxw: 1560px;
+  --pad: max(var(--gut), calc((100vw - var(--maxw)) / 2));
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--bg); color: var(--txt); font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--txt); font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-text-size-adjust: 100%; }
 
 /* 键盘可达性：统一焦点环（鼠标点击不显示，仅键盘导航可见） */
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
 
-.topbar { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 14px var(--pad); border-bottom: 1px solid var(--line); }
 .brand { font-size: 18px; font-weight: 700; }
 .ver { color: var(--acc); font-size: 12px; border: 1px solid var(--acc); border-radius: 4px; padding: 1px 5px; margin-left: 4px; }
 .meta { display: flex; gap: 12px; align-items: center; font-size: 13px; }
@@ -27,18 +31,18 @@ body { margin: 0; background: var(--bg); color: var(--txt); font-family: -apple-
 
 /* 分区导航：sticky，长页面定位 */
 .zonenav { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  padding: 8px 20px; background: rgba(13, 17, 23, .92); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+  padding: 8px var(--pad); background: rgba(13, 17, 23, .92); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
 .zn { color: var(--muted); text-decoration: none; font-size: 12.5px; padding: 3px 10px; border: 1px solid var(--line); border-radius: 20px; white-space: nowrap; }
 .zn:hover { color: var(--acc); border-color: var(--acc); }
 .zn.on { color: var(--acc); border-color: var(--acc); background: rgba(88, 166, 255, .12); }
 .zn-note { margin-left: auto; font-size: 11px; color: var(--muted); }
 
-#alerts { padding: 8px 20px 0; }
+#alerts { padding: 8px var(--pad) 0; }
 .alert { background: #3a2a1b; border: 1px solid var(--warn); color: #f0c674; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; font-size: 13px; }
 .alert.info { background: #16293a; border-color: var(--acc); color: #9dc7f0; }
 
 /* 分区 */
-.zone { padding: 14px 20px 2px; scroll-margin-top: 52px; }
+.zone { padding: 14px var(--pad) 2px; scroll-margin-top: 56px; }
 .zone-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 2px 0 10px; }
 .zone-head h3 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: .3px; }
 .zone-head h3::before { content: ''; display: inline-block; width: 3px; height: 13px; background: var(--acc);
@@ -46,7 +50,7 @@ body { margin: 0; background: var(--bg); color: var(--txt); font-family: -apple-
 .zone-sub { font-size: 11.5px; color: var(--muted); }
 .zone .grid { padding: 0 0 14px; }
 
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 16px 20px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 16px var(--pad); }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
 .card h2 { margin: 0 0 12px; font-size: 14px; color: var(--muted); font-weight: 600; }
 @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
@@ -115,6 +119,31 @@ tbody tr.clickable:hover { background: rgba(88, 166, 255, .09); }
 tbody tr.clickable:hover td:first-child { color: var(--acc); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
+/* ── 窄屏卡片列表：替代表格（≤820px），一屏一张卡、整卡可点 ──
+   同一份数据在 DOM 里同时存在表格与卡片两套，由 CSS 决定显示哪一个——
+   因而不需要 JS 监听 resize，也不会出现旋转屏幕后两边状态不一致。 */
+.only-narrow { display: none; }
+.cardlist { display: none; }
+.cardlist > .empty { padding: 10px 2px; }
+.hcard { background: var(--card2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
+  margin-bottom: 8px; cursor: pointer; }
+.hcard:active { background: rgba(88, 166, 255, .14); }
+.hcard:hover { border-color: var(--acc); }
+.hc-head { display: flex; align-items: baseline; gap: 8px; }
+.hc-name { font-size: 14.5px; font-weight: 700; }
+.hc-code { font-size: 11.5px; }
+.hc-big { margin-left: auto; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hc-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.hc-tag { display: inline-flex; align-items: baseline; gap: 5px; background: var(--line); border-radius: 6px;
+  padding: 3px 8px; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.hc-tag > i { font-style: normal; font-size: 10.5px; color: var(--muted); }
+.hc-reason { font-size: 11.5px; color: var(--muted); margin-top: 7px; line-height: 1.5;
+  overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* 窄屏排序控件（表头在卡片模式下不可见，排序改由此处的下拉+方向钮承担） */
+.sortsel { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--txt);
+  padding: 4px 8px; font-size: 12px; font-family: inherit; }
+
 .sum-line { font-size: 12px; color: var(--muted); margin-bottom: 8px; line-height: 1.7; }
 .sum-line b { color: var(--txt); }
 
@@ -167,7 +196,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .bf-meta { font-size: 10.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; margin-bottom: 10px; background: rgba(127, 127, 127, .06); }
 .bf-meta b { color: var(--txt); }
 
-.foot { text-align: center; padding: 16px; font-size: 12px; }
+.foot { text-align: center; padding: 16px var(--pad); font-size: 12px; line-height: 1.7; }
 
 /* 回到顶部 */
 .totop { position: fixed; right: 18px; bottom: 18px; z-index: 30; width: 34px; height: 34px; border-radius: 50%;
@@ -215,13 +244,55 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .hl { color: var(--up); font-weight: 600; }
 .hl-dn { color: var(--down); font-weight: 600; }
 
+/* 图表数据点：加一层透明描边扩大命中区（手指也点得到），视觉半径不变 */
+#trendSvg circle, #btNavSvg circle { pointer-events: all; stroke: transparent; stroke-width: 8px; }
+
+/* ── 860px 以下：单列（手机 / 平板竖屏） ── */
 @media (max-width: 860px) {
-  .zone { padding: 12px 12px 2px; }
+  :root { --gut: 12px; }
   .topbar { flex-wrap: wrap; gap: 8px; }
-  .zonenav { padding: 8px 12px; }
+  .meta { flex-wrap: wrap; }
   .zn-note { display: none; }
-  .drawer { width: 100%; border-left: 0; }
-  .grid { padding: 0 0 12px; gap: 12px; }
-  #alerts { padding: 8px 12px 0; }
+  .grid { gap: 12px; }
   .factors { grid-template-columns: 1fr; }
+  .drawer { border-left: 0; }
+  #trendSvg { height: 110px; }
+  #btNavSvg { height: 130px; }
+}
+
+/* ── 820px 以下：宽表让位给卡片列表 ── */
+@media (max-width: 820px) {
+  .table-wrap { display: none; }
+  .cardlist { display: block; }
+  #hotSortSel.only-narrow, #hotSortDir.only-narrow { display: inline-block; }
+  .zonenav { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .zonenav::-webkit-scrollbar { display: none; }
+  .zn { flex: none; }
+  .tbar { gap: 6px; }
+  .search { min-width: 0; max-width: none; flex: 1 1 150px; }
+  #hotCount { margin-left: 0; width: 100%; }
+  /* 手机上不做嵌套滚动，表格/报告跟整页一起滚，手感更接近原生 */
+  .brief-body { max-height: none; overflow-y: visible; }
+  .drawer { width: 100%; }
+  .dw-kv { grid-template-columns: 78px 1fr; }
+  .dw-body { overflow-wrap: anywhere; padding-bottom: calc(26px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ── 触屏（无 hover）与窄屏：把可点元素放大到能稳当点中的尺寸 ── */
+@media (hover: none), (max-width: 820px) {
+  .chip, .tag2, .ml-head .tag2 { display: inline-flex; align-items: center; min-height: 30px; padding: 4px 11px; }
+  .zn { display: inline-flex; align-items: center; min-height: 32px; }
+  .seg button { min-height: 34px; padding: 0 13px; }
+  .mini { min-height: 32px; padding: 0 12px; }
+  .bf-nav button { min-height: 30px; padding: 4px 12px; }
+  .search, .sortsel { min-height: 34px; }
+  .dw-close { width: 34px; height: 34px; font-size: 14px; }
+  .totop { width: 44px; height: 44px; font-size: 18px; right: 12px; bottom: 12px; }
+}
+
+/* 触屏没有 hover：净值曲线的数据点直接显形，并进一步放大命中区 */
+@media (hover: none) {
+  #btNavSvg circle { opacity: .9; }
+  #trendSvg circle, #btNavSvg circle { stroke-width: 18px; }
+  #trendSvg circle { r: 5; }
 }

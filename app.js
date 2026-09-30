@@ -211,6 +211,27 @@ const HOT_COLS = {
   ],
 };
 
+// 卡片视图（窄屏用）：与表格共用同一份 rows / cols，字段顺序即卡片结构 ——
+// 前两列（代码/名称）作标题行，第 3 列（涨幅）作右侧大字，末列（wide · 诱因）作说明行，其余列作标签行。
+// 这样切换视图（强势股/龙虎榜）、搜索、排序都不必另写一套逻辑，卡片自动跟随。
+function hotCardHTML(r, cols) {
+  const [c0, c1] = cols;
+  const big = cols[2];
+  const tags = cols.slice(3, cols.length - 1);
+  const last = cols[cols.length - 1];
+  const cellOf = (c) => (c ? (c.cell ? c.cell(r) : esc(nf(c.raw ? c.raw(r) : r[c.key]))) : '');
+  const name = r[c1?.key] ?? r.code;
+  const reason = last ? String(r[last.key] ?? '').trim() : '';
+  return `<div class="hcard" data-act="stock" data-code="${esc(r.code)}" tabindex="0" role="button"`
+    + ` aria-label="查看 ${esc(name)} 的席位与资金详情" title="点击查看 ${esc(name)} 的席位与资金详情">`
+    + `<div class="hc-head"><span class="hc-name">${esc(name)}</span>`
+    + `<span class="hc-code muted">${esc(r[c0?.key] ?? r.code)}</span>`
+    + `<span class="hc-big ${big ? trendCls(big.raw ? big.raw(r) : r[big.key]) : 'muted'}">${cellOf(big)}</span></div>`
+    + `<div class="hc-tags">${tags.map((c) => `<span class="hc-tag"><i>${esc(c.t)}</i>${cellOf(c)}</span>`).join('')}</div>`
+    + (reason ? `<div class="hc-reason">${esc(reason)}</div>` : '')
+    + '</div>';
+}
+
 function hotRows() {
   const days = ARC?.all_days || [];
   const last = days[days.length - 1] || {};
@@ -236,9 +257,11 @@ function renderHotTable() {
   // 排序：显式点列头优先；未点过时用视图默认（强势股按涨幅、资金榜按净买额降序）
   const key = HOT_STATE.key || (HOT_STATE.view === 'lhb' ? 'net_buy_wan' : 'change_pct');
   const col = cols.find((c) => c.key === key);
-  const raw = (r) => (col?.raw ? col.raw(r) : r[key]);
+  // 取值必须「按列」进行：此前这里闭包捕获了当前排序列 col，导致所有无 cell 的列
+  // 都渲染成排序列的值（截图核对时发现：按涨幅排序时，代码/现价/换手列全是 20.01）。
+  const rawOf = (c, r) => (c && c.raw ? c.raw(r) : c ? r[c.key] : r[key]);
   rows = rows.slice().sort((a, b) => {
-    const x = raw(a), y = raw(b);
+    const x = rawOf(col, a), y = rawOf(col, b);
     const xs = (x == null || !Number.isFinite(+x)) ? -Infinity : +x;
     const ys = (y == null || !Number.isFinite(+y)) ? -Infinity : +y;
     if (xs === ys) return 0;
@@ -250,6 +273,25 @@ function renderHotTable() {
     return `<th class="sortable${c.num ? ' num' : ''}" data-sort="${c.key}" title="${esc(c.hint || '点击按此列排序')}">`
       + `${esc(c.t)}${on ? `<span class="dir">${HOT_STATE.dir < 0 ? '▼' : '▲'}</span>` : ''}</th>`;
   }).join('');
+
+  // 窄屏排序控件与表头同步（同一 HOT_STATE，两处都可改）。
+  // 只在「列集合」变化时重建选项，避免每次渲染重置元素、打断用户正在操作的下拉框。
+  const sel = $('hotSortSel');
+  if (sel) {
+    const wantKeys = cols.map((c) => c.key).join(',');
+    if (sel.dataset.keys !== wantKeys) {
+      sel.innerHTML = cols.map((c) => `<option value="${esc(c.key)}">`
+        + `按${esc(String(c.t).replace(/（[^）]*）/g, ''))}排序</option>`).join('');
+      sel.dataset.keys = wantKeys;
+    }
+    sel.value = key;
+  }
+  const dirBtn = $('hotSortDir');
+  if (dirBtn) {
+    const arrow = HOT_STATE.dir < 0 ? '▼' : '▲';
+    if (dirBtn.textContent !== arrow) dirBtn.textContent = arrow;
+    dirBtn.title = HOT_STATE.dir < 0 ? '当前降序，点击改升序' : '当前升序，点击改降序';
+  }
 
   const tb = $('hotTable').querySelector('tbody');
   tb.innerHTML = '';
@@ -265,13 +307,21 @@ function renderHotTable() {
     tr.title = `点击查看 ${r.name || r.code} 的席位与资金详情`;
     tr.innerHTML = cols.map((c) => {
       const cls = `${c.num ? 'num' : ''}${c.wide ? ' muted' : ''}`.trim();
-      const v = c.cell ? c.cell(r) : esc(nf(raw(r)));
+      const v = c.cell ? c.cell(r) : esc(nf(rawOf(c, r)));
       return `<td class="${cls}">${v}</td>`;
     }).join('');
     tb.appendChild(tr);
   }
   const cnt = $('hotCount');
-  if (cnt) cnt.textContent = `显示 ${rows.length}/${all.length} 只${q ? '（已筛选）' : ''} · 点列头排序`;
+  if (cnt) cnt.textContent = `显示 ${rows.length}/${all.length} 只${q ? '（已筛选）' : ''} · 点行或卡片看详情`;
+
+  // 窄屏卡片列表：与上表同源同序（CSS 决定何时显示哪一个，无需监听 resize）
+  const cardBox = $('hotCards');
+  if (cardBox) {
+    cardBox.innerHTML = rows.length
+      ? rows.map((r) => hotCardHTML(r, cols)).join('')
+      : '<div class="empty">没有匹配的个股，试试清空搜索框</div>';
+  }
 }
 
 function setHotView(v) {
@@ -758,28 +808,54 @@ function renderBacktest(bt) {
     ptb.appendChild(tr);
   });
   if (!ptb.children.length) ptb.innerHTML = '<tr><td colspan="5" class="empty">网格结果为空</td></tr>';
+  // 窄屏卡片：同一份 p.rows，同样可点开权重组合
+  const pcb = $('paretoCards');
+  if (pcb) {
+    pcb.innerHTML = (p.rows || []).length ? (p.rows || []).map((r, i) =>
+      `<div class="hcard" data-act="wrow" data-i="${i}" tabindex="0" role="button"`
+      + ` title="点击查看第 ${i + 1} 行权重组合的 7 因子权重与完整绩效">`
+      + `<div class="hc-head"><span class="hc-name">第 ${i + 1} 组权重</span>`
+      + `<span class="hc-code muted">夏普</span><span class="hc-big">${numS(r.sharpe)}</span></div>`
+      + '<div class="hc-tags">'
+      + `<span class="hc-tag"><i>最大回撤</i>${pctS(r.maxDd, 2)}</span>`
+      + `<span class="hc-tag"><i>Calmar</i>${numS(r.calmar)}</span>`
+      + `<span class="hc-tag"><i>年化</i>${pctS(r.annual, 2)}</span>`
+      + `<span class="hc-tag"><i>非支配</i><span class="${r.np ? 'np-yes' : 'muted'}">${r.np ? '✓ 前沿' : '—'}</span></span>`
+      + '</div></div>').join('')
+      : '<div class="empty">网格结果为空</div>';
+  }
 
   const R = bt.rolling || {};
   const line = (label, x) => `${label}：夏普均值 ${numS(x?.sharpeMean)}｜最差段回撤 ${pctS(x?.ddWorst, 2)}｜正收益段 ${pctS(x?.winSegPct, 0)}`;
   $('rollSummary').innerHTML = `${line('固定权重', R.base)}<br>${line('逐窗重寻优', R.refit)}`
     + (R.refitChangedSegments != null ? `<br>重寻优实际换权重的段：${R.refitChangedSegments}/${(R.refit?.segments || []).length}` : '');
-  const rtb = $('rollTable').querySelector('tbody');
-  rtb.innerHTML = '';
+  // 分段行统一收集后同时喂给表格与窄屏卡片（两者 DOM 都在，由 CSS 决定显示哪个）
+  const segs = [];
   [['固定', R.base, 'base'], ['重寻优', R.refit, 'refit']].forEach(([label, x, kind]) => {
-    (x?.segments || []).forEach((sg, i) => {
-      const tr = document.createElement('tr');
-      tr.className = 'clickable';
-      tr.dataset.act = 'seg';
-      tr.dataset.kind = kind;
-      tr.dataset.i = String(i);
-      tr.tabIndex = 0;
-      tr.title = `点击查看该段的训练窗、权重与绩效（${label}口径）`;
-      tr.innerHTML = `<td class="muted">${label}</td><td>${esc(sg.testStart)} ~ ${esc(sg.testEnd)}</td>`
-        + `<td class="${trendCls(sg.total)}">${pctS(sg.total, 2)}</td><td>${numS(sg.sharpe)}</td><td>${pctS(sg.maxDd, 2)}</td>`;
-      rtb.appendChild(tr);
-    });
+    (x?.segments || []).forEach((sg, i) => segs.push({ label, sg, kind, i }));
   });
-  if (!rtb.children.length) rtb.innerHTML = '<tr><td colspan="5" class="muted">样本不足，未切出滚动段</td></tr>';
+  const rtb = $('rollTable').querySelector('tbody');
+  rtb.innerHTML = segs.length ? segs.map(({ label, sg, kind, i }) =>
+    `<tr class="clickable" data-act="seg" data-kind="${kind}" data-i="${i}" tabindex="0"`
+    + ` title="点击查看该段的训练窗、权重与绩效（${label}口径）">`
+    + `<td class="muted">${label}</td><td>${esc(sg.testStart)} ~ ${esc(sg.testEnd)}</td>`
+    + `<td class="${trendCls(sg.total)}">${pctS(sg.total, 2)}</td><td>${numS(sg.sharpe)}</td><td>${pctS(sg.maxDd, 2)}</td></tr>`
+  ).join('') : '<tr><td colspan="5" class="muted">样本不足，未切出滚动段</td></tr>';
+  const rcb = $('rollCards');
+  if (rcb) {
+    rcb.innerHTML = segs.length ? segs.map(({ label, sg, kind, i }) =>
+      `<div class="hcard" data-act="seg" data-kind="${kind}" data-i="${i}" tabindex="0" role="button"`
+      + ` title="点击查看该段的训练窗、权重与绩效（${label}口径）">`
+      + `<div class="hc-head"><span class="hc-name">${label}口径</span>`
+      + `<span class="hc-big ${trendCls(sg.total)}">${pctS(sg.total, 2)}</span></div>`
+      + '<div class="hc-tags">'
+      + `<span class="hc-tag"><i>夏普</i>${numS(sg.sharpe)}</span>`
+      + `<span class="hc-tag"><i>回撤</i>${pctS(sg.maxDd, 2)}</span>`
+      + '</div>'
+      + `<div class="hc-reason">测试区间 ${esc(sg.testStart)} ~ ${esc(sg.testEnd)}</div>`
+      + '</div>').join('')
+      : '<div class="empty">样本不足，未切出滚动段</div>';
+  }
 
   const ml = bt.mainLine || {};
   const box = $('mainLineBody');
@@ -1341,11 +1417,28 @@ document.addEventListener('click', (e) => {
 $('dwClose')?.addEventListener('click', closeDrawer);
 $('drawerMask')?.addEventListener('click', closeDrawer);
 
-// 键盘：Esc 关抽屉；Enter/Space 触发带 tabindex 的可点元素（表格行、chip、数据点）
+// 键盘：Esc 关抽屉；Enter/Space 触发带 tabindex 的可点元素（表格行、卡片、chip、数据点）；
+// PC 端另有快捷键：1-4 跳分区、/ 聚焦个股搜索（在输入框内不抢键，不影响正常打字）
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { closeDrawer(); return; }
-  if (e.key !== 'Enter' && e.key !== ' ') return;
   const t = e.target;
+  const typing = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+  if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    const zones = [...document.querySelectorAll('#zoneNav .zn[data-zone]')];
+    const n = '1234'.indexOf(e.key);
+    if (n >= 0 && zones[n]) { e.preventDefault(); zones[n].click(); return; }
+    if (e.key === '/') {
+      const inp = $('hotSearch');
+      if (inp) {
+        e.preventDefault();
+        const z = document.getElementById('zone-detail');
+        if (z && typeof z.scrollIntoView === 'function') z.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        inp.focus();
+        return;
+      }
+    }
+  }
+  if (e.key !== 'Enter' && e.key !== ' ') return;
   if (!t || typeof t.closest !== 'function') return;
   const el = t.closest('[data-act]');
   if (el && typeof el.click === 'function') { e.preventDefault(); el.click(); }
@@ -1357,6 +1450,16 @@ $('hotSearch')?.addEventListener('input', (e) => {
   const v = e.target.value || '';
   if (searchTimer) clearTimeout(searchTimer);
   searchTimer = setTimeout(() => { HOT_STATE = { ...HOT_STATE, q: v }; renderHotTable(); }, 150);
+});
+
+// 窄屏排序控件（卡片模式没有表头可点，改由此处的下拉 + 方向钮排序，与表头共用 HOT_STATE）
+$('hotSortSel')?.addEventListener('change', (e) => {
+  HOT_STATE = { ...HOT_STATE, key: e.target.value, dir: -1 };
+  renderHotTable();
+});
+$('hotSortDir')?.addEventListener('click', () => {
+  HOT_STATE = { ...HOT_STATE, dir: -HOT_STATE.dir };
+  renderHotTable();
 });
 
 // 报告：一键折叠/展开（逐段折叠由 document 委托的 bftoggle 处理，两处不重复绑定）
