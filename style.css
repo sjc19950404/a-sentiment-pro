@@ -1121,6 +1121,51 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
   font-size: 11px; line-height: 1.6; }
 .dq-note code { background: rgba(255,255,255,.06); padding: 0 3px; border-radius: 2px; }
 
+/* 跨源互证（#135）：与脏数据面板同构，但状态色语义不同（ok/diverge/conflict/unknown） */
+.xcheck-panel { margin: 8px 0; }
+.xcheck-panel[hidden] { display: none; }
+.xc-fold { border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+.xc-fold > summary { padding: 7px 12px; cursor: pointer; display: flex; flex-wrap: wrap;
+  align-items: baseline; gap: 8px; }
+.xc-fold > summary::-webkit-details-marker { display: none; }
+.xc-sum { flex: 1 1 100%; font-size: 11.5px; }
+.xc-body { padding: 6px 12px 10px; border-top: 1px solid var(--line); }
+.xc-chip { display: inline-block; font-size: 10.5px; line-height: 1.6; padding: 0 6px; border-radius: 3px;
+  border: 1px solid currentColor; }
+.xc-chip.ok { color: #3fb950; }
+.xc-chip.diverge { color: #e8843c; }
+.xc-chip.conflict { color: #f0616d; }
+.xc-chip.skip { color: #8b949e; }
+.xc-chip.unknown { color: #8b949e; }
+.xcheck-panel.xc-ok .xc-fold { border-left: 3px solid #3fb950; }
+.xcheck-panel.xc-diverge .xc-fold { border-left: 3px solid #e8843c; }
+.xcheck-panel.xc-conflict .xc-fold { border-left: 3px solid #f0616d; }
+.xcheck-panel.xc-skip .xc-fold { border-left: 3px solid #8b949e; }
+.xcheck-panel.xc-unknown .xc-fold { border-left: 3px solid #8b949e; border-style: dashed; }
+.xc-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 6px; margin: 2px 0 6px; }
+.xc-kpi { border: 1px solid var(--line); border-radius: 5px; padding: 5px 8px; background: rgba(255,255,255,.02); }
+.xc-kpi .xc-k { display: block; font-size: 10.5px; color: var(--muted); }
+.xc-kpi .xc-v { display: block; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.xc-kpi .xc-den { font-size: 9.5px; }
+.xc-kpi.neg .xc-v { color: var(--down); }
+.xc-kpi.warnc .xc-v { color: #e8843c; }
+.xc-sev { display: inline-block; font-size: 10.5px; line-height: 1.6; padding: 0 6px; border-radius: 3px;
+  border: 1px solid currentColor; }
+.xc-sev.sev-error { color: #f0616d; }
+.xc-sev.sev-warn { color: #e8843c; }
+.xc-table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 4px; }
+.xc-table th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11px;
+  padding: 3px 6px; border-bottom: 1px solid var(--line); }
+.xc-table td { padding: 3px 6px; border-bottom: 1px dashed rgba(255,255,255,.06); }
+.xc-date, .xc-name { font-variant-numeric: tabular-nums; }
+.xc-num { text-align: right; font-variant-numeric: tabular-nums; }
+.xc-reason { font-size: 11px; margin-left: 6px; }
+.xc-sub { font-size: 10.5px; margin-top: 8px; }
+.xc-none { font-size: 11.5px; margin: 4px 0 2px; }
+.xc-note { margin-top: 9px; padding-top: 7px; border-top: 1px solid var(--line);
+  font-size: 11px; line-height: 1.6; }
+.xc-note code { background: rgba(255,255,255,.06); padding: 0 3px; border-radius: 2px; }
+
 @media print {
   :root { --bg: #fff; --card: #fff; --card2: #fff; --line: #ccc; --txt: #000; --muted: #555;
     --acc: #000; --up: #c0392b; --down: #1e7e34; --warn: #9a6b00; --focus: #000; }
@@ -1180,6 +1225,13 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
   .breadth-panel .bw-fold { border-left-color: #666 !important; }
   .dirty-panel .dq-fold { border-left-color: #666 !important; }
   .dq-chip, .dq-sev { border-color: #666 !important; color: #000 !important; }
+  /* 跨源互证（#135）：同上，去深色底、保左边框 */
+  .xc-fold { background: #fff !important; border-color: #ccc !important; }
+  .xcheck-panel .xc-fold { border-left-color: #666 !important; }
+  .xc-chip, .xc-sev { border-color: #666 !important; color: #000 !important; }
+  .xc-table th, .xc-table td { border-color: #ccc !important; }
+  .xc-note, .xc-sum, .xc-den, .xc-reason, .xc-none { color: #444 !important; }
+  .xc-kpi { background: #f7f7f7 !important; border-color: #ccc !important; }
   .bw-table th, .bw-table td { border-color: #ccc !important; }
   .bw-note, .bw-sum, .bw-den { color: #444 !important; }
   .bw-kpi { background: #f7f7f7 !important; border-color: #ccc !important; }

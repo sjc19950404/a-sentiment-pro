@@ -88,6 +88,20 @@ const signals = buildSignals(packed, {
       return { snapshot, series, summary, verdict: snapshot.verdict || null };
     } catch { return null; }
   },
+  // 跨源一致性互证（#2）：与 pipeline.writeShards **同源同形态**——
+  //   都只读同一份 crosscheck-latest.json（需联网取第二源，本脚本不抓）。
+  //   漏注入会被 --check 的一致性校验发现（signals 段不同）。
+  crosscheckFn: () => {
+    try {
+      const p = join(DATA, 'crosscheck-latest.json');
+      if (!existsSync(p)) return null;
+      const raw = JSON.parse(readFileSync(p, 'utf8'));
+      // 与 pipeline.writeShards 同款裁剪（体积纪律，两处必须一致，否则 --check 会报形态分裂）：
+      //   逐行业 rows 不下发首屏，只留 KPI + flagged；rows 仍在 crosscheck-latest.json 里。
+      const { rows, ...brief } = raw;
+      return { ...brief, rowCount: Array.isArray(rows) ? rows.length : 0 };
+    } catch { return null; }
+  },
 });
 const years = Object.keys(shards).sort();
 

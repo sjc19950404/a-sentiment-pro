@@ -365,6 +365,8 @@ export function buildSignals(archive, opts = {}) {
   const pFn = typeof opts.painFn === 'function' ? opts.painFn : null;
   // 多维市场宽度（#3）——同上走注入（它的原始 K 线不在档案里，须外部提供）。
   const bFn = typeof opts.breadthFn === 'function' ? opts.breadthFn : null;
+  // 跨源一致性互证（#2 本轮）——第二行业源不在档案里（且接口无法回溯），故走注入。
+  const xFn = typeof opts.crosscheckFn === 'function' ? opts.crosscheckFn : null;
   const score = last.emotion?.value ?? last.emotion?.score ?? null;
   const market = fn ? fn({ emotionScore: score, total: assumedTotal, marketValue: 0 }) : null;
   // 数据健康报告（#115）：随轻量档一起下发，让"盯盘/巡检"的读者不必拉完整档
@@ -417,6 +419,12 @@ export function buildSignals(archive, opts = {}) {
       recent: tagged.slice(-20).map((d) => ({ date: d.trade_date, ...d.emotion.dirty })),
     };
   } catch { dirty = null; }
+  // 跨源一致性互证（#2）：结果由 scripts/fetch_crosscheck.mjs 落盘（需联网取第二源），
+  //   本模块保持"不读盘"→ 走注入。未注入即 null（前端显示"未互证"，绝不放行成"一致"）。
+  let crosscheck = null;
+  if (xFn) {
+    try { crosscheck = xFn(days, { meta: archive?.meta || {} }); } catch { crosscheck = null; }
+  }
   return {
     kind: 'signals-latest',
     version: 1,
@@ -457,6 +465,16 @@ export function buildSignals(archive, opts = {}) {
     dirty,
     dirtyNote: '标脏 = 该字段已被排除在因子入参之外（原值仍保留在档里，可追溯/可人工复核）；'
       + 'warn ≠ dirty：warn 只是提示复核，未剔除任何数据。缺失一律显示"未计算"而非 0。',
+    // 跨源一致性互证（#2 本轮）：{ status, comparable, coverage, offset, divergeCount, conflictCount, flagged, rows }。
+    //   与 dirty 的分工必须说清：dirty 管**单源内部**异常（范围/单位/重复/逻辑一致性）；
+    //   本段管**跨源交叉**验证（同花顺行业 vs 申万二级）——两者互补，不是重复。
+    //   ⚠ 未注入时为 null（前端显示"未互证"），**不得因为"没有第二源"就显示成"两源一致"**。
+    crosscheck,
+    crosscheckNote: xFn
+      ? '跨源互证只在"两源都覆盖且分类可归一"的行业上比对，覆盖率如实披露；'
+        + '当日两源常态偏移（方法论差异）已扣除，判定针对的是"偏离常态关系的离群"，'
+        + '且**只标记不改数**。未覆盖部分=未核对，不等于没问题。第二源无日期参数，故仅最新日有效。'
+      : '未生成（调用方未注入 crosscheck，需第二行业源）',
     marketAlerts: market,
     marketAlertsNote: fn
       ? `仅大盘层告警，按假设总资产 ${assumedTotal} 元、空仓计算；持仓层告警需本地账户，见 paper_ui.js`

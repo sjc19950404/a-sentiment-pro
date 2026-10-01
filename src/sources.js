@@ -165,9 +165,43 @@ async function fetchBoards(date) {
   return rows.sort((a, b) => b.change_pct - a.change_pct);
 }
 
-// 源5: 腾讯三大指数
-async function fetchIndexes(date) {
+// 源4b: 第二行业源（腾讯/申万二级）—— 给「跨源一致性互证」（src/crosscheck.js）用。
+//
+// ⚠ 为什么要第二个源：行业涨跌幅原本只有同花顺一个源（见上方 fetchBoards）。
+//   单源的问题是"错了没人知道"——页面照渲染、报告照生成，没有任何一处会说不一致。
+//   2026-08-18「种植业与林业 9.36%」那次只能靠人工查证才发现是**真实轮动**，
+//   反过来正说明：**没有第二源就分不清"真轮动"与"源抽风"**。
+//
+// ⚠ 口径差异必须显式化：本源是**申万二级行业**（100 个），与主源**同花顺行业**（90 个）
+//   分类体系不同 → 归一化后才能比对（别名表在 src/crosscheck.js）。同名 ≠ 同一指数，
+//   故本函数只负责"如实取回原始值"，任何"跨源合并/加权"一律不在数据层做。
+//
+// ⚠ 只能取到**当下**（接口不接日期参数）→ 仅对"最新交易日"有效。历史日无法回溯互证，
+//   故调用方须把 date 与"实际取数时刻"一并落盘（见 scripts/fetch_crosscheck.mjs），
+//   不得把"昨天取的值"记成"今天两源一致"。
+export async function fetchSecondIndustry() {
+  let lastErr;
   for (let att = 0; att < 3; att++) {
+    try {
+      const j = await fetchJSON(
+        'https://proxy.finance.qq.com/ifzqgtimg/appstock/app/mktHs/rank?l=120&p=1&t=01/averatio&o=0',
+        { headers: { Referer: 'https://gu.qq.com/' } });
+      const list = j && j.data;
+      if (Array.isArray(list) && list.length >= 50) {
+        return list
+          // s 字段：bd_name=板块名, bd_zdf=涨跌幅(%)。只保留能解析出数值的行（缺失不落 0）
+          .map((x) => ({ name: String(x.bd_name || '').trim(), change_pct: num2(x.bd_zdf) }))
+          .filter((x) => x.name && x.change_pct != null);
+      }
+      lastErr = new Error('mktHs/rank 返回异常 len=' + (Array.isArray(list) ? list.length : 'n/a'));
+    } catch (e) { lastErr = e; }
+    await sleep(600);
+  }
+  throw new Error('第二行业源（腾讯/申万二级）连续失败: ' + (lastErr ? lastErr.message : 'unknown'));
+}
+
+// 源5: 腾讯三大指数
+async function fetchIndexes(date) {  for (let att = 0; att < 3; att++) {
     try {
       const txt = await fetchGBK('https://qt.gtimg.cn/q=sh000001,sz399001,sz399006');
       const idx = {}; let ok = false;

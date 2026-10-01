@@ -1752,6 +1752,10 @@ let BREADTH = null;
 // 异常值/脏数据标脏（#3 本轮）：同样来自 signals-latest.json。
 //   为 null 表示"未生成/未加载"（≠"数据干净"）——渲染层须显式区分。
 let DIRTY = null;
+// 跨源一致性互证（#2 本轮）：同样来自 signals-latest.json。
+//   ⚠ 为 null 表示"未互证"（≠"两源一致"）——这两者语义相反，渲染层必须显式区分。
+//     本项目铁律：没检查 ≠ 没问题。故 null 走独立样式 + 「未互证」文案，绝不借用"一致"的绿。
+let XCHECK = null;
 
 async function loadHealth() {
   try {
@@ -1772,6 +1776,9 @@ async function loadHealth() {
     // 异常值/脏数据（#3 本轮）同源同次取。
     DIRTY = s && s.dirty ? s.dirty : null;
     renderDirty(DIRTY);
+    // 跨源一致性互证（#2）同源同次取。
+    XCHECK = s && s.crosscheck ? s.crosscheck : null;
+    renderXcheck(XCHECK);
     // 研判报告里也有一段「数据可信度」——它渲染时 HEALTH 多半还是 null（首屏已画完），
     // 故拉取成功后必须**重刷报告**，否则报告会永久缺这一段。
     // 与 loadBacktest 成功后重刷报告是同一种处理（数据异步到达 → 依赖它的 UI 要重画）。
@@ -1783,6 +1790,7 @@ async function loadHealth() {
     renderPain(null, e.message);
     renderBreadth(null, e.message);
     renderDirty(null, e.message);
+    renderXcheck(null, e.message);
   }
 }
 
@@ -2086,6 +2094,85 @@ function renderDirty(d, errMsg) {
     + `<br>缺失一律显示「未计算」而非 0。本层**不改写任何分值** —— 剔除动作在管线内完成，此处只通报与定位。`
     + `<br>数据来自公开行情，不构成投资建议。`
     + `</div></div></details>`;
+}
+
+// 跨源一致性互证面板（#135）
+//   两个独立来源（同花顺行业 / 腾讯-申万二级）对同一交易日、同一行业口径的涨跌幅做互证。
+//   核心语义（本面板存在的意义）：
+//     ok       = 在**扣除系统性偏移后**，两侧仍在容差内 —— 不是"两个源数字相等"（它们本就不同口径）
+//     diverge  = 存在超出容差的离群行业（可能：单位错、单源抽风、字段串位）
+//     conflict = 出现"符号相反"的行业（同一天一个涨一个跌）—— 最严重，通常是数据源本身错了
+//     unknown  = **没做互证**（未注入/文件缺失）—— 必须显示为"未互证"，绝不能默认放行成"一致"
+function renderXcheck(x, errMsg) {
+  const box = $('xcheckPanel');
+  if (!box) return;
+  if (!x) {
+    box.hidden = false;
+    box.className = 'xcheck-panel xc-unknown';
+    box.innerHTML = `<div class="xc-head"><b>跨源互证</b>`
+      + `<span class="xc-chip unknown">未互证</span>`
+      + `<span class="muted">${esc(errMsg || 'signals-latest.json 缺少 crosscheck 段')}`
+      + `——这是"没核对"，不等于"两个源一致"</span></div>`;
+    return;
+  }
+
+  const st = x.status || 'unknown';
+  box.hidden = false;
+  box.className = `xcheck-panel xc-${esc(st)}`;
+
+  const tag = {
+    ok: ['一致', '在扣除常态偏移后两侧吻合'],
+    diverge: ['有离群', '存在超出容差的行业'],
+    conflict: ['有冲突', '出现符号相反的行业'],
+    skip: ['样本不足', '可比行业数低于门槛，不做判定'],
+    unknown: ['未互证', '未执行互证'],
+  }[st] || ['未知', ''];
+
+  // KPI：可比天数 / 可比行业（中位）/ 常态偏移 / 最大偏差 / 离群 / 冲突
+  const kpis = [
+    ['可比天数', x.comparableDays ?? '未计算', '', x.totalDays],
+    ['可比行业(中位)', x.medianComparable ?? '未计算', '', null],
+    ['常态偏移', x.offsetPp == null ? '未计算' : fmtSigned(x.offsetPp, 2) + 'pp', '', null],
+    ['最大偏差', x.maxDevPp == null ? '未计算' : fmtSigned(x.maxDevPp, 2) + 'pp', '', null],
+    ['离群行业', x.flaggedCount ?? 0, (x.flaggedCount > 0) ? 'warnc' : '', null],
+    ['符号冲突', x.conflictCount ?? 0, (x.conflictCount > 0) ? 'neg' : '', null],
+  ].map(([k, val, c, den]) => `<div class="xc-kpi ${c}"><span class="xc-k">${esc(k)}</span>`
+    + `<span class="xc-v">${esc(val)}</span>`
+    + (den ? `<span class="xc-den muted">/${esc(den)}</span>` : '') + `</div>`).join('');
+
+  const rows = (Array.isArray(x.rows) ? x.rows : []).map((r) => `<tr>`
+    + `<td class="xc-date">${esc(r.date || '')}</td>`
+    + `<td class="xc-name">${esc(r.name || '')}</td>`
+    + `<td class="xc-num">${r.primaryPct == null ? '未计算' : fmtSigned(r.primaryPct, 2)}</td>`
+    + `<td class="xc-num">${r.secondaryPct == null ? '未计算' : fmtSigned(r.secondaryPct, 2)}</td>`
+    + `<td class="xc-num">${r.devPp == null ? '未计算' : fmtSigned(r.devPp, 2)}</td>`
+    + `<td><span class="xc-sev ${r.kind === 'conflict' ? 'sev-error' : 'sev-warn'}">${r.kind === 'conflict' ? '符号冲突' : '离群'}</span>`
+    + `<span class="xc-reason muted">${esc(r.reason || '')}</span></td>`
+    + `</tr>`).join('');
+
+  box.innerHTML = `<details class="xc-fold" open>`
+    + `<summary><b>跨源互证（同花顺行业 × 腾讯/申万二级）</b>`
+    + `<span class="xc-chip ${esc(st)}">${esc(tag[0])}</span>`
+    + `<span class="muted xc-sum">${esc(tag[1])} · 可比 ${esc(x.comparableDays ?? 0)} 天</span></summary>`
+    + `<div class="xc-body">`
+    + `<div class="xc-kpis">${kpis}</div>`
+    + (rows ? `<div class="xc-sub muted">偏离最大的可比行业（最多 20 条）</div>`
+      + `<table class="xc-table"><thead><tr><th>日期</th><th>行业</th><th>主源%</th><th>第二源%</th><th>去偏偏差</th><th>判定</th></tr></thead><tbody>${rows}</tbody></table>`
+      : `<div class="xc-none muted">本次互证未发现超出容差的离群/冲突行业。</div>`)
+    + `<div class="xc-note muted">口径：主源＝同花顺行业（${esc(x.primarySource || 'ths')}），第二源＝腾讯/申万二级（${esc(x.secondarySource || 'sw2')}）。两源**分类体系不同**（同花顺 ${esc(x.primaryUniverse ?? '—')} 个 vs 申万二级 ${esc(x.secondaryUniverse ?? '—')} 个），经别名表归一化后可比 ${esc(x.comparableUniverse ?? '—')} 个（覆盖率 ${x.coveragePct == null ? '未计算' : esc(x.coveragePct) + '%'}）。`
+    + `<br>⚠ 两源存在**系统性偏移**（方法论差异，非抽风）：判定前先扣掉常态偏移 <b>${x.offsetPp == null ? '未计算' : esc(fmtSigned(x.offsetPp, 2)) + 'pp'}</b>，再看剩余偏差。`
+    + `<br>判定规则由 <code>src/crosscheck.js</code> 唯一实现，前端不自算阈值；缺失一律显示「未计算」，未覆盖的行业＝「未核对」而非「一致」。`
+    + `<br>本层<b>只做互证，不改写任何分值</b>；数据来自公开行情，不构成投资建议。`
+    + `</div></div></details>`;
+}
+
+// 带符号格式化（避免 +-0.00 这种噪声）
+function fmtSigned(v, d) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '未计算';
+  const s = n.toFixed(d);
+  const z = (0).toFixed(d);
+  return (n > 0 ? '+' : '') + (s === '-' + z ? z : s);
 }
 
 async function loadVersionRegression() {  const foot = $('verCaution');

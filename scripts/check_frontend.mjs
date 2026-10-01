@@ -2948,6 +2948,50 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
       !/[>≥]\s*(300|4000|1000)\b[\s\S]{0,40}?(dirty|脏)/i.test(code),
       '前端出现校验阈值＝第二套口径，阈值唯一出处是 src/dirty.js');
   }
+
+  // ── 跨源互证面板（#135 两源一致性）──
+  //   核心红线：**未互证 ≠ 一致**。未注入 crosscheck 时前端必须显式说"未互证"，
+  //   绝不能默认渲染成"一致/ok"——那正是本项目最忌讳的"用沉默伪装无事"。
+  //   另外：前端不得自算容差/偏移阈值（唯一出处 src/crosscheck.js）。
+  const xp = $('xcheckPanel');
+  check('跨源互证：面板元素存在', !!xp, xp ? '' : '未找到 #xcheckPanel');
+  if (xp) {
+    const xcls = xp.className || '';
+    const isUnknown = /xc-unknown/.test(xcls);
+    const xtxt = (xp.textContent || '');
+    check('跨源互证：面板已渲染（hidden 已解除或为未知态）', xp.hidden === false, `hidden=${xp.hidden}`);
+    if (!isUnknown) {
+      check('跨源互证：状态类名唯一且合法', /xc-(ok|diverge|conflict|skip)/.test(xcls), `类名 ${xcls}`);
+      check('跨源互证：六个 KPI 齐全（可比天数/可比行业/常态偏移/最大偏差/离群/冲突）',
+        /可比天数/.test(xtxt) && /可比行业/.test(xtxt) && /常态偏移/.test(xtxt)
+        && /最大偏差/.test(xtxt) && /离群/.test(xtxt) && /冲突/.test(xtxt), '');
+      // 必须披露"两源分类体系不同 + 归一化后覆盖率"，否则 80% 覆盖率会被误读为全量核对
+      check('跨源互证：披露两源体系不同与覆盖率',
+        /申万/.test(xtxt) && /覆盖率/.test(xtxt), '不披露会让读者误以为全量行业都核对过');
+      // 必须披露"先扣常态偏移再判定"，否则读者会把方法论差异当成数据错误
+      check('跨源互证：披露系统性偏移与去偏判定',
+        /系统性偏移/.test(xtxt) && /扣除|先扣/.test(xtxt), '不披露会让所有常态差异被误读为错误');
+      // 未覆盖 = 未核对，不得等同"一致"
+      check('跨源互证：明确「未覆盖＝未核对」而非「一致」',
+        /未核对/.test(xtxt), '把未覆盖说成一致＝虚假放行');
+      // 本层只互证、不改分
+      check('跨源互证：披露「只互证、不改写分值」', /不改写/.test(xtxt), '');
+      check('跨源互证：含合规声明（不构成投资建议）', /不构成投资建议/.test(xtxt), '');
+    } else {
+      check('跨源互证：未知态显式说明「没核对 ≠ 两个源一致」',
+        /未互证/.test(xtxt) && /不等于/.test(xtxt), '未互证必须显式说清，不得默认放行成"一致"');
+      check('跨源互证：未知态不得出现"一致/ok"字样',
+        !/一致/.test(xtxt), '未知态出现"一致"＝把沉默伪装成无事');
+    }
+  }
+  // 源码层：前端不得自算互证阈值（唯一出处 src/crosscheck.js）
+  {
+    const src = readFileSync(join(ROOT, 'app.js'), 'utf8');
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    check('跨源互证：前端未自行实现容差/偏移阈值',
+      !/2\.5\s*\|\|\s*0\.8|crosscheck[\s\S]{0,80}?ABS_DIVERGE/.test(code),
+      '前端出现互证阈值＝第二套口径，阈值唯一出处是 src/crosscheck.js');
+  }
 }
 
 // jsdom 未实现的 DOM 桩：不判失败，但**必须打印**——否则将来真出现异常时，

@@ -50,6 +50,11 @@
 
   <div id="dirtyPanel" class="dirty-panel" hidden></div>
 
+  <!-- 跨源一致性互证（#2）：同一交易日用**第二个独立行业源**（申万二级/腾讯）交叉验证
+       主源（同花顺行业）。单源的问题不是"偶尔错"，而是"错了没人知道"；本面板把
+       "真轮动 vs 源抽风"变成可判定。未互证时显示「未互证」——绝不放行成「一致」。 -->
+  <div id="xcheckPanel" class="xcheck-panel" hidden></div>
+
   <main>
     <!-- ── 区一：概览 ── -->
     <section class="zone" id="zone-overview">

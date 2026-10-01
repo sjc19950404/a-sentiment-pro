@@ -452,6 +452,23 @@ export function writeShards(archive, dir = DATA_DIR) {
         return { snapshot, series, summary, verdict: snapshot.verdict || null };
       } catch { return null; }
     },
+    // 跨源一致性互证（#2）：读已落盘的 crosscheck-latest.json
+    //   （由 scripts/fetch_crosscheck.mjs 联网取第二行业源后写入）。
+    //   本函数同步、不能 await，故**只读不现抓**——读不到就是 null，
+    //   前端显示"未互证"，**绝不把"没做互证"渲染成"两源一致"**（本项目铁律：没检查 ≠ 没问题）。
+    crosscheckFn: () => {
+      try {
+        const p = path.join(dir, 'crosscheck-latest.json');
+        if (!existsSync(p)) return null;
+        const raw = JSON.parse(readFileSync(p, 'utf8'));
+        // 体积纪律：signals 是最轻档（<50KB 预算），而 crosscheck 的逐行业明细（72+ 行）
+        //   在**首屏面板上并不需要**——面板只展示 KPI + flagged（越界项）。
+        //   rows 仍留在 crosscheck-latest.json 里（供审计/人工复核按需拉取），
+        //   此处只裁剪下发给首屏的那一份，避免"为了一个面板把轻量档吹大"。
+        const { rows, ...brief } = raw;
+        return { ...brief, rowCount: Array.isArray(rows) ? rows.length : 0 };
+      } catch { return null; }
+    },
   });
   if (signals) writeFileSync(path.join(dir, SIGNALS_FILE), JSON.stringify(signals), 'utf8');
   // 清理被淘汰的年份分片（年份集合会变），避免前端拉到过期数据
