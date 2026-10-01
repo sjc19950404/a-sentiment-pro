@@ -1037,6 +1037,83 @@ escClose();
     const sellTxt = txt('poQuick');
     check('模拟交易·仓位：卖出无持仓时如实提示（不给出无效减仓档位）',
       /无持仓|无可卖/.test(sellTxt), sellTxt.slice(0, 60));
+
+    // ── 自定义比例买入（四档之外的任意百分比）──
+    // 切回买入并重新取值，避免用卖出方向下的渲染结果
+    clickEl(window.document.querySelector('#poSide button[data-side="buy"]'));
+    await new Promise((r) => setTimeout(r, 80));
+    const pctInp = $('poPct');
+    check('模拟交易·仓位：单独下单区提供「按比例买入」输入框（四档之外可填任意百分比）',
+      !!pctInp, pctInp ? '有' : '缺失');
+    const pctBtn = $('poQuick')?.querySelector('button[data-act="pqty-pct"]');
+    check('模拟交易·仓位：按比例买入有「算数量」按钮', !!pctBtn, pctBtn ? '有' : '缺失');
+
+    if (pctInp && pctBtn) {
+      // 注入一个非整档比例（15%），并触发 input 事件走真实的实时算量路径
+      pctInp.value = '15';
+      pctInp.dispatchEvent(new window.Event('input', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 120));
+      const hint = txt('poPctHint');
+      check('模拟交易·仓位：填比例后实时给出股数（不等点按钮）',
+        /=\s*\d+\s*股/.test(hint), hint.slice(0, 80) || '无提示');
+
+      clickEl(pctBtn);
+      await new Promise((r) => setTimeout(r, 150));
+      const qty15 = +$('poQty').value || 0;
+      check('模拟交易·仓位：按 15% 算出的股数为 100 整数倍',
+        qty15 > 0 && qty15 % 100 === 0, `poQty=${qty15}`);
+
+      // 与引擎同口径复算：15% × 总资产预算，整手向下取整（规则唯一出处）
+      const eng = window.__engine__ || {};
+      const ctx = window.__paperCtx || {};
+      const acct = ctx.account ? ctx.account() : null;
+      const st2 = ctx.stats ? ctx.stats() : eng.accountStats(acct);
+      const info2 = ctx.lookup ? ctx.lookup($('poCode').value) : null;
+      if (info2 && info2.price) {
+        const px2 = eng.fillPrice(info2.price, 'buy', eng.DEFAULT_SLIP);
+        const exp = eng.qtyByAssetPct(st2.total, 0.15, px2, { cash: acct.cash });
+        check('模拟交易·仓位：按比例算出的股数与引擎 qtyByAssetPct 同口径一致',
+          exp.qty === qty15, `页面=${qty15} 引擎=${exp.qty}（15% 预算 ${Math.round(st2.total * 0.15)} 元）`);
+        check('模拟交易·仓位：按比例的占用不超该比例预算（取最大整手数）',
+          exp.need <= st2.total * 0.15 + 1e-6 || exp.capped,
+          `占用≈${exp.need} 预算=${Math.round(st2.total * 0.15)}`);
+      }
+
+      // 比例与四档口径必须同源：15% 的股数应落在轻仓(10%)与半仓(50%)之间
+      const t10 = [...$('poQuick').querySelectorAll('button[data-act="pqty"]')]
+        .find((b) => b.textContent.trim().startsWith('轻仓'));
+      if (t10) {
+        check('模拟交易·仓位：15% 股数落在轻仓(10%)与半仓(50%)之间（比例单调）',
+          qty15 > +t10.dataset.qty && qty15 < qtys[1],
+          `10%=${t10.dataset.qty} < 15%=${qty15} < 50%=${qtys[1]}`);
+      }
+
+      // 越界比例必须被夹紧而不是算出荒谬股数（>100% 不得买超满仓）
+      pctInp.value = '300';
+      pctInp.dispatchEvent(new window.Event('input', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 100));
+      clickEl(pctBtn);
+      await new Promise((r) => setTimeout(r, 150));
+      const qty300 = +$('poQty').value || 0;
+      check('模拟交易·仓位：比例超 100% 被夹到 100%（不买超满仓）',
+        qty300 > 0 && qty300 === qtys[3], `300%→${qty300} 满仓=${qtys[3]}`);
+
+      // 0% 必须算不出数量（而不是给出 0 股委托）
+      pctInp.value = '0';
+      pctInp.dispatchEvent(new window.Event('input', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 100));
+      clickEl(pctBtn);
+      await new Promise((r) => setTimeout(r, 150));
+      check('模拟交易·仓位：比例填 0 时不产生数量并给出原因',
+        (+$('poQty').value || 0) === 0, `poQty=${$('poQty').value} 提示=${txt('poPctHint').slice(0, 50)}`);
+
+      // 收尾：恢复一个可提交状态，避免影响后续断言
+      pctInp.value = '15';
+      pctInp.dispatchEvent(new window.Event('input', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 100));
+      clickEl(pctBtn);
+      await new Promise((r) => setTimeout(r, 150));
+    }
   }
 
   // ── 批量下单面板（V5.2-pro 规则第五块）：全链路留在引擎，UI 只解析与渲染 ──

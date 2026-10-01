@@ -76,6 +76,10 @@ let LIVE_BUSY = false;    // 抓取中（防重复请求）
 let LAST_DATE = null;     // 存档最新交易日
 let ARC_DAYS = [];        // 存档全部交易日（研判推荐用：取最后一天算推荐，取序列算情绪分）
 let ORDER = { side: 'buy', code: '', qty: 0 };
+// 单独下单区的「自定义比例买入」输入值（百分数，如 15 表示 15%）。
+// 要保留在内存里：renderQuick 会因行情刷新/方向切换重渲染，值若丢用户得重填。
+// 但切换代码时要清零——上一个票填的 15% 是针对那只票的，套到新票上是误操作。
+let PQ_PCT = null;
 let HIST = { view: 'trade' };
 // ── 批量下单面板状态 ──
 // side/mode 是「输入解释方式」，不是账户状态：side 决定走 batchSubmit 还是 batchSell，
@@ -788,7 +792,58 @@ function renderQuick() {
   const any = tiers.some((t) => t.qty > 0);
   const html = btns(tiers);
   box.innerHTML = head + (any ? html
-    : `<span class="muted">总资产 ${num(st.total)} 元买不起 ${esc(info.name || info.code)} 一手（约 ${num(lotCost)} 元），四档均不可建仓</span>`);
+    : `<span class="muted">总资产 ${num(st.total)} 元买不起 ${esc(info.name || info.code)} 一手（约 ${num(lotCost)} 元），四档均不可建仓</span>`)
+    + pctRow();
+}
+
+/**
+ * 自定义比例买入（任意百分比，不限于四档）。
+ *
+ * 为什么要有：四档（10/50/80/100%）只覆盖粗粒度建仓，实际常要「先上 15% 试探」这类
+ * 非整档比例。这里给一个输入框，填 N% → 按 N% 预算算**最大整手数**。
+ *
+ * 三条口径纪律：
+ *  ① 整手取整 / 含费预算 / 可用资金上限**一律复用** qtyByAssetPct——UI 里绝不另写公式；
+ *  ② 结果必须能被用户复核算得出来，故把「预算 → 实际占用」都写在提示里；
+ *  ③ 算不足一手时不静默留空，直接说明缺多少。
+ *
+ * 输入框用 input 事件实时算（不需要点按钮），失焦后保留用户填的比例，方便微调。
+ */
+function pctRow() {
+  return `<div class="pq-pct">
+    <span class="muted">或按比例买入：</span>
+    <label class="pq-pct-in">
+      <input id="poPct" type="number" inputmode="decimal" min="0" max="100" step="1"
+        value="${PQ_PCT || ''}" placeholder="如 15" aria-label="按总资产百分比买入" />
+      <span class="pq-pct-unit">% 总资产</span>
+    </label>
+    <button class="mini" type="button" data-act="pqty-pct">算数量</button>
+    <span class="pq-pct-hint muted" id="poPctHint"></span>
+  </div>`;
+}
+
+/**
+ * 按百分比算出股数并返回可读结论（供输入框提示与「算数量」按钮共用）。
+ * 只做「翻译」：把百分比换算成 qtyByAssetPct 的入参，取整规则完全交给引擎。
+ */
+function qtyByPct(pct) {
+  const p = Math.max(0, Math.min(100, +pct || 0)) / 100;
+  if (!(p > 0)) return { qty: 0, need: 0, capped: false, budget: 0, reason: '请输入 0~100 之间的比例' };
+  const info = ORDER.code ? lookup(ORDER.code) : null;
+  // 与四档按钮同一判据：取不到真实价就没法按比例估量
+  if (!info || !info.board.tradable || !info.fresh || !info.price) {
+    return { qty: 0, need: 0, capped: false, budget: 0, reason: '先填入有效代码并取到实时行情' };
+  }
+  if (!ACCT) return { qty: 0, need: 0, capped: false, budget: 0, reason: '模拟账户未就绪' };
+  const st = accountStats(ACCT);
+  const px = fillPrice(info.price, 'buy', SLIP);
+  const budget = st.total * p;
+  const r = qtyByAssetPct(st.total, p, px, { cash: ACCT.cash });
+  if (r.qty <= 0) {
+    return { qty: 0, need: 0, capped: false, budget,
+      reason: `预算 ${num(budget)} 元不足一手（一手约 ${num(px * LOT + MIN_COMMISSION)} 元）` };
+  }
+  return { qty: r.qty, need: r.need, capped: !!r.capped, budget, reason: null };
 }
 
 function syncOrderInputs() {
@@ -2265,6 +2320,24 @@ document.addEventListener('click', (e) => {
     renderOrderForm();
     return;
   }
+  // 按比例买入：点「算数量」用当前输入框的比例算；比例无效/不足一手时说明原因，不留空静默
+  if (act === 'pqty-pct') {
+    const inp = $('poPct');
+    PQ_PCT = inp ? inp.value : PQ_PCT;
+    const r = qtyByPct(PQ_PCT);
+    if (r.qty > 0) {
+      ORDER = { ...ORDER, qty: r.qty };
+      syncOrderInputs();
+      msg(`${(+PQ_PCT).toFixed(1)}% 总资产 → ${r.qty} 股（约 ${num(r.need)} 元含费用`
+        + `${r.capped ? '，已受可用资金限制' : ''}）`, 'ok');
+    } else {
+      ORDER = { ...ORDER, qty: 0 };
+      syncOrderInputs();
+      msg(`按 ${PQ_PCT}% 算不出数量：${r.reason}`, 'err');
+    }
+    renderOrderForm();
+    return;
+  }
   if (act === 'pcancel') { e.stopPropagation(); cancel(+el.dataset.id); return; }
   if (act === 'pstat') { openPaperDrawer(statDetail(el.dataset.k)); return; }
   if (act === 'ppos') { openPaperDrawer(posDetail(el.dataset.code)); return; }
@@ -2287,6 +2360,8 @@ let codeTimer = null;
 $('poCode')?.addEventListener('input', (e) => {
   const v = String(e.target.value || '').replace(/\D/g, '').slice(0, 6);
   e.target.value = v;
+  // 换票时清掉上一只票填的比例：15% 是针对那只票的仓位决定，套到新票上是误操作
+  if (v !== ORDER.code) PQ_PCT = null;
   ORDER = { ...ORDER, code: v, qty: 0 };
   renderOrderForm();
   renderQuick();
@@ -2315,6 +2390,24 @@ $('poCode')?.addEventListener('input', (e) => {
 $('poQty')?.addEventListener('input', (e) => {
   ORDER = { ...ORDER, qty: Math.max(0, Math.floor(+e.target.value || 0)) };
   renderOrderForm();
+});
+// 按比例买入：输入即算（不等点按钮），并把结果显示在提示里。
+// 只更新提示、不改 ORDER.qty —— 用户可能只是想看看「15% 是多少股」，
+// 直接覆盖他自己填的数量会造成误操作；要点「算数量」才真正采用。
+document.addEventListener('input', (e) => {
+  if (!e.target || e.target.id !== 'poPct') return;
+  PQ_PCT = e.target.value;
+  const hint = $('poPctHint');
+  if (!hint) return;
+  const r = qtyByPct(PQ_PCT);
+  if (r.qty > 0) {
+    hint.className = 'pq-pct-hint';
+    hint.textContent = `= ${r.qty} 股（预算 ${num(r.budget)} 元 → 占用 ${num(r.need)} 元含费用`
+      + `${r.capped ? '，受可用资金限制' : ''}）`;
+  } else {
+    hint.className = 'pq-pct-hint bad';
+    hint.textContent = r.reason || '';
+  }
 });
 $('poSubmit')?.addEventListener('click', submit);
 $('paperReset')?.addEventListener('click', reset);

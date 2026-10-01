@@ -688,6 +688,15 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 /* 破坏性/全量操作按钮（清仓）：用警示色区分于普通快捷项，防误点 */
 .mini.primary-ghost { color: var(--fade); border-color: var(--fade); background: rgba(240, 97, 109, .10); }
 .mini.primary-ghost:hover { color: var(--fade); border-color: var(--fade); background: rgba(240, 97, 109, .2); }
+/* 自定义比例买入：四档之外的任意百分比。与档位按钮同排，视觉上属同一组快捷填量方式 */
+.pq-pct { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pq-pct-in { display: inline-flex; align-items: center; gap: 4px; }
+.pq-pct-in input { width: 62px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  color: var(--txt); padding: 5px 8px; font-size: 13px; font-family: inherit; text-align: right; }
+.pq-pct-in input:focus { border-color: var(--acc); outline: none; }
+.pq-pct-unit { font-size: 12px; opacity: .78; }
+.pq-pct-hint { font-size: 11.5px; }
+.pq-pct-hint.bad { color: var(--fade); }
 
 /* 批量下单面板（V5.2-pro 规则第五块）：一次多只，逐只独立走龙虎过滤与账户风控 */
 .bt-form { display: flex; flex-direction: column; gap: 8px; }
