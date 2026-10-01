@@ -139,6 +139,181 @@ function renderAlerts(meta) {
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// 错误边界 + 离线/陈旧横幅
+//
+// 分两级（判定在 src/error_boundary.js，此处只做编排与渲染）：
+//   致命 → 首屏必需档（archive-index）拿不到 → 整页替代卡，明确说"没有数据 ≠ 今天没什么"
+//   降级 → 其它档拿不到 → 保留已渲染内容，只把对应卡片标成未加载，整页不中断
+// 白屏是最坏的失败形态：它连"这儿本该有东西、只是没加载成功"都没有。
+//
+// ⚠ 本模块**不吞异常**：window.onerror 里只做渲染与提示，不改任何已展示的数值。
+//   本项目铁律——错误边界的作用是"说清楚发生了什么"，不是"让错误看起来没发生"。
+// ════════════════════════════════════════════════════════════════════════════
+let EB = null;            // src/error_boundary.js 导出的纯函数集（ESM 桥接，见下）
+const LOAD_RESULTS = [];  // 各档加载结果留痕（供横幅汇总）
+let OFFLINE_FRAME = { offline: false, offlineSince: null };
+
+/** ESM 桥接：src/error_boundary.js 是模块脚本，app.js 是经典脚本，不能 import。 */
+function ebMod() {
+  if (window.__errorBoundary) return window.__errorBoundary;
+  if (window.ErrorBoundary) return window.ErrorBoundary;
+  return null;
+}
+
+/** 记一次档位加载结果（ok=false 时进横幅汇总）。 */
+function noteLoad(what, ok, error) {
+  LOAD_RESULTS.push({ what, ok, error: error || null, at: new Date().toISOString() });
+}
+
+/** 当前时间帧：离线时带上 offlineSince，避免"更新时间"停在离线那一刻而无人察觉。 */
+function frameNow() {
+  const E = ebMod();
+  const now = new Date();
+  if (E && typeof E.nowFrame === 'function') {
+    return E.nowFrame(now, OFFLINE_FRAME);
+  }
+  // 降级实现：与 src/error_boundary.js 同口径（守卫断言过字段名一致）
+  return {
+    iso: now.toISOString(),
+    local: now.toISOString().replace('T', ' ').slice(0, 16),
+    offline: !!OFFLINE_FRAME.offline,
+    offlineSince: OFFLINE_FRAME.offlineSince || null,
+  };
+}
+
+/**
+ * 渲染顶部离线/陈旧横幅。
+ *
+ * ⚠ 无 engine 时**不静默返回空**：那会让"数据陈旧"这条最要紧的提示因为
+ *   一个模块没挂上就整条消失。故降级路径自己拼一份最小横幅（只讲最重的两件事）。
+ */
+function renderOfflineBar(health) {
+  const box = $('offlineBar');
+  if (!box) return;
+  const E = ebMod();
+  const meta = (ARC && ARC.meta) || {};
+  const loadState = E && typeof E.classifyLoadResults === 'function'
+    ? E.classifyLoadResults(LOAD_RESULTS)
+    : null;
+
+  let model;
+  if (E && typeof E.staleBannerModel === 'function') {
+    model = E.staleBannerModel(meta, health || HEALTH, frameNow(), loadState || {});
+  } else {
+    // 降级：只覆盖"陈旧"与"离线"这两件最不能漏的事
+    const stale = !!meta.stale;
+    model = {
+      show: stale || OFFLINE_FRAME.offline,
+      level: stale ? 'stale' : (OFFLINE_FRAME.offline ? 'degraded' : 'ok'),
+      chips: [...(stale ? [{ kind: 'stale', text: '数据陈旧' }] : []),
+        ...(OFFLINE_FRAME.offline ? [{ kind: 'offline', text: '离线' }] : [])],
+      lines: [...(stale ? [meta.staleReason || '存档落后于最近已收盘交易日。'] : []),
+        ...(OFFLINE_FRAME.offline ? ['离线模式：展示最近一次缓存的档，不会再自动更新。'] : [])],
+    };
+  }
+
+  if (!model.show) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.className = 'offline-bar ob-' + (model.level || 'unknown');
+  box.innerHTML = (E && typeof E.renderBannerHtml === 'function')
+    ? E.renderBannerHtml(model, esc)
+    : `<div class="ob-inner ob-${esc(model.level)}">`
+      + `<div class="ob-head">${(model.chips || []).map((c) => `<span class="ob-chip ${esc(c.kind)}">${esc(c.text)}</span>`).join('')}</div>`
+      + `<div class="ob-lines">${(model.lines || []).map((l) => `<div class="ob-line">${esc(l)}</div>`).join('')}</div>`
+      + `<div class="ob-note">数据仅供参考，不构成投资建议。</div></div>`;
+}
+
+/**
+ * 致命错误：用替代卡换掉 #alerts 之外的首屏内容。
+ * 刻意**不清空** #alerts 与 #offlineBar —— 它们正是解释"为什么什么都没了"的地方。
+ */
+function renderFatal(err) {
+  const E = ebMod();
+  const main = document.querySelector('main');
+  const info = (E && typeof E.classifyLoadError === 'function')
+    ? E.classifyLoadError('archive-index', err)
+    : { message: String((err && err.message) || err || '未知错误'), hint: '' };
+  const html = (E && typeof E.renderFatalHtml === 'function')
+    ? E.renderFatalHtml(info, esc)
+    : `<div class="fatal-card"><div class="fc-title">⚠ 首屏数据加载失败</div>`
+      + `<div class="fc-msg">${esc(info.message)}</div>`
+      + `<button class="mini primary" type="button" data-act="retry-boot">重试加载</button></div>`;
+  const holder = $('fatalHolder');
+  if (holder) { holder.hidden = false; holder.innerHTML = html; }
+  if (main) main.setAttribute('aria-hidden', 'true');
+  const nav = $('zoneNav'); if (nav) nav.setAttribute('aria-hidden', 'true');
+}
+
+function clearFatal() {
+  const holder = $('fatalHolder');
+  if (holder) { holder.hidden = true; holder.innerHTML = ''; }
+  const main = document.querySelector('main');
+  if (main) main.removeAttribute('aria-hidden');
+  const nav = $('zoneNav'); if (nav) nav.removeAttribute('aria-hidden');
+}
+
+/**
+ * 运行期错误兜底。
+ * ⚠ 只置一次（首个错误就够定位）；且**不清空页面**——已渲染的内容仍然有效，
+ *   这是"降级"而非"致命"。清空页面＝把局部失败放大成整体失败。
+ */
+let RUNTIME_ERR_SHOWN = false;
+function noteRuntimeError(err) {
+  if (RUNTIME_ERR_SHOWN) return;
+  RUNTIME_ERR_SHOWN = true;
+  noteLoad('runtime', false, err);
+  const E = ebMod();
+  const m = (E && typeof E.runtimeErrorModel === 'function')
+    ? E.runtimeErrorModel(err, frameNow())
+    : { title: '页面运行出错', message: String((err && err.message) || err), lines: [] };
+  // 复用横幅容器：这是"有话说"，不是一个新面板（多开容器＝多一处要维护的空态）
+  const box = $('offlineBar');
+  if (!box || !box.hidden) return;
+  box.hidden = false;
+  box.className = 'offline-bar ob-degraded';
+  box.innerHTML = `<div class="ob-inner ob-degraded">`
+    + `<div class="ob-head"><span class="ob-chip degraded">${esc(m.title || '运行出错')}</span></div>`
+    + `<div class="ob-lines"><div class="ob-line">${esc(m.message || '')}</div>`
+    + (m.lines || []).map((l) => `<div class="ob-line">${esc(l)}</div>`).join('') + `</div>`
+    + `<div class="ob-note">数据仅供参考，不构成投资建议。</div></div>`;
+}
+
+// 注册兜底：window.onerror 与 unhandledrejection。
+// ⚠ 不 e.preventDefault()：控制台仍要看到原始报错（开发者需要堆栈）。
+window.addEventListener('error', (e) => {
+  if (e && e.error) noteRuntimeError(e.error);
+  else if (e && e.message) noteRuntimeError(new Error(e.message));
+});
+window.addEventListener('unhandledrejection', (e) => {
+  const r = e && e.reason;
+  noteRuntimeError(r instanceof Error ? r : new Error(String(r == null ? '未处理的 Promise 拒绝' : r)));
+});
+
+// ── 离线状态：SW 通过 postMessage 告知"这次是从缓存拿的" ─────────────────────
+if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    const d = (e && e.data) || {};
+    if (d.type === 'data-offline') {
+      if (!OFFLINE_FRAME.offline) {
+        OFFLINE_FRAME = { offline: true, offlineSince: new Date().toISOString() };
+        renderOfflineBar();
+      }
+    } else if (d.type === 'data-online') {
+      if (OFFLINE_FRAME.offline) { OFFLINE_FRAME = { offline: false, offlineSince: null }; renderOfflineBar(); }
+    }
+  });
+}
+// 浏览器自身的在线/离线事件（SW 未接管时也有用），与上面的 data-* 消息互为补充
+window.addEventListener('offline', () => {
+  OFFLINE_FRAME = { offline: true, offlineSince: OFFLINE_FRAME.offlineSince || new Date().toISOString() };
+  renderOfflineBar();
+});
+window.addEventListener('online', () => {
+  OFFLINE_FRAME = { offline: false, offlineSince: null };
+  renderOfflineBar();
+});
+
 function renderEmotion(latest) {
   const e = latest.emotion || {};
   const sc = e.value ?? e.score ?? null;
@@ -1707,6 +1882,7 @@ async function loadBacktest() {
     const res = await fetch('./data/backtest.json?_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     BT = await res.json();
+    noteLoad('backtest', true);
     renderBacktest(BT);
     // 阈值/主线就绪后按引擎口径重刷：报告（§6 档位）、趋势参考线、个股表的连板/席位列。
     // 首次渲染时 BT 尚为 null，用的是与引擎同值的默认阈值（24/44/65/80），缺失时页面仍可读、不空白。
@@ -1717,8 +1893,10 @@ async function loadBacktest() {
       renderHotTable();
     }
   } catch (e) {
+    noteLoad('backtest', false, e);
     const n = $('btNote');
     if (n) n.textContent = `回测数据未生成或加载失败（生成命令：node scripts/backtest.mjs）：${e.message}`;
+    renderOfflineBar();
   }
 }
 
@@ -1756,12 +1934,17 @@ let DIRTY = null;
 //   ⚠ 为 null 表示"未互证"（≠"两源一致"）——这两者语义相反，渲染层必须显式区分。
 //     本项目铁律：没检查 ≠ 没问题。故 null 走独立样式 + 「未互证」文案，绝不借用"一致"的绿。
 let XCHECK = null;
+// 整份 signals-latest（不只是 health 段）：数据导出（src/dataset.js）要读
+//   breadth/series、seats/series、crosscheck/flagged、dirty/recent 等段。
+//   让它与各面板共用**同一次 fetch 结果**，避免"导出时再现拉一次"造成两处不一致。
+let SIGNALS = null;
 
 async function loadHealth() {
   try {
     const res = await fetch('./data/signals-latest.json?_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const s = await res.json();
+    SIGNALS = s || null;
     HEALTH = s && s.health ? s.health : null;
     renderHealth(HEALTH);
     // 席位属性（#1）与亏钱效应（#2）同在 signals-latest.json 里 → 一次 fetch 全取，
@@ -1779,18 +1962,25 @@ async function loadHealth() {
     // 跨源一致性互证（#2）同源同次取。
     XCHECK = s && s.crosscheck ? s.crosscheck : null;
     renderXcheck(XCHECK);
+    noteLoad('signals-latest', true);
+    // 健康档到位后重刷离线/陈旧横幅：横幅要并进 health 的告警摘要，
+    //   而横幅首次渲染发生在 ARC 就绪时（那时 HEALTH 还是 null）。
+    renderOfflineBar(HEALTH);
     // 研判报告里也有一段「数据可信度」——它渲染时 HEALTH 多半还是 null（首屏已画完），
     // 故拉取成功后必须**重刷报告**，否则报告会永久缺这一段。
     // 与 loadBacktest 成功后重刷报告是同一种处理（数据异步到达 → 依赖它的 UI 要重画）。
     if (lastArc) renderBrief(displayDays(lastArc), lastArc);
   } catch (e) {
     // 拉不到时不显示面板（而不是显示"正常"）——"没检查"与"没问题"必须可区分。
+    SIGNALS = null;
+    noteLoad('signals-latest', false, e);
     renderHealth(null, e.message);
     renderSeats(null, e.message);
     renderPain(null, e.message);
     renderBreadth(null, e.message);
     renderDirty(null, e.message);
     renderXcheck(null, e.message);
+    renderOfflineBar(null);
   }
 }
 
@@ -2180,13 +2370,16 @@ async function loadVersionRegression() {  const foot = $('verCaution');
     const res = await fetch('./data/version-regression.json?_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     VREG = await res.json();
+    noteLoad('version-regression', true);
     renderVerCmp(VREG);
   } catch (e) {
+    noteLoad('version-regression', false, e);
     if (tb) tb.querySelector('tbody').innerHTML =
       `<tr><td colspan="7" class="empty">版本回归未生成（命令：node scripts/version_regression.mjs）：${esc(e.message)}</td></tr>`;
     if (foot) foot.textContent = '';
     const s = $('verSummary');
     if (s) s.textContent = '';
+    renderOfflineBar();
   }
 }
 
@@ -2419,10 +2612,12 @@ let GLOB = null;
 function loadGlobal() {
   return fetch('./data/global.json?_=' + Date.now(), { cache: 'no-store' })
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
-    .then((g) => renderGlobal(g))
+    .then((g) => { GLOB_REF = g; noteLoad('global', true); renderGlobal(g); })
     .catch((e) => {
+      noteLoad('global', false, e);
       const box = $('globVerdict');
       if (box) box.innerHTML = `<div class="gv neu"><div class="gv-hint">外围数据未就绪（${esc(e.message)}）——先运行 <b>node scripts/fetch_global.mjs</b> 生成 data/global.json。</div></div>`;
+      renderOfflineBar();
     });
 }
 
@@ -2670,6 +2865,9 @@ function renderAll(arc) {
   renderScope(arc);
 
   renderAlerts(meta);
+  // 离线/陈旧/降级横幅：与 #alerts 分开——#alerts 说"今天盘面如何"，
+  //   本条说"你看到的数据可信到什么程度"。两者语义不同，不能混在一个容器里。
+  renderOfflineBar(HEALTH);
   renderEmotion(latest);
   renderRelative(latest);
   renderMomentum(arc.signals?.momentum || {});
@@ -2765,6 +2963,8 @@ async function checkUpdate(manual) {
   if (manual && btn) { btn.classList.add('busy'); btn.textContent = '↻ 拉取中…'; }
   try {
     const { changed, first, degraded, hhmm } = await pullArchive();
+    clearFatal();
+    noteLoad('archive-index', true);
     if (st) {
       if (degraded) { st.textContent = hhmm + ' 明细档未取到（仅摘要）'; st.className = 'err'; }
       else if (changed) { st.textContent = hhmm + ' 数据已更新'; st.className = 'ok'; }
@@ -2772,9 +2972,15 @@ async function checkUpdate(manual) {
       else { st.textContent = ''; st.className = ''; }
     }
   } catch (e) {
+    // 首屏必需档拿不到 → 走错误边界，**不是把一条红字塞进 #alerts 就算完**：
+    //   · 页面不能白屏，也不能继续显示上一次的残留结论（那会被当成今天的）
+    //   · 必须明确说"没有数据 ≠ 今天没什么可说的"
+    noteLoad('archive-index', false, e);
     if (lastFp === '') {
-      $('alerts').innerHTML = `<div class="alert">⚠ 加载失败：${e.message}。请确认 data/archive-index.json 已生成并部署（重跑 node scripts/split_archive.mjs）。</div>`;
+      $('alerts').innerHTML = '';
+      renderFatal(e);
     }
+    renderOfflineBar();
     if (st && manual) { st.textContent = '刷新失败: ' + e.message; st.className = 'err'; }
   } finally {
     if (btn) { btn.classList.remove('busy'); btn.textContent = '↻ 刷新'; }
@@ -3332,6 +3538,7 @@ function fireAct(el) {
   else if (act === 'seg') { const v = segDetail(el.dataset.kind, +el.dataset.i); if (v) openDrawer(v); }
   else if (act === 'day') { const v = dayDetail(+el.dataset.i); if (v) openDrawer(v); }
   else if (act === 'loadfull') { loadFullArchive(el); }
+  else if (act === 'retry-boot') { clearFatal(); checkUpdate(true); return; }
   else if (act === 'btmore') { const v = btDetail(); if (v) openDrawer(v); }
   else if (act === 'glob') { const v = globalDetail(el.dataset.key); if (v) openDrawer(v); }
   else if (act === 'gmap') { const v = globalMapDetail(el.dataset.from); if (v) openDrawer(v); }
@@ -3583,6 +3790,127 @@ function flashBtn(btn, text, ms = 1600) {
   btn.textContent = text;
   btn.disabled = true;
   setTimeout(() => { btn.textContent = btn.dataset.label; btn.disabled = false; }, ms);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// 数据导出（CSV / Excel）—— 导出件必须与屏幕同源
+//
+// 核心纪律：**前端一行取数逻辑都不写**。全部走 src/dataset.js 的 DATASETS 目录，
+// 前端只做三件事：把当前档位交给它、拿到文本、触发下载。
+// 一旦在前端另写一套（"这个字段其实就在 ARC 里，直接 map 一下"），导出件与页面
+// 就会慢慢分叉——而下载下来的表格看起来最正式，最不会被怀疑。
+// ════════════════════════════════════════════════════════════════════════════
+let DS = null;      // src/dataset.js（ESM 桥接）
+let GLOB_REF = null; // 外围行情档（导出 global 数据集用；与 loadGlobal 同一次 fetch）
+
+function dsMod() {
+  return (typeof window !== 'undefined' && window.DatasetExport) || DS || null;
+}
+
+/** 导出上下文：与屏幕同源的那几份数据 */
+function exportCtx() {
+  return { archive: ARC, signals: SIGNALS, global: GLOB_REF };
+}
+
+/**
+ * 导出菜单内容：把 DATASETS 目录渲染成菜单项 + 各表行数。
+ * ⚠ 行数为 0 的项**不隐藏**（隐藏会让人以为"没有这个数据集"），而是禁用 +
+ *   标注「暂无数据」——如实说明"这个数据集存在，只是今天没有内容"。
+ */
+function renderExportMenu() {
+  const menu = $('expMenu');
+  if (!menu) return;
+  const M = dsMod();
+  if (!M || typeof M.exportManifest !== 'function') {
+    menu.innerHTML = `<div class="exp-empty muted">导出引擎未就绪（src/dataset.js 未加载）。</div>`;
+    return;
+  }
+  const list = M.exportManifest(exportCtx());
+  const items = list.map((it) => `<button type="button" role="menuitem" data-ds="${esc(it.id)}"`
+    + `${it.empty ? ' disabled' : ''} title="${esc(it.empty ? '该数据集今天没有内容' : '导出 ' + it.label)}">`
+    + `<span class="exp-lab">${esc(it.label)}</span>`
+    + `<span class="exp-num muted">${it.empty ? '暂无数据' : it.count + ' 行'}</span></button>`).join('');
+  menu.innerHTML = `<div class="exp-hint muted">导出件与屏幕同源（同一份档、同一套取数）。空单元格＝未计算，不等于 0。</div>`
+    + items
+    + `<div class="exp-sep"></div>`
+    + `<button type="button" role="menuitem" data-ds="__csv"${list.every((x) => x.empty) ? ' disabled' : ''}>`
+    + `<span class="exp-lab">全部导出（CSV 单表）</span><span class="exp-num muted">合并版</span></button>`
+    + `<button type="button" role="menuitem" data-ds="__xls"${list.every((x) => x.empty) ? ' disabled' : ''}>`
+    + `<span class="exp-lab">全部导出（Excel 多表页）</span><span class="exp-num muted">.xls</span></button>`;
+}
+
+function closeExportAllMenu() {
+  const m = $('expMenu'), b = $('expBtn');
+  if (m) m.hidden = true;
+  if (b) b.setAttribute('aria-expanded', 'false');
+}
+
+/** CSV 里多个数据集用空行分隔 + 二级标题行拼接（单表兼容性最好）。 */
+function combinedCsvText(M, ids, ctx) {
+  const parts = [];
+  for (const id of ids) {
+    const one = M.exportAsCsv(id, ctx);
+    if (!one) continue;
+    parts.push(`### ${one.label}（${one.count} 行）`);
+    parts.push(one.text.replace(/^\uFEFF/, ''));
+  }
+  return '\uFEFF' + parts.join('\r\n') + '\r\n';
+}
+
+/**
+ * 执行导出。
+ * @param {string} what 数据集 id，或 '__csv' / '__xls'
+ * @param {HTMLElement} btn 触发按钮（用于反馈）
+ */
+function doExportDataset(what, btn) {
+  const M = dsMod();
+  if (!M) { flashBtn(btn, '导出引擎未就绪'); return; }
+  if (!ARC) { flashBtn(btn, '无数据可导出'); return; }
+  const ctx = exportCtx();
+  try {
+    if (what === '__csv') {
+      const ids = M.DATASETS.map((d) => d.id);
+      const text = combinedCsvText(M, ids, ctx);
+      const stamp = (ARC.meta && ARC.meta.tradeDate) || '';
+      downloadText(text, M.datasetFileName('sentiment-all', 'csv', stamp), 'text/csv');
+      flashBtn(btn, '已导出 CSV ✓');
+    } else if (what === '__xls') {
+      const ids = M.DATASETS.map((d) => d.id);
+      const out = M.exportAsExcel(ids, ctx);
+      if (!out) { flashBtn(btn, '无数据可导出'); return; }
+      downloadText(out.text, out.fileName, out.mime);
+      flashBtn(btn, '已导出 Excel ✓');
+    } else {
+      const one = M.exportAsCsv(what, ctx);
+      if (!one) { flashBtn(btn, '未知数据集'); return; }
+      if (one.empty) { flashBtn(btn, '该表暂无数据'); return; }
+      downloadText(one.text, one.fileName, one.mime);
+      flashBtn(btn, '已导出 ✓');
+    }
+  } catch (e) {
+    flashBtn(btn, '导出失败：' + e.message);
+  }
+}
+
+if ($('expBtn') && $('expMenu')) {
+  $('expBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const m = $('expMenu');
+    if (!m) return;
+    if (m.hidden) renderExportMenu();
+    m.hidden = !m.hidden;
+    e.currentTarget.setAttribute('aria-expanded', m.hidden ? 'false' : 'true');
+  });
+  $('expMenu').addEventListener('click', (e) => {
+    const item = e.target.closest('button[data-ds]');
+    if (!item || item.disabled) return;
+    e.stopPropagation();
+    closeExportAllMenu();
+    doExportDataset(item.dataset.ds, $('expBtn'));
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest?.('.exp-wrap')) closeExportAllMenu();
+  });
 }
 
 /** 复制全文：优先 Clipboard API；不可用（非 https / 旧浏览器）回退 execCommand */

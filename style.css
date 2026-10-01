@@ -1166,6 +1166,80 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
   font-size: 11px; line-height: 1.6; }
 .xc-note code { background: rgba(255,255,255,.06); padding: 0 3px; border-radius: 2px; }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   离线 / 陈旧 状态横幅 + 错误边界 + 数据导出
+   这一组样式全部服务于同一件事：**让"数据可信到什么程度"永远可见**。
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* 顶部状态横幅。与 #alerts 分开：#alerts 讲盘面，本条约讲数据可信度。 */
+.offline-bar { margin: 8px var(--pad) 0; }
+.offline-bar[hidden] { display: none; }
+.ob-inner { border: 1px solid var(--line); border-left-width: 3px; border-radius: 8px;
+  background: var(--card); padding: 8px 12px; }
+.ob-head { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 4px; }
+.ob-lines { font-size: 12px; line-height: 1.65; color: var(--txt); }
+.ob-line { margin-top: 2px; }
+.ob-note { margin-top: 6px; font-size: 11px; color: var(--muted);
+  border-top: 1px dashed var(--line); padding-top: 5px; }
+.ob-chip { display: inline-block; font-size: 10.5px; line-height: 1.7; padding: 0 7px;
+  border-radius: 3px; border: 1px solid currentColor; font-weight: 600; }
+.ob-chip.fresh { color: #3fb950; }
+.ob-chip.stale { color: #e8843c; }
+.ob-chip.degraded { color: #e8843c; }
+.ob-chip.unknown { color: #8b949e; }
+.ob-chip.pending { color: #58a6ff; }
+.ob-chip.fatal { color: #f0616d; }
+.ob-chip.offline { color: #58a6ff; }
+.ob-chip.phase-live { color: #58a6ff; }
+.ob-chip.phase-pre { color: #8b949e; }
+.offline-bar.ob-ok .ob-inner { border-left-color: #3fb950; }
+.offline-bar.ob-stale .ob-inner { border-left-color: #e8843c; }
+.offline-bar.ob-degraded .ob-inner { border-left-color: #e8843c; }
+.offline-bar.ob-fatal .ob-inner { border-left-color: #f0616d; }
+.offline-bar.ob-unknown .ob-inner { border-left-color: #8b949e; border-left-style: dashed; }
+
+/* 顶栏网络状态小标签（配合横幅：横幅讲原因，这里只给一眼可见的状态点） */
+.net-state { font-size: 11px; padding: 1px 7px; border-radius: 10px;
+  border: 1px solid currentColor; }
+.net-state[hidden] { display: none; }
+.net-state.off { color: #58a6ff; }
+.net-state.on { color: #3fb950; }
+
+/* 致命错误替代卡：**不白屏**的最后一道防线 */
+.fatal-holder { margin: 24px var(--pad); }
+.fatal-holder[hidden] { display: none; }
+.fatal-card { border: 1px solid var(--line); border-left: 3px solid #f0616d; border-radius: 10px;
+  background: var(--card); padding: 18px 20px; max-width: 760px; }
+.fc-title { font-size: 16px; font-weight: 700; color: #f0616d; margin-bottom: 8px; }
+.fc-msg { font-size: 13px; margin-bottom: 8px; font-family: ui-monospace, Menlo, Consolas, monospace;
+  word-break: break-all; }
+.fc-hint { font-size: 12px; color: var(--muted); line-height: 1.7; margin-bottom: 10px; }
+.fc-note { font-size: 12px; color: var(--txt); line-height: 1.7; padding: 8px 10px;
+  border: 1px dashed var(--line); border-radius: 6px; margin-bottom: 12px; }
+
+/* ── 数据导出菜单 ── */
+.exp-wrap { position: relative; display: inline-block; }
+#expBtn { background: var(--card); color: var(--acc); border: 1px solid var(--line);
+  border-radius: 6px; padding: 3px 10px; font-size: 12px; cursor: pointer; }
+#expBtn:hover { border-color: var(--acc); }
+.exp-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; min-width: 300px;
+  max-height: 70vh; overflow: auto; background: var(--card2); border: 1px solid var(--line);
+  border-radius: 8px; box-shadow: 0 8px 28px rgba(0,0,0,.5); padding: 6px; }
+.exp-menu[hidden] { display: none; }
+.exp-menu button[data-ds] { display: flex; justify-content: space-between; align-items: baseline;
+  gap: 12px; width: 100%; text-align: left; background: transparent; border: 0;
+  color: var(--txt); font-size: 12.5px; padding: 7px 9px; border-radius: 6px; cursor: pointer; }
+.exp-menu button[data-ds]:hover:not([disabled]) { background: rgba(88,166,255,.12); }
+.exp-menu button[data-ds][disabled] { color: var(--muted); cursor: not-allowed; opacity: .65; }
+.exp-lab { flex: 1 1 auto; }
+.exp-num { flex: 0 0 auto; font-size: 11px; font-variant-numeric: tabular-nums; }
+.exp-hint { font-size: 11px; line-height: 1.6; padding: 4px 9px 8px; }
+.exp-sep { height: 1px; background: var(--line); margin: 6px 4px; }
+.exp-empty { font-size: 12px; padding: 10px; }
+
+/* 致命错误时把主内容藏起来（替代卡才是"当前唯一的真相"） */
+main[aria-hidden="true"] { display: none; }
+
 @media print {
   :root { --bg: #fff; --card: #fff; --card2: #fff; --line: #ccc; --txt: #000; --muted: #555;
     --acc: #000; --up: #c0392b; --down: #1e7e34; --warn: #9a6b00; --focus: #000; }
@@ -1238,5 +1312,17 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
   .bw-chip.narrow, .bw-kpi.neg .bw-v { color: #c0392b !important; }
   .bw-chip.broad, .bw-kpi.pos .bw-v { color: #1e7e34 !important; }
   .bw-chip.diverged { color: #9a6b00 !important; }
+  /* 离线/陈旧横幅（错误边界）：打印稿也要保留——一张"数据陈旧"的报告
+     比一张不写的数据报告危险得多。去深色底、保左边框表达等级。 */
+  .ob-inner { background: #fff !important; border-color: #ccc !important; }
+  .offline-bar .ob-inner { border-left-color: #666 !important; }
+  .ob-chip { border-color: #666 !important; color: #000 !important; }
+  .ob-lines, .ob-note { color: #333 !important; }
+  .fatal-card { background: #fff !important; border-color: #ccc !important;
+    border-left-color: #c0392b !important; }
+  .fc-title { color: #c0392b !important; }
+  .fc-hint, .fc-note { color: #444 !important; }
+  /* 顶栏导出菜单/网络状态在打印稿里无意义 */
+  .exp-wrap, .net-state { display: none !important; }
   @page { size: A4; margin: 16mm 14mm; }
 }

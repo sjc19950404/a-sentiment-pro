@@ -2992,6 +2992,189 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
       !/2\.5\s*\|\|\s*0\.8|crosscheck[\s\S]{0,80}?ABS_DIVERGE/.test(code),
       '前端出现互证阈值＝第二套口径，阈值唯一出处是 src/crosscheck.js');
   }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // 数据导出（CSV / Excel）
+  //   红线：前端**一行取数逻辑都不写**。导出件必须与屏幕同源，
+  //   否则两者会慢慢分叉 —— 而下载下来的表格最不会被怀疑。
+  //   真产出：点一次导出，必须真的生成内容（不是只改了按钮文案）。
+  // ══════════════════════════════════════════════════════════════════════════
+  {
+    const Dataset = await import('../src/dataset.js').catch(() => null);
+    if (!Dataset) {
+      check('数据导出：口径模块可加载', false, 'src/dataset.js import 失败');
+    } else {
+      // ESM 桥接：jsdom 不执行模块脚本，这里手动挂（与 ReportExport/Seats 同款处理）
+      window.DatasetExport = Dataset;
+      window.dispatchEvent(new window.Event('dataset-export-ready'));
+
+      check('数据导出：顶栏含导出按钮与菜单容器',
+        !!$('expBtn') && !!$('expMenu'), '缺 #expBtn 或 #expMenu');
+      check('数据导出：按钮带 aria-haspopup（可被读屏识别为菜单）',
+        $('expBtn')?.getAttribute('aria-haspopup') === 'true', '');
+
+      // 真开菜单：点一次，菜单必须展开且列出数据集
+      let opened = false;
+      try { clickEl($('expBtn')); opened = $('expMenu') && $('expMenu').hidden === false; } catch { /* 下面报 */ }
+      check('数据导出：点击按钮真的展开菜单', opened, `hidden=${$('expMenu')?.hidden}`);
+
+      if (opened) {
+        const items = [...$('expMenu').querySelectorAll('button[data-ds]')];
+        check('数据导出：菜单列出全部数据集（含"全部导出"两项）',
+          items.length === Dataset.DATASETS.length + 2,
+          `${items.length} 项 vs 期望 ${Dataset.DATASETS.length + 2}`);
+        // 每项都带行数或「暂无数据」——不得只给一个名字让人猜
+        const txtAll = $('expMenu').textContent || '';
+        check('数据导出：每项标明行数（或"暂无数据"）',
+          /\d+\s*行/.test(txtAll) || /暂无数据/.test(txtAll), txtAll.slice(0, 60));
+        check('数据导出：菜单内披露"空单元格＝未计算，不等于 0"',
+          /空单元格/.test(txtAll) && /不等于 0/.test(txtAll),
+          '不披露会让"空"被读成 0');
+      }
+
+      // ★ 真导出：拦下 Blob/URL.createObjectURL，断言真的产出了内容
+      const captured = [];
+      const origCreate = window.URL.createObjectURL;
+      const origRevoke = window.URL.revokeObjectURL;
+      try {
+        window.URL.createObjectURL = (blob) => { captured.push(blob); return 'blob:test-' + captured.length; };
+        window.URL.revokeObjectURL = () => {};
+        // 逐项点一遍（跳过禁用项）——每一项都必须能产出非空内容
+        for (const it of [...$('expMenu').querySelectorAll('button[data-ds]:not([disabled])')]) {
+          captured.length = 0;
+          let threw = '';
+          try { clickEl(it); } catch (e) { threw = e.message; }
+          const ok = !threw && captured.length === 1;
+          const size = ok ? (captured[0] && captured[0].size) || 0 : 0;
+          check(`数据导出：${it.dataset.ds} 真产出文件（非仅改按钮文案）`, ok && size > 0,
+            threw || `${captured.length} 个 blob / ${size} 字节`);
+        }
+      } finally {
+        try { window.URL.createObjectURL = origCreate; window.URL.revokeObjectURL = origRevoke; } catch { /* noop */ }
+      }
+
+      // 内容正确性：逐字段与屏幕同源（拿真实档现算一份，比对导出件含同样的表头）
+      const arcReal = decodeArchive(JSON.parse(readFileSync(join(ROOT, 'data/archive.json'), 'utf8')));
+      const sigReal = JSON.parse(readFileSync(join(ROOT, 'data/signals-latest.json'), 'utf8'));
+      const csvDaily = Dataset.exportAsCsv('daily', { archive: arcReal, signals: sigReal });
+      check('数据导出：daily 导出件含元信息注释（数据日期 / 缺失语义）',
+        /# 数据日期/.test(csvDaily.text) && /# 缺失语义/.test(csvDaily.text), '');
+      check('数据导出：daily 行数 = 存档天数（与屏幕同源）',
+        csvDaily.count === (arcReal.all_days || []).length,
+        `${csvDaily.count} vs ${(arcReal.all_days || []).length}`);
+      const xlsOut = Dataset.exportAsExcel(Dataset.DATASETS.map((d) => d.id), { archive: arcReal, signals: sigReal });
+      check('数据导出：Excel 多表页产物结构完整',
+        /<Workbook/.test(xlsOut.text) && /<\/Workbook>/.test(xlsOut.text)
+        && (xlsOut.text.match(/<Worksheet /g) || []).length === Dataset.DATASETS.length, '');
+    }
+  }
+
+  // 源码层：前端不得自行实现导出取数（第二套口径）
+  {
+    const src = readFileSync(join(ROOT, 'app.js'), 'utf8');
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    check('数据导出：前端未自建 CSV/XLSX 序列化（唯一出处 src/dataset.js）',
+      !/text\/csv;charset|\\r\\n['"]?\s*\+|SpreadsheetML|ss:Type=/.test(code),
+      '前端出现序列化实现＝第二套口径，导出件会与屏幕分叉');
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // 离线看盘（Service Worker）+ 错误边界（数据 stale 时不白屏）
+  // ══════════════════════════════════════════════════════════════════════════
+  // 渲染函数的转义器：与 app.js 顶部同口径（这里不引前端实现，以免"用被测物测被测物"）
+  const escHtml = (s) => String(s == null ? '' : s)
+    .replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  {
+    const EB = await import('../src/error_boundary.js').catch(() => null);
+    if (!EB) {
+      check('错误边界：口径模块可加载', false, 'src/error_boundary.js import 失败');
+    } else {
+      window.ErrorBoundary = EB;
+      window.dispatchEvent(new window.Event('error-boundary-ready'));
+
+      // ① 横幅容器与致命替代区必须在（容器缺失＝渲染会静默落空，最隐蔽的回归）
+      check('离线/陈旧：顶部横幅容器存在', !!$('offlineBar'), '缺 #offlineBar');
+      check('错误边界：致命错误替代区存在（放在 <main> 之外，aria-hidden 后仍可被读屏读到）',
+        !!$('fatalHolder') && !$('fatalHolder')?.closest('main'), '缺 #fatalHolder 或它在 main 内');
+
+      // ② 当前真实数据是 fresh → 横幅应当**不占屏幕**（常驻横幅会训练人忽略它）
+      const metaReal = arcAll.meta || {};
+      const freshModel = EB.staleBannerModel(metaReal, null,
+        EB.nowFrame(new Date(), {}), EB.classifyLoadResults([]));
+      check('离线/陈旧：数据最新时横幅不显示（避免"狼来了"）',
+        metaReal.stale ? true : freshModel.show === false,
+        `meta.stale=${metaReal.stale} show=${freshModel.show}`);
+
+      // ③ 陈旧 → 必须挂横幅且讲清"哪一天 / 不再自动更新"
+      const staleModel = EB.staleBannerModel({
+        tradeDate: '2026-09-20', stale: true,
+        staleReason: '落后 5 个交易日（最近已收盘交易日 2026-09-30）',
+        freshness: { state: 'behind', latestClosed: '2026-09-30', behindSessions: 5 },
+      }, null, EB.nowFrame(new Date(), {}), EB.classifyLoadResults([]));
+      const staleText = staleModel.lines.join(' ');
+      check('离线/陈旧：陈旧时横幅出现，且写明落后交易日数与最近已收盘日',
+        staleModel.show && /落后 5 个交易日/.test(staleText) && /2026-09-30/.test(staleText),
+        staleText.slice(0, 80));
+
+      const offModel = EB.staleBannerModel(
+        { tradeDate: '2026-09-30', stale: false, freshness: { state: 'fresh' } }, null,
+        EB.nowFrame(new Date(), { offline: true, offlineSince: '2026-10-02T01:00:00Z' }),
+        EB.classifyLoadResults([]));
+      const offText = offModel.lines.join(' ');
+      check('离线看盘：离线时出现横幅且写明"不会再自动更新、勿据此下单"',
+        offModel.show && /离线/.test(offText) && /不会自动更新/.test(offText) && /勿据此下单/.test(offText),
+        offText.slice(0, 90));
+
+      // ④ 致命错误：只有首屏必需档失败才算致命
+      check('错误边界：只有 archive-index 失败算致命（写反＝一次抖动就白屏）',
+        EB.classifyLoadError('archive-index', new Error('x')).level === EB.LEVEL.FATAL
+        && EB.classifyLoadError('global', new Error('x')).level !== EB.LEVEL.FATAL, '');
+      const fatalHtml = EB.renderFatalHtml({ message: "HTTP 404", hint: "重跑 split_archive" }, escHtml);
+      check('错误边界：致命替代卡写明「没有数据 ≠ 今天没什么可说的」并给重试入口',
+        /没有.*任何结论/.test(fatalHtml) && /retry-boot/.test(fatalHtml), '');
+      check('错误边界：致命替代卡含合规声明', /不构成投资建议|仅供参考/.test(fatalHtml), '');
+
+      // ⑤ 运行期错误模型：降级而非致命（不清空已渲染内容）
+      check('错误边界：运行期错误定为降级（不整页清空）',
+        EB.runtimeErrorModel(new Error('boom'), EB.nowFrame(new Date(), {})).level === EB.LEVEL.DEGRADED, '');
+
+      // ⑥ 真跑一次：渲染横幅到 DOM，断言类名与文案落位（不是只调模型）
+      const bar = $('offlineBar');
+      if (bar) {
+        bar.hidden = false;
+        bar.className = 'offline-bar ob-stale';
+        bar.innerHTML = EB.renderBannerHtml(staleModel, escHtml);
+        check('离线/陈旧：横幅渲染后含状态 chip 与合规声明',
+          !!bar.querySelector('.ob-chip') && /不构成投资建议/.test(bar.textContent || ''), '');
+        check('离线/陈旧：横幅渲染后含"数据陈旧"字样（用户一眼可见）',
+          /数据陈旧/.test(bar.textContent || ''), '');
+      }
+    }
+  }
+
+  // 源码层：错误边界与 SW 接线必须在（只是有模块、没有接线＝功能不存在）
+  {
+    const src = readFileSync(join(ROOT, 'app.js'), 'utf8');
+    check('错误边界：app.js 注册了 window.onerror 兜底',
+      /addEventListener\(\s*'error'/.test(src) && /noteRuntimeError/.test(src), '缺运行期兜底');
+    check('错误边界：app.js 注册了 unhandledrejection 兜底',
+      /addEventListener\(\s*'unhandledrejection'/.test(src), '缺 Promise 拒绝兜底');
+    check('离线看盘：app.js 监听 SW 的 data-offline/data-online 消息',
+      /data-offline/.test(src) && /data-online/.test(src), '');
+
+    const idx = readFileSync(join(ROOT, 'index.html'), 'utf8');
+    check('离线看盘：index.html 注册 Service Worker（scope 为站点根）',
+      /serviceWorker\.register\(\s*'\.\/sw\.js'/.test(idx) && /scope:\s*'\.\/'/.test(idx), '');
+    check('离线看盘：注册前做安全上下文守卫（file:// 下不注册）',
+      /location\.protocol === 'https:'/.test(idx), '不守卫会污染控制台，让"运行期无异常"断言变红');
+    check('离线看盘：sw.js 文件存在且含 fetch 拦截',
+      existsSync(join(ROOT, 'sw.js'))
+      && /addEventListener\('fetch'/.test(readFileSync(join(ROOT, 'sw.js'), 'utf8')), '');
+
+    const offline = readFileSync(join(ROOT, 'src/offline.js'), 'utf8');
+    check('离线看盘：策略层唯一出处 src/offline.js（数据 network-first / 外壳 cache-first）',
+      /network-first/.test(offline) && /cache-first/.test(offline), '');
+  }
 }
 
 // jsdom 未实现的 DOM 桩：不判失败，但**必须打印**——否则将来真出现异常时，

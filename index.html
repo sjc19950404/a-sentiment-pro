@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>A股情绪系统 · PRO</title>
+  <meta name="theme-color" content="#0d1117" />
+  <!-- 离线看盘：Service Worker（sw.js）预缓存外壳 + 数据网络优先回退缓存。
+       策略判定在 src/offline.js（纯函数，可单测）；sw.js 只执行。
+       注册失败（file:// 打开 / 不支持 SW 的浏览器）不影响任何在线功能——
+       由 app.js 里的 canRegister 守卫，只在 https 或 localhost 下尝试。 -->
+  <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
@@ -14,8 +20,16 @@
       <span id="sourceTag" class="tag">--</span>
       <span id="genTime" class="muted"></span>
       <span id="loadScope" class="scope" hidden></span>
+      <!-- 数据导出（CSV / Excel）：导出件与屏幕同源——取数一律走 src/dataset.js，
+           前端只负责"把哪一份交给下载器"，绝不在前端另写一套取数逻辑
+           （那会让导出件与页面上的数字慢慢分叉，而下载到的表格最不会被怀疑）。 -->
+      <div class="exp-wrap">
+        <button id="expBtn" aria-haspopup="true" aria-expanded="false" title="把页面上的数据导出成 CSV / Excel">⇩ 导出数据 ▾</button>
+        <div id="expMenu" class="exp-menu" role="menu" hidden></div>
+      </div>
       <button id="refreshBtn" title="重新拉取最新数据">↻ 刷新</button>
       <span id="refreshState" class="muted"></span>
+      <span id="netState" class="net-state" hidden></span>
     </div>
   </header>
 
@@ -31,6 +45,13 @@
   </nav>
 
   <div id="alerts"></div>
+
+  <!-- 离线/陈旧 状态横幅（错误边界 + SW 离线回退的统一出口）。
+       与 #alerts 分开是有意的：#alerts 说"今天盘面如何"，本条说"你看到的数据可信到什么程度"。
+       两者语义完全不同，混在一个 div 里会让"数据陈旧"被当成行情信息读过去。
+       模型由 src/error_boundary.js 的 staleBannerModel() 生成（纯函数，可单测）；
+       全 ok / fresh 时不占屏幕——常驻横幅会训练人忽略它，真出事时反而看不见。 -->
+  <div id="offlineBar" class="offline-bar" hidden></div>
 
   <!-- 数据健康面板（#115）：先看"数据能不能用"，再看行情。
        异常时自动展开；正常时折叠成一行，不抢主视觉。 -->
@@ -54,6 +75,13 @@
        主源（同花顺行业）。单源的问题不是"偶尔错"，而是"错了没人知道"；本面板把
        "真轮动 vs 源抽风"变成可判定。未互证时显示「未互证」——绝不放行成「一致」。 -->
   <div id="xcheckPanel" class="xcheck-panel" hidden></div>
+
+  <!-- 致命错误替代区：首屏必需档（archive-index）拿不到时填入。
+       刻意放在 <main> **之外** —— fatal 时会给 main 加 aria-hidden（视觉上收起），
+       本区必须仍在无障碍树里，且仍可被读屏读到。
+       存在的唯一目的就是**不要白屏**：白屏是"看起来像没数据"的最坏形式，
+       连"这儿本该有东西、只是加载失败"这层信息都没有。 -->
+  <div id="fatalHolder" class="fatal-holder" hidden></div>
 
   <main>
     <!-- ── 区一：概览 ── -->
@@ -504,5 +532,50 @@
     window.dispatchEvent(new Event('paper-review-ready'));
   </script>
   <script type="module" src="./paper_ui.js"></script>
+  <!-- 数据导出引擎（src/dataset.js）：同样是 ESM 纯函数、浏览器与 Node 共用。
+       app.js 是经典脚本不能 import，故挂到 window。
+       ⚠ 导出件与屏幕同源这件事，就靠"两边都调同一个 buildDataset"来保证——
+         前端**一行取数逻辑都不写**（连"这个字段就在 ARC 里，直接 map 一下"也不行）。 -->
+  <script type="module">
+    import * as DatasetExport from './src/dataset.js';
+    window.DatasetExport = DatasetExport;
+    window.dispatchEvent(new Event('dataset-export-ready'));
+  </script>
+  <!-- 错误边界 / 离线横幅模型（src/error_boundary.js）：同上，挂 window 供 app.js 调用。 -->
+  <script type="module">
+    import * as ErrorBoundary from './src/error_boundary.js';
+    window.ErrorBoundary = ErrorBoundary;
+    window.dispatchEvent(new Event('error-boundary-ready'));
+  </script>
+  <!-- 离线看盘：注册 Service Worker。刻意放在最后——注册本身要下载 sw.js 并触发
+       预缓存（外壳 9 个文件 + 3 个轻量数据档），不该和首屏渲染抢带宽。
+       ⚠ 只在 https / localhost 下尝试：file:// 打开时 navigator.serviceWorker
+       存在但 register 必失败，会污染控制台并让"运行期无异常"的守卫变红。 -->
+  <script>
+    (function () {
+      if (!('serviceWorker' in navigator)) return;
+      var secure = location.protocol === 'https:' || location.hostname === 'localhost'
+        || location.hostname === '127.0.0.1';
+      if (!secure) return;
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js', { scope: './' }).then(function (reg) {
+          window.__swReg = reg;
+          window.dispatchEvent(new CustomEvent('sw-ready', { detail: { scope: reg.scope } }));
+          // 有新 SW 在等待 → 立刻接管（否则用户要刷两次才拿到新外壳）
+          reg.addEventListener('updatefound', function () {
+            var sw = reg.installing;
+            if (!sw) return;
+            sw.addEventListener('statechange', function () {
+              if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'skip-waiting' });
+              }
+            });
+          });
+        }).catch(function (e) {
+          window.dispatchEvent(new CustomEvent('sw-failed', { detail: { message: String(e && e.message || e) } }));
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
