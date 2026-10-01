@@ -12,11 +12,14 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { auditReport, isAuditPass, auditSummary, RULES, AUDIT_VERSION, EXPECTED_SECTIONS } from '../src/report_audit.js';
+import { auditReport, isAuditPass, auditSummary, RULES, AUDIT_VERSION, EXPECTED_SECTIONS, MASTHEAD } from '../src/report_audit.js';
+import { toStandaloneHtml, toMarkdown, toPlainText } from '../src/report.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // ── 构造一份「合规」的结构化报告（模拟 parseReport 的输出） ──────────────────
+// 章节标题保持 buildBrief 的真实形态（带历史圆形序号前缀）——
+// 导出层要负责把它翻成公文的「一、」，这正是要验的翻译链路，不能提前替它做掉。
 const secTitles = ['① 情绪定位', '② 资金面', '③ 盈亏效应', '④ 广度与量能', '⑤ 题材结构', '⑥ 综合研判', '⑦ 模拟交易复盘'];
 function goodRep() {
   return {
@@ -37,44 +40,38 @@ function goodRep() {
   };
 }
 
-// 合规的 md / txt / html 三形态（只保留审计要看的要素）
-const GOOD_MD = [
-  '# A 股市场情绪研判报告',
-  '> **【极简摘要】** 情绪 62.3 落于中性区｜建议仓位 **60%**',
-  '## ① 情绪定位',
-  '- 情绪 **62.3**（历史分位 **62%**）落于**中性区**',
-  '<details><summary>🔍 点击展开查看口径</summary>', '', '口径 …', '', '</details>',
-  '## ⑥ 综合研判',
-  '### 明日跟踪项（引擎动态生成）',
-  '- [ ] 观察封板率是否站稳 80%',
-  '<span>🔴短板</span> <span>🟢积极</span>',
-  '<details><summary>📚 口径附录</summary>', '', '全报告统一口径', '', '</details>',
-  '> 本报告由规则引擎自动生成，仅供研究参考，**非投资建议**。',
-  '> 导出时间：2026-10-01 17:00',
-].join('\n');
+/**
+ * 三种形态的「合规」样本**从真引擎现生成**，不手抄。
+ *
+ * 为什么必须现生成（这是本项目踩过的坑）：
+ *   手抄的 fixture 等于第二套口径——版式一旦调整（比如这次从「网页文档」改成「公文」），
+ *   手抄样本还停留在旧形态，测试要么假通过、要么报一堆与实现无关的假失败，
+ *   两种结果都会掩盖真问题。现生成的样本天然跟随实现，审计项要与它脱节都难。
+ *   而"实现本身坏了"由另一层负责：test/report.test.mjs 用**字面量**断言版式常量。
+ */
+const goodOpts = (rep = goodRep()) => {
+  const o = { dataDate: '2026-09-30', generatedAt: '2026-10-01 17:00', issueNo: 3 };
+  return { rootEl: null, md: toMarkdown(rep, o), txt: toPlainText(rep, o), html: toStandaloneHtml(rep, o) };
+};
 
-const GOOD_TXT = [
-  'A 股市场情绪研判报告',
-  '【极简摘要】情绪 62.3 落于中性区',
-  '   [ ] 观察封板率是否站稳 80%',
-  '本报告由规则引擎自动生成，仅供研究参考，非投资建议。',
-  '导出时间：2026-10-01 17:00',
-].join('\n');
-
-const GOOD_HTML = [
-  '<p class="doc-abstract">【极简摘要】…</p>',
-  '<details class="caliber"><summary>🔍 点击展开查看口径</summary><p>口径</p></details>',
-  '<details class="caliber appendix" open><summary>📚 口径附录</summary><p>口径</p></details>',
-  '<p class="disclaimer"><b>免责声明</b>：本报告……非投资建议。</p>',
-  '<p class="src">导出时间：2026-10-01 17:00</p>',
-].join('\n');
-
-const goodOpts = () => ({ rootEl: null, md: GOOD_MD, txt: GOOD_TXT, html: GOOD_HTML });
+/**
+ * 一份**完整合规**的样本（三种形态都补齐跟踪项复选框）。
+ * 正向用例必须都走它——只补一半（比如只给 md 补、不给 html 补）会造成
+ * 「这条用例过、那条用例挂」的假象，排查成本全花在 fixture 上。
+ */
+function fullSample() {
+  const rep = goodRep();
+  const opts = goodOpts(rep);
+  opts.md += '\n- [ ] 观察封板率是否站稳 80%\n';
+  opts.html += '\n<ul class="todo"><li><span class="cb">☐</span>观察封板率</li></ul>\n';
+  return { rep, opts };
+}
 
 // ────────────────────────── 正向：合规报告必须全通过 ──────────────────────────
 
 test('正向：合规报告全部检查项通过', () => {
-  const r = auditReport(goodRep(), goodOpts());
+  const { rep, opts } = fullSample();
+  const r = auditReport(rep, opts);
   assert.equal(r.pass, true, '失败项：' + JSON.stringify(r.failed));
   assert.equal(r.total, RULES.length);
   assert.equal(r.passed, r.total);
@@ -82,12 +79,14 @@ test('正向：合规报告全部检查项通过', () => {
 });
 
 test('正向：auditSummary 在通过时给出「通过 N/N 项」', () => {
-  const r = auditReport(goodRep(), goodOpts());
+  const { rep, opts } = fullSample();
+  const r = auditReport(rep, opts);
   assert.match(auditSummary(r), /^通过 \d+\/\d+ 项$/);
 });
 
 test('正向：isAuditPass 与 auditReport().pass 一致', () => {
-  assert.equal(isAuditPass(goodRep(), goodOpts()), true);
+  const { rep, opts } = fullSample();
+  assert.equal(isAuditPass(rep, opts), true);
   assert.equal(isAuditPass({ sections: [] }, {}), false);
 });
 
@@ -211,7 +210,8 @@ test('边界：审计项自身抛异常 → 按失败处理并说明原因（不
   // 传一个会让规则内部炸掉的 rootEl（querySelector 抛错），
   // abstract-first 规则会走到 DOM 分支；这里用 Proxy 强制抛错
   const evil = new Proxy({}, { get() { throw new Error('boom'); } });
-  const r = auditReport(goodRep(), { rootEl: evil, md: GOOD_MD, txt: GOOD_TXT, html: GOOD_HTML });
+  const { opts } = fullSample();
+  const r = auditReport(goodRep(), { ...opts, rootEl: evil });
   assert.equal(r.pass, false, '审计工具坏了必须按失败处理，不能放行');
   assert.ok(r.failed.some((f) => /审计项异常/.test(f.reason)));
 });

@@ -607,7 +607,7 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
 
   // 模板结构必须落地（缺失即视为模板被推翻）
   const STRUCT = [
-    ['模板①极简摘要', /bf-abstract|doc-abstract/],
+    ['模板①摘要栏', /bf-abstract|doc-abstract/],
     ['模板②连板天梯表格', /bf-table|rep-tbl/],
     ['模板③口径折叠件', /CALIBER_SUMMARY|<details/],
     ['模板④复选框清单', /bf-todo|todo/],
@@ -638,6 +638,138 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
       !!appTitle && !!rptTitle && appTitle[1] === rptTitle[1],
       appTitle && rptTitle ? `app「${appTitle[1]}」/ report「${rptTitle[1]}」` : '未找到常量');
   }
+}
+
+// ── B6b. 公文体例守卫（用户给定「A股市场研究分析简报 · 报告标准格式」）─────────
+// 与 B6 的分工：B6 守「模板要求的四类结构别丢」，B6b 守「公文格式别走样」。
+// 公文体例的每一条（页边距/字号阶梯/序号体系/日期形态/六角括号/页码单双页）
+// 都是**规范**，不是审美偏好——所以逐条有守卫，且每条都做过负向注入验证。
+//
+// 这一块查的是 **DOC_SPEC 常量与声明的版式助手**，而不是在 CSS 里
+// 逐个 grep 字面量：常量是唯一出处，CSS 由它插值生成（见 STANDALONE_CSS）。
+// 一旦有人在 CSS 里手抄一个 15pt，B6b 的「CSS 不含手写字号」那条会立刻拦下。
+{
+  const reportSrc = readFileSync(path.join('src', 'report.js'), 'utf8');
+  const css = reportSrc.slice(reportSrc.indexOf('export const STANDALONE_CSS'));
+
+  // ① A4 与页边距（上37 下35 左28 右26）——四边数值缺一不可，顺序也不能错
+  const pageSpec = reportSrc.match(/page:\s*\{([^}]*)\}/);
+  const want = { top: '37mm', bottom: '35mm', left: '28mm', right: '26mm' };
+  const pageOk = !!pageSpec && Object.entries(want).every(([k, v]) => new RegExp(`${k}:\\s*'${v}'`).test(pageSpec[1]));
+  check('公文：A4 版心页边距上37/下35/左28/右26（缺一边就不是公文版心）',
+    pageOk && /size:\s*'A4'/.test(pageSpec[1]),
+    pageSpec ? pageSpec[1].trim().slice(0, 90) : '未找到 DOC_SPEC.page');
+  // @page 简写顺序是 上 右 下 左 —— 写错顺序＝左右边距互换，肉眼几乎看不出，必须机检
+  check('公文：@page margin 按「上 右 下 左」顺序由常量插值（顺序错＝左右互换）',
+    /@page\s*\{\s*size:\s*\$\{DOC_SPEC\.page\.size\};\s*margin:\s*\$\{DOC_SPEC\.page\.top\}\s+\$\{DOC_SPEC\.page\.right\}\s+\$\{DOC_SPEC\.page\.bottom\}\s+\$\{DOC_SPEC\.page\.left\}/.test(css),
+    '未按 上右左下 顺序插值');
+
+  // ② 字号阶梯：2 号＝22pt、3 号＝16pt、4 号＝14pt，全部来自 DOC_SPEC
+  const fontSpec = reportSrc.match(/font:\s*\{([^}]*)\}/);
+  const fontOk = !!fontSpec
+    && /h1:\s*'22pt'/.test(fontSpec[1]) && /abstract:\s*'16pt'/.test(fontSpec[1])
+    && /body:\s*'16pt'/.test(fontSpec[1]) && /table:\s*'16pt'/.test(fontSpec[1])
+    && /page:\s*'14pt'/.test(fontSpec[1]);
+  check('公文：字号阶梯 2号22pt / 3号16pt / 4号14pt（全部取自 DOC_SPEC.font）',
+    fontOk, fontSpec ? fontSpec[1].trim().slice(0, 110) : '未找到 DOC_SPEC.font');
+  // CSS 不得出现裸字号字面量（手抄＝第二套口径，常量改了这边不会跟着改）。
+  // ⚠ 必须同时卡 pt 与 px：只卡 pt 会漏掉「手写成 16px」这种更常见的走样
+  //   （负向注入时实测到的洞——当时只写了 \d+pt，把 16px 放行了）。
+  const barePt = (css.match(/font-size:\s*\d+(?:\.\d+)?(?:pt|px)\b/g) || []);
+  check('公文：CSS 里的字号全部由 DOC_SPEC 插值，无手抄的 pt/px 字面量',
+    barePt.length === 0, barePt.slice(0, 3).join(' ; '));
+
+  // ③ 字体族：小标宋 / 黑体 / 楷体 / 仿宋 四族齐备，且各自有跨平台兜底
+  // ⚠ 每条族的值本身是**逗号分隔的候选列表**（`"方正小标宋简体", "STZhongsong", …`），
+  //   所以不能用 `[^,]*` 卡到第一个逗号就收手（小标宋的第一项是中文名，命中不到 STZhongsong）。
+  //   用 `[^']*` 取到该条**引号值的边界**，跨行用 [\s\S] 兜住。
+  const famSpec = reportSrc.match(/family:\s*\{([\s\S]*?)\n\s*\}/);
+  const famBody = famSpec ? famSpec[1] : '';
+  const famChecks = [
+    ['小标宋', /\bxbs:\s*'[^']*STZhongsong/, '缺小标宋（或没有跨平台兜底 STZhongsong）'],
+    ['黑体', /\bhei:\s*'[^']*SimHei/, '缺黑体 SimHei'],
+    ['楷体', /\bkai:\s*'[^']*KaiTi/, '缺楷体 KaiTi'],
+    ['仿宋', /\bfs:\s*'[^']*FangSong/, '缺仿宋 FangSong'],
+  ];
+  const famBad = famChecks.filter(([, re]) => !re.test(famBody)).map(([, , m]) => m);
+  check('公文：字体族小标宋/黑体/楷体/仿宋齐备，且各有兜底字体（缺字体时不至于是宋体一刀切）',
+    famBody && famBad.length === 0, famBad.join('；') || (famSpec ? '' : '未找到 DOC_SPEC.family'));
+
+  // ④ 序号体系：一、（黑体）→（一）（楷体）→ 1.→（1），层级顺序不得插队、不得混用
+  check('公文：四层序号助手齐备（一、/（一）/1./（1））',
+    /export function sectionNo\(/.test(reportSrc)
+    && /h1Mark|h2Mark|h3Mark|h4Mark/.test(reportSrc)
+    && /numbering:\s*\{[^}]*level1:\s*'cn'[^}]*level2:\s*'cnPar'[^}]*level3:\s*'arabic'[^}]*level4:\s*'arabicPar'/s.test(reportSrc),
+    '序号体系常量或助手缺失');
+  // 一级标题必须是黑体、二级必须是楷体 —— 这是「序号字体跟着层级走」的公文规定。
+  // ⚠ 判据是「引用了对应的 DOC_SPEC.family 条目」而不是「文中出现了 SimHei」：
+  //   CSS 由常量插值生成，字面量本来就不该出现在 CSS 里（下一条正是查这个）。
+  //   一开始写成了 grepping 字面量 SimHei，结果把**正确实现**判成了失败——
+  //   「守卫断言用了错误的参照物」是本项目反复踩的坑，这里记一笔。
+  check('公文：序号字体跟着层级走（一级取 family.hei / 二级取 family.kai）',
+    /\.sec h2\.h1\s*\{[^}]*font-family:\s*\$\{DOC_SPEC\.family\.hei\}/s.test(css)
+    && /\.sec h3\.h2\s*\{[^}]*font-family:\s*\$\{DOC_SPEC\.family\.kai\}/s.test(css),
+    '一级/二级标题的字体族未按层级取 DOC_SPEC.family');
+  // CSS 不得出现裸字体名（手抄＝第二套口径，常量改了这边不会跟着改）
+  const bareFam = (css.match(/font-family:\s*(?!\$\{)[^;]*/g) || [])
+    .filter((s) => /Sim|Kai|Fang|Song|YaHei|PingFang/.test(s));
+  check('公文：CSS 里的字体族全部由 DOC_SPEC.family 插值，无手抄字体名',
+    bareFam.length === 0, bareFam.slice(0, 2).join(' ; '));
+  // 导出层不得再输出历史圆形序号（①②③）当章节号
+  check('公文：导出层不再用圆形序号①②③当章节号（已统一为一、）',
+    !/sec-no">\$\{i \+ 1\}/.test(reportSrc) && !/<span class="sec-no">/.test(reportSrc),
+    '仍存在 ①②③ 圆形序号徽标');
+
+  // ⑤ 六角括号（U+3014/U+3015）——公文规定年份编号用〔〕，不是 [ ]
+  check('公文：年份编号用六角括号〔〕（U+3014/U+3015），且未误用方括号',
+    /bracket:\s*\['\\u3014'|bracket:\s*\['〔',\s*'〕'\]/.test(reportSrc)
+    && /cnBracket/.test(reportSrc)
+    && !/\[\s*\$\{y\}\s*\]/.test(reportSrc),
+    '六角括号常量或 cnBracket 缺失');
+
+  // ⑥ 生成日期：阿拉伯数字全年月日、不编虚位（补零）、右空四字
+  check('公文：生成日期走 docDate()（阿拉伯数字 YYYY-MM-DD 补零，不用汉字数字）',
+    /export function docDate\(/.test(reportSrc)
+    && /padStart\(2,\s*'0'\)/.test(reportSrc.slice(reportSrc.indexOf('export function docDate'))),
+    'docDate 缺失或缺补零');
+  check('公文：落款日期右空四字（padding-right: 4em，取自 DOC_SPEC.dateRightChars）',
+    /\.sign-date\s*\{[^}]*padding-right:\s*\$\{DOC_SPEC\.dateRightChars\}em/s.test(css),
+    '未按 dateRightChars 生成');
+
+  // ⑦ 页码：4 号半角阿拉伯数字、版心之外、单页右放 / 双页左放
+  check('公文：页码单页右放 @page :right @bottom-right（4 号半角）',
+    /@page :right\s*\{\s*@bottom-right\s*\{\s*content:\s*counter\(page\);\s*font-family:\s*\$\{DOC_SPEC\.family\.fs\};\s*font-size:\s*\$\{DOC_SPEC\.font\.page\}/.test(css),
+    '单页页码规则缺失或未由常量插值');
+  check('公文：页码双页左放 @page :left @bottom-left（与单页镜像）',
+    /@page :left\s*\{\s*@bottom-left\s*\{\s*content:\s*counter\(page\)/.test(css),
+    '双页页码规则缺失');
+
+  // ⑧ 正文缩进：左空 2 字符靠 text-indent（回行顶格是它的天然结果，不能用 padding 代替）
+  check('公文：正文「左空 2 字符」用 text-indent: 2em（padding 会让回行不顶格）',
+    /\.sec li\s*\{[^}]*text-indent:\s*2em/s.test(css)
+    && !/\.sec li\s*\{[^}]*padding-left/s.test(css),
+    '正文缩进实现方式不对');
+
+  // ⑨ 附表：标题在表格上方居中
+  check('公文：附表标题在表格上方且居中（.tbl-cap 用 text-align:center）',
+    /\.tbl-cap\s*\{[^}]*text-align:\s*center/s.test(css),
+    '表格标题未居中');
+
+  // ⑩ 屏幕层也要有对应的报头/序号结构（屏幕与导出同体例，不能只有导出是公文）
+  const appRaw3 = readFileSync('app.js', 'utf8');
+  check('公文：屏幕层同样产出报头/主标题/段序号结构',
+    /class="bf-head"/.test(appRaw3) && /class="bf-masthead"/.test(appRaw3)
+    && /class="bf-sec-no"/.test(appRaw3) && /bf-title/.test(appRaw3),
+    'app.js 缺公文报头或序号结构');
+  // 屏幕层序号必须来自「版式层」，不能又在标题字符串里手写序号
+  check('公文：屏幕层段序号由数组现算（不在标题字符串里手抄「①」）',
+    !/seg\('① |seg\('② /.test(appRaw3),
+    'app.js 仍在标题字符串里手写圆形序号');
+  const styleSrc = readFileSync('style.css', 'utf8');
+  check('公文：屏幕样式层有报头/标题/序号样式',
+    /\.bf-head\s*\{/.test(styleSrc) && /\.bf-masthead\s*\{/.test(styleSrc)
+    && /\.bf-sec-no\s*\{/.test(styleSrc),
+    'style.css 缺公文报头/序号样式');
 }
 
 // ── B7. 报告出厂质检闸门的守卫（用户要求「自动化审计后再出现」）───────────────

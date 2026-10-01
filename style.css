@@ -221,14 +221,29 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   padding: 3px 10px; font-size: 11.5px; cursor: pointer; font-family: inherit; white-space: nowrap; }
 .mini:hover { color: var(--acc); border-color: var(--acc); }
 .brief-body { font-size: 12.5px; line-height: 1.55; max-height: 560px; overflow-y: auto; }
+
+/* ── 公文体例：报头 + 主标题（屏幕端镜像导出文档的 2 号小标宋 / 居中 / 编号居右）──
+   屏幕不做 A4 排版（那是导出文档的事），但**层级关系必须一致**：读者在屏幕上看到的
+   「报头 → 主标题 → 摘要栏 → 一、二、三…」顺序，与导出的公文一模一样。
+   序号由 .bf-sec-no 独立承载（不是标题文本的一部分），这既让版式可控，
+   也让导出层能只取标题文字（见 report.js::parseReport 的注释）。 */
+.bf-head { text-align: center; margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.bf-serial { text-align: right; font-size: 10.5px; color: var(--muted); letter-spacing: .5px; }
+.bf-masthead { font-size: 17px; font-weight: 700; color: var(--txt); letter-spacing: .12em; margin-top: 2px; }
+.bf-title { font-size: 13px; color: var(--muted); margin-top: 3px; letter-spacing: .04em; }
+
 .bf-sec { margin-bottom: 12px; scroll-margin-top: 60px; }
-.bf-sec > .bf-h { cursor: pointer; }
+.bf-sec > .bf-h { cursor: pointer; display: flex; gap: 4px; align-items: baseline; }
 .bf-sec > .bf-h:hover { color: var(--txt); }
-.bf-sec > .bf-h::after { content: ' ▾'; font-size: 9px; color: var(--muted); }
+.bf-sec > .bf-h::after { content: ' ▾'; font-size: 9px; color: var(--muted); margin-left: auto; }
 .bf-sec.collapsed > .bf-h::after { content: ' ▸'; }
 .bf-sec.collapsed > .bf-body { display: none; }
-.bf-h { font-size: 12px; color: var(--acc); font-weight: 600; margin-bottom: 4px; }
-.bf-h2 { margin-top: 6px; color: var(--warn); }
+/* 一级标题：一、（黑体）—— 屏幕用等宽强调代替黑体族（页面本身是 UI 字体，混衬线会突兀） */
+.bf-h { font-size: 12.5px; color: var(--acc); font-weight: 700; margin-bottom: 4px; }
+.bf-sec-no { flex: none; color: var(--acc); font-weight: 700; }
+/* 二级标题：（一）（楷体）—— 屏幕用常规色 + 略小字号表达从属关系 */
+.bf-h2 { display: flex; gap: 4px; margin-top: 6px; color: var(--warn); font-weight: 600; font-size: 12px; }
+.bf-h2 .bf-sec-no { color: var(--warn); }
 .bf-li { margin-bottom: 3px; }
 .bf-li b { color: var(--txt); }
 .bf-up { color: var(--up); font-weight: 600; }
@@ -813,6 +828,10 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
   .brief-body { max-height: none !important; overflow: visible !important; font-size: 12pt; }
   .bf-sec { break-inside: avoid-page; }
   .bf-h { break-after: avoid; }
+  /* 报头/主标题在打印稿里保持居中层级，不因去色而丢掉「这是公文」的观感 */
+  .bf-head { border-bottom-color: #999 !important; }
+  .bf-masthead { color: #000 !important; }
+  .bf-title { color: #333 !important; }
   .bf-foot { font-size: 9pt; break-inside: avoid; }
   .bf-meta { border: 1px solid #ccc !important; background: #fff !important; }
   /* 口径折叠件同理：收起着打出来会缺口径——强制展开正文，屏上按钮式 summary 转成标题行 */

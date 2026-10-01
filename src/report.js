@@ -9,11 +9,156 @@
 // 纯函数为主（除 parseReport 需要 DOM 之外，其余都收结构化数据），Node 与浏览器共用，
 // 便于单元测试直接在 Node 里跑断言。
 
-export const REPORT_VERSION = 'report-v2';
+export const REPORT_VERSION = 'report-v3';
 
 /** 报告文档的标题与署名（正式文档需要，屏幕上被页面标题代替） */
-export const REPORT_TITLE = 'A 股市场情绪研判报告';
+export const REPORT_TITLE = 'A股市场情绪研判简报';
 export const REPORT_ORG = 'A股情绪系统 · PRO';
+
+// ────────────────────── 公文体例：排版规格（唯一出处） ──────────────────────
+//
+// 为什么把版式写成**常量**而不是直接字面量写进 CSS：
+//   公文格式（页边距、字号阶梯、序号体系、字体族）是**规范**，不是审美偏好——
+//   规范会被引用、被切面校验（守卫脚本要按行切到「摘要栏」去查它的字号），
+//   也会被导出文档与屏幕共用。一旦有人把 16pt 手改成 15pt，单测要能说得清是哪个常量错了。
+//   故：**所有版式数值只有一个来源 = DOC_SPEC**，CSS 与 DOM 都从这里取。
+//
+// 注意这是**排版层**常量，与指标无关——本文件仍然不重算任何指标（见文件头纪律）。
+//
+// 字号口径：2号 ≈ 22pt，3号 ≈ 16pt，4号 ≈ 14pt（公文常用对照）。
+// 字体族按「Windows 公文标准字体优先、跨平台有兜底」排列：
+//   小标宋 = 方正小标宋简体（Windows 多不带，故并列 STZhongsong / 华文中宋 / SimSun 兜底）
+//   黑体 = SimHei，楷体 = KaiTi，仿宋 = FangSong。
+// 浏览器到导出时一律回落到系统已装字体，**不做字体嵌入**（离线自包含是硬约束）。
+export const DOC_SPEC = {
+  version: 'gb-brief-v1',
+  /** 整体：A4 纸与页边距（上 37 / 下 35 / 左 28 / 右 26，单位 mm） */
+  page: { size: 'A4', w: '210mm', h: '297mm', top: '37mm', bottom: '35mm', left: '28mm', right: '26mm' },
+  /** 字号阶梯：与公文体例一一对应（pt） */
+  font: { h1: '22pt', abstract: '16pt', body: '16pt', table: '16pt', page: '14pt', note: '14pt' },
+  /** 字体族 */
+  family: {
+    xbs: '"方正小标宋简体", "STZhongsong", "华文中宋", "SimSun", serif',
+    hei: '"SimHei", "Microsoft YaHei", sans-serif',
+    kai: '"KaiTi", "Kaiti SC", "STKaiti", serif',
+    fs: '"FangSong", "FangSong_GB2312", "STFangsong", "SimSun", serif',
+  },
+  /** 标题最多排版成几行（超过就压成一行，梯形/菱形排布的行数是有限的） */
+  titleMaxLines: 4,
+  /** 正文「左空 2 字符」= 首行缩进 2 字（回行顶格是缩进的天然结果，无需另设） */
+  indentChars: 2,
+  /** 落款日期「右空四字」 */
+  dateRightChars: 4,
+  /** 层次序号体系：一、（黑体）→（一）（楷体）→ 1.（仿宋）→（1）（仿宋） */
+  numbering: {
+    level1: 'cn',      // 中文数字 + 顿号
+    level2: 'cnPar',   // 中文数字 + 全角括号
+    level3: 'arabic',  // 阿拉伯数字 + 半角点
+    level4: 'arabicPar',
+    family: ['hei', 'kai', 'fs', 'fs'],
+  },
+  /** 公告年份编号用六角括号（U+3014 / U+3015），不是方括号 —— 公文硬规定 */
+  bracket: ['〔', '〕'],
+  /** 页码：4 号半角阿拉伯数字，居版心下边缘之下、版心之外，单页右放、双页左放 */
+  pageNo: { family: 'fs', single: 'right', double: 'left', showTotal: false },
+};
+
+/** 六角括号包裹的文本（年份编号等）—— 唯一出处，禁止各处手写 〔〕 */
+export const cnBracket = (s) => DOC_SPEC.bracket[0] + String(s == null ? '' : s) + DOC_SPEC.bracket[1];
+
+/** 阿拉伯数字写全年月日，不编虚位（如 2026-09-30）；非法输入原样返回，不编造日期 */
+export function docDate(text) {
+  const m = String(text == null ? '' : text).match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (!m) return String(text == null ? '' : text);
+  return `${m[1]}-${String(+m[2]).padStart(2, '0')}-${String(+m[3]).padStart(2, '0')}`;
+}
+
+/** 中文数字（正文一级/二级序号用；报告 7 段以内，够用且不必引入大数转换） */
+const CN_NUM = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+const cnNum = (n) => (n <= 10 ? CN_NUM[n] : String(n));
+
+/**
+ * 一级标题的序号标记：`一、`（黑体）。
+ * 章节自带 `① 情绪定位…` 这类历史前缀时先摘掉，避免「一、① 情绪定位」双序号。
+ */
+export function h1Mark(index1) {
+  return `${cnNum(index1)}、`;
+}
+
+/** 二级标题的序号标记：`（一）`（楷体） */
+export const h2Mark = (index2) => `（${cnNum(index2)}）`;
+/** 三级标题标记：`1.`（仿宋） */
+export const h3Mark = (index3) => `${index3}.`;
+/** 四级标题标记：`（1）`（仿宋） */
+export const h4Mark = (index4) => `（${index4}）`;
+
+/**
+ * 正文层级序号：**固定顺序** 一、→（一）→ 1.→（1）。
+ *
+ * 为什么做成函数而不是各处手写字符串：用户给的四条硬性注意里有一条是
+ * 「正文序号不能混用：一、后面不能直接跟 1.」——这是**跨行**的约束，
+ * 光看一行文本发现不了。把层级选择收敛到一处，才能被守卫脚本按行校验。
+ * 层级语义：'cn' → 一、｜'cnPar' →（一）｜'arabic' → 1.｜'arabicPar' →（1）
+ */
+export function sectionNo(level, index) {
+  if (level === 'cn' || level === 'cnPar') {
+    return level === 'cn' ? h1Mark(index) : h2Mark(index);
+  }
+  if (level === 'arabic' || level === 'arabicPar') {
+    return level === 'arabic' ? h3Mark(index) : h4Mark(index);
+  }
+  return h1Mark(index); // 未声明层级时按一级处理，不抛异常（报告不该因为版式参数崩掉）
+}
+
+/** 章节标题里残留的历史圆形序号（①②③…）——导出前摘掉，避免与「一、」并存 */
+const stripOldNo = (s) => String(s || '').replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫]\s*/, '');
+
+/**
+ * 台阶式换行：章节标题过长时按标点断行，**绝不拆断词语**。
+ *
+ * 规则（宁可行短，不可拆词）：
+ *   ① 中文标点（、，；：）后是天然断点；
+ *   ② 全角括号/引号后**不**断（断了会把「（核心因子·25%）」拆成两行）；
+ *   ③ 单行仍超长时才退回「等分台阶」——此为最后手段，且只按字符等分，
+ *      仍然不插入任何连字符或空格。**注意**：无标点的长串（如「资金面（龙虎榜），参与打分…」，
+ *      整段只有一个中文逗号）在中文里没有真正无歧义的断点，此时只能按字符切，
+ *      切点仍落在字与字之间、不插入任何符号，属可接受的排版近似。
+ */
+export function foldTitle(text, max = DOC_SPEC.titleMaxLines, lineLen = 18) {
+  const chars = [...stripOldNo(String(text || ''))];
+  if (chars.length <= lineLen) return [chars.join('')];
+
+  const lines = [];
+  let cur = [];
+  for (let i = 0; i < chars.length; i++) {
+    cur.push(chars[i]);
+    // 在标点处断行，但排除开括号/开引号后的位置（断了会拆散「『情绪定位』」这类词组）
+    const isBreak = '、，；：'.includes(chars[i])
+      || (chars[i] === '·' && /[\u4e00-\u9fa5]/.test(chars[i + 1] || ''))
+      || (chars[i] === '）' && cur.length >= 8);
+    if (isBreak && chars.length - i - 1 > 2 && lines.length < max - 1) {
+      lines.push(cur.join(''));
+      cur = [];
+    }
+  }
+  if (cur.length) lines.push(cur.join(''));
+
+  // 断点太少（整句无标点）时才退回等分台阶；能被标点切开的绝不做等分
+  if (lines.length < 2) {
+    const per = Math.ceil(chars.length / Math.min(max, Math.ceil(chars.length / lineLen)));
+    const eq = [];
+    for (let i = 0; i < chars.length; i += per) eq.push(chars.slice(i, i + per).join(''));
+    return eq;
+  }
+  return lines;
+}
+
+/** 章节标题的显示文本（去掉序号前缀与历史圆形序号，序号由版式层统一加） */
+export function sectionTitle(secTitle) {
+  return stripOldNo(String(secTitle || ''))
+    // 「一、」这类序号若已由屏幕层写进标题，同样摘掉，防止双序号
+    .replace(/^[一二三四五六七八九十]+、\s*/, '');
+}
 
 /** 章节口径折叠件的统一标题（模板规定，屏幕与导出必须一致） */
 export const CALIBER_SUMMARY = '🔍 点击展开查看口径';
@@ -91,7 +236,7 @@ export function parseReport(rootEl) {
     : null;
 
   /**
-   * 从任意容器抽「行」：.bf-li 是正文行、.bf-h 是段内小标题、.bf-todo 是待办项、
+   * 从任意容器抽「行」：.bf-li 是正文行、.bf-h2 是段内小标题、.bf-todo 是待办项、
    * .bf-table 是表格。**只遍历直接子节点**，保持行的粒度（口语：一行是一行）。
    * 表格单独作为 { kind:'table', head, rows } 返回，导出层负责渲染成真表格，
    * 不做「表格摊平成一行文字」那种丢结构的降级。
@@ -110,8 +255,11 @@ export function parseReport(rootEl) {
         lines.push({ kind: 'todo', text: tidyWarn(clean(inline(child))) });
       } else if (/\bbf-li\b/.test(cls)) {
         lines.push({ kind: 'li', text: tidyWarn(clean(inline(child))) });
-      } else if (/\bbf-h\b/.test(cls)) {
-        lines.push({ kind: 'sub', text: clean(child.textContent) });
+      } else if (/\bbf-h2\b/.test(cls)) {
+        // 段内小标题（（一）级）。与一级标题同理：**只用内容 span 的文字**，
+        // 否则会把版式层刚加的「（一）」当成标题的一部分，导致导出的序号变成「（一）（一）…」。
+        const inner = child.querySelector('.bf-sec-t') || child.querySelector('.bf-h-t');
+        lines.push({ kind: 'sub', text: clean((inner || child).textContent) });
       }
     }
     return lines;
@@ -120,7 +268,12 @@ export function parseReport(rootEl) {
   const sections = [];
   for (const sec of rootEl.querySelectorAll('.bf-sec')) {
     const h = sec.querySelector('.bf-h');
-    const title = h ? clean(h.textContent) : '';
+    // ⚠ 只取**内容 span**（.bf-sec-t / .bf-h-t）的文字，不能取整个 .bf-h 的 textContent：
+    // 屏幕层现在把序号「一、」放在独立的 .bf-sec-no 里，取整块就会把序号带进标题，
+    // 导出时再补一次「一、」→ 变成「一、一、情绪定位」。没有内容 span 时才退回整块
+    // （兼容旧结构 / 单测里手写的 fixture）。
+    const inner = h && (h.querySelector('.bf-sec-t') || h.querySelector('.bf-h-t'));
+    const title = h ? clean((inner || h).textContent) : '';
     // 口径折叠件（模板③）：默认收起，导出时同样渲染为 <details>（纯文本形态平铺 + [口径] 前缀）。
     // 必须从 body 里"摘"出来，否则 extractLines 会把它当成一个不可识别的 div 丢掉。
     const calEl = sec.querySelector('.bf-caliber');
@@ -172,17 +325,22 @@ const stripMark = (s, keepBold = false) => String(s || '')
  * 这与「默认收起、只展示指标」的屏幕体验不一致，是形态限制下的取舍，属预期。
  */
 export function toPlainText(rep, opts = {}) {
-  const { dataDate = '', generatedAt = '' } = opts;
+  const { dataDate = '', generatedAt = '', issueNo = 1 } = opts;
   const L = [];
+  // 报头（简报名称 + 编号）→ 与导出文档同一体例：纯文本也认得出这是一份「简报」
   L.push(REPORT_TITLE);
-  if (dataDate) L.push(`数据日期：${dataDate}`);
+  const serial = briefSerial(dataDate, issueNo);
+  if (serial) L.push(serial);
+  if (dataDate) L.push(`数据日期：${docDate(dataDate)}`);
   L.push('');
-  if (rep.abstract) { L.push(`【极简摘要】${stripMark(rep.abstract)}`); L.push(''); }
+  if (rep.abstract) { L.push(`【摘要】${stripMark(rep.abstract)}`); L.push(''); }
   if (rep.meta) { L.push(rep.meta); L.push(''); }
-  for (const sec of rep.sections) {
-    L.push(sec.title);
+  rep.sections.forEach((sec, i) => {
+    // 层次序号：一、（（一）在段内递进）——纯文本同样遵守，不能因为没有样式就丢掉层级
+    L.push(`${sectionNo('cn', i + 1)}${sectionTitle(sec.title)}`);
+    let subNo = 0;
     for (const ln of sec.lines) {
-      if (ln.kind === 'sub') L.push(`  ${ln.text}`);
+      if (ln.kind === 'sub') { subNo += 1; L.push(`  ${sectionNo('cnPar', subNo)}${sectionTitle(ln.text)}`); }
       else if (ln.kind === 'todo') L.push(`  [ ] ${stripMark(ln.text)}`);
       else if (ln.kind === 'table') {
         // 表格在纯文本里用「｜」分隔的对齐列，保留结构与逐只可核性
@@ -193,7 +351,7 @@ export function toPlainText(rep, opts = {}) {
     }
     if (sec.caliber) L.push(`  [口径] ${stripMark(sec.caliber)}`);
     L.push('');
-  }
+  });
   // 文末独立附录：纯文本里同样平铺（无折叠可用），保留 [口径] 前缀以便检索
   if (rep.appendix) {
     L.push(`【${stripMark(rep.appendix.title)}】`);
@@ -201,7 +359,9 @@ export function toPlainText(rep, opts = {}) {
     L.push('');
   }
   if (rep.foot) { L.push('口径备注'); L.push(stripMark(rep.foot)); L.push(''); }
-  L.push(`本报告由 ${REPORT_ORG} 规则引擎自动生成，数据来源于公开行情接口，仅供研究参考，非投资建议。`);
+  L.push(`本简报由 ${REPORT_ORG} 规则引擎自动生成，数据来源于公开行情接口，仅供研究参考，非投资建议。`);
+  // 落款：生成日期（阿拉伯数字写全年月日，不编虚位）
+  if (dataDate) L.push(docDate(dataDate));
   if (generatedAt) L.push(`导出时间：${generatedAt}`);
   return L.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
 }
@@ -218,25 +378,30 @@ const mdCell = (s) => stripMark(s, true).replace(/\|/g, '\\|').replace(/\n+/g, '
  * 明日观测用 GFM 任务列表语法 `- [ ]`，在支持的编辑器里可直接勾选。
  */
 export function toMarkdown(rep, opts = {}) {
-  const { dataDate = '', generatedAt = '' } = opts;
+  const { dataDate = '', generatedAt = '', issueNo = 1 } = opts;
   const L = [];
+  // 报头：简报名称 + 编号（编号居右 → Markdown 里用行尾对齐语义表达「居右」）
   L.push(`# ${REPORT_TITLE}`);
   L.push('');
-  if (dataDate) L.push(`**数据日期**：${dataDate}　　**生成方式**：规则引擎自动生成`);
+  const serial = briefSerial(dataDate, issueNo);
+  if (serial) { L.push(`<p align="right">${serial}</p>`); L.push(''); }
+  if (dataDate) L.push(`**数据日期**：${docDate(dataDate)}　　**生成方式**：规则引擎自动生成`);
   L.push('');
-  // ① 极简摘要（一句话核心）
+  // 摘要栏（模板①：一句话核心）
   if (rep.abstract) {
-    L.push(`> **【极简摘要】** ${stripMark(rep.abstract, true)}`);
+    L.push(`> **【摘要】** ${stripMark(rep.abstract, true)}`);
     L.push('');
   }
   if (rep.meta) { L.push(`> ${rep.meta.replace(/\|/g, '\\|')}`); L.push(''); }
 
-  // ② 固定章节：正文只放指标，口径一律收进 <details>
-  for (const sec of rep.sections) {
-    L.push(`## ${sec.title}`);
+  // 固定章节：正文只放指标，口径一律收进 <details>
+  // 层次序号与导出文档同一体系：一、→（一）→ 1.，Markdown 的 # 层级与之一一对应
+  rep.sections.forEach((sec, i) => {
+    L.push(`## ${sectionNo('cn', i + 1)}${sectionTitle(sec.title)}`);
     L.push('');
+    let subNo = 0;
     for (const ln of sec.lines) {
-      if (ln.kind === 'sub') { L.push(`### ${ln.text}`); L.push(''); }
+      if (ln.kind === 'sub') { subNo += 1; L.push(`### ${sectionNo('cnPar', subNo)}${sectionTitle(ln.text)}`); L.push(''); }
       else if (ln.kind === 'todo') { L.push(`- [ ] ${stripMark(ln.text, true)}`); }
       else if (ln.kind === 'table') {
         if (ln.caption) { L.push(`**${mdCell(ln.caption)}**`); L.push(''); }
@@ -248,7 +413,7 @@ export function toMarkdown(rep, opts = {}) {
         L.push('');
       } else L.push(`- ${stripMark(ln.text, true)}`);
     }
-    // ③ 每章节口径折叠件（默认收起，仅展示指标）
+    // 每章节口径折叠件（默认收起，仅展示指标）
     if (sec.caliber) {
       L.push('');
       L.push(`<details>`);
@@ -259,7 +424,7 @@ export function toMarkdown(rep, opts = {}) {
       L.push(`</details>`);
     }
     L.push('');
-  }
+  });
 
   // ③ 文末独立折叠附录：汇总全部口径
   if (rep.appendix) {
@@ -286,7 +451,9 @@ export function toMarkdown(rep, opts = {}) {
   }
   L.push('---');
   L.push('');
-  L.push(`> 本报告由 ${REPORT_ORG} 规则引擎自动生成，数据来源于公开行情接口，仅供研究参考，**非投资建议**。`);
+  L.push(`> 本简报由 ${REPORT_ORG} 规则引擎自动生成，数据来源于公开行情接口，仅供研究参考，**非投资建议**。`);
+  // 落款：生成日期（阿拉伯数字写全年月日，不编虚位，右空四字 → Markdown 用行尾对齐表达）
+  if (dataDate) L.push(`<p align="right">${docDate(dataDate)}</p>`);
   if (generatedAt) L.push(`> 导出时间：${generatedAt}`);
   L.push('');
   return L.join('\n');
@@ -332,46 +499,82 @@ function inlineToHtml(raw) {
  * 故模板要求的折叠件在这里用 `<details>` 实现，而不是引入 JS。
  * 打印时用 CSS 强制展开全部 `<details>`（折叠着打出来会缺内容）。
  */
+/**
+ * 简报编号（报头右上）：`〔2026〕第 3 号`。
+ *   · 年份一律**六角括号**（公文硬规定，见 DOC_SPEC.bracket）；
+ *   · 期号由调用方给定（app.js 从全部交易日推算），缺省为 1，不编造；
+ *   · **不写死任何具体年份**——年份从数据日期现取，报告每年都能用。
+ */
+export function briefSerial(dataDate, issueNo) {
+  const y = (String(dataDate || '').match(/\d{4}/) || [])[0] || '';
+  if (!y) return '';
+  const n = Number.isFinite(+issueNo) && +issueNo > 0 ? +issueNo : 1;
+  return `${cnBracket(y)}第 ${n} 号`;
+}
+
+/**
+ * 独立完整的 HTML 文档：**自包含**（内联样式、无外部依赖、无脚本），
+ * 按**党政机关公文体例**排版（报头 / 主标题 / 摘要栏 / 层次序号正文 / 附表 / 页码 / 落款），
+ * A4 打印就绪（精确页边距、避免段落内断页、表头重复）。
+ *
+ * 版式的每一个数值都取自 DOC_SPEC（唯一出处），本函数不写字面量——
+ * 想改页边距/字号，改 DOC_SPEC，屏幕与导出一起变，守卫脚本也按同一份常量校验。
+ *
+ * 关于「无脚本」：这不是为了省事，而是导出文档要能被邮件客户端、旧浏览器、PDF 打印器、
+ * 甚至纯文本查看器安全打开。`<details>` 恰好是唯一**无需脚本**的原生折叠元素，
+ * 故模板要求的折叠件在这里用 `<details>` 实现，而不是引入 JS。
+ * 打印时用 CSS 强制展开全部 `<details>`（折叠着打出来会缺内容）。
+ */
 export function toStandaloneHtml(rep, opts = {}) {
-  const { dataDate = '', generatedAt = '', url = '' } = opts;
+  const { dataDate = '', generatedAt = '', url = '', issueNo = 1 } = opts;
   const css = STANDALONE_CSS;
   const body = [];
+
+  // ── 报头：简报名称（2 号小标宋，居中）+ 简报编号（居右） ──
   body.push(`<header class="doc-head">`);
-  body.push(`<div class="doc-org">${escHtml(REPORT_ORG)}</div>`);
-  body.push(`<h1>${escHtml(REPORT_TITLE)}</h1>`);
-  body.push(`<div class="doc-sub">规则引擎自动生成 · 口径与回测引擎同源</div>`);
-  body.push(`<dl class="doc-facts">`);
-  body.push(`<div><dt>数据日期</dt><dd>${escHtml(dataDate || '—')}</dd></div>`);
-  body.push(`<div><dt>生成方式</dt><dd>规则引擎（每日随档生成）</dd></div>`);
-  if (generatedAt) body.push(`<div><dt>导出时间</dt><dd>${escHtml(generatedAt)}</dd></div>`);
-  body.push(`</dl>`);
+  body.push(`<p class="serial">${escHtml(briefSerial(dataDate, issueNo))}</p>`);
+  body.push(`<p class="masthead">${escHtml(REPORT_TITLE)}</p>`);
   body.push(`</header>`);
 
-  // ① 极简摘要（一句话核心）：独立成块，置于落款之前，读者一眼就能拿到结论
+  // ── 主体：主标题（2 号小标宋，居中，多行梯形/菱形、不拆断词语） ──
+  const titleLines = foldTitle(REPORT_ORG);
+  body.push(`<h1 class="doc-title" data-line-count="${titleLines.length}">`
+    + titleLines.map((l) => `<span class="t-line">${escHtml(l)}</span>`).join('')
+    + `</h1>`);
+
+  // ── 摘要栏：标题下空一行，3 号楷体，左空 2 字符（只放极简核心摘要） ──
   if (rep.abstract) {
-    body.push(`<p class="doc-abstract"><b>【极简摘要】</b>${inlineToHtml(rep.abstract)}</p>`);
+    body.push(`<p class="doc-abstract"><span class="abs-lead">〔摘要〕</span>${inlineToHtml(rep.abstract)}</p>`);
   }
+  // 数据落款条：属于「生成依据」而非摘要内容，字号同 4 号，不占摘要栏
   if (rep.meta) body.push(`<p class="doc-meta">${escHtml(rep.meta)}</p>`);
 
+  // ── 正文：3 号仿宋，每段左空 2 字符、回行顶格 ──
   body.push(`<main class="doc-body">`);
   rep.sections.forEach((sec, i) => {
     body.push(`<section class="sec">`);
-    body.push(`<h2><span class="sec-no">${i + 1}</span>${escHtml(sec.title.replace(/^[①②③④⑤⑥⑦⑧⑨]\s*/, ''))}</h2>`);
+    // 一级标题：一、（黑体）
+    body.push(`<h2 class="h1">${escHtml(sectionNo('cn', i + 1))}${escHtml(sectionTitle(sec.title))}</h2>`);
     const bullets = [];
     const todos = [];
     const flush = () => {
       if (bullets.length) { body.push(`<ul>${bullets.join('')}</ul>`); bullets.length = 0; }
       if (todos.length) { body.push(`<ul class="todo">${todos.join('')}</ul>`); todos.length = 0; }
     };
+    let subNo = 0; // 段内小标题按「（一）（二）…」递进（楷体）
     for (const ln of sec.lines) {
-      if (ln.kind === 'sub') { flush(); body.push(`<h3>${escHtml(ln.text)}</h3>`); }
-      else if (ln.kind === 'todo') {
+      if (ln.kind === 'sub') {
+        flush();
+        subNo += 1;
+        body.push(`<h3 class="h2">${escHtml(sectionNo('cnPar', subNo))}${escHtml(sectionTitle(ln.text))}</h3>`);
+      } else if (ln.kind === 'todo') {
         // 复选框清单：导出文档是静态的，用 ☐ 字符而非 <input>——<input> 在打印稿里
         // 既不可交互也会被部分渲染器丢掉，反倒看不出这是"待办"。
         if (bullets.length) { body.push(`<ul>${bullets.join('')}</ul>`); bullets.length = 0; }
         todos.push(`<li><span class="cb">☐</span>${inlineToHtml(ln.text)}</li>`);
       } else if (ln.kind === 'table') {
         flush();
+        // 附表：**表格标题在表格上方居中**（公文硬规定），文字 3 号仿宋
         if (ln.caption) body.push(`<p class="tbl-cap">${escHtml(ln.caption)}</p>`);
         const th = ln.head.map((c) => `<th>${escHtml(c)}</th>`).join('');
         const trs = ln.rows.map((r) =>
@@ -380,7 +583,7 @@ export function toStandaloneHtml(rep, opts = {}) {
       } else bullets.push(`<li>${inlineToHtml(ln.text)}</li>`);
     }
     flush();
-    // ③ 章节口径折叠件（默认收起，仅展示指标）——打印时由 CSS 强制展开
+    // 章节口径折叠件（默认收起，仅展示指标）——打印时由 CSS 强制展开
     if (sec.caliber) {
       body.push(`<details class="caliber"><summary>${escHtml(CALIBER_SUMMARY)}</summary>`);
       body.push(`<p>${inlineToHtml(sec.caliber)}</p>`);
@@ -390,7 +593,7 @@ export function toStandaloneHtml(rep, opts = {}) {
   });
   body.push(`</main>`);
 
-  // ③ 文末独立折叠附录：汇总全部口径
+  // 文末独立折叠附录：汇总全部口径
   if (rep.appendix) {
     body.push(`<details class="caliber appendix" open><summary>${escHtml(rep.appendix.title)}</summary>`);
     body.push(`<p>${escHtml(rep.appendix.body)}</p>`);
@@ -403,8 +606,11 @@ export function toStandaloneHtml(rep, opts = {}) {
     body.push(`</details>`);
   }
 
+  // ── 落款：生成日期（阿拉伯数字，不编虚位，右空四字） ──
+  body.push(`<p class="sign-date">${escHtml(docDate(dataDate))}</p>`);
+
   body.push(`<footer class="doc-foot">`);
-  body.push(`<p class="disclaimer"><b>免责声明</b>：本报告由 ${escHtml(REPORT_ORG)} 规则引擎根据公开行情数据自动生成，仅供研究参考，<b>不构成任何投资建议</b>。数据可能存在延迟或误差，据此操作风险自担。</p>`);
+  body.push(`<p class="disclaimer"><b>免责声明</b>：本简报由 ${escHtml(REPORT_ORG)} 规则引擎根据公开行情数据自动生成，仅供研究参考，<b>不构成任何投资建议</b>。数据可能存在延迟或误差，据此操作风险自担。</p>`);
   if (url) body.push(`<p class="src">数据来源：${escHtml(url)}</p>`);
   if (generatedAt) body.push(`<p class="src">导出时间：${escHtml(generatedAt)}</p>`);
   body.push(`</footer>`);
@@ -426,97 +632,127 @@ ${body.join('\n')}
 `;
 }
 
-// 正式文档排版：白底黑字、衬线标题、A4 友好。刻意**不**跟随站点深色主题——
+// 公文体例排版：白底黑字、2/3/4 号字号阶梯、小标宋/黑体/楷体/仿宋。刻意**不**跟随站点深色主题——
 // 导出/打印的文档是要发给别人、拿去打印的，深色底打印会变成一片黑。
+//
+// ⚠ 这里的每个数值都来自 DOC_SPEC（唯一出处），用模板串插入而不是手抄：
+//   手抄就会出现「常量说 16pt、CSS 写 15px」这种两套口径，守卫脚本无从判断谁对。
+// 页码的「单页右放、双页左放」用 @page :left/:right 的页边距框 + counter(page) 实现，
+// 精确落在版心之外；Chromium 打印会忽略 :left/:right 的 margin box，此时退化为
+// 浏览器默认的页脚页码位置（内容仍然完整，只是左右分置不生效）——见文末说明。
 export const STANDALONE_CSS = `
-@page { size: A4; margin: 18mm 16mm; }
+@page { size: ${DOC_SPEC.page.size}; margin: ${DOC_SPEC.page.top} ${DOC_SPEC.page.right} ${DOC_SPEC.page.bottom} ${DOC_SPEC.page.left}; }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: #fff; }
-body { color: #1a1a1a; font: 15px/1.75 "Songti SC", "SimSun", Georgia, "Microsoft YaHei", serif; }
-.doc { max-width: 820px; margin: 0 auto; padding: 28px 32px 48px; }
+body { color: #000; font-family: ${DOC_SPEC.family.fs}; font-size: ${DOC_SPEC.font.body}; line-height: 1.7; }
+/* 版心宽度 = A4宽 210 − 左 28 − 右 26 = 156mm，与 @page 页边距严格一致 */
+.doc { width: 156mm; margin: 0 auto; padding: 0 0 12mm; }
 
-/* ── 页眉 ── */
-.doc-head { border-bottom: 2px solid #1a1a1a; padding-bottom: 12px; margin-bottom: 18px; }
-.doc-org { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 12px; letter-spacing: 2px; color: #666; }
-.doc-head h1 { font-size: 26px; margin: 6px 0 4px; letter-spacing: 1px; font-weight: 700; }
-.doc-sub { font-size: 13px; color: #555; }
-.doc-facts { display: flex; flex-wrap: wrap; gap: 6px 28px; margin: 12px 0 0; padding: 0; }
-.doc-facts > div { display: flex; gap: 8px; font-size: 13px; }
-.doc-facts dt { color: #888; }
-.doc-facts dd { margin: 0; font-weight: 600; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+/* ── 报头：简报名称（2 号小标宋，居中）+ 简报编号（居右） ── */
+.doc-head { margin: 0 0 6mm; }
+.doc-head .serial { margin: 0; text-align: right; font-family: ${DOC_SPEC.family.fs}; font-size: ${DOC_SPEC.font.note}; color: #000; }
+.doc-head .masthead { margin: 1mm 0 0; text-align: center; font-family: ${DOC_SPEC.family.xbs};
+  font-size: ${DOC_SPEC.font.h1}; font-weight: 700; letter-spacing: .1em; line-height: 1.4; }
 
-/* ── 极简摘要（模板①：报告开头的一句话核心） ── */
-.doc-abstract { font-size: 14.5px; line-height: 1.8; background: #fbf7ec; border: 1px solid #e8dcc0;
-  border-left: 4px solid #9a6b00; padding: 10px 14px; margin: 0 0 12px; border-radius: 2px;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif; text-align: justify; }
+/* ── 主标题：2 号小标宋，居中；多行梯形/菱形（台阶居中，逐行收窄） ── */
+.doc-title { margin: 4mm 0 ${DOC_SPEC.font.body}; padding: 0; text-align: center; font-family: ${DOC_SPEC.family.xbs};
+  font-size: ${DOC_SPEC.font.h1}; font-weight: 700; line-height: 1.5; }
+.doc-title .t-line { display: block; }
+/* 梯形/菱形：两行时上宽下窄；三行及以上时中间最宽、首尾收窄（菱形） */
+.doc-title[data-line-count="2"] .t-line + .t-line { width: 74%; margin: 0 auto; }
+.doc-title[data-line-count="3"] .t-line:first-child { width: 78%; margin: 0 auto; }
+.doc-title[data-line-count="3"] .t-line:last-child { width: 78%; margin: 0 auto; }
+.doc-title[data-line-count="4"] .t-line:first-child,
+.doc-title[data-line-count="4"] .t-line:last-child { width: 72%; margin: 0 auto; }
+.doc-title[data-line-count="4"] .t-line:nth-child(2),
+.doc-title[data-line-count="4"] .t-line:nth-child(3) { width: 92%; margin: 0 auto; }
 
-/* ── 数据落款 ── */
-.doc-meta { font-size: 12.5px; color: #555; background: #f6f6f6; border-left: 3px solid #999;
-  padding: 8px 12px; margin: 0 0 22px; line-height: 1.7; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+/* ── 摘要栏：标题下空一行、3 号楷体、左空 2 字符 ── */
+.doc-abstract { margin: 0 0 3mm; text-indent: 2em; text-align: justify; font-family: ${DOC_SPEC.family.kai};
+  font-size: ${DOC_SPEC.font.abstract}; line-height: 1.7; }
+.doc-abstract .abs-lead { font-weight: 700; }
 
-/* ── 章节 ── */
-.sec { margin-bottom: 22px; break-inside: avoid-page; }
-.sec h2 { font-size: 17px; margin: 0 0 10px; padding-bottom: 5px; border-bottom: 1px solid #ddd;
-  display: flex; align-items: baseline; gap: 8px; font-weight: 700; }
-.sec-no { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px;
-  background: #1a1a1a; color: #fff; font-size: 12px; border-radius: 50%; font-family: "PingFang SC", sans-serif;
-  padding: 0 5px; flex: none; }
-.sec h3 { font-size: 14px; margin: 12px 0 6px; color: #333; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
-.sec ul { margin: 0; padding-left: 0; list-style: none; }
-.sec li { position: relative; padding-left: 16px; margin-bottom: 6px; break-inside: avoid; }
-.sec li::before { content: ""; position: absolute; left: 5px; top: .68em; width: 5px; height: 5px;
-  background: #999; border-radius: 50%; }
-.sec-note .note { font-size: 12px; color: #666; line-height: 1.8; text-align: justify; }
+/* ── 数据落款条：生成依据，4 号仿宋，不占摘要栏 ── */
+.doc-meta { margin: 0 0 5mm; text-indent: 2em; font-family: ${DOC_SPEC.family.fs};
+  font-size: ${DOC_SPEC.font.note}; color: #333; }
 
-/* ── 连板天梯表格（模板②：连板天梯用表格） ── */
-.tbl-cap { font-size: 13px; color: #333; margin: 10px 0 5px; font-weight: 600;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
-.rep-tbl { width: 100%; border-collapse: collapse; margin: 0 0 10px; font-size: 13px;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif; break-inside: avoid; }
-.rep-tbl th, .rep-tbl td { border: 1px solid #ddd; padding: 5px 8px; text-align: left; vertical-align: top; }
-.rep-tbl thead th { background: #f2f2f2; font-weight: 700; color: #222; white-space: nowrap; }
-.rep-tbl tbody tr:nth-child(even) { background: #fafafa; }
-.rep-tbl td:first-child { white-space: nowrap; font-weight: 600; }
+/* ── 正文：3 号仿宋，每段左空 2 字符、回行顶格 ── */
+.doc-body { font-family: ${DOC_SPEC.family.fs}; font-size: ${DOC_SPEC.font.body}; }
+.sec { margin: 0 0 4mm; break-inside: auto; }
+/* 一级标题：一、（黑体） */
+.sec h2.h1 { margin: 4mm 0 2mm; text-indent: 2em; font-family: ${DOC_SPEC.family.hei};
+  font-size: ${DOC_SPEC.font.body}; font-weight: 700; line-height: 1.6; }
+/* 二级标题：（一）（楷体） */
+.sec h3.h2 { margin: 3mm 0 1mm; text-indent: 2em; font-family: ${DOC_SPEC.family.kai};
+  font-size: ${DOC_SPEC.font.body}; font-weight: 700; line-height: 1.6; }
+/* 正文行：左空 2 字符，回行顶格（text-indent 只管首行，回行自然顶格） */
+.sec ul { margin: 0; padding: 0; list-style: none; }
+.sec li { text-indent: 2em; margin: 0 0 1mm; text-align: justify; break-inside: avoid; }
+
+/* ── 附表：文字 3 号仿宋，表格标题在表格上方居中 ── */
+.tbl-cap { margin: 3mm 0 1mm; text-align: center; font-family: ${DOC_SPEC.family.hei}; font-weight: 700;
+  font-size: ${DOC_SPEC.font.table}; }
+.rep-tbl { width: 100%; border-collapse: collapse; margin: 0 0 3mm; font-family: ${DOC_SPEC.family.fs};
+  font-size: ${DOC_SPEC.font.table}; break-inside: avoid; table-layout: auto; }
+.rep-tbl th, .rep-tbl td { border: 1px solid #000; padding: 1mm 2mm; text-align: left; vertical-align: top;
+  line-height: 1.5; }
+.rep-tbl thead th { background: #f2f2f2; font-family: ${DOC_SPEC.family.hei}; font-weight: 700; text-align: center; }
+.rep-tbl td:first-child { white-space: nowrap; }
 
 /* ── 明日跟踪项：复选框清单（模板④） ── */
-.sec ul.todo li { padding-left: 22px; }
-.sec ul.todo li::before { content: none; }
-.sec ul.todo .cb { position: absolute; left: 0; top: 0; color: #666; font-size: 14px; line-height: 1.75; }
+.sec ul.todo li { text-indent: 2em; }
+.sec ul.todo .cb { margin-right: .3em; }
 
-/* ── 口径折叠件（模板③：<details> 原生折叠，无需脚本；📌 打印时强制展开） ── */
-details.caliber { margin: 8px 0 0; border: 1px solid #e2e2e2; border-radius: 3px; background: #fcfcfc;
-  break-inside: avoid; }
-details.caliber > summary { cursor: pointer; padding: 6px 10px; font-size: 12.5px; color: #555;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif; user-select: none; }
+/* ── 口径折叠件（<details> 原生折叠，无需脚本；📌 打印时强制展开） ── */
+details.caliber { margin: 2mm 0 0; border: 1px solid #bbb; background: #fafafa; break-inside: avoid; }
+details.caliber > summary { cursor: pointer; padding: 1mm 2mm; font-family: ${DOC_SPEC.family.kai};
+  font-size: ${DOC_SPEC.font.note}; color: #333; user-select: none; }
 details.caliber > summary:hover { color: #000; }
-details.caliber > p { margin: 0; padding: 2px 12px 10px; font-size: 12px; color: #666;
-  line-height: 1.8; text-align: justify; }
-details.caliber.appendix { margin-top: 24px; background: #fafafa; }
+details.caliber > p { margin: 0; padding: 1mm 2mm 2mm; font-family: ${DOC_SPEC.family.kai};
+  font-size: ${DOC_SPEC.font.note}; line-height: 1.7; text-align: justify; text-indent: 2em; }
+details.caliber.appendix { margin-top: 5mm; }
+
+/* ── 落款：生成日期，阿拉伯数字写全年月日、不编虚位、右空四字 ── */
+.sign-date { margin: 6mm 0 0; text-align: right; padding-right: ${DOC_SPEC.dateRightChars}em;
+  font-family: ${DOC_SPEC.family.fs}; font-size: ${DOC_SPEC.font.body}; }
 
 /* ── 语义强调（注意：本文件是打印文档，涨红跌绿沿用中文惯例） ── */
 b, strong { font-weight: 700; color: #000; }
 .chg { color: #c0392b; white-space: nowrap; }
 .chg-dn { color: #1e7e34; }
 .chg i { font-style: normal; font-size: .8em; }
-.warn { color: #9a6b00; font-weight: 600; }
+.warn { color: #9a6b00; font-weight: 700; }
 /* 三档配色标记：白底打印文档里 emoji 会转黑白，故同时给文字色做区分 */
 .ico { white-space: nowrap; }
-.ico-risk { color: #c0392b; font-weight: 600; }
-.ico-pos { color: #1e7e34; font-weight: 600; }
-.ico-neutral { color: #555; }
+.ico-risk { color: #c0392b; font-weight: 700; }
+.ico-pos { color: #1e7e34; font-weight: 700; }
+.ico-neutral { color: #333; }
 
-/* ── 页脚 ── */
-.doc-foot { margin-top: 28px; padding-top: 12px; border-top: 1px solid #ddd; }
-.disclaimer { font-size: 12px; color: #666; line-height: 1.8;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif; margin: 0 0 6px; }
-.src { font-size: 11px; color: #999; margin: 0; font-family: "PingFang SC", sans-serif; }
+/* ── 页脚（免责声明等，位于落款之后、版心之内） ── */
+.doc-foot { margin-top: 4mm; padding-top: 2mm; border-top: 1px solid #999; }
+.disclaimer { font-size: ${DOC_SPEC.font.note}; color: #333; line-height: 1.7; text-indent: 2em;
+  font-family: ${DOC_SPEC.family.fs}; margin: 0 0 1mm; }
+.src { font-size: ${DOC_SPEC.font.note}; color: #555; margin: 0; text-indent: 2em;
+  font-family: ${DOC_SPEC.family.fs}; }
+
+/* ── 页码：4 号半角阿拉伯数字，居版心下边缘之下、版心之外；单页右放、双页左放 ──
+   实现说明（这是本项目已知的浏览器能力边界，不粉饰）：
+     · 「居版心下边缘之下 / 版心之外」由 @page 的 @bottom-* 页边距框实现——这正是页脚区，
+       落在下方 35mm 页边距内，不需要 footer 参与分页；
+     · 「单页右放、双页左放」由 @page :right / :left 区分；
+     · counter(page) 取当前页码，decorator 里给 ::after 挂内容（改 counter(page)+'/'+counter(pages)
+       也只是加分母，故本稿不加，保持「4 号半角阿拉伯数字」的极简形态）。
+   ⚠ Chromium 打印会忽略 @page :left/:right 的 margin box，此时退化为浏览器默认页脚位置；
+     内容完整，只是左右分置不生效。若需严格分置，用打印对话框「页眉和页脚」或另行后处理。 */
+@page :right { @bottom-right { content: counter(page); font-family: ${DOC_SPEC.family.fs}; font-size: ${DOC_SPEC.font.page}; } }
+@page :left { @bottom-left { content: counter(page); font-family: ${DOC_SPEC.family.fs}; font-size: ${DOC_SPEC.font.page}; } }
+.pg-no { display: none; }
 
 /* ── 打印微调 ── */
 @media print {
-  .doc { max-width: none; padding: 0; }
+  .doc { width: auto; margin: 0; padding: 0; }
   a { color: inherit; text-decoration: none; }
-  .sec { break-inside: auto; }
-  .sec h2, .sec h3 { break-after: avoid; }
+  .sec h2.h1, .sec h3.h2 { break-after: avoid; }
   .doc-foot { break-inside: avoid; }
   /* 折叠着打印会缺内容：口径件一律强制展开，并隐藏可点击的提示文案 */
   details.caliber > summary { list-style: none; }

@@ -10,6 +10,8 @@ import { createRequire } from 'node:module';
 import {
   parseReport, toPlainText, toMarkdown, toStandaloneHtml, reportFileName,
   REPORT_TITLE, REPORT_ORG, STANDALONE_CSS, CALIBER_SUMMARY, MARKERS,
+  DOC_SPEC, h1Mark, h2Mark, h3Mark, h4Mark, sectionNo, sectionTitle, foldTitle,
+  briefSerial, cnBracket, docDate,
 } from '../src/report.js';
 
 // 可选依赖：解析不出来就跳过解析类用例
@@ -184,12 +186,13 @@ test('report: 警告标记规范化为单个 ⚠（连续/贴边都不会重复�
   }
 });
 
-test('report: Markdown 结构合法（标题层级 + 列表）', () => {
+test('report: Markdown 结构合法（标题层级 + 列表，序号为公文「一、」体系）', () => {
   const md = toMarkdown(REP_DATA, { dataDate: '2026-09-30' });
   assert.ok(md.startsWith(`# ${REPORT_TITLE}`));
   assert.ok(md.includes('**数据日期**：2026-09-30'));
-  assert.ok(/^## ① 情绪定位/m.test(md), '一级段标题应为 ##');
-  assert.ok(/^### 明日跟踪项/m.test(md), '段内小标题应为 ###');
+  // 一级标题用「一、」（不是 ①），二级用「（一）」
+  assert.ok(/^## 一、情绪定位/m.test(md), '一级标题应为 ## 一、…');
+  assert.ok(/^### （一）明日跟踪项/m.test(md), '段内小标题应为 ### （一）…');
   assert.ok(/^- 情绪/m.test(md), '正文行应为无序列表');
   assert.ok(md.includes('> '), '应有引用块（摘要/数据落款/免责）');
   assert.ok(md.includes('非投资建议'));
@@ -206,13 +209,16 @@ test('report: 独立 HTML 自包含——无脚本、无外部依赖', () => {
   assert.ok(html.includes('lang="zh-CN"'));
 });
 
-test('report: 独立 HTML 是正式文档结构（页眉/编号章节/附注/免责）', () => {
+test('report: 独立 HTML 是公文体例的正式文档（报头/落款/编号章节/附注/免责）', () => {
   const html = toStandaloneHtml(REP_DATA, { dataDate: '2026-09-30' });
-  assert.ok(html.includes('class="doc-head"'), '缺页眉');
-  assert.ok(html.includes('<h1>'), '缺主标题');
+  assert.ok(html.includes('class="doc-head"'), '缺报头');
+  assert.ok(html.includes('class="masthead"'), '缺简报名称');
+  assert.ok(html.includes('<h1 class="doc-title"'), '缺主标题');
   assert.ok(html.includes(REPORT_ORG));
   assert.ok(html.includes('数据日期'));
-  assert.ok(html.includes('class="sec-no"'), '章节应带编号');
+  assert.ok(html.includes('class="serial"'), '缺简报编号');
+  assert.ok(/<h2 class="h1">一、/.test(html), '章节序号应为公文「一、」');
+  assert.ok(html.includes('class="sign-date"'), '缺生成日期落款');
   assert.ok(html.includes('口径备注'), '应含口径附注');
   assert.ok(html.includes('免责声明'), '应含免责声明');
 });
@@ -248,7 +254,9 @@ test('report: 涨跌着色只覆盖数字，不吃掉后文', () => {
 test('report: 粗体正确映射为 <b>，且不残留 ** 标记', () => {
   const html = toStandaloneHtml(REP_DATA, {});
   assert.ok(html.includes('<b>68.6</b>'));
-  assert.equal(html.includes('**'), false, 'HTML 里不该残留 Markdown 标记');
+  // 只看 <style> 之后的正文：CSS 注释里的 ** 是文档说明，不是泄漏到成品的标记
+  const bodyPart = html.slice(html.indexOf('</style>'));
+  assert.equal(bodyPart.includes('**'), false, 'HTML 正文里不该残留 Markdown 标记');
 });
 
 test('report: 文件名按日期命名（便于排序），非法日期有兜底', () => {
@@ -259,8 +267,9 @@ test('report: 文件名按日期命名（便于排序），非法日期有兜底
 });
 
 test('report: 样式表是白底黑字（导出/打印的文档不能是深色底）', () => {
-  assert.ok(/body\s*\{[^}]*background:\s*#fff/i.test(STANDALONE_CSS), 'body 应为白底');
-  assert.ok(/color:\s*#1a1a1a/i.test(STANDALONE_CSS), '正文应为近黑色字');
+  assert.ok(/html,\s*body\s*\{[^}]*background:\s*#fff/i.test(STANDALONE_CSS), 'body 应为白底');
+  // 公文正文是纯黑（#000）；这里刻意不用 #1a1a1a——打印稿要求的就是墨色足
+  assert.ok(/body\s*\{[^}]*color:\s*#000/i.test(STANDALONE_CSS), '正文应为纯黑字');
   assert.equal(/#0d1117|#161b22/i.test(STANDALONE_CSS), false, '不该出现站点深色主题色');
   assert.ok(/@media print/.test(STANDALONE_CSS));
   // 涨红跌绿（中文惯例）在导出文档里同样成立
@@ -276,19 +285,19 @@ test('report: 样式表是白底黑字（导出/打印的文档不能是深色�
 // （见文件头的说明；report.js 里不应出现 tanh/加权/阈值之类的计算）。
 // ────────────────────────────────────────────────────────────────────────────
 
-test('模板①：报告开头有【极简摘要】，且排在首个章节之前', () => {
+test('模板①：报告开头有摘要栏，且排在首个章节之前', () => {
   const md = toMarkdown(REP_DATA, { dataDate: '2026-09-30' });
-  assert.ok(md.includes('【极简摘要】'), 'Markdown 缺极简摘要');
-  assert.ok(md.indexOf('【极简摘要】') < md.indexOf('## ① 情绪定位'), '摘要没有排在报告开头');
+  assert.ok(md.includes('【摘要】'), 'Markdown 缺摘要栏');
+  assert.ok(md.indexOf('【摘要】') < md.indexOf('## 一、'), '摘要没有排在报告开头');
   const html = toStandaloneHtml(REP_DATA, { dataDate: '2026-09-30' });
-  assert.ok(html.includes('class="doc-abstract"'), 'HTML 缺摘要块');
+  assert.ok(html.includes('class="doc-abstract"'), 'HTML 缺摘要栏');
   assert.ok(html.indexOf('doc-abstract') < html.indexOf('class="sec"'), '摘要没有排在首个章节前');
 });
 
-test('模板②：固定 7 大章节时输出 7 个 ##，连板天梯是 Markdown 表格而非一行文字', () => {
+test('模板②：固定 7 大章节时输出 7 个「一、」级标题，连板天梯是 Markdown 表格而非一行文字', () => {
   const md = toMarkdown(REP_DATA, {});
-  // 三条章节目录前缀 ① ② ③ 必须都在（其余章节由 app.js 保证 ④~⑦）
-  assert.ok(/^## ①/m.test(md) && /^## ②/m.test(md) && /^## ③/m.test(md));
+  // 公文体例的一级序号是「一、二、三、…」（不再是 ①②③）
+  assert.ok(/^## 一、/m.test(md) && /^## 二、/m.test(md) && /^## 三、/m.test(md));
   // 天梯表格：表头 + 分隔行 + 数据行，三者缺一不可
   assert.ok(/\|\s*板数\s*\|\s*只数\s*\|\s*个股\s*\|/.test(md), '天梯表头缺失');
   assert.ok(/\|\s*---\s*\|\s*---\s*\|\s*---\s*\|/.test(md), '表格缺分隔行（Markdown 不会渲染成表）');
@@ -383,5 +392,199 @@ test('模板·纪律：导出层不重算指标（不出现 tanh/加权/阈值�
   for (const bad of [/Math\.tanh/, /scoreEmotion|scorePnl|scoreTheme|scoreBreadth/, /weights?\s*\./, /clamp100/]) {
     assert.equal(bad.test(code), false, `report.js 里出现了指标计算痕迹：${bad}`);
   }
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 公文体例契约（用户给定的「A股市场研究分析简报 · 报告标准格式」）
+// 这一组用例的性质与前一组不同：前面守的是「内容别丢」，这里守的是「格式别走样」。
+// 公文格式是**规范**——版心、字号阶梯、序号层级都是硬要求，不是审美偏好。
+// 版式数值全部来自 DOC_SPEC（唯一出处），所以这里既断言 DOC_SPEC 本身，
+// 也断言 CSS/HTML **确实用了** DOC_SPEC（防止有人绕过常量手写字面量）。
+// ────────────────────────────────────────────────────────────────────────────
+
+test('公文·版式规格：A4 与页边距（上37 下35 左28 右26）', () => {
+  assert.equal(DOC_SPEC.page.size, 'A4');
+  assert.equal(DOC_SPEC.page.w, '210mm');
+  assert.equal(DOC_SPEC.page.h, '297mm');
+  assert.equal(DOC_SPEC.page.top, '37mm');
+  assert.equal(DOC_SPEC.page.bottom, '35mm');
+  assert.equal(DOC_SPEC.page.left, '28mm');
+  assert.equal(DOC_SPEC.page.right, '26mm');
+  // CSS 必须由常量插值而来，不是手抄
+  assert.ok(/@page\s*\{[^}]*margin:\s*37mm 26mm 35mm 28mm/.test(STANDALONE_CSS),
+    '@page 边距未按 DOC_SPEC 生成（顺序：上 右 下 左）');
+});
+
+test('公文·字号阶梯：2 号报头/主标题、3 号摘要与正文与附表、4 号页码', () => {
+  assert.equal(DOC_SPEC.font.h1, '22pt');
+  assert.equal(DOC_SPEC.font.abstract, '16pt');
+  assert.equal(DOC_SPEC.font.body, '16pt');
+  assert.equal(DOC_SPEC.font.table, '16pt');
+  assert.equal(DOC_SPEC.font.page, '14pt');
+  const html = toStandaloneHtml(REP_DATA, { dataDate: '2026-09-30' });
+  const need = [
+    [/\.doc-head \.masthead\s*\{[^}]*font-size:\s*22pt/, '报头未用 2 号'],
+    [/\.doc-title\s*\{[^}]*font-size:\s*22pt/, '主标题未用 2 号'],
+    [/\.doc-abstract\s*\{[^}]*font-size:\s*16pt/, '摘要栏未用 3 号'],
+    [/\.doc-body\s*\{[^}]*font-size:\s*16pt/, '正文未用 3 号'],
+    [/\.tbl-cap\s*\{[^}]*font-size:\s*16pt/, '附表标题未用 3 号'],
+    [/@page :right\s*\{\s*@bottom-right[^}]*?font-size:\s*14pt/, '页码未用 4 号'],
+  ];
+  for (const [re, msg] of need) assert.ok(re.test(html), msg);
+});
+
+test('公文·字体族：小标宋 / 黑体 / 楷体 / 仿宋', () => {
+  assert.match(DOC_SPEC.family.xbs, /STZhongsong/, '小标宋应有跨平台兜底');
+  assert.match(DOC_SPEC.family.hei, /SimHei/);
+  assert.match(DOC_SPEC.family.kai, /KaiTi/);
+  assert.match(DOC_SPEC.family.fs, /FangSong/);
+  const html = toStandaloneHtml(REP_DATA, { dataDate: '2026-09-30' });
+  const need = [
+    [/\.doc-head \.masthead\s*\{[^}]*font-family:[^;}]*STZhongsong/, '报头未用小标宋'],
+    [/\.doc-title\s*\{[^}]*font-family:[^;}]*STZhongsong/, '主标题未用小标宋'],
+    [/\.doc-abstract\s*\{[^}]*font-family:[^;}]*KaiTi/, '摘要栏未用楷体'],
+    [/\.sec h2\.h1\s*\{[^}]*font-family:[^;}]*SimHei/, '一级标题未用黑体'],
+    [/\.sec h3\.h2\s*\{[^}]*font-family:[^;}]*KaiTi/, '二级标题未用楷体'],
+    [/\.doc-body\s*\{[^}]*font-family:[^;}]*FangSong/, '正文未用仿宋'],
+  ];
+  for (const [re, msg] of need) assert.ok(re.test(html), msg);
+});
+
+test('公文·序号体系：一、（黑体）→（一）（楷体）→ 1.→（1），且不得混用', () => {
+  assert.equal(h1Mark(1), '一、');
+  assert.equal(h1Mark(3), '三、');
+  assert.equal(h2Mark(1), '（一）');
+  assert.equal(h2Mark(12), '（12）', '超出中文数字表的序号要退化成阿拉伯数字而不是崩掉');
+  assert.equal(h3Mark(2), '2.');
+  assert.equal(h4Mark(3), '（3）');
+  assert.equal(sectionNo('cn', 2), '二、');
+  assert.equal(sectionNo('cnPar', 2), '（二）');
+  assert.equal(sectionNo('arabic', 2), '2.');
+  assert.equal(sectionNo('arabicPar', 2), '（2）');
+  // 未知层级不能抛异常（版式参数不该把报告弄崩）
+  assert.equal(sectionNo(undefined, 1), '一、');
+
+  const html = toStandaloneHtml(REP_DATA, { dataDate: '2026-09-30' });
+  // 一级是「一、」、二级是「（一）」——两种形态都要真实出现
+  assert.ok(/<h2 class="h1">一、/.test(html));
+  assert.ok(/<h3 class="h2">（一）/.test(html));
+  // 不得跳级：一、后面若直接跟阿拉伯数字「1.」就是混用（负向见 report_audit 的 doc-numbering-order）
+  assert.equal(/<h2 class="h1">\d+\./.test(html), false, '一级标题混入了阿拉伯数字序号');
+  assert.equal(/<h2 class="h1">[①②③④⑤⑥⑦⑧⑨]/.test(html), false, '一级标题仍带历史圆形序号');
+});
+
+test('公文·摘除历史圆形序号：① 情绪定位 → 情绪定位（序号由版式层重加）', () => {
+  assert.equal(sectionTitle('① 情绪定位（核心因子·25%）'), '情绪定位（核心因子·25%）');
+  assert.equal(sectionTitle('一、情绪定位'), '情绪定位', '屏幕层已写序号时也要摘掉，防止双序号');
+  assert.equal(sectionTitle('情绪定位'), '情绪定位');
+  const html = toStandaloneHtml(REP_DATA, { dataDate: '2026-09-30' });
+  assert.ok(html.includes('>一、情绪定位（核心因子·25%）<'), '一级标题应是「一、＋纯文本标题」');
+  assert.equal(/一、\s*一、/.test(html), false, '出现双序号');
+});
+
+test('公文·台阶式主标题：多行梯形/菱形，且不拆断词语', () => {
+  // 短标题一行
+  assert.deepEqual(foldTitle('情绪定位（核心因子·25%）'), ['情绪定位（核心因子·25%）']);
+  // 长标题按标点断行，且每行都保留完整词组（不在半括号处断）
+  const lines = foldTitle('资金面（龙虎榜）· 参与打分（主分数 s_net 权重 20%）+ 辅助观测（北向/机构行为）');
+  assert.ok(lines.length >= 2 && lines.length <= DOC_SPEC.titleMaxLines, `行数 ${lines.length} 越界`);
+  assert.equal(lines.join(''), '资金面（龙虎榜）· 参与打分（主分数 s_net 权重 20%）+ 辅助观测（北向/机构行为）',
+    '断行不能丢字或多字（不许拆断，也不许吞字）');
+  for (const l of lines) {
+    assert.equal(/^[）】」』]/.test(l), false, `行首不该是收尾括号：「${l}」`);
+  }
+  // 导出的主标题带 data-line-count，供 CSS 决定梯形/菱形收窄比例
+  const html = toStandaloneHtml(REP_DATA, { dataDate: '2026-09-30' });
+  assert.ok(/<h1 class="doc-title" data-line-count="\d+">/.test(html), '主标题缺行数标注（无法排版梯形）');
+  assert.ok(/\.doc-title\[data-line-count="2"\] \.t-line \+ \.t-line\s*\{[^}]*width:\s*7\d%/.test(STANDALONE_CSS),
+    '两行标题未声明梯形收窄');
+});
+
+test('公文·报头与编号：2 号小标宋居中 + 编号居右 + 六角括号年份', () => {
+  assert.equal(REPORT_TITLE, 'A股市场情绪研判简报');
+  assert.deepEqual(DOC_SPEC.bracket, ['〔', '〕']);
+  assert.equal(cnBracket(2026), '〔2026〕');
+  assert.equal(briefSerial('2026-09-30', 3), '〔2026〕第 3 号');
+  assert.equal(briefSerial('2026-09-30', undefined), '〔2026〕第 1 号', '缺期号时给明确缺省值');
+  assert.equal(briefSerial('', 3), '', '无数据日期时不给编号，而不是编一个年份出来');
+
+  const html = toStandaloneHtml(REP_DATA, { dataDate: '2026-09-30', issueNo: 7 });
+  assert.ok(html.includes('<p class="masthead">A股市场情绪研判简报</p>'), '报头名称不对');
+  assert.ok(html.includes('<p class="serial">〔2026〕第 7 号</p>'), '简报编号形态不对');
+  assert.ok(/\.doc-head \.serial\s*\{[^}]*text-align:\s*right/.test(STANDALONE_CSS), '编号应居右');
+  // 六角括号，绝不能用方括号
+  assert.equal(/\[\d{4}\]/.test(html), false, '年份编号误用了方括号');
+});
+
+test('公文·生成日期：阿拉伯数字全年月日、不编虚位、右空四字', () => {
+  assert.equal(docDate('2026-09-30'), '2026-09-30');
+  assert.equal(docDate('2026-9-3'), '2026-09-03', '个位月日要补零（不编虚位的反面就是不能省位）');
+  assert.equal(docDate('数据日期 2026-9-3 · 样本 33'), '2026-09-03', '能从含日期的文本里取日期');
+  assert.equal(docDate('—'), '—', '取不到日期时原样返回，不编造');
+  const html = toStandaloneHtml(REP_DATA, { dataDate: '2026-09-30' });
+  assert.ok(html.includes('<p class="sign-date">2026-09-30</p>'), '落款日期不对');
+  assert.ok(/\.sign-date\s*\{[^}]*text-align:\s*right[^}]*padding-right:\s*4em/.test(STANDALONE_CSS),
+    '落款未右空四字');
+});
+
+test('公文·摘要栏与正文缩进：左空 2 字符、回行顶格', () => {
+  assert.equal(DOC_SPEC.indentChars, 2);
+  assert.equal(DOC_SPEC.dateRightChars, 4);
+  const html = toStandaloneHtml(REP_DATA, { dataDate: '2026-09-30' });
+  assert.ok(/\.doc-abstract\s*\{[^}]*text-indent:\s*2em/.test(html), '摘要栏未左空 2 字符');
+  assert.ok(/\.sec li\s*\{[^}]*text-indent:\s*2em/.test(html), '正文行未左空 2 字符');
+  assert.ok(/\.sec h2\.h1\s*\{[^}]*text-indent:\s*2em/.test(html), '一级标题未左空 2 字符');
+  // 「回行顶格」由 text-indent 只管首行的特性天然实现：
+  // 若改成了 padding-left 或 margin-left，回行会被一起推进去 —— 这里锁死不许出现
+  assert.equal(/\.sec li\s*\{[^}]*padding-left/.test(html), false,
+    '正文用了 padding-left（回行不再顶格，违反公文排版）');
+});
+
+test('公文·附表：表格标题在表格上方居中、表内文字 3 号仿宋', () => {
+  const html = toStandaloneHtml(REP_DATA, { dataDate: '2026-09-30' });
+  assert.ok(/\.tbl-cap\s*\{[^}]*text-align:\s*center/.test(html), '表格标题未居中');
+  assert.ok(/\.rep-tbl\s*\{[^}]*font-family:[^;}]*FangSong/.test(html), '表内文字未用仿宋');
+  assert.ok(/\.rep-tbl\s*\{[^}]*font-size:\s*16pt/.test(html), '表内文字未用 3 号');
+  // 「在上方」：caption 必须出现在 <table> 之前
+  const iCap = html.indexOf('class="tbl-cap"');
+  const iTbl = html.indexOf('<table class="rep-tbl">');
+  assert.ok(iCap > 0 && iTbl > 0 && iCap < iTbl, '表格标题跑到了表格下方');
+});
+
+test('公文·页码：4 号半角阿拉伯数字，单页右放、双页左放、版心之外', () => {
+  assert.equal(DOC_SPEC.pageNo.page ?? DOC_SPEC.font.page, '14pt');
+  assert.equal(DOC_SPEC.pageNo.single, 'right');
+  assert.equal(DOC_SPEC.pageNo.double, 'left');
+  // 「版心之外」= 由 @page 的页边距框（@bottom-*）承载，而不是页面内的 footer
+  assert.ok(/@page :right\s*\{\s*@bottom-right\s*\{\s*content:\s*counter\(page\)/.test(STANDALONE_CSS),
+    '单页页码未右放于版心外');
+  assert.ok(/@page :left\s*\{\s*@bottom-left\s*\{\s*content:\s*counter\(page\)/.test(STANDALONE_CSS),
+    '双页页码未左放于版心外');
+  // 半角数字：counter(page) 输出的是 ASCII 数字，不能套全角替换
+  assert.equal(/content:\s*counter\(page\)/.test(STANDALONE_CSS), true);
+  assert.equal(/[０-９]/.test(STANDALONE_CSS), false, '样式里出现了全角数字（页码要求半角）');
+});
+
+test('公文·折叠口径模块：默认收起 <details>，标题与约定一致', () => {
+  const html = toStandaloneHtml(REP_DATA, {});
+  assert.ok(html.includes(`<summary>${CALIBER_SUMMARY}</summary>`), '折叠件标题必须与约定一致');
+  // 章节口径必须默认收起（没有 open 属性）；只有文末附录是展开的
+  assert.ok(/<details class="caliber"><summary>/.test(html), '章节折叠件不应默认展开');
+  assert.ok(/<details class="caliber appendix" open>/.test(html), '文末附录应默认展开');
+  // 打印时必须强制展开，否则打出来缺口径
+  assert.ok(/details\.caliber\s*>\s*p, details\.caliber\s*>\s*ul\s*\{\s*display:\s*block\s*!important/.test(STANDALONE_CSS),
+    '打印样式未强制展开口径件');
+});
+
+test('公文·三条标记：关键数值加粗 / 风险前置 ⚠ / 跟踪清单复选框', () => {
+  const html = toStandaloneHtml(REP_DATA, {});
+  assert.ok(html.includes('<b>68.6</b>'), '关键数值未加粗');
+  assert.ok(/<span class="warn">⚠ /.test(html), '风险提示未前置 ⚠');
+  assert.ok(/<span class="cb">☐<\/span>/.test(html), '跟踪清单缺复选框占位');
+  const md = toMarkdown(REP_DATA, {});
+  assert.ok(md.includes('**68.6**'), 'Markdown 关键数值未加粗');
+  assert.ok(/^- \[ \] /m.test(md), 'Markdown 跟踪清单未用 GFM 复选框');
+  const txt = toPlainText(REP_DATA, {});
+  assert.ok(txt.includes('[ ] 能否守住正轴'), '纯文本复选框未降级为 [ ]');
 });
 

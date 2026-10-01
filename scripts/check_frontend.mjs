@@ -1892,8 +1892,22 @@ escClose();
     const opts = { dataDate: '2026-09-30', generatedAt: '2026-10-01 10:00', url: 'http://localhost/' };
     check('报告导出：能解析出全部 7 个段落',
       rep.sections.length === 7, `${rep.sections.length} 段`);
-    check('报告导出：段落标题与屏幕一致（①~⑦）',
-      rep.sections.every((s, i) => s.title.includes(['①', '②', '③', '④', '⑤', '⑥', '⑦'][i])),
+    // 公文体例：屏幕把序号「一、」放在独立的 .bf-sec-no 里，标题文本不含序号；
+    // 导出层只翻译屏幕 DOM，序号由版式层重加。故断言分两层：
+    //   ① 导出标题 = 屏幕**内容 span** 的文本（一字不差，证明是翻译而非重写）；
+    //   ② 屏幕序号是公文的「一、二、…」，而不是已退役的圆形序号 ①~⑦。
+    const screenTitles = [...$('briefBody').querySelectorAll('.bf-sec > .bf-h')]
+      .map((h) => (h.querySelector('.bf-sec-t') || h).textContent.trim());
+    const screenNos = [...$('briefBody').querySelectorAll('.bf-sec > .bf-h .bf-sec-no')]
+      .map((n) => n.textContent.trim());
+    check('报告导出：段落标题与屏幕一致（内容 span 逐段相同）',
+      screenTitles.length === 7 && rep.sections.every((s, i) => s.title === screenTitles[i]),
+      `屏幕 ${screenTitles.length} 段 / 导出 ${rep.sections.length} 段`);
+    check('报告导出：屏幕段序号为公文「一、」（圆形序号已退役）',
+      screenNos.join('') === ['一、', '二、', '三、', '四、', '五、', '六、', '七、'].join(''),
+      screenNos.join(' ') || '未找到 .bf-sec-no');
+    check('报告导出：导出标题不含序号（序号由版式层统一重加，防双序号）',
+      rep.sections.every((s) => !/^[一二三四五六七八九十]+、/.test(s.title) && !/[①②③④⑤⑥⑦]/.test(s.title)),
       rep.sections.map((s) => s.title.split('（')[0]).join(' '));
 
     const txt = Report.toPlainText(rep, opts);
@@ -1907,9 +1921,18 @@ escClose();
     check('报告导出：文档自包含（无脚本/无外链样式）',
       !/<script/i.test(html) && !/<link[^>]+href=/i.test(html) && html.includes('@page'),
       `${html.length} 字`);
-    check('报告导出：文档含正式结构（页眉/编号章节/口径附注/免责声明）',
-      html.includes('class="doc-head"') && html.includes('class="sec-no"')
+    // 公文体例结构：报头（名称+编号）/ 主标题 / 摘要栏 / 落款 / 口径 / 免责，
+    // 以及版式规格（A4 页边距、2 号报头、3 号正文、页码在版心外）。
+    check('报告导出：文档含正式结构（报头/主标题/摘要栏/落款/口径附注/免责声明）',
+      html.includes('class="doc-head"') && html.includes('class="serial"')
+      && html.includes('class="masthead"') && html.includes('<h1 class="doc-title"')
+      && html.includes('class="doc-abstract"') && html.includes('class="sign-date"')
       && html.includes('口径备注') && html.includes('免责声明'), '');
+    check('报告导出：版式为公文体例（A4 页边距 + 2 号报头 + 3 号正文 + 页码在版心外）',
+      /@page\s*\{[^}]*margin:\s*37mm 26mm 35mm 28mm/.test(html)
+      && /\.doc-head \.masthead\s*\{[^}]*font-size:\s*22pt/.test(html)
+      && /\.doc-body\s*\{[^}]*font-size:\s*16pt/.test(html)
+      && /@page :right\s*\{\s*@bottom-right[^}]*counter\(page\)/.test(html), '');
     check('报告导出：文档配色为白底黑字（打印不会是一团黑）',
       /background:\s*#fff/i.test(html) && !/#0d1117/i.test(html), '');
     check('报告导出：span 标签成对闭合（排版不会崩）',
@@ -1923,9 +1946,10 @@ escClose();
       Report.reportFileName('2026-09-30', 'html') === 'A股研判报告_2026-09-30.html', '');
 
     // ── 模板契约（用户给定的「A 股研判报告输出模板」五条，全部落到真实渲染的 DOM 上）──
-    check('模板①·导出：极简摘要进入三种形态（md 引用块 / html 摘要块 / txt 方括号）',
-      md.includes('**【极简摘要】**') && html.includes('class="doc-abstract"')
-      && txt.includes('【极简摘要】'), '');
+    // 公文体例的摘要栏标记是「〔摘要〕」（六角括号），不是历史上的「【极简摘要】」
+    check('模板①·导出：摘要栏进入三种形态（md 引用块 / html 摘要栏 / txt 六角括号）',
+      md.includes('**【摘要】**') && html.includes('class="doc-abstract"')
+      && txt.includes('【摘要】'), '');
     check('模板②·导出：Markdown 含 GFM 表格语法（表头 + 分隔行，缺一不成表）',
       /\|\s*板数\s*\|\s*只数\s*\|\s*个股\s*\|/.test(md) && /\|\s*---\s*\|/.test(md), '');
     check('模板③·导出：章节口径收进 <details>，文末有独立折叠附录',

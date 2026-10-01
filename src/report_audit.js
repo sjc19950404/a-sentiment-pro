@@ -18,7 +18,7 @@
 // 「翻译出来的东西是否还符合用户给定的模板契约」。两者都不重算指标。
 
 /** 审计引擎版本（审计规则变了要能一眼看出是哪一版判的） */
-export const AUDIT_VERSION = 'report-audit-v1';
+export const AUDIT_VERSION = 'report-audit-v2';
 
 /**
  * 用户给定的模板契约里「固定几大章节」。
@@ -27,19 +27,41 @@ export const AUDIT_VERSION = 'report-audit-v1';
  */
 export const EXPECTED_SECTIONS = 7;
 
+/** 报头名称（与 src/report.js 的 REPORT_TITLE 同值，防漂移） */
+export const MASTHEAD = 'A股市场情绪研判简报';
+
 /** 章节口径折叠件的统一标题（与 src/report.js 的 CALIBER_SUMMARY 同值，防漂移） */
 export const CALIBER_SUMMARY = '🔍 点击展开查看口径';
 
 /**
- * 审计项定义表：每项是 { id, msg, run(ctx) }。
- * run 返回真值即通过；返回字符串视为失败并作为原因；返回 false 用默认 msg。
- * ctx = { rep, rootEl, md, txt, html }
- *
- * 说明：把「检查项」写成数据表（而不是一长串 if），是为了——
- *   ① 失败时能报出**哪一项**（id 稳定，前端可展示、测试可断言）；
- *   ② 新增检查项不必改主流程；
- *   ③ 表本身可被守卫脚本读取（见 audit_lhb_caliber 的 B7 块）。
+ * 公文体例的四条硬性注意（用户给定），逐条落成**可机检**的结构判据：
+ *   ① 年份编号用六角括号〔〕；
+ *   ② 生成日期为阿拉伯数字全年月日、不编虚位；
+ *   ③ 正文序号不能混用（一、后面不能直接跟 1.）；
+ *   ④ 关键指标数值加粗 / 风险提示前置 ⚠ / 跟踪清单用复选框 [ ]。
+ * 前三条在导出 HTML 上按**结构**判（查的是真实渲染出来的 DOM 片段，不是模板源码），
+ * 第四条在 Markdown 上判（GFM 复选框是最容易在重构中丢掉的形态）。
  */
+const CJK_L1 = /^(一|二|三|四|五|六|七|八|九|十)、/;   // 一、
+const CJK_L2 = /^（(一|二|三|四|五|六|七|八|九|十)）/; // （一）
+const ARABIC_L3 = /^\d+\.\s/;                        // 1.
+const ARABIC_L4 = /^（\d+）/;                         // （1）
+
+/**
+ * 从导出 HTML 里按文档顺序抽出所有标题文字（h2.h1 / h3.h2）。
+ * 判「序号是否混用」必须看**相邻两级**的关系，所以要把顺序保留下来。
+ */
+function headingTexts(html) {
+  const out = [];
+  const re = /<h([23])\b[^>]*class="([^"]*)"[^>]*>([\s\S]*?)<\/h\1>/g;
+  let m;
+  while ((m = re.exec(html))) {
+    const text = m[3].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+    out.push({ level: m[1] === '2' ? 1 : 2, text });
+  }
+  return out;
+}
+
 export const RULES = [
   {
     id: 'abstract-present',
@@ -255,6 +277,178 @@ export const RULES = [
       const BAN = /(保证收益|稳赚不赔|必涨|一定会上涨|包赚)/;
       const m = src.match(BAN);
       return m ? `出现越界措辞「${m[1]}」` : true;
+    },
+  },
+
+  // ── 公文体例（用户给定「A股市场研究分析简报 · 报告标准格式」）─────────────
+  // 这一组的意义：公文格式是**规范**，不是"好看就行"。规范一旦被重构改掉，
+  // 报告就不再是公文了。所以每条硬性注意都有对应的机检项。
+  {
+    id: 'doc-masthead',
+    msg: `报头缺简报名称「${MASTHEAD}」（公文硬规定）`,
+    run: (c) => {
+      if (!c.html) return true;
+      // 判真实渲染出的报头元素，而不是源码里有没有这个字符串
+      const m = c.html.match(/<p class="masthead">([\s\S]*?)<\/p>/);
+      if (!m) return '导出文档里找不到 .masthead 报头';
+      const text = m[1].replace(/<[^>]*>/g, '').trim();
+      return text === MASTHEAD ? true : `报头名称是「${text}」，应为「${MASTHEAD}」`;
+    },
+  },
+  {
+    id: 'doc-serial-right',
+    msg: '简报编号未居右或无六角括号年份〔YYYY〕（公文硬规定）',
+    run: (c) => {
+      if (!c.html) return true;
+      const m = c.html.match(/<p class="serial">([\s\S]*?)<\/p>/);
+      if (!m) return '导出文档里找不到 .serial 简报编号';
+      const text = m[1].replace(/<[^>]*>/g, '').trim();
+      // 六角括号是 U+3014 / U+3015，不是方括号——这是最容易被"顺手改成 [ ]"的地方
+      if (!/〔\d{4}〕/.test(text)) return `编号「${text}」缺六角括号年份`;
+      // 「居右」由 CSS 的 text-align:right 承载；这里断言那条规则真的挂着 .serial
+      if (!/\.doc-head \.serial\s*\{[^}]*text-align:\s*right/.test(c.html)) return '编号未声明居右';
+      return true;
+    },
+  },
+  {
+    id: 'doc-date-arabic',
+    msg: '生成日期不是阿拉伯数字全年月日（公文硬规定：不编虚位、不用汉字数字）',
+    run: (c) => {
+      if (!c.html) return true;
+      const m = c.html.match(/<p class="sign-date">([\s\S]*?)<\/p>/);
+      if (!m) return '导出文档里找不到 .sign-date 生成日期落款';
+      const text = m[1].replace(/<[^>]*>/g, '').trim();
+      // 必须形如 2026-09-30：四位年 + 两位月 + 两位日（不编虚位＝不写成 2026-9-30）
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return `日期「${text}」不是 YYYY-MM-DD 形态`;
+      if (/[一二三四五六七八九十〇]/.test(text)) return `日期「${text}」用了汉字数字`;
+      // 「右空四字」
+      if (!/\.sign-date\s*\{[^}]*padding-right:\s*4em/.test(c.html)) return '日期未声明右空四字';
+      return true;
+    },
+  },
+  {
+    id: 'doc-numbering-order',
+    msg: '正文层级序号混用（公文硬规定：一、→（一）→ 1.→（1），不得跳级）',
+    run: (c) => {
+      if (!c.html) return true;
+      const hs = headingTexts(c.html);
+      if (!hs.length) return '导出文档里找不到任何层级标题';
+      // ① 一级标题必须清一色「一、」形态，二级必须清一色「（一）」形态：
+      //    混用(等级内混)本身就是最常见的错法，先拦掉。
+      const badL1 = hs.filter((h) => h.level === 1 && !CJK_L1.test(h.text));
+      if (badL1.length) return `一级标题不是「一、」形态：${badL1[0].text}`;
+      const badL2 = hs.filter((h) => h.level === 2 && !CJK_L2.test(h.text));
+      if (badL2.length) return `二级标题不是「（一）」形态：${badL2[0].text}`;
+      // ② 跨级：一级标题后**直接**跟阿拉伯数字「1.」＝跳级（缺「（一）」这一层）
+      for (let i = 0; i < hs.length; i++) {
+        if (hs[i].level !== 1) continue;
+        const nxt = hs[i + 1];
+        if (nxt && (ARABIC_L3.test(nxt.text) || ARABIC_L4.test(nxt.text))) {
+          return `「${hs[i].text}」的下一级直接是「${nxt.text}」（跳过了「（一）」这一层）`;
+        }
+      }
+      return true;
+    },
+  },
+  {
+    id: 'doc-numbering-single',
+    msg: '同一标题出现双序号（如「一、① 情绪定位」），序号被叠加了',
+    run: (c) => {
+      if (!c.html) return true;
+      const hs = headingTexts(c.html);
+      const bad = hs.filter((h) => (h.text.match(/^[一二三四五六七八九十]+、/g) || []).length > 1
+        || /^[一二三四五六七八九十]+、\s*[①②③④⑤⑥⑦⑧⑨⑩]/.test(h.text)
+        || /^[①②③④⑤⑥⑦⑧⑨⑩]/.test(h.text));
+      return bad.length === 0 ? true : `标题序号叠加：${bad[0].text}`;
+    },
+  },
+  {
+    id: 'doc-page-margin',
+    msg: '版心页边距不符公文体例（上 37 / 下 35 / 左 28 / 右 26 mm）',
+    run: (c) => {
+      if (!c.html) return true;
+      // @page 简写顺序：top right bottom left —— A4 公文的标准写法
+      return /@page\s*\{[^}]*size:\s*A4[^}]*margin:\s*37mm\s+26mm\s+35mm\s+28mm/.test(c.html)
+        ? true : '导出文档的 @page 边距不是「上37 右26 下35 左28」';
+    },
+  },
+  {
+    id: 'doc-font-ladder',
+    msg: '公文字号阶梯不完整（报头/主标题 2 号、摘要 3 号楷体、正文 3 号仿宋、页码 4 号）',
+    run: (c) => {
+      if (!c.html) return true;
+      const need = [
+        [/\.doc-head \.masthead\s*\{[^}]*font-size:\s*22pt/, '报头未用 2 号（22pt）'],
+        [/\.doc-title\s*\{[^}]*font-size:\s*22pt/, '主标题未用 2 号（22pt）'],
+        [/\.doc-abstract\s*\{[^}]*font-size:\s*16pt/, '摘要栏未用 3 号（16pt）'],
+        [/\.doc-body\s*\{[^}]*font-size:\s*16pt/, '正文未用 3 号（16pt）'],
+        [/@page :right\s*\{\s*@bottom-right\s*\{[^}]*font-size:\s*14pt/, '页码未用 4 号（14pt）'],
+      ];
+      const bad = need.filter(([re]) => !re.test(c.html));
+      return bad.length === 0 ? true : bad.map(([, m]) => m).join('；');
+    },
+  },
+  {
+    id: 'doc-font-family',
+    msg: '公文未使用规定字体族（小标宋 / 黑体 / 楷体 / 仿宋）',
+    run: (c) => {
+      if (!c.html) return true;
+      const need = [
+        [/\.doc-head \.masthead\s*\{[^}]*font-family:[^;}]*STZhongsong/, '报头未用小标宋'],
+        [/\.sec h2\.h1\s*\{[^}]*font-family:[^;}]*SimHei/, '一级标题未用黑体'],
+        [/\.sec h3\.h2\s*\{[^}]*font-family:[^;}]*KaiTi/, '二级标题未用楷体'],
+        [/\.doc-body\s*\{[^}]*font-family:[^;}]*FangSong/, '正文未用仿宋'],
+      ];
+      const bad = need.filter(([re]) => !re.test(c.html));
+      return bad.length === 0 ? true : bad.map(([, m]) => m).join('；');
+    },
+  },
+  {
+    id: 'doc-page-number',
+    msg: '页码规则缺失（单页右放 @page :right / 双页左放 @page :left）',
+    run: (c) => {
+      if (!c.html) return true;
+      const right = /@page :right\s*\{\s*@bottom-right\s*\{\s*content:\s*counter\(page\)/.test(c.html);
+      const left = /@page :left\s*\{\s*@bottom-left\s*\{\s*content:\s*counter\(page\)/.test(c.html);
+      if (!right || !left) return `单页右放=${right} 双页左放=${left}`;
+      return true;
+    },
+  },
+  {
+    id: 'doc-title-indent',
+    msg: '正文/摘要未左空 2 字符（text-indent: 2em）',
+    run: (c) => {
+      if (!c.html) return true;
+      const need = [
+        [/\.doc-abstract\s*\{[^}]*text-indent:\s*2em/, '摘要栏未左空 2 字符'],
+        [/\.sec li\s*\{[^}]*text-indent:\s*2em/, '正文行未左空 2 字符'],
+        [/\.sec h2\.h1\s*\{[^}]*text-indent:\s*2em/, '一级标题未左空 2 字符'],
+      ];
+      const bad = need.filter(([re]) => !re.test(c.html));
+      return bad.length === 0 ? true : bad.map(([, m]) => m).join('；');
+    },
+  },
+  {
+    id: 'doc-table-caption-centered',
+    msg: '附表标题未在表格上方居中（公文硬规定）',
+    run: (c) => {
+      if (!c.html) return true;
+      if (!/\.tbl-cap\s*\{[^}]*text-align:\s*center/.test(c.html)) return '表格标题未居中';
+      // 「在表格上方」：caption 必须出现在 <table 之前（按文档顺序）
+      const iCap = c.html.indexOf('class="tbl-cap"');
+      const iTbl = c.html.indexOf('<table class="rep-tbl"');
+      if (iCap >= 0 && iTbl >= 0 && iCap > iTbl) return '表格标题跑到了表格下方';
+      return true;
+    },
+  },
+  {
+    id: 'doc-checklist-brackets',
+    msg: '跟踪清单未用复选框 [ ]（公文硬规定）',
+    run: (c) => {
+      if (!c.md) return true;
+      if (!/^\- \[ \] /m.test(c.md)) return 'Markdown 未见 - [ ] 复选框行';
+      if (!c.html) return true;
+      return /<span class="cb">☐<\/span>/.test(c.html) ? true : '导出 HTML 未见 ☐ 复选框占位';
     },
   },
 ];

@@ -540,7 +540,12 @@ function buildBrief(days, arc) {
   const f = e.factors || e;
   const mom = arc.signals?.momentum || {};
   const last5 = days.slice(-5);
-  const seg = (h, b, sid) => `<div class="bf-sec" id="${sid}"><div class="bf-h">${h}</div><div class="bf-body">${b}</div></div>`;
+  // ── 公文体例：段（章节）渲染 ──
+  // 序号由**版式层**统一生成（一、黑体），不在标题字符串里手写——见 REPORT_SPEC 注释。
+  // 标题里历史残留的「① 情绪定位…」由导出层的 sectionTitle() 摘除，屏幕这里直接传纯标题。
+  const seg = (h, b, sid) => `<div class="bf-sec" id="${sid}">`
+    + `<div class="bf-h"><span class="bf-sec-no">${h.no}</span><span class="bf-sec-t">${h.text}</span></div>`
+    + `<div class="bf-body">${b}</div></div>`;
   const li = (t) => `<div class="bf-li">${t}</div>`;
   // ── 模板③：章节口径折叠件 ──
   // 默认收起、只展示指标；口径原文一字不改地装进 .bf-cal-body，点开即见。
@@ -860,7 +865,7 @@ function buildBrief(days, arc) {
     (watch.length
       // 模板④：明日跟踪项用复选框清单（屏幕可勾选，刷新后重置——刻意不做持久化，
       // 跟踪项是"当日看盘清单"，隔日勾选残留会比没勾更误导）
-      ? `<div class="bf-h bf-h2">明日跟踪项（引擎动态生成）</div>` + watch.map((w) => todo(w)).join('')
+      ? `<div class="bf-h2">明日跟踪项（引擎动态生成）</div>` + watch.map((w) => todo(w)).join('')
       : '')
     + li(ico(tierKind, tier ? `仓位档位 ${tier.label}（七因子情绪分 ${num(mainScoreV)}）` : '仓位档位待定'))
     + cal(`仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额 20%／涨跌家数 10%／板块涨比 20%／涨停强度 10%／涨跌停对比 15%／封板质量 10%／量能 15%，与页面情绪分、回测引擎同源），阈值 过热 ${num(thr.overheat, 0)}／满仓 ${num(thr.lo, 0)}／半仓 ${num(thr.panic, 0)}~${num(thr.lo, 0)}／清仓 ${num(thr.panic, 0)}，收盘打分、T+1 生效，并叠加止损 -8%、回撤 ≥15% 动态降仓、单日仓位变动 ≤20%、佣金万 3 + 印花税万 5 + 滑点万 2 的实盘约束。因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定（该五模块口径<b>不含资金面</b>，切勿据此误判资金面在整体打分中的地位）；<b>资金面（龙虎榜净额）是 V5.2 主分数 s_net 的组成部分，权重 20%</b>，与 §② 的资金面观测同为一股数据、同一口径，二者不冲突。明日跟踪项由九条触发规则动态生成（触发才输出，非固定列表）。`);
@@ -893,7 +898,7 @@ function buildBrief(days, arc) {
   if (weak.length) abParts.push(`${ico('risk', '短板')}在${weak.join('、')}`);
   else if (total != null) abParts.push(`${ico('pos', '五模块均衡')}`);
   const abstract = abParts.filter(Boolean).join('｜');
-  const absBlock = `<div class="bf-abstract"><span class="bf-ab-tag">极简摘要</span><span class="bf-ab-text">${abstract}</span></div>`;
+  const absBlock = `<div class="bf-abstract"><span class="bf-ab-tag">〔摘要〕</span><span class="bf-ab-text">${abstract}</span></div>`;
 
   // 口径统一出口：模型/样本落款（历史上只存在于脚注里，模板②/③要求"每章节折叠口径 +
   // 文末独立折叠附录"，故把它作为共享段落到附录，**文字一字未改**）。
@@ -906,14 +911,31 @@ function buildBrief(days, arc) {
     + footBody + cal(modelNote).replace(/<details class="bf-caliber">/, '<div class="bf-flat">').replace(/<\/details>$/, '</div>')
     + `</div></details>`;
 
-  return stamp + absBlock
-    + seg('① 情绪定位（核心因子·25%）', sec1, 'bfsec1')
-    + seg('② 资金面（龙虎榜）· 参与打分（主分数 s_net 权重 20%）+ 辅助观测（北向/机构行为）', sec2, 'bfsec2')
-    + seg('③ 盈亏效应（核心因子·25%）', sec3, 'bfsec3')
-    + seg('④ 广度与量能（核心因子·20%）', sec4, 'bfsec4')
-    + seg('⑤ 题材结构（核心因子·20%）', sec5, 'bfsec5')
-    + seg('⑥ 综合研判（含 V5.2 仓位档位）', sec6, 'bfsec6')
-    + seg('⑦ 模拟交易复盘（为什么赚/为什么亏 · 止损与优化建议）', sec7, 'bfsec7')
+  // ── 公文体例：报头（简报名称 + 编号，编号居右）+ 主标题（2 号小标宋，居中） ──
+  // 「简报名称」与「主标题」在公文里是两行不同性质的文字：
+  //   名称＝文种标识（固定不变，作用等同于 logo）；主标题＝这一期讲什么。
+  // 本报告的"这一期讲什么"就是数据日期，故主标题＝数据日期；不另编标题，免得与正文结论打架。
+  const serial = RPT() && RPT().briefSerial
+    ? RPT().briefSerial(dataDate, briefIssueNo()) : '';
+  const head = `<div class="bf-head">`
+    + (serial ? `<div class="bf-serial">${serial}</div>` : '')
+    + `<div class="bf-masthead">${(RPT() && RPT().REPORT_TITLE) || 'A股市场情绪研判简报'}</div>`
+    + `<div class="bf-title">A 股市场情绪研判简报（${dataDate}）</div>`
+    + `</div>`;
+
+  // 段序号：一、（黑体）——号码由版式层给，标题文本不再自带序号
+  const S = [
+    ['情绪定位（核心因子·25%）', sec1, 'bfsec1'],
+    ['资金面（龙虎榜）· 参与打分（主分数 s_net 权重 20%）+ 辅助观测（北向/机构行为）', sec2, 'bfsec2'],
+    ['盈亏效应（核心因子·25%）', sec3, 'bfsec3'],
+    ['广度与量能（核心因子·20%）', sec4, 'bfsec4'],
+    ['题材结构（核心因子·20%）', sec5, 'bfsec5'],
+    ['综合研判（含 V5.2 仓位档位）', sec6, 'bfsec6'],
+    ['模拟交易复盘（为什么赚/为什么亏 · 止损与优化建议）', sec7, 'bfsec7'],
+  ];
+  const CN = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+  return head + stamp + absBlock
+    + S.map(([t, b, id], i) => seg({ no: `${CN[i]}、`, text: t }, b, id)).join('')
     + appendix;
 }
 
@@ -979,7 +1001,7 @@ function buildPaperReviewSection() {
   // ── ① 收益来源拆解 ──
   const a = r.account;
   const dirTxt = a.direction === 'gain' ? '盈利' : a.direction === 'loss' ? '亏损' : '持平';
-  out.push(`<div class="bf-h bf-h2">收益归因（为什么${a.direction === 'loss' ? '亏' : '赚'}）</div>`);
+  out.push(`<div class="bf-h2">收益归因（为什么${a.direction === 'loss' ? '亏' : '赚'}）</div>`);
   out.push(li2(`账户总盈亏 <b class="${tone(a.netPnl)}">${Y(a.netPnl)}</b> 元`
     + `（收益率 <b class="${tone(a.retPct)}">${SP(a.retPct)}</b>，初始本金 ${N(a.initCash, 0)} 元）→ 整体${dirTxt}。`));
   out.push(li2(`拆成三块：`)
@@ -1007,7 +1029,7 @@ function buildPaperReviewSection() {
 
   // ── ② 逐笔复盘 ──
   const t = r.trades;
-  out.push(`<div class="bf-h bf-h2">逐笔复盘（平仓盈亏）</div>`);
+  out.push(`<div class="bf-h2">逐笔复盘（平仓盈亏）</div>`);
   if (t.closedCount === 0) {
     out.push(li2('<span class="muted">尚无平仓记录——逐笔胜率与盈亏比需要至少一笔卖出才能计算。</span>'));
   } else {
@@ -1041,7 +1063,7 @@ function buildPaperReviewSection() {
 
   // ── ③ 持仓诊断 ──
   const p = r.positions;
-  out.push(`<div class="bf-h bf-h2">持仓诊断（浮动盈亏与集中度）</div>`);
+  out.push(`<div class="bf-h2">持仓诊断（浮动盈亏与集中度）</div>`);
   if (!p.rows.length) {
     out.push(li2('<span class="muted">当前无持仓（已清仓）——无浮动盈亏可诊断。</span>'));
   } else {
@@ -1066,7 +1088,7 @@ function buildPaperReviewSection() {
   // ── ④ 预警战绩（台账归因，来自 src/alert_log.js） ──
   if (r.attribution && r.attribution.n > 0) {
     const g = r.attribution;
-    out.push(`<div class="bf-h bf-h2">预警战绩（台账计分板）</div>`);
+    out.push(`<div class="bf-h2">预警战绩（台账计分板）</div>`);
     out.push(li2(`台账累计 <b>${g.n}</b> 条预警：已规避亏损 <span class="bf-up">${N(g.avoidedLoss, 0)}</span> 元 / `
       + `错杀与错过 <span class="bf-dn">${N(g.missedGain, 0)}</span> 元，净贡献 `
       + `<b class="${tone(g.net)}">${Y(g.net)}</b> 元。`
@@ -1079,7 +1101,7 @@ function buildPaperReviewSection() {
   }
 
   // ── ⑤ 止损与优化建议 ──
-  out.push(`<div class="bf-h bf-h2">止损与优化建议</div>`);
+  out.push(`<div class="bf-h2">止损与优化建议</div>`);
   if (!r.advice.length) {
     out.push(li2('当前无需要处理的纪律问题：未击穿止损线、无单票超配、仓位与档位一致。'));
   } else {
@@ -1611,7 +1633,7 @@ function renderGlobal(g) {
   if (sbox) {
     const sig = w.signals || [];
     sbox.innerHTML = sig.length
-      ? '<div class="bf-h bf-h2">触发式观测（越过阈值才输出）</div>'
+      ? '<div class="bf-h2">触发式观测（越过阈值才输出）</div>'
         + sig.map((s) => `<div class="gsig ${esc(s.level)}">${esc(s.text)}</div>`).join('')
       : '<div class="muted">无触发项</div>';
   }
@@ -2496,7 +2518,23 @@ function reportOpts() {
   const pad = (n) => String(n).padStart(2, '0');
   const generatedAt = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} `
     + `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  return { dataDate, generatedAt, url: location.origin + location.pathname };
+  return { dataDate, generatedAt, issueNo: briefIssueNo(), url: location.origin + location.pathname };
+}
+
+/**
+ * 简报编号的期号：`〔YYYY〕第 N 号`。
+ *
+ * 口径说明（与报告口径同一纪律——**不编造，现算且同源**）：
+ *   期号取「本档案里等于数据日期那一天的序号」，与「样本 N 个交易日」同源（都是 ARC.all_days）。
+ *   取不到时返回 undefined，由导出层退化为「第 1 号」——
+ *   宁可给一个明确的缺省值，也不要显示一个凭空编出来的期号。
+ */
+function briefIssueNo() {
+  const days = (ARC && ARC.all_days) || [];
+  const d = days[days.length - 1] || {};
+  const dataDate = (ARC && ARC.meta && ARC.meta.tradeDate) || d.trade_date || '';
+  const i = days.findIndex((x) => x && x.trade_date === dataDate);
+  return i >= 0 ? i + 1 : undefined;
 }
 
 /** 下载一个文本文件（与 paper_ui.js 的账本导出同一套做法） */
