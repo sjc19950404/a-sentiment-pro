@@ -21,6 +21,8 @@ import { buildSeatSeries, seatSeriesSummary, seatVerdict } from './seats_daily.j
 import { buildBreadthSeries, breadthSeriesSummary } from './breadth.js';
 import { validateDay, sanitizeForFactors, dirtyArgsOf } from './dirty.js';
 import { BACKFILL_FLAG } from './backfill.js';
+import { buildRegimeBlock } from './regime.js';
+import { buildDailyReport } from './daily_report.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -608,6 +610,11 @@ export function writeShards(archive, dir = DATA_DIR) {
         return { ...brief, rowCount: Array.isArray(rows) ? rows.length : 0 };
       } catch { return null; }
     },
+    // 拐点标签（#4）：**纯函数、只读档案**（不读盘、不联网）→ 每次写档都刷新，
+    //   与 scripts/split_archive.mjs 用**同一份** buildRegimeBlock，保证两路形态一致。
+    regimeFn: (ds) => buildRegimeBlock(ds),
+    // 每日日报（#4）：纯渲染，输入是上面各段已算好的素材 → 同源同形态。
+    reportFn: (payload) => buildDailyReport(payload),
   });
   if (signals) writeFileSync(path.join(dir, SIGNALS_FILE), JSON.stringify(signals), 'utf8');
   // 清理被淘汰的年份分片（年份集合会变），避免前端拉到过期数据

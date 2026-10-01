@@ -2993,6 +2993,73 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
       '前端出现互证阈值＝第二套口径，阈值唯一出处是 src/crosscheck.js');
   }
 
+  // ── 市场状态面板（拐点标签 #4）──
+  //   核心红线：
+  //     ① 未生成 ≠ 中性 —— null 时必须显式说「未生成」，**绝不能默认渲染成"中性"**
+  //        （那会用一个没算出来的结论冒充已算出的结论，是本项目最忌讳的伪造）。
+  //     ② 标签中文必须来自服务端下发的 regime.labels（唯一出处 src/regime.js），
+  //        前端不得自造标签词表（否则改一处措辞要改两地）。
+  //     ③ 必须披露"以分位为主判据"及理由（否则 64.4 判"高潮"看起来像 bug）。
+  //     ④ 必须声明"不构成投资建议"。
+  const rg = $('regimePanel');
+  check('市场状态：面板元素存在', !!rg, rg ? '' : '未找到 #regimePanel');
+  if (rg) {
+    const rcls = rg.className || '';
+    const isUnknown = /rg-unknown/.test(rcls);
+    const rtxt = (rg.textContent || '');
+    check('市场状态：面板已渲染（hidden 已解除或为未知态）', rg.hidden === false, `hidden=${rg.hidden}`);
+    if (!isUnknown) {
+      check('市场状态：色调类名唯一且合法', /rg-(cold|warm|hot|cool|flat)/.test(rcls), `类名 ${rcls}`);
+      // 四态之一必须出现（真渲染出标签，而不是空壳）
+      check('市场状态：渲染出四态标签之一',
+        /冰点|回暖|高潮|退潮|中性|数据不足/.test(rtxt), rtxt.slice(0, 50));
+      check('市场状态：给出情绪分与历史分位读数',
+        /情绪分/.test(rtxt) && /历史分位/.test(rtxt), '');
+      check('市场状态：披露"以历史分位为主判据"及理由（分布压缩）',
+        /分位为主/.test(rtxt) && /压缩/.test(rtxt),
+        '不披露会让"64.4 判高潮"看起来像 bug');
+      check('市场状态：披露阈值唯一出处', /src\/regime\.js/.test(rtxt), '');
+      check('市场状态：含合规声明（不构成投资建议）', /不构成投资建议/.test(rtxt), '');
+      check('市场状态：不得出现买卖动作措辞',
+        !/建议买入|建议卖出|立即买入|立即卖出/.test(rtxt), '标签只描述状态，不给动作');
+    } else {
+      check('市场状态：未知态显式说明「未生成 ≠ 中性」',
+        /未生成/.test(rtxt) && /不等于/.test(rtxt),
+        '未生成必须显式说清，不得默认渲染成"中性"');
+    }
+  }
+  // 源码层：前端不得自造标签词表（唯一出处 src/regime.js 的 REGIME_LABELS）
+  {
+    const src = readFileSync(join(ROOT, 'app.js'), 'utf8');
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    // 允许出现在注释/说明文案里；不允许出现在"赋值一份中文标签表"的位置
+    check('市场状态：前端未自造标签词表（唯一出处服务端 labels）',
+      !/const\s+\w*(LABEL|TAG)\w*\s*=\s*\{[^}]*冰点[^}]*高潮/.test(code),
+      '前端出现中文标签表＝第二套口径，唯一出处是 src/regime.js');
+  }
+
+  // ── 每日日报面板（#4）──
+  //   红线：日报是"翻译层"，只呈现已算出的数据；缺失项必须显式标注，
+  //   不得静默省略（省略会让读者以为那一节本来就是空的）。
+  const rp = $('reportPanel');
+  check('每日日报：面板元素存在', !!rp, rp ? '' : '未找到 #reportPanel');
+  if (rp) {
+    const pcls = rp.className || '';
+    const isUnknown = /rp-unknown/.test(pcls);
+    const ptxt = (rp.textContent || '');
+    check('每日日报：面板已渲染（hidden 已解除或为未知态）', rp.hidden === false, `hidden=${rp.hidden}`);
+    if (!isUnknown) {
+      check('每日日报：渲染出标题（headline）', ptxt.length > 20, '');
+      check('每日日报：含免责声明', /不构成投资建议/.test(ptxt), '');
+      check('每日日报：提供复制动作', !!$('rpCopy'), '缺 #rpCopy');
+      check('每日日报：提供打印/导出动作', !!$('rpPrint'), '缺 #rpPrint');
+      check('每日日报：披露"缺失不补 0"的口径',
+        /未采集|未计算/.test(ptxt), '不披露会让"缺"被读成 0');
+    } else {
+      check('每日日报：未知态显式说明「未生成」', /未生成/.test(ptxt), '');
+    }
+  }
+
   // ══════════════════════════════════════════════════════════════════════════
   // 数据导出（CSV / Excel）
   //   红线：前端**一行取数逻辑都不写**。导出件必须与屏幕同源，

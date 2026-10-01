@@ -19,6 +19,8 @@ import { resolveHolidays } from '../src/calendar.js';
 import { buildSeatSeries, seatSeriesSummary, seatVerdict } from '../src/seats_daily.js';
 import { buildBreadthSeries, breadthSeriesSummary } from '../src/breadth.js';
 import { aggregateByCode } from '../src/lhb.js';
+import { classifySeries, classifyRegime, detectDivergence, buildRegimeBlock } from '../src/regime.js';
+import { buildDailyReport } from '../src/daily_report.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
@@ -102,6 +104,11 @@ const signals = buildSignals(packed, {
       return { ...brief, rowCount: Array.isArray(rows) ? rows.length : 0 };
     } catch { return null; }
   },
+  // 拐点标签（#4）：与 pipeline.writeShards **同源同形态**——同一批 classifySeries 调用。
+  //   逐日标签由 classifySeries 用"截至当日"的历史算（无前视），counts 是全档分布。
+  regimeFn: (ds) => buildRegimeBlock(ds),
+  // 每日日报（#4）：与 pipeline.writeShards 同源同形态。
+  reportFn: (payload) => buildDailyReport(payload),
 });
 const years = Object.keys(shards).sort();
 

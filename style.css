@@ -1240,6 +1240,129 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
 /* 致命错误时把主内容藏起来（替代卡才是"当前唯一的真相"） */
 main[aria-hidden="true"] { display: none; }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   市场状态（拐点标签 #4）—— 冰点 / 回暖 / 高潮 / 退潮
+   设计意图：这是用户**第一眼**要看的答案，故放在最靠上的位置、用最大字号。
+   四态用**色温**而非"红涨绿跌"表达（状态≠涨跌，混用会误读）：
+     冰点=冷蓝 / 回暖=暖橙 / 高潮=炽红 / 退潮=青灰
+   ⚠ 不用 --up/--down：那对颜色在本项目专指"涨/跌"，拿来表示"情绪状态"
+     会让"高潮"看着像"上涨"、"退潮"看着像"下跌"——语义污染。
+   ══════════════════════════════════════════════════════════════════════════ */
+.regime-panel { margin: 10px 0; }
+.regime-panel[hidden] { display: none; }
+.rg-fold { border: 1px solid var(--line); border-radius: 8px; background: var(--card); overflow: hidden; }
+.rg-fold > summary { cursor: pointer; padding: 9px 12px; display: flex; gap: 10px; align-items: center; list-style: none; }
+.rg-fold > summary::-webkit-details-marker { display: none; }
+.rg-fold > summary::before { content: '▸'; color: var(--muted); font-size: 11px; }
+.rg-fold[open] > summary::before { content: '▾'; }
+.rg-sum { font-size: 12px; }
+.rg-chip { font-size: 11px; padding: 1px 8px; border-radius: 10px; border: 1px solid currentColor; }
+.rg-chip.cold { color: #6ea8d8; }
+.rg-chip.warm { color: #e8a33c; }
+.rg-chip.hot { color: #f0616d; }
+.rg-chip.cool { color: #7fb3a8; }
+.rg-chip.flat { color: var(--muted); }
+.rg-chip.unknown { color: var(--muted); border-style: dashed; }
+.regime-panel.rg-cold .rg-fold { border-left: 3px solid #6ea8d8; }
+.regime-panel.rg-warm .rg-fold { border-left: 3px solid #e8a33c; }
+.regime-panel.rg-hot .rg-fold { border-left: 3px solid #f0616d; }
+.regime-panel.rg-cool .rg-fold { border-left: 3px solid #7fb3a8; }
+.regime-panel.rg-flat .rg-fold { border-left: 3px solid var(--line); }
+.regime-panel.rg-unknown .rg-fold { border-left: 3px solid var(--warn); border-style: dashed; }
+.rg-body { padding: 4px 12px 12px; }
+.rg-main { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 4px 0 10px; }
+.rg-tag { display: flex; align-items: baseline; gap: 8px; padding: 6px 14px; border-radius: 8px; border: 1px solid currentColor; }
+.rg-tag.cold { color: #6ea8d8; }
+.rg-tag.warm { color: #e8a33c; }
+.rg-tag.hot { color: #f0616d; }
+.rg-tag.cool { color: #7fb3a8; }
+.rg-tag.flat { color: var(--txt); border-color: var(--line); }
+.rg-tag.unknown { color: var(--muted); border-style: dashed; }
+.rg-tag-label { font-size: 26px; font-weight: 700; letter-spacing: 2px; }
+.rg-tag-conf { font-size: 10.5px; color: var(--muted); }
+.rg-facts { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); }
+.rg-facts b { color: var(--txt); font-size: 14px; }
+.rg-caution { margin: 6px 0; padding: 6px 10px; border-radius: 5px; font-size: 12.5px; line-height: 1.6;
+  background: rgba(210,153,34,.1); border-left: 3px solid var(--warn); color: #e8c26a; }
+.rg-sub { font-size: 11.5px; color: var(--muted); margin: 10px 0 4px; }
+.rg-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.rg-table th { text-align: left; font-weight: 500; color: var(--muted); font-size: 11px; padding: 3px 6px; border-bottom: 1px solid var(--line); }
+.rg-table td { padding: 3px 6px; border-bottom: 1px solid rgba(255,255,255,.04); }
+.rg-date { color: var(--muted); font-variant-numeric: tabular-nums; }
+.rg-arrow { color: var(--muted); text-align: center; }
+.rg-num { text-align: right; font-variant-numeric: tabular-nums; }
+.rg-mini { font-size: 11px; padding: 1px 6px; border-radius: 8px; border: 1px solid currentColor; }
+.rg-mini.cold { color: #6ea8d8; } .rg-mini.warm { color: #e8a33c; }
+.rg-mini.hot { color: #f0616d; } .rg-mini.cool { color: #7fb3a8; }
+.rg-mini.flat, .rg-mini.unknown { color: var(--muted); }
+.rg-dist { display: flex; flex-wrap: wrap; gap: 6px; }
+.rg-dist-item { font-size: 11px; padding: 3px 8px; border-radius: 5px; border: 1px solid var(--line);
+  background: rgba(255,255,255,.02); display: inline-flex; gap: 5px; align-items: baseline; }
+.rg-dist-item.cold { border-left: 3px solid #6ea8d8; }
+.rg-dist-item.warm { border-left: 3px solid #e8a33c; }
+.rg-dist-item.hot { border-left: 3px solid #f0616d; }
+.rg-dist-item.cool { border-left: 3px solid #7fb3a8; }
+.rg-dist-label { color: var(--txt); }
+.rg-dist-n { color: var(--txt); font-variant-numeric: tabular-nums; }
+.rg-dist-p { font-size: 10.5px; }
+.rg-note { font-size: 11px; line-height: 1.7; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.rg-note code { background: rgba(255,255,255,.06); padding: 0 3px; border-radius: 3px; }
+
+/* 每日日报（#4）—— 七节简报；"翻译层"，只把已有数字翻成人话 */
+.report-panel { margin: 10px 0; }
+.report-panel[hidden] { display: none; }
+.rp-fold { border: 1px solid var(--line); border-radius: 8px; background: var(--card); overflow: hidden; }
+.rp-fold > summary { cursor: pointer; padding: 9px 12px; display: flex; gap: 10px; align-items: center; list-style: none; }
+.rp-fold > summary::-webkit-details-marker { display: none; }
+.rp-fold > summary::before { content: '▸'; color: var(--muted); font-size: 11px; }
+.rp-fold[open] > summary::before { content: '▾'; }
+.rp-sum { font-size: 12px; }
+.rp-chip { font-size: 11px; padding: 1px 8px; border-radius: 10px; border: 1px solid currentColor; }
+.rp-chip.cold { color: #6ea8d8; } .rp-chip.warm { color: #e8a33c; }
+.rp-chip.hot { color: #f0616d; } .rp-chip.cool { color: #7fb3a8; }
+.rp-chip.flat, .rp-chip.unknown { color: var(--muted); }
+.report-panel.rp-hot .rp-fold { border-left: 3px solid #f0616d; }
+.report-panel.rp-cold .rp-fold { border-left: 3px solid #6ea8d8; }
+.report-panel.rp-warm .rp-fold { border-left: 3px solid #e8a33c; }
+.report-panel.rp-cool .rp-fold { border-left: 3px solid #7fb3a8; }
+.report-panel.rp-flat .rp-fold { border-left: 3px solid var(--line); }
+.report-panel.rp-unknown .rp-fold { border-left: 3px solid var(--warn); border-style: dashed; }
+.rp-body { padding: 6px 12px 12px; }
+.rp-headline { font-size: 15px; font-weight: 600; line-height: 1.5; margin: 2px 0 10px;
+  padding: 8px 12px; background: rgba(88,166,255,.07); border-radius: 6px; border-left: 3px solid var(--acc); }
+.rp-caveats { margin: 0 0 10px; padding: 8px 12px; border-radius: 6px; font-size: 12.5px;
+  background: rgba(210,153,34,.09); border-left: 3px solid var(--warn); }
+.rp-caveats b { color: #e8c26a; }
+.rp-caveats ul { margin: 4px 0 0; padding-left: 18px; line-height: 1.7; }
+.rp-secs { display: grid; gap: 8px; }
+.rp-sec { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; background: rgba(255,255,255,.015); }
+.rp-sec.is-missing { border-style: dashed; opacity: .85; }
+.rp-sec-title { font-size: 12.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.rp-sec-lv { font-size: 10px; font-weight: 400; padding: 0 6px; border-radius: 8px; border: 1px solid currentColor; }
+.rp-sec-lv.lv-info, .rp-sec-lv.lv-ok { color: #3fb950; }
+.rp-sec-lv.lv-warn { color: var(--warn); }
+.rp-sec-lv.lv-unknown { color: var(--muted); }
+.rp-missing { font-size: 12px; color: var(--muted); font-style: italic; }
+.rp-pts { margin: 0; padding-left: 18px; line-height: 1.75; font-size: 12.5px; }
+.rp-pt { color: var(--txt); }
+.rp-pt.main { color: var(--txt); font-weight: 500; }
+.rp-pt.warn { color: #e8c26a; }
+.rp-pt.unknown { color: var(--muted); }
+.rp-actions { display: flex; gap: 8px; margin-top: 10px; }
+.rp-btn { background: var(--card2); color: var(--acc); border: 1px solid var(--line); border-radius: 5px;
+  padding: 4px 12px; font-size: 12px; cursor: pointer; }
+.rp-btn:hover { border-color: var(--acc); }
+.rp-btn:disabled { opacity: .6; cursor: default; }
+.rp-note { font-size: 11px; line-height: 1.7; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.rp-note code { background: rgba(255,255,255,.06); padding: 0 3px; border-radius: 3px; }
+
+@media (max-width: 640px) {
+  .rg-tag-label { font-size: 20px; }
+  .rg-main { gap: 8px; }
+  .rg-facts { font-size: 11px; gap: 8px; }
+  .rp-headline { font-size: 14px; }
+}
+
 @media print {
   :root { --bg: #fff; --card: #fff; --card2: #fff; --line: #ccc; --txt: #000; --muted: #555;
     --acc: #000; --up: #c0392b; --down: #1e7e34; --warn: #9a6b00; --focus: #000; }

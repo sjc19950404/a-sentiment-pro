@@ -425,10 +425,49 @@ export function buildSignals(archive, opts = {}) {
   if (xFn) {
     try { crosscheck = xFn(days, { meta: archive?.meta || {} }); } catch { crosscheck = null; }
   }
+  // 拐点标签（#4）与每日日报（#4）——走注入，保持本模块"纯拼装、不 import 业务逻辑"的性质。
+  //   为什么不在本模块直接 import src/regime.js：本模块的既定纪律是**所有需要业务判断的
+  //   段落一律走注入**（health/seats/pain/breadth/crosscheck 皆如此）。保持一致 →
+  //   便于单测注入假实现，也避免 archive_split 变成第二个"口径发散点"。
+  const rFn = typeof opts.regimeFn === 'function' ? opts.regimeFn : null;
+  const repFn = typeof opts.reportFn === 'function' ? opts.reportFn : null;
+  let regime = null;
+  if (rFn) {
+    try { regime = rFn(days); } catch { regime = null; }
+  }
+  let dailyReport = null;
+  if (repFn) {
+    try {
+      // 日报需要各段素材；缺什么就少什么（报告自身会标 missing，不编造）
+      dailyReport = repFn({
+        latest: latestBrief(last),
+        // regime 序列是压缩态四元组 [date, value, pct, key] → 还原成对象供日报用
+      //   （唯一还原点；日报只读 value 序列，故这里只需 value）
+      regimeSeries: (regime && Array.isArray(regime.seriesCompact))
+        ? regime.seriesCompact.map((r) => ({ trade_date: r[0], value: r[1] }))
+        : [],
+        breadth, pain, seats, crosscheck,
+        health: health || null,
+        dirty: dirty || null,
+        meta: archive?.meta || {},
+      });
+    } catch { dailyReport = null; }
+  }
   return {
     kind: 'signals-latest',
     version: 1,
-    meta: archive?.meta || {},
+    // ⚠ meta 必须"瘦身"下发（体积纪律，实测抓出）：
+    //   主档 meta 里带 `reasonCodes`（77 条码表，实测 5.4KB），它是**构建期**解压 rc
+    //   下标用的（lhb_codec 在 decode 时消费），前端读 signals-latest 时**完全用不到**
+    //   ——reason 早已在切片/滚动窗里是明文。原样透传等于把一张只在服务端用的
+    //   码表塞进"只看一眼"的轻量档，白占 5.4KB（占 32KB 预算的 17%）。
+    //   故此处剔除；其余 meta 字段照常（前端要显示新鲜度/相位/版本）。
+    meta: (() => {
+      const m = archive?.meta;
+      if (!m || typeof m !== 'object') return m || {};
+      const { reasonCodes, ...rest } = m;
+      return rest;
+    })(),
     signals: archive?.signals || {},
     latest: latestBrief(last),
     // 板块相对强弱（若管线已算出）。没有就是 null，前端显示"未计算"而非 0——
@@ -475,6 +514,23 @@ export function buildSignals(archive, opts = {}) {
         + '当日两源常态偏移（方法论差异）已扣除，判定针对的是"偏离常态关系的离群"，'
         + '且**只标记不改数**。未覆盖部分=未核对，不等于没问题。第二源无日期参数，故仅最新日有效。'
       : '未生成（调用方未注入 crosscheck，需第二行业源）',
+    // 拐点标签（#4）：{ latest, series, counts, rules }。四态 = 冰点/回暖/高潮/退潮，
+    //   由「水位 × 方向」两个正交维度判定；水位以**历史分位**为主判据（实测情绪分
+    //   分布高度压缩在 40-65，绝对刻度几乎不分类），绝对刻度仅作交叉披露。
+    //   ⚠ 未注入时为 null（前端显示"未生成"），不得默认成"中性"——那会伪造结论。
+    regime,
+    regimeNote: rFn
+      ? '四态标签 = 水位（历史分位为主）× 方向（较 3 个交易日前的变化）；判据缺口一律显示"数据不足"，不猜。'
+        + '绝对水位与分位读数不一致时会如实披露（因情绪分分布高度压缩，以分位为准）。'
+        + '标签只描述市场状态，不含任何买卖建议。'
+      : '未生成（调用方未注入 regimeFn）',
+    // 每日盘后日报（#4）：结构化七节（状态/情绪/涨跌/亏钱/资金/题材/质量），
+    //   供前端折叠渲染与导出。**只翻译屏幕已有数据，不重算任何指标**；
+    //   缺失项写 missing + 原因，绝不补 0。
+    dailyReport,
+    dailyReportNote: repFn
+      ? '日报是"翻译层"：所有读数来自当日已归档数据，缺失项标注"未采集/未计算"而非补 0；不构成投资建议。'
+      : '未生成（调用方未注入 reportFn）',
     marketAlerts: market,
     marketAlertsNote: fn
       ? `仅大盘层告警，按假设总资产 ${assumedTotal} 元、空仓计算；持仓层告警需本地账户，见 paper_ui.js`

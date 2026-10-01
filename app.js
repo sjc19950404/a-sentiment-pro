@@ -1934,6 +1934,11 @@ let DIRTY = null;
 //   ⚠ 为 null 表示"未互证"（≠"两源一致"）——这两者语义相反，渲染层必须显式区分。
 //     本项目铁律：没检查 ≠ 没问题。故 null 走独立样式 + 「未互证」文案，绝不借用"一致"的绿。
 let XCHECK = null;
+// 拐点标签（#4）：来自 signals-latest.json 的 regime 段。
+//   ⚠ null = "未生成"（≠"中性"）。四态标签只描述状态，不含买卖建议。
+let REGIME = null;
+// 每日日报（#4）：来自 signals-latest.json 的 dailyReport 段。
+let REPORT = null;
 // 整份 signals-latest（不只是 health 段）：数据导出（src/dataset.js）要读
 //   breadth/series、seats/series、crosscheck/flagged、dirty/recent 等段。
 //   让它与各面板共用**同一次 fetch 结果**，避免"导出时再现拉一次"造成两处不一致。
@@ -1962,6 +1967,11 @@ async function loadHealth() {
     // 跨源一致性互证（#2）同源同次取。
     XCHECK = s && s.crosscheck ? s.crosscheck : null;
     renderXcheck(XCHECK);
+    // 拐点标签（#4）与每日日报（#4）同源同次取。
+    REGIME = s && s.regime ? s.regime : null;
+    REPORT = s && s.dailyReport ? s.dailyReport : null;
+    renderRegime(REGIME);
+    renderDailyReport(REPORT);
     noteLoad('signals-latest', true);
     // 健康档到位后重刷离线/陈旧横幅：横幅要并进 health 的告警摘要，
     //   而横幅首次渲染发生在 ARC 就绪时（那时 HEALTH 还是 null）。
@@ -1980,6 +1990,8 @@ async function loadHealth() {
     renderBreadth(null, e.message);
     renderDirty(null, e.message);
     renderXcheck(null, e.message);
+    renderRegime(null, e.message);
+    renderDailyReport(null, e.message);
     renderOfflineBar(null);
   }
 }
@@ -2284,6 +2296,218 @@ function renderDirty(d, errMsg) {
     + `<br>缺失一律显示「未计算」而非 0。本层**不改写任何分值** —— 剔除动作在管线内完成，此处只通报与定位。`
     + `<br>数据来自公开行情，不构成投资建议。`
     + `</div></div></details>`;
+}
+
+// ── 拐点标签（#4）────────────────────────────────────────────────────────
+//   用户第一眼要的答案："今天这盘是什么状态？"——冰点 / 回暖 / 高潮 / 退潮。
+//   数据来自 signals-latest.json 的 regime 段（唯一实现 src/regime.js）。
+//   ⚠ 渲染纪律：
+//     · null → 显式显示「未生成」，**绝不默认成"中性"**（那会伪造一个结论）。
+//     · 标签码 → 中文一律查 regime.labels（服务端下发的唯一出处），前端不自造。
+//     · 置信度 low（判据不全）必须显式标注，不能让残缺结论看起来和完整结论一样硬。
+const REGIME_TONE = { ice: 'cold', recover: 'warm', climax: 'hot', ebb: 'cool', neutral: 'flat', unknown: 'unknown' };
+
+function renderRegime(r, errMsg) {
+  const box = $('regimePanel');
+  if (!box) return;
+  if (!r || !r.latest) {
+    box.hidden = false;
+    box.className = 'regime-panel rg-unknown';
+    box.innerHTML = `<div class="rg-head"><b>市场状态</b><span class="rg-chip unknown">未生成</span>`
+      + `<span class="muted">${esc(errMsg || 'signals-latest.json 缺少 regime 段')}`
+      + `——"未生成"不等于"中性"，故不给标签</span></div>`;
+    return;
+  }
+  const L = r.latest || {};
+  const tone = REGIME_TONE[L.key] || 'unknown';
+  box.hidden = false;
+  box.className = `regime-panel rg-${tone}`;
+
+  // 主标签大字 + 关键读数
+  const val = L.value != null ? esc(L.value) : '—';
+  const pct = L.pct_rank != null ? esc(L.pct_rank) + '%' : '未计算';
+  const conf = L.confidence === 'low' ? ' aria-label="判据不全">判据不全'
+    : (L.confidence === 'mid' ? '>中等置信' : '>高置信');
+  const dirTxt = { up: '上行', flat: '横盘', down: '下行' }[L.dir] || '方向未判';
+  const warn = L.caution ? `<div class="rg-caution">⚠ ${esc(L.caution)}</div>` : '';
+
+  // 近期拐点（最近 10 天标签发生变化的日子）——用户最关心的"变盘点"
+  const turns = Array.isArray(r.turns) ? r.turns : [];
+  const turnRows = turns.slice().reverse().map((t) => `<tr>`
+    + `<td class="rg-date">${esc(t.date || '')}</td>`
+    + `<td><span class="rg-mini ${esc(REGIME_TONE[regimeKeyOf(r, t.from)] || 'unknown')}">${esc(t.from)}</span></td>`
+    + `<td class="rg-arrow">→</td>`
+    + `<td><span class="rg-mini ${esc(REGIME_TONE[regimeKeyOf(r, t.to)] || 'unknown')}">${esc(t.to)}</span></td>`
+    + `<td class="rg-num">${esc(t.value != null ? t.value : '—')}</td></tr>`).join('');
+
+  // 分布（这个标签历史上常见吗）
+  const counts = r.counts || {};
+  const total = r.totalDays || 0;
+  const dist = ['ice', 'recover', 'climax', 'ebb', 'neutral', 'unknown']
+    .filter((k) => counts[(r.labels && r.labels[k]) || k] != null)
+    .map((k) => {
+      const label = (r.labels && r.labels[k]) || k;
+      const n = counts[label] || 0;
+      const p = total ? Math.round((n / total) * 100) : 0;
+      return `<span class="rg-dist-item ${esc(REGIME_TONE[k])}">`
+        + `<span class="rg-dist-label">${esc(label)}</span>`
+        + `<span class="rg-dist-n">${n}</span>`
+        + `<span class="rg-dist-p muted">${p}%</span></span>`;
+    }).join('');
+
+  box.innerHTML = `<details class="rg-fold" open>`
+    + `<summary><b>市场状态</b>`
+    + `<span class="rg-chip ${esc(tone)}">${esc(L.label || '—')}</span>`
+    + `<span class="muted rg-sum">情绪分 ${val} · 分位 ${pct} · ${esc(dirTxt)}</span>`
+    + `</summary>`
+    + `<div class="rg-body">`
+    + `<div class="rg-main">`
+    + `<div class="rg-tag ${esc(tone)}"><span class="rg-tag-label">${esc(L.label || '—')}</span>`
+    + `<span class="rg-tag-conf"${conf}</span></div>`
+    + `<div class="rg-facts">`
+    + `<span><b>${val}</b> 情绪分</span>`
+    + `<span><b>${pct}</b> 历史分位</span>`
+    + `<span><b>${esc(dirTxt)}</b> 近期方向</span>`
+    + `<span><b>${esc(L.date || '')}</b> 交易日</span>`
+    + `</div></div>`
+    + warn
+    + (turnRows ? `<div class="rg-sub">近期变盘（最近 10 个交易日内的标签切换）</div>`
+      + `<table class="rg-table"><thead><tr><th>日期</th><th>从</th><th></th><th>到</th><th>情绪分</th></tr></thead><tbody>${turnRows}</tbody></table>` : '')
+    + (dist ? `<div class="rg-sub">全档分布（${esc(total)} 个交易日）</div><div class="rg-dist">${dist}</div>` : '')
+    + `<div class="rg-note muted">判据：水位（**历史分位为主**）× 方向（较 ${esc(r.rules ? r.rules.dirLookback : 3)} 个交易日前的变化）。`
+    + `<br>为什么以分位为主：实测情绪分分布高度压缩（89% 的历史天数落在 40–65 之间），绝对刻度几乎起不到分类作用；分位恒能把历史铺开到 0–100。`
+    + `<br>水位或方向任一不可判 → 显示「数据不足」，**绝不猜一个"中性"顶上**。`
+    + `<br>阈值唯一出处 <code>src/regime.js</code>；标签只描述市场状态，<b>不构成投资建议</b>。`
+    + `</div></div></details>`;
+}
+
+/** 由中文标签反查标签码（用于给"从/到"上色；查不到就返回 null，不猜） */
+function regimeKeyOf(r, label) {
+  const m = r && r.labels;
+  if (!m) return null;
+  for (const [k, v] of Object.entries(m)) if (v === label) return k;
+  return null;
+}
+
+// ── 每日盘后日报（#4）──────────────────────────────────────────────────────
+//   把当天的证据串成七节可读简报。它是**翻译层**：只把屏幕上已有的数字翻成人话，
+//   不重算任何指标。缺失节显示「未生成＋原因」，绝不补 0 伪装成正常。
+function renderDailyReport(rep, errMsg) {
+  const box = $('reportPanel');
+  if (!box) return;
+  if (!rep) {
+    box.hidden = false;
+    box.className = 'report-panel rp-unknown';
+    box.innerHTML = `<div class="rp-head"><b>每日日报</b><span class="rp-chip unknown">未生成</span>`
+      + `<span class="muted">${esc(errMsg || 'signals-latest.json 缺少 dailyReport 段')}</span></div>`;
+    return;
+  }
+  const secs = Array.isArray(rep.sections) ? rep.sections : [];
+  const missingN = secs.filter((s) => s.missing).length;
+  const tagTone = REGIME_TONE[rep.tag && rep.tag.key] || 'unknown';
+
+  const secHtml = secs.map((s) => {
+    const pts = (s.points || []).map((p) => {
+      const cls = p.kind === 'caution' ? 'rp-pt warn'
+        : (p.kind === 'main' ? 'rp-pt main'
+          : (p.kind === 'unknown' ? 'rp-pt unknown' : 'rp-pt'));
+      return `<li class="${cls}">${esc(p.text)}</li>`;
+    }).join('');
+    const miss = s.missing
+      ? `<div class="rp-missing">未生成：${esc(s.missingReason || '原因未知')}</div>` : '';
+    return `<div class="rp-sec${s.missing ? ' is-missing' : ''}">`
+      + `<div class="rp-sec-title">${esc(s.title || '')}`
+      + `<span class="rp-sec-lv lv-${esc(s.level || 'info')}">${esc(secLevelText(s.level))}</span></div>`
+      + miss
+      + (pts ? `<ul class="rp-pts">${pts}</ul>` : '')
+      + `</div>`;
+  }).join('');
+
+  const caveats = Array.isArray(rep.caveats) && rep.caveats.length
+    ? `<div class="rp-caveats"><b>需要注意</b><ul>${rep.caveats.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></div>`
+    : '';
+
+  box.hidden = false;
+  box.className = `report-panel rp-${tagTone}`;
+  box.innerHTML = `<details class="rp-fold" open>`
+    + `<summary><b>每日日报</b>`
+    + `<span class="rp-chip ${esc(tagTone)}">${esc((rep.tag && rep.tag.label) || '—')}</span>`
+    + `<span class="muted rp-sum">${esc(rep.date || '')}${missingN ? ` · ${missingN} 个区块缺数据` : ''}</span>`
+    + `</summary>`
+    + `<div class="rp-body">`
+    + `<div class="rp-headline">${esc(rep.headline || '')}</div>`
+    + caveats
+    + `<div class="rp-secs">${secHtml}</div>`
+    + `<div class="rp-actions">`
+    + `<button type="button" class="rp-btn" id="rpCopy">复制全文</button>`
+    + `<button type="button" class="rp-btn" id="rpPrint">打印 / 存 PDF</button>`
+    + `</div>`
+    + `<div class="rp-note muted">${esc(rep.disclaimer || '')}`
+    + `<br>本日报由 <code>src/daily_report.js</code> 由当日已归档数据翻译而成（不重算指标）；`
+    + `缺失项一律标注「未采集 / 未计算」而非补 0。`
+    + `</div></div></details>`;
+  // 动作按钮（复制/打印）——用**纯文本**导出，便于粘贴到任意地方
+  const copyBtn = $('rpCopy');
+  if (copyBtn) copyBtn.onclick = () => copyReportText(rep, copyBtn);
+  const printBtn = $('rpPrint');
+  if (printBtn) printBtn.onclick = () => printReportText(rep, printBtn);
+}
+
+function secLevelText(lv) {
+  return { info: '正常', ok: '正常', warn: '需注意', unknown: '未评估' }[lv] || '正常';
+}
+
+/** 把日报渲染成纯文本（复制/打印共用；唯一实现，避免两处口径不一） */
+function reportToText(rep) {
+  const lines = [];
+  lines.push(`【每日日报】${rep.date || ''}`);
+  lines.push(rep.headline || '');
+  lines.push('');
+  if (Array.isArray(rep.caveats) && rep.caveats.length) {
+    lines.push('需要注意：');
+    rep.caveats.forEach((c) => lines.push(`  · ${c}`));
+    lines.push('');
+  }
+  (rep.sections || []).forEach((s) => {
+    lines.push(s.title || '');
+    if (s.missing) lines.push(`  （未生成：${s.missingReason || '原因未知'}）`);
+    (s.points || []).forEach((p) => lines.push(`  - ${p.text}`));
+    lines.push('');
+  });
+  lines.push(rep.disclaimer || '');
+  return lines.join('\n');
+}
+function copyReportText(rep, btn) {
+  const txt = reportToText(rep);
+  // 反馈走既有的 flashBtn（把按钮文字临时换成结果）——不新造 toast 机制，
+  //   与页面其它"已复制 ✓"的反馈保持同一种观感（少一套 UI 就少一处不一致）。
+  const done = (ok) => flashBtn(btn, ok ? '已复制 ✓' : '复制失败');
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(() => done(true), () => done(fallbackCopy(txt)));
+    } else done(fallbackCopy(txt));
+  } catch { done(fallbackCopy(txt)); }
+}
+/** 返回是否成功（供按钮反馈）；独立出来便于测试与降级 */
+function fallbackCopy(txt) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch { return false; }
+}
+function printReportText(rep, btn) {
+  try {
+    const w = window.open('', '_blank');
+    if (!w) { flashBtn(btn, '弹窗被拦截'); return; }
+    w.document.write(`<pre style="font:13px/1.7 -apple-system,'PingFang SC',sans-serif;white-space:pre-wrap;padding:24px;max-width:900px;margin:0 auto">${esc(reportToText(rep))}</pre>`);
+    w.document.close();
+    w.focus(); w.print();
+    flashBtn(btn, '已打开 ✓');
+  } catch { flashBtn(btn, '打印失败'); }
 }
 
 // 跨源一致性互证面板（#135）
