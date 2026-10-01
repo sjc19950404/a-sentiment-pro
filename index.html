@@ -24,7 +24,8 @@
     <a class="zn" href="#zone-detail" data-zone="zone-detail">个股与题材</a>
     <a class="zn" href="#zone-backtest" data-zone="zone-backtest">策略回测 V5.2</a>
     <a class="zn" href="#zone-brief" data-zone="zone-brief">研判报告</a>
-    <span class="zn-note" id="navNote">表格行 / 题材标签 / 图上数据点 / 权重行 均可点击查看详情 · 快捷键 1-4 跳分区、/ 聚焦搜索</span>
+    <a class="zn" href="#zone-global" data-zone="zone-global">外围预案</a>
+    <span class="zn-note" id="navNote">表格行 / 题材标签 / 图上数据点 / 权重行 均可点击查看详情 · 快捷键 1-5 跳分区、/ 聚焦搜索</span>
   </nav>
 
   <div id="alerts"></div>
@@ -176,10 +177,39 @@
         </section>
       </div>
     </section>
+
+    <!-- ── 区五：外围市场 · 隔夜与节后预案 ── -->
+    <section class="zone" id="zone-global">
+      <div class="zone-head">
+        <h3>外围市场 · 节后预案</h3>
+        <span class="zone-sub" id="globSub">隔夜美股 / 中国资产 / 汇率 / 商品 —— A股休市期间照常更新</span>
+      </div>
+      <div class="grid">
+        <section class="card glob">
+          <h2>外围行情 · 隔夜 <span class="bf-auto">点品种看与A股的映射口径</span></h2>
+          <div id="globVerdict" class="glob-verdict"></div>
+          <div id="globSignals" class="glob-signals"></div>
+          <div class="table-wrap">
+            <table id="globTable">
+              <thead><tr><th>品种</th><th class="num">最新</th><th class="num">涨跌幅</th><th>会话 / 时间</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="cardlist" id="globCards" aria-label="外围行情卡片列表"></div>
+          <div id="globNote" class="bf-foot"></div>
+        </section>
+
+        <section class="card globmap">
+          <h2>与 A 股的映射 <span class="bf-auto">点条目看口径说明</span></h2>
+          <div id="globMap"></div>
+          <div id="globTrack" class="glob-track"></div>
+        </section>
+      </div>
+    </section>
   </main>
 
   <footer class="foot muted">
-    七因子情绪模型 v5.2-pro · 题材去噪 + 缺失代理 + 多源容灾 · 研判报告与回测引擎同源（阈值/仓位档位）· 策略回测 V5.2（成本/平滑/风控/帕累托）· 数据仅供参考，非投资建议
+    七因子情绪模型 v5.2-pro · 题材去噪 + 缺失代理 + 多源容灾 · 研判报告与回测引擎同源（阈值/仓位档位）· 策略回测 V5.2（成本/平滑/风控/帕累托）· 外围市场观测（A股休市期间照常更新）· 数据仅供参考，非投资建议
   </footer>
 
   <button id="toTop" class="totop" type="button" title="回到顶部" aria-label="回到顶部">↑</button>

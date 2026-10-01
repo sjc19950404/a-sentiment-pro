@@ -211,9 +211,9 @@ const keyEl = (key) => window.document.dispatchEvent(new window.KeyboardEvent('k
 const drawerOpen = () => !!$('drawer') && $('drawer').classList.contains('open');
 const escClose = () => keyEl('Escape');
 
-check('布局：4 个分区 + 4 个锚点导航已就位',
-  ['zone-overview', 'zone-detail', 'zone-backtest', 'zone-brief'].every((id) => !!$(id))
-  && window.document.querySelectorAll('#zoneNav .zn[data-zone]').length === 4, '');
+check('布局：5 个分区 + 5 个锚点导航已就位',
+  ['zone-overview', 'zone-detail', 'zone-backtest', 'zone-brief', 'zone-global'].every((id) => !!$(id))
+  && window.document.querySelectorAll('#zoneNav .zn[data-zone]').length === 5, '');
 check('布局：详情抽屉与遮罩骨架存在（初始关闭）',
   !!$('drawer') && !!$('drawerMask') && !!$('dwTitle') && !!$('dwBody') && !drawerOpen(), '');
 check('布局：个股表已升级为整行卡片且含工具条（视图切换/搜索/计数）',
@@ -509,10 +509,53 @@ escClose();
 // PC 端快捷键（输入框内不抢键）；dispatchEvent 返回 false 表示事件被接管
 const keyOn = (key, target) => (target || window.document).dispatchEvent(
   new window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
-check('PC：数字键 1-4 跳分区（事件被接管）', keyOn('2') === false, '');
+check('PC：数字键 1-5 跳分区（事件被接管）', keyOn('2') === false && keyOn('5') === false, '');
 $('hotSearch').value = '';
 check('PC：/ 聚焦个股搜索框', keyOn('/') === false && window.document.activeElement === $('hotSearch'), '');
 check('PC：在搜索框内打字不被快捷键抢键', keyOn('2', $('hotSearch')) === true, '');
+
+// ── 区五：外围市场（独立数据文件 data/global.json，A 股休市期间照常更新）──
+// 断言一律拿磁盘上的快照做对照，而不是写死数字——数据每天变，写死的断言第二天就假通过。
+const GJSON = JSON.parse(readFileSync(join(ROOT, 'data/global.json'), 'utf8'));
+const gq = Object.fromEntries(GJSON.quotes.map((q) => [q.key, q]));
+const gRow = [...($('globTable')?.querySelectorAll('tbody tr') || [])];
+
+check('外围：行情表行数 = 快照品种数（漏渲染会在这里暴露）',
+  gRow.length === GJSON.quotes.length, `${gRow.length} 行 / ${GJSON.quotes.length} 品种`);
+check('双端：外围卡片与表格同数量、同顺序（同一份 quotes 渲染两次）',
+  window.document.querySelectorAll('#globCards .gcard').length === gRow.length
+  && [...window.document.querySelectorAll('#globCards .gcard')].every((c, i) => c.dataset.key === gRow[i]?.dataset.key), '');
+check('外围：结论条渲染研判标签与净倾向',
+  txt('globVerdict').includes(GJSON.watch.verdict.label) && txt('globVerdict').includes(String(GJSON.watch.bias)),
+  txt('globVerdict').slice(0, 48));
+check('外围：触发式观测逐条渲染（条数与快照一致）',
+  ($('globSignals')?.querySelectorAll('.gsig').length || 0) === GJSON.watch.signals.length,
+  `${GJSON.watch.signals.length} 条`);
+check('外围：A50 期货带「A股锚」标记（长假唯一实时锚不能缺）',
+  gRow.some((tr) => tr.dataset.key === 'a50' && tr.textContent.includes('A股锚')), '');
+check('外围：涨跌幅列直接渲染快照文案（前端不二次格式化，避免两套口径）',
+  gRow.every((tr) => { const q = gq[tr.dataset.key]; return !!q && tr.textContent.includes(q.chgPctText); }), '');
+check('回归：费半收平渲染为 0.00% 而非 -0.00%（收平不被读成下跌）',
+  gq.sox.chgPctText === '0.00%'
+  && (() => { const tr = gRow.find((x) => x.dataset.key === 'sox'); return !!tr && tr.textContent.includes('0.00%') && !tr.textContent.includes('-0.00%'); })(),
+  gq.sox.chgPctText);
+check('外围：映射表按快照 anchors 逐条渲染（映射关系不在前端重写一份）',
+  ($('globMap')?.querySelectorAll('.gmap-row').length || 0) === GJSON.anchors.length, `${GJSON.anchors.length} 条`);
+check('外围：假期跟踪清单列出开市前剩余美股交易日，并写明下次开市日',
+  ($('globTrack')?.querySelectorAll('.gtk').length || 0) === (GJSON.meta.usSessionDates || []).length
+  && txt('globTrack').includes(GJSON.meta.aShareNextOpen),
+  `${(GJSON.meta.usSessionDates || []).length} 个交易日 / 开市 ${GJSON.meta.aShareNextOpen}`);
+check('外围：口径备注写明数据源与「非投资建议」',
+  txt('globNote').includes('新浪') && txt('globNote').includes('非投资建议'), '');
+
+clickEl(gRow.find((tr) => tr.dataset.key === 'sox'));
+check('双端：点外围品种打开详情（含数据源原值比对）',
+  drawerOpen() && txt('dwTitle').includes('费城半导体') && txt('dwBody').includes('源字段涨跌幅'), txt('dwTitle'));
+escClose();
+clickEl(window.document.querySelector('#globMap .gmap-row'));
+check('双端：点映射条目看口径说明与观测阈值',
+  drawerOpen() && txt('dwBody').includes('阈值') && txt('dwBody').includes('为什么这样映射'), txt('dwTitle'));
+escClose();
 
 // 样式层的适配规则必须存在（否则以后误删，手机上又会退回横滑宽表 / 点不中的图表点）
 const htmlTxt = readFileSync(join(ROOT, 'index.html'), 'utf8');

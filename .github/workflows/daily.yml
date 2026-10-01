@@ -24,6 +24,11 @@ jobs:
         run: node src/pipeline.js
       - name: 数据新鲜度判定（按交易日历，输出可读结论）
         run: node scripts/freshness.mjs
+      # 外围行情独立成步：A 股休市（长假）时上面那步会整段跳过，而假期恰恰是外围数据
+      # 最该攒的时候——节后预案靠的就是这几天美股交易日。所以它不受 A 股开市与否影响。
+      # 抓不到时脚本内部容灾（保留上次快照并标记失败），不会拖挂整条 job。
+      - name: 抓取外围市场行情（隔夜美股/中国资产/汇率/商品）
+        run: node scripts/fetch_global.mjs
       - name: 生成 V5.2 回测档（成本/平滑/风控/网格帕累托/滚动/主线选股）
         run: node scripts/backtest.mjs
       # 口径守卫：两套龙虎榜净额（当日榜 / 含区间累计榜的全量）不得混用。
@@ -36,7 +41,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/backtest.json
+          git add data/archive.json data/backtest.json data/global.json
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else

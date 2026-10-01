@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "pipeline": "node src/pipeline.js",
+    "global": "node scripts/fetch_global.mjs",
     "backtest": "node scripts/backtest.mjs",
     "freshness": "node scripts/freshness.mjs",
     "audit:lhb": "node scripts/audit_lhb_caliber.mjs",

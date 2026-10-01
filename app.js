@@ -955,6 +955,188 @@ function fingerprint(arc) {
     (arc.all_days || []).length, (arc.all_days || []).slice(-1)[0]?.emotion?.value ?? ''].join('|');
 }
 
+// ── 区五：外围市场 · 隔夜与节后预案 ──
+// 数据是独立文件 data/global.json（scripts/fetch_global.mjs 预生成）：外围在 A 股休市期间
+// 照常更新，与 archive.json 节奏不同——合成一个文件会让「A股没更新」与「外围没更新」
+// 互相掩盖。加载失败只影响本区，不影响其它卡片。
+let GLOB = null;
+
+function loadGlobal() {
+  return fetch('./data/global.json?_=' + Date.now(), { cache: 'no-store' })
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+    .then((g) => renderGlobal(g))
+    .catch((e) => {
+      const box = $('globVerdict');
+      if (box) box.innerHTML = `<div class="gv neu"><div class="gv-hint">外围数据未就绪（${esc(e.message)}）——先运行 <b>node scripts/fetch_global.mjs</b> 生成 data/global.json。</div></div>`;
+    });
+}
+
+/** 会话/时间列：美股给「会话日 + 收盘时刻」，盘中品种给当日时间 */
+function globWhen(q) {
+  const t = String(q.quoteTime || '');
+  const clock = t.length > 12 ? t.slice(11, 16) : (t.length >= 5 ? t.slice(0, 5) : t);
+  if (q.sessionDate && clock) return q.sessionDate + ' ' + clock;
+  return q.sessionDate || clock || '—';
+}
+
+function renderGlobal(g) {
+  GLOB = g;
+  const meta = g.meta || {};
+  const w = g.watch || {};
+  const sub = $('globSub');
+  if (sub) {
+    sub.textContent = `隔夜美股 ${meta.usSessionDate || '--'} 收盘`
+      + (meta.aShareNextOpen
+        ? ` · A股下次开市 ${meta.aShareNextOpen}（开市前还有 ${meta.usSessionsBeforeOpen} 个美股交易日）`
+        : '');
+  }
+
+  // 结论条
+  const v = w.verdict || {};
+  const vbox = $('globVerdict');
+  if (vbox) {
+    const cls = v.key === 'positive' ? 'ok' : v.key === 'negative' ? 'bad' : 'neu';
+    vbox.innerHTML = `<div class="gv ${cls}">
+        <div class="gv-main">外围研判 <b>${esc(v.label || '—')}</b>
+          <span class="muted">· 净倾向 ${(w.bias > 0 ? '+' : '') + w.bias}（门槛 ±${w.biasGate}）</span></div>
+        <div class="gv-hint">${esc(v.hint || '')}</div>
+        ${meta.aShareHoliday ? '<div class="gv-note">A 股休市中：本卡片每个工作日随隔夜外围刷新，用途就是节后开盘预案。</div>' : ''}
+      </div>`;
+  }
+
+  // 触发式观测：越过阈值才输出（与研判报告的「明日观测」同一思路，不做固定清单）
+  const sbox = $('globSignals');
+  if (sbox) {
+    const sig = w.signals || [];
+    sbox.innerHTML = sig.length
+      ? '<div class="bf-h bf-h2">触发式观测（越过阈值才输出）</div>'
+        + sig.map((s) => `<div class="gsig ${esc(s.level)}">${esc(s.text)}</div>`).join('')
+      : '<div class="muted">无触发项</div>';
+  }
+
+  // 行情表（宽屏）
+  const rows = g.quotes || [];
+  const tb = $('globTable')?.querySelector('tbody');
+  if (tb) {
+    tb.innerHTML = rows.map((q) => {
+      const cls = trendCls(q.chgPct);
+      const marks = (q.role === 'a_share_proxy' ? '<span class="gtag a">A股锚</span>' : '')
+        + (q.ok ? '' : '<span class="gtag n">无行情</span>');
+      return `<tr data-act="glob" data-key="${esc(q.key)}" tabindex="0">
+        <td>${esc(q.name)}${marks}</td>
+        <td class="num ${cls}">${esc(q.lastText)}</td>
+        <td class="num ${cls}">${esc(q.chgPctText)}</td>
+        <td class="muted gwhen">${esc(globWhen(q))}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // 行情卡片（窄屏）：与表格同一份数据、同一顺序
+  const cl = $('globCards');
+  if (cl) {
+    cl.innerHTML = rows.map((q) => {
+      const cls = trendCls(q.chgPct);
+      const marks = q.role === 'a_share_proxy' ? '<span class="gtag a">A股锚</span>' : '';
+      return `<div class="gcard" data-act="glob" data-key="${esc(q.key)}" tabindex="0">
+        <div class="gc-top"><span>${esc(q.name)}${marks}</span>
+          <span class="${cls}">${esc(q.chgPctText)}</span></div>
+        <div class="gc-bot muted"><span>${esc(q.lastText)}</span><span>${esc(globWhen(q))}</span></div>
+      </div>`;
+    }).join('');
+  }
+
+  // 映射表：外围品种 → A 股板块（映射关系来自构建期下发的 anchors，前端不重写一份）
+  const mbox = $('globMap');
+  if (mbox) {
+    mbox.innerHTML = '<div class="gmap">' + (g.anchors || []).map((a) => {
+      const q = rows.find((x) => x.key === a.from);
+      const cls = q ? trendCls(q.chgPct) : 'muted';
+      const dir = a.sign > 0 ? '同向' : a.sign < 0 ? '反向' : '结构';
+      return `<div class="gmap-row" data-act="gmap" data-from="${esc(a.from)}" tabindex="0">
+        <div class="gm-l"><span>${esc(q ? q.name : a.from)}</span>
+          <span class="${cls}">${esc(q ? q.chgPctText : '—')}</span></div>
+        <div class="gm-mid"><span class="gtag ${a.sign > 0 ? 'u' : a.sign < 0 ? 'd' : ''}">${dir}</span></div>
+        <div class="gm-r">${esc((a.aSectors || []).join(' · '))}</div>
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  // 假期跟踪清单
+  const tbox = $('globTrack');
+  if (tbox) {
+    const dates = meta.usSessionDates || [];
+    const wd = (d) => ['日', '一', '二', '三', '四', '五', '六'][new Date(d + 'T00:00:00Z').getUTCDay()];
+    const last = meta.usSessionDate;
+    tbox.innerHTML = '<div class="bf-h">假期跟踪清单</div>'
+      + (dates.length
+        ? `<div class="gtrk-note muted">A 股 ${esc(meta.aShareNextOpen)}（周${wd(meta.aShareNextOpen)}）开市，之前还有 ${dates.length} 个美股交易日，每场收盘后本页自动刷新：</div>
+           <div class="gtrk">${dates.map((d) => `<span class="gtk${last && d <= last ? ' done' : ''}">${d.slice(5)} 周${wd(d)}</span>`).join('')}</div>
+           <div class="gtrk-note muted">最近已收盘 ${esc(last || '—')}。长假期间 A50 期货全程在交易，是最贴近 A 股开盘方向的实时参考；道指金融/消费权重高，只作广度参考。</div>`
+        : '<div class="muted">A 股当前非假期状态：按交易日正常跟踪。</div>');
+  }
+
+  // 口径备注
+  const nbox = $('globNote');
+  if (nbox) {
+    const failed = meta.failed || [];
+    nbox.innerHTML = '口径备注：' + esc(meta.note || '')
+      + (failed.length ? ` <span class="bf-warn">本次未取到：${esc(failed.join('、'))}（保持缺失，不写 0）。</span>` : '')
+      + ` 数据源 ${esc(meta.source || '')} · 最近一次尝试 ${esc(String((meta.lastAttempt || {}).outcome || ''))}。`;
+  }
+}
+
+/** 外围品种详情（点行情表/卡片打开） */
+function globalDetail(key) {
+  if (!GLOB) return null;
+  const q = (GLOB.quotes || []).find((x) => x.key === key);
+  if (!q) return null;
+  const numOr = (x) => (x == null ? '—' : String(x));
+  const lines = [
+    dwSection('行情', dwKv([
+      ['最新', `<b>${esc(q.lastText)}</b>`],
+      ['涨跌幅', `<span class="${trendCls(q.chgPct)}">${esc(q.chgPctText)}</span>`],
+      ['昨收', numOr(q.prevClose)],
+      ['涨跌额', q.chg == null ? '—' : `${q.chg > 0 ? '+' : ''}${q.chg}`],
+      ['开 / 高 / 低', `${numOr(q.open)} / ${numOr(q.high)} / ${numOr(q.low)}`],
+      ['52周高 / 低', q.hi52 == null && q.lo52 == null ? '该品种源不提供' : `${numOr(q.hi52)} / ${numOr(q.lo52)}`],
+    ])),
+    dwSection('时间与来源', dwKv([
+      ['会话日', esc(q.sessionDate || '—')],
+      ['行情时间', esc(String(q.quoteTime || '—'))],
+      ['源字段涨跌幅', q.chgPctReported == null ? '源未提供' : `${q.chgPctReported}%（本页用 昨收 现算，两者不一致即为口径漂移）`],
+      ['数据源代码', esc(q.code)],
+    ])),
+  ];
+  const anchors = (GLOB.anchors || []).filter((a) => a.from === key);
+  if (anchors.length) {
+    lines.push(dwSection('映射到的 A 股方向', anchors.map((a) => `<div class="dw-note"><b>${esc((a.aSectors || []).join(' · '))}</b>（${a.sign > 0 ? '同向' : a.sign < 0 ? '反向' : '结构参考'}）<br>${esc(a.why)}</div>`).join('')));
+  }
+  if (q.note) lines.push(dwSection('口径说明', `<div class="dw-note">${esc(q.note)}</div>`));
+  if (!q.ok) lines.push('<div class="dw-note">⚠ 本次未取到该品种行情（保持缺失，不写 0）——缺失与「0 波动」是两件事。</div>');
+  return { title: q.name, sub: `外围品种 · ${esc(q.key)} · 会话 ${esc(q.sessionDate || '—')}`, body: lines.join('') };
+}
+
+/** 映射条目详情（点映射表打开） */
+function globalMapDetail(from) {
+  if (!GLOB) return null;
+  const a = (GLOB.anchors || []).find((x) => x.from === from);
+  if (!a) return null;
+  const q = (GLOB.quotes || []).find((x) => x.key === from);
+  const t = GLOB.thresholds || {};
+  return {
+    title: `${q ? q.name : from} → A 股`,
+    sub: `映射方向 · ${a.sign > 0 ? '同向' : a.sign < 0 ? '反向' : '结构参考'}`,
+    body: dwSection('对应 A 股板块', `<div class="dw-chips">${(a.aSectors || []).map((s) => `<span class="chip">${esc(s)}</span>`).join('')}</div>`)
+      + dwSection('为什么这样映射', `<div class="dw-note">${esc(a.why)}</div>`)
+      + dwSection('当前值', dwKv([
+        ['最新', q ? esc(q.lastText) : '—'],
+        ['涨跌幅', q ? `<span class="${trendCls(q.chgPct)}">${esc(q.chgPctText)}</span>` : '—'],
+      ]))
+      + dwSection('观测阈值', `<div class="dw-note">承压/支撑阈值定义在 src/global.js 的 WATCH_THRESHOLDS，构建期随 data/global.json 下发；本页触发式观测完全按该阈值判定。</div>`)
+      + `<div class="dw-note">阈值口径：A50 期货 ±${t.a50Up}% · 费半 -${Math.abs(t.soxDown)}%/+${t.soxUp}% · 纳指 ±${t.ixicUp}% · 中国金龙 -${Math.abs(t.hxcDown)}%/+${t.hxcUp}% · 美元指数 ±${t.dxyUp}% · 离岸人民币 ±${t.rmbDep}%。</div>`,
+  };
+}
+
 function renderAll(arc) {
   lastArc = arc; // 供 loadBacktest 完成后按引擎口径重刷报告
   ARC = arc;     // 供个股明细表与详情抽屉使用
@@ -977,6 +1159,7 @@ function renderAll(arc) {
   renderThemes(latest);
   renderHotTable();
   renderBrief(days, arc);
+  loadGlobal();  // 外围市场（独立数据文件，缺失不影响上述渲染）
   loadBacktest(); // 回测/帕累托/滚动/主线选股四区块（独立数据文件，缺失不影响上述渲染）
 }
 
@@ -1391,6 +1574,8 @@ function fireAct(el) {
   else if (act === 'seg') { const v = segDetail(el.dataset.kind, +el.dataset.i); if (v) openDrawer(v); }
   else if (act === 'day') { const v = dayDetail(+el.dataset.i); if (v) openDrawer(v); }
   else if (act === 'btmore') { const v = btDetail(); if (v) openDrawer(v); }
+  else if (act === 'glob') { const v = globalDetail(el.dataset.key); if (v) openDrawer(v); }
+  else if (act === 'gmap') { const v = globalMapDetail(el.dataset.from); if (v) openDrawer(v); }
   else if (act === 'btpt') {
     const dt = el.dataset.d;
     const days = ARC?.all_days || [];
@@ -1454,14 +1639,14 @@ $('dwClose')?.addEventListener('click', closeDrawer);
 $('drawerMask')?.addEventListener('click', closeDrawer);
 
 // 键盘：Esc 关抽屉；Enter/Space 触发带 tabindex 的可点元素（表格行、卡片、chip、数据点）；
-// PC 端另有快捷键：1-4 跳分区、/ 聚焦个股搜索（在输入框内不抢键，不影响正常打字）
+// PC 端另有快捷键：1-5 跳分区、/ 聚焦个股搜索（在输入框内不抢键，不影响正常打字）
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { closeDrawer(); return; }
   const t = e.target;
   const typing = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
   if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
     const zones = [...document.querySelectorAll('#zoneNav .zn[data-zone]')];
-    const n = '1234'.indexOf(e.key);
+    const n = '12345'.indexOf(e.key);
     if (n >= 0 && zones[n]) { e.preventDefault(); zones[n].click(); return; }
     if (e.key === '/') {
       const inp = $('hotSearch');
