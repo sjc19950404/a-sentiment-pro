@@ -37,7 +37,36 @@ const dom = new JSDOM(readFileSync(join(ROOT, 'index.html'), 'utf8'), {
 const { window } = dom;
 
 // 用本地文件系统实现 fetch（相对路径 → 仓库文件），避免依赖静态服务器
-window.fetch = async (url) => {
+// 拦截腾讯实时行情：返回一段构造好的行情报文，让「实时价」路径在离线 CI 里也能被断言。
+// 注意：jsdom 里 TextDecoder('gbk') 由 Node 提供（支持 gbk），ASCII 字段解码后不变，
+// 因此构造报文只需保证数字字段位置正确即可。
+window.fetch = async (url, opts) => {
+  const u = String(url);
+  if (u.includes('qt.gtimg.cn')) {
+    // 注意：端点形如 https://qt.gtimg.cn/q=sh600519（是 /q= 不是 ?q=）
+    const q = u.split(/[/?]q=/)[1] || '';
+    const symbols = q.split(',').filter(Boolean);
+    const lines = symbols.map((s) => {
+      const f = new Array(50).fill('');
+      f[0] = '1';
+      f[1] = 'TEST'; // 用 ASCII 名称：真实源是 GBK，这里不引入编码干扰，名称非断言点
+      f[2] = s.slice(2);
+      f[3] = '12.34';
+      f[4] = '12.00';
+      f[5] = '12.10';
+      f[30] = '20261009150000';
+      f[31] = '0.34';
+      f[32] = '2.83';
+      f[33] = '12.50';
+      f[34] = '11.90';
+      return `v_${s}="${f.join('~')}";`;
+    }).join('\n');
+    return {
+      ok: true, status: 200,
+      arrayBuffer: async () => new TextEncoder().encode(lines).buffer,
+      text: async () => lines,
+    };
+  }
   const rel = String(url).replace(/^\.\//, '').split('?')[0];
   try {
     const txt = readFileSync(join(ROOT, rel), 'utf8');
@@ -565,11 +594,25 @@ escClose();
 {
   const uniObj = JSON.parse(readFileSync(join(ROOT, 'data/paper_universe.json'), 'utf8'));
   const engineNoExport = readFileSync(join(ROOT, 'src/paper.js'), 'utf8').replace(/^export\s+/gm, '');
+  // src/quote.js 也是 ESM：剥掉 import/export 后与引擎/前端拼到同一作用域。
+  // 它 import 的 quoteSymbol 来自 sources.js，这里剥掉 import 即可（该函数在下方内联补齐）。
+  const quoteNoExport = readFileSync(join(ROOT, 'src/quote.js'), 'utf8')
+    .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/sources\.js';/m, '')
+    .replace(/^export\s+/gm, '');
   const uiNoImport = readFileSync(join(ROOT, 'paper_ui.js'), 'utf8')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/paper\.js';/, '')
+    .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/quote\.js';/, '')
     .replace(/^export\s+/gm, '');
+  // quoteSymbol：与 src/sources.js 同口径（沪 6/9 开头、深 0/3、北 4/8/920）
+  const quoteSymbolShim = `function quoteSymbol(code){
+    const c = String(code || '').trim();
+    if (/^(6|9)/.test(c)) return 'sh' + c;
+    if (/^(0|3)/.test(c)) return 'sz' + c;
+    if (/^(4|8|920)/.test(c)) return 'bj' + c;
+    return null;
+  }`;
   try {
-    window.eval(`${engineNoExport}\n;(function(){\n${uiNoImport}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${engineNoExport}\n;(function(){\n${uiNoImport}\n})();`);
   } catch (e) {
     check('模拟交易：paper_ui.js 在 jsdom 中可执行', false, e.message);
   }
@@ -582,12 +625,16 @@ escClose();
     $('paperStats')?.querySelectorAll('.ps-cell').length >= 6
     && txt('paperStats').includes('1,000,000'),
     `${$('paperStats')?.querySelectorAll('.ps-cell').length} 格 | ${txt('paperStats').slice(0, 50)}`);
-  check('模拟交易：副标题写明「仅初始资金虚拟」与行情日期',
-    txt('paperSub').includes('仅初始资金为虚拟') && /行情截至\s*\d{4}-\d{2}-\d{2}/.test(txt('paperSub')),
-    txt('paperSub').slice(0, 70));
-  check('模拟交易：标的池已装载（口径来自 data/paper_universe.json）',
-    txt('paperSub').includes(String(uniObj.meta.total)),
-    `池 ${uniObj.meta.total} 只 / 当日有价 ${uniObj.meta.fresh} 只`);
+  check('模拟交易：副标题写明「仅初始资金虚拟」与实时行情来源',
+    txt('paperSub').includes('仅初始资金为虚拟') && txt('paperSub').includes('腾讯实时行情'),
+    txt('paperSub').slice(0, 80));
+  check('模拟交易：标的池仍装载（作参考/快速选择，不再作为可下单白名单）',
+    Number.isFinite(uniObj?.meta?.total) && Object.keys(uniObj.symbols || {}).length > 0,
+    `池 ${uniObj?.meta?.total} 只 / 当日有价 ${uniObj?.meta?.fresh} 只`);
+  // 标的池在实时行情架构下已从「可下单白名单」降级为「参考/快速选择」：
+  // 能否下单只看「有没有取到真实价格」。这里断言副标题不再把存档日期当成交价依据。
+  check('模拟交易：副标题不再宣称价格取自存档（已改为实时行情）',
+    !txt('paperSub').includes('价格取自真实行情存档'), txt('paperSub').slice(0, 80));
 
   // 下单表单：输入真实代码 → 显示真实行情与可交易性
   const pick = (uniObj.symbols && Object.values(uniObj.symbols)
@@ -625,6 +672,42 @@ escClose();
       pRows('paperPendTable') === 0, `${pRows('paperPendTable')} 条`);
     check('模拟交易：账本仍为 100% 现金（撤单未产生任何成本）',
       txt('paperStats').includes('1,000,000'), txt('paperStats').slice(0, 40));
+  }
+
+  // ── 本次修复的核心回归：不在标的池里的票，也必须能按实时价下单 ──
+  // 旧 bug：lookup() 把「在不在标的池」当成可下单前提，而池只覆盖当日上榜股（约 100 只），
+  // 于是 1200+ 只正常股票全被判「无真实行情，不可下单」。现在能否下单只看「取没取到真实价」。
+  {
+    const outsideCode = ['600519', '000001', '601318', '000002', '002415']
+      .find((c) => !uniObj.symbols?.[c]) || null;
+    check('前置：存在一只「不在标的池中」的股票（验证白名单已废除）', !!outsideCode,
+      outsideCode || '池覆盖了全部候选，换一组再试');
+    if (outsideCode) {
+      const codeInp = $('poCode');
+      codeInp.value = outsideCode;
+      codeInp.dispatchEvent(new window.Event('input', { bubbles: true }));
+      // 等 250ms 防抖 + 实时 fetch 落地
+      await new Promise((r) => setTimeout(r, 600));
+      const t = txt('poQuote');
+      check('模拟交易·回归：池外代码通过实时行情取得价格（不再报「无真实行情」）',
+        t.includes(outsideCode) && !t.includes('取不到'), t.slice(0, 80));
+      check('模拟交易·回归：实时价徽章可见（用户能分辨价格来源）',
+        !!$('poQuote').querySelector('.gtag.live, .gtag.close'),
+        $('poQuote').querySelector('.gtag.live, .gtag.close')?.className || '无徽章');
+
+      // 池外代码同样可以下单（提交后进入待成交）
+      const qtyInp = $('poQty');
+      qtyInp.value = '100';
+      qtyInp.dispatchEvent(new window.Event('input', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 60));
+      clickEl($('poSubmit'));
+      await new Promise((r) => setTimeout(r, 200));
+      check('模拟交易·回归：池外代码可成功挂单（T+1，进入待成交）',
+        pRows('paperPendTable') === 1, `${pRows('paperPendTable')} 条待成交`);
+      // 清掉这张单，避免影响后续断言
+      const cb = $('paperPendTable')?.querySelector('tbody tr button');
+      if (cb) { clickEl(cb); await new Promise((r) => setTimeout(r, 120)); }
+    }
   }
 
   // 记录页签：成交 / 全部委托（含被拒）切换

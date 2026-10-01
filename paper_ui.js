@@ -15,6 +15,11 @@ import {
   COMMISSION_RATE, STAMP_TAX_RATE, TRANSFER_FEE_RATE, DEFAULT_SLIP, REJECT,
   LIMIT_PCT, isLimitHit,
 } from './src/paper.js';
+// 实时行情（腾讯 qt.gtimg.cn，CORS 为 * → 浏览器可直连）。
+// 为什么必须引入：存档是「收盘后生成的日频数据」，只含当日上榜/热点约 100 只票，
+// 池子里其余 1200+ 只票取不到价，界面只能提示「无真实行情，不可下单」。
+// 要按实时真实价格买卖，就必须有一个能查全市场任意 A 股当前价的来源。
+import { fetchQuotes, priceKind, inTradingSession, normalizeCodes } from './src/quote.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
@@ -31,9 +36,13 @@ const INIT_CASH = 1000000;
 const SLIP = DEFAULT_SLIP;
 
 let ACCT = null;          // 当前账户
-let UNI = null;           // 标的池
+let UNI = null;           // 标的池（仅作「参考/快速选择」，不再是可下单的白名单）
 let UNI_META = {};
-let QMAP = {};            // 当日可成交行情 code → quote
+let QMAP = {};            // 存档当日行情 code → quote（降级用）
+let LIVEQ = {};           // 实时行情 code → quote（腾讯源，优先）
+let LIVE_AT = null;       // 最近一次实时抓取时刻
+let LIVE_FAIL = [];       // 最近一次抓取失败的代码
+let LIVE_BUSY = false;    // 抓取中（防重复请求）
 let LAST_DATE = null;     // 存档最新交易日
 let ORDER = { side: 'buy', code: '', qty: 0 };
 let HIST = { view: 'trade' };
@@ -76,6 +85,68 @@ function msg(text, kind) {
   if (text) setTimeout(() => { if (el.textContent === text) { el.textContent = ''; el.className = 'muted'; } }, 6000);
 }
 
+// ────────────────────────── 实时行情 ──────────────────────────
+
+/**
+ * 抓一批代码的实时行情并并进 LIVEQ。
+ * 为什么是「合并」而不是「替换」：用户每输入一个代码就抓一次，若整表替换，
+ * 之前查过的票会立刻失去实时价（持仓列表、待成交列表都会闪回存档价）。
+ * 合并保留已取到的价，配合 LIVE_AT 标注抓取时刻。
+ * @returns {Promise<{ok:number, failed:string[]}>}
+ */
+async function refreshLive(codes) {
+  const list = normalizeCodes(codes);
+  if (!list.length) return { ok: 0, failed: [] };
+  LIVE_BUSY = true;
+  try {
+    const r = await fetchQuotes(list);
+    const got = Object.keys(r.quotes).length;
+    if (got) {
+      LIVEQ = { ...LIVEQ, ...r.quotes };
+      LIVE_AT = new Date();
+    }
+    LIVE_FAIL = r.failed || [];
+    return { ok: got, failed: LIVE_FAIL };
+  } catch (e) {
+    // 网络/跨域失败：不炸界面，降级回存档价，并在下单区如实提示
+    LIVE_FAIL = list;
+    return { ok: 0, failed: list };
+  } finally {
+    LIVE_BUSY = false;
+  }
+}
+
+/** 抓当前屏幕上所有需要现价的代码（下单标的 + 持仓 + 待成交），一次批量拉齐 */
+async function refreshAllLive() {
+  const codes = [
+    ORDER.code,
+    ...Object.keys(ACCT?.positions || {}),
+    ...(ACCT?.pending || []).map((p) => p.code),
+  ];
+  const uniq = normalizeCodes(codes);
+  if (!uniq.length) return { ok: 0, failed: [] };
+  const r = await refreshLive(uniq);
+  // 用实时价刷新持仓浮盈（持仓的 last 字段是显示用，成本/数量不动）
+  syncPositionsLive();
+  return r;
+}
+
+/** 用最新实时价更新持仓的现价字段（只动 last/lastDate，不碰成本与数量） */
+function syncPositionsLive() {
+  if (!ACCT?.positions) return;
+  let changed = false;
+  const positions = { ...ACCT.positions };
+  for (const code of Object.keys(positions)) {
+    const q = LIVEQ[code];
+    if (!q || !Number.isFinite(+q.price)) continue;
+    if (positions[code].last !== q.price || positions[code].lastDate !== q.tickDate) {
+      positions[code] = { ...positions[code], last: q.price, lastDate: q.tickDate || LAST_DATE, pxStale: false };
+      changed = true;
+    }
+  }
+  if (changed) { ACCT = { ...ACCT, positions }; save(); }
+}
+
 // ────────────────────────── 数据装载 ──────────────────────────
 
 async function boot() {
@@ -103,10 +174,14 @@ async function boot() {
     autoCatchUp(days);
 
     if (sub) {
-      sub.textContent = `仅初始资金为虚拟（${INIT_CASH.toLocaleString()} 元）· 行情截至 ${LAST_DATE || '--'}`
-        + ` · 标的池 ${UNI_META.total || 0} 只（当日有价 ${UNI_META.fresh || 0} 只）· 规则对齐 A 股现行制度`;
+      sub.textContent = `仅初始资金为虚拟（${INIT_CASH.toLocaleString()} 元）· 行情来源：腾讯实时行情`
+        + ` · 规则对齐 A 股现行制度（T+1、整手、涨跌停、真实费用）`;
     }
     renderAllPaper();
+
+    // 实时行情放在首屏渲染之后：先把界面画出来，再异步补价，避免网络慢时白屏。
+    // 首次抓「持仓 + 待成交」，让账户列表立刻有实时价；用户输入代码时再按需补抓。
+    refreshAllLive().then(() => renderAllPaper());
   } catch (e) {
     const box = $('paperSub');
     if (box) box.textContent = `模拟器数据未就绪（${e.message}）——先运行 node scripts/fetch_universe.mjs 生成 data/paper_universe.json`;
@@ -149,24 +224,44 @@ function autoCatchUp(days) {
 
 // ────────────────────────── 行情查询 ──────────────────────────
 
-/** 综合标的池与当日行情，给出一只票的完整可交易状态 */
+/**
+ * 综合实时行情 / 存档行情 / 标的池，给出一只票的完整可交易状态。
+ *
+ * 取价优先级（这是本次改造的核心）：
+ *   1) 实时行情 LIVEQ（腾讯源）—— 全市场任意 A 股，盘中是实时价、盘后是最近真实收盘价
+ *   2) 存档当日行情 QMAP —— 实时源拿不到时的降级（仍是真实收盘价，但要标注来源与日期）
+ * 两者都没有 → fresh=false，界面如实说明「取不到价」，而不是谎称不可交易。
+ *
+ * 关键修复：旧版把「在不在标的池里」当成可下单的前提，池子里只有上榜股（约 100 只），
+ * 于是 1200+ 只正常股票都被判「无真实行情，不可下单」。现在**标的池只作参考**，
+ * 是否能下单取决于「有没有取到真实价格」。
+ */
 function lookup(code) {
   const c = String(code || '').trim();
   if (!/^\d{6}$/.test(c)) return null;
   const b = boardOf(c);
   const u = UNI?.[c] || null;
-  const q = QMAP[c] || null;
+  const live = LIVEQ[c] || null;
+  const arch = QMAP[c] || null;
+  // 实时优先；实时没有才用存档收盘价
+  const q = live || arch;
   const name = q?.name || u?.name || '';
+  const kind = live ? priceKind(live) : null;
   return {
     code: c,
     name,
     board: b,
     st: isStName(name),
     limitPct: limitPctOf(c, name),
-    // 当日真实收盘价（可撮合）；没有就是没有，绝不用历史价冒充当日价
     price: q?.price ?? null,
     changePct: q?.changePct ?? null,
-    quoteDate: q ? LAST_DATE : (u?.asOf || null),
+    turnover: q?.turnover ?? u?.huanshou ?? null,
+    prevClose: q?.prevClose ?? null,
+    // 价格来源与时间：界面据此如实标注是「实时价」还是「最近收盘价」
+    src: live ? 'live' : (arch ? 'archive' : null),
+    srcLabel: live ? (kind?.kind === 'live' ? '实时价' : '最近收盘价') : (arch ? '存档收盘价' : null),
+    tickTime: live?.tickTime || null,
+    quoteDate: live ? (live.tickDate || LAST_DATE) : (arch ? LAST_DATE : (u?.asOf || null)),
     fresh: !!q,
     history: u,
     inUniverse: !!u,
@@ -193,7 +288,7 @@ function renderStats() {
     ['总资产', num(st.total), '', `现金 + 冻结 + 持仓市值`, 'stat-total'],
     ['可用资金', num(st.cash), '', '可用于新开仓', ''],
     ['冻结资金', num(st.freeze), '', '买入挂单占用，撤单/成交后释放', ''],
-    ['持仓市值', num(st.marketValue), '', '按最新真实收盘价计', ''],
+    ['持仓市值', num(st.marketValue), '', '按最新真实行情价计', ''],
     ['浮动盈亏', num(st.floatPnl), cls(st.floatPnl), `成本 ${num(st.costValue)} · ${pct(st.floatPnlPct * 100)}`, ''],
     ['已实现盈亏', num(st.realized), cls(st.realized), '清仓结转，含买入成本分摊', ''],
     ['累计费用', num(st.totalFee), '', '佣金 + 过户费 + 印花税', ''],
@@ -423,21 +518,31 @@ function renderOrderForm() {
   if (qbox) {
     if (!ORDER.code) {
       qbox.className = 'po-quote muted';
-      qbox.textContent = '输入代码后显示当日真实行情与可交易性';
+      // 全市场任意 A 股都能查实时价：文案必须说清楚，否则用户不知道入口变宽了
+      qbox.textContent = '输入 6 位代码查询实时行情（全市场 A 股，沪/深/北交所均可）';
     } else if (!info || !info.board.tradable) {
       qbox.className = 'po-quote bad';
       qbox.textContent = info ? `${ORDER.code}：${info.board.label} —— 模拟器不纳入此类品种` : `${ORDER.code}：代码格式非法（需 6 位数字）`;
     } else {
       const hit = isLimitHit(info.changePct, info.code, info.name);
       qbox.className = 'po-quote';
+      // 价格来源标注：实时价 / 最近收盘价 / 存档收盘价，三态必须让用户看得见
+      const badge = info.src === 'live'
+        ? (info.srcLabel === '实时价'
+          ? '<span class="gtag live">实时价</span>'
+          : '<span class="gtag close">最近收盘价</span>')
+        : (info.src === 'archive' ? '<span class="gtag close">存档收盘价</span>' : '');
       qbox.innerHTML = `<b>${esc(info.name || '（名称未知）')}</b> <span class="muted">${esc(info.code)}</span>`
         + `<span class="gtag">${esc(info.board.label)}</span>${info.st ? '<span class="gtag n">ST</span>' : ''}`
-        + `<span class="gtag">±${(info.limitPct * 100).toFixed(0)}%</span>`
+        + `<span class="gtag">±${(info.limitPct * 100).toFixed(0)}%</span>${badge}`
         + (info.fresh
-          ? `<div class="pq-line">当日收盘 <b>${num(info.price)}</b> 元 <span class="${cls(info.changePct)}">${pct(info.changePct)}</span>`
+          ? `<div class="pq-line">${info.srcLabel === '实时价' ? '最新' : '收盘'} <b>${num(info.price)}</b> 元`
+            + ` <span class="${cls(info.changePct)}">${pct(info.changePct)}</span>`
             + (hit === 'up' ? ' <span class="gtag d">涨停</span>' : hit === 'down' ? ' <span class="gtag u">跌停</span>' : '')
-            + `<span class="muted"> · ${esc(info.quoteDate)}</span></div>`
-          : `<div class="pq-line bf-warn">${esc(info.quoteDate || '—')} 之后无真实行情，不可下单（持仓仍可卖出）</div>`);
+            + (info.turnover != null ? `<span class="muted"> · 换手 ${num(info.turnover)}%</span>` : '')
+            + `<span class="muted"> · ${esc(info.tickTime || info.quoteDate || '—')}</span></div>`
+          : `<div class="pq-line bf-warn">取不到 ${esc(ORDER.code)} 的行情（实时源与存档都没有该代码的价格）`
+            + `——请核对代码是否存在/是否已停牌；已有持仓仍可正常卖出。</div>`);
     }
   }
 
@@ -453,7 +558,7 @@ function renderOrderForm() {
       const f = fees(gross, ORDER.side);
       const v = validateOrder(ACCT, { code: info.code, side: ORDER.side, qty, slip: SLIP }, { code: info.code, price: info.price, name: info.name, changePct: info.changePct });
       prev.innerHTML = `<table class="po-tb"><tbody>
-          <tr><td>预估成交价</td><td class="num">${num(px)} 元 <span class="muted">（今收 ${num(info.price)} ${ORDER.side === 'buy' ? '+' : '−'} 滑点 ${SLIP * 1e4}‱）</span></td></tr>
+          <tr><td>预估成交价</td><td class="num">${num(px)} 元 <span class="muted">（${info.srcLabel === '实时价' ? '最新' : '收盘'} ${num(info.price)} ${ORDER.side === 'buy' ? '+' : '−'} 滑点 ${SLIP * 1e4}‱）</span></td></tr>
           <tr><td>成交金额</td><td class="num">${num(gross)} 元</td></tr>
           <tr><td>佣金</td><td class="num">${num(f.comm)} 元 <span class="muted">（万三，最低 ${MIN_COMMISSION} 元）</span></td></tr>
           <tr><td>过户费</td><td class="num">${num(f.transfer)} 元 <span class="muted">（万0.1，双边）</span></td></tr>
@@ -466,21 +571,23 @@ function renderOrderForm() {
   const hint = $('poHint');
   if (hint) {
     hint.innerHTML = `下一可撮合日：<b>${esc(nextSessionLabel())}</b>（按该日真实收盘价成交）`
-      + ` · 买入须 ${LOT} 股整数倍 · 可用 ${num(ACCT.cash)} 元`;
+      + ` · 买入须 ${LOT} 股整数倍 · 可用 ${num(ACCT.cash)} 元`
+      + (LIVE_AT ? ` · <span class="muted">行情 ${esc(fmtClock(LIVE_AT))} 抓取</span>` : '');
   }
 }
 
-/** 下一可撮合日：存档最新日之后的下一个交易日（用 config 的节假日口径在 UI 侧复算） */
+/** 下一可撮合日：**今天（北京时间）之后**的下一个 A 股交易日。
+ *  不再锚定存档日——实时结算下，如果今天就是交易日且盘后，次日即可撮合。 */
 function nextSessionLabel() {
-  if (!LAST_DATE) return '—';
-  const d = new Date(LAST_DATE + 'T00:00:00Z');
+  // 若今天已是交易日且已过结算时点，从明天起算；否则今天本身可能是可撮合日
+  const d = new Date(bjToday() + 'T00:00:00Z');
   for (let i = 0; i < 30; i++) {
     d.setUTCDate(d.getUTCDate() + 1);
     const w = d.getUTCDay();
     if (w === 0 || w === 6) continue;
     const iso = d.toISOString().slice(0, 10);
     if (HOLIDAYS.has(iso)) continue;
-    return iso + '（存档尚未包含该日，届时自动结算）';
+    return iso;
   }
   return '—';
 }
@@ -630,7 +737,7 @@ function pendingDetail(id) {
       ['代码 / 名称', `${esc(p.code)} ${esc(p.name || '')}`],
       ['方向 / 数量', `${p.side === 'buy' ? '买入' : '卖出'} ${p.qty} 股`],
       ['提交日', esc(p.submitDate || '—')],
-      ['提交时价', `${num(p.submitPrice)} 元（存档 ${esc(LAST_DATE)} 收盘）`],
+      ['提交时价', `${num(p.submitPrice)} 元<span class="muted">（下单瞬间的真实行情）</span>`],
       ['预估成交价', `${num(p.estPrice)} 元（含滑点）`],
       ['冻结金额', `${num(p.need)} 元`],
       ['撮合规则', '次一交易日按该日<b>真实收盘价</b>成交'],
@@ -708,11 +815,24 @@ function perfDetail(k) {
 
 // ────────────────────────── 事件 ──────────────────────────
 
-function submit() {
+async function submit() {
   const info = ORDER.code ? lookup(ORDER.code) : null;
   if (!info) { msg('请先输入 6 位股票代码', 'err'); return; }
   if (!ORDER.qty) { msg('请填写委托数量', 'err'); return; }
-  if (!info.fresh) { msg(`${info.code} 在 ${LAST_DATE} 无真实行情（最新报价 ${info.quoteDate || '—'}），无法下单`, 'err'); return; }
+  // 下单前实时校验一次价格：用户可能是几分钟前输入的代码，价格已经变了。
+  // 这是「按实时真实价格买卖」的必要动作——用陈旧价算出来的冻结金额会不准。
+  if (!LIVEQ[info.code]) {
+    msg(`正在获取 ${info.code} 最新行情…`, 'ok');
+    await refreshLive([info.code]);
+    const fresh = lookup(ORDER.code);
+    if (!fresh || !fresh.fresh) {
+      msg(`${info.code} 取不到行情（实时源无此代码或已停牌），无法下单；已有持仓仍可卖出`, 'err');
+      renderOrderForm();
+      return;
+    }
+    Object.assign(info, fresh);
+    renderOrderForm();
+  }
   const q = { code: info.code, name: info.name, price: info.price, changePct: info.changePct };
   const r = submitOrder(ACCT, { code: info.code, side: ORDER.side, qty: ORDER.qty, slip: SLIP }, q, { date: LAST_DATE });
   ACCT = r.next;
@@ -722,7 +842,8 @@ function submit() {
   if (r.order.status === 'rejected') {
     msg(`委托被拒：${r.order.reject}${r.order.detail ? '（' + r.order.detail + '）' : ''}`, 'err');
   } else {
-    msg(`${ORDER.side === 'buy' ? '买入' : '卖出'} ${info.name || info.code} ${ORDER.qty} 股已挂单，将于下一交易日按真实收盘价撮合`, 'ok');
+    const pxSrc = info.src === 'live' ? `按${info.srcLabel} ${num(info.price)} 元` : `按${info.srcLabel || '行情'} ${num(info.price)} 元`;
+    msg(`${ORDER.side === 'buy' ? '买入' : '卖出'} ${info.name || info.code} ${ORDER.qty} 股已挂单（${pxSrc}预估冻结），将于下一交易日按真实收盘价撮合`, 'ok');
   }
 }
 
@@ -778,23 +899,80 @@ function doImport() {
   inp.click();
 }
 
+/**
+ * 用**实时行情**结算当日挂单（T+1 撮合的「次日」到了）。
+ *
+ * 与旧的「按存档日补齐」的区别：
+ *   · 存档日只在收盘后（当晚 ~18:30）才生成，若用户当天盘中/收盘后想结算，存档里还没有今天 ——
+ *     旧逻辑会提示「已是最新，无需结算」，委托卡在那里动不了。
+ *   · 实时源随时能拿到「今天」的真实价，所以「今天」也可以作为结算日。
+ *
+ * 结算价仍取**真实价格**（盘中=最新价，收盘后=当日收盘价），不是模拟价。
+ * @param {string} [date] 结算日（默认：今天，北京时间）
+ * @returns {Promise<{ok:boolean, date?:string, filled?:number, expired?:number, reason?:string}>}
+ */
+async function settleByLive(date) {
+  const pending = ACCT?.pending || [];
+  if (!pending.length) return { ok: false, reason: '当前没有待成交委托' };
+  const today = date || bjToday();
+  if (ACCT.lastSettle && today <= ACCT.lastSettle) {
+    return { ok: false, reason: `今日（${today}）已结算过，下一交易日再结算` };
+  }
+  // 只抓「待成交委托」涉及的代码——不为了结算去抓全市场
+  const codes = normalizeCodes(pending.map((p) => p.code));
+  const r = await refreshLive(codes);
+  if (!r.ok) return { ok: false, reason: '取不到实时行情，无法结算（请稍后重试）' };
+
+  const quotes = {};
+  for (const c of codes) {
+    const q = LIVEQ[c];
+    if (q && Number.isFinite(+q.price)) quotes[c] = { code: c, name: q.name, price: +q.price, changePct: q.changePct ?? null, src: 'live' };
+  }
+  const res = settleDay(ACCT, today, quotes);
+  ACCT = res.account;
+  save();
+  renderAllPaper();
+  return { ok: true, date: today, filled: res.fills.length, expired: res.expired.length };
+}
+
+/** 北京时间「今天」的 YYYY-MM-DD（结算日/行情日期一律用北京时间，与行情源一致） */
+function bjToday() {
+  const d = new Date(Date.now() + 8 * 3600e3);
+  return d.toISOString().slice(0, 10);
+}
+
+/** 行情抓取时刻的简短展示（HH:MM:SS，24 小时制本地时间） */
+function fmtClock(d) {
+  const t = new Date(d);
+  if (isNaN(t)) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(t.getHours())}:${p(t.getMinutes())}:${p(t.getSeconds())}`;
+}
+
 function settleNow() {
-  fetch('./data/archive.json?_=' + Date.now(), { cache: 'no-store' })
-    .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
-    .then((arc) => {
-      const days = arc.all_days || [];
-      const todo = days.filter((d) => d.trade_date > (ACCT.lastSettle || ''));
-      if (!todo.length) { msg('已是最新，无需结算', 'ok'); return; }
-      let cur = ACCT, filled = 0, expired = 0;
-      for (const d of todo) { const r = settleDay(cur, d.trade_date, quotesFromDay(d)); cur = r.account; filled += r.fills.length; expired += r.expired.length; }
-      ACCT = cur;
-      QMAP = { ...QMAP, ...quotesFromDay(days[days.length - 1]) };
-      LAST_DATE = days[days.length - 1].trade_date;
-      save();
-      renderAllPaper();
-      msg(`结算完成：成交 ${filled} 笔、失效 ${expired} 笔`, 'ok');
-    })
-    .catch((e) => msg('结算失败：' + e.message, 'err'));
+  // 先试「按今天实时价结算」；没有待成交委托或今天已结算，则回退到「按存档日补齐」
+  settleByLive().then((r) => {
+    if (r.ok) {
+      msg(`结算完成（${r.date} 实时价）：成交 ${r.filled} 笔、失效 ${r.expired} 笔`, 'ok');
+      return;
+    }
+    fetch('./data/archive.json?_=' + Date.now(), { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('HTTP ' + res.status))))
+      .then((arc) => {
+        const days = arc.all_days || [];
+        const todo = days.filter((d) => d.trade_date > (ACCT.lastSettle || ''));
+        if (!todo.length) { msg(r.reason || '已是最新，无需结算', 'ok'); return; }
+        let cur = ACCT, filled = 0, expired = 0;
+        for (const d of todo) { const rr = settleDay(cur, d.trade_date, quotesFromDay(d)); cur = rr.account; filled += rr.fills.length; expired += rr.expired.length; }
+        ACCT = cur;
+        QMAP = { ...QMAP, ...quotesFromDay(days[days.length - 1]) };
+        LAST_DATE = days[days.length - 1].trade_date;
+        save();
+        renderAllPaper();
+        msg(`结算完成（存档日）：成交 ${filled} 笔、失效 ${expired} 笔`, 'ok');
+      })
+      .catch((e) => msg('结算失败：' + e.message, 'err'));
+  });
 }
 
 document.addEventListener('click', (e) => {
@@ -833,12 +1011,36 @@ document.addEventListener('click', (e) => {
   if (act === 'pperf') { openPaperDrawer(perfDetail(el.dataset.k)); return; }
 });
 
+// 输入满 6 位就抓实时行情（防抖 250ms，避免边打字边发请求）。
+// 这是「全市场任意 A 股都能下单」得以成立的入口：不再要求代码先出现在标的池里。
+let codeTimer = null;
 $('poCode')?.addEventListener('input', (e) => {
   const v = String(e.target.value || '').replace(/\D/g, '').slice(0, 6);
   e.target.value = v;
   ORDER = { ...ORDER, code: v, qty: 0 };
   renderOrderForm();
   renderQuick();
+  if (codeTimer) clearTimeout(codeTimer);
+  if (v.length === 6) {
+    codeTimer = setTimeout(async () => {
+      // 已有同代码实时价则不必重复请求；抓取期间先给个提示，避免用户以为卡住
+      if (!LIVEQ[v] && !LIVE_BUSY) {
+        msg(`正在获取 ${v} 实时行情…`, 'ok');
+        const r = await refreshLive([v]);
+        renderOrderForm();
+        renderQuick();
+        if (r.ok) {
+          const q = LIVEQ[v];
+          msg(`已获取 ${v} ${q?.name || ''} 实时行情`, 'ok');
+        } else {
+          msg(`${v} 取不到行情（请核对代码是否正确 / 是否停牌）`, 'err');
+        }
+      } else if (LIVEQ[v]) {
+        renderOrderForm();
+        renderQuick();
+      }
+    }, 250);
+  }
 });
 $('poQty')?.addEventListener('input', (e) => {
   ORDER = { ...ORDER, qty: Math.max(0, Math.floor(+e.target.value || 0)) };

@@ -15,3 +15,7 @@ tools/backtest/_gui_shot.png
 tools/backtest/reports_dbg/
 tools/backtest/_check*/
 tools/backtest/archive_*.csv
+
+# 真浏览器截图（开发用临时产物）
+shots/
+scripts/_shot_*.mjs

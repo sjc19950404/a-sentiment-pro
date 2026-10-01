@@ -375,6 +375,13 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .gtag.u { background: rgba(63, 185, 80, .16); color: var(--fresh); }
 .gtag.d { background: rgba(240, 97, 109, .16); color: var(--fade); }
 .gtag.n { background: rgba(210, 153, 34, .18); color: var(--warn); }
+/* 价格来源徽章：实时价（绿点呼吸）/ 最近收盘价 / 存档收盘价（灰）
+   必须一眼可辨——用户要能看见「这个价是实时的还是收盘的」，不能糊在一起 */
+.gtag.live { background: rgba(63, 185, 80, .18); color: var(--fresh); }
+.gtag.live::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--fresh); margin-right: 4px; vertical-align: 1px; animation: livePulse 1.6s ease-in-out infinite; }
+@keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+.gtag.close { background: var(--line); color: var(--muted); }
 .gwhen { font-size: 11px; }
 /* 品种清单固定 16 行，默认 300px 会把汇率/商品截到滚动区里看不见 */
 .glob .table-wrap { max-height: 540px; }

@@ -224,7 +224,7 @@
     <section class="zone" id="zone-paper">
       <div class="zone-head">
         <h3>模拟交易 · 纸上交易台</h3>
-        <span class="zone-sub" id="paperSub">仅初始资金为虚拟 · 价格取自真实行情存档 · 交易规则对齐 A 股现行制度</span>
+        <span class="zone-sub" id="paperSub">仅初始资金为虚拟 · 行情来源：腾讯实时行情（全市场 A 股）· 交易规则对齐 A 股现行制度</span>
       </div>
       <div class="grid">
         <section class="card paper-acct">
@@ -234,7 +234,7 @@
             <button id="paperReset" class="mini" type="button">重置账户</button>
             <button id="paperExport" class="mini" type="button">导出账本</button>
             <button id="paperImport" class="mini" type="button">导入账本</button>
-            <button id="paperSettle" class="mini" type="button">按最新档结算到今天</button>
+            <button id="paperSettle" class="mini" type="button">按实时价结算挂单</button>
             <span id="paperMsg" class="muted"></span>
           </div>
           <div id="paperNote" class="bf-foot"></div>
@@ -244,7 +244,7 @@
           <h2>下单 <span class="bf-auto">T+1 撮合：次日按真实收盘价成交</span></h2>
           <div class="po-form">
             <label>代码<input id="poCode" type="text" inputmode="numeric" maxlength="6" placeholder="6 位代码，如 600519" /></label>
-            <div id="poQuote" class="po-quote muted">输入代码后显示当日真实行情与可交易性</div>
+            <div id="poQuote" class="po-quote muted">输入 6 位代码查询实时行情 —— 沪深北交所全市场 A 股，取到价即可下单</div>
             <div class="po-row">
               <div class="seg" id="poSide" role="tablist" aria-label="买卖方向">
                 <button class="on" data-side="buy" role="tab" aria-selected="true">买入</button>
