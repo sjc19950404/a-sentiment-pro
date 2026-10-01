@@ -790,11 +790,196 @@ function buildBrief(days, arc) {
   const sec6 = li(`<b>${verdict}</b>`) + tierLine + decompLine + riskLine +
     (watch.length ? `<div class="bf-h bf-h2">明日观测（引擎动态生成）</div>` + watch.map((w) => li('· ' + w)).join('') : '');
 
+  // 7. 模拟交易复盘（为什么赚 / 为什么亏 + 止损与优化建议）
+  //
+  // 数据来自 paper_ui.js 发布的 window.__paperSnapshot（账户 + 台账 + 实时价 + 情绪分），
+  // 归因由 src/paper_review.js 计算——本处只负责把结构化结论拼成报告段落，
+  // **不重算任何指标**（口径漂移是这一层最容易犯的错）。
+  // 三种降级都要如实说清：引擎未就绪 / 快照未就绪 / 尚未开始交易。
+  const sec7 = buildPaperReviewSection();
+
   const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；上榜总成交、净买率、日度因子 s_net、近5日净额序列、新股扰动占比、主线题材资金占比全部只取「当日榜」口径（剔除"连续N个交易日累计"类区间榜——其买卖额与净额都是区间累计值，混入会把总成交放大数倍、净买率稀释至失真，并让日度因子把三天累计当成一天），分子分母一律同源；全量口径（含区间累计榜）仅在「完整参数」中单列作诊断，禁止与当日值混用；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股当日榜净买÷当日榜全榜净买；主线强度分=涨停家数×密集度（该题材涨停数÷当日全题材涨停数），与引擎 selectMainLine 同式；仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额20%／涨跌家数10%／板块涨比20%／涨停强度10%／涨跌停对比15%／封板质量10%／量能15%，与页面情绪分、回测引擎同源），阈值 过热80／满仓65／半仓24~65／清仓24，收盘打分、T+1 生效，并叠加止损-8%、回撤≥15%动态降仓、单日仓位变动≤20%、佣金万3+印花税万5+滑点万2 的实盘约束；因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定（该五模块口径**不含资金面**，切勿据此误判资金面在整体打分中的地位）；<b>资金面（龙虎榜净额）是 V5.2 主分数 s_net 的组成部分，权重 20%</b>，与 §② 的资金面观测同为一股数据、同一口径，二者不冲突。席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
 
   return stamp + seg('① 情绪定位（核心因子·25%）', sec1, 'bfsec1') + seg('② 资金面（龙虎榜）· 参与打分（主分数 s_net 权重 20%）+ 辅助观测（北向/机构行为）', sec2, 'bfsec2') +
     seg('③ 盈亏效应（核心因子·25%）', sec3, 'bfsec3') + seg('④ 广度与量能（核心因子·20%）', sec4, 'bfsec4') +
-    seg('⑤ 题材结构（核心因子·20%）', sec5, 'bfsec5') + seg('⑥ 综合研判（含 V5.2 仓位档位）', sec6, 'bfsec6') + foot;
+    seg('⑤ 题材结构（核心因子·20%）', sec5, 'bfsec5') + seg('⑥ 综合研判（含 V5.2 仓位档位）', sec6, 'bfsec6') +
+    seg('⑦ 模拟交易复盘（为什么赚/为什么亏 · 止损与优化建议）', sec7, 'bfsec7') + foot;
+}
+
+/**
+ * 生成报告第⑦段「模拟交易复盘」的正文 HTML。
+ *
+ * 分工：本函数**只做渲染**（结构化结论 → HTML 行），归因与建议全部来自
+ * src/paper_review.js 的 buildPaperReview()。这样报告里的每个数字都能在两个地方复现：
+ * 页面上的复盘、导出的文档、以及 Node 单测，三者同源。
+ *
+ * 降级链（任一环缺失都必须如实说明，绝不拼半截结论）：
+ *   1) 复盘引擎未挂载（离线打开、模块加载失败）→ 说明引擎未就绪
+ *   2) 账户快照未发布（paper_ui.js 尚未 boot 完成）→ 说明账户未就绪
+ *   3) 快照有但没有交易 → 由引擎的 headline 如实说「尚未开始模拟交易」
+ */
+function buildPaperReviewSection() {
+  const eng = PR();
+  const snap = PSNAP();
+  const li2 = (t) => `<div class="bf-li">${t}</div>`;
+
+  if (!eng || typeof eng.buildPaperReview !== 'function') {
+    return li2('<span class="muted">复盘引擎未就绪（页面可能被离线打开或模块加载失败）。刷新后可自动生成。</span>');
+  }
+  if (!snap || !snap.account) {
+    return li2('<span class="muted">模拟交易账户未就绪——先在「模拟交易台」完成一次建仓，本段会在账户产生后自动生成复盘。</span>');
+  }
+
+  let r;
+  try {
+    r = eng.buildPaperReview({
+      account: snap.account,
+      log: snap.log,
+      priceMap: snap.priceMap,
+      emotionScore: snap.emotionScore == null ? null : snap.emotionScore,
+      asOf: snap.asOf,
+    });
+  } catch (e) {
+    // 引擎异常绝不能把整份报告打挂（第⑦段只是附加内容）；如实说明并保留其余六段。
+    return li2(`<span class="bf-warn">复盘生成失败：${String(e && e.message || e)}（其余段落不受影响）</span>`);
+  }
+
+  const out = [];
+  const N = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—' : (+v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const Y = (v) => (v == null || !Number.isFinite(+v)) ? '—' : (v >= 0 ? '+' : '−') + Math.round(Math.abs(+v)).toLocaleString('en-US');
+  const P = (v, d = 1) => (v == null || !Number.isFinite(+v)) ? '—' : `${(+v * 100).toFixed(d)}%`;
+  const SP = (v, d = 1) => (v == null || !Number.isFinite(+v)) ? '—' : `${+v > 0 ? '+' : ''}${(+v * 100).toFixed(d)}%`;
+  const tone = (v) => v > 0 ? 'bf-up' : v < 0 ? 'bf-dn' : 'muted';
+
+  // ── 结论行（引擎 headline，唯一出处） ──
+  out.push(li2(`<b>结论</b>：${r.headline}`));
+
+  if (!r.started) {
+    out.push(li2('<span class="muted">账户尚无成交记录，暂无收益归因可分析。建仓并产生成交后，本段会自动给出「为什么赚/为什么亏」的拆解与止损、优化建议。</span>'));
+    return out.join('');
+  }
+
+  // ── ① 收益来源拆解 ──
+  const a = r.account;
+  const dirTxt = a.direction === 'gain' ? '盈利' : a.direction === 'loss' ? '亏损' : '持平';
+  out.push(`<div class="bf-h bf-h2">收益归因（为什么${a.direction === 'loss' ? '亏' : '赚'}）</div>`);
+  out.push(li2(`账户总盈亏 <b class="${tone(a.netPnl)}">${Y(a.netPnl)}</b> 元`
+    + `（收益率 <b class="${tone(a.retPct)}">${SP(a.retPct)}</b>，初始本金 ${N(a.initCash, 0)} 元）→ 整体${dirTxt}。`));
+  out.push(li2(`拆成三块：`)
+    + a.items.map((it) => li2(`&nbsp;&nbsp;· <b>${it.label}</b> <span class="${tone(it.value)}">${Y(it.value)}</span> 元`
+      + `<span class="muted">（${it.note}）</span>`)).join(''));
+  if (a.dominant && Math.abs(a.dominant.value) > 1) {
+    out.push(li2(`主导项是 <b>${a.dominant.label}</b>（${Y(a.dominant.value)} 元）——${a.dominant.value < 0
+      ? '这一项是主要亏损来源，改善它对本金的边际效果最大。'
+      : '这一项是主要盈利来源，注意它是否可持续（浮动部分会随价格回吐）。'}`));
+  }
+  if (a.feeDrag != null && a.feeDrag >= 0.005) {
+    out.push(li2(`<span class="bf-warn">交易费用累计 ${N(a.totalFee, 0)} 元，占初始本金 ${P(a.feeDrag, 2)}</span>`
+      + `——这是确定性的负收益，与行情无关。`));
+  }
+  if (Math.abs(a.residual) >= 1) {
+    // 残差大小决定措辞：正常情况下只有「持仓买入费被重复计入费用」的量级（几元~本金的千分之几）；
+    // 若残差显著偏大，说明账本本身不自洽（外部导入、手工编辑），应如实提示，而不是含糊说「小额差异」。
+    const big = a.initCash > 0 && Math.abs(a.residual) / a.initCash > 0.005;
+    out.push(li2(`<span class="muted">口径说明：三块之和与总盈亏存在 ${Y(a.residual)} 元差异`
+      + `（占本金 ${a.initCash > 0 ? P(Math.abs(a.residual) / a.initCash, 2) : '—'}）——`
+      + `已实现盈亏按加权平均成本法结转，而「全部费用」含尚未卖出持仓的买入费，二者有一次交集；`
+      + `差异不分配到任何一项，避免把不可归因的零头说成某个来源。`
+      + `${big ? '<span class="bf-warn">该差异偏大，账户记录可能存在外部导入或手工编辑导致的成本/现金不一致。</span>' : ''}</span>`));
+  }
+
+  // ── ② 逐笔复盘 ──
+  const t = r.trades;
+  out.push(`<div class="bf-h bf-h2">逐笔复盘（平仓盈亏）</div>`);
+  if (t.closedCount === 0) {
+    out.push(li2('<span class="muted">尚无平仓记录——逐笔胜率与盈亏比需要至少一笔卖出才能计算。</span>'));
+  } else {
+    out.push(li2(`已平仓 <b>${t.closedCount}</b> 笔：盈利 <b class="bf-up">${t.wins}</b> 笔 / 亏损 <b class="bf-dn">${t.losses}</b> 笔`
+      + `${t.flats ? ` / 持平 ${t.flats} 笔` : ''}，`
+      + `胜率 <b>${P(t.winRate, 0)}</b>`
+      + `${!t.samplesEnough ? `<span class="muted">（样本 ${t.judged} 笔，不足 ${eng.REVIEW_CFG ? eng.REVIEW_CFG.minTradesForWinRate : 3} 笔，胜率仅供参考）</span>` : ''}。`));
+    if (t.avgWin != null && t.avgLoss != null) {
+      out.push(li2(`平均盈利 <span class="bf-up">${Y(t.avgWin)}</span> 元 / 平均亏损 <span class="bf-dn">${Y(t.avgLoss)}</span> 元`
+        + `${t.plRatio != null ? `，盈亏比 <b>${N(t.plRatio, 2)}</b>` : ''}`
+        + `${t.profitFactor != null ? `，盈利因子 <b>${N(t.profitFactor, 2)}</b>` : ''}。`
+        + `${t.avgWin < Math.abs(t.avgLoss) ? '<span class="bf-warn">平均亏损大于平均盈利——典型的「截断利润、放任亏损」。</span>' : ''}`));
+    }
+    if (t.best && t.best.pnl > 0) {
+      out.push(li2(`最赚的一笔：<b>${t.best.name}</b>（${t.best.code}）${Y(t.best.pnl)} 元`
+        + `（成本 ${N(t.best.costPx, 3)} → 卖出 ${N(t.best.sellPx, 2)}，${SP(t.best.pct)}）`
+        + `${t.best.reason ? `<span class="muted">买入依据：${t.best.reason}</span>` : ''}`));
+    }
+    if (t.worst && t.worst.pnl < 0) {
+      out.push(li2(`最亏的一笔：<b>${t.worst.name}</b>（${t.worst.code}）${Y(t.worst.pnl)} 元`
+        + `（成本 ${N(t.worst.costPx, 3)} → 卖出 ${N(t.worst.sellPx, 2)}，${SP(t.worst.pct)}）`
+        + `${t.worst.reason ? `<span class="muted">买入依据：${t.worst.reason}</span>` : ''}`));
+    }
+    if (t.maxLossStreak >= 2) {
+      out.push(li2(`最长连亏 <b class="bf-dn">${t.maxLossStreak}</b> 笔。`));
+    }
+    if (t.orphanSell > 0) {
+      out.push(li2(`<span class="muted">有 ${t.orphanSell} 笔卖出找不到对应买入记录（导入账本或买入记录被裁剪），未纳入逐笔统计——不猜成本。</span>`));
+    }
+  }
+
+  // ── ③ 持仓诊断 ──
+  const p = r.positions;
+  out.push(`<div class="bf-h bf-h2">持仓诊断（浮动盈亏与集中度）</div>`);
+  if (!p.rows.length) {
+    out.push(li2('<span class="muted">当前无持仓（已清仓）——无浮动盈亏可诊断。</span>'));
+  } else {
+    out.push(li2(`持有 <b>${p.posCount}</b> 只，总市值 ${N(p.totalMv, 0)} 元，浮动盈亏合计 `
+      + `<b class="${tone(p.totalPnl)}">${Y(p.totalPnl)}</b> 元。`
+      + `${p.curPos != null ? `仓位占比 ${P(p.curPos)}` : ''}`
+      + `${p.targetPos != null ? `，档位建议 ${P(p.targetPos, 0)}` : ''}`
+      + `${p.tierVerdict === 'over' ? '，<span class="bf-warn">超配</span>' : p.tierVerdict === 'under' ? '，低配' : p.tierVerdict === 'fit' ? '，与档位贴合' : ''}。`));
+    // 贡献排序（最多列 5 只，避免报告过长）
+    const top = p.rows.slice(0, 5);
+    out.push(li2('逐票贡献（按浮动盈亏降序）：')
+      + top.map((x) => li2(`&nbsp;&nbsp;· <b>${x.name}</b>（${x.code}）${x.qty} 股，市值 ${N(x.mv, 0)} 元，`
+        + `浮动 <span class="${tone(x.pnl)}">${Y(x.pnl)}</span> 元（${SP(x.pnlPct)}）`
+        + `${x.conc != null ? `，占总资产 ${P(x.conc)}` : ''}`
+        + `${x.pxStale ? '<span class="bf-warn">取不到当日行情，按成本估</span>' : ''}`)).join(''));
+    if (p.rows.length > 5) out.push(li2(`&nbsp;&nbsp;<span class="muted">…另有 ${p.rows.length - 5} 只（见页面「持仓」明细）</span>`));
+    if (p.overConc.length) {
+      out.push(li2(`<span class="bf-warn">单票超配：${p.overConc.map((x) => `${x.name} ${P(x.conc)}`).join('、')}（上限 ${P(0.20, 0)}）</span>`));
+    }
+  }
+
+  // ── ④ 预警战绩（台账归因，来自 src/alert_log.js） ──
+  if (r.attribution && r.attribution.n > 0) {
+    const g = r.attribution;
+    out.push(`<div class="bf-h bf-h2">预警战绩（台账计分板）</div>`);
+    out.push(li2(`台账累计 <b>${g.n}</b> 条预警：已规避亏损 <span class="bf-up">${N(g.avoidedLoss, 0)}</span> 元 / `
+      + `错杀与错过 <span class="bf-dn">${N(g.missedGain, 0)}</span> 元，净贡献 `
+      + `<b class="${tone(g.net)}">${Y(g.net)}</b> 元。`
+      + `${g.hitRate != null ? `命中率 <b>${P(g.hitRate, 0)}</b>（${g.hit} 对 / ${g.miss} 错）` : '<span class="muted">命中率待积累</span>'}`
+      + `${g.pending + g.tracked > 0 ? `，另有 ${g.pending + g.tracked} 条待价格验证` : ''}。`));
+    const bt = g.byType.filter((x) => Math.abs(x.net) > 1 || x.count >= 2).slice(0, 4);
+    if (bt.length) {
+      out.push(li2('按规则拆解：' + bt.map((x) => `${x.type} ${x.count} 条（净 ${Y(x.net)} 元）`).join('；') + '。'));
+    }
+  }
+
+  // ── ⑤ 止损与优化建议 ──
+  out.push(`<div class="bf-h bf-h2">止损与优化建议</div>`);
+  if (!r.advice.length) {
+    out.push(li2('当前无需要处理的纪律问题：未击穿止损线、无单票超配、仓位与档位一致。'));
+  } else {
+    const lvTxt = { risk: '<span class="bf-warn">[风险]</span>', opp: '<span class="bf-up">[机会]</span>', tip: '<span class="muted">[提示]</span>' };
+    for (const ad of r.advice) {
+      out.push(li2(`${lvTxt[ad.level] || ''} <b>${ad.title}</b>——${ad.text}`));
+      out.push(li2(`&nbsp;&nbsp;<span class="muted">依据：${ad.why}</span>`));
+    }
+  }
+
+  // ── ⑥ 口径与免责 ──
+  out.push(li2(`<span class="muted">复盘口径：收益拆解 = 浮动盈亏 + 已实现盈亏 − 交易费用（费用含尚未卖出持仓的买入费，故三块之和与总盈亏可能有小额差异，已单列）；`
+    + `逐笔盈亏按 **FIFO 先进先出** 配对（卖出净额 − 结转的含费成本），与账本的加权平均成本法在全部清仓时结果一致、部分减仓时逐笔口径更可解释；`
+    + `止损线 ${eng.POS_CFG ? (eng.POS_CFG.stopLoss * 100).toFixed(0) : -8}%、单票上限 ${eng.POS_CFG ? (eng.POS_CFG.concMax * 100).toFixed(0) : 20}% 与预警引擎（src/alerts.js）、回测引擎同源；`
+    + `档位阈值与研判报告同源（≥80 过热 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓）。模拟资金仅为虚拟，交易规则与费用口径对齐 A 股现行制度。本段为规则引擎自动生成的复盘，非投资建议。</span>`));
+
+  return out.join('');
 }
 
 function renderBrief(days, arc) {
@@ -1900,6 +2085,13 @@ $('briefToggle')?.addEventListener('click', () => {
 
 /** 导出引擎由 index.html 的模块脚本挂到 window（app.js 是经典脚本，不能 import） */
 const RPT = () => window.ReportExport || null;
+// 模拟交易复盘引擎（ESM，由 index.html 挂到 window）。
+// 与 RPT 同纪律：报告端只负责「把快照喂进去、把结果拼成段落」，归因口径全部在 src/paper_review.js。
+// 兼容两种挂载名：生产用 window.PaperReview（index.html 模块脚本），
+// 前端断言脚本用 window.__paperreview__（它在同一 window 里平铺求值，不跑模块脚本）。
+const PR = () => window.PaperReview || window.__paperreview__ || null;
+// 当前账户快照（由 paper_ui.js 在每次账户变更后发布）。**只读**——报告端绝不改写它。
+const PSNAP = () => window.__paperSnapshot || null;
 
 /** 引擎尚未挂载时提示，而不是静默失败 */
 function needRpt() {
@@ -2099,4 +2291,20 @@ function onScroll() {
 window.addEventListener('scroll', onScroll, { passive: true });
 $('toTop')?.addEventListener('click', () => {
   if (typeof window.scrollTo === 'function') window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// 模拟交易账户变化 → 刷新报告第⑦段「模拟交易复盘」。
+// paper_ui.js 在每次账户变更后发布 window.__paperSnapshot 并派发 paper-snapshot。
+// 这里只重渲染 #briefBody（并重建目录 chip），不动其它区块——账户变化与行情无关。
+window.addEventListener('paper-snapshot', () => {
+  if (!ARC || !ARC.all_days || !ARC.all_days.length) return;
+  renderBrief(ARC.all_days, ARC);
+});
+
+// 复盘引擎是 ESM、由 index.html 的模块脚本挂到 window；而 app.js（经典脚本）先执行、
+// 首次 renderBrief 时它可能还没挂上（首次渲染会如实降级为「引擎未就绪」）。
+// 挂载完成时补刷一次，保证首屏就能看到第⑦段的真实内容。
+window.addEventListener('paper-review-ready', () => {
+  if (!ARC || !ARC.all_days || !ARC.all_days.length) return;
+  renderBrief(ARC.all_days, ARC);
 });

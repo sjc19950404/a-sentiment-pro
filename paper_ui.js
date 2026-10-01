@@ -29,6 +29,12 @@ import { buildAlerts, MARKET_CFG, POS_CFG, LEVELS } from './src/alerts.js';
 // 预警台账与收益归因——回答「预警到底有没有帮我少亏、多赚」。
 // 同样只有一个出处（src/alert_log.js）：UI 只负责把当前预警喂进台账、把归因结果画出来。
 import { appendSignals, summarizeLog, summarizeText, LOG_CAP } from './src/alert_log.js';
+// 模拟交易复盘引擎——回答「这笔交易为什么赚、为什么亏」。
+// 研判报告（app.js）里新增的「⑦ 模拟交易复盘」段落读的就是它。此处只在每次账户变化后
+// 把「账户 + 台账 + 实时价快照 + 情绪分」挂到 window.__paperSnapshot，报告端据此生成段落。
+// 为什么用 window 桥接而不是让 app.js import：app.js 是经典脚本（不能用 import），
+// paper_ui.js 是 module，两者没有共享状态。挂一个带版本号的快照是最小的耦合面。
+import { REVIEW_VERSION } from './src/paper_review.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
@@ -339,6 +345,45 @@ function renderAllPaper() {
   renderPerf();
   renderOrderForm();
   renderQuick();
+  publishSnapshot();
+}
+
+/**
+ * 把「账户 + 预警台账 + 实时价 + 当日情绪分」挂到 window.__paperSnapshot，
+ * 供经典脚本 app.js 生成研判报告的「⑦ 模拟交易复盘」段落。
+ *
+ * 为什么在 renderAllPaper 末尾调用：renderAllPaper 是**所有账户变更的唯一收口**
+ * （下单、撤单、结算、重置、导入、补结算后都会走这里），挂在这里就不会漏更新。
+ *
+ * 快照是**只读拷贝**（结构化克隆），不是引用——报告端绝不能拿到能反向改账户的对象。
+ * 价格用 lookup() 的当前值（实时 > 存档 > 标的池），与台账记账、下单区同一口径，
+ * 保证「报告里说的浮盈」和「界面上看到的浮盈」是同一个数。
+ */
+function publishSnapshot() {
+  if (!ACCT) { delete window.__paperSnapshot; return; }
+  const day = ARC_DAYS[ARC_DAYS.length - 1] || {};
+  const priceMap = {};
+  for (const code of Object.keys(ACCT.positions || {})) {
+    const q = lookup(code);
+    if (q && q.price != null && Number.isFinite(+q.price)) priceMap[code] = +q.price;
+  }
+  window.__paperSnapshot = {
+    version: REVIEW_VERSION,
+    updatedAt: new Date().toISOString(),
+    asOf: day.trade_date || LAST_DATE || null,
+    emotionScore: (day.emotion && day.emotion.value != null) ? +day.emotion.value : null,
+    account: JSON.parse(JSON.stringify({ ...ACCT, orders: undefined, pending: undefined })),
+    log: JSON.parse(JSON.stringify(ALOG)),
+    priceMap,
+    meta: {
+      liveAt: LIVE_AT,
+      liveCount: Object.keys(LIVEQ).length,
+      lastDate: LAST_DATE,
+    },
+  };
+  // 通知报告端刷新第⑦段（app.js 监听此事件）。用事件而不是让 app.js 轮询：
+  // 账户变化是低频动作（下单/结算/导入），轮询只会白白增加耦合。
+  try { window.dispatchEvent(new Event('paper-snapshot')); } catch (e) { /* 静默 */ }
 }
 
 function renderStats() {

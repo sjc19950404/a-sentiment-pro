@@ -414,12 +414,12 @@ if (c779) {
 }
 
 // 9) 报告目录跳转与一键折叠
-check('布局：报告目录 chip 数 = 段落数（6）',
-  $('briefNav').querySelectorAll('button[data-act="brsec"]').length === 6,
+check('布局：报告目录 chip 数 = 段落数（7）',
+  $('briefNav').querySelectorAll('button[data-act="brsec"]').length === 7,
   `${$('briefNav').querySelectorAll('button').length} 个`);
 clickEl($('briefToggle'));
-check('交互：一键折叠报告全部 6 段',
-  window.document.querySelectorAll('#briefBody .bf-sec.collapsed').length === 6, '');
+check('交互：一键折叠报告全部 7 段',
+  window.document.querySelectorAll('#briefBody .bf-sec.collapsed').length === 7, '');
 clickEl($('briefToggle'));
 check('交互：一键展开报告全部段落',
   window.document.querySelectorAll('#briefBody .bf-sec.collapsed').length === 0, '');
@@ -613,6 +613,7 @@ escClose();
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/picks\.js';/, '')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/alerts\.js';/, '')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/alert_log\.js';/, '')
+    .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/paper_review\.js';/, '')
     .replace(/^export\s+/gm, '');
   // src/picks.js（研判推荐引擎）同样是 ESM 纯函数，零依赖。
   // 它 import 了 src/lhb.js 的 RANGE_BOARD_RE / isNewStock（口径唯一出处）。
@@ -668,6 +669,26 @@ escClose();
     + '\nreturn { appendSignals, evaluateEntry, evaluateMarketEntry, summarizeLog, summarizeText, ACTION_DIR, LOG_CFG, LOG_CAP };\n})('
     + LOT_LITERAL + ');';
   const alertLogFlat = `const { appendSignals, summarizeLog, summarizeText, LOG_CAP } = window.__alertlog__;`;
+  // src/paper_review.js（模拟交易复盘引擎）：纯函数 ESM，import 了
+  //   · ./alerts.js 的 POS_CFG / MARKET_CFG      → 取 window.__alerts__
+  //   · ./picks.js  的 marketTier / TIER_THRESHOLDS → 取 window.__picks__
+  //   · ./alert_log.js 的 summarizeLog           → 取 window.__alertlog__
+  //   · ./paper.js  的 LOT                        → 从 engineNoExport 的裸 const 取（同一作用域）
+  // 并**再导出** POS_CFG / MARKET_CFG / TIER_THRESHOLDS 供报告端引用阈值原文，故也一并挂出。
+  // 包 IIFE：paper_review 内部若与前面平铺的 paper.js / alerts.js 有同名私有符号会冲突。
+  const reviewBundle = `window.__paperreview__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/paper_review.js'), 'utf8')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/alerts\.js';/m,
+        'const { POS_CFG, MARKET_CFG } = window.__alerts__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/picks\.js';/m,
+        'const { marketTier, TIER_THRESHOLDS } = window.__picks__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/alert_log\.js';/m,
+        'const { summarizeLog } = window.__alertlog__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/paper\.js';/m, '')
+      .replace(/^export\s*\{[^}]*\};\s*$/m, '')   // 去掉 `export { POS_CFG, ... };` 这个纯转出语句
+      .replace(/^export\s+/gm, '')
+    + '\nreturn { buildPaperReview, reviewAccount, reviewTrades, reviewPositions, buildAdvice, REVIEW_CFG, ADVICE_LEVELS, REVIEW_TITLE, REVIEW_VERSION, POS_CFG, MARKET_CFG, TIER_THRESHOLDS };\n})();';
+  const reviewFlat = `const { buildPaperReview, REVIEW_TITLE, REVIEW_VERSION } = window.__paperreview__;`;
   // quoteSymbol：与 src/sources.js 同口径（沪 6/9 开头、深 0/3、北 4/8/920）
   const quoteSymbolShim = `function quoteSymbol(code){
     const c = String(code || '').trim();
@@ -677,7 +698,7 @@ escClose();
     return null;
   }`;
   try {
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${uiNoImport}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
   } catch (e) {
     check('模拟交易：paper_ui.js 在 jsdom 中可执行', false, e.message);
   }
@@ -881,7 +902,7 @@ escClose();
     let threw = null;
     try {
       // 重新执行一遍 paper_ui.js：boot() 会 load() 到上面这份种子 → renderAllPaper()
-      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${uiNoImport}\n})();`);
+      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
       await new Promise((r) => setTimeout(r, 800));
     } catch (e) { threw = e; }
     check('模拟交易·持仓：带 pxStale 的种子账本渲染不抛错',
@@ -1019,6 +1040,106 @@ escClose();
     window.localStorage.removeItem(seedKey);
   }
 
+  // ── 报告第⑦段「模拟交易复盘」：引擎在浏览器里可执行、快照桥接通、降级如实 ──
+  {
+    // ① 引擎已挂到 window（index.html 的模块脚本）
+    check('报告·复盘：paper_review 引擎挂载到 window（供经典脚本 app.js 使用）',
+      !!window.__paperreview__ && typeof window.__paperreview__.buildPaperReview === 'function',
+      typeof window.__paperreview__);
+
+    // ② 快照桥接：paper_ui.js 在每次账户变更后发布 window.__paperSnapshot
+    const snap = window.__paperSnapshot;
+    check('报告·复盘：paper_ui 发布账户快照 window.__paperSnapshot',
+      !!snap && snap.version === window.__paperreview__.REVIEW_VERSION,
+      snap ? `version=${snap.version}` : '缺失');
+    check('报告·复盘：快照含账户 / 台账 / 实时价 / 情绪分四要素',
+      !!snap && !!snap.account && Array.isArray(snap.log) && typeof snap.priceMap === 'object' && 'emotionScore' in snap,
+      snap ? Object.keys(snap).join(',') : '');
+    check('报告·复盘：快照是只读拷贝（不含可变委托数组）',
+      !!snap && snap.account.orders === undefined && snap.account.pending === undefined,
+      '');
+
+    // ③ 报告段落：编号 ⑦ 存在，且在 ⑥ 之后、口径备注之前
+    const secs = [...$('briefBody').querySelectorAll('.bf-sec')];
+    check('报告·复盘：第⑦段已渲染（.bf-sec #bfsec7）',
+      !!$('bfsec7'), secs.map((s) => s.id).join(','));
+    check('报告·复盘：⑦段标题含「模拟交易复盘」',
+      /模拟交易复盘/.test($('bfsec7')?.querySelector('.bf-h')?.textContent || ''),
+      $('bfsec7')?.querySelector('.bf-h')?.textContent || '');
+    check('报告·复盘：⑦段排在⑥段之后（顺序不被插错）',
+      secs.findIndex((s) => s.id === 'bfsec6') < secs.findIndex((s) => s.id === 'bfsec7'),
+      secs.map((s) => s.id).join(','));
+
+    // ④ 段落内容：必须给出「为什么赚/为什么亏」的拆解或如实降级
+    const s7 = txt('bfsec7');
+    check('报告·复盘：段落给出结论行（不空转）', s7.length > 60, `${s7.length} 字`);
+    check('报告·复盘：未开始交易时如实降级（不编造收益）',
+      /尚未开始模拟交易|尚无成交记录|尚无平仓记录|复盘|收益归因|持仓诊断/.test(s7),
+      s7.slice(0, 80));
+    check('报告·复盘：段落包含收益归因三块之一（浮动/已实现/费用）或如实说明无记录',
+      /浮动盈亏|已实现盈亏|交易费用|尚无成交记录/.test(s7), s7.slice(0, 120));
+    check('报告·复盘：段落写明口径（FIFO / 止损线 / 单票上限）或降级说明',
+      /FIFO|止损线|单票上限|尚未开始|尚无成交/.test(s7), s7.slice(0, 100));
+
+    // ⑤ 建议必须可追溯（风险级建议带「依据」；无建议时须说明无问题）
+    const s7html = $('bfsec7').innerHTML;
+    check('报告·复盘：建议带「依据」而非空泛措辞',
+      !/止损与优化建议/.test(s7) || (/依据：/.test(s7) || /无需要处理的纪律问题/.test(s7)),
+      /依据：/.test(s7) ? '有依据' : '无建议或未触发');
+
+    // ⑥ 负向守卫：段落不得出现「注意风险」这类无法执行的话
+    check('报告·复盘：段落不含空泛措辞（注意风险 / 综合来看）',
+      !/注意风险|综合来看|有待改进/.test(s7), '');
+
+    // ⑦ 引擎在浏览器环境可跑通并返回结构完整的结论
+    try {
+      const r = window.__paperreview__.buildPaperReview({
+        account: snap ? snap.account : null,
+        log: snap ? snap.log : [],
+        priceMap: snap ? snap.priceMap : {},
+        emotionScore: snap ? snap.emotionScore : null,
+        asOf: snap ? snap.asOf : null,
+      });
+      check('报告·复盘：引擎在浏览器环境返回完整结构',
+        !!r && typeof r.headline === 'string' && Array.isArray(r.advice)
+        && !!r.account && !!r.trades && !!r.positions,
+        r && r.headline ? r.headline.slice(0, 60) : '');
+      check('报告·复盘：引擎的置信边界清晰（hasAccount / started 为布尔）',
+        typeof r.hasAccount === 'boolean' && typeof r.started === 'boolean',
+        `hasAccount=${r.hasAccount} started=${r.started}`);
+      // 建议的每条都必须带 level/text/why（可核验）
+      check('报告·复盘：每条建议都带 level/text/why 三要素',
+        r.advice.every((a) => a.level && a.text && a.why),
+        `${r.advice.length} 条`);
+    } catch (e) {
+      check('报告·复盘：引擎在浏览器环境返回完整结构', false, e.message);
+    }
+
+    // ⑧ 引擎与报告阈值同源：报告里写的止损线来自 POS_CFG，不是手抄
+    const pc = window.__paperreview__.POS_CFG;
+    check('报告·复盘：阈值与预警引擎同源（POS_CFG.stopLoss / concMax）',
+      pc && pc.stopLoss === -0.08 && pc.concMax === 0.20,
+      pc ? `stopLoss=${pc.stopLoss} concMax=${pc.concMax}` : '缺失');
+
+    // ⑨ 端到端：模拟一笔成交后，快照与第⑦段必须跟着变（不能是死数据）
+    const before = txt('bfsec7');
+    const acct = JSON.parse(JSON.stringify(snap.account));
+    const code = Object.keys(acct.positions)[0];
+    if (code) {
+      // 用一只已持仓票反向注入：把成本抬高 20% 制造浮亏，看段落是否变化
+      acct.positions[code].cost = Math.round(acct.positions[code].cost * 1.2 * 100) / 100;
+      acct.positions[code].avgCost = Math.round(acct.positions[code].avgCost * 1.2 * 1000) / 1000;
+      const r2 = window.__paperreview__.buildPaperReview({
+        account: acct, log: [], priceMap: snap.priceMap, emotionScore: snap.emotionScore, asOf: snap.asOf,
+      });
+      check('报告·复盘：浮亏注入后引擎结论随之改变（归因是现算，不是写死）',
+        r2.account.floatPnl < 0 || r2.account.netPnl !== before,
+        `floatPnl=${r2.account.floatPnl}`);
+    } else {
+      check('报告·复盘：当前无持仓（跳过浮亏注入用例）', true, '无持仓');
+    }
+  }
+
   // ── 研判推荐（模拟交易区小模块）：由系统研判生成、可填入下单、可点看详情 ──
   {
     check('模拟交易·推荐：推荐卡片存在（列表 + 元信息 + 脚注三件套）',
@@ -1133,10 +1254,10 @@ escClose();
   if (Report) {
     const rep = Report.parseReport($('briefBody'));
     const opts = { dataDate: '2026-09-30', generatedAt: '2026-10-01 10:00', url: 'http://localhost/' };
-    check('报告导出：能解析出全部 6 个段落',
-      rep.sections.length === 6, `${rep.sections.length} 段`);
-    check('报告导出：段落标题与屏幕一致（①~⑥）',
-      rep.sections.every((s, i) => s.title.includes(['①', '②', '③', '④', '⑤', '⑥'][i])),
+    check('报告导出：能解析出全部 7 个段落',
+      rep.sections.length === 7, `${rep.sections.length} 段`);
+    check('报告导出：段落标题与屏幕一致（①~⑦）',
+      rep.sections.every((s, i) => s.title.includes(['①', '②', '③', '④', '⑤', '⑥', '⑦'][i])),
       rep.sections.map((s) => s.title.split('（')[0]).join(' '));
 
     const txt = Report.toPlainText(rep, opts);

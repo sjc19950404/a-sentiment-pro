@@ -363,6 +363,15 @@
     window.Seats = Seats;
     window.dispatchEvent(new Event('seats-ready'));
   </script>
+  <!-- 模拟交易复盘引擎同理：报告（app.js）要读「账户 + 台账」算「为什么赚/为什么亏」，
+       但那是 ESM、app.js 不能 import，故挂到 window。数据本身来自 paper_ui.js 发布的
+       window.__paperSnapshot（账户、台账、实时价、情绪分）。挂载完成前报告的第⑦段
+       会如实降级为「尚未开始模拟交易」，不会拼出半截结论。 -->
+  <script type="module">
+    import * as PaperReview from './src/paper_review.js';
+    window.PaperReview = PaperReview;
+    window.dispatchEvent(new Event('paper-review-ready'));
+  </script>
   <script type="module" src="./paper_ui.js"></script>
 </body>
 </html>
