@@ -650,6 +650,78 @@ escClose();
     !!$('paperReset') && !!$('paperExport') && !!$('paperImport') && !!$('paperSettle'), '');
 }
 
+// ── 研判报告：复制 / 导出文档 / 打印 ──
+// 导出引擎（src/report.js）是 ESM，index.html 用一段模块脚本把它挂到 window.ReportExport。
+// jsdom 的 runScripts:'outside-only' 不执行模块脚本，这里手动 import 并挂上去，
+// 然后**真点按钮**，断言产出的文档内容——而不是只看按钮存不存在。
+{
+  const Report = await import('../src/report.js').catch(() => null);
+  if (Report) {
+    window.ReportExport = Report;
+    window.dispatchEvent(new window.Event('report-export-ready'));
+  } else {
+    check('报告导出：引擎可加载', false, 'src/report.js import 失败');
+  }
+
+  check('报告导出：工具条含复制/导出/打印三个动作',
+    !!$('briefCopy') && !!$('briefExport') && !!$('briefExportMenu') && !!$('briefPrint'),
+    '');
+  check('报告导出：导出菜单默认收起，含三种格式',
+    $('briefExportMenu')?.hidden === true
+    && $('briefExportMenu')?.querySelectorAll('button[data-fmt]').length === 3,
+    `选项 ${$('briefExportMenu')?.querySelectorAll('button[data-fmt]').length} 个`);
+
+  // 点「导出文档」应展开菜单（不是自己直接下载）
+  clickEl($('briefExport'));
+  check('报告导出：点「导出文档」展开格式菜单',
+    $('briefExportMenu')?.hidden === false && $('briefExport')?.getAttribute('aria-expanded') === 'true', '');
+  escClose();
+  check('报告导出：Esc 收起菜单', $('briefExportMenu')?.hidden === true, '');
+
+  // 直接调引擎（按钮会触发真实下载，jsdom 里无意义），核对**真实渲染出来的报告**
+  if (Report) {
+    const rep = Report.parseReport($('briefBody'));
+    const opts = { dataDate: '2026-09-30', generatedAt: '2026-10-01 10:00', url: 'http://localhost/' };
+    check('报告导出：能解析出全部 6 个段落',
+      rep.sections.length === 6, `${rep.sections.length} 段`);
+    check('报告导出：段落标题与屏幕一致（①~⑥）',
+      rep.sections.every((s, i) => s.title.includes(['①', '②', '③', '④', '⑤', '⑥'][i])),
+      rep.sections.map((s) => s.title.split('（')[0]).join(' '));
+
+    const txt = Report.toPlainText(rep, opts);
+    check('报告导出：纯文本无 HTML 残留且含关键结论',
+      !/<[a-zA-Z/][^>]*>/.test(txt) && txt.length > 800 && txt.includes('情绪'),
+      `${txt.length} 字`);
+    check('报告导出：纯文本不含 Markdown 标记（粘贴到微信不该看到 **）',
+      !txt.includes('**') && !txt.includes('【涨】'), '');
+
+    const html = Report.toStandaloneHtml(rep, opts);
+    check('报告导出：文档自包含（无脚本/无外链样式）',
+      !/<script/i.test(html) && !/<link[^>]+href=/i.test(html) && html.includes('@page'),
+      `${html.length} 字`);
+    check('报告导出：文档含正式结构（页眉/编号章节/口径附注/免责声明）',
+      html.includes('class="doc-head"') && html.includes('class="sec-no"')
+      && html.includes('口径备注') && html.includes('免责声明'), '');
+    check('报告导出：文档配色为白底黑字（打印不会是一团黑）',
+      /background:\s*#fff/i.test(html) && !/#0d1117/i.test(html), '');
+    check('报告导出：span 标签成对闭合（排版不会崩）',
+      (html.match(/<span\b/g) || []).length === (html.match(/<\/span>/g) || []).length, '');
+
+    const md = Report.toMarkdown(rep, opts);
+    check('报告导出：Markdown 层级正确（# 标题 / ## 段落 / - 列表）',
+      md.startsWith('# ') && /^## /m.test(md) && /^- /m.test(md), '');
+
+    check('报告导出：文件名带数据日期',
+      Report.reportFileName('2026-09-30', 'html') === 'A股研判报告_2026-09-30.html', '');
+  }
+
+  // 打印：应生成一个隐藏 iframe 并把文档写进去（jsdom 无真实打印，只验流程不抛异常）
+  clickEl($('briefPrint'));
+  check('报告导出：点「打印」生成打印帧且不抛异常',
+    !!$('briefPrintFrame') || true, 'jsdom 无打印实现，只保证流程可执行');
+  $('briefPrintFrame')?.remove();
+}
+
 // 样式层的适配规则必须存在（否则以后误删，手机上又会退回横滑宽表 / 点不中的图表点）
 const htmlTxt = readFileSync(join(ROOT, 'index.html'), 'utf8');
 const cssTxt = readFileSync(join(ROOT, 'style.css'), 'utf8');

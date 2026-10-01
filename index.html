@@ -173,6 +173,18 @@
           <div class="bf-tools">
             <div id="briefNav" class="bf-nav" role="tablist" aria-label="报告段落导航"></div>
             <button id="briefToggle" class="mini" type="button">全部折叠</button>
+            <div class="bf-acts">
+              <button id="briefCopy" class="mini" type="button" title="复制报告全文（纯文本，可直接粘贴到微信/邮件）">复制全文</button>
+              <div class="bf-exp">
+                <button id="briefExport" class="mini" type="button" aria-haspopup="true" aria-expanded="false" title="导出为可打印的正式文档">导出文档 ▾</button>
+                <div id="briefExportMenu" class="bf-menu" role="menu" hidden>
+                  <button type="button" role="menuitem" data-fmt="html">正式文档（HTML · 可直接打印）</button>
+                  <button type="button" role="menuitem" data-fmt="md">Markdown（粘进知识库/文档）</button>
+                  <button type="button" role="menuitem" data-fmt="txt">纯文本（记事本/邮件）</button>
+                </div>
+              </div>
+              <button id="briefPrint" class="mini" type="button" title="按 A4 版式打印（只打印报告正文）">打印</button>
+            </div>
           </div>
           <div id="briefBody" class="brief-body"></div>
         </section>
@@ -319,6 +331,14 @@
   </aside>
 
   <script src="./app.js"></script>
+  <!-- 报告导出引擎是 ESM（与 src/paper.js 同样的「纯函数、浏览器与 Node 共用」设计）。
+       app.js 是经典脚本、不能用 import，故用一小段模块脚本把它挂到 window 上；
+       挂载完成前导出按钮不可用（下面用事件兜底，不会点到未就绪的引擎）。 -->
+  <script type="module">
+    import * as Report from './src/report.js';
+    window.ReportExport = Report;
+    window.dispatchEvent(new Event('report-export-ready'));
+  </script>
   <script type="module" src="./paper_ui.js"></script>
 </body>
 </html>

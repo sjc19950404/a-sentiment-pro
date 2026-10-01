@@ -1641,7 +1641,7 @@ $('drawerMask')?.addEventListener('click', closeDrawer);
 // 键盘：Esc 关抽屉；Enter/Space 触发带 tabindex 的可点元素（表格行、卡片、chip、数据点）；
 // PC 端另有快捷键：1-6 跳分区、/ 聚焦个股搜索（在输入框内不抢键，不影响正常打字）
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { closeDrawer(); return; }
+  if (e.key === 'Escape') { closeDrawer(); closeExportMenu(); return; }
   const t = e.target;
   const typing = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
   if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -1694,6 +1694,185 @@ $('briefToggle')?.addEventListener('click', () => {
     if (h) h.setAttribute('aria-expanded', anyOpen ? 'false' : 'true');
   }
   syncBriefToggleLabel();
+});
+
+// ── 报告：复制全文 / 导出文档 / 打印 ──
+// 三者都消费同一份东西——**屏幕上已经渲染出来的报告 DOM**（#briefBody）。
+// 刻意不重新计算任何指标：若导出另写一套字符串拼接，数字与口径迟早和屏幕漂移，
+// 用户就会发现"看到的"和"导出的"对不上。这里只做格式转换（引擎见 src/report.js）。
+
+/** 导出引擎由 index.html 的模块脚本挂到 window（app.js 是经典脚本，不能 import） */
+const RPT = () => window.ReportExport || null;
+
+/** 引擎尚未挂载时提示，而不是静默失败 */
+function needRpt() {
+  const r = RPT();
+  if (!r) { alert('导出引擎尚未就绪（页面可能被离线打开）。请刷新后重试。'); return null; }
+  return r;
+}
+
+function currentReport() {
+  const r = RPT();
+  if (!r) return null;
+  return r.parseReport($('briefBody'));
+}
+
+/** 导出的落款信息统一在这里取，三处输出保持一致 */
+function reportOpts() {
+  const d = (ARC && ARC.all_days && ARC.all_days[ARC.all_days.length - 1]) || {};
+  const dataDate = (ARC && ARC.meta && ARC.meta.tradeDate) || d.trade_date || '';
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const generatedAt = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} `
+    + `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  return { dataDate, generatedAt, url: location.origin + location.pathname };
+}
+
+/** 下载一个文本文件（与 paper_ui.js 的账本导出同一套做法） */
+function downloadText(text, filename, mime) {
+  const blob = new Blob([text], { type: mime + ';charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/** 按钮反馈：短暂把按钮文案换成结果提示（比 alert 轻，不打断阅读） */
+function flashBtn(btn, text, ms = 1600) {
+  if (!btn) return;
+  const old = btn.dataset.label || btn.textContent;
+  btn.dataset.label = old;
+  btn.textContent = text;
+  btn.disabled = true;
+  setTimeout(() => { btn.textContent = btn.dataset.label; btn.disabled = false; }, ms);
+}
+
+/** 复制全文：优先 Clipboard API；不可用（非 https / 旧浏览器）回退 execCommand */
+async function doCopyBrief(btn) {
+  const R = needRpt();
+  if (!R) return;
+  const rep = currentReport();
+  if (!rep || !rep.sections.length) { flashBtn(btn, '报告未就绪'); return; }
+  const text = R.toPlainText(rep, reportOpts());
+  const ok = await copyToClipboard(text);
+  flashBtn(btn, ok ? '已复制 ✓' : '复制失败');
+}
+
+/** 剪贴板：navigator.clipboard 在 http/localhost 之外不可用，必须有兜底 */
+async function copyToClipboard(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) { /* 落到下面的兜底 */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+/** 导出文档：html（正式可打印）/ md（知识库）/ txt（邮件记事本） */
+function doExportBrief(fmt, btn) {
+  const R = needRpt();
+  if (!R) return;
+  const rep = currentReport();
+  if (!rep || !rep.sections.length) { flashBtn(btn, '报告未就绪'); return; }
+  const o = reportOpts();
+  if (fmt === 'md') {
+    downloadText(R.toMarkdown(rep, o), R.reportFileName(o.dataDate, 'md'), 'text/markdown');
+    flashBtn(btn, '已导出 MD ✓');
+  } else if (fmt === 'txt') {
+    downloadText(R.toPlainText(rep, o), R.reportFileName(o.dataDate, 'txt'), 'text/plain');
+    flashBtn(btn, '已导出 TXT ✓');
+  } else {
+    downloadText(R.toStandaloneHtml(rep, o), R.reportFileName(o.dataDate, 'html'), 'text/html');
+    flashBtn(btn, '已导出文档 ✓');
+  }
+}
+
+/**
+ * 打印：走独立打印窗口而不是给当前页加 @media print。
+ * 原因：本页是深色看板、且报告只是六个分区之一——直接打印整页要么打印出一堆用不上的卡片，
+ * 要么得写一大段 print 样式去逐块隐藏。而导出引擎已经能产出**自包含的正式文档 HTML**，
+ * 把它塞进隐藏 iframe 打印，版式就是「导出文档」那一版，与用户下载到的完全一致。
+ */
+function doPrintBrief(btn) {
+  const R = needRpt();
+  if (!R) return;
+  const rep = currentReport();
+  if (!rep || !rep.sections.length) { flashBtn(btn, '报告未就绪'); return; }
+  const html = R.toStandaloneHtml(rep, reportOpts());
+
+  const old = $('briefPrintFrame');
+  if (old) old.remove();
+  const frame = document.createElement('iframe');
+  frame.id = 'briefPrintFrame';
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+  document.body.appendChild(frame);
+
+  const doc = frame.contentDocument || frame.contentWindow?.document;
+  if (!doc) { flashBtn(btn, '打印不可用'); frame.remove(); return; }
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  // 等 iframe 里的文档解析完再打印；打印结束后清理（onload 在 write 后可能不触发，故双保险）
+  const go = () => {
+    try {
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+    } catch (e) {
+      flashBtn(btn, '打印被拦截');
+    }
+    // 打印对话框是阻塞的，这里通常在用户关闭后才执行到
+    setTimeout(() => frame.remove(), 60000);
+  };
+  if (doc.readyState === 'complete') setTimeout(go, 60);
+  else frame.addEventListener('load', () => setTimeout(go, 60), { once: true });
+}
+
+/** 导出菜单开合：点按钮切换、点菜单项执行并收起、点外面也收起 */
+function closeExportMenu() {
+  const m = $('briefExportMenu'), b = $('briefExport');
+  if (m) m.hidden = true;
+  if (b) b.setAttribute('aria-expanded', 'false');
+}
+
+$('briefCopy')?.addEventListener('click', (e) => doCopyBrief(e.currentTarget));
+$('briefPrint')?.addEventListener('click', (e) => doPrintBrief(e.currentTarget));
+
+$('briefExport')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const m = $('briefExportMenu');
+  if (!m) return;
+  m.hidden = !m.hidden;
+  e.currentTarget.setAttribute('aria-expanded', m.hidden ? 'false' : 'true');
+});
+$('briefExportMenu')?.addEventListener('click', (e) => {
+  const item = e.target.closest('button[data-fmt]');
+  if (!item) return;
+  e.stopPropagation();
+  closeExportMenu();
+  doExportBrief(item.dataset.fmt, $('briefExport'));
+});
+// 点页面其他地方收起导出菜单（Esc 由主键盘处理器统一处理，见下方 closeDrawer 之前）
+document.addEventListener('click', (e) => {
+  if (!e.target.closest?.('.bf-exp')) closeExportMenu();
 });
 
 // 分区导航高亮 + 回到顶部（滚动节流：只在帧间计算一次）

@@ -182,6 +182,17 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .bf-nav button { background: var(--line); border: 1px solid transparent; color: var(--muted); border-radius: 14px;
   padding: 2px 10px; font-size: 11.5px; cursor: pointer; font-family: inherit; }
 .bf-nav button:hover { color: var(--acc); border-color: var(--acc); }
+/* 报告动作区：复制 / 导出▾ / 打印。与段落目录同一行右侧，窄屏自动换行 */
+.bf-acts { display: flex; align-items: center; gap: 6px; flex: none; }
+.bf-exp { position: relative; }
+.bf-menu { position: absolute; right: 0; top: calc(100% + 5px); z-index: 25; min-width: 232px;
+  background: var(--card2); border: 1px solid var(--line); border-radius: 8px; padding: 5px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .45); display: flex; flex-direction: column; gap: 2px; }
+.bf-menu[hidden] { display: none; }
+.bf-menu button { background: transparent; border: 0; color: var(--txt); text-align: left;
+  padding: 7px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.bf-menu button:hover { background: rgba(88, 166, 255, .14); color: var(--acc); }
+.mini:disabled { opacity: .65; cursor: default; }
 .mini { background: var(--card2); border: 1px solid var(--line); color: var(--muted); border-radius: 6px;
   padding: 3px 10px; font-size: 11.5px; cursor: pointer; font-family: inherit; white-space: nowrap; }
 .mini:hover { color: var(--acc); border-color: var(--acc); }
@@ -273,6 +284,13 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .table-wrap { display: none; }
   .cardlist { display: block; }
   #hotSortSel.only-narrow, #hotSortDir.only-narrow { display: inline-block; }
+  /* 报告工具条：目录 chip 与动作钮在窄屏各占一行，避免挤成一团 */
+  .bf-tools { gap: 6px; }
+  .bf-nav { flex: 1 1 100%; }
+  .bf-acts { width: 100%; }
+  .bf-exp { flex: 1; }
+  .bf-exp > .mini { width: 100%; }
+  .bf-menu { left: 0; right: auto; min-width: 0; width: max(232px, 100%); }
   .zonenav { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .zonenav::-webkit-scrollbar { display: none; }
   .zn { flex: none; }
@@ -445,4 +463,38 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
   /* 手机上至少 120px 一格（两列）：金额「1,000,000.00」约 108px 宽，
      三列排布会被截成「1,000,0…」——金额截断不可接受，宁可少放一列 */
   .ps-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+}
+
+/* ── 打印：兜底样式 ──
+   主路径是「打印」按钮 → 独立打印窗口（内容就是导出文档那一版，版式最正规）。
+   但用户也可能直接按 Ctrl+P，那时打印的是整个深色看板——深色底打印出来是一团黑，
+   所以这里把页面强制转成白底黑字，并只保留研判报告区（其余分区隐藏）。
+   报告内部的行/段落样式继续复用屏幕上的 .bf-* 规则，不另写一套。 */
+@media print {
+  :root { --bg: #fff; --card: #fff; --card2: #fff; --line: #ccc; --txt: #000; --muted: #555;
+    --acc: #000; --up: #c0392b; --down: #1e7e34; --warn: #9a6b00; --focus: #000; }
+  html, body { background: #fff !important; color: #000 !important; }
+  .topbar, .zonenav, #alerts, .foot, .totop, .drawer, .drawer-mask,
+  #zone-overview, #zone-detail, #zone-backtest, #zone-global, #zone-paper { display: none !important; }
+  .zone { padding: 0 !important; }
+  /* 区头前的强调色块在黑白打印里只是一个黑点，去掉；屏幕交互提示同理 */
+  #zone-brief .zone-head h3::before { display: none !important; }
+  .bf-auto { display: none !important; }
+  #zone-brief .zone-head { margin-bottom: 6px; }
+  #zone-brief .grid { padding: 0 !important; grid-template-columns: 1fr !important; }
+  .card { border: 0 !important; background: #fff !important; padding: 0 !important; }
+  .brief { grid-column: span 1 !important; }
+  /* 打印时报告必须完整展开：折叠的段落打出来会缺内容 */
+  .bf-sec.collapsed > .bf-body { display: block !important; }
+  .bf-sec > .bf-h::after { content: '' !important; }
+  .bf-tools { display: none !important; }
+  .brief-body { max-height: none !important; overflow: visible !important; font-size: 12pt; }
+  .bf-sec { break-inside: avoid-page; }
+  .bf-h { break-after: avoid; }
+  .bf-foot { font-size: 9pt; break-inside: avoid; }
+  .bf-meta { border: 1px solid #ccc !important; background: #fff !important; }
+  .bf-up { color: #c0392b !important; }
+  .bf-dn { color: #1e7e34 !important; }
+  .bf-warn { color: #9a6b00 !important; }
+  @page { size: A4; margin: 16mm 14mm; }
 }
