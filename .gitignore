@@ -3,6 +3,9 @@ node_modules/
 .DS_Store
 snapshot.html
 
+# 合并版 UI 构建产物（dist/ 部署走 Pages artifact，不入库；源在 ui/ + scripts/build_ui.mjs）
+dist/
+
 # backtest 产物
 tools/backtest/demo_preview/
 tools/backtest/_smoke_gui.py

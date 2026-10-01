@@ -27,6 +27,8 @@ on:
 
 permissions:
   contents: write
+  pages: write        # 合并版：GitHub Pages 部署（dist → Pages）
+  id-token: write
 
 jobs:
   # ── ② 真实 API 冒烟：六源逐个真打（getharden/东财LHB/同花顺行业/腾讯指数/东财池/同花顺日K）──
@@ -127,13 +129,24 @@ jobs:
       # 放在提交之前——口径一旦漂移，宁可本次运行失败，也不要把错数据推上线。
       - name: 龙虎榜口径守卫（双口径不混用 + 存档可重现）
         run: node scripts/audit_lhb_caliber.mjs
-      - name: 单元测试（含 Python↔JS 一致性夹具比对）
+      - name: 单元测试（含 Python↔JS 一致性夹具比对 + 合并版 UI schema 守卫）
         run: node --test
+      # ── 合并版（merge/pro-into-ui · 2026-10-02）：K线增量 + UI 构建 + Pages 部署 ──
+      # K线增量必须在 UI 构建**之前**：个股 closes/yzt_chg（昨涨停今均涨幅）由 K 线分片派生，
+      # 分片没当日 bar → 这些卡片按缺失降级（如实「—」，不编数）。非交易日脚本自报无增量。
+      - name: K线分片增量（全市场当日 bar，非交易日无增量）
+        run: node ui/fetch_kline_all.mjs
+      - name: 合并构建 UI（PRO 管线数据层 + 原系统 UI 展示层 → dist/）
+        run: node scripts/build_ui.mjs
+      - name: 上传 Pages 部署产物（dist/）
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
       - name: 提交最新数据
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/ops-alerts-latest.json
+          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/ops-alerts-latest.json data/board_rank.json ui/kline
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else
@@ -145,6 +158,22 @@ jobs:
       # 18:30 首抓常因龙虎榜未公布而跳过，此时判定为 pending（非滞后）不会误伤；21:00 补抓仍不成才会标红。
       - name: 数据新鲜度门禁（真滞后则本次运行失败）
         run: node scripts/freshness.mjs --require-fresh
+
+  deploy-pages:
+    # 合并版：dist/（单文件 index.html + guide + kline 分片）→ GitHub Pages。
+    # 单部署闭环：仓库 = sjc19950404/a-sentiment，一个 daily.yml，一条数据流
+    # （六源冒烟门禁 → PRO 管道 → K线增量 → UI 构建 → 提交 + Pages）。
+    # 旧系统的 rsync/gh-pages 推送与 fetch-daily 旧管线一并废弃（见 params 历史与 merge plan）。
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   intraday:
     # 盘中轻量快照：只抓 hot/pools/breadth 三个实时源，写 data/intraday.json。
