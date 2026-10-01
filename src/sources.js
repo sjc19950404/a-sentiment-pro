@@ -118,7 +118,7 @@ async function enrichHotQuotes(hotRaw) {
 }
 
 // 源3: 东财龙虎榜（分页全量；第1页无 result = 当日未公布）
-async function fetchLhb(date) {
+export async function fetchLhb(date) {
   const out = []; let page = 1;
   while (page <= 5) {
     const url = 'https://datacenter-web.eastmoney.com/api/data/v1/get?pageSize=200&pageNumber=' + page +
@@ -137,7 +137,7 @@ async function fetchLhb(date) {
 }
 
 // 源4: 881xxx 行业日K
-async function fetchBoards(date) {
+export async function fetchBoards(date) {
   const html = await fetchGBK('https://q.10jqka.com.cn/thshy/', { headers: {} });
   const re = /thshy\/detail\/code\/(88\d{4})\/" target="_blank">([^<]+)</g;
   let m; const boards = []; const seen = new Set();
@@ -210,7 +210,7 @@ export async function fetchSecondIndustry() {
 }
 
 // 源5: 腾讯三大指数
-async function fetchIndexes(date) {  for (let att = 0; att < 3; att++) {
+export async function fetchIndexes(date) {  for (let att = 0; att < 3; att++) {
     try {
       const txt = await fetchGBK('https://qt.gtimg.cn/q=sh000001,sz399001,sz399006');
       const idx = {}; let ok = false;
@@ -290,7 +290,7 @@ async function fetchBreadth() {
 }
 
 // 源7: 同花顺大盘日K → 两市成交额 Map（YYYYMMDD → 亿）
-async function fetchAmountMap() {
+export async function fetchAmountMap() {
   // 分指数抓取，合并时要求两市同日都有值——防单市缺数据被当全市（2026-09-29 事故：深证延迟只出上证 6617 亿）
   const byCode = {};
   const years = [2025, 2026];
@@ -741,8 +741,10 @@ export async function fetchLive() {
   return { newDays: [day], tradeDate: date };
 }
 
-export { LhbNotPublishedError, fetchLhb };
+export { LhbNotPublishedError };
 // 盘中轻量快照（scripts/snapshot_intraday.mjs）需要的三个「实时可得」源：
 //   强势股（同花顺，兼交易日探测）/ 涨跌停池（东财 push2ex，盘中实时）/ 涨跌家数（东财 push2，盘中实时）。
-// 只导出这三个——日K、席位明细、行业板块等在盘中意义不大或代价过高，快照不抓。
+//   日K、席位明细、行业板块等在盘中意义不大或代价过高，快照不抓。
 export { fetchHot, fetchPools, fetchBreadth };
+// fetchLhb/fetchBoards/fetchIndexes/fetchAmountMap 的导出已上移到各自定义处
+// （② 冒烟测 scripts/smoke_sources.mjs 与生产同一实现逐源真打，只加导出不改实现）。
