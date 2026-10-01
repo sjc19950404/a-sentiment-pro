@@ -82,7 +82,32 @@ test('recalcAll: 有原始数据的天用统一公式重算, 输出 factors', ()
   recalcAll([day]);
   assert.ok(day.emotion.value >= 0 && day.emotion.value <= 100);
   assert.ok(day.emotion.factors && typeof day.emotion.factors.s_net === 'number');
-  assert.equal(typeof day.emotion.pct_rank, 'number');
+  // #1/#134 防前视分位窗口：不足 RANK_MIN(20) 个有效样本 -> null（缺失显式化，不填 50 冒充中位）
+  assert.equal(day.emotion.pct_rank, null);
+});
+
+test('recalcAll: 样本充足(>=RANK_MIN)后 pct_rank 为数值，且历史日分位不随追加漂移', () => {
+  const N = 25; // > RANK_MIN(20)，最后 6 天可得分位
+  const mkDay = (i) => ({
+    trade_date: `2026-09-${String(1 + i).padStart(2, '0')}`,
+    summary: { net_total_yi: 3 + i, net_pos: 30, net_neg: 10, ind_up: 60, ind_count: 90, zt_count: 80, dt_count: 20, zb_count: 15, amount_yi: 1.8e4 },
+    emotion: { value: 50 },
+    hot: [],
+  });
+  const days = Array.from({ length: N }, (_, i) => mkDay(i));
+  recalcAll(days);
+  // 前置窗口不足的天：null（显式缺失）
+  assert.equal(days[0].emotion.pct_rank, null);
+  // 达到 RANK_MIN 后：数值分位
+  const last = days[N - 1].emotion;
+  assert.equal(typeof last.pct_rank, 'number');
+  assert.ok(last.pct_rank >= 0 && last.pct_rank <= 100);
+  // 幂等锁：追加新天不改历史日分位（recalcAll 内所有跨日依赖只向后看）
+  const snapBefore = days.map((d) => d.emotion.pct_rank);
+  const extra = mkDay(N);
+  recalcAll([...days, extra]);
+  const snapAfter = days.map((d) => d.emotion.pct_rank);
+  assert.deepEqual(snapAfter, snapBefore);
 });
 
 test('recalcAll: 无原始数据的种子天标记 legacy 保留原值', () => {
