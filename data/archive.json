@@ -13,12 +13,12 @@
       "latestClosed": "2026-09-30",
       "behindSessions": 0,
       "publishDeadline": "2026-10-08T11:30:00.000Z",
-      "checkedAt": "2026-09-30T13:11:50.394Z"
+      "checkedAt": "2026-10-01T10:43:47.494Z"
     },
     "lastAttempt": {
-      "at": "2026-09-30T13:11:50.394Z",
-      "outcome": "ok",
-      "reason": null
+      "at": "2026-10-01T10:43:47.494Z",
+      "outcome": "non-trading-day",
+      "reason": "2026-10-01 非交易日"
     },
     "note": "龙虎榜双口径全档重算：当日榜口径写入 lhb_daily_*（权威）、全量口径改名 lhb_all_net（仅诊断）、清除歧义字段 net_total_yi，情绪因子 s_net 改为「当日榜且剔除新股」净额输入（新股/无涨跌幅限制标的自动剥离并留痕 emotion.newStock），33 天，2026-10-01"
   },
