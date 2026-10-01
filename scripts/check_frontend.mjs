@@ -710,6 +710,111 @@ escClose();
     }
   }
 
+  // ── 仓位档位：买入给「轻仓/半仓/重仓/满仓」，卖出给「减仓/清仓」，账户给「一键空仓」 ──
+  // 旧版只有「1万/5万/10万/全仓」绝对金额，且卖出只有「1/4、1/2、全部」，缺少仓位语义。
+  {
+    // 确保在买入方向、且有可用的池外代码（沿用上面的 outsideCode）
+    clickEl(window.document.querySelector('#poSide button[data-side="buy"]'));
+    await new Promise((r) => setTimeout(r, 80));
+    const tierLabels = () => [...$('poQuick').querySelectorAll('button[data-act="pqty"]')]
+      .map((b) => b.textContent.trim());
+
+    // 需要一个有价代码才能算出档位
+    const codeInp = $('poCode');
+    if (!codeInp.value) {
+      codeInp.value = '600519';
+      codeInp.dispatchEvent(new window.Event('input', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 600));
+    } else {
+      codeInp.dispatchEvent(new window.Event('input', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 120));
+    }
+    const labels = tierLabels();
+    check('模拟交易·仓位：买入区提供四档仓位选项（轻仓/半仓/重仓/满仓）',
+      ['轻仓', '半仓', '重仓', '满仓'].every((k) => labels.some((l) => l.startsWith(k))),
+      labels.join(' | '));
+    check('模拟交易·仓位：档位副标签写明以总资产为分母',
+      txt('poQuick').includes('按仓位') && /总资产/.test(txt('poQuick')), txt('poQuick').slice(0, 60));
+
+    // 档位股数必须为整手，且四档严格递增
+    const qtys = [...$('poQuick').querySelectorAll('button[data-act="pqty"]')]
+      .map((b) => +b.dataset.qty);
+    check('模拟交易·仓位：各档股数为 100 股整数倍', qtys.length > 0 && qtys.every((q) => q % 100 === 0),
+      qtys.join(','));
+    check('模拟交易·仓位：四档股数严格递增（轻仓 < 半仓 < 重仓 < 满仓）',
+      qtys.length === 4 && qtys.every((q, i) => i === 0 || q > qtys[i - 1]), qtys.join('<'));
+
+    // 点「半仓」按钮 → 数量框被填入
+    const halfBtn = [...$('poQuick').querySelectorAll('button[data-act="pqty"]')]
+      .find((b) => b.textContent.trim().startsWith('半仓'));
+    clickEl(halfBtn);
+    await new Promise((r) => setTimeout(r, 80));
+    check('模拟交易·仓位：点档位按钮后数量框填入对应股数',
+      +$('poQty').value === +halfBtn.dataset.qty, `qty=${$('poQty').value} 期望=${halfBtn.dataset.qty}`);
+
+    // 切到卖出：无持仓时应如实提示而不是给出无效档位
+    clickEl(window.document.querySelector('#poSide button[data-side="sell"]'));
+    await new Promise((r) => setTimeout(r, 80));
+    const sellTxt = txt('poQuick');
+    check('模拟交易·仓位：卖出无持仓时如实提示（不给出无效减仓档位）',
+      /无持仓|无可卖/.test(sellTxt), sellTxt.slice(0, 60));
+  }
+
+  // ── 一键空仓：T+1 下必须「能卖的全挂、卖不掉的如实告知」 ──
+  {
+    check('模拟交易·空仓：账户区有「一键空仓」按钮', !!$('paperCloseAll'),
+      $('paperCloseAll')?.textContent || '缺失');
+    // 无持仓时点它应提示无需空仓，而不是报错
+    const before = txt('paperMsg');
+    $('paperCloseAll').click();
+    await new Promise((r) => setTimeout(r, 200));
+    check('模拟交易·空仓：无持仓时提示「无需空仓」（不误报错）',
+      /无需空仓/.test(txt('paperMsg')) || /无需空仓/.test(before), txt('paperMsg').slice(0, 60));
+  }
+
+  // ── 持仓渲染守护：renderPositions 的「旧价」提示不得读错对象层级 ──
+  // 回归：rows 里装的是原始持仓对象，曾经的 x.p.pxStale 会在「结算后重渲染」时抛
+  // TypeError: Cannot read properties of undefined (reading 'pxStale')，把整个渲染链打断
+  // （表现是「点了结算但界面没反应」——用户以为结算按钮失效，实际是渲染崩了）。
+  //
+  // 这条路径只在「持仓取不到实时价」时触发，而 jsdom 的行情 shim 对任何代码都返回价格，
+  // 无法在 DOM 层复现「pxStale=true」。所以分两层守：
+  //   ① 结构层：源码里不得再出现 x.p.pxStale / rows[].p.* 这类「对原始持仓对象取 .p」
+  //   ② 行为层：真塞一份带 pxStale 的种子账本重新 boot，渲染不得抛错
+  {
+    const uiSrc = readFileSync(join(ROOT, 'paper_ui.js'), 'utf8');
+    const badPattern = /\.filter\s*\(\s*\(\s*\w+\s*\)\s*=>\s*\w+\.p\.pxStale\s*\)/;
+    check('模拟交易·持仓：源码不再对原始持仓对象误取 .p.pxStale（回归 339 行崩溃）',
+      !badPattern.test(uiSrc), badPattern.test(uiSrc) ? '仍存在 x.p.pxStale' : 'ok');
+
+    // 存储键在 paper_ui.js 里是 'paper-acct-' + PAPER_VERSION，这里从已装载的 localStorage 里认出来
+    const seedKey = Object.keys(window.localStorage).find((k) => k.startsWith('paper-acct-')) || 'paper-acct-paper-v1';
+    const arcLast = (arcAll.all_days || []).slice(-1)[0]?.trade_date || '2000-01-04';
+    const seed = {
+      cash: 900000, freeze: 0, realized: 0, totalFee: 0, trades: [], orders: [], pending: [],
+      lastSettle: arcLast,
+      nav: [{ date: arcLast, equity: 1025950, cash: 900000, marketValue: 125950 }],
+      positions: {
+        '600519': { code: '600519', name: '贵州茅台', qty: 100, avail: 100, avgCost: 1259.26,
+          cost: 125926, grossBuy: 125900, fee: 26, openDate: '2000-01-04', days: 3,
+          lastBuyDate: '2000-01-04', last: 1258.62, lastDate: '2000-01-04', pxStale: true },
+      },
+    };
+    window.localStorage.setItem(seedKey, JSON.stringify(seed));
+    let threw = null;
+    try {
+      // 重新执行一遍 paper_ui.js：boot() 会 load() 到上面这份种子 → renderAllPaper()
+      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${engineNoExport}\n;(function(){\n${uiNoImport}\n})();`);
+      await new Promise((r) => setTimeout(r, 800));
+    } catch (e) { threw = e; }
+    check('模拟交易·持仓：带 pxStale 的种子账本渲染不抛错',
+      !threw, threw ? String(threw.message || threw).slice(0, 140) : 'ok');
+    check('模拟交易·持仓：持仓说明渲染完整且不含 undefined',
+      !/undefined/.test(txt('paperPosNote')), txt('paperPosNote').slice(0, 100));
+    // 收尾：清掉种子，避免影响后续用例
+    window.localStorage.removeItem(seedKey);
+  }
+
   // 记录页签：成交 / 全部委托（含被拒）切换
   clickEl($('paperTabs').querySelector('button[data-view="order"]'));
   await new Promise((r) => setTimeout(r, 80));

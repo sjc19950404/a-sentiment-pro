@@ -19,3 +19,4 @@ tools/backtest/archive_*.csv
 # 真浏览器截图（开发用临时产物）
 shots/
 scripts/_shot_*.mjs
+scripts/_diag_*.mjs

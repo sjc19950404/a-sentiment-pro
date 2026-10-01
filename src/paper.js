@@ -134,6 +134,99 @@ export function fillPrice(price, side, slip = DEFAULT_SLIP) {
   return Math.max(0.01, out);   // 卖出不能压到 0 以下
 }
 
+// ────────────────────── 二·B、仓位档位（建仓/减仓的「按比例」口径） ──────────────────────
+
+/**
+ * 仓位档位定义（唯一出处）。
+ *
+ * 买入用「占账户总资产的比例」，卖出用「占该票当前持仓的比例」——两者分母不同是刻意的：
+ *   · 建仓说的是「这笔仓位在我整个账户里占多大」，分母自然是总资产（含已持股市值）；
+ *     若用「可用资金」作分母，满仓买入会因分母缩水而永远买不到目标比例。
+ *   · 减仓说的是「我把这只票卖掉多少」，分母自然是该票持仓，与账户其他部分无关。
+ *
+ * 档位取整：一律「向下取整到 100 股整手」——宁可少买一手，不可超出档位金额导致资金不足被拒。
+ */
+export const POS_TIERS = [
+  { key: 'light', label: '轻仓', pct: 0.10, note: '10% 总资产' },
+  { key: 'half', label: '半仓', pct: 0.50, note: '50% 总资产' },
+  { key: 'heavy', label: '重仓', pct: 0.80, note: '80% 总资产' },
+  { key: 'full', label: '满仓', pct: 1.00, note: '100% 总资产（买入口径，非清空资金）' },
+];
+
+/** 减仓档位（分母 = 该票当前可卖数量） */
+export const CUT_TIERS = [
+  { key: 'cut25', label: '减 1/4', pct: 0.25 },
+  { key: 'cut50', label: '减 1/2', pct: 0.50 },
+  { key: 'cut75', label: '减 3/4', pct: 0.75 },
+];
+
+/**
+ * 按「占总额的比例」计算可买股数（含费用倒推，整手向下取整）。
+ *
+ * 为什么不能直接用 金额/价格：买入还要付佣金（最低 5 元）+ 过户费，只按裸价算会在
+ * 临界点被资金校验拒绝（明明只想买"半仓"却提示资金不足）。这里用「预估成交额 + 费用」
+ * 反推，并留 1 手的余量迭代收口，保证「按档位下单一定不会被资金不足拒掉」。
+ *
+ * @param {number} totalAssets 账户总资产（元）
+ * @param {number} pct 目标比例 0~1
+ * @param {number} price 预估成交价（已含滑点）
+ * @param {object} [opts] { cash } 可用资金上限（默认不限，由调用方传 accountStats().cash 兜底）
+ * @returns {{qty:number, gross:number, fee:number, need:number, capped:boolean}}
+ *          qty 为 100 的整数倍；capped=true 表示受可用资金限制而未达目标比例
+ */
+export function qtyByAssetPct(totalAssets, pct, price, opts = {}) {
+  const P = +price;
+  const T = +totalAssets;
+  const p = Math.max(0, Math.min(1, +pct || 0));
+  if (!Number.isFinite(P) || P <= 0 || !Number.isFinite(T) || T <= 0) {
+    return { qty: 0, gross: 0, fee: 0, need: 0, capped: false };
+  }
+  const budget = T * p;
+  // 先按裸价粗估手数，再逐步回退到「成交额 + 费用 ≤ 预算」的最大整手数
+  let lots = Math.floor(budget / (P * LOT));
+  for (; lots > 0; lots--) {
+    const gross = round2(lots * LOT * P);
+    const fee = fees(gross, 'buy').total;
+    if (gross + fee <= budget + 1e-6) break;
+  }
+  let qty = Math.max(0, lots) * LOT;
+  // 零股不产生费用——fees(0,'buy') 会因「最低佣金 5 元」给出 5 元，那是"有成交才收"的规则，
+  // 用在 0 股上会显示「需冻结 5 元」，属明显错误。故 qty=0 时费用与占用一律归零。
+  if (qty <= 0) return { qty: 0, gross: 0, fee: 0, need: 0, capped: false };
+  let gross = round2(qty * P);
+  let fee = fees(gross, 'buy').total;
+  let capped = false;
+  // 受可用资金约束时再回退（买入不能用「总资产」里的已持股市值）
+  const cash = opts.cash;
+  if (Number.isFinite(+cash)) {
+    while (qty > 0 && gross + fee > +cash) {
+      qty -= LOT;
+      if (qty <= 0) return { qty: 0, gross: 0, fee: 0, need: 0, capped: true };
+      gross = round2(qty * P);
+      fee = fees(gross, 'buy').total;
+    }
+    if (qty < Math.max(0, lots) * LOT) capped = true;
+  }
+  return { qty, gross, fee, need: round2(gross + fee), capped };
+}
+
+/**
+ * 按「占该票可卖数量的比例」计算减仓股数（整手向下取整）。
+ * 卖出无最低佣金外的整手约束（A 股允许卖出零股），但这里仍按整手给档位，
+ * 避免「减 1/4」给出 37 股这类奇怪数字；「清仓」不走本函数，直接用全部可卖数。
+ */
+export function qtyByHoldPct(avail, pct) {
+  const a = Math.floor(+avail || 0);
+  if (a <= 0) return 0;
+  const p = Math.max(0, Math.min(1, +pct || 0));
+  const q = Math.floor((a * p) / LOT) * LOT;
+  // 整手取整后为 0（例如可卖 100 股要「减 1/2」→ 0 手）时，退化为全部可卖：
+  // 否则按钮点了没反应，用户会以为功能坏了。零股（不足 1 手）同理按全部。
+  if (q <= 0) return a;
+  return Math.min(a, q);
+}
+
+
 // ────────────────────────── 三、账本（以「分」累计，避免浮点漂移） ──────────────────────────
 
 const toCents = (yuan) => Math.round(yuan * 100);

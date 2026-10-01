@@ -459,6 +459,15 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 #poSubmit { align-self: flex-start; }
 .mini.primary { color: var(--acc); border-color: var(--acc); background: rgba(88, 166, 255, .12); }
 .mini.primary:hover { background: rgba(88, 166, 255, .22); }
+/* 仓位档位按钮：主标签 + 副标签（比例/金额说明），副标签弱化避免抢视线 */
+.po-quick .mini { display: inline-flex; align-items: baseline; gap: 5px; line-height: 1.5; }
+.pq-sub { font-size: 10px; opacity: .72; }
+/* 禁用态档位（如高价股上「轻仓够不着一手」）：保持可见并说明原因，而非静默隐藏 */
+.po-quick .mini:disabled { opacity: .45; cursor: not-allowed; border-style: dashed; }
+.po-quick .mini:disabled .pq-sub { opacity: .9; }
+/* 破坏性/全量操作按钮（清仓）：用警示色区分于普通快捷项，防误点 */
+.mini.primary-ghost { color: var(--fade); border-color: var(--fade); background: rgba(240, 97, 109, .10); }
+.mini.primary-ghost:hover { color: var(--fade); border-color: var(--fade); background: rgba(240, 97, 109, .2); }
 
 /* 状态标签：成交 / 在途 / 被拒 / 已撤 / 失效 */
 .stag { display: inline-block; padding: 1px 7px; border-radius: 8px; font-size: 10.5px; white-space: nowrap; }

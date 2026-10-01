@@ -9,6 +9,7 @@ import {
   applyBuy, applySell, emptyAccount, accountStats,
   validateOrder, submitOrder, cancelOrder, settleDay, paperMetrics,
   exportAccount, importAccount, quotesFromDay, REJECT,
+  POS_TIERS, CUT_TIERS, qtyByAssetPct, qtyByHoldPct, DEFAULT_SLIP,
 } from '../src/paper.js';
 
 const Q = (code, name, price, changePct = 0) => ({ code, name, price, changePct });
@@ -561,4 +562,100 @@ test('回归：成本结转不得因取整而丢失零头（部分卖出后剩�
   assert.ok(Math.abs(s1.cost + carried - q0.cost) <= 0.01, '成本守恒（误差 ≤ 1 分）');
   const s2 = applySell({ ...q0, ...s1 }, { qty: s1.qty, price: 9, fee: 5.5 });
   assert.equal(s2.cost, 0, '清仓后成本必须精确归零');
+});
+
+// ────────────────────── 仓位档位（建仓按总资产 / 减仓按持仓） ──────────────────────
+
+test('仓位档位：四档比例定义正确且单调递增', () => {
+  const keys = POS_TIERS.map((t) => t.key);
+  assert.deepEqual(keys, ['light', 'half', 'heavy', 'full']);
+  const pcts = POS_TIERS.map((t) => t.pct);
+  assert.deepEqual(pcts, [0.10, 0.50, 0.80, 1.00]);
+  for (let i = 1; i < pcts.length; i++) assert.ok(pcts[i] > pcts[i - 1], '档位比例必须单调递增');
+});
+
+test('仓位档位：买入股数 = 总资产×比例÷价，且为 100 股整数倍', () => {
+  const r = qtyByAssetPct(1000000, 0.5, 10);
+  assert.equal(r.qty % LOT, 0, '必须是整手');
+  assert.ok(r.need <= 1000000 * 0.5 + 1e-6, '含费用后不得超出档位预算');
+  assert.ok(r.qty > 0 && r.qty <= 50000, '应在 5 万股量级且不超过裸算上限');
+});
+
+test('仓位档位：满仓按总资产（非可用资金）——已有持仓时不会缩水', () => {
+  const st = { total: 1000000, cash: 400000 };
+  const r = qtyByAssetPct(st.total, 1.0, 10, { cash: st.cash });
+  assert.ok(r.capped, '超出可用资金时必须标记 capped');
+  assert.ok(r.need <= st.cash, '实际占用不得超过可用资金');
+  assert.equal(r.qty % LOT, 0);
+});
+
+test('仓位档位：预算不足一手时返回 0（不产生非法委托）', () => {
+  const r = qtyByAssetPct(1000, 0.1, 50);
+  assert.equal(r.qty, 0);
+  assert.equal(r.need, 0);
+});
+
+test('仓位档位：价格非法/资产为 0 时安全返回 0（不抛异常）', () => {
+  for (const [t, p] of [[1000000, 0], [1000000, -1], [0, 10], [NaN, 10], [1000000, NaN]]) {
+    const r = qtyByAssetPct(t, 0.5, p);
+    assert.equal(r.qty, 0, `total=${t} price=${p} 应返回 0`);
+  }
+});
+
+test('仓位档位：比例越界被夹到 [0,1]（不会因传 1.5 买出超额）', () => {
+  const a = qtyByAssetPct(1000000, 1.5, 10);
+  const b = qtyByAssetPct(1000000, 1.0, 10);
+  assert.equal(a.qty, b.qty, '比例 >1 应等同满仓');
+  assert.equal(qtyByAssetPct(1000000, -1, 10).qty, 0, '负比例应为 0');
+});
+
+test('减仓档位：分母是该票可卖数量，且不超过可卖数', () => {
+  assert.equal(qtyByHoldPct(1000, 0.25), 200);
+  assert.equal(qtyByHoldPct(1000, 0.50), 500);
+  assert.equal(qtyByHoldPct(1000, 0.75), 700);
+  assert.equal(qtyByHoldPct(100, 0.50), 100, '不足 2 手时按全部，避免档位恒为 0');
+  assert.equal(qtyByHoldPct(50, 0.25), 50, '零股按全部');
+  assert.equal(qtyByHoldPct(0, 0.5), 0);
+  assert.equal(qtyByHoldPct(-5, 0.5), 0);
+});
+
+test('减仓档位：任意档位结果都不超过可卖数量（不得卖超）', () => {
+  for (const avail of [100, 250, 333, 1000, 1500, 99999]) {
+    for (const t of CUT_TIERS) {
+      const q = qtyByHoldPct(avail, t.pct);
+      assert.ok(q <= avail, `avail=${avail} pct=${t.pct} 卖出 ${q} 股卖超了`);
+      assert.ok(q >= 0);
+    }
+  }
+});
+
+test('回归：按档位建仓后必定通过资金校验（含费用倒推不得被拒）', () => {
+  // 契约：qtyByAssetPct 的价格入参必须是**含滑点的成交价**（fillPrice 的输出），
+  // 与 validateOrder 内部使用的价格基线一致——否则会算多股数、在临界点被拒。
+  const acct = fresh(1000000);
+  for (const raw of [3.33, 10, 47.5, 1258.62, 2000]) {
+    const px = fillPrice(raw, 'buy', DEFAULT_SLIP);
+    for (const t of POS_TIERS) {
+      const r = qtyByAssetPct(1000000, t.pct, px, { cash: acct.cash });
+      if (!r.qty) continue;
+      const v = validateOrder(acct, { code: '600519', side: 'buy', qty: r.qty, slip: DEFAULT_SLIP },
+        { code: '600519', price: raw, name: '测试', changePct: 0 });
+      assert.ok(v.ok, `raw=${raw} 档位=${t.key} qty=${r.qty} 被拒：${v.reason}`);
+    }
+  }
+});
+
+test('回归：qtyByAssetPct 传裸价（未含滑点）会算多股数并被资金校验拒绝', () => {
+  // 锁住这个陷阱：裸价 3.33 算出的股数 > 含滑点 3.34 算出的股数，前者在满仓时会被资金校验拒掉。
+  // 结论：UI 必须把 fillPrice(...) 的输出传给本函数（见上一条用例的契约说明）。
+  const acct = fresh(1000000);
+  const bare = qtyByAssetPct(1000000, 1.0, 3.33, { cash: acct.cash });
+  const slipped = qtyByAssetPct(1000000, 1.0, fillPrice(3.33, 'buy', DEFAULT_SLIP), { cash: acct.cash });
+  assert.ok(bare.qty > slipped.qty, '裸价会高估股数（这正是必须传含滑点价的原因）');
+  const vBare = validateOrder(acct, { code: '600519', side: 'buy', qty: bare.qty, slip: DEFAULT_SLIP },
+    { code: '600519', price: 3.33, name: '测试', changePct: 0 });
+  const vSlipped = validateOrder(acct, { code: '600519', side: 'buy', qty: slipped.qty, slip: DEFAULT_SLIP },
+    { code: '600519', price: 3.33, name: '测试', changePct: 0 });
+  assert.equal(vBare.ok, false, '裸价算出的股数应被资金校验拒绝（滑点成本未计入）');
+  assert.equal(vSlipped.ok, true, '含滑点价算出的股数应通过校验');
 });

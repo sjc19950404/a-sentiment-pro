@@ -13,7 +13,7 @@ import {
   exportAccount, importAccount, fees, fillPrice, boardOf, limitPctOf, isStName,
   validateOrder, quotesFromDay, PAPER_VERSION, LOT, MIN_COMMISSION,
   COMMISSION_RATE, STAMP_TAX_RATE, TRANSFER_FEE_RATE, DEFAULT_SLIP, REJECT,
-  LIMIT_PCT, isLimitHit,
+  LIMIT_PCT, isLimitHit, POS_TIERS, CUT_TIERS, qtyByAssetPct, qtyByHoldPct,
 } from './src/paper.js';
 // 实时行情（腾讯 qt.gtimg.cn，CORS 为 * → 浏览器可直连）。
 // 为什么必须引入：存档是「收盘后生成的日频数据」，只含当日上榜/热点约 100 只票，
@@ -81,8 +81,10 @@ function msg(text, kind) {
   const el = $('paperMsg');
   if (!el) return;
   el.textContent = text || '';
-  el.className = kind === 'err' ? 'hl-dn' : kind === 'ok' ? 'hl' : 'muted';
-  if (text) setTimeout(() => { if (el.textContent === text) { el.textContent = ''; el.className = 'muted'; } }, 6000);
+  // warn 用于「部分成功」——既不是全成功也不是全失败，用警示色避免被当成成功略过
+  el.className = kind === 'err' ? 'hl-dn' : kind === 'ok' ? 'hl' : kind === 'warn' ? 'bf-warn' : 'muted';
+  const ms = kind === 'warn' || kind === 'err' ? 12000 : 6000;
+  if (text) setTimeout(() => { if (el.textContent === text) { el.textContent = ''; el.className = 'muted'; } }, ms);
 }
 
 // ────────────────────────── 实时行情 ──────────────────────────
@@ -334,7 +336,8 @@ function renderPositions() {
       : '<div class="dw-empty">暂无持仓</div>';
   }
   if (note) {
-    const stale = rows.filter((x) => x.p.pxStale).map((x) => x.p.code);
+    // rows 里装的是「原始持仓对象」（{p,...} 包装只存在于 html 数组），故直接读 x.pxStale
+    const stale = rows.filter((x) => x.pxStale).map((x) => x.code);
     note.innerHTML = `成本含买入费用（加权平均）· 「可卖」已扣除待成交卖单的冻结 · `
       + `T+1：当日买入次一交易日才可卖`
       + (stale.length ? ` · <span class="bf-warn">${esc(stale.join('、'))} 最近一档无行情，沿用上一价（已标「旧价」）</span>` : '');
@@ -598,30 +601,63 @@ const HOLIDAYS = new Set([
   '2026-10-05', '2026-10-06', '2026-10-07',
 ]);
 
+/**
+ * 数量快捷区（按方向给出不同语义的档位）。
+ *
+ * 买入：轻仓/半仓/重仓/满仓（分母 = 账户总资产，见 src/paper.js qtyByAssetPct）
+ * 卖出：减 1/4、减 1/2、减 3/4、清仓（分母 = 该票可卖数量，清仓=全部可卖）
+ *
+ * 为什么买卖两套分母不同：建仓说的是「占我整个账户多少」，减仓说的是「这只票卖掉多少」。
+ * 混用一套比例会在「账户里已有多只票」时给出明显不合理的手数。
+ */
 function renderQuick() {
   const box = $('poQuick');
   if (!box) return;
   const info = ORDER.code ? lookup(ORDER.code) : null;
-  const canSize = info && info.board.tradable && info.fresh && info.price;
+  // 档位按钮：qty=0 且带 sub 说明时渲染为禁用态（而非隐藏）——高价股上「轻仓够不着一手」
+  // 是真实约束，静默隐藏会让用户以为功能缺失；禁用+原因才说得清。
+  const btns = (items) => items
+    .filter((x) => x && (x.qty > 0 || x.disabled))
+    .map((x) => {
+      const dis = x.qty > 0 ? '' : ' disabled';
+      return `<button class="mini${x.primary ? ' primary-ghost' : ''}" type="button" data-act="pqty" data-qty="${x.qty}"${dis}${x.note ? ` title="${esc(x.note)}"` : ''}>${esc(x.label)}${x.sub ? `<span class="pq-sub">${esc(x.sub)}</span>` : ''}</button>`;
+    })
+    .join('');
+
   if (ORDER.side === 'sell') {
     const pos = ACCT.positions?.[ORDER.code];
-    if (!pos) { box.innerHTML = '<span class="muted">该股无持仓</span>'; return; }
+    if (!pos) { box.innerHTML = '<span class="muted">该股无持仓，暂无可卖数量</span>'; return; }
     const frozen = (ACCT.pending || []).filter((x) => x.code === ORDER.code && x.side === 'sell').reduce((a, x) => a + x.qty, 0);
     const free = Math.max(0, (pos.avail || 0) - frozen);
+    if (!free) {
+      box.innerHTML = `<span class="muted">当前无可卖数量（持仓 ${pos.qty} 股${frozen ? `，其中 ${frozen} 股已挂卖单` : ''}${pos.avail === 0 ? '，当日买入需次日才可卖' : ''}）</span>`;
+      return;
+    }
+    const cut = CUT_TIERS.map((t) => ({ label: t.label, qty: qtyByHoldPct(free, t.pct) }));
     box.innerHTML = `<span class="muted">可卖 ${free} 股：</span>`
-      + [['1/4', Math.floor(free / 4 / LOT) * LOT], ['1/2', Math.floor(free / 2 / LOT) * LOT], ['全部', free]]
-        .filter(([, v]) => v > 0)
-        .map(([lab, v]) => `<button class="mini" type="button" data-act="pqty" data-qty="${v}">${lab}（${v}）</button>`).join('');
+      + btns(cut) + btns([{ label: '清仓', qty: free, primary: true, note: '卖出该票全部可卖数量' }]);
     return;
   }
-  if (!canSize) { box.innerHTML = '<span class="muted">填入有效代码后可按金额快速估算数量</span>'; return; }
+
+  const canSize = info && info.board.tradable && info.fresh && info.price;
+  if (!canSize) { box.innerHTML = '<span class="muted">填入有效代码后可按仓位档位快速估量</span>'; return; }
+  if (!ACCT) { box.innerHTML = ''; return; }
+  const st = accountStats(ACCT);
   const px = fillPrice(info.price, 'buy', SLIP);
-  box.innerHTML = ['1 万', '5 万', '10 万', '全仓'].map((lab) => {
-    const amt = lab === '全仓' ? ACCT.cash : parseFloat(lab) * 1e4;
-    const lots = Math.floor(amt / (px * LOT));
-    return { lab, qty: Math.max(0, lots) * LOT };
-  }).filter((x) => x.qty > 0)
-    .map(({ lab, qty }) => `<button class="mini" type="button" data-act="pqty" data-qty="${qty}">${lab}</button>`).join('');
+  const lotCost = px * LOT + MIN_COMMISSION;      // 一手的含费成本（含最低佣金）
+  const tiers = POS_TIERS.map((t) => {
+    const r = qtyByAssetPct(st.total, t.pct, px, { cash: ACCT.cash });
+    if (r.qty <= 0) {
+      return { label: t.label, qty: 0, disabled: true, sub: '不足一手',
+        note: `${t.note} → 预算 ${num(st.total * t.pct)} 元，不足一手（约 ${num(lotCost)} 元）` };
+    }
+    return { label: t.label, qty: r.qty, sub: r.capped ? '受可用资金限' : t.note, note: `${t.note}：${num(r.need)} 元（含费用）` };
+  });
+  const head = `<span class="muted">按仓位（总资产 ${num(st.total)} 元，一手约 ${num(lotCost)} 元）：</span>`;
+  const any = tiers.some((t) => t.qty > 0);
+  const html = btns(tiers);
+  box.innerHTML = head + (any ? html
+    : `<span class="muted">总资产 ${num(st.total)} 元买不起 ${esc(info.name || info.code)} 一手（约 ${num(lotCost)} 元），四档均不可建仓</span>`);
 }
 
 function syncOrderInputs() {
@@ -856,6 +892,60 @@ function cancel(id) {
   msg(`委托 #${id} 已撤销，冻结资金已释放`, 'ok');
 }
 
+/**
+ * 一键空仓：把全部持仓按各自「可卖数量」逐票挂卖单。
+ *
+ * 诚实边界：T+1 下当日买入的股份不可卖，必然有票卖不掉。这里**不伪造、不排队等解冻**，
+ * 而是把不能卖的部分明确跳过，并在结果里逐条列出原因——用户需要知道"哪些没卖掉、为什么"，
+ * 否则会误以为已经空仓了。
+ *
+ * 卖价一律取**实时价**（与单票下单同一口径）；取不到价的标的跳过并说明。
+ */
+async function closeAll() {
+  const positions = Object.values(ACCT?.positions || {});
+  if (!positions.length) { msg('当前无持仓，无需空仓', 'ok'); return; }
+  const frozenOf = (code) => (ACCT.pending || [])
+    .filter((x) => x.code === code && x.side === 'sell').reduce((a, x) => a + x.qty, 0);
+
+  // 先把所有要卖的代码抓一次实时价（与单票下单同源，避免用陈旧价挂单）
+  await refreshLive(positions.map((p) => p.code));
+
+  const sold = [];      // 成功挂单
+  const skipped = [];   // 未挂单（附原因）
+  for (const p of positions) {
+    const free = Math.max(0, (p.avail || 0) - frozenOf(p.code));
+    if (free <= 0) {
+      const why = (p.qty > 0 && (p.avail || 0) === 0) ? '当日买入，T+1 未解冻' : (frozenOf(p.code) > 0 ? '已全部挂卖单' : '可卖数量为 0');
+      skipped.push(`${p.name || p.code}：${why}`);
+      continue;
+    }
+    const info = lookup(p.code);
+    if (!info || !info.fresh || !Number.isFinite(+info.price) || +info.price <= 0) {
+      skipped.push(`${p.name || p.code}：取不到实时行情，无法挂单`);
+      continue;
+    }
+    const q = { code: info.code, name: info.name, price: info.price, changePct: info.changePct };
+    const r = submitOrder(ACCT, { code: p.code, side: 'sell', qty: free, slip: SLIP }, q, { date: LAST_DATE });
+    if (r.order.status === 'rejected') {
+      skipped.push(`${p.name || p.code}：${r.order.reject}${r.order.detail ? '（' + r.order.detail + '）' : ''}`);
+      continue;
+    }
+    ACCT = r.next;
+    sold.push(`${p.name || p.code} ${free} 股`);
+  }
+  save();
+  renderAllPaper();
+  syncPositionsLive();
+
+  if (sold.length && !skipped.length) {
+    msg(`已按实时价挂出卖单：${sold.join('、')}（下一交易日按真实收盘价撮合）`, 'ok');
+  } else if (sold.length && skipped.length) {
+    msg(`已挂卖 ${sold.length} 只：${sold.join('、')}；未挂 ${skipped.length} 只 —— ${skipped.join('；')}`, 'warn');
+  } else {
+    msg(`未能挂出任何卖单 —— ${skipped.join('；')}`, 'err');
+  }
+}
+
 function reset() {
   if (!window.confirm('重置账户将清空全部持仓、成交与委托记录，且不可恢复。确定继续？')) return;
   ACCT = emptyAccount(INIT_CASH, LAST_DATE);
@@ -1051,6 +1141,13 @@ $('paperReset')?.addEventListener('click', reset);
 $('paperExport')?.addEventListener('click', doExport);
 $('paperImport')?.addEventListener('click', doImport);
 $('paperSettle')?.addEventListener('click', settleNow);
+// 一键空仓：先确认（会一次性挂出多笔卖单，误点代价大）
+$('paperCloseAll')?.addEventListener('click', () => {
+  const n = Object.keys(ACCT?.positions || {}).length;
+  if (!n) { msg('当前无持仓，无需空仓', 'ok'); return; }
+  if (!window.confirm(`将对 ${n} 只持仓全部挂出卖单（按各自可卖数量、按实时价）。\nT+1 下当日买入的股份卖不掉，会如实告知。\n\n确定继续？`)) return;
+  closeAll();
+});
 
 // 键盘快捷键 6 跳转到模拟交易（与 app.js 的 1-5 互补；app.js 只认 1-5，故不冲突）
 document.addEventListener('keydown', (e) => {
