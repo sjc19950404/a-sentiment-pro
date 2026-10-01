@@ -34,7 +34,7 @@ body { margin: 0; background: var(--bg); color: var(--txt); font-family: -apple-
 .scope-note { display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px;
   border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
 .scope-note.ok { border-color: transparent; color: var(--down); }
-.scope-note b { color: var(--fg); }
+.scope-note b { color: var(--txt); }
 .scope-note button.mini { padding: 0 7px; font-size: 11px; border-radius: 8px; }
 .lazy-note { display: inline-block; margin-top: 4px; padding: 2px 8px; font-size: 11px;
   color: var(--warn); border: 1px dashed var(--line); border-radius: 8px; }
@@ -691,7 +691,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .po-gate.ok { background: var(--line); border-left-color: var(--muted); }
 .po-gate-h { font-weight: 700; color: var(--warn); margin-bottom: 3px; }
 .po-gate.ok .po-gate-h { color: var(--muted); }
-.po-gate-b { color: var(--fg); }
+.po-gate-b { color: var(--txt); }
 .po-gate-a { margin-top: 7px; }
 .po-gate-btn { background: var(--warn); color: #fff; border: none; font-weight: 700; }
 
@@ -953,6 +953,80 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
 .ver-cau { margin-top: 4px; line-height: 1.6; }
 .ver-cau + .ver-cau { margin-top: 6px; }
 
+/* ── 资金属性面板（#1）：谁在买 ────────────────────────────────────────────────
+   与健康面板同构（折叠 + 左边框状态色），但语义色不同：
+   机构=蓝（配置/趋势）、北向=青（外资）、游资=橙（情绪/接力）。 */
+.seats-panel { margin: 8px 0; }
+.seats-panel[hidden] { display: none; }
+.st-fold { border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+.st-fold > summary { padding: 7px 12px; cursor: pointer; display: flex; flex-wrap: wrap;
+  align-items: center; gap: 6px; font-size: 12px; }
+.st-fold > summary::-webkit-details-marker { display: none; }
+.st-sum { flex: 1 1 100%; font-size: 11.5px; }
+.st-body { padding: 4px 12px 10px; border-top: 1px solid var(--line); }
+.st-chip { display: inline-block; font-size: 10.5px; line-height: 1.6; padding: 0 6px; border-radius: 3px;
+  border: 1px solid currentColor; white-space: nowrap; }
+.st-chip.inst { color: #58a6ff; }
+.st-chip.north { color: #39c5cf; }
+.st-chip.hot { color: #e8843c; }
+.st-chip.unknown { color: #8b949e; }
+.seats-panel.st-inst .st-fold { border-left: 3px solid #58a6ff; }
+.seats-panel.st-north .st-fold { border-left: 3px solid #39c5cf; }
+.seats-panel.st-hot .st-fold { border-left: 3px solid #e8843c; }
+.seats-panel.st-unknown .st-fold { border-left: 3px solid #8b949e; border-style: dashed; }
+.st-table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 4px; }
+.st-table th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11px;
+  border-bottom: 1px solid var(--line); padding: 3px 6px; }
+.st-table td { padding: 3px 6px; border-bottom: 1px dashed rgba(255,255,255,.06); }
+.st-table td.st-num, .st-table th:nth-child(n+2):nth-child(-n+4) { text-align: right; font-variant-numeric: tabular-nums; }
+.st-num.pos { color: var(--up); }
+.st-num.neg { color: var(--down); }
+.st-date { color: var(--muted); font-variant-numeric: tabular-nums; }
+.st-dom { color: var(--muted); }
+.st-row.dom-inst .st-dom { color: #58a6ff; font-weight: 600; }
+.st-row.dom-north .st-dom { color: #39c5cf; font-weight: 600; }
+.st-row.dom-hot .st-dom { color: #e8843c; font-weight: 600; }
+.st-note { margin-top: 9px; padding-top: 7px; border-top: 1px solid var(--line);
+  font-size: 11px; line-height: 1.6; }
+
+/* ── 亏钱效应面板（#2）：追高的人亏没亏 ────────────────────────────────────────
+   等级色：severe=红（显著）、weak=橙（转弱）、normal=灰（拉锯）、strong=绿（顺畅）、
+   unknown=灰虚线。注意这里是**语义色不是涨跌色**：亏钱效应用"好/坏"而非"涨/跌"。 */
+.pain-panel { margin: 8px 0; }
+.pain-panel[hidden] { display: none; }
+.pn-fold { border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+.pn-fold > summary { padding: 7px 12px; cursor: pointer; display: flex; flex-wrap: wrap;
+  align-items: center; gap: 6px; font-size: 12px; }
+.pn-fold > summary::-webkit-details-marker { display: none; }
+.pn-sum { flex: 1 1 100%; font-size: 11.5px; }
+.pn-body { padding: 6px 12px 10px; border-top: 1px solid var(--line); }
+.pn-chip { display: inline-block; font-size: 10.5px; line-height: 1.6; padding: 0 6px; border-radius: 3px;
+  border: 1px solid currentColor; white-space: nowrap; }
+.pn-chip.severe { color: #f0616d; }
+.pn-chip.weak { color: #e8843c; }
+.pn-chip.normal { color: #8b949e; }
+.pn-chip.strong { color: #3fb950; }
+.pn-chip.unknown { color: #8b949e; }
+.pain-panel.pn-severe .pn-fold { border-left: 3px solid #f0616d; }
+.pain-panel.pn-weak .pn-fold { border-left: 3px solid #e8843c; }
+.pain-panel.pn-normal .pn-fold { border-left: 3px solid #8b949e; }
+.pain-panel.pn-strong .pn-fold { border-left: 3px solid #3fb950; }
+.pain-panel.pn-unknown .pn-fold { border-left: 3px solid #8b949e; border-style: dashed; }
+.pn-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 6px; margin: 2px 0 6px; }
+.pn-kpi { border: 1px solid var(--line); border-radius: 5px; padding: 5px 8px; background: rgba(255,255,255,.02); }
+.pn-kpi .pn-k { display: block; font-size: 10.5px; color: var(--muted); }
+.pn-kpi .pn-v { display: block; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pn-kpi-main .pn-v { font-size: 16px; }
+.pn-kpi.pn-bad .pn-v { color: #f0616d; }
+.pn-list { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline;
+  font-size: 11.5px; padding: 3px 0; border-top: 1px dashed rgba(255,255,255,.06); }
+.pn-list .pn-k { color: var(--muted); min-width: 62px; }
+.pn-stock { color: var(--txt); }
+.pn-stock b.neg { color: var(--down); }
+.pn-stock b { font-variant-numeric: tabular-nums; }
+.pn-note { margin-top: 9px; padding-top: 7px; border-top: 1px solid var(--line);
+  font-size: 11px; line-height: 1.6; }
+
 @media print {
   :root { --bg: #fff; --card: #fff; --card2: #fff; --line: #ccc; --txt: #000; --muted: #555;
     --acc: #000; --up: #c0392b; --down: #1e7e34; --warn: #9a6b00; --focus: #000; }
@@ -998,5 +1072,14 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
   .bf-health.bf-hl-unknown { border-left-color: #666 !important; }
   .bf-hl-item, .bf-hl-note { color: #444 !important; }
   .bf-hl-item b { color: #000 !important; }
+  /* 资金属性 / 亏钱效应：打印时去深色底，保留左边框表达状态 */
+  .st-fold, .pn-fold { background: #fff !important; border-color: #ccc !important; }
+  .seats-panel .st-fold { border-left-color: #666 !important; }
+  .st-table th, .st-table td { border-color: #ccc !important; }
+  .st-note, .pn-note, .st-sum, .pn-sum { color: #444 !important; }
+  .pn-kpi { background: #f7f7f7 !important; border-color: #ccc !important; }
+  .pn-chip.severe, .pn-kpi.pn-bad .pn-v { color: #c0392b !important; }
+  .pn-chip.weak { color: #9a6b00 !important; }
+  .pn-chip.strong { color: #1e7e34 !important; }
   @page { size: A4; margin: 16mm 14mm; }
 }

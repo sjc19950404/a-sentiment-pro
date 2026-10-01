@@ -1742,6 +1742,10 @@ let VREG = null;
 //   index 里没有 health 段（它是纯元信息+摘要）。signals-latest 只有 ~16KB，
 //   专门为"轻量结论"而存在——健康面板正好是这类信息。
 let HEALTH = null;
+// 席位属性（#1）与亏钱效应（#2）：来自 signals-latest.json 的兄弟段，与 HEALTH 同一次 fetch。
+//   为 null 表示"未生成/未加载"（≠"没有资金分歧"），渲染层须显式区分。
+let SEATS = null;
+let PAIN = null;
 
 async function loadHealth() {
   try {
@@ -1750,6 +1754,12 @@ async function loadHealth() {
     const s = await res.json();
     HEALTH = s && s.health ? s.health : null;
     renderHealth(HEALTH);
+    // 席位属性（#1）与亏钱效应（#2）同在 signals-latest.json 里 → 一次 fetch 全取，
+    //   不为它们各开一次请求（首屏预算敏感，见 archive_split.js 分层说明）。
+    SEATS = s && s.seats ? s.seats : null;
+    PAIN = s && s.pain ? s.pain : null;
+    renderSeats(SEATS);
+    renderPain(PAIN);
     // 研判报告里也有一段「数据可信度」——它渲染时 HEALTH 多半还是 null（首屏已画完），
     // 故拉取成功后必须**重刷报告**，否则报告会永久缺这一段。
     // 与 loadBacktest 成功后重刷报告是同一种处理（数据异步到达 → 依赖它的 UI 要重画）。
@@ -1757,6 +1767,8 @@ async function loadHealth() {
   } catch (e) {
     // 拉不到时不显示面板（而不是显示"正常"）——"没检查"与"没问题"必须可区分。
     renderHealth(null, e.message);
+    renderSeats(null, e.message);
+    renderPain(null, e.message);
   }
 }
 
@@ -1808,8 +1820,127 @@ function renderHealth(h, errMsg) {
     + `</div></details>`;
 }
 
+// ── 席位/资金属性面板（#1）────────────────────────────────────────────────
+// 回答"谁在买"：机构 / 北向 / 游资 三类的**逐日净买**。
+// ⚠ 全部口径来自引擎（src/seats_daily.js），本函数只排版，不重算任何净额。
+//   缺失一律显示"—"，绝不显示 0——"净买 0"（多空抵消）与"没数据"含义相反。
+function renderSeats(s, errMsg) {
+  const box = $('seatsPanel');
+  if (!box) return;
+  if (!s || !s.verdict) {
+    box.hidden = false;
+    box.className = 'seats-panel st-unknown';
+    box.innerHTML = `<div class="st-head"><b>资金属性</b>`
+      + `<span class="st-chip unknown">未评估</span>`
+      + `<span class="muted">${esc(errMsg || 'signals-latest.json 缺少 seats 段')}`
+      + `——这是"没数据"，不等于"资金均衡"</span></div>`;
+    return;
+  }
+  const series = Array.isArray(s.series) ? s.series : [];
+  const sm = s.summary || {};
+  const v = s.verdict || {};
+  // 等级色：按主导方给（机构=蓝偏稳、北向=青、游资=橙偏激、未知=灰）
+  const tone = { inst: 'inst', north: 'north', hot: 'hot', unknown: 'unknown' }[v.level] || 'unknown';
+  box.hidden = false;
+  box.className = `seats-panel st-${tone}`;
+
+  const fmt = (x) => (x == null ? '—' : (x > 0 ? '+' : '') + x + ' 亿');
+  const cls = (x) => (x == null ? '' : x > 0 ? ' pos' : x < 0 ? ' neg' : '');
+
+  // 逐日净买条（只有真正有数据的天才会出现——序列已在引擎侧滤掉 null 行）
+  const rows = series.map((r) => `<tr class="st-row${r.dominant ? ' dom-' + esc(r.dominant) : ''}">`
+    + `<td class="st-date">${esc(r.date || '')}</td>`
+    + `<td class="st-num${cls(r.instNet)}">${fmt(r.instNet)}</td>`
+    + `<td class="st-num${cls(r.northNet)}">${fmt(r.northNet)}</td>`
+    + `<td class="st-num${cls(r.hotNet)}">${fmt(r.hotNet)}</td>`
+    + `<td class="st-dom">${r.dominant ? esc({ inst: '机构', north: '北向', hot: '游资' }[r.dominant] || r.dominant) : '—'}</td>`
+    + `</tr>`).join('');
+
+  // 汇总：只在有样本时给均值，否则 —（不把 null 画成 0.00）
+  const agg = (a) => (a && a.n ? `${a.mean > 0 ? '+' : ''}${a.mean}（${a.n}日）` : '—');
+
+  box.innerHTML = `<details class="st-fold" open>`
+    + `<summary><b>资金属性（谁在买）</b>`
+    + `<span class="st-chip ${esc(tone)}">${esc(v.label || '未知')}</span>`
+    + `<span class="muted st-sum">机构 ${esc(agg(sm.instNet))} · 北向 ${esc(agg(sm.northNet))} · 游资 ${esc(agg(sm.hotNet))}</span>`
+    + `</summary>`
+    + `<div class="st-body">`
+    + `<table class="st-table"><thead><tr><th>日期</th><th>机构净买</th><th>北向净买</th><th>游资净买</th><th>主导</th></tr></thead>`
+    + `<tbody>${rows || '<tr><td colspan="5" class="muted">暂无有席位明细的交易日</td></tr>'}</tbody></table>`
+    + `<div class="st-note muted">${esc(v.reason || '')}`
+    + `<br>${esc(s.seatsNote || s.note || '席位明细接口仅保留最近数日，序列自 2026-09-28 起累积。')}`
+    + `<br>样本 ${sm.okRows ?? 0}/${sm.totalDays ?? '?'} 个交易日有明细（覆盖率 `
+    + `${sm.coverage == null ? '—' : (sm.coverage * 100).toFixed(1) + '%'}）；缺失日为"—"，不填 0。`
+    + `</div></div></details>`;
+}
+
+// ── 亏钱效应面板（#2）────────────────────────────────────────────────────
+// 回答"追高的人亏没亏"。核心口径是**昨涨停今日翻绿比例**。
+// ⚠ 绝不可用 hot 列表反查（hot 只含上涨股，会得出恒为 +10% 的假繁荣，见 src/pain.js 头注）。
+function renderPain(p, errMsg) {
+  const box = $('painPanel');
+  if (!box) return;
+  if (!p || !p.perf) {
+    box.hidden = false;
+    box.className = 'pain-panel pn-unknown';
+    box.innerHTML = `<div class="pn-head"><b>亏钱效应</b>`
+      + `<span class="pn-chip unknown">未评估</span>`
+      + `<span class="muted">${esc(errMsg || 'signals-latest.json 缺少 pain 段（需收盘后跑 scripts/fetch_pain.mjs）')}`
+      + `——这是"没数据"，不等于"无亏钱效应"</span></div>`;
+    return;
+  }
+  const v = p.verdict || {};
+  const perf = p.perf || {};
+  const adv = p.advance || {};
+  const tone = { severe: 'severe', weak: 'weak', normal: 'normal', strong: 'strong', unknown: 'unknown' }[v.level] || 'unknown';
+  box.hidden = false;
+  box.className = `pain-panel pn-${tone}`;
+
+  const pct = (x) => (x == null ? '—' : (x * 100).toFixed(0) + '%');
+  const num = (x, unit = '%') => (x == null ? '—' : (x > 0 ? '+' : '') + x + unit);
+
+  // 关键数字块
+  const kpis = [
+    ['昨涨停今日均涨', num(perf.avg), 'pn-kpi-main'],
+    ['中位数', num(perf.median), ''],
+    ['翻绿比例', pct(perf.lossRatio), perf.lossRatio != null && perf.lossRatio > 0.6 ? 'pn-bad' : ''],
+    ['再涨停', (perf.limitUpAgain ?? '—') + ' 只', ''],
+    ['跌停', (perf.limitDown ?? '—') + ' 只', (perf.limitDown || 0) > 0 ? 'pn-bad' : ''],
+    ['大面股', (perf.bigLoss ?? '—') + ' 只', ''],
+    ['连板晋级失败', pct(adv.failRate), adv.failRate != null && adv.failRate > 0.5 ? 'pn-bad' : ''],
+    ['最高连板', (adv.maxLb ?? '—') + ' 板', ''],
+  ].map(([k, val, c]) => `<div class="pn-kpi ${c}"><span class="pn-k">${esc(k)}</span><span class="pn-v">${esc(val)}</span></div>`).join('');
+
+  // 大面股名单（若有）
+  const big = (p.bigLoss && p.bigLoss.list) || [];
+  const bigHtml = big.length
+    ? `<div class="pn-list"><span class="pn-k">大面股</span>` + big.slice(0, 6).map((x) =>
+      `<span class="pn-stock">${esc(x.name || x.code)} <b class="neg">${num(x.chg)}</b></span>`).join('') + `</div>`
+    : '';
+
+  // 连板分层
+  const tier = adv.byTier || {};
+  const tierHtml = Object.keys(tier).length
+    ? `<div class="pn-list"><span class="pn-k">连板分层</span>` + ['2', '3', '4+'].filter((k) => tier[k] && tier[k].n)
+      .map((k) => `<span class="pn-stock">${k}板 ${tier[k].kept}/${tier[k].n} 晋级 <b class="${tier[k].failRate > 0.5 ? 'neg' : ''}">失败${pct(tier[k].failRate)}</b></span>`).join('') + `</div>`
+    : '';
+
+  box.innerHTML = `<details class="pn-fold" open>`
+    + `<summary><b>亏钱效应（追高亏没亏）</b>`
+    + `<span class="pn-chip ${esc(tone)}">${esc(v.label || '未知')}</span>`
+    + `<span class="muted pn-sum">${esc(v.reason || '')}</span>`
+    + `</summary>`
+    + `<div class="pn-body">`
+    + `<div class="pn-kpis">${kpis}</div>`
+    + tierHtml + bigHtml
+    + `<div class="pn-note muted">口径：以「前一交易日涨停名单」为样本，用**今日全市场真实行情**统计（含下跌股）。`
+    + `翻绿比例 = 今日收跌只数 ÷ 取到行情的样本数；连板晋级失败 = 昨日 N≥2 连板今日未能再封板。`
+    + `<br>⚠ 不可用热门榜（hot）反查——hot 只含上涨股，会静默丢弃下跌的一半，得出恒为 +10% 的假繁荣。`
+    + `<br>样本 ${perf.n ?? 0}/${perf.universe ?? 0} 只${perf.reliable === false ? '（偏少，结论仅供参考）' : ''}。`
+    + `</div></div></details>`;
+}
+
 async function loadVersionRegression() {
-  const tb = $('verTable');
   const foot = $('verCaution');
   try {
     const res = await fetch('./data/version-regression.json?_=' + Date.now(), { cache: 'no-store' });
@@ -2315,7 +2446,7 @@ function renderAll(arc) {
   loadGlobal();  // 外围市场（独立数据文件，缺失不影响上述渲染）
   loadBacktest(); // 回测/帕累托/滚动/主线选股四区块（独立数据文件，缺失不影响上述渲染）
   loadVersionRegression(); // 公式版本对比（独立数据文件；缺失时卡内显示生成命令，不影响其他区块）
-  loadHealth(); // 数据健康面板（独立数据文件；读 signals-latest.json 的 health 段，不自行重算）
+  loadHealth(); // 数据健康 + 资金属性 + 亏钱效应（同一份 signals-latest.json，一次 fetch）
   loadIntraday(meta); // 盘中快照（独立数据文件；仅盘中相位且有文件时显示）
 }
 

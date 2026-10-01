@@ -17,6 +17,7 @@ import { buildReasonCodes, encodeArchive, decodeArchive } from './lhb_codec.js';
 import { marketAlerts } from './alerts.js';
 import { computeRelative } from './relative.js';
 import { healthReport } from './health.js';
+import { buildSeatSeries, seatSeriesSummary, seatVerdict } from './seats_daily.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -383,6 +384,22 @@ export function writeShards(archive, dir = DATA_DIR) {
       assessFn: assessFreshness,
       holidays: resolveHolidays(),
     }),
+    // 席位属性（#1）：纯函数，只读 summary.seats，无网络依赖 → 每次写档都刷新，
+    //   历史随有数据的天数自然增长（接口只保留最近数日，见 src/seats_daily.js 头注）。
+    seatSeriesFn: (ds) => {
+      const series = buildSeatSeries(ds);
+      return { series, summary: seatSeriesSummary(series, { totalDays: ds.length }), verdict: seatVerdict(series) };
+    },
+    // 亏钱效应（#2）：需要**全市场真实行情**，本函数是同步的、不能 await，
+    //   故这里只读已落盘的 pains 缓存（由 scripts/fetch_pain.mjs 在收盘后写入）。
+    //   读不到就是 null —— 绝不在此现造，否则会把失败伪装成"今天很平静"。
+    painFn: () => {
+      try {
+        const p = path.join(dir, 'pain-latest.json');
+        if (!existsSync(p)) return null;
+        return JSON.parse(readFileSync(p, 'utf8'));
+      } catch { return null; }
+    },
   });
   if (signals) writeFileSync(path.join(dir, SIGNALS_FILE), JSON.stringify(signals), 'utf8');
   // 清理被淘汰的年份分片（年份集合会变），避免前端拉到过期数据

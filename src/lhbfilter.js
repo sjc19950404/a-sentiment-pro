@@ -139,7 +139,11 @@ export const BUCKET = {
   REJECTED: 'rejected', // 被强制剔除：禁止生成买入委托
 };
 
-const finite = (v) => Number.isFinite(+v);
+// ⚠ 不能写成 `Number.isFinite(+v)`：`+null === 0` 且 `+'' === 0`，两者都会让**缺失值**
+//   通过判定，随后被读成 0。本文件用它判断 change_pct/turnover_pct/close/marketNetWan 等
+//   可空字段，一旦失守，"没有数据"会静默变成"涨跌 0%"并进入评分。
+//   （src/alerts.js::finite 早已记录同一陷阱，此处必须对齐同一纪律。）
+const finite = (v) => v != null && v !== '' && typeof v !== 'boolean' && Number.isFinite(+v);
 const r2 = (v) => Math.round(v * 100) / 100;
 const r3 = (v) => Math.round(v * 1000) / 1000;
 

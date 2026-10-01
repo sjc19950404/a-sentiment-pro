@@ -1758,6 +1758,134 @@ function versionHasNormalizerOnlyOnCandidate(code) {
     /healthFn:/.test(pipeSrcH) && /healthFn:/.test(splitSrcH), '');
 }
 
+// ── B16. 席位属性（#1）与亏钱效应（#2）：口径唯一出处 + 缺数据不得变成 0 ──────────
+//
+// 本块守两件事，都是"错了也看不出"的类型：
+//   ① **亏钱效应绝不可用 hot 反查**。hot 是涨幅榜（实测 2026-09-30 的 56 只里最小 +9.87、
+//      低于 0 的 0 只），用它算"昨涨停今日表现"会静默丢弃下跌的一半，恒得 +10% 的假繁荣。
+//      故必须断言：pain.js 的输入是"行情 Map"，而非从 hot 抽 change_pct。
+//   ② **缺数据不得退化成 0**。本块用真调用验证：空行情 → 翻绿比例 null（不是 0）；
+//      null 的 changePct 不得被算成平盘（`+null===0` 是本项目反复踩的陷阱）。
+{
+  const painPath = path.join(ROOT, 'src', 'pain.js');
+  const sdPath = path.join(ROOT, 'src', 'seats_daily.js');
+  check('资金属性/亏钱效应：src/pain.js 与 src/seats_daily.js 存在（口径唯一出处）',
+    existsSync(painPath) && existsSync(sdPath), '');
+
+  const painMod = await import(pathToFileURL(painPath).href);
+  const sdMod = await import(pathToFileURL(sdPath).href);
+
+  // ① 真调用：空行情 → 翻绿比例必须是 null（不是 0）
+  const emptyPerf = painMod.prevZtPerformance({}, ['600000', '000001']);
+  check('亏钱效应：无行情时翻绿比例为 null（"不知道"≠"全部上涨"）',
+    emptyPerf.lossRatio === null && emptyPerf.avg === null,
+    `lossRatio=${emptyPerf.lossRatio}`);
+
+  // ② 真调用：+null 陷阱 —— changePct 为 null 不得被当成 0
+  const nullQ = { A: { changePct: null }, B: { changePct: 10 }, C: { changePct: -10 } };
+  const nullPerf = painMod.prevZtPerformance(nullQ, ['A', 'B', 'C']);
+  check('亏钱效应：changePct 为 null 不得被当成 0（+null===0 陷阱）',
+    nullPerf.n === 2 && nullPerf.lossRatio === 0.5,
+    `n=${nullPerf.n} lossRatio=${nullPerf.lossRatio}（分母被 null 污染会让翻绿比例失真）`);
+
+  // ③ 分级中性带：49% 翻绿不得判成"接力顺畅"
+  const mid = painMod.painVerdict({ lossRatio: 0.49, reliable: true }, { failRate: 0.4, reliable: true });
+  check('亏钱效应：49% 翻绿判"多空拉锯"而非"接力顺畅"（中性带起效）',
+    mid.level === 'normal', `level=${mid.level}`);
+
+  // ④ 静态度量不变量：pain.js 不得从 hot 抽涨跌幅（源码级硬约束）
+  const painSrc = readFileSync(painPath, 'utf8');
+  const painCode = stripCommentsAud(painSrc);
+  check('亏钱效应：pain.js 未从 hot 列表抽 change_pct（会造成假繁荣）',
+    !/hot[\s\S]{0,40}?change_pct/.test(painCode), '');
+
+  // ⑤ 真调用：席位缺卖侧 → 净额 null（不得只减一半）
+  const halfRow = sdMod.seatRowOf({ trade_date: 'x', summary: { seats: { inst_buy: 10, north_buy: 5, hot_buy: 3, cover: 50 } } });
+  check('资金属性：缺卖侧时净额为 null（不得得出假净额）',
+    halfRow.instNet === null && halfRow.hasSell === false,
+    `instNet=${halfRow.instNet}`);
+
+  // ⑥ 真调用：null 净额不得被算成 0
+  const nullRow = sdMod.seatRowOf({ trade_date: 'x', summary: { seats: { inst_buy: null, inst_sell: null, north_buy: null, north_sell: null, hot_buy: null, hot_sell: null, cover: 100 } } });
+  check('资金属性：null 买入额不得被算成 0 净额（+null===0 陷阱）',
+    nullRow.instNet === null, `instNet=${nullRow.instNet}`);
+
+  // ⑦ 真调用：无 seats 的天整行 null（不得填 0）
+  const noSeat = sdMod.seatRowOf({ trade_date: 'y', summary: {} });
+  check('资金属性：无席位数据的天净额为 null（"多空抵消"≠"没数据"）',
+    noSeat.ok === false && noSeat.instNet === null && noSeat.hotNet === null, '');
+
+  // ⑧ 序列默认滤空行（体积 + 可读性）；覆盖率分母须由 totalDays 给出
+  const ser = sdMod.buildSeatSeries([{ trade_date: 'a', summary: {} }, { trade_date: 'b', summary: { seats: { inst_buy: 1, inst_sell: 0, north_buy: 0, north_sell: 0, hot_buy: 0, hot_sell: 0, cover: 100 } } }]);
+  check('资金属性：序列默认滤掉无数据的天（避免空行撑爆轻量档）',
+    ser.length === 1 && ser[0].date === 'b', `len=${ser.length}`);
+  const smNoTotal = sdMod.seatSeriesSummary(ser);
+  const smWith = sdMod.seatSeriesSummary(ser, { totalDays: 100 });
+  check('资金属性：无 totalDays 时覆盖率为 null（不得虚报 100%）',
+    smNoTotal.coverage === null && smWith.coverage === 0.01,
+    `null→${smNoTotal.coverage} withTotal→${smWith.coverage}`);
+
+  // ⑨ signals-latest.json 必须带 seats / pain 段（前端据此渲染）
+  const sigPath2 = path.join(ROOT, 'data', 'signals-latest.json');
+  if (existsSync(sigPath2)) {
+    const sig2 = JSON.parse(readFileSync(sigPath2, 'utf8'));
+    check('资金属性/亏钱效应：signals-latest 带 seats 段',
+      !!sig2.seats && Array.isArray(sig2.seats.series) && !!sig2.seats.verdict,
+      `seats=${sig2.seats ? 'ok' : '缺'}`);
+    // pain 依赖收盘后跑脚本，可能为 null——但只要是非 null 就必须结构完整
+    const painOk = sig2.pain == null || (!!sig2.pain.perf && !!sig2.pain.verdict);
+    check('资金属性/亏钱效应：signals-latest 的 pain 段结构完整（或为 null）',
+      painOk,
+      sig2.pain == null ? '' : 'pain 段缺 perf/verdict');
+  }
+
+  // ⑩ 前端不得重算（第二套口径）
+  const appSrcP = readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const appCodeP = stripCommentsAud(appSrcP);
+  check('资金属性/亏钱效应：前端未自行实现 painReport / 席位聚合',
+    !/function\s+painReport\b/.test(appCodeP) && !/inst_buy\s*-\s*inst_sell/.test(appCodeP), '');
+
+  // ⑪ 两条写盘路径都必须注入 seatSeriesFn（同源同形态）
+  const pipeSrcS = readFileSync(path.join(ROOT, 'src', 'pipeline.js'), 'utf8');
+  const splitSrcS = readFileSync(path.join(ROOT, 'scripts', 'split_archive.mjs'), 'utf8');
+  check('资金属性：pipeline 与 split_archive 两条路径都注入 seatSeriesFn（形态一致）',
+    /seatSeriesFn:/.test(pipeSrcS) && /seatSeriesFn:/.test(splitSrcS), '');
+
+  // ⑫ ★ 全仓回归守卫：禁止对**数据字段**裸用 `Number.isFinite(+v)`。
+  //    本块新增这个守卫的直接原因：本轮在 pain.js 与 seats_daily.js **各踩一次**
+  //    （null → 0），而 src/alerts.js / alert_log.js 早已记录该陷阱。
+  //
+  //    精度说明：只查"对可空**数据**取值后判有限"这一形状。内部受控参数
+  //    （如 opts.window / opts.totalDays，调用方不会传 null 语义）不算——把它们
+  //    一起禁掉会逼出无意义的写法，守卫反而会被绕过。故：变量名以 opts. 开头、
+  //    或本身就来自本模块内部常量/已判过的量，一律放行。
+  const risky = [];
+  for (const f of ['pain.js', 'seats_daily.js', 'health.js']) {
+    const p = path.join(ROOT, 'src', f);
+    if (!existsSync(p)) continue;
+    const raw = stripCommentsAud(readFileSync(p, 'utf8'));
+    raw.split(/\r?\n/).forEach((ln, i) => {
+      if (!/Number\.isFinite\(\s*\+/.test(ln)) return;
+      if (/==\s*null|!=\s*null|typeof/.test(ln)) return;        // 已有空值前置 → 安全
+      if (/Number\.isFinite\(\s*\+\s*opts\./.test(ln)) return;  // 受控参数 → 放行
+      if (/Number\.isFinite\(\s*\+\s*[a-zA-Z_$]+\.\w+/.test(ln) === false
+        && /Number\.isFinite\(\s*\+\s*v\b/.test(ln)) return;    // 已由 num() 包过的 v
+      risky.push(`${f}:${i + 1} ${ln.trim().slice(0, 60)}`);
+    });
+  }
+  check('数值纪律：数据字段判定不得裸用 Number.isFinite(+v)（null 会被算成 0）',
+    risky.length === 0, risky.length ? `疑似裸用：\n      ${risky.join('\n      ')}` : '');
+  // ⑬ CI 必须把亏钱效应快照一起提交（漏了就是"本地算了、线上看不见"）。
+  //    与 archive 切片同理：脚本产出物不进提交清单，线上就永远停留在初始状态，
+  //    而页面上只会表现为"这块一直没数据"，不会报错 —— 正是最难归因的一类故障。
+  const wfSrcP = readFileSync(path.join(ROOT, '.github', 'workflows', 'daily.yml'), 'utf8');
+  check('亏钱效应：CI 提交清单含 data/pain-latest.json（漏了＝线上永远没有该面板）',
+    /data\/pain-latest\.json/.test(wfSrcP), '');
+  // ⑭ CI 必须跑抓取步（否则 signals 里 pain 恒为 null）
+  check('亏钱效应：CI 含 fetch_pain 抓取步（否则 signals 里 pain 恒为 null）',
+    /scripts\/fetch_pain\.mjs/.test(wfSrcP), '');
+}
+
 // ── C. 结论 ────────────────────────────────────────────────────────────────
 if (warns.length) for (const w of warns) console.log(`⚠ ${w}`);
 if (fails.length) {

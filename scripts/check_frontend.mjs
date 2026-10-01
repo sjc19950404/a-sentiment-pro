@@ -2768,6 +2768,94 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// 资金属性（#1）与亏钱效应（#2）
+//
+// 守的是什么：
+//   ① **"没数据"不得显示成 0**。席位净买缺失、亏钱效应样本不足时，必须显示"—"或
+//      "未评估"，不得渲染 0 —— "净买 0（多空抵消）"与"没数据"含义相反；
+//      "翻绿 0%（极强）"与"不知道"更是天壤之别。
+//   ② **前端不得重算**。席位净额、翻绿比例、晋级失败率全部来自引擎
+//      （src/seats_daily.js / src/pain.js），前端只排版。若前端出现这些算式，
+//      就是第二套口径，切换时会静默漂移。
+//   ③ **亏钱效应不得用 hot 反查**。这是源码级硬约束：hot 只含上涨股，用它算
+//      "昨涨停今日表现"会恒得 +10%（假繁荣）。守卫检测 app.js 里是否出现
+//      "遍历 hot 求涨跌幅均值"这种形状。
+// ════════════════════════════════════════════════════════════════════════════
+{
+  // ── 资金属性面板 ──
+  const sp = $('seatsPanel');
+  check('资金属性：面板元素存在', !!sp, sp ? '' : '未找到 #seatsPanel');
+  if (sp) {
+    const isUnknown = /st-unknown/.test(sp.className || '');
+    if (isUnknown) {
+      check('资金属性：未评估时显式说明"不等于资金均衡"',
+        /没数据/.test(sp.textContent) && /不等于资金均衡/.test(sp.textContent),
+        sp.textContent.slice(0, 90));
+    } else {
+      check('资金属性：面板已渲染（hidden 已解除）', sp.hidden === false, `hidden=${sp.hidden}`);
+      // 状态类必须是 inst/north/hot/unknown 之一（决定左边框色）
+      const lv = ['st-inst', 'st-north', 'st-hot', 'st-unknown'].filter((c) => new RegExp(c).test(sp.className || ''));
+      check('资金属性：主导方状态类唯一且合法', lv.length === 1, `类名 ${sp.className}`);
+      // 三类资金列必须齐（缺一列说明某类被吞掉）
+      const txt = sp.textContent || '';
+      check('资金属性：机构/北向/游资三类列齐全',
+        /机构净买/.test(txt) && /北向净买/.test(txt) && /游资净买/.test(txt), '');
+      // 缺失必须显示"—"而不是 0
+      check('资金属性：缺失值以"—"呈现（不得渲染成 0）',
+        /—/.test(txt), '缺失显示成 0 会让"没数据"被读成"资金均衡"');
+      // 数据可用性（覆盖率）必须披露——席位明细只有最近数日，不披露会让人误以为序列很长
+      check('资金属性：披露样本覆盖率（席位明细仅最近数日）',
+        /覆盖率/.test(txt), '未披露覆盖率，读者会高估序列长度');
+    }
+  }
+  // 源码层：前端不得自行聚合席位净额
+  {
+    const src = readFileSync(join(ROOT, 'app.js'), 'utf8');
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    check('资金属性：前端未自行聚合席位净额（只读引擎结果）',
+      !/inst_buy\s*-\s*inst_sell|instBuy\s*-\s*instSell/.test(code),
+      '前端出现净额算式＝第二套口径');
+  }
+
+  // ── 亏钱效应面板 ──
+  const pp = $('painPanel');
+  check('亏钱效应：面板元素存在', !!pp, pp ? '' : '未找到 #painPanel');
+  if (pp) {
+    const isUnknown = /pn-unknown/.test(pp.className || '');
+    if (isUnknown) {
+      check('亏钱效应：未评估时显式说明"不等于无亏钱效应"',
+        /没数据/.test(pp.textContent) && /不等于无亏钱效应/.test(pp.textContent),
+        pp.textContent.slice(0, 90));
+    } else {
+      check('亏钱效应：面板已渲染（hidden 已解除）', pp.hidden === false, `hidden=${pp.hidden}`);
+      const lv = ['pn-severe', 'pn-weak', 'pn-normal', 'pn-strong', 'pn-unknown']
+        .filter((c) => new RegExp(c).test(pp.className || ''));
+      check('亏钱效应：结论状态类唯一且合法', lv.length === 1, `类名 ${pp.className}`);
+      const txt = pp.textContent || '';
+      // 核心口径必须在场：翻绿比例（这是整块的价值所在）
+      check('亏钱效应：渲染核心口径「翻绿比例」', /翻绿比例/.test(txt), '');
+      check('亏钱效应：渲染连板晋级失败率', /连板晋级失败/.test(txt), '');
+      // 必须披露"不可用 hot 反查"这件事——它是本模块最容易被误用的地方
+      check('亏钱效应：面板内披露口径警示（不得用 hot 反查）',
+        /hot/.test(txt) && /假繁荣/.test(txt), '缺口径警示，后来者可能改回 hot 反查');
+    }
+  }
+  // 源码层：禁止用 hot 列表反查涨跌幅均值（硬约束，见 src/pain.js 头注）
+  {
+    const src = readFileSync(join(ROOT, 'app.js'), 'utf8');
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    // 形状：把 hot 映射成 change_pct 再求平均/中位
+    const hotMap = /hot[\s\S]{0,40}?map\([\s\S]{0,60}?change_pct/.test(code) && /\/\s*(hot|h)\.length|reduce\(/.test(code);
+    check('亏钱效应：前端未用 hot 列表反算涨跌幅（会造成假繁荣）', !hotMap,
+      hotMap ? '发现 hot→change_pct 聚合，hot 只含上涨股，会得出恒为 +10% 的假结论' : '');
+    // 翻绿比例必须来自引擎，不在前端算
+    check('亏钱效应：翻绿比例读自引擎（不在前端现算）',
+      !/filter\([^)]*changePct[^)]*<\s*0\s*\)[\s\S]{0,30}?\/\s*\w+\.length/.test(code),
+      '前端出现翻绿比例算式＝第二套口径');
+  }
+}
+
 // jsdom 未实现的 DOM 桩：不判失败，但**必须打印**——否则将来真出现异常时，
 // 读者会以为"一类错误被静默吞掉了"。单独一条提示说明它们为何不算失败。
 if (notImplemented.length) {

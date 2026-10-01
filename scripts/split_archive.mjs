@@ -16,6 +16,7 @@ import { marketAlerts } from '../src/alerts.js';
 import { healthReport } from '../src/health.js';
 import { assessFreshness } from '../src/freshness.js';
 import { resolveHolidays } from '../src/calendar.js';
+import { buildSeatSeries, seatSeriesSummary, seatVerdict } from '../src/seats_daily.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
@@ -51,6 +52,19 @@ const signals = buildSignals(packed, {
   // 健康报告（#115）：与 pipeline.writeShards 用**同一套注入**，保证两条写盘路径
   // 产出的 signals-latest.json 完全一致（否则 --check 之外又多一处形态分裂）。
   healthFn: (ds, o) => healthReport(ds, { ...o, assessFn: assessFreshness, holidays: resolveHolidays() }),
+  // 席位属性（#1）：纯函数，与 pipeline.writeShards 同源同形态。
+  seatSeriesFn: (ds) => {
+    const series = buildSeatSeries(ds);
+    return { series, summary: seatSeriesSummary(series, { totalDays: ds.length }), verdict: seatVerdict(series) };
+  },
+  // 亏钱效应（#2）：读已落盘的 pain-latest.json（需行情，本脚本不联网抓）。
+  painFn: () => {
+    try {
+      const p = join(DATA, 'pain-latest.json');
+      if (!existsSync(p)) return null;
+      return JSON.parse(readFileSync(p, 'utf8'));
+    } catch { return null; }
+  },
 });
 const years = Object.keys(shards).sort();
 

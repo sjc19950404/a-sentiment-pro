@@ -56,6 +56,13 @@ jobs:
       # 脚本内部对板段非法/非股票品种做校验，不合法直接退出，避免把错池子推上线。
       - name: 构建模拟交易标的池（板段/ST/最近真实收盘价）
         run: node scripts/fetch_universe.mjs
+      # 亏钱效应行情快照（#2）：昨涨停今日表现**必须**用全市场真实行情算，
+      # 不能用 hot 列表反查（hot 只含上涨股，会静默丢弃下跌的一半，得出恒 +10% 的假繁荣）。
+      # 故单独一步在收盘后抓昨日涨停名单的今日行情，产出 data/pain-latest.json。
+      # 非交易日/行情日期不匹配时脚本自行拒绝写盘（退出码 2），不阻断整条 job。
+      - name: 抓取亏钱效应行情（昨涨停今日表现，收盘后口径）
+        run: node scripts/fetch_pain.mjs
+        continue-on-error: true
       # 口径守卫：两套龙虎榜净额（当日榜 / 含区间累计榜的全量）不得混用。
       # 放在提交之前——口径一旦漂移，宁可本次运行失败，也不要把错数据推上线。
       - name: 龙虎榜口径守卫（双口径不混用 + 存档可重现）
@@ -66,7 +73,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json
+          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else

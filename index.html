@@ -36,6 +36,14 @@
        异常时自动展开；正常时折叠成一行，不抢主视觉。 -->
   <div id="healthPanel" class="health-panel" hidden></div>
 
+  <!-- 资金属性（#1）：谁在买——机构/北向/游资三类逐日净买。答"资金性质"而非"资金多少"。
+       席位明细接口只保留最近数日，故此处序列从有数据之日起逐日累积。 -->
+  <div id="seatsPanel" class="seats-panel" hidden></div>
+
+  <!-- 亏钱效应（#2）：追高的人今天亏没亏——昨涨停今日翻绿比例 + 连板晋级失败率。
+       与 s_zbl（炸板率，当日视角）正交，这一块才是真情绪。 -->
+  <div id="painPanel" class="pain-panel" hidden></div>
+
   <main>
     <!-- ── 区一：概览 ── -->
     <section class="zone" id="zone-overview">

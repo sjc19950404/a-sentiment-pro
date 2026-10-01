@@ -297,6 +297,9 @@ export function buildSignals(archive, opts = {}) {
   const assumedTotal = Number.isFinite(+opts.assumedTotal) ? +opts.assumedTotal : 100000;
   const fn = typeof opts.marketAlertsFn === 'function' ? opts.marketAlertsFn : null;
   const hFn = typeof opts.healthFn === 'function' ? opts.healthFn : null;
+  // 席位属性序列（#1）与亏钱效应（#2）——同样走注入，保持本模块"不读盘"的纯函数性质。
+  const sFn = typeof opts.seatSeriesFn === 'function' ? opts.seatSeriesFn : null;
+  const pFn = typeof opts.painFn === 'function' ? opts.painFn : null;
   const score = last.emotion?.value ?? last.emotion?.score ?? null;
   const market = fn ? fn({ emotionScore: score, total: assumedTotal, marketValue: 0 }) : null;
   // 数据健康报告（#115）：随轻量档一起下发，让"盯盘/巡检"的读者不必拉完整档
@@ -305,6 +308,18 @@ export function buildSignals(archive, opts = {}) {
   let health = null;
   if (hFn) {
     try { health = hFn(days, { meta: archive?.meta || {} }); } catch { health = null; }
+  }
+  // 席位属性（#1）：三类资金逐日净买 + 最新一日的主导方。
+  //   刻意**不**放进分片：席位明细只最近数日有效，序列本身很短（当前 3 行），
+  //   放此处正好让前端一次拿到，不必回看分片。
+  let seats = null;
+  if (sFn) {
+    try { seats = sFn(days); } catch { seats = null; }
+  }
+  // 亏钱效应（#2）：昨涨停今日表现 / 连板晋级失败 / 大面股。需外部行情，由注入方提供。
+  let pain = null;
+  if (pFn) {
+    try { pain = pFn(days); } catch { pain = null; }
   }
   return {
     kind: 'signals-latest',
@@ -320,6 +335,18 @@ export function buildSignals(archive, opts = {}) {
     healthNote: hFn
       ? '健康面板只看数据能不能用（新鲜度/补位率/字段覆盖），不参与打分；缺失一律显示"未知"而非 0。'
       : '未生成（调用方未注入 healthReport）',
+    // 席位/资金属性（#1）：{ series, summary, verdict }。series 每行一个交易日，
+    //   含机构/北向/游资三类净买。无数据的天 net 为 null（不是 0）。
+    seats,
+    seatsNote: sFn
+      ? '席位明细接口仅保留最近若干交易日，故序列从有数据之日起逐日累积；缺失日为 null，不填 0。'
+      : '未生成（调用方未注入 seatSeries）',
+    // 亏钱效应（#2）：昨涨停今日表现须用**全市场真实行情**算，不可用 hot 列表
+    //   （hot 只含上涨股，会静默丢弃下跌的那一半，得出恒为 +10% 的假繁荣）。
+    pain,
+    painNote: pFn
+      ? '昨涨停今日表现基于全市场真实行情（含下跌股），非 hot 涨幅榜口径；样本不足时结论降级为"未知"。'
+      : '未生成（调用方未注入 painReport，需实时行情）',
     marketAlerts: market,
     marketAlertsNote: fn
       ? `仅大盘层告警，按假设总资产 ${assumedTotal} 元、空仓计算；持仓层告警需本地账户，见 paper_ui.js`
