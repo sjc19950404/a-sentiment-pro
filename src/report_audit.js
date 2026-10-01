@@ -30,7 +30,14 @@ export const EXPECTED_SECTIONS = 7;
 /** 报头名称（与 src/report.js 的 REPORT_TITLE 同值，防漂移） */
 export const MASTHEAD = 'A股市场情绪研判简报';
 
-/** 章节口径折叠件的统一标题（与 src/report.js 的 CALIBER_SUMMARY 同值，防漂移） */
+/**
+ * 章节口径折叠件的统一标题——**屏幕**用（与 src/report.js 的 CALIBER_SUMMARY 同值，防漂移）。
+ *
+ * ★ 注意屏幕与导出**刻意不同值**：屏幕说「点击展开查看口径」（真的能点），
+ *   导出/打印稿说「口径说明（附）」（静态文档里"点击"是一句做不到的邀请）。
+ *   本常量只管屏幕；导出那边用 report.js 的 CALIBER_SUMMARY_DOC。
+ *   两者都必须含"口径"二字（下面 caliber-summary-text 规则靠它确认语义没被换掉）。
+ */
 export const CALIBER_SUMMARY = '🔍 点击展开查看口径';
 
 /**
@@ -117,7 +124,11 @@ export const RULES = [
   },
   {
     id: 'caliber-summary-text',
-    msg: `口径折叠件标题不是「${CALIBER_SUMMARY}」（屏幕与导出的文案必须一致）`,
+    // 注意本规则查的是**屏幕** DOM（#briefBody 下的 .bf-sec .bf-caliber summary），
+    // 故判据是屏幕串 CALIBER_SUMMARY。导出侧用的是 report.js 的 CALIBER_SUMMARY_DOC，
+    // 两者**刻意不同**（屏幕说"点击展开"，静态文档说"口径说明"），由 audit_lhb_caliber 的
+    // 模板契约块反向锁死"必须不同"。所以这里不能写"屏幕与导出必须一致"——那句话现在是错的。
+    msg: `屏幕口径折叠件标题不是「${CALIBER_SUMMARY}」`,
     // 判据来源：优先用调用方**在 parseReport 之前**采好的 domCaliberSummaries 快照。
     // 原因：parseReport 会就地移除 .bf-caliber（防口径混进正文），之后 DOM 上就查不到了——
     // 若这时才查，会把一份合规报告误判为未通过。没有快照时才退回实时查询

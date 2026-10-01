@@ -718,13 +718,34 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     check(`模板契约：${label} 在屏幕层落地`, re.test(appRaw2), re.test(appRaw2) ? '' : 'app.js 缺该结构');
   }
 
-  // 折叠件标题只能有一份约定（app.js 常量 + report.js 常量；两处值必须相等，防漂移）
+  // 折叠件标题：屏幕与导出**各有约定**，两者都必须存在、且都必须含"口径"二字。
+  //
+  // ★ 这里曾经断言"两处取值必须相等"，现已**刻意改为断言两者不同**（真实需求）：
+  //   屏幕说得「点击展开查看口径」——那是一个真能点的交互提示；
+  //   导出/打印稿说得「口径说明（附）」——静态文档里"点击"是一句做不到的邀请。
+  //   若哪天有人图省事把两者重新合并成一个串，要么屏幕失去可点击的提示、要么
+  //   纸面上出现点不动的"点击展开"，两种都是回归。故这条守卫反向锁死"必须不同"。
   {
     const appTitle = appRaw2.match(/const CAL_SUMMARY = '([^']+)'/);
-    const rptTitle = reportSrc.match(/CALIBER_SUMMARY = '([^']+)'/);
-    check('模板契约：折叠件标题在屏幕层与导出层取值一致（防止两处文案漂移）',
-      !!appTitle && !!rptTitle && appTitle[1] === rptTitle[1],
-      appTitle && rptTitle ? `app「${appTitle[1]}」/ report「${rptTitle[1]}」` : '未找到常量');
+    const rptScrTitle = reportSrc.match(/export const CALIBER_SUMMARY = '([^']+)'/);
+    const rptDocTitle = reportSrc.match(/export const CALIBER_SUMMARY_DOC = '([^']+)'/);
+    check('模板契约：屏幕/导出各自持有折叠件标题常量，且都含「口径」语义',
+      !!appTitle && !!rptScrTitle && !!rptDocTitle
+      && /口径/.test(appTitle[1]) && /口径/.test(rptScrTitle[1]) && /口径/.test(rptDocTitle[1]),
+      appTitle && rptScrTitle && rptDocTitle
+        ? `app「${appTitle[1]}」/ report屏幕「${rptScrTitle[1]}」/ report导出「${rptDocTitle[1]}」`
+        : '未找到常量');
+    check('模板契约：导出文案不含「点击」（静态文档里点不动，是一句做不到的邀请）',
+      !/点击/.test(rptDocTitle[1]),
+      rptDocTitle ? `导出折叠件标题「${rptDocTitle[1]}」` : '未找到常量');
+    check('模板契约：屏幕与导出的折叠件标题**必须不同**（防被重新合并成一份文案）',
+      !!rptScrTitle && !!rptDocTitle && rptScrTitle[1] !== rptDocTitle[1],
+      '两者取值相同了——要么屏幕失去可点提示，要么纸面出现点不动的「点击展开」');
+    // 导出实现里不得再引用屏幕串（否则会把"点击展开"漏进文档）
+    const exportBody = reportSrc.slice(reportSrc.indexOf('export function toMarkdown'));
+    check('模板契约：导出实现不引用屏幕用折叠件标题（防「点击展开」漏进文档）',
+      !/CALIBER_SUMMARY(?!_DOC)/.test(exportBody),
+      '');
   }
 }
 

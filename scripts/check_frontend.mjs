@@ -2251,7 +2251,9 @@ escClose();
       /\|\s*板数\s*\|\s*只数\s*\|\s*个股\s*\|/.test(md) && /\|\s*---\s*\|/.test(md), '');
     check('模板③·导出：章节口径收进 <details>，文末有独立折叠附录',
       (md.match(/<details>/g) || []).length === (md.match(/<\/details>/g) || []).length
-      && md.includes('<summary>🔍 点击展开查看口径</summary>')
+      && md.includes('<summary>📎 口径说明（附）</summary>')
+      // ★ 导出/打印稿里不能出现"点击展开"：静态文档里它是一句做不到的邀请
+      && !md.includes('点击展开')
       && md.includes('口径附录'), `details ${(md.match(/<details>/g) || []).length} 个`);
     check('模板③·导出：HTML 折叠件为原生 <details>（无脚本也能折叠）',
       html.includes('<details class="caliber"') && !/<script/i.test(html), '');
@@ -2723,19 +2725,42 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
     check('板块相对强弱：超额列全部带符号（+ 或 −）', exs.length === 10 && exs.every((e) => /^[+\-−]/.test(e)),
       exs.join(','));
   }
-  // 报告表格
-  const relTbl = window.document.querySelector('table.rel-table');
-  check('板块相对强弱：报告内 rel-table 已渲染', !!relTbl, relTbl ? '' : '未找到 .rel-table');
-  if (relTbl) {
-    const cap = relTbl.getAttribute('data-caption') || '';
-    check('板块相对强弱：报告表格 data-caption 标注基准（口径可追溯）',
-      /基准/.test(cap) && /上证指数|行业中位数/.test(cap), cap.slice(0, 60));
-    check('板块相对强弱：报告表格 10 个数据行', relTbl.querySelectorAll('tbody tr').length === 10,
-      `${relTbl.querySelectorAll('tbody tr').length} 行`);
+  // 报告表格 —— ★ 攻/防现在是**两张各自合法的表**（一张表只允许一个 <thead>，
+  //   原先塞两组 thead 会让真实浏览器移位/丢表头，导出层也会解析成"6 列表头 vs 3 列数据"）。
+  const relTbls = [...window.document.querySelectorAll('table.rel-table')];
+  check('板块相对强弱：报告内 rel-table 已渲染', relTbls.length > 0, relTbls.length ? '' : '未找到 .rel-table');
+  if (relTbls.length) {
+    check('板块相对强弱：攻/防拆为两张表（一张表只允许一个 <thead>）', relTbls.length === 2,
+      `${relTbls.length} 张 .rel-table`);
+    // 每张表都必须自洽：表头列数 == 数据行单元格数（防"表头 3 列、数据 2 格"的错位）
+    const misaligned = relTbls.filter((t) => {
+      const nTh = t.querySelectorAll('thead th').length;
+      return [...t.querySelectorAll('tbody tr')].some((tr) => tr.children.length !== nTh);
+    });
+    check('板块相对强弱：每张表表头列数 == 数据行单元格数（无错位）', misaligned.length === 0,
+      `${misaligned.length} 张表列数不符`);
+    // 每张表只能有一个 thead/tbody（多表头是本次修的 bug 根源）
+    const multiHead = relTbls.filter((t) => t.querySelectorAll('thead').length !== 1
+      || t.querySelectorAll('tbody').length !== 1);
+    check('板块相对强弱：每张表恰一个 thead + 一个 tbody', multiHead.length === 0,
+      `${multiHead.length} 张表结构异常`);
+    const allRows = relTbls.reduce((a, t) => a + t.querySelectorAll('tbody tr').length, 0);
+    check('板块相对强弱：报告表格 10 个数据行', allRows === 10, `${allRows} 行`);
     // 列头须点明是"超额进攻/超额防御"，而非泛泛的"涨幅榜"
-    const heads = [...relTbl.querySelectorAll('thead th')].map((x) => x.textContent.trim()).join('|');
+    const heads = relTbls.map((t) => [...t.querySelectorAll('thead th')].map((x) => x.textContent.trim()).join('|')).join(' / ');
     check('板块相对强弱：表头含"超额进攻"与"超额防御"', /超额进攻/.test(heads) && /超额防御/.test(heads),
-      heads.slice(0, 70));
+      heads.slice(0, 90));
+    // data-caption 逐表标注基准（口径可追溯）
+    const caps = relTbls.map((t) => t.getAttribute('data-caption') || '');
+    check('板块相对强弱：报告表格 data-caption 标注基准（口径可追溯）',
+      caps.every((c) => /基准/.test(c) && /上证指数|行业中位数/.test(c)), caps.map((c) => c.slice(0, 40)).join(' / '));
+  }
+  // ★ 回归：报告 §4 的 rel 表必须是**真表格节点**，不得被导出层摊平成一行文字
+  {
+    const flat = [...window.document.querySelectorAll('#briefBody .bf-li')]
+      .some((el) => /涨跌幅超额/.test(el.textContent));
+    check('板块相对强弱：报告 §4 的表格未被摊平成一行文字（★ 真实 bug 回归）', !flat,
+      flat ? '发现被摊平的「涨跌幅超额…」文本行' : '');
   }
   // 源码层：前端不得自行相减（口径唯一出处守卫的运行时补充）
   {

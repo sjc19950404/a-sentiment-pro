@@ -1034,6 +1034,7 @@ function buildBrief(days, arc) {
   // 必须显示「未计算」，绝不能渲染成 0：0 是"与基准完全同步"的确定结论，
   // 缺失是"不知道"，二者含义相反，混同就是编造数据。
   const REL = s.industry_relative;
+  // ★ 返回的是「一行说明 + 两张并列的表」，不是一张表——原因见下方 col/tbl 注释。
   const relTbl = (() => {
     if (!REL) return li(`<span class="muted">板块相对强弱：未计算——该日无行业明细（历史回填天仅有情绪分，不含行业涨跌幅）。</span>`);
     const b = (REL.primary === 'median' ? REL.vsMedian : REL.vsIndex) || REL.vsMedian || REL.vsIndex;
@@ -1043,24 +1044,34 @@ function buildBrief(days, arc) {
     // 不新造类名——新类名在导出/打印样式里不会有定义，会退化成无色。
     const cls = (v) => (v >= 0 ? 'bf-up' : 'bf-dn');
     const scls = (v) => (v > 0 ? 'bf-up' : v < 0 ? 'bf-dn' : 'muted');
-    // 攻/防两栏并排：读者最需要的两个动作是"跟谁"和"避谁"，放在同一屏。
-    const col = (rows) => rows.map((r) => `<tr>`
+    const rowsOf = (rows, label) => rows.map((r) => `<tr>`
       + `<td>${esc(r.name)}</td>`
       + `<td class="num ${scls(r.change_pct)}">${f2(r.change_pct)}%</td>`
       + `<td class="num ${cls(r.excess)}"><b>${f2(r.excess)}</b></td>`
       + `</tr>`).join('');
-    const tbl = `<table class="bf-table rel-table" data-caption="板块相对强弱（基准 ${esc(b.baseLabel)} ${f2(b.basePct)}%）">`
-      + `<thead><tr><th>超额进攻（前 ${REL.topN}）</th><th>涨跌幅</th><th>超额</th></tr></thead>`
-      + `<tbody>${col(b.attack)}</tbody>`
-      + `<thead><tr><th>超额防御（后 ${REL.topN}）</th><th>涨跌幅</th><th>超额</th></tr></thead>`
-      + `<tbody>${col(b.defense)}</tbody></table>`;
+    // ★ 为什么是**两张表**而不是一张带双表头的表（这是一个真实 bug 的修复）：
+    //   原先写成「一个 <table> 里放两组 <thead>+<tbody>」。这有两处坏：
+    //   ① 一张表只允许一个 <thead>，第二个表头在真实浏览器里会被移位/丢弃 → 屏幕上看就"缺一块"；
+    //   ② 导出层按「所有 thead th 拼成一个表头 + 所有 tbody tr 作为数据行」解析，
+    //      于是得到"6 列表头 vs 3 单元格数据行"，而且解析器还会把它摊平成一行连续文字
+    //      （因为表格被包在 .bf-li 里，见 report.js::extractLines 的说明）。
+    //   拆成两张各自合法的表后，表头与数据行数一一对应，屏幕、导出、打印三处都正常。
+    const tbl = (caption, headLabel, rows) =>
+      `<table class="bf-table rel-table" data-caption="${esc(caption)}">`
+      + `<thead><tr><th>${esc(headLabel)}</th><th>涨跌幅</th><th>超额</th></tr></thead>`
+      + `<tbody>${rowsOf(rows)}</tbody></table>`;
+    const baseCap = `板块相对强弱（基准 ${b.baseLabel} ${f2(b.basePct)}%）`;
     const degraded = REL.degraded
       ? `<span class="muted">（⚠ ${esc(REL.degradedReason)}，主榜已降级）</span>` : '';
     const head = li(`板块相对强弱（基准 <b>${esc(b.baseLabel)}</b> ${f2(b.basePct)}%）：`
       + `<b>超额进攻</b> ${esc(b.attack[0] ? b.attack[0].name : '—')} ${b.attack[0] ? f2(b.attack[0].excess) : ''}；`
       + `<b>超额防御</b> ${esc(b.defense[0] ? b.defense[0].name : '—')} ${b.defense[0] ? f2(b.defense[0].excess) : ''}`
       + `。行业红盘中位 ${f2(REL.medianPct)}%（${REL.upCount}/${REL.total} 个行业飘红）${degraded}`);
-    return head + tbl;
+    // 两张表**裸传**（不经 li() 包裹）：导出层只把 .bf-body 的**直接子** .bf-table 认作表格，
+    // 套一层 .bf-li 会让它退化成一条被摊平的纯文本（同 连板天梯 的做法，见 sec3 的 ladderTbl）。
+    return head
+      + tbl(`${baseCap} · 超额进攻（前 ${REL.topN}）`, `超额进攻（前 ${REL.topN}）`, b.attack)
+      + tbl(`${baseCap} · 超额防御（后 ${REL.topN}）`, `超额防御（后 ${REL.topN}）`, b.defense);
   })();
 
   const sec4 = [
@@ -1241,8 +1252,16 @@ function buildBrief(days, arc) {
   // ── 模板③：文末独立折叠附录（汇总全部口径）──
   // 与各章节折叠件是**同一份口径文本**：章节处给"这一段怎么算"，附录给"全报告统一口径"。
   // 附录默认展开（它是给要核对口径的人用的，藏起来等于没有），章节折叠件默认收起。
+  //
+  // ★ modelNote 直接落成平铺段落，**不再套一层折叠件**（这是一个真实 bug 的修复）：
+  //   旧写法是 cal(modelNote).replace(/<details class="bf-caliber">/, '<div class="bf-flat">')…
+  //   ——它只换掉了外层 <details> 标签，却把里面的 <summary>🔍 点击展开查看口径</summary>
+  //   留了下来。于是文末附录里凭空多出一句"点击展开查看口径"，而它后面根本没有可折叠的东西
+  //   （外层已 open、且标签已被换成 div）。导出成文档后，这句"点击"就成了一句做不到的邀请。
+  //   现在直接按附录正文的形态输出，结构与文案都对得上。
   const appendix = `<details class="bf-caliber bf-appendix" open><summary>📚 口径附录（全报告统一口径汇总）</summary><div class="bf-cal-body">`
-    + footBody + cal(modelNote).replace(/<details class="bf-caliber">/, '<div class="bf-flat">').replace(/<\/details>$/, '</div>')
+    + footBody
+    + `<div class="bf-flat">${modelNote}</div>`
     + `</div></details>`;
 
   // ── 公文体例：报头（简报名称 + 编号，编号居右）+ 主标题（2 号小标宋，居中） ──
