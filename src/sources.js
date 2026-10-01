@@ -24,7 +24,16 @@ const r2 = (v) => Math.round(v * 100) / 100;
 const r1 = (v) => Math.round(v * 10) / 10;
 // 缺失保持 null，绝不落成 0：0 是合法行情值（一字板换手可真为 0），
 // 一旦把"没取到"写成 0，前端既看不出数据缺失，下游的 ?? 兜底也会失效（0 不是 null）。
-const num2 = (v) => (v == null || !Number.isFinite(+v) ? null : r2(+v));
+const num2 = (v) => {
+  // ⚠ 不能用 `!Number.isFinite(+v)` 单独判定：`+'' === 0`、`+[] === 0`、`+null === 0`
+  //   都是"有限数"，会把空串/空数组/布尔当成真值 0 混进统计量。本项目已四次踩同一坑。
+  //   故先拒类型与空值，再判有限性。
+  if (v == null || v === '') return null;
+  const t = typeof v;
+  if (t !== 'number' && t !== 'string') return null;
+  const n = +v;
+  return Number.isFinite(n) ? r2(n) : null;
+};
 
 // 龙虎榜未公布 → 优雅跳过（不报错、不回退）
 class LhbNotPublishedError extends Error {
@@ -635,18 +644,77 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
   return { trade_date: date, lhb, hot, topics, industry, summary, indexes, emotion, lhb_aggr };
 }
 
-// 全档分位重算（pct_rank = rank/(n-1)*100）
+// ── 分位窗口（#1）────────────────────────────────────────────────────────────
+//
+// ⚠ 这是本项目**唯一**的分位口径出处。历史上这里是「全档秩」——
+//   `vals` 取的是**整份档案**（含 T 日之后的所有天），于是：
+//     · 2025-10-09（首日，无任何历史可比）被算成 52.1 分位——"中位偏上"，
+//       而任何只看历史的窗口下它只能是 0。这是纯粹的**未来信息泄漏**；
+//     · 2026-09-30（最新日）被算成 94.2，去掉未来后是 76.3，虚高 17.9 分位点；
+//     · 全档实测：与无前视口径的差异 max 52.1、p50 6.1、均值 8.6 分位点。
+//   后果不是"分数不好看"，而是**科学性问题**：分位是"今天在历史上排第几"的陈述，
+//   用未来数据算等于用后验分布给先验问题打分——回测与实盘的可用性全部失效。
+//
+// 修正后的口径（唯一）：**只用到 T 日为止（含 T 日）的最近 RANK_WINDOW 个有效样本**。
+//   · 含 T 日**本身**：分位是"当日值在历史窗口中的位置"，当日必须在窗口内，否则
+//     "今天创新高"永远显示不出 100。这与 formula_versions 里"归一历史不含当日"是
+//     **两个不同的东西**——那里算的是"当日相对于**过去**的位置"（分位映射的原料），
+//     这里算的是"当日**在含自身窗口**里的位置"。两者都在同一批数据上，不得混用，
+//     故各自持有独立的窗口常量与注释（见 src/formula_versions.js 的 NET_HIST_WINDOW）。
+//   · 不足 RANK_MIN 个有效样本 → 返回 null（显示"未计算"）。
+//     **绝不**退化成"用更短的窗口凑合"或"填 50 冒充中位"——缺失必须显式化。
+//     代价是档案最前面 RANK_MIN-1 天没有分位（如实披露，而不是编一个数字）。
+//
+// 窗口长度 60：与 NET_HIST_WINDOW 同值同理由（约一个季度，覆盖一段完整情绪周期
+// 又能跟上量级漂移）。两者独立，不得互相 import —— 一个是"含当日"、一个是"不含当日"，
+// 共用常量会让未来某次调整其中一处时静默污染另一处。
+export const RANK_WINDOW = 60;
+export const RANK_MIN = 20;
+
+/** 分位：`vals[i]` 在「以 i 结尾的最近 window 个有效样本」中的位置 ×100。
+ *  · 有效样本 = 通过 `num` 加固的数（拒 null/''/布尔/数组/对象），null 不进窗口也不进分母。
+ *  · 平值取**首次出现位置**（与旧实现 `indexOf` 语义逐位一致，避免"改了前视偏差
+ *    顺带改了平值口径"这种混合变更——真要改平值口径必须另开一项、单独验证）。
+ *  · 窗口内样本数 < min → null。 */
+export function windowedPctRank(vals, i, window = RANK_WINDOW, min = RANK_MIN) {
+  const cur = num2(vals[i]);
+  if (cur === null) return null;
+  const win = [];
+  for (let j = Math.max(0, i - window + 1); j <= i; j++) {
+    const v = num2(vals[j]);
+    if (v !== null) win.push(v);
+  }
+  if (win.length < min) return null;
+  const s = win.slice().sort((a, b) => a - b);
+  // 平值取**首个**出现位置 —— 与旧实现 `indexOf` 语义逐位一致。
+  // 用「≤ cur 的个数」会是另一种平值口径（并列中位）；换口径必须单独开一项、
+  // 单独验证，不能混在"修前视偏差"这一项里顺带改掉（否则回归差异无法归因）。
+  const pos = s.indexOf(cur);
+  if (pos < 0) return null; // 防御性：cur 必然在 win 内，不可达则不猜
+  return r1((pos / Math.max(s.length - 1, 1)) * 100);
+}
+
+/**
+ * 全档分位重算（**无前视**）。每个交易日的分位只依赖该日及之前的数据。
+ *
+ * 幂等性（#1 的另一半要求）：本函数逐日独立、只看"到该日为止"的窗口，
+ * 因此
+ *   · 追加新的一天**不会**改变任何历史日的分位（旧实现会：新值进入分母/排序 ⇒
+ *     同一个历史日的 pct_rank 会随"后来抓了多少天"而漂移，重建档两次得两个答案）；
+ *   · 同一天重复调用结果恒定 → 归档 diff 稳定，不会每次运行都产生噪音提交。
+ * 这两点是"防重复抓 + 幂等"在**派生指标**这一层的体现：即使抓取层省了网络请求，
+ * 只要重算出的数不一样，落盘就还是不幂等。
+ */
 export function recalcRanks(days) {
-  const rank = (vals, i) => {
-    const s = [...vals].sort((a, b) => a - b);
-    return (s.indexOf(vals[i]) / Math.max(s.length - 1, 1)) * 100;
-  };
   // 分位口径与因子入参一致：净额分位按「当日榜」净额排（用全量口径排会让区间累计值参与分位）
-  const vs = days.map((d) => d.emotion.value), ns = days.map((d) => d.emotion.lhb_daily_net);
+  const vs = days.map((d) => (d.emotion ? d.emotion.value : null));
+  const ns = days.map((d) => (d.emotion ? d.emotion.lhb_daily_net : null));
   days.forEach((d, i) => {
-    d.emotion.pct_rank = r1(rank(vs, i));
-    d.emotion.net_daily_pct_rank = r1(rank(ns, i));
+    if (!d.emotion) return;
+    d.emotion.pct_rank = windowedPctRank(vs, i);
+    d.emotion.net_daily_pct_rank = windowedPctRank(ns, i);
   });
+  return days;
 }
 
 // 实时抓取：返回最新交易日 day（与快照同结构）

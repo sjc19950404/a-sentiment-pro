@@ -20,6 +20,7 @@ import { healthReport } from './health.js';
 import { buildSeatSeries, seatSeriesSummary, seatVerdict } from './seats_daily.js';
 import { buildBreadthSeries, breadthSeriesSummary } from './breadth.js';
 import { validateDay, sanitizeForFactors, dirtyArgsOf } from './dirty.js';
+import { BACKFILL_FLAG } from './backfill.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -127,6 +128,44 @@ export function runOffline(snapshotPath) {
   return archive;
 }
 
+// ── 供 recalcAll 使用的小工具（模块级，不在 forEach 里重复创建）────────────
+const r1s = (v) => (v == null || !Number.isFinite(+v) ? null : Math.round(v * 10) / 10);
+
+/** 与 src/dirty.js 的 num() 同款加固：拒 null/''/布尔/数组/对象（+[]===0 陷阱）。
+ *  用于读取**存档里已有的值**做一致性比对——若不过这道闸，空数组会被当成 0，
+ *  从而把"字段缺失"误判成"值不一致"，凭空造出一条待复核记录。 */
+const numOf = (v) => {
+  if (v == null || v === '') return null;
+  const t = typeof v;
+  if (t !== 'number' && t !== 'string') return null;
+  const n = +v;
+  return Number.isFinite(n) ? n : null;
+};
+
+/**
+ * 这一天是不是「只有回填数据」的形态？
+ *
+ * 判据与 src/backfill.js::buildBackfillDay 写下的形态一一对应：
+ *   · buildBackfillDay 不采集行业（ind_count: 0）与涨跌家数（无 up_count），
+ *     故回填天的特征就是"没有行业明细、也没有涨跌家数"。
+ *   · 用 `ind_count` 判 0/缺失而不是"数组为空"：档里 industry 是裁剪形态，
+ *     历史天可能连字段都没有；用 count 与 hasRaw 判据同源，不另立一套。
+ *
+ * ⚠ 判据必须**保守**：只要这天有行业或涨跌家数，就不标回填——宁可漏标（那天被
+ *   当作真情绪分参与回测，是可复核的偏差），也不能误标（真数据被前端过滤掉，
+ *   用户看不到，且**没有任何提示**）。这是"缺失显式化"在相反方向的同一条纪律。
+ */
+function isBackfillShaped(s) {
+  if (!s) return false;
+  const indCount = s.ind_count;
+  const hasIndustry = indCount != null && Number.isFinite(+indCount) && +indCount > 0;
+  const hasBreadth = s.up_count != null && s.down_count != null;
+  if (hasIndustry || hasBreadth) return false;
+  // 还没抓到龙虎榜原料的天也不是"回填天"——它是"空天"，两者语义不同
+  // （空天连 s_net 都没有，回填天至少有 s_net）。不把它标成回填，避免混淆。
+  return s.lhb_daily_net != null || s.lhb_all_net != null;
+}
+
 // 全档情绪重算：统一公式（computeSentiment）重跑所有交易日，再重算分位。
 // 历史天缺原始数据的因子走 proxy（posRatio/行业涨比），完全无原始数据的种子天标记 _legacy 保留原值。
 export function recalcAll(days) {
@@ -200,6 +239,16 @@ export function recalcAll(days) {
     const FKEY = { s_net20: 's_net', s_pos10: 's_pos', s_brd20: 's_brd', s_hot10: 's_hot', s_zdt15: 's_zdt', s_zbl10: 's_zbl', s_amt15: 's_amt' };
     const facPlain = {};
     for (const [wk, pk] of Object.entries(FKEY)) facPlain[pk] = sent.factors[wk];
+    // ⚠ 诊断字段的**凭据**必须在覆写 emotion 之前抓取。
+    //   下方 `d.emotion = { ...d.emotion, ... }` 会用一份新对象替换旧对象；
+    //   而 hot_count / industryCount 这两个"是否曾经采集过"的凭据就存在旧对象里，
+    //   覆写之后再读只会读到 undefined（实测踩过：hot_count 被自己的凭据判据挡掉，
+    //   导致最新日的 hot_count/topic_conc/top_topic 整组蒸发）。
+    //   教训与 #3 标脏的"时序纪律"同源：**先取证、再改写**。
+    //   取证用 `!= null`（`0` 是合法凭据——"真抓到 0 只强势股"是可能且必须保留的事实），
+    //   但拒 undefined/''/null（那才是"从没采集过"）。
+    const priorHotCount = (d.emotion && d.emotion.hot_count != null && d.emotion.hot_count !== '') ? d.emotion.hot_count : null;
+    const priorIndustryCount = (d.emotion && d.emotion.industryCount != null && d.emotion.industryCount !== '') ? d.emotion.industryCount : null;
     d.emotion = {
       ...d.emotion,
       value: sent.score,
@@ -207,8 +256,20 @@ export function recalcAll(days) {
       factors: facPlain,
       imputedRatio: sent.imputedRatio,
       missing: sent.missing,
-      // 新股修正留痕（可逐日核对 s_net 是否被动过、动了多少）
       newStock: sent.newStock,
+      // ── 回填标记（BACKFILL_FLAG）由**本重算路径统一裁定** ──────────────────
+      //   ⚠ 这是一处真实的漂移源，实测抓出来的（scripts/need_rebuild.mjs --verify 报 241/241 天变）：
+      //     旧档里有 208 天带 `emotion._backfill = true`（历史龙虎榜回填天），而本函数
+      //     只重建**数值因子**、从不写这个标记；一旦经 recalcAll 重算，标记即被静默抹掉。
+      //     后果不是"少个字段"，而是**判定翻转**：回测/前端都靠它排除"只有 s_net、
+      //     其余六因子未采集"的假情绪分天。标记丢了 → 208 天的假分混进回测样本，
+      //     每个指标一起失真，而且没有任何报错。
+      //   故在此按**原料可得性**重新裁定，与 src/backfill.js 的 buildBackfillDay 同判据：
+      //     回填天 = 无行业明细（ind_count 缺失/为 0）且无涨跌家数（up_count 缺失）。
+      //     这正是 buildBackfillDay 写下的形态（ind_count: 0，无 up_count）。
+      //   注意判据用 `hasRaw` 而非"字段存在与否"：hasRaw 已经区分了"有原始数据"与
+      //   "有壳无内容"，两者是同一件事的两个说法，不应各写一遍。
+      ...(isBackfillShaped(s) ? { [BACKFILL_FLAG]: true } : {}),
       // #3 标脏留痕：本日被剔除的因子入参 + 校验状态。
       //   只写"有情况"的天（干净天不写字段），避免给 241 天全加上噪声字段。
       //   形态：{ status, dropped: ['netBuy', ...], issues: [{field,rule,severity,reason}] }
@@ -222,6 +283,84 @@ export function recalcAll(days) {
         },
       }),
     };
+    // ── 诊断字段由重算路径刷新（防"算过就不管"的静默陈旧）──────────────────
+    //   实测抓出的第二处漂移：`emotion.pos_ratio / up_ratio / hot_count / topic_conc /
+    //   top_topic` 只在**实时抓取**（src/sources.js buildDay）时写入，
+    //   recalcAll 不碰它们。于是经重算路径回写后，最新一天这五个字段整组消失——
+    //   它们是留痕/证据链（守卫按 pos_ratio 反算校验 s_pos 用的就是 pos_ratio），
+    //   丢了之后守卫虽不报错、但**证据链断了一环**。
+    //
+    //   ⚠ 但"补字段"有一个**不可逆的伪造风险**，故必须与真实抓取严格区分：
+    //     历史天（回填/早期）的档里 `hot` 是**裁剪后的空壳**（buildBackfillDay 直接写
+    //     `hot: []`），hot_count 则从未写入过。若按"用档里现成数据重建"去补，
+    //     就会用空壳算出 `hot_count = 0` 并落盘 —— 那是**把"未采集"伪造成"今天有 0 只
+    //     强势股"**，恰恰违反本项目铁律（缺失显式化：unknown ≠ 0）。
+    //     实测验证过这个陷阱：第一版补字段把首日补成 hot_count=0，而真实值是"未采集"。
+    //   故补字段必须带**证据门槛**：只有当原料在档里是**真值**时才补，否则**保持缺失**。
+    //     · pos_ratio：net_pos/net_neg 是正式链路的真值（回填天也有）→ 可补
+    //     · hot_count / topic_conc / top_topic：**只有**当日真实抓过 hot 才有意义 →
+    //       以 `emotion.hot_count` 曾存在或 `summary.hot_count` 存在为凭据，否则跳过
+    //     · up_ratio：需 industry 明细 + ind_up，两者齐备才补
+    //
+    //   ⚠⚠ 第三处发现（**不是漂移，是既有数据不可复现**）——
+    //     实测枚举了四种可能口径，**没有任何一种能从存档数据反推出 pos_ratio**：
+    //       全部记录笔数比 1/33、每股一笔(|额|最大) 5/33、金额比 5/33、去重行数比 1/33。
+    //     即：存档里的 `emotion.pos_ratio` 与当天存档的 `summary.net_pos/net_neg`
+    //     **不自洽**（例：2026-08-14 存 52.7，而 net_pos=33/net_neg=34 → 49.25）。
+    //     它大概是某次已废弃口径的遗留产物，但**原始输入已不可考**。
+    //     处置（关键，别改成"顺手覆盖"）：
+    //       · 若直接把重算值写进去 → 30 个历史日的 `pos_ratio` 会被静默改写，
+    //         而这 30 天正是回填期数据，**没人能判断哪个才是对的**。那是拿一次
+    //         "修复"去掩盖一次"数据完整性问题"，且不可逆（原值没了）。
+    //       · 故：**现存的存疑值原样保留**，只在重算值与之不一致时打留痕
+    //         `pos_ratio_inconsistent`，交给报告/人工复核。这是"缺失显式化"的延伸：
+    //         **不一致也要显式化**，不能靠覆盖来消灭症状。
+    //       · 只在原本没有该字段时**补**（补的是可复现值，有据可依）。
+    if (s.net_pos != null && s.net_neg != null && (s.net_pos + s.net_neg) > 0) {
+      const recomputed = r1s((s.net_pos / (s.net_pos + s.net_neg)) * 100);
+      const stored = (d.emotion && d.emotion.pos_ratio != null) ? numOf(d.emotion.pos_ratio) : null;
+      if (stored == null) {
+        d.emotion.pos_ratio = recomputed;
+      } else if (recomputed != null && Math.abs(stored - recomputed) > 0.05) {
+        // 保留原值 + 留痕。留痕里同时给出"存档值"与"由存档输入重算的值"，
+        // 复核者不必自己去翻 net_pos/net_neg 就能判断。
+        d.emotion.pos_ratio_stale = {
+          stored,
+          recomputed,
+          inputs: { net_pos: s.net_pos, net_neg: s.net_neg },
+          note: '存档 pos_ratio 与由 summary.net_pos/net_neg 重算的值不一致，且原口径不可复现；'
+            + '原值已保留未改写，此处仅留痕待人工复核。',
+        };
+      }
+    }
+    if (Array.isArray(d.industry) && d.industry.length && s.ind_up != null) {
+      d.emotion.up_ratio = r1s((s.ind_up / d.industry.length) * 100);
+    }
+    // 强势股相关三字段：凭据 = 这一天**确实抓过**热榜（priorHotCount 非 null）。
+    //   这是唯一能区分"真 0 只"与"未采集"的信息；绝不看 d.hot.length 反推
+    //   （回填天的 d.hot 是空壳，反推会得出"今天有 0 只强势股"的伪造结论）。
+    if (priorHotCount != null && Array.isArray(d.hot)) {
+      d.emotion.hot_count = d.hot.length;
+      const top = Array.isArray(d.topics) && d.topics.length ? d.topics[0] : null;
+      if (top && top.count != null) {
+        d.emotion.topic_conc = r1s((top.count / (d.hot.length || 1)) * 100);
+      }
+      if (top && top.tag != null) d.emotion.top_topic = top.tag;
+    }
+    // ── 重算路径必须与在线抓取**同字段集**：industryCount 是 buildDay 写的诊断字段，
+    //   重算路径漏写会让它整组消失（实测：最新日 industryCount 丢失）。
+    //   ⚠ 只在**真抓到行业明细**时写（ind_count > 0）。回填天 buildDay 从未运行过，
+    //     给它补一个 industryCount: 0 等于**把"未采集"伪造成"采集到 0 个行业"**——
+    //     正是本项目反复禁止的那件事。判据取 ind_count > 0，不用"字段是否存在"，
+    //     但一旦这天曾经有过真值（priorIndustryCount），本轮的 0 就是"真的掉到 0"，
+    //     此时**保留真值 0** 而不是删字段（否则会把一次真实退化伪装成"未采集"）。
+    if (priorIndustryCount != null && !(s.ind_count > 0)) {
+      d.emotion.industryCount = 0;
+    } else if (s.ind_count != null && Number.isFinite(+s.ind_count) && +s.ind_count > 0) {
+      d.emotion.industryCount = +s.ind_count;
+    } else {
+      delete d.emotion.industryCount;
+    }
   });
   // 板块相对强弱：与情绪分一样属于**派生指标**，必须在每次写档时重算——
   // 否则新增口径（如换基准、改 topN）对存量天永不生效，只能靠手工回填。
