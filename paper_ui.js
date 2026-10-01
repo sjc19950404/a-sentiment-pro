@@ -20,6 +20,9 @@ import {
 // 池子里其余 1200+ 只票取不到价，界面只能提示「无真实行情，不可下单」。
 // 要按实时真实价格买卖，就必须有一个能查全市场任意 A 股当前价的来源。
 import { fetchQuotes, priceKind, inTradingSession, normalizeCodes } from './src/quote.js';
+// 研判推荐引擎（把市场研判结论落到具体个股）。
+// 规则同样只有一个出处：src/picks.js。本文件只负责渲染、以及把用户点击转成下单区输入。
+import { recommendPicks, PICK_TOP_N, SCORE_WEIGHTS } from './src/picks.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
@@ -44,6 +47,7 @@ let LIVE_AT = null;       // 最近一次实时抓取时刻
 let LIVE_FAIL = [];       // 最近一次抓取失败的代码
 let LIVE_BUSY = false;    // 抓取中（防重复请求）
 let LAST_DATE = null;     // 存档最新交易日
+let ARC_DAYS = [];        // 存档全部交易日（研判推荐用：取最后一天算推荐，取序列算情绪分）
 let ORDER = { side: 'buy', code: '', qty: 0 };
 let HIST = { view: 'trade' };
 
@@ -166,6 +170,7 @@ async function boot() {
     UNI = uni.symbols || {};
     UNI_META = uni.meta || {};
     const days = arc.all_days || [];
+    ARC_DAYS = days;
     const last = days[days.length - 1] || {};
     LAST_DATE = last.trade_date || null;
     QMAP = quotesFromDay(last);
@@ -274,6 +279,7 @@ function lookup(code) {
 
 function renderAllPaper() {
   renderStats();
+  renderPicks();
   renderPositions();
   renderPending();
   renderHist();
@@ -669,6 +675,165 @@ function syncOrderInputs() {
     b.classList.toggle('on', on);
     b.setAttribute('aria-selected', on ? 'true' : 'false');
   });
+}
+
+// ────────────────────────── 研判推荐（小模块） ──────────────────────────
+
+/**
+ * 当前推荐结果（缓存，供抽屉与渲染共用，避免两处各算一遍导致数字不一致）。
+ * 每天都重算——推荐是「当日」的，不是「永久」的。
+ */
+let PICKS = null;
+
+function currentPicks() {
+  const day = ARC_DAYS[ARC_DAYS.length - 1];
+  if (!day) return null;
+  // 情绪分取当档（与研判报告、回测引擎同源），不是页面当前实时值——推荐必须可复现
+  const score = (day.emotion && day.emotion.value != null) ? day.emotion.value : null;
+  if (!PICKS || PICKS.asOf !== (day.trade_date || null)) {
+    PICKS = recommendPicks(day, { emotionScore: score, topN: PICK_TOP_N });
+  }
+  return PICKS;
+}
+
+const TONE_CLS = { up: 'hl', warn: 'bf-warn', muted: 'muted' };
+
+function renderPicks() {
+  const meta = $('picksMeta');
+  const box = $('picksList');
+  const note = $('picksNote');
+  if (!box) return;
+
+  const r = currentPicks();
+  if (!r) {
+    // 存档没就绪：如实说明，不给假数据
+    if (meta) meta.innerHTML = '<span class="muted">数据未就绪</span>';
+    box.innerHTML = '<div class="picks-empty muted">等待行情存档加载…</div>';
+    if (note) note.textContent = '';
+    return;
+  }
+
+  if (meta) {
+    const tierTxt = r.tier
+      ? `<span class="pk-tier ${r.tier.allowNew ? '' : 'warn'}">${esc(r.tier.label)}</span>`
+      : '<span class="pk-tier warn">档位未知</span>';
+    meta.innerHTML = `数据日期 <b>${esc(r.asOf || '—')}</b> · 情绪分 <b>${r.score == null ? '—' : r.score.toFixed(1)}</b>`
+      + ` → 市场档位 ${tierTxt} · 候选池 <b>${r.pool}</b> 只（当日榜净买为正 / 涨停）`;
+  }
+
+  if (!r.picks.length) {
+    box.innerHTML = `<div class="picks-empty muted">${esc(r.note.text)}</div>`;
+  } else {
+    box.innerHTML = r.picks.map((p, i) => {
+      const chg = p.changePct == null ? null : +p.changePct;
+      const chgCls = chg == null ? 'muted' : (chg > 0 ? 'hl' : chg < 0 ? 'hl-dn' : 'muted');
+      return `<div class="pk-row" data-act="pick" data-code="${esc(p.code)}" tabindex="0" role="button"
+          title="点击查看 ${esc(p.name || p.code)} 的详情">
+        <span class="pk-rank${i === 0 ? ' top' : ''}">${i + 1}</span>
+        <div class="pk-main">
+          <div class="pk-line1">
+            <b class="pk-name">${esc(p.name || p.code)}</b>
+            <span class="pk-code muted">${esc(p.code)}</span>
+            ${chg == null ? '' : `<span class="pk-chg ${chgCls}">${pct(chg)}</span>`}
+            <span class="pk-score" title="评分：资金 40% / 连板 25% / 题材 20% / 流动性 15%">${p.score.toFixed(1)}</span>
+          </div>
+          <div class="pk-reasons">${p.reasons.map((x) => `<span class="pk-tag ${TONE_CLS[x.tone] || 'muted'}">${esc(x.text)}</span>`).join('')}</div>
+          ${p.risks.length ? `<div class="pk-risks muted">风险：${esc(p.risks.join('；'))}</div>` : ''}
+        </div>
+        <div class="pk-actions">
+          <span class="pk-w" title="建议仓位（占总资产）">${p.suggestWeight > 0 ? (p.suggestWeight * 100).toFixed(1) + '%' : '观察'}</span>
+          <button class="mini pk-buy" type="button" data-act="pick-fill" data-code="${esc(p.code)}"
+            title="把该股代码填入下方下单区">填入下单</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  if (note) {
+    const n = r.note;
+    note.innerHTML = `<span class="${n.level === 'blocked' ? 'bf-warn' : 'muted'}">${esc(n.text)}</span>`
+      // 权重一律从引擎常量取，避免 UI 文案与引擎权重悄悄漂移
+      + ` 评分维度：龙虎榜当日净买 ${Math.round(SCORE_WEIGHTS.fund * 100)}% · 连板高度 ${Math.round(SCORE_WEIGHTS.streak * 100)}% ·`
+      + ` 主线题材 ${Math.round(SCORE_WEIGHTS.theme * 100)}% · 流动性 ${Math.round(SCORE_WEIGHTS.liquidity * 100)}%；`
+      + `数据取自当日榜（区间累计榜与新股已剔除）。推荐由规则引擎按当档数据生成，<b>不构成投资建议</b>，`
+      + `仅供模拟盘练习参考；买卖由你自行判断。`;
+  }
+}
+
+/** 把推荐股填入下单区（不自动提交——绝不替用户下单） */
+function fillPickToOrder(code) {
+  const c = String(code || '');
+  if (!c) return;
+  ORDER = { ...ORDER, code: c, qty: 0, side: 'buy' };
+  syncOrderInputs();
+  renderOrderForm();
+  renderQuick();
+  // 输入框的实时抓价逻辑挂在 input 事件上；这里用程序赋值不会触发，故显式抓一次
+  if (!LIVEQ[c] && !LIVE_BUSY) {
+    msg(`正在获取 ${c} 实时行情…`, 'ok');
+    refreshLive([c]).then((r) => {
+      renderOrderForm();
+      renderQuick();
+      msg(r.ok ? `已填入 ${c} ${LIVEQ[c]?.name || ''}，请选择仓位档位或填数量后提交` : `${c} 取不到行情，请核对代码`, r.ok ? 'ok' : 'err');
+    });
+  } else {
+    msg(`已填入 ${c} ${LIVEQ[c]?.name || ''}，请选择仓位档位或填数量后提交`, 'ok');
+  }
+  // 滚到下单区并聚焦数量，减少一次滚动操作
+  $('poQty')?.focus?.();
+}
+
+/** 推荐个股的详情抽屉（含入选理由与风险，便于「点击查看个股信息」） */
+function pickDetail(code) {
+  const r = currentPicks();
+  const p = r && r.picks.find((x) => x.code === code);
+  if (!p) return null;
+  const info = lookup(code);
+  const netTxt = (p.netWan == null || !Number.isFinite(+p.netWan))
+    ? '<span class="muted">无当日龙虎榜净买记录</span>'
+    : `<span class="${p.netWan > 0 ? 'hl' : 'hl-dn'}">${(p.netWan / 1e4).toFixed(2)} 亿</span>`;
+  const parts = p.scoreParts || {};
+  // 注意：dwKv 收的是 [键, 值] 二元组数组（内部对键做 esc、对值按 HTML 处理）；
+  // 早先误把拼好的 HTML 字符串当二元组传进去，字符串被逐字符解构 → 渲染成 "<d<d<d"。
+  const bar = (label, w, v) => [
+    `${label}（权重 ${Math.round(w * 100)}%）`,
+    `${(v * 100).toFixed(0)} 分 <span class="muted">→ 贡献 ${(w * v * 100).toFixed(1)}</span>`,
+  ];
+  return {
+    title: `${esc(p.name || code)}　${esc(code)}`,
+    sub: `研判推荐第 ${r.picks.indexOf(p) + 1} 位 · 综合评分 ${p.score.toFixed(1)} · 数据日期 ${esc(r.asOf || '—')}`,
+    body: dwSection('为什么入选', dwKv([
+      ['龙虎榜当日净买', netTxt],
+      ['涨停 / 连板', p.isZt ? (p.streak > 1 ? `涨停（${p.streak} 连板）` : '涨停') : '<span class="muted">未涨停</span>'],
+      ['主线题材', p.mainThemeMatch === 'exact' ? '属当日主线题材'
+        : p.mainThemeMatch === 'stem' ? '<span class="bf-warn">与主线题材同源（词根匹配，非精确命中）</span>'
+          : '<span class="muted">不在当日主线内</span>'],
+      ['所属题材', p.themes && p.themes.length ? esc(p.themes.join('、')) : '<span class="muted">—</span>'],
+      ['换手率', p.turnoverPct == null ? '—' : `${p.turnoverPct}%`],
+      ['现价（当档收盘）', p.close == null ? '—' : `${p.close} 元`],
+    ]))
+      + dwSection('评分构成（可核验）', dwKv([
+        bar('资金面 · 龙虎榜净买', SCORE_WEIGHTS.fund, parts.fund || 0),
+        bar('连板高度', SCORE_WEIGHTS.streak, parts.streak || 0),
+        bar('主线题材', SCORE_WEIGHTS.theme, parts.theme || 0),
+        bar('流动性 · 占全榜比重', SCORE_WEIGHTS.liquidity, parts.liquidity || 0),
+      ]) + '<div class="dw-note">每一维都对应一个可核验的原始字段（净买额 / 连板数 / 题材归属 / 成交额占比）；'
+      + '权重和为 1，故评分可跨日比较。</div>')
+      + dwSection('风险提示', p.risks.length
+        ? `<div class="dw-note">${p.risks.map((x) => '· ' + esc(x)).join('<br>')}</div>`
+        : '<div class="dw-empty">按当前规则未命中风险特征（不代表无风险）</div>')
+      + dwSection('仓位建议', dwKv([
+        ['市场档位', r.tier ? `${esc(r.tier.label)}（建议总仓位 ${Math.round(r.tier.pos * 100)}%）` : '—'],
+        ['本股建议', p.suggestWeight > 0
+          ? `${(p.suggestWeight * 100).toFixed(1)}% 总资产（${num(p.suggestWeight * accountStats(ACCT).total)} 元）`
+          : '<span class="bf-warn">当前档位不建议新建仓，仅供观察</span>'],
+      ]) + '<div class="dw-note">个股仓位由「市场档位 ÷ 推荐数」均分得出，单只上限 20%——'
+      + '系统不假装能给出个股间的差异化权重。</div>')
+      + dwSection('实时行情', info
+        ? dwKv([['最新价', `${num(info.price)} 元`], ['涨跌幅', `<span class="${(info.changePct || 0) >= 0 ? 'hl' : 'hl-dn'}">${pct(info.changePct)}</span>`], ['价格来源', esc(info.srcLabel || '—')]])
+        : '<div class="dw-empty">取不到实时行情</div>')
+      + `<div class="dw-note">本推荐由规则引擎按当档数据自动生成，<b>不构成投资建议</b>。是否买卖、买多少，由你自行判断。</div>`,
+  };
 }
 
 // ────────────────────────── 详情抽屉（复用 app.js 的 #drawer） ──────────────────────────
@@ -1099,6 +1264,9 @@ document.addEventListener('click', (e) => {
   if (act === 'ppend') { openPaperDrawer(pendingDetail(+el.dataset.id)); return; }
   if (act === 'phist') { openPaperDrawer(histDetail(el.dataset.view, +el.dataset.i)); return; }
   if (act === 'pperf') { openPaperDrawer(perfDetail(el.dataset.k)); return; }
+  // 研判推荐：点「填入下单」只填不提交（绝不替用户下单）；点整行看详情
+  if (act === 'pick-fill') { e.stopPropagation(); fillPickToOrder(el.dataset.code); return; }
+  if (act === 'pick') { openPaperDrawer(pickDetail(el.dataset.code)); return; }
 });
 
 // 输入满 6 位就抓实时行情（防抖 250ms，避免边打字边发请求）。

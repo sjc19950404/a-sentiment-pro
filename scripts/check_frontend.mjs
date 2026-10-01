@@ -602,7 +602,10 @@ escClose();
   const uiNoImport = readFileSync(join(ROOT, 'paper_ui.js'), 'utf8')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/paper\.js';/, '')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/quote\.js';/, '')
+    .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/picks\.js';/, '')
     .replace(/^export\s+/gm, '');
+  // src/picks.js（研判推荐引擎）同样是 ESM 纯函数，零依赖，剥掉 export 即可并入同一作用域。
+  const picksNoExport = readFileSync(join(ROOT, 'src/picks.js'), 'utf8').replace(/^export\s+/gm, '');
   // quoteSymbol：与 src/sources.js 同口径（沪 6/9 开头、深 0/3、北 4/8/920）
   const quoteSymbolShim = `function quoteSymbol(code){
     const c = String(code || '').trim();
@@ -612,7 +615,7 @@ escClose();
     return null;
   }`;
   try {
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${engineNoExport}\n;(function(){\n${uiNoImport}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${picksNoExport}\n${engineNoExport}\n;(function(){\n${uiNoImport}\n})();`);
   } catch (e) {
     check('模拟交易：paper_ui.js 在 jsdom 中可执行', false, e.message);
   }
@@ -804,7 +807,7 @@ escClose();
     let threw = null;
     try {
       // 重新执行一遍 paper_ui.js：boot() 会 load() 到上面这份种子 → renderAllPaper()
-      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${engineNoExport}\n;(function(){\n${uiNoImport}\n})();`);
+      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${picksNoExport}\n${engineNoExport}\n;(function(){\n${uiNoImport}\n})();`);
       await new Promise((r) => setTimeout(r, 800));
     } catch (e) { threw = e; }
     check('模拟交易·持仓：带 pxStale 的种子账本渲染不抛错',
@@ -813,6 +816,65 @@ escClose();
       !/undefined/.test(txt('paperPosNote')), txt('paperPosNote').slice(0, 100));
     // 收尾：清掉种子，避免影响后续用例
     window.localStorage.removeItem(seedKey);
+  }
+
+  // ── 研判推荐（模拟交易区小模块）：由系统研判生成、可填入下单、可点看详情 ──
+  {
+    check('模拟交易·推荐：推荐卡片存在（列表 + 元信息 + 脚注三件套）',
+      !!$('picksList') && !!$('picksMeta') && !!$('picksNote'),
+      [$('picksList') && 'list', $('picksMeta') && 'meta', $('picksNote') && 'note'].filter(Boolean).join('+') || '缺失');
+
+    const rows = [...($('picksList')?.querySelectorAll('.pk-row') || [])];
+    check('模拟交易·推荐：渲染出推荐个股行（含排名/名称/代码）', rows.length > 0, `${rows.length} 行`);
+
+    const metaTxt = txt('picksMeta');
+    check('模拟交易·推荐：元信息写明数据日期与市场档位',
+      /数据日期/.test(metaTxt) && /市场档位|档位/.test(metaTxt) && /情绪分/.test(metaTxt),
+      metaTxt.slice(0, 90));
+
+    // 每行必须给出理由（不能只给代码了事）
+    const withReasons = rows.filter((r) => (r.querySelectorAll('.pk-tag') || []).length > 0).length;
+    check('模拟交易·推荐：每只推荐股都给出可核验的入选理由',
+      rows.length > 0 && withReasons === rows.length, `${withReasons}/${rows.length} 行有理由`);
+
+    // 每行必须有风险或说明；且页面不得出现空泛措辞
+    const anyRisk = rows.some((r) => r.querySelector('.pk-risks'));
+    check('模拟交易·推荐：给出具体风险提示（不用「注意风险」这类空话）',
+      anyRisk && !/注意风险(?!，)/.test(txt('picksList')),
+      anyRisk ? '有风险行' : '无风险行');
+
+    // 评分徽章存在且是数字
+    const scoreTxt = rows[0]?.querySelector('.pk-score')?.textContent?.trim() || '';
+    check('模拟交易·推荐：显示综合评分', /^\d+(\.\d+)?$/.test(scoreTxt), scoreTxt);
+
+    // 一键填入下单区：点「填入下单」后代码框被填上该股代码，且不自动提交
+    const firstCode = rows[0]?.dataset.code;
+    const fillBtn = rows[0]?.querySelector('button[data-act="pick-fill"]');
+    check('模拟交易·推荐：每行有「填入下单」按钮', !!fillBtn, fillBtn ? '有' : '缺失');
+    if (fillBtn) {
+      const pendBefore = ($('paperPendTable')?.querySelectorAll('tbody tr') || []).length;
+      clickEl(fillBtn);
+      await new Promise((r) => setTimeout(r, 200));
+      check('模拟交易·推荐：点「填入下单」把代码填入下单区',
+        $('poCode').value === firstCode, `poCode=${$('poCode').value} 期望=${firstCode}`);
+      const pendAfter = ($('paperPendTable')?.querySelectorAll('tbody tr') || []).length;
+      check('模拟交易·推荐：填入不自动下单（委托数不变）',
+        pendAfter === pendBefore, `${pendBefore} → ${pendAfter}`);
+    }
+
+    // 点击整行 → 打开详情抽屉，且含「为什么入选」「评分构成」「风险」
+    clickEl(rows[0]);
+    await new Promise((r) => setTimeout(r, 120));
+    const dw = txt('dwBody');
+    check('模拟交易·推荐：点推荐行打开个股详情抽屉', drawerOpen() && dw.length > 60, txt('dwTitle'));
+    check('模拟交易·推荐：详情含「为什么入选」「评分构成」「风险提示」三段',
+      /为什么入选/.test(dw) && /评分构成/.test(dw) && /风险提示/.test(dw),
+      dw.slice(0, 60));
+    escClose();
+
+    // 脚注必须写明不构成投资建议（合规底线）
+    check('模拟交易·推荐：脚注声明不构成投资建议',
+      /不构成投资建议/.test(txt('picksNote')), txt('picksNote').slice(-60));
   }
 
   // 记录页签：成交 / 全部委托（含被拒）切换
