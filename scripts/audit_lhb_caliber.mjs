@@ -559,6 +559,58 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
   }
 }
 
+// ── B7. 报告出厂质检闸门的守卫（用户要求「自动化审计后再出现」）───────────────
+// 闸门本身也必须被守卫，否则它可能被"优化"掉——
+//   · 引擎文件必须存在且是**纯函数**（不得重算指标）；
+//   · 闸门必须真的在 renderBrief 里（而不是只写了个函数没人调）；
+//   · 不通过时必须**不渲染报告**（清空 #briefBody 而不是照样写进去）；
+//   · 下游导出/复制/打印必须共享同一把锁（guardAudited），漏一个就是漏一个口子；
+//   · 期望章节数必须是**人工声明的常量**（从 DOM 数就永远发现不了缺段）。
+{
+  const auditPath = path.join('src', 'report_audit.js');
+  if (!existsSync(path.join(ROOT, auditPath))) {
+    check('质检闸门：引擎 src/report_audit.js 存在', false, '文件缺失');
+  } else {
+    const asrc = readFileSync(path.join(ROOT, auditPath), 'utf8');
+    const acode = asrc.split('\n').filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln)).join('\n');
+    check('质检闸门：引擎存在且导出 auditReport',
+      /export function auditReport/.test(asrc), '');
+    // 与导出层同一条纪律：质检只校验结构，绝不重算指标
+    const RECOMPUTE2 = [/Math\.tanh/, /scoreEmotion|scorePnl|scoreTheme|scoreBreadth/, /clamp100/, /weights\s*\./];
+    const rh = RECOMPUTE2.filter((re) => re.test(acode)).map((re) => re.source);
+    check('质检闸门：引擎不重算任何指标（只校验结构）', rh.length === 0, rh.join(' ; '));
+    check('质检闸门：期望章节数是人工声明的常量（从 DOM 数就发现不了缺段）',
+      /export const EXPECTED_SECTIONS = \d+;/.test(asrc), '');
+
+    const appRaw = readFileSync('app.js', 'utf8');
+    // 闸门必须真的接在渲染链路上：renderBrief 函数体内要有 auditReport 调用。
+    // 判据取「函数起点到下一个顶层 function 之间」而不是固定字符窗口——
+    // 固定窗口会被函数里的长注释撑爆（本项目就踩过：注释一多，1600 字符不够）。
+    const rfStart = appRaw.indexOf('function renderBrief(');
+    const rfEnd = rfStart < 0 ? -1 : appRaw.indexOf('\nfunction ', rfStart + 10);
+    const rfBody = rfStart < 0 ? '' : appRaw.slice(rfStart, rfEnd < 0 ? rfStart + 6000 : rfEnd);
+    check('质检闸门：真的接在 renderBrief 里（不是写了个没人调的引擎）',
+      /\.auditReport\(/.test(rfBody),
+      rfStart < 0 ? '找不到 renderBrief' : (rfBody ? '' : 'renderBrief 函数体为空'));
+    // 不通过必须不渲染：**在 renderBrief 函数体内**清空 #briefBody 并挂失败面板。
+    // 判据取「归一化行尾后三句相邻」——直接写 \s*\n\s* 会被贪婪的 \s* 吃掉换行导致匹配失败
+    // （本项目踩过：文件是 CRLF，正则里 \s* 与 \n 打架，正反向都判为通过）。
+    // 另外必须限定在 renderBrief 内且三句相邻：renderBrief 里另有一个正常分支
+    // （数据未就绪）也写 body.innerHTML = ''，松判据在闸门被拆掉后依然为真。
+    const rfNorm = rfBody.replace(/\r\n/g, '\n');
+    check('质检闸门：不通过时不渲染报告（三件事相邻且在同一段代码里）',
+      /body\.innerHTML = '';\n\s*body\.classList\.add\('audit-blocked'\);\n\s*body\.appendChild\(renderAuditPanel\(result\)\);/.test(rfNorm),
+      'renderBrief 内未找到「清空 → 标记 audit-blocked → 挂失败面板」相邻三句');
+    // 下游三入口必须共享同一把锁——漏一个就等于没拦
+    const guards = (appRaw.match(/if \(!guardAudited\(btn\)\) return;/g) || []).length;
+    check('质检闸门：复制/导出/打印三入口共享同一把锁（漏一个就是漏一个口子）',
+      guards === 3, `实际 ${guards} 处 guardAudited`);
+    // 引擎未挂载与数据未就绪必须与"不合格"区分开（否则会把正常中间态报成质检失败）
+    check('质检闸门：区分「引擎未就绪 / 数据未就绪 / 报告不合格」三种状态',
+      /audit-engine-unavailable/.test(appRaw) && /data-not-ready/.test(appRaw), '');
+  }
+}
+
 // ── C. 结论 ────────────────────────────────────────────────────────────────
 if (warns.length) for (const w of warns) console.log(`⚠ ${w}`);
 if (fails.length) {

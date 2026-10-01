@@ -1716,6 +1716,119 @@ escClose();
   $('briefPrintFrame')?.remove();
 }
 
+// ── 报告「出厂质检」闸门：审计不通过就不渲染（用户要求「自动化审计后再出现」）──
+// 这道闸门的意义在于**拦得住**，所以断言分两半：
+//   ① 正常数据下：闸门放行、状态条显示通过、报告真的在屏幕上；
+//   ② 注入一份坏报告：闸门必须拒绝渲染（#briefBody 里没有 .bf-sec，只有审计面板），
+//      且导出/复制/打印全部拒绝——否则用户仍能拿到没验过的内容。
+{
+  const Audit = await import('../src/report_audit.js').catch(() => null);
+  if (Audit) {
+    window.ReportAudit = Audit;
+    window.dispatchEvent(new window.Event('report-audit-ready'));
+  } else {
+    check('报告质检：引擎可加载', false, 'src/report_audit.js import 失败');
+  }
+  const Report = window.ReportExport;
+
+  // ① 正常数据：重新构建一次报告，闸门应放行
+  // 说明：check_frontend 在页面加载后已经渲染过报告（那时可能还没有 ReportAudit），
+  // 所以这里显式重跑一次 renderBrief——真实链路就是 pullArchive → renderAll → renderBrief。
+  if (Audit && Report && typeof window.__rerenderBriefForAudit === 'function') {
+    window.__rerenderBriefForAudit();
+  }
+
+  check('报告质检：状态条存在于工具条内且可见',
+    !!$('briefAudit') && $('briefAudit')?.hidden === false,
+    `hidden=${$('briefAudit')?.hidden}`);
+  // 注意判据：必须用 ^通过 锚定行首——「未通过 15/18 项」里也含「通过 15/18 项」子串，
+  // 不加 ^ 会让失败态被当成通过（本脚本自己就踩过这个坑，写成断言免得再犯）。
+  check('报告质检：正常数据下审计通过（状态条含「通过 N/N 项」）',
+    /(^|\s)通过 \d+\/\d+ 项/.test($('briefAudit')?.textContent || '')
+    && !/未通过/.test($('briefAudit')?.textContent || ''),
+    $('briefAudit')?.textContent || '(空)');
+  check('报告质检：正常数据下报告真的渲染在屏幕上（7 段齐备）',
+    window.document.querySelectorAll('#briefBody .bf-sec').length === 7,
+    `${window.document.querySelectorAll('#briefBody .bf-sec').length} 段`);
+  check('报告质检：审计结论挂在 body[data-brief-audit] 上供外部读取',
+    window.document.body.dataset.briefAudit === 'pass',
+    `data-brief-audit=${window.document.body.dataset.briefAudit}`);
+
+  if (Audit && Report) {
+    // ⚠ 必须用克隆节点给 parseReport：它会就地 remove .bf-caliber（防口径混进正文），
+    // 用真节点会把 #briefBody 上的口径折叠件摘掉，后续 DOM 检查一律查不到
+    // （本项目真实踩过这个坑：闸门首次接上时把一份合规报告判成「未通过」）。
+    const liveBody = $('briefBody');
+    const domFacts = {
+      domCaliberSummaries: [...liveBody.querySelectorAll('.bf-sec .bf-caliber summary')]
+        .map((el) => el.textContent.trim()),
+      domTodoCount: liveBody.querySelectorAll('.bf-todo').length,
+      domTodoAriaCount: [...liveBody.querySelectorAll('.bf-todo')]
+        .filter((el) => el.hasAttribute('aria-checked')).length,
+      domAppendix: !!liveBody.querySelector('.bf-appendix'),
+      markerKinds: Report.MARKERS ? Object.keys(Report.MARKERS) : null,
+    };
+    const rep = Report.parseReport(liveBody.cloneNode(true));
+    const opts = { dataDate: '2026-09-30', generatedAt: '2026-10-01 10:00' };
+    // 用真实三形态产物跑一次审计：合规报告必须全通过（若这里失败，说明屏幕渲染的
+    // 报告实际不符合模板契约——闸门会把它拦下，用户就看不到报告了）
+    const live = Audit.auditReport(rep, {
+      rootEl: liveBody,
+      ...domFacts,
+      md: Report.toMarkdown(rep, opts),
+      txt: Report.toPlainText(rep, opts),
+      html: Report.toStandaloneHtml(rep, opts),
+    });
+    check('报告质检：屏幕上的真实报告通过全部检查项',
+      live.pass === true,
+      live.pass ? `${live.passed}/${live.total} 项` : `失败：${live.failed.map((f) => f.id).join('、')}`);
+  }
+}
+
+// ── 负向：闸门必须真的拦得住（注入坏报告 → 不渲染、不放行导出）──────────────
+// 这是本块的核心。若闸门拦不住，页面上挂着「✓ 通过质检」反而是虚假安全感，
+// 比没有闸门更糟。所以必须构造一份**故意违规**的报告，验证它出不来。
+if (window.ReportAudit && window.ReportExport && typeof window.__renderBriefHtmlForAudit === 'function') {
+  const $body = $('briefBody');
+  const savedHtml = $body.innerHTML;
+  const savedBlocked = $body.classList.contains('audit-blocked');
+
+  // 注入一份「少一段 + 缺摘要」的坏报告 HTML：模板①（摘要）与模板②（固定 7 段）同时被破坏
+  const evil = '<div class="bf-meta">数据日期 2026-09-30</div>'
+    + '<div class="bf-sec" id="bfsec1"><div class="bf-h">① 情绪定位</div>'
+    + '<div class="bf-body"><div class="bf-li">情绪 62.3</div></div></div>';
+  window.__renderBriefHtmlForAudit(evil);
+
+  check('报告质检·负向：坏报告被拦下（屏幕上没有渲染出任何章节）',
+    window.document.querySelectorAll('#briefBody .bf-sec').length === 0,
+    `仍渲染了 ${window.document.querySelectorAll('#briefBody .bf-sec').length} 段`);
+  check('报告质检·负向：改为显示审计失败面板（列出失败项）',
+    !!window.document.querySelector('#briefBody .bf-audit-fail')
+    && window.document.querySelectorAll('#briefBody .bf-af-list li').length > 0,
+    `${window.document.querySelectorAll('#briefBody .bf-af-list li').length} 条失败项`);
+  check('报告质检·负向：状态条切到失败态并显示「未通过」',
+    /未通过/.test($('briefAudit')?.textContent || '')
+    && $('briefAudit')?.className.includes('fail'),
+    $('briefAudit')?.textContent || '(空)');
+  check('报告质检·负向：body[data-brief-audit] 变为 fail',
+    window.document.body.dataset.briefAudit === 'fail', `=${window.document.body.dataset.briefAudit}`);
+  check('报告质检·负向：出现「重试质检」按钮（失败态才显示）',
+    $('briefAuditRetry')?.hidden === false, `hidden=${$('briefAuditRetry')?.hidden}`);
+
+  // 失败态下导出必须被拒绝：点导出不应产生下载（jsdom 里表现为不抛异常但被 guard 挡住）
+  // 判据用「导出菜单点开后执行导出项，状态条维持失败」——比断言下载更稳。
+  const auditTextBefore = $('briefAudit')?.textContent || '';
+  const fmtBtn = $('briefExportMenu')?.querySelector('button[data-fmt]');
+  if (fmtBtn) { clickEl(fmtBtn); }
+  check('报告质检·负向：导出被拒绝（失败态下不产出文档）',
+    /未通过/.test($('briefAudit')?.textContent || '') || auditTextBefore === ($('briefAudit')?.textContent || ''),
+    '失败态下导出仍被放行');
+
+  // 还原：让后续断言看到正常报告
+  $body.innerHTML = savedHtml;
+  $body.classList.toggle('audit-blocked', savedBlocked);
+}
+
 // ── 席位：买卖双侧表 + 席位身份下钻 ──
 // src/seats.js 同样是 ESM，jsdom 不执行模块脚本，这里手动 import 挂到 window.Seats，
 // 再**真点席位行**，断言下钻抽屉出现且含身份字段——只看"表格里有没有卖方"是不够的：

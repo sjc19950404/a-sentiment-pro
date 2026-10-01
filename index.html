@@ -173,6 +173,8 @@
           <div class="bf-tools">
             <button id="briefRefresh" class="mini primary" type="button" title="只重新拉取并重建研判报告（保留当前阅读位置与折叠状态，不重算其它区块）">↻ 刷新报告</button>
             <span id="briefRefreshState" class="bf-rf-state muted" role="status" aria-live="polite"></span>
+            <span id="briefAudit" class="bf-audit" role="status" aria-live="polite" hidden></span>
+            <button id="briefAuditRetry" class="mini" type="button" hidden title="重新构建并重新执行出厂质检">重试质检</button>
             <div id="briefNav" class="bf-nav" role="tablist" aria-label="报告段落导航"></div>
             <button id="briefToggle" class="mini" type="button">全部折叠</button>
             <div class="bf-acts">
@@ -422,6 +424,14 @@
     import * as Report from './src/report.js';
     window.ReportExport = Report;
     window.dispatchEvent(new Event('report-export-ready'));
+  </script>
+  <!-- 报告「出厂质检」引擎：同样是 ESM 纯函数，挂到 window 供 app.js 在渲染前调用。
+       闸门语义——审计不通过就不把报告写入 #briefBody（宁可不出报告，也不显示坏报告）。
+       必须在 report.js 之后挂载（它审计的三形态产物由 ReportExport 生成）。 -->
+  <script type="module">
+    import * as ReportAudit from './src/report_audit.js';
+    window.ReportAudit = ReportAudit;
+    window.dispatchEvent(new Event('report-audit-ready'));
   </script>
   <!-- 席位口径唯一来源（券商主体/席位类型/买卖双侧读取）同样是 ESM 纯函数，app.js 不能 import，
        故与 report.js 一样挂到 window。个股抽屉里的「席位身份」下钻与表格渲染都走它，

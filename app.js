@@ -547,7 +547,9 @@ function buildBrief(days, arc) {
   // 用 <details>（原生折叠，无需脚本），导出文档与屏幕共用同一套标签语义。
   const cal = (t) => t ? `<details class="bf-caliber"><summary>${CAL_SUMMARY}</summary><div class="bf-cal-body">${t}</div></details>` : '';
   // ── 模板④：明日跟踪项复选框清单 ──
-  const todo = (t) => `<div class="bf-todo">${t}</div>`;
+  // role/aria-checked **初始就要写死**，不能等用户点一下才补：屏幕上它从第一帧起
+  // 就是一个"可勾选的复选框"，屏幕阅读器与审计闸门读的都是这个属性（缺了就不是复选框）。
+  const todo = (t) => `<div class="bf-todo" role="checkbox" aria-checked="false" tabindex="0">${t}</div>`;
   // ── 模板④：三档配色标记（🔴风险 / 🟢积极 / ⚫中性）──
   // 屏幕侧用语义 class + emoji 双写：class 负责主题配色，emoji 保证导出任何形态都认得出。
   const ico = (kind, t) => `<span class="ico ico-${kind}">${{ risk: '🔴', pos: '🟢', neutral: '⚫' }[kind] || '⚫'} ${t}</span>`;
@@ -1112,10 +1114,217 @@ function paperCaliber(eng) {
     + `</div></details>`;
 }
 
-function renderBrief(days, arc) {
-  $('briefBody').innerHTML = buildBrief(days, arc);
-  renderBriefNav(); // 段落标题由 DOM 读出，不硬编码，避免与 buildBrief 的段落数漂移
+// ── 研判报告「出厂质检」闸门 ────────────────────────────────────────────────
+// 为什么需要：报告的屏幕渲染与导出已共用同一份 DOM，但「结构对不对」此前只有
+// CI 里的事后脚本来保证（scripts/check_frontend.mjs）。也就是说线上/本地打开页面时，
+// 用户完全可能看到一份**坏报告**（缺摘要、少一段、口径折叠件没挂上、指标被重算），
+// 而没有任何东西会拦下来。
+//
+// 现在改成：先构建 → 审计 → 通过才写入 #briefBody。不通过就**不渲染报告**，
+// 改为显示审计面板（列出每条失败原因 + 重试按钮）。宁可什么都不显示，
+// 也不能让用户读到一份没通过模板契约的报告。
+//
+// 纪律：审计只读，不改数据/指标/阈值（引擎见 src/report_audit.js，纯函数、Node 与浏览器共用）。
+const AUDIT = () => window.ReportAudit || null;
+
+/**
+ * 在 parseReport **之前**采集 DOM 事实。
+ *
+ * 为什么必须提前采集：parseReport 为了「口径不混进正文」会就地 remove 掉
+ * .bf-caliber 节点。若审计规则在那之后再查 DOM，就永远找不到口径折叠件——
+ * 闸门首次接上时正是这样把一份完全合规的报告判成「未通过」的。
+ * 所以 DOM 侧的事实只在这一处、只在这一刻采一次，之后各规则读快照。
+ * @returns {{domCaliberSummaries:string[], domTodoCount:number, domTodoAriaCount:number, domAppendix:boolean}}
+ */
+function collectDomFacts(stage) {
+  const calSums = [...stage.querySelectorAll('.bf-sec .bf-caliber summary')]
+    .map((s) => s.textContent.trim());
+  const todos = [...stage.querySelectorAll('.bf-todo')];
+  // 三档配色 class 的"机制在位"判据：样式表里三档都有规则 → 模板落地了。
+  // 之所以查样式而不是查 DOM：标记是数据驱动的，当日没触发某档时 DOM 里自然没有它，
+  // 但那不代表模板没落地（把「数据没触发」当成「模板没落地」会天天误报）。
+  const hasMarkerClasses = ['ico-risk', 'ico-pos', 'ico-neutral'].every((k) => {
+    for (const sheet of document.styleSheets) {
+      try {
+        for (const r of sheet.cssRules) if (r.selectorText && r.selectorText.includes('.' + k)) return true;
+      } catch (e) { /* 跨域样式表读 cssRules 会抛，跳过 */ }
+    }
+    return false;
+  });
+  return {
+    domCaliberSummaries: calSums,
+    domTodoCount: todos.length,
+    // 复选框必须带 aria-checked 才是"可勾选题"（模板④）；屏幕上初始就应设好，
+    // 而不是等用户点一下才补上——否则屏幕阅读器读到的是普通文本。
+    domTodoAriaCount: todos.filter((t) => t.hasAttribute('aria-checked')).length,
+    domAppendix: !!stage.querySelector('.bf-appendix'),
+    // 导出层的三档映射表（report.js 的 MARKERS 键）——机制在位即通过
+    markerKinds: window.ReportExport && window.ReportExport.MARKERS
+      ? Object.keys(window.ReportExport.MARKERS) : null,
+    hasMarkerClasses,
+  };
 }
+
+/** 把审计结果渲染成用户能读懂的面板（不通过时替换报告正文） */
+function renderAuditPanel(result) {  const env = document.createElement('div');
+  env.className = 'bf-audit-fail';
+  const items = (result.failed || []).map((f) =>
+    `<li><code>${f.id}</code> ${f.reason || f.msg}</li>`).join('');
+  env.innerHTML = `<div class="bf-af-h">⚠ 报告未通过出厂质检，已阻止显示</div>`
+    + `<div class="bf-af-sub">共 ${result.total} 项检查，失败 <b>${result.failed.length}</b> 项。`
+    + `这是一道保护：宁可不出报告，也不让没通过模板契约的内容被读到。</div>`
+    + `<ul class="bf-af-list">${items}</ul>`
+    + `<div class="bf-af-foot">修复后点右侧「重试质检」重新校验。</div>`;
+  return env;
+}
+
+/** 展示/隐藏报告中部的审计面板；通过时也把结论写进状态条，让用户知道这份报告是验过的 */
+function paintAudit(state, result) {
+  const bar = $('briefAudit');
+  if (bar) {
+    const A = AUDIT();
+    bar.className = 'bf-audit ' + state;
+    bar.hidden = false;
+    bar.textContent = state === 'running' ? '质检中…'
+      : state === 'pass' ? '✓ ' + (A ? A.auditSummary(result) : '已通过')
+      : '⚠ ' + (A ? A.auditSummary(result) : '未通过');
+  }
+  const btn = $('briefAuditRetry');
+  if (btn) btn.hidden = state !== 'fail';
+}
+
+function renderBrief(days, arc) {
+  const A = AUDIT();
+  const html = buildBrief(days, arc);
+  const body = $('briefBody');
+
+  // 审计引擎未挂载（离线打开/模块加载失败）：如实降级为「直接渲染 + 状态条说明未审计」。
+  // 不静默跳过——用户有权知道这份报告没经过质检。
+  if (!A || typeof A.auditReport !== 'function') {
+    body.innerHTML = html;
+    renderBriefNav();
+    paintAudit('skip', null);
+    window.__briefAudit = { pass: null, reason: 'audit-engine-unavailable' };
+    return;
+  }
+
+  // ── 数据未就绪：明确区分「数据还没到」与「报告不合格」 ──
+  // 这两种情况的处理必须不同：数据未就绪是**正常的中间态**（首屏加载中、拉取失败），
+  // 报「未通过质检」会把用户吓一跳且指向错误的排查方向；而报告不合格是真问题。
+  // 判据用「构建产物里一个章节都没有」——这是数据缺失的确定性特征
+  // （buildBrief 在任何有数据的档位下都必然产出 7 段）。
+  if (!/class="bf-sec"/.test(html)) {
+    body.innerHTML = '';
+    body.classList.remove('audit-blocked');
+    body.innerHTML = '<div class="bf-li muted">报告数据尚未就绪——等待行情数据拉取完成后会自动生成（本段不是质检失败）。</div>';
+    renderBriefNav();
+    paintAudit('skip', null);
+    window.__briefAudit = { pass: null, reason: 'data-not-ready' };
+    return;
+  }
+
+  // 在**离屏容器**里先装一遍，供审计读取真实 DOM 结构（不能直接写 #briefBody，
+  // 那样不通过时用户会先看到一帧坏报告，再被替换——闪烁反倒像出了 bug）。
+  const stage = document.createElement('div');
+  stage.className = 'brief-body';
+  stage.innerHTML = html;
+
+  // ⚠ 顺序很重要：parseReport 会**移除** .bf-caliber 节点（它要防口径混进正文），
+  // 所以 DOM 结构类检查（折叠件标题）必须在 parseReport **之前**跑，
+  // 否则一律报「屏幕 DOM 里找不到章节口径折叠件」——这是真踩过的坑：
+  // 闸门首次接上时就是这样把一份完全合规的报告判成未通过的。
+  const domFacts = collectDomFacts(stage);
+
+  // 三形态产物同时审计：结构问题常常只在某一种形态里暴露
+  // （例：GFM 表格语法、<details> 配对、导出时间只在 md/txt 里）。
+  // 注意 parseReport 传**克隆节点**：stage 还要留着做后续 DOM 检查与失败时的兜底，
+  // 不能被 parseReport 的就地修改（remove 口径件）污染。
+  const rep = window.ReportExport ? window.ReportExport.parseReport(stage.cloneNode(true)) : null;
+  const opts = reportOpts();
+  const E = RPT();
+  const md = E ? E.toMarkdown(rep, opts) : '';
+  const txt = E ? E.toPlainText(rep, opts) : '';
+  const out = E ? E.toStandaloneHtml(rep, opts) : '';
+
+  let result;
+  try {
+    result = A.auditReport(rep, { rootEl: stage, ...domFacts, md, txt, html: out });
+  } catch (e) {
+    // 审计自身崩了：按「未通过」处理（不能因为质检工具坏了就放行）
+    result = { pass: false, total: 0, passed: 0, failed: [{ id: 'audit-crashed', msg: '质检异常', reason: String(e && e.message || e) }], checks: [] };
+  }
+
+  window.__briefAudit = result;
+  // 审计结论同时挂到 body 上，供前端断言脚本直接读（不必依赖 window 时序）
+  document.body.dataset.briefAudit = result.pass ? 'pass' : 'fail';
+
+  if (result.pass) {
+    body.innerHTML = html;
+    body.classList.remove('audit-blocked');
+    renderBriefNav(); // 段落标题由 DOM 读出，不硬编码，避免与 buildBrief 的段落数漂移
+    paintAudit('pass', result);
+    return;
+  }
+
+  // ── 未通过：不渲染报告 ──
+  body.innerHTML = '';
+  body.classList.add('audit-blocked');
+  body.appendChild(renderAuditPanel(result));
+  renderBriefNav(); // 无 .bf-sec 时目录自然为空（不保留上一份的陈旧目录）
+  paintAudit('fail', result);
+  console.error('[brief-audit] 报告未通过出厂质检，已阻止显示：', result.failed);
+}
+
+// 「重试质检」：重新构建并重新审计（用于排查/数据刷新后手动恢复）
+function retryBriefAudit(btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '质检中…'; }
+  try {
+    if (ARC && ARC.all_days && ARC.all_days.length) renderBrief(ARC.all_days, ARC);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '重试质检'; }
+  }
+}
+
+// ── 审计闸门的测试钩子 ──
+// 前端断言脚本（scripts/check_frontend.mjs）跑在 jsdom 里，在页面加载之后才把
+// ReportAudit 挂上 window（模块脚本不执行），此时报告已经渲染过一次了。这两个钩子
+// 让断言脚本能① 触发一次完整重渲染、② 注入任意报告 HTML 走同一条闸门路径。
+// 它们的唯一用途是「让闸门可被验证」——没有它们，断言只能看闸门代码而不能证明它拦得住。
+window.__rerenderBriefForAudit = () => {
+  if (ARC && ARC.all_days && ARC.all_days.length) { renderBrief(ARC.all_days, ARC); return true; }
+  return false;
+};
+/** 把给定 HTML 当作 buildBrief 的产物走一遍闸门（负向验证注入坏报告用） */
+window.__renderBriefHtmlForAudit = (html) => {
+  const A = AUDIT();
+  const body = $('briefBody');
+  const stage = document.createElement('div');
+  stage.innerHTML = html;
+  const rep = RPT() ? RPT().parseReport(stage) : null;
+  const opts = reportOpts();
+  const E = RPT();
+  const md = E ? E.toMarkdown(rep, opts) : '';
+  const txt = E ? E.toPlainText(rep, opts) : '';
+  const out = E ? E.toStandaloneHtml(rep, opts) : '';
+  const result = A
+    ? A.auditReport(rep, { rootEl: stage, md, txt, html: out })
+    : { pass: true, total: 0, passed: 0, failed: [], checks: [] };
+  window.__briefAudit = result;
+  document.body.dataset.briefAudit = result.pass ? 'pass' : 'fail';
+  if (result.pass) {
+    body.innerHTML = html;
+    body.classList.remove('audit-blocked');
+    renderBriefNav();
+    paintAudit('pass', result);
+  } else {
+    body.innerHTML = '';
+    body.classList.add('audit-blocked');
+    body.appendChild(renderAuditPanel(result));
+    renderBriefNav();
+    paintAudit('fail', result);
+  }
+  return result;
+};
 
 // 报告目录：从渲染后的 .bf-sec 读标题生成跳转 chip（点击 → 滚到该段 + 展开）
 function renderBriefNav() {
@@ -2261,6 +2470,24 @@ function currentReport() {
   return r.parseReport($('briefBody'));
 }
 
+/**
+ * 审计闸门的「下游守卫」：报告未通过质检时，导出/复制/打印一律拒绝。
+ * 原因：闸门只挡住了屏幕显示，但导出按钮读的是 #briefBody——若不禁，用户点导出
+ * 仍可能拿到一份内容（这时候 #briefBody 里只有审计面板，导出来的是个空壳文档）。
+ * 统一在这里拦，三个入口共享同一判据，不会各写一遍。
+ * @returns {boolean} true 表示放行
+ */
+function guardAudited(btn) {
+  const a = window.__briefAudit;
+  if (a && a.pass === false) {
+    flashBtn(btn, '未通过质检');
+    const st = $('briefAuditState');
+    if (st) { st.textContent = '报告未通过出厂质检，已阻止导出——修复后点「重试质检」'; st.className = 'err'; }
+    return false;
+  }
+  return true;
+}
+
 /** 导出的落款信息统一在这里取，三处输出保持一致 */
 function reportOpts() {
   const d = (ARC && ARC.all_days && ARC.all_days[ARC.all_days.length - 1]) || {};
@@ -2298,6 +2525,7 @@ function flashBtn(btn, text, ms = 1600) {
 async function doCopyBrief(btn) {
   const R = needRpt();
   if (!R) return;
+  if (!guardAudited(btn)) return;
   const rep = currentReport();
   if (!rep || !rep.sections.length) { flashBtn(btn, '报告未就绪'); return; }
   const text = R.toPlainText(rep, reportOpts());
@@ -2333,6 +2561,7 @@ async function copyToClipboard(text) {
 function doExportBrief(fmt, btn) {
   const R = needRpt();
   if (!R) return;
+  if (!guardAudited(btn)) return;
   const rep = currentReport();
   if (!rep || !rep.sections.length) { flashBtn(btn, '报告未就绪'); return; }
   const o = reportOpts();
@@ -2357,6 +2586,7 @@ function doExportBrief(fmt, btn) {
 function doPrintBrief(btn) {
   const R = needRpt();
   if (!R) return;
+  if (!guardAudited(btn)) return;
   const rep = currentReport();
   if (!rep || !rep.sections.length) { flashBtn(btn, '报告未就绪'); return; }
   const html = R.toStandaloneHtml(rep, reportOpts());
@@ -2399,6 +2629,7 @@ function closeExportMenu() {
 
 $('briefCopy')?.addEventListener('click', (e) => doCopyBrief(e.currentTarget));
 $('briefPrint')?.addEventListener('click', (e) => doPrintBrief(e.currentTarget));
+$('briefAuditRetry')?.addEventListener('click', (e) => retryBriefAudit(e.currentTarget));
 
 // ── 研判报告单独刷新 ──────────────────────────────────────────────────────
 // 与顶栏「↻ 刷新」的区别：顶栏刷新会重算整页（行情/题材/回测/模拟交易全部重渲染），
