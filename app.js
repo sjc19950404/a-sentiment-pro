@@ -1667,6 +1667,10 @@ function loadRecentArchiveShared() {
 }
 window.__loadRecentArchive = loadRecentArchiveShared;
 
+// 标的池分档完成时，paper_ui.js 需要**只**重刷这块披露（不能调 renderAll ——
+// 那会重跑全部 7 段渲染与 3 个网络加载，只为改一行文案）。
+window.__renderScope = renderScope;
+
 function loadRecent() {
   return loadRecentArchiveShared().catch(() => null);
 }
@@ -1967,9 +1971,41 @@ function backfillInfo(arc) {
   return { count: bf.length, total: all.length, from: bf[0].trade_date, to: bf[bf.length - 1].trade_date };
 }
 
+/**
+ * 渲染 #loadScope —— 分层加载范围的**唯一披露点**。
+ *
+ * 为什么单独抽成一个函数：标的池与档案是两条独立的分档链，各自完成时刻不同。
+ * 标的池补全完成时若不能单独刷新这块，用户就会一直看到"精简档"过期的说法
+ * （或者反过来：只刷一次，补全后还写着"补全中"）。抽出来就可以被任一方重复调用。
+ *
+ * 两个通道都**必须**如实披露，因为它们都会改变屏幕上数字的含义：
+ *   · archive 深度：决定"样本 N 个交易日"里的 N 是 30 还是 241
+ *   · 标的池档位：决定个股的板段/最近收盘价是否已就位（板段由代码规则判定，始终可信）
+ * 分档本身不是问题，"用户不知道现在是哪一档"才是。
+ */
+function renderScope(arc) {
+  const scope = $('loadScope');
+  if (!scope) return;
+  const staged = typeof window !== 'undefined' && window.__uniStaged;
+  const uniNote = staged
+    ? `<span class="scope-note" title="模拟器标的池首屏只加载代码+名称（137KB）；板段/涨跌停幅度由 src/paper.js 的代码规则直接判定（始终有效），最近收盘价/换手等明细在首屏之后补拉（1059KB）">`
+      + `· 标的池：精简档（明细后台补全中）</span>`
+    : '';
+  const days = (arc && arc.all_days) || [];
+  scope.innerHTML = (arc && arc._partial
+    ? `<span class="scope-note" title="档案已按年切片，首屏只加载最近 ${days.length} 个交易日的明细；完整档共 ${arc._totalDays} 个交易日">`
+      + `⚡ 分层加载：已载入最近 <b>${days.length}</b> / ${arc._totalDays} 个交易日`
+      + `<button class="mini" type="button" data-act="loadfull">载入完整档</button></span>`
+    : `<span class="scope-note ok">✓ 完整档：${days.length} 个交易日</span>`) + uniNote;
+  scope.hidden = false;
+}
+
 function renderAll(arc) {
   lastArc = arc; // 供 loadBacktest 完成后按引擎口径重刷报告
   ARC = arc;     // 供个股明细表与详情抽屉使用
+  // 也挂到 window：paper_ui.js 在标的池补全完成后要单独重刷 #loadScope，
+  // 而它拿不到 app.js 的模块作用域变量。只放只读引用，不构成第二份口径。
+  if (typeof window !== 'undefined') window.__lastArc = arc;
   const days = displayDays(arc);
   const latest = days[days.length - 1] || {};
   const meta = arc.meta || {};
@@ -1989,15 +2025,9 @@ function renderAll(arc) {
 
   // 分层加载的**诚实披露**：当前页只加载了最近 N 日明细，"样本 N 个交易日"这类
   // 会随加载深度变化的数字必须显式说明来源，否则读者会把 30 读成 241。
-  const scope = $('loadScope');
-  if (scope) {
-    scope.innerHTML = arc._partial
-      ? `<span class="scope-note" title="档案已按年切片，首屏只加载最近 ${arc.all_days.length} 个交易日的明细；完整档共 ${arc._totalDays} 个交易日">`
-        + `⚡ 分层加载：已载入最近 <b>${arc.all_days.length}</b> / ${arc._totalDays} 个交易日`
-        + `<button class="mini" type="button" data-act="loadfull">载入完整档</button></span>`
-      : `<span class="scope-note ok">✓ 完整档：${arc.all_days.length} 个交易日</span>`;
-    scope.hidden = false;
-  }
+  // 同理，模拟器的标的池也是分档的（首屏只有代码+名称），故一并披露——
+  // 分档本身不是问题，"用户不知道现在是哪一档"才是。
+  renderScope(arc);
 
   renderAlerts(meta);
   renderEmotion(latest);

@@ -49,6 +49,8 @@ import { appendSignals, summarizeLog, summarizeText, LOG_CAP } from './src/alert
 // 为什么用 window 桥接而不是让 app.js import：app.js 是经典脚本（不能用 import），
 // paper_ui.js 是 module，两者没有共享状态。挂一个带版本号的快照是最小的耦合面。
 import { REVIEW_VERSION } from './src/paper_review.js';
+// 标的池的 reason 走码表压缩，前端解回明文（见 boot 内注释）
+import { decodeStrField } from './src/lhb_codec.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
@@ -365,20 +367,92 @@ function recentDays(arc) {
     .sort((a, b) => String(a.trade_date).localeCompare(String(b.trade_date)));
 }
 
+// ────────────────────────── 标的池：分档加载 ──────────────────────────
+//
+// 标的池（data/paper_universe.json，3558 只 / 1059KB）是首屏最重的请求，比滚动窗还大 5 倍。
+// 但它承担两类**时效要求完全不同**的职责，拆开就能把首屏成本砍掉七成：
+//
+//   · 硬依赖（必须首屏）：代码 → 名称映射。账户持仓、待成交、预警台账、推荐个股全都要
+//     显示股票名，没有它整页都是光秃秃的代码。字段只有 code + name。
+//   · 软依赖（可延后）：板段/ST/涨跌停幅度/最近收盘价/换手/amount 来源，只在
+//     **用户真正输入代码或准备下单**时才需要 —— 那时已经过了 200ms 防抖，晚到几十毫秒无感。
+//
+// 关键前提：所有软依赖都是**纯函数可推导**的（board/boardLabel/tradable/limitPct/st/active），
+// 或者只影响「输入框旁的一行提示文案」（last/changePct/lastSeen/srcs/reason/huanshou）。
+// 换言之软依赖的数据即使到得晚，也**不会改变任何下单判定结果**——这点经 test/universe_lazy.test.mjs 断言。
+// 反之，若软依赖参与了下单判定，分档就会变成"先看到的信息决定能不能下单"，绝不可接受。
+const UNI_LITE_FILE = './data/paper_universe-lite.json';
+const UNI_FULL_FILE = './data/paper_universe.json';
+let UNI_FULL_READY = false;   // 完整池是否已就位（决定 lookup 是否还该提示"信息补全中"）
+let UNI_FULL_ERROR = null;    // 完整池拉取失败时的原因（界面如实披露，不静默降级）
+
+/** 精简池 → 代码映射（只需 code/name；软依赖字段一概不参与，故这里缺字段是正常的）。 */
+function liteUniverse(lite) {
+  const m = {};
+  for (const r of (lite && lite.symbols) || []) {
+    if (r && r.code) m[r.code] = { code: r.code, name: r.name || '' };
+  }
+  return m;
+}
+
+/** 完整池 → 代码映射（解回 reason 明文字段，见原注释）。 */
+function fullUniverse(uni) {
+  // 标的池的 reason 已按码表压缩（reasonIdx → meta.reasonCodes，3558 条唯一值仅 663 个：
+  // 1634.5KB → 1059.1KB）。前端目前不读该字段，但仍**解回明文**再挂 UNI——
+  // 保留 reasonIdx 会让以后任何想读 reason 的代码拿到 undefined，属"静默缺字段"。
+  // 表缺失（未压缩的存量文件）时 decodeStrField 原样返回，故兼容。
+  return uni.meta && Array.isArray(uni.meta.reasonCodes)
+    ? decodeStrField(Object.values(uni.symbols || {}), uni.meta.reasonCodes, 'reason')
+      .reduce((m, r) => { m[r.code] = r; return m; }, {})
+    : (uni.symbols || {});
+}
+
+/**
+ * 分档拉标的池。返回 { lite, full }，两个 promise 独立——lite 先到先渲染，full 到了再补。
+ * 精简池缺失（未生成 / 旧存档）时回退为直接拉完整池，行为与分档之前完全一致。
+ */
+function loadUniverseStaged() {
+  const bust = '?_=' + Date.now();
+  const liteP = fetch(UNI_LITE_FILE + bust, { cache: 'no-store' })
+    .then((res) => (res.ok ? res.json() : null))
+    .catch(() => null);
+  return { liteP };
+}
+
 async function boot() {
   try {
-    // 分层加载：标的池 + 滚动窗（近 30 日）。
+    // 分层加载：精简标的池 + 滚动窗（近 30 日）。
     // 模拟器只需要"最近几个交易日的收盘价"来补结算（autoCatchUp / settleNow），
     // 从不需要 241 天前的价格——故拉滚动窗即可，不再拉 5.1MB 完整档。
     // 结算窗口由最近一次结算日决定，正常使用下至多落后数个交易日，30 天有充裕余量。
-    const [uniRes, arc] = await Promise.all([
-      fetch('./data/paper_universe.json?_=' + Date.now(), { cache: 'no-store' }),
-      loadRecentArchive(),
-    ]);
-    if (!uniRes.ok) throw new Error('标的池 HTTP ' + uniRes.status);
-    const uni = await uniRes.json();
-    UNI = uni.symbols || {};
-    UNI_META = uni.meta || {};
+    const { liteP } = loadUniverseStaged();
+    const [lite, arc] = await Promise.all([liteP, loadRecentArchive()]);
+
+    if (lite && lite.symbols) {
+      UNI = liteUniverse(lite);          // 首屏只拿到"代码 → 名称"
+      UNI_META = lite.meta || {};
+      // 给上层（app.js 的 #loadScope）一个可读的分档标记，让它能如实披露
+      // "标的池现在是精简档"。没有这个标记，页面会同时显示"已载入最近 30 日"
+      // 和"标的池完整"，读者无法判断哪些数字来自哪一档。
+      //
+      // ⚠ 时序坑：index.html 里 app.js（经典脚本）**先**求值，paper_ui.js（module）后求值。
+      //   也就是说 app.js 的 renderAll → renderScope 跑完时，这个标记还不存在，
+      //   披露块里不会带"精简档"。故设置标记后必须**主动再刷一次**披露块。
+      //   （这正是把 renderScope 抽成独立函数的原因：它必须能被重复调用。）
+      if (typeof window !== 'undefined') window.__uniStaged = true;
+      if (typeof window !== 'undefined' && typeof window.__renderScope === 'function') {
+        try { window.__renderScope(window.__lastArc || null); } catch { /* 披露失败不影响功能 */ }
+      }
+    } else {
+      // 精简池不可用：退回完整池（老部署 / 精简池生成失败），此时首屏就是旧行为
+      const res = await fetch(UNI_FULL_FILE + '?_=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error('标的池 HTTP ' + res.status);
+      const uni = await res.json();
+      UNI = fullUniverse(uni);
+      UNI_META = uni.meta || {};
+      UNI_FULL_READY = true;
+      UNI_FULL_ERROR = '精简池缺失，已直接载入完整池';
+    }
     // 滚动窗是分层结构：曲线点 + 最新日。模拟器要的是"逐日收盘价"，故拼成日期升序序列。
     const days = recentDays(arc);
     ARC_DAYS = days;
@@ -395,15 +469,89 @@ async function boot() {
     syncInitCashInput();
     // 副标题交给 renderAllPaper → renderSub 统一刷新，避免两处文案各自演化
     renderAllPaper();
+    // 首屏完成标记。为什么要有它：**"首屏"必须是一个可观测的时刻，而不是"等 1.2 秒"**。
+    // 用固定延时去界定首屏，会把"首屏之后按设计补拉的东西"算进首屏成本——
+    // 于是要么误报回归，要么逼着人把断言放宽到没有意义。真浏览器核对脚本读这个标记：
+    // 在它触发之前发生的请求才算首屏成本，之后的一律归"按需/后台补全"。
+    // 用 setTimeout(0) 把它排在当前微/宏任务队列之后，保证 renderAllPaper 的 DOM 已落定。
+    setTimeout(() => {
+      if (typeof window !== 'undefined') window.__paperFirstPaint = Date.now();
+      document.documentElement?.setAttribute('data-paper-first-paint', String(Date.now()));
+    }, 0);
 
     // 实时行情放在首屏渲染之后：先把界面画出来，再异步补价，避免网络慢时白屏。
     // 首次抓「持仓 + 待成交」，让账户列表立刻有实时价；用户输入代码时再按需补抓。
     refreshAllLive().then(() => renderAllPaper());
+    // 完整标的池**不在这里抢带宽**。1MB 的请求若与首屏的滚动窗（204KB）并行发出，
+    // 会在同一条 HTTP/1.1 连接上排队，把首屏关键路径拉长——"分档"的账面上省了 900KB，
+    // 体感上却因为慢了一个 RTT 而变差。
+    // 故：等浏览器空闲（首屏渲染 + 实时行情都落定）再补拉；用户若先输了代码，
+    // lookup() 会立刻触发它（那条路径是用户主动等待，抢带宽是对的）。
+    if (!UNI_FULL_READY) scheduleIdleUniverse();
   } catch (e) {
     const box = $('paperSub');
     if (box) box.textContent = `模拟器数据未就绪（${e.message}）——先运行 node scripts/fetch_universe.mjs 生成 data/paper_universe.json`;
     msg('加载失败：' + e.message, 'err');
   }
+}
+
+/**
+ * 把完整标的池的补拉推迟到浏览器空闲。
+ * 优先 requestIdleCallback（真正的"主线程空且网络不忙"），
+ * 不可用时退化为 setTimeout 2s —— 2s 足够首屏与实时行情收尾，又不至于让用户输完代码还没到。
+ * 注意：这只影响**主动补拉**；用户输代码触发的 lookup() 分支不受影响（那里直接调 loadFullUniverse）。
+ */
+function scheduleIdleUniverse() {
+  const run = () => { if (!UNI_FULL_READY) loadFullUniverse().then(() => renderAllPaper()); };
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 3000 });
+  else setTimeout(run, 2000);
+}
+
+/**
+ * 后台补拉完整标的池（板段/ST/涨跌停/最近收盘价/换手/来源）。
+ * 首屏用的是精简池（只有代码+名称），这里补齐**软依赖**字段。
+ * 失败不阻断——界面继续用精简池工作，只在下单区如实提示"信息仍在补全"。
+ * 也绝不重复拉：UNI_FULL_READY 一旦为真就直接返回。
+ */
+function loadFullUniverse() {
+  if (UNI_FULL_READY) return Promise.resolve(UNI);
+  if (!window.__uniFullPromise) {
+    window.__uniFullPromise = fetch(UNI_FULL_FILE + '?_=' + Date.now(), { cache: 'no-store' })
+      .then((res) => {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then((uni) => {
+        // 合并而非替换：精简池已有的 name 保留，完整池补齐其余字段。
+        // 直接替换会把「完整池里没有、精简池里有」的边缘票弄丢（两者本应同源，但不做假设）。
+        const full = fullUniverse(uni);
+        const merged = { ...UNI };
+        for (const [code, r] of Object.entries(full)) merged[code] = { ...(merged[code] || {}), ...r };
+        UNI = merged;
+        UNI_META = { ...(uni.meta || {}), staged: true };
+        UNI_FULL_READY = true;
+        UNI_FULL_ERROR = null;
+        // 完整档到位：撤下"精简档"披露标记，并**只**重刷披露块
+        // （不调 renderAll —— 那会重跑全部 7 段渲染与 3 个网络加载，只为改一行文案）
+        if (typeof window !== 'undefined') {
+          window.__uniStaged = false;
+          if (typeof window.__renderScope === 'function') {
+            try { window.__renderScope(window.__lastArc || null); } catch { /* 披露失败不影响功能 */ }
+          }
+        }
+        renderAllPaper();
+        return UNI;
+      })
+      .catch((e) => {
+        window.__uniFullPromise = null;   // 允许下次重试（例如用户重新输入代码时）
+        UNI_FULL_ERROR = e.message;
+        // 如实披露：不静默降级成"就是没有这只票"——那会让用户以为代码打错了。
+        msg('标的池明细未载入（' + e.message + '）：可下单性判定暂不可用，可稍后重新输入代码重试', 'warn');
+        renderAllPaper();
+        return UNI;
+      });
+  }
+  return window.__uniFullPromise;
 }
 
 /**
@@ -458,6 +606,9 @@ function lookup(code) {
   if (!/^\d{6}$/.test(c)) return null;
   const b = boardOf(c);
   const u = UNI?.[c] || null;
+  // 分档加载：首屏只有代码+名称，完整池的板段/最近收盘价等**软依赖**字段还没到。
+  // 这里触发一次后台补拉（幂等，已在首屏之后主动调过一次；此处是用户输代码时的保险）。
+  if (!UNI_FULL_READY) loadFullUniverse();
   const live = LIVEQ[c] || null;
   const arch = QMAP[c] || null;
   // 实时优先；实时没有才用存档收盘价
@@ -482,6 +633,10 @@ function lookup(code) {
     fresh: !!q,
     history: u,
     inUniverse: !!u,
+    // 标的池明细是否已就位。界面据此区分「确实不在池里」与「池子还在补全」——
+    // 后者若不区分，用户会以为代码打错了。
+    universeReady: UNI_FULL_READY,
+    universeError: UNI_FULL_ERROR,
   };
 }
 
@@ -843,7 +998,12 @@ function renderOrderForm() {
             + (info.turnover != null ? `<span class="muted"> · 换手 ${num(info.turnover)}%</span>` : '')
             + `<span class="muted"> · ${esc(info.tickTime || info.quoteDate || '—')}</span></div>`
           : `<div class="pq-line bf-warn">取不到 ${esc(ORDER.code)} 的行情（实时源与存档都没有该代码的价格）`
-            + `——请核对代码是否存在/是否已停牌；已有持仓仍可正常卖出。</div>`);
+            + `——请核对代码是否存在/是否已停牌；已有持仓仍可正常卖出。</div>`)
+        // 分档加载的诚实披露：板段/幅度**由代码纯函数推导**，不依赖标的池，故永远是准的；
+        // 但「最近一次真实收盘价 / 换手 / 是否曾在池内」来自完整池，补全前不能假装知道。
+        + (info.universeReady ? ''
+          : `<div class="pq-line muted">标的池明细载入中（首屏只加载了代码与名称）；`
+            + `板段与涨跌停幅度由代码规则直接判定、始终有效${info.universeError ? ` · 上次失败：${esc(info.universeError)}` : ''}</div>`);
     }
   }
 

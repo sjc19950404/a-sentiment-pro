@@ -1159,6 +1159,46 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     /writeFileSync\(filePath,\s*text/.test(codecSrc), '');
 }
 
+// ── B11. 标的池分档：精简池与完整池必须同源生成，且 CI 必须把两份都提交 ────────
+// 分档能省 920KB，但它引入了一个新的**静默失败面**：
+//   · 精简池忘了生成 → 前端回退拉完整池（1059KB）→ 首屏变慢，但**页面看起来完全正常**；
+//   · 精简池生成后没被 git add → 推到线上的仍是旧池 → 新股没有名字，**页面也看起来正常**；
+//   · 两份池用不同的输入生成 → 同一只票在两个池里名称/代码不一致，**页面依旧正常**。
+// 三者都不会报错，只会悄悄变慢或悄悄缺字段。故用 CI 守卫兜住。
+{
+  const uniSrc = readFileSync(path.join(ROOT, 'scripts', 'fetch_universe.mjs'), 'utf8');
+  const wfSrc = readFileSync(path.join(ROOT, '.github', 'workflows', 'daily.yml'), 'utf8');
+  // ① 两份池必须由**同一个脚本同一次运行**产出（同一份 list 派生，不存在两套构建逻辑）
+  check('标的池：精简池与完整池由同一脚本同一次运行产出（杜绝两套构建逻辑）',
+    /OUT_LITE/.test(uniSrc) && /paper_universe-lite/.test(uniSrc)
+    && (uniSrc.match(/const list = \[\.\.\.uni\.values\(\)\]/g) || []).length === 1,
+    '');
+  // ② 精简池必须只写 code+name —— 结构断言在 test/universe_lazy.test.mjs，
+  //    这里守的是**源码层**：JSON.stringify 前不得把整行对象直接塞进去
+  check('标的池：精简池显式只取 code+name（不得整行塞入，否则规则副本会跟着漂移）',
+    /map\(\(x\) => \(\{ code: x\.code, name: x\.name \}\)\)/.test(uniSrc), '');
+  // ③ CI 必须把精简池一起提交（漏了就是"本地有、线上没有"）
+  check('标的池：CI 提交清单含 paper_universe-lite.json（漏了＝线上永远拿不到精简池）',
+    /paper_universe-lite\.json/.test(wfSrc), '');
+  // ④ CI 必须把切片一起提交（同理：本地生成、线上没有会让前端 404 后回退拉主档 5MB）
+  check('标的池：CI 提交清单含 archive-index / archive-recent / signals-latest 切片',
+    /archive-index\.json/.test(wfSrc) && /archive-recent\.json/.test(wfSrc)
+    && /signals-latest\.json/.test(wfSrc), '');
+  // ⑤ 前端必须优先用精简池，且**必须**有回退路径（精简池缺失时不至于整页挂掉）
+  const paperSrc = readFileSync(path.join(ROOT, 'paper_ui.js'), 'utf8');
+  check('标的池：前端有精简池缺失时的回退路径（否则一次漏生成就整页不可用）',
+    /if \(lite && lite\.symbols\)/.test(paperSrc) && /else \{/.test(paperSrc)
+    && /精简池缺失/.test(paperSrc), '');
+  // ⑥ 非交易日也要重建池：active/quoteFresh 是日期敏感字段，长假不重建会显示过期的"当日有价"
+  const pipeSrc = readFileSync(path.join(ROOT, 'src', 'pipeline.js'), 'utf8');
+  check('标的池：非交易日管道也重建标的池（否则长假 7 天后仍显示"当日有价"）',
+    /function refreshUniverseOnly/.test(pipeSrc)
+    && /refreshUniverseOnly\(today\)/.test(pipeSrc), '');
+  // ⑦ 重建必须跑**同一个脚本**，不得在管道里重写一份构建逻辑
+  check('标的池：非交易日重建走 scripts/fetch_universe.mjs（不重写第二份构建逻辑）',
+    /fetch_universe\.mjs/.test(pipeSrc) && /spawnSync/.test(pipeSrc), '');
+}
+
 // ── C. 结论 ────────────────────────────────────────────────────────────────
 if (warns.length) for (const w of warns) console.log(`⚠ ${w}`);
 if (fails.length) {

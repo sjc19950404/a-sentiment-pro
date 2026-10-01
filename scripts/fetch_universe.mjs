@@ -17,12 +17,19 @@ import { readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { boardOf, isStName, limitPctOf, PAPER_VERSION } from '../src/paper.js';
-import { decodeArchive } from '../src/lhb_codec.js';
+import { decodeArchive, encodeStrField } from '../src/lhb_codec.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const ARCHIVE = path.join(ROOT, 'data', 'archive.json');
 const OUT = path.join(ROOT, 'data', 'paper_universe.json');
+// 精简池：只含【代码 + 名称】，供首屏使用。
+// 为什么单出一份：完整池 1059KB 是首屏最重的请求（比滚动窗还大 5 倍），
+// 但其中首屏**真正需要**的只有「代码 → 名称」——账户持仓、待成交、台账、推荐都要显示股票名，
+// 缺了整页只剩光秃秃的代码。板段/ST/涨跌停幅度是纯函数可推导的（boardOf/limitPctOf/isStName），
+// 最近收盘价/换手/来源只影响输入框旁一行提示，都能延后到用户真输入代码时再要。
+// 实测 1059.1KB → 约 62KB（省 94%），首屏总字节因此从 1300KB 降到 ~320KB。
+const OUT_LITE = path.join(ROOT, 'data', 'paper_universe-lite.json');
 
 const ACTIVE_DAYS = 30; // 最近 N 个交易日内出现过 → 活跃
 
@@ -106,6 +113,12 @@ const exList = [...excluded.values()].sort((a, b) => b.n - a.n);
 const exByLabel = {};
 for (const e of exList) exByLabel[e.label] = (exByLabel[e.label] || 0) + 1;
 
+// reason 字段压缩：3558 条里唯一值只有 663 个（实测 242KB → 约 12KB）。
+// 该字段**前端从不读取**（只导出时顺带写入），但保留它对人工核验标的来源有用，故压而不删。
+// 用码表：`{reason:'X'}` → `{reasonIdx:25}`，表存 meta.reasonCodes。
+const rc = encodeStrField(list, 'reason');
+const exRc = encodeStrField(exList, 'reason');
+
 const out = {
   meta: {
     generatedAt: new Date().toISOString(),
@@ -119,18 +132,44 @@ const out = {
     excludedCount: exList.length,
     excluded: exByLabel,
     note: '标的池仅含本系统真实抓到过往收盘价的证券；价格来源可逐条核验。模拟器不提供全市场任意代码下单。'
-      + `可转债/基金/B股等非股票品种 ${exList.length} 只已排除（交易制度不同），不在池内。`,
+      + `可转债/基金/B股等非股票品种 ${exList.length} 只已排除（交易制度不同），不在池内。`
+      + `标的 reason 字段已按码表压缩（reasonIdx → meta.reasonCodes），前端不读该字段。`,
+    reasonCodes: rc.table,
+    reasonEncoding: 'idx-v1',
   },
   boards: {
     shb: '沪市主板 ±10%', szb: '深市主板 ±10%', gem: '创业板 ±20%',
     star: '科创板 ±20%', bj: '北交所 ±30%', st: 'ST/*ST ±5%',
   },
-  symbols: Object.fromEntries(list.map((x) => [x.code, x])),
-  excluded: Object.fromEntries(exList.map((e) => [e.code, e])),
+  symbols: Object.fromEntries(rc.rows.map((x) => [x.code, x])),
+  excluded: Object.fromEntries(exRc.rows.map((e) => [e.code, e])),
 };
 
-writeFileSync(OUT, JSON.stringify(out, null, 1));
-console.log(`标的池已写出：${path.relative(ROOT, OUT)}`);
+// 紧凑写盘：缩进 1 会白吃压缩收益（实测 1.6MB 里约 20% 是空白）
+const text = JSON.stringify(out);
+writeFileSync(OUT, text);
+
+// ───────────── 精简池（首屏用） ─────────────
+// 只留 code + name，其余一律不写。**刻意不写板段/幅度**：它们由 boardOf/limitPctOf 纯函数推导，
+// 前端本来就不读池里的副本（实测前端 0 处引用 board/limitPct），写进去纯属体积浪费。
+// active/quoteFresh 是「随时间漂移」的字段，只在完整池里表达——精简池没有它就没有说谎的机会。
+const lite = {
+  meta: {
+    generatedAt: out.meta.generatedAt,
+    version: out.meta.version,
+    lastTradeDate: lastDate,
+    kind: 'paper_universe-lite',
+    total: list.length,
+    note: '首屏精简池：仅 code + name。板段/ST/涨跌停幅度由 src/paper.js 的 boardOf/limitPctOf/isStName '
+      + '按代码规则推导，无需数据副本；最近收盘价/换手/来源见 data/paper_universe.json（按需载入）。',
+  },
+  symbols: list.map((x) => ({ code: x.code, name: x.name })),
+};
+const liteText = JSON.stringify(lite);
+writeFileSync(OUT_LITE, liteText);
+
+console.log(`标的池已写出：${path.relative(ROOT, OUT)}（${(Buffer.byteLength(text) / 1024).toFixed(1)}KB）`);
+console.log(`  精简池：${path.relative(ROOT, OUT_LITE)}（${(Buffer.byteLength(liteText) / 1024).toFixed(1)}KB · 仅 code+name · 省 ${(100 - Buffer.byteLength(liteText) / Buffer.byteLength(text) * 100).toFixed(1)}%）`);
 console.log(`  最近交易日 ${lastDate} · 合计 ${out.meta.total} 只 · 活跃 ${out.meta.active} 只 · 当日有价 ${out.meta.fresh} 只`);
 const byBoard = {};
 for (const x of list) {

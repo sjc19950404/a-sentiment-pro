@@ -233,6 +233,39 @@ export function compressionStats(archive) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// 通用「字符串列 → 码表」压缩（供 archive 之外的产物复用）
+//
+// 与上面 reason 码表同一原理、同一收益来源：**高度重复的枚举文本逐条存是纯浪费**。
+// 实测 paper_universe.json（3558 标的）里 `reason` 字段占 242KB，而唯一值只有 663 个
+// ——同样一句话被存了几十遍。且该字段**前端从未读取**（grep 确认），纯属导出时的顺带。
+// 保留它（不删）是因为它对人工核验标的来源有用，故"压而不删"。
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 把一组对象里指定字符串字段抽成 `[表, 下标]`。表按字典序排序保证稳定。 */
+export function encodeStrField(rows, field) {
+  const set = new Set();
+  for (const r of rows) { const v = r && r[field]; if (typeof v === 'string' && v) set.add(v); }
+  const table = [...set].sort();
+  const idx = new Map(table.map((s, i) => [s, i]));
+  const out = rows.map((r) => {
+    if (!r || typeof r[field] !== 'string' || !r[field]) return r;
+    const { [field]: v, ...rest } = r;
+    return { ...rest, [`${field}Idx`]: idx.get(v) };
+  });
+  return { table, rows: out, field };
+}
+
+/** encodeStrField 的逆操作。表缺失时原样返回（兼容未压缩的存量文件）。 */
+export function decodeStrField(rows, table, field) {
+  if (!Array.isArray(table) || !table.length) return rows;
+  return rows.map((r) => {
+    if (!r || r[`${field}Idx`] == null) return r;
+    const { [`${field}Idx`]: i, ...rest } = r;
+    return { ...rest, [field]: table[i] };
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // 落盘助手：所有**会回写主档**的脚本必须用它，不得手写 JSON.stringify
 //
 // ── 为什么要有这个 ─────────────────────────────────────────────────────────

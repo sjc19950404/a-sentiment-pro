@@ -1,5 +1,6 @@
 // 管道：抓取(或离线回放) -> 题材去噪 -> 情绪 -> 校验 -> 写出 archive.json
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync } from 'fs';
+import { spawnSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import path from 'path';
 import config from './config.js';
@@ -385,6 +386,11 @@ export async function main() {
   if (mode === 'live' && !isTradingDay(today, config.manualHolidays)) {
     console.log('[skip]', today, '非交易日，保留上次数据');
     refreshMetaOnly(dataPath, now, { outcome: 'non-trading-day', reason: `${today} 非交易日` });
+    // 标的池是**日期敏感**的派生物：active（近 30 交易日）与 quoteFresh（== 最新交易日）
+    // 都会随时间推移而变化。非交易日不重建，长假 7 天后池子仍宣称「当日有价 66 只」——
+    // 用户按它下单会拿到 9 天前的陈旧价，而界面上的日期徽章是对的、只有池子标签在说谎。
+    // 重建本身零成本（纯读主档 + 纯函数推导，不发网络请求），故这里无条件刷新。
+    refreshUniverseOnly(today);
     return null;
   }
 
@@ -464,6 +470,40 @@ function refreshMetaOnly(dataPath, now, attempt) {
   console.log('[freshness] meta 已刷新 |', f.state, '| stale =', a.meta.stale,
     a.meta.staleReason ? '| ' + a.meta.staleReason : '');
   return a;
+}
+
+/**
+ * 非交易日也重建标的池。
+ *
+ * 为什么必须做：池子里有两个**随时间漂移**的字段——
+ *   · active     = 最近 30 个交易日内出现过（窗口在滑）
+ *   · quoteFresh = asOf === 主档最新交易日
+ * 平时这两个字段由管道每交易日重建，看不出问题；但**长假期间管道整段跳过**，
+ * 于是 7 天国庆后池子仍写着「当日有价 66 只 · 活跃 N 只」，而实际上所有价都已陈旧。
+ * 界面上的行情徽章取的是实时价（真话），池子标签却是 9 天前算的（假话）——两者矛盾时用户会信错的。
+ *
+ * 为什么不干脆不在非交易日 tag 上「今日」：报价新鲜度是**数据属性**，不是渲染属性。
+ * 让 UI 去减日期差就是第二套口径；正确做法是让数据本身跟着日历走。
+ *
+ * 实现：读主档 → 纯函数重算 → 写盘（紧凑）。零网络请求，失败只告警不影响主档。
+ */
+function refreshUniverseOnly(today) {
+  const script = path.join(ROOT, 'scripts', 'fetch_universe.mjs');
+  if (!existsSync(script)) return null;
+  try {
+    // 用子进程跑，保证与 CI / 本地手动执行**同一条代码路径**（绝不在此重写一份池子构建逻辑）。
+    const r = spawnSync(process.execPath, [script], { cwd: ROOT, encoding: 'utf8' });
+    if (r.status !== 0) {
+      console.log('::warning::非交易日标的池重建失败：' + (r.stderr || r.stdout || '').trim().split('\n').slice(-2).join(' '));
+      return null;
+    }
+    const tail = (r.stdout || '').trim().split('\n').slice(-1)[0];
+    console.log('[universe] 非交易日已按日历重建标的池 |', today, '|', tail);
+    return tail;
+  } catch (e) {
+    console.log('::warning::非交易日标的池重建异常：' + e.message);
+    return null;
+  }
 }
 
 // 回退：优先用已提交的真实 archive.json（记录原因），否则用快照演示数据。

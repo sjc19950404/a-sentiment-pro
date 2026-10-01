@@ -60,6 +60,11 @@ const { window } = dom;
 // 曾用一个静态守卫验证这点，注入死代码后依然"通过"，说明那条守卫是假的）。
 // 故在 fetch 垫片里真实计数，用运行时行为做断言。
 const fetchCalls = [];
+// 标的池的两份文件在**模块作用域**读进来：多个断言区块（jsdom 区 / 分档守卫区）都要用。
+// 放这里而不是某个块里，是为了避免"跨块引用就 ReferenceError"这种低级坑。
+const uniObj = JSON.parse(readFileSync(join(ROOT, 'data/paper_universe.json'), 'utf8'));
+// 首屏拉的是精简池（只含 code+name），完整池在首屏之后才按需拉。
+const uniLite = JSON.parse(readFileSync(join(ROOT, 'data/paper_universe-lite.json'), 'utf8'));
 window.fetch = async (url, opts) => {
   const u = String(url);
   fetchCalls.push(u.replace(/\?_=.*$/, '').replace(/^\.\//, ''));
@@ -900,7 +905,6 @@ escClose();
 // 在 jsdom 窗口里求值。相对路径 fetch 已被上面的 window.fetch 垫片接住（落到仓库文件）。
 // 这样断言跑的是「真正的前端代码 + 真正的引擎」，而不是另写一份逻辑。
 {
-  const uniObj = JSON.parse(readFileSync(join(ROOT, 'data/paper_universe.json'), 'utf8'));
   // src/paper.js 现在 import 了 src/lhbfilter.js 的 filterOne（买入前置过滤）。
   // 平铺时该 import 行必须剥掉，并改为从 window.__lhbfilter__ 解构——
   // 否则残留的 import 语句会让整段被 window.eval 的脚本语法报错（整块区六全挂）。
@@ -922,6 +926,11 @@ escClose();
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/alert_log\.js';/, '')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/paper_review\.js';/, '')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/predict\.js';/, '')
+    // paper_ui.js 现在还 import 了 './src/lhb_codec.js' 的 decodeStrField（标的池 reason 码表解回）。
+    // 与其它 import 一样必须剥掉，否则残留的 import 语句会让整段被 window.eval 的脚本语法报错。
+    // 实现从 window.__lhbcodec__ 解构——绝不手抄码表逻辑（手抄等于第二套口径）。
+    .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/lhb_codec\.js';/,
+      'const { decodeStrField } = window.__lhbcodec__;')
     .replace(/^export\s+/gm, '');
   // src/picks.js（研判推荐引擎）同样是 ESM 纯函数，零依赖。
   // 它 import 了 src/lhb.js 的 RANGE_BOARD_RE / isNewStock（口径唯一出处）。
@@ -1055,6 +1064,12 @@ escClose();
       .replace(/^export\s+/gm, '')
     + '\nreturn { buildPaperReview, reviewAccount, reviewTrades, reviewPositions, buildAdvice, REVIEW_CFG, ADVICE_LEVELS, REVIEW_TITLE, REVIEW_VERSION, POS_CFG, MARKET_CFG, TIER_THRESHOLDS };\n})();';
   const reviewFlat = `const { buildPaperReview, REVIEW_TITLE, REVIEW_VERSION } = window.__paperreview__;`;
+  // src/lhb_codec.js（存储层编解码：码表压缩 / 惰性提子 / 落盘自检）：零依赖纯函数 ESM。
+  // paper_ui.js 用它的 decodeStrField 把标的池的 reasonIdx 解回明文。
+  // 包 IIFE 挂到 window.__lhbcodec__，**绝不手抄**码表逻辑——手抄等于第二套口径。
+  const lhbCodecBundle = `window.__lhbcodec__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/lhb_codec.js'), 'utf8').replace(/^export\s+/gm, '')
+    + '\nreturn { decodeStrField, encodeStrField, decodeArchive, encodeArchive, buildReasonCodes, REASON_PLACEHOLDER };\n})();';
   // quoteSymbol：与 src/sources.js 同口径（沪 6/9 开头、深 0/3、北 4/8/920）
   const quoteSymbolShim = `function quoteSymbol(code){
     const c = String(code || '').trim();
@@ -1064,7 +1079,7 @@ escClose();
     return null;
   }`;
   try {
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
   } catch (e) {
     check('模拟交易：paper_ui.js 在 jsdom 中可执行', false, e.message);
   }
@@ -1471,7 +1486,7 @@ escClose();
     let threw = null;
     try {
       // 重新执行一遍 paper_ui.js：boot() 会 load() 到上面这份种子 → renderAllPaper()
-      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
+      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
       await new Promise((r) => setTimeout(r, 800));
     } catch (e) { threw = e; }
     check('模拟交易·持仓：带 pxStale 的种子账本渲染不抛错',
@@ -2474,6 +2489,85 @@ check('样式：降级告警标签有独立样式类（.pk-outflow）', cssTxt.i
   check('分层：主档 archive.json 全程未被拉取（首屏与按需路径都应走切片）',
     fetchCalls.filter((u) => u === 'data/archive.json').length === 0,
     `${fetchCalls.filter((u) => u === 'data/archive.json').length} 次`);
+}
+
+// ── 标的池分档：首屏只拉精简池，完整池延后 ─────────────────────────────────
+// 为什么必须守：
+//   ① 精简池是"首屏唯一能接受的池子"——它一旦缺 name，持仓/待成交/台账全变成光秃秃的代码；
+//   ② 但精简池**绝不能**开始承担软依赖（板段/幅度/最近收盘价）。今天它不含这些字段，
+//      所以不会骗人；哪天有人往精简池里塞 active/quoteFresh 这类"随时间漂移"的字段，
+//      首屏就会显示 9 天前的活跃数——这正是本次要修的那类静默错误。
+//   ③ 完整池必须**只拉一次**，且必须在首屏之后（否则分档白做）。
+{
+  const paperRaw = readFileSync(join(ROOT, 'paper_ui.js'), 'utf8');
+  // ① 精简池字段收敛：只允许 code / name（顶层 meta 另算）
+  const liteKeys = new Set();
+  for (const r of uniLite.symbols || []) for (const k of Object.keys(r)) liteKeys.add(k);
+  const liteExtra = [...liteKeys].filter((k) => k !== 'code' && k !== 'name');
+  check('标的池：精简池只含 code + name（多一个字段就多一分"过期副本"的风险）',
+    (uniLite.symbols || []).length > 3000 && liteExtra.length === 0,
+    `${(uniLite.symbols || []).length} 只 · 越界字段 ${liteExtra.join(',') || '无'}`);
+  // ② 精简池不得含"随时间漂移"的判定字段——这类字段最危险（看着对，其实过期）
+  const liteDrift = ['active', 'quoteFresh', 'lastSeen', 'appearances', 'asOf']
+    .filter((k) => liteKeys.has(k));
+  check('标的池：精简池不含随时间漂移的字段（active/quoteFresh/asOf 等，过期了看不出来）',
+    liteDrift.length === 0, liteDrift.join(',') || '无');
+  // ③ 精简池必须显著小于完整池（否则分档没有意义）
+  const liteBytes = Buffer.byteLength(JSON.stringify(uniLite));
+  const fullBytes = Buffer.byteLength(JSON.stringify(uniObj));
+  check('标的池：精简池 < 完整池的 20%（分档的全部意义；否则不如不分）',
+    liteBytes < fullBytes * 0.2, `${(liteBytes / 1024).toFixed(1)}KB / ${(fullBytes / 1024).toFixed(1)}KB`);
+  // ④ 名称映射必须完整：精简池漏一只，那只票在持仓表里就没有名字
+  const missingName = (uniObj.symbols && Object.values(uniObj.symbols) || [])
+    .filter((r) => !(uniLite.symbols || []).some((x) => x.code === r.code)).length;
+  check('标的池：精简池覆盖完整池全部代码（漏一只＝那只票在持仓表里没有名字）',
+    missingName === 0, `漏 ${missingName} 只`);
+  // ⑤ 硬依赖不许落到完整池上：首屏渲染用到的字段（name）必须来自精简池
+  check('标的池：paper_ui 首屏拉的是精简池（paper_universe-lite.json）',
+    /paper_universe-lite\.json/.test(paperRaw) && /UNI_LITE_FILE/.test(paperRaw), '');
+  // ⑥ 完整池必须延后且有"只拉一次"的守卫（模块级槽位）
+  const fullIdx = paperRaw.indexOf('UNI_FULL_FILE');
+  const bootIdx = paperRaw.indexOf('async function boot');
+  check('标的池：完整池的拉取点定义在 boot 之前、调用在首屏渲染之后',
+    fullIdx >= 0 && /loadFullUniverse\(\)\.then/.test(paperRaw), '');
+  check('标的池：完整池只拉一次（模块级 promise 槽位；无槽位＝每次输入代码都重拉 1MB）',
+    /__uniFullPromise/.test(paperRaw), '');
+  // ⑦ 运行时：完整池在整个页面生命周期内只被拉一次
+  const uniHits = fetchCalls.filter((u) => u === 'data/paper_universe.json').length;
+  check('标的池：完整池运行时拉取 ≤ 1 次（分档的另一半守卫）',
+    uniHits <= 1, `${uniHits} 次`);
+  // ⑧ 运行时：精简池必须真的被拉过（否则就是"以为省了，其实还在拉 1MB"）
+  check('标的池：精简池运行时确实被拉取（首屏走的是它）',
+    fetchCalls.some((u) => u === 'data/paper_universe-lite.json'),
+    fetchCalls.filter((u) => /paper_universe/.test(u)).join(' , ') || '一个都没拉');
+  // ⑨ 软依赖不得参与下单判定：这是分档的**安全前提**。
+  //    active/quoteFresh/lastSeen/srcs/reason/huanshou 全部只影响展示文案；
+  //    一旦有人拿 u.active 去拦下单，分档就变成"先看到的信息决定能不能下单"。
+  const uniSoftInGate = ['u?.active', 'u?.quoteFresh', 'u?.lastSeen', 'u?.srcs', 'u?.reason']
+    .filter((p) => paperRaw.includes(p));
+  check('标的池：软依赖字段（active/quoteFresh/lastSeen/srcs/reason）不参与下单判定',
+    uniSoftInGate.length === 0, uniSoftInGate.join(',') || '无');
+  // ⑩ 板段/幅度必须由代码规则推导，不得读池里的副本（副本会过期，规则不会）
+  check('标的池：板段与涨跌停幅度由 boardOf/limitPctOf 推导（不读池内副本）',
+    /limitPct: limitPctOf\(c, name\)/.test(paperRaw) && /const b = boardOf\(c\)/.test(paperRaw)
+    && !/u\?\.limitPct|u\?\.boardLabel/.test(paperRaw), '');
+  // ⑪ 分档必须被**披露**：分档本身没问题，"用户不知道现在是哪一档"才是。
+  //    #loadScope 是唯一披露点，两条分档链（档案深度 / 标的池档位）都要在里面。
+  const appRaw2 = readFileSync(join(ROOT, 'app.js'), 'utf8');
+  check('标的池：分档状态在 #loadScope 里被披露（用户要知道数字来自哪一档）',
+    /function renderScope\(/.test(appRaw2) && /__uniStaged/.test(appRaw2)
+    && /标的池：精简档/.test(appRaw2), '');
+  // ⑫ 补全完成后要能**只**重刷披露块，而不是重跑整页渲染
+  check('标的池：补全后只重刷披露块（window.__renderScope，不重跑 7 段渲染）',
+    /window\.__renderScope\s*=\s*renderScope/.test(appRaw2)
+    && /window\.__renderScope\(/.test(paperRaw), '');
+  // 运行时：首屏披露里确实带上了"精简档"
+  {
+    const scopeTxt = txt('loadScope');
+    check('标的池：首屏 #loadScope 文案含"标的池：精简档"（运行时可见）',
+      /标的池：精简档/.test(scopeTxt) || /精简池缺失/.test(scopeTxt),
+      scopeTxt.slice(0, 90));
+  }
 }
 
 check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' | '));
