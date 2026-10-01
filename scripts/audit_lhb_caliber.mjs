@@ -55,6 +55,46 @@ for (const rel of files) {
 }
 check('源码无歧义字段 net_total_yi、无重复的区间榜判别式', hits.length === 0, hits.join(' ; '));
 
+// ── A2. 文案与权重一致性：资金面到底参不参与打分（易被写错的口径锁）────────────
+// 背景：V5.0 五模块分解分（情绪/盈亏/广度/题材/主线）**不含**资金面；V5.2 主分数是**七因子**情绪分，
+//       其中龙虎净额 s_net 占 20%。历史上因沿用 V5.0 旧文案，报告里出现过「资金面不参与打分」
+//       这类**与权重直接矛盾**的整体否定，甚至同一句里既写「龙虎净额20%」又写「不参与打分」。
+// 本守卫把两件事锁死：① 权重确实 > 0（资金面参与打分）；② 源码里不得出现整体否定措辞。
+const cfg = (await import('../src/config.js')).default;
+const netW = cfg?.weights?.s_net20;
+check('权重事实：资金面（龙虎净额 s_net20）权重 > 0 —— 资金面参与主分数', Number(netW) > 0,
+  `config.weights.s_net20 = ${netW}`);
+// 整体否定措辞黑名单：出现即视为与权重冲突。
+// 设计要点（踩过两次坑）：
+//   ① 词距可跨逗号（真实回归文案就是「资金面为辅助观测，不参与打分」），但不得跨句号/分号；
+//   ② 先剥离「被引用的措辞」——「不可据此说『资金面不参与打分』」「不是"…"」里的引号内容是在
+//      警告读者别这么写，本身正确。直接删掉引号内文本再匹配，比用 lookbehind 更可靠
+//      （lookbehind 在跨子句匹配时位置会错，实测漏判）。
+const BAN_PHRASES = [
+  /资金面[^。；]{0,24}不参与打分/,
+  /资金面[^。；]{0,24}移出打分/,
+  /资金面[^。；]{0,24}降为辅助模块[^。；]{0,8}不参与/,
+];
+const blameHits = [];
+for (const rel of files) {
+  const abs = path.join(ROOT, rel);
+  if (!existsSync(abs)) continue;
+  // 只看代码/模板文本，跳过注释行（注释里可能正是在说明「不能说资金面不参与打分」）
+  const raw = readFileSync(abs, 'utf8');
+  const codeOnly = raw.split('\n')
+    .filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln))
+    .join('\n')
+    // 剥离反引号/中英文引号包裹的引用片段（纠正性引用，非断言）
+    .replace(/[「『“‘][^」』”’]{0,40}[」』”’]/g, '〔引用〕')
+    .replace(/[`][^`]{0,40}[`]/g, '〔引用〕');
+  for (const re of BAN_PHRASES) {
+    const g = new RegExp(re.source, 'g');
+    for (const m of codeOnly.matchAll(g)) blameHits.push(`${rel} 命中「${m[0]}」`);
+  }
+}
+check('文案守卫：源码不得出现「资金面不参与打分」类整体否定（与 s_net20 权重矛盾）',
+  blameHits.length === 0, blameHits.join(' ; '));
+
 // ── B. 存档逐日不变量 ────────────────────────────────────────────────────────
 const arch = JSON.parse(readFileSync(ARCHIVE, 'utf8'));
 const days = (arch.all_days || []).filter((d) => d && (d.lhb || []).length);
