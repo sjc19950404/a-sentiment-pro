@@ -11,7 +11,9 @@ import {
   BASELINE_VERSION, FORMULA_VERSIONS, WEIGHT_TO_FACTOR,
   versionKeys, versionOf, recomputeDay, computableDays, computeAllVersions,
   netBuyV45, netBuyV50, netBuyV52, nextRetOf, COMPUTE_TIERS,
+  NET_HIST_WINDOW, NET_HIST_MIN,
 } from '../src/formula_versions.js';
+import { NET_NORMALIZER_TANH5, NET_NORMALIZER_PCTL } from '../src/sentiment.js';
 import { pearson, spearman, ranks, directionAccuracy } from './_helpers_regression.mjs';
 import { caliberFromDay } from '../src/lhb.js';
 
@@ -22,10 +24,27 @@ test('公式版本：基线版本与 config.formulaVersion 一致', () => {
     'config.formulaVersion 与 formula_versions 的基线不一致 —— 改版本号必须两处同步');
 });
 
-test('公式版本：恰好三版，且只有一个是基线', () => {
-  assert.deepEqual(versionKeys(), ['v4.5', 'v5.0', 'v5.2-pro']);
-  assert.equal(FORMULA_VERSIONS.filter((v) => v.baseline).length, 1);
+test('公式版本：版本表与基线唯一性', () => {
+  assert.deepEqual(versionKeys(), ['v4.5', 'v5.0', 'v5.2-pro', 'v5.3-pro'],
+    '版本表变了——新增/删除版本必须同步更新本断言，且确认回归报告已覆盖');
+  assert.equal(FORMULA_VERSIONS.filter((v) => v.baseline).length, 1, '基线必须唯一');
   assert.equal(versionOf(BASELINE_VERSION).baseline, true);
+  // 候选版本纪律：v5.3 必须显式声明 candidate，防止它被误当成"升级后的基线"。
+  // 这条断言的存在意义：切换基线是一个**重大动作**（影响分位、档位、推荐、回测），
+  // 必须有意识地做，而不是某次重构顺手就改了。
+  const cands = FORMULA_VERSIONS.filter((v) => v.candidate).map((v) => v.key);
+  assert.deepEqual(cands, ['v5.3-pro'], '候选版本集合变化——确认是否符合预期');
+  assert.equal(versionOf(BASELINE_VERSION).candidate, undefined, '基线不得同时是候选');
+});
+
+test('公式版本：v5.3 只改归一器、净买原料与基线完全一致', () => {
+  // 这是 v5.3 的**定义性约束**：差异必须只在归一层。若哪天有人顺手也改了净买口径，
+  // 那么"饱和改善"就无法归因到归一方式上——两个变量同时动，结论不可解释。
+  const v53 = versionOf('v5.3-pro');
+  const v52 = versionOf(BASELINE_VERSION);
+  assert.equal(v53.extractNetBuy, v52.extractNetBuy, 'v5.3 的 extractNetBuy 必须与基线是同一个函数引用');
+  assert.equal(typeof v53.normalizer, 'function', 'v5.3 必须声明 normalizer');
+  assert.equal(v52.normalizer, undefined, '基线不得声明 normalizer（走历史 tanh5 默认）');
 });
 
 test('公式版本：每版都有 extractNetBuy 与描述', () => {
@@ -139,6 +158,101 @@ test('口径：三版分数严格递减（净买越小，s_net 越低）', () =>
   const s52 = recomputeDay(SYNTH_DAY, BASELINE_VERSION, { weights: config.weights }).score;
   assert.ok(s45 > s50, `v4.5(${s45}) 应高于 v5.0(${s50})`);
   assert.ok(s50 > s52, `v5.0(${s50}) 应高于 v5.2(${s52})`);
+});
+
+// ────────────────────────── 二·B、归一层（v5.3 的核心不变量）──────────────────────
+//
+// v5.3 与基线的净买完全相同，差异只在 s_net 的换算。故这里不测"分数高低"，
+// 只测归一层本身的三条性质：单调、有界、不饱和，以及历史窗口的切片语义。
+
+test('归一器：tanh5 就是历史基线公式（不得被悄悄改动）', () => {
+  // 直接对拍公式，防止有人"顺手优化"我 NET_NORMALIZER_TANH5
+  for (const x of [-80, -20, -5, -1, 0, 1, 5, 20, 80]) {
+    assert.equal(NET_NORMALIZER_TANH5(x), Math.tanh(x / 5) * 50 + 50, `tanh5(${x}) 偏离历史公式`);
+  }
+  assert.equal(NET_NORMALIZER_TANH5(null), null, 'null 必须原样返回 null（交调用方标 missing）');
+  assert.equal(NET_NORMALIZER_TANH5(NaN), null, 'NaN 必须返回 null');
+});
+
+test('归一器：分位映射在历史不足时返回 null，不硬算', () => {
+  // 历史 < minHist(20) → 不可信 → null。这是**防止静默填假值**的关键守卫：
+  // 若这里返回一个数，调用方就无从区分"算出来的"和"猜出来的"。
+  assert.equal(NET_NORMALIZER_PCTL(10, { netHistory: [] }), null, '空历史必须返回 null');
+  assert.equal(NET_NORMALIZER_PCTL(10, { netHistory: [1, 2, 3] }), null, '历史 3 天 < 20 必须返回 null');
+  const h20 = Array.from({ length: 20 }, (_, i) => i + 1);
+  assert.equal(typeof NET_NORMALIZER_PCTL(10, { netHistory: h20 }), 'number', '历史 20 天应可算');
+});
+
+test('归一器：分位映射单调、有界、且 50 分位落回中性 50', () => {
+  // 历史取 1..60，当日值扫过全区间，检查单调（非严格：clamp 到边界后会出现相等）+ 落在 [1,99]
+  const hist = Array.from({ length: 60 }, (_, i) => i + 1);
+  const vals = [0.5, 1, 5, 15, 30, 45, 60, 100, 1000].map((x) => NET_NORMALIZER_PCTL(x, { netHistory: hist }));
+  for (let i = 1; i < vals.length; i++) {
+    // 非严格递增：极弱/极强值会被 clamp 到 1 或 99，此时相邻可相等。
+    // 断言"不得下降"即可——下降才是真 bug（更强的净买算出更低的分）。
+    assert.ok(vals[i] >= vals[i - 1], `分位映射不得下降：${vals[i - 1]} → ${vals[i]}`);
+  }
+  for (const v of vals) assert.ok(v >= 1 && v <= 99, `因子值应落在 [1,99]：${v}`);
+  // 中位数落到 50 附近（允许并列值造成的少量偏移）
+  const mid = NET_NORMALIZER_PCTL(30, { netHistory: hist });
+  assert.ok(Math.abs(mid - 50) <= 5, `历史中位数附近应≈50，实际 ${mid}`);
+  // 极值必须真的触到边界（证明分辨力用满了，而不是被压在中间一小段）
+  assert.equal(vals[0], 1, '远低于历史区间应触下界 1');
+  assert.equal(vals[vals.length - 1], 99, '远高于历史区间应触上界 99');
+});
+
+test('归一器：分位映射对符号做镜像（流出与流入强度对称、方向相反）', () => {
+  const hist = Array.from({ length: 60 }, (_, i) => i + 1);
+  const inflow = NET_NORMALIZER_PCTL(50, { netHistory: hist });   // 强流入
+  const outflow = NET_NORMALIZER_PCTL(-50, { netHistory: hist }); // 同强度流出
+  assert.ok(inflow > 50, `流入应 > 50，实际 ${inflow}`);
+  assert.ok(outflow < 50, `流出应 < 50，实际 ${outflow}`);
+  // 镜像性：与 50 的距离相等
+  assert.ok(Math.abs((inflow - 50) + (outflow - 50)) < 1e-9,
+    `流入(${inflow}) 与流出(${outflow}) 应关于 50 对称`);
+});
+
+test('归一层：v5.3 确实解除了饱和（tanh5 在大净买上顶格，分位版不顶格）', () => {
+  // ⚠ 必须用**真能顶格**的量级来演示饱和。实测：tanh5(4 亿)=83.2、tanh5(10 亿)=98.2、
+  //   tanh5(20 亿)=99.96。故取 20 亿——这是档案里 p75 附近的真实量级（20.09 亿），
+  //   用 4 亿会得到 83.2，根本演示不出饱和（我第一版就写错了这个数）。
+  const hist = Array.from({ length: 60 }, (_, i) => (i + 1) * 0.5); // 0.5 ~ 30 亿
+  const t5 = NET_NORMALIZER_TANH5(20);
+  const pc = NET_NORMALIZER_PCTL(20, { netHistory: hist });
+  assert.ok(t5 > 99.9, `tanh5 在 20 亿上应已顶格（实际 ${t5.toFixed(4)}）——这正是饱和问题`);
+  assert.ok(pc < 99, `分位版不应顶格（实际 ${pc.toFixed(2)}）`);
+  // 关键：tanh5 下 20 → 78 亿只挪动了不到 0.1 分（分辨力耗尽）；
+  // 分位版应把这段拉开。这是"解除饱和"的**操作性定义**。
+  const t5big = NET_NORMALIZER_TANH5(78); // 档案 max
+  const pcBig = NET_NORMALIZER_PCTL(78, { netHistory: hist });
+  assert.ok((pcBig - pc) > 5, `分位版在 20→78 亿区间应拉开 ≥5 分（实际 ${(pcBig - pc).toFixed(2)}）`);
+  assert.ok((t5big - t5) < 0.2, `tanh5 在 20→78 亿区间几乎无变化（实际 ${(t5big - t5).toFixed(4)}）`);
+});
+
+test('归一层：v5.3 的 recomputeDay 走分位归一，v5.2 仍走 tanh5', () => {
+  // 端到端：同一夹具、同一净买，两版 s_net 应不同（因为归一方式不同），
+  // 但 netBuy 应完全相同（因为原料相同）。
+  const hist = Array.from({ length: 60 }, (_, i) => (i + 1) * 0.5);
+  const ctx = { weights: config.weights, netHistory: hist };
+  const r52 = recomputeDay(SYNTH_DAY, 'v5.2-pro', ctx);
+  const r53 = recomputeDay(SYNTH_DAY, 'v5.3-pro', ctx);
+  assert.equal(r52.netBuy, r53.netBuy, 'v5.2 与 v5.3 的净买原料必须完全一致');
+  // ⚠ computeSentiment 输出前会把因子四舍五入到 1 位小数（Math.round(v*10)/10），
+  //   故断言必须比对**取整后**的值，否则 fake 精度会制造假失败。
+  const r1 = (v) => Math.round(v * 10) / 10;
+  assert.equal(r52.factors.s_net, r1(NET_NORMALIZER_TANH5(4)), 'v5.2 的 s_net 必须走 tanh5');
+  assert.equal(r53.factors.s_net, r1(NET_NORMALIZER_PCTL(4, { netHistory: hist })), 'v5.3 的 s_net 必须走分位');
+  assert.notEqual(r52.factors.s_net, r53.factors.s_net, '两版 s_net 应因归一方式不同而不同');
+  // 归一层留痕
+  assert.equal(r52.netCaliber.normalizer, 'tanh5');
+  assert.equal(r53.netCaliber.normalizer, 'percentile');
+  assert.equal(r53.netCaliber.histLen, 60, '应记录实际用到的历史长度');
+});
+
+test('归一层：不传 netHistory 时 v5.3 的 s_net 标 missing，而不是静默填 50', () => {
+  // 这是**最重要的守卫**：缺历史时绝不能假装算出来了。
+  const r = recomputeDay(SYNTH_DAY, 'v5.3-pro', { weights: config.weights });
+  assert.ok(r.missing.includes('s_net20'), `缺历史时 s_net 应进 missing，实际 missing=${JSON.stringify(r.missing)}`);
 });
 
 test('口径：三版只在 s_net 上有差异，其余六因子逐字段相同', () => {

@@ -2622,6 +2622,152 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// 公式版本对比卡（#116）
+//
+// 守的是什么：候选版与基线**在视觉上必须可分**。
+//   本项目最容易犯的错不是"算错"，而是"把候选当成品"——v5.3 的 s_net 饱和是 0/N，
+//   比基线(10/N)漂亮得多，若不标出"这是候选"，读者会自然认为它是该用的那版。
+//   故断言徽标、行样式、饱和列的语义色都必须真实渲染出来。
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const verTbl = $('verTable');
+  const verSum = $('verSummary');
+  const verFoot = $('verCaution');
+  if (!verTbl) {
+    check('公式版本对比：卡内表格存在', false, '未找到 #verTable');
+  } else {
+    // 数据文件缺失是允许的（独立文件、失败不影响他区块），但那时必须显示生成命令，
+    // 不能静默空白——"没有内容"与"没生成"对读者是两件事。
+    const rows = [...verTbl.querySelectorAll('tbody tr')];
+    const emptyMsg = rows.length === 1 && /empty/.test(rows[0].className || '');
+    if (emptyMsg) {
+      check('公式版本对比：数据缺失时显示生成命令（非静默空白）',
+        /version_regression\.mjs/.test(verTbl.textContent), verTbl.textContent.slice(0, 80));
+    } else {
+      check('公式版本对比：渲染出 4 个版本行', rows.length === 4, `${rows.length} 行`);
+      // 基线必须可识别（徽标 + 行样式），否则"哪个在线上"不可知
+      const baseRow = rows.find((r) => /ver-base/.test(r.className));
+      check('公式版本对比：基线行有专属样式与徽标',
+        !!baseRow && /基线/.test(baseRow.textContent),
+        baseRow ? baseRow.textContent.slice(0, 50) : '未找到基线行');
+      // 候选必须可识别
+      const candRow = rows.find((r) => /ver-cand/.test(r.className));
+      check('公式版本对比：候选行有专属样式与徽标',
+        !!candRow && /候选/.test(candRow.textContent),
+        candRow ? candRow.textContent.slice(0, 50) : '未找到候选行');
+      // 归一层列必须显示归一器名（这是 v5.2 vs v5.3 差异的唯一可解释来源）
+      const bodyText = verTbl.textContent;
+      check('公式版本对比：归一层列显示归一器名（分位映射 / tanh(k=5)）',
+        /分位映射/.test(bodyText) && /tanh\(k=5\)/.test(bodyText),
+        '');
+      // 饱和列语义色：>0 标红（bad）、0 标绿（ok）。两色必须同时出现——
+      // 只出现一种说明要么全饱和要么全不饱和，那多半是数据没接上。
+      check('公式版本对比：饱和列用状态色区分（有饱和 vs 无饱和）',
+        /ver-sat-bad/.test(verTbl.innerHTML) && /ver-sat-ok/.test(verTbl.innerHTML),
+        '');
+      // 表头七列与 HTML 定义一致
+      const ths = [...verTbl.querySelectorAll('thead th')].map((x) => x.textContent.trim());
+      check('公式版本对比：表头 7 列齐全', ths.length === 7, ths.join('|'));
+      // 摘要须披露样本量（否则读者会按 33 天样本得出"版本优劣"结论）
+      check('公式版本对比：摘要披露样本量与饱和判定阈值',
+        !verSum || (/主样本/.test(verSum.textContent) && /饱和判定/.test(verSum.textContent)),
+        verSum ? verSum.textContent.slice(0, 80) : '(无摘要)');
+      // cautions 必须渲染（样本量不足的披露是本表最重要的一行字）
+      check('公式版本对比：披露 cautions（样本量不足不得隐去）',
+        !verFoot || /样本|自由度/.test(verFoot.textContent),
+        verFoot ? verFoot.textContent.slice(0, 80) : '(无披露)');
+    }
+  }
+  // 源码层：前端不得自己算 Pearson / 饱和率（那些是回归脚本的职责）；
+  // 也**不得重写 s_net 归一公式**——这是本项目最容易复发的一类漂移：
+  //   app.js 曾硬编码 `Math.tanh(nb/5)*50+50` 展示"修正前后因子分"。基线是 v5.2 时它恰好正确，
+  //   一旦切到 v5.3（分位映射）就会静默显示错误分数。故这里精确匹配"tanh 除以 5 再乘 50 加 50"
+  //   这一特定形状，而不是笼统禁掉 Math.tanh（量能因子等处合法使用 tanh，笼统禁止会误报）。
+  {
+    const appSrcVer = readFileSync(join(ROOT, 'app.js'), 'utf8');
+    // 先剥掉注释再检测：否则"注释里提到这个公式"会被误判成"代码里抄了这个公式"，
+    // 而为了让注释能讨论这个坑，注释里必然会写出它。剥离注释让守卫只盯**可执行代码**。
+    const codeOnly = appSrcVer
+      .replace(/\/\*[\s\S]*?\*\//g, '')   // 块注释
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1'); // 行注释（避开 http:// 这类）
+    const tanh5Copy = /Math\.tanh\s*\([^)]*\/\s*5\s*\)\s*\*\s*50\s*\+\s*50/.test(codeOnly);
+    check('公式版本对比：前端未自行计算统计量（只读 JSON）',
+      !/function\s+pearson\b/.test(codeOnly) && !tanh5Copy,
+      tanh5Copy ? '发现 s_net 归一公式副本（Math.tanh(x/5)*50+50）——应改为读引擎结果' : '');
+    // 因子分必须从引擎字段读，而不是由净买现算
+    check('公式版本对比：报告里的修正前后因子分读自引擎字段（factorRaw/factorUsed）',
+      /nsMeta\.factorRaw/.test(codeOnly) && /nsMeta\.factorUsed/.test(codeOnly),
+      '');
+  }
+}
+// ════════════════════════════════════════════════════════════════════════════
+// 数据健康面板（#115）
+//
+// 守的是什么：**"未评估"不得显示成"正常"**。
+//   这是本项目反复踩过的一类坑（0 vs 未计算、missing vs 真值 50）：
+//   把"没检查"渲染成绿色"正常"，比不显示面板更糟——它会让人以为查过了。
+//   故断言：unknown 有独立颜色类；数据缺失文案含"没检查/不等于正常"字样。
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const hp = $('healthPanel');
+  check('数据健康：面板元素存在', !!hp, hp ? '' : '未找到 #healthPanel');
+  if (hp) {
+    // jsdom 下 signals-latest.json 存在 → 应渲染出真实面板（而非"未评估"态）
+    const isUnknown = /hl-unknown/.test(hp.className || '');
+    if (isUnknown) {
+      check('数据健康：未评估时显式说明"不等于正常"（不得伪装成 ok）',
+        /没检查/.test(hp.textContent) && /不等于正常/.test(hp.textContent),
+        hp.textContent.slice(0, 90));
+      check('数据健康：未评估态用独立样式类（不借用 ok 的绿）',
+        !/hl-ok/.test(hp.className || ''), hp.className);
+    } else {
+      check('数据健康：面板已渲染（hidden 已解除）', hp.hidden === false, `hidden=${hp.hidden}`);
+      // 整档状态必须是四种之一，且体现在类名上（供 CSS 决定左边框色）
+      const lvCls = ['hl-ok', 'hl-warn', 'hl-fail', 'hl-unknown'].filter((c) => new RegExp(c).test(hp.className || ''));
+      check('数据健康：整档状态类唯一且合法', lvCls.length === 1, `类名 ${hp.className}`);
+      // 三个维度都要在面板里出现（缺一个说明某项被吞掉）
+      const txt = hp.textContent || '';
+      check('数据健康：三个维度都渲染（新鲜度/补位率/字段可用率）',
+        /数据新鲜度/.test(txt) && /因子补位率/.test(txt) && /关键字段可用率/.test(txt), '');
+      // 字段明细必须带"缺失影响"（否则读者不知道该担心什么）
+      check('数据健康：关键字段明细带"缺失影响"说明',
+        /缺失影响/.test(txt), '');
+      // 折叠策略：异常/未知应默认展开（open 属性），正常可折叠
+      const fold = hp.querySelector('details.hl-fold');
+      const level = lvCls[0];
+      check('数据健康：非正常状态默认展开（出问题时要看得见）',
+        level === 'hl-ok' ? true : !!(fold && fold.hasAttribute('open')),
+        `level=${level} open=${fold ? fold.hasAttribute('open') : 'n/a'}`);
+    }
+  }
+  // 源码层：前端不得自行实现健康判定（阈值必须在 src/health.js）
+  {
+    const src = readFileSync(join(ROOT, 'app.js'), 'utf8');
+    const codeOnly2 = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    check('数据健康：前端未自行判定阈值（只读 JSON，不重写 health.js 口径）',
+      !/imputedWarn|imputedFail|fieldWarnRatio/.test(codeOnly2) && !/function\s+healthReport\b/.test(codeOnly2),
+      '前端出现阈值常量或 healthReport 实现＝第二套口径');
+  }
+  // 研判报告内也应有「数据可信度」块（双处渲染：#115 要求面板 + 告警都要）
+  {
+    const body = $('briefBody');
+    const txt = (body && body.textContent) || '';
+    const hasHealth = /数据可信度/.test(txt);
+    check('数据健康：研判报告内含「数据可信度」块（与页面面板双处渲染）', hasHealth,
+      hasHealth ? '' : '报告缺数据可信度段——loadHealth 成功后应重刷报告');
+    if (hasHealth) {
+      // 报告内健康块必须标出等级，不能只给文字而看不出好/坏
+      const blk = body.querySelector('.bf-health');
+      check('数据健康：报告内健康块带等级样式类（可一眼看出好/坏）',
+        !!blk && /bf-hl-(ok|warn|fail|unknown)/.test(blk.className), blk ? blk.className : '无 .bf-health');
+      // 必带口径说明（不参与打分）
+      check('数据健康：报告内健康块带口径说明（不参与打分）',
+        !blk || /不参与打分/.test(blk.textContent), '');
+    }
+  }
+}
+
 // jsdom 未实现的 DOM 桩：不判失败，但**必须打印**——否则将来真出现异常时，
 // 读者会以为"一类错误被静默吞掉了"。单独一条提示说明它们为何不算失败。
 if (notImplemented.length) {

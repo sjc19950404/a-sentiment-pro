@@ -1,7 +1,7 @@
 {
  "kind": "version-regression",
  "version": "1.0",
- "generatedAt": "2026-10-01T15:05:06.797Z",
+ "generatedAt": "2026-10-01T15:37:01.947Z",
  "baseline": "v5.2-pro",
  "formulaVersion": "v5.2-pro",
  "sample": {
@@ -19,7 +19,9 @@
  "cautions": [
   "主样本仅 32 个交易日（含次日收益），统计自由度极低，任何相关系数的 95% 置信区间都宽于 ±0.35——本报告只用于**发现异常**（如某版 s_net 全部饱和、某版分数与收益反向），不足以判定版本优劣。",
   "本样本中有 30/33 天缺少涨跌家数真值（up_count/down_count），s_pos 因子走 posRatio 代理——版本间差异会被代理值稀释，真实差异应大于本表所示。",
-  "三版差异**只在 s_net 一项**，其余六因子完全相同；因此本表差异全部可归因于净买口径（全量/当日/剔新股）。",
+  "版本差异可归因于「净买原料口径」（v4.5 全量 / v5.0 当日 / v5.2 当日剔新股）与「s_net 归一方式」（v5.3 分位映射 vs 其余 tanh5）两个维度；其余因子在各版本中完全相同。",
+  "v5.3-pro 的均分相对基线偏移 -5.38 分（61.2 → 55.8），这是**分位归一转 positive 作用的必然结果**：tanh(x/5) 把中位数交易日顶到 97 分以上，分位映射把中位数拉回 50 分——即\"削掉了虚高\"。⚠ 因此切换基线**必须同步重标定档位阈值（24/65/80）**，否则大量原本判\"满仓\"的日子会掉到\"半仓\"档，这是口径变更而非市场变化。",
+  "饱和改善：s_net ≥99.9 的天数 10/32 → 0/32（候选版 vs 基线）。这是 v5.3 存在的**唯一设计目标**，已达成；但它不能被解读为\"预测力更强\"——Pearson 差异在 n=32 下不显著。",
   "档案共 241 天，其中 208 天因缺 ind_up/amount_yi/indexes 未纳入主样本（partial 档：可算 s_net 差异但无次日收益），故样本集中在 2026-08-14 起。"
  ],
  "versions": [
@@ -27,21 +29,36 @@
    "key": "v4.5",
    "name": "v4.5",
    "desc": "七个因子加权，净买取全量聚合（未滤区间累计榜、未剔新股）",
-   "baseline": false
+   "baseline": false,
+   "candidate": false,
+   "normalizer": "tanh5"
   },
   {
    "key": "v5.0",
    "name": "v5.0",
    "desc": "七个因子加权，净买取当日榜（滤掉区间累计榜），仍含新股",
-   "baseline": false
+   "baseline": false,
+   "candidate": false,
+   "normalizer": "tanh5"
   },
   {
    "key": "v5.2-pro",
    "name": "v5.2-pro",
    "desc": "七个因子加权，净买取当日榜并剔除新股/无涨跌幅限制标的（当前基线）",
-   "baseline": true
+   "baseline": true,
+   "candidate": false,
+   "normalizer": "tanh5"
+  },
+  {
+   "key": "v5.3-pro",
+   "name": "v5.3-pro",
+   "desc": "七个因子加权，净买口径同 v5.2，但 s_net 归一改为滚动分位映射（缓解 tanh 饱和）",
+   "baseline": false,
+   "candidate": true,
+   "normalizer": "percentile"
   }
  ],
+ "satThreshold": 99.9,
  "stats": {
   "v4.5": {
    "version": "v4.5",
@@ -51,7 +68,9 @@
    "scoreStdev": 13.842651188825206,
    "scoreMin": 29.9,
    "scoreMax": 86.3,
-   "sNetSaturated": 20,
+   "sNetSaturated": 15,
+   "sNetMissing": 0,
+   "sNetOk": 32,
    "pearson": 0.09963226328686996,
    "spearman": 0.12757767444288215,
    "direction": {
@@ -61,7 +80,8 @@
     "median": 63.55
    },
    "netPearson": -0.0700691502467432,
-   "n": 32
+   "n": 32,
+   "normalizer": "tanh5"
   },
   "v5.0": {
    "version": "v5.0",
@@ -71,7 +91,9 @@
    "scoreStdev": 14.061380421382486,
    "scoreMin": 29.9,
    "scoreMax": 85.6,
-   "sNetSaturated": 12,
+   "sNetSaturated": 10,
+   "sNetMissing": 0,
+   "sNetOk": 32,
    "pearson": 0.09894444019304349,
    "spearman": 0.11915673693858846,
    "direction": {
@@ -81,7 +103,8 @@
     "median": 62.1
    },
    "netPearson": 0.12834964640474558,
-   "n": 32
+   "n": 32,
+   "normalizer": "tanh5"
   },
   "v5.2-pro": {
    "version": "v5.2-pro",
@@ -91,7 +114,9 @@
    "scoreStdev": 14.12665598343053,
    "scoreMin": 29.9,
    "scoreMax": 85.6,
-   "sNetSaturated": 12,
+   "sNetSaturated": 10,
+   "sNetMissing": 0,
+   "sNetOk": 32,
    "pearson": 0.11034545924770793,
    "spearman": 0.14462469128654312,
    "direction": {
@@ -101,7 +126,31 @@
     "median": 62.1
    },
    "netPearson": 0.12834964640474558,
-   "n": 32
+   "n": 32,
+   "normalizer": "tanh5"
+  },
+  "v5.3-pro": {
+   "version": "v5.3-pro",
+   "name": "v5.3-pro",
+   "desc": "七个因子加权，净买口径同 v5.2，但 s_net 归一改为滚动分位映射（缓解 tanh 饱和）",
+   "scoreMean": 55.84062500000001,
+   "scoreStdev": 11.135495683304953,
+   "scoreMin": 39.9,
+   "scoreMax": 83.2,
+   "sNetSaturated": 0,
+   "sNetMissing": 0,
+   "sNetOk": 32,
+   "pearson": 0.1315338026348612,
+   "spearman": 0.11150849406860046,
+   "direction": {
+    "acc": 0.5625,
+    "hit": 18,
+    "total": 32,
+    "median": 53.849999999999994
+   },
+   "netPearson": 0.12834964640474558,
+   "n": 32,
+   "normalizer": "percentile"
   }
  },
  "shifts": {
@@ -116,6 +165,12 @@
    "meanDiff": 0.3406249999999993,
    "maxAbsDiff": 2.799999999999997,
    "changedDays": 7
+  },
+  "v5.3-pro": {
+   "vs": "v5.2-pro",
+   "meanDiff": -5.381249999999998,
+   "maxAbsDiff": 11.099999999999994,
+   "changedDays": 32
   }
  },
  "daily": [
@@ -127,17 +182,38 @@
    "scores": {
     "v4.5": 59,
     "v5.0": 59,
-    "v5.2-pro": 59
+    "v5.2-pro": 59,
+    "v5.3-pro": 49
    },
    "nets": {
     "v4.5": 22.43,
     "v5.0": 22.71,
-    "v5.2-pro": 22.71
+    "v5.2-pro": 22.71,
+    "v5.3-pro": 22.71
    },
    "sNet": {
     "v4.5": 100,
     "v5.0": 100,
-    "v5.2-pro": 100
+    "v5.2-pro": 100,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 0
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 0
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 0
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 0
+    }
    }
   },
   {
@@ -148,17 +224,38 @@
    "scores": {
     "v4.5": 68.5,
     "v5.0": 68.5,
-    "v5.2-pro": 68.5
+    "v5.2-pro": 68.5,
+    "v5.3-pro": 58.5
    },
    "nets": {
     "v4.5": 17.89,
     "v5.0": 13.91,
-    "v5.2-pro": 13.91
+    "v5.2-pro": 13.91,
+    "v5.3-pro": 13.91
    },
    "sNet": {
     "v4.5": 99.9,
     "v5.0": 99.6,
-    "v5.2-pro": 99.6
+    "v5.2-pro": 99.6,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 1
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 1
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 1
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 1
+    }
    }
   },
   {
@@ -169,17 +266,38 @@
    "scores": {
     "v4.5": 59.1,
     "v5.0": 57,
-    "v5.2-pro": 57
+    "v5.2-pro": 57,
+    "v5.3-pro": 49.1
    },
    "nets": {
     "v4.5": 19.42,
     "v5.0": 5.33,
-    "v5.2-pro": 5.33
+    "v5.2-pro": 5.33,
+    "v5.3-pro": 5.33
    },
    "sNet": {
     "v4.5": 100,
     "v5.0": 89.4,
-    "v5.2-pro": 89.4
+    "v5.2-pro": 89.4,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 2
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 2
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 2
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 2
+    }
    }
   },
   {
@@ -190,17 +308,38 @@
    "scores": {
     "v4.5": 29.9,
     "v5.0": 29.9,
-    "v5.2-pro": 29.9
+    "v5.2-pro": 29.9,
+    "v5.3-pro": 39.9
    },
    "nets": {
     "v4.5": -26.44,
     "v5.0": -25.11,
-    "v5.2-pro": -25.11
+    "v5.2-pro": -25.11,
+    "v5.3-pro": -25.11
    },
    "sNet": {
     "v4.5": 0,
     "v5.0": 0,
-    "v5.2-pro": 0
+    "v5.2-pro": 0,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 3
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 3
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 3
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 3
+    }
    }
   },
   {
@@ -211,17 +350,38 @@
    "scores": {
     "v4.5": 67.8,
     "v5.0": 67.8,
-    "v5.2-pro": 67.8
+    "v5.2-pro": 67.8,
+    "v5.3-pro": 57.9
    },
    "nets": {
     "v4.5": 21.25,
     "v5.0": 19.2,
-    "v5.2-pro": 19.2
+    "v5.2-pro": 19.2,
+    "v5.3-pro": 19.2
    },
    "sNet": {
     "v4.5": 100,
     "v5.0": 100,
-    "v5.2-pro": 99.9
+    "v5.2-pro": 99.9,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 4
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 4
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 4
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 4
+    }
    }
   },
   {
@@ -232,17 +392,38 @@
    "scores": {
     "v4.5": 62.8,
     "v5.0": 62.8,
-    "v5.2-pro": 62.8
+    "v5.2-pro": 62.8,
+    "v5.3-pro": 52.8
    },
    "nets": {
     "v4.5": 39.88,
     "v5.0": 26.97,
-    "v5.2-pro": 26.97
+    "v5.2-pro": 26.97,
+    "v5.3-pro": 26.97
    },
    "sNet": {
     "v4.5": 100,
     "v5.0": 100,
-    "v5.2-pro": 100
+    "v5.2-pro": 100,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 5
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 5
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 5
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 5
+    }
    }
   },
   {
@@ -253,17 +434,38 @@
    "scores": {
     "v4.5": 53.6,
     "v5.0": 49.1,
-    "v5.2-pro": 49.1
+    "v5.2-pro": 49.1,
+    "v5.3-pro": 44.1
    },
    "nets": {
     "v4.5": 8.94,
     "v5.0": 2.75,
-    "v5.2-pro": 2.75
+    "v5.2-pro": 2.75,
+    "v5.3-pro": 2.75
    },
    "sNet": {
     "v4.5": 97.3,
     "v5.0": 75,
-    "v5.2-pro": 75
+    "v5.2-pro": 75,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 6
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 6
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 6
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 6
+    }
    }
   },
   {
@@ -274,17 +476,38 @@
    "scores": {
     "v4.5": 68.8,
     "v5.0": 68.8,
-    "v5.2-pro": 68.8
+    "v5.2-pro": 68.8,
+    "v5.3-pro": 58.8
    },
    "nets": {
     "v4.5": 23.21,
     "v5.0": 22.86,
-    "v5.2-pro": 22.86
+    "v5.2-pro": 22.86,
+    "v5.3-pro": 22.86
    },
    "sNet": {
     "v4.5": 100,
     "v5.0": 100,
-    "v5.2-pro": 100
+    "v5.2-pro": 100,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 7
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 7
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 7
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 7
+    }
    }
   },
   {
@@ -295,17 +518,38 @@
    "scores": {
     "v4.5": 60.7,
     "v5.0": 54.5,
-    "v5.2-pro": 54.5
+    "v5.2-pro": 54.5,
+    "v5.3-pro": 52.8
    },
    "nets": {
     "v4.5": 5.31,
     "v5.0": 0.86,
-    "v5.2-pro": 0.86
+    "v5.2-pro": 0.86,
+    "v5.3-pro": 0.86
    },
    "sNet": {
     "v4.5": 89.3,
     "v5.0": 58.5,
-    "v5.2-pro": 58.5
+    "v5.2-pro": 58.5,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 8
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 8
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 8
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 8
+    }
    }
   },
   {
@@ -316,17 +560,38 @@
    "scores": {
     "v4.5": 66.1,
     "v5.0": 66.1,
-    "v5.2-pro": 66.1
+    "v5.2-pro": 66.1,
+    "v5.3-pro": 56.1
    },
    "nets": {
     "v4.5": 34.07,
     "v5.0": 29.09,
-    "v5.2-pro": 29.09
+    "v5.2-pro": 29.09,
+    "v5.3-pro": 29.09
    },
    "sNet": {
     "v4.5": 100,
     "v5.0": 100,
-    "v5.2-pro": 100
+    "v5.2-pro": 100,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 9
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 9
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 9
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 9
+    }
    }
   },
   {
@@ -337,17 +602,38 @@
    "scores": {
     "v4.5": 61.6,
     "v5.0": 61.6,
-    "v5.2-pro": 61.6
+    "v5.2-pro": 61.6,
+    "v5.3-pro": 52
    },
    "nets": {
     "v4.5": 9.35,
     "v5.0": 9.47,
-    "v5.2-pro": 9.47
+    "v5.2-pro": 9.47,
+    "v5.3-pro": 9.47
    },
    "sNet": {
     "v4.5": 97.7,
     "v5.0": 97.8,
-    "v5.2-pro": 97.8
+    "v5.2-pro": 97.8,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 10
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 10
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 10
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 10
+    }
    }
   },
   {
@@ -358,17 +644,38 @@
    "scores": {
     "v4.5": 62.2,
     "v5.0": 60.5,
-    "v5.2-pro": 60.5
+    "v5.2-pro": 60.5,
+    "v5.3-pro": 52.8
    },
    "nets": {
     "v4.5": 8.5,
     "v5.0": 5.05,
-    "v5.2-pro": 5.05
+    "v5.2-pro": 5.05,
+    "v5.3-pro": 5.05
    },
    "sNet": {
     "v4.5": 96.8,
     "v5.0": 88.3,
-    "v5.2-pro": 88.3
+    "v5.2-pro": 88.3,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 11
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 11
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 11
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 11
+    }
    }
   },
   {
@@ -379,17 +686,38 @@
    "scores": {
     "v4.5": 47.2,
     "v5.0": 45.4,
-    "v5.2-pro": 45.1
+    "v5.2-pro": 45.1,
+    "v5.3-pro": 54.9
    },
    "nets": {
     "v4.5": -5.11,
     "v5.0": -9.03,
-    "v5.2-pro": -9.03
+    "v5.2-pro": -9.03,
+    "v5.3-pro": -9.03
    },
    "sNet": {
     "v4.5": 11.5,
     "v5.0": 2.6,
-    "v5.2-pro": 1.1
+    "v5.2-pro": 1.1,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 12
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 12
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 12
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 12
+    }
    }
   },
   {
@@ -400,17 +728,38 @@
    "scores": {
     "v4.5": 37.3,
     "v5.0": 34.3,
-    "v5.2-pro": 33.5
+    "v5.2-pro": 33.5,
+    "v5.3-pro": 41
    },
    "nets": {
     "v4.5": -1.92,
     "v5.0": -4.01,
-    "v5.2-pro": -4.01
+    "v5.2-pro": -4.01,
+    "v5.3-pro": -4.01
    },
    "sNet": {
     "v4.5": 31.7,
     "v5.0": 16.7,
-    "v5.2-pro": 12.7
+    "v5.2-pro": 12.7,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 13
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 13
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 13
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 13
+    }
    }
   },
   {
@@ -421,17 +770,38 @@
    "scores": {
     "v4.5": 52.6,
     "v5.0": 52,
-    "v5.2-pro": 52
+    "v5.2-pro": 52,
+    "v5.3-pro": 42.8
    },
    "nets": {
     "v4.5": 13.08,
     "v5.0": 8.04,
-    "v5.2-pro": 8.04
+    "v5.2-pro": 8.04,
+    "v5.3-pro": 8.04
    },
    "sNet": {
     "v4.5": 99.5,
     "v5.0": 96.1,
-    "v5.2-pro": 96.1
+    "v5.2-pro": 96.1,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 14
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 14
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 14
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 14
+    }
    }
   },
   {
@@ -442,17 +812,38 @@
    "scores": {
     "v4.5": 69,
     "v5.0": 69,
-    "v5.2-pro": 69
+    "v5.2-pro": 69,
+    "v5.3-pro": 59
    },
    "nets": {
     "v4.5": 25.45,
     "v5.0": 19.43,
-    "v5.2-pro": 19.43
+    "v5.2-pro": 19.43,
+    "v5.3-pro": 19.43
    },
    "sNet": {
     "v4.5": 100,
     "v5.0": 100,
-    "v5.2-pro": 100
+    "v5.2-pro": 100,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 15
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 15
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 15
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 15
+    }
    }
   },
   {
@@ -463,17 +854,38 @@
    "scores": {
     "v4.5": 80.7,
     "v5.0": 80.7,
-    "v5.2-pro": 80.7
+    "v5.2-pro": 80.7,
+    "v5.3-pro": 70.7
    },
    "nets": {
     "v4.5": 69.52,
     "v5.0": 49.21,
-    "v5.2-pro": 49.21
+    "v5.2-pro": 49.21,
+    "v5.3-pro": 49.21
    },
    "sNet": {
     "v4.5": 100,
     "v5.0": 100,
-    "v5.2-pro": 100
+    "v5.2-pro": 100,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 16
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 16
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 16
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 16
+    }
    }
   },
   {
@@ -484,17 +896,38 @@
    "scores": {
     "v4.5": 78.4,
     "v5.0": 68.3,
-    "v5.2-pro": 68.3
+    "v5.2-pro": 68.3,
+    "v5.3-pro": 68.5
    },
    "nets": {
     "v4.5": 13.42,
     "v5.0": -0.11,
-    "v5.2-pro": -0.11
+    "v5.2-pro": -0.11,
+    "v5.3-pro": -0.11
    },
    "sNet": {
     "v4.5": 99.5,
     "v5.0": 48.9,
-    "v5.2-pro": 48.9
+    "v5.2-pro": 48.9,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 17
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 17
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 17
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 17
+    }
    }
   },
   {
@@ -505,17 +938,38 @@
    "scores": {
     "v4.5": 65.5,
     "v5.0": 55.5,
-    "v5.2-pro": 52.7
+    "v5.2-pro": 52.7,
+    "v5.3-pro": 56.1
    },
    "nets": {
     "v4.5": 8.56,
     "v5.0": -0.28,
-    "v5.2-pro": -0.28
+    "v5.2-pro": -0.28,
+    "v5.3-pro": -0.28
    },
    "sNet": {
     "v4.5": 96.8,
     "v5.0": 47.2,
-    "v5.2-pro": 32.8
+    "v5.2-pro": 32.8,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 18
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 18
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 18
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 18
+    }
    }
   },
   {
@@ -526,17 +980,38 @@
    "scores": {
     "v4.5": 56,
     "v5.0": 55.4,
-    "v5.2-pro": 52.6
+    "v5.2-pro": 52.6,
+    "v5.3-pro": 46.9
    },
    "nets": {
     "v4.5": 7.71,
     "v5.0": 6.29,
-    "v5.2-pro": 6.29
+    "v5.2-pro": 6.29,
+    "v5.3-pro": 6.29
    },
    "sNet": {
     "v4.5": 95.6,
     "v5.0": 92.5,
-    "v5.2-pro": 78.5
+    "v5.2-pro": 78.5,
+    "v5.3-pro": 50
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 19
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 19
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 19
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 19
+    }
    }
   },
   {
@@ -547,17 +1022,38 @@
    "scores": {
     "v4.5": 56.2,
     "v5.0": 56,
-    "v5.2-pro": 56
+    "v5.2-pro": 56,
+    "v5.3-pro": 47.2
    },
    "nets": {
     "v4.5": 21.93,
     "v5.0": 11.58,
-    "v5.2-pro": 11.58
+    "v5.2-pro": 11.58,
+    "v5.3-pro": 11.58
    },
    "sNet": {
     "v4.5": 100,
     "v5.0": 99,
-    "v5.2-pro": 99
+    "v5.2-pro": 99,
+    "v5.3-pro": 55
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 20
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 20
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 20
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 20
+    }
    }
   },
   {
@@ -568,17 +1064,38 @@
    "scores": {
     "v4.5": 71.2,
     "v5.0": 71.2,
-    "v5.2-pro": 71.2
+    "v5.2-pro": 71.2,
+    "v5.3-pro": 70.2
    },
    "nets": {
     "v4.5": 48.71,
     "v5.0": 34.38,
-    "v5.2-pro": 34.38
+    "v5.2-pro": 34.38,
+    "v5.3-pro": 34.38
    },
    "sNet": {
     "v4.5": 100,
     "v5.0": 100,
-    "v5.2-pro": 100
+    "v5.2-pro": 100,
+    "v5.3-pro": 95.2
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 21
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 21
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 21
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 21
+    }
    }
   },
   {
@@ -589,17 +1106,38 @@
    "scores": {
     "v4.5": 51,
     "v5.0": 50.9,
-    "v5.2-pro": 50.9
+    "v5.2-pro": 50.9,
+    "v5.3-pro": 42.8
    },
    "nets": {
     "v4.5": 16.79,
     "v5.0": 13.92,
-    "v5.2-pro": 13.92
+    "v5.2-pro": 13.92,
+    "v5.3-pro": 13.92
    },
    "sNet": {
     "v4.5": 99.9,
     "v5.0": 99.6,
-    "v5.2-pro": 99.6
+    "v5.2-pro": 99.6,
+    "v5.3-pro": 59.1
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 22
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 22
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 22
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 22
+    }
    }
   },
   {
@@ -610,17 +1148,38 @@
    "scores": {
     "v4.5": 83.5,
     "v5.0": 83.5,
-    "v5.2-pro": 83.5
+    "v5.2-pro": 83.5,
+    "v5.3-pro": 80
    },
    "nets": {
     "v4.5": 46.08,
     "v5.0": 25.36,
-    "v5.2-pro": 25.36
+    "v5.2-pro": 25.36,
+    "v5.3-pro": 25.36
    },
    "sNet": {
     "v4.5": 100,
     "v5.0": 100,
-    "v5.2-pro": 100
+    "v5.2-pro": 100,
+    "v5.3-pro": 82.6
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 23
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 23
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 23
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 23
+    }
    }
   },
   {
@@ -631,17 +1190,38 @@
    "scores": {
     "v4.5": 72.1,
     "v5.0": 68.8,
-    "v5.2-pro": 68.1
+    "v5.2-pro": 68.1,
+    "v5.3-pro": 57.2
    },
    "nets": {
     "v4.5": 4.85,
     "v5.0": 2.19,
-    "v5.2-pro": 2.19
+    "v5.2-pro": 2.19,
+    "v5.3-pro": 2.19
    },
    "sNet": {
     "v4.5": 87.4,
     "v5.0": 70.6,
-    "v5.2-pro": 67.3
+    "v5.2-pro": 67.3,
+    "v5.3-pro": 12.5
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 24
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 24
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 24
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 24
+    }
    }
   },
   {
@@ -652,17 +1232,38 @@
    "scores": {
     "v4.5": 85.6,
     "v5.0": 85.6,
-    "v5.2-pro": 85.6
+    "v5.2-pro": 85.6,
+    "v5.3-pro": 83.2
    },
    "nets": {
     "v4.5": 32.71,
     "v5.0": 27.99,
-    "v5.2-pro": 27.99
+    "v5.2-pro": 27.99,
+    "v5.3-pro": 27.99
    },
    "sNet": {
     "v4.5": 100,
     "v5.0": 100,
-    "v5.2-pro": 100
+    "v5.2-pro": 100,
+    "v5.3-pro": 88
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 25
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 25
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 25
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 25
+    }
    }
   },
   {
@@ -673,17 +1274,38 @@
    "scores": {
     "v4.5": 86.3,
     "v5.0": 85.1,
-    "v5.2-pro": 85.1
+    "v5.2-pro": 85.1,
+    "v5.3-pro": 74
    },
    "nets": {
     "v4.5": 7.98,
     "v5.0": 5.42,
-    "v5.2-pro": 5.42
+    "v5.2-pro": 5.42,
+    "v5.3-pro": 5.42
    },
    "sNet": {
     "v4.5": 96.1,
     "v5.0": 89.7,
-    "v5.2-pro": 89.7
+    "v5.2-pro": 89.7,
+    "v5.3-pro": 34.6
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 26
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 26
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 26
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 26
+    }
    }
   },
   {
@@ -694,17 +1316,38 @@
    "scores": {
     "v4.5": 74.7,
     "v5.0": 71.1,
-    "v5.2-pro": 68.4
+    "v5.2-pro": 68.4,
+    "v5.3-pro": 57.7
    },
    "nets": {
     "v4.5": 15.87,
     "v5.0": 3.74,
-    "v5.2-pro": 3.74
+    "v5.2-pro": 3.74,
+    "v5.3-pro": 3.74
    },
    "sNet": {
     "v4.5": 99.8,
     "v5.0": 81.7,
-    "v5.2-pro": 68
+    "v5.2-pro": 68,
+    "v5.3-pro": 14.8
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 27
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 27
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 27
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 27
+    }
    }
   },
   {
@@ -715,17 +1358,38 @@
    "scores": {
     "v4.5": 64.3,
     "v5.0": 62.6,
-    "v5.2-pro": 62.6
+    "v5.2-pro": 62.6,
+    "v5.3-pro": 52.1
    },
    "nets": {
     "v4.5": 27.29,
     "v5.0": 5.95,
-    "v5.2-pro": 5.95
+    "v5.2-pro": 5.95,
+    "v5.3-pro": 5.95
    },
    "sNet": {
     "v4.5": 100,
     "v5.0": 91.5,
-    "v5.2-pro": 91.5
+    "v5.2-pro": 91.5,
+    "v5.3-pro": 39.3
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 28
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 28
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 28
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 28
+    }
    }
   },
   {
@@ -736,17 +1400,38 @@
    "scores": {
     "v4.5": 61.7,
     "v5.0": 60.2,
-    "v5.2-pro": 60.2
+    "v5.2-pro": 60.2,
+    "v5.3-pro": 50
    },
    "nets": {
     "v4.5": 15.74,
     "v5.0": 6.09,
-    "v5.2-pro": 6.09
+    "v5.2-pro": 6.09,
+    "v5.3-pro": 6.09
    },
    "sNet": {
     "v4.5": 99.8,
     "v5.0": 92,
-    "v5.2-pro": 92
+    "v5.2-pro": 92,
+    "v5.3-pro": 41.4
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 29
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 29
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 29
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 29
+    }
    }
   },
   {
@@ -757,17 +1442,38 @@
    "scores": {
     "v4.5": 34.4,
     "v5.0": 32.1,
-    "v5.2-pro": 32.1
+    "v5.2-pro": 32.1,
+    "v5.3-pro": 42.9
    },
    "nets": {
     "v4.5": -0.61,
     "v5.0": -1.83,
-    "v5.2-pro": -1.83
+    "v5.2-pro": -1.83,
+    "v5.3-pro": -1.83
    },
    "sNet": {
     "v4.5": 43.9,
     "v5.0": 32.5,
-    "v5.2-pro": 32.5
+    "v5.2-pro": 32.5,
+    "v5.3-pro": 86.7
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 30
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 30
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 30
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 30
+    }
    }
   },
   {
@@ -778,17 +1484,38 @@
    "scores": {
     "v4.5": 76.8,
     "v5.0": 76.7,
-    "v5.2-pro": 75.9
+    "v5.2-pro": 75.9,
+    "v5.3-pro": 65.9
    },
    "nets": {
     "v4.5": 15.53,
     "v5.0": 11.74,
-    "v5.2-pro": 11.74
+    "v5.2-pro": 11.74,
+    "v5.3-pro": 11.74
    },
    "sNet": {
     "v4.5": 99.8,
     "v5.0": 99.1,
-    "v5.2-pro": 95.3
+    "v5.2-pro": 95.3,
+    "v5.3-pro": 45.2
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 31
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 31
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 31
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 31
+    }
    }
   },
   {
@@ -799,19 +1526,40 @@
    "scores": {
     "v4.5": 69.3,
     "v5.0": 68.6,
-    "v5.2-pro": 64.4
+    "v5.2-pro": 64.4,
+    "v5.3-pro": 53.2
    },
    "nets": {
     "v4.5": 12.11,
     "v5.0": 7.74,
-    "v5.2-pro": 7.74
+    "v5.2-pro": 7.74,
+    "v5.3-pro": 7.74
    },
    "sNet": {
     "v4.5": 99.2,
     "v5.0": 95.7,
-    "v5.2-pro": 74.6
+    "v5.2-pro": 74.6,
+    "v5.3-pro": 18.8
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 32
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 32
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 32
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 32
+    }
    }
   }
  ],
- "caliber": "三版共用 src/sentiment.js 的 computeSentiment（同一函数、同一权重）；差异仅在净买原料口径，由 src/formula_versions.js 唯一描述。次日收益取真实交易日相邻的下一交易日上证涨跌幅。"
+ "caliber": "各版共用 src/sentiment.js 的 computeSentiment（同一函数、同一权重）；版本差异来自两个维度：净买原料口径（由 src/formula_versions.js 的 extractNetBuy 描述）与 s_net 归一方式（tanh5 基线 / 分位映射，由 src/sentiment.js 的 NET_NORMALIZER_* 描述）。次日收益取真实交易日相邻的下一交易日上证涨跌幅。"
 }

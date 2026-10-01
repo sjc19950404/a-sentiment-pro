@@ -875,6 +875,84 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
    但用户也可能直接按 Ctrl+P，那时打印的是整个深色看板——深色底打印出来是一团黑，
    所以这里把页面强制转成白底黑字，并只保留研判报告区（其余分区隐藏）。
    报告内部的行/段落样式继续复用屏幕上的 .bf-* 规则，不另写一套。 */
+/* ── 数据健康面板（#115）─────────────────────────────────────────────────────
+   三条状态色与它们的语义（不要与涨跌色混用——这里是"数据状态"不是"行情"）：
+     ok     正常   绿系（--down 的绿色调）
+     warn   注意   黄系（--warn）
+     fail   异常   红系（--up 的红色调）
+     unknown 未评估 灰系
+   未知必须是**独立的一种颜色**，不能借用 ok 的绿——否则"没检查"看起来像"没问题"。 */
+.health-panel { margin: 8px 0; }
+.health-panel[hidden] { display: none; }
+.hl-fold { border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+.hl-fold > summary { padding: 7px 12px; cursor: pointer; display: flex; flex-wrap: wrap;
+  align-items: center; gap: 6px; font-size: 12px; }
+.hl-fold > summary::-webkit-details-marker { display: none; }
+.hl-sum { flex: 1 1 100%; font-size: 11.5px; }
+.hl-body { padding: 4px 12px 10px; border-top: 1px solid var(--line); }
+.hl-chip { display: inline-block; font-size: 10.5px; line-height: 1.6; padding: 0 6px; border-radius: 3px;
+  border: 1px solid currentColor; white-space: nowrap; }
+.hl-chip.ok { color: #3fb950; }
+.hl-chip.warn { color: var(--warn); }
+.hl-chip.fail { color: #f0616d; }
+.hl-chip.unknown { color: #8b949e; }
+/* 整档状态影响面板左边框——不展开也能一眼看出有没有问题 */
+.health-panel.hl-ok .hl-fold { border-left: 3px solid #3fb950; }
+.health-panel.hl-warn .hl-fold { border-left: 3px solid var(--warn); }
+.health-panel.hl-fail .hl-fold { border-left: 3px solid #f0616d; }
+.health-panel.hl-unknown .hl-fold { border-left: 3px solid #8b949e; border-style: dashed; }
+.hl-item { margin-top: 8px; }
+.hl-item-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.hl-detail { font-size: 11.5px; color: var(--muted); flex: 1 1 60%; line-height: 1.55; }
+.hl-fields { margin: 5px 0 0 4px; }
+.hl-field { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline;
+  font-size: 11px; padding: 2px 0; border-bottom: 1px dashed rgba(255,255,255,.06); }
+.hl-field .hf-name { min-width: 92px; font-weight: 600; }
+.hl-field .hf-num { font-variant-numeric: tabular-nums; color: var(--muted); }
+.hl-field .hf-affects { font-size: 10.5px; flex: 1 1 100%; }
+/* 覆盖不足的字段行标黄，让"哪一项拖后腿"不必逐行读数字 */
+.hl-field.warn .hf-name { color: var(--warn); }
+.hl-field.unknown .hf-name { color: #8b949e; }
+.hl-note { margin-top: 9px; padding-top: 7px; border-top: 1px solid var(--line);
+  font-size: 11px; line-height: 1.6; }
+
+/* ── 报告内「数据可信度」块（#115，紧随摘要）──────────────────────────────────
+   它是"这份结论能信多少"的前提，故放在摘要之后、正文之前。
+   左边框颜色表达等级——与页面顶部面板同一套语义色。 */
+.bf-health { margin: 8px 0 10px; padding: 8px 11px; border: 1px solid var(--line);
+  border-radius: 6px; background: rgba(255,255,255,.02); font-size: 12px; line-height: 1.7; }
+.bf-health.bf-hl-ok { border-left: 3px solid #3fb950; }
+.bf-health.bf-hl-warn { border-left: 3px solid var(--warn); }
+.bf-health.bf-hl-fail { border-left: 3px solid #f0616d; }
+.bf-health.bf-hl-unknown { border-left: 3px dashed #8b949e; }
+.bf-hl-head { font-weight: 600; }
+.bf-hl-item { margin-top: 4px; color: var(--muted); }
+.bf-hl-item b { color: var(--fg, #e6edf3); }
+.bf-hl-note { margin-top: 6px; padding-top: 5px; border-top: 1px solid var(--line);
+  font-size: 11px; color: var(--muted); }
+
+/* ── 公式版本对比表 ─────────────────────────────────────────────────────────
+   本表最关键的视觉任务是**让"基线"与"候选"一眼可分**：
+   候选版通常"数字更漂亮"（如 s_net 饱和 0/N），但那是设计后果而非优劣证明。
+   若两者长得一样，读者会自然地把更漂亮的当成"该用的那一版"——这是误导。
+   故基线加左侧色条 + 徽标，候选用虚线边 + 不同徽标，形成"正式 vs 试用"的对比。 */
+.ver-key { font-weight: 600; }
+.ver-badge { display: inline-block; font-size: 10px; line-height: 1.5; padding: 0 5px; border-radius: 3px;
+  margin-left: 5px; vertical-align: middle; }
+.ver-badge.base { background: rgba(88, 166, 255, .18); color: var(--acc); border: 1px solid var(--acc); }
+.ver-badge.cand { background: rgba(210, 153, 34, .15); color: var(--warn); border: 1px dashed var(--warn); }
+#verTable tbody tr.ver-base { background: rgba(88, 166, 255, .07); }
+#verTable tbody tr.ver-base td:first-child { border-left: 3px solid var(--acc); }
+#verTable tbody tr.ver-cand td:first-child { border-left: 3px dashed var(--warn); }
+/* 饱和列：>0 标红（失去分辨力是要看的问题），=0 标绿。与涨跌配色无关，是"状态"语义。 */
+.ver-sat-bad { color: var(--up); }
+.ver-sat-ok { color: var(--down); }
+/* 数值列右对齐 + 等宽数字，便于纵向比较（本表的核心用途就是"逐列比"） */
+#verTable tbody td:nth-child(n+3) { text-align: right; font-variant-numeric: tabular-nums; }
+#verTable tbody td:nth-child(2) { color: var(--muted); font-size: 12px; }
+.ver-cau { margin-top: 4px; line-height: 1.6; }
+.ver-cau + .ver-cau { margin-top: 6px; }
+
 @media print {
   :root { --bg: #fff; --card: #fff; --card2: #fff; --line: #ccc; --txt: #000; --muted: #555;
     --acc: #000; --up: #c0392b; --down: #1e7e34; --warn: #9a6b00; --focus: #000; }
@@ -912,5 +990,13 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
   .bf-up { color: #c0392b !important; }
   .bf-dn { color: #1e7e34 !important; }
   .bf-warn { color: #9a6b00 !important; }
+  /* 数据可信度块：打印时去掉深色底，保留左边框表达等级 */
+  .bf-health { background: #fff !important; border-color: #ccc !important; }
+  .bf-health.bf-hl-ok { border-left-color: #1e7e34 !important; }
+  .bf-health.bf-hl-warn { border-left-color: #9a6b00 !important; }
+  .bf-health.bf-hl-fail { border-left-color: #c0392b !important; }
+  .bf-health.bf-hl-unknown { border-left-color: #666 !important; }
+  .bf-hl-item, .bf-hl-note { color: #444 !important; }
+  .bf-hl-item b { color: #000 !important; }
   @page { size: A4; margin: 16mm 14mm; }
 }

@@ -1,7 +1,64 @@
 // 七因子情绪模型 v5（透明、可审计、缺失走代理而非静默填50）
 import { clamp } from './util.js';
 
-// 单个因子：能算则算；算不出尝试 proxy；再不行中性50但标记
+// ── s_net 归一器（可插拔接缝）──────────────────────────────────────────────
+//
+// 为什么要把「归一方式」抽成参数：
+//   本文件原本把 tanh(x/5)*50+50 硬编码进 s_net（见下方 f_net）。实测 241 个交易日，
+//   该尺度下净买 |x| 的 p50 = 11.65 亿 → 因子 97.5，p75 = 20.09 亿 → 因子 99.6，
+//   即**一半以上的交易日挤在 95 分以上**，241 天取整后只剩 64 个不同值。
+//   成因是 A 股龙虎榜净买额的量级分布与 k=5 不匹配（不是回填引入的，完整档 33 天
+//   里同样有 10 天 ≥99.9）。修法有两条：放宽 k（阈值语义整体漂移）或改分位映射
+//   （自适应量级、天然均匀）。两条都是**公式版本差异**，必须能并行对比，
+//   否则「哪一版更好」又会像 v4.5→v5.2 那样靠"看到某天数字不对劲"来判断。
+//
+// 契约：
+//   normalizer(netBuyYi, ctx) → number | null
+//     netBuyYi —— 已剔除新股后的净买额（亿），可能为 null/NaN
+//     ctx      —— { netHistory: number[] }，该日**之前**的历史净买序列（不含当日），
+//                 由调用方按同一口径、同一次序切片提供；分位映射需要它，tanh 不需要。
+//   返回夹在 [0,100] 的因子值；返回 null 表示"本日算不出"→ 走既有的 missing/代理路径。
+//
+// ⚠ 向后兼容（硬约束）：不传 normalizer 时行为必须与历史**逐位一致**（就是原来的
+//   tanh(x/5)*50+50）。v4.5/v5.0/v5.2 三版都不传 → 三版结果不受本次改动影响，
+//   既有回归基线（data/version-regression.json）与全部单测无需改数。
+
+/** 历史基线归一器：tanh(x/5)*50+50。k=5 是历史常量，**不得修改**——改了就是新版本。 */
+export const NET_NORMALIZER_TANH5 = (x) => (x != null && !Number.isNaN(x) ? Math.tanh(x / 5) * 50 + 50 : null);
+
+/**
+ * 分位映射归一器（v5.3-pro 用）：把 |净买| 映射到它在历史窗口里的**百分位**。
+ *
+ * 为什么不直接放宽 k：
+ *   tanh(x/k) 只是把饱和点右移，量级分布一变（如龙虎榜口径调整、市场整体放大）
+ *   就再次失配，是"换一个坑"。分位映射对本问题**结构性免疫**：无论净买中枢是 5 亿
+ *   还是 50 亿，中位数永远落在 50 分位、p75 永远在 75 分位附近——分辨率不随量级漂移。
+ *
+ * 符号处理：分位只用**绝对值**排序（衡量"强度"），方向由 sign 决定——净买为负 →
+ *   50 - (pct-50) 的镜像。这样"流出 20 亿"与"流入 20 亿"的强度对称，而方向相反。
+ *   若不做镜像而对含符号的原始值取分位，则"历史全负的一天"会被算成高分（因为它比
+ *   更负的那些强），那是荒谬的。
+ *
+ * winsorize 理由：历史不足 minHist 天时，分位估计噪声大，返回 null 让调用方标 missing
+ *   （而不是硬算一个不可信的百分位）。实测档案前 208 天缺六因子、后 33 天才齐全，
+ *   分位窗口取 60 个交易日：既够统计意义，又能让 v5.3 在 33 天样本上真正算得出来
+ *   （前 27 天用不足窗口的历史，仍可算，只是标记 histUsed 偏小）。
+ */
+export const NET_NORMALIZER_PCTL = (x, ctx = {}) => {
+  const hist = Array.isArray(ctx.netHistory) ? ctx.netHistory.filter((v) => v != null && !Number.isNaN(v)) : [];
+  if (x == null || Number.isNaN(x)) return null;
+  if (hist.length < (ctx.minHist ?? 20)) return null; // 历史太少 → 不可信，交调用方标 missing
+  const abs = Math.abs(x);
+  const below = hist.filter((v) => Math.abs(v) < abs).length;
+  const equal = hist.filter((v) => Math.abs(v) === abs).length;
+  // 中位排名法：等于本值的样本算半票，避免并列值把分位推向极端
+  const pct = ((below + equal / 2) / hist.length) * 100;
+  // 分位 → 因子：50 分位 = 中性 50 分；按 ±(pct-50) 线性展开，再压到 [1,99]
+  const v = x >= 0 ? 50 + (pct - 50) : 50 - (pct - 50);
+  return clamp(v, 1, 99);
+};
+
+/** 单个因子：能算则算；算不出尝试 proxy；再不行中性50但标记 */
 function factor(value, proxyFn) {
   if (value != null && !Number.isNaN(value)) return { v: clamp(value), missing: false };
   if (proxyFn) {
@@ -23,6 +80,9 @@ export function computeSentiment(raw = {}, weights) {
     // 新股/无涨跌幅限制标的的净买（亿）——由 src/lhb.js 的 splitNewStockNet 唯一产出。
     // 传入即自动从 s_net 里剔除；不传则视为 0（行为与旧版完全一致，历史种子天不受影响）。
     newStockNet = 0, newStockRatio = null,
+    // s_net 归一器 + 其上下文。**不传即走历史基线 tanh(x/5)**，逐位兼容。
+    netNormalizer = NET_NORMALIZER_TANH5,
+    netNormalizerCtx = null,
   } = raw;
 
   const upRatio = (upCount != null && downCount != null && upCount + downCount > 0)
@@ -31,7 +91,7 @@ export function computeSentiment(raw = {}, weights) {
     ? industryUp / industryTotal : null;
   const ldDen = (limitUp != null && limitDown != null) ? limitUp + limitDown : 0;
 
-  // s_net20: 龙虎榜净额（亿），tanh 归一
+  // s_net20: 龙虎榜净额（亿），走归一器（默认 tanh(x/5)*50+50，历史基线）
   //
   // ⚠ 唯一口径纪律：**必须用剔除新股后的净买**。
   //   新股（上市首 5 日无涨跌幅限制）首日换手极高、筹码未沉淀，其大额净买衡量的是
@@ -40,9 +100,18 @@ export function computeSentiment(raw = {}, weights) {
   //   实测 2026-09-30：含新股 7.74 亿 → s_net 95.7；剔新股 2.70 亿 → s_net 74.6（虚高 21.1，
   //   情绪分虚高 4.20 分，且把结论从「满仓」推过了 65 分档位线）。
   //   全档统计：33 天里 10 天受影响，累计虚增 15.12 分。
+  //
+  // ⚠ 归一层纪律：本行**只负责把净买交给归一器**，换算公式一律在 sentiment.js 顶部的
+  //   NET_NORMALIZER_* 里。归一方式属「公式版本差异」，由 src/formula_versions.js 注册，
+  //   不得在此处按版本分支（那会让"版本差异"散落成两套实现）。
   const netExNew = netBuy != null ? netBuy - (Number.isFinite(+newStockNet) ? +newStockNet : 0) : null;
+  // 未剔除新股的对照因子（仅用于报告披露"修正了多少分"）。
+  // ⚠ 必须在这里算、不能在 UI 里算：app.js 曾自行写了一遍 Math.tanh(nb/5)*50+50，
+  //   一旦归一方式换成 v5.3 的分位映射，那处副本就会与引擎真实分数不符**且不报错**。
+  //   现在把两套分数一并产出，前端只读——口径唯一出处纪律。
+  const netFactorRaw = netBuy != null ? netNormalizer(netBuy, netNormalizerCtx || {}) : null;
   const f_net = factor(
-    netExNew != null ? Math.tanh(netExNew / 5) * 50 + 50 : null
+    netExNew != null ? netNormalizer(netExNew, netNormalizerCtx || {}) : null
   );
   // s_pos10: 涨跌家数（缺则用龙虎榜正负占比 posRatio 代理）
   const f_pos = factor(
@@ -100,6 +169,23 @@ export function computeSentiment(raw = {}, weights) {
       newStockRatio: newStockRatio != null ? Math.round(newStockRatio * 100) / 100 : null,
       adjusted: netBuy != null && Number.isFinite(+newStockNet) && +newStockNet !== 0,
       disturbed: newStockRatio != null && newStockRatio > 0.25,
+      // 修正前后的 s_net 因子分（引擎算、UI 只读）。
+      //   factorRaw —— 若不剔新股会得到的因子分（对照，非实际使用值）
+      //   factorUsed —— 实际采用的因子分（＝factors.s_net）
+      // 两者都取到 1 位小数，与 factors.s_net 的取整口径一致，避免报告里出现
+      // "83.2 → 74.6" 与"83.20 → 74.65"这类假精度差。
+      factorRaw: netFactorRaw != null ? Math.round(clamp(netFactorRaw) * 10) / 10 : null,
+      factorUsed: netExNew != null ? Math.round(clamp(netNormalizer(netExNew, netNormalizerCtx || {})) * 10) / 10 : null,
+    },
+    // 归一层留痕：本日 s_net 用的是哪套换算、历史窗口多长。
+    //   为什么必须留在返回值里：v5.2 与 v5.3 的**净买完全相同**，只有归一方式不同——
+    //   若不留痕，两份分数放在一起时无法解释差异从何而来（会被误读成"哪个算错了"）。
+    netCaliber: {
+      // 按函数引用反查名字，避免调用方自己声明字符串（会漂移）
+      normalizer: netNormalizer === NET_NORMALIZER_PCTL ? 'percentile'
+        : netNormalizer === NET_NORMALIZER_TANH5 ? 'tanh5' : 'custom',
+      histLen: netNormalizerCtx && Array.isArray(netNormalizerCtx.netHistory)
+        ? netNormalizerCtx.netHistory.length : null,
     },
   };
 }

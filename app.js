@@ -768,9 +768,18 @@ function buildBrief(days, arc) {
     netVerdict ? li(netVerdict + `（结构 ${s.net_pos ?? '—'} 买 / ${s.net_neg ?? '—'} 卖）`) : '',
     (newStocks.length && totNetDaily != null && totNetDaily > 0) ? li(`新股/独立标的（${newStocks.map((l) => l.name).join('、')}）净买 +${num(newNet, 2)} 亿，占当日龙虎净买 <b>${(newNet / totNetDaily * 100).toFixed(0)}%</b>${disturb ? '，<span class="bf-warn">超 25% 扰动线</span>' : ''}；剔除后主线净买 ${mainNet >= 0 ? '+' : ''}${num(mainNet, 2)} 亿`) : '',
     (nsMeta.adjusted && totNetDaily != null) ? (() => {
-      // s_net = tanh(净买/5)*50+50：把修正前后的因子分同屏列出，让「改了多少分」可核验
-      const fNet = (nb) => (nb == null ? '—' : (Math.tanh(+nb / 5) * 50 + 50).toFixed(1));
-      return li(`<span class="muted">✅ 引擎已自动修正：情绪因子 s_net 入参已剔除新股（净买 ${num(totNetDaily, 2)} → <b>${num(nsMeta.netExNew, 2)}</b> 亿），因子分 ${fNet(nsMeta.netRaw)} → <b>${fNet(nsMeta.netExNew)}</b>${nsMeta.disturbed ? '，已触发 25% 扰动熔断' : ''}。本页情绪分与仓位档位即为修正后结果，无需人工二次剔除。</span>`);
+      // ⚠ 因子分一律从引擎结果读（nsMeta.factorRaw / factorUsed），**不得在此重写公式**。
+      //   历史教训：这里曾硬编码 Math.tanh(nb/5)*50+50，那是 s_net 的第二套口径实现；
+      //   一旦归一方式变更（如切到 v5.3 的分位映射），本行会继续显示 tanh 的值，
+      //   与页面顶部的真实情绪分不符，而且**不会报错**——是最难发现的一类漂移。
+      //   引擎已在 emotion.newStock 里同时产出两套分数（见 src/sentiment.js）。
+      const fRaw = nsMeta.factorRaw != null ? numS(nsMeta.factorRaw, 1) : '—';
+      const fUsed = nsMeta.factorUsed != null ? numS(nsMeta.factorUsed, 1) : '—';
+      // 兜底：老存档没有 factorRaw/factorUsed 字段时，退化为只报净买额，不擅自补算分数。
+      const scoreTxt = (nsMeta.factorRaw != null && nsMeta.factorUsed != null)
+        ? `，因子分 ${fRaw} → <b>${fUsed}</b>`
+        : '（旧存档未记录修正前后因子分，仅列净买额）';
+      return li(`<span class="muted">✅ 引擎已自动修正：情绪因子 s_net 入参已剔除新股（净买 ${num(totNetDaily, 2)} → <b>${num(nsMeta.netExNew, 2)}</b> 亿）${scoreTxt}${nsMeta.disturbed ? '，已触发 25% 扰动熔断' : ''}。本页情绪分与仓位档位即为修正后结果，无需人工二次剔除。</span>`);
     })() : '',
     topBuy.length ? li('净买头部: ' + topBuy.join('、')) : '',
     seatLines,
@@ -1019,6 +1028,28 @@ function buildBrief(days, arc) {
   const abstract = abParts.filter(Boolean).join('｜');
   const absBlock = `<div class="bf-abstract"><span class="bf-ab-tag">〔摘要〕</span><span class="bf-ab-text">${abstract}</span></div>`;
 
+  // ── 数据可信度提示（#115）：紧随摘要，因为它是"这份结论能信多少"的前提 ──
+  // 口径纪律：本块**只渲染** HEALTH（来自 signals-latest.json 的 health 段，由 src/health.js 算好）。
+  //   报告不得自行判定健康等级——阈值只在 src/health.js 一处。
+  const healthBlock = (() => {
+    if (!HEALTH) return '';
+    const cls = { ok: 'bf-hl-ok', warn: 'bf-hl-warn', fail: 'bf-hl-fail', unknown: 'bf-hl-unknown' }[HEALTH.level] || 'bf-hl-unknown';
+    const items = (HEALTH.items || []).map((it) => {
+      const rowTxt = it.rows
+        ? '；' + it.rows.map((r) => {
+          const rr = r.ratioRecent == null ? '—' : (r.ratioRecent * 100).toFixed(0) + '%';
+          return `${r.label} 近${r.totalRecent}日 ${r.hasRecent}/${r.totalRecent}（${rr}）`;
+        }).join('、')
+        : '';
+      return `<div class="bf-hl-item"><b>${esc(it.label)}</b>：${esc(it.detail)}${esc(rowTxt)}</div>`;
+    }).join('');
+    return `<div class="bf-health ${cls}">`
+      + `<div class="bf-hl-head">〔数据可信度〕<b>${esc(HEALTH.label || HEALTH.level)}</b>——${esc(HEALTH.summary || '')}</div>`
+      + items
+      + `<div class="bf-hl-note">${esc(HEALTH.note || '')}</div>`
+      + `</div>`;
+  })();
+
   // 口径统一出口：模型/样本落款（历史上只存在于脚注里，模板②/③要求"每章节折叠口径 +
   // 文末独立折叠附录"，故把它作为共享段落到附录，**文字一字未改**）。
   const modelNote = `打分模型 ${(BT && BT.meta && BT.meta.formulaVersion) || meta.formulaVersion || '—'}；样本 ${days.length} 个交易日；数据日期 ${dataDate}，抓取状态 ${freshLabel}。`;
@@ -1053,7 +1084,7 @@ function buildBrief(days, arc) {
     ['模拟交易复盘（为什么赚/为什么亏 · 止损与优化建议）', sec7, 'bfsec7'],
   ];
   const CN = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
-  return head + stamp + absBlock
+  return head + stamp + absBlock + healthBlock
     + S.map(([t, b, id], i) => seg({ no: `${CN[i]}、`, text: t }, b, id)).join('')
     + appendix;
 }
@@ -1691,6 +1722,159 @@ async function loadBacktest() {
   }
 }
 
+// ── 公式版本对比：读 data/version-regression.json（由 scripts/version_regression.mjs 预生成）──
+//
+// 为什么单独一个加载器而不并进 loadBacktest：
+//   两者数据源不同、失败互不影响（回测档缺失不该让版本对比也空白，反之亦然）。
+//   ⚠ 本函数**只渲染**：所有数字（均分/σ/饱和/Pearson）都来自 JSON，前端绝不重算——
+//   重算就等于在 UI 里再写一套公式口径，那正是本项目一直在消灭的东西。
+let VREG = null;
+
+// ── 数据健康面板（#115）──────────────────────────────────────────────────────
+//
+// 数据来源：data/signals-latest.json 的 health 段（由管线用 src/health.js 算好）。
+//
+// ⚠ 为什么前端**不自己算**健康：
+//   新鲜度那一项需要交易日历（前端没有 calendar.json），补位率与字段可算但阈值
+//   在 src/health.js —— 前端再实现一遍就是第二套口径。故一律读算好的结果。
+//
+// ⚠ 为什么单独拉 signals-latest 而不是从 archive-index 取：
+//   index 里没有 health 段（它是纯元信息+摘要）。signals-latest 只有 ~16KB，
+//   专门为"轻量结论"而存在——健康面板正好是这类信息。
+let HEALTH = null;
+
+async function loadHealth() {
+  try {
+    const res = await fetch('./data/signals-latest.json?_=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const s = await res.json();
+    HEALTH = s && s.health ? s.health : null;
+    renderHealth(HEALTH);
+    // 研判报告里也有一段「数据可信度」——它渲染时 HEALTH 多半还是 null（首屏已画完），
+    // 故拉取成功后必须**重刷报告**，否则报告会永久缺这一段。
+    // 与 loadBacktest 成功后重刷报告是同一种处理（数据异步到达 → 依赖它的 UI 要重画）。
+    if (lastArc) renderBrief(displayDays(lastArc), lastArc);
+  } catch (e) {
+    // 拉不到时不显示面板（而不是显示"正常"）——"没检查"与"没问题"必须可区分。
+    renderHealth(null, e.message);
+  }
+}
+
+function renderHealth(h, errMsg) {
+  const box = $('healthPanel');
+  if (!box) return;
+  // 未生成/加载失败：显式说明，且**不显示成"正常"**
+  if (!h) {
+    box.hidden = false;
+    box.className = 'health-panel hl-unknown';
+    box.innerHTML = `<div class="hl-head"><b>数据健康</b>`
+      + `<span class="hl-chip unknown">未评估</span>`
+      + `<span class="muted">${esc(errMsg || 'signals-latest.json 未生成或缺少 health 段')}`
+      + `——这是"没检查"，不等于"正常"</span></div>`;
+    return;
+  }
+  const lv = { ok: 'ok', warn: 'warn', fail: 'fail', unknown: 'unknown' }[h.level] || 'unknown';
+  box.hidden = false;
+  box.className = `health-panel hl-${lv}`;
+  // 折叠策略：**异常/未知时默认展开**（那是需要看的时候），正常时默认折叠。
+  //   反过来会让人错过问题——健康面板的全部价值就在于"出问题时你会看到"。
+  const openAttr = (h.level === 'ok') ? '' : ' open';
+  const chips = (h.items || []).map((it) =>
+    `<span class="hl-chip ${esc(it.level)}" title="${esc(it.detail || '')}">${esc(it.label)}</span>`
+  ).join('');
+  const rows = (h.items || []).map((it) => {
+    const sub = it.rows ? `<div class="hl-fields">${it.rows.map((row) => {
+      const ra = row.ratioAll == null ? '—' : (row.ratioAll * 100).toFixed(0) + '%';
+      const rr = row.ratioRecent == null ? '—' : (row.ratioRecent * 100).toFixed(0) + '%';
+      return `<div class="hl-field ${esc(row.level)}">`
+        + `<span class="hf-name">${esc(row.label)}</span>`
+        + `<span class="hf-num">全档 ${row.hasAll}/${row.totalAll}（${ra}）</span>`
+        + `<span class="hf-num">近${row.totalRecent}日 ${row.hasRecent}/${row.totalRecent}（${rr}）</span>`
+        + `<span class="hf-affects muted">缺失影响：${esc(row.affects)}</span>`
+        + `</div>`;
+    }).join('')}</div>` : '';
+    return `<div class="hl-item ${esc(it.level)}">`
+      + `<div class="hl-item-head"><span class="hl-chip ${esc(it.level)}">${esc(it.label)}</span>`
+      + `<span class="hl-detail">${esc(it.detail)}</span></div>${sub}</div>`;
+  }).join('');
+  box.innerHTML = `<details class="hl-fold"${openAttr}>`
+    + `<summary><b>数据健康</b>`
+    + `<span class="hl-chip ${lv}">${esc(h.label || lv)}</span>`
+    + chips
+    + `<span class="muted hl-sum">${esc(h.summary || '')}</span>`
+    + `</summary>`
+    + `<div class="hl-body">${rows}`
+    + `<div class="hl-note muted">${esc(h.note || '')}</div>`
+    + `</div></details>`;
+}
+
+async function loadVersionRegression() {
+  const tb = $('verTable');
+  const foot = $('verCaution');
+  try {
+    const res = await fetch('./data/version-regression.json?_=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    VREG = await res.json();
+    renderVerCmp(VREG);
+  } catch (e) {
+    if (tb) tb.querySelector('tbody').innerHTML =
+      `<tr><td colspan="7" class="empty">版本回归未生成（命令：node scripts/version_regression.mjs）：${esc(e.message)}</td></tr>`;
+    if (foot) foot.textContent = '';
+    const s = $('verSummary');
+    if (s) s.textContent = '';
+  }
+}
+
+function renderVerCmp(r) {
+  const s = $('verSummary');
+  const tb = $('verTable');
+  const foot = $('verCaution');
+  if (!tb) return;
+  const smp = r.sample || {};
+  const thr = r.satThreshold ?? 99.9;
+  if (s) {
+    s.innerHTML = `主样本 <b>${smp.mainDays ?? '—'}</b> 天（有次日收益 <b>${smp.withNextRet ?? '—'}</b> 天）`
+      + `｜区间 ${esc(smp.dateRange?.[0] || '—')} ~ ${esc(smp.dateRange?.[1] || '—')}`
+      + `｜档案共 ${smp.archiveDays ?? '—'} 天，其中 ${(smp.archiveDays ?? 0) - (smp.mainDays ?? 0)} 天缺行业/量能未纳入`
+      + `｜饱和判定 s_net ≥ ${thr}`;
+  }
+  const keys = (r.versions || []).map((v) => v.key);
+  const stats = r.stats || {};
+  const tbody = tb.querySelector('tbody');
+  tbody.innerHTML = '';
+  keys.forEach((k) => {
+    const st = stats[k] || {};
+    const v = (r.versions || []).find((x) => x.key === k) || {};
+    const tr = document.createElement('tr');
+    // 基线/候选用不同行样式——这是本表最重要的视觉区分：
+    // 候选版看起来"更漂亮"（饱和 0）不代表它该上线，必须一眼能看出哪个是当前生效的。
+    tr.className = v.baseline ? 'ver-base' : (v.candidate ? 'ver-cand' : '');
+    const satRate = st.n ? (st.sNetSaturated / st.n * 100) : null;
+    const nm = v.normalizer === 'percentile' ? '分位映射' : v.normalizer === 'tanh5' ? 'tanh(k=5)' : esc(v.normalizer || '—');
+    tr.innerHTML =
+      `<td><span class="ver-key">${esc(k)}</span>`
+      + (v.baseline ? '<span class="ver-badge base">基线</span>' : '')
+      + (v.candidate ? '<span class="ver-badge cand">候选</span>' : '')
+      + `</td>`
+      + `<td class="muted">${nm}</td>`
+      + `<td>${numS(st.scoreMean, 1)}</td>`
+      + `<td>${numS(st.scoreStdev, 2)}</td>`
+      + `<td class="${st.sNetSaturated > 0 ? 'ver-sat-bad' : 'ver-sat-ok'}">`
+      + `${st.sNetSaturated ?? '—'}/${st.n ?? '—'}（${satRate == null ? '—' : satRate.toFixed(0) + '%'}）`
+      + `${st.sNetMissing ? `<span class="muted"> +${st.sNetMissing} 缺</span>` : ''}</td>`
+      + `<td>${numS(st.pearson, 3)}</td>`
+      + `<td>${st.direction ? (st.direction.acc * 100).toFixed(1) + '%' : '—'}</td>`;
+    tbody.appendChild(tr);
+  });
+  if (!tbody.children.length) tbody.innerHTML = '<tr><td colspan="7" class="empty">无版本数据</td></tr>';
+  if (foot) {
+    const cau = r.cautions || [];
+    foot.innerHTML = cau.length
+      ? cau.map((c) => `<div class="ver-cau">· ${esc(c)}</div>`).join('')
+      : '';
+  }
+}
+
 let lastFp = '';
 
 function fingerprint(arc) {
@@ -2130,6 +2314,8 @@ function renderAll(arc) {
   renderBrief(days, arc);
   loadGlobal();  // 外围市场（独立数据文件，缺失不影响上述渲染）
   loadBacktest(); // 回测/帕累托/滚动/主线选股四区块（独立数据文件，缺失不影响上述渲染）
+  loadVersionRegression(); // 公式版本对比（独立数据文件；缺失时卡内显示生成命令，不影响其他区块）
+  loadHealth(); // 数据健康面板（独立数据文件；读 signals-latest.json 的 health 段，不自行重算）
   loadIntraday(meta); // 盘中快照（独立数据文件；仅盘中相位且有文件时显示）
 }
 

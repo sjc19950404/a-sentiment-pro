@@ -13,6 +13,9 @@ import { dirname, resolve, join } from 'node:path';
 import { buildIndex, buildShards, shardName, buildRecent, buildSignals, RECENT_DAYS, RECENT_FILE, SIGNALS_FILE } from '../src/archive_split.js';
 import { buildReasonCodes, encodeArchive, decodeArchive } from '../src/lhb_codec.js';
 import { marketAlerts } from '../src/alerts.js';
+import { healthReport } from '../src/health.js';
+import { assessFreshness } from '../src/freshness.js';
+import { resolveHolidays } from '../src/calendar.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
@@ -42,7 +45,13 @@ const packed = encodeArchive(arc, codes, { deflate: true });
 const index = buildIndex(packed);
 const shards = buildShards(packed);
 const recent = buildRecent(packed, RECENT_DAYS);
-const signals = buildSignals(packed, { assumedTotal: 100000, marketAlertsFn: marketAlerts });
+const signals = buildSignals(packed, {
+  assumedTotal: 100000,
+  marketAlertsFn: marketAlerts,
+  // 健康报告（#115）：与 pipeline.writeShards 用**同一套注入**，保证两条写盘路径
+  // 产出的 signals-latest.json 完全一致（否则 --check 之外又多一处形态分裂）。
+  healthFn: (ds, o) => healthReport(ds, { ...o, assessFn: assessFreshness, holidays: resolveHolidays() }),
+});
 const years = Object.keys(shards).sort();
 
 const kb = (o) => (Buffer.byteLength(JSON.stringify(o), 'utf8') / 1024).toFixed(1);

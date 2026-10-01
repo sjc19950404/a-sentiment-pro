@@ -287,6 +287,8 @@ export const SIGNALS_FILE = 'signals-latest.json';
  *        默认 10 万（与 paper.js emptyAccount 默认一致），仅供"假如满仓"的口径演示；
  *        前端必须用本地真实 total/marketValue 重算，不得直接展示本字段的仓位结论。
  * @param {Function} [opts.marketAlertsFn] 注入 marketAlerts（保持本模块纯函数、可单测）
+ * @param {Function} [opts.healthFn] 注入 health.healthReport（同上，纯函数注入）
+ *        签名：healthFn(days, { meta }) → health 报告对象
  */
 export function buildSignals(archive, opts = {}) {
   const days = (archive && archive.all_days) || [];
@@ -294,8 +296,16 @@ export function buildSignals(archive, opts = {}) {
   if (!last) return null;
   const assumedTotal = Number.isFinite(+opts.assumedTotal) ? +opts.assumedTotal : 100000;
   const fn = typeof opts.marketAlertsFn === 'function' ? opts.marketAlertsFn : null;
+  const hFn = typeof opts.healthFn === 'function' ? opts.healthFn : null;
   const score = last.emotion?.value ?? last.emotion?.score ?? null;
   const market = fn ? fn({ emotionScore: score, total: assumedTotal, marketValue: 0 }) : null;
+  // 数据健康报告（#115）：随轻量档一起下发，让"盯盘/巡检"的读者不必拉完整档
+  //   也能知道今天的数据能不能用。注意它看的是**近窗口**，不是单日。
+  //   注入失败不影响本文件生成——健康报告是附加信息，不能成为管线单点。
+  let health = null;
+  if (hFn) {
+    try { health = hFn(days, { meta: archive?.meta || {} }); } catch { health = null; }
+  }
   return {
     kind: 'signals-latest',
     version: 1,
@@ -305,6 +315,11 @@ export function buildSignals(archive, opts = {}) {
     // 板块相对强弱（若管线已算出）。没有就是 null，前端显示"未计算"而非 0——
     // 0 与"没算"在相对强弱语境下含义完全相反（0 = 与大盘同步，没算 = 未知）。
     relative: last.summary?.industry_relative || null,
+    // 数据健康（#115）。未注入时为 null，前端显示"未评估"而非"正常"。
+    health,
+    healthNote: hFn
+      ? '健康面板只看数据能不能用（新鲜度/补位率/字段覆盖），不参与打分；缺失一律显示"未知"而非 0。'
+      : '未生成（调用方未注入 healthReport）',
     marketAlerts: market,
     marketAlertsNote: fn
       ? `仅大盘层告警，按假设总资产 ${assumedTotal} 元、空仓计算；持仓层告警需本地账户，见 paper_ui.js`

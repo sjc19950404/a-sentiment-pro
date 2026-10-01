@@ -11,11 +11,12 @@ import { fetchLive, recalcRanks, LhbNotPublishedError, applyLhb, fetchLhb, fetch
 import { caliberFromDay, dailyRowsOf } from './lhb.js';
 import { todayBeijing, isTradingDay } from './util.js';
 import { resolveHolidays } from './calendar.js';
-import { applyFreshnessMeta, applyPhaseMeta, freshnessKey } from './freshness.js';
+import { applyFreshnessMeta, applyPhaseMeta, freshnessKey, assessFreshness } from './freshness.js';
 import { buildIndex, buildShards, shardName, buildRecent, buildSignals, RECENT_DAYS, RECENT_FILE, SIGNALS_FILE } from './archive_split.js';
 import { buildReasonCodes, encodeArchive, decodeArchive } from './lhb_codec.js';
 import { marketAlerts } from './alerts.js';
 import { computeRelative } from './relative.js';
+import { healthReport } from './health.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -370,9 +371,19 @@ export function writeShards(archive, dir = DATA_DIR) {
   // 滚动窗：走势图/抽屉只需最近 30 个交易日，不该为它拉整年分片（2026 年分片仍 >4MB）
   const recent = buildRecent(archive, RECENT_DAYS);
   writeFileSync(path.join(dir, RECENT_FILE), JSON.stringify(recent), 'utf8');
-  // 最轻档：只含最新日 + 动量 + 大盘告警（~11KB）。给"不跑前端只看今日结论"的读者。
-  // marketAlerts 是**纯函数**，注入进来而不是让本模块 import —— 保持 archive_split 无业务依赖。
-  const signals = buildSignals(archive, { assumedTotal: 100000, marketAlertsFn: marketAlerts });
+  // 最轻档：只含最新日 + 动量 + 大盘告警 + 数据健康（~14KB）。给"不跑前端只看今日结论"的读者。
+  // marketAlerts / healthReport 都是**纯函数**，注入进来而不是让本模块 import 业务依赖 —— 保持 archive_split 无业务依赖。
+  // 健康报告注入 assessFreshness + meta：新鲜度那一项需要日历与"当前时刻"，
+  //   两者都只有管线这边有（前端没有日历文件），故必须在这里算好随文件下发。
+  const signals = buildSignals(archive, {
+    assumedTotal: 100000,
+    marketAlertsFn: marketAlerts,
+    healthFn: (ds, o) => healthReport(ds, {
+      ...o,
+      assessFn: assessFreshness,
+      holidays: resolveHolidays(),
+    }),
+  });
   if (signals) writeFileSync(path.join(dir, SIGNALS_FILE), JSON.stringify(signals), 'utf8');
   // 清理被淘汰的年份分片（年份集合会变），避免前端拉到过期数据
   try {

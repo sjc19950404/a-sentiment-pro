@@ -32,6 +32,10 @@
 
   <div id="alerts"></div>
 
+  <!-- 数据健康面板（#115）：先看"数据能不能用"，再看行情。
+       异常时自动展开；正常时折叠成一行，不抢主视觉。 -->
+  <div id="healthPanel" class="health-panel" hidden></div>
+
   <main>
     <!-- ── 区一：概览 ── -->
     <section class="zone" id="zone-overview">
@@ -139,6 +143,18 @@
           <div id="btParams" class="bt-params muted"></div>
           <button id="btMore" class="mini" type="button" data-act="btmore" style="margin-top:8px">查看完整参数与口径</button>
           <div id="btNote" class="bf-foot"></div>
+        </section>
+
+        <section class="card vercmp">
+          <h2>公式版本对比 <span class="bf-auto">同一段历史、多版并行重算；只看异常，不排优劣</span></h2>
+          <div id="verSummary" class="sum-line"></div>
+          <div class="table-wrap">
+            <table id="verTable">
+              <thead><tr><th>版本</th><th>s_net 归一</th><th>均分</th><th>σ</th><th>s_net 饱和</th><th>Pearson</th><th>方向</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="verCaution" class="bf-foot"></div>
         </section>
 
         <section class="card pareto">

@@ -22,10 +22,21 @@
 //   v5.2  净买 = 当日榜 **剔除新股/无涨跌幅限制标的**（当前基线）
 //         · 即 src/lhb.js 的 splitNewStockNet 产出的 ex_new_yi。
 //
-// 版本号与档位阈值的关系：三版共用同一组阈值（24/65/80），差异全部体现在分子上——
-// 这正是"同一段历史、三版并行重算"能做出有意义对比的前提。
+//   v5.3  净买 = **与 v5.2 完全相同**（当日榜剔新股），但 s_net 的**归一方式**改为
+//         **滚动分位映射**（|净买| 在过去 60 个交易日的百分位 → 因子值），
+//         取代 tanh(x/5)*50+50。
+//         · 动因：实测 241 天，k=5 下净买 p50=11.65 亿 → 因子 97.5、p75=20.09 亿 → 99.6，
+//           即有**一半以上的交易日挤在 95 分以上**，241 天取整后只剩 64 个不同值。
+//           tanh 的问题不是"饱和点选错"，而是**尺度固定**：净买中枢一旦漂移（口径调整、
+//           市场规模变化），分辨率就整体失效。分位映射对本问题结构性免疫。
+//         · ⚠ v5.3 是**候选版本，不是基线**。它是否更优必须由 version_regression 的数字说话：
+//           本档案只有 33 天有次日收益，统计力极弱，故**不允许**仅凭"看起来更均匀"就切换基线。
+//           切换基线须同时更新 config.formulaVersion + BASELINE_VERSION + 全部回归夹具。
+//
+// 版本号与档位阈值的关系：四版共用同一组阈值（24/65/80），差异全部体现在分子上——
+// 这正是"同一段历史、多版并行重算"能做出有意义对比的前提。
 
-import { computeSentiment } from './sentiment.js';
+import { computeSentiment, NET_NORMALIZER_TANH5, NET_NORMALIZER_PCTL } from './sentiment.js';
 import {
   caliberFromDay, mergeDuplicateRecords, aggregateByCode, isNewStock,
 } from './lhb.js';
@@ -111,6 +122,12 @@ export function netBuyV52(day) {
 //
 // 加新版本 = 在这里加一行 + 在 test/formula_version.test.mjs 里加一条口径断言。
 // 顺序即报告里的展示顺序（由旧到新）。
+//
+// 版本条目的两个可选字段：
+//   extractNetBuy —— 净买**原料**提取器（v4.5/v5.0/v5.2 的差异所在）
+//   normalizer    —— s_net **归一器**（v5.3 的差异所在）；缺省 = 历史基线 tanh5
+// 两者正交：一个版本可以只改原料、只改归一，或都改。这样"版本差异"永远是
+// 「原料 × 归一」两个维度的组合，而不是 n 份并行实现。
 export const FORMULA_VERSIONS = [
   {
     key: 'v4.5',
@@ -131,7 +148,25 @@ export const FORMULA_VERSIONS = [
     extractNetBuy: netBuyV52,
     baseline: true,
   },
+  {
+    key: 'v5.3-pro',
+    name: 'v5.3-pro',
+    desc: '七个因子加权，净买口径同 v5.2，但 s_net 归一改为滚动分位映射（缓解 tanh 饱和）',
+    extractNetBuy: netBuyV52, // ← 净买原料与基线**完全一致**，差异只在归一器
+    normalizer: NET_NORMALIZER_PCTL,
+    // 候选版本的自我声明：进报告时必须带这句（防止被当成"升级后的基线"）
+    candidate: true,
+  },
 ];
+
+// 归一窗口长度（交易日）。60 取的是一个折中：
+//   · 太短（如 20）→ 分位被近期行情绑架，"横盘市的正常净买"会被算成高分；
+//   · 太长（如 250）→ 跨年了，一年前的量级与当下不可比（市场规模/口径都会漂）；
+//   60 个交易日≈一个季度，既能覆盖一段完整情绪周期，又能跟上量级漂移。
+export const NET_HIST_WINDOW = 60;
+// 分位窗口**最少**要有多少天历史才算得出来（不足则返回 null → 标 missing）。
+// 取 20：低于这个数分位估计的方差太大，不如老实说"算不出"。
+export const NET_HIST_MIN = 20;
 
 export function versionKeys() {
   return FORMULA_VERSIONS.map((v) => v.key);
@@ -154,6 +189,10 @@ export function recomputeDay(day, versionKey, ctx = {}) {
   if (!v) throw new Error('未知公式版本：' + versionKey);
   const s = day?.summary || {};
   const { netBuy, newStockNet, label, evidence } = v.extractNetBuy(day);
+  // 归一器：版本未声明就走历史基线（tanh5），保证 v4.5/v5.0/v5.2 行为逐位不变。
+  // ctx.netNormalizer 可覆盖（单测/前端预览用），但**常规路径一律取版本声明**——
+  // 否则同一版本在不同调用点会算出不同因子，版本对比失去意义。
+  const normalizer = ctx.netNormalizer || v.normalizer || NET_NORMALIZER_TANH5;
   const sent = computeSentiment({
     netBuy,
     newStockNet,
@@ -169,6 +208,10 @@ export function recomputeDay(day, versionKey, ctx = {}) {
     brokenCount: s.zb_count ?? null,
     amount: s.amount_yi ?? null,
     amountMA20: ctx.amountMA20 ?? null,
+    // 分位映射需要的历史净买序列（不含当日）。不传 → 归一器自己判「算不出」并返回 null，
+    // 由 computeSentiment 的 factor() 走 missing/代理路径（不会静默填 50 冒充"算过"）。
+    netNormalizer: normalizer,
+    netNormalizerCtx: { netHistory: ctx.netHistory || [], minHist: NET_HIST_MIN },
   }, ctx.weights);
   // 硬失败而非静默 NaN：computeSentiment 按**带档位后缀的权重键**取 w[k]（s_net20 / s_pos10 …），
   // 若调用方传了无后缀的因子键（s_net / s_pos …），w[k] 全是 undefined → score = NaN，
@@ -198,6 +241,9 @@ export function recomputeDay(day, versionKey, ctx = {}) {
     newStockNet: r2(newStockNet || 0),
     label,
     evidence,
+    // 归一层留痕（哪个归一器、历史窗口多长）—— v5.2 与 v5.3 净买相同、只有归一不同，
+    // 不带上这个字段，两份分数的差异在报告里会变成无解释的黑箱。
+    netCaliber: sent.netCaliber,
   };
 }
 
@@ -291,17 +337,43 @@ function tradingDayGap(a, b) {
   return Math.round((tb - ta) / 86400000);
 }
 
+// ────────────────────────── 批量重算（含归一历史的构造）──────────────────────────
+//
+// ⚠ 本函数是**唯一**为分位归一器构造历史窗口的地方。为什么必须集中在这里：
+//   分位映射要求历史序列与当日值**同口径**（都用 ex_new_yi）。如果调用方各自切片，
+//   很容易一处传 lhb_all_net、一处传 ex_new_yi，算出来的分位看似正常却毫无意义，
+//   而且不会报错。故：历史一律用**基线版本（v5.2 口径）的 netBuy**重建，
+//   与 v5.3 的 netBuy 天然同口径（v5.3 的 extractNetBuy 就是 netBuyV52）。
+//
+// 切片语义：某日的历史 = 该日**之前**（不含当日）最近 NET_HIST_WINDOW 个有效净买。
+//   刻意不含当日——若含当日，分位会永远把当日算在"自己在自己里的百分位"，
+//   在满值 50 分位附近产生系统偏差；且未来若改窗口长度，历史日的分数会整体变化，
+//   破坏"同一段历史、同一版本、分数恒定"的可复现性。
 export function computeAllVersions(days, versions = versionKeys(), weights) {
   const out = {};
   for (const k of versions) out[k] = [];
   if (!Array.isArray(days) || !days.length) return out;
   const amts = days.map((d) => (d?.summary && d.summary.amount_yi != null) ? d.summary.amount_yi : null);
+
+  // 先用基线口径抽一遍逐日净买（= ex_new_yi），作为所有分位归一器的共同历史。
+  // 用基线提取器而非遍历各版本：历史只有一份，不应随"当前在算哪个版本"而变。
+  const baseNet = days.map((d) => {
+    const r = netBuyV52(d);
+    if (r.netBuy == null) return null;
+    const exNew = r.netBuy - (Number.isFinite(+r.newStockNet) ? +r.newStockNet : 0);
+    return Number.isFinite(exNew) ? exNew : null;
+  });
+
   days.forEach((d, i) => {
     const hist = [];
-    for (let j = i - 1; j >= 0 && hist.length < 20; j--) if (amts[j] != null) hist.unshift(amts[j]);
-    const amountMA20 = hist.length >= 10 ? hist.reduce((a, b) => a + b, 0) / hist.length : null;
+    for (let j = i - 1; j >= 0 && hist.length < NET_HIST_WINDOW; j--) {
+      if (baseNet[j] != null) hist.unshift(baseNet[j]);
+    }
+    const amtHist = [];
+    for (let j = i - 1; j >= 0 && amtHist.length < 20; j--) if (amts[j] != null) amtHist.unshift(amts[j]);
+    const amountMA20 = amtHist.length >= 10 ? amtHist.reduce((a, b) => a + b, 0) / amtHist.length : null;
     for (const k of versions) {
-      const r = recomputeDay(d, k, { amountMA20, weights });
+      const r = recomputeDay(d, k, { amountMA20, weights, netHistory: hist });
       out[k].push({ trade_date: d.trade_date, ...r });
     }
   });

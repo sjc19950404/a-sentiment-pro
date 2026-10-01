@@ -1095,6 +1095,26 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     check('切片：signals 含动量（盘前一眼看题材）', sg.signals && sg.signals.momentum != null, '');
     check('切片：signals 不得夹带 lhb_aggr 明细（那是滚动窗的活）',
       !(sg.latest && sg.latest.lhb_aggr), '');
+    // 「轻」的定义性约束：本档只放**结论**，不放任何"逐日明细数组"。
+    //   加一句"顺手把 all_days 也带上"就会让它从 16KB 涨到 MB 级，
+    //   而因为它有个 <32KB 的体积守卫，涨上去会先触发体积断言——但那时已经不知道为什么涨了。
+    //   这条断言把"为什么"钉死：明细数组根本不该出现在这里。
+    const heavyKeys = [];
+    for (const [k, v] of Object.entries(sg)) {
+      if (k === 'meta' || k === 'signals') continue;
+      if (Array.isArray(v) && v.length > 12) heavyKeys.push(`${k}(${v.length})`);
+    }
+    check('切片：signals 不含逐日明细数组（"轻"的定义性约束）',
+      heavyKeys.length === 0, heavyKeys.join(',') || '');
+    check('切片：signals 顶层不得出现 all_days（完整档的职责）',
+      !sg.all_days, sg.all_days ? `带了 ${sg.all_days.length} 天` : '');
+    // 三个"看一眼"的结论段都必须在（缺一个说明某条生成路径没接上）
+    check('切片：signals 带 latest / relative / health / marketAlerts 四段结论',
+      !!sg.latest && 'relative' in sg && 'health' in sg && 'marketAlerts' in sg,
+      `latest=${!!sg.latest} relative=${'relative' in sg} health=${'health' in sg} marketAlerts=${'marketAlerts' in sg}`);
+    check('切片：signals 里 relative/health 缺失时为 null（不得用 0 顶替）',
+      sg.relative !== 0 && sg.health !== 0 && sg.healthNote != null,
+      `healthNote=${sg.healthNote ? '有' : '无'}`);
   } else {
     check('切片：存在 signals-latest.json', false, 'missing');
   }
@@ -1210,11 +1230,30 @@ const stripCommentsAud = (s) => String(s)
   .replace(/\/\*[\s\S]*?\*\//g, '')
   .replace(/(^|[^:])\/\/.*$/gm, '$1');
 
-// ── B12. 公式版本治理：版本差异必须只体现在「净买原料」，不得出现第二套因子实现 ────
+// ── B12. 公式版本治理：版本差异必须只体现在「净买原料 × 归一方式」，不得出现第二套因子实现 ────
 // 版本可插拔最大的诱惑是「顺手在新版本里把某个因子也改改」——一旦如此，
-//   · 三版对比就不再能归因（分不清差异来自净买口径还是来自因子改动）；
+//   · 多版对比就不再能归因（分不清差异来自净买口径、归一方式，还是来自因子改动）；
 //   · 报告/回测/推荐会各自绑定不同版本的因子语义，口径彻底失控。
-// 本块把「版本差异只在净买」这条从**注释里的约定**升级为**机器可验的约束**。
+// 本块把「版本差异只在净买原料与归一层」这条从**注释里的约定**升级为**机器可验的约束**。
+
+// 辅助：确认 normalizer 只出现在候选版本条目上（基线必须留空以走历史默认）。
+// 不能用"数出现次数"糊弄——那无法区分"候选声明了"与"基线声明了"，而后者才是危险信号：
+//   基线一旦显式声明归一器，历史分数就会随该声明变动，可比性断档。
+function versionHasNormalizerOnlyOnCandidate(code) {
+  // 按版本条目切块：以 key: 'vX.Y' 为分隔，看每块里是否有 normalizer: 与 candidate: true
+  const entries = code.split(/key:\s*'v[^']+'/).slice(1);
+  let hit = 0;
+  for (const e of entries) {
+    const hasNorm = /normalizer:\s*\w+/.test(e);
+    const isCand = /candidate:\s*true/.test(e);
+    const isBase = /baseline:\s*true/.test(e);
+    if (hasNorm && isBase) return false; // 基线声明归一器 = 违规
+    if (hasNorm && isCand) hit++;
+    if (hasNorm && !isCand) return false; // 非候选、非基线却声明归一器 = 违规
+  }
+  return hit === 1;
+}
+
 {
   const fvPath = path.join(ROOT, 'src', 'formula_versions.js');
   const fvExists = existsSync(fvPath);
@@ -1230,17 +1269,40 @@ const stripCommentsAud = (s) => String(s)
     .replace(/\/\*[\s\S]*?\*\//g, '')   // 块注释
     .replace(/(^|[^:])\/\/.*$/gm, '$1'); // 行注释（不误伤 https:// 里的 //）
   const fvCode = stripComments(fv);
+  // 断言放宽到"从 sentiment.js 具名导入 computeSentiment"，不含 '}' 紧跟 ' from' 的硬形状——
+  //   原因：v5.3 起还要导入两个归一器（NET_NORMALIZER_*），解构列表不再只有一个名字。
+  //   但**不放宽其实质**：computeSentiment 必须来自 sentiment.js，且本文件不得出现
+  //   Math.tanh 或 factor( —— 那才意味着"因子被重写了一遍"。
   check('公式版本：复用 src/sentiment.js 的 computeSentiment（不得实现第二套七因子）',
-    /import \{ computeSentiment \} from '\.\/sentiment\.js'/.test(fvCode)
+    /import\s*\{[^}]*\bcomputeSentiment\b[^}]*\}\s*from\s*'\.\/sentiment\.js'/.test(fvCode)
     && !/Math\.tanh/.test(fvCode) && !/\bfactor\(/.test(fvCode),
     '若在版本文件里出现 tanh / factor(，说明因子被重写了一遍');
 
-  // ② 差异必须收敛到「净买提取」这一个接缝：三版各有一个提取器
-  check('公式版本：三版各有一个净买提取器，差异被收敛到单一接缝',
+  // ② 差异必须收敛到「净买原料 × 归一方式」两个接缝
+  //
+  // 语义升级：原断言是"三版各有一个提取器"。v5.3 的净买原料与 v5.2 **完全相同**
+  //   （它改的是归一方式），故"提取器个数 == 版本数"不再是正确的不变量。
+  //   真正该守的不变量有三条：
+  //     · 三个历史提取器都还在（不得为了加版本而删掉旧版——历史可比性靠它们）
+  //     · 每个版本都声明了 extractNetBuy（函数引用），且**只允许是两个已知提取器之一**
+  //     · 有版本声明 normalizer 时，它必须来自 sentiment.js 导出的归一器白名单
+  const extractRefs = [...fvCode.matchAll(/extractNetBuy:\s*(\w+)/g)].map((m) => m[1]);
+  const knownExtractors = new Set(['netBuyV45', 'netBuyV50', 'netBuyV52']);
+  check('公式版本：三个历史净买提取器齐备（不得为加版本而删旧版）',
     /export function netBuyV45/.test(fv) && /export function netBuyV50/.test(fv)
-    && /export function netBuyV52/.test(fv)
-    && (fv.match(/extractNetBuy: netBuyV/g) || []).length === 3,
-    '');
+    && /export function netBuyV52/.test(fv),
+    '旧版提取器缺失会让历史可比性断档');
+  check('公式版本：每个版本都声明已知提取器（差异收敛到单一接缝）',
+    extractRefs.length === 4 && extractRefs.every((r) => knownExtractors.has(r)),
+    `提取器引用 ${extractRefs.join(',')}（应为 4 个且都属 ${[...knownExtractors].join('/')}）`);
+  // 归一器白名单：必须是 sentiment.js 具名导出，防止某个版本偷偷内联一套换算
+  const normRefs = [...fvCode.matchAll(/normalizer:\s*(\w+)/g)].map((m) => m[1]);
+  check('公式版本：归一器只能取自 sentiment.js 的白名单（不得内联换算）',
+    normRefs.every((r) => r === 'NET_NORMALIZER_TANH5' || r === 'NET_NORMALIZER_PCTL'),
+    `归一器引用 ${normRefs.join(',') || '(无)'}`);
+  check('公式版本：仅候选版本声明 normalizer，基线不声明（基线走历史默认）',
+    normRefs.length === 1 && versionHasNormalizerOnlyOnCandidate(fvCode),
+    `normalizer 声明 ${normRefs.length} 处`);
 
   // ③ 基线版本号必须与 config.formulaVersion 同步（两处不一致＝报告说 A、算的是 B）
   const cfg = readFileSync(path.join(ROOT, 'src', 'config.js'), 'utf8');
@@ -1292,6 +1354,61 @@ const stripCommentsAud = (s) => String(s)
     existsSync(helper) && /export function pearson/.test(helperSrc)
     && /from '\.\.\/test\/_helpers_regression\.mjs'/.test(vrSrc)
     && !/export function pearson/.test(vrSrc), '');
+
+  // ⑪ 归一层：s_net 的换算必须真在 sentiment.js 里可插拔，且 tanh5 逐位等于历史公式
+  //
+  // ⚠ 本项用**真调用**而不是扫源码字面量。上一轮 B14 的教训：
+  //   扫源码只能证明"某句话在"，不能证明"行为对"——把返回体改掉、条件行原样保留，
+  //   字面量断言会完全逃过。故这里直接 import 归一器并跑数字。
+  {
+    const sentSrc = readFileSync(path.join(ROOT, 'src', 'sentiment.js'), 'utf8');
+    check('归一层：sentiment.js 导出两个具名归一器（tanh5 基线 + 分位映射）',
+      /export const NET_NORMALIZER_TANH5/.test(sentSrc) && /export const NET_NORMALIZER_PCTL/.test(sentSrc),
+      '');
+    check('归一层：s_net 走可插拔归一器，而非硬编码 tanh',
+      /netNormalizer\(netExNew/.test(sentSrc) && !/Math\.tanh\(netExNew\s*\/\s*5\)/.test(stripCommentsAud(sentSrc)),
+      '若出现 Math.tanh(netExNew/5) 说明归一器被绕过，v5.3 会失效');
+    // 真调用：tanh5 必须逐位等于历史公式（改它就是改历史分数）
+    const sMod = await import(pathToFileURL(path.join(ROOT, 'src', 'sentiment.js')).href);
+    const t5 = sMod.NET_NORMALIZER_TANH5;
+    let tanhOk = true;
+    const tanhProbe = [-80, -12.14, -4.73, 0, 4.73, 11.65, 20.09, 31.33, 78.16];
+    for (const x of tanhProbe) {
+      if (Math.abs(t5(x) - (Math.tanh(x / 5) * 50 + 50)) > 1e-12) tanhOk = false;
+    }
+    check('归一层：tanh5 逐位等于历史公式 tanh(x/5)*50+50（改它＝改历史分数）',
+      tanhOk && t5(null) === null && t5(NaN) === null, `probe ${tanhProbe.join(',')}`);
+    // 真调用：分位映射必须解饱和——用真实档案量级探针（p50=11.65 / p75=20.09 / max=78.16）
+    const pctl = sMod.NET_NORMALIZER_PCTL;
+    const hist = Array.from({ length: 60 }, (_, i) => (i + 1) * 0.5); // 0.5~30 亿
+    const p20 = pctl(20.09, { netHistory: hist });  // 档案 p75 量级
+    const p78 = pctl(78.16, { netHistory: hist });  // 档案 max 量级
+    check('归一层：分位映射在档案 p75→max 量级区间仍有分辨力（tanh5 此时已顶格）',
+      p20 < 99 && (p78 - p20) > 5 && t5(20.09) > 99.9,
+      `分位 ${p20.toFixed(1)}→${p78.toFixed(1)}（差 ${(p78 - p20).toFixed(1)}）| tanh5(20.09)=${t5(20.09).toFixed(4)}`);
+    // 真调用：历史不足必须返回 null（不得硬算，也不得静默填 50）
+    check('归一层：历史不足时返回 null（不得编造分位）',
+      pctl(10, { netHistory: [] }) === null && pctl(10, { netHistory: [1, 2, 3] }) === null
+      && typeof pctl(10, { netHistory: hist }) === 'number',
+      '');
+    // 真调用：符号镜像（流入/流出强度对称、方向相反）
+    const inF = pctl(25, { netHistory: hist });
+    const outF = pctl(-25, { netHistory: hist });
+    check('归一层：分位映射对符号做镜像（对称且方向相反）',
+      inF > 50 && outF < 50 && Math.abs((inF - 50) + (outF - 50)) < 1e-9,
+      `流入 ${inF.toFixed(2)} / 流出 ${outF.toFixed(2)}`);
+  }
+
+  // ⑫ 回归产物必须携带归一层留痕与饱和阈值（否则前端两版分数无法解释差异）
+  {
+    const regSrc = readFileSync(path.join(ROOT, 'scripts', 'version_regression.mjs'), 'utf8');
+    check('公式版本：回归产物带饱和阈值常量（前端不得自行硬编码 99.9）',
+      /const SAT_THRESHOLD\s*=\s*99\.9/.test(regSrc) && /satThreshold:\s*SAT_THRESHOLD/.test(regSrc),
+      '');
+    check('公式版本：回归产物带归一层留痕（normalizer 字段）',
+      /normalizer:/.test(regSrc) && /netCaliber/.test(regSrc),
+      '两版净买相同、只有归一不同，不留痕则差异无法解释');
+  }
 }
 
 // ── B13. 交易日历：判定必须来自日历，不得再散落"手写手册"式的日期判断 ────────────
@@ -1530,6 +1647,115 @@ const stripCommentsAud = (s) => String(s)
         a0 && d0 ? `${a0.excess} vs ${d0.excess}` : '缺榜');
     }
   }
+}
+
+// ── B15. 数据健康面板：口径唯一出处 + "未知"不得退化成"正常" ────────────────────
+//
+// 本块存在的理由（这是本项目**反复**踩的一类坑）：
+//   "没检查"与"检查过且没问题"在数据上都是"没有异常"，极易被写成同一个值。
+//   健康面板若把 unknown 渲染成 ok，读者会以为"已经查过了"——比不显示更糟。
+//   故这里既守**语义**（真调用 healthReport 验等级判定），也守**渲染契约**。
+{
+  const hPath = path.join(ROOT, 'src', 'health.js');
+  const hExists = existsSync(hPath);
+  const hSrc = hExists ? readFileSync(hPath, 'utf8') : '';
+  const hCode = stripCommentsAud(hSrc);
+  check('数据健康：src/health.js 存在（健康口径唯一出处）', hExists, '');
+
+  // ① 必须有 unknown 等级，且不得被合并进 ok
+  check('数据健康：定义 unknown 等级（"查不出来"必须可表达）',
+    /unknown:\s*'unknown'/.test(hCode), '缺 unknown 会让"未评估"被迫渲染成 ok');
+
+  // ② 阈值必须集中在 health.js，且 warn < fail（否则 warn 档不可达）
+  const tWarn = (hCode.match(/imputedWarn:\s*([\d.]+)/) || [])[1];
+  const tFail = (hCode.match(/imputedFail:\s*([\d.]+)/) || [])[1];
+  check('数据健康：阈值集中在 health.js 且 warn < fail',
+    tWarn != null && tFail != null && +tWarn < +tFail,
+    `warn=${tWarn} fail=${tFail}`);
+
+  // ③ 真调用验证：这是本块的核心——扫源码只能证明"某句话在"，不能证明"行为对"。
+  //    （B14 的教训：把返回体改掉、条件行原样保留，字面量断言会完全逃过。）
+  const hMod = await import(pathToFileURL(hPath).href);
+  const { healthReport, checkFreshness, checkImputed, checkFields, HEALTH_LEVEL } = hMod;
+
+  // ③-a 空输入必须是 unknown，不得是 ok
+  const emptyRep = healthReport([], {});
+  check('数据健康：空输入整档为 unknown（不得判成 ok）',
+    emptyRep.level === HEALTH_LEVEL.unknown,
+    `实际 ${emptyRep.level}`);
+
+  // ③-b 未注入新鲜度评估函数 → unknown（不得佯装 fresh）
+  const noFn = checkFreshness({}, {});
+  check('数据健康：未注入新鲜度评估函数时返回 unknown（不得伪造成正常）',
+    noFn.level === HEALTH_LEVEL.unknown && noFn.state === null,
+    `level=${noFn.level} state=${noFn.state}`);
+
+  // ③-c 补位率判级看**最差一天**而非均值（一天烂不能被平均掉）
+  const mkD = (i, ratio) => ({
+    trade_date: `2099-01-${String(i).padStart(2, '0')}`,
+    summary: { ind_up: 1, up_count: 1, amount_yi: 1, zt_count: 1, zb_count: 1, lhb_daily_net: 1 },
+    emotion: { imputedRatio: ratio, missing: [] },
+  });
+  const mostlyGood = Array.from({ length: 20 }, (_, i) => mkD(i + 1, i === 7 ? 1.0 : 0));
+  const imp = checkImputed(mostlyGood, { recentWindow: 20 });
+  check('数据健康：补位率判级取最差一天（19 天好 + 1 天全缺必须报出来）',
+    imp.level !== HEALTH_LEVEL.ok && imp.meanRatio != null && imp.meanRatio < 0.1,
+    `level=${imp.level} mean=${imp.meanRatio} worst=${imp.worstDay && imp.worstDay.ratio}`);
+
+  // ③-d 字段可用率：空样本的覆盖率必须是 null 而非 0
+  const fEmpty = checkFields([], { recentWindow: 20 });
+  const allNull = fEmpty.rows.every((r) => r.ratioRecent === null && r.ratioAll === null);
+  check('数据健康：无样本时覆盖率为 null（0 会被误读成"覆盖率为零"）', allNull, '');
+
+  // ③-e 字段可用率判级只看近窗口（历史缺口是既成事实，不该持续报 warn）
+  const oldBad = Array.from({ length: 30 }, (_, i) => ({
+    trade_date: `2099-02-${String(i + 1).padStart(2, '0')}`,
+    summary: { ind_up: 1, up_count: null, amount_yi: 1, zt_count: 1, zb_count: 1, lhb_daily_net: 1 },
+    emotion: { imputedRatio: 0, missing: [] },
+  }));
+  const newGood = Array.from({ length: 20 }, (_, i) => mkD(i + 1, 0));
+  const fMixed = checkFields([...oldBad, ...newGood], { recentWindow: 20 });
+  const upRow = fMixed.rows.find((r) => r.key === 'up_count');
+  check('数据健康：字段判级只看近窗口（历史缺口已修复则不再报 warn）',
+    upRow && upRow.ratioAll < 0.5 && upRow.ratioRecent === 1 && upRow.level === HEALTH_LEVEL.ok,
+    `全档 ${upRow && upRow.ratioAll} 近窗 ${upRow && upRow.ratioRecent} level=${upRow && upRow.level}`);
+
+  // ③-f 整档取最差项（问题项不得被平均值稀释）
+  const warnRep = healthReport(
+    Array.from({ length: 20 }, (_, i) => mkD(i + 1, 0)).map((d) => ({ ...d, summary: { ...d.summary, ind_up: null } })),
+    { assessFn: () => ({ state: 'fresh' }), recentWindow: 20 },
+  );
+  check('数据健康：整档取最差项（一项 warn 即整档 warn，不被稀释）',
+    warnRep.level === HEALTH_LEVEL.warn,
+    `实际 ${warnRep.level}`);
+
+  // ③-g 必带口径说明（不参与打分 + 缺失显示未知）
+  check('数据健康：报告自带口径说明（不参与打分、缺失显示未知）',
+    /不参与打分/.test(emptyRep.note || '') && /未知/.test(emptyRep.note || ''), '');
+
+  // ④ signals-latest.json 必须带 health 段（前端据此渲染，不得让前端自己算）
+  const sigPath = path.join(ROOT, 'data', 'signals-latest.json');
+  if (existsSync(sigPath)) {
+    const sig = JSON.parse(readFileSync(sigPath, 'utf8'));
+    check('数据健康：signals-latest.json 带 health 段（前端不自行判定）',
+      !!sig.health && typeof sig.health.level === 'string',
+      `health.level=${sig.health && sig.health.level}`);
+    check('数据健康：signals-latest 的 health 三项齐备',
+      Array.isArray(sig.health.items) && sig.health.items.length === 3,
+      `items=${sig.health.items && sig.health.items.map((x) => x.item).join(',')}`);
+  }
+
+  // ⑤ 前端不得重写健康阈值（第二套口径）
+  const appSrcH = readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const appCodeH = stripCommentsAud(appSrcH);
+  check('数据健康：前端未自行实现 healthReport 或阈值常量',
+    !/function\s+healthReport\b/.test(appCodeH) && !/imputedWarn|fieldWarnRatio/.test(appCodeH), '');
+
+  // ⑥ 两条写盘路径都必须注入 healthFn（否则主档写完的 signals 与切片脚本产出的不一致）
+  const pipeSrcH = readFileSync(path.join(ROOT, 'src', 'pipeline.js'), 'utf8');
+  const splitSrcH = readFileSync(path.join(ROOT, 'scripts', 'split_archive.mjs'), 'utf8');
+  check('数据健康：pipeline 与 split_archive 两条路径都注入 healthFn（形态一致）',
+    /healthFn:/.test(pipeSrcH) && /healthFn:/.test(splitSrcH), '');
 }
 
 // ── C. 结论 ────────────────────────────────────────────────────────────────
