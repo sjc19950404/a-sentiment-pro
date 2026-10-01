@@ -324,6 +324,12 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
   // 判据：只有「阈值数字 + 规则语义词」同时出现才算重复实现。
   // 单纯出现 0.25 / 0.20 / -0.08 不算——它们在别处有完全无关的用途（回撤曲线、权重、涨跌幅等），
   // 盲扫数字必然误报（实测 app.js 因图表阈值被误判）。故要求同一条代码行上出现规则语义词。
+  //
+  // 第二道判据（**引用 ≠ 重复实现**）：即便语义词命中，也要区分该行是「读取引擎常量」还是
+  // 「在本地重新定义这个阈值」。UI 层正确做法恰恰是 import 引擎常量再 * 100 显示，
+  // 若把这种读取也判为违规，守卫就变成了「逼 UI 手抄数字」——与它想保护的纪律完全相反。
+  // 因此：定义形态（`NAME = 0.20` / `NAME: 0.20` / `const NAME = 0.2`）才算重复实现；
+  // 读取形态（`NAME * 100`、`${NAME}`、`NAME`、`Math.abs(NAME)`）一律放行。
   const RULES = [
     { label: '龙虎净买占比上限 25%', owner: 'src/lhbfilter.js',
       re: /(SHARE_TOO_HIGH|share_of_market|占当日全市场|占全市场龙虎|MARKET_SHARE)/ },
@@ -336,6 +342,17 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     { label: '止损线 −8%', owner: 'src/paper.js',
       re: /HARD_STOP_LOSS|scanStopLoss\s*\(|硬性止损/ },
   ];
+  // 是否为「本地重定义」（= 重复实现）：常量/字段名后紧跟赋值，且右侧是字面量数字。
+  // 反例（应放行）：`MAX_DAILY_POSITION_CHANGE * 100`、`MAX_DAILY_POSITION_CHANGE,`（import 解构）、
+  //                 `${HARD_STOP_LOSS}`、`const TODAY = todayBuy`（非字面量）。
+  const isRedefinition = (ln) => {
+    const NAME = '(?:SHARE_TOO_HIGH|MAX_TOP3_CONC|MAX_TOP3_CONC_STRICT|MAX_DAILY_POSITION_CHANGE|DD_TIERS|HARD_STOP_LOSS|dailyPositionChange|ddTriggerCap)';
+    // ① NAME = <数字> / NAME: <数字> / const NAME = <数字>
+    const literal = new RegExp(`(?:const|let|var)?\\s*${NAME}\\s*[:=]\\s*-?\\d`);
+    // ② 内联阈值写法：top3 集中度直接写 70/75、回撤直接写 9/15
+    const inline = /(?:top3Conc|buy_top3_pct|回撤|dd)\s*[<>]=?\s*0?\.?\d/;
+    return literal.test(ln) || inline.test(ln);
+  };
   // 扫描 UI 层与其它 src 文件，确认这些语义标识没有在「唯一出处」之外被重写
   const scanFiles = ['paper_ui.js', 'app.js', ...readdirSync('src').filter((f) => f.endsWith('.js')).map((f) => `src/${f}`)];
   const dupRules = [];
@@ -353,7 +370,7 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
       .filter((ln) => !/口径备注|口径：/.test(ln))
       .filter((ln) => /(=|===|==|>=|<=|>|<|:|const|let|var)/.test(ln));
     for (const r of RULES) {
-      const hit = lines.find((ln) => r.re.test(ln));
+      const hit = lines.find((ln) => r.re.test(ln) && isRedefinition(ln));
       if (hit) dupRules.push(`${rel} 疑似重复实现「${r.label}」：${hit.trim().slice(0, 60)}`);
     }
   }

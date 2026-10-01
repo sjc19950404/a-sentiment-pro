@@ -278,6 +278,43 @@
           <div id="poHint" class="po-hint muted"></div>
         </section>
 
+        <section class="card paper-batch">
+          <h2>批量下单 <span class="bf-auto">一次多只 · 每只独立走龙虎过滤与账户风控 · 只提交不自动成交</span></h2>
+          <div class="bt-form">
+            <div class="bt-head">
+              <div class="seg bt-sideseg" id="btSide" role="tablist" aria-label="批量方向">
+                <button class="on" data-side="buy" role="tab" aria-selected="true">批量买入</button>
+                <button data-side="sell" role="tab" aria-selected="false">批量卖出</button>
+              </div>
+              <div class="seg bt-modeseg" id="btMode" role="tablist" aria-label="数量口径">
+                <button class="on" data-mode="pct" role="tab" aria-selected="true">按仓位比例</button>
+                <button data-mode="qty" role="tab" aria-selected="false">按股数</button>
+              </div>
+            </div>
+            <textarea id="btInput" class="bt-input" rows="5" spellcheck="false"
+              placeholder="每行一只，格式：代码,值&#10;例（按比例）：600519,10&#10;例（按股数）：600519,200&#10;值可省略：600519（买入默认 5% 仓位，卖出默认全部可卖）&#10;同批次内重复代码会自动去重"></textarea>
+            <div class="bt-row">
+              <label>买入按比例时单只默认仓位<input id="btDefaultPct" type="number" step="1" min="0" max="100" value="5" /> %</label>
+              <label class="bt-chk"><input id="btApplyLhb" type="checkbox" checked /> 执行龙虎榜前置过滤</label>
+              <label class="bt-chk"><input id="btCheckRisk" type="checkbox" checked /> 执行账户全局风控</label>
+            </div>
+            <div class="bt-actions">
+              <button id="btFillPicks" class="mini" type="button">从研判推荐填入</button>
+              <button id="btFillPos" class="mini" type="button">从持仓填入</button>
+              <button id="btClear" class="mini" type="button">清空输入</button>
+              <button id="btSubmit" class="mini primary" type="button">批量提交委托</button>
+            </div>
+          </div>
+          <div id="btSummary" class="bt-summary"></div>
+          <div class="table-wrap tall">
+            <table id="btTable">
+              <thead><tr><th>代码</th><th>名称</th><th>方向</th><th class="num">股数</th><th>结果</th><th>说明</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="btHint" class="po-hint muted"></div>
+        </section>
+
         <section class="card paper-pos">
           <h2>持仓 <span class="bf-auto">点行看成本构成与 T+1 可卖明细</span></h2>
           <div class="table-wrap">
@@ -318,6 +355,34 @@
             </table>
           </div>
           <div class="cardlist" id="paperHistCards" aria-label="成交与委托卡片列表"></div>
+        </section>
+
+        <section class="card paper-log">
+          <h2>事件日志 <span class="bf-auto">每笔委托与每次拦截自动留痕 · 可按阶段过滤 · 可追加进研判报告</span></h2>
+          <div class="tbar">
+            <div class="seg" id="logTabs" role="tablist" aria-label="日志阶段过滤">
+              <button class="on" data-stage="" role="tab" aria-selected="true">全部</button>
+              <button data-stage="lhb" role="tab" aria-selected="false">龙虎过滤</button>
+              <button data-stage="risk" role="tab" aria-selected="false">风控</button>
+              <button data-stage="order" role="tab" aria-selected="false">委托</button>
+              <button data-stage="settle" role="tab" aria-selected="false">结算</button>
+              <button data-stage="stop" role="tab" aria-selected="false">止损</button>
+            </div>
+            <span id="logCount" class="muted"></span>
+          </div>
+          <div class="bt-actions">
+            <button id="logExport" class="mini" type="button">导出日志（Markdown）</button>
+            <button id="logCopy" class="mini" type="button">复制到剪贴板</button>
+            <button id="logClear" class="mini" type="button">清空日志</button>
+          </div>
+          <div class="table-wrap tall">
+            <table id="logTable">
+              <thead><tr><th>时间</th><th>交易日</th><th>代码</th><th>名称</th><th>方向</th><th class="num">股数</th><th>阶段</th><th>结果</th><th>说明</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="cardlist" id="logCards" aria-label="事件日志卡片列表"></div>
+          <div id="logNote" class="bf-foot"></div>
         </section>
 
         <section class="card paper-perf">

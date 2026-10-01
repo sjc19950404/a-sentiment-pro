@@ -14,7 +14,18 @@ import {
   validateOrder, quotesFromDay, PAPER_VERSION, LOT, MIN_COMMISSION,
   COMMISSION_RATE, STAMP_TAX_RATE, TRANSFER_FEE_RATE, DEFAULT_SLIP, REJECT,
   LIMIT_PCT, isLimitHit, POS_TIERS, CUT_TIERS, qtyByAssetPct, qtyByHoldPct,
+  // ── V5.2-pro：批量委托与事件日志（规则第五、六块）──
+  // 批量下单面板与事件日志面板的**全部规则判断**仍由引擎负责，UI 只解析输入、渲染结果。
+  // 为什么不在 UI 里自己拼一遍过滤/风控链路：那就是规则的第二出处，一旦漂移，
+  // 页面上显示的「拦没拦住」就和账本里实际发生的「拦没拦住」不是一回事。
+  batchSubmit, batchSell, readLogs, logsToReport, orderDetail, MAX_LOGS,
+  // 风控口径常量：日志面板在「全部/风控」过滤之外还要按档位说明拦截原因，取同一份阈值
+  MAX_DAILY_POSITION_CHANGE, HARD_STOP_LOSS, DD_TIERS,
 } from './src/paper.js';
+// 龙虎榜前置过滤（规则第一块，唯一出处 src/lhbfilter.js）。
+// 批量买入时引擎内部会调用它；UI 侧另需 filterOne 来**预检并解释**——
+// 让用户在提交前就能看到「这几只为什么不给买」，而不是提交后只看到一句「未通过」。
+import { filterOne, BUCKET, LHBFILTER_VERSION } from './src/lhbfilter.js';
 // 实时行情（腾讯 qt.gtimg.cn，CORS 为 * → 浏览器可直连）。
 // 为什么必须引入：存档是「收盘后生成的日频数据」，只含当日上榜/热点约 100 只票，
 // 池子里其余 1200+ 只票取不到价，界面只能提示「无真实行情，不可下单」。
@@ -66,6 +77,14 @@ let LAST_DATE = null;     // 存档最新交易日
 let ARC_DAYS = [];        // 存档全部交易日（研判推荐用：取最后一天算推荐，取序列算情绪分）
 let ORDER = { side: 'buy', code: '', qty: 0 };
 let HIST = { view: 'trade' };
+// ── 批量下单面板状态 ──
+// side/mode 是「输入解释方式」，不是账户状态：side 决定走 batchSubmit 还是 batchSell，
+// mode 决定第 2 列的数值是「占总资产比例%」还是「股数」。两者都不持久化——
+// 下次打开页面时回到最保守的默认（买入 + 按比例），避免上一次的激进设置被静默沿用。
+let BATCH = { side: 'buy', mode: 'pct', defaultPct: 5, applyLhb: true, checkRisk: true, result: null };
+// ── 事件日志面板状态 ──
+// stage 为空串表示「全部」。这是**视图过滤**，不改数据，只改渲染。
+let LOG = { stage: '' };
 // 预警台账（持久化，跨会话累积）。不放进 ACCT —— 它不是账户状态，导出账本时也不该混进去。
 let ALOG = [];
 
@@ -345,6 +364,8 @@ function renderAllPaper() {
   renderPerf();
   renderOrderForm();
   renderQuick();
+  renderBatch();
+  renderLogs();
   publishSnapshot();
 }
 
@@ -1588,6 +1609,328 @@ function perfDetail(k) {
   };
 }
 
+// ────────────────────────── 渲染：批量下单（V5.2-pro 规则第五块） ──────────────────────────
+//
+// 设计取舍（为什么这样接）：
+//   · **规则判断全部在引擎**。本文件只做三件事：解析文本输入 → 组装 items → 调 batchSubmit/batchSell。
+//     过滤条件、风控阈值、日志文案一律不由 UI 决定，保证屏幕上看到的和账本里发生的是同一件事。
+//   · **价格用实时源**。batchSubmit 的签名收的是 archive 的「某一天」，但模拟器是实时撮合下的
+//     真实价口径，所以这里用实时价**现造**一个 day 对象喂进去（与单票 submit() 同源）。
+//     为什么敢这么做：batchSubmit 只从 day 里读 trade_date / lhb（龙虎榜） / summary.lhb_daily_net，
+//     行情本身由 quotesFromDay(day) 取——我们用实时价覆盖同名键，语义仍是「今天的真实价」。
+//   · **卖出不做龙虎过滤**（规则原文：龙虎榜过滤只针对买入标的前置），走 batchSell。
+//   · **预检不等于拦截**。用户点提交前，UI 不预先拦他；但提交后每只票的结果必须逐条说清
+//     「在哪一步、因为什么被拦」，否则用户会以为挂单成功了。
+
+/** 当前用于批量过滤的「当日」对象：优先取存档最新日（含龙虎榜），再叠加实时价 */
+function batchDay() {
+  const day = ARC_DAYS[ARC_DAYS.length - 1] || {};
+  // 实时价覆盖：把 live 盘中/盘后价写进 quotes，让 batchSubmit 的成交额估算用真实价
+  const quotes = {};
+  for (const code of Object.keys(LIVEQ)) {
+    const q = LIVEQ[code];
+    if (!q || !Number.isFinite(+q.price)) continue;
+    quotes[code] = { code, name: q.name, price: +q.price, changePct: q.changePct ?? null, prevClose: q.prevClose ?? null, src: 'live' };
+  }
+  return { ...day, quotes: { ...(day.quotes || {}), ...quotes } };
+}
+
+/**
+ * 解析批量输入框文本 → items。
+ * 容忍格式：`600519`、`600519,10`、`600519 10`、`600519,200`（mode=qty 时 200 是股数）、
+ * `#注释`、空行。**不猜**：无法解析的行如实标为解析失败，不静默丢弃。
+ * @returns {{items:Array, errors:Array}}
+ */
+function parseBatchInput(text, { mode, side, defaultPct }) {
+  const items = [];
+  const errors = [];
+  const lines = String(text || '').split(/\r?\n/);
+  lines.forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) return;
+    // 代码：前 6 位数字（允许带 .SH/.SZ 后缀或前后空格）
+    const m = line.match(/^(\d{6})/);
+    if (!m) { errors.push(`第 ${i + 1} 行「${line}」：找不到 6 位股票代码`); return; }
+    const code = m[1];
+    const rest = line.slice(m[0].length).replace(/^[\s,，]+/, '').trim();
+    const val = rest ? Number(String(rest).replace(/[%％]/g, '')) : null;
+    const row = { code };
+    if (side === 'buy') {
+      if (mode === 'qty') {
+        // 按股数：显式值必须是正整数；缺省时不给默认股数（股数没有「合理默认」，宁可不填让对方看到提示）
+        if (val != null && Number.isFinite(val) && val > 0) row.qty = Math.floor(val);
+        else if (val != null) { errors.push(`第 ${i + 1} 行「${line}」：股数需为正整数`); return; }
+        else row.pct = defaultPct;   // 无值时退回默认比例（引擎会换算整手）
+      } else {
+        // 按比例：显式值视为「占总资产百分比」；缺省用默认仓位
+        if (val != null && Number.isFinite(val) && val > 0) row.pct = val / 100;
+        else if (val != null) { errors.push(`第 ${i + 1} 行「${line}」：比例需为正数`); return; }
+        else row.pct = defaultPct / 100;
+      }
+    } else if (val != null && Number.isFinite(val) && val > 0) {
+      // 批量卖出：卖出没有「比例」的引擎口径，只有全部可卖。显式数值暂不支持——
+      // 诚实拦下并告知，而不是悄悄按全卖处理（那是最危险的一种「猜」）。
+      errors.push(`第 ${i + 1} 行「${line}」：批量卖出目前按「全部可卖数量」执行，不支持指定数值`);
+      return;
+    }
+    items.push(row);
+  });
+  return { items, errors };
+}
+
+/** 批量提交（买入走 batchSubmit，卖出走 batchSell） */
+async function runBatch() {
+  const ta = $('btInput');
+  const text = ta ? ta.value : '';
+  const side = BATCH.side;
+  const mode = BATCH.mode;
+
+  // 读控件当前值（用户可能改了默认比例/勾选项但没触发 change）
+  const defPctEl = $('btDefaultPct');
+  const defaultPct = Math.max(0.1, +((defPctEl && defPctEl.value) || 5) || 5);
+  const applyLhbEl = $('btApplyLhb');
+  const checkRiskEl = $('btCheckRisk');
+  const applyLhb = applyLhbEl ? !!applyLhbEl.checked : true;
+  const checkRisk = checkRiskEl ? !!checkRiskEl.checked : true;
+
+  const { items, errors } = parseBatchInput(text, { mode, side, defaultPct });
+  if (!items.length) {
+    msg(errors.length ? `没有可提交的标的 —— ${errors[0]}` : '请先在输入框填写至少一只标的（每行「代码,值」）', 'err');
+    BATCH = { ...BATCH, result: { side, items: [], errors, summary: null } };
+    renderBatch();
+    return;
+  }
+
+  // 先抓齐所有标的实时价（批量提交的成交额估算依赖真实价；缺价的票会被引擎如实拦下）
+  msg(`正在获取 ${items.length} 只标的的实时行情…`, 'ok');
+  await refreshLive(items.map((it) => it.code));
+
+  const day = batchDay();
+  const opts = { date: LAST_DATE || day.trade_date || bjToday(), applyLhbFilter: applyLhb, checkRisk };
+  // 卖出：不做龙虎过滤（规则原文只对买入做前置过滤），也不做仓位变动风控（降仓必须放行）
+  const r = side === 'buy'
+    ? batchSubmit(ACCT, items, day, opts)
+    : batchSell(ACCT, items, day, { date: opts.date });
+
+  ACCT = r.next;
+  save();
+  BATCH = { ...BATCH, result: { side, items: r.results, errors, summary: r.summary } };
+  renderAllPaper();
+  syncPositionsLive();
+
+  const s = r.summary || {};
+  const okN = s.submitted ?? 0;
+  const blkN = s.blocked ?? 0;
+  if (okN && !blkN) {
+    msg(`批量${side === 'buy' ? '买入' : '卖出'}完成：${okN} 笔已挂单，将于下一交易日按真实收盘价撮合`, 'ok');
+  } else if (okN && blkN) {
+    msg(`批量完成：${okN} 笔已挂单、${blkN} 笔被拦`
+      + (s.blockedByLhb ? `（龙虎过滤 ${s.blockedByLhb}）` : '')
+      + (s.blockedByRisk ? `（风控 ${s.blockedByRisk}）` : '')
+      + ` —— 逐只原因见下表`, 'warn');
+  } else {
+    msg(`全部 ${blkN} 笔被拦，未产生任何委托 —— 逐只原因见下表`, 'err');
+  }
+}
+
+const BT_STAGE_LABEL = { lhb: '龙虎过滤', risk: '风控', quote: '行情', position: '持仓', qty: '股数', order: '委托' };
+const BT_STATUS_LABEL = { submitted: '已挂单', blocked: '已拦截' };
+
+/** 批量结果面板渲染 */
+function renderBatch() {
+  const box = $('btSummary');
+  const tb = $('btTable')?.querySelector('tbody');
+  const hint = $('btHint');
+
+  // 同步方向/口径分段控件的选中态（渲染是唯一收口，避免两处各改一次 className）
+  document.querySelectorAll('#btSide button').forEach((b) => {
+    const on = b.dataset.side === BATCH.side;
+    b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('#btMode button').forEach((b) => {
+    const on = b.dataset.mode === BATCH.mode;
+    b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+    // 卖出没有「按比例/按股数」之分（恒为全部可卖）——把口径控件禁用并说明，
+    // 否则用户会以为「卖出按比例 10%」生效了，而实际挂的是全部持仓，这是最危险的一种误解。
+    b.disabled = BATCH.side === 'sell';
+  });
+  const pctWrap = $('btDefaultPct')?.closest('label');
+  if (pctWrap) pctWrap.style.display = BATCH.side === 'sell' ? 'none' : '';
+
+  const r = BATCH.result;
+  if (box) {
+    if (!r) {
+      box.innerHTML = '<div class="muted">填写标的后点「批量提交委托」——每只独立走龙虎过滤与账户风控，'
+        + '结果逐条列出（含被拦原因），不会替你自动成交。</div>';
+    } else {
+      const s = r.summary;
+      const errN = (r.errors || []).length;
+      box.innerHTML = `<div class="bt-sum-line">`
+        + `<span class="bt-chip ${r.side === 'buy' ? 'hl' : 'hl-dn'}">批量${r.side === 'buy' ? '买入' : '卖出'}</span>`
+        + `<span class="bt-chip">共 ${r.items.length + errN} 行输入</span>`
+        + (s
+          ? `<span class="bt-chip ok">已挂单 <b>${s.submitted}</b></span>`
+            + `<span class="bt-chip ${s.blocked ? 'bad' : ''}">被拦 <b>${s.blocked}</b></span>`
+            + (s.blockedByLhb ? `<span class="bt-chip warn">龙虎过滤 ${s.blockedByLhb}</span>` : '')
+            + (s.blockedByRisk ? `<span class="bt-chip warn">风控 ${s.blockedByRisk}</span>` : '')
+            + (r.side === 'buy' && s.todayBuyPct != null
+              ? `<span class="bt-chip">当日已买入 ${num(s.todayBuyAmount)} 元（占总资产 ${s.todayBuyPct.toFixed(2)}%，上限 ${(MAX_DAILY_POSITION_CHANGE * 100).toFixed(0)}%）</span>`
+              : '')
+          : '<span class="bt-chip">未提交</span>')
+        + (errN ? `<span class="bt-chip bad">输入解析失败 ${errN} 行</span>` : '')
+        + `</div>`
+        + (errN ? `<ul class="bt-errs">${r.errors.map((e) => `<li>${esc(e)}</li>`).join('')}</ul>` : '');
+    }
+  }
+
+  if (tb) {
+    if (!r || !r.items.length) {
+      tb.innerHTML = '<tr class="empty-row"><td colspan="6" class="muted">暂无批量提交记录</td></tr>';
+    } else {
+      tb.innerHTML = r.items.map((it) => {
+        const st = it.status === 'submitted' ? 'submitted' : 'blocked';
+        const stage = it.stage ? (BT_STAGE_LABEL[it.stage] || it.stage) : '—';
+        const why = it.status === 'submitted'
+          ? (it.detail || '已挂单，待次一交易日撮合')
+          : `${stage}：${it.reason || '未通过'}${it.detail ? '（' + it.detail + '）' : ''}`;
+        return `<tr class="${it.status === 'submitted' ? '' : 'bt-blocked-row'}">`
+          + `<td>${esc(it.code)}</td><td>${esc(it.name || '—')}</td>`
+          + `<td class="${it.side === 'buy' ? 'hl' : 'hl-dn'}">${it.side === 'buy' ? '买入' : '卖出'}</td>`
+          + `<td class="num">${it.qty == null ? '—' : it.qty}</td>`
+          + `<td><span class="stag ${st === 'submitted' ? 'ok' : 'bad'}">${esc(BT_STATUS_LABEL[st])}</span></td>`
+          + `<td class="muted">${esc(why)}</td></tr>`;
+      }).join('');
+    }
+  }
+
+  if (hint) {
+    const s = r && r.summary;
+    hint.innerHTML = `龙虎榜前置过滤版本 <b>${esc(LHBFILTER_VERSION)}</b>`
+      + ` · 过滤档位：主池 <b>${esc(BUCKET.MAIN)}</b>（可下单）/ 备选观察 <b>${esc(BUCKET.WATCH)}</b>（禁止自动下单）/ 剔除 <b>${esc(BUCKET.REJECTED)}</b>`
+      + ` · 硬止损线 <b>${(HARD_STOP_LOSS * 100).toFixed(0)}%</b>（收盘扫描，触发即生成 T+1 卖单）`
+      + (s && s.todayBuyPct != null
+        ? ` · 本批次后当日仓位变动 <b>${s.todayBuyPct.toFixed(2)}%</b> / 上限 ${(MAX_DAILY_POSITION_CHANGE * 100).toFixed(0)}%`
+        : '')
+      + ` · <span class="muted">批量卖出不做龙虎过滤（该规则只约束买入）；全部委托仍为 T+1 次日按真实收盘价撮合</span>`;
+  }
+}
+
+// ────────────────────────── 渲染：事件日志（V5.2-pro 规则第六块） ──────────────────────────
+//
+// 日志由引擎在**每一次**委托流转与拦截时写入 ACCT.logs（submitOrder / batchSubmit / batchSell /
+// settleDay / scanStopLoss 都会 appendLog）。UI 只读不写——这样「日志完整性」不依赖于
+// 用户是否打开了某个面板，也就不会出现「因为界面没渲染所以没记录」的漏洞。
+
+const LOG_STAGE_LABEL = { lhb: '龙虎过滤', risk: '风控', order: '委托', settle: '结算', stop: '止损' };
+const LOG_STAGE_CLS = { lhb: 'warn', risk: 'bad', order: 'mut', settle: 'ok', stop: 'warn' };
+const LOG_RESULT_LABEL = {
+  pass: '通过', rejected: '拦截', submitted: '已提交', filled: '已成交',
+  expired: '失效', cancelled: '已撤单', info: '记录',
+};
+const LOG_RESULT_CLS = {
+  pass: 'ok', submitted: 'ok', filled: 'ok', rejected: 'bad',
+  expired: 'warn', cancelled: 'mut', info: 'mut',
+};
+
+function renderLogs() {
+  const tb = $('logTable')?.querySelector('tbody');
+  const cards = $('logCards');
+  const cnt = $('logCount');
+  const note = $('logNote');
+  if (!tb && !cards) return;
+
+  const all = readLogs(ACCT, {});
+  const rows = LOG.stage ? all.filter((r) => r.stage === LOG.stage) : all;
+
+  document.querySelectorAll('#logTabs button').forEach((b) => {
+    const on = (b.dataset.stage || '') === LOG.stage;
+    b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+
+  if (cnt) {
+    cnt.textContent = LOG.stage
+      ? `${LOG_STAGE_LABEL[LOG.stage] || LOG.stage} ${rows.length} 条 / 全部 ${all.length} 条（上限 ${MAX_LOGS}）`
+      : `共 ${all.length} 条（上限 ${MAX_LOGS}，超出自动丢弃最早的记录）`;
+  }
+
+  // 最新在前：日志是「最近发生了什么」，用户第一眼要看的永远是最新一条
+  const list = [...rows].reverse();
+  if (tb) {
+    tb.innerHTML = list.length
+      ? list.map((r) => {
+        const ts = r.ts ? fmtClock(new Date(r.ts)) : '—';
+        const stCls = LOG_STAGE_CLS[r.stage] || 'mut';
+        const rsCls = LOG_RESULT_CLS[r.result] || 'mut';
+        return `<tr><td class="muted">${esc(ts)}</td><td>${esc(r.date || '—')}</td>`
+          + `<td>${esc(r.code || '—')}</td><td>${esc(r.name || '—')}</td>`
+          + `<td class="${r.side === 'buy' ? 'hl' : r.side === 'sell' ? 'hl-dn' : 'muted'}">${r.side === 'buy' ? '买入' : r.side === 'sell' ? '卖出' : '—'}</td>`
+          + `<td class="num">${r.qty == null ? '—' : r.qty}</td>`
+          + `<td><span class="stag ${stCls}">${esc(LOG_STAGE_LABEL[r.stage] || r.stage)}</span></td>`
+          + `<td><span class="stag ${rsCls}">${esc(LOG_RESULT_LABEL[r.result] || r.result)}</span></td>`
+          + `<td class="muted">${esc(r.text || r.reason || '—')}</td></tr>`;
+      }).join('')
+      : `<tr class="empty-row"><td colspan="9" class="muted">暂无日志——下单、结算或触发拦截后会自动记录</td></tr>`;
+  }
+  if (cards) {
+    cards.innerHTML = list.length
+      ? list.slice(0, 60).map((r) => {
+        const ts = r.ts ? fmtClock(new Date(r.ts)) : '—';
+        return `<div class="card-row"><div class="cr-top"><b>${esc(r.name || r.code || '账户事件')}</b>`
+          + `<span class="stag ${LOG_STAGE_CLS[r.stage] || 'mut'}">${esc(LOG_STAGE_LABEL[r.stage] || r.stage)}</span>`
+          + `<span class="stag ${LOG_RESULT_CLS[r.result] || 'mut'}">${esc(LOG_RESULT_LABEL[r.result] || r.result)}</span></div>`
+          + `<div class="cr-bot muted">${esc(r.date || '—')} ${esc(ts)} · ${esc(r.text || r.reason || '')}</div></div>`;
+      }).join('')
+      : '<div class="dw-empty">暂无日志</div>';
+  }
+  if (note) {
+    note.innerHTML = `日志由交易引擎在每次委托流转与拦截时**自动写入**（不依赖本面板是否打开）。`
+      + `阶段口径：龙虎过滤（买入前置）/ 风控（仓位变动与降仓上限）/ 委托（提交与被拒）/ 结算（成交与失效）/ 止损（收盘扫描 −${Math.abs(HARD_STOP_LOSS * 100).toFixed(0)}%）。`
+      + `点「导出日志」可把当前过滤结果追加进每日研判报告。`;
+  }
+}
+
+/** 导出/复制日志文本（Markdown，与研判报告同一格式） */
+function logText() {
+  const txt = logsToReport(ACCT, LOG.stage ? { stage: LOG.stage } : {});
+  if (!txt) return '';
+  return txt;
+}
+
+function doLogExport() {
+  const txt = logText();
+  if (!txt) { msg('当前过滤条件下没有日志可导出', 'err'); return; }
+  const blob = new Blob([txt], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `paper-logs-${LOG.stage || 'all'}-${LAST_DATE || 'unknown'}.md`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  msg('事件日志已导出（Markdown，可直接粘贴进每日研判报告）', 'ok');
+}
+
+async function doLogCopy() {
+  const txt = logText();
+  if (!txt) { msg('当前过滤条件下没有日志可复制', 'err'); return; }
+  try {
+    await navigator.clipboard.writeText(txt);
+    msg('事件日志已复制到剪贴板', 'ok');
+  } catch (e) {
+    // 剪贴板 API 在非 https / 无权限时会失败：降级为「下载」，不让用户空手而归
+    doLogExport();
+    msg('浏览器不允许直接写剪贴板，已改为下载文件', 'warn');
+  }
+}
+
+function doLogClear() {
+  const n = (ACCT?.logs || []).length;
+  if (!n) { msg('当前没有日志', 'ok'); return; }
+  if (!window.confirm(`将清空全部 ${n} 条事件日志。\n日志是「这笔委托当时为什么被拦」的唯一凭据，清空后不可恢复。\n\n确定继续？`)) return;
+  ACCT = { ...ACCT, logs: [] };
+  save();   // logs 是账户的一部分（ACCT.logs），随账户一起落盘，故 save() 即可
+  renderAllPaper();
+  msg('事件日志已清空', 'ok');
+}
+
 // ────────────────────────── 事件 ──────────────────────────
 
 async function submit() {
@@ -1823,6 +2166,29 @@ document.addEventListener('click', (e) => {
     return;
   }
 
+  // 批量下单：方向切换（买/卖）——切换时清掉上一次的结果表，避免「卖出的结果」留在屏幕上被当成买
+  const btSide = t.closest('#btSide button');
+  if (btSide) {
+    const side = btSide.dataset.side;
+    if (side !== BATCH.side) BATCH = { ...BATCH, side, result: null };
+    renderBatch();
+    return;
+  }
+  // 批量下单：数量口径切换（按比例 / 按股数）。只影响**后续解析**，不回溯已提交的记录
+  const btMode = t.closest('#btMode button');
+  if (btMode) {
+    if (!btMode.disabled) BATCH = { ...BATCH, mode: btMode.dataset.mode, result: null };
+    renderBatch();
+    return;
+  }
+  // 事件日志：阶段过滤（纯视图过滤，不改数据）
+  const logTab = t.closest('#logTabs button');
+  if (logTab) {
+    LOG = { stage: logTab.dataset.stage || '' };
+    renderLogs();
+    return;
+  }
+
   const el = t.closest('[data-act]');
   if (!el) return;
   const act = el.dataset.act;
@@ -1894,6 +2260,49 @@ $('paperCloseAll')?.addEventListener('click', () => {
   if (!n) { msg('当前无持仓，无需空仓', 'ok'); return; }
   if (!window.confirm(`将对 ${n} 只持仓全部挂出卖单（按各自可卖数量、按实时价）。\nT+1 下当日买入的股份卖不掉，会如实告知。\n\n确定继续？`)) return;
   closeAll();
+});
+
+// ── 批量下单面板 ──
+$('btSubmit')?.addEventListener('click', runBatch);
+$('btClear')?.addEventListener('click', () => {
+  const ta = $('btInput');
+  if (ta) ta.value = '';
+  BATCH = { ...BATCH, result: null };
+  renderBatch();
+});
+// 「从研判推荐填入」：把当前推荐清单写成「代码,默认仓位%」逐行填入。
+// 只填不提交——与单票的「填入下单」同一纪律：绝不替用户下单。
+$('btFillPicks')?.addEventListener('click', () => {
+  const r = currentPicks();
+  if (!r || !r.picks.length) { msg('暂无研判推荐（需先有行情存档），无法填入', 'err'); return; }
+  const ta = $('btInput');
+  if (!ta) return;
+  const pct = Math.max(0.1, +($('btDefaultPct')?.value || 5) || 5);
+  ta.value = r.picks.map((p) => `${p.code},${pct}`).join('\n');
+  BATCH = { ...BATCH, side: 'buy', result: null };
+  renderBatch();
+  msg(`已填入 ${r.picks.length} 只研判推荐（每只 ${pct}% 仓位预览）——请核对后点「批量提交委托」`, 'ok');
+});
+// 「从持仓填入」：把所有持仓写成代码逐行填入，方向切到卖出（批量卖出=全部可卖）。
+// 这是「一键空仓」的**可预览版本**：先看清单再决定，而不是点一下就挂出去。
+$('btFillPos')?.addEventListener('click', () => {
+  const codes = Object.keys(ACCT?.positions || {});
+  if (!codes.length) { msg('当前无持仓，无法填入', 'err'); return; }
+  const ta = $('btInput');
+  if (!ta) return;
+  ta.value = codes.join('\n');
+  BATCH = { ...BATCH, side: 'sell', result: null };
+  renderBatch();
+  msg(`已填入 ${codes.length} 只持仓（按各自可卖数量卖出）——请核对后点「批量提交委托」`, 'ok');
+});
+
+// ── 事件日志面板 ──
+$('logExport')?.addEventListener('click', doLogExport);
+$('logCopy')?.addEventListener('click', doLogCopy);
+$('logClear')?.addEventListener('click', doLogClear);
+// 默认比例改动即时生效（不用等提交才读值）
+$('btDefaultPct')?.addEventListener('change', (e) => {
+  BATCH = { ...BATCH, defaultPct: Math.max(0.1, +e.target.value || 5) };
 });
 
 // 键盘快捷键 6 跳转到模拟交易（与 app.js 的 1-5 互补；app.js 只认 1-5，故不冲突）

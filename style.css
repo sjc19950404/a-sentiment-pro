@@ -426,8 +426,8 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
    配色沿用本页「价格涨红跌绿」约定（--up 红 / --down 绿），
    因为这里展示的确实是价格与盈亏方向，不是「对 A 股的影响方向」。
    状态标签（.stag）是另一套语义：成交/在途/被拒/失效，用蓝/橙/红/灰区分。 */
-.paper-acct, .paper-order, .paper-pos, .paper-pend, .paper-hist, .paper-perf, .paper-picks, .paper-alerts { grid-column: span 2; }
-@media (max-width: 860px) { .paper-acct, .paper-order, .paper-pos, .paper-pend, .paper-hist, .paper-perf, .paper-picks, .paper-alerts { grid-column: span 1; } }
+.paper-acct, .paper-order, .paper-pos, .paper-pend, .paper-hist, .paper-perf, .paper-picks, .paper-alerts, .paper-batch, .paper-log { grid-column: span 2; }
+@media (max-width: 860px) { .paper-acct, .paper-order, .paper-pos, .paper-pend, .paper-hist, .paper-perf, .paper-picks, .paper-alerts, .paper-batch, .paper-log { grid-column: span 1; } }
 
 /* 交易预警：与「研判推荐」并排的两层结构同款。
    左色条按严重度分色（风险红 / 机会绿 / 提示灰），让用户一眼扫到最该看的那条；
@@ -627,6 +627,35 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 /* 破坏性/全量操作按钮（清仓）：用警示色区分于普通快捷项，防误点 */
 .mini.primary-ghost { color: var(--fade); border-color: var(--fade); background: rgba(240, 97, 109, .10); }
 .mini.primary-ghost:hover { color: var(--fade); border-color: var(--fade); background: rgba(240, 97, 109, .2); }
+
+/* 批量下单面板（V5.2-pro 规则第五块）：一次多只，逐只独立走龙虎过滤与账户风控 */
+.bt-form { display: flex; flex-direction: column; gap: 8px; }
+.bt-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+/* 口径控件在卖出方向下被禁用：保持可见（用户要知道「本来有这选项」）+ 虚线边框说明不可用 */
+.bt-modeseg button:disabled { opacity: .42; cursor: not-allowed; }
+.bt-input { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  color: var(--txt); padding: 8px 10px; font-size: 12.5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  line-height: 1.7; resize: vertical; min-height: 84px; }
+.bt-input:focus { border-color: var(--acc); outline: none; }
+.bt-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.bt-row label { display: flex; align-items: center; gap: 6px; }
+.bt-row input[type="number"] { width: 62px; background: var(--bg); border: 1px solid var(--line);
+  border-radius: 7px; color: var(--txt); padding: 4px 8px; font-size: 12.5px; font-family: inherit; }
+.bt-row input[type="number"]:focus { border-color: var(--acc); outline: none; }
+.bt-chk { user-select: none; }
+.bt-chk input { accent-color: var(--acc); }
+.bt-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bt-summary { font-size: 12px; margin: 8px 0 2px; }
+.bt-sum-line { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bt-chip { display: inline-block; padding: 2px 9px; border-radius: 8px; font-size: 11px;
+  background: var(--line); color: var(--muted); white-space: nowrap; }
+.bt-chip.ok { background: rgba(63, 185, 80, .16); color: var(--fresh); }
+.bt-chip.bad { background: rgba(240, 97, 109, .16); color: var(--fade); }
+.bt-chip.warn { background: rgba(210, 153, 34, .18); color: var(--warn); }
+/* 输入解析失败清单：逐行给出原始文本，用户能直接对上自己写的哪一行 */
+.bt-errs { margin: 7px 0 0; padding-left: 20px; color: var(--warn); font-size: 11.5px; line-height: 1.8; }
+/* 被拦行整行弱化——结果表里最刺眼的信息应该是「哪几笔没挂上」 */
+.bt-blocked-row td { background: rgba(240, 97, 109, .05); }
 
 /* 状态标签：成交 / 在途 / 被拒 / 已撤 / 失效 */
 .stag { display: inline-block; padding: 1px 7px; border-radius: 8px; font-size: 10.5px; white-space: nowrap; }

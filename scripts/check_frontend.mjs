@@ -334,6 +334,12 @@ check('布局：详情抽屉与遮罩骨架存在（初始关闭）',
 check('布局：个股表已升级为整行卡片且含工具条（视图切换/搜索/计数）',
   !!$('hotTabs') && !!$('hotSearch') && !!$('hotCount') && !!$('hotHead'), '');
 check('布局：报告卡含目录与折叠控制', !!$('briefNav') && !!$('briefToggle'), '');
+// V5.2-pro 规则第五/六块的两张面板必须真实存在于 DOM（只在 JS 里定义而不给容器，
+// 渲染会静默落空——用户看不到任何东西，但守卫不会报错，是最隐蔽的一类回归）。
+check('布局：模拟交易区含批量下单与事件日志两张卡片（V5.2-pro 第五/六块）',
+  !!window.document.querySelector('#zone-paper .paper-batch')
+  && !!window.document.querySelector('#zone-paper .paper-log')
+  && !!$('btInput') && !!$('logTable'), '');
 
 // 1) 表格行 → 个股详情
 const firstRow = $('hotTable').querySelector('tbody tr.clickable');
@@ -693,6 +699,7 @@ escClose();
     .replace(/^export\s+/gm, '');
   const uiNoImport = readFileSync(join(ROOT, 'paper_ui.js'), 'utf8')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/paper\.js';/, '')
+    .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/lhbfilter\.js';/, '')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/quote\.js';/, '')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/picks\.js';/, '')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/alerts\.js';/, '')
@@ -725,6 +732,9 @@ escClose();
       .replace(/^export\s+/gm, '')
     + '\nreturn { filterOne, filterBatch, featuresOf, themeStrengthOf, BUCKET, REJECT_LHB, SKIPPED_RULES,'
     + ' MAX_SHARE_OF_MARKET, MAX_TOP3_CONC, MAX_TOP3_CONC_STRICT, ADMIT, THEME_FULL_PCT, LHBFILTER_VERSION };\n})();';
+  // paper_ui.js（批量下单面板）直接用 filterOne / BUCKET / LHBFILTER_VERSION 做提交前预检与档位文案，
+  // 故从 window.__lhbfilter__ 解构回作用域。**绝不手抄**这些符号——它们就是规则本身。
+  const lhbFilterFlat = `const { filterOne, BUCKET, LHBFILTER_VERSION } = window.__lhbfilter__;`;
   // 一手股数（LOT）不手抄字面量——从 src/paper.js 源码里抽出真实值。
   // 多处 IIFE 需要它（predict / alert_log），故提前到使用点之前声明。
   const LOT_LITERAL_EARLY = (readFileSync(join(ROOT, 'src/paper.js'), 'utf8')
@@ -813,7 +823,7 @@ escClose();
     return null;
   }`;
   try {
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
   } catch (e) {
     check('模拟交易：paper_ui.js 在 jsdom 中可执行', false, e.message);
   }
@@ -961,6 +971,132 @@ escClose();
       /无持仓|无可卖/.test(sellTxt), sellTxt.slice(0, 60));
   }
 
+  // ── 批量下单面板（V5.2-pro 规则第五块）：全链路留在引擎，UI 只解析与渲染 ──
+  {
+    check('模拟交易·批量：批量下单卡片三件套齐备（输入 / 汇总 / 结果表）',
+      !!$('btInput') && !!$('btSummary') && !!$('btTable') && !!$('btSubmit'),
+      [$('btInput') && 'input', $('btSummary') && 'summary', $('btTable') && 'table', $('btSubmit') && 'submit']
+        .filter(Boolean).join('+') || '缺失');
+
+    // 方向/口径分段控件必须齐备：side 决定走 batchSubmit 还是 batchSell，mode 决定第 2 列语义
+    check('模拟交易·批量：方向与数量口径两组分段控件齐备',
+      $('btSide')?.querySelectorAll('button[data-side]').length === 2
+      && $('btMode')?.querySelectorAll('button[data-mode]').length === 2,
+      `side=${$('btSide')?.querySelectorAll('button[data-side]').length} mode=${$('btMode')?.querySelectorAll('button[data-mode]').length}`);
+
+    // 买入（默认）：填两行「代码,比例」→ 提交 → 结果表逐行给出结构化结果
+    const ta = $('btInput');
+    ta.value = '300893,5\n000001,5';
+    $('btSubmit').click();
+    await new Promise((r) => setTimeout(r, 900));
+
+    const btRows = pRows('btTable');
+    check('模拟交易·批量：提交后结果表逐只列出（每只一行）', btRows >= 1, `${btRows} 行`);
+    check('模拟交易·批量：汇总条给出「已挂单 / 被拦」计数与当日仓位变动上限',
+      /已挂单/.test(txt('btSummary')) && /被拦/.test(txt('btSummary'))
+      && /当日已买入/.test(txt('btSummary')) && /上限 20%/.test(txt('btSummary')),
+      txt('btSummary').slice(0, 140));
+    check('模拟交易·批量：脚注写明龙虎过滤版本与三档档位口径',
+      /龙虎榜前置过滤版本/.test(txt('btHint')) && /主池/.test(txt('btHint'))
+      && /备选观察/.test(txt('btHint')) && /剔除/.test(txt('btHint')),
+      txt('btHint').slice(0, 140));
+    check('模拟交易·批量：脚注写明批量卖出不做龙虎过滤（该规则只约束买入）',
+      /批量卖出不做龙虎过滤/.test(txt('btHint')), txt('btHint').slice(-80));
+
+    // 被拦的行必须说清「在哪一步、因为什么」，不能只给一句「未通过」
+    const blockedRow = [...$('btTable').querySelectorAll('tbody tr')]
+      .find((tr) => /已拦截/.test(tr.textContent || ''));
+    if (blockedRow) {
+      const t = blockedRow.textContent || '';
+      check('模拟交易·批量：被拦行写明拦截阶段与原因（不是一句空泛「未通过」）',
+        /龙虎过滤|风控|行情|持仓|股数|委托/.test(t) && t.length > 12, t.slice(0, 120));
+    } else {
+      check('模拟交易·批量：被拦行写明拦截阶段与原因（本轮无被拦行，跳过语义断言）', true, '无被拦行');
+    }
+
+    // 从研判推荐填入：只填不提交（纪律：绝不替用户下单）
+    const pendBefore = pRows('paperPendTable');
+    if ($('btFillPicks')) {
+      clickEl($('btFillPicks'));
+      await new Promise((r) => setTimeout(r, 120));
+      const filled = ($('btInput')?.value || '').split('\n').filter(Boolean).length;
+      const pendAfter = pRows('paperPendTable');
+      check('模拟交易·批量：「从研判推荐填入」只填输入框、不产生任何委托',
+        filled >= 1 && pendAfter === pendBefore, `填入 ${filled} 行 / 待成交 ${pendBefore}→${pendAfter}`);
+    }
+
+    // 切到卖出方向：批量卖出恒为「全部可卖」，没有比例/股数口径之分。
+    // 此时「按比例/按股数」控件必须被禁用 —— 否则用户会以为「卖出按比例 10%」生效了，
+    // 而实际挂出去的是全部持仓，这是最危险的一种误解。
+    clickEl(window.document.querySelector('#btSide button[data-side="sell"]'));
+    await new Promise((r) => setTimeout(r, 120));
+    const modeBtns = [...$('btMode').querySelectorAll('button')];
+    const modeDisabled = modeBtns.length === 2 && modeBtns.every((b) => b.disabled);
+    check('模拟交易·批量：卖出方向下「按比例/按股数」口径控件被禁用（卖出恒为全部可卖）',
+      modeDisabled, modeDisabled ? 'ok' : '仍可点，易被误解为按比例卖出');
+    // 禁用态下点击不得改变口径（不能只是视觉禁用但逻辑仍生效）
+    clickEl(modeBtns.find((b) => b.dataset.mode === 'qty'));
+    await new Promise((r) => setTimeout(r, 80));
+    check('模拟交易·批量：卖出方向下点口径钮不改变模式（禁用是真禁用）',
+      modeBtns.filter((b) => b.classList.contains('on')).length === 1
+      && modeBtns.find((b) => b.classList.contains('on'))?.dataset.mode === 'pct',
+      modeBtns.map((b) => `${b.dataset.mode}${b.classList.contains('on') ? '*' : ''}`).join('|'));
+    // 默认比例输入在卖出时隐藏（卖出不读它，留着会让人以为生效）
+    const defWrap = $('btDefaultPct')?.closest('label');
+    check('模拟交易·批量：卖出方向下隐藏「默认仓位%」输入（不读它就别显示它）',
+      !!defWrap && defWrap.style.display === 'none', defWrap ? `display=${defWrap.style.display || '(空)'}` : '缺失');
+
+    // 切回买入，避免影响后续断言
+    clickEl(window.document.querySelector('#btSide button[data-side="buy"]'));
+    await new Promise((r) => setTimeout(r, 80));
+    check('模拟交易·批量：切换方向会清空上一次结果表（避免卖出的结果留在屏上被当成买）',
+      pRows('btTable') === 0, `${pRows('btTable')} 行`);
+    check('模拟交易·批量：切回买入后口径控件恢复可用',
+      [...$('btMode').querySelectorAll('button')].every((b) => !b.disabled), 'ok');
+  }
+
+  // ── 事件日志面板（V5.2-pro 规则第六块）：日志由引擎自动写，UI 只读 + 过滤 + 导出 ──
+  {
+    check('模拟交易·日志：事件日志卡片三件套齐备（过滤 / 表 / 说明）',
+      !!$('logTabs') && !!$('logTable') && !!$('logNote') && !!$('logExport'),
+      [$('logTabs') && 'tabs', $('logTable') && 'table', $('logNote') && 'note', $('logExport') && 'export']
+        .filter(Boolean).join('+') || '缺失');
+
+    const stageBtns = [...($('logTabs')?.querySelectorAll('button[data-stage]') || [])];
+    check('模拟交易·日志：阶段过滤覆盖全部/龙虎过滤/风控/委托/结算/止损六档',
+      stageBtns.length === 6
+      && ['', 'lhb', 'risk', 'order', 'settle', 'stop'].every((s) => stageBtns.some((b) => (b.dataset.stage || '') === s)),
+      stageBtns.map((b) => b.dataset.stage || '全部').join('|'));
+
+    // 上一步批量提交已产生日志 → 日志表必须有行
+    const allRows = pRows('logTable');
+    check('模拟交易·日志：委托流转后自动产生日志行（引擎写入，不依赖面板开关）',
+      allRows >= 1, `${allRows} 行`);
+    check('模拟交易·日志：计数写明条数与上限（超出自动丢弃最早记录）',
+      /上限/.test(txt('logCount')), txt('logCount').slice(0, 90));
+
+    // 按阶段过滤：切「委托」后行数应 ≤ 全部
+    clickEl(stageBtns.find((b) => b.dataset.stage === 'order'));
+    await new Promise((r) => setTimeout(r, 100));
+    const orderRows = pRows('logTable');
+    check('模拟交易·日志：按「委托」阶段过滤后行数不超过全部',
+      orderRows <= allRows && orderRows >= 0, `委托 ${orderRows} ≤ 全部 ${allRows}`);
+    check('模拟交易·日志：过滤计数标明「阶段 x 条 / 全部 y 条」',
+      /全部/.test(txt('logCount')), txt('logCount').slice(0, 90));
+
+    // 切回全部
+    clickEl(stageBtns.find((b) => (b.dataset.stage || '') === ''));
+    await new Promise((r) => setTimeout(r, 100));
+    check('模拟交易·日志：切回「全部」后恢复完整行数',
+      pRows('logTable') === allRows, `${pRows('logTable')} vs ${allRows}`);
+
+    // 导出必须真的生成 Markdown 文本（含阶段中文名与「###」标题）
+    const src = readFileSync(join(ROOT, 'src/paper.js'), 'utf8');
+    check('模拟交易·日志：导出走引擎 logsToReport（UI 不自己拼日志文案）',
+      /logsToReport/.test(readFileSync(join(ROOT, 'paper_ui.js'), 'utf8'))
+      && /export function logsToReport/.test(src), 'ok');
+  }
+
   // ── 一键空仓：T+1 下必须「能卖的全挂、卖不掉的如实告知」 ──
   {
     check('模拟交易·空仓：账户区有「一键空仓」按钮', !!$('paperCloseAll'),
@@ -1017,7 +1153,7 @@ escClose();
     let threw = null;
     try {
       // 重新执行一遍 paper_ui.js：boot() 会 load() 到上面这份种子 → renderAllPaper()
-      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
+      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
       await new Promise((r) => setTimeout(r, 800));
     } catch (e) { threw = e; }
     check('模拟交易·持仓：带 pxStale 的种子账本渲染不抛错',
