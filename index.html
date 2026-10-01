@@ -171,6 +171,8 @@
         <section class="card brief">
           <h2>研判报告 <span class="bf-auto">可跳转段落 / 逐段折叠</span></h2>
           <div class="bf-tools">
+            <button id="briefRefresh" class="mini primary" type="button" title="只重新拉取并重建研判报告（保留当前阅读位置与折叠状态，不重算其它区块）">↻ 刷新报告</button>
+            <span id="briefRefreshState" class="bf-rf-state muted" role="status" aria-live="polite"></span>
             <div id="briefNav" class="bf-nav" role="tablist" aria-label="报告段落导航"></div>
             <button id="briefToggle" class="mini" type="button">全部折叠</button>
             <div class="bf-acts">

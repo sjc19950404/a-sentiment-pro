@@ -115,6 +115,44 @@ check('新增·滚动样本外：分段表已填充', rows('rollTable') > 0, `${
 check('新增·主线选股：主线题材已渲染', txt('mainLineBody').includes('主线题材'), txt('mainLineBody').slice(0, 40));
 check('新增·主线选股：口径备注已渲染', txt('mainLineBody').includes('强度分'), '');
 
+// ── 研判报告单独刷新（用户要求：报告要能独立刷新，不必重算整页）──────────────
+check('报告刷新：工具条内有「刷新报告」按钮',
+  !!$('briefRefresh') && /刷新/.test($('briefRefresh')?.textContent || ''),
+  $('briefRefresh')?.textContent || '(缺按钮)');
+check('报告刷新：按钮有明确 title 说明范围（只重建报告、保留折叠状态）',
+  /只重新拉取并重建研判报告/.test($('briefRefresh')?.getAttribute('title') || ''),
+  $('briefRefresh')?.getAttribute('title') || '(缺 title)');
+check('报告刷新：按钮带 primary 样式（与复制/导出/打印区分）',
+  ($('briefRefresh')?.className || '').includes('primary'), $('briefRefresh')?.className || '');
+check('报告刷新：状态区存在且有 aria-live（结果可被读屏播报）',
+  !!$('briefRefreshState') && $('briefRefreshState')?.getAttribute('aria-live') === 'polite', '');
+check('报告刷新：按钮不依赖表单提交（type=button，不会触发表单/整页跳转）',
+  $('briefRefresh')?.getAttribute('type') === 'button', $('briefRefresh')?.getAttribute('type') || '');
+// 行为守卫：真点一次，必须 ① 有状态反馈 ② 报告非空 ③ 不抛异常 ④ 不整页重载
+{
+  let reloaded = false;
+  const origReload = window.location.reload;
+  try { window.location.reload = () => { reloaded = true; }; } catch { /* 只读则忽略 */ }
+  const before = txt('briefBody').length;
+  let threw = '';
+  try {
+    $('briefRefresh')?.click();
+    // 等待异步拉取完成（jsdom 下 fetch 由 harness 提供）
+    await new Promise((r) => setTimeout(r, 260));
+  } catch (e) { threw = e.message; }
+  try { window.location.reload = origReload; } catch { /* noop */ }
+  check('报告刷新：点击后不抛异常', threw === '', threw);
+  check('报告刷新：点击后不触发整页重载', !reloaded, reloaded ? '发生了 location.reload' : '');
+  check('报告刷新：点击后给出状态反馈（已更新/已是最新/失败，不静默）',
+    /已更新|已是最新|已生成|失败/.test(txt('briefRefreshState')), txt('briefRefreshState') || '(空)');
+  check('报告刷新：点击后报告仍非空（重建成功，未清空）',
+    txt('briefBody').length > 0 && txt('briefBody').length >= before * 0.5,
+    `前 ${before} → 后 ${txt('briefBody').length}`);
+  check('报告刷新：重建后段落目录 chip 仍齐备（renderBriefNav 被调用）',
+    ($('briefNav')?.querySelectorAll('button') || []).length > 0,
+    `${$('briefNav')?.querySelectorAll('button')?.length} 个 chip`);
+}
+
 // 研判报告与引擎同源（V5.2）：报告结论必须用引擎口径（七因子情绪分 = archive.emotion.value）
 // 套引擎阈值，不能再用自算的五模块分当结论——实测过两套分套同一阈值会给出相反结论
 // （83.8 →「过热」 vs 76.8 →「满仓持有」）。

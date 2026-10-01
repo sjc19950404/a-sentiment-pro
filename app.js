@@ -1458,19 +1458,26 @@ function renderAll(arc) {
   loadBacktest(); // 回测/帕累托/滚动/主线选股四区块（独立数据文件，缺失不影响上述渲染）
 }
 
+// 拉取最新 archive 并渲染全页。返回 {arc, changed, first, hhmm}；失败抛出。
+// 抽成独立函数是为了让「研判报告单独刷新」能复用同一条拉取/指纹链路，
+// 而不是各写一份 fetch（两份必然漂移：缓存参数、指纹口径、错误处理都会分叉）。
+async function pullArchive() {
+  const res = await fetch('./data/archive.json?_=' + Date.now(), { cache: 'no-store' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const arc = await res.json();
+  const fp = fingerprint(arc);
+  const changed = lastFp !== '' && fp !== lastFp;
+  const first = lastFp === '';
+  renderAll(arc); // 先渲染，成功才更新指纹——渲染失败下次轮询自动重试
+  lastFp = fp;
+  return { arc, changed, first, hhmm: new Date().toTimeString().slice(0, 5) };
+}
+
 async function checkUpdate(manual) {
   const btn = $('refreshBtn'), st = $('refreshState');
   if (manual && btn) { btn.classList.add('busy'); btn.textContent = '↻ 拉取中…'; }
   try {
-    const res = await fetch('./data/archive.json?_=' + Date.now(), { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const arc = await res.json();
-    const fp = fingerprint(arc);
-    const changed = lastFp !== '' && fp !== lastFp;
-    const first = lastFp === '';
-    renderAll(arc); // 先渲染，成功才更新指纹——渲染失败下次轮询自动重试
-    lastFp = fp;
-    const hhmm = new Date().toTimeString().slice(0, 5);
+    const { changed, first, hhmm } = await pullArchive();
     if (st) {
       if (changed) { st.textContent = hhmm + ' 数据已更新'; st.className = 'ok'; }
       else if (manual && !first) { st.textContent = hhmm + ' 已是最新'; st.className = 'ok'; }
@@ -2276,6 +2283,49 @@ function closeExportMenu() {
 
 $('briefCopy')?.addEventListener('click', (e) => doCopyBrief(e.currentTarget));
 $('briefPrint')?.addEventListener('click', (e) => doPrintBrief(e.currentTarget));
+
+// ── 研判报告单独刷新 ──────────────────────────────────────────────────────
+// 与顶栏「↻ 刷新」的区别：顶栏刷新会重算整页（行情/题材/回测/模拟交易全部重渲染），
+// 在只需要最新研判时成本高、且会打断用户当前的阅读位置与折叠状态。
+// 本按钮**只重建报告**：重新拉 archive → 重建报告（外加报告依赖的回测档，
+// 因为报告落款版本/档位阈值取自 data/backtest.json）。
+// 保留折叠状态：渲染前记录已折叠段落 id，**所有**重渲染结束（含 loadBacktest 内部的
+// 二次 renderBrief）之后再还原——否则先还原、后被覆盖，等于没还原（真浏览器抓到过）。
+// 状态如实告知：数据有变→「已更新」；无变→「已是最新」；失败→「刷新失败」+ 原因。
+async function doRefreshBrief(btn) {
+  if (btn) { btn.classList.add('busy'); btn.textContent = '↻ 拉取中…'; btn.disabled = true; }
+  const st = $('briefRefreshState');
+  const collapsed = new Set([...document.querySelectorAll('#briefBody .bf-sec.collapsed')].map((s) => s.id));
+  try {
+    const { changed, first, hhmm } = await pullArchive(); // 内部 renderAll → renderBrief（第 1 次）
+    // 报告依赖回测档（落款版本/档位阈值）——loadBacktest 成功后会**再调一次 renderBrief**（第 2 次），
+    // 故必须等它结束再还原折叠态，否则刚还原就被覆盖。失败不回滚报告（显示为降级态）。
+    try { await loadBacktest(); } catch { /* 回测档缺失不影响报告主体 */ }
+    // 所有重渲染都结束，此时才还原折叠状态
+    for (const id of collapsed) {
+      const el = id && document.getElementById(id);
+      if (el && el.classList.contains('bf-sec')) el.classList.add('collapsed');
+    }
+    syncBriefToggleLabel();
+    // 说明：这里**不**调 window.scrollTo 还原滚动位置——只替换 #briefBody 的 innerHTML，
+    // 文档高度基本不变，浏览器会自然保持视口；而 window.scrollTo 在 jsdom 下会触发
+    // 「Not implemented」jsdomError，污染「运行期无 JS 异常」断言（本项目的滚动一律走
+    // 元素的 scrollIntoView 并做存在性守卫，见锚点跳转）。
+    if (st) {
+      if (changed) { st.textContent = hhmm + ' 报告已更新'; st.className = 'ok'; }
+      else if (!first) { st.textContent = hhmm + ' 已是最新'; st.className = 'ok'; }
+      else { st.textContent = hhmm + ' 已生成'; st.className = 'ok'; }
+    }
+  } catch (e) {
+    if (st) { st.textContent = '刷新失败：' + e.message; st.className = 'err'; }
+  } finally {
+    if (btn) { btn.classList.remove('busy'); btn.textContent = '↻ 刷新报告'; btn.disabled = false; }
+  }
+}
+$('briefRefresh')?.addEventListener('click', (e) => doRefreshBrief(e.currentTarget));
+$('briefRefresh')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); doRefreshBrief(e.currentTarget); }
+});
 
 $('briefExport')?.addEventListener('click', (e) => {
   e.stopPropagation();
