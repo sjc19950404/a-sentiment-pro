@@ -3,6 +3,12 @@
 // 定位：把系统已有的「市场研判结论」落到**具体个股**上，作为模拟交易的下单参考。
 // 它不产生新的市场判断，只做一件事——**把已经算好的信号按同一套口径排序并给出可读理由**。
 //
+// ⚠ 2026-10-01 升级：推荐目标从「列出今天有资金证据的票」改为「**预测买入后大概率会涨的票**」。
+//   打分/剔除规则全部下沉到 src/predict.js（基于 33 交易日真实前瞻收益回溯实测）。
+//   本文件负责：候选池构建（去噪）→ 调用预测引擎筛选排序 → 组装展示字段。
+//   职责边界：picks.js 管「哪些票进了池子、池子怎么去噪」；predict.js 管
+//   「池子里哪些大概率涨、哪些必须扔掉」。两处都不要重复实现对方的规则。
+//
 // 为什么必须集中在这里、不能写在 UI：
 //   推荐是「用户会照着下单」的东西，最容易因为口径漂移而误导。所以：
 //     · 龙虎榜一律走 src/lhb.js 的当日榜口径（区间累计榜必须剔除，否则净买额是三天累计值）
@@ -12,7 +18,8 @@
 // 三条硬纪律：
 //   1. **只在有真实资金依据的池子里选**：龙虎榜当日净买 > 0，或当日涨停。其他票再好也不进推荐——
 //      没有上榜就没有真实资金证据，推荐它就等于凭感觉。
-//   2. **不做盈亏承诺、不给目标价**：只给「为什么今天值得看」与「风险在哪」。
+//   2. **不做盈亏承诺、不给目标价**：只给「为什么今天值得看」与「风险在哪」，
+//      概率分是「历史同特征组上涨占比」这个可核验统计量，不是主观置信度。
 //   3. **仓位建议与市场档位联动**：市场情绪决定总仓位，个股均分——冰点区就该少拿甚至空仓，
 //      逆着档位推荐重仓是自相矛盾。
 
@@ -20,6 +27,8 @@
 // 但 picks.js 是**浏览器也要用**的零依赖模块（paper_ui.js 直接 import），不能引 node 侧依赖——
 // lhb.js 本身是纯函数无 node 依赖，故可直接复用，不再自己写正则（口径守卫会拦重复实现）。
 import { RANGE_BOARD_RE, isNewStock } from './lhb.js';
+// 预测与剔除引擎（上涨概率、预期收益、止损位）。规则唯一出处，本文件不重写任何阈值。
+import { predictPicks, probBandText, PREDICT_VERSION, BASELINE_UP } from './predict.js';
 
 // ────────────────────────── 常量（阈值集中在此，UI 不重写） ──────────────────────────
 
@@ -334,11 +343,17 @@ export function suggestWeight(tier, n, opts = {}) {
 /**
  * 产出推荐列表。这是 UI 唯一该调用的函数。
  *
+ * 流程：候选池（去噪）→ 预测引擎（剔除大概率亏 + 概率排序）→ 仓位与说明组装。
+ *
  * @param {object} day     archive 的某一天
  * @param {object} ctx     市场上下文
  * @param {number} ctx.emotionScore  七因子情绪分（与研判报告同源）
  * @param {number} [ctx.topN]
- * @returns {{tier:object|null, score:number|null, picks:Array, note:object, asOf:string|null, pool:number}}
+ * @param {number} [ctx.minProb] 概率分下限（默认取 predict.js 的中等档起点 57）
+ * @param {number} [ctx.stopLossPct] 单笔止损线（调用方传 alerts.js 的 POS_CFG.stopLoss 保持同源；
+ *                                   不在这里 import alerts.js 是为了避免 picks ⇄ alerts 互引）
+ * @returns {{tier:object|null, score:number|null, picks:Array, rejected:Array,
+ *            note:object, asOf:string|null, pool:number, pred:object, version:string}}
  */
 export function recommendPicks(day, ctx = {}) {
   const d = day || {};
@@ -348,21 +363,40 @@ export function recommendPicks(day, ctx = {}) {
   const candidates = buildCandidates(d);
   const totalDealWan = candidates.reduce((a, c) => a + (finite(c.buyWan) ? +c.buyWan : 0) + (finite(c.sellWan) ? +c.sellWan : 0), 0);
 
-  const scored = candidates
-    .map((c) => {
-      const { score, parts } = scoreCandidate(c, { totalDealWan });
-      return { ...c, score, scoreParts: parts, reasons: reasonsOf(c), risks: risksOf(c) };
-    })
-    .sort((a, b) => (b.score - a.score) || ((b.netWan || 0) - (a.netWan || 0)) || String(a.code).localeCompare(String(b.code)));
+  // 先补上「可核验理由/风险」与流动性分（这些是展示字段，与预测相互独立）
+  const enriched = candidates.map((c) => {
+    const { score, parts } = scoreCandidate(c, { totalDealWan });
+    return { ...c, score, scoreParts: parts, reasons: reasonsOf(c), risks: risksOf(c) };
+  });
 
-  const picks = scored.slice(0, topN);
+  // 交给预测引擎：剔除大概率亏的，其余按上涨概率排序
+  const ztCount = finite(d.summary && d.summary.zt_count) ? +d.summary.zt_count : null;
+  const pred = predictPicks(enriched, {
+    topN, ztCount, minProb: ctx.minProb, stopLossPct: ctx.stopLossPct,
+  });
+
+  const picks = pred.picks;
   const weight = suggestWeight(tier, picks.length);
-  for (const p of picks) p.suggestWeight = weight;
+  for (const p of picks) {
+    p.suggestWeight = weight;
+    // 宽波动品种（创业板/科创板）按预测引擎的建议把仓位打折
+    const factor = p.stop && finite(p.stop.maxPosFactor) ? +p.stop.maxPosFactor : 1;
+    p.suggestWeight = Math.round(weight * factor * 1e4) / 1e4;
+    p.probText = probBandText(p.prob.score);
+  }
 
   // 空态与拒绝态必须说清原因，不能只给一个空列表
   let note;
   if (!candidates.length) {
     note = { level: 'empty', text: '当日没有同时满足「龙虎榜净买为正」或「涨停」的标的，本日不产生推荐。' };
+  } else if (!picks.length) {
+    // 有候选但全被预测引擎筛掉——必须如实说明，不能让人以为今天没票
+    note = {
+      level: 'empty',
+      text: `当日候选池 ${candidates.length} 只，但按预测规则全部未达推荐门槛`
+        + `（剔除 ${pred.stats.rejected} 只、概率分不足 ${pred.stats.minProb} 的 ${pred.stats.below} 只）。`
+        + '宁可不推荐，也不推大概率亏的票。',
+    };
   } else if (tier && !tier.allowNew) {
     note = {
       level: 'blocked',
@@ -376,12 +410,20 @@ export function recommendPicks(day, ctx = {}) {
         + `按 ${picks.length} 只均分即每只约 ${(weight * 100).toFixed(1)}%（单只上限 20%）。`,
     };
   } else {
-    note = { level: 'unknown', text: '市场情绪分缺失，无法给出仓位建议；下列标的仅按资金证据排序。' };
+    note = { level: 'unknown', text: '市场情绪分缺失，无法给出仓位建议；下列标的仅按预测上涨概率排序。' };
   }
 
   return {
     tier, score: finite(ctx.emotionScore) ? +ctx.emotionScore : null,
-    picks, note, pool: candidates.length,
-    asOf: d.trade_date || null,
+    picks,
+    // 三个「非推荐」桶全部透出，保证进池的每一只票都能被用户看见，不被静默丢弃：
+    //   rejected       —— 命中剔除规则（大概率亏），必须展示原因
+    //   belowThreshold —— 概率分不足门槛（没把握，宁可不推）
+    //   overflow       —— 达门槛但被 topN 截断（够格，只是名额有限）
+    rejected: pred.rejected.slice(0, 12),
+    belowThreshold: pred.belowThreshold.slice(0, 8),
+    overflow: pred.overflow.slice(0, 8),
+    note, pool: candidates.length, asOf: d.trade_date || null,
+    pred: pred.stats, version: PREDICT_VERSION, baseline: BASELINE_UP,
   };
 }

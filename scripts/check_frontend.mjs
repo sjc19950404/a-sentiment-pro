@@ -614,6 +614,7 @@ escClose();
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/alerts\.js';/, '')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/alert_log\.js';/, '')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/paper_review\.js';/, '')
+    .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/predict\.js';/, '')
     .replace(/^export\s+/gm, '');
   // src/picks.js（研判推荐引擎）同样是 ESM 纯函数，零依赖。
   // 它 import 了 src/lhb.js 的 RANGE_BOARD_RE / isNewStock（口径唯一出处）。
@@ -625,10 +626,24 @@ escClose();
   const lhbBundle = `window.__lhb__ = (function(){\n`
     + readFileSync(join(ROOT, 'src/lhb.js'), 'utf8').replace(/^export\s+/gm, '')
     + '\nreturn { RANGE_BOARD_RE, isNewStock };\n})();';
+  // 一手股数（LOT）不手抄字面量——从 src/paper.js 源码里抽出真实值。
+  // 多处 IIFE 需要它（predict / alert_log），故提前到使用点之前声明。
+  const LOT_LITERAL_EARLY = (readFileSync(join(ROOT, 'src/paper.js'), 'utf8')
+    .match(/export const LOT\s*=\s*(\d+)/) || [, '100'])[1];
+  // src/predict.js（上涨概率预测与剔除引擎）：**零依赖**纯函数 ESM。
+  // 刻意不 import alerts.js（否则 alerts → picks → predict → alerts 成环，
+  // IIFE 即时求值环境会崩）——止损线由调用方以参数传入。故这里只需剥掉 export 即可。
+  // 放在 picksBundle **之前**：picks.js 现在 import 它。
+  const predictBundle = `window.__predict__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/predict.js'), 'utf8').replace(/^export\s+/gm, '')
+    + '\nreturn { PREDICT_VERSION, PROB_BANDS, probBand, probBandText, REJECT_RULES, screenCandidate,'
+    + ' BASELINE_UP, BASELINE_N, PREDICT_FACTORS, predictUpProb, expectedReturn, suggestStop, predictPicks };\n})();';
   const picksBundle = `window.__picks__ = (function(){\n`
     + readFileSync(join(ROOT, 'src/picks.js'), 'utf8')
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhb\.js';/m,
         'const { RANGE_BOARD_RE, isNewStock } = window.__lhb__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/predict\.js';/m,
+        'const { predictPicks, probBandText, PREDICT_VERSION, BASELINE_UP } = window.__predict__;')
       .replace(/^export\s+/gm, '')
     + '\nreturn { marketTier, TIER_THRESHOLDS, POSITION_TIERS, recommendPicks, PICK_TOP_N, SCORE_WEIGHTS, suggestWeight };\n})();';
   // paper_ui.js 直接调用 recommendPicks / PICK_TOP_N / SCORE_WEIGHTS，故从 window.__picks__ 解构回作用域
@@ -658,8 +673,7 @@ escClose();
   // 实际上 engineNoExport 就在同一作用域，alert_log 包进 IIFE 后从 window.__alerts__ 取 alerts 符号，
   // 而 LOT 需要显式传入——故把 LOT 作为 IIFE 参数传进去，避免依赖「谁先声明」的隐式顺序。
   // LOT 不手抄字面量——从 src/paper.js 源码里抽出真实值（与 alert_log 的 minQty 口径同源）。
-  const LOT_LITERAL = (readFileSync(join(ROOT, 'src/paper.js'), 'utf8')
-    .match(/export const LOT\s*=\s*(\d+)/) || [, '100'])[1];
+  const LOT_LITERAL = LOT_LITERAL_EARLY;
   const alertLogBundle = `window.__alertlog__ = (function(LOT){\n`
     + readFileSync(join(ROOT, 'src/alert_log.js'), 'utf8')
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/alerts\.js';/m,
@@ -698,7 +712,7 @@ escClose();
     return null;
   }`;
   try {
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
   } catch (e) {
     check('模拟交易：paper_ui.js 在 jsdom 中可执行', false, e.message);
   }
@@ -902,7 +916,7 @@ escClose();
     let threw = null;
     try {
       // 重新执行一遍 paper_ui.js：boot() 会 load() 到上面这份种子 → renderAllPaper()
-      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
+      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
       await new Promise((r) => setTimeout(r, 800));
     } catch (e) { threw = e; }
     check('模拟交易·持仓：带 pxStale 的种子账本渲染不抛错',
@@ -1165,9 +1179,24 @@ escClose();
       anyRisk && !/注意风险(?!，)/.test(txt('picksList')),
       anyRisk ? '有风险行' : '无风险行');
 
-    // 评分徽章存在且是数字
-    const scoreTxt = rows[0]?.querySelector('.pk-score')?.textContent?.trim() || '';
-    check('模拟交易·推荐：显示综合评分', /^\d+(\.\d+)?$/.test(scoreTxt), scoreTxt);
+    // 上涨概率徽章存在且是数字（排序主依据已从「加权综合分」改为「上涨概率」）
+    const probTxt = rows[0]?.querySelector('.pk-prob')?.textContent?.trim() || '';
+    check('模拟交易·推荐：显示上涨概率分（预测主依据）', /上涨概率\s*\d+(\.\d+)?/.test(probTxt), probTxt);
+
+    // 概率分档位色调必须是「高=红、低=中性/警示」，绝不能给低概率上绿色
+    // （绿色在本页表示「跌」，用在概率上会被误读成「跌的概率」）
+    const probCls = rows[0]?.querySelector('.pk-prob')?.className || '';
+    check('模拟交易·推荐：概率徽章带分档样式类（不裸渲染）',
+      /pb-(high|mid|low|poor)/.test(probCls), probCls.trim());
+
+    // 每行必须给出「依据」（命中的实测因子），这是可核验性的最低要求
+    check('模拟交易·推荐：每行给出预测依据与样本量',
+      /依据：/.test(txt('picksList')) && /样本\s*\d+\s*例/.test(txt('picksList')),
+      txt('picksList').slice(0, 80));
+
+    // 止损位必须逐行给出——这是「止损建议」落地为可执行数字的关键
+    check('模拟交易·推荐：每行给出止损位数字', /止损\s*-\d+%/.test(txt('picksList')),
+      (txt('picksList').match(/止损\s*-?\d+%/) || ['无'])[0]);
 
     // 一键填入下单区：点「填入下单」后代码框被填上该股代码，且不自动提交
     const firstCode = rows[0]?.dataset.code;
@@ -1189,14 +1218,41 @@ escClose();
     await new Promise((r) => setTimeout(r, 120));
     const dw = txt('dwBody');
     check('模拟交易·推荐：点推荐行打开个股详情抽屉', drawerOpen() && dw.length > 60, txt('dwTitle'));
-    check('模拟交易·推荐：详情含「为什么入选」「评分构成」「风险提示」三段',
-      /为什么入选/.test(dw) && /评分构成/.test(dw) && /风险提示/.test(dw),
+    check('模拟交易·推荐：详情含「预测」「预期收益」「止损」「为什么入选」「风险提示」五段',
+      /为什么认为它大概率会涨/.test(dw) && /预期收益/.test(dw) && /止损与仓位/.test(dw)
+      && /为什么入选/.test(dw) && /风险提示/.test(dw),
       dw.slice(0, 60));
+    check('模拟交易·推荐：详情写明「概率是历史统计，不是收益承诺」（诚实边界）',
+      /历史统计/.test(dw) && /不是收益承诺/.test(dw), dw.slice(-100));
+    check('模拟交易·推荐：详情区分「收盘价买入」与「开盘价买入」两种口径',
+      /T 日收盘买入/.test(dw) && /T\+1 开盘买入/.test(dw), '两种口径均已标注');
     escClose();
 
     // 脚注必须写明不构成投资建议（合规底线）
     check('模拟交易·推荐：脚注声明不构成投资建议',
       /不构成投资建议/.test(txt('picksNote')), txt('picksNote').slice(-60));
+    check('模拟交易·推荐：脚注写明「概率是历史统计，不是收益承诺」',
+      /概率是历史统计/.test(txt('picksNote')) && /不是收益承诺/.test(txt('picksNote')),
+      txt('picksNote').slice(0, 80));
+    check('模拟交易·推荐：脚注列出剔除规则（用户可核对筛掉了什么）',
+      /换手≥25%/.test(txt('picksNote')) && /连板≥5/.test(txt('picksNote')),
+      txt('picksNote').slice(0, 120));
+  }
+
+  // 剔除清单：必须在页面上可见（折叠面板），不能被静默丢弃
+  {
+    const rejBox = $('picksRejected');
+    const rejTxt = txt('picksRejected');
+    const hasRej = /已剔除\s*\d+\s*只/.test(rejTxt);
+    check('模拟交易·推荐：被剔除的「大概率亏」标的在页面可见（折叠面板，非静默丢弃）',
+      !!rejBox && (hasRej || rejTxt.trim() === ''), rejTxt.slice(0, 60) || '当日无剔除');
+    if (hasRej) {
+      check('模拟交易·推荐：剔除清单逐条给出剔除原因',
+        /换手过高|连板过高|北交所|ST|仅小额外资金|无涨停也无有效净买/.test(rejTxt),
+        (rejTxt.match(/换手过高|连板过高|北交所|ST|仅小额外资金|无涨停也无有效净买/) || ['无'])[0]);
+      check('模拟交易·推荐：剔除原因带实测依据（不是空泛措辞）',
+        /实测|T\+1|上涨占比|均收益|回撤/.test(rejTxt), rejTxt.slice(0, 100));
+    }
   }
 
   // 记录页签：成交 / 全部委托（含被拒）切换

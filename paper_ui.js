@@ -1145,7 +1145,11 @@ function currentPicks() {
   // 情绪分取当档（与研判报告、回测引擎同源），不是页面当前实时值——推荐必须可复现
   const score = (day.emotion && day.emotion.value != null) ? day.emotion.value : null;
   if (!PICKS || PICKS.asOf !== (day.trade_date || null)) {
-    PICKS = recommendPicks(day, { emotionScore: score, topN: PICK_TOP_N });
+    // stopLossPct 由这里显式传入：picks.js 不 import alerts.js（避免 picks ⇄ alerts 互引），
+    // 但止损线口径仍取自 alerts.js 的 POS_CFG，保持「阈值唯一出处」。
+    PICKS = recommendPicks(day, {
+      emotionScore: score, topN: PICK_TOP_N, stopLossPct: POS_CFG.stopLoss,
+    });
   }
   return PICKS;
 }
@@ -1155,6 +1159,7 @@ const TONE_CLS = { up: 'hl', warn: 'bf-warn', muted: 'muted' };
 function renderPicks() {
   const meta = $('picksMeta');
   const box = $('picksList');
+  const rejBox = $('picksRejected');
   const note = $('picksNote');
   if (!box) return;
 
@@ -1163,6 +1168,7 @@ function renderPicks() {
     // 存档没就绪：如实说明，不给假数据
     if (meta) meta.innerHTML = '<span class="muted">数据未就绪</span>';
     box.innerHTML = '<div class="picks-empty muted">等待行情存档加载…</div>';
+    if (rejBox) rejBox.innerHTML = '';
     if (note) note.textContent = '';
     return;
   }
@@ -1171,8 +1177,12 @@ function renderPicks() {
     const tierTxt = r.tier
       ? `<span class="pk-tier ${r.tier.allowNew ? '' : 'warn'}">${esc(r.tier.label)}</span>`
       : '<span class="pk-tier warn">档位未知</span>';
+    const st = r.pred || {};
     meta.innerHTML = `数据日期 <b>${esc(r.asOf || '—')}</b> · 情绪分 <b>${r.score == null ? '—' : r.score.toFixed(1)}</b>`
-      + ` → 市场档位 ${tierTxt} · 候选池 <b>${r.pool}</b> 只（当日榜净买为正 / 涨停）`;
+      + ` → 市场档位 ${tierTxt} · 候选池 <b>${r.pool}</b> 只`
+      + ` → 预测筛选：推荐 <b class="hl">${r.picks.length}</b> 只`
+      + `、剔除 <b class="hl-dn">${st.rejected == null ? '—' : st.rejected}</b> 只（大概率亏）`
+      + `、未达概率门槛 ${st.below == null ? '—' : st.below} 只`;
   }
 
   if (!r.picks.length) {
@@ -1181,6 +1191,12 @@ function renderPicks() {
     box.innerHTML = r.picks.map((p, i) => {
       const chg = p.changePct == null ? null : +p.changePct;
       const chgCls = chg == null ? 'muted' : (chg > 0 ? 'hl' : chg < 0 ? 'hl-dn' : 'muted');
+      const prob = p.prob || {};
+      const band = prob.band || {};
+      const bandCls = band.key === 'high' ? 'pb-high' : band.key === 'mid' ? 'pb-mid' : band.key === 'low' ? 'pb-low' : 'pb-poor';
+      const exp = p.exp || {};
+      const expC = exp.atClose || {};
+      const factorTxt = (prob.factors || []).map((f) => f.label).join(' + ') || '无实测有效因子';
       return `<div class="pk-row" data-act="pick" data-code="${esc(p.code)}" tabindex="0" role="button"
           title="点击查看 ${esc(p.name || p.code)} 的详情">
         <span class="pk-rank${i === 0 ? ' top' : ''}">${i + 1}</span>
@@ -1189,13 +1205,20 @@ function renderPicks() {
             <b class="pk-name">${esc(p.name || p.code)}</b>
             <span class="pk-code muted">${esc(p.code)}</span>
             ${chg == null ? '' : `<span class="pk-chg ${chgCls}">${pct(chg)}</span>`}
-            <span class="pk-score" title="评分：资金 40% / 连板 25% / 题材 20% / 流动性 15%">${p.score.toFixed(1)}</span>
+            <span class="pk-prob ${bandCls}" title="上涨概率分：历史同特征组的实际上涨占比（不是主观置信度）">上涨概率 ${prob.score == null ? '—' : prob.score.toFixed(1)}</span>
           </div>
-          <div class="pk-reasons">${p.reasons.map((x) => `<span class="pk-tag ${TONE_CLS[x.tone] || 'muted'}">${esc(x.text)}</span>`).join('')}</div>
+          <div class="pk-reasons">
+            <span class="pk-tag muted">依据：${esc(factorTxt)}</span>
+            ${expC.median == null ? '' : `<span class="pk-tag hl" title="T 日收盘价买入 → T+1 收盘的实测中位涨幅（同特征分组）">历史同组中位 ${expC.median > 0 ? '+' : ''}${expC.median}%</span>`}
+            <span class="pk-tag muted" title="该分组的实测样本量，样本越小可信度越低">样本 ${prob.sample || '—'} 例</span>
+            ${p.reasons.map((x) => `<span class="pk-tag ${TONE_CLS[x.tone] || 'muted'}">${esc(x.text)}</span>`).join('')}
+          </div>
           ${p.risks.length ? `<div class="pk-risks muted">风险：${esc(p.risks.join('；'))}</div>` : ''}
+          ${exp.warn ? `<div class="pk-risks bf-warn">${esc(exp.warn.replace(/\*\*/g, ''))}</div>` : ''}
         </div>
         <div class="pk-actions">
           <span class="pk-w" title="建议仓位（占总资产）">${p.suggestWeight > 0 ? (p.suggestWeight * 100).toFixed(1) + '%' : '观察'}</span>
+          <span class="pk-stop muted" title="止损位（系统单笔止损纪律）">止损 ${p.stop ? (p.stop.stopLossPct * 100).toFixed(0) : '—'}%</span>
           <button class="mini pk-buy" type="button" data-act="pick-fill" data-code="${esc(p.code)}"
             title="把该股代码填入下方下单区">填入下单</button>
         </div>
@@ -1203,14 +1226,38 @@ function renderPicks() {
     }).join('');
   }
 
+  // 被剔除的票必须让用户看得见——「静默丢弃」会让人以为池子里本来就没有这些票
+  if (rejBox) {
+    const rj = r.rejected || [];
+    if (!rj.length) {
+      rejBox.innerHTML = '';
+    } else {
+      rejBox.innerHTML = `<details class="pk-rej"><summary>已剔除 ${rj.length} 只「大概率亏」标的（点开看原因）</summary>`
+        + `<div class="pk-rej-body">` + rj.map((p) => {
+          const d = [];
+          if (p.changePct != null) d.push(`当日 ${p.changePct > 0 ? '+' : ''}${p.changePct}%`);
+          if (p.turnoverPct != null) d.push(`换手 ${p.turnoverPct}%`);
+          if (p.streak != null && p.streak > 1) d.push(`${p.streak} 连板`);
+          return `<div class="pk-rej-row">`
+            + `<span class="pk-rej-name">${esc(p.name || p.code)}</span>`
+            + `<span class="pk-code muted">${esc(p.code)}</span>`
+            + `<span class="pk-rej-why bf-warn">${esc(p.reason)}</span>`
+            + `<span class="muted">${esc(d.join(' · '))}</span>`
+            + `<div class="pk-rej-detail muted">${esc(String(p.why || '').replace(/\*\*/g, ''))}</div>`
+            + `</div>`;
+        }).join('') + `</div></details>`;
+    }
+  }
+
   if (note) {
     const n = r.note;
     note.innerHTML = `<span class="${n.level === 'blocked' ? 'bf-warn' : 'muted'}">${esc(n.text)}</span>`
       // 权重一律从引擎常量取，避免 UI 文案与引擎权重悄悄漂移
-      + ` 评分维度：龙虎榜当日净买 ${Math.round(SCORE_WEIGHTS.fund * 100)}% · 连板高度 ${Math.round(SCORE_WEIGHTS.streak * 100)}% ·`
-      + ` 主线题材 ${Math.round(SCORE_WEIGHTS.theme * 100)}% · 流动性 ${Math.round(SCORE_WEIGHTS.liquidity * 100)}%；`
-      + `数据取自当日榜（区间累计榜与新股已剔除）。推荐由规则引擎按当档数据生成，<b>不构成投资建议</b>，`
-      + `仅供模拟盘练习参考；买卖由你自行判断。`;
+      + ` 排序依据：预测上涨概率（基于 ${(r.pred && r.pred.baselineN) || 975} 个涨停样本的实测分组统计，`
+      + `基准上涨占比 ${(r.pred && r.pred.baselineUp) || 55.3}%）。`
+      + `剔除规则：换手≥25%、连板≥5、北交所、ST、仅小额外资金且无涨停。`
+      + `数据取自当日榜（区间累计榜与新股已剔除）。<b>概率是历史统计，不是收益承诺</b>，`
+      + `且<b>不构成投资建议</b>，仅供模拟盘练习参考；买卖由你自行判断。`;
   }
 }
 
@@ -1247,46 +1294,79 @@ function pickDetail(code) {
     ? '<span class="muted">无当日龙虎榜净买记录</span>'
     : `<span class="${p.netWan > 0 ? 'hl' : 'hl-dn'}">${(p.netWan / 1e4).toFixed(2)} 亿</span>`;
   const parts = p.scoreParts || {};
+  const prob = p.prob || {};
+  const exp = p.exp || {};
+  const expC = exp.atClose || {};
+  const expO = exp.atOpen || {};
+  const stop = p.stop || {};
   // 注意：dwKv 收的是 [键, 值] 二元组数组（内部对键做 esc、对值按 HTML 处理）；
   // 早先误把拼好的 HTML 字符串当二元组传进去，字符串被逐字符解构 → 渲染成 "<d<d<d"。
   const bar = (label, w, v) => [
     `${label}（权重 ${Math.round(w * 100)}%）`,
     `${(v * 100).toFixed(0)} 分 <span class="muted">→ 贡献 ${(w * v * 100).toFixed(1)}</span>`,
   ];
+  const bandCls = (prob.band && prob.band.key) === 'high' ? 'pb-high'
+    : (prob.band && prob.band.key) === 'mid' ? 'pb-mid'
+      : (prob.band && prob.band.key) === 'low' ? 'pb-low' : 'pb-poor';
   return {
     title: `${esc(p.name || code)}　${esc(code)}`,
-    sub: `研判推荐第 ${r.picks.indexOf(p) + 1} 位 · 综合评分 ${p.score.toFixed(1)} · 数据日期 ${esc(r.asOf || '—')}`,
-    body: dwSection('为什么入选', dwKv([
-      ['龙虎榜当日净买', netTxt],
-      ['涨停 / 连板', p.isZt ? (p.streak > 1 ? `涨停（${p.streak} 连板）` : '涨停') : '<span class="muted">未涨停</span>'],
-      ['主线题材', p.mainThemeMatch === 'exact' ? '属当日主线题材'
-        : p.mainThemeMatch === 'stem' ? '<span class="bf-warn">与主线题材同源（词根匹配，非精确命中）</span>'
-          : '<span class="muted">不在当日主线内</span>'],
-      ['所属题材', p.themes && p.themes.length ? esc(p.themes.join('、')) : '<span class="muted">—</span>'],
-      ['换手率', p.turnoverPct == null ? '—' : `${p.turnoverPct}%`],
-      ['现价（当档收盘）', p.close == null ? '—' : `${p.close} 元`],
-    ]))
-      + dwSection('评分构成（可核验）', dwKv([
+    sub: `研判推荐第 ${r.picks.indexOf(p) + 1} 位 · 上涨概率 ${prob.score == null ? '—' : prob.score.toFixed(1)} · 数据日期 ${esc(r.asOf || '—')}`,
+    body: dwSection('预测：为什么认为它大概率会涨', dwKv([
+      ['上涨概率分', `<span class="${bandCls}">${prob.score == null ? '—' : prob.score.toFixed(1)}</span>`
+        + `　<span class="muted">${esc((prob.band && prob.band.label) || '—')}　${esc((prob.band && prob.band.desc) || '')}</span>`],
+      ['这个分是什么', `<span class="muted">历史同特征组的<b>实际上涨占比</b>——不是主观置信度，也不是收益预测。基准（全部涨停股）为 ${prob.baseline == null ? '—' : prob.baseline}%。</span>`],
+      ['命中的实测因子', (prob.factors && prob.factors.length)
+        ? prob.factors.map((f) => `<span class="pk-tag hl">${esc(f.label)} ${f.adj > 0 ? '+' : ''}${f.adj}pt</span>`).join(' ')
+        : '<span class="muted">无（按基准概率处理）</span>'],
+      ['最弱证据样本量', `${prob.sample == null ? '—' : prob.sample} 例　<span class="muted">取所有命中因子里最小的样本量（木桶原理）</span>`],
+    ]) + (prob.factors && prob.factors.length
+      ? `<div class="dw-note">${prob.factors.map((f) => '· ' + esc(f.note)).join('<br>')}</div>`
+      : ''))
+
+      + dwSection('预期收益（实测分组中位数）', dwKv([
+        ['T 日收盘买入 → T+1 收盘', expC.median == null ? '—'
+          : `<span class="${expC.median > 0 ? 'hl' : 'hl-dn'}">${expC.median > 0 ? '+' : ''}${expC.median}%</span>`
+            + `　<span class="muted">${esc(expC.group || '')}　n=${expC.n || '—'}</span>`],
+        ['T+1 开盘买入 → T+1 收盘', expO.median == null ? '—'
+          : `<span class="${expO.median > 0 ? 'hl' : 'hl-dn'}">${expO.median > 0 ? '+' : ''}${expO.median}%</span>`
+            + `　<span class="muted">${esc(expO.group || '')}　n=${expO.n || '—'}</span>`],
+      ]) + (exp.warn ? `<div class="dw-note bf-warn">${esc(String(exp.warn).replace(/\*\*/g, ''))}</div>`
+        : '<div class="dw-note muted">该分组无实测正期望记录。</div>'))
+
+      + dwSection('止损与仓位', dwKv([
+        ['止损位', `<span class="bf-warn">${(stop.stopLossPct * 100).toFixed(0)}%</span>　<span class="muted">系统单笔止损纪律</span>`],
+        ['实测 3 日平均最大回撤', stop.maxDD == null ? '—' : `${stop.maxDD}%`],
+        ['仓位系数', `${stop.maxPosFactor == null ? 1 : stop.maxPosFactor} 倍　<span class="muted">宽波动品种自动打折</span>`],
+        ['本股建议', p.suggestWeight > 0
+          ? `${(p.suggestWeight * 100).toFixed(1)}% 总资产（${num(p.suggestWeight * accountStats(ACCT).total)} 元）`
+          : '<span class="bf-warn">当前档位不建议新建仓，仅供观察</span>'],
+      ]) + `<div class="dw-note">${esc(String(stop.reason || '').replace(/\*\*/g, ''))}</div>`)
+
+      + dwSection('为什么入选（原始证据）', dwKv([
+        ['龙虎榜当日净买', netTxt],
+        ['涨停 / 连板', p.isZt ? (p.streak > 1 ? `涨停（${p.streak} 连板）` : '涨停') : '<span class="muted">未涨停</span>'],
+        ['主线题材', p.mainThemeMatch === 'exact' ? '属当日主线题材'
+          : p.mainThemeMatch === 'stem' ? '<span class="bf-warn">与主线题材同源（词根匹配，非精确命中）</span>'
+            : '<span class="muted">不在当日主线内</span>'],
+        ['所属题材', p.themes && p.themes.length ? esc(p.themes.join('、')) : '<span class="muted">—</span>'],
+        ['换手率', p.turnoverPct == null ? '—' : `${p.turnoverPct}%`],
+        ['现价（当档收盘）', p.close == null ? '—' : `${p.close} 元`],
+      ]))
+      + dwSection('展示分（旧口径，仅供参考）', dwKv([
         bar('资金面 · 龙虎榜净买', SCORE_WEIGHTS.fund, parts.fund || 0),
         bar('连板高度', SCORE_WEIGHTS.streak, parts.streak || 0),
         bar('主线题材', SCORE_WEIGHTS.theme, parts.theme || 0),
         bar('流动性 · 占全榜比重', SCORE_WEIGHTS.liquidity, parts.liquidity || 0),
-      ]) + '<div class="dw-note">每一维都对应一个可核验的原始字段（净买额 / 连板数 / 题材归属 / 成交额占比）；'
-      + '权重和为 1，故评分可跨日比较。</div>')
+      ]) + '<div class="dw-note muted">这是升级前的加权分（权重和为 1），现在**不再用于排序**——'
+      + '实测显示「资金面/题材」这类因子的边际预测力弱于连板与换手，故排序已改为上涨概率分。</div>')
       + dwSection('风险提示', p.risks.length
         ? `<div class="dw-note">${p.risks.map((x) => '· ' + esc(x)).join('<br>')}</div>`
         : '<div class="dw-empty">按当前规则未命中风险特征（不代表无风险）</div>')
-      + dwSection('仓位建议', dwKv([
-        ['市场档位', r.tier ? `${esc(r.tier.label)}（建议总仓位 ${Math.round(r.tier.pos * 100)}%）` : '—'],
-        ['本股建议', p.suggestWeight > 0
-          ? `${(p.suggestWeight * 100).toFixed(1)}% 总资产（${num(p.suggestWeight * accountStats(ACCT).total)} 元）`
-          : '<span class="bf-warn">当前档位不建议新建仓，仅供观察</span>'],
-      ]) + '<div class="dw-note">个股仓位由「市场档位 ÷ 推荐数」均分得出，单只上限 20%——'
-      + '系统不假装能给出个股间的差异化权重。</div>')
       + dwSection('实时行情', info
         ? dwKv([['最新价', `${num(info.price)} 元`], ['涨跌幅', `<span class="${(info.changePct || 0) >= 0 ? 'hl' : 'hl-dn'}">${pct(info.changePct)}</span>`], ['价格来源', esc(info.srcLabel || '—')]])
         : '<div class="dw-empty">取不到实时行情</div>')
-      + `<div class="dw-note">本推荐由规则引擎按当档数据自动生成，<b>不构成投资建议</b>。是否买卖、买多少，由你自行判断。</div>`,
+      + `<div class="dw-note"><b>概率是历史统计，不是收益承诺。</b>本推荐由规则引擎按当档数据自动生成，`
+      + `<b>不构成投资建议</b>。是否买卖、买多少，由你自行判断。</div>`,
   };
 }
 

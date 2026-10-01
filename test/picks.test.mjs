@@ -282,17 +282,21 @@ const fullDay = () => day({
   summary: { main_theme: { name: '固态电池' }, zt_codes: ['600101', '600102'], zt_lb: { 600101: 3, 600102: 1 } },
 });
 
-test('主入口：返回档位、评分、推荐列表与可读说明，且按分数降序', () => {
+test('主入口：返回档位、评分、推荐列表与可读说明，且按上涨概率降序', () => {
   const r = recommendPicks(fullDay(), { emotionScore: 70 });
   assert.equal(r.asOf, '2026-09-30');
   assert.equal(r.tier.key, 'full');
   assert.equal(r.score, 70);
-  // 本例候选共 3 只（600101/600102/600103），故取 min(TOP_N, 候选数)
-  assert.equal(r.picks.length, 3);
-  assert.equal(r.pool, 3);
-  const scores = r.picks.map((p) => p.score);
-  for (let i = 1; i < scores.length; i++) assert.ok(scores[i] <= scores[i - 1], '必须按分数降序');
-  assert.ok(r.picks[0].name === '强票A', `榜首应为净买+连板双强的票，实际 ${r.picks[0].name}`);
+  // 候选 3 只中，600103「净买 100 万」命中「仅小额外资金且无涨停」被剔除；
+  // 600101/600102 是首板且 600101 净买 6 亿 → 2 只进推荐。推荐数受**预测筛选**约束，
+  // 不再是「候选数截断到 topN」——这是升级后最重要的行为变化。
+  assert.equal(r.pool, 3, '候选池仍应统计全部候选');
+  assert.equal(r.picks.length, 2);
+  assert.equal(r.rejected.length, 1);
+  assert.equal(r.rejected[0].code, '600103');
+  const probs = r.picks.map((p) => p.prob.score);
+  for (let i = 1; i < probs.length; i++) assert.ok(probs[i] <= probs[i - 1], '必须按上涨概率降序');
+  assert.ok(r.picks[0].name === '强票A', `榜首应为双证据票，实际 ${r.picks[0].name}`);
   assert.ok(r.note.text.includes('满仓'));
 });
 
@@ -327,10 +331,15 @@ test('主入口：候选充足时默认取 PICK_TOP_N 条，且 topN 可覆盖',
   const rDef = recommendPicks(many, { emotionScore: 70 });
   assert.equal(rDef.pool, 12);
   assert.equal(rDef.picks.length, PICK_TOP_N, `默认应取 ${PICK_TOP_N} 条`);
+  // 超出 topN 的进 overflow（不被静默丢弃）
+  assert.ok(rDef.picks.length + rDef.overflow.length + rDef.rejected.length + rDef.belowThreshold.length === 12,
+    '进池的票必须出现在四个桶之一');
   const r2 = recommendPicks(many, { emotionScore: 70, topN: 2 });
   assert.equal(r2.picks.length, 2);
   const r99 = recommendPicks(many, { emotionScore: 70, topN: 99 });
-  assert.equal(r99.picks.length, 12, '不得超过实际候选数');
+  // 不得超过来自预测筛选后的可用数（剔除了净买最小、不达门槛的那些）
+  assert.ok(r99.picks.length <= 12, '不得超过实际候选数');
+  assert.equal(r99.picks.length, r99.picks.length + r99.overflow.length, 'topN 很大时不应有 overflow');
 });
 
 test('主入口：畸形输入安全，不抛错', () => {

@@ -515,6 +515,30 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .pk-chg { font-size: 12px; font-variant-numeric: tabular-nums; }
 .pk-score { font-size: 11px; color: var(--acc); border: 1px solid var(--line); border-radius: 4px;
   padding: 0 4px; font-variant-numeric: tabular-nums; }
+
+/* 上涨概率分：分档上色。概率越高越"红"（本页涨红约定），低概率用中性/警示色。
+   刻意不给"poor"用绿色——绿色在本页表示"跌"，用在这里会误读成"跌的概率"。 */
+.pk-prob { font-size: 11px; font-weight: 700; padding: 0 5px; border-radius: 4px;
+  font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pk-prob.pb-high { background: rgba(240, 97, 109, .18); color: var(--up); }
+.pk-prob.pb-mid { background: rgba(240, 97, 109, .10); color: var(--up); }
+.pk-prob.pb-low { background: var(--line); color: var(--muted); }
+.pk-prob.pb-poor { background: rgba(210, 153, 34, .16); color: var(--warn); }
+.pk-stop { font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* 已剔除区：折叠面板，避免占满屏但不隐藏事实 */
+.picks-rejected { margin-top: 8px; }
+.pk-rej { font-size: 11.5px; }
+.pk-rej > summary { cursor: pointer; color: var(--muted); padding: 4px 0; user-select: none; }
+.pk-rej > summary:hover { color: var(--txt); }
+.pk-rej-body { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.pk-rej-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px;
+  padding: 6px 9px; background: var(--card2); border: 1px dashed var(--line); border-radius: 7px; }
+.pk-rej-name { font-size: 12.5px; }
+.pk-rej-why { font-size: 11px; padding: 1px 6px; border-radius: 4px;
+  background: rgba(210, 153, 34, .16); }
+.pk-rej-detail { flex-basis: 100%; font-size: 11px; line-height: 1.55; }
+
 .pk-reasons { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .pk-tag { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--line); }
 .pk-tag.hl { background: rgba(240, 97, 109, .14); color: var(--up); }
