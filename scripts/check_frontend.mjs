@@ -301,9 +301,67 @@ check('研判报告·主线题材归属标注需人工核对',
   brief.includes('需人工核对当日涨停股') || brief.includes('无官方唯一标准'), '');
 
 // 6. 连板：必须给出可逐只核对的天梯
-check('研判报告·连板天梯逐只列出（最高板与2板以上可核对）',
-  /连板天梯[:：]/.test(brief) && /板\s*\d+\s*只/.test(brief),
-  brief.match(/连板天梯[:：][^<]{0,120}/)?.[0] || '缺连板天梯');
+// 模板②：连板天梯必须是**真表格**（不是一行竖线分隔的长文本），且逐只可核。
+// 断言分两层：① 屏幕 DOM 里存在 .bf-table 且表头是「板数/只数/个股」；
+//            ② 数字与 summary.zt_lb 现算一致（防有人把天梯写死）。
+{
+  const tbl = window.document.querySelector('#briefBody .bf-table');
+  const ths = tbl ? [...tbl.querySelectorAll('thead th')].map((th) => th.textContent.trim()) : [];
+  check('研判报告·连板天梯为表格（模板②：表头 板数/只数/个股）',
+    !!tbl && ths.join('/') === '板数/只数/个股',
+    tbl ? `表头 ${ths.join('/')}；${tbl.querySelectorAll('tbody tr').length} 行` : '未找到 .bf-table');
+  // 逐只可核：表格里列出的个股数必须等于 zt_lb 里连板数 ≥2 的只数
+  const ztLb = (arcAll.all_days || []).slice(-1)[0]?.summary?.zt_lb || {};
+  const lb2 = Object.values(ztLb).filter((n) => Number(n) >= 2).length;
+  const listed = tbl ? [...tbl.querySelectorAll('tbody tr')].reduce((a, tr) => {
+    const cells = tr.children;
+    const n = parseInt(String(cells[1]?.textContent || '').replace(/[^\d]/g, ''), 10);
+    return a + (Number.isFinite(n) ? n : 0);
+  }, 0) : -1;
+  check('研判报告·连板天梯只数与 zt_lb 现算一致（未硬编码）',
+    lb2 === 0 ? listed <= 0 : listed === lb2,
+    `表格合计 ${listed} 只 vs zt_lb 连板≥2 共 ${lb2} 只`);
+}
+
+// 模板①③④：极简摘要 / 章节口径折叠件 / 文末独立附录 / 跟踪项复选框
+{
+  const abs = window.document.querySelector('#briefBody .bf-abstract');
+  check('研判报告·极简摘要存在且排在首个章节之前（模板①）',
+    !!abs && abs.textContent.length > 10
+    && !!(abs.compareDocumentPosition(window.document.getElementById('bfsec1')) & 4),
+    abs ? `${abs.textContent.trim().slice(0, 60)}` : '缺 .bf-abstract');
+
+  const cals = [...window.document.querySelectorAll('#briefBody .bf-sec .bf-caliber')];
+  check('研判报告·每个章节都有口径折叠件（模板③，7 段 7 件）',
+    cals.length === 7, `${cals.length} 件`);
+  check('研判报告·口径折叠件标题统一为「🔍 点击展开查看口径」',
+    cals.length > 0 && cals.every((d) => (d.querySelector('summary')?.textContent || '').includes('🔍 点击展开查看口径')),
+    cals[0]?.querySelector('summary')?.textContent || '');
+  check('研判报告·口径默认收起（7 段无一件带 open）',
+    cals.every((d) => !d.hasAttribute('open')), cals.filter((d) => d.hasAttribute('open')).length + ' 件默认展开');
+
+  const appx = window.document.querySelector('#briefBody .bf-appendix');
+  check('研判报告·文末有独立折叠附录（模板③，汇总全部口径）',
+    !!appx && !!appx.querySelector('.bf-cal-body')
+    && (appx.querySelector('.bf-cal-body').textContent || '').length > 500,
+    appx ? `${(appx.querySelector('.bf-cal-body').textContent || '').length} 字` : '缺 .bf-appendix');
+  // 附录必须在全部章节之后（顺序错了就不是"文末"）
+  check('研判报告·独立附录排在全部章节之后',
+    !!appx && !!(window.document.getElementById('bfsec7').compareDocumentPosition(appx) & 4), '');
+
+  const todos = [...window.document.querySelectorAll('#briefBody .bf-todo')];
+  check('研判报告·明日跟踪项为复选框清单（模板④）',
+    todos.length > 0, `${todos.length} 项`);
+  // 交互：点一下应切换 done（纯屏幕，不写数据）
+  if (todos.length) {
+    const t0 = todos[0];
+    const before = t0.classList.contains('done');
+    t0.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+    check('研判报告·跟踪项可勾选（点击切换 done）',
+      t0.classList.contains('done') !== before, `done=${t0.classList.contains('done')}`);
+    t0.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));  // 复位
+  }
+}
 check('研判报告·连板数字取自 zt_lb（不与存档 max_lb/lb2_count 冲突）',
   lastSum.max_lb == null || brief.includes(`连板高标 ${lastSum.max_lb} 板`),
   `存档 max_lb=${lastSum.max_lb}`);
@@ -1618,6 +1676,37 @@ escClose();
 
     check('报告导出：文件名带数据日期',
       Report.reportFileName('2026-09-30', 'html') === 'A股研判报告_2026-09-30.html', '');
+
+    // ── 模板契约（用户给定的「A 股研判报告输出模板」五条，全部落到真实渲染的 DOM 上）──
+    check('模板①·导出：极简摘要进入三种形态（md 引用块 / html 摘要块 / txt 方括号）',
+      md.includes('**【极简摘要】**') && html.includes('class="doc-abstract"')
+      && txt.includes('【极简摘要】'), '');
+    check('模板②·导出：Markdown 含 GFM 表格语法（表头 + 分隔行，缺一不成表）',
+      /\|\s*板数\s*\|\s*只数\s*\|\s*个股\s*\|/.test(md) && /\|\s*---\s*\|/.test(md), '');
+    check('模板③·导出：章节口径收进 <details>，文末有独立折叠附录',
+      (md.match(/<details>/g) || []).length === (md.match(/<\/details>/g) || []).length
+      && md.includes('<summary>🔍 点击展开查看口径</summary>')
+      && md.includes('口径附录'), `details ${(md.match(/<details>/g) || []).length} 个`);
+    check('模板③·导出：HTML 折叠件为原生 <details>（无脚本也能折叠）',
+      html.includes('<details class="caliber"') && !/<script/i.test(html), '');
+    check('模板④·导出：跟踪项为 GFM 复选框 - [ ]（屏幕上同一份清单）',
+      /^- \[ \] /m.test(md) && html.includes('<ul class="todo">'), '');
+    check('模板⑤·导出：结尾附免责声明与导出时间',
+      md.trimEnd().endsWith('> 导出时间：2026-10-01 10:00')
+      && html.includes('免责声明') && html.includes('2026-10-01 10:00')
+      && txt.includes('非投资建议') && txt.includes('导出时间：2026-10-01 10:00'), '');
+
+    // ── 「看到的即导出的」纪律：导出层的数字必须**逐个来自屏幕 DOM**，导出不得重算 ──
+    // 做法：把屏幕上每个 li 的纯文本抽出来，断言导出文本里的关键数字都出现在屏幕文本里。
+    // 若有人在导出层自己算了一个新数字（口径漂移的典型来源），这里会立刻抓到。
+    {
+      const screenText = $('briefBody').textContent;
+      const numsInExport = (txt.match(/[+-]?\d+\.\d+/g) || []);
+      const missing = numsInExport.filter((n) => !screenText.includes(n));
+      check('导出纪律：导出文本的小数数字全部来自屏幕 DOM（导出层不重算指标）',
+        missing.length === 0,
+        missing.length ? `${missing.length} 个数字在屏幕上找不到，如 ${missing.slice(0, 5).join(',')}` : `${numsInExport.length} 个数字全部对上`);
+    }
   }
 
   // 打印：应生成一个隐藏 iframe 并把文档写进去（jsdom 无真实打印，只验流程不抛异常）

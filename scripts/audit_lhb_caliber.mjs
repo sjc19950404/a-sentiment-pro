@@ -272,11 +272,25 @@ summarize('席位明细已净化（不含「自然人/中小投资者/机构」�
     // 去掉注释行与「口径备注/文案」类字符串行，避免把解释性文字误判为实现
     const code = readFileSync(abs, 'utf8').split('\n')
       .filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln))
-      .filter((ln) => !/口径备注|muted|const foot|口径：/.test(ln))
+      .filter((ln) => !/口径备注|muted|const foot|const footBody|口径：|cal\(|bf-cal-body/.test(ln))
       .join('\n');
-    // 判据实现的特征：出现这些词 **且** 用在过滤/集合成员判断里
-    if (/中小投资者/.test(code) && /(filter|has\(|Set\(|includes)/.test(code)) {
-      dup.push(`${rel} 自行实现了汇总行判别式（应 import src/seats.js）`);
+    // 判据实现的特征：**同一段代码窗口内**把汇总行名称用于过滤/集合成员判断。
+    // 收敛过程（两次实测）：
+    //   · 「两词全文共现」→ 被无关的 .filter(Boolean) + 文案里的「中小投资者」误触发
+    //     （改报告排版都能把它打红，守卫成了噪音）；
+    //   · 「两词同一行」→ 漏判「名单放数组常量、下一行才 filter」这种真实复现（实测未拦下）。
+    // 故取 ±6 行窗口：名单字面量与成员判断邻近即视为重复实现。
+    const AGG_LITERAL = /['"`][^'"`]*中小投资者/;
+    const MEMBERSHIP = /(\.filter\s*\(|\.some\s*\(|\.has\s*\(|new\s+Set\s*\(|\.includes\s*\()/;
+    const lines = code.split('\n');
+    let dupAt = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (!AGG_LITERAL.test(lines[i])) continue;
+      const win = lines.slice(Math.max(0, i - 6), i + 7).join('\n');
+      if (MEMBERSHIP.test(win)) { dupAt = i; break; }
+    }
+    if (dupAt >= 0) {
+      dup.push(`${rel} 自行实现了汇总行判别式（应 import src/seats.js）：${lines[dupAt].trim().slice(0, 70)}`);
     }
   }
   check('席位汇总行判据唯一出处（src/seats.js::isAggregateSeatRow，别处不得重复实现）', dup.length === 0, dup.join(' ; '));
@@ -321,10 +335,14 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
 // 判据用「关键词共现」，不锁具体措辞（措辞可以改，口径说明不能删）。
 {
   const appRaw = readFileSync('app.js', 'utf8');
-  // 取口径备注那一整段（bf-foot）作为检查域，避免正文里偶然提到某个词就算通过
-  const footM = appRaw.match(/const foot = `<div class="bf-foot">([\s\S]*?)<\/div>`;/);
+  // 取口径备注那一整段作为检查域，避免正文里偶然提到某个词就算通过。
+  // 注意：模板③改造后口径从「<div class="bf-foot">…</div>」搬进了
+  // 「文末独立折叠附录 <details class="bf-appendix">…<div class="bf-cal-body">…</div>」，
+  // **文字内容一字未改**；故这里用兼容两种形态的提取，而不是把守卫删掉。
+  const footM = appRaw.match(/const footBody = `([\s\S]*?)`;/)
+    || appRaw.match(/const foot = `<div class="bf-foot">([\s\S]*?)<\/div>`;/);
   const foot = footM ? footM[1] : '';
-  check('报告存在口径备注段落（bf-foot）', foot.length > 500, `长度 ${foot.length}`);
+  check('报告存在口径备注段落（口径附录正文）', foot.length > 500, `长度 ${foot.length}`);
   const need = [
     ['题材口径披露', /题材/.test(foot) && /(无官方|自定义|平台间|不同平台)/.test(foot)],
     ['锁仓口径披露', /锁仓/.test(foot) && /(买方席位|近2日|连续上榜)/.test(foot)],
@@ -489,6 +507,56 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
   const filterSrc = readFileSync('src/lhbfilter.js', 'utf8');
   const hasSkip = /SKIPPED_RULES/.test(filterSrc) && /skipped\.push/.test(filterSrc);
   check('数据不足的规则必须留痕（skipped 数组），不得静默忽略', hasSkip, `hasSkip=${hasSkip}`);
+}
+
+// ── B6. 报告模板契约守卫（用户给定模板，仅排版层，不得动数据） ──────────────
+// 模板五条是排版硬约束，但更关键的是一条**纪律**：报告只翻译屏幕 DOM，不重算指标。
+// 一旦有人在导出层重算指标（口径漂移的头号来源），数字就会和屏幕对不上。
+//   ① 导出层 src/report.js 不得出现指标计算痕迹（tanh / 打分函数 / 权重表 / clamp）；
+//   ② 模板要求的四类结构必须真实存在于生成代码里（摘要/表格/折叠件/复选框）；
+//   ③ 各章节口径与文末附录必须由同一份文本来源（禁止把脚注复制成两份）。
+{
+  const reportSrc = readFileSync(path.join('src', 'report.js'), 'utf8');
+  // 去掉注释行后检查代码本体
+  const rcode = reportSrc.split('\n').filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln)).join('\n');
+  const RECOMPUTE = [/Math\.tanh/, /scoreEmotion|scorePnl|scoreTheme|scoreBreadth/, /clamp100/, /weights\s*\./];
+  const recomputeHits = RECOMPUTE.filter((re) => re.test(rcode)).map((re) => re.source);
+  check('导出纪律：src/report.js 不重算任何指标（只翻译 DOM；无 tanh/打分函数/权重表）',
+    recomputeHits.length === 0, recomputeHits.join(' ; '));
+
+  // 模板结构必须落地（缺失即视为模板被推翻）
+  const STRUCT = [
+    ['模板①极简摘要', /bf-abstract|doc-abstract/],
+    ['模板②连板天梯表格', /bf-table|rep-tbl/],
+    ['模板③口径折叠件', /CALIBER_SUMMARY|<details/],
+    ['模板④复选框清单', /bf-todo|todo/],
+    ['模板⑤导出时间', /导出时间/],
+  ];
+  for (const [label, re] of STRUCT) {
+    check(`模板契约：${label} 在导出层落地`, re.test(reportSrc), re.test(reportSrc) ? '' : '导出层缺该结构');
+  }
+
+  // 屏幕层同样必须落地（屏幕与导出共用同一份 DOM，缺一边版式就不一致）
+  const appRaw2 = readFileSync('app.js', 'utf8');
+  const SCREEN_STRUCT = [
+    ['摘要', /class="bf-abstract"/],
+    ['天梯表格', /class="bf-table"/],
+    ['口径折叠件', /class="bf-caliber"/],
+    ['复选框清单', /class="bf-todo"/],
+    ['独立附录', /class="bf-caliber bf-appendix"/],
+  ];
+  for (const [label, re] of SCREEN_STRUCT) {
+    check(`模板契约：${label} 在屏幕层落地`, re.test(appRaw2), re.test(appRaw2) ? '' : 'app.js 缺该结构');
+  }
+
+  // 折叠件标题只能有一份约定（app.js 常量 + report.js 常量；两处值必须相等，防漂移）
+  {
+    const appTitle = appRaw2.match(/const CAL_SUMMARY = '([^']+)'/);
+    const rptTitle = reportSrc.match(/CALIBER_SUMMARY = '([^']+)'/);
+    check('模板契约：折叠件标题在屏幕层与导出层取值一致（防止两处文案漂移）',
+      !!appTitle && !!rptTitle && appTitle[1] === rptTitle[1],
+      appTitle && rptTitle ? `app「${appTitle[1]}」/ report「${rptTitle[1]}」` : '未找到常量');
+  }
 }
 
 // ── C. 结论 ────────────────────────────────────────────────────────────────

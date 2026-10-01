@@ -422,6 +422,11 @@ function setHotView(v) {
 // 两个相反结论（实测：主体报告 83.8 →「过热」，引擎 76.8 →「满仓持有」）。
 let BT = null;      // data/backtest.json 缓存，loadBacktest 成功后赋值
 let lastArc = null; // 最近一次 archive.json：BT 就绪后用它重刷报告，让阈值/主线切到引擎口径
+
+// 模板③规定的口径折叠件标题。放模块级（而非 buildBrief 内部）是因为第⑦段
+// 「模拟交易复盘」由 buildPaperReviewSection() 单独生成，两处必须用同一个标题——
+// 复制一份字符串迟早会漂移，导出层 src/report.js 的 CALIBER_SUMMARY 也是同一份约定。
+const CAL_SUMMARY = '🔍 点击展开查看口径';
 const TH_DEFAULT = { panic: 24, hi: 44, lo: 65, overheat: 80 };
 function getThresholds() {
   const t = BT && BT.params && BT.params.thresholds;
@@ -537,6 +542,15 @@ function buildBrief(days, arc) {
   const last5 = days.slice(-5);
   const seg = (h, b, sid) => `<div class="bf-sec" id="${sid}"><div class="bf-h">${h}</div><div class="bf-body">${b}</div></div>`;
   const li = (t) => `<div class="bf-li">${t}</div>`;
+  // ── 模板③：章节口径折叠件 ──
+  // 默认收起、只展示指标；口径原文一字不改地装进 .bf-cal-body，点开即见。
+  // 用 <details>（原生折叠，无需脚本），导出文档与屏幕共用同一套标签语义。
+  const cal = (t) => t ? `<details class="bf-caliber"><summary>${CAL_SUMMARY}</summary><div class="bf-cal-body">${t}</div></details>` : '';
+  // ── 模板④：明日跟踪项复选框清单 ──
+  const todo = (t) => `<div class="bf-todo">${t}</div>`;
+  // ── 模板④：三档配色标记（🔴风险 / 🟢积极 / ⚫中性）──
+  // 屏幕侧用语义 class + emoji 双写：class 负责主题配色，emoji 保证导出任何形态都认得出。
+  const ico = (kind, t) => `<span class="ico ico-${kind}">${{ risk: '🔴', pos: '🟢', neutral: '⚫' }[kind] || '⚫'} ${t}</span>`;
   const num = (v, fix = 1) => (v == null || !Number.isFinite(+v)) ? '—' : (+v).toFixed(fix);
   const arrow = (cur, pre) => (cur == null || pre == null) ? '' :
     (cur > pre ? `<span class="bf-up">↑${num(cur - pre)}</span>` : cur < pre ? `<span class="bf-dn">↓${num(pre - cur)}</span>` : '持平');
@@ -580,7 +594,7 @@ function buildBrief(days, arc) {
     li(`情绪 <b>${num(v)}</b>（历史分位 <b>${pct == null ? '—' : pct + '%'}</b>）${delta != null ? `，较昨日 <b>${delta >= 0 ? '+' : ''}${num(delta)}</b>` : ''}，落于<b>${zone}</b>。${dirTxt}`),
     zoneNote ? li(zoneNote) : '',
     e.missing && e.missing.length ? li(`<span class="bf-warn">⚠ 因子缺失：${e.missing.join('、')}，今日分可信度降权</span>`) : '',
-  ].join('');
+  ].join('') + cal('情绪分为七因子加权合成（龙虎净额20%／涨跌家数10%／板块涨比20%／涨停强度10%／涨跌停对比15%／封板质量10%／量能15%），与页面情绪分、回测引擎同源；历史分位＝该分在样本窗口内的百分位排名。分区阈值：<40 冰点区／40~55 偏冷区／55~70 中性区／70~85 偏热区／≥85 狂热区。');
 
   // 2. 资金（龙虎榜）
   // 近5日净买序列：必须与净买率同口径（当日榜）。此处原取全量口径，
@@ -676,7 +690,7 @@ function buildBrief(days, arc) {
     lockLine,
     mtLine,
     divs.length ? li(`<span class="bf-warn">背离校验：${divs.join('；')}</span>`) : '',
-  ].join('');
+  ].join('') + cal('<b>席位分项（机构/北向/游资买卖总额）与锁仓统计覆盖的是「当日有席位明细的全部上榜个股」</b>，其只数多于「当日榜」家数（区间累计榜个股当日无独立榜、但其席位明细仍在披露名单内），故席位分项之和与「当日榜净买」不必相等，<b>二者不可相互校验</b>。上榜总成交、净买率、日度因子 s_net、近5日净额序列、新股扰动占比、主线题材资金占比全部只取「当日榜」口径（剔除「连续 N 个交易日累计」类区间榜——其买卖额与净额都是区间累计值，混入会把总成交放大数倍、净买率稀释至失真，并让日度因子把三天累计当成一天），分子分母一律同源；全量口径（含区间累计榜）仅在「完整参数」中单列作诊断，禁止与当日值混用。新股/独立标的＝上市首 5 日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部 3 席位集中度＝全市场前 3 席位买入 ÷ 全部买方买入（分子分母均已剔除「自然人/中小投资者/机构/其他自然人」这类投资者结构汇总行——它们非席位，混入会虚增买方总额并稀释集中度）；锁仓统计＝当日买方席位与近 2 日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比＝主线题材个股当日榜净买 ÷ 当日榜全榜净买。席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足 100% 时拆分为部分样本。');
 
   // 3. 盈亏效应（涨跌停结构）——规格阈值：涨停≥50&跌停≤10强/30~49&11~20中等/<30或>20偏弱；封板率≥90优秀/80~90中等/<80弱；高标≥6板空间打开/3~5中等/≤2压制；2板以上≥15饱满/8~14一般/<8断层
   const zt = s.zt_count, dt = s.dt_count, mlb = s.max_lb, lb2n = s.lb2_count;
@@ -686,7 +700,11 @@ function buildBrief(days, arc) {
   const deden = s.seal_den != null ? s.seal_den : ((s.zt_count != null && s.zb_count != null) ? s.zt_count + s.zb_count : null);
   // 连板天梯：把 zt_lb（代码→连板数）按板数归组，让「最高板数 / 二板以上只数」可逐只核对。
   // 数字一律现算，不写死任何具体板数或只数（口径守卫会拦硬编码）。
-  const ladderTxt = (() => {
+  //
+  // 模板②要求「连板天梯用表格」——故这里产出真 <table class="bf-table">，
+  // 而不是把结构摊平成一串竖线分隔的长文本（长文本既难扫读，导出后也无法逐列对齐）。
+  // 表头/行内容全部由上面的 buckets 现算而来，未引入任何新指标。
+  const ladderTbl = (() => {
     const m = s.zt_lb;
     if (!m || typeof m !== 'object') return '';
     const buckets = {};
@@ -697,15 +715,19 @@ function buildBrief(days, arc) {
     }
     const keys = Object.keys(buckets).map(Number).sort((a, b) => b - a);
     if (!keys.length) return '';
-    const parts = keys.map((k) => {
+    const rows = keys.map((k) => {
       const arr = buckets[k];
-      const nm = arr.slice(0, 6).map((c) => {
+      const shown = arr.slice(0, 8).map((c) => {
         const hit = (d.lhb || []).find((x) => x.code === c) || (d.hot || []).find((x) => x.code === c);
         return hit && hit.name ? `${hit.name}(${c})` : c;
       });
-      return `${k}板 ${arr.length}只: ${nm.join('、')}${arr.length > 6 ? ` 等${arr.length}只` : ''}`;
-    });
-    return `<div class="bf-sub">连板天梯：${parts.join(' ｜ ')}</div>`;
+      return `<tr><td>${k} 板</td><td>${arr.length} 只</td><td>${shown.join('、')}${arr.length > 8 ? ` 等 ${arr.length} 只` : ''}</td></tr>`;
+    }).join('');
+    const tot = keys.reduce((a, k) => a + buckets[k].length, 0);
+    return `<table class="bf-table" data-caption="连板天梯（当日涨停股连板数映射 zt_lb，逐只可核）">`
+      + `<thead><tr><th>板数</th><th>只数</th><th>个股</th></tr></thead>`
+      + `<tbody>${rows}</tbody>`
+      + `<tfoot><tr><td>合计</td><td>${tot} 只</td><td>2 板及以上梯队</td></tr></tfoot></table>`;
   })();
   let pnl = '';
   if (zt != null && dt != null) {
@@ -716,8 +738,9 @@ function buildBrief(days, arc) {
   const sec3 = [
     pnl ? li(pnl + `（昨日 ${ps.zt_count ?? '—'}/${ps.dt_count ?? '—'}）`) : '',
     sealPct != null ? li(`<b>封板率 ${sealPct}%</b>（收盘涨停 ${s.zt_count ?? '—'} ÷ 触板 ${deden ?? '—'}只，其中炸板 ${s.zb_count ?? '—'}只；炸板率 ${zbPct}%）。口径=盘中触及涨停的个股为分母，与各行情软件通用算法一致。${sealPct >= 90 ? '封板质量优秀' : sealPct >= 80 ? '封板质量中等' : '封板质量弱，接力意愿差'}`) : '',
-    mlb != null ? li(`连板高标 ${mlb} 板${mlb >= 6 ? '，空间打开' : mlb >= 3 ? '，空间中等' : '，空间压制，情绪偏弱'}；2板以上 ${lb2n ?? '—'} 只${lb2n != null ? (lb2n >= 15 ? '，梯队饱满' : lb2n >= 8 ? '，梯队一般' : '，梯队断层') : ''}<span class="muted">（取自当日 ${s.zt_count ?? '—'} 只涨停股的连板数映射 zt_lb，逐只可核；连板天梯见下方）</span>${ladderTxt}`) : '',
-  ].join('');
+    mlb != null ? li(`连板高标 ${mlb} 板${mlb >= 6 ? '，空间打开' : mlb >= 3 ? '，空间中等' : '，空间压制，情绪偏弱'}；2板以上 ${lb2n ?? '—'} 只${lb2n != null ? (lb2n >= 15 ? '，梯队饱满' : lb2n >= 8 ? '，梯队一般' : '，梯队断层') : ''}<span class="muted">（取自当日 ${s.zt_count ?? '—'} 只涨停股的连板数映射 zt_lb，逐只可核；连板天梯见下方）</span>`) : '',
+    ladderTbl,
+  ].join('') + cal('封板率＝收盘涨停 ÷ 盘中触板个股（＝涨停+炸板），与各行情软件通用算法一致；炸板率＝100−封板率，二者同一分母互补。连板高度/梯队取自当日涨停股的连板数映射（zt_lb），可与公开连板天梯逐只核对。阈值：涨停≥50 且跌停≤10 为强／30~49 且 11~20 为中等／其余偏弱；封板率≥90 优秀／80~90 中等／<80 弱；高标≥6 板空间打开／3~5 中等／≤2 压制；2 板以上≥15 饱满／8~14 一般／<8 断层。');
 
   // 4. 广度与量能——规格阈值：红盘占比≥65普涨/55~65结构性/45~55震荡分化/<45普跌；行业红盘≥70扩散好/50~70结构性/<50抱团；环比±10%放量/平稳/缩量；量能因子≥40高/20~40中/<20低
   const up = s.up_count, dn = s.down_count, amt = s.amount_yi, pamt = ps.amount_yi;
@@ -728,7 +751,7 @@ function buildBrief(days, arc) {
     redPct != null ? li(`涨跌家数 ${up} / ${dn}（沪深口径），红盘占比 ${redPct.toFixed(0)}%——${redPct >= 65 ? '普涨' : redPct >= 55 ? '结构性行情' : redPct >= 45 ? '震荡分化' : '普跌'}`) : '',
     indPct != null ? li(`行业红盘 ${s.ind_up ?? '—'}/${s.ind_count}（${indPct.toFixed(0)}%）——${indPct >= 70 ? '板块扩散良好' : indPct >= 50 ? '结构性扩散' : '抱团行情，扩散不足'}；最强 ${s.top_industry || '—'} / 最弱 ${s.bottom_industry || '—'}`) : '',
     amtChg != null ? li(`两市成交额 ${num(amt, 0)} 亿，环比 ${amtChg >= 0 ? '+' : ''}${amtChg.toFixed(1)}%${amt === pamt ? '' : `（${amt >= pamt ? '放量' : '缩量'} ${num(Math.abs(amt - pamt), 0)} 亿）`}——${amtChg >= 10 ? '放量' : amtChg <= -10 ? '缩量' : '量能平稳'}；量能因子 ${f.s_amt ?? '—'}（${f.s_amt >= 40 ? '高量能' : f.s_amt >= 20 ? '中等量能' : '低量能'}）`) : '',
-  ].join('');
+  ].join('') + cal('涨跌家数为沪深两市口径（不含北交所）；红盘占比＝上涨家数 ÷（上涨+下跌）。阈值：红盘占比≥65 普涨／55~65 结构性／45~55 震荡分化／<45 普跌；行业红盘≥70 扩散良好／50~70 结构性扩散／<50 抱团；成交额环比 ±10% 为放量/缩量的分界（区间内视为平稳）。');
 
   // 5. 题材结构——规格阈值：主线涨停≥6强/3~5中等/<3弱化；昨日新晋存活率≥50%延续性强/30~50中等/<30一日游
   const freshN = (mom.fresh || []).length, contN = (mom.continuing || []).length, fadeN = (mom.fading || []).length;
@@ -762,7 +785,7 @@ function buildBrief(days, arc) {
     topTheme ? li(`今日最强题材: ${topTheme[0]}（${mainZt} 只涨停）——${mainZt >= 6 ? '主线强势' : mainZt >= 3 ? '主线强度中等' : '主线弱化'}<span class="muted">（归属为引擎自动归类，需人工核对当日涨停股，无官方唯一标准）</span>`) : '',
     (topTheme && mainDensity != null) ? li(`主线强度分 <b>${mainScore}</b>（涨停 ${mainZt} × 密集度 ${(mainDensity * 100).toFixed(1)}%，与引擎 selectMainLine 同式）——标的清单见「主线自动选股」卡`) : '',
     surv ? li(`昨日新晋题材存活 ${surv.alive}/${surv.n}（${surv.pct}%）——${surv.pct >= 50 ? '题材延续性强' : surv.pct >= 30 ? '延续性中等' : '题材一日游风险高'}<span class="muted">（分子＝昨日新晋名单，分母＝该名单今日仍在题材覆盖表内的只数；两侧同一动量口径，可逐题材核对）</span>`) : '',
-  ].join('');
+  ].join('') + cal('<b>题材标签（新晋/延续/退潮、主线归属、涨停题材归类）为引擎自定义分类，沪深交易所无官方题材标准</b>，标签由「近 5 日窗口内覆盖个股数≥2」的存在性比对自动生成，不同平台的题材划分会影响该口径下的数字，仅供参考。主线强度分＝涨停家数 × 密集度（该题材涨停数 ÷ 当日全题材涨停数），与引擎 selectMainLine 同式。昨日新晋题材存活率＝昨日视角新晋名单（引擎用截至昨日数据重算动量所得）中今日仍存在的只数 ÷ 该名单只数，两侧同一口径；阈值：≥50% 延续性强／30~50% 中等／<30% 一日游风险高。');
 
   // 6. 综合研判（规则表决）
   const ev = [];
@@ -825,8 +848,20 @@ function buildBrief(days, arc) {
   const tierLine = tier ? li(`<b>仓位档位（V5.2 引擎口径）</b>：七因子情绪分 <b>${num(mainScoreV)}</b>（与页面情绪分、回测引擎同源）→ <b>${tier.label}</b>，建议仓位 <b>${tier.pos}</b>。${tier.note}。<br><span class="muted">档位阈值：≥${num(thr.overheat, 0)} 过热只减仓不新建 / ≥${num(thr.lo, 0)} 满仓 / ${num(thr.panic, 0)}~${num(thr.lo, 0)} 半仓 / ≤${num(thr.panic, 0)} 清仓（收盘打分、T+1 生效）</span>`) : '';
   const decompLine = total != null ? li(`因子分解（V5.0 五模块，仅供结构解释，不参与档位判定）: 情绪定位 ${scE} · 盈亏效应 ${scP} · 广度量能 ${scB} · 题材结构 ${scT} · 主线结构 ${scM} → 复合 ${total}。<span class="bf-warn">${riskHint}</span>`) : '';
   const riskLine = li(`V5.2 实盘约束：单笔止损 <b>-${pctOf(v52p.stopLoss ?? -0.08, 0)}</b>（优先于信号）｜回撤 ≥<b>${pctOf(v52p.ddTrigger ?? -0.15, 0)}</b> 动态降仓至 40%（0.6 倍阈值处降至 70%）｜单日仓位变动 ≤<b>${num(v52p.maxPosChg ?? 0.2, 2)}</b>｜换仓成本 佣金 ${bpOf(v52p.comm, 0.0003)}‱（双边）+ 印花税 ${bpOf(v52p.stamp, 0.0005)}‱（卖出）+ 滑点 ${bpOf(v52p.slip, 0.0002)}‱，按仓位变动幅度计提`);
+  // 模板④：风险提示带 ⚠（已有），并按三档配色标记给关键结论标注风险/积极/中性。
+  // 档位语义直接来自引擎输出（tier），不额外自造判据：
+  //   过热/清仓档 → 🔴 风险；满仓档 → 🟢 积极；半仓档 → ⚫ 中性。
+  const tierKind = !tier ? 'neutral'
+    : (mainScoreV >= thr.overheat || mainScoreV <= thr.panic) ? 'risk'
+    : (mainScoreV >= thr.lo) ? 'pos' : 'neutral';
   const sec6 = li(`<b>${verdict}</b>`) + tierLine + decompLine + riskLine +
-    (watch.length ? `<div class="bf-h bf-h2">明日观测（引擎动态生成）</div>` + watch.map((w) => li('· ' + w)).join('') : '');
+    (watch.length
+      // 模板④：明日跟踪项用复选框清单（屏幕可勾选，刷新后重置——刻意不做持久化，
+      // 跟踪项是"当日看盘清单"，隔日勾选残留会比没勾更误导）
+      ? `<div class="bf-h bf-h2">明日跟踪项（引擎动态生成）</div>` + watch.map((w) => todo(w)).join('')
+      : '')
+    + li(ico(tierKind, tier ? `仓位档位 ${tier.label}（七因子情绪分 ${num(mainScoreV)}）` : '仓位档位待定'))
+    + cal(`仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额 20%／涨跌家数 10%／板块涨比 20%／涨停强度 10%／涨跌停对比 15%／封板质量 10%／量能 15%，与页面情绪分、回测引擎同源），阈值 过热 ${num(thr.overheat, 0)}／满仓 ${num(thr.lo, 0)}／半仓 ${num(thr.panic, 0)}~${num(thr.lo, 0)}／清仓 ${num(thr.panic, 0)}，收盘打分、T+1 生效，并叠加止损 -8%、回撤 ≥15% 动态降仓、单日仓位变动 ≤20%、佣金万 3 + 印花税万 5 + 滑点万 2 的实盘约束。因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定（该五模块口径<b>不含资金面</b>，切勿据此误判资金面在整体打分中的地位）；<b>资金面（龙虎榜净额）是 V5.2 主分数 s_net 的组成部分，权重 20%</b>，与 §② 的资金面观测同为一股数据、同一口径，二者不冲突。明日跟踪项由九条触发规则动态生成（触发才输出，非固定列表）。`);
 
   // 7. 模拟交易复盘（为什么赚 / 为什么亏 + 止损与优化建议）
   //
@@ -836,12 +871,48 @@ function buildBrief(days, arc) {
   // 三种降级都要如实说清：引擎未就绪 / 快照未就绪 / 尚未开始交易。
   const sec7 = buildPaperReviewSection();
 
-  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；<b>封板率</b>=收盘涨停 ÷ 盘中触板个股（＝涨停+炸板），与各行情软件通用算法一致；炸板率＝100−封板率，二者同一分母互补；<b>席位分项（机构/北向/游资买卖总额）与锁仓统计覆盖的是「当日有席位明细的全部上榜个股」</b>，其只数多于「当日榜」家数（区间累计榜个股当日无独立榜、但其席位明细仍在披露名单内），故席位分项之和与「当日榜净买」不必相等，二者不可相互校验；上榜总成交、净买率、日度因子 s_net、近5日净额序列、新股扰动占比、主线题材资金占比全部只取「当日榜」口径（剔除"连续N个交易日累计"类区间榜——其买卖额与净额都是区间累计值，混入会把总成交放大数倍、净买率稀释至失真，并让日度因子把三天累计当成一天），分子分母一律同源；全量口径（含区间累计榜）仅在「完整参数」中单列作诊断，禁止与当日值混用；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入（分子分母均已剔除「自然人/中小投资者/机构/其他自然人」这类投资者结构汇总行——它们非席位，混入会虚增买方总额并稀释集中度）；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股当日榜净买÷当日榜全榜净买；主线强度分=涨停家数×密集度（该题材涨停数÷当日全题材涨停数），与引擎 selectMainLine 同式；昨日新晋题材存活率=昨日视角新晋名单（引擎用截至昨日数据重算动量所得）中今日仍存在的只数÷该名单只数，两侧同一口径；<b>题材标签（新晋/延续/退潮、主线归属、涨停题材归类）为引擎自定义分类，沪深交易所无官方题材标准，标签由「近N日覆盖个股数≥2」的存在性比对自动生成，不同平台的题材划分会影响该口径下的数字，仅供参考</b>；连板高度/梯队取自当日涨停股连板数映射（zt_lb），可与公开连板天梯逐只核对；仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额20%／涨跌家数10%／板块涨比20%／涨停强度10%／涨跌停对比15%／封板质量10%／量能15%，与页面情绪分、回测引擎同源），阈值 过热80／满仓65／半仓24~65／清仓24，收盘打分、T+1 生效，并叠加止损-8%、回撤≥15%动态降仓、单日仓位变动≤20%、佣金万3+印花税万5+滑点万2 的实盘约束；因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定（该五模块口径**不含资金面**，切勿据此误判资金面在整体打分中的地位）；<b>资金面（龙虎榜净额）是 V5.2 主分数 s_net 的组成部分，权重 20%</b>，与 §② 的资金面观测同为一股数据、同一口径，二者不冲突。席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
+  // 口径正文（**文字一字未改**，只是从"包在 .bf-foot 里的独立段落"改为"折叠附录的正文"）：
+  //   · 屏幕：收进文末 <details class="bf-appendix" open> 折叠附录（模板③：文末独立折叠附录汇总全部口径）
+  //   · 导出：同样渲染为 <details>（纯文本形态平铺 + [口径] 前缀）
+  // 之所以摘掉外层 <div class="bf-foot">：它会被 parseReport 当成一个"独立段落"参与编号，
+  // 而模板要求口径属附录、不占章节号。
+  const footBody = `口径备注：涨跌家数为沪深两市（不含北交所）；<b>封板率</b>=收盘涨停 ÷ 盘中触板个股（＝涨停+炸板），与各行情软件通用算法一致；炸板率＝100−封板率，二者同一分母互补；<b>席位分项（机构/北向/游资买卖总额）与锁仓统计覆盖的是「当日有席位明细的全部上榜个股」</b>，其只数多于「当日榜」家数（区间累计榜个股当日无独立榜、但其席位明细仍在披露名单内），故席位分项之和与「当日榜净买」不必相等，二者不可相互校验；上榜总成交、净买率、日度因子 s_net、近5日净额序列、新股扰动占比、主线题材资金占比全部只取「当日榜」口径（剔除"连续N个交易日累计"类区间榜——其买卖额与净额都是区间累计值，混入会把总成交放大数倍、净买率稀释至失真，并让日度因子把三天累计当成一天），分子分母一律同源；全量口径（含区间累计榜）仅在「完整参数」中单列作诊断，禁止与当日值混用；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入（分子分母均已剔除「自然人/中小投资者/机构/其他自然人」这类投资者结构汇总行——它们非席位，混入会虚增买方总额并稀释集中度）；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股当日榜净买÷当日榜全榜净买；主线强度分=涨停家数×密集度（该题材涨停数÷当日全题材涨停数），与引擎 selectMainLine 同式；昨日新晋题材存活率=昨日视角新晋名单（引擎用截至昨日数据重算动量所得）中今日仍存在的只数÷该名单只数，两侧同一口径；<b>题材标签（新晋/延续/退潮、主线归属、涨停题材归类）为引擎自定义分类，沪深交易所无官方题材标准，标签由「近N日覆盖个股数≥2」的存在性比对自动生成，不同平台的题材划分会影响该口径下的数字，仅供参考</b>；连板高度/梯队取自当日涨停股连板数映射（zt_lb），可与公开连板天梯逐只核对；仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额20%／涨跌家数10%／板块涨比20%／涨停强度10%／涨跌停对比15%／封板质量10%／量能15%，与页面情绪分、回测引擎同源），阈值 过热80／满仓65／半仓24~65／清仓24，收盘打分、T+1 生效，并叠加止损-8%、回撤≥15%动态降仓、单日仓位变动≤20%、佣金万3+印花税万5+滑点万2 的实盘约束；因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定（该五模块口径**不含资金面**，切勿据此误判资金面在整体打分中的地位）；<b>资金面（龙虎榜净额）是 V5.2 主分数 s_net 的组成部分，权重 20%</b>，与 §② 的资金面观测同为一股数据、同一口径，二者不冲突。席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。`;
 
-  return stamp + seg('① 情绪定位（核心因子·25%）', sec1, 'bfsec1') + seg('② 资金面（龙虎榜）· 参与打分（主分数 s_net 权重 20%）+ 辅助观测（北向/机构行为）', sec2, 'bfsec2') +
-    seg('③ 盈亏效应（核心因子·25%）', sec3, 'bfsec3') + seg('④ 广度与量能（核心因子·20%）', sec4, 'bfsec4') +
-    seg('⑤ 题材结构（核心因子·20%）', sec5, 'bfsec5') + seg('⑥ 综合研判（含 V5.2 仓位档位）', sec6, 'bfsec6') +
-    seg('⑦ 模拟交易复盘（为什么赚/为什么亏 · 止损与优化建议）', sec7, 'bfsec7') + foot;
+  // ── 模板①：极简摘要（报告开头一句话核心）──
+  // 组成（全部来自上面已经算好的结论变量，不新增任何指标/阈值）：
+  //   ① 综合研判 verdict 首句（结论）
+  //   ② 仓位档位 tier.label / tier.pos（可执行动作）
+  //   ③ 情绪分 + 分区（定位）
+  //   ④ 最强/最弱环节（风险方向，来自 weak 与 riskHint 的同一份判据）
+  const abParts = [];
+  abParts.push(String(verdict || '').split('，')[0].replace(/[。；]$/, ''));
+  if (tier) abParts.push(`建议仓位 ${tier.pos}`);
+  if (v != null) abParts.push(`情绪 ${num(v)} 落于${zone}`);
+  if (weak.length) abParts.push(`${ico('risk', '短板')}在${weak.join('、')}`);
+  else if (total != null) abParts.push(`${ico('pos', '五模块均衡')}`);
+  const abstract = abParts.filter(Boolean).join('｜');
+  const absBlock = `<div class="bf-abstract"><span class="bf-ab-tag">极简摘要</span><span class="bf-ab-text">${abstract}</span></div>`;
+
+  // 口径统一出口：模型/样本落款（历史上只存在于脚注里，模板②/③要求"每章节折叠口径 +
+  // 文末独立折叠附录"，故把它作为共享段落到附录，**文字一字未改**）。
+  const modelNote = `打分模型 ${(BT && BT.meta && BT.meta.formulaVersion) || meta.formulaVersion || '—'}；样本 ${days.length} 个交易日；数据日期 ${dataDate}，抓取状态 ${freshLabel}。`;
+
+  // ── 模板③：文末独立折叠附录（汇总全部口径）──
+  // 与各章节折叠件是**同一份口径文本**：章节处给"这一段怎么算"，附录给"全报告统一口径"。
+  // 附录默认展开（它是给要核对口径的人用的，藏起来等于没有），章节折叠件默认收起。
+  const appendix = `<details class="bf-caliber bf-appendix" open><summary>📚 口径附录（全报告统一口径汇总）</summary><div class="bf-cal-body">`
+    + footBody + cal(modelNote).replace(/<details class="bf-caliber">/, '<div class="bf-flat">').replace(/<\/details>$/, '</div>')
+    + `</div></details>`;
+
+  return stamp + absBlock
+    + seg('① 情绪定位（核心因子·25%）', sec1, 'bfsec1')
+    + seg('② 资金面（龙虎榜）· 参与打分（主分数 s_net 权重 20%）+ 辅助观测（北向/机构行为）', sec2, 'bfsec2')
+    + seg('③ 盈亏效应（核心因子·25%）', sec3, 'bfsec3')
+    + seg('④ 广度与量能（核心因子·20%）', sec4, 'bfsec4')
+    + seg('⑤ 题材结构（核心因子·20%）', sec5, 'bfsec5')
+    + seg('⑥ 综合研判（含 V5.2 仓位档位）', sec6, 'bfsec6')
+    + seg('⑦ 模拟交易复盘（为什么赚/为什么亏 · 止损与优化建议）', sec7, 'bfsec7')
+    + appendix;
 }
 
 /**
@@ -861,11 +932,15 @@ function buildPaperReviewSection() {
   const snap = PSNAP();
   const li2 = (t) => `<div class="bf-li">${t}</div>`;
 
+  // 三条降级路径都必须带上口径折叠件：模板③要求「每个章节配置 <details> 折叠组件」，
+  // 第⑦段若因引擎/账户未就绪就少一个折叠件，七段版式就破了。降级的是**结论**，不是版式。
   if (!eng || typeof eng.buildPaperReview !== 'function') {
-    return li2('<span class="muted">复盘引擎未就绪（页面可能被离线打开或模块加载失败）。刷新后可自动生成。</span>');
+    return li2('<span class="muted">复盘引擎未就绪（页面可能被离线打开或模块加载失败）。刷新后可自动生成。</span>')
+      + paperCaliber(null);
   }
   if (!snap || !snap.account) {
-    return li2('<span class="muted">模拟交易账户未就绪——先在「模拟交易台」完成一次建仓，本段会在账户产生后自动生成复盘。</span>');
+    return li2('<span class="muted">模拟交易账户未就绪——先在「模拟交易台」完成一次建仓，本段会在账户产生后自动生成复盘。</span>')
+      + paperCaliber(eng);
   }
 
   let r;
@@ -879,7 +954,8 @@ function buildPaperReviewSection() {
     });
   } catch (e) {
     // 引擎异常绝不能把整份报告打挂（第⑦段只是附加内容）；如实说明并保留其余六段。
-    return li2(`<span class="bf-warn">复盘生成失败：${String(e && e.message || e)}（其余段落不受影响）</span>`);
+    return li2(`<span class="bf-warn">复盘生成失败：${String(e && e.message || e)}（其余段落不受影响）</span>`)
+      + paperCaliber(eng);
   }
 
   const out = [];
@@ -894,6 +970,7 @@ function buildPaperReviewSection() {
 
   if (!r.started) {
     out.push(li2('<span class="muted">账户尚无成交记录，暂无收益归因可分析。建仓并产生成交后，本段会自动给出「为什么赚/为什么亏」的拆解与止损、优化建议。</span>'));
+    out.push(paperCaliber(eng));
     return out.join('');
   }
 
@@ -1012,12 +1089,27 @@ function buildPaperReviewSection() {
   }
 
   // ── ⑥ 口径与免责 ──
-  out.push(li2(`<span class="muted">复盘口径：收益拆解 = 浮动盈亏 + 已实现盈亏 − 交易费用（费用含尚未卖出持仓的买入费，故三块之和与总盈亏可能有小额差异，已单列）；`
-    + `逐笔盈亏按 **FIFO 先进先出** 配对（卖出净额 − 结转的含费成本），与账本的加权平均成本法在全部清仓时结果一致、部分减仓时逐笔口径更可解释；`
-    + `止损线 ${eng.POS_CFG ? (eng.POS_CFG.stopLoss * 100).toFixed(0) : -8}%、单票上限 ${eng.POS_CFG ? (eng.POS_CFG.concMax * 100).toFixed(0) : 20}% 与预警引擎（src/alerts.js）、回测引擎同源；`
-    + `档位阈值与研判报告同源（≥80 过热 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓）。模拟资金仅为虚拟，交易规则与费用口径对齐 A 股现行制度。本段为规则引擎自动生成的复盘，非投资建议。</span>`));
+  // 模板③要求「每个章节配置折叠口径」——第⑦段的口径原本以普通 li2 裸露在正文里，
+  // 现改为与其他六段同构的 <details class="bf-caliber">（口径原文一字未改，只是收进折叠件）。
+  out.push(paperCaliber(eng));
 
   return out.join('');
+}
+
+/**
+ * 第⑦段的口径折叠件正文（模板③）。
+ * 抽成函数是为了让「尚未开始交易」的提前返回路径也能挂上折叠件——
+ * 否则第⑦段会变成七段里唯一没有口径件的，模板契约就破了。
+ * 口径文字与「已开始交易」路径完全一致，只有 eng 的仓位配置可能为 null（用兜底值）。
+ */
+function paperCaliber(eng) {
+  const cfg = (eng && eng.POS_CFG) || null;
+  return `<details class="bf-caliber"><summary>${CAL_SUMMARY}</summary><div class="bf-cal-body">`
+    + `复盘口径：收益拆解 = 浮动盈亏 + 已实现盈亏 − 交易费用（费用含尚未卖出持仓的买入费，故三块之和与总盈亏可能有小额差异，已单列）；`
+    + `逐笔盈亏按 <b>FIFO 先进先出</b> 配对（卖出净额 − 结转的含费成本），与账本的加权平均成本法在全部清仓时结果一致、部分减仓时逐笔口径更可解释；`
+    + `止损线 ${cfg ? (cfg.stopLoss * 100).toFixed(0) : -8}%、单票上限 ${cfg ? (cfg.concMax * 100).toFixed(0) : 20}% 与预警引擎（src/alerts.js）、回测引擎同源；`
+    + `档位阈值与研判报告同源（≥80 过热 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓）。模拟资金仅为虚拟，交易规则与费用口径对齐 A 股现行制度。本段为规则引擎自动生成的复盘，非投资建议。`
+    + `</div></details>`;
 }
 
 function renderBrief(days, arc) {
@@ -2057,6 +2149,16 @@ document.addEventListener('click', (e) => {
     return;
   }
 
+  // 明日跟踪项复选框（模板④）：纯屏幕交互，**不写回任何数据**。
+  // 刻意不持久化——跟踪项是"当日看盘清单"，次日报告会重新生成一份新清单，
+  // 隔日残留的勾选比没勾更误导（读者会以为某项已核对过，其实换了一天）。
+  const todo = t.closest('#briefBody .bf-todo');
+  if (todo) {
+    todo.classList.toggle('done');
+    todo.setAttribute('aria-checked', todo.classList.contains('done') ? 'true' : 'false');
+    return;
+  }
+
   const actEl = t.closest('[data-act]');
   if (actEl) fireAct(actEl);
 });
@@ -2089,6 +2191,14 @@ document.addEventListener('keydown', (e) => {
   }
   if (e.key !== 'Enter' && e.key !== ' ') return;
   if (!t || typeof t.closest !== 'function') return;
+  // 明日跟踪项复选框：键盘 Enter/空格 与鼠标点击等价（两项共用同一个 class 切换）
+  const todo = t.closest('#briefBody .bf-todo');
+  if (todo) {
+    e.preventDefault();
+    todo.classList.toggle('done');
+    todo.setAttribute('aria-checked', todo.classList.contains('done') ? 'true' : 'false');
+    return;
+  }
   const el = t.closest('[data-act]');
   if (el && typeof el.click === 'function') { e.preventDefault(); el.click(); }
 });
