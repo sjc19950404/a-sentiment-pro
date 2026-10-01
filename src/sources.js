@@ -426,6 +426,11 @@ export async function fetchSeats(date, aggr) {
     agg.buy_top3_pct = r1(tops.reduce((s, [, v]) => s + v, 0) / buyAll * 100);
   }
   for (const k of ['inst_buy', 'inst_sell', 'north_buy', 'north_sell', 'hot_buy', 'hot_sell']) agg[k] = r2(agg[k]);
+  // 样本口径留痕：aggr 传进来的是「全部上榜个股」（含区间累计榜个股），故分项之和 ≠ 当日榜净买。
+  // 报告端必须把这两个数摆明白，否则读者会拿分项之和去对当日榜净买，误判为数据错误。
+  agg.universe = 'all_listed';       // 口径标记：全部上榜个股（含区间累计榜）
+  agg.universe_n = got;              // 实际取到明细的个股数
+  agg.universe_total = aggr.length;  // 请求的个股数
   return agg;
 }
 
@@ -467,7 +472,15 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
   if (hot_quote_missing) missing.push(`hot_quotes(${hot_quote_missing})`);
   const zt = pools ? pools.zt : null, dt = pools ? pools.dt : null, zb = pools ? pools.zb : null;
   if (zt == null || dt == null || zb == null) missing.push('pools');
-  const zbl_pct = (zt != null && zb != null && (zb + zt) > 0) ? r1((zb / (zb + zt)) * 100) : null;
+  // 封板率（市场通用口径）= 收盘涨停 ÷ 盘中触及过涨停（涨停 + 炸板）。
+  // 分母是「触板个股」，不是「收盘涨停个股」；这是各行情软件「封板率」的通用算法。
+  // ⚠ 历史坑：本字段旧名 zbl_pct、旧式 zb/(zb+zt)，但存储值一直是 zt/(zt+zb)。
+  //   即**数值算对了（封板率），字段名却是炸板率**，导致报告把 81.3% 渲染成「炸板率 18.8%」。
+  //   见 scripts/audit_lhb_caliber.mjs 的口径守卫；此处同时保留 zbl_pct 旧名做兼容。
+  const seal_pct = (zt != null && zb != null && (zb + zt) > 0) ? r1((zt / (zb + zt)) * 100) : null;
+  // 炸板率 = 100 − 封板率（同一分母，二者互补，不再各自现算以免漂移）
+  const zb_pct = seal_pct != null ? r1(100 - seal_pct) : null;
+  const zbl_pct = zb_pct; // 兼容旧字段名（语义=炸板率，与旧报告渲染一致）
   const ymdNum = date.replace(/-/g, '');
   const amount_yi = amountYi != null ? r1(amountYi) : null;
   if (amount_yi == null) missing.push('amount');
@@ -518,7 +531,12 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
     ind_count: industry.length, ind_up, ind_down,
     top_industry: industry[0] ? industry[0].name : null,
     bottom_industry: industry[industry.length - 1] ? industry[industry.length - 1].name : null,
-    zt_count: zt, dt_count: dt, zb_count: zb, zbl_pct,
+    // 封板率/炸板率：分母同为「盘中触板个股数」= 收盘涨停 + 炸板，二者互补
+    zt_count: zt, dt_count: dt, zb_count: zb,
+    seal_pct,                 // 封板率 = zt/(zt+zb) ×100，市场通用口径
+    zb_pct,                   // 炸板率 = 100 − seal_pct
+    seal_den: (zt != null && zb != null) ? zt + zb : null, // 分母（触板个股），供报告如实披露口径
+    zbl_pct,                  // [兼容] 旧字段名；语义=炸板率
     max_lb: pools ? pools.max_lb : null, lb2_count: pools ? pools.lb2 : null,
     zt_codes: pools ? (pools.zt_codes || null) : null,
     zt_lb: pools ? (pools.zt_lb || null) : null,

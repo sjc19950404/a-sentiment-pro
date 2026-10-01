@@ -203,6 +203,37 @@ summarize('因子 s_net 锁「当日榜 + 剔除新股」净额', bad.factor);
 summarize('emotion 与 summary 的当日榜净额一致', bad.sync);
 summarize('新股剔除证据链自洽（netRaw − new == netExNew；有新股必留痕，禁止只告警不修正）', bad.newstock);
 
+// ── B2. 封板率口径守卫 ─────────────────────────────────────────────────────
+// 历史 bug：字段名 zbl_pct 与存储值语义相反（存的是封板率 zt/(zt+zb)，报告按炸板率渲染并取补），
+// 导致 2026-09-30 把 81.3% 的封板率显示成「炸板率 18.8%」。这里锁死三件事：
+//   ① seal_pct 必须 = zt/(zt+zb)×100（市场通用封板率口径，分母为触板个股）
+//   ② seal_pct + zb_pct 必须 = 100（互补，同一分母）
+//   ③ 报告端不得再把该值当炸板率渲染（源码守卫）
+const badSeal = [];
+for (const d of days) {
+  const s = d.summary || {};
+  const { zt_count: zt, zb_count: zb, seal_pct: seal, zb_pct: zbp, seal_den: den } = s;
+  if (zt == null || zb == null) continue;
+  if (den != null && den !== zt + zb) badSeal.push(`${d.trade_date} seal_den=${den} ≠ zt+zb=${zt + zb}`);
+  if (seal != null) {
+    const expect = Math.round((zt / (zt + zb)) * 1000) / 10;
+    if (!near(seal, expect)) badSeal.push(`${d.trade_date} seal_pct=${seal} ≠ zt/(zt+zb)=${expect}`);
+  }
+  if (seal != null && zbp != null && !near(seal + zbp, 100)) badSeal.push(`${d.trade_date} seal_pct+zb_pct=${seal + zbp} ≠ 100`);
+}
+summarize('封板率口径 = 收盘涨停 ÷ 盘中触板（zt/(zt+zb)），且与炸板率互补为 100', badSeal);
+
+// 源码守卫：报告端不得再出现「炸板率 ${…zbl…}%（…封板率 100−…）」这种把封板率当炸板率的渲染式
+{
+  const appRaw = readFileSync('app.js', 'utf8');
+  const inverted = /炸板率\s*\$\{[^}]*zbl[^}]*\}[\s\S]{0,120}?100\s*-\s*zbl/.test(appRaw);
+  check('报告端不再把封板率当炸板率渲染（禁止「炸板率 X%（…100−X）」式）', !inverted,
+    'app.js 仍存在把 zbl_pct 当炸板率并取补的渲染');
+  // 源码守卫：连板天梯数字必须来自 zt_lb（不得硬编码）
+  const hardcoded = /最高\s*7\s*板|2\s*板以上\s*12\s*只/.test(appRaw);
+  check('连板天梯数字不硬编码（一律取自 summary.zt_lb）', !hardcoded, 'app.js 出现硬编码连板数');
+}
+
 // ── C. 结论 ────────────────────────────────────────────────────────────────
 if (warns.length) for (const w of warns) console.log(`⚠ ${w}`);
 if (fails.length) {

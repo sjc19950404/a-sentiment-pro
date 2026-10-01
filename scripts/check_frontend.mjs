@@ -230,6 +230,46 @@ check('研判报告·不含与引擎冲突的 V5.0「极低/极高风险」措�
 check(`研判报告·落款版本与回测档一致（${bt.meta?.formulaVersion}）`,
   brief.includes(bt.meta?.formulaVersion || 'v5.2-pro'), '');
 
+// ── 封板率口径 + 待核实项的口径披露（用户 6 项质疑的回归守卫）────────────────
+// 1. 封板率：必须按市场通用口径渲染（涨停 ÷ 触板），不得再把封板率当炸板率并取补
+const lastSum = (arcAll.all_days.slice(-1)[0] || {}).summary || {};
+check('研判报告·封板率按通用口径渲染（涨停÷触板，含炸板只数）',
+  /封板率\s*\d+(\.\d+)?%/.test(brief) && brief.includes('触板'),
+  brief.match(/封板率[^；。]{0,80}/)?.[0] || '报告缺封板率行');
+check('研判报告·封板率数值与存档 seal_pct 一致（禁止取补）',
+  lastSum.seal_pct == null || brief.includes(`封板率 ${lastSum.seal_pct}%`),
+  `存档 seal_pct=${lastSum.seal_pct}，报告未见该值`);
+check('研判报告·不再出现「炸板率 X%（…封板率 100−X）」式错标',
+  !/炸板率\s*[\d.]+%[\s\S]{0,60}封板率\s*(8[01]|7[0-9])/.test(brief), '');
+check('研判报告·封板率行披露分母口径（触板个股）', brief.includes('盘中触板') || brief.includes('触及涨停的个股为分母'), '');
+
+// 2. 席位分项：必须标明样本口径与「不可与当日榜净买互相校验」
+check('研判报告·席位分项标明样本口径（全部上榜个股 ≠ 当日榜）',
+  brief.includes('全部上榜个股') && brief.includes('不是同一集合'),
+  brief.match(/口径：上述分项[^。]{0,60}/)?.[0] || '缺席位样本口径说明');
+check('研判报告·明写席位分项之和与当日榜净买不可互校',
+  brief.includes('不可互相校验') || brief.includes('不可相互校验'), '');
+
+// 3. 锁仓统计：必须标明比对方法与只用买方
+check('研判报告·锁仓统计标明比对方法（当日买方席位 vs 近2日）',
+  brief.includes('未重复出现的席位计为') || brief.includes('名称比对'), '');
+check('研判报告·锁仓统计标明只用买方且样本非全市场',
+  brief.includes('只用买方') && brief.includes('非全市场'), '');
+
+// 4/5. 题材标签：必须声明为引擎自定义分类、无官方标准
+check('研判报告·题材标签声明为引擎自定义分类（无官方标准）',
+  brief.includes('引擎自定义标签') || brief.includes('无官方题材标准'), '');
+check('研判报告·主线题材归属标注需人工核对',
+  brief.includes('需人工核对当日涨停股') || brief.includes('无官方唯一标准'), '');
+
+// 6. 连板：必须给出可逐只核对的天梯
+check('研判报告·连板天梯逐只列出（最高板与2板以上可核对）',
+  /连板天梯[:：]/.test(brief) && /板\s*\d+\s*只/.test(brief),
+  brief.match(/连板天梯[:：][^<]{0,120}/)?.[0] || '缺连板天梯');
+check('研判报告·连板数字取自 zt_lb（不与存档 max_lb/lb2_count 冲突）',
+  lastSum.max_lb == null || brief.includes(`连板高标 ${lastSum.max_lb} 板`),
+  `存档 max_lb=${lastSum.max_lb}`);
+
 // 告警口径：stale（或客户端已过预期更新时刻）才允许出现「告警」级别的条；
 // 仅「字段级修补 note / 跳过 / 非交易日」只能是 info，不能把正常等待说成抓取失败。
 const meta = JSON.parse(readFileSync(join(ROOT, 'data/archive.json'), 'utf8')).meta || {};

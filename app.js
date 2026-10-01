@@ -480,11 +480,13 @@ function calcLockNew(days) {
 const clamp100 = (x) => Math.max(0, Math.min(100, Math.round(x)));
 // 因子1 情绪定位：分值即热度（80~100高潮/60~79偏强/40~59中性/20~39偏弱/0~19冰点），历史分位极端在文字区提示，不改动分数
 function scoreEmotion(v) { return v == null ? null : clamp100(Math.round(v)); }
-// 盈亏效应：涨停多跌停少定基线，炸板率/高标空间/梯队饱满度微调
-function scorePnl(zt, dt, zbl, mlb, lb2n) {
+// 盈亏效应：涨停多跌停少定基线，封板率/高标空间/梯队饱满度微调
+// ⚠ 历史坑：第 3 参曾传 s.zbl_pct（存储值是封板率）却按「炸板率」阈值判分——80.5% 的封板率
+//   会被 `zbl <= 20 ? 0 : -8` 判成 −8 分（实际应为优秀档 +6）。现改为直接传封板率并按封板率阈值判。
+function scorePnl(zt, dt, sealPct, mlb, lb2n) {
   if (zt == null || dt == null) return null;
   let s = (zt >= 50 && dt <= 10) ? 88 : (zt >= 30 && dt <= 20) ? 72 : 50;
-  if (zbl != null) s += zbl < 10 ? 6 : zbl <= 20 ? 0 : -8;
+  if (sealPct != null) s += sealPct >= 90 ? 6 : sealPct >= 80 ? 0 : -8;
   if (mlb != null) s += mlb >= 6 ? 5 : mlb >= 3 ? 2 : -5;
   if (lb2n != null) s += lb2n >= 15 ? 4 : lb2n >= 8 ? 0 : -5;
   return clamp100(s);
@@ -648,11 +650,14 @@ function buildBrief(days, arc) {
       if (instNorthNet < -5) opp += ` <span class="bf-warn">⚠ 机构+北向合计净卖 ${num(-instNorthNet, 2)} 亿，高抛压预警</span>`;
       else opp += `；对手盘分歧中等，无大规模机构砸盘`;
     }
-    seatLines = li(`席位拆分: 机构${dirTxt2(instN)} / 北向${dirTxt2(northN)} / 游资${dirTxt2(hotN)} 亿（席位覆盖 ${seats.cover}%）${b3Txt}${conc}${opp}`);
+    const seatN = seats.universe_n != null ? seats.universe_n : (seats.detail ? Object.keys(seats.detail).length : '—');
+    seatLines = li(`席位拆分: 机构${dirTxt2(instN)} / 北向${dirTxt2(northN)} / 游资${dirTxt2(hotN)} 亿（席位覆盖 ${seats.cover}%）${b3Txt}${conc}${opp}`)
+      + li(`　<span class="muted">口径：上述分项为<b>逐只上榜股买卖双侧席位明细的加总</b>，样本 ${seatN} 只（＝有席位明细的全部上榜个股，含区间累计榜个股）；与「当日榜 ${s.lhb_daily_stocks ?? '—'} 只」不是同一集合，故分项之和 ≠ 当日榜净买，两者不可互相校验。分项为<b>成交额</b>口径（买卖各自加总），净额=买−卖。此处为「榜上席位」口径，覆盖不足 100% 时拆分为部分样本。</span>`);
   }
   // 锁仓/新进资金占比 + 主线题材龙虎资金占比（规格阈值）
   const lock = calcLockNew(days);
-  const lockLine = lock ? li(`锁仓与资金留存（近${lock.win + 1}日连续上榜样本 ${lock.n} 只）: 锁仓金额 ${num(lock.lockYi, 2)} 亿，新进资金占当日买入 <b>${lock.pct}%</b>——${lock.pct > 70 ? '短线脉冲，兑现风险高' : lock.pct >= 50 ? '中等' : '锁仓偏好强，持续性更好'}`) : '';
+  const lockLine = lock ? li(`锁仓与资金留存（近${lock.win + 1}日连续上榜样本 ${lock.n} 只）: 锁仓金额 ${num(lock.lockYi, 2)} 亿，新进资金占当日买入 <b>${lock.pct}%</b>——${lock.pct > 70 ? '短线脉冲，兑现风险高' : lock.pct >= 50 ? '中等' : '锁仓偏好强，持续性更好'}`)
+    + li(`　<span class="muted">口径：对每只连续上榜股，把当日买方席位与近2日同票买方席位做<b>名称比对</b>，未重复出现的席位计为「新进」；新进占比=新进买方买入额 ÷ 当日买方买入额，只用买方。样本为有席位明细的 ${lock.n} 只，非全市场。可逐只跨日比对复核，但依赖席位披露完整度。</span>`) : '';
   const mt = s.main_theme;
   const mtLine = (mt && mt.tot_yi > 0 && mt.pct != null) ? li(`资金-题材联动: 主线题材（${mt.name}）龙虎净买 ${mt.main_yi >= 0 ? '+' : ''}${num(mt.main_yi, 2)} 亿，占全部龙虎净买 <b>${mt.pct}%</b>——${mt.pct >= 60 ? '资金聚焦主线' : mt.pct >= 40 ? '资金分化' : '资金散乱，主线弱化'}`) : '';
   const sec2 = [
@@ -673,8 +678,35 @@ function buildBrief(days, arc) {
     divs.length ? li(`<span class="bf-warn">背离校验：${divs.join('；')}</span>`) : '',
   ].join('');
 
-  // 3. 盈亏效应（涨跌停结构）——规格阈值：涨停≥50&跌停≤10强/30~49&11~20中等/<30或>20偏弱；炸板率<10优秀/10~20中等/>20弱；高标≥6板空间打开/3~5中等/≤2压制；2板以上≥15饱满/8~14一般/<8断层
-  const zt = s.zt_count, dt = s.dt_count, zbl = s.zbl_pct, mlb = s.max_lb, lb2n = s.lb2_count;
+  // 3. 盈亏效应（涨跌停结构）——规格阈值：涨停≥50&跌停≤10强/30~49&11~20中等/<30或>20偏弱；封板率≥90优秀/80~90中等/<80弱；高标≥6板空间打开/3~5中等/≤2压制；2板以上≥15饱满/8~14一般/<8断层
+  const zt = s.zt_count, dt = s.dt_count, mlb = s.max_lb, lb2n = s.lb2_count;
+  // 封板率/炸板率：新字段优先，旧存档回退到 zbl_pct（旧存档的 zbl_pct 存的是…见下）
+  const sealPct = s.seal_pct != null ? s.seal_pct : s.zbl_pct;
+  const zbPct = s.zb_pct != null ? s.zb_pct : (sealPct != null ? Math.round((100 - sealPct) * 10) / 10 : null);
+  const deden = s.seal_den != null ? s.seal_den : ((s.zt_count != null && s.zb_count != null) ? s.zt_count + s.zb_count : null);
+  // 连板天梯：把 zt_lb（代码→连板数）按板数归组，让「最高板数 / 二板以上只数」可逐只核对。
+  // 数字一律现算，不写死任何具体板数或只数（口径守卫会拦硬编码）。
+  const ladderTxt = (() => {
+    const m = s.zt_lb;
+    if (!m || typeof m !== 'object') return '';
+    const buckets = {};
+    for (const [code, n] of Object.entries(m)) {
+      const v = Number(n);
+      if (!Number.isFinite(v) || v < 2) continue;
+      (buckets[v] = buckets[v] || []).push(code);
+    }
+    const keys = Object.keys(buckets).map(Number).sort((a, b) => b - a);
+    if (!keys.length) return '';
+    const parts = keys.map((k) => {
+      const arr = buckets[k];
+      const nm = arr.slice(0, 6).map((c) => {
+        const hit = (d.lhb || []).find((x) => x.code === c) || (d.hot || []).find((x) => x.code === c);
+        return hit && hit.name ? `${hit.name}(${c})` : c;
+      });
+      return `${k}板 ${arr.length}只: ${nm.join('、')}${arr.length > 6 ? ` 等${arr.length}只` : ''}`;
+    });
+    return `<div class="bf-sub">连板天梯：${parts.join(' ｜ ')}</div>`;
+  })();
   let pnl = '';
   if (zt != null && dt != null) {
     if (zt >= 50 && dt <= 10) pnl = `涨停 ${zt} / 跌停 ${dt}，赚钱效应强`;
@@ -683,8 +715,8 @@ function buildBrief(days, arc) {
   }
   const sec3 = [
     pnl ? li(pnl + `（昨日 ${ps.zt_count ?? '—'}/${ps.dt_count ?? '—'}）`) : '',
-    zbl != null ? li(`炸板率 ${zbl}%（炸板 ${s.zb_count ?? '—'}，封板率 ${Math.round(100 - zbl)}%），${zbl < 10 ? '封板质量优秀' : zbl <= 20 ? '封板质量中等' : '封板弱，接力意愿差'}`) : '',
-    mlb != null ? li(`连板高标 ${mlb} 板${mlb >= 6 ? '，空间打开' : mlb >= 3 ? '，空间中等' : '，空间压制，情绪偏弱'}；2板以上 ${lb2n ?? '—'} 只${lb2n != null ? (lb2n >= 15 ? '，梯队饱满' : lb2n >= 8 ? '，梯队一般' : '，梯队断层') : ''}`) : '',
+    sealPct != null ? li(`<b>封板率 ${sealPct}%</b>（收盘涨停 ${s.zt_count ?? '—'} ÷ 触板 ${deden ?? '—'}只，其中炸板 ${s.zb_count ?? '—'}只；炸板率 ${zbPct}%）。口径=盘中触及涨停的个股为分母，与各行情软件通用算法一致。${sealPct >= 90 ? '封板质量优秀' : sealPct >= 80 ? '封板质量中等' : '封板质量弱，接力意愿差'}`) : '',
+    mlb != null ? li(`连板高标 ${mlb} 板${mlb >= 6 ? '，空间打开' : mlb >= 3 ? '，空间中等' : '，空间压制，情绪偏弱'}；2板以上 ${lb2n ?? '—'} 只${lb2n != null ? (lb2n >= 15 ? '，梯队饱满' : lb2n >= 8 ? '，梯队一般' : '，梯队断层') : ''}<span class="muted">（取自当日 ${s.zt_count ?? '—'} 只涨停股的连板数映射 zt_lb，逐只可核；连板天梯见下方）</span>${ladderTxt}`) : '',
   ].join('');
 
   // 4. 广度与量能——规格阈值：红盘占比≥65普涨/55~65结构性/45~55震荡分化/<45普跌；行业红盘≥70扩散好/50~70结构性/<50抱团；环比±10%放量/平稳/缩量；量能因子≥40高/20~40中/<20低
@@ -720,8 +752,8 @@ function buildBrief(days, arc) {
     return { n: fr.length, alive: alive.length, pct: Math.round(alive.length / fr.length * 100) };
   })();
   const sec5 = [
-    li(`新晋 ${freshN} / 延续 ${contN} / 退潮 ${fadeN}。${focus}`),
-    topTheme ? li(`今日最强题材: ${topTheme[0]}（${mainZt} 只涨停）——${mainZt >= 6 ? '主线强势' : mainZt >= 3 ? '主线强度中等' : '主线弱化'}`) : '',
+    li(`新晋 ${freshN} / 延续 ${contN} / 退潮 ${fadeN}。<span class="muted">（引擎自定义标签：题材在近5日窗口内覆盖个股数≥2 视为「存在」，与前一5日窗口比对定新晋/延续/退潮；交易所无官方题材标准，平台间题材划分不同会改变此三数）</span>${focus}`),
+    topTheme ? li(`今日最强题材: ${topTheme[0]}（${mainZt} 只涨停）——${mainZt >= 6 ? '主线强势' : mainZt >= 3 ? '主线强度中等' : '主线弱化'}<span class="muted">（归属为引擎自动归类，需人工核对当日涨停股，无官方唯一标准）</span>`) : '',
     (topTheme && mainDensity != null) ? li(`主线强度分 <b>${mainScore}</b>（涨停 ${mainZt} × 密集度 ${(mainDensity * 100).toFixed(1)}%，与引擎 selectMainLine 同式）——标的清单见「主线自动选股」卡`) : '',
     surv ? li(`昨日新晋题材存活 ${surv.alive}/${surv.n}（${surv.pct}%）——${surv.pct >= 50 ? '题材延续性强' : surv.pct >= 30 ? '延续性中等' : '题材一日游风险高'}`) : '',
   ].join('');
@@ -761,7 +793,7 @@ function buildBrief(days, arc) {
   // 真正的档位由下方 mainScoreV（七因子情绪分，含龙虎净额 20%）决定——别把「五模块不含资金面」
   // 说成「资金面不参与打分」。
   const scE = scoreEmotion(v);
-  const scP = scorePnl(zt, dt, zbl, mlb, s.lb2_count);
+  const scP = scorePnl(zt, dt, sealPct, mlb, s.lb2_count);
   const scB = scoreBreadth(redPct, indPct, amtChg);
   const scT = scoreTheme(contN, freshN, mainZt, surv);
   const scM = scoreMainStructure(topTheme ? topTheme[0] : null, d.hot || [], mainZt);
@@ -798,7 +830,7 @@ function buildBrief(days, arc) {
   // 三种降级都要如实说清：引擎未就绪 / 快照未就绪 / 尚未开始交易。
   const sec7 = buildPaperReviewSection();
 
-  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；上榜总成交、净买率、日度因子 s_net、近5日净额序列、新股扰动占比、主线题材资金占比全部只取「当日榜」口径（剔除"连续N个交易日累计"类区间榜——其买卖额与净额都是区间累计值，混入会把总成交放大数倍、净买率稀释至失真，并让日度因子把三天累计当成一天），分子分母一律同源；全量口径（含区间累计榜）仅在「完整参数」中单列作诊断，禁止与当日值混用；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股当日榜净买÷当日榜全榜净买；主线强度分=涨停家数×密集度（该题材涨停数÷当日全题材涨停数），与引擎 selectMainLine 同式；仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额20%／涨跌家数10%／板块涨比20%／涨停强度10%／涨跌停对比15%／封板质量10%／量能15%，与页面情绪分、回测引擎同源），阈值 过热80／满仓65／半仓24~65／清仓24，收盘打分、T+1 生效，并叠加止损-8%、回撤≥15%动态降仓、单日仓位变动≤20%、佣金万3+印花税万5+滑点万2 的实盘约束；因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定（该五模块口径**不含资金面**，切勿据此误判资金面在整体打分中的地位）；<b>资金面（龙虎榜净额）是 V5.2 主分数 s_net 的组成部分，权重 20%</b>，与 §② 的资金面观测同为一股数据、同一口径，二者不冲突。席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
+  const foot = `<div class="bf-foot">口径备注：涨跌家数为沪深两市（不含北交所）；<b>封板率</b>=收盘涨停 ÷ 盘中触板个股（＝涨停+炸板），与各行情软件通用算法一致；炸板率＝100−封板率，二者同一分母互补；<b>席位分项（机构/北向/游资买卖总额）与锁仓统计覆盖的是「当日有席位明细的全部上榜个股」</b>，其只数多于「当日榜」家数（区间累计榜个股当日无独立榜、但其席位明细仍在披露名单内），故席位分项之和与「当日榜净买」不必相等，二者不可相互校验；上榜总成交、净买率、日度因子 s_net、近5日净额序列、新股扰动占比、主线题材资金占比全部只取「当日榜」口径（剔除"连续N个交易日累计"类区间榜——其买卖额与净额都是区间累计值，混入会把总成交放大数倍、净买率稀释至失真，并让日度因子把三天累计当成一天），分子分母一律同源；全量口径（含区间累计榜）仅在「完整参数」中单列作诊断，禁止与当日值混用；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股当日榜净买÷当日榜全榜净买；主线强度分=涨停家数×密集度（该题材涨停数÷当日全题材涨停数），与引擎 selectMainLine 同式；<b>题材标签（新晋/延续/退潮、主线归属、涨停题材归类）为引擎自定义分类，沪深交易所无官方题材标准，标签由「近N日覆盖个股数≥2」的存在性比对自动生成，不同平台的题材划分会影响该口径下的数字，仅供参考</b>；连板高度/梯队取自当日涨停股连板数映射（zt_lb），可与公开连板天梯逐只核对；仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额20%／涨跌家数10%／板块涨比20%／涨停强度10%／涨跌停对比15%／封板质量10%／量能15%，与页面情绪分、回测引擎同源），阈值 过热80／满仓65／半仓24~65／清仓24，收盘打分、T+1 生效，并叠加止损-8%、回撤≥15%动态降仓、单日仓位变动≤20%、佣金万3+印花税万5+滑点万2 的实盘约束；因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定（该五模块口径**不含资金面**，切勿据此误判资金面在整体打分中的地位）；<b>资金面（龙虎榜净额）是 V5.2 主分数 s_net 的组成部分，权重 20%</b>，与 §② 的资金面观测同为一股数据、同一口径，二者不冲突。席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。</div>`;
 
   return stamp + seg('① 情绪定位（核心因子·25%）', sec1, 'bfsec1') + seg('② 资金面（龙虎榜）· 参与打分（主分数 s_net 权重 20%）+ 辅助观测（北向/机构行为）', sec2, 'bfsec2') +
     seg('③ 盈亏效应（核心因子·25%）', sec3, 'bfsec3') + seg('④ 广度与量能（核心因子·20%）', sec4, 'bfsec4') +
@@ -1928,7 +1960,7 @@ function dayDetail(i) {
     ]))
       + dwSection('涨跌与量能', dwKv([
         ['涨停 / 跌停', `${nf(s.zt_count)} / ${nf(s.dt_count)}`],
-        ['炸板率', s.zbl_pct != null ? `${s.zbl_pct}%` : '—'],
+        ['封板率', s.seal_pct != null ? `${s.seal_pct}%（涨停 ${nf(s.zt_count)} ÷ 触板 ${nf(s.seal_den)} 只，炸板 ${nf(s.zb_count)} 只＝${s.zb_pct ?? '—'}%）` : (s.zbl_pct != null ? `${s.zbl_pct}%（旧档：字段名为炸板率口径）` : '—')],
         ['连板高标', s.max_lb != null ? `${s.max_lb} 板（2 板以上 ${nf(s.lb2_count)} 只）` : '—'],
         ['涨跌家数', up != null ? `${up} / ${dn}（红盘 ${redPct != null ? redPct.toFixed(0) + '%' : '—'}）` : '—'],
         ['两市成交额', s.amount_yi != null ? `${s.amount_yi} 亿` : '—'],
