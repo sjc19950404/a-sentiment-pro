@@ -25,7 +25,9 @@ for (const d of a.all_days) {
   s.seal_den = zt + zb;
   n++;
 }
-if (!DRY) writeFileSync(FILE, JSON.stringify(a));
+// ⚠ 写盘必须带 2 空格缩进（与 src/pipeline.js 的写盘格式一致）——否则整个 archive
+//   会被压成单行，git diff 无法审阅（本次修复 archive 被 minify 的教训）。
+if (!DRY) writeFileSync(FILE, JSON.stringify(a, null, 2), 'utf8');
 console.log(`[backfill-seal] ${DRY ? '(dry) ' : ''}更新 ${n} 天，跳过 ${skipped} 天（无涨停池数据）`);
 const last = a.all_days[a.all_days.length - 1].summary;
 console.log(`样本 ${last.trade_date ?? a.all_days[a.all_days.length - 1].trade_date}: zt=${last.zt_count} zb=${last.zb_count} → 封板率 ${last.seal_pct}% / 炸板率 ${last.zb_pct}%（旧 zbl_pct=${last.zbl_pct}）`);
