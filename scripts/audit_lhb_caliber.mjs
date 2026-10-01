@@ -2116,6 +2116,74 @@ async function checkDirty() {
   });
   check('数值纪律：dirty.js 数据字段判定不得裸用 Number.isFinite(+v)',
     !/Number\.isFinite\(\+\w/.test(DIRTY_SRC.replace(/function num[\s\S]*?\n}/, '')), risky.length ? risky.join('; ') : '');
+
+  // ⑫ ★ 覆盖率实证（本轮新增，实测抓出的"守卫盲区"）
+  //    以上 ①–⑪ 全是"单点构造输入 → 看函数反应"。它们证明**函数本身**对，
+  //    却完全不能证明**在真实 241 天档上跑没跑过**——若 pipeline 某天起跳过
+  //    validateDay（或 recalcAll 不再把 vres 写进 emotion），以上守卫全绿而
+  //    档案里一天留痕都没有。故必须对**真实档**逐日核验：
+  //      (a) 存档的 emotion.dirty.status 与现算 validateDay 的 status 必须**逐日一致**
+  //          （不一致 = 有人在重算路径里偷偷改了标脏结果，或档里是过期留痕）
+  //      (b) 现算判非 ok 的天，档里**必须**有 dirty 留痕（漏写 = 静默丢标记）
+  //    这是"没检查 ≠ 没问题"的直接落地：**覆盖度本身要被检查**。
+  {
+    let mismatch = 0, missed = 0;
+    const mismatchEx = [], missedEx = [];
+    days.forEach((d, i) => {
+      const stored = (d.emotion && d.emotion.dirty) ? d.emotion.dirty.status : 'ok';
+      const now = all.perDay[i] ? all.perDay[i].status : 'ok';
+      if (stored !== now) {
+        mismatch++;
+        if (mismatchEx.length < 3) mismatchEx.push(`${d.trade_date}:存${stored}/算${now}`);
+      }
+      if (now !== 'ok' && !(d.emotion && d.emotion.dirty)) {
+        missed++;
+        if (missedEx.length < 3) missedEx.push(`${d.trade_date}:算${now}`);
+      }
+    });
+    check('脏数据：全档逐日 status 存档与现算一致（覆盖度实证，防静默失效）',
+      mismatch === 0, `不一致 ${mismatch} 天：${mismatchEx.join(' | ')}`);
+    check('脏数据：现算判非 ok 的天必须有留痕（防 recalcAll 漏写）',
+      missed === 0, `漏写 ${missed} 天：${missedEx.join(' | ')}`);
+    // 校验覆盖度：validateAll 的 total 必须等于全档天数（不是只覆盖有明细的少数天）
+    check('脏数据：validateAll 覆盖全档（total === 档案天数）',
+      all.total === days.length, `total=${all.total} days=${days.length}`);
+  }
+
+  // ⑬ ★ 规则灵敏度实证（本轮新增）：逐条**真调用**注入脏值，确认真命中。
+  //    为什么不能只扫字面量：规则写在那里但判据恒假（阈值写错、字段名对不上、
+  //    提前 return）时，"扫源码"照样全绿。只有注入→跑→看是否报，才算验证。
+  //    这一组覆盖 VALIDATION_RULES 里每一条"会在真实档上生效"的规则。
+  {
+    const base = days[Math.floor(days.length / 2)];
+    const mk = (mut) => { const p = JSON.parse(JSON.stringify(base)); mut(p); return p; };
+    const cases = [
+      ['RANGE_INDUSTRY', () => mk((p) => {
+        const src = (Array.isArray(p.industry) && p.industry.length) ? p.industry.slice(0, 2) : [{ name: 'a' }, { name: 'b' }];
+        p.industry = src.map((it, i) => ({ ...it, change_pct: i === 0 ? 20 : 0.3 }));
+      })],
+      ['UNIT_LHB', () => mk((p) => { p.summary = { ...p.summary, lhb_daily_net: 50000 }; })],
+      ['RANGE_AMOUNT', () => mk((p) => { p.summary = { ...p.summary, amount_yi: 120 }; })],
+      ['RANGE_BREADTH', () => mk((p) => { p.summary = { ...p.summary, up_count: 300, down_count: 200 }; })],
+      ['CONSIST_ZT', () => mk((p) => { p.summary = { ...p.summary, up_count: 500, down_count: 3000, zt_count: 900 }; })],
+      ['RANGE_SCORE', () => mk((p) => { p.emotion = { ...p.emotion, value: 120 }; })],
+      ['RANGE_FACTOR', () => mk((p) => { p.emotion = { ...p.emotion, factors: { ...(p.emotion && p.emotion.factors), s_net: -5 } }; })],
+      ['DUPLICATE', () => mk((p) => { p.hot = [{ code: 'sz000001' }, { code: 'sz000001' }]; })],
+      ['RANGE_STOCK', () => mk((p) => { p.hot = [{ code: 'sz000002', name: 'z', change_pct: 155 }]; })],
+      ['RANGE_PCT', () => mk((p) => { p.summary = { ...p.summary, seal_pct: 130 }; })],
+    ];
+    const notFired = [];
+    cases.forEach(([rule, build]) => {
+      let hit = false;
+      try {
+        const r = validateDay(build());
+        hit = r.issues.some((x) => x.rule === rule);
+      } catch (e) { notFired.push(`${rule}(抛异常:${e.message})`); return; }
+      if (!hit) notFired.push(rule);
+    });
+    check('脏数据：每条规则经注入实测均真命中（非"写在源码里但恒不触发"）',
+      notFired.length === 0, `未命中：${notFired.join(', ')}`);
+  }
 }
 try { await checkDirty(); } catch (e) {
   fails.push(`B18 脏数据检查抛异常：${e.message}`);
