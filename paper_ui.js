@@ -25,7 +25,10 @@ import {
 // 龙虎榜前置过滤（规则第一块，唯一出处 src/lhbfilter.js）。
 // 批量买入时引擎内部会调用它；UI 侧另需 filterOne 来**预检并解释**——
 // 让用户在提交前就能看到「这几只为什么不给买」，而不是提交后只看到一句「未通过」。
-import { filterOne, BUCKET, LHBFILTER_VERSION } from './src/lhbfilter.js';
+// 降级规则（龙虎净买 ≤ 0）的常量也从唯一出处取——UI 一处都不手抄：
+// 扣分值 LHB_NET_OUTFLOW_PENALTY 用于提示条文案，FLAG_LHB 用于告警标签，
+// isNetOutflow 供 outflowOf 判断（判断本身还走 filterOne 的桶判定）。
+import { filterOne, BUCKET, LHBFILTER_VERSION, LHB_NET_OUTFLOW_PENALTY, FLAG_LHB, isNetOutflow } from './src/lhbfilter.js';
 // 实时行情（腾讯 qt.gtimg.cn，CORS 为 * → 浏览器可直连）。
 // 为什么必须引入：存档是「收盘后生成的日频数据」，只含当日上榜/热点约 100 只票，
 // 池子里其余 1200+ 只票取不到价，界面只能提示「无真实行情，不可下单」。
@@ -33,7 +36,7 @@ import { filterOne, BUCKET, LHBFILTER_VERSION } from './src/lhbfilter.js';
 import { fetchQuotes, priceKind, inTradingSession, normalizeCodes } from './src/quote.js';
 // 研判推荐引擎（把市场研判结论落到具体个股）。
 // 规则同样只有一个出处：src/picks.js。本文件只负责渲染、以及把用户点击转成下单区输入。
-import { recommendPicks, PICK_TOP_N, SCORE_WEIGHTS } from './src/picks.js';
+import { recommendPicks, PICK_TOP_N, SCORE_WEIGHTS, NET_OUTFLOW_TAG } from './src/picks.js';
 // 双层预警引擎（大盘层档位偏离 + 持仓层止损/集中度/T+1）。
 // 与 picks.js 同纪律：规则只有一个出处（src/alerts.js），UI 只渲染 + 把动作转成下单区输入。
 import { buildAlerts, MARKET_CFG, POS_CFG, LEVELS } from './src/alerts.js';
@@ -102,6 +105,40 @@ let BATCH = { side: 'buy', mode: 'pct', defaultPct: 5, applyLhb: true, checkRisk
 let LOG = { stage: '' };
 // 预警台账（持久化，跨会话累积）。不放进 ACCT —— 它不是账户状态，导出账本时也不该混进去。
 let ALOG = [];
+
+// ── 人工复核门槛（降级规则：龙虎榜净买入 ≤ 0）──
+// 规则原文：「不直接禁止委托，但扣分降优先级 + 打告警标签 + **人工复核后才允许下单**」。
+// 这条门槛是**会话级、按代码记账、一次性**的：
+//   · 不持久化——复核是「本次操作前我确实看过依据了」的确认，隔天/重载后旧确认不成立；
+//   · 不绑定数量——用户改的是数量，不是「我看过净流出了」这个事实；
+//   · 一次性——放行一次后即清除，避免一张票反复下单都靠同一次确认。
+// 改代码/改方向/改数量都会清空，见 clearReview()。
+let REVIEW_OK = new Set();
+
+/** 取该票的降级信息（龙虎净买 ≤ 0 且有人工复核要求）。非降级票返回 null。 */
+function outflowOf(code) {
+  const c = String(code || '');
+  if (!c) return null;
+  try {
+    const day = ARC_DAYS[ARC_DAYS.length - 1];
+    if (!day) return null;
+    // 走规则引擎判定，绝不自己比 netWan <= 0 —— 那是规则，不是渲染。
+    const f = filterOne(c, day, {
+      marketNetWan: day.summary && day.summary.lhb_daily_net != null
+        ? +day.summary.lhb_daily_net * 1e4 : null,
+    });
+    return f && f.netOutflow ? f : null;
+  } catch (e) { return null; }
+}
+
+/** 复核是否已通过（未通过则下单被门槛拦住） */
+function reviewPassed(code) { return REVIEW_OK.has(String(code || '')); }
+
+/** 标记复核已通过——只应由「用户显式确认」这一个入口调用 */
+function markReviewed(code) { REVIEW_OK.add(String(code || '')); }
+
+/** 清空复核标记：换代码 / 换方向时必须清，否则上一个票的确认会被顺延到新票上 */
+function clearReview() { REVIEW_OK.clear(); }
 
 // ────────────────────────── 持久化 ──────────────────────────
 
@@ -473,6 +510,17 @@ function publishSnapshot() {
       saveInitCash, loadInitCash, newAccountWith,
       INIT_CASH, INIT_MIN, INIT_MAX, INIT_KEY,
     };
+    // 降级复核门槛的状态与判定也要可测：这是**规则**（不是渲染），
+    // 断言必须能独立问「当前这只票有没有过复核」，而不是去读 DOM 文案猜。
+    window.__reviewGate = {
+      outflowOf: (c) => outflowOf(c),
+      passed: (c) => reviewPassed(c),
+      mark: (c) => markReviewed(c),
+      clear: () => clearReview(),
+      // 常量从 lhbfilter 取，绝不在这里另写字面量
+      PENALTY: LHB_NET_OUTFLOW_PENALTY,
+      TAG: FLAG_LHB.NET_OUTFLOW,
+    };
   } catch (e) { /* 静默 */ }
 }
 
@@ -740,6 +788,35 @@ function renderOrderForm() {
             + `<span class="muted"> · ${esc(info.tickTime || info.quoteDate || '—')}</span></div>`
           : `<div class="pq-line bf-warn">取不到 ${esc(ORDER.code)} 的行情（实时源与存档都没有该代码的价格）`
             + `——请核对代码是否存在/是否已停牌；已有持仓仍可正常卖出。</div>`);
+    }
+  }
+
+  // ── 降级复核提示条（龙虎净买 ≤ 0）──
+  // 这条横幅不是「装饰」：submit() 里的门槛只负责拦截，用户必须在这里**看到依据**
+  // 才有资格点「确认复核并下单」。所以横幅要给出：命中原因 + 扣分明细 + 当日净额。
+  const gate = $('poGate');
+  if (gate) {
+    const od = ORDER.side === 'buy' ? outflowOf(ORDER.code) : null;
+    if (!od) {
+      gate.innerHTML = '';
+      gate.hidden = true;
+    } else {
+      const netWan = od.netOutflow ? od.netOutflow.value : null;
+      const amt = netWan == null ? '当日龙虎榜无净买记录'
+        : (netWan < 0 ? `当日龙虎榜净买 −${(Math.abs(+netWan) / 1e4).toFixed(2)} 亿`
+          : '当日龙虎榜净买为 0');
+      const done = reviewPassed(ORDER.code);
+      gate.hidden = false;
+      gate.className = 'po-gate' + (done ? ' ok' : '');
+      gate.innerHTML = `<div class="po-gate-h">${esc(FLAG_LHB.NET_OUTFLOW)}</div>`
+        + `<div class="po-gate-b">${esc(amt)}。该票已被规则引擎降级：综合分 −${LHB_NET_OUTFLOW_PENALTY.SCORE} 分、`
+        + `上涨概率 −${LHB_NET_OUTFLOW_PENALTY.PROB} 个百分点，落<b>备选观察池（禁止自动下单）</b>。`
+        + `${esc(String(od.netOutflow ? od.netOutflow.text : ''))}</div>`
+        + (done
+          ? `<div class="po-gate-a muted">✓ 本次会话已确认复核（换代码/改方向后需重新确认）。</div>`
+          : `<div class="po-gate-a"><button class="mini po-gate-btn" type="button" data-act="review-ok" data-code="${esc(ORDER.code)}">`
+            + `我已知悉该票当日资金净流出，确认复核并下单</button>`
+            + `<span class="muted">　点此仅为**授权**下单，不会自动提交；数量仍需你自行填写。</span></div>`);
     }
   }
 
@@ -1367,6 +1444,7 @@ function renderPicks() {
               ? `<span class="pk-streak ${sbCls}" title="连板概率：历史同特征组（${esc(lp.group || '')}）里 T+1 再次涨停的占比。基准 ${r.streakBaseline == null ? 21.8 : r.streakBaseline}%。">${esc(p.streakText || '大概率连板')}</span>`
               : ''}
             <span class="pk-prob ${bandCls}" title="上涨概率分：历史同特征组的实际上涨占比（不是主观置信度）">上涨概率 ${prob.score == null ? '—' : prob.score.toFixed(1)}</span>
+            ${p.netOutflow ? `<span class="pk-outflow" title="${esc(NET_OUTFLOW_TAG)}：该票当日龙虎榜净买入 ≤ 0，已扣综合分 ${LHB_NET_OUTFLOW_PENALTY.SCORE} 分 / 上涨概率 ${LHB_NET_OUTFLOW_PENALTY.PROB} 个百分点，且须人工复核后才能下单。">${esc(NET_OUTFLOW_TAG)}</span>` : ''}
           </div>
           <div class="pk-reasons">
             <span class="pk-tag muted">依据：${esc(factorTxt)}</span>
@@ -1444,8 +1522,18 @@ function qtyBySuggestWeight(code) {
   const c = String(code || '');
   const p = (currentPicks()?.picks || []).find((x) => x.code === c) || null;
   const pct = p && Number.isFinite(+p.suggestWeight) ? +p.suggestWeight : 0;
+  // 降级票（龙虎净买 ≤ 0）**不自动填量**：填量 = 替用户把仓位算好了，
+  // 而这条规则的处置恰恰是「先人工复核再决定买多少」。系统在这里退一步，
+  // 只把代码填进去并说明原因，把「买多少」的决定权交回用户。
+  const od = outflowOf(c);
+  if (od) {
+    return { qty: 0, pct, px: null, need: 0, capped: false, needReview: true,
+      reason: `${FLAG_LHB.NET_OUTFLOW}：已扣综合分 ${LHB_NET_OUTFLOW_PENALTY.SCORE} 分 / `
+        + `上涨概率 ${LHB_NET_OUTFLOW_PENALTY.PROB} 个百分点，进入备选观察池。`
+        + `系统不代填数量——请先人工复核，并自行决定买多少` };
+  }
   if (!(pct > 0)) {
-    return { qty: 0, pct: 0, px: null, need: 0, capped: false,
+    return { qty: 0, pct, px: null, need: 0, capped: false,
       reason: '当前档位不建议新建仓（建议比例为 0）——可手动填数量' };
   }
   const info = lookup(c);
@@ -1471,6 +1559,9 @@ function qtyBySuggestWeight(code) {
 function fillPickToOrder(code) {
   const c = String(code || '');
   if (!c) return;
+  // 换票即作废上一个票的复核确认：确认是「针对这只票看过净流出了」，
+  // 顺延到另一只票上就成了走过场。
+  if (ORDER.code !== c) clearReview();
   // 数量按建议比例自动算好再填（整手向下取整；算不出来则留空并说明原因）
   const s = qtyBySuggestWeight(c);
   ORDER = { ...ORDER, code: c, qty: s.qty, side: 'buy' };
@@ -1478,6 +1569,13 @@ function fillPickToOrder(code) {
   renderOrderForm();
   renderQuick();
   const nm = LIVEQ[c]?.name || lookup(c)?.name || '';
+  // 降级票：不抓实时价、不重算数量——数量留空是**刻意的**，不是算不出来。
+  // 抓价会把「留空」当成「价格没到」自动填回去，反而绕过了规则。
+  if (s.needReview) {
+    msg(`已填入 ${c} ${nm}，但**数量留空**：${s.reason}`, 'err');
+    $('poQty')?.focus?.();
+    return;
+  }
   const said = s.qty > 0
     ? `已填入 ${c} ${nm} 建议 ${(s.pct * 100).toFixed(1)}% → ${s.qty} 股（约 ${num(s.need)} 元含费用）`
       + `${s.capped ? '，已受可用资金限制' : ''}`
@@ -1489,6 +1587,16 @@ function fillPickToOrder(code) {
       // 拉到实时价后用**同一口径**重算数量：首次填的是存档价估量，
       // 实时价到手后价格可能变了，数量必须跟着变，否则"建议比例"其实没兑现。
       const s2 = r.ok ? qtyBySuggestWeight(c) : s;
+      // 重算前再判一次降级：抓价期间规则结果不会变，但这一行让「不代填」的口径
+      // 在两条分支上都成立，不必依赖上面的提前 return。
+      if (s2.needReview) {
+        ORDER = { ...ORDER, qty: 0 };
+        syncOrderInputs();
+        renderOrderForm();
+        renderQuick();
+        msg(`${c} ${FLAG_LHB.NET_OUTFLOW}，数量留空：${s2.reason}`, 'err');
+        return;
+      }
       if (r.ok && s2.qty !== s.qty) {
         ORDER = { ...ORDER, qty: s2.qty };
         syncOrderInputs();
@@ -1585,8 +1693,7 @@ function pickDetail(code) {
       ]) + `<div class="dw-note">${esc(String(stop.reason || '').replace(/\*\*/g, ''))}</div>`)
 
       + dwSection('为什么入选（原始证据）', dwKv([
-        ['龙虎榜当日净买', netTxt],
-        ['涨停 / 连板', p.isZt ? (p.streak > 1 ? `涨停（${p.streak} 连板）` : '涨停') : '<span class="muted">未涨停</span>'],
+        ['龙虎榜当日净买', netTxt],        ['涨停 / 连板', p.isZt ? (p.streak > 1 ? `涨停（${p.streak} 连板）` : '涨停') : '<span class="muted">未涨停</span>'],
         ['主线题材', p.mainThemeMatch === 'exact' ? '属当日主线题材'
           : p.mainThemeMatch === 'stem' ? '<span class="bf-warn">与主线题材同源（词根匹配，非精确命中）</span>'
             : '<span class="muted">不在当日主线内</span>'],
@@ -1594,6 +1701,22 @@ function pickDetail(code) {
         ['换手率', p.turnoverPct == null ? '—' : `${p.turnoverPct}%`],
         ['现价（当档收盘）', p.close == null ? '—' : `${p.close} 元`],
       ]))
+      // 降级规则（净买 ≤ 0）的扣分明细：必须让用户看到「扣了多少、扣前是多少」，
+      // 否则「上涨概率 47.3」会被误读成模型的原始判断，而它其实是被规则扣过的。
+      + (p.netOutflow ? dwSection(`⚠ 规则降级：${NET_OUTFLOW_TAG}`, dwKv([
+        ['命中规则', `<span class="bf-warn">龙虎榜当日净买入 ≤ 0</span>　<span class="muted">唯一出处 src/lhbfilter.js（票数桶 + 扣分）</span>`],
+        ['综合分扣减', `−${LHB_NET_OUTFLOW_PENALTY.SCORE} 分　<span class="muted">`
+          + `${p.scoreRaw == null ? '—' : p.scoreRaw} → ${p.score == null ? '—' : p.score}`
+          + `${p.scorePenalty ? '（已生效）' : '（该分制下扣减为展示口径）'}</span>`],
+        ['上涨概率扣减', `−${LHB_NET_OUTFLOW_PENALTY.PROB} 个百分点　<span class="muted">`
+          + `${prob.rawScore == null ? '—' : prob.rawScore} → ${prob.score == null ? '—' : prob.score}</span>`],
+        ['处置', `<span class="bf-warn">进入备选观察池（禁止自动下单）；<b>人工复核后方可下单</b></span>`
+          + `　<span class="muted">系统不会代填买入数量</span>`],
+      ]) + `<div class="dw-note bf-warn">${esc(String(p.scoreOutflow || ''))}</div>`
+        + `<div class="dw-note muted">这不是"不建议关注"，而是"今天它没有资金证据支持"：`
+        + `规则只降优先级、不禁止委托——若你另有依据，可以人工复核后自行决定下单数量。`
+        + `但填量与下单的责任随复核一并回到你手上，系统不再代劳。</div>`)
+        : '')
       + dwSection('展示分（旧口径，仅供参考）', dwKv([
         bar('资金面 · 龙虎榜净买', SCORE_WEIGHTS.fund, parts.fund || 0),
         bar('连板高度', SCORE_WEIGHTS.streak, parts.streak || 0),
@@ -2118,6 +2241,20 @@ async function submit() {
   const info = ORDER.code ? lookup(ORDER.code) : null;
   if (!info) { msg('请先输入 6 位股票代码', 'err'); return; }
   if (!ORDER.qty) { msg('请填写委托数量', 'err'); return; }
+  // ── 降级规则的**硬门槛**：龙虎榜净买入 ≤ 0 的买入委托，人工复核通过前一律不下发 ──
+  // 规则说「人工复核后才允许下单」，那门槛就必须拦在真正下单的那一行之前，
+  // 而不能只停留在按钮上的提示文案——提示是可以被绕过的（回车提交、批量面板、程序调用）。
+  // 卖出不设门槛：净流出是「谨慎开仓」的理由，不是「不许离场」的理由。
+  if (ORDER.side === 'buy') {
+    const od = outflowOf(ORDER.code);
+    if (od && !reviewPassed(ORDER.code)) {
+      msg(`已拦截：${info.name || ORDER.code} 命中「${FLAG_LHB.NET_OUTFLOW}」，须人工复核后才能下单。`
+        + `该票已扣综合分 ${LHB_NET_OUTFLOW_PENALTY.SCORE} 分 / 上涨概率 ${LHB_NET_OUTFLOW_PENALTY.PROB} 个百分点，`
+        + `当前落入备选观察池（禁止自动下单）。请先确认下方告警详情，再点一次「确认复核并下单」。`, 'err');
+      renderOrderForm();   // 让复核按钮显形
+      return;
+    }
+  }
   // 下单前实时校验一次价格：用户可能是几分钟前输入的代码，价格已经变了。
   // 这是「按实时真实价格买卖」的必要动作——用陈旧价算出来的冻结金额会不准。
   if (!LIVEQ[info.code]) {
@@ -2368,7 +2505,12 @@ document.addEventListener('click', (e) => {
   if (!t || typeof t.closest !== 'function') return;
 
   const sideBtn = t.closest('#poSide button');
-  if (sideBtn) { ORDER = { ...ORDER, side: sideBtn.dataset.side, qty: 0 }; syncOrderInputs(); renderOrderForm(); renderQuick(); return; }
+  if (sideBtn) {
+    // 买卖切换必须作废复核记录：降级门槛只针对**买入**（卖出不设槛），
+    // 若不清，切换前的确认会静默顺延到另一个方向的操作上。
+    if (sideBtn.dataset.side !== ORDER.side) clearReview();
+    ORDER = { ...ORDER, side: sideBtn.dataset.side, qty: 0 }; syncOrderInputs(); renderOrderForm(); renderQuick(); return;
+  }
 
   const tab = t.closest('#paperTabs button');
   if (tab) {
@@ -2433,6 +2575,16 @@ document.addEventListener('click', (e) => {
     return;
   }
   if (act === 'pcancel') { e.stopPropagation(); cancel(+el.dataset.id); return; }
+  // 降级复核确认：**只授权，不提交**。授权后仍需用户点「提交委托」（或自己回车），
+  // 这样「人工复核」与「下达委托」始终是两个分离的动作，不会一按就连带下单。
+  if (act === 'review-ok') {
+    e.stopPropagation();
+    markReviewed(el.dataset.code || ORDER.code);
+    renderOrderForm();
+    msg(`已记录复核：${ORDER.code} 允许本次下单。系统不会自动提交，`
+      + `请自行填写数量后点「提交委托」。`, 'ok');
+    return;
+  }
   if (act === 'pstat') { openPaperDrawer(statDetail(el.dataset.k)); return; }
   if (act === 'ppos') { openPaperDrawer(posDetail(el.dataset.code)); return; }
   if (act === 'ppend') { openPaperDrawer(pendingDetail(+el.dataset.id)); return; }
@@ -2456,6 +2608,8 @@ $('poCode')?.addEventListener('input', (e) => {
   e.target.value = v;
   // 换票时清掉上一只票填的比例：15% 是针对那只票的仓位决定，套到新票上是误操作
   if (v !== ORDER.code) PQ_PCT = null;
+  // 同理：降级复核确认也是**按代码**的，换代码即作废（不区分是换成哪一只）
+  if (v !== ORDER.code) clearReview();
   ORDER = { ...ORDER, code: v, qty: 0 };
   renderOrderForm();
   renderQuick();

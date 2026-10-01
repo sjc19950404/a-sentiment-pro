@@ -789,20 +789,30 @@ escClose();
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/seats\.js';/m, 'const { buySeatsOf, sellSeatsOf, sideStats, seatTypeOf } = window.__seats__;')
       .replace(/^export\s+/gm, '')
     + '\nreturn { filterOne, filterBatch, featuresOf, themeStrengthOf, BUCKET, REJECT_LHB, SKIPPED_RULES,'
-    + ' MAX_SHARE_OF_MARKET, MAX_TOP3_CONC, MAX_TOP3_CONC_STRICT, ADMIT, THEME_FULL_PCT, LHBFILTER_VERSION };\n})();';
+    + ' MAX_SHARE_OF_MARKET, MAX_TOP3_CONC, MAX_TOP3_CONC_STRICT, ADMIT, THEME_FULL_PCT, LHBFILTER_VERSION,'
+    // 降级规则（净买 ≤ 0）的唯一出处：常量与判定函数都必须挂出去，
+    // 否则 predict/picks/alerts/paper_ui 只能各自手抄 10/8 与标签文案——那就是第二套口径。
+    + ' LHB_NET_OUTFLOW_PENALTY, FLAG_LHB, isNetOutflow, netOutflowText };\n})();';
   // paper_ui.js（批量下单面板）直接用 filterOne / BUCKET / LHBFILTER_VERSION 做提交前预检与档位文案，
   // 故从 window.__lhbfilter__ 解构回作用域。**绝不手抄**这些符号——它们就是规则本身。
-  const lhbFilterFlat = `const { filterOne, BUCKET, LHBFILTER_VERSION } = window.__lhbfilter__;`;
+  const lhbFilterFlat = `const { filterOne, BUCKET, LHBFILTER_VERSION, LHB_NET_OUTFLOW_PENALTY, FLAG_LHB, isNetOutflow } = window.__lhbfilter__;`;
   // 一手股数（LOT）不手抄字面量——从 src/paper.js 源码里抽出真实值。
   // 多处 IIFE 需要它（predict / alert_log），故提前到使用点之前声明。
   const LOT_LITERAL_EARLY = (readFileSync(join(ROOT, 'src/paper.js'), 'utf8')
     .match(/export const LOT\s*=\s*(\d+)/) || [, '100'])[1];
-  // src/predict.js（上涨概率预测与剔除引擎）：**零依赖**纯函数 ESM。
+  // src/predict.js（上涨概率预测与剔除引擎）：纯函数 ESM。
   // 刻意不 import alerts.js（否则 alerts → picks → predict → alerts 成环，
-  // IIFE 即时求值环境会崩）——止损线由调用方以参数传入。故这里只需剥掉 export 即可。
-  // 放在 picksBundle **之前**：picks.js 现在 import 它。
+  // IIFE 即时求值环境会崩）——止损线由调用方以参数传入。
+  // ⚠ 但它**现在 import 了 ./lhbfilter.js**（降级规则：净买 ≤ 0 → 概率扣固定分）。
+  //   依赖方向 predict → lhbfilter 是单向的（lhbfilter 不引 predict），不成环；
+  //   而 lhbFilterBundle 排在本 bundle 之前，故可直接从 window.__lhbfilter__ 取。
+  //   绝不手抄 10/8 与标签文案——那等于在 predict 里重建第二套规则。
+  // 放在 picksBundle **之前**：picks.js 也 import 它。
   const predictBundle = `window.__predict__ = (function(){\n`
-    + readFileSync(join(ROOT, 'src/predict.js'), 'utf8').replace(/^export\s+/gm, '')
+    + readFileSync(join(ROOT, 'src/predict.js'), 'utf8')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhbfilter\.js';/m,
+        'const { isNetOutflow, LHB_NET_OUTFLOW_PENALTY, FLAG_LHB } = window.__lhbfilter__;')
+      .replace(/^export\s+/gm, '')
     + '\nreturn { PREDICT_VERSION, PROB_BANDS, probBand, probBandText, REJECT_RULES, screenCandidate,'
     + ' BASELINE_UP, BASELINE_N, PREDICT_FACTORS, predictUpProb, expectedReturn, suggestStop, predictPicks,'
     + ' STREAK_BASELINE, STREAK_BASELINE_N, STREAK_BANDS, STREAK_TABLE, STREAK_TOP_MIN, streakBand, streakBandText,'
@@ -813,12 +823,14 @@ escClose();
       // 让人误以为 paper_ui 写坏了（曾经真的误判过一次）。
       .replace(/^import\s+\{[\s\S]*?\}\s*from\s*'\.\/lhb\.js';/m,
         'const { RANGE_BOARD_RE, isNewStock } = window.__lhb__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhbfilter\.js';/m,
+        'const { isNetOutflow, LHB_NET_OUTFLOW_PENALTY, FLAG_LHB } = window.__lhbfilter__;')
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/predict\.js';/m,
         'const { predictPicks, probBandText, streakBandText, streakTagText, PREDICT_VERSION, BASELINE_UP, STREAK_BASELINE } = window.__predict__;')
       .replace(/^export\s+/gm, '')
-    + '\nreturn { marketTier, TIER_THRESHOLDS, POSITION_TIERS, recommendPicks, PICK_TOP_N, SCORE_WEIGHTS, suggestWeight };\n})();';
+    + '\nreturn { marketTier, TIER_THRESHOLDS, POSITION_TIERS, recommendPicks, PICK_TOP_N, SCORE_WEIGHTS, suggestWeight, NET_OUTFLOW_TAG };\n})();';
   // paper_ui.js 直接调用 recommendPicks / PICK_TOP_N / SCORE_WEIGHTS，故从 window.__picks__ 解构回作用域
-  const picksFlat = `const { recommendPicks, PICK_TOP_N, SCORE_WEIGHTS } = window.__picks__;`;
+  const picksFlat = `const { recommendPicks, PICK_TOP_N, SCORE_WEIGHTS, NET_OUTFLOW_TAG } = window.__picks__;`;
   // paper.js（交易引擎）是平铺到 jsdom 全局作用域的，脚本自身 module scope 取不到它。
   // 断言里要独立复算「按建议比例该填多少股」时必须用到同一口径，故再包一层 IIFE
   // 把需要的符号挂到 window.__engine__ —— 绝不在断言里手抄整手/费用公式（那就是第二出处）。
@@ -830,6 +842,7 @@ escClose();
   // src/alerts.js（双层预警引擎）：纯函数 ESM，import 了
   //   · ./picks.js 的 marketTier / TIER_THRESHOLDS / POSITION_TIERS → 取 window.__picks__
   //   · ./config.js 的 default（风控阈值 stopLoss / ddTrigger）
+  //   · ./lhbfilter.js 的 isNetOutflow / FLAG_LHB（持仓票当日净流出告警，第 ⑧ 条）
   // config.js 用 export default，剥掉 export 后是裸对象字面量，并进来只是一条孤立表达式语句
   // （语法合法但取不到值），故改写成赋给 backtestCfg 再交给 alerts.js——
   // 绝不手抄阈值（手抄等于第二套口径，与 alerts.test.mjs 的「阈值同源」断言冲突）。
@@ -842,6 +855,8 @@ escClose();
     + readFileSync(join(ROOT, 'src/alerts.js'), 'utf8')
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/picks\.js';/m,
         'const { marketTier, TIER_THRESHOLDS, POSITION_TIERS } = window.__picks__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhbfilter\.js';/m,
+        'const { isNetOutflow, FLAG_LHB } = window.__lhbfilter__;')
       .replace(/^import\s+backtestCfg\s+from\s*'\.\/config\.js';/m, '')
       .replace(/^export\s+/gm, '')
     + '\nreturn { buildAlerts, marketAlerts, positionAlerts, MARKET_CFG, POS_CFG, LEVELS, ACTIONS };\n})();';
@@ -2166,6 +2181,53 @@ check('样式：预警严重度色条三档齐全（风险/机会/提示各一�
   && cssTxt.includes('.alert-row') && /border-left:\s*3px solid/.test(cssTxt), '');
 check('样式：预警条目窄屏折行（操作按钮整行右对齐）',
   /@media \(max-width: 560px\)/.test(cssTxt) && cssTxt.includes('.al-actions'), '');
+
+// ── 降级规则（龙虎榜净买入 ≤ 0）：扣分 + 告警标签 + 人工复核门槛 ──
+// 这一组断言守的是**用户裁定的处置**，而不是某段实现：
+//   ① 不禁止委托（不能回到 rejectedBy）；② 扣固定分；③ 有告警标签；④ 复核后才放行。
+{
+  const RG = dom.window.__reviewGate;
+  const LF = dom.window.__lhbfilter__;
+  const PK = dom.window.__picks__;
+  check('降级：复核门槛句柄已桥接（__reviewGate）', !!(RG && typeof RG.outflowOf === 'function'), '');
+  if (RG && LF) {
+    // 常量必须同源：UI 侧读到的扣分值就是 lhbfilter 的常量，不是渲染层另写的字面量
+    check('降级：扣分值经桥接读到的与规则引擎同源',
+      RG.PENALTY.SCORE === LF.LHB_NET_OUTFLOW_PENALTY.SCORE
+      && RG.PENALTY.PROB === LF.LHB_NET_OUTFLOW_PENALTY.PROB
+      && RG.PENALTY.SCORE === 10 && RG.PENALTY.PROB === 8,
+      `${RG.PENALTY.SCORE}/${RG.PENALTY.PROB}`);
+    check('降级：告警标签文案与 FLAG_LHB 同源',
+      RG.TAG === LF.FLAG_LHB.NET_OUTFLOW && /龙虎当日资金净流出/.test(RG.TAG) && RG.TAG.startsWith('⚠'), RG.TAG);
+    // 桶的归属：净买 ≤ 0 必须是 watch（可展示、禁自动下单），不是 rejected
+    check('降级：净买 ≤ 0 落备选观察池而非剔除桶',
+      LF.BUCKET.WATCH === 'watch' && LF.BUCKET.REJECTED === 'rejected', '');
+  }
+  // picks 侧标签符号可用（供推荐卡片渲染）
+  check('降级：推荐引擎透出告警标签常量（NET_OUTFLOW_TAG）',
+    !!(PK && PK.NET_OUTFLOW_TAG === '⚠龙虎当日资金净流出，谨慎开仓'), PK ? PK.NET_OUTFLOW_TAG : 'missing');
+}
+
+// 复核门槛的**状态机**：按代码记账、一次性、换代码作废。
+// 这四条不涉及行情，纯逻辑，故可以脱开账户直接断言。
+{
+  const RG = dom.window.__reviewGate;
+  if (RG) {
+    RG.clear();
+    check('复核门槛：初始为「未复核」', RG.passed('600001') === false, '');
+    RG.mark('600001');
+    check('复核门槛：确认后该票放行', RG.passed('600001') === true, '');
+    check('复核门槛：确认按代码记账，不波及其他票', RG.passed('600002') === false, '');
+    RG.clear();
+    check('复核门槛：clear 后回到未复核（换代码/换方向即作废）', RG.passed('600001') === false, '');
+  }
+}
+
+// 下单区必须真的挂了复核提示条的容器，否则门槛只拦不解释，用户无从"复核"
+check('降级：下单区存在复核提示条容器（#poGate）', htmlTxt.includes('id="poGate"'), '');
+check('样式：复核提示条有未复核/已复核两态样式',
+  cssTxt.includes('.po-gate') && cssTxt.includes('.po-gate.ok') && cssTxt.includes('.po-gate-btn'), '');
+check('样式：降级告警标签有独立样式类（.pk-outflow）', cssTxt.includes('.pk-outflow'), '');
 
 check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' | '));
 

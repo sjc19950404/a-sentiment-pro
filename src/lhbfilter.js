@@ -57,15 +57,74 @@ export const ADMIT = {
   top3ConcMax: 0.75,    // 买方前三席位集中度 ≤75%
 };
 
-/** 强制剔除原因码（可读，UI 只翻译不判断） */
+/** 强制剔除原因码（可读，UI 只翻译不判断）
+ *
+ *  ⚠ 「龙虎榜净买入 ≤ 0」**不在**此表内——它已降级为「不阻断」规则（见下方「降级规则」区块）。
+ *  该键曾被删除，不是遗漏：留一个不再被 push 的死键，会让人下次「顺手」把它接回
+ *  rejectedBy，规则就悄悄从降级退回禁止。要恢复禁止，请连测试一起改，别只删一行。 */
 export const REJECT_LHB = {
-  NEW_STOCK: '上市5日内无涨跌幅限制新股',
-  NET_BUY_NON_POSITIVE: '龙虎榜净买入 ≤ 0',
+  NEW_STOCK: '上市5日内无涨跌幅限制股票',
   SHARE_TOO_HIGH: '龙虎净买占全市场龙虎总净额 > 25%',
   HOT_ONLY_AND_CONC: '买方仅游资（机构与北向均净卖出）且买方前三席位集中度 > 80%',
   NET_BUY_RATE_TOO_LOW: '龙虎净买率低于准入门槛（规则⑦联动条款）',
   THEME_TOO_WEAK: '主线题材强度分 < 0.5',
 };
+
+// ────────────────────── 降级规则：龙虎净买入 ≤ 0（不阻断，改为降级+告警） ──────────────────────
+//
+// 2026-10-01 用户裁定：龙虎榜净买入 ≤ 0 **不再直接禁止委托**，改为
+//   ① 模型打分扣减固定分值（降低入选优先级）；
+//   ② 打告警标签（谨慎开仓）；
+//   ③ 人工复核后才允许下单。
+//
+// 为什么从「强制剔除」降级为「备选观察」：净买为负说明当日资金在出，但它**不等于**次日必跌——
+// 一笔买入委托是否该被系统直接掐掉，与「这只票今天资金面不好看」是两个不同量级的结论。
+// 系统能负责的是「标明风险、降低优先级」；「要不要买」这一层必须留给用户，
+// 所以落在 WATCH 桶（仅展示、禁止自动下单）+ 显式告警，而不是 REJECTED（禁止生成委托）。
+//
+// 扣分是**固定分值**（人工声明常量，不做任何归一化/自适应）——可复算、可单测、可解释。
+// 两条打分链路各扣各的（两处的分数语义不同，混用一个数会让「概率分 52.3」这类
+// 可核验统计量失去基准含义）：
+//   · picks.js  综合分（0~100 加权和）        −LHB_NET_OUTFLOW_PENALTY.SCORE
+//   · predict.js 上涨概率分（基准 55.3，百分点）−LHB_NET_OUTFLOW_PENALTY.PROB
+// **UI 一律 import 这两个常量，绝不得手抄 10 / 8**（手抄等于第二套口径，口径守卫会拦）。
+export const LHB_NET_OUTFLOW_PENALTY = {
+  SCORE: 10,   // picks.js 综合分扣减（0~100 分制），减法后夹在 0~100
+  PROB: 8,     // predict.js 上涨概率扣减（百分点；基准 55.3，多数票落在 55~72）
+};
+
+/** 降级/告警原因码（不阻断委托，只降优先级 + 打标签 + 要求人工复核） */
+export const FLAG_LHB = {
+  NET_OUTFLOW: '⚠龙虎当日资金净流出，谨慎开仓',
+};
+
+/**
+ * 「龙虎净买入 ≤ 0」的唯一判据。判据本身也集中在这里——UI/picks/predict 一律调它，
+ * 不得各写一份 `netWan <= 0`（那样阈值一变就三处不同步）。
+ *
+ * null 视同「不达标」：无净买记录就是没有资金进场证据，与净流出同档处理。
+ * 调用方必须显式处理 null，故这里同时返回区分标志，避免把「没有记录」说成「净流出」。
+ *
+ * @returns {{hit:boolean, kind:'null'|'zero'|'negative'|null, value:number|null}}
+ */
+export function isNetOutflow(netWan) {
+  if (netWan == null || !Number.isFinite(+netWan)) return { hit: true, kind: 'null', value: null };
+  const v = +netWan;
+  if (v < 0) return { hit: true, kind: 'negative', value: v };
+  if (v === 0) return { hit: true, kind: 'zero', value: 0 };
+  return { hit: false, kind: null, value: v };
+}
+
+/** 告警标签的可读文案（UI 直接渲染；带「为什么」与「怎么办」两句必需信息） */
+export function netOutflowText(f) {
+  const v = f && f.netWan;
+  const head = (v == null)
+    ? '当日龙虎榜无净买记录'
+    : (v < 0 ? `当日龙虎榜净买 ${(Math.abs(+v) / 1e4).toFixed(2)} 亿（资金净流出）` : '当日龙虎榜净买为 0');
+  return `${FLAG_LHB.NET_OUTFLOW} —— ${head}，模型打分已扣 `
+    + `综合分 ${LHB_NET_OUTFLOW_PENALTY.SCORE} 分 / 上涨概率 ${LHB_NET_OUTFLOW_PENALTY.PROB} 个百分点`
+    + `（降低入选优先级，不禁止委托）；请人工复核后再决定是否开仓。`;
+}
 
 /** 因数据不足而未生效的规则（留痕，不拦截） */
 export const SKIPPED_RULES = {
@@ -120,6 +179,11 @@ export function featuresOf(code, day) {
 
   // 热点榜补充名称/换手（龙虎榜缺名称时用）
   const hot = (Array.isArray(d.hot) ? d.hot : []).find((h) => h && String(h.code) === c) || null;
+  // 涨停名单：判定「该票当日有没有可核验的市场共识证据」。
+  // 与 picks.js buildCandidates 同源（summary.zt_codes），仅用于区分
+  // 「有记录但资金在出」（降级）与「根本查无此票」（仍强制剔除）。
+  const ztCodes = new Set(Array.isArray(s.zt_codes) ? s.zt_codes.map(String) : []);
+  const isZt = ztCodes.has(c);
 
   // 席位明细（唯一读取出口，已净化「类别汇总行」）
   const detail = (s.seats || {}).detail || null;
@@ -152,6 +216,9 @@ export function featuresOf(code, day) {
     name: (rec && rec.name) || (lhbRow && lhbRow.name) || (hot && hot.name) || c,
     onLhb: !!(rec || lhbRow),
     isNewStock: isNew,
+    // 当日涨停（当日榜名单口径）。无龙虎记录但涨停的票仍算「有真实依据」——
+    // 降级规则据此把它与「查无此票」区分开。
+    isZt,
     netWan,
     buyWan,
     sellWan,
@@ -209,13 +276,22 @@ export function themeStrengthOf(day) {
  * {
  *   code, name, bucket,          // 'main' | 'watch' | 'rejected'
  *   passed,                      // 是否通过强制剔除（进入主候选或备选的必要条件）
- *   rejectedBy: [...],           // 命中的强制剔除条目（含 code/text/value）
+ *   rejectedBy: [...],           // 命中的**强制剔除**条目（含 code/text/value）——只含阻断类
+ *   netOutflow: object|null,     // 命中的**降级**条目（龙虎净买 ≤ 0）——不阻断，只降级
+ *   flags: string[],             // 告警标签文案（UI 直接渲染，不重写）
+ *   needReview: boolean,         // 是否须人工复核后才允许下单（降级命中即为 true）
  *   admit: { met:[], unmet:[] }, // 主候选准入 4 条的达成情况
  *   skipped: [...],              // 因数据不足未生效的规则（留痕）
  *   features,                    // 原始特征（可核验）
  *   themeStrength,               // 主线题材强度分
  *   text,                        // 一句可读结论
  * }
+ *
+ * ⚠ `passed` 与 `bucket==='main'` 是两件事，别混用：
+ *   · passed=true 只说明「没被强制剔除」，降级票也会是 true；
+ *   · 能不能自动下单只看 bucket==='main'（降级票恒为 'watch'）。
+ *   早先把「净买 ≤ 0」放进 rejectedBy，等于用阻断语义表达降级语义；现已拆开，
+ *   因为二者对下游的含义完全不同（能否生成委托 vs 优先级与复核要求）。
  *
  * @param {string} code 标的代码
  * @param {object} day  archive 的某一天
@@ -253,9 +329,27 @@ export function filterOne(code, day, opts = {}) {
   // ① 上市 5 日内无涨跌幅限制新股 —— 涨跌幅不予板段约束，与正常股不可比
   if (f.isNewStock) push('NEW_STOCK', REJECT_LHB.NEW_STOCK, f.reason);
 
-  // ② 个股当日龙虎榜净买入 ≤ 0
-  if (f.netWan == null || f.netWan <= 0) {
-    push('NET_BUY_NON_POSITIVE', REJECT_LHB.NET_BUY_NON_POSITIVE, f.netWan);
+  // ② 个股当日龙虎榜净买入 ≤ 0 —— **降级规则，不阻断**（见文件上部「降级规则」注释）
+  //
+  //    为什么不用 `push(...)`：那个数组叫 rejectedBy，进去就意味着 `passed=false` →
+  //    REJECTED 桶 → 禁止生成买入委托，与该规则现在的定位（降优先级，不禁止）自相矛盾。
+  //    单独放一个 flag，再由下方的桶判定把它压进 WATCH。
+  //
+  //    ⚠ 但「无任何记录」必须与「有记录且净买 ≤ 0」分开处理，不能一起降级：
+  //      前者是**数据缺失/代码不对**（该票当天根本没上榜），后者是**有依据但依据不好**。
+  //      把「查无此票」降级放行，等于让一个没有真实资金证据、也没有涨停记录的代码
+  //      走到「填得进下单区」这一步——那不是谨慎，那是把校验口子开在数据缺失上。
+  //      故：有龙虎记录 → 降级；无龙虎记录但有涨停记录（isZt 由候选池带出时可辨）→ 也降级；
+  //      两者皆无 → 仍按强制剔除（无任何资金/共识证据）。
+  const outflow = isNetOutflow(f.netWan);
+  const hasAnyRecord = f.onLhb || f.isZt === true;
+  const netOutflow = (outflow.hit && hasAnyRecord)
+    ? { code: 'NET_BUY_NON_POSITIVE', kind: outflow.kind, value: outflow.value, text: netOutflowText(f) }
+    : null;
+  // 无龙虎记录且无涨停证据：仍属强制剔除（与文件头「数据边界」的诚实原则一致——
+  // 没有依据就不放行，而不是把缺数据说成"风险降级"）
+  if (outflow.hit && !hasAnyRecord) {
+    push('NO_RECORD', '当日归档无该标的任何记录（龙虎榜与涨停名单均无）', null);
   }
 
   // ③ 个股龙虎净买占当日全市场龙虎总净额 > 25%（单票吸走全市场超四分之一资金，异常）
@@ -325,6 +419,22 @@ export function filterOne(code, day, opts = {}) {
   if (!passed) {
     bucket = BUCKET.REJECTED;
     text = '强制剔除：' + rejectedBy.map((x) => x.text).join('；') + '。禁止生成买入委托。';
+  } else if (netOutflow) {
+    // ⚠ 顺序即语义：`!passed` 必须排在 netOutflow 之前。
+    //    若把降级提到前面，一只「净买 ≤ 0 且同时踩了 25% 集中度 / 题材过弱 /
+    //    买方仅游资且集中度 >80%」的票，会因为降级分支先命中而被放行成 WATCH——
+    //    那等于**用降级规则给其他强制剔除开后门**。降级的含义是
+    //    「该票本身没有其他硬伤，只是资金证据不足」，不是「一票否决权豁免」。
+    //    注：①新股 与 ③集中度>80% 通常都会同时把 netBuyRate/top3Conc 打穿，
+    //    本来就进不了主池，但仍有必要让它们落到 REJECTED——桶决定的是
+    //    「能不能被自动下单」，两者必须一致地偏保守。
+    //
+    // 降级：净买入 ≤ 0 → 备选观察池。**无论是否满足准入，一律不给主池资格**——
+    // 主池 = 可自动下单，而这条规则的处置正是「不自动放行、要人工复核」。
+    bucket = BUCKET.WATCH;
+    text = '降级（不阻断）：龙虎榜净买入 ≤ 0 —— 已扣综合分 '
+      + `${LHB_NET_OUTFLOW_PENALTY.SCORE} 分 / 上涨概率 ${LHB_NET_OUTFLOW_PENALTY.PROB} 个百分点，`
+      + `进入备选观察池（禁止自动下单）；${FLAG_LHB.NET_OUTFLOW}，人工复核后方可下单。`;
   } else if (allAdmit) {
     bucket = BUCKET.MAIN;
     text = '通过全部强制剔除与准入条件，进入主候选池（可自动下单）。';
@@ -336,6 +446,12 @@ export function filterOne(code, day, opts = {}) {
   return {
     code: f.code, name: f.name, bucket, passed,
     rejectedBy, admit: { met, unmet, all: allAdmit },
+    // 降级规则（不阻断）：命中 = 该票被打告警标签 + 扣分 + 强制人工复核。
+    // needReview 恒为 true（命中即复核），单列一个字段是为了让 UI 不必
+    // 自己判断「哪些命中项属于降级类」——那是规则，不是渲染。
+    netOutflow,
+    flags: netOutflow ? [netOutflow.text] : [],
+    needReview: !!netOutflow,
     skipped, features: f, themeStrength,
     sharePct: sharePct != null ? r3(sharePct * 100) : null,
     hotOnlyConc,
@@ -371,6 +487,7 @@ export function filterBatch(codes, day, opts = {}) {
   }
   const by = (b) => all.filter((x) => x.bucket === b);
   const themeStrength = themeStrengthOf(day);
+  const review = all.filter((x) => x.needReview);
   return {
     main: by(BUCKET.MAIN),
     watch: by(BUCKET.WATCH),
@@ -382,6 +499,10 @@ export function filterBatch(codes, day, opts = {}) {
       main: by(BUCKET.MAIN).length,
       watch: by(BUCKET.WATCH).length,
       rejected: by(BUCKET.REJECTED).length,
+      // 降级规则命中数（龙虎净买 ≤ 0）：不进 rejected，只降级 + 打标签 + 要求人工复核。
+      // 单列一个计数是为了让「被降级」在汇总里可见，而不是消失在 watch 的合计里。
+      needReview: review.length,
+      flaggedCodes: review.map((x) => x.code),
       // 因数据不足未生效的规则清单（去重）
       skippedRules: [...new Set(all.flatMap((x) => (x.skipped || []).map((s) => s.key)))],
     },

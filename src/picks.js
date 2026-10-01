@@ -27,6 +27,13 @@
 // 但 picks.js 是**浏览器也要用**的零依赖模块（paper_ui.js 直接 import），不能引 node 侧依赖——
 // lhb.js 本身是纯函数无 node 依赖，故可直接复用，不再自己写正则（口径守卫会拦重复实现）。
 import { RANGE_BOARD_RE, isNewStock } from './lhb.js';
+// 龙虎降级规则（净买入 ≤ 0）：判据、扣分值、告警文案的唯一出处都在 src/lhbfilter.js。
+// 本文件只负责「把扣分应用到综合分上」，绝不自己写 `netWan <= 0` 或手抄 10 分
+// （判据/阈值一旦出现第二份，两处就会不同步——口径守卫会拦）。
+import { isNetOutflow, LHB_NET_OUTFLOW_PENALTY, FLAG_LHB } from './lhbfilter.js';
+
+/** 告警标签文案（唯一出处仍是 lhbfilter.js 的 FLAG_LHB，这里只是取个别名方便渲染层引用） */
+export const NET_OUTFLOW_TAG = FLAG_LHB.NET_OUTFLOW;
 // 预测与剔除引擎（上涨概率、连板概率、预期收益、止损位）。规则唯一出处，本文件不重写任何阈值。
 import {
   predictPicks, probBandText, streakBandText, streakTagText,
@@ -253,6 +260,13 @@ export function scoreStreak(streak) {
  *   streak ← summary.zt_lb[code]（连板数）
  *   theme ← summary.main_theme.name 是否出现在该股题材列表（精确 1.0 / 词根 0.6 / 仅泛题材 0.4）
  *   liquidity ← deal 占当日全榜比重（用对数压缩，避免大票垄断）
+ *
+ * ⚠ 修正项：龙虎榜净买入 ≤ 0 时**扣减固定分值**（LHB_NET_OUTFLOW_PENALTY.SCORE，来自 lhbfilter.js）。
+ *   为什么用「减法后夹 0~100」而不是把扣分塞进权重表：权重表和必须为 1（有单测锁住），
+ *   往表里加一项就要重配所有其他项、且会稀释掉「分档可解释」这个性质；
+ *   而负面证据天然是「在基础分上扣」，减法语义更直白，也不破坏任何原有因子的读数。
+ *   注意：净买 ≤ 0 时 fund 因子本就是 0 分（scoreFund 对非正数返回 0）——那不是扣分，是「没拿到分」；
+ *   这里再扣固定分，表达的是「不但没拿到资金证据，而且资金在往外走」这层额外负面信息。
  */
 export function scoreCandidate(c, ctx = {}) {
   const totalDeal = finite(ctx.totalDealWan) && +ctx.totalDealWan > 0 ? +ctx.totalDealWan : null;
@@ -269,7 +283,21 @@ export function scoreCandidate(c, ctx = {}) {
   };
   const raw = Object.entries(SCORE_WEIGHTS)
     .reduce((a, [k, w]) => a + w * (parts[k] || 0), 0);
-  return { score: Math.round(raw * 1000) / 10, parts };
+
+  // 龙虎净买 ≤ 0 → 固定扣分（判据唯一出处：lhbfilter.isNetOutflow）
+  const outflow = isNetOutflow(c.netWan);
+  const penalty = outflow.hit ? LHB_NET_OUTFLOW_PENALTY.SCORE : 0;
+  const score = Math.max(0, Math.min(100, Math.round((raw * 1000) / 10) - penalty));
+
+  return {
+    score, parts, penalty,
+    netOutflow: outflow.hit,
+    // 保留扣分前的原始分，便于页面上说清「这一分是怎么被扣掉的」（可核验性）
+    rawScore: Math.round(raw * 1000) / 10,
+    outflowText: outflow.hit
+      ? `龙虎榜净买入 ≤ 0 → 综合分扣 ${penalty} 分（${Math.round(raw * 1000) / 10} → ${score}）`
+      : null,
+  };
 }
 
 // ────────────────────────── 四、理由与风险（必须是可核验的事实） ──────────────────────────
@@ -295,6 +323,12 @@ export function reasonsOf(c) {
       tone: 'up',
     });
   } else if (c.themes && c.themes.length) out.push({ kind: 'theme', text: `题材：${c.themes.slice(0, 2).join('、')}`, tone: 'muted' });
+  // 龙虎净买 ≤ 0：**必须显式打告警标签**（用户要求「增加告警标签，人工复核后才允许下单」）。
+  // 文案与扣分值全部来自 lhbfilter.js，此处不重写一个字——标签就是规则对用户的可见面。
+  // 放在最后（tone=warn）：负面标签排在正面理由之后，读起来是「有这些理由，但注意这一点」。
+  if (isNetOutflow(c.netWan).hit) {
+    out.push({ kind: 'outflow', text: NET_OUTFLOW_TAG, tone: 'warn' });
+  }
   if (finite(c.turnoverPct) && c.turnoverPct >= 20) {
     out.push({ kind: 'turn', text: `换手 ${r2(c.turnoverPct)}%（高换手）`, tone: 'warn' });
   }
@@ -369,8 +403,13 @@ export function recommendPicks(day, ctx = {}) {
 
   // 先补上「可核验理由/风险」与流动性分（这些是展示字段，与预测相互独立）
   const enriched = candidates.map((c) => {
-    const { score, parts } = scoreCandidate(c, { totalDealWan });
-    return { ...c, score, scoreParts: parts, reasons: reasonsOf(c), risks: risksOf(c) };
+    const sc = scoreCandidate(c, { totalDealWan });
+    return {
+      ...c, score: sc.score, scoreParts: sc.parts,
+      // 扣分链路透出（页面要能说清「这一分是怎么被扣的」，不能只给一个变小了的数）
+      scorePenalty: sc.penalty, scoreRaw: sc.rawScore, scoreOutflow: sc.netOutflow,
+      reasons: reasonsOf(c), risks: risksOf(c),
+    };
   });
 
   // 交给预测引擎：剔除大概率亏的，连板概率高的置顶，其余按上涨概率排序

@@ -26,6 +26,10 @@ import { marketTier, TIER_THRESHOLDS, POSITION_TIERS } from './picks.js';
 // 风控阈值：与 V5.2 回测引擎同源（止损线、回撤降仓触发线、单日仓位变动上限）
 import backtestCfg from './config.js';
 const RISK = backtestCfg.backtest;
+// 龙虎降级规则（净买入 ≤ 0）：判据与告警标签文案的唯一出处。
+// 依赖方向：alerts → picks → {predict, lhbfilter}，而 lhbfilter 不引 alerts，
+// 故无环（check_frontend 里各模块被包成 IIFE 即时求值，成环会直接崩，这条注释是给未来的自己看的）。
+import { isNetOutflow, FLAG_LHB } from './lhbfilter.js';
 
 // ────────────────────────── 一、阈值（集中在此，UI 不重写） ──────────────────────────
 
@@ -412,6 +416,29 @@ export function positionAlerts({ positions, stats, tier, pickCodes } = {}) {
           + `市值按${last != null ? '最近成交价' : '成本价'}估算，浮盈与占比可能失真。`,
         why: `账户市值口径：有最新价按最新价、无价按成本（src/paper.js accountStats）。`
           + `无价时该票的浮动盈亏与仓位占比都是估算值，不应据此做强判断。`,
+      });
+    }
+
+    // ⑧ 持仓票当日龙虎榜净买入 ≤ 0 —— 告警标签（用户要求「增加告警标签，人工复核后才允许下单」）
+    //
+    // 为什么持仓层也要有：这条规则的完整语义是「降低入选优先级 + 告警 + 人工复核」。
+    // 如果标签只出现在「研判推荐」卡片上，那**已经持有**这只票的用户就完全看不到这个信号——
+    // 而持仓恰恰是「可能还要加仓」的地方。这里只提示、不给一键买入动作：
+    // 净流出是「谨慎开仓」的理由，不是「该抄底」的理由，给个买入按钮就把话说过头了。
+    if (isNetOutflow(p.netWan).hit) {
+      const v = p.netWan;
+      const amt = v == null ? '当日龙虎榜无净买记录'
+        : (v < 0 ? `当日龙虎榜净买 −${(Math.abs(+v) / 1e4).toFixed(2)} 亿` : '当日龙虎榜净买为 0');
+      out.push({
+        ...base, level: 'tip', type: 'pos-net-outflow', action: 'watch',
+        weight: 40,
+        netWan: v == null ? null : +v,
+        text: `${name}（${code}）${FLAG_LHB.NET_OUTFLOW} —— ${amt}。`
+          + `${qty > 0 ? '持仓已在，' : ''}如需加仓请先人工复核，不要照推荐位次直接下单。`,
+        why: `判据：个股当日龙虎榜净买入 ≤ 0（与「研判推荐」的降级规则同一条，`
+          + `唯一出处 src/lhbfilter.js::isNetOutflow）。该票在推荐链路里会被扣综合分/上涨概率、`
+          + `降到备选观察池（禁止自动下单），并要求人工复核后才允许下单。`
+          + `**净流出不等于次日必跌**，系统因此只标风险、不禁委托。`,
       });
     }
   }

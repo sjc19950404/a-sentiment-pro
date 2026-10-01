@@ -507,6 +507,87 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
   const filterSrc = readFileSync('src/lhbfilter.js', 'utf8');
   const hasSkip = /SKIPPED_RULES/.test(filterSrc) && /skipped\.push/.test(filterSrc);
   check('数据不足的规则必须留痕（skipped 数组），不得静默忽略', hasSkip, `hasSkip=${hasSkip}`);
+
+  // ── A5. 降级规则（龙虎榜净买入 ≤ 0）的处置守卫 ───────────────────────────────
+  // 用户裁定：**不禁止委托** / 扣固定分 / 打告警标签 / 人工复核后才允许下单。
+  // 这四条里最容易被后续改动破坏的是第①条——因为「净买 ≤ 0」历史上就在
+  // REJECT_LHB 的强制剔除清单里，任何人「顺手清理」都可能把它 push 回 rejectedBy，
+  // 于是规则悄悄从「降级」退回「禁止」，而测试若不覆盖就无人察觉。故单列守卫。
+  {
+    // ① 不得把「净买 ≤ 0」写回强制剔除（rejectedBy / REJECT_LHB 里不得有它）
+    const rejectBlock = (filterSrc.match(/export const REJECT_LHB\s*=\s*\{[\s\S]*?\n\};/) || [''])[0];
+    check('降级：净买≤0 不得写回 REJECT_LHB 强制剔除清单',
+      rejectBlock.length > 0 && !/净买\s*[≤<]|net_buy.*non_positive|NET_BUY_NON_POSITIVE/i.test(rejectBlock),
+      'REJECT_LHB 中出现了净买≤0 的描述');
+    // ② 该判据在 filterOne 里必须走 flag 而非 push（push 进 rejectedBy 即等于禁止委托）
+    const noPush = /const\s+netOutflow\s*=/.test(filterSrc)
+      && !/push\(\s*['"]NET_BUY_NON_POSITIVE/.test(filterSrc);
+    check('降级：净买≤0 走 flag 不走 push(rejectedBy)（push 即等于禁止委托）', noPush,
+      `flag=${/const\s+netOutflow\s*=/.test(filterSrc)} push=${/push\(\s*['"]NET_BUY_NON_POSITIVE/.test(filterSrc)}`);
+    // ③ 桶判定必须保持「!passed 优先于 netOutflow」——否则降级会给其他强制剔除开后门。
+    //
+    //    判据必须基于**代码结构**而不是 indexOf：把 netOutflow 分支提到前面时，
+    //    字符串里 `if (!passed)` 的位置其实没变（我第一版就是这么写的，负向验证没拦住）。
+    //    正确做法：抽出桶判定那一段（从 `let bucket, text;` 到 `return {` 之前），
+    //    扫描各个 if/else-if 条件，比较「判 !passed」与「判 netOutflow」的先后序号。
+    //    注意不能截到第一个 `}` —— 那会在第一个分支体结束时就截断，漏掉后面的分支。
+    const bStart = filterSrc.indexOf('let bucket, text;');
+    const bEnd = filterSrc.indexOf('return {', bStart);
+    const bucketBlock = (bStart > -1 && bEnd > bStart) ? filterSrc.slice(bStart, bEnd) : '';
+    const conds = [...bucketBlock.matchAll(/(?:if|else\s+if)\s*\(([^)]*)\)/g)].map((m) => m[1].trim());
+    const iP = conds.findIndex((c) => /!\s*passed\b/.test(c));
+    const iN = conds.findIndex((c) => /\bnetOutflow\b/.test(c));
+    const orderOk = bucketBlock !== '' && iP > -1 && iN > -1 && iP < iN;
+    check('降级：桶判定中 !passed 优先于 netOutflow（降级不得豁免其他强制剔除）', orderOk,
+      `分支序=${JSON.stringify(conds)}`);
+    // ④ 扣分值必须只有一个出处，且下游不得重写字面量
+    const ownerOk = /export const LHB_NET_OUTFLOW_PENALTY\s*=\s*\{[\s\S]*?SCORE:\s*10[\s\S]*?PROB:\s*8[\s\S]*?\};/.test(filterSrc)
+      && /export const FLAG_LHB\s*=\s*\{[\s\S]*?NET_OUTFLOW:\s*'⚠龙虎当日资金净流出，谨慎开仓'/.test(filterSrc);
+    check('降级：扣分值(10/8)与告警标签在 src/lhbfilter.js 唯一定义', ownerOk, `ownerOk=${ownerOk}`);
+    // 下游（picks/predict/alerts/UI）必须 import，不得自行写 10 或 8 当扣分
+    const downstream = ['src/picks.js', 'src/predict.js', 'src/alerts.js', 'paper_ui.js'];
+    const hardcode = [];
+    for (const rel of downstream) {
+      const src = readFileSync(path.join(ROOT, rel), 'utf8');
+      // 判据：出现「降级/净流出」语义词的行里，同时出现裸字面量 10 或 8 作为扣减量
+      const bad = src.split('\n').filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln))
+        .filter((ln) => /(PENALTY|净流出|netOutflow|降级)/.test(ln))
+        .filter((ln) => /[:=]\s*(10|8)\s*[,;)]|\*\s*(10|8)\b/.test(ln));
+      if (bad.length) hardcode.push(`${rel}: ${bad[0].trim().slice(0, 70)}`);
+    }
+    check('降级：下游（picks/predict/alerts/UI）不得手抄 10/8 扣分值，必须引用常量',
+      hardcode.length === 0, hardcode.slice(0, 2).join(' ; '));
+    // ⑤ UI 不得手抄告警标签文案
+    const uiSrc = readFileSync('paper_ui.js', 'utf8');
+    const tagCopies = uiSrc.split('\n').filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln))
+      .filter((ln) => /['"`]⚠?龙虎当日资金净流出/.test(ln));
+    check('降级：UI 不得手抄告警标签文案（模板占位符/注释不计）', tagCopies.length === 0,
+      tagCopies.slice(0, 2).join(' ; '));
+    // ⑥ 人工复核门槛必须拦在真正下单之前（提示文案不能当门槛）
+    //
+    //    这个断言写了三版才站得住，三版都栽在「拿错参照物」上，记录下来免得后人重踩：
+    //      ① 用 `s.search(/reviewPassed\(/)` 找门槛 → 命中的是**函数定义**
+    //         （`function reviewPassed(code)` 在文件中段），与 submitOrder 比较恒为真；
+    //      ② 用「submit() 起点 ~ 其后第一个 submitOrder」当门槛区段 → 门槛被移动到
+    //         submitOrder **之后**时，区间端点跟着一起后移，区间内依然含门槛，仍恒为真。
+    //    站得住的判据：在 submit() 函数体内，取**门槛调用点**与 **submitOrder 调用点**
+    //    两个绝对位置直接比大小，不构造任何依赖被测对象的区间。
+    const uiSrc2 = readFileSync('paper_ui.js', 'utf8');
+    const submitStart = uiSrc2.indexOf('async function submit()');
+    // submit() 的结束位置：下一个顶层 `function ` / `async function ` 声明
+    const nextDecl = uiSrc2.slice(submitStart + 10).search(/\n(?:async )?function /);
+    const submitEnd = nextDecl > -1 ? submitStart + 10 + nextDecl : uiSrc2.length;
+    const body = uiSrc2.slice(submitStart, submitEnd);
+    // 门槛调用点：形如 `!reviewPassed(<expr>)`，且**排除** `function reviewPassed` 定义行
+    const gateCall = body.search(/(?<!function\s)\breviewPassed\s*\(/);
+    const orderCall = body.indexOf('submitOrder(ACCT,');
+    const gateInSubmit = submitStart > -1 && gateCall > -1 && orderCall > -1 && gateCall < orderCall;
+    check('降级：人工复核门槛拦在 submit() 内、submitOrder 调用之前（提示文案不能当门槛）',
+      gateInSubmit, `函数区段=${submitEnd - submitStart} 门槛@${gateCall} 下单@${orderCall}`);
+    // 卖出侧不得设槛：净流出是「谨慎开仓」的理由，不是「不许离场」的理由
+    check('降级：复核门槛只拦买入（ORDER.side === \'buy\'），卖出不设槛',
+      /ORDER\.side\s*===\s*'buy'/.test(body.slice(0, Math.max(gateCall, 0))), '');
+  }
 }
 
 // ── B6. 报告模板契约守卫（用户给定模板，仅排版层，不得动数据） ──────────────

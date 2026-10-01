@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import {
   filterOne, filterBatch, featuresOf, themeStrengthOf, BUCKET, REJECT_LHB, SKIPPED_RULES,
   MAX_SHARE_OF_MARKET, MAX_TOP3_CONC, MAX_TOP3_CONC_STRICT, ADMIT, LHBFILTER_VERSION,
+  isNetOutflow, netOutflowText, LHB_NET_OUTFLOW_PENALTY, FLAG_LHB,
 } from '../src/lhbfilter.js';
 import {
   accountStats, riskGuard, ddTier, MAX_DAILY_POSITION_CHANGE, DD_TIERS, HARD_STOP_LOSS,
@@ -71,14 +72,62 @@ test('强制剔除①：上市 5 日内无涨跌幅限制新股', () => {
   assert.ok(r.rejectedBy.some((x) => x.code === 'NEW_STOCK'));
 });
 
-test('强制剔除②：龙虎榜净买入 ≤ 0', () => {
+test('降级规则②：龙虎榜净买入 ≤ 0 —— 不阻断委托，但降级+扣分+告警+人工复核', () => {
   const day = makeDay({ lhb: [L('600000', '浦发银行', { net: -500 })] });
   const r = filterOne('600000', day);
-  assert.equal(r.bucket, BUCKET.REJECTED);
-  assert.ok(r.rejectedBy.some((x) => x.code === 'NET_BUY_NON_POSITIVE'));
-  // 净买恰好为 0 也要剔（规则原文「≤ 0」）
+  // ① 不再进强制剔除（rejectedBy 必须为空）——否则等于禁止生成买入委托，与规则定位矛盾
+  assert.equal(r.rejectedBy.length, 0, '净买入≤0 不得再进强制剔除');
+  assert.equal(r.passed, true, '不阻断：passed 应为 true');
+  // ② 不得进主候选池（主池=可自动下单，而这条规则要求人工复核）
+  assert.equal(r.bucket, BUCKET.WATCH, '应降级进备选观察池（禁止自动下单）');
+  // ③ 降级条目与告警标签必须显式带出
+  assert.ok(r.netOutflow, '须带 netOutflow 降级条目');
+  assert.equal(r.netOutflow.code, 'NET_BUY_NON_POSITIVE');
+  assert.equal(r.netOutflow.kind, 'negative');
+  assert.equal(r.needReview, true, '须要求人工复核');
+  assert.ok(r.flags.length > 0 && r.flags[0].includes('⚠龙虎当日资金净流出，谨慎开仓'),
+    `告警标签文案不符：${r.flags[0]}`);
+  // ④ 扣分值必须出现在结论里（用户要能看见"扣了多少分"）
+  assert.match(r.text, /已扣综合分\s*10\s*分/);
+  assert.match(r.text, /上涨概率\s*8\s*个百分点/);
+  assert.match(r.text, /人工复核/);
+
+  // 净买恰好为 0 同样降级（规则原文「≤ 0」）
   const r0 = filterOne('600000', makeDay({ lhb: [L('600000', '浦发银行', { net: 0 })] }));
-  assert.equal(r0.bucket, BUCKET.REJECTED);
+  assert.equal(r0.bucket, BUCKET.WATCH);
+  assert.equal(r0.passed, true);
+  assert.equal(r0.netOutflow.kind, 'zero');
+  assert.equal(r0.needReview, true);
+
+  // 净买为正：不得出现降级条目（否则降级规则会误伤所有票）
+  const rp = filterOne('600000', makeDay({
+    lhb: [L('600000', '浦发银行', { net: 5000 })],
+    detail: { '600000': { b: [seat('机构专用', 3000), seat('某营业部1', 2800), seat('某营业部2', 2600), seat('某营业部3', 2400), seat('某营业部4', 2200), seat('某营业部5', 2000)], s: [seat('沪股通专用', 100)] } },
+  }));
+  assert.equal(rp.netOutflow, null);
+  assert.equal(rp.needReview, false);
+  assert.equal(rp.bucket, BUCKET.MAIN);
+});
+
+test('降级规则②：降级条目与「数据不足留痕」是两类东西（不含 blocking 字段、不进 skipped）', () => {
+  const r = filterOne('600000', makeDay({ lhb: [L('600000', '浦发银行', { net: -100 })] }));
+  // skipped 只装"数据不足"，降级是"数据充足但结论不好"——混进去会让用户以为缺数据
+  assert.ok(!r.skipped.some((s) => s.code === 'NET_BUY_NON_POSITIVE' || s.key === 'NET_BUY_NON_POSITIVE'));
+  // 无当日记录时的 NO_RECORD / 异常时的 FILTER_ERROR 仍是阻断类（仍走 rejectedBy）——
+  // 这两个是"根本没有依据"，与"有依据但不好"（净流出）必须区别对待
+  assert.equal(filterOne('999999', makeDay({})).bucket, BUCKET.REJECTED);
+});
+
+test('降级扣分值常量必须与用户裁定一致（锁死，防被改）', () => {
+  assert.equal(LHB_NET_OUTFLOW_PENALTY.SCORE, 10, '综合分固定扣减 10 分');
+  assert.equal(LHB_NET_OUTFLOW_PENALTY.PROB, 8, '上涨概率固定扣减 8 个百分点');
+  assert.equal(FLAG_LHB.NET_OUTFLOW, '⚠龙虎当日资金净流出，谨慎开仓');
+  // 判据本身也只有一份实现
+  assert.deepEqual(isNetOutflow(100), { hit: false, kind: null, value: 100 });
+  assert.deepEqual(isNetOutflow(0), { hit: true, kind: 'zero', value: 0 });
+  assert.deepEqual(isNetOutflow(-5), { hit: true, kind: 'negative', value: -5 });
+  assert.equal(isNetOutflow(null).hit, true);
+  assert.equal(isNetOutflow(undefined).hit, true);
 });
 
 test('强制剔除③：龙虎净买占全市场总净额 > 25%', () => {
@@ -205,28 +254,65 @@ test('备选观察池的标的：passed=true 但 bucket 不是 main（禁止自�
   assert.match(r.text, /禁止自动下单/);
 });
 
+test('降级不得给其他强制剔除开后门：净买≤0 且同时踩硬伤 → 仍 REJECTED', () => {
+  // 一票同时满足：净买为负（降级） + 买方仅游资且前三集中度 >80%（强制剔除③）
+  // 席位：机构净卖、北向净卖、营业部净买 → 三个条件全中
+  const day = makeDay({
+    lhb: [L('600000', '浦发银行', { net: -200, buy: 20000, sell: 20200 })],
+    detail: {
+      '600000': {
+        b: [seat('某营业部1', 9000), seat('某营业部2', 8000), seat('某营业部3', 7000), seat('某营业部4', 100), seat('某营业部5', 100)],
+        s: [seat('机构专用', 12000), seat('沪股通专用', 3000)],
+      },
+    },
+  });
+  const r = filterOne('600000', day);
+  // 顺序即语义：!passed 必须优先于 netOutflow。否则降级分支先命中，
+  // 就等于「只要净买为负，其他硬伤一律不算」——把降级变成了豁免权。
+  assert.equal(r.bucket, BUCKET.REJECTED, '降级不得覆盖其他强制剔除');
+  assert.equal(r.passed, false);
+  assert.ok(r.rejectedBy.some((x) => x.code === 'HOT_ONLY_AND_CONC'));
+  assert.match(r.text, /禁止生成买入委托/);
+  assert.match(r.text, /买方仅游资/);
+  // 但降级条目本身仍要如实记录（它在 ② 步已算出）——剔除原因与告警信息是两件事，
+  // UI 若只看到 rejected 就丢掉告警，人工复核时会少一条关键依据。
+  assert.ok(r.netOutflow, '降级条目不应因被剔除而被抹掉');
+  assert.equal(r.needReview, true);
+});
+
 test('无当日记录：直接拒绝，禁止生成买入委托', () => {
   const r = filterOne('999999', makeDay({}));
   assert.equal(r.bucket, BUCKET.REJECTED);
   assert.equal(r.passed, false);
   assert.match(r.text, /禁止生成买入委托/);
+  // "没有记录"是**阻断类**，不能与"净流出"（降级类）混为一谈：
+  // 前者连判断依据都没有，后者有依据、只是依据不好。二者对下游的含义完全不同。
+  assert.equal(r.needReview, false, '阻断类不应走降级复核路径');
+  assert.equal(r.netOutflow, null);
 });
 
 test('批量过滤：单只失败不影响其他，且同票去重', () => {
   const day = makeDay({
     lhb: [
       L('600000', '好票', { net: 5000 }),
-      L('600001', '差票', { net: -100 }),
+      // 差票：净买为负 → 降级进 watch。
+      // 席位明细刻意给「机构净买 >0」的形态，避免同时踩到集中度/游资类强制剔除——
+      // 本用例要验的是**降级单独生效**，不能把两种处置混在一个样本里。
+      L('600001', '差票', { net: -100, buy: 4000, sell: 4100 }),
     ],
     detail: {
       '600000': { b: [seat('机构专用', 3000), seat('某营业部1', 2800), seat('某营业部2', 2600), seat('某营业部3', 2400), seat('某营业部4', 2200), seat('某营业部5', 2000)], s: [seat('沪股通专用', 100)] },
-      '600001': { b: [seat('某营业部', 500)], s: [seat('机构专用', 100)] },
+      '600001': { b: [seat('机构专用', 2000), seat('某营业部1', 1000), seat('某营业部2', 900), seat('某营业部3', 100)], s: [seat('沪股通专用', 1500), seat('某营业部', 2600)] },
     },
   });
   const r = filterBatch(['600000', '600001', '999999', '600000'], day);
   assert.equal(r.summary.total, 3);                 // 去重后 3 只
   assert.equal(r.main.length, 1);
-  assert.equal(r.rejected.length, 2);
+  // 600001 净买为负 → 降级进 watch（不再是被剔除）；999999 无记录 → 仍被剔除
+  assert.equal(r.rejected.length, 1);
+  assert.equal(r.watch.length, 1);
+  assert.equal(r.summary.needReview, 1);
+  assert.deepEqual(r.summary.flaggedCodes, ['600001']);
   assert.ok(r.summary.skippedRules.includes('LOCKUP_RATIO'));
 });
 
@@ -316,21 +402,34 @@ test('批量买入：龙虎过滤前置生效，非主池标的绝不生成委�
     trade_date: '2026-09-30',
     lhb: [
       L('600000', '好票', { net: 5000, close: 10 }),
-      L('600001', '差票', { net: -100, close: 10 }),
+      // 净流出票：只触发降级（机构净买 >0，不踩集中度/游资类强制剔除）
+      L('600001', '净流出票', { net: -100, buy: 4000, sell: 4100, close: 10 }),
+      // 新股：强制剔除（reason 命中「无价格涨跌幅限制」）
+      L('600002', '新股', { net: 5000, close: 10, reason: '无价格涨跌幅限制的证券' }),
     ],
     detail: {
       '600000': { b: [seat('机构专用', 3000), seat('某营业部1', 2800), seat('某营业部2', 2600), seat('某营业部3', 2400), seat('某营业部4', 2200), seat('某营业部5', 2000)], s: [seat('沪股通专用', 100)] },
-      '600001': { b: [seat('某营业部', 500)], s: [seat('机构专用', 100)] },
+      '600001': { b: [seat('机构专用', 2000), seat('某营业部1', 1000), seat('某营业部2', 900), seat('某营业部3', 100)], s: [seat('沪股通专用', 1500), seat('某营业部', 2600)] },
     },
   });
   const acct = emptyAccount(1000000, '2026-09-29');
-  const r = batchSubmit(acct, [{ code: '600000', pct: 0.05 }, { code: '600001', pct: 0.05 }], day);
+  const r = batchSubmit(acct, [
+    { code: '600000', pct: 0.05 }, { code: '600001', pct: 0.05 }, { code: '600002', pct: 0.05 },
+  ], day);
   assert.equal(r.summary.submitted, 1);
-  assert.equal(r.summary.blockedByLhb, 1);
+  // 净流出票（降级）+ 新股（强制剔除）都进不了主池 → 两笔都被龙虎前置拦下
+  assert.equal(r.summary.blockedByLhb, 2);
   assert.equal(r.next.pending.length, 1);
   assert.equal(r.next.pending[0].code, '600000');
-  // 差票不应有任何委托记录
+  // 降级票同样**不生成任何委托**（降级 = 禁止自动下单，不是"放行但排序靠后"）
   assert.ok(!r.next.orders.some((o) => o.code === '600001' && o.status === 'pending'));
+  assert.ok(!r.next.orders.some((o) => o.code === '600002' && o.status === 'pending'));
+  // 但拦截原因必须能分辨：降级票给"备选观察池"，新股给"龙虎榜前置过滤未通过"
+  const r1 = r.results.find((x) => x.code === '600001');
+  const r2 = r.results.find((x) => x.code === '600002');
+  assert.match(r1.reason, /备选观察池/);
+  assert.match(r1.detail, /谨慎开仓/, '降级票的明细里必须带告警标签文案');
+  assert.match(r2.reason, /龙虎榜前置过滤未通过/);
 });
 
 test('批量买入：批次内共享「当日累计」累加器，防止分笔绕过 20% 上限', () => {

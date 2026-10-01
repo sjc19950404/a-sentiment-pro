@@ -68,6 +68,14 @@ export const PREDICT_VERSION = 'predict-v2';
 
 const r2less = null; // 占位：本文件不需要 r2，保留结构清晰
 
+// ⚠ 本文件**不再是零依赖**：降级规则（龙虎榜净买入 ≤ 0）要求「上涨概率扣固定分」，
+//    而 10/8 这两个数与标签文案的唯一出处是 src/lhbfilter.js。
+//    取舍：宁可让 predict 失去「零依赖」这个漂亮的属性，也不能把 8 手抄进来——
+//    手抄等于在预测链路里重建第二套口径，改一处漏一处（口径守卫会拦）。
+//    依赖方向是单向的：predict → lhbfilter（lhbfilter 不引 predict），不成环。
+//    放在这里而不是文件顶部 import 区，是为了紧邻使用点、让「为什么有依赖」一眼可见。
+import { isNetOutflow, LHB_NET_OUTFLOW_PENALTY, FLAG_LHB } from './lhbfilter.js';
+
 /**
  * 「有真实数值」判据。**不能用 Number.isFinite(+v)**——`+null === 0`、`+'' === 0`、
  * `+false === 0`，会把「没有数据」当成「数值 0」，从而让「换手缺失」被判成「换手 0%」
@@ -263,12 +271,31 @@ export function predictUpProb(c, ctx = {}) {
   // 这种不可能的数字（样本里最乐观的分组也只有 72.2%）。
   const rawAdj = hits.reduce((a, f) => a + f.adj, 0);
   const adj = Math.min(rawAdj, 18);
-  const score = Math.max(0, Math.min(95, Math.round((BASELINE_UP + adj) * 10) / 10));
+  const base = Math.max(0, Math.min(95, Math.round((BASELINE_UP + adj) * 10) / 10));
+
+  // ── 降级规则：龙虎榜净买入 ≤ 0 → 上涨概率扣固定分（不剔除，只降优先级）──
+  // 顺序很重要：先算「基准 + 因子」得到 base，再扣固定分。
+  // 若把扣分并进 adj 一起饱和，扣分会与因子的 +18 上限互相抵消——净流出票只要
+  // 命中几个强因子就「扣不动」了，规则形同虚设。扣分必须是**独立的一刀**。
+  const outflow = isNetOutflow(c1.netWan);
+  const penalty = outflow.hit ? LHB_NET_OUTFLOW_PENALTY.PROB : 0;
+  const score = Math.max(0, Math.round((base - penalty) * 10) / 10);
 
   // 样本量取所有命中因子里最小的——木桶原理：最弱的那个证据决定整体可信度
   const sample = hits.length ? Math.min(...hits.map((f) => f.n)) : BASELINE_N;
 
-  return { score, band: probBand(score), factors: hits, sample, baseline: BASELINE_UP };
+  return {
+    score, band: probBand(score), factors: hits, sample, baseline: BASELINE_UP,
+    // 扣分明细：UI 要能展示「扣前是多少」，否则被扣过的分会看起来像模型的原始判断
+    rawScore: base,
+    penalty,
+    netOutflow: outflow.hit,
+    outflowKind: outflow.hit ? outflow.kind : null,
+    penaltyNote: outflow.hit
+      ? `龙虎榜净买入 ≤ 0（${outflow.kind === 'zero' ? '净买为 0' : outflow.kind === 'null' ? '无净买记录' : '净买为负'}）`
+        + ` → 上涨概率扣 ${penalty} 个百分点（${base} → ${score}）；${FLAG_LHB.NET_OUTFLOW}`
+      : null,
+  };
 }
 
 // ────────────────────────── 三、预期收益与止损位 ──────────────────────────

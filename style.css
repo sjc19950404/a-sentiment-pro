@@ -594,6 +594,24 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .pk-prob.pb-low { background: var(--line); color: var(--muted); }
 .pk-prob.pb-poor { background: rgba(210, 153, 34, .16); color: var(--warn); }
 
+/* 降级标签（龙虎榜当日净买 ≤ 0）：文案由 src/lhbfilter.js::FLAG_LHB 提供，样式只管外观。
+   刻意用警示色而非"危险色"——规则是「谨慎开仓」，不是「禁止关注」；
+   用红/绿都会被误读成涨跌信号，这里的语义是"需要人工复核"。 */
+.pk-outflow { font-size: 11px; font-weight: 700; padding: 0 5px; border-radius: 4px;
+  background: rgba(210, 153, 34, .18); color: var(--warn);
+  border: 1px solid rgba(210, 153, 34, .45); white-space: nowrap; }
+
+/* 复核提示条（下单区）：命中降级规则时才显示。
+   默认态（未复核）用左色条强调"要先看这里"，已复核态转成低调的确认样式。 */
+.po-gate { margin: 8px 0; padding: 9px 11px; border-radius: 6px; font-size: 12px; line-height: 1.6;
+  background: rgba(210, 153, 34, .10); border-left: 3px solid var(--warn); }
+.po-gate.ok { background: var(--line); border-left-color: var(--muted); }
+.po-gate-h { font-weight: 700; color: var(--warn); margin-bottom: 3px; }
+.po-gate.ok .po-gate-h { color: var(--muted); }
+.po-gate-b { color: var(--fg); }
+.po-gate-a { margin-top: 7px; }
+.po-gate-btn { background: var(--warn); color: #fff; border: none; font-weight: 700; }
+
 /* 连板标签：置顶组的核心标识，必须比上涨概率徽章更醒目（用户一眼要能分出哪些是连板票）。
    用实心红底+白字做区分——同为红色系（涨红约定），但「实心 vs 淡底」能立刻分开两类标签；
    刻意不给它加绿色，也不会与上涨概率徽章混淆。 */

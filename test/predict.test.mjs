@@ -12,6 +12,8 @@ import {
   STREAK_BASELINE, STREAK_BASELINE_N, STREAK_BANDS, STREAK_TABLE, STREAK_TOP_MIN,
   streakBand, streakBandText, turnoverBandOf, limitUpProb, isStreakTop, streakTagText,
 } from '../src/predict.js';
+// 龙虎净流出降级的扣分值：与 predict 引擎共用同一份常量（不手抄数字）。
+import { LHB_NET_OUTFLOW_PENALTY, FLAG_LHB } from '../src/lhbfilter.js';
 
 // 构造候选。字段名与 picks.js buildCandidates 的输出严格一致，
 // 避免测试因字段拼错而「恰好通过」——那会让引擎上线后取不到值却无人发现。
@@ -199,11 +201,60 @@ test('概率：每个因子的 adj 与 note 一致（note 里写的上涨占比 
 });
 
 test('概率：畸形输入返回基准分而非 NaN', () => {
+  // 注意：`{}`（无 netWan 字段）现在会被判为"无净买记录"→ 触发龙虎净流出降级扣分，
+  // 因而**低于基准**。这是刻意行为，不是回归：null 净买 = 没有资金进场证据，
+  // 与净流出同档处理（判据唯一出处 src/lhbfilter.js::isNetOutflow）。
+  // 本用例只守两件事：① 分数必须是有限数（不 NaN）；② 扣分必须是那个固定值、且算得出来。
   for (const bad of [null, undefined, {}, { streak: 'x' }, { turnoverPct: {} }]) {
     const r = predictUpProb(bad, {});
     assert.ok(Number.isFinite(r.score), `${JSON.stringify(bad)} → ${r.score}`);
-    assert.ok(r.score >= BASELINE_UP, '畸形输入不应低于基准');
+    assert.equal(r.netOutflow, true, `${JSON.stringify(bad)} 无净买记录应判为净流出`);
+    assert.equal(r.penalty, LHB_NET_OUTFLOW_PENALTY.PROB);
+    assert.equal(r.rawScore, BASELINE_UP, '畸形输入不该命中任何加/减因子，基准分应保持不变');
+    assert.equal(r.score, BASELINE_UP - LHB_NET_OUTFLOW_PENALTY.PROB);
   }
+  // 有正向净买、不命中任何加分的畸形输入 → 必须**不低于**基准（确保扣分不误伤）
+  const ok = predictUpProb({ netWan: 5000, streak: 'x' }, {});
+  assert.ok(ok.score >= BASELINE_UP, `净买为正不应被扣分：${ok.score}`);
+  assert.equal(ok.penalty, 0);
+});
+
+// ────────────────────── 龙虎净买入 ≤ 0：扣分降权（不剔除） ──────────────────────
+
+test('涨概率：龙虎净买入 ≤ 0 → 扣固定分值，且**不剔除**（用户裁定：降优先级而非禁委托）', () => {
+  // 用两只净买额都**够不到「净买 ≥2 亿」加分门槛**的票，让「基准 + 命中因子」完全一致，
+  // 从而把差额干净地隔离到「净流出扣分」这一项上。
+  // （若一只 30000、一只 −30000，前者会额外吃到 big_fund +9.5pt，
+  //  差额里就混进了因子差异，断言会变成"测两件事"——那是脆弱的测试。）
+  const good = predictUpProb(cand({ netWan: 5000 }), {});
+  const bad = predictUpProb(cand({ netWan: -5000 }), {});
+  assert.equal(good.penalty, 0);
+  assert.equal(bad.penalty, LHB_NET_OUTFLOW_PENALTY.PROB);
+  assert.equal(bad.netOutflow, true);
+  // 基准分（基准 + 命中因子）必须完全一致——扣分只动最终分，不改因子统计量
+  assert.equal(bad.rawScore, good.rawScore);
+  assert.equal(bad.score, Math.round((good.score - LHB_NET_OUTFLOW_PENALTY.PROB) * 10) / 10);
+  // 关键：不得被剔除（还在候选里），否则等于"直接禁止委托"
+  assert.equal(screenCandidate(cand({ netWan: -5000 })).rejected, false);
+  // 扣分说明必须点明「这是规则扣分、不是实测因子」——否则用户会以为 8pt 也是回测出来的。
+  // 措辞以「龙虎榜净买入 ≤ 0」开头，明确它是**规则命中**而非统计因子。
+  assert.match(bad.penaltyNote, /龙虎榜净买入 ≤ 0/);
+  assert.match(bad.penaltyNote, /扣 8 个百分点/);
+  assert.match(bad.penaltyNote, /59\.3 → 51\.3|→ \d/);   // 必须展示「扣前 → 扣后」
+  assert.ok(bad.penaltyNote.includes(FLAG_LHB.NET_OUTFLOW), `扣分说明缺告警标签：${bad.penaltyNote}`);
+  // 标签不得被误加到正向净买的票上
+  assert.equal(good.penaltyNote, null);
+});
+
+test('涨概率：扣分不得把分数压成负数（0 分下限）', () => {
+  // 基准 55.3 − 8 = 47.3；构造一个扣分后仍 >0 的情形，再验证极端输入不出现负分
+  const r = predictUpProb({ netWan: -1, streak: 1, turnoverPct: 30 }, {});
+  assert.ok(r.score >= 0, `分数不得为负：${r.score}`);
+});
+
+test('涨概率：净买为 0 与为负同样降级（规则原文「≤ 0」）', () => {
+  assert.equal(predictUpProb(cand({ netWan: 0 }), {}).netOutflow, true);
+  assert.equal(predictUpProb(cand({ netWan: 1 }), {}).netOutflow, false);
 });
 
 // ────────────────────── 四、预期收益（两种口径必须都给出） ──────────────────────
