@@ -1,5 +1,5 @@
 // 管道：抓取(或离线回放) -> 题材去噪 -> 情绪 -> 校验 -> 写出 archive.json
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync } from 'fs';
 import { fileURLToPath, pathToFileURL } from 'url';
 import path from 'path';
 import config from './config.js';
@@ -10,6 +10,9 @@ import { fetchLive, recalcRanks, LhbNotPublishedError, applyLhb, fetchLhb, fetch
 import { caliberFromDay, dailyRowsOf } from './lhb.js';
 import { todayBeijing, isTradingDay } from './util.js';
 import { applyFreshnessMeta, applyPhaseMeta, freshnessKey } from './freshness.js';
+import { buildIndex, buildShards, shardName, buildRecent, buildSignals, RECENT_DAYS, RECENT_FILE, SIGNALS_FILE } from './archive_split.js';
+import { buildReasonCodes, encodeArchive, decodeArchive } from './lhb_codec.js';
+import { marketAlerts } from './alerts.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -239,7 +242,10 @@ export async function runLive() {
   let history = [];
   const dataPath = path.join(DATA_DIR, 'archive.json');
   if (existsSync(dataPath)) {
-    try { history = JSON.parse(readFileSync(dataPath, 'utf8')).all_days || []; } catch { history = []; }
+    // 读回来必须 decode：主档是码表压缩态，reasons 被换成了下标数组。
+    // 直接喂给 caliberFromDay 会让 isRangeBoard 拿不到中文原文而静默失配——
+    // 表现就是「区间榜被当成当日榜」，区间累计值混进日度因子。
+    try { history = decodeArchive(JSON.parse(readFileSync(dataPath, 'utf8'))).all_days || []; } catch { history = []; }
   }
   if (!history.length) {
     history = runOffline(path.join(ROOT, 'snapshot.html')).all_days || [];
@@ -310,8 +316,62 @@ export function writeArchive(archive, filePath) {
   if (!ok) {
     throw new Error('校验失败: ' + errors.join('; '));
   }
-  writeFileSync(p, JSON.stringify(archive, null, 2), 'utf8');
-  return { path: p, ok: true };
+  // 码表压缩：只在**落盘时**生效（内存里始终是中文原文，口径正则才不会失配）。
+  // 主档与切片都写压缩态——它们都是读盘产物，读回来统一走 decodeArchive 还原。
+  const codes = buildReasonCodes(archive.all_days);
+  const packed = encodeArchive(archive, codes);
+  // 紧凑写盘：`rc` 是数字下标数组，加 2 空格缩进会被 JSON 展开成一行一个数字，
+  // 缩进开销足以吃掉码表 92% 的收益（实测 4.99MB → 9.44MB，比压缩前还大）。
+  writeFileSync(p, JSON.stringify(packed), 'utf8');
+  // 切片与主档**同源生成**：每次写主档都重建切片，杜绝"两个文件各自演化"。
+  // 只在写默认主档时生成——--out 到别处（测试/临时）不该污染 data/ 下的切片。
+  let shards = null;
+  if (!filePath) {
+    try {
+      shards = writeShards(packed);
+    } catch (e) {
+      // 切片失败不得让主档写入回滚（主档是权威源，切片是派生视图）
+      console.error('[split] 切片生成失败（主档已写入，前端将回退全量档）:', e.message);
+    }
+  }
+  return { path: p, ok: true, shards, reasonCodes: codes.length };
+}
+
+// 生成「索引 + 按年分片 + 近 N 日滚动窗」。与 scripts/split_archive.mjs 共用
+// src/archive_split.js，保证两条路径产出的切片结构完全一致（不存在两套拆法）。
+export function writeShards(archive, dir = DATA_DIR) {
+  const index = buildIndex(archive);
+  const shards = buildShards(archive);
+  const years = Object.keys(shards).sort();
+  writeFileSync(path.join(dir, 'archive-index.json'), JSON.stringify(index), 'utf8');
+  for (const y of years) {
+    writeFileSync(path.join(dir, shardName(y)), JSON.stringify(shards[y]), 'utf8');
+  }
+  // 滚动窗：走势图/抽屉只需最近 30 个交易日，不该为它拉整年分片（2026 年分片仍 >4MB）
+  const recent = buildRecent(archive, RECENT_DAYS);
+  writeFileSync(path.join(dir, RECENT_FILE), JSON.stringify(recent), 'utf8');
+  // 最轻档：只含最新日 + 动量 + 大盘告警（~11KB）。给"不跑前端只看今日结论"的读者。
+  // marketAlerts 是**纯函数**，注入进来而不是让本模块 import —— 保持 archive_split 无业务依赖。
+  const signals = buildSignals(archive, { assumedTotal: 100000, marketAlertsFn: marketAlerts });
+  if (signals) writeFileSync(path.join(dir, SIGNALS_FILE), JSON.stringify(signals), 'utf8');
+  // 清理被淘汰的年份分片（年份集合会变），避免前端拉到过期数据
+  try {
+    const keep = new Set([...years.map((y) => shardName(y)), RECENT_FILE, SIGNALS_FILE]);
+    for (const f of readdirSync(dir)) {
+      if (/^archive-\d{4}\.json$/.test(f) && !keep.has(f)) {
+        unlinkSync(path.join(dir, f));
+        console.log('[split] 删除过期分片', f);
+      }
+    }
+  } catch { /* 目录读取失败不致命 */ }
+  return {
+    index: 'archive-index.json',
+    recent: RECENT_FILE,
+    signals: SIGNALS_FILE,
+    years,
+    totalDays: (archive.all_days || []).length,
+    recentDays: recent.days.length + (recent.latest ? 1 : 0),
+  };
 }
 
 // 主入口
@@ -385,14 +445,22 @@ function applyFreshness(archive, now, attempt) {
 function refreshMetaOnly(dataPath, now, attempt) {
   if (!existsSync(dataPath)) return null;
   let a;
-  try { a = JSON.parse(readFileSync(dataPath, 'utf8')); } catch { return null; }
+  try { a = decodeArchive(JSON.parse(readFileSync(dataPath, 'utf8'))); } catch { return null; }
   const before = freshnessKey(a.meta);
   const f = applyFreshness(a, now, attempt).meta.freshness;
   if (freshnessKey(a.meta) === before) {
     console.log('[freshness] meta 未变化 |', f.state);
     return a;
   }
-  writeFileSync(dataPath, JSON.stringify(a, null, 2), 'utf8');
+  // 刷新 meta 也必须走压缩写盘，否则会把刚压好的主档「解压」回中文原文（体积翻数倍）。
+  // 这里重新编码是幂等的：entries 已带 rc 时 encodeDay 原样返回。
+  writeFileSync(dataPath, JSON.stringify(encodeArchive(a, buildReasonCodes(a.all_days))), 'utf8');
+  // 切片必须跟着刷新：首屏读的是 archive-index.json 的 meta（相位/新鲜度），
+  // 只更新主档会让页面顶部的相位标签与 STALE 标记停在旧值上——而这两者恰恰是
+  // 「数据是否可信」的唯一提示，过期比没有更危险。
+  if (path.basename(dataPath) === 'archive.json') {
+    try { writeShards(a); } catch (e) { console.error('[split] 切片刷新失败:', e.message); }
+  }
   console.log('[freshness] meta 已刷新 |', f.state, '| stale =', a.meta.stale,
     a.meta.staleReason ? '| ' + a.meta.staleReason : '');
   return a;
@@ -409,7 +477,7 @@ function fallbackArchive(dataPath, reason) {
     return a;
   };
   if (existsSync(dataPath)) {
-    return mark(JSON.parse(readFileSync(dataPath, 'utf8')));
+    return mark(decodeArchive(JSON.parse(readFileSync(dataPath, 'utf8'))));
   }
   return mark(runOffline(process.env.SNAPSHOT || path.join(ROOT, 'snapshot.html')));
 }

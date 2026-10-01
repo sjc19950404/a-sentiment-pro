@@ -13,6 +13,7 @@
       <span id="tradeDate">--</span>
       <span id="sourceTag" class="tag">--</span>
       <span id="genTime" class="muted"></span>
+      <span id="loadScope" class="scope" hidden></span>
       <button id="refreshBtn" title="重新拉取最新数据">↻ 刷新</button>
       <span id="refreshState" class="muted"></span>
     </div>
@@ -109,6 +110,7 @@
             <button id="hotSortDir" class="mini only-narrow" type="button" aria-label="切换排序方向" title="切换升/降序">▼</button>
             <span id="hotCount" class="muted"></span>
           </div>
+          <div id="hotLazyNote" class="hot-lazy" hidden></div>
           <div class="table-wrap tall">
             <table id="hotTable">
               <thead><tr id="hotHead"></tr></thead>

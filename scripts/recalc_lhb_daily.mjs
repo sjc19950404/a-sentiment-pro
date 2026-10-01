@@ -20,13 +20,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { caliberFromDay, isRangeBoard, mergeDuplicateRecords, duplicateKeys } from '../src/lhb.js';
 import { recalcAll, enrich } from '../src/pipeline.js';
+import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const P = path.join(ROOT, 'data', 'archive.json');
 const DRY = process.argv.includes('--dry');
 const nf = (v) => (v == null ? '—' : Number(v).toFixed(2));
 
-const a = JSON.parse(readFileSync(P, 'utf8'));
+const a = decodeArchive(JSON.parse(readFileSync(P, 'utf8')));
 const days = a.all_days || [];
 // 幂等判据：重算前后数据完全一致就不写盘（否则每次运行都追加一条 meta.note，产生噪音提交）
 const signature = () => JSON.stringify({ d: a.all_days, m: a.signals?.momentum, n: a.meta?.note || '' });
@@ -130,5 +131,6 @@ if (signature() === beforeSig) {
   console.log('存档已是最新口径（无实际变化），未写盘。');
   process.exit(0);
 }
-writeFileSync(P, JSON.stringify(a, null, 2), 'utf8');
+// 必须重编码写回（直接 stringify 会把压缩档解压成 9.2MB 且丢掉 rc 的可读性）
+writeArchiveSafely(P, a, { writeFileSync });
 console.log(`已写回 ${path.relative(ROOT, P)}`);

@@ -17,6 +17,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { boardOf, isStName, limitPctOf, PAPER_VERSION } from '../src/paper.js';
+import { decodeArchive } from '../src/lhb_codec.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -25,7 +26,7 @@ const OUT = path.join(ROOT, 'data', 'paper_universe.json');
 
 const ACTIVE_DAYS = 30; // 最近 N 个交易日内出现过 → 活跃
 
-const arc = JSON.parse(readFileSync(ARCHIVE, 'utf8'));
+const arc = decodeArchive(JSON.parse(readFileSync(ARCHIVE, 'utf8')));
 const days = arc.all_days || [];
 if (!days.length) {
   console.error('archive.json 无 all_days，无法构建标的池');

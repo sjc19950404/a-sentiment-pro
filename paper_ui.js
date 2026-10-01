@@ -311,20 +311,76 @@ function syncPositionsLive() {
 
 // ────────────────────────── 数据装载 ──────────────────────────
 
+/**
+ * 还原惰性字段（`_sub` → 原位置）。
+ *
+ * 引擎侧把"席位明细"和"龙虎原始榜"从每日顶层提到了 `_sub` 以省首屏流量
+ * （见 src/lhb_codec.js）。模拟器唯一需要的是 `lhb`：quotesFromDay() 从
+ * `day.lhb` 取收盘价，但它是**未提子**的原始榜——最新的 latest 带 `_sub`，
+ * 而 29 个曲线点字段已被裁到最小集（没有 lhb），故这里的还原是"有则归位"。
+ *
+ * 缺少 lhb 的曲线点不影响结算：quotesFromDay 对空数组返回 {}，
+ * 那些日子本就没有该股行情，与"字段被省掉了"是两回事——但为安全起见，
+ * 我们只对**带 _sub 的那一天**（即 latest）做还原。
+ */
+function liftSeats(day) {
+  if (!day || !day._sub) return day;
+  const { _sub, ...rest } = day;
+  const out = { ...rest };
+  if (_sub.lhb != null) out.lhb = _sub.lhb;
+  if (_sub.seats != null) out.summary = { ...(rest.summary || {}), seats: _sub.seats };
+  return out;
+}
+
+// ── 滚动窗的**跨模块单次拉取** ──────────────────────────────────────────────
+// 为什么必须共享：`app.js`（主页面，index.html 里先求值的普通 script）与
+// `paper_ui.js`（同为该文档的 type=module，**晚于 app.js 求值**）在同一次首屏
+// 各拉一次 `archive-recent.json`，真浏览器网络中实测就是**两次 204KB 请求**
+// （首屏 1056KB，其中一份纯属重复）。分层加载的首屏成本本来只有 200KB 级，
+// 多拉一次直接吃掉一半收益。
+// 故：入口由**先求值的 app.js** 建立并挂到 window，本文件复用同一 promise。
+// 若因加载顺序异常没挂上，则本地兜底（宁可多拉一次，也不能拉不到）。
+function loadRecentArchive() {
+  if (typeof window !== 'undefined' && typeof window.__loadRecentArchive === 'function') {
+    return window.__loadRecentArchive();
+  }
+  if (typeof window !== 'undefined') {
+    if (!window.__recentPromise) {
+      window.__recentPromise = fetch('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : Promise.reject(new Error('HTTP ' + res.status))))
+        .catch((e) => { window.__recentPromise = null; throw e; });
+    }
+    return window.__recentPromise;
+  }
+  return fetch('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
+    .then((res) => (res.ok ? res.json() : Promise.reject(new Error('HTTP ' + res.status))));
+}
+
+/** 滚动窗 → 日期升序的逐日序列（含最新日明细，quotesFromDay 只认 latest 的 hot/lhb_aggr）。 */
+function recentDays(arc) {
+  return (arc && arc.kind === 'archive-recent'
+    ? [...(arc.days || []), ...(arc.latest ? [arc.latest] : [])]
+    : ((arc && arc.all_days) || []))
+    .map(liftSeats)
+    .sort((a, b) => String(a.trade_date).localeCompare(String(b.trade_date)));
+}
+
 async function boot() {
   try {
-    const [uniRes, arcRes] = await Promise.all([
+    // 分层加载：标的池 + 滚动窗（近 30 日）。
+    // 模拟器只需要"最近几个交易日的收盘价"来补结算（autoCatchUp / settleNow），
+    // 从不需要 241 天前的价格——故拉滚动窗即可，不再拉 5.1MB 完整档。
+    // 结算窗口由最近一次结算日决定，正常使用下至多落后数个交易日，30 天有充裕余量。
+    const [uniRes, arc] = await Promise.all([
       fetch('./data/paper_universe.json?_=' + Date.now(), { cache: 'no-store' }),
-      fetch('./data/archive.json?_=' + Date.now(), { cache: 'no-store' }),
+      loadRecentArchive(),
     ]);
     if (!uniRes.ok) throw new Error('标的池 HTTP ' + uniRes.status);
-    if (!arcRes.ok) throw new Error('存档 HTTP ' + arcRes.status);
     const uni = await uniRes.json();
-    const arc = await arcRes.json();
-
     UNI = uni.symbols || {};
     UNI_META = uni.meta || {};
-    const days = arc.all_days || [];
+    // 滚动窗是分层结构：曲线点 + 最新日。模拟器要的是"逐日收盘价"，故拼成日期升序序列。
+    const days = recentDays(arc);
     ARC_DAYS = days;
     const last = days[days.length - 1] || {};
     LAST_DATE = last.trade_date || null;
@@ -2481,12 +2537,20 @@ function settleNow() {
       msg(`结算完成（${r.date} 实时价）：成交 ${r.filled} 笔、失效 ${r.expired} 笔`, 'ok');
       return;
     }
-    fetch('./data/archive.json?_=' + Date.now(), { cache: 'no-store' })
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('HTTP ' + res.status))))
+    // 回退档同样走滚动窗而非完整档：补结算只可能落后几个交易日。
+    // 若账户确实落后超过滚动窗（极端情况：长期未打开），会结算到窗口起点为止——
+    // 此时用**日期早于窗口起点**这个事实明确告知用户，而不是静默少算几天。
+    // 走 loadRecentArchive 复用同一 promise：boot 已拉过，这里不再产生第二次网络请求。
+    loadRecentArchive()
       .then((arc) => {
-        const days = arc.all_days || [];
+        const days = recentDays(arc);
         const todo = days.filter((d) => d.trade_date > (ACCT.lastSettle || ''));
         if (!todo.length) { msg(r.reason || '已是最新，无需结算', 'ok'); return; }
+        const from = days[0]?.trade_date;
+        if (ACCT.lastSettle && from && from > ACCT.lastSettle) {
+          msg(`账户最后结算日 ${ACCT.lastSettle} 早于本地滚动窗起点 ${from}，仅结算窗口内交易日；`
+            + `如需补齐更早日期，请重跑 node scripts/split_archive.mjs 后刷新`, 'err');
+        }
         let cur = ACCT, filled = 0, expired = 0;
         for (const d of todo) { const rr = settleDay(cur, d.trade_date, quotesFromDay(d)); cur = rr.account; filled += rr.fills.length; expired += rr.expired.length; }
         ACCT = cur;

@@ -12,12 +12,14 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const P = path.join(ROOT, 'data', 'archive.json');
 const DRY = process.argv.includes('--dry');
 
-const a = JSON.parse(readFileSync(P, 'utf8'));
+// 存档是压缩态（reason→rc 码表 + lhb 提子），读进来必须先解码成明文再改。
+const a = decodeArchive(JSON.parse(readFileSync(P, 'utf8')));
 const fixed = [];
 
 for (const day of a.all_days || []) {
@@ -55,5 +57,6 @@ a.meta = a.meta || {};
 const stamp = new Date().toISOString().slice(0, 10);
 a.meta.note = [a.meta.note, `强势股行情空值已按同日龙虎榜明细回填（${fixed.length} 条，${stamp}）`]
   .filter(Boolean).join('；');
-writeFileSync(P, JSON.stringify(a, null, 2), 'utf8');
+// 必须重编码写回（直接 stringify 会把压缩档解压成 9.2MB，且丢掉 rc 的可读性）
+writeArchiveSafely(P, a, { writeFileSync });
 console.log(`已写回 ${path.relative(ROOT, P)}`);

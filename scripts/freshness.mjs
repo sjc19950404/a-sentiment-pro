@@ -11,6 +11,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import config from '../src/config.js';
+import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
 import { assessFreshness, applyFreshnessMeta, applyPhaseMeta, marketPhase, PHASE_NOTE,
   freshnessKey, bjDate, bjTime, staleReasonText } from '../src/freshness.js';
 
@@ -28,7 +29,7 @@ if (!existsSync(P)) {
   console.error('[freshness] 未找到存档:', P);
   process.exit(2);
 }
-const a = JSON.parse(readFileSync(P, 'utf8'));
+const a = decodeArchive(JSON.parse(readFileSync(P, 'utf8')));
 const meta = a.meta || {};
 const tradeDate = meta.tradeDate
   || a.signals?.tradeDate
@@ -76,7 +77,8 @@ if (WRITE) {
   if (freshnessKey(meta) === before) {
     console.log('[freshness] 判定字段无实质变化，未写入');
   } else {
-    writeFileSync(P, JSON.stringify(a, null, 2), 'utf8');
+    // 必须重编码写回（直接 stringify 会把压缩档解压成 9.2MB 且丢掉 rc 的可读性）
+    writeArchiveSafely(P, a, { writeFileSync });
     console.log('[freshness] 已写回判定字段 →', nf.state, '| phase =', meta.phase, '| stale =', nf.stale,
       staleReasonText(nf) ? '| ' + staleReasonText(nf) : '');
   }

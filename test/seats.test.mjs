@@ -190,7 +190,11 @@ test('seats: 真实 archive 里旧格式天数能被安全读取（不崩、卖�
   const { readFileSync, existsSync } = await import('node:fs');
   const p = new URL('../data/archive.json', import.meta.url);
   if (!existsSync(p)) return; // CI 无存档时跳过
-  const arc = JSON.parse(readFileSync(p, 'utf8'));
+  // ⚠ 主档是**序列化态**（reason 已码表压缩、seats/lhb 已提到 `_sub`）。
+  //   直接读会拿到 `summary.seats === null` 的占位，本测试就会误报"存档里没有席位明细"。
+  //   凡读主档处一律先 decodeArchive —— 这是全局纪律，不是本测试的局部技巧。
+  const { decodeArchive } = await import('../src/lhb_codec.js');
+  const arc = decodeArchive(JSON.parse(readFileSync(p, 'utf8')));
   const days = arc.all_days || [];
   let v1 = 0, v2 = 0, checked = 0;
   for (const d of days) {

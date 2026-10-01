@@ -28,6 +28,17 @@ body { margin: 0; background: var(--bg); color: var(--txt); font-family: -apple-
 .tag { padding: 1px 7px; border-radius: 10px; background: var(--line); font-size: 11px; }
 .tag.live { background: #1b3a2a; color: var(--down); }
 .tag.stale { background: #3a2a1b; color: var(--warn); }
+/* 分层加载范围提示：让"当前页只有最近 N 日明细"永远可见。
+   不显示它的话，报告里的"样本 N 个交易日"会随加载深度静默变化（30 vs 241）。 */
+.scope { font-size: 11px; color: var(--muted); }
+.scope-note { display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.scope-note.ok { border-color: transparent; color: var(--down); }
+.scope-note b { color: var(--fg); }
+.scope-note button.mini { padding: 0 7px; font-size: 11px; border-radius: 8px; }
+.lazy-note { display: inline-block; margin-top: 4px; padding: 2px 8px; font-size: 11px;
+  color: var(--warn); border: 1px dashed var(--line); border-radius: 8px; }
+.hot-lazy { padding: 4px 10px 0; }
 
 /* 分区导航：sticky，长页面定位 */
 .zonenav { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;

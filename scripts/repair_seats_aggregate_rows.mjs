@@ -14,6 +14,7 @@
 // 用法：node scripts/repair_seats_aggregate_rows.mjs [--dry]
 import { readFileSync, writeFileSync } from 'node:fs';
 import { isAggregateSeatRow } from '../src/seats.js';
+import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
 
 const FILE = 'data/archive.json';
 const DRY = process.argv.includes('--dry');
@@ -27,7 +28,8 @@ const classifySeat = (name) => {
   return 'hot';
 };
 
-const a = JSON.parse(readFileSync(FILE, 'utf8'));
+// 存档是压缩态（reason→rc 码表 + lhb 提子），读进来必须先解码成明文再改。
+const a = decodeArchive(JSON.parse(readFileSync(FILE, 'utf8')));
 let touchedDays = 0, removedRows = 0, affectedStocks = 0;
 
 for (const d of a.all_days) {
@@ -97,6 +99,7 @@ console.log('');
 console.log(`整理：${touchedDays} 天受影响，剔除 ${removedRows} 行汇总行，涉及 ${affectedStocks} 只票`);
 if (DRY) console.log('（--dry 未写盘）');
 else {
-  writeFileSync(FILE, JSON.stringify(a, null, 2), 'utf8');
+  // 必须重编码写回（直接 stringify 会把压缩档解压成 9.2MB，且丢掉 rc 的可读性）
+  writeArchiveSafely(FILE, a, { writeFileSync });
   console.log('已写盘', FILE);
 }

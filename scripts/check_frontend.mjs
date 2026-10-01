@@ -8,6 +8,7 @@ import { join, resolve } from 'node:path';
 import { createRequire } from 'node:module';
 // 口径唯一出处：新股判定与净买分离一律走 src/lhb.js，本脚本不自行实现（口径守卫会拦）
 import { newStockSplitOfDay } from '../src/lhb.js';
+import { decodeArchive } from '../src/lhb_codec.js';
 
 const rootArg = process.argv.indexOf('--root');
 const ROOT = resolve(rootArg >= 0 ? process.argv[rootArg + 1] : '.');
@@ -26,9 +27,20 @@ try {
 }
 const { JSDOM, VirtualConsole } = jsdom;
 
+// jsdom 对少数 DOM API 只提供"未实现"桩（throw NotImplemented），典型是
+// `window.focus()` 与 `window.print()`。它们是否被走到，取决于**渲染深度**：
+// 分层加载前页面只跑最近 30 天的分支，从不触发抽屉的焦点归还与打印路径；
+// 加载层级加深后这些路径被真正执行到，于是桩被踩中。
+// 这是**环境能力缺失**，不是应用异常——若一并计入，守卫会随"渲染得更完整"而报错，
+// 那就成了"越认真越失败"的假警报。故单独归类，只做提示、不计失败。
+const NOT_IMPLEMENTED_RE = /Not implemented:\s*Window'?s?\s*(focus|print|scrollTo|alert|confirm)/i;
 const errors = [];
+const notImplemented = [];
 const vc = new VirtualConsole();
-vc.on('jsdomError', (e) => errors.push(`jsdomError: ${e.message}`));
+vc.on('jsdomError', (e) => {
+  if (NOT_IMPLEMENTED_RE.test(e.message || '')) { notImplemented.push(e.message); return; }
+  errors.push(`jsdomError: ${e.message}`);
+});
 vc.on('error', (...a) => errors.push(`console.error: ${a.join(' ')}`));
 
 const dom = new JSDOM(readFileSync(join(ROOT, 'index.html'), 'utf8'), {
@@ -42,8 +54,15 @@ const { window } = dom;
 // 拦截腾讯实时行情：返回一段构造好的行情报文，让「实时价」路径在离线 CI 里也能被断言。
 // 注意：jsdom 里 TextDecoder('gbk') 由 Node 提供（支持 gbk），ASCII 字段解码后不变，
 // 因此构造报文只需保证数字字段位置正确即可。
+//
+// fetchCalls：记录每次请求（剥掉 ?_= 时间戳）。**"拉了几次"是本次分层加载改动的核心
+// 指标，而静态读源码测不出它**（`if (false)` 包住的调用照样能被正则匹配到——
+// 曾用一个静态守卫验证这点，注入死代码后依然"通过"，说明那条守卫是假的）。
+// 故在 fetch 垫片里真实计数，用运行时行为做断言。
+const fetchCalls = [];
 window.fetch = async (url, opts) => {
   const u = String(url);
+  fetchCalls.push(u.replace(/\?_=.*$/, '').replace(/^\.\//, ''));
   if (u.includes('qt.gtimg.cn')) {
     // 注意：端点形如 https://qt.gtimg.cn/q=sh600519（是 /q= 不是 ?q=）
     const q = u.split(/[/?]q=/)[1] || '';
@@ -157,7 +176,18 @@ check('报告刷新：按钮不依赖表单提交（type=button，不会触发�
 // 套引擎阈值，不能再用自算的五模块分当结论——实测过两套分套同一阈值会给出相反结论
 // （83.8 →「过热」 vs 76.8 →「满仓持有」）。
 const bt = JSON.parse(readFileSync(join(ROOT, 'data/backtest.json'), 'utf8'));
-const arcAll = JSON.parse(readFileSync(join(ROOT, 'data/archive.json'), 'utf8'));
+const arcAll = decodeArchive(JSON.parse(readFileSync(join(ROOT, 'data/archive.json'), 'utf8')));
+// ⚠ 分层加载（archive_split.js）后，页面**只加载最近 30 个交易日**的明细，
+//   完整档 241 天仅由脚本/回测读取。故凡"报告里渲染了什么"的断言，其期望值必须从
+//   **页面同款视图**推导 —— 从完整档推导会得出"报告少了 211 天"这类**假失败**
+//   （报告没错，是守卫的期望值用错了源）。
+//   规则：断言"最新一天/元信息" → 用 arcAll（两者一致）；断言"近 N 日序列/报告正文" → 用 arcView。
+const arcView = (() => {
+  const rec = JSON.parse(readFileSync(join(ROOT, 'data/archive-recent.json'), 'utf8'));
+  if (rec.kind !== 'archive-recent') return arcAll;
+  const days = [...(rec.days || []), ...(rec.latest ? [rec.latest] : [])];
+  return { ...arcAll, all_days: days };
+})();
 const lastEmo = (arcAll.all_days || []).slice(-1)[0]?.emotion?.value;
 const th = bt.params?.thresholds || { panic: 24, hi: 44, lo: 65, overheat: 80 };
 const expectTier = lastEmo == null ? null
@@ -328,7 +358,8 @@ check('口径：报告首页「当日龙虎净买」取当日榜，不显示全�
   `emNet=「${txt('emNet')}」`);
 {
   // 近5日净额序列必须与净买率同口径：逐日核对报告里出现的数字就是 lhb_daily_net
-  const last5 = arcAll.all_days.slice(-5).map((d) => d.summary?.lhb_daily_net);
+  // 用 arcView（页面同款 30 日视图）——报告的"近5日"取自它渲染时手里的序列
+  const last5 = arcView.all_days.slice(-5).map((d) => d.summary?.lhb_daily_net);
   const segI = brief.indexOf('近5日当日龙虎净买');
   const seg = segI >= 0 ? brief.slice(segI, segI + 120) : '';
   // 渲染用 (+v).toFixed(1)，正数补 + 号；断言要按同样的格式比对，否则 6.09 会被拿来匹配「6.1」而假失败
@@ -472,7 +503,7 @@ check('研判报告·连板数字取自 zt_lb（不与存档 max_lb/lb2_count �
 
 // 告警口径：stale（或客户端已过预期更新时刻）才允许出现「告警」级别的条；
 // 仅「字段级修补 note / 跳过 / 非交易日」只能是 info，不能把正常等待说成抓取失败。
-const meta = JSON.parse(readFileSync(join(ROOT, 'data/archive.json'), 'utf8')).meta || {};
+const meta = decodeArchive(JSON.parse(readFileSync(join(ROOT, 'data/archive.json'), 'utf8'))).meta || {};
 const warns = window.document.querySelectorAll('#alerts .alert:not(.info)').length;
 const infos = window.document.querySelectorAll('#alerts .alert.info').length;
 const pastDeadline = !!(meta.freshness?.publishDeadline && Date.now() > Date.parse(meta.freshness.publishDeadline));
@@ -484,6 +515,14 @@ if (meta.note) check('告警口径：字段级修补 note 以 info 展示', info
 // ── 布局与交互层断言（UI 改造）──
 // 用真实事件模拟点击/键盘，验证「详情能打开、能下钻、能返回、能关闭」，而不是只看 DOM 有没有元素。
 const clickEl = (el) => { if (el) el.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true })); return !!el; };
+// 分层加载后，个股/席位详情是**异步**的（席位明细为惰性字段，要先按需拉取再渲染）。
+// 点一下立刻断言会看到中间的「正在加载」占位 —— 那是真实行为，不是 bug。
+// 故凡涉及这两类抽屉的守卫一律用本函数：点完等一拍，让 ensureLazy 的 Promise 落定。
+const clickAndSettle = async (el) => {
+  const ok = clickEl(el);
+  await new Promise((r) => setTimeout(r, 60));
+  return ok;
+};
 const keyEl = (key) => window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
 const drawerOpen = () => !!$('drawer') && $('drawer').classList.contains('open');
 const escClose = () => keyEl('Escape');
@@ -506,7 +545,7 @@ check('布局：模拟交易区含批量下单与事件日志两张卡片（V5.2
 // 1) 表格行 → 个股详情
 const firstRow = $('hotTable').querySelector('tbody tr.clickable');
 const firstCode = firstRow?.dataset.code || '';
-clickEl(firstRow);
+await clickAndSettle(firstRow);
 check('交互：点表格行打开详情抽屉', drawerOpen() && txt('dwTitle').includes(firstCode), txt('dwTitle'));
 check('交互：个股详情含行情/龙虎资金/近5日记录段',
   txt('dwBody').includes('行情与状态') && txt('dwBody').includes('近 5 个交易日记录'), txt('dwBody').slice(0, 50));
@@ -533,7 +572,7 @@ if (withTheme) {
   const pickRow = $('hotTable').querySelector('tbody tr.clickable');
   check('前置：按代码搜索恰好命中该股',
     pickRow?.dataset.code === withTheme.code, pickRow?.dataset.code || '无匹配行');
-  clickEl(pickRow);
+  await clickAndSettle(pickRow);
   themeChip = $('dwBody').querySelector('[data-act="theme"]');
   sinp.value = '';
   sinp.dispatchEvent(new window.Event('input', { bubbles: true }));
@@ -578,12 +617,27 @@ check('交互：点滚动分段行看训练窗与权重',
 escClose();
 
 // 5.5) 净值曲线数据点（与趋势图一致：图上的点也可点开当日盘面）
+// 分层加载后，净值曲线跨 33 天而首屏只持最近 30 天 → 第一个点必然落在窗口外。
+// 此时应当**仍然是"盘面"抽屉**，只是正文说明"该日未载入"并给出补全入口——
+// 断言这一点，而不是断言必然命中（否则守卫会逼着首屏加载全档，与切片目标相反）。
 check('布局：净值曲线已渲染可点数据点',
   $('btNavSvg').querySelectorAll('circle[data-act="btpt"]').length > 0,
   `${$('btNavSvg').querySelectorAll('circle').length} 点`);
 clickEl($('btNavSvg').querySelector('circle[data-act="btpt"]'));
-check('交互：点净值曲线数据点看当日盘面',
-  drawerOpen() && txt('dwTitle').includes('盘面') && txt('dwSub').includes('净值曲线数据点'), txt('dwTitle'));
+{
+  const hit = txt('dwBody').includes('指数表现');
+  const layered = txt('dwBody').includes('不在当前已加载') && txt('dwBody').includes('载入完整档');
+  check('交互：点净值曲线数据点看当日盘面',
+    drawerOpen() && txt('dwTitle').includes('盘面') && txt('dwSub').includes('净值曲线数据点')
+      && (hit || layered),
+    `${txt('dwTitle')}｜${hit ? '命中当日明细' : '落在窗口外·已给出补全入口'}`);
+  // 落在窗口外时必须真的能给出一键补全，否则用户看到空态就断头了
+  if (layered) {
+    check('交互：窗口外的数据点给出「载入完整档」入口',
+      !!$('dwBody').querySelector('[data-act="loadfull"]'),
+      '缺 loadfull 按钮');
+  }
+}
 escClose();
 
 // 6) 趋势图数据点
@@ -2216,14 +2270,15 @@ if (window.ReportAudit && window.ReportExport && typeof window.__renderBriefHtml
   }
 
   // 找一只有席位明细的票，打开它的个股抽屉
-  const arc = JSON.parse(readFileSync(join(ROOT, 'data/archive.json'), 'utf8'));
+  const arc = decodeArchive(JSON.parse(readFileSync(join(ROOT, 'data/archive.json'), 'utf8')));
   const lastDay = (arc.all_days || [])[arc.all_days.length - 1] || {};
   const detMap = lastDay.summary?.seats?.detail || {};
   const anyCode = Object.keys(detMap)[0] || null;
 
   // 点热点表第一行打开个股抽屉（表行本身即 data-act="stock"）
+  // ⚠ 分层加载后个股抽屉是异步的（席位明细惰性），必须等一拍再断言席位行。
   const firstRow = $('hotTable')?.querySelector('tbody tr.clickable');
-  if (firstRow) clickEl(firstRow);
+  if (firstRow) await clickAndSettle(firstRow);
   const drewStock = drawerOpen();
   check('席位：个股抽屉可打开', drewStock || !!anyCode, `code=${anyCode}`);
 
@@ -2371,13 +2426,65 @@ check('样式：降级告警标签有独立样式类（.pk-outflow）', cssTxt.i
   const body = (dom.window.document.querySelector('#briefBody') || {}).textContent || '';
   const m = body.match(/样本\s*(\d+)\s*个交易日/);
   const n = m ? Number(m[1]) : null;
-  check('回填：报告样本交易日数不含回填天（应为完整档天数）',
-    n !== null && n < 241 && n === 33, String(n));
+  // 期望值从**页面同款视图**推导，不写死常量：分层加载后页面持有的是最近 30 日，
+  // 写死 33（已加载天数）会在切片窗口变化时假失败，写死 241（完整档）则永远是错的。
+  const viewFull = arcView.all_days.filter((d) => !(d.emotion && d.emotion._backfill)).length;
+  check('回填：报告样本交易日数不含回填天（＝已加载视图的非回填天数）',
+    n !== null && n === viewFull && n < arcAll.all_days.length,
+    `报告 ${n} · 视图非回填 ${viewFull} · 完整档 ${arcAll.all_days.length}`);
   check('回填：报告未出现「241 个交易日」这类被回填天数污染的说法',
     !/241\s*个交易日/.test(body), '');
 }
 
+// ── 分层加载：跨模块不得重复拉滚动窗 ──────────────────────────────────────
+// 为什么单独守这一条：jsdom 的 fetch 是脚本桩出来的，**不产生真实网络事件**，
+// 所以"拉了几次"在这里测不出来——只能测"两边是否共用同一个入口"。
+// 真浏览器侧的字节账由 scripts/_shot_layered_load.mjs 负责（那里断言首屏无重复请求）。
+// 本条守的是**根因**：共享入口必须存在，且两个消费方都必须走它。
+{
+  const appRaw = readFileSync(join(ROOT, 'app.js'), 'utf8');
+  const paperRaw = readFileSync(join(ROOT, 'paper_ui.js'), 'utf8');
+  // app.js 必须建立共享入口（它在 index.html 里先求值，天然适合当 owner）
+  check('分层：app.js 建立跨模块的滚动窗共享入口（window.__loadRecentArchive）',
+    /window\.__loadRecentArchive\s*=/.test(appRaw), '');
+  // paper_ui.js 必须复用，而不是自己再 fetch 一份
+  check('分层：paper_ui.js 复用 app.js 的共享入口（否则网络上就是两次 204KB）',
+    /window\.__loadRecentArchive\(\)/.test(paperRaw), '');
+  // 裸 fetch 只允许出现在**一个**函数里（即共享入口本身 + 其兜底分支）。
+  // 判据不是"次数少"，而是"没有第二个独立的拉取点"——所以检查的是：
+  // 每次裸 fetch 是否都在同一个 `function loadRecentArchive` 体内。
+  const paperBareIdxs = [...paperRaw.matchAll(/fetch\(\s*'\.\/data\/archive-recent\.json/g)].map((m) => m.index);
+  const loaderStart = paperRaw.indexOf('function loadRecentArchive');
+  const loaderEnd = loaderStart >= 0 ? paperRaw.indexOf('\n}', loaderStart) : -1;
+  const strayFetch = paperBareIdxs.filter((i) => !(loaderStart >= 0 && i > loaderStart && i < loaderEnd));
+  check('分层：滚动窗的裸 fetch 只允许在共享入口函数内（别处出现＝多一个拉取点）',
+    loaderStart >= 0 && strayFetch.length === 0,
+    `入口@${loaderStart} · 越界 fetch ${strayFetch.length} 处`);
+  // 曾经出现过的反模式：两个模块各有一个模块级 promise 槽位
+  check('分层：不得残留只作用于单模块的 recentPromise 槽位（两个槽位＝两次请求）',
+    !/^\s*let\s+recentPromise\s*=/m.test(appRaw) || /window\.__recentPromise/.test(appRaw),
+    '发现模块级 recentPromise');
+  // ⚠ 上面两条都是**静态**的，它们测不出"调用点被 if(false) 包住"这类死代码
+  //   （实测：注入 `if (false) { return window.__loadRecentArchive(); }` 后两者仍全绿）。
+  //   故补**运行时**断言——这才是真正兜住"两个模块各拉一次"的那个 bug 的守卫
+  //   （该 bug 在真浏览器里实测为两次 204KB 请求，见 scripts/_shot_layered_load.mjs）。
+  const rcHits = fetchCalls.filter((u) => u === 'data/archive-recent.json').length;
+  check('分层：滚动窗全页运行时只被拉取 1 次（跨模块共享生效；两次＝白吃 204KB）',
+    rcHits <= 1, `${rcHits} 次`);
+  check('分层：主档 archive.json 全程未被拉取（首屏与按需路径都应走切片）',
+    fetchCalls.filter((u) => u === 'data/archive.json').length === 0,
+    `${fetchCalls.filter((u) => u === 'data/archive.json').length} 次`);
+}
+
 check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' | '));
+
+// jsdom 未实现的 DOM 桩：不判失败，但**必须打印**——否则将来真出现异常时，
+// 读者会以为"一类错误被静默吞掉了"。单独一条提示说明它们为何不算失败。
+if (notImplemented.length) {
+  const uniq = [...new Set(notImplemented.map((m) => String(m).split('\n')[0]))];
+  console.log(`[check_frontend] 提示：jsdom 未实现的 DOM 桩 ${notImplemented.length} 次（环境限制，不计失败）：`);
+  for (const m of uniq.slice(0, 4)) console.log(`  · ${m}`);
+}
 
 dom.window.close();
 

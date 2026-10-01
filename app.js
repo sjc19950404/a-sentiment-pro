@@ -1,4 +1,6 @@
-// 前端：读取 data/archive.json 并渲染（纯 vanilla，无构建步骤）
+// 前端：分层加载 data/archive-index.json（10KB）+ archive-recent.json（124KB）后渲染
+// （纯 vanilla，无构建步骤）。完整档 data/archive.json 仅由脚本/审计/回测读取，前端不拉。
+// 分层规则与切片生成见 src/archive_split.js（唯一出处）；惰性字段见 src/lhb_codec.js。
 const $ = (id) => document.getElementById(id);
 
 // ── 通用工具 ──
@@ -405,6 +407,14 @@ function renderHotTable() {
   }
   const cnt = $('hotCount');
   if (cnt) cnt.textContent = `显示 ${rows.length}/${all.length} 只${q ? '（已筛选）' : ''} · 点行或卡片看详情`;
+
+  // 惰性字段提示：本表若引用了被剥离首屏的字段，且该字段尚未补齐，
+  // 对应列会显示为 null（看起来像"这些票都没有"）。有则提示"未加载"，无则不显示。
+  const lazyBox = $('hotLazyNote');
+  if (lazyBox) {
+    lazyBox.innerHTML = lazyNoticeHTML();
+    lazyBox.hidden = !lazyBox.innerHTML;
+  }
 
   // 窄屏卡片列表：与上表同源同序（CSS 决定何时显示哪一个，无需监听 resize）
   const cardBox = $('hotCards');
@@ -1597,6 +1607,165 @@ function fingerprint(arc) {
     (arc.all_days || []).length, (arc.all_days || []).slice(-1)[0]?.emotion?.value ?? ''].join('|');
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// 档案分层加载（三档按需）
+//
+// ── 为什么必须分层 ──────────────────────────────────────────────────────────
+// archive.json 已 5.1MB（241 天），半年后十几 MB。而首屏真正要的只有**最新一天**。
+// 故引擎侧把档案切成四份（src/archive_split.js 是唯一出处）：
+//   archive-index.json   10.6KB  元信息 + 逐年摘要 + 最新日摘要     ← 首屏必拉
+//   archive-recent.json  124KB   29 个曲线点 + 最新日完整明细        ← 开走势图/表格时拉
+//   archive-YYYY.json    870KB~4.2MB  该年完整数据                  ← 抽屉回看时才拉
+//   archive.json         5.1MB   完整档（脚本/审计/回测用）          ← 前端**不拉**
+//
+// ── 为什么"最新日摘要"不够、还得拉 recent ──────────────────────────────────
+// 首屏的个股明细表 / 题材条 / 研判报告都要**当日明细**（hot/lhb_aggr/themes），
+// 索引里只有标量摘要。故首屏实际上是 index + recent 两级，共约 135KB——
+// 相对原来的 5.1MB 仍是 97% 的削减。
+//
+// ── 为什么走势图不需要年分片 ────────────────────────────────────────────────
+// 走势图只画最近 15 个点，15 日窗口 ⊂ recent 的 29 个曲线点。故年分片**永不**参与首屏。
+//
+// ── 惰性字段（lhb）─────────────────────────────────────────────────────────
+// 只有 `lhb`（原始未去重榜单）被剥离首屏：展示一律用 lhb_aggr，它只对审计有意义。
+// `summary.seats` **不在此列**——研判报告的「席位分项/锁仓统计」首屏就要用，
+// 提走会让那两段静默消失（见 src/lhb_codec.js 的说明）。判定标准是"首屏是否用到"，不是"大不大"。
+// ════════════════════════════════════════════════════════════════════════════
+
+const LAZY_FIELD_LAB = { lhb: '龙虎原始榜' };
+const lazyWanted = new Set();   // 本次会话已按需取过的惰性字段（取过就不再提示）
+// 滚动窗的请求去重槽位挂在 window 上（见下方 loadRecentArchiveShared），
+// 不在此处再开一个模块级变量——两个槽位就等于两次请求，正是要修的那件事。
+
+function loadJson(url) {
+  return fetch(url + '?_=' + Date.now(), { cache: 'no-store' })
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))));
+}
+
+/**
+ * 取滚动窗（近 30 日）。并发去重：同一时刻多处调用只发一次请求。
+ * 失败时 resolve(null) 而非 reject —— 首屏已由索引渲染完毕，
+ * 明细拿不到不该把整页打成错误态（降级显示"需刷新"比白屏有用）。
+ *
+ * ⚠ 去重必须**跨模块**：`paper_ui.js`（同一文档，但以 type=module 加载、
+ *   晚于本文件求值）也会拉这份文件。两边各去重一次的结果就是网络上两次 204KB 请求
+ *   ——真浏览器实测确认过（首屏 1056KB，其中一份 204KB 是纯重复）。
+ *   故本文件（在 index.html 里是**先求值的普通 script**）负责建立共享入口
+ *   `window.__loadRecentArchive`，paper_ui.js 复用；两边共用一个 promise。
+ */
+function loadRecentArchiveShared() {
+  if (!window.__recentPromise) {
+    window.__recentPromise = fetch('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+      .catch((e) => {
+        // 不缓存失败：清空让下一次调用能真的重试（否则一次抖动会把整页锁死在"无明细"）
+        window.__recentPromise = null;
+        throw e;
+      });
+  }
+  return window.__recentPromise;
+}
+window.__loadRecentArchive = loadRecentArchiveShared;
+
+function loadRecent() {
+  return loadRecentArchiveShared().catch(() => null);
+}
+
+/**
+ * 取完整档（按年分片）。只在用户点了"回看更早交易日"时才调。
+ * 返回合并后的 all_days（新→旧按年拼接，再按日期升序），语义与旧 archive.all_days 一致。
+ */
+async function loadFull(arc, years) {
+  const want = (years && years.length) ? years : (arc.years || []);
+  const parts = await Promise.all(want.map((y) => loadJson('./data/archive-' + y + '.json').catch(() => null)));
+  const days = [];
+  for (const p of parts) if (p && Array.isArray(p.all_days)) days.push(...p.all_days);
+  days.sort((a, b) => String(a.trade_date).localeCompare(String(b.trade_date)));
+  return days;
+}
+
+/**
+ * 把"索引 + 滚动窗两级"拼成一个**结构上兼容旧 archive** 的对象。
+ *
+ * ⚠ 语义诚实性：拼出来的 all_days 只有最近 N 天，绝不是"完整档"。
+ *   故挂 `_partial: true` 与 `_backfill_from`，让任何需要完整序列的读者能自己判断。
+ *   曾考虑静默拼成"看着像完整档"的对象——那是错的：报告里的"样本 N 个交易日"
+ *   会从 241 静默变成 30，读者无从发现。
+ */
+let RECENT_CACHE = null;
+
+function mergeArc(index, recent) {
+  // 滚动窗：29 个曲线点（字段少）+ 最新日（完整明细）
+  const trend = (recent && recent.days) || [];
+  const latest = (recent && recent.latest) || null;
+  const days = latest ? [...trend, latest] : trend.slice();
+  const full = (RECENT_CACHE && RECENT_CACHE.days) || [];
+  // 完整档已加载 → 它的 all_days 才是权威序列，不要再拼部分序列
+  if (full.length) {
+    return { ...index, signals: index.signals || recent?.signals || {}, all_days: full, _partial: false };
+  }
+  return {
+    ...index,
+    signals: index.signals || (recent && recent.signals) || {},
+    all_days: days,
+    _partial: true,
+    _windowDays: days.length,
+    _totalDays: index.totalDays,
+    _fallbackNote: '首屏仅加载最近 ' + days.length + ' 个交易日的明细（当前档共 ' + index.totalDays + ' 个交易日）',
+  };
+}
+
+/**
+ * 惰性字段按需取。若滚动窗已含该字段的**真实值**，就地合并，避免无谓请求。
+ * @returns {Promise<boolean>} 是否成功补齐
+ */
+async function ensureLazy(field) {
+  if (!field || lazyWanted.has(field)) return true;
+  const cur = displayDays(ARC);
+  if (lazyValuePresent(cur, field)) { lazyWanted.add(field); return true; }
+  const r = await loadRecent();
+  if (!r || !r.latest) return false;
+  const src = r.latest[field];
+  if (src == null) return false;
+  const latestDate = r.latest.trade_date;
+  // 就地替换**最新日**的那一份：只改这一个 day 对象，不动数组结构。
+  // 用不可变替换（而非修改原对象）是为了让 fingerprint 与"已渲染"判断保持一致。
+  const next = (ARC.all_days || []).map((d) => (d.trade_date !== latestDate
+    ? d
+    : { ...d, [field]: src, _sub: stripSub(d._sub, field) }));
+  ARC = { ...ARC, all_days: next };
+  lazyWanted.add(field);
+  return true;
+}
+
+function stripSub(sub, field) {
+  if (!sub) return sub;
+  const nxt = { ...sub };
+  delete nxt[field];
+  return Object.keys(nxt).length ? nxt : undefined;
+}
+
+/** 某字段在给定日内是否已有真实值（不是 null 占位、不是 _sub 待加载）。 */
+function lazyValuePresent(days, field) {
+  for (const d of days) {
+    if (d[field] != null) return true;
+  }
+  return false;
+}
+
+/** 惰性字段的"未加载"提示 HTML（无待加载字段时返回空串）。 */
+function lazyNoticeHTML() {
+  const idx = INDEX_CACHE;
+  const lazy = (idx && idx.lazy) || null;
+  if (!lazy) return '';
+  const pend = Object.keys(lazy).filter((k) => !lazyWanted.has(k) && !lazyValuePresent(displayDays(ARC), k));
+  if (!pend.length) return '';
+  const txt = pend.map((k) => `${LAZY_FIELD_LAB[k] || k}（${(lazy[k] / 1024).toFixed(0)}KB）`).join('、');
+  return `<span class="lazy-note" title="这些字段已从首屏剥离，点开相关详情时会自动补齐；当前显示为空是'未加载'而非'无数据'">⌛ ${txt}未加载</span>`;
+}
+
+let INDEX_CACHE = null;
+
 // ── 区五：外围市场 · 隔夜与节后预案 ──
 // 数据是独立文件 data/global.json（scripts/fetch_global.mjs 预生成）：外围在 A 股休市期间
 // 照常更新，与 archive.json 节奏不同——合成一个文件会让「A股没更新」与「外围没更新」
@@ -1818,6 +1987,18 @@ function renderAll(arc) {
   tag.className = 'tag ' + (tagText === 'STALE' ? 'stale' : tagText.startsWith('LIVE') ? 'live' : '');
   $('genTime').textContent = meta.generatedAt ? '更新 ' + meta.generatedAt.replace('T', ' ').slice(0, 16) : '';
 
+  // 分层加载的**诚实披露**：当前页只加载了最近 N 日明细，"样本 N 个交易日"这类
+  // 会随加载深度变化的数字必须显式说明来源，否则读者会把 30 读成 241。
+  const scope = $('loadScope');
+  if (scope) {
+    scope.innerHTML = arc._partial
+      ? `<span class="scope-note" title="档案已按年切片，首屏只加载最近 ${arc.all_days.length} 个交易日的明细；完整档共 ${arc._totalDays} 个交易日">`
+        + `⚡ 分层加载：已载入最近 <b>${arc.all_days.length}</b> / ${arc._totalDays} 个交易日`
+        + `<button class="mini" type="button" data-act="loadfull">载入完整档</button></span>`
+      : `<span class="scope-note ok">✓ 完整档：${arc.all_days.length} 个交易日</span>`;
+    scope.hidden = false;
+  }
+
   renderAlerts(meta);
   renderEmotion(latest);
   renderMomentum(arc.signals?.momentum || {});
@@ -1882,34 +2063,44 @@ async function loadIntraday(meta) {
   card.hidden = false;
 }
 
-// 拉取最新 archive 并渲染全页。返回 {arc, changed, first, hhmm}；失败抛出。
+// 拉取档案并渲染全页。返回 {arc, changed, first, hhmm, degraded}；失败抛出。
 // 抽成独立函数是为了让「研判报告单独刷新」能复用同一条拉取/指纹链路，
 // 而不是各写一份 fetch（两份必然漂移：缓存参数、指纹口径、错误处理都会分叉）。
+//
+// 加载顺序（首屏 = 索引 + 滚动窗，二档共 ~135KB；对比旧的全量 5.1MB）：
+//   ① archive-index.json 10.6KB —— 元信息/相位/新鲜度/逐年摘要/最新日摘要
+//   ② archive-recent.json 124KB —— 最新日完整明细（表格与报告要）+ 29 个曲线点（走势图要）
+//   ③（按需）archive-YYYY.json —— 抽屉回看更早交易日；④（按需）惰性字段 seats/lhb
 async function pullArchive() {
-  const res = await fetch('./data/archive.json?_=' + Date.now(), { cache: 'no-store' });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const arc = await res.json();
+  const idx = await loadJson('./data/archive-index.json');
+  INDEX_CACHE = idx;
+  // 滚动窗拿到之前就用索引先渲染：相位/新鲜度/情绪分/动量都在索引里，
+  // 首屏第一帧不必等明细（明细慢一点只影响表格与报告，不影响"今天什么状态"）。
+  const recent = await loadRecent();
+  const arc = mergeArc(idx, recent);
+  if (!arc.all_days || !arc.all_days.length) throw new Error('档案为空（index.latest 缺失）');
   const fp = fingerprint(arc);
   const changed = lastFp !== '' && fp !== lastFp;
   const first = lastFp === '';
   renderAll(arc); // 先渲染，成功才更新指纹——渲染失败下次轮询自动重试
   lastFp = fp;
-  return { arc, changed, first, hhmm: new Date().toTimeString().slice(0, 5) };
+  return { arc, changed, first, degraded: !recent, hhmm: new Date().toTimeString().slice(0, 5) };
 }
 
 async function checkUpdate(manual) {
   const btn = $('refreshBtn'), st = $('refreshState');
   if (manual && btn) { btn.classList.add('busy'); btn.textContent = '↻ 拉取中…'; }
   try {
-    const { changed, first, hhmm } = await pullArchive();
+    const { changed, first, degraded, hhmm } = await pullArchive();
     if (st) {
-      if (changed) { st.textContent = hhmm + ' 数据已更新'; st.className = 'ok'; }
+      if (degraded) { st.textContent = hhmm + ' 明细档未取到（仅摘要）'; st.className = 'err'; }
+      else if (changed) { st.textContent = hhmm + ' 数据已更新'; st.className = 'ok'; }
       else if (manual && !first) { st.textContent = hhmm + ' 已是最新'; st.className = 'ok'; }
       else { st.textContent = ''; st.className = ''; }
     }
   } catch (e) {
     if (lastFp === '') {
-      $('alerts').innerHTML = `<div class="alert">⚠ 加载失败：${e.message}。请确认 data/archive.json 已生成并部署。</div>`;
+      $('alerts').innerHTML = `<div class="alert">⚠ 加载失败：${e.message}。请确认 data/archive-index.json 已生成并部署（重跑 node scripts/split_archive.mjs）。</div>`;
     }
     if (st && manual) { st.textContent = '刷新失败: ' + e.message; st.className = 'err'; }
   } finally {
@@ -2409,15 +2600,65 @@ function dayDetail(i) {
   };
 }
 
+// ── 惰性字段的异步开抽屉 ──────────────────────────────────────────────────
+// 目前唯一的惰性字段是 `lhb`（原始榜），而个股/席位抽屉**展示层不用它**（用 lhb_aggr），
+// 故这两个抽屉无需等待。保留此封装是为了"以后若真有首屏不用的字段"时有统一入口，
+// 而不是在 15 个点击处各写一份"先 ensureLazy 再渲染"。
+async function openStockDetail(code) {
+  const v = stockDetail(code);
+  if (v) openDrawer(v);
+}
+
+async function openSeatDetail(code, side, idx) {
+  const v = seatDetail(code, side, idx);
+  if (v) openDrawer(v);
+}
+
+/** 当前 ARC 是否还有指定惰性字段未补齐。 */
+function needsLazy(field) {
+  if (lazyWanted.has(field)) return false;
+  const lazy = (INDEX_CACHE && INDEX_CACHE.lazy) || null;
+  if (!lazy || !(field in lazy)) return false; // 该档无此字段（如历史档），无需拉
+  return !lazyValuePresent(displayDays(ARC), field);
+}
+// needsLazy 供"以后新增惰性字段"时复用；当前唯一惰性字段 lhb 不在展示路径上，
+// 故本函数暂无调用点 —— 保留而非删除，是为了让后来者一眼看到判定入口在哪。
+void needsLazy;
+
+/**
+ * 用户显式请求"完整档"：拉全部年份分片（几 MB），用完整 all_days 重渲染。
+ *
+ * 这是三档里的最后一档，**只在用户点按钮时**发生——绝不能因为"反正都拉一次"
+ * 就顺手在首屏拉上，那样分层就白做了。
+ */
+async function loadFullArchive(btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '载入中…'; }
+  try {
+    const days = await loadFull(INDEX_CACHE || lastArc, (INDEX_CACHE || lastArc)?.years);
+    if (!days.length) throw new Error('分片为空');
+    RECENT_CACHE = { days };
+    const merged = mergeArc(INDEX_CACHE || lastArc, null);
+    merged.all_days = days;
+    merged._partial = false;
+    renderAll(merged);
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = '载入失败，重试'; }
+    // 失败不改数据：仍留在首屏那 30 天上的**部分视图**（诚实标注），而不是清空页面
+    const scope = $('loadScope');
+    if (scope) scope.insertAdjacentHTML('beforeend', ` <span class="bf-warn">完整档载入失败：${esc(e.message)}</span>`);
+  }
+}
+
 // ── 事件委托：一处处理全部点击/键盘，避免逐元素绑定 ──
 function fireAct(el) {
   const act = el.dataset.act;
-  if (act === 'stock') openDrawer(stockDetail(el.dataset.code));
-  else if (act === 'seat') { const v = seatDetail(el.dataset.code, el.dataset.side, +el.dataset.i); if (v) openDrawer(v); }
+  if (act === 'stock') { openStockDetail(el.dataset.code); return; }
+  else if (act === 'seat') { openSeatDetail(el.dataset.code, el.dataset.side, +el.dataset.i); return; }
   else if (act === 'theme') openDrawer(themeDetail(el.dataset.theme));
   else if (act === 'wrow') { const v = weightDetail(+el.dataset.i); if (v) openDrawer(v); }
   else if (act === 'seg') { const v = segDetail(el.dataset.kind, +el.dataset.i); if (v) openDrawer(v); }
   else if (act === 'day') { const v = dayDetail(+el.dataset.i); if (v) openDrawer(v); }
+  else if (act === 'loadfull') { loadFullArchive(el); }
   else if (act === 'btmore') { const v = btDetail(); if (v) openDrawer(v); }
   else if (act === 'glob') { const v = globalDetail(el.dataset.key); if (v) openDrawer(v); }
   else if (act === 'gmap') { const v = globalMapDetail(el.dataset.from); if (v) openDrawer(v); }
@@ -2426,11 +2667,28 @@ function fireAct(el) {
     const days = displayDays(ARC);
     const i = days.findIndex((x) => x.trade_date === dt);
     const v = i >= 0 ? dayDetail(i) : null;
-    if (v) openDrawer({ ...v, sub: `净值曲线数据点 · ${v.sub}` });
-    else openDrawer({
-      title: dt || '未知日期',
-      sub: '净值曲线数据点',
-      body: '<div class="dw-empty">该日期不在当前存档 all_days 中（回测档与存档可能不同步，重跑 <b>node scripts/backtest.mjs</b> 即可对齐）。</div>',
+    if (v) { openDrawer({ ...v, sub: `净值曲线数据点 · ${v.sub}` }); return; }
+    // 两种"找不到"必须分开说 —— 混成一句话会让用户按错的指引去排查：
+    //   ① 在完整档里、只是当前只加载了最近 N 日 → 可一键补全（分层加载的正常代价）
+    //   ② 连完整档都没有 → 回测档与存档真的不同步，得重跑回测
+    const inFull = (INDEX_CACHE?.yearMeta?.length)
+      ? Object.entries(INDEX_CACHE.yearMeta).some(([y, m]) => m && dt >= m.from && dt <= m.to)
+      : null;
+    const partial = !!(ARC._partial);
+    // title 仍带「盘面」——**空态也要与命中态同名同栏目**。
+    // 曾把空态 title 写成裸日期，结果读者（与守卫）无法从标题看出"这是当日盘面、
+    // 只是没加载"，只能读正文才知道——标题就该承担这个信息。
+    const reachable = partial && inFull !== false;
+    openDrawer({
+      title: `${dt || '未知日期'} 盘面`,
+      sub: reachable
+        ? `净值曲线数据点 · 该日暂未载入（分层加载）`
+        : `净值曲线数据点 · 不在当前存档`,
+      body: reachable
+        ? `<div class="dw-empty">该交易日不在当前已加载的 <b>${days.length}</b> 个交易日内`
+          + `（档案共 ${ARC._totalDays} 个交易日，首屏为省流量只载入最近 ${days.length} 日）。</div>`
+          + `<button class="mini" type="button" data-act="loadfull">载入完整档后再看</button>`
+        : '<div class="dw-empty">该日期不在当前存档 all_days 中（回测档与存档可能不同步，重跑 <b>node scripts/backtest.mjs</b> 即可对齐）。</div>',
     });
   }
   else if (act === 'brsec') {

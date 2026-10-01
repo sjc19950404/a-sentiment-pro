@@ -1,0 +1,283 @@
+// lhb_codec：两级序列化（reason 码表压缩 + 惰性字段提子）
+//
+// 这两件事都在**存储/传输层**，共同的不变量只有一个：**往返无损**。
+// 一旦有损，最先坏掉的不是展示，而是口径——RANGE_BOARD_RE / NEW_STOCK_RE 靠中文原文
+// 做正则匹配，解不回来就会把「区间累计榜」当「当日榜」，区间值混进日度因子。
+// 故本文件的核心断言是"decode(encode(x)) 与 x 逐字段等价"，且必须用**键序无关**比较
+// （JSON 对象键序不承载语义，逐字符串比会假失败）。
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  buildReasonCodes, encodeDay, decodeDay, encodeArchive, decodeArchive,
+  deflateDay, inflateDay, pickDay, pendingFields, SUBSCRIBE_FIELDS, compressionStats,
+  writeArchiveSafely, readArchiveForEdit,
+} from '../src/lhb_codec.js';
+
+/** 键序无关的深比较（数组顺序仍然敏感——顺序承载语义，如 rc 下标序列）。 */
+function norm(o) {
+  return JSON.stringify(o, (k, v) => {
+    if (Array.isArray(v)) return v;
+    if (v && typeof v === 'object') {
+      return Object.keys(v).sort().reduce((a, kk) => { a[kk] = v[kk]; return a; }, {});
+    }
+    return v;
+  });
+}
+
+// 真实形状的一天（含 summary.seats 与未去重的 lhb，两块惰性字段）
+function mkDay(date, reason) {
+  return {
+    trade_date: date,
+    lhb: [{ code: '001246', name: '力勤资源', reason, reasons: [reason], close: 65.09, is_range: false }],
+    lhb_aggr: [{ code: '001246', name: '力勤资源', net_buy_wan: 50412.7, close: 65.09, caliber: 'daily' }],
+    hot: [{ code: '001246', name: '力勤资源', change_pct: 206.59, close: 65.09 }],
+    topics: { 锂电: 3 },
+    industry: [{ name: '有色', chg: 2.1 }],
+    summary: {
+      zt_count: 52, dt_count: 3, seal_pct: 81.3, lhb_daily_net: 136.5,
+      seats: { cover: 88, detail: { '001246': { b: [['某营业部', 12345]], s: [] } }, conc_top: [['001246', 12.3]] },
+    },
+    emotion: { value: 61.2, pct_rank: 72, factors: { s_net: 0.4 }, breadth_bias: 12 },
+  };
+}
+
+const CODES = ['无价格涨跌幅限制的证券', '连续三个交易日内，涨幅偏离值累计达到20%的证券', '日涨幅偏离值达到7%的前5只证券'];
+const mkArc = () => ({ meta: { tradeDate: '2026-09-30' }, signals: { version: '5.2' }, all_days: [mkDay('2026-09-29', CODES[1]), mkDay('2026-09-30', CODES[0])] });
+
+// ────────────────────────── 码表 ──────────────────────────
+
+test('codec: 码表收集全档唯一原因且排序稳定（同输入必得同码表）', () => {
+  const days = mkArc().all_days;
+  const a = buildReasonCodes(days);
+  const b = buildReasonCodes(days.slice().reverse()); // 顺序变了
+  assert.deepEqual(a, b, '码表必须与输入顺序无关');
+  assert.deepEqual(a, [...a].sort(), '码表必须有序');
+  assert.equal(new Set(a).size, a.length, '码表不得有重复');
+  assert.equal(a.length, 2, '两天各一个唯一原因');
+});
+
+test('codec: encode/decode 往返无损（单条）', () => {
+  const day = mkDay('2026-09-30', CODES[0]);
+  const codes = buildReasonCodes([day]);
+  const enc = encodeDay(day, codes);
+  const l = enc.lhb[0];
+  assert.ok(Array.isArray(l.rc), '压缩后应有 rc 下标数组');
+  assert.equal(l.reason, undefined, '压缩后不应保留 reason 文本');
+  assert.equal(l.reasons, undefined, '压缩后不应保留 reasons 文本');
+  const back = decodeDay(enc, codes);
+  assert.equal(back.lhb[0].reason, CODES[0]);
+  assert.deepEqual(back.lhb[0].reasons, [CODES[0]]);
+  assert.equal(norm(back.lhb), norm(day.lhb), '往返后 lhb 必须逐字段等价');
+});
+
+test('codec: 同票多原因（reasons 数组）往返保持顺序与去重语义', () => {
+  const day = mkDay('2026-09-30', CODES[0]);
+  day.lhb[0].reasons = [CODES[2], CODES[0], CODES[2]]; // 含重复
+  day.lhb[0].reason = CODES[2]; // reason 是 reasons[0]
+  const codes = buildReasonCodes([day]);
+  const back = decodeDay(encodeDay(day, codes), codes);
+  assert.deepEqual(back.lhb[0].reasons, [CODES[2], CODES[0]], 'rc 必须唯一化但保持首次出现顺序');
+  assert.equal(back.lhb[0].reason, CODES[2], 'reason 必须还原为 reasons 首条');
+});
+
+test('codec: encodeDay 幂等（已压缩的记录原样返回，不会二次压缩丢数据）', () => {
+  const day = mkDay('2026-09-30', CODES[0]);
+  const codes = buildReasonCodes([day]);
+  const once = encodeDay(day, codes);
+  const twice = encodeDay(once, codes);
+  assert.equal(norm(twice), norm(once), '二次压缩必须与一次等价');
+});
+
+test('codec: 未压缩的存量档 decode 原样返回（向后兼容）', () => {
+  const day = mkDay('2026-09-30', CODES[0]); // 明文，无 rc
+  const codes = buildReasonCodes([day]);
+  assert.equal(norm(decodeDay(day, codes)), norm(day), '明文档解码不得改动任何字段');
+});
+
+test('codec: 无码表的档整体 decode 原样返回（存量主档兼容）', () => {
+  const arc = mkArc();
+  assert.equal(norm(decodeArchive(arc)), norm(arc), 'meta 无 reasonCodes 时不得改动');
+});
+
+// ────────────────────────── 惰性字段提子 ──────────────────────────
+
+test('codec: deflateDay 把 lhb 提到 _sub，并从顶层移除；seats 必须留在原地', () => {
+  const d = deflateDay(mkDay('2026-09-30', CODES[0]));
+  assert.deepEqual(Object.keys(d._sub), ['lhb']);
+  assert.equal(d.lhb, undefined, 'lhb 必须离开顶层');
+  assert.equal(d.lhb_aggr.length, 1, 'lhb_aggr 不是惰性字段，必须留在顶层');
+  // ⚠ 这条是**回归守卫**：seats 曾被提走，导致研判报告的「席位分项/锁仓统计」
+  //   在首屏静默消失（if (seats && seats.cover) 直接跳过），用户只看到"报告少了结论"。
+  //   判定惰性字段的标准是"首屏渲染是否用到"，不是"大不大"。
+  assert.ok(d.summary.seats, 'summary.seats 必须留在原地（研判报告首屏要用）');
+  assert.equal(d.summary._seatsUnloaded, undefined, '不得出现未加载标记（它已不是惰性字段）');
+  assert.equal(d.summary.zt_count, 52, '同层其它字段不得受影响');
+});
+
+test('codec: 提子后 inflateDay 能完全归位', () => {
+  const src = mkDay('2026-09-30', CODES[0]);
+  const back = inflateDay(deflateDay(src));
+  assert.equal(norm(back), norm(src), '提子→归位必须无损');
+});
+
+test('codec: 无惰性字段的天不产生 _sub（不留空壳）', () => {
+  const bare = { trade_date: '2026-09-30', hot: [], lhb_aggr: [] };
+  assert.equal(deflateDay(bare)._sub, undefined);
+  assert.equal(norm(inflateDay(bare)), norm(bare));
+});
+
+test('codec: pickDay 只还原指定字段，其余仍在 _sub（按需取，不全解）', () => {
+  // 用两个字段的场景验证 pickDay 的选择性（当前 SUBSCRIBE_FIELDS 只有 lhb，
+  // 故这里直接构造带两个键的 _sub，检验"只取指定的那个"这一语义本身）
+  const d = { trade_date: '2026-09-30', hot: [], _sub: { lhb: [{ code: 'x' }] } };
+  const only = pickDay(d, ['lhb']);
+  assert.ok(only.lhb.length, 'lhb 应已还原');
+  assert.equal(only._sub, undefined, '取完不得残留空 _sub');
+  assert.equal(pickDay(d, [])._sub.lhb.length, 1, '未指定字段时应原样返回（lhb 仍在 _sub）');
+  assert.equal(pendingFields(d).length, 1);
+  assert.equal(pendingFields(only).length, 0);
+});
+
+// ────────────────────────── 整档：码表（默认）与提子（可选）──────────────────────────
+
+// ⚠ 设计变更留痕：`encodeArchive` 默认**只做码表压缩**，不再默认提子。
+//   原因（实测）：提子对主档体积零收益（`lhb` → `_sub.lhb` 只是改名，多 7 字节/天），
+//   却让 `day.lhb` 变成 `day._sub.lhb`，任何读者都得先 inflate。默认关闭 = 少一层间接。
+//   需要把某字段挡在首屏之外的地方（切片滚动窗）显式传 `{ deflate: true }`。
+test('codec: encodeArchive 默认只压码表、不提子（lhb 仍在顶层）', () => {
+  const arc = mkArc();
+  const codes = buildReasonCodes(arc.all_days);
+  const packed = JSON.parse(JSON.stringify(encodeArchive(arc, codes)));
+  assert.equal(packed.meta.reasonEncoding, 'rc-v1');
+  assert.ok(Array.isArray(packed.meta.reasonCodes) && packed.meta.reasonCodes.length === 2);
+  // 默认态：lhb 在顶层，且已是 rc；不应出现 _sub
+  assert.ok(Array.isArray(packed.all_days[0].lhb), '默认态 lhb 必须留在顶层（审计要读）');
+  assert.ok(packed.all_days[0].lhb[0].rc.length, 'lhb 里应是 rc 下标数组');
+  assert.equal(packed.all_days[0].lhb[0].reason, undefined, 'rc 态不得残留 reason 文本');
+  assert.equal(packed.all_days[0]._sub, undefined, '默认态不得凭空产生 _sub');
+  assert.ok(packed.all_days[0].summary.seats.detail, 'seats 不是惰性字段，必须内联');
+  // 往返
+  const back = decodeArchive(packed);
+  assert.equal(norm(back.all_days), norm(arc.all_days), '整档往返必须逐字段等价');
+  assert.equal(back.all_days[1].lhb[0].reason, CODES[0], 'reason 文本必须还原');
+  assert.ok(back.all_days[1].summary.seats.detail, '席位明细必须还原到 summary.seats');
+});
+
+test('codec: encodeArchive({deflate:true}) 才提子，且往返仍无损', () => {
+  const arc = mkArc();
+  const codes = buildReasonCodes(arc.all_days);
+  const packed = JSON.parse(JSON.stringify(encodeArchive(arc, codes, { deflate: true })));
+  assert.equal(packed.all_days[0].lhb, undefined, '提子后 lhb 不得留在顶层');
+  assert.ok(packed.all_days[0]._sub.lhb[0].rc.length, '_sub.lhb 里应是 rc 下标数组');
+  assert.equal(packed.all_days[0]._sub.lhb[0].reason, undefined, 'rc 态不得残留 reason 文本');
+  const back = decodeArchive(packed);
+  assert.equal(norm(back.all_days), norm(arc.all_days), '提子态往返必须逐字段等价');
+  assert.equal(back.all_days[1]._sub, undefined, '全解后不得残留 _sub');
+});
+
+test('codec: 提子对体积零收益（防后人把它当省钱手段）', () => {
+  // 这条是**负面知识**的守卫：提子看起来像"把大字段搬走"，实际只是改名。
+  // 体积必须由码表那一级负责；提子只服务于"切片里不出现某字段"这个结构目的。
+  const arc = mkArc();
+  const codes = buildReasonCodes(arc.all_days);
+  const plain = JSON.stringify(encodeArchive(arc, codes));
+  const deflated = JSON.stringify(encodeArchive(arc, codes, { deflate: true }));
+  const delta = deflated.length - plain.length;
+  // 只允许多出 _sub 包装的少量字节（每天 ~7 字节），绝不允许体积下降——
+  // 若哪天真下降了，说明 deflateDay 被改成了"真删除"，那会破坏审计完整性，必须人工复核。
+  assert.ok(delta > 0, `提子不得让体积下降（说明字段真被删了，会破坏审计输入）；实得 ${delta} 字节`);
+  assert.ok(delta < 64, `提子开销应仅为 _sub 包装（<64 字节），实得 ${delta}`);
+});
+
+test('codec: 码表压缩确实省体积（否则这层是白做的）', () => {
+  const arc = mkArc();
+  const st = compressionStats(arc);
+  assert.ok(st.codes > 0);
+  assert.ok(st.savedRatio > 0.4, `长中文原因文本压缩率应 >40%，实得 ${(st.savedRatio * 100).toFixed(1)}%`);
+  assert.ok(st.after < st.before);
+});
+
+test('codec: 口径正则依赖的原因文本在往返后仍可匹配（不是只对长度负责）', () => {
+  // 这两条正则的失配后果最严重：区间榜会被当当日榜，区间累计值混进日度因子
+  const RANGE_BOARD_RE = /连续\s*[0-9一二三四五六七八九十]+\s*个交易日|严重异常期间/;
+  const NEW_STOCK_RE = /无价格涨跌幅限制/;
+  const arc = mkArc();
+  const codes = buildReasonCodes(arc.all_days);
+  const back = decodeArchive(JSON.parse(JSON.stringify(encodeArchive(arc, codes))));
+  const r0 = back.all_days[0].lhb[0].reason;
+  const r1 = back.all_days[1].lhb[0].reason;
+  assert.ok(RANGE_BOARD_RE.test(r0), '区间榜原因必须仍能匹配 RANGE_BOARD_RE');
+  assert.ok(NEW_STOCK_RE.test(r1), '新股原因必须仍能匹配 NEW_STOCK_RE');
+  assert.ok(!RANGE_BOARD_RE.test(r1), '反向：新股原因不得被误判为区间榜');
+});
+
+// ────────────────── 落盘助手：writeArchiveSafely / readArchiveForEdit ──────────────────
+// 这一组守的是**最容易造成静默坏档**的那条路径：脚本读主档 → 改一点 → 写回。
+// 若写回时忘了重编码，档里记录仍是 rc 下标而码表语义对不上，解码会整体回退成
+// reasons:[undefined]，表现是 reason 全变占位符 + RANGE_BOARD_RE 静默失配
+// （区间累计榜被当当日榜）。本项目已发生过一次同类事故，故助手带写前自检。
+
+test('落盘：readArchiveForEdit 返回明文态（reason 可读，不是 rc 下标）', () => {
+  const fs = { readFileSync: () => JSON.stringify(encodeArchive(mkArc(), buildReasonCodes(mkArc().all_days))) };
+  const a = readArchiveForEdit('ignored.json', fs.readFileSync);
+  assert.ok(a.all_days.length === 2);
+  for (const d of a.all_days) {
+    for (const l of d.lhb || []) {
+      assert.equal(typeof l.reason, 'string', 'reason 必须是字符串');
+      assert.ok(l.reason.length > 0, 'reason 不得为空');
+      assert.equal(l.rc, undefined, '明文态不应残留 rc');
+    }
+  }
+});
+
+test('落盘：writeArchiveSafely 写出的是紧凑压缩态（不是明文、不是缩进）', () => {
+  const written = [];
+  const fsMod = { writeFileSync: (p, text) => written.push({ p, text }) };
+  const arc = mkArc();
+  const info = writeArchiveSafely('ignored.json', arc, fsMod);
+  assert.equal(written.length, 1);
+  const text = written[0].text;
+  // 紧凑：不得有换行缩进
+  assert.ok(!/\n\s{2}"/.test(text), '写出的 JSON 不得带缩进（缩进会白吃压缩收益）');
+  // 压缩态：记录里应是 rc 而非明文 reasons
+  const parsed = JSON.parse(text);
+  const recs = parsed.all_days.flatMap((d) => [...(d.lhb || []), ...((d._sub && d._sub.lhb) || [])]);
+  assert.ok(recs.length > 0, '应写出 lhb 记录');
+  assert.ok(recs.every((r) => Array.isArray(r.rc)), '记录必须是 rc 码表态');
+  assert.ok(parsed.meta.reasonCodes.length > 0, '必须带 meta.reasonCodes');
+  assert.equal(info.codes, parsed.meta.reasonCodes.length);
+  assert.equal(info.days, arc.all_days.length);
+});
+
+test('落盘：writeArchiveSafely 写出的档可被 decodeArchive 完整还原（往返闭环）', () => {
+  const written = [];
+  const fsMod = { writeFileSync: (p, text) => written.push(text) };
+  const arc = mkArc();
+  writeArchiveSafely('ignored.json', arc, fsMod);
+  const back = decodeArchive(JSON.parse(written[0]));
+  assert.equal(norm(back.all_days), norm(arc.all_days), '写盘→读回必须逐字段等价');
+});
+
+test('落盘：往返不一致时拒绝写盘（不得静默落坏档）', () => {
+  const written = [];
+  const fsMod = { writeFileSync: (p, text) => written.push(text) };
+  // 构造"原因文本会丢失"的档：reason 不是能进码表的字符串。
+  // ⚠ 注意判据必须是"查出**占位符**"，不能只查"是不是字符串"——
+  //   decodeDay 在 rc 解析失败时恰好写 '—'（字符串！），类型检查会永远通过。
+  //   这正是本条自检存在的意义：那种坏档一旦落盘，RANGE_BOARD_RE 会静默失配。
+  const bad = mkArc();
+  bad.all_days[0].lhb[0] = { code: 'X', reason: { z: 1 } };
+  assert.throws(() => writeArchiveSafely('ignored.json', bad, fsMod), (e) => {
+    assert.equal(e.code, 'ROUNDTRIP_MISMATCH');
+    return true;
+  }, '往返不一致必须抛错');
+  assert.equal(written.length, 0, '抛错时绝不能已经写盘');
+});
+
+test('落盘：正常档不得被自检误拦（否则脚本会整体不可用）', () => {
+  const written = [];
+  const fsMod = { writeFileSync: (p, text) => written.push(text) };
+  assert.doesNotThrow(() => writeArchiveSafely('ignored.json', mkArc(), fsMod));
+  assert.equal(written.length, 1);
+});

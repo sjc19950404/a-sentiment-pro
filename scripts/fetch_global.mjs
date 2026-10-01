@@ -12,6 +12,7 @@ import config from '../src/config.js';
 import { buildGlobalSnapshot, evaluateGlobalWatch, SINA_URL, SINA_CODES } from '../src/global.js';
 import { nextSession } from '../src/freshness.js';
 import { todayBeijing, isTradingDay } from '../src/util.js';
+import { decodeArchive } from '../src/lhb_codec.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
 const ARCHIVE = new URL('../data/archive.json', import.meta.url);
@@ -49,7 +50,7 @@ async function fetchSina(retries = 3) {
 /** 读 A 股存档当前交易日：外围快照要对齐它，才能算「假期里还攒了几个美股交易日」 */
 function readTradeDate() {
   try {
-    return JSON.parse(readFileSync(ARCHIVE, 'utf8'))?.meta?.tradeDate || null;
+    return decodeArchive(JSON.parse(readFileSync(ARCHIVE, 'utf8')))?.meta?.tradeDate || null;
   } catch { return null; }
 }
 

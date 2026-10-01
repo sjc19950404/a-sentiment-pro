@@ -46,6 +46,7 @@ import { dirname, resolve } from 'node:path';
 import { fetchLhb, LhbNotPublishedError, recalcRanks } from '../src/sources.js';
 import { buildBackfillDay, BACKFILL_FLAG } from '../src/backfill.js';
 import { sleep, todayBeijing } from '../src/util.js';
+import { decodeArchive, encodeArchive, buildReasonCodes, writeArchiveSafely } from '../src/lhb_codec.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
@@ -100,7 +101,7 @@ async function main() {
     console.error(`[backfill] 找不到 ${ARCHIVE}`);
     process.exit(1);
   }
-  const arc = JSON.parse(readFileSync(ARCHIVE, 'utf8'));
+  const arc = decodeArchive(JSON.parse(readFileSync(ARCHIVE, 'utf8')));
   const days = arc.all_days;
   const have = new Set(days.map((d) => d.trade_date));
   const lastKnown = days.reduce((m, d) => (d.trade_date > m ? d.trade_date : m), '');
@@ -249,15 +250,17 @@ async function main() {
   }
 
   const before = readFileSync(ARCHIVE, 'utf8');
-  const after = JSON.stringify(out);
-  if (before.length === after.length && before === after) {
+  // ⚠ `out` 是**解码后**的明文态（读进来时 decodeArchive 过），直接 stringify 写回会把
+  //   压缩档解压成 9.2MB 明文。必须重编码 + 写前往返自检（见 writeArchiveSafely）。
+  const after = JSON.stringify(encodeArchive(out, buildReasonCodes(out.all_days)));
+  const mb = (s) => (Buffer.byteLength(s, 'utf8') / 1024 / 1024).toFixed(2);
+  if (before === after) {
     console.log('[backfill] 内容无变化，未写盘。');
     return;
   }
-  writeFileSync(ARCHIVE, after);
-  const mb = (s) => (Buffer.byteLength(s, 'utf8') / 1024 / 1024).toFixed(2);
+  const info = writeArchiveSafely(ARCHIVE, out, { writeFileSync });
   console.log(`[backfill] 已写盘 ${ARCHIVE}：${mb(before)}MB → ${mb(after)}MB，`
-    + `总天数 ${days.length} → ${merged.length}`);
+    + `总天数 ${days.length} → ${merged.length}（码表 ${info.codes} 条 · 往返自检通过）`);
 }
 
 main().catch((e) => {

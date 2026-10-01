@@ -4,11 +4,12 @@
 // 用法：node scripts/backfill_prev_momentum.mjs [--dry]
 import { readFileSync, writeFileSync } from 'node:fs';
 import { enrich } from '../src/pipeline.js';
+import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
 
 const FILE = 'data/archive.json';
 const DRY = process.argv.includes('--dry');
 
-const a = JSON.parse(readFileSync(FILE, 'utf8'));
+const a = decodeArchive(JSON.parse(readFileSync(FILE, 'utf8')));
 const before = a.signals?.momentum || {};
 console.log('回填前 momentum 键:', Object.keys(before).join(', '));
 
@@ -32,6 +33,7 @@ a.signals = a.signals || {};
 a.signals.momentum = momObj;
 if (DRY) console.log('\n（--dry 未写盘）');
 else {
-  writeFileSync(FILE, JSON.stringify(a, null, 2), 'utf8');
+  // 必须重编码写回（直接 stringify 会把压缩档解压成 9.2MB 且丢掉 rc 的可读性）
+  writeArchiveSafely(FILE, a, { writeFileSync });
   console.log('\n已写盘', FILE);
 }

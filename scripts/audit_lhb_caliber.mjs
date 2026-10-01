@@ -14,6 +14,7 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { caliberFromDay, isRangeBoard, duplicateKeys } from '../src/lhb.js';
+import { decodeArchive } from '../src/lhb_codec.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ARCHIVE = path.join(ROOT, 'data', 'archive.json');
@@ -188,7 +189,7 @@ check('新股判定无重复实现（唯一出处 src/lhb.js；app.js 仅限展�
 }
 
 // ── B. 存档逐日不变量 ────────────────────────────────────────────────────────
-const arch = JSON.parse(readFileSync(ARCHIVE, 'utf8'));
+const arch = decodeArchive(JSON.parse(readFileSync(ARCHIVE, 'utf8')));
 const days = (arch.all_days || []).filter((d) => d && (d.lhb || []).length);
 const bad = { missing: [], amt: [], stocks: [], range: [], replay: [], caliber: [], factor: [], sync: [], newstock: [], merge: [] };
 const near = (a, b, tol = 0.011) => a != null && b != null && Math.abs(a - b) <= tol;
@@ -934,6 +935,228 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
       check('回填：backtest.json 必须带 meta.sampleNote（否则口径无法对账）', false, 'missing');
     }
   }
+}
+
+// ── B9. 分层切片一致性 + 码表压缩往返无损（性能改动不得悄悄改口径）─────────────
+// 为什么必须有这一块：
+//   切片是**同一份数据的第二种落盘形态**。一旦切片与主档脱钩（少一天、字段改动、
+//   码表不同步），线上页面读的是切片、审计读的是主档，两边会各自"正确"地给出不同结论。
+//   所以：① 每档的日集合必须是主档日集合的**子集**且可对账；② 码表往返必须逐字节无损；
+//   ③ 惰性字段的提子/还原必须守恒（丢一天 lhb 就是丢一天审计依据）；
+//   ④ 前端不得在首屏无条件拉主档（否则切片白做，性能回到起点）。
+{
+  const splitter = path.join(ROOT, 'scripts', 'split_archive.mjs');
+  check('切片：存在唯一出处 scripts/split_archive.mjs（切片不得手写）', existsSync(splitter), 'missing');
+
+  const mainDates = new Set((arch.all_days || []).map((d) => d.trade_date));
+  const idxPath = path.join(ROOT, 'data', 'archive-index.json');
+  const rcPath = path.join(ROOT, 'data', 'archive-recent.json');
+  const sigPath = path.join(ROOT, 'data', 'signals-latest.json');
+  // 滚动窗在后文（码表段落）也要用；此处提前读一次，避免重复 IO 与作用域嵌套
+  const rcCached = existsSync(rcPath) ? JSON.parse(readFileSync(rcPath, 'utf8')) : null;
+
+  if (existsSync(idxPath)) {
+    const raw = readFileSync(idxPath, 'utf8');
+    const idx = JSON.parse(raw);
+    const kb = Buffer.byteLength(raw) / 1024;
+    // 索引是首屏必拉文件，体积必须锁死——它一大，"按需加载"就名存实亡
+    check('切片：archive-index.json 首屏体积 < 32KB', kb < 32, `${kb.toFixed(1)}KB`);
+    check('切片：索引 totalDays = 主档天数（否则前端"共 N 天"是假的）',
+      idx.totalDays === mainDates.size, `${idx.totalDays} vs ${mainDates.size}`);
+    check('切片：索引 latestDate 是主档最后一个交易日',
+      idx.latestDate === (arch.all_days || [])[arch.all_days.length - 1]?.trade_date,
+      String(idx.latestDate));
+    // 年分片的日期区间必须与索引自报的一致，否则"按年取片段"会取错区间
+    const years = idx.years || [];
+    check('切片：索引声明了年份清单', years.length > 0, JSON.stringify(years));
+    // 摘要字段不得混入明细（索引里出现 all_days / summary.seats 就说明切片退化成了全量）
+    check('切片：索引不含 all_days 全量明细', !('all_days' in idx), Object.keys(idx).join(','));
+    check('切片：索引不得携带 lhb 原始明细',
+      !JSON.stringify(idx.latest || {}).includes('"seat"'), '');
+    // 惰性字段必须在索引里被显式声明，前端才能知道"还差什么"
+    check('切片：索引声明 lazy 字段清单（前端据此决定要不要补拉）',
+      idx.lazy !== undefined && typeof idx.lazy === 'object', JSON.stringify(idx.lazy || null));
+
+    let yearTotal = 0;
+    const bad = [];
+    for (const y of years) {
+      const p = path.join(ROOT, 'data', `archive-${y}.json`);
+      if (!existsSync(p)) { bad.push(`archive-${y}.json 缺失`); continue; }
+      const shard = JSON.parse(readFileSync(p, 'utf8'));
+      const ds = (shard.all_days || []).map((d) => d.trade_date);
+      yearTotal += ds.length;
+      const outside = ds.filter((dt) => !mainDates.has(dt));
+      if (outside.length) bad.push(`${y}: ${outside.length} 天不在主档（${outside.slice(0, 2).join(',')}）`);
+      const wrongYear = ds.filter((dt) => String(dt).slice(0, 4) !== String(y));
+      if (wrongYear.length) bad.push(`${y}: ${wrongYear.length} 天不是本年度（${wrongYear.slice(0, 2).join(',')}）`);
+    }
+    check('切片：年分片日期均为本年度且全部属于主档', bad.length === 0, bad.slice(0, 3).join(' ; '));
+
+    // 滚动窗是"最近 N 天"的缓存，不是分片的子集——与年分片合并后必须能覆盖主档所有天
+    if (rcCached) {
+      const rc = rcCached;
+      const rcDates = [...(rc.days || []).map((d) => d.trade_date), rc.latest && rc.latest.trade_date].filter(Boolean);
+      const union = new Set([...rcDates, ...years.flatMap((y) => {
+        const p = path.join(ROOT, 'data', `archive-${y}.json`);
+        return existsSync(p) ? (JSON.parse(readFileSync(p, 'utf8')).all_days || []).map((d) => d.trade_date) : [];
+      })]);
+      check('切片：滚动窗 + 年分片 并集 = 主档全量（不得漏天）',
+        union.size === mainDates.size && [...mainDates].every((dt) => union.has(dt)),
+        `并集 ${union.size} vs 主档 ${mainDates.size}`);
+      check('切片：滚动窗按日期升序（前端取 [-1] 当最新日）',
+        rcDates.every((dt, i) => i === 0 || rcDates[i - 1] < dt), rcDates.slice(-3).join(','));
+      check('切片：滚动窗末位 = 主档最新日',
+        rcDates[rcDates.length - 1] === (arch.all_days || [])[arch.all_days.length - 1]?.trade_date,
+        String(rcDates[rcDates.length - 1]));
+      const rckb = Buffer.byteLength(readFileSync(rcPath, 'utf8')) / 1024;
+      check('切片：滚动窗体积 < 512KB（首屏第二个请求，需可接受）', rckb < 512, `${rckb.toFixed(1)}KB`);
+      // 最新日必须是"完整明细"，否则首屏的当日盘面/报告会缺字段
+      const lt = rc.latest || {};
+      check('切片：滚动窗最新日带 hot（首屏当日盘面必用）', Array.isArray(lt.hot) && lt.hot.length > 0, String((lt.hot || []).length));
+      check('切片：滚动窗最新日带 lhb_aggr（展示层唯一入口）',
+        Array.isArray(lt.lhb_aggr) && lt.lhb_aggr.length > 0, `${(lt.lhb_aggr || []).length} 条`);
+      // 锁仓口径 calcLockNew 读前 2 天 seats.detail —— 裁掉就是报告静默少一段
+      const seatDays = (rc.days || []).filter((d) => d.summary && d.summary.seats).length;
+      const mainSeatDays = (arch.all_days || []).filter((d) => d.summary && d.summary.seats).length;
+      check('切片：滚动窗保留历史日 summary.seats（锁仓统计读前 2 天，裁掉会静默少一段）',
+        mainSeatDays === 0 || seatDays > 0, `窗内 ${seatDays} 天 / 主档 ${mainSeatDays} 天`);
+    } else {
+      check('切片：存在 archive-recent.json', false, 'missing');
+    }
+  } else {
+    check('切片：存在 archive-index.json', false, 'missing');
+  }
+
+  // 码表压缩：往返无损 + 内存侧必须还原成中文原文（否则 isRangeBoard 会静默失配）
+  const codec = await import('../src/lhb_codec.js');
+  const roundtrip = codec.decodeArchive(codec.encodeArchive(
+    { meta: {}, signals: {}, all_days: arch.all_days }, codec.buildReasonCodes(arch.all_days)));
+  const norm = (x) => JSON.stringify(x, Object.keys(x || {}).sort());
+  const rtDiff = [];
+  const origDays = arch.all_days || [];
+  for (let i = 0; i < origDays.length; i++) {
+    const a = origDays[i]; const b = roundtrip.all_days[i];
+    if (!b || a.trade_date !== b.trade_date) { rtDiff.push(`#${i} 日期错位`); continue; }
+    // 只比"编码涉及 + 提子涉及"的字段：reason/reasons/lhb —— 其余字段本就该原样
+    if (JSON.stringify(a.lhb || []) !== JSON.stringify(b.lhb || [])) rtDiff.push(`${a.trade_date} lhb 往返不一致`);
+    const ar = (a.lhb || []).map((r) => r.reason).join('|');
+    const br = (b.lhb || []).map((r) => r.reason).join('|');
+    if (ar !== br) rtDiff.push(`${a.trade_date} reason 往返不一致`);
+    const ars = (a.lhb || []).map((r) => (r.reasons || []).join('+')).join('|');
+    const brs = (b.lhb || []).map((r) => (r.reasons || []).join('+')).join('|');
+    if (ars !== brs) rtDiff.push(`${a.trade_date} reasons 往返不一致`);
+  }
+  check('切片：码表压缩往返逐日无损（reason / reasons / lhb 三项）',
+    rtDiff.length === 0, rtDiff.slice(0, 3).join(' ; '));
+  check('切片：解码后 reason 必须是中文原文（正则口径依赖它，退回下标会静默失配）',
+    origDays.some((d) => (d.lhb || []).some((r) => /[\u4e00-\u9fa5]/.test(String(r.reason || ''))))
+    && origDays.every((d) => (d.lhb || []).every((r) => !Array.isArray(r.reason))),
+    '');
+  // 主档写盘态的**真实**不变量：码表生效 + 惰性字段已提子。
+  // ⚠ 这里必须读**磁盘原始 JSON**，不能读 `arch`（它已被 decodeArchive 还原成明文+内联），
+  //   否则守卫会反过来断言"压缩没生效"——一个把正确状态判成错的假警报。
+  // ⚠ 上一版曾写成 `lhbInline === 0 || lhbInMain === lhbInline`，两边都取自已解码视图，
+  //   恒真通过（顶层 241 / 应有 241），是在验证一个不存在的状态。此处改为读原始盘。
+  const rawDisk = JSON.parse(readFileSync(ARCHIVE, 'utf8'));
+  const diskRecs = rawDisk.all_days.flatMap((d) => [...(d.lhb || []), ...((d._sub && d._sub.lhb) || [])]);
+  const encRec = diskRecs.filter((r) => Array.isArray(r.rc)).length;
+  const plainRec = diskRecs.filter((r) => r.reasons !== undefined || r.reason !== undefined).length;
+  check('切片：主档 lhb 记录已走码表（rc 下标），无明文残留',
+    encRec > 0 && plainRec === 0, `rc ${encRec} / 明文 ${plainRec}`);
+  check('切片：主档写盘态 lhb 已提子到 _sub（顶层不得残留 lhb）',
+    rawDisk.all_days.filter((d) => d.lhb != null).length === 0,
+    `${rawDisk.all_days.filter((d) => d.lhb != null).length} 天顶层带 lhb`);
+  // ⚠ 修正常见误读：提子对**主档体积零收益**（只是改名 lhb → _sub.lhb，多 7 字节/天）。
+  //   真正省体积的是码表这一级。此处锁住"提子不得让体积回涨"，防止将来把它当省钱手段。
+  const rawMb = Buffer.byteLength(readFileSync(ARCHIVE, 'utf8')) / 1048576;
+  check('切片：主档体积 < 6MB（码表是唯一有效手段；提子只是改名，不省体积）',
+    rawMb < 6, `${rawMb.toFixed(2)}MB`);
+  check('切片：主档 meta.reasonCodes 与记录引用一致（码表缺失会让解码整体回退成 undefined）',
+    Array.isArray(arch.meta?.reasonCodes) && arch.meta.reasonEncoding === 'rc-v1'
+    && origDays.every((d) => (d.lhb || []).every((r) => (r.rc || []).every((i) => i >= 0 && i < arch.meta.reasonCodes.length))),
+    `${arch.meta?.reasonCodes?.length ?? 0} 条`);
+  // 提子只在切片里用（主档保留 lhb 内联以便审计），故检查滚动窗历史日确实不带 lhb
+  const winHistory = (rcCached?.days || []);
+  check('切片：滚动窗历史日不带 lhb 原始榜（首屏体积的主要来源，必须裁掉）',
+    winHistory.length === 0 || winHistory.every((d) => d.lhb == null && !(d._sub && d._sub.lhb)),
+    `${winHistory.filter((d) => d.lhb != null).length} 天带 lhb`);
+
+  // signals：最新日 + 动量 + 大盘告警；必须小、且不含明细
+  if (existsSync(sigPath)) {
+    const sraw = readFileSync(sigPath, 'utf8');
+    const sg = JSON.parse(sraw);
+    const skb = Buffer.byteLength(sraw) / 1024;
+    check('切片：signals-latest.json < 32KB（只放"看一眼"的量）', skb < 32, `${skb.toFixed(1)}KB`);
+    check('切片：signals 的交易日 = 主档最新日',
+      sg.latest && sg.latest.trade_date === (arch.all_days || [])[arch.all_days.length - 1]?.trade_date,
+      String(sg.latest && sg.latest.trade_date));
+    check('切片：signals 含动量（盘前一眼看题材）', sg.signals && sg.signals.momentum != null, '');
+    check('切片：signals 不得夹带 lhb_aggr 明细（那是滚动窗的活）',
+      !(sg.latest && sg.latest.lhb_aggr), '');
+  } else {
+    check('切片：存在 signals-latest.json', false, 'missing');
+  }
+
+  // 前端不得在首屏无条件拉主档——这条是本块存在的**唯一目的**
+  const appRaw = readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  check('切片：前端首屏走索引 + 滚动窗，不得直接 fetch 主档 archive.json',
+    !/fetch\(\s*['"`]\.\/data\/archive\.json/.test(appRaw), 'app.js 仍在首屏拉主档');
+  check('切片：前端存在按需加载完整档的入口（loadFull / archive-<年>.json）',
+    /archive-\$\{|archive-' \+ y|archive-" \+ y/.test(appRaw), 'app.js 缺少分片加载');
+}
+
+// ── B10. 回写主档的脚本必须走「解码 → 改 → 重编码」往返 ──────────────────────
+// 这是本项目**最危险的一类改动**：主档是压缩态（reason→rc 码表 + lhb 提子），
+// 任何"读进来 → 改一点 → 直接 JSON.stringify 写回"的脚本都会产出坏档：
+//   ① 缩进：紧凑 4.99MB → 9.22MB，压缩收益全丢
+//   ② 致命：档里记录仍是 rc 下标，但重编码被跳过 → 解码回退成 reasons:[undefined]，
+//      表现是 reason 全变 '—'、RANGE_BOARD_RE 静默失配（**区间累计榜被当成当日榜**，
+//      区间值混进日度因子）。本项目已发生过一次同类事故（二次迁移丢了 2 天 seats）。
+// 判据：源码里同时出现"写 data/archive.json"与 `JSON.stringify(<变量>, null, N)`
+// 就是漏了重编码（正确写法是 writeArchiveSafely）。
+{
+  const WRITERS = [
+    'backfill_lhb_history.mjs', 'backfill_prev_momentum.mjs', 'backfill_seal_pct.mjs',
+    'freshness.mjs', 'recalc_lhb_daily.mjs', 'refetch_seats_clean.mjs',
+    'repair_hot_quotes.mjs', 'repair_seats_aggregate_rows.mjs', 'pipeline.js',
+  ];
+  const bad = [];
+  const missingDecode = [];
+  const missingSafe = [];
+  for (const rel of WRITERS) {
+    const p = path.join(ROOT, rel.startsWith('pipeline') ? 'src' : 'scripts', rel);
+    if (!existsSync(p)) continue;
+    const src = readFileSync(p, 'utf8');
+    if (!/archive\.json|writeArchive\b|ARCHIVE|dataPath/.test(src)) continue;
+    // ① 不得有「缩进写盘」——那一定同时意味着跳过了重编码
+    for (const m of src.matchAll(/JSON\.stringify\([^)]*,\s*null,\s*\d+\s*\)/g)) {
+      // 允许：写的是**别的**文件（如 backtest.json / paper_universe.json / 缓存）
+      const line = src.slice(Math.max(0, m.index - 200), m.index + 40);
+      const targetsArchive = /writeFileSync\(\s*(ARCHIVE|FILE|P|dataPath)\b/.test(line)
+        || /archive\.json/.test(line);
+      const isArchiveVar = /\b(JSON\.stringify\((?:a|arc|archive|packed|out)\b)/.test(m[0]);
+      if (targetsArchive && isArchiveVar) bad.push(`${rel}: ${m[0].slice(0, 40)}`);
+    }
+    // ② 读主档的地方必须 decodeArchive
+    if (/readFileSync\([^)]*archive\.json/.test(src) && !/decodeArchive/.test(src)) missingDecode.push(rel);
+    // ③ 写主档的地方必须"重编码"：或走 writeArchiveSafely（改存量档的脚本），
+    //    或至少显式调 encodeArchive（pipeline.js 是从零构造整档的生产端，本就持有对象）
+    const writesArchive = /writeFileSync\(\s*(ARCHIVE|FILE|P|dataPath)\b/.test(src)
+      || /archive\.json[^)]*\).*writeFileSync/s.test(src);
+    if (writesArchive && !/writeArchiveSafely|encodeArchive/.test(src)) missingSafe.push(rel);
+  }
+  check('回写：不得有「缩进写盘」主档的脚本（缩进＝跳过了重编码，且体积翻倍）',
+    bad.length === 0, bad.slice(0, 3).join(' ; '));
+  check('回写：读主档的脚本必须 decodeArchive（否则拿到的是 rc 下标，reason 会全变占位符）',
+    missingDecode.length === 0, missingDecode.join(', '));
+  check('回写：写主档的脚本必须重编码（writeArchiveSafely 或 encodeArchive），不得裸写',
+    missingSafe.length === 0, missingSafe.join(', '));
+  // 4. 助手本身必须存在且真的做自检
+  const codecSrc = readFileSync(path.join(ROOT, 'src', 'lhb_codec.js'), 'utf8');
+  check('回写：writeArchiveSafely 存在且带往返自检（不一致时拒绝写盘）',
+    /export function writeArchiveSafely/.test(codecSrc) && /ROUNDTRIP_MISMATCH/.test(codecSrc), '');
+  check('回写：writeArchiveSafely 紧凑写盘（不得带缩进参数）',
+    /writeFileSync\(filePath,\s*text/.test(codecSrc), '');
 }
 
 // ── C. 结论 ────────────────────────────────────────────────────────────────

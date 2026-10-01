@@ -3,6 +3,7 @@
 // 用法：node scripts/backtest.mjs [--archive data/archive.json] [--out data/backtest.json]
 import { readFileSync, writeFileSync } from 'node:fs';
 import config from '../src/config.js';
+import { decodeArchive } from '../src/lhb_codec.js';
 import {
   BASE_PARAMS, V52_PARAMS, DEFAULT_TH,
   scoreWith, poolBacktest, gridSearch, paretoFrontier, rollingTest, selectMainLine, weightGrid, sortByRank,
@@ -16,7 +17,7 @@ const argOf = (k, d) => {
 const ARCHIVE = argOf('--archive', 'data/archive.json');
 const OUT = argOf('--out', 'data/backtest.json');
 
-const arch = JSON.parse(readFileSync(ARCHIVE, 'utf8'));
+const arch = decodeArchive(JSON.parse(readFileSync(ARCHIVE, 'utf8')));
 // ⚠ 必须剔除历史回填天（emotion._backfill）：
 //   回填天只有 lhb 与 s_net，其 emotion.value 是 **s_net 单因子占位值、不是综合分**。
 //   回测把 value 当信号用，若混入回填天，208 天的「假情绪分」会直接污染

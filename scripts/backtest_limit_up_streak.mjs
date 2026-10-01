@@ -11,6 +11,7 @@
 // 用法：node scripts/backtest_limit_up_streak.mjs [--archive data/archive.json] [--out data/streak_backtest.json]
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { decodeArchive } from '../src/lhb_codec.js';
 
 const args = process.argv.slice(2);
 const argOf = (k, d) => { const i = args.indexOf(k); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
@@ -73,7 +74,7 @@ async function kline(code) {
 }
 
 // ── 构建「交易日 → 全市场收盘价」用于算 T+1 涨幅 ──
-const arch = JSON.parse(readFileSync(ARCHIVE, 'utf8'));
+const arch = decodeArchive(JSON.parse(readFileSync(ARCHIVE, 'utf8')));
 const days = (arch.all_days || []).filter((d) => d && d.trade_date);
 const allDates = days.map((d) => d.trade_date);
 
