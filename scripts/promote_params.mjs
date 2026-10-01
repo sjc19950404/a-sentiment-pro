@@ -83,12 +83,22 @@ const evalOnOOS = (pBlock) => {
     ...pBlock.costModel,
   };
   const oosRets = Object.fromEntries(ASSETS.map((a) => [a, retsByAsset[a].slice(oosStart)]));
-  const m = poolBacktest(scores.slice(oosStart), oosRets, p);
-  return { metrics: m, rank: rankKey(m) };
+  // ⚠ poolBacktest 返回 { strat, pos, perf } —— 指标在 .perf 下（实测踩坑：
+  //   取错层级会拿到 undefined 指标，NaN 比较让字典序退化成「通过」= 缺失当真值）。
+  const { perf } = poolBacktest(scores.slice(oosStart), oosRets, p);
+  return { metrics: perf, rank: rankKey(perf) };
 };
 
 const liveRes = evalOnOOS(live);
 const trainRes = evalOnOOS(train);
+// 指标加固：三指标任一非有限数 → 无法判定 → 一律拒绝晋升（缺失禁当真值，
+// 「拉不到就如实报不可用，不许编数」与 #6 探针同一条纪律）。
+const fin = (v) => Number.isFinite(v);
+const metricsUsable = [liveRes, trainRes].every((r) => fin(r.metrics.maxDd) && fin(r.metrics.sharpe) && fin(r.metrics.annual));
+if (!metricsUsable) {
+  console.error('[promote] 样本外指标缺失（非有限数），无法判定 —— 拒绝晋升（缺失禁当真值）。');
+  process.exit(1);
+}
 // rankKey = [maxDd, -sharpe, -annual]（升序更优，与 src/backtest.js sortByRank 同语义）：
 // 「train 不劣于 live」= 字典序 train ≤ live（首个差异分量上 train 更优，或完全相等）
 const lexCompare = (a, b) => {
