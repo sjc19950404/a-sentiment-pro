@@ -7,7 +7,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createRequire } from 'node:module';
 // 口径唯一出处：新股判定与净买分离一律走 src/lhb.js，本脚本不自行实现（口径守卫会拦）
-import { newStockSplitOfDay } from '../src/lhb.js';
+import { newStockSplitOfDay, aggregateByCode } from '../src/lhb.js';
 import { decodeArchive } from '../src/lhb_codec.js';
 
 const rootArg = process.argv.indexOf('--root');
@@ -687,7 +687,15 @@ check('交互：可切到龙虎榜资金视图（净买/买卖额列）',
 // 区间累计榜的数值不能和当日值混在一起看：表格必须把它标出来（否则读表人会以为 2.84 亿就是当天净买）
 {
   const rngBadges = $('hotTable').querySelectorAll('tbody .rngb').length;
-  const rngRows = (arcAll.all_days.slice(-1)[0]?.lhb_aggr || []).filter((l) => l.caliber === 'range').length;
+  // ⚠ 取数纪律（本轮体积纪律的连带修正）：主档**不再持久化 lhb_aggr**（会使归档翻倍，
+  //   见 scripts/recalc_lhb_daily.mjs 注），故不能读 `day.lhb_aggr`（永远 undefined → 断言假红）。
+  //   正确做法：从当日原始记录 `lhb` 用**同一条聚合**（src/lhb.js 的 aggregateByCode）现算。
+  //   注意判据字段是**聚合产物**上的 `caliber === 'range'`，不是原始记录的 `is_range`
+  //   （原始 79 条里 is_range=true 有 23 条，聚合后 caliber='range' 才是页面上打标的行）。
+  const lastDay = arcAll.all_days.slice(-1)[0];
+  const lastRows = (lastDay?._sub && Array.isArray(lastDay._sub.lhb)) ? lastDay._sub.lhb
+    : (Array.isArray(lastDay?.lhb) ? lastDay.lhb : []);
+  const rngRows = aggregateByCode(lastRows).filter((l) => l.caliber === 'range').length;
   check('口径：龙虎榜表格给「区间累计榜」行打标记（数值口径肉眼可辨）',
     rngRows > 0 && rngBadges === rngRows, `区间榜 ${rngRows} 行 → 页面标记 ${rngBadges} 个`);
 }
@@ -2901,6 +2909,44 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
     // 宽度不得从 hot 列表推（hot 是涨幅榜，用它算宽度必然全在均线上方）
     check('市场宽度：前端未用 hot 列表推算宽度',
       !/hot[\s\S]{0,50}?(aboveMa|maRatio|newHigh)/.test(code), '');
+  }
+
+  // ── 数据质量面板（#3 异常值/脏数据）──
+  //   ① 面板必须存在并渲染
+  //   ② 三态可区分：「已剔除（error）」与「需复核（warn）」**不得同色同词** —— 混为一谈
+  //      会让人误判数据是否被丢弃，这正是本面板存在的意义
+  //   ③ 必须披露"标脏只剔因子入参、原值保留"和"本层不改写分值"
+  //   ④ 缺数据必须显示「未计算」，不得显示成"数据干净"
+  //   ⑤ 前端不得自行实现校验规则（第二套口径）
+  const dp = $('dirtyPanel');
+  check('数据质量：面板元素存在', !!dp, dp ? '' : '未找到 #dirtyPanel');
+  if (dp) {
+    const isUnknown = /dq-unknown/.test(dp.className || '');
+    const txt = (dp.textContent || '');
+    check('数据质量：面板已渲染（hidden 已解除或为未知态）', dp.hidden === false, `hidden=${dp.hidden}`);
+    if (!isUnknown) {
+      check('数据质量：三态类名唯一且合法', /dq-(clean|has-warn|has-dirty)/.test(dp.className || ''), `类名 ${dp.className}`);
+      check('数据质量：四个 KPI 齐全（干净/已剔除/需复核/涉及字段）',
+        /干净天数/.test(txt) && /已剔除/.test(txt) && /需复核/.test(txt) && /涉及字段/.test(txt), '');
+      check('数据质量：区分「已剔除」与「需复核」两种语义标签',
+        /已剔除/.test(txt) && /需复核/.test(txt), '两者混用会让人误判数据是否被丢弃');
+      check('数据质量：披露「原值保留在档里」与「本层不改写分值」',
+        /原值/.test(txt) && /不改写/.test(txt), '不披露会让读者以为数据被删了');
+      check('数据质量：披露校验口径来源（单源内部校验）',
+        /单源内部校验/.test(txt), '');
+      check('数据质量：含合规声明（不构成投资建议）', /不构成投资建议/.test(txt), '');
+    } else {
+      check('数据质量：未知态显式说明「没检查 ≠ 数据干净」',
+        /未评估/.test(txt), '');
+    }
+  }
+  // 源码层：前端不得自行实现校验规则（阈值必须唯一出处 src/dirty.js）
+  {
+    const src = readFileSync(join(ROOT, 'app.js'), 'utf8');
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    check('数据质量：前端未自行实现校验阈值（不得出现 300 亿/500 亿等硬编码）',
+      !/[>≥]\s*(300|4000|1000)\b[\s\S]{0,40}?(dirty|脏)/i.test(code),
+      '前端出现校验阈值＝第二套口径，阈值唯一出处是 src/dirty.js');
   }
 }
 

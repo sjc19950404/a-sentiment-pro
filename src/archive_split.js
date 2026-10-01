@@ -19,11 +19,38 @@
 //   页面与脚本看到不同的数据（最坏情况是分位与因子对不上，且没人发现）。
 //
 // ⚠ 入参 archive 是**已序列化态**（lhb 已码表压缩、惰性字段已在 `_sub`）：
-//   本模块只做"搬运/裁剪"，不碰 reason 也不解 `_sub`。语义见 src/lhb_codec.js。
+//   本模块只做"搬运/裁剪"，不碰 reason 也不解 `_sub`。
+//   **唯一例外**：滚动窗最新日补 `lhb_aggr` 时，因为要交给聚合函数（它按 reason 文本
+//   判新股/区间榜），必须先把 `rc` 码表下标还原成明文——见下方 decodeRcRows 与其长注。
+//   除此之外模块仍不依赖业务代码（码表取自 archive.meta，不 import lhb_codec）。
+//   语义见 src/lhb_codec.js。
 
 /** 每年分片的年键（按 trade_date 的年份）。跨年档案天然落到不同文件。 */
 export function yearOf(tradeDate) {
   return String(tradeDate || '').slice(0, 4);
+}
+
+/**
+ * 把**压缩态**的 lhb 记录行还原成明文 reason（`rc:[i]` → `reasons:[code]`）。
+ *
+ * 为什么需要：入参 archive 里 reason 是码表下标（`rc`）。聚合函数 aggregateByCode 的产物
+ *   会被前端拿去判「新股」（isNewStock 只认 reasons/reason 文本里的
+ *   "无价格涨跌幅限制的证券"）与「区间累计榜」（RANGE_BOARD_RE 认 reasons 文本）。
+ *   若拿 rc 形态聚合，产物会是 `reasons:[null]`，两类判定**双双击穿**，且不报错——
+ *   表现是界面静默少了标记（实测：check_frontend 的「新股」标记断言因此变红）。
+ *
+ * 与 lhb_codec.decodeDay 同一套语义（`rc` 每一项查码表，取不到则丢弃；`reason` 取首项）。
+ *   此处**不复用** decodeDay 是为了保持本模块零 import；逻辑很短，且单一职责
+ *   （只处理"一行记录"这一件事）。
+ * 已是明文（无 `rc`）的行原样返回——兼容未压缩的存量档。
+ */
+function decodeRcRows(rows, codes) {
+  return rows.map((l) => {
+    if (!l || !Array.isArray(l.rc)) return l;
+    const reasons = l.rc.map((i) => codes[i]).filter((x) => typeof x === 'string');
+    const { rc, ...rest } = l;
+    return { ...rest, reasons, reason: reasons[0] ?? '—' };
+  });
 }
 
 /**
@@ -186,11 +213,47 @@ export const RECENT_FILE = 'archive-recent.json';
  *
  * 两级都保留 meta/signals，使前端只加载本文件就能完成首屏 + 走势渲染。
  */
-export function buildRecent(archive, n = RECENT_DAYS) {
+export function buildRecent(archive, n = RECENT_DAYS, opts = {}) {
   const days = (archive && archive.all_days) || [];
   const slice = days.slice(-n);
   const last = slice[slice.length - 1] || null;
   const head = slice.slice(0, -1);
+  // 最新日补 lhb_aggr（展示层唯一入口，审计断言它会存在）。
+  //
+  // ⚠ 为什么在**切片层**补、而不是让主档持久化它：
+  //   主档 241 天全存 lhb_aggr ≈ +4.2MB（实测翻倍，见 scripts/recalc_lhb_daily.mjs 的体积纪律注）。
+  //   而真正需要它的只有**滚动窗的最新日一屏**（前端首屏盘面/报告）。故：
+  //     · 主档：只存 lhb（原始记录），lhb_aggr 一律不存 → 体积最小、形态统一
+  //     · 切片最新日：现从 lhb 聚合出 lhb_aggr → 满足展示层，代价 O(当日条数) 且只算 1 天
+  //   注入式实现（aggregateFn）保持本模块零依赖，与 breadthFn/painFn 同款。
+  //   注入缺省时回退为原样（不补），不抛错——切片是派生视图，不该因缺注入而失败。
+  //
+  // ⚠ 原始记录的取法：主档是 **deflate 态**，`lhb` 被提到 `_sub.lhb`（提子规则 SUBSCRIBE_FIELDS）。
+  //   若只看 `latest.lhb` 会永远取空 → 补聚合静默失效，故必须先解 `_sub` 再回退顶层。
+  //   两处都取是刻意的：deflate 态与非 deflate 态都要兼容。
+  //
+  // ⚠⚠ 更致命的一层：入参 `archive` 是**压缩态**，记录里的上榜原因存的是码表下标 `rc: [25]`，
+  //   而 `reason`/`reasons` 明文只在解码后才存在。若直接拿 `rc` 形态的记录去聚合，
+  //   聚合产物会是 `reasons: [null]`，于是 `isNewStock()`（它只认 reasons 文本里的
+  //   "无价格涨跌幅限制的证券"）全部失配 → 前端「新股」标记消失（实测：本断言曾因此变红）。
+  //   故此处必须**先用档内自带的 `meta.reasonCodes` 把 rc 还原成明文**再聚合。
+  //   码表就在 archive.meta 里，故仍然零依赖（不 import lhb_codec）。
+  let latest = last || null;
+  const aggFn = typeof opts.aggregateFn === 'function' ? opts.aggregateFn : null;
+  if (latest && aggFn && !Array.isArray(latest.lhb_aggr)) {
+    try {
+      const sub = (latest._sub && typeof latest._sub === 'object') ? latest._sub : null;
+      const rawRows = Array.isArray(latest.lhb) ? latest.lhb
+        : (sub && Array.isArray(sub.lhb)) ? sub.lhb
+          : [];
+      if (rawRows.length) {
+        const codes = (archive && archive.meta && Array.isArray(archive.meta.reasonCodes))
+          ? archive.meta.reasonCodes : null;
+        const rows = codes ? decodeRcRows(rawRows, codes) : rawRows;
+        latest = { ...latest, lhb_aggr: aggFn(rows) };
+      }
+    } catch { /* 补聚合失败 → 保持原样（前端会回退 day.lhb） */ }
+  }
   return {
     kind: 'archive-recent',
     version: 2,
@@ -202,7 +265,7 @@ export function buildRecent(archive, n = RECENT_DAYS) {
     // 近 N-1 日：只保画曲线所需字段（见 trendPoint）
     days: head.map(trendPoint),
     // 最新日：完整明细，但惰性字段仍在 _sub（前端按需 pickDay）
-    latest: last || null,
+    latest,
   };
 }
 
@@ -329,6 +392,31 @@ export function buildSignals(archive, opts = {}) {
   if (bFn) {
     try { breadth = bFn(days); } catch { breadth = null; }
   }
+  // 异常值/脏数据（#3 本轮）：**直接从档案里读** emotion.dirty 留痕（不需外部注入）——
+  //   因为标脏结果已由 recalcAll 写进每一天，这里只是把"有情况的天"汇总成一份清单。
+  //   纪律：脏数据是**数据质量问题**，不属于情绪信号；此处只做"通报 + 定位"，
+  //   不重算、不修改任何分值（分值的剔除早在管线里做完了，此处只读）。
+  let dirty = null;
+  try {
+    const tagged = days.filter((d) => d.emotion && d.emotion.dirty);
+    const fieldAgg = new Map();
+    tagged.forEach((d) => {
+      (d.emotion.dirty.fields || []).forEach((f) => fieldAgg.set(f, (fieldAgg.get(f) || 0) + 1));
+    });
+    dirty = {
+      // 最近一日的标脏情况（前端首屏展示用）
+      latest: (last && last.emotion && last.emotion.dirty) ? last.emotion.dirty : null,
+      // 全档汇总：哪些天有留痕、哪些字段出现最多
+      totalDays: days.length,
+      taggedDays: tagged.length,
+      // 只有 error 级才算"脏"；warn 级是"需人工复核"，语义不同，分开计数
+      dirtyDays: tagged.filter((d) => d.emotion.dirty.status === 'dirty').length,
+      warnDays: tagged.filter((d) => d.emotion.dirty.status === 'warn').length,
+      byField: [...fieldAgg.entries()].map(([field, n]) => ({ field, days: n })).sort((a, b) => b.days - a.days),
+      // 明细（最多 20 条，避免轻量档膨胀）
+      recent: tagged.slice(-20).map((d) => ({ date: d.trade_date, ...d.emotion.dirty })),
+    };
+  } catch { dirty = null; }
   return {
     kind: 'signals-latest',
     version: 1,
@@ -362,6 +450,13 @@ export function buildSignals(archive, opts = {}) {
       ? '宽度由全市场真实前复权日K计算（非榜单样本）。破净率依赖 PB 源，不可用时为 null（显示"未计算"）而非 0；'
         + '样本不足时比例同样为 null。占比分母是已扫描样本数，不是全市场总数。'
       : '未生成（调用方未注入 breadthFn，需全市场 K 线）',
+    // 异常值/脏数据（#3）：{ latest, totalDays, taggedDays, dirtyDays, warnDays, byField, recent }。
+    //   注意语义分层：dirtyDays = 有 error 级问题（该因子已从情绪分剔除）；
+    //   warnDays = 仅"需人工复核"（如数值孤立的强板块，**未剔除**任何数据）。
+    //   把两者混为一谈会让人误以为数据被丢了——这是本面板最要紧的区分。
+    dirty,
+    dirtyNote: '标脏 = 该字段已被排除在因子入参之外（原值仍保留在档里，可追溯/可人工复核）；'
+      + 'warn ≠ dirty：warn 只是提示复核，未剔除任何数据。缺失一律显示"未计算"而非 0。',
     marketAlerts: market,
     marketAlertsNote: fn
       ? `仅大盘层告警，按假设总资产 ${assumedTotal} 元、空仓计算；持仓层告警需本地账户，见 paper_ui.js`

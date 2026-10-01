@@ -18,6 +18,7 @@ import { assessFreshness } from '../src/freshness.js';
 import { resolveHolidays } from '../src/calendar.js';
 import { buildSeatSeries, seatSeriesSummary, seatVerdict } from '../src/seats_daily.js';
 import { buildBreadthSeries, breadthSeriesSummary } from '../src/breadth.js';
+import { aggregateByCode } from '../src/lhb.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
@@ -46,7 +47,9 @@ const codes = Array.isArray(raw?.meta?.reasonCodes) && raw.meta.reasonCodes.leng
 const packed = encodeArchive(arc, codes, { deflate: true });
 const index = buildIndex(packed);
 const shards = buildShards(packed);
-const recent = buildRecent(packed, RECENT_DAYS);
+// 注入 aggregateByCode：主档不再持久化 lhb_aggr（体积纪律），滚动窗「最新日」需现补。
+//   与 pipeline.writeShards 必须用**同一注入**，否则 --check 会报两路径形态分裂。
+const recent = buildRecent(packed, RECENT_DAYS, { aggregateFn: aggregateByCode });
 const signals = buildSignals(packed, {
   assumedTotal: 100000,
   marketAlertsFn: marketAlerts,

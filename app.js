@@ -1749,6 +1749,9 @@ let PAIN = null;
 // 多维市场宽度（#3）：同样来自 signals-latest.json。为 null 表示"未生成/未加载"
 //   （≠"宽度均衡"）——渲染层须显式区分。
 let BREADTH = null;
+// 异常值/脏数据标脏（#3 本轮）：同样来自 signals-latest.json。
+//   为 null 表示"未生成/未加载"（≠"数据干净"）——渲染层须显式区分。
+let DIRTY = null;
 
 async function loadHealth() {
   try {
@@ -1766,6 +1769,9 @@ async function loadHealth() {
     // 市场宽度（#3）同源同次取。
     BREADTH = s && s.breadth ? s.breadth : null;
     renderBreadth(BREADTH);
+    // 异常值/脏数据（#3 本轮）同源同次取。
+    DIRTY = s && s.dirty ? s.dirty : null;
+    renderDirty(DIRTY);
     // 研判报告里也有一段「数据可信度」——它渲染时 HEALTH 多半还是 null（首屏已画完），
     // 故拉取成功后必须**重刷报告**，否则报告会永久缺这一段。
     // 与 loadBacktest 成功后重刷报告是同一种处理（数据异步到达 → 依赖它的 UI 要重画）。
@@ -1776,6 +1782,7 @@ async function loadHealth() {
     renderSeats(null, e.message);
     renderPain(null, e.message);
     renderBreadth(null, e.message);
+    renderDirty(null, e.message);
   }
 }
 
@@ -2017,8 +2024,71 @@ function renderBreadth(b, errMsg) {
     + `</div></div></details>`;
 }
 
-async function loadVersionRegression() {
-  const foot = $('verCaution');
+// 数据质量（#3 本轮）：异常值/脏数据标脏结果。
+//   核心语义区分（本面板存在的意义）：
+//     dirty（error 级）= 该字段已被**排除在情绪分之外**（原值保留，可追溯）
+//     warn            = 仅"需人工复核"，**未剔除任何数据**
+//   把两者渲染成同一个数字，会让人误以为数据被丢了 —— 那正是本项目最忌讳的"用失败伪装平静"的反面。
+function renderDirty(d, errMsg) {
+  const box = $('dirtyPanel');
+  if (!box) return;
+  if (!d) {
+    box.hidden = false;
+    box.className = 'dirty-panel dq-unknown';
+    box.innerHTML = `<div class="dq-head"><b>数据质量</b>`
+      + `<span class="dq-chip unknown">未评估</span>`
+      + `<span class="muted">${esc(errMsg || 'signals-latest.json 缺少 dirty 段')}`
+      + `——这是"没检查"，不等于"数据干净"</span></div>`;
+    return;
+  }
+  const dirtyN = d.dirtyDays ?? 0;
+  const warnN = d.warnDays ?? 0;
+  const tone = dirtyN > 0 ? 'has-dirty' : (warnN > 0 ? 'has-warn' : 'clean');
+  box.hidden = false;
+  box.className = `dirty-panel dq-${tone}`;
+
+  const latest = d.latest || null;
+  const byField = Array.isArray(d.byField) ? d.byField : [];
+  const recent = Array.isArray(d.recent) ? d.recent : [];
+
+  // KPI：干净天数 / 需复核天数 / 已剔除因子字段数
+  const cleanN = (d.totalDays ?? 0) - (d.taggedDays ?? 0);
+  const kpis = [
+    ['干净天数', cleanN, 'pos', d.totalDays],
+    ['已剔除（error）', dirtyN, dirtyN > 0 ? 'neg' : '', d.totalDays],
+    ['需复核（warn）', warnN, warnN > 0 ? 'warnc' : '', d.totalDays],
+    ['涉及字段', byField.length, '', null],
+  ].map(([k, val, c, den]) => `<div class="dq-kpi ${c}"><span class="dq-k">${esc(k)}</span>`
+    + `<span class="dq-v">${esc(val)}</span>`
+    + (den ? `<span class="dq-den muted">/${esc(den)}</span>` : '') + `</div>`).join('');
+
+  const fieldRows = byField.map((f) => `<tr><td class="dq-field">${esc(f.field)}</td><td class="dq-num">${esc(f.days)}</td></tr>`).join('');
+
+  const recentRows = recent.map((r) => `<tr>`
+    + `<td class="dq-date">${esc(r.date || '')}</td>`
+    + `<td><span class="dq-sev ${r.status === 'dirty' ? 'sev-error' : 'sev-warn'}">${r.status === 'dirty' ? '已剔除' : '需复核'}</span></td>`
+    + `<td class="dq-reason">${esc((r.issues && r.issues[0] && r.issues[0].reason) || '—')}</td>`
+    + `</tr>`).join('');
+
+  box.innerHTML = `<details class="dq-fold" open>`
+    + `<summary><b>数据质量（异常值/脏数据）</b>`
+    + `<span class="dq-chip ${esc(tone)}">${dirtyN > 0 ? '有脏数据' : (warnN > 0 ? '有需复核项' : '干净')}</span>`
+    + `<span class="muted dq-sum">校验 ${esc(d.totalDays ?? 0)} 天 · 剔除 ${dirtyN} 天 · 复核 ${warnN} 天</span>`
+    + `</summary>`
+    + `<div class="dq-body">`
+    + `<div class="dq-kpis">${kpis}</div>`
+    + (latest ? `<div class="dq-latest"><b>最新一日</b> <span class="dq-sev ${latest.status === 'dirty' ? 'sev-error' : 'sev-warn'}">${latest.status === 'dirty' ? '已剔除' : '需复核'}</span>`
+      + `<div class="dq-reason">${esc((latest.issues || []).map((i) => i.reason).join('；') || '—')}</div></div>` : '')
+    + (fieldRows ? `<table class="dq-table"><thead><tr><th>字段</th><th>天数</th></tr></thead><tbody>${fieldRows}</tbody></table>` : '')
+    + (recentRows ? `<div class="dq-sub muted">最近留痕（最多 20 条）</div><table class="dq-table dq-recent"><thead><tr><th>日期</th><th>状态</th><th>原因</th></tr></thead><tbody>${recentRows}</tbody></table>` : '')
+    + `<div class="dq-note muted">口径：单源内部校验（范围 / 单位「万-亿」/ 重复 / 逻辑一致性），由 <code>src/dirty.js</code> 唯一实现。`
+    + `<br>⚠ 两类语义必须分清：<b>已剔除</b>＝该字段被排除在因子入参之外（**原值仍保留在档里**，可追溯、可人工复核）；<b>需复核</b>＝仅标记，**未剔除任何数据**。`
+    + `<br>缺失一律显示「未计算」而非 0。本层**不改写任何分值** —— 剔除动作在管线内完成，此处只通报与定位。`
+    + `<br>数据来自公开行情，不构成投资建议。`
+    + `</div></div></details>`;
+}
+
+async function loadVersionRegression() {  const foot = $('verCaution');
   try {
     const res = await fetch('./data/version-regression.json?_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);

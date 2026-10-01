@@ -8,7 +8,7 @@ import { ThemeDenoiser, computeMomentum } from './themes.js';
 import { computeSentiment } from './sentiment.js';
 import { validateArchive } from './validate.js';
 import { fetchLive, recalcRanks, LhbNotPublishedError, applyLhb, fetchLhb, fetchSeats } from './sources.js';
-import { caliberFromDay, dailyRowsOf } from './lhb.js';
+import { caliberFromDay, dailyRowsOf, aggregateByCode } from './lhb.js';
 import { todayBeijing, isTradingDay } from './util.js';
 import { resolveHolidays } from './calendar.js';
 import { applyFreshnessMeta, applyPhaseMeta, freshnessKey, assessFreshness } from './freshness.js';
@@ -19,6 +19,7 @@ import { computeRelative } from './relative.js';
 import { healthReport } from './health.js';
 import { buildSeatSeries, seatSeriesSummary, seatVerdict } from './seats_daily.js';
 import { buildBreadthSeries, breadthSeriesSummary } from './breadth.js';
+import { validateDay, sanitizeForFactors, dirtyArgsOf } from './dirty.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -134,6 +135,16 @@ export function recalcAll(days) {
     const s = d.summary || {};
     const hasRaw = (s.ind_count > 0 || s.lhb_daily_net != null || s.lhb_all_net != null);
     if (!hasRaw) { if (d.emotion) d.emotion._legacy = true; return; }
+
+    // ── #3 脏数据标脏 ─────────────────────────────────────────────────────
+    //   纪律：脏字段的**原始值保留在档里**（可追溯/可人工复核），只是不喂给
+    //   computeSentiment —— 让因子走它既有的 missing/proxy 通道（那是一条已测试的
+    //   "缺失显式化"路径），而不是被脏值污染后算出一个"看起来正常"的分数。
+    //
+    // ⚠ 时序纪律（本层最易踩的坑）：标脏必须发生在 caliberFromDay **之后**。
+    //   caliberFromDay 会从原始记录**重写** s.lhb_daily_net / s.lhb_new_net 等字段。
+    //   若在它之前校验，看到的是上一轮的旧值 → 漏标本轮新出现的脏值。
+    //   故校验点统一放在"档内字段已定稿"之后（见下方 vres）。
     // 双口径统一从原始记录现算（每票一笔，取 |净额| 最大者），杜绝各自相加时把区间累计榜混进当日口径。
     // 权威口径 lhb_daily_net 喂日度因子；lhb_all_net 只作诊断留痕，两者不共用任何中间量。
     const c = caliberFromDay(d);
@@ -160,28 +171,30 @@ export function recalcAll(days) {
       s.lhb_new_stocks = c.daily_new_stocks;
       if (d.emotion) d.emotion.lhb_daily_net = c.daily_net_yi;
     }
-    const netBuy = s.lhb_daily_net ?? null;
+    // 字段定稿后校验 + 把脏字段从因子入参里摘掉
+    const vres = validateDay(d);
+    const { cleaned, dropped } = sanitizeForFactors(d, vres);
+
+    const netBuy = cleaned.netBuy ?? null;
     // 新股净买：优先用上面刚算出的当日榜分离结果；明细缺失的天回退为 0（不阻断，但不虚构数值）
-    const newStockNet = s.lhb_new_net ?? 0;
+    const newStockNet = cleaned.newStockNet ?? 0;
     // amount MA20：取当日之前最近 20 个有值交易日
     const hist = [];
     for (let j = i - 1; j >= 0 && hist.length < 20; j--) if (amts[j] != null) hist.unshift(amts[j]);
     const ma = hist.length >= 10 ? hist.reduce((a, b) => a + b, 0) / hist.length : null;
-    const posRatio = (s.net_pos != null && s.net_neg != null && (s.net_pos + s.net_neg) > 0)
-      ? s.net_pos / (s.net_pos + s.net_neg) : null;
     const sent = computeSentiment({
       netBuy,
       newStockNet,
-      newStockRatio: s.lhb_new_ratio ?? null,
-      upCount: s.up_count ?? null,
-      downCount: s.down_count ?? null,
-      posRatio,
-      industryUp: s.ind_up ?? null,
-      industryTotal: s.ind_count ?? null,
-      limitUp: s.zt_count ?? null,
-      limitDown: s.dt_count ?? null,
-      brokenCount: s.zb_count ?? null,
-      amount: s.amount_yi ?? null,
+      newStockRatio: cleaned.newStockRatio ?? null,
+      upCount: cleaned.upCount ?? null,
+      downCount: cleaned.downCount ?? null,
+      posRatio: cleaned.posRatio ?? null,
+      industryUp: cleaned.industryUp ?? null,
+      industryTotal: cleaned.industryTotal ?? null,
+      limitUp: cleaned.limitUp ?? null,
+      limitDown: cleaned.limitDown ?? null,
+      brokenCount: cleaned.brokenCount ?? null,
+      amount: cleaned.amount ?? null,
       amountMA20: ma,
     }, config.weights);
     const FKEY = { s_net20: 's_net', s_pos10: 's_pos', s_brd20: 's_brd', s_hot10: 's_hot', s_zdt15: 's_zdt', s_zbl10: 's_zbl', s_amt15: 's_amt' };
@@ -196,6 +209,18 @@ export function recalcAll(days) {
       missing: sent.missing,
       // 新股修正留痕（可逐日核对 s_net 是否被动过、动了多少）
       newStock: sent.newStock,
+      // #3 标脏留痕：本日被剔除的因子入参 + 校验状态。
+      //   只写"有情况"的天（干净天不写字段），避免给 241 天全加上噪声字段。
+      //   形态：{ status, dropped: ['netBuy', ...], issues: [{field,rule,severity,reason}] }
+      //   报告与前端据此说"今天哪个因子被跳过了"，而不是让用户猜。
+      ...(vres.status === 'ok' ? {} : {
+        dirty: {
+          status: vres.status,
+          dropped: dropped.slice(),
+          fields: [...vres.dirtyFields],
+          issues: vres.issues.map((x) => ({ field: x.field, rule: x.rule, severity: x.severity, reason: x.reason })),
+        },
+      }),
     };
   });
   // 板块相对强弱：与情绪分一样属于**派生指标**，必须在每次写档时重算——
@@ -371,7 +396,10 @@ export function writeShards(archive, dir = DATA_DIR) {
     writeFileSync(path.join(dir, shardName(y)), JSON.stringify(shards[y]), 'utf8');
   }
   // 滚动窗：走势图/抽屉只需最近 30 个交易日，不该为它拉整年分片（2026 年分片仍 >4MB）
-  const recent = buildRecent(archive, RECENT_DAYS);
+  // 注入 aggregateByCode：主档不再持久化 lhb_aggr（体积纪律，见 recalc_lhb_daily.mjs），
+  //   而滚动窗「最新日」是展示层唯一入口，需带 lhb_aggr 一屏。这里现从当日 lhb 聚合，
+  //   只算 1 天，代价 O(条数)。本模块保持零业务依赖（与 marketAlertsFn 同款注入）。
+  const recent = buildRecent(archive, RECENT_DAYS, { aggregateFn: aggregateByCode });
   writeFileSync(path.join(dir, RECENT_FILE), JSON.stringify(recent), 'utf8');
   // 最轻档：只含最新日 + 动量 + 大盘告警 + 数据健康（~14KB）。给"不跑前端只看今日结论"的读者。
   // marketAlerts / healthReport 都是**纯函数**，注入进来而不是让本模块 import 业务依赖 —— 保持 archive_split 无业务依赖。

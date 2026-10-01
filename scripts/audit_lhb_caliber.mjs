@@ -1022,6 +1022,31 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
       const mainSeatDays = (arch.all_days || []).filter((d) => d.summary && d.summary.seats).length;
       check('切片：滚动窗保留历史日 summary.seats（锁仓统计读前 2 天，裁掉会静默少一段）',
         mainSeatDays === 0 || seatDays > 0, `窗内 ${seatDays} 天 / 主档 ${mainSeatDays} 天`);
+      // ── B20：滚动窗的 lhb_aggr 必须是「reason 已还原」的聚合，不得是 rc 下标聚合 ──
+      //
+      // 守的事故：主档是压缩态，lhb 记录的 reason 存成码表下标 `rc:[25]`。滚动窗的 lhb_aggr
+      //   是在 **切片层**现聚合的（主档不持久化它，见体积纪律）。若聚合前忘了把 rc 还原成明文，
+      //   产物会是 `reasons:[null]` → `isNewStock()`（只认 reasons 文本里的
+      //   "无价格涨跌幅限制的证券"）与 `RANGE_BOARD_RE` **双双击穿且不报错**。
+      //   表现：前端「新股」标记静默消失（本轮实测：check_frontend 的新股断言因此变红）。
+      //   这是本项目最隐蔽的一类坑——**数值对、标签错、无异常**。故必须在口径审计里逐行验 reason。
+      {
+        const aggr = Array.isArray(lt.lhb_aggr) ? lt.lhb_aggr : [];
+        const withRc = aggr.filter((r) => Array.isArray(r.rc));                        // 残留下标 = 没还原
+        const badReason = aggr.filter((r) => Array.isArray(r.reasons)
+          && r.reasons.some((s) => s == null || s === '—'));                           // 还原失败 = null/占位
+        check('切片：滚动窗 lhb_aggr 不得残留 rc 下标（必须先还原 reason 再聚合）',
+          withRc.length === 0, `${withRc.length} 行仍带 rc`);
+        check('切片：滚动窗 lhb_aggr 的 reasons 不得为 null/占位符（rc 未还原的信号）',
+          badReason.length === 0, `${badReason.length} 行 reasons 含 null/'—'`);
+        // 明文 reason 必须在档里有对应码表（证明用的是**同一份** codes，不是拍的）
+        const codes = Array.isArray(arch?.meta?.reasonCodes) ? arch.meta.reasonCodes : [];
+        const reasonSet = new Set(codes);
+        const unbacked = aggr.filter((r) => Array.isArray(r.reasons)
+          && r.reasons.some((s) => typeof s === 'string' && !reasonSet.has(s)));
+        check('切片：滚动窗 lhb_aggr 的 reason 明文均在档内码表中（同一份 codes）',
+          unbacked.length === 0, `${unbacked.length} 行 reason 不在码表`);
+      }
     } else {
       check('切片：存在 archive-recent.json', false, 'missing');
     }
@@ -2007,6 +2032,123 @@ async function checkBreadth() {
 
 try { await checkBreadth(); } catch (e) {
   fails.push(`B17 市场宽度检查抛异常：${e.message}`);
+}
+
+// ── B18. 异常值 / 脏数据自动标脏（#3）──────────────────────────────────────
+//  这一层的守卫重点是三条纪律：
+//   ① 标脏必须**只**剔因子入参、不动档内原值（可追溯）；
+//   ② 缺失显式化：脏字段进 dirtyFields 后，因子走 missing 通道而非被填 0；
+//   ③ 两轮实测证伪的误报规则必须保持**降级**（DIVERGE_INDEX 已删、OUTLIER 只 WARN），
+//      防止后续有人"好心"把它们改回 ERROR —— 那会把真实板块轮动当噪声剔掉。
+async function checkDirty() {
+  const DIRTY_SRC = readFileSync(path.join(ROOT, 'src', 'dirty.js'), 'utf8');
+  const PIPE_SRC = readFileSync(path.join(ROOT, 'src', 'pipeline.js'), 'utf8');
+  const mod = await import(pathToFileURL(path.join(ROOT, 'src', 'dirty.js')).href);
+  const { validateDay, sanitizeForFactors, validateAll, VALIDATION_RULES, SEVERITY, num } = mod;
+
+  // ① num 加固：拒绝数组/对象/布尔（+[]===0 陷阱，本项目第四次出现）
+  check('脏数据：num([]) 必须为 null（+[] === 0 陷阱）', num([]) === null, `got ${num([])}`);
+  check('脏数据：num(0) 必须为 0（0 是合法值不是缺失）', num(0) === 0, `got ${num(0)}`);
+  check('脏数据：num(null) 必须为 null', num(null) === null, '');
+
+  // ② 标脏只剔入参、不动原值
+  const d1 = { trade_date: 'T', hot: [], industry: [], indexes: [], summary: { lhb_daily_net: 5000, up_count: 1313, down_count: 1894 }, emotion: {} };
+  const r1 = validateDay(d1);
+  const s1 = sanitizeForFactors(d1, r1);
+  check('脏数据：脏字段被摘出入参（netBuy → null）', s1.cleaned.netBuy === null, `got ${s1.cleaned.netBuy}`);
+  check('脏数据：档内原值必须保留（可追溯/可人工复核）', d1.summary.lhb_daily_net === 5000, `got ${d1.summary.lhb_daily_net}`);
+  check('脏数据：干净字段不得被误摘（upCount 保留）', s1.cleaned.upCount === 1313, `got ${s1.cleaned.upCount}`);
+  check('脏数据：dropped 名单与脏字段对应', s1.dropped.includes('netBuy'), `dropped=${s1.dropped.join(',')}`);
+
+  // ③ 单位校验：万/亿搞反（用户点名第②类）
+  check('脏数据：龙虎榜净买 >300 亿判脏（万/亿单位搞反）',
+    validateDay({ trade_date: 'T', hot: [], industry: [], indexes: [], summary: { lhb_daily_net: 5000 }, emotion: {} }).status === 'dirty', '');
+
+  // ④ ★ 真实板块轮动不得误判（两轮打脸后的定稿行为，锁死）
+  //    2026-08-18 种植业与林业 +9.36%（真实行情：农林牧渔领涨）不得判 dirty。
+  const rot = [{ name: '种植业与林业', change_pct: 9.36 }, { name: '农产品加工', change_pct: 3.51 }];
+  for (let i = 0; i < 60; i++) rot.push({ name: 'x' + i, change_pct: 0.2 });
+  const rRot = validateDay({ trade_date: 'T', hot: [], indexes: [], summary: {}, emotion: {}, industry: rot });
+  check('脏数据：真实板块轮动不得判 dirty（8-18 实测反证）', rRot.status !== 'dirty', `status=${rRot.status}`);
+  check('脏数据：数值孤立只能 WARN 不得 ERROR（OUTLIER_INDUSTRY 已降级）',
+    !DIRTY_SRC.includes("'OUTLIER_INDUSTRY', SEVERITY.ERROR"), '若改回 ERROR 会把真实轮动当噪声剔掉');
+
+  // ⑤ 已删除的误报规则不得复活
+  check('脏数据：DIVERGE_INDEX 误报规则不得复活（行业动大+指数不动＝正常轮动）',
+    !/DIVERGE_INDEX/.test(DIRTY_SRC), '该规则两轮实测均为误报，已删除');
+
+  // ⑥ 席位条数必须用**全量口径**分母（实测校正，初版跨口径误报 3 天）
+  check('脏数据：席位明细条数与 lhb_stocks（全量口径）比，不用当日榜',
+    /lhb_stocks/.test(DIRTY_SRC) && /allStocks/.test(DIRTY_SRC), '跨口径比会误报');
+
+  // ⑦ 阈值唯一出处
+  check('脏数据：VALIDATION_RULES 为冻结口径唯一出处',
+    typeof VALIDATION_RULES.LHB_NET_YI_ABS_MAX === 'number' && typeof VALIDATION_RULES.AMOUNT_YI_MIN === 'number', '');
+  check('脏数据：SEVERITY 只有 error / warn 两级',
+    SEVERITY.ERROR === 'error' && SEVERITY.WARN === 'warn', '');
+
+  // ⑧ 管线接线：标脏必须在 computeSentiment **之前**、caliberFromDay **之后**
+  const idxCaliber = PIPE_SRC.indexOf('const c = caliberFromDay(d)');
+  const idxValidate = PIPE_SRC.indexOf('const vres = validateDay(d)');
+  const idxSent = PIPE_SRC.indexOf('const sent = computeSentiment({');
+  check('脏数据：pipeline 已接线 validateDay + sanitizeForFactors',
+    idxValidate > 0 && PIPE_SRC.includes('sanitizeForFactors(d, vres)'), '');
+  check('脏数据：标脏在 caliberFromDay 之后（否则看到的是上一轮旧值）',
+    idxValidate > idxCaliber && idxCaliber > 0, `caliber@${idxCaliber} validate@${idxValidate}`);
+  check('脏数据：标脏在 computeSentiment 之前（否则脏值已进因子）',
+    idxValidate < idxSent && idxSent > 0, `validate@${idxValidate} sent@${idxSent}`);
+
+  // ⑨ 缺失显式化：脏字段不得被填 0
+  check('脏数据：因子入参被摘后传的是 null 而不是 0',
+    /netBuy = cleaned\.netBuy \?\? null/.test(PIPE_SRC), '若写成 ?? 0 就是伪造数值');
+
+  // ⑩ 全档实测：241 天里 dirty 应为 0（数据干净的证明，也是无误报的证明）
+  const all = validateAll(days);
+  check('脏数据：全档 dirty 天数为 0（实测 241 天无误报）', all.dirty === 0, `dirty=${all.dirty}`);
+  check('脏数据：全档校验有 byField 汇总（供数据源治理）', Array.isArray(all.byField), '');
+  check('脏数据：cleanRatio 有值（口径声明，非 null）', all.cleanRatio != null, `got ${all.cleanRatio}`);
+
+  // ⑪ 数值纪律：dirty.js 不得裸用 Number.isFinite(+v)
+  const lines = DIRTY_SRC.split(/\r?\n/);
+  const risky = [];
+  lines.forEach((ln, i) => {
+    if (/Number\.isFinite\(\+/.test(ln) && !/function num|typeof/.test(ln)) risky.push(`dirty.js:${i + 1} ${ln.trim().slice(0, 60)}`);
+  });
+  check('数值纪律：dirty.js 数据字段判定不得裸用 Number.isFinite(+v)',
+    !/Number\.isFinite\(\+\w/.test(DIRTY_SRC.replace(/function num[\s\S]*?\n}/, '')), risky.length ? risky.join('; ') : '');
+}
+try { await checkDirty(); } catch (e) {
+  fails.push(`B18 脏数据检查抛异常：${e.message}`);
+}
+
+// ── B19. 主档体积纪律：派生字段不得持久化（#3 实证 bug 的守卫）──────────────
+//  实证事故：scripts/recalc_lhb_daily.mjs 曾把 `day.lhb_aggr = c.all_aggr` 写进主档。
+//  该字段**完全可由 day.lhb 重建**（src/lhb.js 的 caliberFromDay 在缺它时自动回退现算；
+//  app.js 各处读取也一律写作 `day.lhb_aggr || day.lhb || []`），持久化它对运行时零收益。
+//  代价：≈17.5KB/天 × 241 天 ≈ 4.2MB —— 实测主档 5.28MB → 10.9MB（**翻倍**）。
+//  本守卫确保它不会复活，也确保存量档已被清洗。
+function checkVolume() {
+  const RECALC_SRC = readFileSync(path.join(ROOT, 'scripts', 'recalc_lhb_daily.mjs'), 'utf8');
+  // ① 重算脚本不得给 day 赋 lhb_aggr
+  const assignsAggr = /day\.lhb_aggr\s*=/.test(RECALC_SRC) && !/delete\s+day\.lhb_aggr/.test(RECALC_SRC);
+  check('体积纪律：recalc 脚本不得持久化派生字段 lhb_aggr（会使主档翻倍）', !assignsAggr,
+    assignsAggr ? '发现 day.lhb_aggr = 赋值且无对应 delete' : '');
+  check('体积纪律：recalc 脚本显式清除存量 lhb_aggr（清洗老档）',
+    /delete\s+day\.lhb_aggr/.test(RECALC_SRC), '');
+  // ② 存档里不得残留 lhb_aggr（除了本来就没有的历史天）
+  const withAggr = days.filter((d) => d.lhb_aggr != null).length;
+  check('体积纪律：主档不含 lhb_aggr（存量已清洗）', withAggr === 0, `仍有 ${withAggr} 天带 lhb_aggr`);
+  // ③ 主档体积上限（防再次悄悄翻倍；当前约 4.6MB，留 1.5 倍余量）
+  const bytes = readFileSync(ARCHIVE, 'utf8').length;
+  check('体积纪律：主档 < 7MB（当前约 4.6MB，超限说明又混入了派生字段）',
+    bytes < 7 * 1024 * 1024, `实际 ${(bytes / 1024 / 1024).toFixed(2)}MB`);
+  // ④ 派生字段仍可从 lhb 重建（口径唯一出处的证据）
+  const LHB_SRC = readFileSync(path.join(ROOT, 'src', 'lhb.js'), 'utf8');
+  check('体积纪律：caliberFromDay 缺 lhb_aggr 时回退 day.lhb 现算（故无需持久化）',
+    /Array\.isArray\(day\?\.lhb_aggr\)/.test(LHB_SRC), '');
+}
+try { checkVolume(); } catch (e) {
+  fails.push(`B19 体积纪律检查抛异常：${e.message}`);
 }
 
 // ── C. 结论 ────────────────────────────────────────────────────────────────

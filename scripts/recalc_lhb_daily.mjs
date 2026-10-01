@@ -53,7 +53,21 @@ for (const day of days) {
   const mergedAway = Math.max(0, rawBefore - rawAfter);
 
   // 2) 聚合行带口径标签 + 全部上榜原因
-  day.lhb_aggr = c.all_aggr;
+  //
+  // ⚠ 体积纪律（本处曾造成主档翻倍的实证 bug，勿回退）：
+  //   `c.all_aggr` 是**派生数据**——它可由 day.lhb（原始记录）完全重建：
+  //   src/lhb.js 的 caliberFromDay 在缺 lhb_aggr 时会自动回退到 day.lhb 现算
+  //   （见 lhb.js:263 起的「明细优先 / 回退」分支）。而 app.js 各处读取也统一写作
+  //   `day.lhb_aggr || day.lhb || []`，即**消费方本就不依赖它被持久化**。
+  //
+  //   若把它写进档：每只上榜个股约 250 字节 × 平均 70 只 ≈ 17.5 KB/天，
+  //   241 天累计 ≈ 4.2 MB —— 实测主档从 5.28MB 膨胀到 10.9MB（**翻倍**），
+  //   而运行时行为零变化（因为读的地方都有回退）。这是纯浪费，且制造出
+  //   "有的天有 lhb_aggr、有的天没有"的第三种不一致形态。
+  //
+  //   故此处**只算不存**：c.all_aggr 仅在 caliberFromDay 内部消费（它自己会重算），
+  //   本脚本不依赖持久化的 lhb_aggr，故直接剔除。
+  delete day.lhb_aggr;   // 显式清除存量（老档可能已被上一版脚本写脏）
 
   const s = (day.summary = day.summary || {});
   const beforeDaily = s.lhb_daily_net ?? null;

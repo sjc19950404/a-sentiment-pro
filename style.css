@@ -1072,6 +1072,55 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
 .bw-note { margin-top: 9px; padding-top: 7px; border-top: 1px solid var(--line);
   font-size: 11px; line-height: 1.6; }
 
+/* ── 数据质量面板（#3 异常值/脏数据）────────────────────────────────────────
+   与宽度面板同款结构，但状态语义不同：
+     clean    = 无任何留痕（绿）
+     has-warn = 仅"需复核"，未剔除任何数据（橙，中等关注）
+     has-dirty= 有字段被剔出因子入参（红，最需关注）
+   三色必须可区分 —— "需复核"与"已剔除"若同色，会让人误判数据是否被丢。 */
+.dirty-panel { margin: 8px 0; }
+.dirty-panel[hidden] { display: none; }
+.dq-fold { border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+.dq-fold > summary { padding: 7px 12px; cursor: pointer; display: flex; flex-wrap: wrap;
+  align-items: baseline; gap: 8px; }
+.dq-fold > summary::-webkit-details-marker { display: none; }
+.dq-sum { flex: 1 1 100%; font-size: 11.5px; }
+.dq-body { padding: 6px 12px 10px; border-top: 1px solid var(--line); }
+.dq-chip { display: inline-block; font-size: 10.5px; line-height: 1.6; padding: 0 6px; border-radius: 3px;
+  border: 1px solid currentColor; }
+.dq-chip.clean { color: #3fb950; }
+.dq-chip.has-warn { color: #e8843c; }
+.dq-chip.has-dirty { color: #f0616d; }
+.dq-chip.unknown { color: #8b949e; }
+.dirty-panel.dq-clean .dq-fold { border-left: 3px solid #3fb950; }
+.dirty-panel.dq-has-warn .dq-fold { border-left: 3px solid #e8843c; }
+.dirty-panel.dq-has-dirty .dq-fold { border-left: 3px solid #f0616d; }
+.dirty-panel.dq-unknown .dq-fold { border-left: 3px solid #8b949e; border-style: dashed; }
+.dq-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 6px; margin: 2px 0 6px; }
+.dq-kpi { border: 1px solid var(--line); border-radius: 5px; padding: 5px 8px; background: rgba(255,255,255,.02); }
+.dq-kpi .dq-k { display: block; font-size: 10.5px; color: var(--muted); }
+.dq-kpi .dq-v { display: block; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.dq-kpi .dq-den { font-size: 9.5px; }
+.dq-kpi.pos .dq-v { color: var(--up); }
+.dq-kpi.neg .dq-v { color: var(--down); }
+.dq-kpi.warnc .dq-v { color: #e8843c; }
+.dq-latest { font-size: 11.5px; margin: 4px 0 6px; }
+.dq-sev { display: inline-block; font-size: 10.5px; line-height: 1.6; padding: 0 6px; border-radius: 3px;
+  border: 1px solid currentColor; }
+.dq-sev.sev-error { color: #f0616d; }
+.dq-sev.sev-warn { color: #e8843c; }
+.dq-table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 4px; }
+.dq-table th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11px;
+  padding: 3px 6px; border-bottom: 1px solid var(--line); }
+.dq-table td { padding: 3px 6px; border-bottom: 1px dashed rgba(255,255,255,.06); }
+.dq-field, .dq-date { font-variant-numeric: tabular-nums; }
+.dq-num { text-align: right; font-variant-numeric: tabular-nums; }
+.dq-reason { color: var(--muted); font-size: 11px; }
+.dq-sub { font-size: 10.5px; margin-top: 8px; }
+.dq-note { margin-top: 9px; padding-top: 7px; border-top: 1px solid var(--line);
+  font-size: 11px; line-height: 1.6; }
+.dq-note code { background: rgba(255,255,255,.06); padding: 0 3px; border-radius: 2px; }
+
 @media print {
   :root { --bg: #fff; --card: #fff; --card2: #fff; --line: #ccc; --txt: #000; --muted: #555;
     --acc: #000; --up: #c0392b; --down: #1e7e34; --warn: #9a6b00; --focus: #000; }
@@ -1129,6 +1178,8 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
   /* 市场宽度（#3）：打印时去深色底，保留左边框表达状态 */
   .bw-fold { background: #fff !important; border-color: #ccc !important; }
   .breadth-panel .bw-fold { border-left-color: #666 !important; }
+  .dirty-panel .dq-fold { border-left-color: #666 !important; }
+  .dq-chip, .dq-sev { border-color: #666 !important; color: #000 !important; }
   .bw-table th, .bw-table td { border-color: #ccc !important; }
   .bw-note, .bw-sum, .bw-den { color: #444 !important; }
   .bw-kpi { background: #f7f7f7 !important; border-color: #ccc !important; }
