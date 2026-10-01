@@ -722,6 +722,91 @@ escClose();
   $('briefPrintFrame')?.remove();
 }
 
+// ── 席位：买卖双侧表 + 席位身份下钻 ──
+// src/seats.js 同样是 ESM，jsdom 不执行模块脚本，这里手动 import 挂到 window.Seats，
+// 再**真点席位行**，断言下钻抽屉出现且含身份字段——只看"表格里有没有卖方"是不够的：
+// 用户的问题就是"卖方席位能不能点"，必须验证点击真的能到身份页。
+{
+  const Seats = await import('../src/seats.js').catch(() => null);
+  if (Seats) {
+    window.Seats = Seats;
+    window.dispatchEvent(new window.Event('seats-ready'));
+  } else {
+    check('席位：口径模块可加载', false, 'src/seats.js import 失败');
+  }
+
+  // 找一只有席位明细的票，打开它的个股抽屉
+  const arc = JSON.parse(readFileSync(join(ROOT, 'data/archive.json'), 'utf8'));
+  const lastDay = (arc.all_days || [])[arc.all_days.length - 1] || {};
+  const detMap = lastDay.summary?.seats?.detail || {};
+  const anyCode = Object.keys(detMap)[0] || null;
+
+  // 点热点表第一行打开个股抽屉（表行本身即 data-act="stock"）
+  const firstRow = $('hotTable')?.querySelector('tbody tr.clickable');
+  if (firstRow) clickEl(firstRow);
+  const drewStock = drawerOpen();
+  check('席位：个股抽屉可打开', drewStock || !!anyCode, `code=${anyCode}`);
+
+  const seatRowsOf = () => [...($('dwBody')?.querySelectorAll('tr[data-act="seat"]') || [])];
+  let seatRows = seatRowsOf();
+  check('席位：抽屉内席位行可点击（买卖两侧都挂了 data-act="seat"）',
+    seatRows.length > 0, `${seatRows.length} 行`);
+
+  if (seatRows.length) {
+    check('席位：抽屉含"买卖双侧席位明细"标题', txt('dwBody').includes('买卖双侧席位明细'), '');
+
+    // 点某行的席位 → 应弹出席位身份抽屉（用户的核心诉求：席位能不能点）
+    const aRow = seatRows[seatRows.length - 1];
+    const beforeTitle = txt('dwTitle');
+    clickEl(aRow);
+    check('席位：点席位行下钻到席位身份页（标题变化）',
+      drawerOpen() && txt('dwTitle') !== beforeTitle, `→ ${txt('dwTitle')}`);
+    check('席位：身份页含可核验字段（席位类型/券商主体/所在城市）',
+      txt('dwBody').includes('席位类型') && txt('dwBody').includes('券商主体') && txt('dwBody').includes('所在城市'), '');
+    check('席位：身份页如实声明不做游资点名归属（诚实边界可见）',
+      txt('dwBody').includes('不做') && txt('dwBody').includes('游资'), '');
+    check('席位：身份页有返回上级按钮', !!$('dwBody')?.querySelector('button[data-act="dback"]'), '');
+    // 用「返回上级」回到个股详情，再验旧格式降级（此时 dwBody 是身份页，不能直接查）
+    clickEl($('dwBody')?.querySelector('button[data-act="dback"]'));
+    seatRows = seatRowsOf();
+    check('席位：返回上级后回到个股详情（席位行仍在）', seatRows.length > 0, `${seatRows.length} 行`);
+
+    // 旧格式（仅买方）存档：卖方列应明确显示"无卖方席位明细"而非 0 或空白
+    const isV1 = Array.isArray(Object.values(detMap)[0]);
+    if (isV1 && seatRows.every((r) => r.dataset.side === 'b')) {
+      check('席位：旧格式存档优雅降级（卖方列显式提示，不显示 0 占位）',
+        txt('dwBody').includes('无卖方席位明细') && txt('dwBody').includes('旧格式存档'), '');
+    } else {
+      const hasBuy = seatRows.some((r) => r.dataset.side === 'b');
+      const hasSell = seatRows.some((r) => r.dataset.side === 's');
+      check('席位：买卖双侧都有行（不是只有买方）', hasBuy && hasSell,
+        `买方 ${seatRows.filter((r) => r.dataset.side === 'b').length} / 卖方 ${seatRows.filter((r) => r.dataset.side === 's').length}`);
+    }
+    escClose();
+  } else {
+    check('席位：抽屉内席位行可点击（买卖两侧都挂了 data-act="seat"）', false,
+      '最新档没有票带席位明细，无法验证下钻');
+  }
+  escClose();
+
+  // 新格式（买卖双侧）渲染：现存存档尚未重抓（全是 v1），故注入一条 v2 记录，
+  // 直接验证卖方行的渲染与下钻——否则"卖方可点"这个核心功能在 CI 里永远测不到。
+  {
+    // 直接构建 v2 明细，复用席位口径模块核对卖方侧的读取/统计/身份解析
+    const syn = { b: [['华泰证券股份有限公司海口国兴大道证券营业部', 5000], ['机构专用', 2000]],
+      s: [['东方财富证券股份有限公司拉萨团结路第二证券营业部', 8000], ['中信证券股份有限公司总部', 3000]] };
+    const S2 = window.Seats || Seats;
+    const stB = S2.sideStats(syn.b), stS = S2.sideStats(syn.s);
+    check('席位：新股口径下卖方侧占比计算正确（前 3 席 100%）',
+      stS.n === 2 && stS.sum === 11000 && stS.top3Pct === 100, `sum=${stS.sum}`);
+    check('席位：v2 明细经 seatsOf 读取后买卖双侧条数正确',
+      S2.seatsOf({ X: syn }, 'X').b.length === 2 && S2.seatsOf({ X: syn }, 'X').s.length === 2, '');
+    const sellId = S2.seatIdentity(syn.s[0][0]);
+    check('席位：卖方席位身份可解析（城市/主体）',
+      sellId.broker === '东方财富证券' && sellId.city === '拉萨', `${sellId.broker}/${sellId.city}`);
+  }
+}
+
 // 样式层的适配规则必须存在（否则以后误删，手机上又会退回横滑宽表 / 点不中的图表点）
 const htmlTxt = readFileSync(join(ROOT, 'index.html'), 'utf8');
 const cssTxt = readFileSync(join(ROOT, 'style.css'), 'utf8');
@@ -733,6 +818,9 @@ check('样式：窄屏宽表切卡片 + 触屏放大命中区规则',
   /@media \(max-width: 820px\)/.test(cssTxt) && cssTxt.includes('.cardlist {') && /@media \(hover: none\)/.test(cssTxt), '');
 check('样式：图表数据点扩大命中区（含触屏放大）',
   /stroke-width: 8px/.test(cssTxt) && /stroke-width: 18px/.test(cssTxt), '');
+check('样式：席位双侧表并排 + 窄屏堆叠规则齐备',
+  cssTxt.includes('.seat-grid') && /grid-template-columns:\s*1fr 1fr/.test(cssTxt)
+  && cssTxt.includes('.seat-badge.b') && cssTxt.includes('.seat-badge.s'), '');
 
 check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' | '));
 

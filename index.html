@@ -339,6 +339,14 @@
     window.ReportExport = Report;
     window.dispatchEvent(new Event('report-export-ready'));
   </script>
+  <!-- 席位口径唯一来源（券商主体/席位类型/买卖双侧读取）同样是 ESM 纯函数，app.js 不能 import，
+       故与 report.js 一样挂到 window。个股抽屉里的「席位身份」下钻与表格渲染都走它，
+       保证屏幕上的解析结果与 Node 侧测试/报告完全同源。 -->
+  <script type="module">
+    import * as Seats from './src/seats.js';
+    window.Seats = Seats;
+    window.dispatchEvent(new Event('seats-ready'));
+  </script>
   <script type="module" src="./paper_ui.js"></script>
 </body>
 </html>

@@ -364,7 +364,15 @@ async function fetchSeatRows(reportName, date, code, sortCol) {
 }
 
 // 抓全部榜单股的席位明细并聚合。cover=成功覆盖率（%）；席位明细分批发布，未发布视作无数据
-// 附加: buy_top3_pct=全市场买方头部3席位集中度（前3席位买入÷全部买方买入）; detail=逐票买方席位明细(万元)，供锁仓/新进资金跨日比对
+// 附加: buy_top3_pct=全市场买方头部3席位集中度（前3席位买入÷全部买方买入）;
+//       detail=逐票**买卖双侧**席位明细，供锁仓/新进资金跨日比对与"席位身份"下钻。
+//
+// detail 结构（v2，买卖双侧）：
+//   { code: { b: [[席位名, 金额万元], ...], s: [[席位名, 金额万元], ...] } }
+// 旧结构（v1，仅买方）是 { code: [[席位名, 金额万元], ...] }。
+// 前端必须两种都能读——存量存档不会因为这次改动而重算，历史天数仍是 v1 形态。
+// 之所以补上卖侧：龙虎榜本来就是"买卖各前 5 席位"，只存买方等于把对手盘结构整块丢掉，
+// 用户点开个股只能看到"谁在买"，看不到"谁在卖"，而砸盘方往往才是判断接力的关键。
 export async function fetchSeats(date, aggr) {
   const agg = { inst_buy: 0, inst_sell: 0, north_buy: 0, north_sell: 0, hot_buy: 0, hot_sell: 0, cover: 0, conc_top: [], buy_top3_pct: null, detail: {} };
   const concAll = [];
@@ -391,10 +399,13 @@ export async function fetchSeats(date, aggr) {
       const tot = buys.reduce((x, y) => x + y, 0);
       if (tot > 0) concAll.push([a.name, r1(buys.slice(0, 3).reduce((x, y) => x + y, 0) / tot * 100)]);
     }
-    // 逐票买方席位明细（[席位名, 买入万元]）：锁仓/新进资金口径原料
-    if (buyRows && buyRows.length) {
-      agg.detail[a.code] = buyRows.map((r) => [String(r.OPERATEDEPT_NAME || ''), Math.round((r.BUY || 0) / 1e4)]);
-    }
+    // 逐票买卖双侧席位明细（[席位名, 金额万元]，各侧均按金额降序）
+    const toPairs = (rows, col) => (rows || [])
+      .map((r) => [String(r.OPERATEDEPT_NAME || ''), Math.round((r[col] || 0) / 1e4)])
+      .filter(([nm, v]) => nm && v > 0)
+      .sort((x, y) => y[1] - x[1]);
+    const b = toPairs(buyRows, 'BUY'), s2 = toPairs(sellRows, 'SELL');
+    if (b.length || s2.length) agg.detail[a.code] = { b, s: s2 };
     await sleep(120);
   }
   agg.cover = aggr.length ? r2((got / aggr.length) * 100) : 0;

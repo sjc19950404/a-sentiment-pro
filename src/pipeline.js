@@ -230,13 +230,18 @@ export async function runLive() {
       if (e instanceof LhbNotPublishedError) console.log('[refresh-lhb]', day.trade_date, '未公布，跳过');
       else console.error('[refresh-lhb]', day.trade_date, '失败:', e.message);
     }
-    // 席位明细同样晚间分批发布：上一交易日覆盖率不满或缺逐票明细（锁仓口径原料）则补抓（取优）
+    // 席位明细同样晚间分批发布：上一交易日覆盖率不满、缺逐票明细（锁仓口径原料），
+    // 或明细仍是**旧格式（仅买方，无卖侧）**则补抓（取优）。第三项是本次买卖双侧升级后的关键：
+    // 旧档 detail 是买方数组（真值判断为真），若不加这条，历史天数永远不会补上卖方明细。
     if (Array.isArray(day.lhb_aggr) && day.lhb_aggr.length) {
       const oldCover = day.summary?.seats?.cover ?? 0;
-      if (oldCover < 100 || !day.summary?.seats?.detail) {
+      const oldDetail = day.summary?.seats?.detail;
+      const noSellSide = oldDetail && Object.values(oldDetail).some((v) => Array.isArray(v));
+      if (oldCover < 100 || !oldDetail || noSellSide) {
         try {
           const seats = await fetchSeats(day.trade_date, day.lhb_aggr.map((l) => ({ code: l.code, name: l.name, net_buy_wan: l.net_buy_wan })));
-          if (seats.cover > oldCover || !day.summary?.seats?.detail) {
+          const newHasSell = seats.detail && Object.values(seats.detail).some((v) => v && !Array.isArray(v) && (v.s || []).length);
+          if (seats.cover > oldCover || !oldDetail || newHasSell) {
             day.summary = day.summary || {};
             day.summary.seats = seats;
             console.log('[refresh-seats]', day.trade_date, '补抓席位 cover', oldCover, '→', seats.cover + '%');

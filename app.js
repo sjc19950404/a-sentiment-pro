@@ -12,6 +12,56 @@ const pctOf2 = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—' : `${v 
 const trendCls = (v) => (v == null || !Number.isFinite(+v)) ? 'muted' : (v > 0 ? 'hl' : v < 0 ? 'hl-dn' : 'muted');
 const nf = (v) => (v == null || v === '') ? '—' : (Number.isFinite(+v) ? String(v) : String(v));
 
+// ── 席位口径桥接 ──
+// src/seats.js 是 ESM 纯函数（席位解析的唯一来源），index.html 用模块脚本挂到 window.Seats。
+// app.js 是经典脚本、不能 import，模块脚本又是异步加载的，所以这里做一层薄桥接：
+// 已就绪就直接用；尚未就绪则用**同口径**的内联降级实现，绝不让抽屉因为时序问题白屏。
+// 两组实现只在「是否有 window.Seats」上分叉，逻辑逐字对齐，Node 侧测试覆盖的是模块本体。
+function seatsMod() {
+  if (window.Seats) return window.Seats;
+  // 降级：与 src/seats.js 同逻辑的最小实现（仅读取与身份解析，够抽屉用）
+  const normPair = (p) => (Array.isArray(p)
+    ? [String(p[0] ?? ''), Number(p[1]) || 0]
+    : [String(p?.name ?? ''), Number(p?.v ?? p?.amount ?? 0) || 0]);
+  return {
+    seatsOf(detailMap, code) {
+      const raw = detailMap && code != null ? detailMap[code] : null;
+      if (!raw) return { b: [], s: [], hasSell: false };
+      if (Array.isArray(raw)) return { b: raw.map(normPair), s: [], hasSell: false };
+      const b = Array.isArray(raw.b) ? raw.b.map(normPair) : [];
+      const s = Array.isArray(raw.s) ? raw.s.map(normPair) : [];
+      return { b, s, hasSell: s.length > 0 };
+    },
+    sideStats(pairs) {
+      const rows = Array.isArray(pairs) ? pairs : [];
+      const sum = rows.reduce((a, x) => a + (Number(x[1]) || 0), 0);
+      const top3 = rows.slice().sort((x, y) => y[1] - x[1]).slice(0, 3)
+        .reduce((a, x) => a + (Number(x[1]) || 0), 0);
+      return { n: rows.length, sum, top3Pct: sum > 0 ? top3 / sum * 100 : null };
+    },
+    seatIdentity(name) {
+      const s = String(name || '').trim();
+      const type = /机构专用/.test(s) ? 'inst'
+        : /(沪|深)股通/.test(s) ? 'north'
+        : (/总部/.test(s) || /自营/.test(s) || /证券投资部/.test(s)) ? 'prop'
+        : /营业部/.test(s) ? 'sales'
+        : /分公司/.test(s) ? 'branch'
+        : /证券|基金|资管/.test(s) ? 'sales' : 'other';
+      const LABEL = { inst: '机构专用', north: '沪深股通', prop: '券商总部/自营', branch: '分公司', sales: '证券营业部', other: '其他' };
+      let broker = '';
+      if (!/机构专用|(沪|深)股通/.test(s)) {
+        const m = s.match(/^(.{2,30}?(?:证券|基金|资管|资产管理|期货))(?:(?:股份)?有限(?:责任)?公司|\(|（|$)/)
+          || s.match(/^(.{2,30}?)(?:股份有限公司|有限责任公司|有限公司)/);
+        broker = m ? m[1].trim() : s.slice(0, 6);
+      }
+      return { name: s, broker, type, typeLabel: LABEL[type], foreign: false, city: '' };
+    },
+    buySeatsOf(dm, code) { return seatsMod().seatsOf(dm, code).b.slice().sort((x, y) => y[1] - x[1]); },
+    sellSeatsOf(dm, code) { return seatsMod().seatsOf(dm, code).s.slice().sort((x, y) => y[1] - x[1]); },
+    SEAT_TYPE_LABEL: { inst: '机构专用', north: '沪深股通', prop: '券商总部/自营', branch: '分公司', sales: '证券营业部', other: '其他' },
+  };
+}
+
 // 全局状态：最新存档 / 回测档 / 个股明细表的视图与排序（搜索与排序纯前端，不改数据）
 let ARC = null;
 let HOT_STATE = { view: 'hot', q: '', key: null, dir: -1 };
@@ -259,13 +309,19 @@ function hotRows() {
   const last = days[days.length - 1] || {};
   const ztLb = last.summary?.zt_lb || {};
   const detail = last.summary?.seats?.detail || {};
+  const S = seatsMod();
   const base = HOT_STATE.view === 'lhb' ? (last.lhb_aggr || last.lhb || []) : (last.hot || []);
-  return base.map((r) => ({
-    ...r,
-    lb: ztLb[r.code] ?? null,
-    seat: detail[r.code]?.length ?? null,
-    net_buy_wan: r.net_buy_wan ?? null,
-  }));
+  return base.map((r) => {
+    // 席位明细有新旧两代：v1 是买方数组、v2 是 {b,s}。用统一读取器取「买卖双侧总条数」，
+    // 避免旧写法 detail[r.code].length 在 v2 上得到 undefined（会把有明细的票显示成"无"）。
+    const st = S.seatsOf(detail, r.code);
+    return {
+      ...r,
+      lb: ztLb[r.code] ?? null,
+      seat: (st.b.length + st.s.length) || null,
+      net_buy_wan: r.net_buy_wan ?? null,
+    };
+  });
 }
 
 function renderHotTable() {
@@ -391,20 +447,27 @@ const isNewStock = (l) => (l.reasons || [l.reason || '']).some((r) => String(r).
 
 // 锁仓/新进资金口径（规格阈值：新进占比 >70% 短线脉冲 / 50~70% 中等 / <50% 锁仓偏好强）
 // 当日买方席位与近2日同票买方席位比对，未重复出现=新进；样本=有席位明细的连续上榜股
+// 注：本口径**只用买方**——锁仓/新进问的是"买盘是不是老面孔"。明细已升级为买卖双侧（{b,s}），
+// 故统一走 seatsOf 取 b，避免把 s（卖方）也当买盘统计进去而虚增样本。
 function calcLockNew(days) {
+  const S = seatsMod();
   const cur = days[days.length - 1]?.summary?.seats?.detail;
   const prevs = days.slice(-3, -1).map((d) => d.summary?.seats?.detail).filter(Boolean);
   if (!cur || !prevs.length) return null;
   const hist = {};
-  for (const pd of prevs) for (const [c, lst] of Object.entries(pd)) {
+  for (const pd of prevs) for (const c of Object.keys(pd)) {
+    const b = S.seatsOf(pd, c).b;
+    if (!b.length) continue;
     if (!hist[c]) hist[c] = new Set();
-    for (const [nm] of lst) hist[c].add(nm);
+    for (const [nm] of b) hist[c].add(nm);
   }
   let nb = 0, tb = 0, used = 0;
-  for (const [c, lst] of Object.entries(cur)) {
+  for (const c of Object.keys(cur)) {
     if (!hist[c] || !hist[c].size) continue; // 无历史样本的票不计入
+    const b = S.seatsOf(cur, c).b;
+    if (!b.length) continue;
     used++;
-    for (const [nm, buy] of lst) { tb += buy; if (!hist[c].has(nm)) nb += buy; }
+    for (const [nm, buy] of b) { tb += buy; if (!hist[c].has(nm)) nb += buy; }
   }
   if (!tb || !used) return null;
   return { n: used, pct: Math.round(nb / tb * 1000) / 10, lockYi: Math.round((tb - nb) / 1e4 * 100) / 100, win: prevs.length };
@@ -1255,6 +1318,127 @@ function closeDrawer() {
   if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
 }
 
+// ── 席位渲染：买卖双侧表格 + 席位身份下钻 ──
+// 席位行可点击（data-act="seat"）→ seatDetail()。之所以整行可点：用户的问题就是
+// 「卖方席位能不能点」，所以买方卖方一视同仁，两侧行都挂同一个动作，只是侧别不同。
+const SEAT_SIDE_LABEL = { b: '买方', s: '卖方' };
+
+function seatRowsHtml(pairs, sum, side, code) {
+  if (!pairs.length) return `<tr><td colspan="4" class="muted">无${SEAT_SIDE_LABEL[side]}席位明细</td></tr>`;
+  return pairs.map(([nm, v], i) => {
+    const pct = sum ? ((+v || 0) / sum * 100) : null;
+    // 排序号 + 金额条形（一眼看出头部集中度），整行可点下钻
+    return `<tr class="clickable" data-act="seat" data-code="${esc(code)}" data-side="${side}" data-i="${i}" tabindex="0"`
+      + ` title="点击查看该席位身份信息">`
+      + `<td class="seat-nm"><span class="seat-badge ${side}">${i + 1}</span>${esc(nm)}</td>`
+      + `<td class="num">${(+v || 0).toFixed(0)}</td>`
+      + `<td class="num">${pct == null ? '—' : pct.toFixed(1) + '%'}</td>`
+      + `<td class="seat-bar"><i class="${side}" style="width:${pct == null ? 0 : Math.min(100, pct * 2).toFixed(1)}%"></i></td>`
+      + '</tr>';
+  }).join('');
+}
+
+// 双侧并排表：买方左、卖方右（PC 两列；窄屏由 CSS 堆叠）
+function seatTable(buyRows, sellRows, code, cover) {
+  const S = seatsMod();
+  const bs = S.sideStats(buyRows), ss = S.sideStats(sellRows);
+  const head = (label, st) => `<thead><tr><th>${label}</th><th class="num">金额(万)</th><th class="num">占比</th><th></th></tr></thead>`;
+  const foot = (label, st) => st.n
+    ? `<div class="dw-note">${label}席位合计 <b>${st.sum.toFixed(0)}</b> 万 · ${st.n} 席`
+      + ` · 前 3 席占 ${st.top3Pct == null ? '—' : st.top3Pct.toFixed(1)}%</div>`
+    : '';
+  return `<div class="seat-grid">`
+    + `<div class="seat-col"><div class="seat-cap buy">买方席位（前 5）</div>`
+    + `<table class="dw-tb seat-tb">${head('买方席位', bs)}<tbody>${seatRowsHtml(buyRows, bs.sum, 'b', code)}</tbody></table>${foot('买方', bs)}</div>`
+    + `<div class="seat-col"><div class="seat-cap sell">卖方席位（前 5）</div>`
+    + `<table class="dw-tb seat-tb">${head('卖方席位', ss)}<tbody>${seatRowsHtml(sellRows, ss.sum, 's', code)}</tbody></table>${foot('卖方', ss)}</div>`
+    + '</div>'
+    + `<div class="dw-note">席位口径：东财龙虎榜逐票买卖前 5 席位（万元）。`
+    + (sellRows.length
+      ? '买卖双侧均为当日实际成交席位。'
+      : '本档为<b>旧格式存档</b>（仅买方），卖方明细自席位升级后开始采集，历史天数无卖方。')
+    + `席位覆盖 ${cover ?? '—'}%。点击任一行可查看席位身份。</div>`;
+}
+
+// 席位身份下钻：只输出**可从名称直接核验**的结构性事实，不做游资点名归属
+function seatDetail(code, side, idx) {
+  const days = ARC?.all_days || [];
+  const last = days[days.length - 1] || {};
+  const s = last.summary || {};
+  const S = seatsMod();
+  const pair = S.seatsOf(s.seats?.detail, code);
+  const rows = (side === 's' ? pair.s : pair.b).slice().sort((a, b) => (+b[1] || 0) - (+a[1] || 0));
+  const row = rows[idx];
+  if (!row) return null;
+  const [seatName, amount] = row;
+  const id = S.seatIdentity(seatName);
+  const sideLabel = SEAT_SIDE_LABEL[side] || '买方';
+  const st = S.sideStats(rows);
+  const share = st.sum ? (+amount || 0) / st.sum * 100 : null;
+
+  const hot = (last.hot || []).find((h) => h.code === code) || null;
+  const lhb = (last.lhb_aggr || last.lhb || []).find((l) => l.code === code) || null;
+  const stockName = hot?.name || lhb?.name || code;
+
+  // 该席位在**全市场其他上榜股**的同日出现（同一天同一席位买卖多只，是结构性事实）
+  const others = [];
+  const detailAll = s.seats?.detail || {};
+  for (const c of Object.keys(detailAll)) {
+    if (c === code) continue;
+    const p = S.seatsOf(detailAll, c);
+    const hitB = (p.b || []).find((x) => x[0] === seatName);
+    const hitS = (p.s || []).find((x) => x[0] === seatName);
+    if (hitB || hitS) {
+      const nm = (last.hot || []).find((h) => h.code === c)?.name
+        || (last.lhb_aggr || last.lhb || []).find((l) => l.code === c)?.name || c;
+      others.push({ code: c, name: nm, buy: hitB ? hitB[1] : null, sell: hitS ? hitS[1] : null });
+    }
+  }
+
+  const head = dwKv([
+    ['席位全称', `<b>${esc(seatName)}</b>`],
+    ['席位类型', `<b>${esc(id.typeLabel)}</b>${id.foreign ? ' <span class="seat-flag">外资券商</span>' : ''}`],
+    ['券商主体', id.broker ? esc(id.broker) : '<span class="muted">—（机构专用/股通类席位无券商主体）</span>'],
+    ['所在城市', id.city ? esc(id.city) : '<span class="muted">—（未从名称中识别出城市，可能是省级分公司或名称未含地名）</span>'],
+    ['本侧 / 本票', `${sideLabel} · ${esc(stockName)}（${esc(code)}）`],
+    ['当日本票金额', `<b>${(+amount || 0).toFixed(0)}</b> 万元`],
+    ['占本侧比重', share == null ? '—' : `${share.toFixed(1)}%（该侧前 3 席占 ${st.top3Pct == null ? '—' : st.top3Pct.toFixed(1)}%）`],
+    ['本侧席位数', `${st.n} 席`],
+  ]);
+
+  const typeNote = {
+    inst: '机构专用席位：公募/保险/社保等机构的专用交易通道，<b>不披露具体机构</b>，只能确认"是机构在交易"。',
+    north: '沪深股通席位：北向资金（外资经陆股通的集合通道），无法进一步拆分到具体境外机构。',
+    prop: '券商总部/自营席位：券商自有资金或以总部名义交易的席位，通常体量较大、方向性强。',
+    branch: '分公司席位：省级/地市级分公司归集席，常见于互联网开户与量化通道，<b>单个席位可能是大量散户或程序化资金的混合</b>，不代表单一主体意图。',
+    sales: '证券营业部席位：传统营业部通道，可能是散户、游资或量化共用，<b>不能仅凭营业部名断定是某位游资</b>。',
+    other: '未能归类到已知席位类型的名称。',
+  }[id.type] || '';
+
+  const otherSec = others.length ? dwSection(`同日该席位的其他上榜股（${others.length} 只）`,
+    `<table class="dw-tb"><thead><tr><th>股票</th><th class="num">该席位买入(万)</th><th class="num">该席位卖出(万)</th></tr></thead><tbody>`
+    + others.slice().sort((a, b) => ((b.buy || 0) + (b.sell || 0)) - ((a.buy || 0) + (a.sell || 0)))
+      .map((o) => `<tr class="clickable" data-act="stock" data-code="${esc(o.code)}" tabindex="0">`
+        + `<td>${esc(o.name)} <span class="muted">${esc(o.code)}</span></td>`
+        + `<td class="num">${o.buy == null ? '—' : o.buy.toFixed(0)}</td>`
+        + `<td class="num">${o.sell == null ? '—' : o.sell.toFixed(0)}</td></tr>`).join('')
+    + '</tbody></table>'
+    + `<div class="dw-note">同一席位同日在多只上榜股出现，说明其当日资金分散在多个标的上（结构性事实，不代表协同或关联）。</div>`)
+    : '';
+
+  const body = dwSection('席位身份（从名称可直接核验的信息）', head)
+    + (typeNote ? `<div class="dw-note">${typeNote}</div>` : '')
+    + otherSec
+    + `<div class="dw-note">诚实边界：本页只呈现<b>可从席位名称直接读出</b>的结构性事实（券商主体、席位类型、外资属性、城市）。`
+    + `市面上"某营业部=某游资大佬"的名单多数无法核验、且席位会转租换手，故本工具<b>不做</b>此类点名归属——那是猜测，不是数据。</div>`;
+
+  return {
+    title: `${seatName.length > 16 ? seatName.slice(0, 16) + '…' : seatName}`,
+    sub: `${sideLabel}席位 · ${esc(stockName)}（${esc(code)}）· ${(+amount || 0).toFixed(0)} 万元 · ${esc(id.typeLabel)}`,
+    body,
+  };
+}
+
 // ── ① 个股详情 ──
 function stockDetail(code) {
   const days = ARC?.all_days || [];
@@ -1262,7 +1446,11 @@ function stockDetail(code) {
   const hot = (last.hot || []).find((h) => h.code === code) || null;
   const lhb = (last.lhb_aggr || last.lhb || []).find((l) => l.code === code) || null;
   const s = last.summary || {};
-  const detail = (s.seats?.detail || {})[code] || null;
+  const S = seatsMod();
+  const seatPair = S.seatsOf(s.seats?.detail, code);
+  const buyRows = seatPair.b.slice().sort((a, b) => (+b[1] || 0) - (+a[1] || 0));
+  const sellRows = seatPair.s.slice().sort((a, b) => (+b[1] || 0) - (+a[1] || 0));
+  const hasDetail = buyRows.length || sellRows.length;
   const name = hot?.name || lhb?.name || code;
   const chg = hot?.change_pct ?? lhb?.change_pct ?? null;
   const reason = hot?.reason || lhb?.reason || '';
@@ -1289,22 +1477,15 @@ function stockDetail(code) {
     ['榜单口径', lhb.caliber === 'range'
       ? '<span class="bf-warn">区间累计榜</span>（连续 N 个交易日累计值，非当日；不计入当日净买率）'
       : '当日榜（当日席位买卖，权威口径）'],
-    ['上榜席位', detail ? `${detail.length} 条买方明细` : '无明细'],
+    ['上榜席位', hasDetail
+      ? `${buyRows.length} 买方 / ${sellRows.length} 卖方（点击任一行查看席位身份）`
+      : '无明细'],
   ]) : '<div class="dw-empty">该股当日未上龙虎榜（无资金明细）</div>';
 
-  let seatSec = '';
-  if (detail?.length) {
-    const rows = detail.slice().sort((a, b) => (+b[1] || 0) - (+a[1] || 0));
-    const sum = rows.reduce((a, x) => a + (+x[1] || 0), 0);
-    const top3 = rows.slice(0, 3).reduce((a, x) => a + (+x[1] || 0), 0);
-    seatSec = dwSection('买方席位明细（东财买卖榜口径）',
-      `<table class="dw-tb"><thead><tr><th>买方席位</th><th class="num">买入(万)</th><th class="num">占买方</th></tr></thead><tbody>`
-      + rows.slice(0, 8).map(([nm, v]) => `<tr><td>${esc(nm)}</td><td class="num">${(+v || 0).toFixed(0)}</td>`
-        + `<td class="num">${sum ? ((+v || 0) / sum * 100).toFixed(1) : '—'}%</td></tr>`).join('')
-      + `</tbody></table>`
-      + `<div class="dw-note">买方席位合计 ${sum.toFixed(0)} 万，前 3 席位占 ${sum ? (top3 / sum * 100).toFixed(1) : '—'}%`
-      + `（明细为榜单口径，仅含买方席位；席位覆盖 ${s.seats?.cover ?? '—'}%）。</div>`);
-  }
+  const seatSec = hasDetail ? dwSection('买卖双侧席位明细（东财龙虎榜口径）',
+    seatTable(buyRows, sellRows, code, s.seats?.cover))
+    : (lhb ? dwSection('买卖双侧席位明细（东财龙虎榜口径）',
+      `<div class="dw-empty">该股无席位明细。${seatPair.hasSell === false && s.seats?.detail ? '（本档为旧格式存档，仅存买方席位，卖方明细自本次升级后开始采集）' : ''}</div>`) : '');
 
   const themes = Object.keys(last.themes || {}).filter((t) => reason.includes(t) && t.length >= 2);
   const themeSec = themes.length
@@ -1569,6 +1750,7 @@ function dayDetail(i) {
 function fireAct(el) {
   const act = el.dataset.act;
   if (act === 'stock') openDrawer(stockDetail(el.dataset.code));
+  else if (act === 'seat') { const v = seatDetail(el.dataset.code, el.dataset.side, +el.dataset.i); if (v) openDrawer(v); }
   else if (act === 'theme') openDrawer(themeDetail(el.dataset.theme));
   else if (act === 'wrow') { const v = weightDetail(+el.dataset.i); if (v) openDrawer(v); }
   else if (act === 'seg') { const v = segDetail(el.dataset.kind, +el.dataset.i); if (v) openDrawer(v); }
