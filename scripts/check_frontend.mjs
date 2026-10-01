@@ -809,7 +809,9 @@ escClose();
     + ' turnoverBandOf, limitUpProb, isStreakTop, streakTagText };\n})();';
   const picksBundle = `window.__picks__ = (function(){\n`
     + readFileSync(join(ROOT, 'src/picks.js'), 'utf8')
-      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhb\.js';/m,
+      // 报错时把「残留 import」这个坑显性暴露出来，而不是抛一句「Unexpected token import」
+      // 让人误以为 paper_ui 写坏了（曾经真的误判过一次）。
+      .replace(/^import\s+\{[\s\S]*?\}\s*from\s*'\.\/lhb\.js';/m,
         'const { RANGE_BOARD_RE, isNewStock } = window.__lhb__;')
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/predict\.js';/m,
         'const { predictPicks, probBandText, streakBandText, streakTagText, PREDICT_VERSION, BASELINE_UP, STREAK_BASELINE } = window.__predict__;')
@@ -817,6 +819,14 @@ escClose();
     + '\nreturn { marketTier, TIER_THRESHOLDS, POSITION_TIERS, recommendPicks, PICK_TOP_N, SCORE_WEIGHTS, suggestWeight };\n})();';
   // paper_ui.js 直接调用 recommendPicks / PICK_TOP_N / SCORE_WEIGHTS，故从 window.__picks__ 解构回作用域
   const picksFlat = `const { recommendPicks, PICK_TOP_N, SCORE_WEIGHTS } = window.__picks__;`;
+  // paper.js（交易引擎）是平铺到 jsdom 全局作用域的，脚本自身 module scope 取不到它。
+  // 断言里要独立复算「按建议比例该填多少股」时必须用到同一口径，故再包一层 IIFE
+  // 把需要的符号挂到 window.__engine__ —— 绝不在断言里手抄整手/费用公式（那就是第二出处）。
+  const engineSymbols = ['LOT', 'MIN_COMMISSION', 'DEFAULT_SLIP', 'fillPrice', 'accountStats',
+    'qtyByAssetPct', 'qtyByHoldPct', 'fees', 'boardOf'];
+  const engineBundle = `window.__engine__ = {\n`
+    + engineSymbols.map((s) => `  get ${s}(){ return typeof ${s} === 'undefined' ? undefined : ${s}; }`).join(',\n')
+    + '\n};';
   // src/alerts.js（双层预警引擎）：纯函数 ESM，import 了
   //   · ./picks.js 的 marketTier / TIER_THRESHOLDS / POSITION_TIERS → 取 window.__picks__
   //   · ./config.js 的 default（风控阈值 stopLoss / ddTrigger）
@@ -881,7 +891,7 @@ escClose();
     return null;
   }`;
   try {
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
   } catch (e) {
     check('模拟交易：paper_ui.js 在 jsdom 中可执行', false, e.message);
   }
@@ -1211,7 +1221,7 @@ escClose();
     let threw = null;
     try {
       // 重新执行一遍 paper_ui.js：boot() 会 load() 到上面这份种子 → renderAllPaper()
-      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
+      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
       await new Promise((r) => setTimeout(r, 800));
     } catch (e) { threw = e; }
     check('模拟交易·持仓：带 pxStale 的种子账本渲染不抛错',
@@ -1546,6 +1556,67 @@ escClose();
       const pendAfter = ($('paperPendTable')?.querySelectorAll('tbody tr') || []).length;
       check('模拟交易·推荐：填入不自动下单（委托数不变）',
         pendAfter === pendBefore, `${pendBefore} → ${pendAfter}`);
+
+      // ── 填入下单时按「建议比例」自动算量（用户要求：自动按建议比例填数量，
+      //    非 100 整数倍时取「不超过该比例的最大整手数」）──
+      // 口径必须来自引擎（src/paper.js 的 qtyByAssetPct），页面上不许另写一套取整：
+      // 这里用页面同款函数复算一遍作对照，而不是自己再写一遍公式。
+      const eng = window.__engine__ || {};
+      const lotSize = eng.LOT;
+      const qtyFilled = +$('poQty').value || 0;
+      check('模拟交易·推荐：填入下单区自动带上买入数量（不再留 0 让人手填）',
+        qtyFilled > 0, `poQty=${qtyFilled}`);
+      check('模拟交易·推荐：自动数量必为 100 股整数倍（A 股整手约束）',
+        qtyFilled > 0 && lotSize > 0 && qtyFilled % lotSize === 0,
+        `poQty=${qtyFilled} LOT=${lotSize}`);
+
+      // 期望值用「建议比例」在引擎里复算：suggestWeight 已含宽波动打折，
+      // 是「建议填多少」的唯一出处，绝不在断言里另设一个比例。
+      const pct = +rows[0]?.dataset?.suggestWeight || 0;
+      if (pct > 0 && qtyFilled > 0) {
+        // 引擎符号走 window.__engine__（paper.js 平铺在 jsdom 全局，脚本 module scope 取不到）；
+        // ACCT / lookup 在 paper_ui 的 IIFE 内，走 window.__paperCtx 桥接。
+        const ctx = window.__paperCtx || {};
+        const acct = ctx.account ? ctx.account() : null;
+        const st = ctx.stats ? ctx.stats() : eng.accountStats(acct);
+        const info = ctx.lookup ? ctx.lookup(firstCode) : null;
+        const px = eng.fillPrice(info.price, 'buy', eng.DEFAULT_SLIP);
+        // 同一引擎口径、同一比例、同一含滑点价 + 可用资金上限
+        const expect = eng.qtyByAssetPct(st.total, pct, px, { cash: acct.cash });
+        check('模拟交易·推荐：自动数量与引擎 qtyByAssetPct 同口径复算一致（规则唯一出处）',
+          expect.qty === qtyFilled, `页面=${qtyFilled} 引擎=${expect.qty}（比例 ${(pct * 100).toFixed(2)}%）`);
+        check('模拟交易·推荐：自动数量不超过建议比例预算（即「不超过该比例的最大整手数」）',
+          expect.need <= st.total * pct + 1e-6 || expect.capped,
+          `占用≈${expect.need} 预算=${Math.round(st.total * pct)}${expect.capped ? '（受可用资金限制）' : ''}`);
+        // 再买一手必然超预算 —— 证明取的是「最大」整手数而非保守缩水
+        if (!expect.capped) {
+          const gross2 = (expect.qty + lotSize) * px;
+          check('模拟交易·推荐：已取到该比例下「最大」整手数（再多一手会超预算）',
+            gross2 > st.total * pct + 1e-6,
+            `+1 手成交额≈${Math.round(gross2)} 预算=${Math.round(st.total * pct)}`);
+        }
+      } else {
+        check('模拟交易·推荐：首只推荐股带有可读的「建议比例」（自动填量的依据）',
+          false, `suggestWeight=${pct} poQty=${qtyFilled}`);
+      }
+
+      // 提示：必须告诉用户数量是按建议比例算出来的（避免被误认为手填）
+      const fillMsg = txt('paperMsg') || '';
+      check('模拟交易·推荐：填入后提示写明「建议 N.N% → M 股」（口径对用户可见）',
+        /建议\s*\d+(\.\d+)?%/.test(fillMsg) && /股/.test(fillMsg), fillMsg.slice(0, 90) || '无提示');
+
+      // 降级路径：建议比例为 0（当前档位不建议新建仓）→ 数量留空但不报错崩溃
+      const zeroBtn = [...($('picksList')?.querySelectorAll('button[data-act="pick-fill"]') || [])]
+        .find((b) => (+b.closest('.pk-row')?.dataset?.suggestWeight || 0) === 0);
+      if (zeroBtn) {
+        clickEl(zeroBtn);
+        await new Promise((r) => setTimeout(r, 200));
+        check('模拟交易·推荐：建议比例为 0 的票填入后数量留空（不硬凑一手）',
+          (+$('poQty').value || 0) === 0, `poQty=${$('poQty').value} code=${zeroBtn.dataset.code}`);
+      } else {
+        check('模拟交易·推荐：建议比例为 0 的降级路径（当日首只均有比例，用例跳过）',
+          true, '当日推荐均有建议比例');
+      }
     }
 
     // 点击整行 → 打开详情抽屉，且含「为什么入选」「评分构成」「风险」

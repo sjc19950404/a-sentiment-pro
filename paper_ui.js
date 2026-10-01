@@ -405,6 +405,12 @@ function publishSnapshot() {
   // 通知报告端刷新第⑦段（app.js 监听此事件）。用事件而不是让 app.js 轮询：
   // 账户变化是低频动作（下单/结算/导入），轮询只会白白增加耦合。
   try { window.dispatchEvent(new Event('paper-snapshot')); } catch (e) { /* 静默 */ }
+  // 前端断言脚本（scripts/check_frontend.mjs）需要「账户 + lookup」才能独立复算
+  // 「按建议比例该填多少股」——本文件被包在 IIFE 里执行，ACCT/lookup 取不到，
+  // 故与 __paperSnapshot 同样的桥接方式挂一个最小只读句柄（仅供测试与报告端复用）。
+  try {
+    window.__paperCtx = { account: () => ACCT, lookup: (c) => lookup(c), stats: () => accountStats(ACCT) };
+  } catch (e) { /* 静默 */ }
 }
 
 function renderStats() {
@@ -1234,7 +1240,8 @@ function renderPicks() {
       const exp = p.exp || {};
       const expC = exp.atClose || {};
       const factorTxt = (prob.factors || []).map((f) => f.label).join(' + ') || '无实测有效因子';
-      return sep + `<div class="pk-row${p.streakTop ? ' pk-row-top' : ''}" data-act="pick" data-code="${esc(p.code)}" tabindex="0" role="button"
+      return sep + `<div class="pk-row${p.streakTop ? ' pk-row-top' : ''}" data-act="pick" data-code="${esc(p.code)}"
+          data-suggest-weight="${p.suggestWeight > 0 ? p.suggestWeight : 0}" tabindex="0" role="button"
           title="点击查看 ${esc(p.name || p.code)} 的详情">
         <span class="pk-rank${i === 0 ? ' top' : ''}">${i + 1}</span>
         <div class="pk-main">
@@ -1303,24 +1310,84 @@ function renderPicks() {
   }
 }
 
+/**
+ * 按「研判推荐的建议比例」算出该票的可下单数量（唯一出处）。
+ *
+ * 需求：点「填入下单」时要自动按建议比例填数量，且**必须是 100 的整数倍**；
+ * 不足 100 整手时，取「不超过该比例预算的最大整手数」。
+ *
+ * 为什么不自己写一套取整逻辑：整手规则（LOT=100）、含费预算、可用资金上限
+ * 全都已经在 src/paper.js 的 qtyByAssetPct 里定义过一遍了。这里再写一遍必然漂移
+ * （手续费率、最低佣金、滑点任一调整就会两处不一致）。所以本函数只做三件事：
+ *   ① 取比例（推荐的 suggestWeight，已含宽波动打折）；
+ *   ② 取价（与「仓位档位」按钮同一口径：实时价 → 存档价，再叠加买入滑点）；
+ *   ③ 把口径原样委托给 qtyByAssetPct —— 它已保证整手向下取整 + 受可用资金约束。
+ *
+ * @returns {{qty:number, pct:number, px:number|null, need:number, capped:boolean,
+ *            reason:string|null}} qty=0 时 reason 说明为什么填不出来
+ */
+function qtyBySuggestWeight(code) {
+  const c = String(code || '');
+  const p = (currentPicks()?.picks || []).find((x) => x.code === c) || null;
+  const pct = p && Number.isFinite(+p.suggestWeight) ? +p.suggestWeight : 0;
+  if (!(pct > 0)) {
+    return { qty: 0, pct: 0, px: null, need: 0, capped: false,
+      reason: '当前档位不建议新建仓（建议比例为 0）——可手动填数量' };
+  }
+  const info = lookup(c);
+  // 与 renderQuick 的档位按钮同一判据：能取到真实价才谈得上算数量
+  if (!info || !info.board.tradable || !info.fresh || !info.price) {
+    return { qty: 0, pct, px: null, need: 0, capped: false,
+      reason: '取不到该股真实价格，无法按比例估量——请先拉到行情' };
+  }
+  if (!ACCT) {
+    return { qty: 0, pct, px: null, need: 0, capped: false, reason: '模拟账户未就绪' };
+  }
+  const px = fillPrice(info.price, 'buy', SLIP);
+  const st = accountStats(ACCT);
+  const r = qtyByAssetPct(st.total, pct, px, { cash: ACCT.cash });
+  if (r.qty <= 0) {
+    return { qty: 0, pct, px, need: 0, capped: true,
+      reason: `预算 ${num(st.total * pct)} 元不足一手（一手约 ${num(px * LOT + MIN_COMMISSION)} 元，含最低佣金）` };
+  }
+  return { qty: r.qty, pct, px, need: r.need, capped: !!r.capped, reason: null };
+}
+
 /** 把推荐股填入下单区（不自动提交——绝不替用户下单） */
 function fillPickToOrder(code) {
   const c = String(code || '');
   if (!c) return;
-  ORDER = { ...ORDER, code: c, qty: 0, side: 'buy' };
+  // 数量按建议比例自动算好再填（整手向下取整；算不出来则留空并说明原因）
+  const s = qtyBySuggestWeight(c);
+  ORDER = { ...ORDER, code: c, qty: s.qty, side: 'buy' };
   syncOrderInputs();
   renderOrderForm();
   renderQuick();
+  const nm = LIVEQ[c]?.name || lookup(c)?.name || '';
+  const said = s.qty > 0
+    ? `已填入 ${c} ${nm} 建议 ${(s.pct * 100).toFixed(1)}% → ${s.qty} 股（约 ${num(s.need)} 元含费用）`
+      + `${s.capped ? '，已受可用资金限制' : ''}`
+    : `已填入 ${c} ${nm}，但数量留空：${s.reason}`;
   // 输入框的实时抓价逻辑挂在 input 事件上；这里用程序赋值不会触发，故显式抓一次
   if (!LIVEQ[c] && !LIVE_BUSY) {
     msg(`正在获取 ${c} 实时行情…`, 'ok');
     refreshLive([c]).then((r) => {
-      renderOrderForm();
+      // 拉到实时价后用**同一口径**重算数量：首次填的是存档价估量，
+      // 实时价到手后价格可能变了，数量必须跟着变，否则"建议比例"其实没兑现。
+      const s2 = r.ok ? qtyBySuggestWeight(c) : s;
+      if (r.ok && s2.qty !== s.qty) {
+        ORDER = { ...ORDER, qty: s2.qty };
+        syncOrderInputs();
+        renderOrderForm();
+      }
       renderQuick();
-      msg(r.ok ? `已填入 ${c} ${LIVEQ[c]?.name || ''}，请选择仓位档位或填数量后提交` : `${c} 取不到行情，请核对代码`, r.ok ? 'ok' : 'err');
+      msg(r.ok
+        ? `已填入 ${c} ${LIVEQ[c]?.name || nm}`
+          + (s2.qty > 0 ? ` 建议 ${(s2.pct * 100).toFixed(1)}% → ${s2.qty} 股（按实时价重算）` : `，数量留空：${s2.reason}`)
+        : `${c} 取不到行情，请核对代码`, r.ok ? 'ok' : 'err');
     });
   } else {
-    msg(`已填入 ${c} ${LIVEQ[c]?.name || ''}，请选择仓位档位或填数量后提交`, 'ok');
+    msg(said, s.qty > 0 ? 'ok' : 'err');
   }
   // 滚到下单区并聚焦数量，减少一次滚动操作
   $('poQty')?.focus?.();
