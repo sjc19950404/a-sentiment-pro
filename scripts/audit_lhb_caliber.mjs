@@ -314,6 +314,65 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     'app.js 仍存在「今日 fresh 比昨日 themes」的错误存活率算法');
 }
 
+// ── B5. V5.2-pro 交易规则唯一出处守卫 ────────────────────────────────────────
+// 规则（用户给定）一旦在别处被重新实现，就会出现「页面按 A 阈值过滤、引擎按 B 阈值下单」的分裂——
+// 那会让模拟结果彻底失去可核验性。这里锁三件事：
+//   ① 龙虎过滤阈值（25% / 75% / 80% / 4%）只出现在 src/lhbfilter.js；
+//   ② 风控阈值（20% 单日变动 / 9%·15% 回撤档位 / −8% 止损）只出现在 src/paper.js；
+//   ③ 买入委托必须以龙虎过滤为前置（paper.js 确实 import 并调用了 filterOne）。
+{
+  // 判据：只有「阈值数字 + 规则语义词」同时出现才算重复实现。
+  // 单纯出现 0.25 / 0.20 / -0.08 不算——它们在别处有完全无关的用途（回撤曲线、权重、涨跌幅等），
+  // 盲扫数字必然误报（实测 app.js 因图表阈值被误判）。故要求同一条代码行上出现规则语义词。
+  const RULES = [
+    { label: '龙虎净买占比上限 25%', owner: 'src/lhbfilter.js',
+      re: /(SHARE_TOO_HIGH|share_of_market|占当日全市场|占全市场龙虎|MARKET_SHARE)/ },
+    { label: '买方前三集中度 75%', owner: 'src/lhbfilter.js',
+      re: /MAX_TOP3_CONC|top3Conc|buy_top3_pct\s*[<>]=?\s*7[05]/ },
+    { label: '单日仓位变动 20%', owner: 'src/paper.js',
+      re: /MAX_DAILY_POSITION_CHANGE|dailyPositionChange|单日账户仓位变动|单日仓位变动/ },
+    { label: '回撤降仓档位 9%/15%', owner: 'src/paper.js',
+      re: /DD_TIERS|ddTier|ddTriggerCap|回撤\s*[≥>]=?\s*(9|15)/ },
+    { label: '止损线 −8%', owner: 'src/paper.js',
+      re: /HARD_STOP_LOSS|scanStopLoss\s*\(|硬性止损/ },
+  ];
+  // 扫描 UI 层与其它 src 文件，确认这些语义标识没有在「唯一出处」之外被重写
+  const scanFiles = ['paper_ui.js', 'app.js', ...readdirSync('src').filter((f) => f.endsWith('.js')).map((f) => `src/${f}`)];
+  const dupRules = [];
+  for (const rel of scanFiles) {
+    if (rel === 'src/lhbfilter.js' || rel === 'src/paper.js') continue;   // 这两个是唯一出处
+    const abs = path.join(ROOT, rel);
+    if (!existsSync(abs)) continue;
+    // 只保留非注释代码行；且要求该行确实在「赋值/比较/常量定义」语境里
+    const lines = readFileSync(abs, 'utf8').split('\n')
+      .filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln))
+      // 排除「回测参数展示」行：app.js 渲染的是 backtest.json 里记录的回测参数（v52p/BT.params），
+      // 与模拟盘的规则是两套东西（回测用历史参数复现，模拟盘用当前规则）。展示它们不算重复实现。
+      .filter((ln) => !/BT\.params|v52p|v52\s*=|回测参数/.test(ln))
+      // 排除纯文案行（含「口径备注」等解释性文字）
+      .filter((ln) => !/口径备注|口径：/.test(ln))
+      .filter((ln) => /(=|===|==|>=|<=|>|<|:|const|let|var)/.test(ln));
+    for (const r of RULES) {
+      const hit = lines.find((ln) => r.re.test(ln));
+      if (hit) dupRules.push(`${rel} 疑似重复实现「${r.label}」：${hit.trim().slice(0, 60)}`);
+    }
+  }
+  check('V5.2-pro 规则阈值不在唯一出处之外被重复实现', dupRules.length === 0, dupRules.slice(0, 3).join(' ; '));
+
+  // paper.js 必须把龙虎过滤作为买入前置（import + 在批量买入里调用）
+  const engineSrc = readFileSync('src/paper.js', 'utf8');
+  const importsFilter = /import\s*\{[\s\S]*?filterOne[\s\S]*?\}\s*from\s*'\.\/lhbfilter\.js'/.test(engineSrc);
+  const callsFilter = /filterOne\s*\(/.test(engineSrc) && /bucket\s*!==\s*'main'|bucket\s*===\s*'main'/.test(engineSrc);
+  check('买入委托以龙虎榜前置过滤为闸门（paper.js import 并在批量买入中调用 filterOne）',
+    importsFilter && callsFilter,
+    `import=${importsFilter} call=${callsFilter}`);
+
+  // 因数据不足而跳过的规则必须留痕（不得静默忽略）
+  const filterSrc = readFileSync('src/lhbfilter.js', 'utf8');
+  const hasSkip = /SKIPPED_RULES/.test(filterSrc) && /skipped\.push/.test(filterSrc);
+  check('数据不足的规则必须留痕（skipped 数组），不得静默忽略', hasSkip, `hasSkip=${hasSkip}`);
+}
+
 // ── C. 结论 ────────────────────────────────────────────────────────────────
 if (warns.length) for (const w of warns) console.log(`⚠ ${w}`);
 if (fails.length) {

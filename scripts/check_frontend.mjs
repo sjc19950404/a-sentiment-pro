@@ -679,7 +679,13 @@ escClose();
 // 这样断言跑的是「真正的前端代码 + 真正的引擎」，而不是另写一份逻辑。
 {
   const uniObj = JSON.parse(readFileSync(join(ROOT, 'data/paper_universe.json'), 'utf8'));
-  const engineNoExport = readFileSync(join(ROOT, 'src/paper.js'), 'utf8').replace(/^export\s+/gm, '');
+  // src/paper.js 现在 import 了 src/lhbfilter.js 的 filterOne（买入前置过滤）。
+  // 平铺时该 import 行必须剥掉，并改为从 window.__lhbfilter__ 解构——
+  // 否则残留的 import 语句会让整段被 window.eval 的脚本语法报错（整块区六全挂）。
+  const engineNoExport = readFileSync(join(ROOT, 'src/paper.js'), 'utf8')
+    .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhbfilter\.js';/m,
+      'const { filterOne } = window.__lhbfilter__;')
+    .replace(/^export\s+/gm, '');
   // src/quote.js 也是 ESM：剥掉 import/export 后与引擎/前端拼到同一作用域。
   // 它 import 的 quoteSymbol 来自 sources.js，这里剥掉 import 即可（该函数在下方内联补齐）。
   const quoteNoExport = readFileSync(join(ROOT, 'src/quote.js'), 'utf8')
@@ -704,6 +710,21 @@ escClose();
   const lhbBundle = `window.__lhb__ = (function(){\n`
     + readFileSync(join(ROOT, 'src/lhb.js'), 'utf8').replace(/^export\s+/gm, '')
     + '\nreturn { RANGE_BOARD_RE, isNewStock };\n})();';
+  // src/seats.js（席位口径唯一出处）：**零依赖**纯函数 ESM。包 IIFE 后挂出龙虎过滤要用的符号。
+  const seatsBundle = `window.__seats__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/seats.js'), 'utf8').replace(/^export\s+/gm, '')
+    + '\nreturn { seatsOf, buySeatsOf, sellSeatsOf, sideStats, seatTypeOf, seatIdentity, SEAT_TYPE_LABEL };\n})();';
+  // src/lhbfilter.js（V5.2-pro 龙虎榜前置过滤）：纯函数 ESM，import 了
+  //   · ./lhb.js 的 isNewStock / RANGE_BOARD_RE → 取 window.__lhb__
+  //   · ./seats.js 的 buySeatsOf / sellSeatsOf / sideStats / seatTypeOf → 取 window.__seats__
+  // 包 IIFE：lhbfilter 与 paper.js 存在同名内部辅助（finite / r2 / r3），平铺会「Identifier already declared」。
+  const lhbFilterBundle = `window.__lhbfilter__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/lhbfilter.js'), 'utf8')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhb\.js';/m, 'const { isNewStock, RANGE_BOARD_RE } = window.__lhb__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/seats\.js';/m, 'const { buySeatsOf, sellSeatsOf, sideStats, seatTypeOf } = window.__seats__;')
+      .replace(/^export\s+/gm, '')
+    + '\nreturn { filterOne, filterBatch, featuresOf, themeStrengthOf, BUCKET, REJECT_LHB, SKIPPED_RULES,'
+    + ' MAX_SHARE_OF_MARKET, MAX_TOP3_CONC, MAX_TOP3_CONC_STRICT, ADMIT, THEME_FULL_PCT, LHBFILTER_VERSION };\n})();';
   // 一手股数（LOT）不手抄字面量——从 src/paper.js 源码里抽出真实值。
   // 多处 IIFE 需要它（predict / alert_log），故提前到使用点之前声明。
   const LOT_LITERAL_EARLY = (readFileSync(join(ROOT, 'src/paper.js'), 'utf8')
@@ -792,7 +813,7 @@ escClose();
     return null;
   }`;
   try {
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
   } catch (e) {
     check('模拟交易：paper_ui.js 在 jsdom 中可执行', false, e.message);
   }
@@ -996,7 +1017,7 @@ escClose();
     let threw = null;
     try {
       // 重新执行一遍 paper_ui.js：boot() 会 load() 到上面这份种子 → renderAllPaper()
-      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
+      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n${reviewBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
       await new Promise((r) => setTimeout(r, 800));
     } catch (e) { threw = e; }
     check('模拟交易·持仓：带 pxStale 的种子账本渲染不抛错',
