@@ -1,8 +1,14 @@
 // 前端渲染校验（开发用）：在 jsdom 里真跑 index.html + app.js，读取磁盘上的 data/*.json，
 // 断言 V5.2 四个新卡片确实被渲染、且原有卡片未被破坏。
-// 依赖 jsdom（非仓库依赖，CI 不跑本脚本）：
-//   npm i -g jsdom 或在任意 node_modules 下有 jsdom；缺失时脚本自动跳过并以 0 退出。
-// 用法：node scripts/check_frontend.mjs [--root .]
+// 依赖 jsdom（非仓库依赖）：
+//   npm i -g jsdom 或在任意 node_modules 下有 jsdom。
+// 用法：node scripts/check_frontend.mjs [--root .] [--require-jsdom]
+//
+// ★ --require-jsdom（#141）：本脚本缺席 jsdom 时**默认跳过并以 0 退出**，这在开发机上
+//   是体贴的（不想为了跑一条断言去装依赖），但在 CI 里是**假绿**：门禁显示"通过"，
+//   实际一条断言都没跑 —— 正是"没检查 ≠ 没问题"的反面教材。
+//   故给出显式开关：CI 的合并门禁传 --require-jsdom，缺依赖直接**失败**，
+//   逼着流水线把 jsdom 装齐，而不是让门禁空转着一路绿灯。
 import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createRequire } from 'node:module';
@@ -12,6 +18,8 @@ import { decodeArchive } from '../src/lhb_codec.js';
 
 const rootArg = process.argv.indexOf('--root');
 const ROOT = resolve(rootArg >= 0 ? process.argv[rootArg + 1] : '.');
+// CI 合并门禁用：缺 jsdom 时不允许"跳过即通过"，必须硬失败（理由见文件头 ★）。
+const REQUIRE_JSDOM = process.argv.includes('--require-jsdom');
 
 // 依赖解析：先 ESM import，再 CJS require（require 才认 NODE_PATH，便于指向任意 node_modules）
 let jsdom;
@@ -21,6 +29,12 @@ try {
   try {
     jsdom = createRequire(import.meta.url)('jsdom');
   } catch {
+    if (REQUIRE_JSDOM) {
+      console.error('[check_frontend] ✗ 传了 --require-jsdom 但环境里没有 jsdom。');
+      console.error('[check_frontend]   拒绝以"跳过"冒充"通过"：本门禁一条断言都没跑。');
+      console.error('[check_frontend]   请在 CI 里安装 jsdom（npm i jsdom，或用 NODE_PATH 指向已装目录）。');
+      process.exit(1);
+    }
     console.log('[check_frontend] 未安装 jsdom，跳过（安装：npm i jsdom，或用 NODE_PATH 指向已装目录）');
     process.exit(0);
   }

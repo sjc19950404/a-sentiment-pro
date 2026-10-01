@@ -439,3 +439,50 @@ test('buildDivergenceBlock: historyNote 必须解释分母口径（防"0% = 从�
   });
   assert.ok(/未核对|不计入分母/.test(b.historyNote));
 });
+
+// ── ⑥ ★ 决策锁：多维宽度**绝不**进综合分 ───────────────────────────────────
+//   这是 #3 的核心决策（宽度不进综合分，只做背离告警）。它是**可被静默破坏**的：
+//   将来谁"顺手"把 breadth 的读数接进 computeSentiment 的入参，综合分就会变，
+//   而没有任何测试会红——直到有人发现分数不对。故此处用**真调用 + 灵敏度对照**锁死。
+//
+//   ⚠ 必须带灵敏度对照：若探针连"改真因子"都测不出变化，那么"注入宽度分数不变"
+//     只是探针瞎了，不构成证据。两段缺一不可。
+test('★ 决策锁：注入多维宽度读数不改变综合分（宽度不进综合分）', async () => {
+  const { computeSentiment } = await import('../src/sentiment.js');
+  // 一组能产生非中性分数的真实原料（涨停 60/炸 10/涨 1800 跌 2600 …）
+  const raw = {
+    netBuy: 3.2, newStockNet: 0, newStockRatio: null,
+    upCount: 1800, downCount: 2600, posRatio: 0.44,
+    industryUp: 12, industryTotal: 31,
+    limitUp: 60, limitDown: 8, brokenCount: 10,
+    amount: 12000, amountMA20: 10000,
+  };
+  const base = computeSentiment(raw, undefined);
+
+  // ① 注入多维宽度（src/breadth.js 的产物字段名）→ 综合分与七因子必须逐位不变
+  const polluted = computeSentiment({
+    ...raw,
+    breadth: { aboveMa20Pct: 0.99, newHighCount: 9999, newLowCount: 0, brokenPbPct: 0.9 },
+    aboveMa20Pct: 0.99, aboveMa20: 0.99, newHighCount: 9999, newLowCount: 0,
+    breadthAboveMa: 0.99, breadthSignal: 'wide', brokenPbPct: 0.9,
+  }, undefined);
+  assert.equal(polluted.score, base.score, '注入多维宽度后综合分变了 → 宽度被偷偷接进了公式');
+  assert.deepEqual(polluted.factors, base.factors, '因子分也被宽度污染了');
+
+  // ② 灵敏度对照：改一个**真因子**（涨停数）必须让分数变——证探针没瞎
+  const sens = computeSentiment({ ...raw, limitUp: 600, brokenCount: 0 }, undefined);
+  assert.notEqual(sens.score, base.score,
+    '改了真因子分数却没变 → 本探针无效，"宽度不影响"的结论不成立');
+});
+
+test('★ 决策锁：breadth.js 不得被 sentiment.js / formula_versions.js 引用', async () => {
+  // 上面的真调用锁"行为"，这条锁"依赖图"——防止有人绕过 computeSentiment 的入参，
+  //   直接在公式模块里 import breadth.js 的读数（那样入参探针测不到）。
+  const { readFileSync } = await import('node:fs');
+  for (const f of ['src/sentiment.js', 'src/formula_versions.js']) {
+    const code = readFileSync(new URL('../' + f, import.meta.url), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    assert.ok(!/from\s+['"]\.\/breadth\.js['"]/.test(code),
+      `${f} 引入了 breadth.js —— 多维宽度不得进综合分公式（#3 决策）`);
+  }
+});

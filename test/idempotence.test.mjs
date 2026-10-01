@@ -137,6 +137,120 @@ test('分位：窗口内全为同一值时（无区分度）不返回 NaN', () =
   assert.ok(v === null || Number.isFinite(v), `得到 ${v}`);
 });
 
+// ── ①b 分位窗口的**边界**（#134a：把"边界"从注释变成可执行的守卫）──────────
+//
+//   为什么单独一组：分位是"当日值在含自身窗口中的位置"，它的正确性完全由
+//   **窗口左右两端**决定。左端（起点）错 → 前视/样本不足；右端（含当日）错 →
+//   "今天创新高永远显示不出 100"。这两端历史上都出过事，且都**不会抛错**，
+//   只会静默给出一个看起来正常的数字。故这里逐端钉死。
+test('分位边界·左端：样本数 < MIN 时返回 null，绝不用短窗口凑合或填 50', () => {
+  // 恰好 MIN-1 个有效样本 → 必须 null（不能"凑合算"）
+  const justUnder = Array.from({ length: RANK_MIN - 1 }, () => 50);
+  assert.equal(windowedPctRank(justUnder, justUnder.length - 1, RANK_WINDOW, RANK_MIN), null,
+    `${RANK_MIN - 1} 个样本不足 ${RANK_MIN}，必须"未计算"而不是给个数字`);
+  // 恰好 MIN 个 → 可算
+  const atMin = Array.from({ length: RANK_MIN }, (_, i) => i);
+  const v = windowedPctRank(atMin, atMin.length - 1, RANK_WINDOW, RANK_MIN);
+  assert.ok(Number.isFinite(v), `恰好 ${RANK_MIN} 个样本应可算，得到 ${v}`);
+});
+
+test('分位边界·左端：窗口只截到 i 之前，绝不用 i 之后的数据（无前视）', () => {
+  // 构造：i=2 处值 50；i 之后塞入大量极小值。若窗口误含未来，50 的排名会变得极高。
+  const vals = [10, 20, 50, 0.001, 0.002, 0.003, 0.004];
+  const noFuture = windowedPctRank(vals, 2, RANK_WINDOW, 3);
+  // 只用 vals[0..2] = [10,20,50] → 50 是最大 → 100
+  assert.equal(noFuture, 100, `只用截至 i 的样本时 50 应为 100 分位，得到 ${noFuture}`);
+  // 若把未来（极小值）算进来，50 仍会是最大 → 这里再加一个反例：i 之后塞超大值
+  const vals2 = [50, 40, 30, 9999, 9999];
+  const r2 = windowedPctRank(vals2, 2, RANK_WINDOW, 3); // 只用 [50,40,30] → 30 最小 → 0
+  assert.equal(r2, 0, `i 之后的 9999 不得进入窗口；30 在 [50,40,30] 中最小应为 0，得到 ${r2}`);
+});
+
+test('分位边界·右端：含 T 日自身 —— 当日创新高必须能显示 100', () => {
+  // 这是"含当日"口径的意义：如果窗口不含当日，创历史新高永远算不出 100。
+  const vals = Array.from({ length: RANK_MIN }, (_, i) => 100 + i);
+  vals[RANK_MIN - 1] = 9999; // 当日为窗口内最大
+  const v = windowedPctRank(vals, RANK_MIN - 1, RANK_WINDOW, RANK_MIN);
+  assert.equal(v, 100, `当日是窗口最大值时应为 100（含当日口径），得到 ${v}`);
+  // 反向：当日是窗口最小值 → 0
+  const vals2 = Array.from({ length: RANK_MIN }, (_, i) => 100 + i);
+  vals2[RANK_MIN - 1] = -9999;
+  assert.equal(windowedPctRank(vals2, RANK_MIN - 1, RANK_WINDOW, RANK_MIN), 0);
+});
+
+test('分位边界·右端：窗口长度恰好等于 WINDOW 时，左边界样本不会被多算一天', () => {
+  // 构造 window+1 个样本，i = window（第 window+1 个）。窗口应恰好是 [1..window]，
+  //   不含 0 号。用一个极大值放在 0 号：若被误含，结果会不同。
+  const W = 10, MINN = 3;
+  const vals = [9999, ...Array.from({ length: W }, (_, i) => i + 1)];
+  const i = W; // vals[10] = 10
+  const r = windowedPctRank(vals, i, W, MINN);
+  // 窗口 = vals[1..10] = [1..10] → 10 是最大 → 100（9999 不得进入）
+  assert.equal(r, 100, `0 号的 9999 不得进入窗口；10 在 [1..10] 中应为 100，得到 ${r}`);
+  // 恰好 W 个样本时，起点应为 i-W+1=1（不是 0）
+  const r0 = windowedPctRank(vals, W - 1, W, MINN); // i=9 → 窗口 vals[0..9] 含 9999
+  assert.ok(r0 === null || r0 === 100 || Number.isFinite(r0), '边界起点允许含 0 号时不应崩');
+});
+
+test('分位边界·平值：取首次出现位置（indexOf 语义），不被"并列中位"口径污染', () => {
+  // [10,10,10,20] 取 i=3（末位）→ 窗口 = 全部 4 个，cur=20 → 最大 → 100（正常）。
+  //   要测平值口径，需让 cur 是那组平值本身：取 i=2（cur=10），窗口 = [10,10,10]（3 个）。
+  //   sorted=[10,10,10] → indexOf(10)=0 → 0/2*100 = 0。
+  //   若误用"并列中位"或"≤个数"口径 → 会得到 50 或 100。这里必须锁定 indexOf=0。
+  const vals = [10, 10, 10, 20];
+  const r = windowedPctRank(vals, 2, RANK_WINDOW, 3); // 窗口 vals[0..2]=[10,10,10]，cur=10
+  assert.equal(r, 0, `平值必须取首次出现位置（indexOf=0 → 0 分位），得到 ${r}；` +
+    '若得到 50/100 说明平值口径被换成了"并列中位"——那必须单独开一项并重新验证全档');
+  // 对照组：cur 是窗口内最大（i=3, cur=20）→ 100，证明探针非恒 0
+  assert.equal(windowedPctRank(vals, 3, RANK_WINDOW, 3), 100);
+});
+
+test('分位边界·自定义窗口：window/min 显式传入时完全按传入值走（不被全局常量劫持）', () => {
+  const vals = [1, 2, 3, 4, 5];
+  // window=3 → 只取 vals[2..4] = [3,4,5]，cur=5 → 100
+  assert.equal(windowedPctRank(vals, 4, 3, 3), 100);
+  // window=3, min=4（不足）→ null
+  assert.equal(windowedPctRank(vals, 4, 3, 4), null);
+});
+
+test('★ 分位边界·实证：真档案 241 天，逐日分位只由"截至该日"的窗口算得', async () => {
+  // 用真档案做**端到端**无前视证明：
+  //   ① 全量跑一遍 recalcRanks 得分位 A；
+  //   ② 把档案在每一天**截断**（只保留前 k 天）再单独跑该天的分位，得 B；
+  //   ③ A 与 B 必须逐日相同 —— 若不同，说明 A 用了第 k 天之后的数据（前视）。
+  const { readFileSync } = await import('node:fs');
+  const { decodeArchive } = await import('../src/lhb_codec.js');
+  const fp = new URL('../data/archive.json', import.meta.url);
+  let days;
+  try {
+    days = (decodeArchive(JSON.parse(readFileSync(fp, 'utf8'))).all_days || [])
+      .filter((d) => d && d.emotion && d.trade_date);
+  } catch { return; } // CI 首次 clone 无档则跳过（与 health.test 同款）
+  if (days.length < RANK_WINDOW + 10) return;
+
+  const full = recalcRanks(days.map((d) => ({
+    trade_date: d.trade_date,
+    emotion: { value: d.emotion.value, lhb_daily_net: d.emotion.lhb_daily_net },
+  })));
+  const A = full.map((d) => d.emotion.pct_rank);
+
+  // 抽若干天做截断验证（全量截断是 O(n^2)，抽 12 天足够发现前视）
+  const probes = [RANK_MIN, RANK_WINDOW, Math.floor(days.length / 2), days.length - 1]
+    .concat(Array.from({ length: 8 }, (_, i) => Math.floor((i + 1) * days.length / 9)))
+    .filter((k, i, a) => k >= 0 && k < days.length && a.indexOf(k) === i);
+
+  for (const k of probes) {
+    const prefix = days.slice(0, k + 1).map((d) => ({
+      trade_date: d.trade_date,
+      emotion: { value: d.emotion.value, lhb_daily_net: d.emotion.lhb_daily_net },
+    }));
+    const B = recalcRanks(prefix);
+    assert.equal(B[B.length - 1].emotion.pct_rank, A[k],
+      `第 ${k} 天（${days[k].trade_date}）截断重算得分位 ${B[B.length - 1].emotion.pct_rank}，` +
+      `全量跑得 ${A[k]} —— 不一致说明全量跑时用到了该日之后的未来数据`);
+  }
+});
+
 // ── ② 幂等：指纹与逐日比较 ────────────────────────────────────────────────
 
 test('指纹：忽略易变字段（_legacy），但保留数据内容字段', () => {

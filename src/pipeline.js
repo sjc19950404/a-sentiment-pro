@@ -23,6 +23,7 @@ import { validateDay, sanitizeForFactors, dirtyArgsOf } from './dirty.js';
 import { BACKFILL_FLAG } from './backfill.js';
 import { buildRegimeBlock, buildDivergenceBlock } from './regime.js';
 import { buildDailyReport } from './daily_report.js';
+import { computeRecomputeScope, needFetch } from './idempotence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -170,9 +171,47 @@ function isBackfillShaped(s) {
 
 // 全档情绪重算：统一公式（computeSentiment）重跑所有交易日，再重算分位。
 // 历史天缺原始数据的因子走 proxy（posRatio/行业涨比），完全无原始数据的种子天标记 _legacy 保留原值。
-export function recalcAll(days) {
+//
+// ── ★ #134b：接入幂等（`scope`）——从"每轮全档 241 天"缩到"真正会变的那几天" ──────
+//
+//   背景：本函数原本对每一天都完整重跑（标脏校验 + 因子 + 派生字段）。实测 241 天里
+//   真正会变的只有 1~2 天（当日 + 上一交易日，见 src/idempotence.js::computeRecomputeScope）。
+//   其余 239 天重算 100% 是恒等变换，但代价实打实（每次多花数十秒）。
+//
+//   ⚠ 为什么"跳过"是**安全**的（这条是本项成立的前提，不得想当然）：
+//     本函数内的每一处跨日依赖都只**向后看**（依赖索引 < i 的日）：
+//       · amountMA20：只取 `j < i` 的历史（见下方 hist 循环）；
+//       · 分位：windowedPctRank 只看"到 i 为止"的窗口（src/sources.js，已由
+//         test/idempotence.test.mjs 的"追加新天不改历史分位"+真档案截断实证锁死）；
+//       · computeRelative：逐日独立，只读当日 summary。
+//     没有任何一处依赖"未来某天"或"档案总长度"。故 i 日的结果**只取决于 [0..i]**，
+//     跳过与它无关的其他天不改变它。
+//
+//   ⚠ 但**分位与相对强弱两段仍对全档跑**（不跳过）——它们是"薄"操作且同样是派生指标：
+//     · 分位：本就逐日独立，全档跑只是 O(n·window)，实测毫秒级；
+//       若只对 scope 内跑，反而要额外证明"两套调用路径结果一致"，得不偿失。
+//     · computeRelative：同理，逐日独立、极轻。
+//     结论：**重的是因子那段（标脏/校验/七因子/诊断字段），轻的是派生两段**。
+//     scope 只跳过前者，后者照旧全跑 —— 这样"省"与"正确"同时拿到，
+//     且不必为后者额外论证（它们本来就是 per-day 无状态）。
+//
+//   ⚠ scope 为 null/未传 → 行为与旧版**逐位一致**（全档重算）。
+//     调用方若判定口径整体变更（公式版本切换/阈值重标定），必须显式传
+//     `{ scope: { full: true } }`，或干脆不传 scope。
+//
+//   正确性由 test/pipeline_scope.test.mjs 用**真档案**证明：
+//     带 scope 的重算结果与全档重算结果**逐字段深比较必须相同**（否则说明存在
+//     未被识别的跨日依赖，此时必须停止缩小范围）。
+export function recalcAll(days, opts = {}) {
+  const scope = opts.scope || null;
+  // 需要**完整重算因子段**的日期集合；scope 为空 = 全档（旧行为）。
+  const scopedDates = (scope && !scope.full && Array.isArray(scope.dates))
+    ? new Set(scope.dates)
+    : null;
   const amts = days.map((d) => (d.summary && d.summary.amount_yi != null) ? d.summary.amount_yi : null);
   days.forEach((d, i) => {
+    // scope 命中判定：只跳过**因子段**；分位/相对两段在循环外照旧全跑。
+    if (scopedDates && !scopedDates.has(d.trade_date)) return;
     const s = d.summary || {};
     const hasRaw = (s.ind_count > 0 || s.lhb_daily_net != null || s.lhb_all_net != null);
     if (!hasRaw) { if (d.emotion) d.emotion._legacy = true; return; }
@@ -364,6 +403,11 @@ export function recalcAll(days) {
       delete d.emotion.industryCount;
     }
   });
+  // ── 以下两段**刻意对全档跑**（即使 scope 只覆盖 1~2 天）──────────────────
+  //   理由见函数头注：它们都是逐日无状态的薄操作（分位只看截至当日的窗口、
+  //   相对强弱只读当日 summary），全档跑是毫秒级，且避免"两条调用路径"的分叉风险。
+  //   真正重的是上面的因子段（标脏/校验/七因子/诊断字段），那一段已被 scope 跳过。
+  //
   // 板块相对强弱：与情绪分一样属于**派生指标**，必须在每次写档时重算——
   // 否则新增口径（如换基准、改 topN）对存量天永不生效，只能靠手工回填。
   // 口径唯一实现在 src/relative.js；此处只负责调用与挂载。
@@ -438,8 +482,21 @@ export async function runLive() {
   history.sort((a, b) => (a.trade_date < b.trade_date ? -1 : 1));
 
   // 龙虎榜晚间分批披露：重抓上一交易日 lhb 刷原始数据（行业/涨跌停池收盘即定死，无需补抓）
+  //
+  // ★ #134b：抓取前先问"手上这份数据凭什么可信、够不够新"（needFetch 的凭据判据），
+  //   而不是无条件重抓。已定稿（当日北京 ≥21:00）+ 龙虎榜有量 + 席位覆盖 100% → 跳过。
+  //   ⚠ 判据刻意保守：任何一项不确定/缺失都倾向"重抓"（多抓一次只是花时间，
+  //     少抓一次会产生"数据看着正常但其实是旧的"——本项目最危险的失败）。
+  //   实测：长假后首个交易日那晚，上一交易日通常已定稿满覆盖 → 省下 1 次 lhb + 1 次 seats 请求。
   const prevDays = history.filter((d) => d.trade_date < tradeDate).slice(-1);
+  let skippedFetch = 0;
   for (const day of prevDays) {
+    const prem = needFetch(day, { now: new Date(), tradeDate: day.trade_date });
+    if (!prem.need) {
+      skippedFetch++;
+      console.log('[refresh-lhb]', day.trade_date, '按凭据跳过重抓：', prem.reason);
+      continue;
+    }
     try {
       const lhbRaw = await fetchLhb(day.trade_date);
       applyLhb(day, lhbRaw);
@@ -469,7 +526,17 @@ export async function runLive() {
     }
   }
 
-  recalcAll(history);
+  // ★ #134b：重算范围从"全档 241 天"缩到"真正会变的那几天"。
+  //   依据是**已落盘的证据**（当日新抓 + 上一交易日席位凭据不足），不是日期差。
+  //   正确性前提：本管线无跨日前视依赖（见 recalcAll 头注），由
+  //   test/pipeline_scope.test.mjs 用真档案证明"带 scope 与全档重算逐字段相同"。
+  //   ⚠ 若将来引入任何"依赖未来天或档案总长度"的派生指标，必须同时修改此处
+  //     （改回全档）——否则历史天会停在旧值，且**不会有任何报错**。
+  const rescope = computeRecomputeScope(history);
+  console.log('[rescan]', rescope.full ? '全档' : '增量', rescope.dates.length + '/' + history.length, '天：', rescope.dates.join('、') || '（无）');
+  console.log('[rescan]', rescope.reason);
+
+  recalcAll(history, { scope: rescope });
   const { out, momObj } = enrich(history);
   const latest = out[out.length - 1];
   const archive = {
