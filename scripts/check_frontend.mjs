@@ -2357,6 +2357,26 @@ check('样式：复核提示条有未复核/已复核两态样式',
   cssTxt.includes('.po-gate') && cssTxt.includes('.po-gate.ok') && cssTxt.includes('.po-gate-btn'), '');
 check('样式：降级告警标签有独立样式类（.pk-outflow）', cssTxt.includes('.pk-outflow'), '');
 
+// ── 历史回填天（emotion._backfill）不得进入展示层 ──
+// 回填天只有 lhb 与 s_net，其 emotion.value 是 **s_net 单因子占位值、不是综合分**。
+// 一旦混进走势图/报告，会被读成「那天情绪分只有 12 分」——一个凭空捏造的结论。
+// 守两头：① 展示过滤函数存在且真的按 _backfill 过滤；② 报告样本数不含回填天。
+{
+  const src = readFileSync(join(ROOT, 'app.js'), 'utf8');
+  check('回填：展示层过滤函数 displayDays 存在且按 _backfill 过滤',
+    /function displayDays\(arc\)/.test(src) && /_backfill/.test(src)
+    && /return all\.filter\(\(d\) => !\(d\.emotion && d\.emotion\._backfill\)\)/.test(src), '');
+  check('回填：报告/走势/抽屉不再直接消费 ARC.all_days（只剩 fingerprint 全量用）',
+    (src.match(/displayDays\(ARC\)|displayDays\(arc\)|displayDays\(lastArc\)/g) || []).length >= 12, '');
+  const body = (dom.window.document.querySelector('#briefBody') || {}).textContent || '';
+  const m = body.match(/样本\s*(\d+)\s*个交易日/);
+  const n = m ? Number(m[1]) : null;
+  check('回填：报告样本交易日数不含回填天（应为完整档天数）',
+    n !== null && n < 241 && n === 33, String(n));
+  check('回填：报告未出现「241 个交易日」这类被回填天数污染的说法',
+    !/241\s*个交易日/.test(body), '');
+}
+
 check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' | '));
 
 dom.window.close();

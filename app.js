@@ -318,7 +318,7 @@ function hotCardHTML(r, cols) {
 }
 
 function hotRows() {
-  const days = ARC?.all_days || [];
+  const days = displayDays(ARC);
   const last = days[days.length - 1] || {};
   const ztLb = last.summary?.zt_lb || {};
   const detail = last.summary?.seats?.detail || {};
@@ -1319,7 +1319,7 @@ function renderBrief(days, arc) {
 function retryBriefAudit(btn) {
   if (btn) { btn.disabled = true; btn.textContent = '质检中…'; }
   try {
-    if (ARC && ARC.all_days && ARC.all_days.length) renderBrief(ARC.all_days, ARC);
+    const dd = displayDays(ARC); if (dd.length) renderBrief(dd, ARC);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '重试质检'; }
   }
@@ -1331,7 +1331,7 @@ function retryBriefAudit(btn) {
 // 让断言脚本能① 触发一次完整重渲染、② 注入任意报告 HTML 走同一条闸门路径。
 // 它们的唯一用途是「让闸门可被验证」——没有它们，断言只能看闸门代码而不能证明它拦得住。
 window.__rerenderBriefForAudit = () => {
-  if (ARC && ARC.all_days && ARC.all_days.length) { renderBrief(ARC.all_days, ARC); return true; }
+  const dd = displayDays(ARC); if (dd.length) { renderBrief(dd, ARC); return true; }
   return false;
 };
 /** 把给定 HTML 当作 buildBrief 的产物走一遍闸门（负向验证注入坏报告用） */
@@ -1579,7 +1579,7 @@ async function loadBacktest() {
     // 阈值/主线就绪后按引擎口径重刷：报告（§6 档位）、趋势参考线、个股表的连板/席位列。
     // 首次渲染时 BT 尚为 null，用的是与引擎同值的默认阈值（24/44/65/80），缺失时页面仍可读、不空白。
     if (lastArc) {
-      const d = lastArc.all_days || [];
+      const d = displayDays(lastArc);
       renderBrief(d, lastArc);
       renderTrend(d);
       renderHotTable();
@@ -1779,10 +1779,29 @@ function globalMapDetail(from) {
   };
 }
 
+// 展示层过滤：历史回填天（emotion._backfill === true）只有 lhb 与 s_net，
+// 六因子未采集，其 emotion.value 是 **s_net 单因子占位值、不是综合分**。
+// 若混进走势图/报告，会被读成"那天情绪分只有 12 分"，严重误导。
+//
+// 唯一去处：把所有消费 all_days 的渲染路径统一改喂本函数的结果，
+// 而不是在 15 处调用点各写一遍过滤（漏一处就是一个错误结论）。
+// 完整天数（含回填天）仍在 arc.all_days 里，供分位、回测、导出使用。
+function displayDays(arc) {
+  const all = (arc && arc.all_days) || [];
+  return all.filter((d) => !(d.emotion && d.emotion._backfill));
+}
+
+function backfillInfo(arc) {
+  const all = (arc && arc.all_days) || [];
+  const bf = all.filter((d) => d.emotion && d.emotion._backfill);
+  if (!bf.length) return null;
+  return { count: bf.length, total: all.length, from: bf[0].trade_date, to: bf[bf.length - 1].trade_date };
+}
+
 function renderAll(arc) {
   lastArc = arc; // 供 loadBacktest 完成后按引擎口径重刷报告
   ARC = arc;     // 供个股明细表与详情抽屉使用
-  const days = arc.all_days || [];
+  const days = displayDays(arc);
   const latest = days[days.length - 1] || {};
   const meta = arc.meta || {};
 
@@ -2006,7 +2025,7 @@ function seatTable(buyRows, sellRows, code, cover) {
 
 // 席位身份下钻：只输出**可从名称直接核验**的结构性事实，不做游资点名归属
 function seatDetail(code, side, idx) {
-  const days = ARC?.all_days || [];
+  const days = displayDays(ARC);
   const last = days[days.length - 1] || {};
   const s = last.summary || {};
   const S = seatsMod();
@@ -2085,7 +2104,7 @@ function seatDetail(code, side, idx) {
 
 // ── ① 个股详情 ──
 function stockDetail(code) {
-  const days = ARC?.all_days || [];
+  const days = displayDays(ARC);
   const last = days[days.length - 1] || {};
   const hot = (last.hot || []).find((h) => h.code === code) || null;
   const lhb = (last.lhb_aggr || last.lhb || []).find((l) => l.code === code) || null;
@@ -2169,7 +2188,7 @@ function stockDetail(code) {
 
 // ── ② 题材详情 ──
 function themeDetail(theme) {
-  const days = ARC?.all_days || [];
+  const days = displayDays(ARC);
   const last = days[days.length - 1] || {};
   const th = last.themes || {};
   const cnt = th[theme] ?? null;
@@ -2345,7 +2364,7 @@ function segDetail(kind, i) {
 
 // ── ⑤ 交易日详情（趋势图数据点）──
 function dayDetail(i) {
-  const days = ARC?.all_days || [];
+  const days = displayDays(ARC);
   const d = days[i];
   if (!d) return null;
   const s = d.summary || {};
@@ -2404,7 +2423,7 @@ function fireAct(el) {
   else if (act === 'gmap') { const v = globalMapDetail(el.dataset.from); if (v) openDrawer(v); }
   else if (act === 'btpt') {
     const dt = el.dataset.d;
-    const days = ARC?.all_days || [];
+    const days = displayDays(ARC);
     const i = days.findIndex((x) => x.trade_date === dt);
     const v = i >= 0 ? dayDetail(i) : null;
     if (v) openDrawer({ ...v, sub: `净值曲线数据点 · ${v.sub}` });
@@ -2588,7 +2607,7 @@ function guardAudited(btn) {
 
 /** 导出的落款信息统一在这里取，三处输出保持一致 */
 function reportOpts() {
-  const d = (ARC && ARC.all_days && ARC.all_days[ARC.all_days.length - 1]) || {};
+  const _dd = displayDays(ARC); const d = _dd[_dd.length - 1] || {};
   const dataDate = (ARC && ARC.meta && ARC.meta.tradeDate) || d.trade_date || '';
   const now = new Date();
   const pad = (n) => String(n).padStart(2, '0');
@@ -2606,7 +2625,7 @@ function reportOpts() {
  *   宁可给一个明确的缺省值，也不要显示一个凭空编出来的期号。
  */
 function briefIssueNo() {
-  const days = (ARC && ARC.all_days) || [];
+  const days = displayDays(ARC);
   const d = days[days.length - 1] || {};
   const dataDate = (ARC && ARC.meta && ARC.meta.tradeDate) || d.trade_date || '';
   const i = days.findIndex((x) => x && x.trade_date === dataDate);
@@ -2840,14 +2859,16 @@ $('toTop')?.addEventListener('click', () => {
 // paper_ui.js 在每次账户变更后发布 window.__paperSnapshot 并派发 paper-snapshot。
 // 这里只重渲染 #briefBody（并重建目录 chip），不动其它区块——账户变化与行情无关。
 window.addEventListener('paper-snapshot', () => {
-  if (!ARC || !ARC.all_days || !ARC.all_days.length) return;
-  renderBrief(ARC.all_days, ARC);
+  const dd = displayDays(ARC);
+  if (!dd.length) return;
+  renderBrief(dd, ARC);
 });
 
 // 复盘引擎是 ESM、由 index.html 的模块脚本挂到 window；而 app.js（经典脚本）先执行、
 // 首次 renderBrief 时它可能还没挂上（首次渲染会如实降级为「引擎未就绪」）。
 // 挂载完成时补刷一次，保证首屏就能看到第⑦段的真实内容。
 window.addEventListener('paper-review-ready', () => {
-  if (!ARC || !ARC.all_days || !ARC.all_days.length) return;
-  renderBrief(ARC.all_days, ARC);
+  const dd = displayDays(ARC);
+  if (!dd.length) return;
+  renderBrief(dd, ARC);
 });
