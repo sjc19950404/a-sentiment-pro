@@ -25,7 +25,8 @@
     <a class="zn" href="#zone-backtest" data-zone="zone-backtest">策略回测 V5.2</a>
     <a class="zn" href="#zone-brief" data-zone="zone-brief">研判报告</a>
     <a class="zn" href="#zone-global" data-zone="zone-global">外围预案</a>
-    <span class="zn-note" id="navNote">表格行 / 题材标签 / 图上数据点 / 权重行 均可点击查看详情 · 快捷键 1-5 跳分区、/ 聚焦搜索</span>
+    <a class="zn" href="#zone-paper" data-zone="zone-paper">模拟交易</a>
+    <span class="zn-note" id="navNote">表格行 / 题材标签 / 图上数据点 / 权重行 均可点击查看详情 · 快捷键 1-6 跳分区、/ 聚焦搜索</span>
   </nav>
 
   <div id="alerts"></div>
@@ -206,10 +207,100 @@
         </section>
       </div>
     </section>
+
+    <!-- ── 区六：模拟交易（除资金为虚拟外，价格/规则/日历全部真实） ── -->
+    <section class="zone" id="zone-paper">
+      <div class="zone-head">
+        <h3>模拟交易 · 纸上交易台</h3>
+        <span class="zone-sub" id="paperSub">仅初始资金为虚拟 · 价格取自真实行情存档 · 交易规则对齐 A 股现行制度</span>
+      </div>
+      <div class="grid">
+        <section class="card paper-acct">
+          <h2>账户总览 <span class="bf-auto">点指标看计算口径</span></h2>
+          <div id="paperStats" class="ps-grid"></div>
+          <div class="ps-bar">
+            <button id="paperReset" class="mini" type="button">重置账户</button>
+            <button id="paperExport" class="mini" type="button">导出账本</button>
+            <button id="paperImport" class="mini" type="button">导入账本</button>
+            <button id="paperSettle" class="mini" type="button">按最新档结算到今天</button>
+            <span id="paperMsg" class="muted"></span>
+          </div>
+          <div id="paperNote" class="bf-foot"></div>
+        </section>
+
+        <section class="card paper-order">
+          <h2>下单 <span class="bf-auto">T+1 撮合：次日按真实收盘价成交</span></h2>
+          <div class="po-form">
+            <label>代码<input id="poCode" type="text" inputmode="numeric" maxlength="6" placeholder="6 位代码，如 600519" /></label>
+            <div id="poQuote" class="po-quote muted">输入代码后显示当日真实行情与可交易性</div>
+            <div class="po-row">
+              <div class="seg" id="poSide" role="tablist" aria-label="买卖方向">
+                <button class="on" data-side="buy" role="tab" aria-selected="true">买入</button>
+                <button data-side="sell" role="tab" aria-selected="false">卖出</button>
+              </div>
+              <label>数量<input id="poQty" type="number" step="100" min="0" placeholder="100 的整数倍" /></label>
+            </div>
+            <div class="po-quick" id="poQuick"></div>
+            <div id="poPreview" class="po-preview"></div>
+            <button id="poSubmit" class="mini primary" type="button">提交委托</button>
+          </div>
+          <div id="poHint" class="po-hint muted"></div>
+        </section>
+
+        <section class="card paper-pos">
+          <h2>持仓 <span class="bf-auto">点行看成本构成与 T+1 可卖明细</span></h2>
+          <div class="table-wrap">
+            <table id="paperPosTable">
+              <thead><tr><th>代码</th><th>名称</th><th class="num">持仓</th><th class="num">可卖</th><th class="num">成本</th><th class="num">现价</th><th class="num">浮动盈亏</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="cardlist" id="paperPosCards" aria-label="持仓卡片列表"></div>
+          <div id="paperPosNote" class="bf-foot"></div>
+        </section>
+
+        <section class="card paper-pend">
+          <h2>待成交委托 <span class="bf-auto">次日开盘前有效；点行看预估与冻结</span></h2>
+          <div class="table-wrap">
+            <table id="paperPendTable">
+              <thead><tr><th>提交日</th><th>代码</th><th>名称</th><th>方向</th><th class="num">数量</th><th class="num">预估价</th><th class="num">冻结</th><th>操作</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="cardlist" id="paperPendCards" aria-label="待成交委托卡片列表"></div>
+          <div id="paperPendNote" class="bf-foot"></div>
+        </section>
+
+        <section class="card paper-hist">
+          <h2>成交与委托记录 <span class="bf-auto">含被拒单原因 · 点行看费用明细</span></h2>
+          <div class="tbar">
+            <div class="seg" id="paperTabs" role="tablist" aria-label="记录视图">
+              <button class="on" data-view="trade" role="tab" aria-selected="true">成交</button>
+              <button data-view="order" role="tab" aria-selected="false">全部委托（含被拒）</button>
+            </div>
+            <span id="paperHistCount" class="muted"></span>
+          </div>
+          <div class="table-wrap tall">
+            <table id="paperHistTable">
+              <thead><tr id="paperHistHead"></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="cardlist" id="paperHistCards" aria-label="成交与委托卡片列表"></div>
+        </section>
+
+        <section class="card paper-perf">
+          <h2>账户净值 <span class="bf-auto">与策略回测同口径指标</span></h2>
+          <div id="paperPerf" class="ps-grid"></div>
+          <svg id="paperNavSvg" viewBox="0 0 300 90" preserveAspectRatio="none" role="img" aria-label="账户净值曲线"></svg>
+          <div id="paperPerfNote" class="bf-foot"></div>
+        </section>
+      </div>
+    </section>
   </main>
 
   <footer class="foot muted">
-    七因子情绪模型 v5.2-pro · 题材去噪 + 缺失代理 + 多源容灾 · 研判报告与回测引擎同源（阈值/仓位档位）· 策略回测 V5.2（成本/平滑/风控/帕累托）· 外围市场观测（A股休市期间照常更新）· 数据仅供参考，非投资建议
+    七因子情绪模型 v5.2-pro · 题材去噪 + 缺失代理 + 多源容灾 · 研判报告与回测引擎同源（阈值/仓位档位）· 策略回测 V5.2（成本/平滑/风控/帕累托）· 外围市场观测（A股休市期间照常更新）· 模拟交易（仅资金虚拟，价格/规则/日历均真实）· 数据仅供参考，非投资建议
   </footer>
 
   <button id="toTop" class="totop" type="button" title="回到顶部" aria-label="回到顶部">↑</button>
@@ -228,5 +319,6 @@
   </aside>
 
   <script src="./app.js"></script>
+  <script type="module" src="./paper_ui.js"></script>
 </body>
 </html>

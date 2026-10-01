@@ -31,6 +31,11 @@ jobs:
         run: node scripts/fetch_global.mjs
       - name: 生成 V5.2 回测档（成本/平滑/风控/网格帕累托/滚动/主线选股）
         run: node scripts/backtest.mjs
+      # 模拟交易的标的池：从存档里归纳出「有哪些票、属于哪个板段、最近一次真实收盘价」。
+      # 必须在 archive.json 更新之后跑——池子就是存档的派生物，早跑会拿到昨天的价。
+      # 脚本内部对板段非法/非股票品种做校验，不合法直接退出，避免把错池子推上线。
+      - name: 构建模拟交易标的池（板段/ST/最近真实收盘价）
+        run: node scripts/fetch_universe.mjs
       # 口径守卫：两套龙虎榜净额（当日榜 / 含区间累计榜的全量）不得混用。
       # 放在提交之前——口径一旦漂移，宁可本次运行失败，也不要把错数据推上线。
       - name: 龙虎榜口径守卫（双口径不混用 + 存档可重现）
@@ -41,7 +46,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/backtest.json data/global.json
+          git add data/archive.json data/backtest.json data/global.json data/paper_universe.json
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else

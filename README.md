@@ -22,13 +22,14 @@
 ## 本地开发
 
 ```bash
-node --test            # 跑单元测试（情绪/校验/题材去噪/龙虎榜双口径 + V5.2 回测引擎 + 新鲜度三态，含 Python↔JS 一致性夹具）
+node --test            # 跑单元测试（情绪/校验/题材去噪/龙虎榜双口径 + V5.2 回测引擎 + 新鲜度三态 + 外围解析 + 模拟交易规则，含 Python↔JS 一致性夹具）
 node scripts/replay.mjs # 用 snapshot.html 离线重建 archive.json 并打印噪声对比
 node scripts/backtest.mjs   # 生成 data/backtest.json（回测/网格帕累托/滚动/主线选股）
 node scripts/audit_lhb_caliber.mjs  # 龙虎榜口径守卫（CI 门禁：双口径不混用 + 存档可重现 + 因子口径锁）
 node scripts/recalc_lhb_daily.mjs   # 存量全档重算（双口径字段 + 七因子；幂等，--dry 可预览）
 node scripts/freshness.mjs  # 数据新鲜度自查（--write 落盘刷新判定 / --require-fresh 滞后即退出码 1）
 node scripts/fetch_global.mjs  # 抓外围行情 → data/global.json（隔夜美股/中国资产/汇率/商品；A股休市期间照常更新）
+node scripts/fetch_universe.mjs  # 构建模拟交易标的池 → data/paper_universe.json（板段/ST/最近真实收盘价）
 NODE_PATH=<任意含 jsdom 的 node_modules> node scripts/check_frontend.mjs  # 前端渲染校验（可选）
 MODE=live node src/pipeline.js  # 线上模式（需外网）
 ```
@@ -46,16 +47,20 @@ src/validate.js   archive.json 结构/范围校验
 src/backtest.js   V5.2 回测引擎（仓位/成本/绩效/网格帕累托/滚动/主线选股，纯函数）
 src/freshness.js  数据新鲜度三态判定（fresh/pending/behind，按交易日历，纯函数）
 src/global.js     外围市场口径唯一来源（品种清单/字段布局解析/与A股映射/触发阈值；别处只许 import）
+src/paper.js      模拟交易规则唯一来源（板段/涨跌停/费用/滑点/T+1 撮合/加权成本/绩效，纯函数，浏览器与 Node 共用）
 src/pipeline.js   编排：抓取→去噪→情绪→校验→写出
 scripts/backtest.mjs  读 archive.json → 预计算 data/backtest.json
 scripts/fetch_global.mjs  抓外围行情 → 预计算 data/global.json（独立于 A 股开市与否）
+scripts/fetch_universe.mjs  读 archive.json → 预计算 data/paper_universe.json（模拟交易标的池）
 scripts/audit_lhb_caliber.mjs  口径守卫（源码卫生 + 存档不变量 + 因子口径锁，CI 门禁）
 scripts/recalc_lhb_daily.mjs   存量全档重算（幂等）
 scripts/freshness.mjs 新鲜度自查/落盘刷新/CI 门禁（--write / --require-fresh）
 index.html/app.js/style.css  前端看板（纯静态、零构建；分区导航 + 详情抽屉 + 报告折叠，见「界面与交互」）
+paper_ui.js       模拟交易前端（ESM，有状态交互；交易判断全部 import 自 src/paper.js，不在 UI 重写一遍）
 data/archive.json 生成数据（Actions 每日更新）
 data/backtest.json 回测档（Actions 每日更新）
 data/global.json 外围行情档（Actions 每工作日更新，A股休市期间照常）
+data/paper_universe.json 模拟交易标的池（Actions 每日更新，archive.json 的派生物）
 test/fixtures/parity_v52.json  Python↔JS 一致性夹具（由 tools/backtest/make_parity_fixture.py 生成）
 test/fixtures/sina_global_20260930.txt  外围解析夹具（2026-09-30 美股收盘后抓到的真实响应）
 ```
@@ -230,6 +235,41 @@ test/fixtures/sina_global_20260930.txt  外围解析夹具（2026-09-30 美股�
 另用真实浏览器（Edge headless，390/768/1600/2560 四种视口）核对实际排版：无横向溢出、
 卡片/表格的可见性切换正确、触控目标尺寸达标、超宽屏版心居中。
 
+## 模拟交易 · 纸上交易台（区六）
+
+一句话：**只有「初始资金」是假的（100 万虚拟），价格、规则、日历全部真实。**
+
+| 维度 | 做法 | 为什么不偷懒 |
+| --- | --- | --- |
+| 价格 | 只取 `data/archive.json` 里**当日真实收盘价**；`quotesFromDay` 对缺价一律**不进表** | 缺价用 0 或历史价冒充，等于凭空造出一个成交价 |
+| 撮合 | **T+1**：委托在下单日**不成交**，进入 `pending`，于**次一交易日按该日真实收盘价**撮合 | 存档是「收盘后生成的日频数据」，允许当日收盘价成交就是拿已知结果下单（前视偏差）；成交价与下单价的漂移 `driftPct` 如实展示 |
+| 交易单位 | 买入必须 **100 股整数倍**；零股只能一次性清仓 | A 股现行制度 |
+| 涨跌停 | 按板段取值：沪深主板 ±10%、创业板/科创板 ±20%、北交所 ±30%、ST/*ST ±5%；触板即拒单或判失效 | 不同板段幅度不同，混用会把「买不进」错判成「能成交」 |
+| 费用 | 佣金万三（**单笔最低 5 元**）、印花税万五（**仅卖出**）、过户费万0.1（双边）、滑点万二 | 最低佣金与单边印花税是最容易被漏掉的两项；低频小单的实际成本几乎由最低佣金决定 |
+| 滑点 | 买卖各让一格；**四舍五入后若方向未体现，强制按 0.01 元朝不利方向走一格** | 低价股（如 2.76 元）万二滑点四舍五入到分会归零，与「低价股冲击成本更高」的真实相反 |
+| 成本 | 加权平均成本法，成本含买入费用；卖出按「持仓总成本 × 卖出比例」结转，清仓直接结转全部 | 按 `avgCost` 四舍五入再乘数量会丢零头（如 10.0053 被截成 10.00），清仓后成本与已实现盈亏对不上 |
+| 绩效 | 与 `src/backtest.js` 的 `metrics()` **完全同口径**（年化 252、回撤按峰值、夏普按日收益标准差） | 便于和策略回测直接对比，而不是另一套「看起来更好看」的算法 |
+
+**规则只有一个出处**：全部规则（板段判定、涨跌停容差、费用、滑点、撮合、成本、绩效）都在
+`src/paper.js`，浏览器与 Node 共用；`paper_ui.js` 只做渲染与状态，**不在 UI 里重写一遍规则**——
+否则规则会随前端改动静默漂移，而模拟器的价值恰恰是「规则和真实一致」。
+
+**标的池** `data/paper_universe.json` 是 `archive.json` 的派生物（存档只有当日上榜票，没有板段/ST
+标记）：`scripts/fetch_universe.mjs` 遍历所有交易日，为每个代码记录**最近一次真实收盘价**、板段、
+ST、出现过的日期集合、是否活跃；可转债/基金 ETF/B 股识别出来单独统计，**不混进可交易池**。
+入口校验不合法直接 `exit(1)`，避免把错池子推上线。
+
+**账本持久化**：`localStorage`，key 带版本号（`paper-acct-paper-v1`）。升级引擎时旧账本不会被误读；
+支持导出/导入（可读 JSON 文件，便于人工核对与迁移）。账本落后于存档时（比如隔了一天没打开页面），
+`autoCatchUp` 会用存档里真实存在的交易日**逐日补结算**——周末/休市不会凭空产生净值点。
+
+**已明确不支持的品种**：可转债、基金/ETF、B 股——这些品种的交易单位与涨跌停规则和股票不同，
+在池子里被显式排除并给出原因，而不是套用股票规则硬算。
+
+守护方式：`test/paper.test.mjs` 把每条制度边界锁成可回归的断言（44 例）。开测以来它抓到并修掉了
+**3 个真 bug**：① 委托成交后没出队 → 同一张单天天重复成交；② T+1 解冻用「最近有行情的日」判定 →
+连续有行情时永远不解冻；③ 成本结转取整丢零头。这三条都有专门的回归测试。
+
 ## 数据更新与故障排查
 
 - **生成链路**：Actions 定时（北京 18:30 / 21:00，周一至五）跑 `MODE=live node src/pipeline.js` →
@@ -293,4 +333,8 @@ test/fixtures/sina_global_20260930.txt  外围解析夹具（2026-09-30 美股�
 - **外围模块的两处能力缺口**（已知，非 bug）：① 新浪不提供**美债收益率**（`gb_$tnx` 返回空），
   长端利率这个分母端锚点只能通过美元指数/黄金间接观察；② 外围只做**方向性观测**，不做量化传导——
   「费半跌 2% 对应 A 股元件板块跌多少」这类映射本系统不给，因为没有可验证的传导系数。
-- 数据仅供参考，**非投资建议**。
+- **模拟器刻意保留的简化**（都在 `src/paper.js` 文件头注明依据）：① 撮合价用**收盘价**而非分钟级
+  撮合（存档是日频的，没有盘中价可用）；② 不模拟**分红送股/配股/退市**对公司行为的影响，持仓跨
+  这些事件不会自动调整；③ 不模拟**停牌**（停牌日无行情，持仓标 `pxStale` 但不会阻止卖出）；
+  ④ 不支持可转债/ETF/B 股与新股申购。这些缺口的方向一致：**宁可少做，也不做一个假的**。
+- 数据仅供参考，**非投资建议**。模拟交易的成绩**不代表**真实资金的可实现收益。

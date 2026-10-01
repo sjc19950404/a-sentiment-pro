@@ -1639,14 +1639,15 @@ $('dwClose')?.addEventListener('click', closeDrawer);
 $('drawerMask')?.addEventListener('click', closeDrawer);
 
 // 键盘：Esc 关抽屉；Enter/Space 触发带 tabindex 的可点元素（表格行、卡片、chip、数据点）；
-// PC 端另有快捷键：1-5 跳分区、/ 聚焦个股搜索（在输入框内不抢键，不影响正常打字）
+// PC 端另有快捷键：1-6 跳分区、/ 聚焦个股搜索（在输入框内不抢键，不影响正常打字）
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { closeDrawer(); return; }
   const t = e.target;
   const typing = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
   if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
     const zones = [...document.querySelectorAll('#zoneNav .zn[data-zone]')];
-    const n = '12345'.indexOf(e.key);
+    // 数字键与分区一一对应（顺序即导航顺序），不写死上界——加分区时快捷键自动跟上
+    const n = e.key >= '1' && e.key <= '9' ? Number(e.key) - 1 : -1;
     if (n >= 0 && zones[n]) { e.preventDefault(); zones[n].click(); return; }
     if (e.key === '/') {
       const inp = $('hotSearch');

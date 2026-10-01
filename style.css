@@ -364,3 +364,85 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .gmap-row { grid-template-columns: 1fr; gap: 3px; }
   .gm-mid { text-align: left; }
 }
+
+/* ── 区六：模拟交易 · 纸上交易台 ──
+   配色沿用本页「价格涨红跌绿」约定（--up 红 / --down 绿），
+   因为这里展示的确实是价格与盈亏方向，不是「对 A 股的影响方向」。
+   状态标签（.stag）是另一套语义：成交/在途/被拒/失效，用蓝/橙/红/灰区分。 */
+.paper-acct, .paper-order, .paper-pos, .paper-pend, .paper-hist, .paper-perf { grid-column: span 2; }
+@media (max-width: 860px) { .paper-acct, .paper-order, .paper-pos, .paper-pend, .paper-hist, .paper-perf { grid-column: span 1; } }
+#paperNavSvg { width: 100%; height: 110px; }
+#paperNavSvg polyline { fill: none; stroke-width: 2; }
+#paperNavSvg line { stroke: var(--line); }
+#paperNavSvg circle { cursor: pointer; opacity: 0; }
+#paperNavSvg circle:hover, #paperNavSvg circle:focus { opacity: 1; }
+.pnav-pt { pointer-events: all; stroke: transparent; stroke-width: 8px; }
+
+.ps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(108px, 1fr)); gap: 8px; }
+.ps-cell { background: var(--card2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px;
+  min-width: 0; cursor: pointer; }
+.ps-cell:hover, .ps-cell:focus-visible { border-color: var(--acc); }
+.ps-cell.wide { grid-column: 1 / -1; cursor: default; }
+.ps-k { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ps-v { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ps-n { font-size: 10.5px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
+.ps-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.ps-bar #paperMsg { font-size: 11.5px; }
+
+/* 下单表单 */
+.po-form { display: flex; flex-direction: column; gap: 8px; }
+.po-form label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.po-form input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--txt);
+  padding: 5px 10px; font-size: 13px; font-family: inherit; flex: 1; min-width: 0; }
+.po-form input:focus { border-color: var(--acc); outline: none; }
+.po-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.po-row label { flex: 1; min-width: 160px; }
+.po-quote { font-size: 12px; line-height: 1.7; }
+.pq-line { font-size: 12.5px; }
+.po-quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.po-preview { font-size: 12px; }
+.po-tb { width: 100%; border-collapse: collapse; font-size: 12px; }
+.po-tb td { padding: 3px 6px; border-bottom: 1px solid var(--line); }
+.po-tb td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.po-tb tr.po-sum td { border-bottom: 0; padding-top: 6px; }
+.po-hint { font-size: 11.5px; line-height: 1.6; margin-top: 8px; min-height: 15px; }
+#poSubmit { align-self: flex-start; }
+.mini.primary { color: var(--acc); border-color: var(--acc); background: rgba(88, 166, 255, .12); }
+.mini.primary:hover { background: rgba(88, 166, 255, .22); }
+
+/* 状态标签：成交 / 在途 / 被拒 / 已撤 / 失效 */
+.stag { display: inline-block; padding: 1px 7px; border-radius: 8px; font-size: 10.5px; white-space: nowrap; }
+.stag.ok { background: rgba(63, 185, 80, .16); color: var(--fresh); }
+.stag.wait { background: rgba(88, 166, 255, .16); color: var(--acc); }
+.stag.bad { background: rgba(240, 97, 109, .16); color: var(--fade); }
+.stag.warn { background: rgba(210, 153, 34, .18); color: var(--warn); }
+.stag.mut { background: var(--line); color: var(--muted); }
+
+/* 行内小标：冻结数量 / 旧价 */
+.tag-mini { display: inline-block; margin-left: 4px; padding: 0 4px; border-radius: 6px; font-size: 10px;
+  background: var(--line); color: var(--muted); vertical-align: 1px; white-space: nowrap; }
+.tag-mini.warn { color: var(--warn); border: 1px solid var(--warn); background: transparent; }
+.psub { display: block; font-size: 10.5px; color: var(--muted); font-weight: 400; }
+tr.empty-row td { color: var(--muted); padding: 10px 8px; }
+
+/* 窄屏卡片：与表格同一份数据、同一顺序 */
+.card-row { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 7px;
+  background: var(--card2); cursor: pointer; }
+.card-row:active { border-color: var(--acc); }
+.cr-top { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; }
+.cr-top b { font-weight: 700; }
+.cr-bot { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; margin-top: 3px; flex-wrap: wrap; }
+
+@media (hover: none) {
+  .pnav-pt { stroke-width: 18px; }
+}
+@media (hover: none), (max-width: 820px) {
+  .po-form input { min-height: 34px; }
+  .ps-cell { padding: 9px 11px; }
+}
+@media (max-width: 860px) {
+  /* 手机上至少 120px 一格（两列）：金额「1,000,000.00」约 108px 宽，
+     三列排布会被截成「1,000,0…」——金额截断不可接受，宁可少放一列 */
+  .ps-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+}

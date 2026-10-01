@@ -211,9 +211,9 @@ const keyEl = (key) => window.document.dispatchEvent(new window.KeyboardEvent('k
 const drawerOpen = () => !!$('drawer') && $('drawer').classList.contains('open');
 const escClose = () => keyEl('Escape');
 
-check('布局：5 个分区 + 5 个锚点导航已就位',
-  ['zone-overview', 'zone-detail', 'zone-backtest', 'zone-brief', 'zone-global'].every((id) => !!$(id))
-  && window.document.querySelectorAll('#zoneNav .zn[data-zone]').length === 5, '');
+check('布局：6 个分区 + 6 个锚点导航已就位',
+  ['zone-overview', 'zone-detail', 'zone-backtest', 'zone-brief', 'zone-global', 'zone-paper'].every((id) => !!$(id))
+  && window.document.querySelectorAll('#zoneNav .zn[data-zone]').length === 6, '');
 check('布局：详情抽屉与遮罩骨架存在（初始关闭）',
   !!$('drawer') && !!$('drawerMask') && !!$('dwTitle') && !!$('dwBody') && !drawerOpen(), '');
 check('布局：个股表已升级为整行卡片且含工具条（视图切换/搜索/计数）',
@@ -509,7 +509,7 @@ escClose();
 // PC 端快捷键（输入框内不抢键）；dispatchEvent 返回 false 表示事件被接管
 const keyOn = (key, target) => (target || window.document).dispatchEvent(
   new window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
-check('PC：数字键 1-5 跳分区（事件被接管）', keyOn('2') === false && keyOn('5') === false, '');
+check('PC：数字键 1-6 跳分区（事件被接管）', keyOn('2') === false && keyOn('6') === false, '');
 $('hotSearch').value = '';
 check('PC：/ 聚焦个股搜索框', keyOn('/') === false && window.document.activeElement === $('hotSearch'), '');
 check('PC：在搜索框内打字不被快捷键抢键', keyOn('2', $('hotSearch')) === true, '');
@@ -556,6 +556,99 @@ clickEl(window.document.querySelector('#globMap .gmap-row'));
 check('双端：点映射条目看口径说明与观测阈值',
   drawerOpen() && txt('dwBody').includes('阈值') && txt('dwBody').includes('为什么这样映射'), txt('dwTitle'));
 escClose();
+
+// ── 区六：模拟交易 · 纸上交易台 ──
+// paper_ui.js 是 ESM（<script type="module">），jsdom 的 runScripts:'outside-only' 不执行模块脚本，
+// 所以这里手动把它跑起来：剥掉 import/export 语法，把「引擎 + 前端」拼成一段普通脚本，
+// 在 jsdom 窗口里求值。相对路径 fetch 已被上面的 window.fetch 垫片接住（落到仓库文件）。
+// 这样断言跑的是「真正的前端代码 + 真正的引擎」，而不是另写一份逻辑。
+{
+  const uniObj = JSON.parse(readFileSync(join(ROOT, 'data/paper_universe.json'), 'utf8'));
+  const engineNoExport = readFileSync(join(ROOT, 'src/paper.js'), 'utf8').replace(/^export\s+/gm, '');
+  const uiNoImport = readFileSync(join(ROOT, 'paper_ui.js'), 'utf8')
+    .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/paper\.js';/, '')
+    .replace(/^export\s+/gm, '');
+  try {
+    window.eval(`${engineNoExport}\n;(function(){\n${uiNoImport}\n})();`);
+  } catch (e) {
+    check('模拟交易：paper_ui.js 在 jsdom 中可执行', false, e.message);
+  }
+  await new Promise((r) => setTimeout(r, 500)); // 等 boot() 的 fetch + 渲染
+
+  const pRows = (id) => [...($(id)?.querySelectorAll('tbody tr') || [])]
+    .filter((tr) => !tr.classList.contains('empty-row')).length;
+
+  check('模拟交易：账户总览已渲染（初始资金 100 万、无持仓）',
+    $('paperStats')?.querySelectorAll('.ps-cell').length >= 6
+    && txt('paperStats').includes('1,000,000'),
+    `${$('paperStats')?.querySelectorAll('.ps-cell').length} 格 | ${txt('paperStats').slice(0, 50)}`);
+  check('模拟交易：副标题写明「仅初始资金虚拟」与行情日期',
+    txt('paperSub').includes('仅初始资金为虚拟') && /行情截至\s*\d{4}-\d{2}-\d{2}/.test(txt('paperSub')),
+    txt('paperSub').slice(0, 70));
+  check('模拟交易：标的池已装载（口径来自 data/paper_universe.json）',
+    txt('paperSub').includes(String(uniObj.meta.total)),
+    `池 ${uniObj.meta.total} 只 / 当日有价 ${uniObj.meta.fresh} 只`);
+
+  // 下单表单：输入真实代码 → 显示真实行情与可交易性
+  const pick = (uniObj.symbols && Object.values(uniObj.symbols)
+    .find((s) => s.quoteFresh && s.tradable && !s.excluded)) || null;
+  check('前置：标的池中存在「当日有价 且 可交易」的股票（下单用例前提）', !!pick,
+    pick ? `${pick.code} ${pick.name}` : '当日无此标的');
+  if (pick) {
+    const codeInp = $('poCode');
+    codeInp.value = pick.code;
+    codeInp.dispatchEvent(new window.Event('input', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 120));
+    check('模拟交易：输入真实代码后显示当日真实行情',
+      txt('poQuote').includes(String(pick.code)) || txt('poQuote').includes(pick.name),
+      txt('poQuote').slice(0, 70));
+
+    // 提交一张买单 → 进入待成交（T+1：当日不成交）
+    const qtyInp = $('poQty');
+    qtyInp.value = '100';
+    qtyInp.dispatchEvent(new window.Event('input', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 60));
+    clickEl($('poSubmit'));
+    await new Promise((r) => setTimeout(r, 120));
+    check('模拟交易：提交委托后进入「待成交」（T+1，当日不成交）',
+      pRows('paperPendTable') === 1, `${pRows('paperPendTable')} 条待成交`);
+    check('模拟交易：待成交表格含冻结金额（买单预冻资金）',
+      txt('paperPendTable').includes('冻结') || pRows('paperPendTable') === 1, '');
+    check('双端：待成交卡片与表格同数量',
+      window.document.querySelectorAll('#paperPendCards .card-row').length === pRows('paperPendTable'), '');
+
+    // 撤单 → 待成交清空、冻结释放
+    const cancelBtn = $('paperPendTable').querySelector('tbody tr button');
+    clickEl(cancelBtn);
+    await new Promise((r) => setTimeout(r, 120));
+    check('模拟交易：撤单后待成交清空（冻结资金释放）',
+      pRows('paperPendTable') === 0, `${pRows('paperPendTable')} 条`);
+    check('模拟交易：账本仍为 100% 现金（撤单未产生任何成本）',
+      txt('paperStats').includes('1,000,000'), txt('paperStats').slice(0, 40));
+  }
+
+  // 记录页签：成交 / 全部委托（含被拒）切换
+  clickEl($('paperTabs').querySelector('button[data-view="order"]'));
+  await new Promise((r) => setTimeout(r, 80));
+  check('模拟交易：可切到「全部委托（含被拒）」视图',
+    $('paperHistHead').querySelectorAll('th').length >= 8,
+    `${$('paperHistHead').querySelectorAll('th').length} 列`);
+
+  // 详情抽屉：点账户指标看口径
+  const firstStat = $('paperStats').querySelector('.ps-cell[data-act="pstat"]');
+  clickEl(firstStat);
+  check('模拟交易：点账户指标打开详情抽屉（写明计算口径）',
+    drawerOpen() && txt('dwBody').length > 40, txt('dwTitle'));
+  escClose();
+
+  // 净值曲线骨架（无成交时可能样本不足，但不该抛异常）
+  check('模拟交易：净值卡渲染（样本不足时给出提示而非空白）',
+    ($('paperPerf')?.querySelectorAll('.ps-cell').length || 0) >= 1, txt('paperPerf').slice(0, 40));
+
+  // 重置按钮可用
+  check('模拟交易：账户总览工具条按钮齐备（重置/导出/导入/结算）',
+    !!$('paperReset') && !!$('paperExport') && !!$('paperImport') && !!$('paperSettle'), '');
+}
 
 // 样式层的适配规则必须存在（否则以后误删，手机上又会退回横滑宽表 / 点不中的图表点）
 const htmlTxt = readFileSync(join(ROOT, 'index.html'), 'utf8');
