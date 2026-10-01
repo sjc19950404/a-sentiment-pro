@@ -2572,6 +2572,56 @@ check('样式：降级告警标签有独立样式类（.pk-outflow）', cssTxt.i
 
 check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' | '));
 
+// ── 板块相对强弱（超额进攻 / 超额防御）───────────────────────────────────────
+// 运行时断言，覆盖两个最易翻车的点：
+//   ① 无数据时渲染 0（0＝与基准完全同步，是确定结论；缺数据＝不知道，两者相反）
+//   ② 前端自己再算一遍超额（口径分叉），或双基准只渲染了一个
+{
+  // 情绪面板区块
+  const relHost = $('relBlock');
+  check('板块相对强弱：情绪面板 #relBlock 已渲染', !!relHost && relHost.innerHTML.length > 0,
+    relHost ? `${relHost.innerHTML.length} 字节` : '无 #relBlock 元素');
+  if (relHost) {
+    const relRows = [...relHost.querySelectorAll('.rel-row')];
+    const summary = (relHost.querySelector('summary')?.textContent || '').replace(/\s+/g, ' ').trim();
+    // 最新交易日有行业明细 → 应渲染出攻防两榜（各 5 条 = 10 行）
+    check('板块相对强弱：攻防两榜各 5 条（共 10 行）', relRows.length === 10, `${relRows.length} 行`);
+    check('板块相对强弱：摘要标注了基准名（不得只说"超额"不说基准）',
+      /上证指数|行业中位数/.test(summary), summary.slice(0, 60));
+    check('板块相对强弱：摘要含两榜口径说明', /行业|超额/.test(summary), summary.slice(0, 60));
+    // 每行须有 名称 + 涨跌幅 + 超额 三段；超额必须带正负号（正负号是判断攻防的唯一视觉线索）
+    const badRow = relRows.find((r) => r.querySelectorAll('span').length < 4);
+    check('板块相对强弱：每行含 排名/名称/涨跌幅/超额 四段', !badRow,
+      badRow ? badRow.textContent.replace(/\s+/g, ' ').trim() : '');
+    // 攻防两端符号应相反（有行业明细的正常交易日必然如此；全市场同涨跌到"攻榜首超额也为负"
+    // 是可能的，故只断言"两端不等价"，不断言符号）
+    const exs = relRows.map((r) => (r.querySelector('.rel-ex')?.textContent || '').trim()).filter(Boolean);
+    check('板块相对强弱：超额列全部带符号（+ 或 −）', exs.length === 10 && exs.every((e) => /^[+\-−]/.test(e)),
+      exs.join(','));
+  }
+  // 报告表格
+  const relTbl = window.document.querySelector('table.rel-table');
+  check('板块相对强弱：报告内 rel-table 已渲染', !!relTbl, relTbl ? '' : '未找到 .rel-table');
+  if (relTbl) {
+    const cap = relTbl.getAttribute('data-caption') || '';
+    check('板块相对强弱：报告表格 data-caption 标注基准（口径可追溯）',
+      /基准/.test(cap) && /上证指数|行业中位数/.test(cap), cap.slice(0, 60));
+    check('板块相对强弱：报告表格 10 个数据行', relTbl.querySelectorAll('tbody tr').length === 10,
+      `${relTbl.querySelectorAll('tbody tr').length} 行`);
+    // 列头须点明是"超额进攻/超额防御"，而非泛泛的"涨幅榜"
+    const heads = [...relTbl.querySelectorAll('thead th')].map((x) => x.textContent.trim()).join('|');
+    check('板块相对强弱：表头含"超额进攻"与"超额防御"', /超额进攻/.test(heads) && /超额防御/.test(heads),
+      heads.slice(0, 70));
+  }
+  // 源码层：前端不得自行相减（口径唯一出处守卫的运行时补充）
+  {
+    const appSrcRel = readFileSync(join(ROOT, 'app.js'), 'utf8');
+    check('板块相对强弱：前端源码未自行计算超额（只读 summary.industry_relative）',
+      /industry_relative/.test(appSrcRel) && !/change_pct\s*-\s*\w+\.indexes/.test(appSrcRel),
+      '');
+  }
+}
+
 // jsdom 未实现的 DOM 桩：不判失败，但**必须打印**——否则将来真出现异常时，
 // 读者会以为"一类错误被静默吞掉了"。单独一条提示说明它们为何不算失败。
 if (notImplemented.length) {

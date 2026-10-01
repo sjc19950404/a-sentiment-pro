@@ -12,7 +12,7 @@
 // 用法：node scripts/audit_lhb_caliber.mjs
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { caliberFromDay, isRangeBoard, duplicateKeys } from '../src/lhb.js';
 import { decodeArchive } from '../src/lhb_codec.js';
 import config from '../src/config.js';
@@ -1409,6 +1409,127 @@ const stripCommentsAud = (s) => String(s)
   const fcSrc = readFileSync(path.join(ROOT, 'scripts', 'fetch_calendar.mjs'), 'utf8');
   check('交易日历：抓取脚本写盘前自检（拒绝自相矛盾的日历）',
     /validateCalendar\(payload\)/.test(fcSrc) && /拒绝写盘/.test(fcSrc), '');
+}
+
+// ── B14. 板块相对强弱：口径唯一出处 + 缺数据不得渲染成 0 ──────────────────────
+// 这条守卫盯的是本类指标最典型的两个翻车方式：
+//   ① UI/报告层自己再算一遍超额（"顺手减一下"）→ 改口径时两处必然不同步；
+//   ② 无数据时渲染 0 → 0 的语义是"与基准完全同步"，是**确定结论**；
+//      缺数据的语义是"不知道"。把后者画成前者，就是在编造数据。
+// 历史 208 天没有行业明细，②几乎必然被踩。
+{
+  const relPath = path.join(ROOT, 'src', 'relative.js');
+  const relExists = existsSync(relPath);
+  const rel = relExists ? readFileSync(relPath, 'utf8') : '';
+  const relCode = stripCommentsAud(rel);
+  check('板块相对强弱：src/relative.js 存在（口径唯一出处）', relExists, '');
+
+  // ① 必须自带中位数（不得用均值——均值会被单行业异动拽偏）
+  check('板块相对强弱：中位数基准实现在唯一出处内',
+    /export function median/.test(relCode) && /\.sort\(\(x, y\) => x - y\)/.test(relCode),
+    '中位数必须在本模块内实现且真排序取中');
+
+  // ② 缺数据必须返回 null，不得返回 0/空榜
+  //
+  // ⚠ 这条**必须真调用来验，不能只扫源码文本**。最初写成扫
+  //   `if (valid.length < 30) return null` 字面量，结果负向注入
+  //   （把返回改成 0 榜）**完全逃过**——因为改的是条件体，字面量仍在。
+  //   扫描源码只能证明"某句话在"，不能证明"行为对"。此处改为 import 后真跑。
+  const { computeRelative: probeRel, median: probeMedian } = await import(
+    pathToFileURL(relPath).href
+  );
+  // ① 无行业明细 → null
+  const rEmpty = probeRel({ trade_date: 'x', industry: [], indexes: { 上证指数: 0.5 } });
+  check('板块相对强弱：无行业明细时返回 null（不得返回 0 或空榜）',
+    rEmpty === null, `实得 ${JSON.stringify(rEmpty)?.slice(0, 60)}`);
+  // ② 行业数不足 30（残缺列表）→ null
+  const rFew = probeRel({
+    trade_date: 'x',
+    industry: Array.from({ length: 29 }, (_, i) => ({ name: 'I' + i, change_pct: i / 10 })),
+    indexes: { 上证指数: 0.5 },
+  });
+  check('板块相对强弱：行业数不足 30 返回 null（残缺列表不凑榜）',
+    rFew === null, `实得 ${JSON.stringify(rFew)?.slice(0, 60)}`);
+  // ③ 正常输入 → 双基准且 basePct 正确（行为面确认模块真在算）
+  const rOk = probeRel({
+    trade_date: 'x',
+    industry: Array.from({ length: 40 }, (_, i) => ({ name: 'I' + i, change_pct: (i - 20) / 5 })),
+    indexes: { 上证指数: 0.31 },
+  });
+  check('板块相对强弱：正常输入产出双基准且基准值正确（行为验证）',
+    !!rOk && rOk.vsIndex?.basePct === 0.31 && rOk.vsMedian?.baseLabel === '行业中位数'
+    && rOk.vsIndex.attack.length === 5,
+    rOk ? `vsIndex.basePct=${rOk.vsIndex?.basePct} attack=${rOk.vsIndex?.attack?.length}` : 'null');
+  // ④ 中位数验证（偶数取两数均值；必须真排序，不是取中间那个位置的原始值）
+  check('板块相对强弱：中位数真排序取中（偶数取两数均值）',
+    probeMedian === probeMedian && probeMedian([4, 1, 3, 2]) === 2.5 && probeMedian([3, 1, 2]) === 2,
+    `[4,1,3,2]→${probeMedian([4, 1, 3, 2])}`);
+
+  // ③ 双基准必须并存（缺一个就答不了另一半问题）
+  check('板块相对强弱：vsIndex 与 vsMedian 双基准并存',
+    /REL_BASE = \{[\s\S]*?INDEX[\s\S]*?MEDIAN/.test(relCode)
+    && /vsIndex/.test(relCode) && /vsMedian/.test(relCode),
+    '只留单基准会让"跑赢大盘"与"板块内排序"其中一个问题无法回答');
+
+  // ④ 排序键必须是 excess，不得按 change_pct 排
+  check('板块相对强弱：排序键是超额而非绝对涨幅',
+    /\.sort\(\(a, b\) => b\.excess - a\.excess\)/.test(relCode),
+    '按绝对涨幅排会让普跌日的进攻榜全是负数、含义混乱');
+
+  // ⑤ UI / 报告层不得自带超额计算（只许读 summary.industry_relative）
+  const appSrc = readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const appCode = stripCommentsAud(appSrc);
+  check('板块相对强弱：前端只读 summary.industry_relative，不自行相减',
+    /summary\?\.industry_relative|summary\.industry_relative/.test(appCode)
+    && !/change_pct\s*-\s*(day|d)\.indexes/.test(appCode),
+    '前端出现 change_pct − indexes 说明它自己算了一遍超额');
+  check('板块相对强弱：报告/前端把「未计算」与 0 严格区分',
+    /未计算/.test(appSrc),
+    '无数据时必须渲染"未计算"而非 0');
+
+  // ⑥ 管线必须重算（否则新增/改口径对存量天永不生效）
+  const pipeSrc = readFileSync(path.join(ROOT, 'src', 'pipeline.js'), 'utf8');
+  check('板块相对强弱：管线在写档时重算（派生指标不得只写一次）',
+    /computeRelative\(d\)/.test(pipeSrc) && /industry_relative/.test(pipeSrc),
+    '只在新抓当天算、不回算存量天 → 改口径后历史天永久停旧值');
+
+  // ⑦ 落盘态字段必须能往返（存档/切片都要带）
+  const splitSrc = readFileSync(path.join(ROOT, 'src', 'archive_split.js'), 'utf8');
+  check('板块相对强弱：index/recent/signals 三档都带该字段',
+    (splitSrc.match(/industry_relative/g) || []).length >= 3,
+    '只带一档会让另一档的 UI 显示"未计算"（其实是没传）');
+
+  // ⑧ 存档里该字段必须与 industry 明细同生共死（有明细才有值）
+  const arcRel = (() => {
+    try {
+      const a = decodeArchive(JSON.parse(readFileSync(path.join(ROOT, 'data', 'archive.json'), 'utf8')));
+      return a.all_days || [];
+    } catch { return null; }
+  })();
+  if (arcRel) {
+    const withInd = arcRel.filter((d) => Array.isArray(d.industry) && d.industry.length >= 30);
+    const withRel = arcRel.filter((d) => d.summary && d.summary.industry_relative);
+    const fake = arcRel.filter((d) => (!Array.isArray(d.industry) || d.industry.length < 30)
+      && d.summary && d.summary.industry_relative);
+    check('板块相对强弱：存档中有行业明细的天数 == 有超额榜的天数',
+      withInd.length === withRel.length, `industry ${withInd.length} / relative ${withRel.length}`);
+    check('板块相对强弱：无行业明细的天绝不允许有超额榜（防凭空生成）',
+      fake.length === 0, fake.length ? `越界 ${fake.length} 天：${fake.slice(0, 3).map((d) => d.trade_date).join(',')}` : '');
+    // ⑨ 抽验算法：榜首超额必须等于「榜首涨幅 − 基准」，且攻防两端不交叉
+    const probe = withRel[withRel.length - 1];
+    if (probe) {
+      const r = probe.summary.industry_relative;
+      const b = r.vsIndex || r.vsMedian;
+      const a0 = b && b.attack[0];
+      const d0 = b && b.defense[0];
+      check('板块相对强弱：榜首超额 == 涨幅 − 基准（可外部复算）',
+        !!a0 && Math.abs(a0.excess - Math.round((a0.change_pct - b.basePct) * 100) / 100) < 0.011,
+        a0 ? `${a0.name}: ${a0.excess} vs ${a0.change_pct}−${b.basePct}` : '无攻榜');
+      check('板块相对强弱：攻榜首项超额 > 防榜首项超额（两榜不交叉）',
+        !!a0 && !!d0 && a0.excess > d0.excess,
+        a0 && d0 ? `${a0.excess} vs ${d0.excess}` : '缺榜');
+    }
+  }
 }
 
 // ── C. 结论 ────────────────────────────────────────────────────────────────

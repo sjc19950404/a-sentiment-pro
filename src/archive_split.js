@@ -121,6 +121,9 @@ export function latestBrief(d) {
     down_count: s.down_count ?? null,
     amount_yi: s.amount_yi ?? null,
     ind_count: s.ind_count ?? null,
+    // 板块相对强弱：与 index 档同源同字段名（前端一轮渲染可同时读两档）。
+    // null 表示该日无行业明细 → 渲染成「未计算」，不得当成 0。
+    industry_relative: s.industry_relative ?? null,
     main_theme: s.main_theme ?? null,
   };
 }
@@ -234,6 +237,10 @@ export function trendPoint(d) {
     max_lb: s.max_lb ?? null,
     amount_yi: s.amount_yi ?? null,
     lhb_daily_net: s.lhb_daily_net ?? null,
+    // 板块相对强弱：走势点也带上——否则「回看更早交易日」时超额榜会整块消失
+    // （同 seats 的教训：该带的字段裁掉，报告那段就静默不见了）。
+    // 代价很小：有数据时约 2KB/日；无数据的日子就是 null，约 20 字节。
+    industry_relative: s.industry_relative ?? null,
     // 席位摘要（不含 detail —— 那是唯一的大块，留给需要时的完整档）
     ...(seatKeys.length ? { summary: { seats: pickKeys(s.seats, seatKeys) } } : {}),
   };

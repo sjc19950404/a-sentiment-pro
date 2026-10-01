@@ -15,6 +15,7 @@ import { applyFreshnessMeta, applyPhaseMeta, freshnessKey } from './freshness.js
 import { buildIndex, buildShards, shardName, buildRecent, buildSignals, RECENT_DAYS, RECENT_FILE, SIGNALS_FILE } from './archive_split.js';
 import { buildReasonCodes, encodeArchive, decodeArchive } from './lhb_codec.js';
 import { marketAlerts } from './alerts.js';
+import { computeRelative } from './relative.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -194,6 +195,16 @@ export function recalcAll(days) {
       newStock: sent.newStock,
     };
   });
+  // 板块相对强弱：与情绪分一样属于**派生指标**，必须在每次写档时重算——
+  // 否则新增口径（如换基准、改 topN）对存量天永不生效，只能靠手工回填。
+  // 口径唯一实现在 src/relative.js；此处只负责调用与挂载。
+  // 无行业明细的历史天（208/241）返回 null → 不写字段，报告/前端显示「未计算」。
+  days.forEach((d) => {
+    if (!d.summary) return;
+    const rel = computeRelative(d);
+    if (rel) d.summary.industry_relative = rel;
+    else delete d.summary.industry_relative;
+  });
   recalcRanks(days);
 }
 
@@ -318,10 +329,17 @@ export function writeArchive(archive, filePath) {
   if (!ok) {
     throw new Error('校验失败: ' + errors.join('; '));
   }
-  // 码表压缩：只在**落盘时**生效（内存里始终是中文原文，口径正则才不会失配）。
+  // 码表压缩 + 提子：只在**落盘时**生效（内存里始终是中文原文，口径正则才不会失配）。
   // 主档与切片都写压缩态——它们都是读盘产物，读回来统一走 decodeArchive 还原。
+  //
+  // ⚠ 提子（deflate）必须开启，且与 src/lhb_codec.js 的 writeArchiveSafely 一致。
+  //   历史坑：本函数曾漏传 `{ deflate: true }`，于是 pipeline 写出的主档是
+  //   `day.lhb` 内联，而 writeArchiveSafely / 存量档是 `day._sub.lhb`——
+  //   同一份存档有了两种形态，审计断言（"主档写盘态 lhb 已提子"）在
+  //   pipeline 自己写完之后反而变红。两条写盘路径必须产出同一种形态。
+  //   本次由 backfill_relative.mjs 走 writeArchive 回写存量档时暴露。
   const codes = buildReasonCodes(archive.all_days);
-  const packed = encodeArchive(archive, codes);
+  const packed = encodeArchive(archive, codes, { deflate: true });
   // 紧凑写盘：`rc` 是数字下标数组，加 2 空格缩进会被 JSON 展开成一行一个数字，
   // 缩进开销足以吃掉码表 92% 的收益（实测 4.99MB → 9.44MB，比压缩前还大）。
   writeFileSync(p, JSON.stringify(packed), 'utf8');

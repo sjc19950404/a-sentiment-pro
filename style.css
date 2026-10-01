@@ -101,6 +101,31 @@ body { margin: 0; background: var(--bg); color: var(--txt); font-family: -apple-
 .factor .bar > i { display: block; height: 100%; background: var(--acc); }
 .factor .val { width: 30px; text-align: right; }
 
+/* ── 板块相对强弱（首页情绪面板内）──
+ * 与报告 §4 同源同字段（summary.industry_relative），此处只换呈现形态。
+ * 默认展开：超额进攻/防御是本系统对外最有区分度的两块信息，折叠起来等于没有。 */
+.rel-block { margin-top: 14px; }
+.rel-fold { border-top: 1px solid var(--line); padding-top: 8px; }
+.rel-fold > summary { cursor: pointer; font-size: 12px; color: var(--muted); display: flex; gap: 8px; align-items: baseline; }
+.rel-fold > summary::marker { color: var(--muted); }
+.rel-base { margin-left: auto; color: var(--txt); font-variant-numeric: tabular-nums; }
+.rel-na { margin-left: auto; color: var(--warn); }
+.rel-body { margin-top: 7px; }
+.rel-meta { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+.rel-warn { font-size: 11px; color: var(--warn); margin-bottom: 6px; }
+.rel-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; }
+.rel-col-h { font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 3px; border-bottom: 1px solid var(--line); padding-bottom: 2px; }
+.rel-hint { opacity: .7; }
+.rel-row { display: flex; align-items: baseline; gap: 6px; font-size: 11.5px; padding: 1.5px 0; }
+.rel-rank { width: 12px; color: var(--muted); flex: none; font-size: 10px; }
+.rel-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rel-pct { width: 50px; text-align: right; color: var(--muted); flex: none; font-variant-numeric: tabular-nums; }
+.rel-ex { width: 44px; text-align: right; flex: none; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rel-pct.up, .rel-ex.up { color: var(--up); }
+.rel-pct.down, .rel-ex.down { color: var(--down); }
+.rel-pct.flat, .rel-ex.flat { color: var(--muted); }
+@media (max-width: 720px) { .rel-cols { grid-template-columns: 1fr; } }
+
 .mom-group { margin-bottom: 10px; }
 .mom-title { font-size: 13px; margin-bottom: 5px; }
 .mom-title.fresh { color: var(--fresh); } .mom-title.fade { color: var(--fade); } .mom-title.cont { color: var(--cont); }
@@ -302,6 +327,17 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .bf-table tbody td:nth-child(2) { white-space: nowrap; color: var(--acc); }
 .bf-table tfoot td { color: var(--muted); background: rgba(127, 127, 127, .06); }
 .bf-table tbody tr:hover { background: rgba(88, 166, 255, .06); }
+
+/* ── 模板②b：板块相对强弱（攻/防双栏）──
+ * 双栏表刻意**不用** .bf-table 的 nth-child(2) 高亮色：那张表里第 2 列是"名称"，
+ * 强制 --acc 好看；本表第 2 列是"涨跌幅"，必须红涨绿跌。若不覆盖，
+ * `.bf-table tbody td:nth-child(2)`（0,2,2）会压过 `.bf-up`（0,1,0），
+ * 涨跌幅会全部染成蓝色——数值对但颜色错，比数值错更难发现。
+ * 故用同等特异度（0,2,2）+ 后置位置覆盖。 */
+.bf-table.rel-table tbody td:nth-child(2),
+.bf-table.rel-table tbody td:nth-child(3) { text-align: right; white-space: nowrap; color: inherit; font-variant-numeric: tabular-nums; }
+.bf-table.rel-table tbody td:nth-child(1) { color: var(--txt); }
+.bf-table.rel-table thead th:not(:first-child) { text-align: right; }
 
 /* ── 模板④：明日跟踪项复选框清单（纯前端勾选，不持久化）── */
 .bf-todo { position: relative; padding-left: 22px; margin-bottom: 3px; cursor: pointer; user-select: none; }

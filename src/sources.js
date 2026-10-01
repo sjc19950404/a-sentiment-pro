@@ -15,6 +15,7 @@ import config from './config.js';
 import { computeSentiment } from './sentiment.js';
 import { normalizeRecord, summarizeCalibers, mergeDuplicateRecords } from './lhb.js';
 import { isAggregateSeatRow } from './seats.js';
+import { computeRelative } from './relative.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -577,6 +578,10 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
     amount_yi,
   };
   if (seats) summary.seats = seats;
+  // 板块相对强弱：口径唯一实现在 src/relative.js；此处只负责**挂上去**。
+  // 无行业明细的日子（历史回填天）返回 null —— 报告/前端必须显示「未计算」而非 0。
+  const industry_relative = computeRelative({ trade_date: date, industry, indexes });
+  if (industry_relative) summary.industry_relative = industry_relative;
   if (missing.length) summary._missing = missing;
 
   const emotion = {

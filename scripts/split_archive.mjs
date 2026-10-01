@@ -33,7 +33,12 @@ const arc = decodeArchive(raw);
 const codes = Array.isArray(raw?.meta?.reasonCodes) && raw.meta.reasonCodes.length
   ? raw.meta.reasonCodes
   : buildReasonCodes(arc.all_days);
-const packed = encodeArchive(arc, codes);
+// ⚠ 必须传 { deflate: true }，与主档落盘态（pipeline.writeArchive / writeArchiveSafely）
+//   保持同一种形态。历史坑：此处曾漏传，于是 decodeArchive 把 _sub.lhb 还原成顶层 lhb 后
+//   直接进了滚动窗，`latest.lhb` 变成内联——首屏体积白涨，且 --check 会报
+//   "滚动窗 latest.lhb 未提子"。三种写盘路径（主档 / 本脚本 / writeArchiveSafely）
+//   必须产出完全一致的形态，否则同源切片就成了"两种口径"。
+const packed = encodeArchive(arc, codes, { deflate: true });
 const index = buildIndex(packed);
 const shards = buildShards(packed);
 const recent = buildRecent(packed, RECENT_DAYS);

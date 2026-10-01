@@ -174,8 +174,60 @@ function renderEmotion(latest) {
   }
 }
 
-function chips(list, attr) {
-  const wrap = $(attr);
+/**
+ * 板块相对强弱（超额进攻 / 超额防御）——首页情绪面板可折叠区块。
+ *
+ * 与报告 §4 同一份数据（summary.industry_relative，口径在 src/relative.js），
+ * 本函数**只渲染不重算**。两处渲染同一字段是刻意的：报告是"结论"，面板是"随手看"，
+ * 若各自现算，改口径时必然一处生效一处不生效（本项目反复踩过的坑）。
+ *
+ * 缺数据时必须显示「未计算」而非 0：历史 208 天无行业明细，渲染成 0 会被读成
+ * "板块与大盘完全同步"——一个与事实相反的确定结论。
+ */
+function renderRelative(latest) {
+  const host = $('relBlock');
+  if (!host) return;
+  const rel = latest?.summary?.industry_relative;
+  if (!rel) {
+    host.innerHTML = `<details class="rel-fold"><summary>板块相对强弱（超额进攻 / 防御）`
+      + `<span class="rel-na">未计算</span></summary>`
+      + `<div class="rel-body"><div class="muted">该日无行业明细，未计算相对强弱。`
+      + `相对强弱需要当日各行业涨跌幅（90 个行业）与上证涨跌幅同源对比，`
+      + `历史回填天只有情绪分，故不计算——不用可疑数据凑榜。</div></div></details>`;
+    return;
+  }
+  const b = (rel.primary === 'median' ? rel.vsMedian : rel.vsIndex) || rel.vsMedian || rel.vsIndex;
+  if (!b) {
+    host.innerHTML = `<details class="rel-fold"><summary>板块相对强弱（超额进攻 / 防御）`
+      + `<span class="rel-na">基准缺失</span></summary></details>`;
+    return;
+  }
+  const f2 = (v) => (v >= 0 ? '+' : '') + v.toFixed(2);
+  const tone = (v) => (v > 0 ? 'up' : v < 0 ? 'down' : 'flat');
+  const row = (r, i) => `<div class="rel-row">`
+    + `<span class="rel-rank">${i + 1}</span>`
+    + `<span class="rel-name" title="${esc(r.name)}">${esc(r.name)}</span>`
+    + `<span class="rel-pct ${tone(r.change_pct)}">${f2(r.change_pct)}%</span>`
+    + `<span class="rel-ex ${tone(r.excess)}">${f2(r.excess)}</span>`
+    + `</div>`;
+  const col = (title, rows, hint) => `<div class="rel-col">`
+    + `<div class="rel-col-h">${title}<span class="rel-hint">${hint}</span></div>`
+    + rows.map(row).join('') + `</div>`;
+  const degraded = rel.degraded
+    ? `<div class="rel-warn">⚠ ${esc(rel.degradedReason)}，主榜已降级</div>` : '';
+  host.innerHTML = `<details class="rel-fold" open><summary>板块相对强弱（超额进攻 / 防御）`
+    + `<span class="rel-base">基准 ${esc(b.baseLabel)} ${f2(b.basePct)}%</span></summary>`
+    + `<div class="rel-body">`
+    + `<div class="rel-meta">行业中位 ${f2(rel.medianPct)}% · 飘红 ${rel.upCount}/${rel.total} 个行业`
+    + `（超额 ＝ 行业涨跌幅 − 基准涨跌幅，同日同源）</div>`
+    + degraded
+    + `<div class="rel-cols">`
+    + col('超额进攻', b.attack, '强于基准前 ' + rel.topN)
+    + col('超额防御', b.defense, '弱于基准后 ' + rel.topN)
+    + `</div></div></details>`;
+}
+
+function chips(list, attr) {  const wrap = $(attr);
   wrap.innerHTML = '';
   const arr = (list || []).map((t) => (typeof t === 'string' ? t : (t.theme || t.name || ''))).filter(Boolean);
   if (!arr.length) { wrap.innerHTML = '<span class="empty">无</span>'; return; }
@@ -782,11 +834,50 @@ function buildBrief(days, arc) {
   const redPct = (up != null && dn != null && up + dn > 0) ? up / (up + dn) * 100 : null;
   const indPct = (s.ind_count && s.ind_up != null) ? s.ind_up / s.ind_count * 100 : null;
   const amtChg = (amt != null && pamt != null && pamt > 0) ? (amt - pamt) / pamt * 100 : null;
+
+  // 板块相对强弱（超额进攻 / 超额防御）
+  // ── 口径全在 src/relative.js，此处**只渲染不重算**（本项目铁律：规则唯一出处）。
+  // 数据来自 summary.industry_relative；历史 208 天无行业明细 → 字段缺失 →
+  // 必须显示「未计算」，绝不能渲染成 0：0 是"与基准完全同步"的确定结论，
+  // 缺失是"不知道"，二者含义相反，混同就是编造数据。
+  const REL = s.industry_relative;
+  const relTbl = (() => {
+    if (!REL) return li(`<span class="muted">板块相对强弱：未计算——该日无行业明细（历史回填天仅有情绪分，不含行业涨跌幅）。</span>`);
+    const b = (REL.primary === 'median' ? REL.vsMedian : REL.vsIndex) || REL.vsMedian || REL.vsIndex;
+    if (!b) return li(`<span class="muted">板块相对强弱：未计算——基准缺失。</span>`);
+    const f2 = (v) => (v >= 0 ? '+' : '') + v.toFixed(2);
+    // 报告内的涨跌配色一律用 bf-up / bf-dn（本项目已有类，红涨绿跌），
+    // 不新造类名——新类名在导出/打印样式里不会有定义，会退化成无色。
+    const cls = (v) => (v >= 0 ? 'bf-up' : 'bf-dn');
+    const scls = (v) => (v > 0 ? 'bf-up' : v < 0 ? 'bf-dn' : 'muted');
+    // 攻/防两栏并排：读者最需要的两个动作是"跟谁"和"避谁"，放在同一屏。
+    const col = (rows) => rows.map((r) => `<tr>`
+      + `<td>${esc(r.name)}</td>`
+      + `<td class="num ${scls(r.change_pct)}">${f2(r.change_pct)}%</td>`
+      + `<td class="num ${cls(r.excess)}"><b>${f2(r.excess)}</b></td>`
+      + `</tr>`).join('');
+    const tbl = `<table class="bf-table rel-table" data-caption="板块相对强弱（基准 ${esc(b.baseLabel)} ${f2(b.basePct)}%）">`
+      + `<thead><tr><th>超额进攻（前 ${REL.topN}）</th><th>涨跌幅</th><th>超额</th></tr></thead>`
+      + `<tbody>${col(b.attack)}</tbody>`
+      + `<thead><tr><th>超额防御（后 ${REL.topN}）</th><th>涨跌幅</th><th>超额</th></tr></thead>`
+      + `<tbody>${col(b.defense)}</tbody></table>`;
+    const degraded = REL.degraded
+      ? `<span class="muted">（⚠ ${esc(REL.degradedReason)}，主榜已降级）</span>` : '';
+    const head = li(`板块相对强弱（基准 <b>${esc(b.baseLabel)}</b> ${f2(b.basePct)}%）：`
+      + `<b>超额进攻</b> ${esc(b.attack[0] ? b.attack[0].name : '—')} ${b.attack[0] ? f2(b.attack[0].excess) : ''}；`
+      + `<b>超额防御</b> ${esc(b.defense[0] ? b.defense[0].name : '—')} ${b.defense[0] ? f2(b.defense[0].excess) : ''}`
+      + `。行业红盘中位 ${f2(REL.medianPct)}%（${REL.upCount}/${REL.total} 个行业飘红）${degraded}`);
+    return head + tbl;
+  })();
+
   const sec4 = [
     redPct != null ? li(`涨跌家数 ${up} / ${dn}（沪深口径），红盘占比 ${redPct.toFixed(0)}%——${redPct >= 65 ? '普涨' : redPct >= 55 ? '结构性行情' : redPct >= 45 ? '震荡分化' : '普跌'}`) : '',
     indPct != null ? li(`行业红盘 ${s.ind_up ?? '—'}/${s.ind_count}（${indPct.toFixed(0)}%）——${indPct >= 70 ? '板块扩散良好' : indPct >= 50 ? '结构性扩散' : '抱团行情，扩散不足'}；最强 ${s.top_industry || '—'} / 最弱 ${s.bottom_industry || '—'}`) : '',
     amtChg != null ? li(`两市成交额 ${num(amt, 0)} 亿，环比 ${amtChg >= 0 ? '+' : ''}${amtChg.toFixed(1)}%${amt === pamt ? '' : `（${amt >= pamt ? '放量' : '缩量'} ${num(Math.abs(amt - pamt), 0)} 亿）`}——${amtChg >= 10 ? '放量' : amtChg <= -10 ? '缩量' : '量能平稳'}；量能因子 ${f.s_amt ?? '—'}（${f.s_amt >= 40 ? '高量能' : f.s_amt >= 20 ? '中等量能' : '低量能'}）`) : '',
-  ].join('') + cal('涨跌家数为沪深两市口径（不含北交所）；红盘占比＝上涨家数 ÷（上涨+下跌）。阈值：红盘占比≥65 普涨／55~65 结构性／45~55 震荡分化／<45 普跌；行业红盘≥70 扩散良好／50~70 结构性扩散／<50 抱团；成交额环比 ±10% 为放量/缩量的分界（区间内视为平稳）。');
+    relTbl,
+  ].join('') + cal('涨跌家数为沪深两市口径（不含北交所）；红盘占比＝上涨家数 ÷（上涨+下跌）。阈值：红盘占比≥65 普涨／55~65 结构性／45~55 震荡分化／<45 普跌；行业红盘≥70 扩散良好／50~70 结构性扩散／<50 抱团；成交额环比 ±10% 为放量/缩量的分界（区间内视为平稳）。'
+    + '<br><b>板块相对强弱口径</b>：超额 ＝ 行业当日涨跌幅 − 基准当日涨跌幅，基准取<b>同日同源</b>（上证指数取当日收盘涨跌幅，行业中位数取同日全部行业涨跌幅的中位数）。排序键是<b>超额</b>而非绝对涨幅——普跌日里"跌得最少"的才是最强，按绝对涨幅排会让普跌日的进攻榜全是负数、含义混乱。两基准并存的原因：vs 上证回答"跑赢大盘了吗"（体感最贴近持仓），但上证含大量低波权重股，题材行情里它常躺平，会让几乎所有题材行业显示正超额；vs 行业中位数回答"在板块里排前还是排后"（中位数基准下攻防榜天然均衡，必有强弱）。报告主榜优先取上证，上证缺失时降级为中位数并显式标注。'
+    + '<br>行业数不足 30 个（残缺列表）或无行业明细时返回「未计算」——不用可疑数据凑一个榜。历史回填天（共 208 天）无行业明细，其超额榜一律显示「未计算」，与 0 严格区分（0＝与基准完全同步，是确定结论；未计算＝不知道）。');
 
   // 5. 题材结构——规格阈值：主线涨停≥6强/3~5中等/<3弱化；昨日新晋存活率≥50%延续性强/30~50中等/<30一日游
   const freshN = (mom.fresh || []).length, contN = (mom.continuing || []).length, fadeN = (mom.fading || []).length;
@@ -2031,6 +2122,7 @@ function renderAll(arc) {
 
   renderAlerts(meta);
   renderEmotion(latest);
+  renderRelative(latest);
   renderMomentum(arc.signals?.momentum || {});
   renderTrend(days);
   renderThemes(latest);
