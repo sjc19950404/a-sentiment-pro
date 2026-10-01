@@ -62,7 +62,18 @@ const LS_KEY = 'paper-acct-' + PAPER_VERSION;
 // 这是历史事实，不随交易引擎版本升级而失效。带版本号会导致升级后战绩被清空，
 // 而那恰恰是最该保留的东西（用户要拿它判断「这套预警值不值得继续听」）。
 const AL_KEY = 'paper-alerts-log';
+/** 初始资金默认值（元）。用户可在账户总览里自定义，自定义值另存 PAPER_INIT_KEY。 */
 const INIT_CASH = 1000000;
+/**
+ * 自定义初始资金的持久化 key。
+ * 为什么单独存一份、而不直接读账户的 initCash：用户可能想「先设 50 万，过会再建账户」，
+ * 或者重置前先看看能改多少。把「偏好」与「账户事实」分开，重置时才能按用户设定的金额重建，
+ * 而不是被上一次的账户值绑架。**不带 PAPER_VERSION**——这是用户偏好，不是引擎数据。
+ */
+const INIT_KEY = 'paper-init-cash';
+/** 初始资金合法区间：下限 1000（连一手低价股都买不起的账户没意义），上限 10 亿（防手滑多打 0）。 */
+const INIT_MIN = 1000;
+const INIT_MAX = 1000000000;
 const SLIP = DEFAULT_SLIP;
 
 let ACCT = null;          // 当前账户
@@ -93,6 +104,35 @@ let LOG = { stage: '' };
 let ALOG = [];
 
 // ────────────────────────── 持久化 ──────────────────────────
+
+/**
+ * 读取用户设定的初始资金（元）。没设过就用默认 100 万。
+ * 越界/非数值一律回落到默认值——宁可用默认的 100 万，也不要一个非法金额建出诡异账户。
+ */
+function loadInitCash() {
+  try {
+    const raw = localStorage.getItem(INIT_KEY);
+    if (raw == null) return INIT_CASH;
+    const v = Math.round(+raw);
+    if (!Number.isFinite(v) || v < INIT_MIN || v > INIT_MAX) return INIT_CASH;
+    return v;
+  } catch (e) {
+    return INIT_CASH;
+  }
+}
+
+/** 保存用户设定的初始资金。越界直接拒绝并说明区间（不静默夹紧——用户要能发现填错了）。 */
+function saveInitCash(v) {
+  const n = Math.round(+v);
+  if (!Number.isFinite(n) || n < INIT_MIN || n > INIT_MAX) {
+    msg(`初始资金需在 ${INIT_MIN.toLocaleString()} ~ ${INIT_MAX.toLocaleString()} 元之间（当前填的是 ${v}）`, 'err');
+    return null;
+  }
+  try {
+    localStorage.setItem(INIT_KEY, String(n));
+  } catch (e) { /* 存储不可用则只在本次会话生效 */ }
+  return n;
+}
 
 function save() {
   try {
@@ -235,7 +275,6 @@ function syncPositionsLive() {
 // ────────────────────────── 数据装载 ──────────────────────────
 
 async function boot() {
-  const sub = $('paperSub');
   try {
     const [uniRes, arcRes] = await Promise.all([
       fetch('./data/paper_universe.json?_=' + Date.now(), { cache: 'no-store' }),
@@ -254,17 +293,14 @@ async function boot() {
     LAST_DATE = last.trade_date || null;
     QMAP = quotesFromDay(last);
 
-    // 账户：优先本地账本；没有则新建（起始日 = 存档最新交易日）
-    ACCT = load() || emptyAccount(INIT_CASH, LAST_DATE);
+    // 账户：优先本地账本；没有则按「用户设定的初始资金」新建（起始日 = 存档最新交易日）
+    ACCT = load() || emptyAccount(loadInitCash(), LAST_DATE);
     // 预警台账：与账户相互独立（重置账户不清空战绩——它衡量的是规则本身，不是某一笔交易）
     ALOG = loadAlertLog();
     // 若本地账户落后于存档（比如隔了一天），自动补结算到最后可用的存档日
     autoCatchUp(days);
-
-    if (sub) {
-      sub.textContent = `仅初始资金为虚拟（${INIT_CASH.toLocaleString()} 元）· 行情来源：腾讯实时行情`
-        + ` · 规则对齐 A 股现行制度（T+1、整手、涨跌停、真实费用）`;
-    }
+    syncInitCashInput();
+    // 副标题交给 renderAllPaper → renderSub 统一刷新，避免两处文案各自演化
     renderAllPaper();
 
     // 实时行情放在首屏渲染之后：先把界面画出来，再异步补价，避免网络慢时白屏。
@@ -359,6 +395,7 @@ function lookup(code) {
 // ────────────────────────── 渲染：账户 ──────────────────────────
 
 function renderAllPaper() {
+  renderSub();
   renderStats();
   renderAlerts();
   renderPicks();
@@ -371,6 +408,21 @@ function renderAllPaper() {
   renderBatch();
   renderLogs();
   publishSnapshot();
+}
+
+/**
+ * 副标题（区域头下方那行小字）。
+ * 为什么放进 renderAllPaper 而不是只在 boot 里写一次：初始资金是**可改的**，
+ * 改完只更新总览、副标题还挂旧金额，两处数字打架比不显示更糟。
+ */
+function renderSub() {
+  const sub = $('paperSub');
+  if (!sub) return;
+  // 报账户实际的初始资金（initCash），不是用户偏好里那个——两者可能不同
+  // （改了设定但还没建新账户），报偏好值会与下方总览自相矛盾。
+  const cash = ACCT?.initCash || loadInitCash();
+  sub.textContent = `仅初始资金为虚拟（${num(cash)} 元）· 行情来源：腾讯实时行情`
+    + ` · 规则对齐 A 股现行制度（T+1、整手、涨跌停、真实费用）`;
 }
 
 /**
@@ -414,6 +466,13 @@ function publishSnapshot() {
   // 故与 __paperSnapshot 同样的桥接方式挂一个最小只读句柄（仅供测试与报告端复用）。
   try {
     window.__paperCtx = { account: () => ACCT, lookup: (c) => lookup(c), stats: () => accountStats(ACCT) };
+    // 初始资金的读写与常量也要可测：越界拦截是**唯一**的口径防线，
+    // 但输入框上可能挂多个 change 监听（如测试脚本重复 eval 本文件），
+    // 靠 dispatch 事件验证会假绿/假红。直接暴露纯函数给断言用。
+    window.__paperInitTest = {
+      saveInitCash, loadInitCash, newAccountWith,
+      INIT_CASH, INIT_MIN, INIT_MAX, INIT_KEY,
+    };
   } catch (e) { /* 静默 */ }
 }
 
@@ -2150,15 +2209,50 @@ async function closeAll() {
   }
 }
 
-function reset() {
-  if (!window.confirm('重置账户将清空全部持仓、成交与委托记录，且不可恢复。确定继续？')) return;
-  ACCT = emptyAccount(INIT_CASH, LAST_DATE);
+/** 用指定金额新建一个空账户（含起始净值锚点）。初始资金是唯一「虚拟」的输入，其余全部由引擎算。 */
+function newAccountWith(cash) {
+  let a = emptyAccount(cash, LAST_DATE);
   if (LAST_DATE) {
-    ACCT = { ...ACCT, nav: [{ date: LAST_DATE, equity: INIT_CASH, cash: INIT_CASH, marketValue: 0 }] };
+    a = { ...a, nav: [{ date: LAST_DATE, equity: cash, cash, marketValue: 0 }] };
   }
+  return a;
+}
+
+/** 把「用户设定的初始资金」同步到输入框（避免渲染后输入框与设定值不一致）。 */
+function syncInitCashInput() {
+  const inp = $('paperInitCash');
+  if (!inp) return;
+  // 账户已存在时报账户实际值更有用：用户看到的就是「我这个账户当初用了多少」
+  const v = ACCT?.initCash || loadInitCash();
+  inp.value = String(Math.round(v));
+}
+
+/** 按输入框金额新建账户（会先确认：这是破坏性操作，清空现有记录）。 */
+function applyInitCash() {
+  const inp = $('paperInitCash');
+  if (!inp) return;
+  const n = saveInitCash(inp.value);
+  if (n == null) return;                      // 越界已提示，保持原账户不动
+  if (ACCT && !window.confirm(
+    `将按 ${n.toLocaleString()} 元新建账户，现有持仓、成交与委托记录会被清空（不可恢复）。\n\n确定继续？`)) return;
+  ACCT = newAccountWith(n);
   save();
   renderAllPaper();
-  msg('账户已重置为 ' + INIT_CASH.toLocaleString() + ' 元虚拟资金', 'ok');
+  syncInitCashInput();
+  msg(`已按 ${n.toLocaleString()} 元新建模拟账户`, 'ok');
+}
+
+function reset() {
+  // 重置优先用「账户自己的初始资金」而不是用户偏好：重置的语义是「把这个账户打回原点」，
+  // 保持本金不变才符合预期；想换本金请用左边的「按此金额新建账户」。
+  const cash = ACCT?.initCash || loadInitCash();
+  if (!window.confirm(
+    `重置账户将清空全部持仓、成交与委托记录，且不可恢复。\n\n将按原初始资金 ${cash.toLocaleString()} 元重建。\n确定继续？`)) return;
+  ACCT = newAccountWith(cash);
+  save();
+  renderAllPaper();
+  syncInitCashInput();
+  msg('账户已重置为 ' + cash.toLocaleString() + ' 元虚拟资金', 'ok');
 }
 
 function doExport() {
@@ -2411,6 +2505,22 @@ document.addEventListener('input', (e) => {
 });
 $('poSubmit')?.addEventListener('click', submit);
 $('paperReset')?.addEventListener('click', reset);
+// 初始资金：输入框失焦时只**记住偏好**（不建账户），点按钮才真正新建——
+// 与下单区的「比例买入」同一交互分层：先看/先设，明确动作才产生后果。
+$('paperInitCash')?.addEventListener('change', (e) => {
+  const n = saveInitCash(e.target.value);
+  // 越界：saveInitCash 已经 msg 了原因。**先记下来再回填**——syncInitCashInput 内部
+  // 不写 msg，但若顺序反过来先回填、后又有别的渲染调用 msg，用户就永远看不到为什么被拒。
+  // 这里先把提示亮出来，再回填输入框（回填只改 value，不动 msg）。
+  if (n == null) {
+    const why = $('paperMsg')?.textContent;
+    syncInitCashInput();
+    if (why) msg(why, 'err');
+    return;
+  }
+  msg(`初始资金已设为 ${n.toLocaleString()} 元（点「按此金额新建账户」生效）`, 'ok');
+});
+$('paperApplyInit')?.addEventListener('click', applyInitCash);
 $('paperExport')?.addEventListener('click', doExport);
 $('paperImport')?.addEventListener('click', doImport);
 $('paperSettle')?.addEventListener('click', settleNow);

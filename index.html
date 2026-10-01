@@ -235,6 +235,12 @@
           <h2>账户总览 <span class="bf-auto">点指标看计算口径</span></h2>
           <div id="paperStats" class="ps-grid"></div>
           <div class="ps-bar">
+            <label class="ps-init">初始资金
+              <input id="paperInitCash" type="number" inputmode="numeric" min="1000" step="10000"
+                value="1000000" aria-label="模拟交易初始资金（元）" />
+              元
+            </label>
+            <button id="paperApplyInit" class="mini" type="button">按此金额新建账户</button>
             <button id="paperReset" class="mini" type="button">重置账户</button>
             <button id="paperExport" class="mini" type="button">导出账本</button>
             <button id="paperImport" class="mini" type="button">导入账本</button>

@@ -1759,6 +1759,88 @@ escClose();
   // 重置按钮可用
   check('模拟交易：账户总览工具条按钮齐备（重置/导出/导入/结算）',
     !!$('paperReset') && !!$('paperExport') && !!$('paperImport') && !!$('paperSettle'), '');
+
+  // ── 初始资金自定义（默认 100 万）──
+  const initInp = $('paperInitCash');
+  const initBtn = $('paperApplyInit');
+  check('模拟交易·初始资金：提供自定义输入框与「新建账户」按钮',
+    !!initInp && !!initBtn, [initInp && 'input', initBtn && 'btn'].filter(Boolean).join('+') || '缺失');
+  check('模拟交易·初始资金：输入框回显账户实际初始资金（不是写死的默认值）',
+    !!initInp && Math.round(+initInp.value) === Math.round(+window.__paperCtx.account().initCash),
+    initInp ? `input=${initInp.value} acct=${window.__paperCtx.account().initCash}` : '缺失');
+
+  if (initInp && initBtn) {
+    // 越界金额必须被拒绝且不改账户（不静默夹紧）。
+    // 注意：本脚本会对 paper_ui.js 做**两次** window.eval（一次常规、一次种账本），
+    // 于是同一个输入框上挂了两个 change 监听。disptach 一次 change 两个都会跑，
+    // 前者回填输入框、后者再读到回填后的合法值 → 会假报成功。
+    // 所以这里直接验证**拦截点**（偏好存储）与**动作点**（新建账户）两处，
+    // 不依赖监听器个数——这才是真正要守的契约。
+    const beforeCash = window.__paperCtx.account().initCash;
+    const setPref = window.__paperInitTest?.saveInitCash;
+    if (typeof setPref === 'function') {
+      check('模拟交易·初始资金：低于下限被拒绝且不写入偏好',
+        setPref(10) === null && window.localStorage.getItem('paper-init-cash') == null,
+        `saveInitCash(10)=${setPref(10)} ls=${window.localStorage.getItem('paper-init-cash')}`);
+      check('模拟交易·初始资金：高于上限被拒绝且不写入偏好',
+        setPref(999999999999) === null, `saveInitCash(1e12)=${setPref(999999999999)}`);
+      check('模拟交易·初始资金：合法金额写入偏好（如 50 万）',
+        setPref(500000) === 500000 && window.localStorage.getItem('paper-init-cash') === '500000',
+        `ls=${window.localStorage.getItem('paper-init-cash')}`);
+    } else {
+      check('模拟交易·初始资金：测试钩子 window.__paperInitTest 可用', false, '未挂载');
+    }
+
+    // 输入框值本身也要能承载越界输入（不被 min/max 属性挡掉，好让 JS 给出可读原因）
+    initInp.value = '10';
+    initInp.dispatchEvent(new window.Event('change', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 80));
+    check('模拟交易·初始资金：越界输入不会改动账户',
+      Math.round(+window.__paperCtx.account().initCash) === Math.round(beforeCash),
+      `acct=${window.__paperCtx.account().initCash}（应保持 ${beforeCash}）`);
+
+    // 合法金额 → 新建账户（confirm 自动确认）
+    window.confirm = () => true;
+    initInp.value = '500000';
+    await new Promise((r) => setTimeout(r, 80));
+    check('模拟交易·初始资金：只改输入框不会立刻动账户（先设后建）',
+      Math.round(+window.__paperCtx.account().initCash) === Math.round(beforeCash),
+      `acct=${window.__paperCtx.account().initCash}`);
+
+    clickEl(initBtn);
+    await new Promise((r) => setTimeout(r, 200));
+    const a2 = window.__paperCtx.account();
+    check('模拟交易·初始资金：点「新建账户」后按新金额建户',
+      Math.round(+a2.initCash) === 500000 && Math.round(+a2.cash) === 500000,
+      `initCash=${a2.initCash} cash=${a2.cash}`);
+    check('模拟交易·初始资金：新账户总资产 = 新初始资金（总览随之刷新）',
+      window.__paperCtx.stats().total === 500000, `total=${window.__paperCtx.stats().total}`);
+    check('模拟交易·初始资金：新账户无持仓无成交（确实是全新账户）',
+      Object.keys(a2.positions || {}).length === 0 && (a2.trades || []).length === 0,
+      `positions=${Object.keys(a2.positions || {}).length} trades=${(a2.trades || []).length}`);
+
+    // 重置应保留「账户自己的初始资金」，而不是回落到默认 100 万
+    clickEl($('paperReset'));
+    await new Promise((r) => setTimeout(r, 200));
+    check('模拟交易·初始资金：重置账户保留原初始资金（不回落到默认 100 万）',
+      Math.round(+window.__paperCtx.account().initCash) === 500000,
+      `initCash=${window.__paperCtx.account().initCash}`);
+
+    // 副标题也要跟着变——只更新总览、副标题挂旧金额，两处数字打架比不显示更糟
+    check('模拟交易·初始资金：副标题同步报出新的初始资金（不与总览打架）',
+      txt('paperSub').includes('500,000') && !txt('paperSub').includes('1,000,000'),
+      txt('paperSub').slice(0, 70));
+
+    // 还原到 100 万，避免影响后续断言（下方多处断言写死 1,000,000）
+    initInp.value = '1000000';
+    initInp.dispatchEvent(new window.Event('change', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 80));
+    clickEl(initBtn);
+    await new Promise((r) => setTimeout(r, 200));
+    check('模拟交易·初始资金：可改回 100 万（默认值未被写死）',
+      Math.round(+window.__paperCtx.account().initCash) === 1000000,
+      `initCash=${window.__paperCtx.account().initCash}`);
+  }
 }
 
 // ── 研判报告：复制 / 导出文档 / 打印 ──

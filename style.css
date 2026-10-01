@@ -658,6 +658,12 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .ps-n { font-size: 10.5px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
 .ps-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .ps-bar #paperMsg { font-size: 11.5px; }
+/* 初始资金：与一排操作按钮同栏。输入框偏窄即可（金额量级大，靠右对齐方便核对位数） */
+.ps-init { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
+.ps-init input { width: 104px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  color: var(--txt); padding: 5px 8px; font-size: 12.5px; font-family: inherit; text-align: right;
+  font-variant-numeric: tabular-nums; }
+.ps-init input:focus { border-color: var(--acc); outline: none; }
 
 /* 下单表单 */
 .po-form { display: flex; flex-direction: column; gap: 8px; }
