@@ -668,8 +668,11 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
 // 窗口长度 60：与 NET_HIST_WINDOW 同值同理由（约一个季度，覆盖一段完整情绪周期
 // 又能跟上量级漂移）。两者独立，不得互相 import —— 一个是"含当日"、一个是"不含当日"，
 // 共用常量会让未来某次调整其中一处时静默污染另一处。
-export const RANK_WINDOW = 60;
-export const RANK_MIN = 20;
+// 值的出处（2026-10-02 起）：config.lookback.rankWindow / rankMin（lookback 集中块，
+// live 冻结口径）——本处只做引用，不再是字面量定义点；NET_HIST_WINDOW 仍在
+// formula_versions.js 独立持有，不受 config 影响。
+export const RANK_WINDOW = config.lookback.rankWindow;
+export const RANK_MIN = config.lookback.rankMin;
 
 /** 分位：`vals[i]` 在「以 i 结尾的最近 window 个有效样本」中的位置 ×100。
  *  · 有效样本 = 通过 `num` 加固的数（拒 null/''/布尔/数组/对象），null 不进窗口也不进分母。

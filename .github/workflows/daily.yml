@@ -78,6 +78,9 @@ jobs:
       - name: 运行管道（live 模式，非交易日自动跳过）
         env:
           MODE: live
+          # 运维告警推送通道（降维预埋）：拦截器事件 → 企微机器人。
+          # secret 未配置时为空串 → 脚本内部跳过推送（仅落盘），不会报错。
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         run: node src/pipeline.js
       - name: 数据新鲜度判定（按交易日历，输出可读结论）
         run: node scripts/freshness.mjs
@@ -130,7 +133,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json
+          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/ops-alerts-latest.json
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else

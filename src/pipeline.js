@@ -18,6 +18,9 @@ import { marketAlerts } from './alerts.js';
 import { computeRelative } from './relative.js';
 import { healthReport } from './health.js';
 import { buildSeatSeries, seatSeriesSummary, seatVerdict } from './seats_daily.js';
+// 运维告警（降维预埋 · 2026-10-02）：拦截器（freshness/lastAttempt/imputed/missing/dataQuality）
+// 的坏事实 → 结构化事件 → 落盘 + 可选企微推送（OPS_WEBHOOK 环境变量，未配置则零打扰）。
+import { opsEventsFromArchive, writeOpsAlerts, pushOpsAlerts } from './opsalerts.js';
 import { buildBreadthSeries, breadthSeriesSummary } from './breadth.js';
 import { validateDay, sanitizeForFactors, dirtyArgsOf } from './dirty.js';
 import { BACKFILL_FLAG } from './backfill.js';
@@ -775,6 +778,23 @@ export async function main() {
     '| 情绪分', archive.signals.latestEmotion?.value ?? archive.signals.latestEmotion?.score);
   console.log('[freshness]', archive.meta.freshness.state, '| stale =', archive.meta.stale,
     archive.meta.staleReason ? '| ' + archive.meta.staleReason : '| 数据为最新已收盘会话');
+  // ── 运维告警挂钩（拦截器 → 事件 → 落盘 + 可选推送）─────────────────────────
+  // 纪律：告警链路自身任何失败都不得影响主管道（双保险：这里 try-catch，模块内部也不抛）。
+  // 落盘无条件执行（0 条也写「体检通过」档）——CI 提交步骤依赖文件存在，且每次体检留痕可查。
+  try {
+    const opsEvents = opsEventsFromArchive(archive, { warnImputedRatio: config.healthWarnImputedRatio });
+    writeOpsAlerts(opsEvents, path.join(ROOT, 'data', 'ops-alerts-latest.json'));
+    if (opsEvents.length) {
+      const pushed = await pushOpsAlerts(opsEvents, {});
+      const bySev = opsEvents.reduce((a, e) => ({ ...a, [e.severity]: (a[e.severity] || 0) + 1 }), {});
+      console.log('[ops-alert]', opsEvents.length, '条', JSON.stringify(bySev),
+        pushed.pushed ? `→ 已推送 ${pushed.pushed} 条` : pushed.error ? `→ 推送失败（${pushed.error}，已落盘可查）` : '→ 未配置 OPS_WEBHOOK，仅落盘');
+    } else {
+      console.log('[ops-alert] 体检通过，0 条事件（已落盘留痕）');
+    }
+  } catch (e) {
+    console.log('[ops-alert] 评估失败（不影响主管道）:', e.message);
+  }
   return archive;
 }
 

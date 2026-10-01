@@ -120,6 +120,30 @@ test/fixtures/sina_global_20260930.txt  外围解析夹具（2026-09-30 美股�
   B/C 的负收益在基准同期 -6.6% 的下跌段里，样本量不具统计意义。
 - ⚠ **免责**：历史回测 ≠ 未来收益。结果仅用于管线自检与口径演示，不构成投资建议。
 
+## 参数治理（过拟合防线 · 2026-10-02）
+
+`src/config.js` 的调参对象拆成**双套**：
+
+| 块 | 语义 | 谁读 |
+|---|---|---|
+| `params.live` | 生产口径，**递归冻结** | 打分管道 / 研判 / 前端（`config.weights` 等旧路径 = 同一引用） |
+| `params.train` | 实验区 | 网格寻优 / walk-forward（`scripts/backtest.mjs` 锚点已切至此） |
+
+- **晋升唯一通道**：`node scripts/promote_params.mjs` —— 跑「样本外 20%」门禁（与
+  `backtest.mjs` 同一引擎同一口径，真实交易日剔除回填天后 80/20 切分，train 的
+  rankKey 不劣于 live 才放行）→ `--apply --why "理由"` 机器重写 `LIVE_PARAMS` 块
+  （PROMOTE-MANAGED 标记内）+ 追加 `params_changelog.json`（who/when/why/验证结果/liveAfter 快照）。
+- **守卫测试**（`test/params_governance.test.mjs`）：live 冻结（运行期改参抛 TypeError）、
+  兼容层引用同一、changelog 最后一条 `liveAfter` 与 live 逐位相等——**手改 live 不留痕 = CI 红**。
+- **实盘摩擦预埋**：`costModel` 独立块（comm/stamp/slip 已接真实值；`priceLimit.enabled=false`
+  为涨跌停约束占位，引擎实现限价口径时置 true 即接上，不返工）。
+- **运维告警挂钩**（`src/opsalerts.js`）：管道既有拦截器（`meta.lastAttempt` / `freshness` /
+  `imputedRatioLatest` / `emotion.missing` / `dataQuality.*Ok`）的坏事实 → 结构化事件 →
+  `data/ops-alerts-latest.json` 落盘 + 可选企微推送（CI 配 `OPS_WEBHOOK` secret 即生效；
+  未配置零打扰；推送失败绝不炸主管道）。
+- 诚实披露：当前真实样本仅 33 天（OOS ≈ 6 天），门禁是**流程防线**（防「只看样本内调参」
+  这一行为模式），不是统计证明。
+
 ## 研判报告（口径与回测引擎同源）
 
 （正文见页面「研判报告」分区；此处记录报告的三种"带走"方式——内容与屏幕所见**严格同一份**。）

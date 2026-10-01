@@ -50,7 +50,10 @@
    "maxPosChg": 0.2,
    "comm": 0.0003,
    "stamp": 0.0005,
-   "slip": 0.0002
+   "slip": 0.0002,
+   "priceLimit": {
+    "enabled": false
+   }
   },
   "weights": {
    "s_net": 0.2,
