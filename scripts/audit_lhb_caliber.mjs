@@ -909,6 +909,33 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
   }
 }
 
+// ── B8. 历史回填天不得进入「综合分」消费路径（回测/报告/走势）───────────────
+// 回填天只有 lhb 与 s_net，emotion.value 是 **s_net 单因子占位值、不是综合分**。
+// 分位需要它（样本基线），但任何把 value 当信号的地方都不需要——用了就是凭空捏造结论。
+{
+  const btRaw = readFileSync(path.join(ROOT, 'scripts', 'backtest.mjs'), 'utf8');
+  check('回填：回测脚本显式排除 emotion._backfill 天（否则 208 天假情绪分会污染每个指标）',
+    /_backfill/.test(btRaw) && /filter\(\(d\) => d && d\.trade_date && !\(d\.emotion && d\.emotion\._backfill\)\)/.test(btRaw), '');
+  // 交叉核对产物：backtest.json 的 sampleNote 必须与档案实际构成对得上账
+  const btPath = path.join(ROOT, 'data', 'backtest.json');
+  if (existsSync(btPath)) {
+    const bt = JSON.parse(readFileSync(btPath, 'utf8'));
+    const sn = bt.meta && bt.meta.sampleNote;
+    const bfCount = days.filter((d) => d.emotion && d.emotion._backfill).length;
+    check('回填：档案里确有回填天（否则这条守卫是空转）', bfCount > 0, String(bfCount));
+    if (sn) {
+      check('回填：回测样本数 = 档案天数 − 回填天数（三者必须对得上账）',
+        sn.archiveDays === days.length && sn.excludedBackfillDays === bfCount
+        && sn.backtestDays === days.length - bfCount,
+        );
+      check('回填：回测样本里不含任何回填天',
+        (bt.series && bt.series.dates ? bt.series.dates.length : -1) === sn.backtestDays, '');
+    } else {
+      check('回填：backtest.json 必须带 meta.sampleNote（否则口径无法对账）', false, 'missing');
+    }
+  }
+}
+
 // ── C. 结论 ────────────────────────────────────────────────────────────────
 if (warns.length) for (const w of warns) console.log(`⚠ ${w}`);
 if (fails.length) {

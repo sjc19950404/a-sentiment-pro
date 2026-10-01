@@ -17,11 +17,20 @@ const ARCHIVE = argOf('--archive', 'data/archive.json');
 const OUT = argOf('--out', 'data/backtest.json');
 
 const arch = JSON.parse(readFileSync(ARCHIVE, 'utf8'));
-const days = (arch.all_days || []).filter((d) => d && d.trade_date);
+// ⚠ 必须剔除历史回填天（emotion._backfill）：
+//   回填天只有 lhb 与 s_net，其 emotion.value 是 **s_net 单因子占位值、不是综合分**。
+//   回测把 value 当信号用，若混入回填天，208 天的「假情绪分」会直接污染
+//   收益率/夏普/最大回撤/权重网格/帕累托前沿——每一个数字都会错，而且错得不容易看出来
+//   （曲线照样平滑、照样有形状）。
+//   回填天存在的意义是为 **分位** 提供基线，不是为回测提供样本。
+const days = (arch.all_days || []).filter((d) => d && d.trade_date && !(d.emotion && d.emotion._backfill));
 if (days.length < 5) {
   console.error(`[backtest] 样本不足（${days.length} 个交易日），跳过生成`);
   process.exit(0);
 }
+
+// 回测样本构成留痕：让使用者一眼看出「回测用的是哪一段、排除了多少回填天」
+const BACKFILL_EXCLUDED = (arch.all_days || []).filter((d) => d && d.emotion && d.emotion._backfill).length;
 
 const { thresholds: TH, assets: ASSETS, costs: COSTS, maxPos, stopLoss, ddTrigger, maxPosChg, gridSteps, rolling } = config.backtest;
 const baseW = { ...config.weights };          // s_net20 / s_pos10 / ...（含档位后缀）
@@ -119,7 +128,14 @@ const payload = {
     assets: ASSETS,
     signal: '七因子加权情绪分（权重取 src/config.js weights，与页面 emotion.value 同口径）',
     costNote: `佣金 ${COSTS.comm}（双边）· 印花税 ${COSTS.stamp}（卖出）· 滑点 ${COSTS.slip}；按仓位变动幅度计提`,
-    caveat: `样本仅 ${dates.length} 个交易日，年化/夏普等指标的统计意义有限，仅用于管线自检与参数对比，不构成投资建议。`,
+    caveat: `样本仅 ${dates.length} 个交易日，年化/夏普等指标的统计意义有限，仅用于管线自检与参数对比，不构成投资建议。`
+      + (BACKFILL_EXCLUDED ? ` 已排除 ${BACKFILL_EXCLUDED} 个历史回填天（只有 s_net、无六因子，不可用于回测）。` : ''),
+    // 回测样本口径留痕：档案总天数 ≠ 回测样本数，两者必须能对上账
+    sampleNote: {
+      archiveDays: (arch.all_days || []).length,
+      backtestDays: dates.length,
+      excludedBackfillDays: BACKFILL_EXCLUDED,
+    },
     weightDrift: Math.round(recomputeDrift * 1e4) / 1e4,
   },
   params: {
