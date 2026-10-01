@@ -14,6 +14,7 @@
 import config from './config.js';
 import { computeSentiment } from './sentiment.js';
 import { normalizeRecord, summarizeCalibers } from './lhb.js';
+import { isAggregateSeatRow } from './seats.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -361,6 +362,12 @@ export function classifySeat(name) {
   return 'hot';
 }
 
+// 席位明细接口在部分票（尤其区间累计榜）里会混入「自然人/中小投资者/机构/其他自然人」
+// 这类**投资者结构汇总行**——它们不是席位，金额与整票成交额同阶，计入会把游资买入虚增、
+// 并把买方集中度的分母放大（2026-09-30 实测：游资买入虚增 192.77 亿、集中度 44.5%→18.7%）。
+// 判据与净化集中在 src/seats.js::isAggregateSeatRow，此处只做调用，不再另写一份判别式。
+
+
 async function fetchSeatRows(reportName, date, code, sortCol) {
   for (let att = 0; att < 2; att++) {
     try {
@@ -396,17 +403,21 @@ export async function fetchSeats(date, aggr) {
       fetchSeatRows('RPT_BILLBOARD_DAILYDETAILSSELL', date, a.code, 'SELL'),
     ]);
     if (buyRows == null && sellRows == null) continue;
+    // 净化：剔除「自然人/中小投资者/机构/其他自然人」类投资者结构汇总行（非席位）。
+    // 不剔除会让游资买入虚增、并稀释全市场买方集中度（详见 isAggregateSeatRow 注释）。
+    const cleanBuy = (buyRows || []).filter((r) => !isAggregateSeatRow(r.OPERATEDEPT_NAME));
+    const cleanSell = (sellRows || []).filter((r) => !isAggregateSeatRow(r.OPERATEDEPT_NAME));
     got++;
-    for (const r of buyRows || []) {
+    for (const r of cleanBuy) {
       agg[classifySeat(r.OPERATEDEPT_NAME) + '_buy'] += (r.BUY || 0) / 1e8;
       const nm = String(r.OPERATEDEPT_NAME || ''), buy = r.BUY || 0;
       seatBuy[nm] = (seatBuy[nm] || 0) + buy;
       buyAll += buy;
     }
-    for (const r of sellRows || []) agg[classifySeat(r.OPERATEDEPT_NAME) + '_sell'] += (r.SELL || 0) / 1e8;
+    for (const r of cleanSell) agg[classifySeat(r.OPERATEDEPT_NAME) + '_sell'] += (r.SELL || 0) / 1e8;
     // 买方集中度：前三席位买入占该票榜上买入的比重
-    if (buyRows && buyRows.length >= 3) {
-      const buys = buyRows.map((r) => r.BUY || 0).sort((x, y) => y - x);
+    if (cleanBuy.length >= 3) {
+      const buys = cleanBuy.map((r) => r.BUY || 0).sort((x, y) => y - x);
       const tot = buys.reduce((x, y) => x + y, 0);
       if (tot > 0) concAll.push([a.name, r1(buys.slice(0, 3).reduce((x, y) => x + y, 0) / tot * 100)]);
     }
@@ -415,7 +426,7 @@ export async function fetchSeats(date, aggr) {
       .map((r) => [String(r.OPERATEDEPT_NAME || ''), Math.round((r[col] || 0) / 1e4)])
       .filter(([nm, v]) => nm && v > 0)
       .sort((x, y) => y[1] - x[1]);
-    const b = toPairs(buyRows, 'BUY'), s2 = toPairs(sellRows, 'SELL');
+    const b = toPairs(cleanBuy, 'BUY'), s2 = toPairs(cleanSell, 'SELL');
     if (b.length || s2.length) agg.detail[a.code] = { b, s: s2 };
     await sleep(120);
   }

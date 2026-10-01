@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   seatsOf, buySeatsOf, sellSeatsOf, sideStats,
-  brokerOf, seatTypeOf, SEAT_TYPE_LABEL, isForeignBroker, cityOf, seatIdentity, SIDE,
+  brokerOf, seatTypeOf, SEAT_TYPE_LABEL, isForeignBroker, cityOf, seatIdentity, SIDE, isAggregateSeatRow,
 } from '../src/seats.js';
 
 // ────────────────────────── 新旧格式兼容 ──────────────────────────
@@ -211,4 +211,57 @@ test('seats: 真实 archive 里旧格式天数能被安全读取（不崩、卖�
   assert.ok(checked > 0, '存档里应至少有一只票的席位明细');
   // 旧格式（v1）天数必须能读——这是向后兼容的核心断言
   assert.ok(v1 + v2 === checked);
+});
+
+// ────────────────────────── 类别汇总行净化（真 bug 回归）──────────────────────────
+// 东财席位明细接口对部分票（尤其区间累计榜）会返回「自然人/中小投资者/机构/其他自然人」
+// 这类投资者结构汇总行——它们不是席位，金额与整票成交额同阶。
+// 2026-09-30 实测：688137 近岸蛋白 一条区间榜 4 行汇总合计 192.77 亿，被计入游资买入，
+// 使游资买入 77.56→270.33 亿、买方头部3席位集中度 44.5%→18.7%、该票集中度虚高进 TOP5。
+
+test('seats: isAggregateSeatRow 精确识别投资者结构汇总行', () => {
+  for (const n of ['自然人', '机构', '中小投资者', '其他自然人', '其他机构', '专业机构', '个人投资者']) {
+    assert.equal(isAggregateSeatRow(n), true, `${n} 应判为汇总行`);
+    assert.equal(isAggregateSeatRow(` ${n} `), true, `${n}（带空格）应判为汇总行`);
+  }
+});
+
+test('seats: isAggregateSeatRow 不误杀真实席位名', () => {
+  for (const n of [
+    '机构专用', '深股通专用', '沪股通专用',
+    '中信证券股份有限公司深圳深南中路中信大厦证券营业部',
+    '国泰海通证券股份有限公司总部', '平安证券股份有限公司浙江分公司',
+    '高盛(中国)证券有限责任公司上海浦东新区世纪大道证券营业部',
+    '某机构专用席位', // 含"机构"但不是全等
+    '', null, undefined,
+  ]) {
+    assert.equal(isAggregateSeatRow(n), false, `${n} 不应判为汇总行`);
+  }
+});
+
+test('seats: seatsOf 读明细时自动剔除汇总行（新旧格式都剔）', () => {
+  // 旧格式（仅买方数组）
+  const v1 = { '688137': [['自然人', 757986], ['高盛(中国)证券有限责任公司上海浦东新区世纪大道证券营业部', 11347]] };
+  const r1 = seatsOf(v1, '688137');
+  assert.deepEqual(r1.b.map((x) => x[0]), ['高盛(中国)证券有限责任公司上海浦东新区世纪大道证券营业部']);
+  // 新格式（{b,s}）
+  const v2 = { '600000': { b: [['中小投资者', 414874], ['席位A', 100]], s: [['机构', 411742], ['席位B', 80]] } };
+  const r2 = seatsOf(v2, '600000');
+  assert.deepEqual(r2.b.map((x) => x[0]), ['席位A']);
+  assert.deepEqual(r2.s.map((x) => x[0]), ['席位B']);
+  assert.equal(r2.hasSell, true);
+});
+
+test('seats: 净化后 688137 真实数据里集中度不再被汇总行占满', async () => {
+  const { readFileSync, existsSync } = await import('node:fs');
+  const p = new URL('../data/archive.json', import.meta.url);
+  if (!existsSync(p)) return;
+  const arc = JSON.parse(readFileSync(p, 'utf8'));
+  const det = (arc.all_days || []).find((d) => d.trade_date === '2026-09-30')?.summary?.seats?.detail;
+  if (!det || !det['688137']) return; // 存档变化则跳过
+  const rows = seatsOf(det, '688137').b;
+  assert.ok(!rows.some(([nm]) => isAggregateSeatRow(nm)), '净化后不得残留汇总行');
+  // 该票榜上买方额应从 197.78 亿（含污染）回到 5.01 亿量级（万元口径 ≈ 50064）
+  const tot = rows.reduce((x, [, v]) => x + v, 0);
+  assert.ok(tot < 100000, `净化后该票榜上买方额应 < 10 亿（万元口径），实得 ${tot}`);
 });

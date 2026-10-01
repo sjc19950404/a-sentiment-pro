@@ -39,10 +39,23 @@ export function enrich(allDays) {
   const dn = new ThemeDenoiser({ minGlobalStocks: config.minThemeStocksGlobal }).fit(allDays);
   const byDay = dn.themesAllDays(allDays);
   const mom = computeMomentum(byDay, config.momentumRecent, config.momentumPrev, config.minThemeStocksWindow);
+  // 昨日新晋名单：把「上一交易日按同一 momentum 口径算出的 fresh」也落盘。
+  // 为什么必须由引擎算并留痕：报告要回答「昨日新晋题材今日还活着吗」，这需要**昨日视角**的
+  // fresh 名单（用截止昨日的数据重算 momentum）。如果报告端拿「今日 fresh」去比「昨日 themes」，
+  // 语义会变成「今日新晋在昨日是否已存在」——而新晋的定义本就是昨日不存在，逻辑自相矛盾，
+  // 得数恒为一个不小的小数（2026-09-30 实测算出 53%，真实存活率是另一回事）。
+  // 引擎侧用同一份 byDay/同一套参数重算昨日视角，是唯一不会口径漂移的做法。
+  const prevMom = byDay.length > 1
+    ? computeMomentum(byDay.slice(0, -1), config.momentumRecent, config.momentumPrev, config.minThemeStocksWindow)
+    : { fresh: [], continuing: [], fading: [] };
   const momObj = {
     fresh: mom.fresh.map((t) => ({ theme: t, stocks: [...byDay[byDay.length - 1][t] || []].length || countInWindow(byDay, t, config.momentumRecent) })),
     continuing: mom.continuing,
     fading: mom.fading,
+    // 昨日视角的新晋/延续/退潮（用于「昨日新晋今日存活」的分子分母同源比对）
+    prev_fresh: prevMom.fresh,
+    prev_continuing: prevMom.continuing,
+    prev_fading: prevMom.fading,
   };
   const out = allDays.map((d, i) => {
     const o = { ...d, themes: Object.fromEntries(Object.entries(byDay[i]).map(([k, v]) => [k, v.size])) };

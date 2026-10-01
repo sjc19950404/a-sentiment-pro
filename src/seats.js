@@ -16,6 +16,32 @@
 export const SIDE = { BUY: 'b', SELL: 's' };
 
 /**
+ * 「类别汇总行」判定 —— 东财席位明细接口的非席位污染行。
+ *
+ * 为什么必须剔除：东财 RPT_BILLBOARD_DAILYDETAILSBUY/SELL 在**部分票**（尤其「连续N日累计」
+ * 涨跌幅偏离类区间榜）里，除了真正的 5 个买卖席位，还会混入交易所披露的**投资者结构汇总行**：
+ * 「自然人」「中小投资者」「机构」「其他自然人」等。它们不是任一营业部/席位，而是该股
+ * 买入（卖出）总额按投资者类型拆分的统计口径行，金额量级与整只票的成交额同阶。
+ *
+ * 不剔除的后果（2026-09-30 实测，真 bug）：
+ *   · 688137 近岸蛋白 一条区间榜记录 BILLBOARD_BUY_AMT = 116.97 亿（正常应为 5.01 亿，放大 23.4 倍），
+ *     席位明细里「自然人 75.8 亿 + 中小投资者 41.49 亿 + 机构 41.17 亿 + 其他自然人 34.31 亿」合计 192.77 亿；
+ *   · 这 4 行被 classifySeat 判成 hot（既非「机构专用」也非「股通」）→ 游资买入被虚增 192.77 亿；
+ *   · 同时进入全市场买方合计 buyAll，把 buy_top3_pct 的分母从 139.67 亿抬到 332.44 亿，
+ *     集中度从 44.5% 被稀释到 18.7%（错了一个量级档位：中等 → 分散）；
+ *   · 个股层面 近岸蛋白的「买方前三集中度」被这 4 行占满，虚高到 80.1% 并挤进 TOP5。
+ *
+ * 判据：名称**完全等于**这些投资者类别词（不做包含匹配）——真实席位名再短也带券商主体或
+ * 「营业部/分公司/专用/总部」，不会恰好只有这几个词，所以全等匹配足够且不会误杀。
+ */
+const AGGREGATE_ROW_NAMES = new Set([
+  '自然人', '机构', '中小投资者', '其他自然人', '其他机构', '专业机构', '个人投资者', '非金融类上市公司',
+]);
+export function isAggregateSeatRow(name) {
+  return AGGREGATE_ROW_NAMES.has(String(name || '').trim());
+}
+
+/**
  * 读取某票的席位明细，并把**旧格式（仅买方数组）与新格式（{b,s}）统一**成同一形态。
  * 存量存档不会因字段升级而重算，历史天数仍是旧格式——调用方不必关心这件事。
  * @returns {{b: Array<[string, number]>, s: Array<[string, number]>, hasSell: boolean}}
@@ -24,11 +50,16 @@ export function seatsOf(detailMap, code) {
   const raw = detailMap && code != null ? detailMap[code] : null;
   if (!raw) return { b: [], s: [], hasSell: false };
   // 旧格式：直接是 [[名, 额], ...]，只有买方
-  if (Array.isArray(raw)) return { b: raw.map(normPair), s: [], hasSell: false };
-  const b = Array.isArray(raw.b) ? raw.b.map(normPair) : [];
-  const s = Array.isArray(raw.s) ? raw.s.map(normPair) : [];
+  if (Array.isArray(raw)) return { b: raw.map(normPair).filter(keepSeat), s: [], hasSell: false };
+  const b = Array.isArray(raw.b) ? raw.b.map(normPair).filter(keepSeat) : [];
+  const s = Array.isArray(raw.s) ? raw.s.map(normPair).filter(keepSeat) : [];
   return { b, s, hasSell: s.length > 0 };
 }
+
+// 过滤掉「类别汇总行」——它们不是席位，是交易所的投资者结构统计行（见 isAggregateSeatRow）。
+// 这里是**唯一读取出口**：所有消费方（锁仓/新进、席位身份下钻、报告抽屉）都经此函数，
+// 故净化只需做一次，不必在每个调用点重复判。
+const keepSeat = ([nm]) => !isAggregateSeatRow(nm);
 
 const normPair = (p) => (Array.isArray(p)
   ? [String(p[0] ?? ''), Number(p[1]) || 0]

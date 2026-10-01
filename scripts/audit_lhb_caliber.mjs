@@ -234,6 +234,86 @@ summarize('封板率口径 = 收盘涨停 ÷ 盘中触板（zt/(zt+zb)），且�
   check('连板天梯数字不硬编码（一律取自 summary.zt_lb）', !hardcoded, 'app.js 出现硬编码连板数');
 }
 
+// ── B3. 席位明细「类别汇总行」污染守卫 ────────────────────────────────────────
+// 历史 bug（2026-09-30 实测，真 bug）：东财席位明细接口对部分票（尤其区间累计榜）会返回
+// 「自然人/中小投资者/机构/其他自然人」这类**投资者结构汇总行**——它们不是席位，金额与整票
+// 成交额同阶。被 classifySeat 归成 hot（游资）后：
+//   · 游资买入被虚增 192.77 亿（77.56 → 270.33）；
+//   · 全市场买方合计从 139.67 亿抬到 332.44 亿，买方头部3席位集中度 44.5% → 18.7%（错一个量级档）；
+//   · 个股层面 近岸蛋白 集中度虚高至 80.1% 并挤进 TOP5（真值 79.3% 的联泰环保才该上榜）。
+// 这里锁死三件事：
+//   ① 存档 seats.detail 里不得再出现这些类别汇总行（净化后落盘）；
+//   ② 净化的唯一出处是 src/seats.js::isAggregateSeatRow，别处不得另写判别式；
+//   ③ cons_top / buy_top3_pct 必须能由（净化后的）detail 逐笔复算出来（防手工改数）。
+const AGG_NAMES = ['自然人', '机构', '中小投资者', '其他自然人', '其他机构', '专业机构', '个人投资者'];
+const badAgg = [];
+for (const d of days) {
+  const det = d.summary?.seats?.detail;
+  if (!det) continue;
+  for (const [code, raw] of Object.entries(det)) {
+    const rows = Array.isArray(raw) ? raw : [...(raw.b || []), ...(raw.s || [])];
+    const hit = rows.filter(([nm]) => AGG_NAMES.includes(String(nm || '').trim()));
+    if (hit.length) badAgg.push(`${d.trade_date} ${code} 含汇总行 ${hit.map(([n]) => n).join('/')}`);
+  }
+}
+summarize('席位明细已净化（不含「自然人/中小投资者/机构」类投资者结构汇总行）', badAgg);
+
+// 源码守卫：净化判据只在 src/seats.js 出现一次，别处必须 import。
+// 注意：① 只查**代码**，文案/口径备注里提到这些词是合理的（报告要解释剔了什么）；
+//       ② 跳过临时探针脚本（_ 前缀）与本审计自身——它们本来就是来复现/检查这件事的。
+{
+  const GLOBAL = files.filter((f) => !/seats\.js$/.test(f)
+    && !/audit_lhb_caliber\.mjs$/.test(f)
+    && !/(^|\/)_/.test(f));
+  const dup = [];
+  for (const rel of GLOBAL) {
+    const abs = path.join(ROOT, rel);
+    if (!existsSync(abs)) continue;
+    // 去掉注释行与「口径备注/文案」类字符串行，避免把解释性文字误判为实现
+    const code = readFileSync(abs, 'utf8').split('\n')
+      .filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln))
+      .filter((ln) => !/口径备注|muted|const foot|口径：/.test(ln))
+      .join('\n');
+    // 判据实现的特征：出现这些词 **且** 用在过滤/集合成员判断里
+    if (/中小投资者/.test(code) && /(filter|has\(|Set\(|includes)/.test(code)) {
+      dup.push(`${rel} 自行实现了汇总行判别式（应 import src/seats.js）`);
+    }
+  }
+  check('席位汇总行判据唯一出处（src/seats.js::isAggregateSeatRow，别处不得重复实现）', dup.length === 0, dup.join(' ; '));
+}
+
+// ── B4. 题材「昨日新晋存活率」口径守卫 ───────────────────────────────────────
+// 历史 bug：报告用「今日 fresh 名单」比「昨日 themes 存在性」——语义变成「今日新晋在昨日是否已存在」，
+// 而新晋的定义就是昨日不存在，逻辑自相矛盾、得数无意义（2026-09-30 实测 9/17=53% 看似合理）。
+// 正确口径：昨日视角新晋名单（引擎重算的 signals.momentum.prev_fresh）→ 今日 themes 是否仍存在。
+// 这里锁两件事：① 存档 momentum 必须带 prev_fresh（引擎留痕，报告不得自行现算昨日名单）；
+//              ② 报告的存活率必须读 prev_fresh（源码守卫）。
+const badMom = [];
+const momSig = arch.signals?.momentum;
+if (!momSig) badMom.push('signals.momentum 缺失');
+else {
+  if (!Array.isArray(momSig.prev_fresh)) badMom.push('momentum.prev_fresh 缺失（昨日新晋名单无留痕）');
+  if (!Array.isArray(momSig.prev_continuing)) badMom.push('momentum.prev_continuing 缺失');
+  if (!Array.isArray(momSig.prev_fading)) badMom.push('momentum.prev_fading 缺失');
+}
+const latestThemes = days[days.length - 1]?.themes || {};
+if (Array.isArray(momSig?.prev_fresh) && momSig.prev_fresh.length) {
+  // 存活率必须落在 [0,100]，且可按「今日 themes 是否含该题材」复算
+  const alive = momSig.prev_fresh.filter((t) => (latestThemes[t] || 0) > 0);
+  const pct = Math.round(alive.length / momSig.prev_fresh.length * 100);
+  if (!(pct >= 0 && pct <= 100)) badMom.push(`存活率越界 ${pct}%`);
+  console.log(`  · 昨日新晋 ${momSig.prev_fresh.length} → 今日存活 ${alive.length}（${pct}%）`);
+}
+summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源复算', badMom);
+
+// 源码守卫：报告的存活率必须取 prev_fresh，不得用今日 fresh 比昨日 themes
+{
+  const appRaw = readFileSync('app.js', 'utf8');
+  const wrongAlgo = /mom\.fresh[\s\S]{0,200}?p\.themes\[/.test(appRaw);
+  check('报告存活率取「昨日视角新晋名单」(prev_fresh)，非用今日 fresh 比昨日 themes', !wrongAlgo,
+    'app.js 仍存在「今日 fresh 比昨日 themes」的错误存活率算法');
+}
+
 // ── C. 结论 ────────────────────────────────────────────────────────────────
 if (warns.length) for (const w of warns) console.log(`⚠ ${w}`);
 if (fails.length) {

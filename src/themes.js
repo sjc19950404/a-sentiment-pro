@@ -143,6 +143,11 @@ export class ThemeDenoiser {
 // 动量：近N日 vs 前N日（按窗口内覆盖个股数判定存在）
 export function computeMomentum(themesByDay, recentN, prevN, minStocks = 2) {
   const N = themesByDay.length;
+  // 窗口不足时早退：原实现用 Array.from({length:N}) 生成下标，当 N < recentN + prevN 时
+  // 会取到负下标 → agg 里 themesByDay[-1] 为 undefined → Object.entries 抛
+  // 「Cannot convert undefined or null to object」。调用方（enrich）在存档不足 10 天时曾直接崩，
+  // 这里改为返回三个空数组，把「数据不足」表达成空结果而不是异常。
+  if (N < recentN + prevN) return { fresh: [], continuing: [], fading: [] };
   const recentIdx = Array.from({ length: recentN }, (_, i) => N - recentN + i);
   const prevIdx = Array.from({ length: prevN }, (_, i) => N - recentN - prevN + i);
   const agg = (idxs) => {
