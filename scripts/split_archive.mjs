@@ -19,7 +19,7 @@ import { resolveHolidays } from '../src/calendar.js';
 import { buildSeatSeries, seatSeriesSummary, seatVerdict } from '../src/seats_daily.js';
 import { buildBreadthSeries, breadthSeriesSummary } from '../src/breadth.js';
 import { aggregateByCode } from '../src/lhb.js';
-import { classifySeries, classifyRegime, detectDivergence, buildRegimeBlock } from '../src/regime.js';
+import { classifySeries, classifyRegime, detectDivergence, buildRegimeBlock, buildDivergenceBlock } from '../src/regime.js';
 import { buildDailyReport } from '../src/daily_report.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -107,6 +107,26 @@ const signals = buildSignals(packed, {
   // 拐点标签（#4）：与 pipeline.writeShards **同源同形态**——同一批 classifySeries 调用。
   //   逐日标签由 classifySeries 用"截至当日"的历史算（无前视），counts 是全档分布。
   regimeFn: (ds) => buildRegimeBlock(ds),
+  // 宽度背离告警（#3 决策）：与 pipeline.writeShards **同源同形态**。
+  //   宽度读数从同一份 breadth-daily.json 读（与上面 breadthFn 同一文件、同一套汇总），
+  //   判据唯一出处 src/regime.js::buildDivergenceBlock。漏注入会被 --check 发现。
+  divergenceFn: (ds) => {
+    let breadth = null;
+    try {
+      const p = join(DATA, 'breadth-latest.json');
+      if (existsSync(p)) {
+        const snapshot = JSON.parse(readFileSync(p, 'utf8'));
+        let series = [];
+        const dp = join(DATA, 'breadth-daily.json');
+        if (existsSync(dp)) series = buildBreadthSeries(JSON.parse(readFileSync(dp, 'utf8')).rows || []);
+        // verdict 取 breadth-latest.json 的 **对象形态** { level, label, detail }
+        //   ⚠ 不能用 buildBreadthSeries 产出的字符串 verdict（那只够上色，没有 label 文案）。
+        //   与上面 breadthFn 读同一份文件，不存在"两处各算一次宽度"。
+        breadth = { snapshot, series, verdict: snapshot.verdict || null };
+      }
+    } catch { breadth = null; }
+    return buildDivergenceBlock(ds, breadth);
+  },
   // 每日日报（#4）：与 pipeline.writeShards 同源同形态。
   reportFn: (payload) => buildDailyReport(payload),
 });

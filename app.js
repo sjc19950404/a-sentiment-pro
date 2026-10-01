@@ -1939,6 +1939,10 @@ let XCHECK = null;
 let REGIME = null;
 // 每日日报（#4）：来自 signals-latest.json 的 dailyReport 段。
 let REPORT = null;
+// 宽度背离告警（#3 决策）：来自 signals-latest.json 的 divergence 段。
+//   ⚠ 三态：diverged=true / diverged=false（同向，已比对）/ level='unknown'（未评估）。
+//     最后一种**不是**"一致"——宽度判定缺失时无从比对，渲染层必须显示"未评估"。
+let DIVERGE = null;
 // 整份 signals-latest（不只是 health 段）：数据导出（src/dataset.js）要读
 //   breadth/series、seats/series、crosscheck/flagged、dirty/recent 等段。
 //   让它与各面板共用**同一次 fetch 结果**，避免"导出时再现拉一次"造成两处不一致。
@@ -1972,6 +1976,9 @@ async function loadHealth() {
     REPORT = s && s.dailyReport ? s.dailyReport : null;
     renderRegime(REGIME);
     renderDailyReport(REPORT);
+    // 宽度背离告警（#3 决策）同源同次取。**独立于日报**——日报缺失时它照常显示。
+    DIVERGE = s && s.divergence ? s.divergence : null;
+    renderDiverge(DIVERGE);
     noteLoad('signals-latest', true);
     // 健康档到位后重刷离线/陈旧横幅：横幅要并进 health 的告警摘要，
     //   而横幅首次渲染发生在 ARC 就绪时（那时 HEALTH 还是 null）。
@@ -1992,6 +1999,7 @@ async function loadHealth() {
     renderXcheck(null, e.message);
     renderRegime(null, e.message);
     renderDailyReport(null, e.message);
+    renderDiverge(null, e.message);
     renderOfflineBar(null);
   }
 }
@@ -2295,6 +2303,70 @@ function renderDirty(d, errMsg) {
     + `<br>⚠ 两类语义必须分清：<b>已剔除</b>＝该字段被排除在因子入参之外（**原值仍保留在档里**，可追溯、可人工复核）；<b>需复核</b>＝仅标记，**未剔除任何数据**。`
     + `<br>缺失一律显示「未计算」而非 0。本层**不改写任何分值** —— 剔除动作在管线内完成，此处只通报与定位。`
     + `<br>数据来自公开行情，不构成投资建议。`
+    + `</div></div></details>`;
+}
+
+// ── 宽度背离告警（#3 决策：宽度不纳入情绪分）─────────────────────────────
+//   决策背景：情绪分 = "钱有多凶"，宽度 = "多少票在涨"。二者同向时无信息量，
+//   **背离**才是信号。故不高权重地把宽度塞进情绪分（那会让两个同义读数重复计权），
+//   而是独立盯"这两个读数打架了没有"。
+//   ⚠ 三态必须分清，且**未评估 ≠ 一致**：
+//     · diverged=true  → 有背离（假繁荣 / 底部背离），给黄色/蓝色提示
+//     · diverged=false → 同向，已比对过 → "一致"
+//     · level=unknown  → **未评估**（宽度判定缺失）→ 灰态，绝不借用"一致"的绿
+//   数据源：signals-latest.json 的 divergence 段（唯一实现 src/regime.js::detectDivergence）。
+const DIVERGE_TONE = { 'fake-boom': 'warn', 'bottom-divergence': 'info' };
+
+function renderDiverge(d, errMsg) {
+  const box = $('divergePanel');
+  if (!box) return;
+  if (!d) {
+    box.hidden = false;
+    box.className = 'diverge-panel dv-unknown';
+    box.innerHTML = `<div class="dv-head"><b>宽度背离</b><span class="dv-chip unknown">未生成</span>`
+      + `<span class="muted">${esc(errMsg || 'signals-latest.json 缺少 divergence 段')}`
+      + `——"未生成"不等于"两个读数一致"</span></div>`;
+    return;
+  }
+  const lvl = d.level || 'unknown';
+  const tone = lvl === 'unknown' ? 'unknown'
+    : (d.diverged ? (DIVERGE_TONE[d.kind] || 'warn') : 'ok');
+  box.hidden = false;
+  box.className = `diverge-panel dv-${tone}`;
+
+  const chip = lvl === 'unknown' ? '未评估' : (d.diverged ? (d.label || '背离') : '同向');
+  const chipCls = lvl === 'unknown' ? 'unknown' : (d.diverged ? 'warn' : 'ok');
+  // 历史稀缺度：一条天天响的告警等于没响。分母 = 真的比对过的天数（不是全档天数）。
+  const H = d.history;
+  let histHtml = '';
+  if (H && H.checkedDays > 0) {
+    const rate = H.ratePct != null ? `${H.ratePct}%` : '未计算';
+    const rec = (H.recent || []).slice().reverse().map((r) => `<tr>`
+      + `<td class="dv-date">${esc(r.trade_date || '')}</td>`
+      + `<td><span class="dv-mini ${esc(DIVERGE_TONE[r.kind] || 'warn')}">${esc(r.label || '')}</span></td>`
+      + `</tr>`).join('');
+    histHtml = `<div class="dv-sub">历史背离率（仅统计"情绪分与宽度判定同时可算"的交易日）</div>`
+      + `<div class="dv-hist"><span><b>${esc(H.divergedDays)}</b> / ${esc(H.checkedDays)} 天</span>`
+      + `<span class="dv-rate">${esc(rate)}</span>`
+      + `<span class="muted">未核对日不计入分母；分母为 0 时显示"未计算"而非 0%</span></div>`
+      + (rec ? `<table class="dv-table"><thead><tr><th>日期</th><th>背离类型</th></tr></thead><tbody>${rec}</tbody></table>` : '');
+  } else {
+    histHtml = `<div class="dv-sub">历史背离率</div>`
+      + `<div class="dv-hist muted">未计算：宽度逐日序列缺失，仅最新日可判（不是"从没背离过"）</div>`;
+  }
+
+  box.innerHTML = `<details class="dv-fold" ${lvl === 'unknown' ? '' : 'open'}>`
+    + `<summary><b>宽度背离</b><span class="dv-chip ${chipCls}">${esc(chip)}</span>`
+    + `<span class="muted dv-sum">情绪分 vs 宽度：${esc(d.reason || '')}</span></summary>`
+    + `<div class="dv-body">`
+    + `<div class="dv-main"><span class="dv-tag ${chipCls}">${esc(chip)}</span>`
+    + `<span class="dv-reason">${esc(d.reason || '')}</span></div>`
+    + histHtml
+    + `<div class="dv-note muted">宽度<b>不参与</b>情绪分打分——两者是"多少票在涨"与"钱有多凶"，`
+    + `同向时无信息量，重复计权只会稀释真正有区分度的因子；只有背离才出信号。`
+    + `<br>三态须分清：有背离 / 同向（已比对）/ <b>未评估</b>（宽度判定缺失）。`
+    + `"未评估"是"没核对"，<b>不等于</b>"两个读数一致"。`
+    + `<br>判据唯一出处 <code>src/regime.js::detectDivergence</code>；本告警只描述状态，<b>不构成投资建议</b>。`
     + `</div></div></details>`;
 }
 

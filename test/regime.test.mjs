@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   REGIME_RULES, REGIME_LABELS,
   num, levelOf, directionOf, classifyRegime, detectDivergence, classifySeries,
+  buildDivergenceBlock,
 } from '../src/regime.js';
 
 // ── num：与 dirty.js 同款陷阱（+[]===0 / +''===0 / +null===0）──────────────
@@ -326,4 +327,115 @@ test('常量：绝对水位阈值【不参与主分类】（防回退到第一�
 test('opts.rules: 可覆盖阈值（便于测试与标定）', () => {
   const r = levelOf(50, 50, { rules: { PCT_LOW: 60, PCT_HIGH: 90 } });
   assert.equal(r.level, 'low');
+});
+
+// ── ⑤ buildDivergenceBlock：signals-latest 的 divergence 段组装 ──────────────
+//   这是 #3 决策的落地（宽度不纳入情绪分，独立成告警）。测的是**真调用**，
+//   不是扫源码里有没有 "divergence" 字样。
+const mkDays = (rows) => rows.map(([date, value, pct]) => ({
+  trade_date: date, emotion: { value, pct_rank: pct },
+}));
+
+test('buildDivergenceBlock: 空数组 → null（不是空壳对象）', () => {
+  assert.equal(buildDivergenceBlock([], null), null);
+  assert.equal(buildDivergenceBlock(null, null), null);
+});
+
+test('buildDivergenceBlock: 高位+宽度窄 → 真报假繁荣（端到端）', () => {
+  const days = mkDays([['2026-09-30', 70, 90]]);
+  const b = buildDivergenceBlock(days, { verdict: { level: 'narrow', label: '宽度收窄' } });
+  assert.equal(b.diverged, true);
+  assert.equal(b.kind, 'fake-boom');
+  assert.ok(/假繁荣/.test(b.label));
+  assert.equal(b.ref, 'src/regime.js::detectDivergence', '必须标注判据唯一出处');
+});
+
+test('buildDivergenceBlock: 低位+宽度扩张 → 底部背离', () => {
+  const days = mkDays([['2026-09-30', 35, 10]]);
+  const b = buildDivergenceBlock(days, { verdict: { level: 'broad', label: '宽度扩张' } });
+  assert.equal(b.diverged, true);
+  assert.equal(b.kind, 'bottom-divergence');
+});
+
+test('buildDivergenceBlock: ★ 宽度判定缺失 → 未评估，绝不显示成"一致"', () => {
+  const days = mkDays([['2026-09-30', 70, 90]]);
+  const b = buildDivergenceBlock(days, null);
+  assert.equal(b.level, 'unknown');
+  assert.equal(b.diverged, false, 'diverged 为 false 只表示"没触发"，不能被读成"一致"');
+  assert.equal(b.label, '未评估');
+  assert.ok(/缺失不等于一致|未评估/.test(b.reason));
+});
+
+test('buildDivergenceBlock: ★ 宽度序列是 buildBreadthSeries 形态（date + 字符串 verdict）也要能统计', () => {
+  // 历史坑：宽度序列两种形态（{date, verdict:'narrow'} vs {trade_date, verdict:{level}}），
+  //   只认一种会得出 checkedDays=0 —— "序列在，却统计出 0 天核对过"，静默失真。
+  const days = mkDays([
+    ['2026-09-25', 70, 90],
+    ['2026-09-26', 50, 50],
+    ['2026-09-30', 70, 92],
+  ]);
+  const b = buildDivergenceBlock(days, {
+    verdict: { level: 'narrow', label: '宽度收窄' },
+    series: [
+      { date: '2026-09-25', verdict: 'narrow' },   // 高位 + 窄 → 背离
+      { date: '2026-09-26', verdict: 'mid' },      // 中位 → 不背离
+      { date: '2026-09-30', verdict: 'very_narrow' },
+    ],
+  });
+  assert.ok(b.history, '有宽度序列就必须给出历史统计');
+  assert.equal(b.history.checkedDays, 3, '三天都有判定 → 三天都该进分母');
+  assert.equal(b.history.divergedDays, 2, '09-25 与 09-30 背离，09-26 不背离');
+});
+
+test('buildDivergenceBlock: 对象形态 verdict（{level,label}）同样能统计', () => {
+  const days = mkDays([['2026-09-30', 70, 90]]);
+  const b = buildDivergenceBlock(days, {
+    verdict: { level: 'narrow', label: 'x' },
+    series: [{ trade_date: '2026-09-30', verdict: { level: 'narrow', label: '宽度收窄' } }],
+  });
+  assert.equal(b.history.checkedDays, 1);
+  assert.equal(b.history.divergedDays, 1);
+});
+
+test('buildDivergenceBlock: ★ 分母为 0 时 ratePct 必须为 null（不是 0%）', () => {
+  // "没核对过" 与 "核对过但一次没背离" 是两回事，0% 会把前者伪装成后者。
+  const days = mkDays([['2026-09-30', 70, 90]]);
+  const b = buildDivergenceBlock(days, { verdict: null, series: [] });
+  assert.equal(b.history, null, '宽度序列为空 → 整段历史统计为 null');
+  assert.ok(/未计算/.test(b.historyNote));
+});
+
+test('buildDivergenceBlock: 序列有行但情绪分缺失 → 该日不计入分母（未评估≠同向）', () => {
+  const days = mkDays([['2026-09-30', null, null]]);
+  const b = buildDivergenceBlock(days, {
+    verdict: { level: 'narrow', label: 'x' },
+    series: [{ date: '2026-09-30', verdict: 'narrow' }],
+  });
+  assert.equal(b.history.checkedDays, 0);
+  assert.equal(b.history.ratePct, null, '分母 0 → null');
+});
+
+test('buildDivergenceBlock: 序列日期对不上档案日期 → 不计入分母（不误配）', () => {
+  const days = mkDays([['2026-09-30', 70, 90]]);
+  const b = buildDivergenceBlock(days, {
+    verdict: { level: 'narrow', label: 'x' },
+    series: [{ date: '2026-01-01', verdict: 'narrow' }],   // 档案里没有这一天
+  });
+  assert.equal(b.history.checkedDays, 0, '日期对不上就不能算核对过');
+});
+
+test('buildDivergenceBlock: 同向 → diverged=false 且 level=ok（已比对，非未评估）', () => {
+  const days = mkDays([['2026-09-30', 70, 90]]);
+  const b = buildDivergenceBlock(days, { verdict: { level: 'broad', label: '宽度扩张' } });
+  assert.equal(b.diverged, false);
+  assert.equal(b.level, 'ok', 'level=ok 表示"比对过且同向"，与 unknown 是两回事');
+});
+
+test('buildDivergenceBlock: historyNote 必须解释分母口径（防"0% = 从没背离"误读）', () => {
+  const days = mkDays([['2026-09-30', 70, 90]]);
+  const b = buildDivergenceBlock(days, {
+    verdict: { level: 'narrow', label: 'x' },
+    series: [{ date: '2026-09-30', verdict: 'narrow' }],
+  });
+  assert.ok(/未核对|不计入分母/.test(b.historyNote));
 });

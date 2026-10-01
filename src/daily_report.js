@@ -52,11 +52,17 @@ export function buildDailyReport(signals = {}) {
   });
 
   // ── ② 背离（综合分 vs 宽度）────────────────────────────────────────────
-  const div = detectDivergence({
-    score: latest.value,
-    pctRank: latest.pct_rank,
-    breadthVerdict: S.breadth && S.breadth.verdict,
-  });
+  //   ⚠ 优先用调用方传入的 divergence 段（signals-latest 的独立段落，唯一出处
+  //     src/regime.js::buildDivergenceBlock）；未传时才退回本地 detectDivergence。
+  //     为什么优先用它：同一份数据在"宽度背离面板"与"日报"里必须是同一条结论，
+  //     若两处各自调一次，将来改判据就会漏改一处 → 面板说背离、日报说同向。
+  const div = (S.divergence && typeof S.divergence === 'object')
+    ? S.divergence
+    : detectDivergence({
+      score: latest.value,
+      pctRank: latest.pct_rank,
+      breadthVerdict: S.breadth && S.breadth.verdict,
+    });
 
   const sections = [];
   const caveats = [];

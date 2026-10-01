@@ -21,7 +21,7 @@ import { buildSeatSeries, seatSeriesSummary, seatVerdict } from './seats_daily.j
 import { buildBreadthSeries, breadthSeriesSummary } from './breadth.js';
 import { validateDay, sanitizeForFactors, dirtyArgsOf } from './dirty.js';
 import { BACKFILL_FLAG } from './backfill.js';
-import { buildRegimeBlock } from './regime.js';
+import { buildRegimeBlock, buildDivergenceBlock } from './regime.js';
 import { buildDailyReport } from './daily_report.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -613,6 +613,27 @@ export function writeShards(archive, dir = DATA_DIR) {
     // 拐点标签（#4）：**纯函数、只读档案**（不读盘、不联网）→ 每次写档都刷新，
     //   与 scripts/split_archive.mjs 用**同一份** buildRegimeBlock，保证两路形态一致。
     regimeFn: (ds) => buildRegimeBlock(ds),
+    // 宽度背离告警（#3 决策）：与 regime 同源同形态。**独立于日报**注入——
+    //   日报生成失败不该把背离一起带走（两者失败域不同）。
+    //   宽度读数从已落盘的 breadth-daily.json 读（与上面 breadthFn 同一份文件、
+    //   同一套 buildBreadthSeries 汇总），不存在"两处各算一次宽度"。
+    divergenceFn: (ds) => {
+      let breadth = null;
+      try {
+        const bp = path.join(dir, 'breadth-latest.json');
+        if (existsSync(bp)) {
+          const snapshot = JSON.parse(readFileSync(bp, 'utf8'));
+          let series = [];
+          const dp = path.join(dir, 'breadth-daily.json');
+          if (existsSync(dp)) series = buildBreadthSeries(JSON.parse(readFileSync(dp, 'utf8')).rows || []);
+          // verdict 取 breadth-latest.json 的**对象形态** { level, label, detail }——
+          //   buildBreadthSeries 产出的是字符串 verdict，只够上色、没有 label 文案可比对。
+          //   与上面 breadthFn 读同一份文件，不存在"两处各算一次宽度"。
+          breadth = { snapshot, series, verdict: snapshot.verdict || null };
+        }
+      } catch { breadth = null; }
+      return buildDivergenceBlock(ds, breadth);
+    },
     // 每日日报（#4）：纯渲染，输入是上面各段已算好的素材 → 同源同形态。
     reportFn: (payload) => buildDailyReport(payload),
   });

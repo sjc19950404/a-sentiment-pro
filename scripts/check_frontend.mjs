@@ -3060,6 +3060,59 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
     }
   }
 
+  // ── 宽度背离告警面板（#3 决策）──
+  //   核心红线（这是本面板存在的全部理由）：
+  //     ① **未评估 ≠ 一致**：宽度判定缺失时（level='unknown'）必须显示"未评估"，
+  //        **绝不能**借用"同向/一致"的绿色与文案 —— 那是把"没检查"读成"没问题"。
+  //     ② `diverged:false` 有两种来源（同向 / 未评估），**不能只看 diverged**——
+  //        必须结合 level 区分（ok=同向，unknown=未评估）。
+  //     ③ 历史背离率的**分母口径**必须披露（未核对日不计入），否则 100% 会被误读成
+  //        "天天背离"（实际只有 1 天可判）。
+  //     ④ 必须声明宽度**不参与**情绪分打分（否则用户会以为情绪分里含宽度）。
+  //     ⑤ 必须要免责声明 + 不得出现买卖动作措辞。
+  const dv = $('divergePanel');
+  check('宽度背离：面板元素存在', !!dv, dv ? '' : '未找到 #divergePanel');
+  if (dv) {
+    const dcls = dv.className || '';
+    const dIsUnknown = /dv-unknown/.test(dcls);
+    const dtxt = (dv.textContent || '');
+    check('宽度背离：面板已渲染（hidden 已解除）', dv.hidden === false, `hidden=${dv.hidden}`);
+    if (!dIsUnknown) {
+      check('宽度背离：色调类名唯一且合法', /dv-(ok|warn|info|unknown)/.test(dcls), `类名 ${dcls}`);
+      // ★ 未评估不得借用"同向/一致"的措辞与绿色
+      const allData = (typeof SIGNALS !== 'undefined' && SIGNALS) ? SIGNALS.divergence : null;
+      if (allData && allData.level === 'unknown') {
+        check('宽度背离：★ 未评估时不出现"同向/一致"措辞（未评估≠一致）',
+          !/同向|一致/.test(dtxt.split('未评估').join('').split('不等于').join('')),
+          '"未评估"是没核对，绝不能渲染成"一致"');
+        check('宽度背离：未评估确有不一致警示文案',
+          !/dv-ok/.test(dcls), '未评估不得用"同向"的绿');
+      }
+      check('宽度背离：渲染出三态之一（有背离/同向/未评估）',
+        /假繁荣|底部背离|同向|未评估|背离/.test(dtxt), dtxt.slice(0, 60));
+      check('宽度背离：披露"宽度不参与情绪分打分"',
+        /不参与|不纳入/.test(dtxt), '不披露会被误认为情绪分含宽度');
+      check('宽度背离：披露历史背离率的分母口径（未核对日不计入）',
+        /未核对|不计入分母|未计算/.test(dtxt), '不披露会让 100% 被读成"天天背离"');
+      check('宽度背离：披露判据唯一出处', /src\/regime\.js/.test(dtxt), '');
+      check('宽度背离：含合规声明（不构成投资建议）', /不构成投资建议/.test(dtxt), '');
+      check('宽度背离：不得出现买卖动作措辞',
+        !/建议买入|建议卖出|立即买入|立即卖出/.test(dtxt), '告警只描述状态，不给动作');
+    } else {
+      check('宽度背离：未生成态显式说明「未生成 ≠ 一致」',
+        /未生成/.test(dtxt) && /不等于/.test(dtxt),
+        '未生成必须说清，不得默认渲染成"一致"');
+    }
+  }
+  // 源码层：前端不得自造背离阈值/类型表（唯一出处 src/regime.js::detectDivergence）
+  {
+    const src = readFileSync(join(ROOT, 'app.js'), 'utf8');
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    check('宽度背离：前端未自造背离阈值',
+      !/PCT_HIGH\s*[:=]\s*70|narrow[\s\S]{0,40}?===\s*['"]?narrow['"]?[\s\S]{0,40}?diverged/.test(code),
+      '前端出现背离判据阈值＝第二套口径，唯一出处是 src/regime.js');
+  }
+
   // ══════════════════════════════════════════════════════════════════════════
   // 数据导出（CSV / Excel）
   //   红线：前端**一行取数逻辑都不写**。导出件必须与屏幕同源，

@@ -1140,6 +1140,23 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     check('切片：signals 里 relative/health 缺失时为 null（不得用 0 顶替）',
       sg.relative !== 0 && sg.health !== 0 && sg.healthNote != null,
       `healthNote=${sg.healthNote ? '有' : '无'}`);
+    // 宽度背离（#3 决策）：独立段必须存在，且**三态语义不得混淆**
+    //   （未评估绝不能与同向共用一个形态——那是把"没检查"读成"没问题"）
+    check('切片：signals 带 divergence 段（#3 决策：宽度不纳入情绪分，独立成告警）',
+      'divergence' in sg && sg.divergence !== 0,
+      `divergence=${'divergence' in sg ? JSON.stringify(sg.divergence && sg.divergence.level) : '缺字段'}`);
+    if (sg.divergence && typeof sg.divergence === 'object') {
+      const dv = sg.divergence;
+      check('切片：divergence 标注判据唯一出处',
+        typeof dv.ref === 'string' && /regime\.js/.test(dv.ref), `ref=${dv.ref}`);
+      check('切片：divergence 三态自洽（unknown 时不得声称已比对 / ok 时不得声称背离）',
+        (dv.level === 'unknown' ? dv.diverged === false : true)
+        && (dv.level === 'ok' ? dv.diverged === false : true),
+        `level=${dv.level} diverged=${dv.diverged}`);
+      check('切片：divergence 历史统计分母为 0 时 ratePct 为 null（不得填 0%）',
+        !dv.history || dv.history.checkedDays > 0 || dv.history.ratePct === null,
+        dv.history ? `checked=${dv.history.checkedDays} rate=${dv.history.ratePct}` : '无 history');
+    }
   } else {
     check('切片：存在 signals-latest.json', false, 'missing');
   }

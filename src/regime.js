@@ -339,6 +339,84 @@ export function detectDivergence(ctx = {}, opts = {}) {
   };
 }
 
+// ── ⑤ 组装 signals-latest 的 divergence 区块（两条写盘路径共用）───────────
+//
+//   与 buildRegimeBlock 同源同理：唯一出处放这里，pipeline.js 与 split_archive.mjs
+//   只注入调用，不各自重写（否则切片 --check 报形态分裂）。
+//
+//   为什么独立成段：regime 回答"今天什么状态"，背离回答"这个状态可信吗"。
+//   两者读者不同、失败域也不同——日报生成失败不该把背离一起带走。
+//
+//   days    —— 主档 day 数组（升序）
+//   breadth —— breadth 段（{ verdict: { level, label } }），缺失即"未评估"
+//   返回 { diverged, kind, level, label, reason, ref, checked } | null
+export function buildDivergenceBlock(days, breadth) {
+  const list = Array.isArray(days) ? days : [];
+  if (!list.length) return null;
+  const last = list[list.length - 1] || {};
+  const bv = (breadth && breadth.verdict) ? breadth.verdict : null;
+  const raw = detectDivergence({
+    score: last.emotion ? last.emotion.value : null,
+    pctRank: last.emotion ? last.emotion.pct_rank : null,
+    breadthVerdict: bv,
+  });
+  // 全档"背离天数"计数：让读者知道这条告警**稀不稀罕**。
+  //   稀罕的告警才值得看；天天响的告警等于没响（本项目对"恒不触发"与"恒触发"同样警惕）。
+  //   ⚠ 逐日必须用**截至当日**的宽度判定（前视锁窗同一纪律）；宽度序列不存在时
+  //     只能给出"最新日可判、历史不可判"，此时 historyChecked=false，不伪造计数。
+  const histRaw = (breadth && Array.isArray(breadth.series))
+    ? breadth.series
+    : ((breadth && Array.isArray(breadth.daily)) ? breadth.daily : null);
+  let history = null;
+  if (histRaw && histRaw.length) {
+    const byDate = new Map();
+    // 宽度序列有两种形态（历史遗留）：
+    //   · buildBreadthSeries 产出 { date, verdict: 'narrow'|'broad'|... }（verdict 是字符串）
+    //   · 早期/手工注入形态 { trade_date, verdict: { level, label } }
+    //   两种都要能读，否则"宽度序列在，却统计出 0 天核对过"——静默失真的经典坑。
+    histRaw.forEach((r) => {
+      if (!r) return;
+      const d = r.trade_date || r.date;
+      if (!d) return;
+      byDate.set(d, r);
+    });
+    let checked = 0; const hits = [];
+    list.forEach((d) => {
+      const row = byDate.get(d.trade_date);
+      if (!row) return;                      // 该日无宽度判定 → 未核对，不计入分母
+      const rv = row.verdict;
+      const v = (rv && typeof rv === 'object')
+        ? rv
+        : (rv ? { level: rv, label: null } : (row.level ? { level: row.level, label: row.label } : null));
+      if (!v || !v.level) return;
+      const r = detectDivergence({
+        score: d.emotion ? d.emotion.value : null,
+        pctRank: d.emotion ? d.emotion.pct_rank : null,
+        breadthVerdict: v,
+      });
+      if (r.level === 'unknown') return;     // 未评估 ≠ 同向
+      checked++;
+      if (r.diverged) hits.push({ trade_date: d.trade_date, kind: r.kind, label: r.label });
+    });
+    history = {
+      checkedDays: checked,
+      divergedDays: hits.length,
+      // 分母为 0 时必须为 null（不是 0%）——"没核对过"和"核对过但一次没背离"是两回事
+      ratePct: checked ? Math.round((hits.length / checked) * 1000) / 10 : null,
+      recent: hits.slice(-8),
+    };
+  }
+  return {
+    ...raw,
+    ref: 'src/regime.js::detectDivergence',
+    history,
+    historyNote: history
+      ? '历史背离率只在"当日情绪分与宽度判定同时可算"的交易日上统计（未核对日不计入分母）；'
+        + '分母为 0 时显示"未计算"而非 0%。'
+      : '历史背离率未计算：宽度逐日序列缺失（仅最新日可判）。',
+  };
+}
+
 // ── ⑥ 组装 signals-latest 的 regime 区块（两条写盘路径共用，唯一出处）──────
 //
 //   ⚠ 为什么必须共用：本项目有两条写盘路径（src/pipeline.js::writeShards 与

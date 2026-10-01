@@ -435,6 +435,18 @@ export function buildSignals(archive, opts = {}) {
   if (rFn) {
     try { regime = rFn(days); } catch { regime = null; }
   }
+  // 宽度背离（#3 决策：宽度**不纳入**情绪分，而是独立成一条告警）——————
+  //   为什么独立成段而不是塞在 regime/dailyReport 里：
+  //     · regime 回答"今天什么状态"，背离回答"这个状态**可信吗**"——两个问题，
+  //       读者也不同（一个看大方向，一个看风险提示）。
+  //     · 复用日报的背离结果会让"日报没生成 → 背离也没了"（耦合），
+  //       而背离只需要 情绪分 + 宽度两个读数，哪怕日报注入失败它也该照常输出。
+  //   ⚠ 判据唯一出处仍是 src/regime.js::detectDivergence（此处只注入调用，不重写）。
+  let divergence = null;
+  const dFn = typeof opts.divergenceFn === 'function' ? opts.divergenceFn : null;
+  if (dFn) {
+    try { divergence = dFn(days, { breadth, latest: latestBrief(last) }); } catch { divergence = null; }
+  }
   let dailyReport = null;
   if (repFn) {
     try {
@@ -447,6 +459,9 @@ export function buildSignals(archive, opts = {}) {
         ? regime.seriesCompact.map((r) => ({ trade_date: r[0], value: r[1] }))
         : [],
         breadth, pain, seats, crosscheck,
+        // 背离结论**复用**给日报（同一条结论，不在两处各判一次）——
+        //   否则将来改判据会漏改一处，出现"面板说背离、日报说同向"。
+        divergence: divergence || null,
         health: health || null,
         dirty: dirty || null,
         meta: archive?.meta || {},
@@ -524,6 +539,17 @@ export function buildSignals(archive, opts = {}) {
         + '绝对水位与分位读数不一致时会如实披露（因情绪分分布高度压缩，以分位为准）。'
         + '标签只描述市场状态，不含任何买卖建议。'
       : '未生成（调用方未注入 regimeFn）',
+    // 宽度背离告警（#3 决策）：{ diverged, kind, level, label, reason, ... }。
+    //   宽度**不纳入**情绪分（两者是"多少票在涨" vs "钱有多凶"，同向时无信息量），
+    //   只在**背离时**出信号 —— 这才是可操作的信息。
+    //   ⚠ 三态必须分清：diverged=true（有背离）/ false（同向，已比对）/ level='unknown'
+    //     （**未评估**：宽度判定缺失或情绪分缺失）—— 最后一种**不得**被读成"一致"。
+    divergence,
+    divergenceNote: dFn
+      ? '宽度不参与情绪分打分（避免同义重复计权）；本告警只在"钱凶但票不涨"或'
+        + '"票在涨但钱冷"这类**背离**时触发，同向时不报。'
+        + '宽度判定缺失 → 显示"未评估"，**缺失不等于一致**。判据唯一出处 src/regime.js::detectDivergence。'
+      : '未生成（调用方未注入 divergenceFn）',
     // 每日盘后日报（#4）：结构化七节（状态/情绪/涨跌/亏钱/资金/题材/质量），
     //   供前端折叠渲染与导出。**只翻译屏幕已有数据，不重算任何指标**；
     //   缺失项写 missing + 原因，绝不补 0。
