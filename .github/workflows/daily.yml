@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '30 10 * * 1-5'   # 北京 18:30（UTC 10:30），仅周一至五；盘后首抓（部分源可能未出当日数据）
     - cron: '0 13 * * 1-5'    # 北京 21:00（UTC 13:00），晚间补抓：深证日K/龙虎榜等延迟数据齐后重抓当日并覆盖，合并时同日替换 + 全档重算
+    # 盘中轻量快照：北京 09:30~15:00 每 30 分钟（UTC 01:30~07:00 的 :00/:30）。
+    # 与上面两个 cron 的**根本区别**：这条只跑 scripts/snapshot_intraday.mjs，
+    # 不跑管道、不碰 archive.json、不重算分位与因子（理由见该脚本文件头）。
+    # 覆盖 01:00~07:30 UTC（= 北京 09:00~15:30），脚本内部再按相位闸门过滤出真正的盘中时段。
+    - cron: '0,30 1-7 * * 1-5'
   workflow_dispatch:        # 手动触发
 
 permissions:
@@ -11,6 +16,8 @@ permissions:
 
 jobs:
   build:
+    # 盘后完整管道（18:30 / 21:00 / 手动触发）
+    if: github.event.schedule != '0,30 1-7 * * 1-5'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -58,3 +65,30 @@ jobs:
       # 18:30 首抓常因龙虎榜未公布而跳过，此时判定为 pending（非滞后）不会误伤；21:00 补抓仍不成才会标红。
       - name: 数据新鲜度门禁（真滞后则本次运行失败）
         run: node scripts/freshness.mjs --require-fresh
+
+  intraday:
+    # 盘中轻量快照：只抓 hot/pools/breadth 三个实时源，写 data/intraday.json。
+    # 绝不触碰 archive.json —— 盘中涨跌家数未定盘，写进情绪因子会让分数反复跳变、分位失去意义。
+    if: github.event.schedule == '0,30 1-7 * * 1-5' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # 脚本自带三重保险：① 相位非 live 直接跳过；② 强势股返回交易日 ≠ 北京当日则跳过
+      # （该接口在非交易日会静默返回上一交易日数据）；③ 三源全失败则不覆盖上次成功快照。
+      - name: 抓盘中快照（非盘中自动跳过）
+        run: node scripts/snapshot_intraday.mjs
+      - name: 提交盘中快照
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/intraday.json
+          if git diff --cached --quiet; then
+            echo "无变化（非盘中或快照相同），跳过提交"
+          else
+            git commit -m "chore: 盘中快照 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi

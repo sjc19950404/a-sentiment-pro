@@ -13,7 +13,7 @@
 
 import config from './config.js';
 import { computeSentiment } from './sentiment.js';
-import { normalizeRecord, summarizeCalibers } from './lhb.js';
+import { normalizeRecord, summarizeCalibers, mergeDuplicateRecords } from './lhb.js';
 import { isAggregateSeatRow } from './seats.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
@@ -308,9 +308,23 @@ async function fetchAmountTencentFallback(ymd) {
 // lhb 原始数据 → 聚合结构（buildDay 与 applyLhb 补抓共用）
 // 口径判别、同票去重、双口径汇总全部收敛在 src/lhb.js —— 此处只做装配，不再自行相加，
 // 避免「少了带口径后缀的那一刻」把区间累计榜混进当日口径（2026-09-30 曾因此把 136.5 亿算成 511.1 亿）。
+//
+// 装配顺序（不可颠倒）：normalizeRecord → mergeDuplicateRecords → summarizeCalibers
+//   · mergeDuplicateRecords 消灭「同票同口径逐字段完全相同」的重复披露（2026-08-14 蓝盾光电实测：
+//     两条净额都是 37382.3 万，只有上榜原因不同）。放在装配层而不是只在汇总层，是因为
+//     **lhb 原始数组本身就是下游入口**：picks / paper / lhbfilter / fetch_universe / 连板回测
+//     都直接遍历它，任何 `reduce(净买)` 都会把同一只票算两遍。
+//   · summarizeCalibers 自己也会再合并一次（幂等），作为"调用方忘了合并"的兜底。
 function buildLhbPart(lhbRaw) {
-  const lhb = lhbRaw.map(normalizeRecord).sort((a, b) => b.net_buy_wan - a.net_buy_wan);
+  const normalized = lhbRaw.map(normalizeRecord);
+  const lhb = mergeDuplicateRecords(normalized).sort((a, b) => b.net_buy_wan - a.net_buy_wan);
   const c = summarizeCalibers(lhb);
+  // 合并留痕的「原始条数」必须取**合并前**的 normalized.length。
+  //   注意：summarizeCalibers(lhb) 收到的已是合并后数组，它的 raw_records 只能看到合并后条数，
+  //   拿它当"东财原始披露条数"会把 merged_away 恒算成 0（守卫 `raw − 合并 = count` 也就恒成立，
+  //   变成一条永远通过的废断言）。故此处显式用 normalized.length 覆盖。
+  const rawCount = normalized.length;
+  const mergedAway = rawCount - lhb.length;
   return {
     lhb,
     lhb_aggr: c.all_aggr,
@@ -325,6 +339,8 @@ function buildLhbPart(lhbRaw) {
     daily_new_ratio: c.daily_new_ratio, daily_new_stocks: c.daily_new_stocks,
     daily_new_count: c.daily_new_count,
     range_count: c.range_records,
+    // 合并留痕：raw 条数 vs 合并后条数，供审计核对「同票多榜重复披露」的规模
+    raw_count: rawCount, merged_away: mergedAway,
   };
 }
 
@@ -333,8 +349,11 @@ export function applyLhb(day, lhbRaw) {
   const p = buildLhbPart(lhbRaw);
   day.lhb = p.lhb;
   day.lhb_aggr = p.lhb_aggr;
+  day.lhb_daily_aggr = p.lhb_daily_aggr;
   const s = day.summary = day.summary || {};
-  s.lhb_count = p.lhb.length;
+  s.lhb_count = p.lhb.length;        // 合并后的记录条数（不是东财原始披露条数）
+  s.lhb_raw_count = p.raw_count;     // 东财原始披露条数（同票多榜会 > lhb_count）
+  s.lhb_merged_away = p.merged_away; // 被合并掉的重复条数
   s.lhb_stocks = p.lhb_aggr.length;
   s.lhb_all_net = p.all_net_yi;      // 全量口径（含区间累计榜）——仅诊断
   s.net_pos = p.net_pos;
@@ -450,6 +469,7 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
     lhb, lhb_aggr, lhb_daily_aggr, all_net_yi, net_pos, net_neg,
     daily_net_yi, daily_amt_yi, range_count,
     daily_ex_new_net_yi, daily_new_net_yi, daily_new_ratio, daily_new_stocks, daily_new_count,
+    raw_count, merged_away,
   } = buildLhbPart(lhbRaw);
 
   const hot = hotRaw.map((x) => ({
@@ -525,7 +545,10 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
   const factorMissing = sent.missing;
 
   const summary = {
+    // lhb_count 是**合并后**的记录条数（下游恒等式 `区间条数 = lhb_count − 当日榜记录数` 依赖它）
     lhb_count: lhb.length, lhb_stocks: lhb_aggr.length,
+    // 东财原始披露条数与被合并掉的重复条数（同票多榜会重复披露，留痕供审计核对）
+    lhb_raw_count: raw_count, lhb_merged_away: merged_away,
     // 全量口径（含「连续N个交易日」区间累计榜）：仅诊断，以及「上榜个股数」这类外部可核对的家数
     lhb_all_net: all_net_yi, net_pos, net_neg,
     // 当日榜口径（权威）：报告展示、日度因子、净买率、新股扰动全部同源
@@ -612,3 +635,7 @@ export async function fetchLive() {
 }
 
 export { LhbNotPublishedError, fetchLhb };
+// 盘中轻量快照（scripts/snapshot_intraday.mjs）需要的三个「实时可得」源：
+//   强势股（同花顺，兼交易日探测）/ 涨跌停池（东财 push2ex，盘中实时）/ 涨跌家数（东财 push2，盘中实时）。
+// 只导出这三个——日K、席位明细、行业板块等在盘中意义不大或代价过高，快照不抓。
+export { fetchHot, fetchPools, fetchBreadth };

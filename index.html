@@ -78,6 +78,14 @@
           <h2>最新日题材（已去噪）<span class="bf-auto">点条目看成分股</span></h2>
           <div id="themeBars"></div>
         </section>
+
+        <!-- 盘中快照卡：只在 meta.phase === 'live' 且有 data/intraday.json 时显示。
+             口径纪律：这里的一切数值都是**盘中实时值**，未定盘，且**不参与情绪因子与分位**。
+             与上方各卡（收盘口径）并存时必须显著区分，否则读者会拿实时涨停数去对收盘分位。 -->
+        <section class="card intraday" id="intradayCard" hidden>
+          <h2>盘中快照 <span class="bf-auto">实时值 · 不参与打分</span></h2>
+          <div id="intradayBody"></div>
+        </section>
       </div>
     </section>
 

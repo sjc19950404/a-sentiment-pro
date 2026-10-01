@@ -110,6 +110,19 @@ function renderAlerts(meta) {
     msgs.push({ cls: 'alert info', icon: 'ℹ', text: `${attempt.reason || '非交易日'}，保留 ${td} 收盘数据。` });
   }
 
+  // ②B 盘中相位（与新鲜度正交）：phase 说「现在市场在什么阶段」，
+  //      freshness.state 说「存档是不是最新已收盘会话」。盘中两者语义必然不同——
+  //      行情实时可得，但情绪分/分位/因子仍是上一收盘日算的，绝不能混读。
+  //      故盘中必须显著标注，且附口径说明（meta.phaseNote 由引擎下发，前端不自行措辞）。
+  const phase = meta.phase || null;
+  if (phase === 'live') {
+    msgs.push({ cls: 'alert phase-live', icon: '🕐', text:
+      meta.phaseNote || '盘中：行情为实时快照，情绪分/分位/因子仍为上一收盘日口径（未重算）。' });
+  } else if (phase === 'pre') {
+    msgs.push({ cls: 'alert info phase-pre', icon: '🌅', text:
+      meta.phaseNote || '开盘前：今日行情尚未产生，下方为上一交易日收盘口径。' });
+  }
+
   // ④ 字段级修补说明（与新鲜度正交，可同时出现）
   if (meta.note) msgs.push({ cls: 'alert info', icon: 'ℹ', text: `数据说明：${meta.note}。` });
 
@@ -570,8 +583,13 @@ function buildBrief(days, arc) {
     || (meta.stale ? '滞后' : '未判定');
   const dataDate = meta.tradeDate || d.trade_date || '—';
   const att = meta.lastAttempt || {};
+  // 相位标注（盘中/开盘前）：报告必须自带时点说明，否则读者会把盘中实时涨跌家数
+  // 与「按上一收盘日算的分位」对照，误判为「情绪分突然跳变」。
+  const phaseTag = meta.phase === 'live' ? ' · 时点 <b>盘中</b>（实时快照，分位/因子为上一收盘日口径）'
+    : meta.phase === 'pre' ? ' · 时点 <b>开盘前</b>（展示上一交易日收盘口径）' : '';
   const stamp = `<div class="bf-meta">数据日期 <b>${dataDate}</b> · 抓取状态 <b>${freshLabel}</b>`
     + (fresh.behindSessions ? `（落后 ${fresh.behindSessions} 个交易日）` : '')
+    + phaseTag
     + (att.outcome === 'skipped' ? ' · 本次尝试跳过（当日数据未发布，属正常等待）' : '')
     + (att.outcome === 'failed' ? ` · 本次抓取失败：${att.reason || '原因未记录'}` : '')
     + ` · 样本 ${days.length} 个交易日 · 打分模型 ${(BT && BT.meta && BT.meta.formulaVersion) || meta.formulaVersion || '—'}</div>`;
@@ -1770,10 +1788,15 @@ function renderAll(arc) {
 
   $('tradeDate').textContent = arc.signals?.tradeDate || latest.trade_date || '--';
   const tag = $('sourceTag');
-  // 小标签按新口径：live 且未滞后 → LIVE；滞后 → STALE；离线回放 → DEMO
-  const tagText = meta.source === 'offline-replay' ? 'DEMO' : (meta.stale ? 'STALE' : 'LIVE');
+  // 小标签按新口径：离线回放 → DEMO；盘中 → LIVE（实时快照）；滞后 → STALE；否则 LIVE（收盘）
+  // 优先级：DEMO > STALE > 盘中 > LIVE。滞后比相位更要紧——数据不新鲜时，
+  // 无论此刻是不是盘中，展示的都是过期收盘数据，标 STALE 才不会误导。
+  const tagText = meta.source === 'offline-replay' ? 'DEMO'
+    : meta.stale ? 'STALE'
+      : meta.phase === 'live' ? 'LIVE · 盘中'
+        : meta.phase === 'pre' ? 'PRE' : 'LIVE';
   tag.textContent = tagText;
-  tag.className = 'tag ' + (tagText === 'LIVE' ? 'live' : tagText === 'STALE' ? 'stale' : '');
+  tag.className = 'tag ' + (tagText === 'STALE' ? 'stale' : tagText.startsWith('LIVE') ? 'live' : '');
   $('genTime').textContent = meta.generatedAt ? '更新 ' + meta.generatedAt.replace('T', ' ').slice(0, 16) : '';
 
   renderAlerts(meta);
@@ -1785,6 +1808,59 @@ function renderAll(arc) {
   renderBrief(days, arc);
   loadGlobal();  // 外围市场（独立数据文件，缺失不影响上述渲染）
   loadBacktest(); // 回测/帕累托/滚动/主线选股四区块（独立数据文件，缺失不影响上述渲染）
+  loadIntraday(meta); // 盘中快照（独立数据文件；仅盘中相位且有文件时显示）
+}
+
+// ── 盘中快照卡 ──────────────────────────────────────────────────────────────
+// 口径纪律（本卡存在的全部意义）：
+//   data/intraday.json 里的每个数值都是**抓取时刻的实时值**，未定盘；而情绪分 / 分位 / 因子
+//   是按**收盘值**算的。两者不同尺度，绝不能互相比较。故本卡：
+//     ① 只在 meta.phase === 'live' 时显示（收盘后显示会让人以为"收盘了还这么高"）；
+//     ② 卡内显著标注抓取时刻与"不参与打分"；
+//     ③ 不把任何快照数值喂给其它卡片。
+// 文件缺失 / 相位非盘中 → 整卡隐藏（不是显示 0，0 会被读成"涨停 0 家"）。
+async function loadIntraday(meta) {
+  const card = $('intradayCard'), body = $('intradayBody');
+  if (!card || !body) return;
+  const phase = (meta || {}).phase;
+  if (phase !== 'live') { card.hidden = true; return; }
+  let snap = null;
+  try {
+    const res = await fetch('./data/intraday.json?_=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) { card.hidden = true; return; }
+    snap = await res.json();
+  } catch { card.hidden = true; return; }
+  if (!snap || snap.kind !== 'intraday') { card.hidden = true; return; }
+
+  const n = (v, fix = 1) => (v == null || !Number.isFinite(+v)) ? '—' : (+v).toFixed(fix);
+  const i = (v) => (v == null ? '—' : String(v));
+  const p = snap.pools || null, b = snap.breadth || null;
+  const prev = snap.prevPools || null;
+  // 与上一次快照的对比：盘中唯一有意义的"动量"证据（同一尺度下自己跟自己比，安全）
+  const delta = (cur, old) => (cur == null || old == null) ? '' :
+    cur > old ? ` <span class="idu-up">↑${cur - old}</span>`
+      : cur < old ? ` <span class="idu-dn">↓${old - cur}</span>` : ' <span class="muted">持平</span>';
+
+  const rows = [
+    ['涨停', p ? i(p.zt) + delta(p.zt, prev && prev.zt) : '—', '触板未封（炸板）', p ? i(p.zb) + delta(p.zb, prev && prev.zb) : '—'],
+    ['跌停', p ? i(p.dt) : '—', '封板率', p && p.seal_pct != null ? `<b>${n(p.seal_pct)}%</b>` + delta(p.seal_pct, prev && prev.seal_pct) : '—'],
+    ['最高连板', p ? i(p.max_lb) + ' 板' : '—', '2板以上', p ? i(p.lb2) + ' 只' : '—'],
+    ['上涨家数', b ? i(b.up) : '—', '下跌家数', b ? i(b.down) : '—'],
+  ];
+
+  body.innerHTML =
+    `<div class="idu-head">抓取时刻 <b>${esc(snap.capturedAtBJ || '—')}</b>`
+    + ` · 强势股 <b>${i(snap.hot && snap.hot.count)}</b> 只`
+    + (snap.prevCapturedAtBJ ? ` · 对比 ${esc(snap.prevCapturedAtBJ)}` : '')
+    + `<span class="idu-warn">本卡为盘中实时值，未定盘，不参与情绪因子与分位</span></div>`
+    + `<table class="idu-tbl"><tbody>${rows.map((r) =>
+      `<tr><th>${r[0]}</th><td>${r[1]}</td><th>${r[2]}</th><td>${r[3]}</td></tr>`).join('')}</tbody></table>`
+    + `<div class="idu-note">口径：封板率 = 收盘涨停 ÷ 盘中触板（涨停+炸板），与盘后同一算法，但分母随盘中变化。`
+    + `快照每 30 分钟刷新；情绪分 / 历史分位 / 七因子仍为上一收盘日口径（未重算），不要把本卡数值与上方分位对比。`
+    + (snap.sourcesFailed && snap.sourcesFailed.length
+      ? `<br>本次未取到的源：${esc(snap.sourcesFailed.join('；'))}` : '')
+    + `</div>`;
+  card.hidden = false;
 }
 
 // 拉取最新 archive 并渲染全页。返回 {arc, changed, first, hhmm}；失败抛出。

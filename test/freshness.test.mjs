@@ -10,7 +10,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import config from '../src/config.js';
 import {
-  assessFreshness, staleReasonText, applyFreshnessMeta, freshnessKey,
+  assessFreshness, staleReasonText, applyFreshnessMeta, applyPhaseMeta, freshnessKey,
+  marketPhase, PHASE_NOTE, MARKET_OPEN, MARKET_CLOSE,
   prevSession, nextSession, countSessions, publishDeadline, lastClosedSession,
 } from '../src/freshness.js';
 
@@ -145,4 +146,65 @@ test('回归：真实存档 meta 结构自洽（stale 必须等价于 state===be
       'stale 必须由 state 推导，不能是独立粘滞的标记');
     assert.equal(arc.meta.freshness.tradeDate, arc.meta.tradeDate);
   }
+});
+
+// ── 市场相位（pre / live / closed）──────────────────────────────────────────
+// 相位与新鲜度正交：state 说「存档是不是最新已收盘会话」，phase 说「现在市场在什么阶段」。
+// 盘中两者必然不同（行情实时可得，但分位/因子按上一收盘日算），混读会得出「情绪分突然跳变」的假信号。
+
+test('相位：交易日开盘前 09:29 → pre；09:30 起 → live；15:00 起 → closed', () => {
+  assert.equal(marketPhase(bj('2026-09-30T09:29'), HOL).phase, 'pre');
+  assert.equal(marketPhase(bj('2026-09-30T09:30'), HOL).phase, 'live');
+  assert.equal(marketPhase(bj('2026-09-30T14:59'), HOL).phase, 'live');
+  assert.equal(marketPhase(bj('2026-09-30T15:00'), HOL).phase, 'closed');
+  assert.equal(marketPhase(bj('2026-09-30T23:59'), HOL).phase, 'closed');
+  assert.equal(marketPhase(bj('2026-09-30T00:01'), HOL).phase, 'pre');
+});
+
+test('相位：非交易日恒为 closed（无盘中概念），且标注 isTradingDay=false', () => {
+  // 2026-10-01 为国庆休市（在 config.manualHolidays 内）
+  for (const t of ['09:00', '10:30', '14:30', '20:00']) {
+    const p = marketPhase(bj(`2026-10-01T${t}`), HOL);
+    assert.equal(p.phase, 'closed', `非交易日 ${t} 应为 closed`);
+    assert.equal(p.isTradingDay, false);
+  }
+  // 周末同理
+  assert.equal(marketPhase(bj('2026-10-03T10:30'), HOL).phase, 'closed'); // 周六
+});
+
+test('相位：applyPhaseMeta 写入 meta，且不触碰 freshness/数据字段', () => {
+  const meta = { tradeDate: '2026-09-29', stale: true, staleReason: 'x', note: '别动我' };
+  applyPhaseMeta(meta, bj('2026-09-30T10:30'), HOL);
+  assert.equal(meta.phase, 'live');
+  assert.equal(meta.phaseTradingDay, true);
+  assert.equal(meta.phaseNote, PHASE_NOTE.live);
+  assert.ok(meta.phaseCheckedAt);
+  // 正交性：相位写入不得改写新鲜度或业务说明
+  assert.equal(meta.tradeDate, '2026-09-29');
+  assert.equal(meta.stale, true);
+  assert.equal(meta.staleReason, 'x');
+  assert.equal(meta.note, '别动我');
+});
+
+test('相位：三个相位各有口径说明文案（不得为空白——前端直接展示它）', () => {
+  for (const k of ['pre', 'live', 'closed']) {
+    assert.ok(typeof PHASE_NOTE[k] === 'string' && PHASE_NOTE[k].length > 10, `${k} 缺口径说明`);
+  }
+  // live 的说明必须点出「分位/因子未重算」——这是最容易被误读的一点
+  assert.ok(/未重算|上一收盘/.test(PHASE_NOTE.live), 'live 说明未点明分位/因子口径');
+});
+
+test('相位参与 freshnessKey：相位切换必须触发落盘，否则页面永远停在旧相位', () => {
+  const base = { tradeDate: '2026-09-30', stale: false, freshness: { state: 'fresh' } };
+  const a = { ...base, phase: 'live' };
+  const b = { ...base, phase: 'closed' };
+  assert.notEqual(freshnessKey(a), freshnessKey(b), '相位变化必须改变 key');
+  // 但仅时间戳变化（同相位）不得触发落盘，避免提交噪音
+  assert.equal(freshnessKey({ ...a, phaseCheckedAt: '2026-09-30T10:30:00Z' }),
+    freshnessKey({ ...a, phaseCheckedAt: '2026-09-30T10:31:00Z' }));
+});
+
+test('相位常量：MARKET_OPEN=09:30 / MARKET_CLOSE=15:00（与 fresh 判定共用同一组边界）', () => {
+  assert.equal(MARKET_OPEN, '09:30');
+  assert.equal(MARKET_CLOSE, '15:00');
 });

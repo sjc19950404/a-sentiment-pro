@@ -18,7 +18,54 @@
 import { isTradingDay } from './util.js';
 
 export const MARKET_CLOSE = '15:00'; // 收盘时刻，用于判定「当日是否已收盘」
+export const MARKET_OPEN = '09:30';  // 连续竞价开始（集合竞价 09:15~09:25 不产生有效盘中快照）
 export const PUBLISH_HHMM = '19:30'; // 某交易日数据应已落库的兜底时刻（18:30 首抓 + 1h 余量）
+
+// ── 盘中/盘后相位（与 freshness.state 正交，不可互相替代）──────────────────────
+//
+// 为什么单独要一个 phase：
+//   freshness.state 回答的是「**存档** 是不是最新的已收盘会话」（数据滞后与否）；
+//   phase 回答的是「**现在这个时刻**市场处在什么阶段」。两者语义完全不同，且会同时出现在
+//   同一份页面上——盘中 10:30 时，存档仍是昨天收盘的（若尚未跑盘中快照，state=pending），
+//   但 markets 正在交易、push2ex 涨跌停池与同花顺强势股都**已经有当日数据**。
+//   把两者混成一句话，读者就无法判断「现在看到的是不是实时」。
+//
+// 三态：
+//   pre     交易日开盘前（00:00~09:30）——今日行情尚未产生，页面应显示「昨收」口径
+//   live    交易日盘中（09:30~15:00）——盘中数据可得（快照 cron 每 30 分钟刷），但**分位与因子未重算**
+//   closed  收盘后（15:00~24:00）或非交易日——当日已定盘
+//
+// ⚠ 关键纪律：phase=live 时，页面**必须显著标注「盘中快照，分位/因子为上一收盘值」**。
+//   盘中拿实时涨跌家数去和「按收盘值算的分位」比较，会得出"情绪分突然跳变"的假信号——
+//   这不是数据错，是把两个不同时点的量放进了同一个尺度。故 meta.phase 必须成对携带
+//   meta.phaseNote（口径说明），由前端如实展示。
+export const PHASE_NOTE = {
+  pre: '开盘前：今日行情尚未产生，下方为上一交易日收盘口径',
+  live: '盘中：行情为实时快照，情绪分/分位/因子仍为上一收盘日口径（未重算），不要把实时涨跌家数与收盘分位对比',
+  closed: '收盘后：当日已定盘，各项指标为收盘口径',
+};
+
+/** 北京时区当前相位。非交易日恒为 closed（无盘中概念）。 */
+export function marketPhase(now = new Date(), holidays = []) {
+  const today = bjDate(now);
+  if (!isTradingDay(today, holidays)) return { phase: 'closed', isTradingDay: false, bjDate: today, bjTime: bjTime(now) };
+  const t = bjTime(now);
+  let phase;
+  if (t < MARKET_OPEN) phase = 'pre';
+  else if (t < MARKET_CLOSE) phase = 'live';
+  else phase = 'closed';
+  return { phase, isTradingDay: true, bjDate: today, bjTime: t };
+}
+
+/** 把相位写进 meta（与 applyFreshnessMeta 分开调用，两者互不改写对方字段） */
+export function applyPhaseMeta(meta, now = new Date(), holidays = []) {
+  const p = marketPhase(now, holidays);
+  meta.phase = p.phase;
+  meta.phaseNote = PHASE_NOTE[p.phase];
+  meta.phaseCheckedAt = now.toISOString();
+  meta.phaseTradingDay = p.isTradingDay;
+  return p;
+}
 
 const BJ = 8 * 3600 * 1000;
 
@@ -141,13 +188,18 @@ export function applyFreshnessMeta(meta, tradeDate, now = new Date(), holidays =
 
 /**
  * 判定字段里「有意义」的部分——用于判断是否值得落盘。
- * checkedAt / lastAttempt.at 每次评估都会变，不参与比较，避免产生无意义提交；
+ * checkedAt / lastAttempt.at / phaseCheckedAt 每次评估都会变，不参与比较，避免产生无意义提交；
  * 但 lastAttempt.outcome 参与：让「最近一次没抓成（跳过/失败）」这类信息能真正落盘给页面看，
  * 同时因为只比结果不比时间戳，连续同类结果不会产生重复提交。
+ *
+ * phase 参与比较：相位切换（pre→live→closed）是**页面必须知道**的状态变化，
+ * 不写盘就永远停在旧相位（比如盘中一直显示"收盘后"）。但它一天只变 2~3 次，
+ * 不会像时间戳那样造成提交噪音。
  */
 export function freshnessKey(meta = {}) {
   const f = meta.freshness || {};
   return JSON.stringify([meta.tradeDate, meta.stale, meta.staleReason,
     f.state, f.latestClosed, f.behindSessions, f.publishDeadline,
+    meta.phase ?? null, meta.phaseTradingDay ?? null,
     meta.lastAttempt?.outcome ?? null]);
 }

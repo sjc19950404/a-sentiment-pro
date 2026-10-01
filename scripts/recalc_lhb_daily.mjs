@@ -18,7 +18,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { caliberFromDay, isRangeBoard } from '../src/lhb.js';
+import { caliberFromDay, isRangeBoard, mergeDuplicateRecords, duplicateKeys } from '../src/lhb.js';
 import { recalcAll, enrich } from '../src/pipeline.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -36,8 +36,20 @@ const rows = [];
 for (const day of days) {
   // 1) 原始记录自描述：存量记录没有 is_range，按 reason 现判并写回（此后任何读取都不必再猜）
   for (const l of day.lhb || []) if (l.is_range == null) l.is_range = isRangeBoard(l.reason);
+  // 1b) 同票多榜去重：东财同一次披露里同票多榜且数值常完全相同（2026-08-14 蓝盾光电 300862 两条
+  //     净额都是 37382.3 万）。lhb 原始数组是 picks/paper/lhbfilter/fetch_universe 的共同入口，
+  //     不合并则任何 `reduce(净买)` 都会双算。判据与实现全部走 src/lhb.js（五元组同值）。
+  const rawBefore = Array.isArray(day.lhb) ? day.lhb.length : 0;
+  const rawMerged = mergeDuplicateRecords(day.lhb || []);
+  // 补 is_range 后再合并（mergeDuplicateRecords 的判据依赖它，缺失会被当成 daily 而与区间榜混并）
+  day.lhb = rawMerged;
+  const rawAfter = day.lhb.length;
+  const dups = duplicateKeys(day.lhb);
+  if (dups.length) throw new Error(`${day.trade_date} 合并后仍存在重复记录：${dups.slice(0, 3).join(' | ')}`);
+
   const c = caliberFromDay(day);
   if (!c.total_records) continue;
+  const mergedAway = Math.max(0, rawBefore - rawAfter);
 
   // 2) 聚合行带口径标签 + 全部上榜原因
   day.lhb_aggr = c.all_aggr;
@@ -47,6 +59,8 @@ for (const day of days) {
   const beforeAll = s.lhb_all_net ?? s.net_total_yi ?? null;
   delete s.net_total_yi;                    // 歧义字段名：不带口径后缀，一律清除
   s.lhb_count = c.total_records;
+  s.lhb_raw_count = rawBefore;              // 东财原始披露条数
+  s.lhb_merged_away = mergedAway;           // 被合并掉的同票同值重复条数
   s.lhb_stocks = c.all_stocks;
   s.lhb_all_net = c.all_net_yi;
   s.net_pos = c.all_pos;
@@ -64,7 +78,7 @@ for (const day of days) {
 
   rows.push({
     date: day.trade_date,
-    records: c.total_records, range: c.range_records,
+    records: c.total_records, raw: rawBefore, mergedAway, range: c.range_records,
     allNet: c.all_net_yi, dailyNet: c.daily_net_yi, dailyAmt: c.daily_amt_yi,
     dailyStocks: c.daily_stocks,
     rate: c.daily_amt_yi > 0 ? `${(c.daily_net_yi / c.daily_amt_yi * 100).toFixed(1)}%` : '—',
@@ -80,11 +94,12 @@ if (a.signals) a.signals.momentum = momObj;
 // 4) 全档因子重算（口径：netBuy = 当日榜净额）+ 分位重算
 recalcAll(a.all_days);
 
-console.log('日期         记录  区间  当日只数  当日净额   全量净额   当日成交   净买率   s_net 前→后');
+console.log('日期         原始  合并  记录  区间  当日只数  当日净额   全量净额   当日成交   净买率   s_net 前→后');
 for (const r of rows) {
   const d = a.all_days.find((x) => x.trade_date === r.date);
   const afterFactor = d?.emotion?.factors?.s_net ?? null;
-  console.log(`${r.date}  ${String(r.records).padStart(4)}  ${String(r.range).padStart(4)}  ${String(r.dailyStocks).padStart(8)}  `
+  console.log(`${r.date}  ${String(r.raw).padStart(4)}  ${String(r.mergedAway).padStart(4)}  `
+    + `${String(r.records).padStart(4)}  ${String(r.range).padStart(4)}  ${String(r.dailyStocks).padStart(8)}  `
     + `${nf(r.dailyNet).padStart(8)}  ${nf(r.allNet).padStart(8)}  ${nf(r.dailyAmt).padStart(8)}  ${r.rate.padStart(6)}  `
     + `${nf(r.beforeFactor)}→${nf(afterFactor)}`);
 }
@@ -93,17 +108,21 @@ const changed = a.all_days.filter((d, i) => {
   return b && Math.abs((b.beforeFactor ?? -1) - (d.emotion?.factors?.s_net ?? -2)) > 0.05;
 }).length;
 const nsChanged = a.all_days.filter((d) => d.emotion?.newStock?.adjusted).length;
+const totalMerged = rows.reduce((a, r) => a + r.mergedAway, 0);
 console.log(`\n共 ${rows.length} 天；s_net 因子值发生变化 ${changed} 天`
   + `（口径：含区间累计榜 → 当日榜 → **当日榜且剔除新股**）；`
   + `其中因剔除新股而修正的 ${nsChanged} 天。`);
+console.log(`同票多榜重复披露合并：合计合并掉 ${totalMerged} 条（东财原始 ${rows.reduce((a, r) => a + r.raw, 0)} 条`
+  + ` → 合并后 ${rows.reduce((a, r) => a + r.records, 0)} 条）。`);
 
 if (DRY) { console.log('（--dry：仅预览，未写盘）'); process.exit(0); }
 a.meta = a.meta || {};
 const stamp = new Date().toISOString().slice(0, 10);
 // note 用「；」分隔，所以本条内容不得再含「；」；按迁移标记词去重，重复运行不会堆叠碎片
-const STALE = /龙虎榜双口径全档重算|当日榜净额输入|lhb_daily_\*|lhb_all_net|剔除新股/;
-const entry = '龙虎榜双口径全档重算：当日榜口径写入 lhb_daily_*（权威）、全量口径改名 lhb_all_net（仅诊断）、'
-  + '清除歧义字段 net_total_yi，情绪因子 s_net 改为「当日榜且剔除新股」净额输入'
+const STALE = /龙虎榜双口径全档重算|当日榜净额输入|lhb_daily_\*|lhb_all_net|剔除新股|同票多榜合并/;
+const entry = '龙虎榜双口径全档重算＋同票多榜合并：当日榜口径写入 lhb_daily_*（权威）、全量口径改名 lhb_all_net（仅诊断）、'
+  + '清除歧义字段 net_total_yi；lhb 原始数组按五元组(code+is_range+净额+买+卖)同值合并、reasons 数组化，'
+  + '消灭同票多榜的重复披露（否则下游按 code 求净买会双算）；情绪因子 s_net 改为「当日榜且剔除新股」净额输入'
   + `（新股/无涨跌幅限制标的自动剥离并留痕 emotion.newStock），${rows.length} 天，${stamp}`;
 a.meta.note = [...String(a.meta.note || '').split('；').map((s) => s.trim()).filter(Boolean)
   .filter((s) => !STALE.test(s)), entry].join('；');

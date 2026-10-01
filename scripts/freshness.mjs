@@ -11,7 +11,8 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import config from '../src/config.js';
-import { assessFreshness, applyFreshnessMeta, freshnessKey, bjDate, bjTime, staleReasonText } from '../src/freshness.js';
+import { assessFreshness, applyFreshnessMeta, applyPhaseMeta, marketPhase, PHASE_NOTE,
+  freshnessKey, bjDate, bjTime, staleReasonText } from '../src/freshness.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
@@ -35,15 +36,23 @@ const tradeDate = meta.tradeDate
   || null;
 
 const f = assessFreshness({ tradeDate }, now, config.manualHolidays);
+const ph = marketPhase(now, config.manualHolidays);
 const STATE_TEXT = {
   fresh: '数据为最新已收盘会话',
   pending: '落后 1 个交易日，但预期更新时刻未到（正常等待 18:30 首抓 / 21:00 补抓）',
   behind: '已过预期更新时刻仍然落后（真滞后，需处置）',
   unknown: '存档无交易日信息',
 };
+const PHASE_TEXT = {
+  pre: '开盘前（今日行情尚未产生）',
+  live: '盘中（行情实时可得，但情绪分/分位/因子仍为上一收盘日口径）',
+  closed: '收盘后 / 非交易日（当日已定盘）',
+};
 
 console.log('[freshness] 存档', P);
 console.log('  评估时刻（北京）  ', bjDate(now), bjTime(now));
+console.log('  市场相位 phase    ', ph.phase, '→', PHASE_TEXT[ph.phase] || '', ph.isTradingDay ? '(交易日)' : '(非交易日)');
+console.log('  相位口径说明      ', PHASE_NOTE[ph.phase] || '');
 console.log('  存档交易日        ', tradeDate ?? '(无)');
 console.log('  最近已收盘交易日  ', f.latestClosed ?? '(无)');
 console.log('  落后交易日数      ', f.behindSessions);
@@ -63,11 +72,12 @@ if (WRITE) {
     outcome: 'freshness-cli',
     reason: 'scripts/freshness.mjs --write 重算判定',
   });
+  applyPhaseMeta(meta, now, config.manualHolidays);
   if (freshnessKey(meta) === before) {
     console.log('[freshness] 判定字段无实质变化，未写入');
   } else {
     writeFileSync(P, JSON.stringify(a, null, 2), 'utf8');
-    console.log('[freshness] 已写回判定字段 →', nf.state, '| stale =', nf.stale,
+    console.log('[freshness] 已写回判定字段 →', nf.state, '| phase =', meta.phase, '| stale =', nf.stale,
       staleReasonText(nf) ? '| ' + staleReasonText(nf) : '');
   }
 }

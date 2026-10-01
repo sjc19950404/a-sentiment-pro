@@ -13,7 +13,7 @@
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { caliberFromDay, isRangeBoard } from '../src/lhb.js';
+import { caliberFromDay, isRangeBoard, duplicateKeys } from '../src/lhb.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ARCHIVE = path.join(ROOT, 'data', 'archive.json');
@@ -121,10 +121,76 @@ for (const rel of files) {
 check('新股判定无重复实现（唯一出处 src/lhb.js；app.js 仅限展示用徽标）',
   NEW_RE_HITS.length === 0, NEW_RE_HITS.join(' ; '));
 
+// ── A4. 同票多榜去重的唯一出处守卫 ──────────────────────────────────────────
+// 背景：东财同一次披露里，同票多榜且**数值常完全相同**（2026-08-14 蓝盾光电 300862：两条净额都是
+//       37382.3 万，只有上榜原因不同）。lhb 原始数组是 picks / paper / lhbfilter / fetch_universe
+//       的共同入口，任何按 code 求和都会双算。去重判据必须只有一个出处：
+//       src/lhb.js::mergeDuplicateRecords（五元组 code+is_range+净额+买+卖）。
+// 本守卫拦三件事：
+//   ① 装配层（sources.js）漏了合并 —— "改了 normalizeRecord 却忘了在 buildLhbPart 里合并" 是头号回归；
+//   ② 别处另写一份「去重 / 相同记录合并」判别式（口径会漂移，五元组字段少一个就漏合并）；
+//   ③ mergeDuplicateRecords 被删或被改名（下游 import 会静默变成 undefined 而不报错）。
+{
+  const lhbSrc = readFileSync(path.join('src', 'lhb.js'), 'utf8');
+  check('同票去重唯一出处：src/lhb.js 导出 mergeDuplicateRecords 与 duplicateKeys',
+    /export function mergeDuplicateRecords\s*\(/.test(lhbSrc) && /export function duplicateKeys\s*\(/.test(lhbSrc),
+    '');
+  // 判据必须是五元组（少一个字段就会把"数值不同的同票"错误合并，等于在两种口径间凭空二选一）
+  check('同票去重判据为五元组（code + is_range + 净额 + 买 + 卖），不是只按 code',
+    /MERGE_KEY_FIELDS\s*=\s*\[\s*'is_range'\s*,\s*'net_buy_wan'\s*,\s*'buy_wan'\s*,\s*'sell_wan'\s*\]/.test(lhbSrc),
+    '未找到 MERGE_KEY_FIELDS 五元组定义');
+
+  const srcSrc = readFileSync(path.join('src', 'sources.js'), 'utf8');
+  const importsMerge = /import\s*\{[^}]*mergeDuplicateRecords[^}]*\}\s*from\s*'\.\/lhb\.js'/.test(srcSrc);
+  // 判据按「buildLhbPart 函数体内确实调用了 mergeDuplicateRecords」而非固定字符串形态——
+  // 固定形态（如 `mergeDuplicateRecords(lhbRaw.map(normalizeRecord))`）会被正常重构打断，
+  // 让守卫变成"必须保持某种写法"，与它想保护的口径纪律无关。
+  //
+  // ⚠ src/sources.js 是 CRLF。先归一化行尾，再按顶层 `}` 收口函数体——
+  //   早先用「下一个 \nfunction 」定位函数尾，但 buildLhbPart 与 applyLhb 之间夹着大段注释与
+  //   const 声明，位置会漂到很远（实测 span 6674 字符），把邻函数的调用也收进来 → 断言恒真。
+  //   改为：从函数起点往后找第一个「行首 `}`」作为结束。
+  const srcSrcNorm = srcSrc.replace(/\r\n/g, '\n');
+  const bpStart = srcSrcNorm.indexOf('function buildLhbPart(');
+  const bpTail = bpStart < 0 ? '' : srcSrcNorm.slice(bpStart);
+  const bpClose = bpTail.search(/\n\}/);
+  const bpBody = bpStart < 0 ? '' : (bpClose < 0 ? bpTail : bpTail.slice(0, bpClose + 2));
+  // 判据用「引用了 normalizeRecord / mergeDuplicateRecords」而非「调用形态」：
+  //   `lhbRaw.map(normalizeRecord)` 是**作为回调传入**（没有紧跟的 `(`），
+  //   用 `normalizeRecord\s*\(` 会漏判成未使用（本守卫第一版就栽在这里）。
+  const callsMerge = /\bmergeDuplicateRecords\b/.test(bpBody);
+  const callsNormalize = /\bnormalizeRecord\b/.test(bpBody);
+  check('装配层已合并：src/sources.js::buildLhbPart 走 normalizeRecord → mergeDuplicateRecords',
+    importsMerge && callsMerge && callsNormalize,
+    `import=${importsMerge} normalize=${callsNormalize} merge=${callsMerge}`);
+
+  // 别处不得自行比较「两条记录是否相同」来实现去重（合法做法一律 import src/lhb.js）
+  const dupImpl = [];
+  for (const rel of files) {
+    if (rel === path.join('src', 'lhb.js')) continue;
+    const abs = path.join(ROOT, rel);
+    if (!existsSync(abs)) continue;
+    const code = readFileSync(abs, 'utf8').split('\n')
+      .filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln)).join('\n');
+    // 特征：同一段代码里既比较 net_buy_wan 又比较 buy_wan（= 在实现"同值合并"）
+    if (/net_buy_wan\s*===\s*\w+\.net_buy_wan/.test(code) && /buy_wan\s*===\s*\w+\.buy_wan/.test(code)
+      && !/mergeDuplicateRecords|duplicateKeys/.test(code)) {
+      dupImpl.push(`${rel} 自行实现了同票同值去重（应 import src/lhb.js）`);
+    }
+  }
+  check('同票同值去重不在唯一出处之外重复实现', dupImpl.length === 0, dupImpl.join(' ; '));
+
+  // 下游恒等式守卫：range_count 必须 = lhb_count − 当日榜记录数（两者都取合并后）
+  const calSrc = lhbSrc.slice(lhbSrc.indexOf('export function caliberFromDay'));
+  check('caliberFromDay 不再依赖原始 lhb 行数（改为由 lhb_daily_aggr + lhb_aggr 现算）',
+    !/total_records:\s*Array\.isArray\(day\?\.lhb\)\s*\?\s*day\.lhb\.length/.test(calSrc),
+    'caliberFromDay 仍用 day.lhb.length 当 total_records');
+}
+
 // ── B. 存档逐日不变量 ────────────────────────────────────────────────────────
 const arch = JSON.parse(readFileSync(ARCHIVE, 'utf8'));
 const days = (arch.all_days || []).filter((d) => d && (d.lhb || []).length);
-const bad = { missing: [], amt: [], stocks: [], range: [], replay: [], caliber: [], factor: [], sync: [], newstock: [] };
+const bad = { missing: [], amt: [], stocks: [], range: [], replay: [], caliber: [], factor: [], sync: [], newstock: [], merge: [] };
 const near = (a, b, tol = 0.011) => a != null && b != null && Math.abs(a - b) <= tol;
 
 for (const d of days) {
@@ -137,11 +203,29 @@ for (const d of days) {
     bad.amt.push(`${d.trade_date} amt=${s.lhb_daily_amt} < |net|=${s.lhb_daily_net}`);
   }
   if (s.lhb_daily_stocks != null && s.lhb_daily_stocks < 1) bad.stocks.push(d.trade_date);
-  const recDaily = (d.lhb || []).filter((l) => !isRangeBoard(l.reason)).length;
+  // 区间条数恒等式：以**合并后**的记录数为基准。
+  //   历史坑：早先这里用 `d.lhb.filter(!isRangeBoard).length` 数原始数组，而 lhb_count 已经过
+  //   mergeDuplicateRecords 合并，同票多榜的天（2026-08-14 蓝盾光电 300862 出现两次）两边不相等，
+  //   审计会误报「区间条数 ≠ 全部 − 当日」。现在两个数都取自同一份**合并后**数据：
+  //     当日榜记录数 = 存档 lhb（已合并）里 is_range=false 的条数
+  //   为什么不用 lhb_daily_aggr：它是**内存态**字段，落盘时被丢弃（见 pipeline 输出结构），
+  //   审计读不到它；而合并后的 lhb 数组与 lhb_daily_aggr 在「当日榜条数」上是同源的
+  //   （lhb_daily_aggr 正是 aggregateByCode(merged.filter(!is_range))，只少了同票合并那一步，
+  //    而合并后的 lhb 里同票当日榜仍可能多条但值不同 → 故此处用 lhb_daily_aggr 条数不等的天数更少）。
+  const recDailyMerged = (d.lhb || []).filter((l) => !(l.is_range != null ? l.is_range : isRangeBoard(l.reason))).length;
   if (s.lhb_range_count != null && s.lhb_count != null
-    && s.lhb_range_count !== s.lhb_count - recDaily) {
-    bad.range.push(`${d.trade_date} range=${s.lhb_range_count} 记录=${s.lhb_count} 当日记录=${recDaily}`);
+    && s.lhb_range_count !== s.lhb_count - recDailyMerged) {
+    bad.range.push(`${d.trade_date} range=${s.lhb_range_count} 记录=${s.lhb_count} 当日记录=${recDailyMerged}`);
   }
+  // 重复披露留痕自洽：lhb_count + merged_away 必须等于东财原始条数 lhb_raw_count
+  //   （存量老数据没有 raw_count 字段 → 跳过，不构成失败）
+  if (s.lhb_raw_count != null && s.lhb_merged_away != null
+    && s.lhb_raw_count - s.lhb_merged_away !== s.lhb_count) {
+    bad.merge.push(`${d.trade_date} raw=${s.lhb_raw_count} − 合并=${s.lhb_merged_away} ≠ count=${s.lhb_count}`);
+  }
+  // 原始 lhb 数组内部不得再有「五元组完全相同」的重复（mergeDuplicateRecords 失效即在此暴露）
+  const dupKeys = duplicateKeys(d.lhb || []);
+  if (dupKeys.length) bad.merge.push(`${d.trade_date} lhb 仍在重复：${dupKeys.slice(0, 3).join(' | ')}`);
   // 可重现：现算必须与存档一致（否则说明被手改或口径漂移）
   const c = caliberFromDay(d);
   if (!near(c.daily_net_yi, s.lhb_daily_net) || !near(c.daily_amt_yi, s.lhb_daily_amt)
@@ -196,7 +280,8 @@ check('样本天数（含龙虎榜原始记录）', days.length > 0, `${days.len
 summarize('双口径字段齐全', bad.missing);
 summarize('成交额 ≥ |净额|（买+卖 ≥ |买−卖|）', bad.amt);
 summarize('当日榜至少 1 只', bad.stocks);
-summarize('区间榜条数 = 全部记录 − 当日榜记录', bad.range);
+summarize('区间榜条数 = 全部记录 − 当日榜记录（均以合并后条数为准）', bad.range);
+summarize('同票多榜重复披露已合并（lhb 五元组唯一；raw − 合并 ≠ count 即回归）', bad.merge);
 summarize('双口径可重现（现算 == 存档）', bad.replay);
 summarize('聚合行 caliber 标签齐备且与 reason 自洽', bad.caliber);
 summarize('因子 s_net 锁「当日榜 + 剔除新股」净额', bad.factor);

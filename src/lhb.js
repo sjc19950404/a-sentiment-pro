@@ -89,12 +89,20 @@ const r1 = (v) => Math.round(v * 10) / 10;
 const r2 = (v) => Math.round(v * 100) / 100;
 
 // 规范化一条原始记录（东财字段 → 内部字段）。is_range / caliber 在此定死，下游不再自行判断。
+//
+// reasons 数组化（而不是只留一个 reason 字符串）：
+//   东财同一次披露里，**同一只票会因多个上榜标准各出一条记录**，且这两条的数值往往**完全相同**
+//   （2026-08-14 蓝盾光电 300862：出现两次，"日涨幅达到15%的前5只证券" 与 "日换手率达到30%的前5只证券"，
+//    net=37382.3 / buy=69254.9 / sell=31872.6 逐字段一致）。下游任何按 code 求和都会双算。
+//   判定必须看全部上榜原因：新股识别（NEW_STOCK_RE）就依赖它——同票可能一条是普通榜、一条是
+//   "无价格涨跌幅限制的证券"，只留代表那条会漏判。
 export function normalizeRecord(x) {
   const reason = x.EXPLANATION || '—';
   return {
     code: x.SECURITY_CODE,
     name: x.SECURITY_NAME_ABBR,
     reason,
+    reasons: [reason],
     close: x.CLOSE_PRICE,
     change_pct: r2(x.CHANGE_RATE || 0),
     net_buy_wan: r1((x.BILLBOARD_NET_AMT || 0) / 1e4),
@@ -107,17 +115,82 @@ export function normalizeRecord(x) {
   };
 }
 
+// ── 同口径同值合并（唯一实现）────────────────────────────────────────────────
+//
+// 为什么必须做：东财「一次披露」里同票多榜是常态，且**数值常常一模一样**。这些记录不是"区间累计"，
+// 就是同一天的同一笔钱被两个上榜标准各记了一次。直接落进 lhb 数组，下游任何 `reduce(净买)`
+// 都会把同一只票算两遍——而 lhb 原始数组正是 picks / paper / lhbfilter / fetch_universe 的入口。
+//
+// 合并判据是「**五元组完全相同**」而不是「code 相同」：
+//   (code, is_range, net_buy_wan, buy_wan, sell_wan)
+//   为什么不能只按 code：同一只票可能**同时**上当日榜与区间累计榜，两者数值本就不同、口径也不同
+//   （2026-08-14 中际联合 603118：区间榜 net=22850.6 / 当日榜 net=7894.4）。
+//   把它们合并成一个数，等于凭空在「当日值」与「三日累计值」之间二选一，两边都错。
+//
+// 为什么用「五元组同值」而不是更粗的 (code, is_range)：
+//   同一只票在同一口径下**确实**可能出现两条数值不同的记录（东财按上榜标准分别披露）。
+//   那种情形下"该求和还是该取代表"没有唯一正确答案，故**一律保持原样、不合并**，
+//   由下游（aggregateByCode 取 |净额| 最大者为代表）统一处置——合并层的职责只有一件事：
+//   **消灭逐字段完全相同的重复**，不替下游做口径决策。
+//
+// 合并结果：reasons 数组化为全部上榜原因（去重、保持首次出现顺序），
+//   reason 保留第一条（与 is_range 判定同源，不会出现"诱因为区间榜、数值是当日值"的错配——
+//   因为参与合并的记录 is_range 必然相同）。
+export const MERGE_KEY_FIELDS = ['is_range', 'net_buy_wan', 'buy_wan', 'sell_wan'];
+
+function mergeKeyOf(l) {
+  return [l.code, ...MERGE_KEY_FIELDS.map((f) => (f === 'is_range' ? (l.is_range ? 1 : 0) : l[f]))].join('\u0001');
+}
+
+export function mergeDuplicateRecords(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  const byKey = new Map();
+  const out = [];
+  for (const l of list) {
+    if (!l || !l.code) continue;
+    const rs = Array.isArray(l.reasons) && l.reasons.length ? l.reasons : (l.reason ? [l.reason] : []);
+    const key = mergeKeyOf(l);
+    const prev = byKey.get(key);
+    if (!prev) {
+      const rec = { ...l, reason: l.reason ?? (rs[0] || '—'), reasons: [...new Set(rs)] };
+      byKey.set(key, rec);
+      out.push(rec);
+      continue;
+    }
+    // 重复条目：只并入上榜原因，数值/诱因代表一律不动（同值，动了反而制造差异）
+    for (const r of rs) if (r && !prev.reasons.includes(r)) prev.reasons.push(r);
+  }
+  return out;
+}
+
+// 供守卫与测试使用：合并后的记录必须满足「五元组唯一」——重复即说明合并层失效。
+export function duplicateKeys(rows) {
+  const seen = new Set(); const dup = [];
+  for (const l of Array.isArray(rows) ? rows : []) {
+    if (!l || !l.code) continue;
+    const k = mergeKeyOf(l);
+    if (seen.has(k)) dup.push(k.split('\u0001').join('/'));
+    seen.add(k);
+  }
+  return dup;
+}
+
 // 同票多榜（同一只票因不同上榜原因出现多条）→ 每股一笔，取 |净额| 最大的那条为代表。
 // 同时记录该笔来自哪类榜单（caliber），供 UI 标注「区间」，避免把区间累计值当日度值读。
+//
+// 前置假设：入参**已经过 mergeDuplicateRecords**（逐字段完全相同的重复已消失）。
+// 因此这里剩下的"同票多条"必然数值不同，`reasons` 只需并集、不需要再判重合并。
+// 仍然对 reasons 做兜底初始化，允许调用方直接喂未经合并的原始记录（测试与存量重算路径）。
 export function aggregateByCode(rows) {
   const byCode = new Map();
   for (const l of rows) {
+    const rs = Array.isArray(l.reasons) && l.reasons.length ? l.reasons : [l.reason];
     const prev = byCode.get(l.code);
     if (!prev) {
-      byCode.set(l.code, { ...l, reasons: [l.reason], caliber: l.is_range ? 'range' : 'daily' });
+      byCode.set(l.code, { ...l, reasons: [...new Set(rs)], caliber: l.is_range ? 'range' : 'daily' });
       continue;
     }
-    if (!prev.reasons.includes(l.reason)) prev.reasons.push(l.reason);
+    for (const r of rs) if (r && !prev.reasons.includes(r)) prev.reasons.push(r);
     if (Math.abs(l.net_buy_wan || 0) > Math.abs(prev.net_buy_wan || 0)) {
       // 换代表：reason / 买卖额 / 净额 / 榜单类型一起替换，保证「显示的诱因」与「显示的数值」同源。
       // 早先只换了数值没换 reason，会出现「诱因写着日涨幅偏离7%，数值却是连续3日累计」的错配。
@@ -143,9 +216,15 @@ const dealOf = (l) => (l.deal_wan != null ? l.deal_wan : (l.buy_wan || 0) + (l.s
 // 双口径汇总（唯一实现）。返回的字段一律带口径后缀，调用方无法含糊其辞。
 //   daily.* —— 当日榜：权威口径，用于日度因子 / 净买率 / 新股扰动
 //   all.*   —— 全量（含区间累计榜）：只做单列诊断与「上榜个股数」这类外部可核对的家数统计
+//
+// 入参约定：records 既可以是**原始记录**（未合并），也可以是 mergeDuplicateRecords 的产物。
+// 为杜绝"调用方忘了合并"导致的静默双算，本函数**自己先合并一遍**（幂等：已合并的再合并是恒等变换），
+// 并把合并前后的条数一并返回（raw_records / merged_records / merged_away），供审计与报告留痕。
 export function summarizeCalibers(records) {
-  const daily = records.filter((l) => !l.is_range);
-  const allAggr = aggregateByCode(records);
+  const raw = Array.isArray(records) ? records : [];
+  const merged = mergeDuplicateRecords(raw);
+  const daily = merged.filter((l) => !l.is_range);
+  const allAggr = aggregateByCode(merged);
   const dailyAggr = aggregateByCode(daily);
   const seg = splitNewStockNet(dailyAggr);
   return {
@@ -169,8 +248,13 @@ export function summarizeCalibers(records) {
     all_neg: allAggr.filter((l) => l.net_buy_wan < 0).length,
     all_aggr: allAggr,
     // 口径元信息
-    total_records: records.length,
-    range_records: records.length - daily.length,
+    //   total_records / range_records 一律以**合并后**为准：合并前东财会因「同票多榜」重复披露，
+    //   用原始条数会让 `区间条数 = 全部 − 当日` 这条恒等式在重复票上失配（历史审计因此报错）。
+    total_records: merged.length,
+    raw_records: raw.length,
+    merged_records: merged.length,
+    merged_away: raw.length - merged.length,
+    range_records: merged.length - daily.length,
   };
 }
 
@@ -181,6 +265,11 @@ export function caliberFromDay(day) {
   //    直接喂 splitNewStockNet，不再二次 aggregateByCode —— 它是聚合产物，不是原始记录。
   if (Array.isArray(day?.lhb_daily_aggr) && day.lhb_daily_aggr.length) {
     const rows = day.lhb_daily_aggr;
+    const aggr = Array.isArray(day?.lhb_aggr) ? day.lhb_aggr : rows;
+    // 条数一律现算：lhb_daily_aggr + lhb_aggr 已是**合并去重后的聚合产物**，
+    // 两者条数之和恰好等于「合并后记录数」（每只票在每类口径下必有一条代表）。
+    // 早先用 `day.lhb.length`（原始数组长度）会让 `区间条数 = 全部 − 当日` 在「同票多榜」上失配。
+    const totalRec = rows.length + aggr.length;
     const seg = splitNewStockNet(rows);
     const dailyNet = r2(sumOf(rows, (l) => l.net_buy_wan) / 1e4);
     return {
@@ -194,20 +283,24 @@ export function caliberFromDay(day) {
       daily_new_ratio: seg.ratio,
       daily_new_stocks: seg.new_stocks,
       daily_new_count: seg.new_count,
-      all_stocks: Array.isArray(day?.lhb_aggr) ? day.lhb_aggr.length : rows.length,
+      all_stocks: aggr.length,
       all_net_yi: ((day?.summary || {}).lhb_all_net != null) ? day.summary.lhb_all_net
-        : r2(sumOf(Array.isArray(day?.lhb_aggr) ? day.lhb_aggr : rows, (l) => l.net_buy_wan) / 1e4),
+        : r2(sumOf(aggr, (l) => l.net_buy_wan) / 1e4),
       all_pos: ((day?.summary || {}).net_pos != null) ? day.summary.net_pos : null,
       all_neg: ((day?.summary || {}).net_neg != null) ? day.summary.net_neg : null,
-      all_aggr: Array.isArray(day?.lhb_aggr) ? day.lhb_aggr : rows,
-      total_records: Array.isArray(day?.lhb) ? day.lhb.length : rows.length,
-      range_records: Array.isArray(day?.summary) ? 0 : 0,
+      all_aggr: aggr,
+      total_records: totalRec,
+      raw_records: totalRec,
+      merged_records: totalRec,
+      merged_away: 0,
+      range_records: aggr.length - rows.length,
     };
   }
   const rows = Array.isArray(day?.lhb) ? day.lhb : [];
   if (rows.length) {
     const norm = rows.map((l) => ({
       ...l,
+      reasons: Array.isArray(l.reasons) && l.reasons.length ? l.reasons : (l.reason ? [l.reason] : []),
       is_range: l.is_range != null ? l.is_range : isRangeBoard(l.reason),
     }));
     return summarizeCalibers(norm);
@@ -216,6 +309,7 @@ export function caliberFromDay(day) {
   const aggr = Array.isArray(day?.lhb_aggr) ? day.lhb_aggr : [];
   const norm = aggr.map((l) => ({
     ...l,
+    reasons: Array.isArray(l.reasons) && l.reasons.length ? l.reasons : (l.reason ? [l.reason] : []),
     is_range: l.is_range != null ? l.is_range : isRangeBoard(l.reason),
   }));
   return summarizeCalibers(norm);

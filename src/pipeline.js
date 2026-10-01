@@ -9,7 +9,7 @@ import { validateArchive } from './validate.js';
 import { fetchLive, recalcRanks, LhbNotPublishedError, applyLhb, fetchLhb, fetchSeats } from './sources.js';
 import { caliberFromDay, dailyRowsOf } from './lhb.js';
 import { todayBeijing, isTradingDay } from './util.js';
-import { applyFreshnessMeta, freshnessKey } from './freshness.js';
+import { applyFreshnessMeta, applyPhaseMeta, freshnessKey } from './freshness.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -130,6 +130,10 @@ export function recalcAll(days) {
     const c = caliberFromDay(d);
     if (c.total_records) {
       s.lhb_count = c.total_records;
+      // 重复披露留痕：raw_records 为东财原始条数，merged_away 为被合并掉的同票同值重复条数。
+      // 存量老数据还没这两个字段 → 只在现算能给出时写入，避免把历史天伪造出 0。
+      if (c.raw_records != null) s.lhb_raw_count = c.raw_records;
+      if (c.merged_away != null) s.lhb_merged_away = c.merged_away;
       s.lhb_stocks = c.all_stocks;
       s.lhb_all_net = c.all_net_yi;
       s.net_pos = c.all_pos;
@@ -361,6 +365,10 @@ export async function main() {
 // 把新鲜度判定写进 meta（成功/回退/跳过三条路径统一口径）。
 // stale 不再表示「上次尝试失败」，而是「存档交易日落后于最近已收盘交易日且已过预期更新时刻」，
 // 由 assessFreshness 按交易日历算；抓取是否成功另记于 meta.lastAttempt。
+//
+// 相位（phase）与新鲜度（state）正交，必须一起写：前者说「现在市场在什么阶段」，
+// 后者说「存档是不是最新已收盘会话」。盘中跑快照时 phase=live 而 state 仍指上一收盘日——
+// 两者同时出现才是准确的，缺一个读者就会误读「实时数据 vs 收盘分位」。
 function applyFreshness(archive, now, attempt) {
   archive.meta = archive.meta || {};
   const tradeDate = archive.meta.tradeDate
@@ -368,6 +376,7 @@ function applyFreshness(archive, now, attempt) {
     || (archive.all_days || []).slice(-1)[0]?.trade_date
     || null;
   applyFreshnessMeta(archive.meta, tradeDate, now, config.manualHolidays, attempt);
+  applyPhaseMeta(archive.meta, now, config.manualHolidays);
   return archive;
 }
 

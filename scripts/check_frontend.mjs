@@ -3,7 +3,7 @@
 // 依赖 jsdom（非仓库依赖，CI 不跑本脚本）：
 //   npm i -g jsdom 或在任意 node_modules 下有 jsdom；缺失时脚本自动跳过并以 0 退出。
 // 用法：node scripts/check_frontend.mjs [--root .]
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createRequire } from 'node:module';
 // 口径唯一出处：新股判定与净买分离一律走 src/lhb.js，本脚本不自行实现（口径守卫会拦）
@@ -206,6 +206,110 @@ if (s0.lhb_daily_amt > 0 && s0.lhb_daily_net != null) {
 }
 check('研判报告·因子分解已降级（标注不参与档位判定）',
   brief.includes('因子分解') && brief.includes('不参与档位判定'), '');
+
+// ── 同票多榜合并：原始 lhb 不得残留「五元组完全相同」的重复 ──────────────────
+// 事故形态：东财一次披露里同票多榜、数值完全相同（2026-08-14 蓝盾光电 300862 两条净额都是
+// 37382.3 万），下游任何按 code 求净买都会双算。合并后 reasons 应数组化保留全部上榜原因。
+// 判据在页面侧独立复算（不调引擎），确保「存档里的数」与「页面读到的数」一致。
+{
+  const dupKey = (l) => [l.code, l.is_range ? 1 : 0, l.net_buy_wan, l.buy_wan, l.sell_wan].join('|');
+  let dupTotal = 0, mergedDays = 0, reasonsOk = 0, reasonsBad = 0;
+  for (const d of arcAll.all_days || []) {
+    const rows = Array.isArray(d.lhb) ? d.lhb : [];
+    if (!rows.length) continue;
+    const seen = new Set();
+    for (const l of rows) { const k = dupKey(l); if (seen.has(k)) dupTotal++; seen.add(k); }
+    const s = d.summary || {};
+    if ((s.lhb_merged_away || 0) > 0) mergedDays++;
+    // reasons 必须齐备：有 reason 就该有等价的 reasons 数组
+    for (const l of rows) {
+      if (Array.isArray(l.reasons) && l.reasons.length && l.reasons.includes(l.reason)) reasonsOk++;
+      else reasonsBad++;
+    }
+  }
+  check('数据：龙虎榜原始数组无「同票同口径逐字段相同」的重复（否则下游按 code 求净买会双算）',
+    dupTotal === 0, `残留重复 ${dupTotal} 条`);
+  check('数据：reasons 数组化且与原 reason 自洽（同票多榜的上榜原因全部留痕）',
+    reasonsBad === 0, reasonsOk > 0 ? `ok=${reasonsOk} bad=${reasonsBad}` : '未找到带 reasons 的记录');
+  check('数据：重复合并留痕（lhb_merged_away / lhb_raw_count）与条数自洽',
+    (arcAll.all_days || []).every((d) => {
+      const s = d.summary || {};
+      if (s.lhb_raw_count == null || s.lhb_merged_away == null) return true;
+      return s.lhb_raw_count - s.lhb_merged_away === s.lhb_count;
+    }),
+    `存在 ${mergedDays} 天发生过合并（留痕已核对）`);
+}
+
+// ── 市场相位：meta.phase 必须在页面上显著标注 ───────────────────────────────
+// 相位与新鲜度正交：盘中（live）时行情实时可得，但情绪分/分位/因子仍是上一收盘日口径。
+// 不标注读者就会拿实时涨跌家数去对收盘分位，误判为「情绪分突然跳变」。
+{
+  const m0 = arcAll.meta || {};
+  check('数据：meta.phase 三态合法且带口径说明',
+    ['pre', 'live', 'closed'].includes(m0.phase) && typeof m0.phaseNote === 'string' && m0.phaseNote.length > 10,
+    `phase=${m0.phase}`);
+  // 页面必须能渲染盘中相位提示（源码守卫：相位分支存在且用引擎下发的 phaseNote，不自行措辞）
+  const appSrc = readFileSync(join(ROOT, 'app.js'), 'utf8');
+  check('页面：盘中相位有显著提示，且文案取自引擎 meta.phaseNote（前端不自行措辞）',
+    /phase === 'live'/.test(appSrc) && /meta\.phaseNote/.test(appSrc)
+    && /alert\.phase-live|phase-live/.test(appSrc),
+    '');
+  check('页面：顶部来源标签区分「LIVE / LIVE·盘中 / PRE / STALE」',
+    /LIVE · 盘中/.test(appSrc) && /'PRE'/.test(appSrc) && /'STALE'/.test(appSrc), '');
+  check('样式：盘中相位用非告警配色（盘中是正常状态，不是故障）',
+    /\.alert\.phase-live/.test(readFileSync(join(ROOT, 'style.css'), 'utf8')), '');
+}
+
+// ── 盘中快照：独立数据文件 + 独立 CI job，绝不触碰收盘存档 ────────────────────
+// 口径纪律：intraday.json 里的量是盘中实时值、未定盘；情绪分/分位/因子按收盘值算。
+// 两者不同尺度——快照的存在意义是"看现在"，不是"改打分"。故：
+//   ① 卡内必须标注抓取时刻与"不参与打分"；
+//   ② 相位非 live 时整卡隐藏（收盘后显示会让人误读，缺失也不能显示 0）；
+//   ③ CI 必须有独立的盘中 job，且该 job 不得提交 archive.json。
+{
+  const idoc = await (async () => {
+    try {
+      const p = join(ROOT, 'data', 'intraday.json');
+      if (!existsSync(p)) return null;
+      return JSON.parse(readFileSync(p, 'utf8'));
+    } catch { return null; }
+  })();
+  if (idoc) {
+    check('数据：盘中快照自带口径说明与抓取时刻（kind=intraday，可据此区分收盘口径）',
+      idoc.kind === 'intraday' && typeof idoc.caliberNote === 'string' && idoc.caliberNote.length > 20
+      && !!idoc.capturedAtBJ,
+      `kind=${idoc.kind} at=${idoc.capturedAtBJ}`);
+    check('数据：盘中快照不冒充收盘口径（不得含情绪分/分位字段）',
+      !('emotion' in idoc) && !('factors' in idoc) && !('pct_rank' in idoc),
+      '快照里出现了打分字段，盘中值会污染分位');
+  } else {
+    check('数据：盘中快照文件（本次运行环境未产出，跳过内容断言）', true, 'data/intraday.json 不存在');
+  }
+  const appSrc3 = readFileSync(join(ROOT, 'app.js'), 'utf8');
+  check('页面：盘中快照卡仅在 phase=live 且有文件时显示（缺失不显示 0，避免误读成「涨停 0 家」）',
+    /function loadIntraday\(/.test(appSrc3) && /phase !== 'live'[\s\S]{0,40}card\.hidden = true/.test(appSrc3),
+    '');
+  check('页面：盘中快照卡显著标注「未定盘 / 不参与打分 / 分位未重算」',
+    /未定盘/.test(appSrc3) && /不参与情绪因子与分位/.test(appSrc3) && /未重算/.test(appSrc3), '');
+  check('样式：盘中快照卡有独立强调样式（与收盘口径卡片可区分）',
+    /\.card\.intraday/.test(readFileSync(join(ROOT, 'style.css'), 'utf8')), '');
+
+  // CI 分离守卫：盘中 job 必须存在，且**只**提交 intraday.json
+  const wf = readFileSync(join(ROOT, '.github', 'workflows', 'daily.yml'), 'utf8');
+  const hasIntradayJob = /^\s{2}intraday:/m.test(wf);
+  check('CI：盘中快照独立成 job（不跑管道、不重算分位）', hasIntradayJob, '');
+  if (hasIntradayJob) {
+    const jobBody = wf.slice(wf.indexOf('\n  intraday:'));
+    const addsArchive = /git add[^\n]*archive\.json/.test(jobBody);
+    check('CI：盘中 job 绝不提交 archive.json（盘中值不得进入收盘存档）',
+      !addsArchive, addsArchive ? '盘中 job 提交了 archive.json' : '');
+    check('CI：盘中 job 有独立 cron（每 30 分钟，仅工作日）',
+      /cron:\s*'0,30 1-7 \* \* 1-5'/.test(wf), '');
+    // 盘后 job 必须排除该 cron，否则盘中会触发完整管道
+    check('CI：盘后 job 显式排除盘中 cron（否则每 30 分钟跑一次完整管道）',
+      /github\.event\.schedule != '0,30 1-7 \* \* 1-5'/.test(wf), '');
+  }
+}
 
 // ── 口径纪律：两套净额（当日榜 lhb_daily_net / 全量 lhb_all_net）绝不能混用 ──
 // 事故形态：同一句话里净买率用当日榜、滚动净买却用全量；新股扰动用「当日榜分子 ÷ 全量分母」。
