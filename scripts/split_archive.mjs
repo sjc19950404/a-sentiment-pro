@@ -17,6 +17,7 @@ import { healthReport } from '../src/health.js';
 import { assessFreshness } from '../src/freshness.js';
 import { resolveHolidays } from '../src/calendar.js';
 import { buildSeatSeries, seatSeriesSummary, seatVerdict } from '../src/seats_daily.js';
+import { buildBreadthSeries, breadthSeriesSummary } from '../src/breadth.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
@@ -63,6 +64,25 @@ const signals = buildSignals(packed, {
       const p = join(DATA, 'pain-latest.json');
       if (!existsSync(p)) return null;
       return JSON.parse(readFileSync(p, 'utf8'));
+    } catch { return null; }
+  },
+  // 市场宽度（#3）：与 pipeline.writeShards **同源同形态**——同一批 buildBreadthSeries/
+  //   breadthSeriesSummary，读同一份 breadth-latest/daily.json。
+  //   两条路径若有一处漏注入，--check 的一致性校验就会发现（signals 段不同）。
+  breadthFn: () => {
+    try {
+      const p = join(DATA, 'breadth-latest.json');
+      if (!existsSync(p)) return null;
+      const snapshot = JSON.parse(readFileSync(p, 'utf8'));
+      let series = [];
+      let summary = null;
+      const dp = join(DATA, 'breadth-daily.json');
+      if (existsSync(dp)) {
+        const daily = JSON.parse(readFileSync(dp, 'utf8'));
+        series = buildBreadthSeries(daily.rows || []);
+        summary = breadthSeriesSummary(series, { totalDays: (packed.all_days || []).length });
+      }
+      return { snapshot, series, summary, verdict: snapshot.verdict || null };
     } catch { return null; }
   },
 });

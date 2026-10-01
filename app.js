@@ -1746,6 +1746,9 @@ let HEALTH = null;
 //   为 null 表示"未生成/未加载"（≠"没有资金分歧"），渲染层须显式区分。
 let SEATS = null;
 let PAIN = null;
+// 多维市场宽度（#3）：同样来自 signals-latest.json。为 null 表示"未生成/未加载"
+//   （≠"宽度均衡"）——渲染层须显式区分。
+let BREADTH = null;
 
 async function loadHealth() {
   try {
@@ -1760,6 +1763,9 @@ async function loadHealth() {
     PAIN = s && s.pain ? s.pain : null;
     renderSeats(SEATS);
     renderPain(PAIN);
+    // 市场宽度（#3）同源同次取。
+    BREADTH = s && s.breadth ? s.breadth : null;
+    renderBreadth(BREADTH);
     // 研判报告里也有一段「数据可信度」——它渲染时 HEALTH 多半还是 null（首屏已画完），
     // 故拉取成功后必须**重刷报告**，否则报告会永久缺这一段。
     // 与 loadBacktest 成功后重刷报告是同一种处理（数据异步到达 → 依赖它的 UI 要重画）。
@@ -1769,6 +1775,7 @@ async function loadHealth() {
     renderHealth(null, e.message);
     renderSeats(null, e.message);
     renderPain(null, e.message);
+    renderBreadth(null, e.message);
   }
 }
 
@@ -1937,6 +1944,76 @@ function renderPain(p, errMsg) {
     + `翻绿比例 = 今日收跌只数 ÷ 取到行情的样本数；连板晋级失败 = 昨日 N≥2 连板今日未能再封板。`
     + `<br>⚠ 不可用热门榜（hot）反查——hot 只含上涨股，会静默丢弃下跌的一半，得出恒为 +10% 的假繁荣。`
     + `<br>样本 ${perf.n ?? 0}/${perf.universe ?? 0} 只${perf.reliable === false ? '（偏少，结论仅供参考）' : ''}。`
+    + `</div></div></details>`;
+}
+
+// ── 多维市场宽度面板（#3）────────────────────────────────────────────────
+// 回答"市场结构长什么样"——四个维度：站上20日线占比（趋势参与度）、创新高/新低
+// 家数（两个独立极端）、破净率（估值底部宽度）。
+// ⚠ 全部由**全市场真实前复权日K**算，非 hot 榜单样本（那是涨幅榜，会失真）。
+// ⚠ 缺口径纪律：样本不足 / PB 源不可用 → 显示「未计算」，绝不当 0。破净率 0% 是
+//   "全市场无一家破净"（极强信号），与"没抓到"含义完全相反，必须可区分。
+function renderBreadth(b, errMsg) {
+  const box = $('breadthPanel');
+  if (!box) return;
+  if (!b || !b.snapshot) {
+    box.hidden = false;
+    box.className = 'breadth-panel bw-unknown';
+    box.innerHTML = `<div class="bw-head"><b>市场宽度</b>`
+      + `<span class="bw-chip unknown">未评估</span>`
+      + `<span class="muted">${esc(errMsg || 'signals-latest.json 缺少 breadth 段（需收盘后跑 scripts/fetch_breadth.mjs）')}`
+      + `——这是"没数据"，不等于"宽度正常"</span></div>`;
+    return;
+  }
+  const snap = b.snapshot || {};
+  const v = b.verdict || snap.verdict || {};
+  const series = Array.isArray(b.series) ? b.series : [];
+  const sm = b.summary || {};
+  const tone = { broad: 'broad', narrow: 'narrow', mixed: 'mixed', diverged: 'diverged', unknown: 'unknown' }[v.level] || 'unknown';
+  box.hidden = false;
+  box.className = `breadth-panel bw-${tone}`;
+
+  // 缺数据一律 "—"，不画 0
+  const pct = (x) => (x == null ? '—' : (x * 100).toFixed(1) + '%');
+  const cnt = (o) => (o && o.den ? `${o.n}/${o.den}` : '—');
+
+  const kpis = [
+    ['站上20日线', pct(snap.aboveMa && snap.aboveMa.ratio), 'bw-kpi-main', snap.aboveMa && snap.aboveMa.den],
+    ['创新高', pct(snap.newHigh && snap.newHigh.ratio), '', snap.newHigh && snap.newHigh.den],
+    ['创新低', pct(snap.newLow && snap.newLow.ratio), '', snap.newLow && snap.newLow.den],
+    ['破净率', pct(snap.brokenPb && snap.brokenPb.ratio), snap.brokenPb && snap.brokenPb.ratio == null ? 'bw-na' : '', snap.brokenPb && snap.brokenPb.den],
+    ['上涨家数', snap.updown ? snap.updown.up : '—', 'pos', null],
+    ['下跌家数', snap.updown ? snap.updown.down : '—', 'neg', null],
+    ['有效样本', snap.scanned ?? '—', '', snap.requested],
+    ['分化度', pct(snap.divergence), '', null],
+  ].map(([k, val, c, den]) => `<div class="bw-kpi ${c}"><span class="bw-k">${esc(k)}</span>`
+    + `<span class="bw-v">${esc(val)}</span>`
+    + (den ? `<span class="bw-den muted">n=${esc(den)}</span>` : '') + `</div>`).join('');
+
+  // 逐日序列（只有真正算过的天才出现——引擎侧已滤掉不可信日）
+  const rows = series.slice(-10).map((r) => `<tr>`
+    + `<td class="bw-date">${esc(r.date || '')}</td>`
+    + `<td class="bw-num">${r.maRatio == null ? '—' : (r.maRatio * 100).toFixed(1) + '%'}</td>`
+    + `<td class="bw-num">${r.newHighRatio == null ? '—' : (r.newHighRatio * 100).toFixed(1) + '%'}</td>`
+    + `<td class="bw-num">${r.newLowRatio == null ? '—' : (r.newLowRatio * 100).toFixed(1) + '%'}</td>`
+    + `<td class="bw-num">${r.brokenRatio == null ? '—' : (r.brokenRatio * 100).toFixed(1) + '%'}</td>`
+    + `<td class="bw-updown"><span class="pos">${r.up ?? '—'}</span>/<span class="neg">${r.down ?? '—'}</span></td>`
+    + `</tr>`).join('');
+
+  box.innerHTML = `<details class="bw-fold" open>`
+    + `<summary><b>市场宽度（结构）</b>`
+    + `<span class="bw-chip ${esc(tone)}">${esc(v.label || '未评估')}</span>`
+    + `<span class="muted bw-sum">${esc(v.detail || '')}</span>`
+    + `</summary>`
+    + `<div class="bw-body">`
+    + `<div class="bw-kpis">${kpis}</div>`
+    + (rows ? `<table class="bw-table"><thead><tr><th>日期</th><th>站上20日线</th><th>新高</th><th>新低</th><th>破净</th><th>涨/跌</th></tr></thead><tbody>${rows}</tbody></table>` : '')
+    + `<div class="bw-note muted">口径：由全市场**真实前复权日K**计算（前复权是本口径的正确性前提——不复权时除权日的假暴跌会同时打掉均线并伪造新低）。`
+    + `占比分母是当次扫描的有效样本数，不是全市场总数。`
+    + `<br>⚠ 「未计算」出现在两类情形：① 有效样本 &lt; ${esc((snap.thresholds && snap.thresholds.MIN_SAMPLE) ?? 100)} 只；② 破净率依赖 PB 源不可用。`
+    + `两者都**不填 0**——破净率 0% 是"无一家破净"（极强信号），与"没抓到"含义相反。`
+    + `<br>序列 ${sm.days ?? series.length} 天有数据${sm.coverage == null ? '' : `（覆盖 ${(sm.coverage * 100).toFixed(1)}%）`}，逐日累积、历史自然生长。`
+    + `<br>数据来自公开行情，不构成投资建议。`
     + `</div></div></details>`;
 }
 

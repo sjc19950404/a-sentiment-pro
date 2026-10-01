@@ -1886,6 +1886,129 @@ function versionHasNormalizerOnlyOnCandidate(code) {
     /scripts\/fetch_pain\.mjs/.test(wfSrcP), '');
 }
 
+// ── B17. 多维市场宽度（#3）：口径唯一出处 + "未计算"不得退化成 0 ────────────────
+async function checkBreadth() {
+  const bwPath = path.join(ROOT, 'src', 'breadth.js');
+  if (!existsSync(bwPath)) return;
+  const bwMod = await import(pathToFileURL(bwPath).href);
+
+  // ① 真调用：num 的 null 陷阱（本项目最反复的坑，本轮在 num 上又踩一次）
+  check('市场宽度：num(null) 必须为 null（+null===0 陷阱）',
+    bwMod.num(null) === null && bwMod.num('') === null,
+    `num(null)=${bwMod.num(null)} num('')=${bwMod.num('')}`);
+  // ② 真调用：+[]===0 也是同类陷阱 —— 数组必须判为 null
+  check('市场宽度：num([]) 必须为 null（+[]===0 同类陷阱）',
+    bwMod.num([]) === null && bwMod.num({}) === null,
+    `num([])=${bwMod.num([])} num({})=${bwMod.num({})}`);
+  // ③ 真调用：真 0 必须保留（0 是有效值，不能与 null 混为一谈）
+  check('市场宽度：num(0) 保留为 0（0 与"缺数据"必须可区分）',
+    bwMod.num(0) === 0, `num(0)=${bwMod.num(0)}`);
+
+  // ④ 真调用：K 线不足 → aboveMa 为 null（判不出 ≠ false）
+  const shortB = bwMod.stockBreadth({ close: 10, closes: [10, 11, 12], pb: null });
+  check('市场宽度：K 线不足 MA 窗口时 aboveMa 为 null（不是 false）',
+    shortB.aboveMa === null && shortB.ma === null, `aboveMa=${shortB.aboveMa}`);
+
+  // ⑤ 真调用：回看窗口不足 → 新高/新低为 null（不得用"有史以来"伪造新高）
+  const midB = bwMod.stockBreadth({ close: 10, closes: Array.from({ length: 100 }, (_, i) => 10 + i * 0.1), pb: null });
+  check('市场宽度：回看窗口不足时新高/新低为 null（防止早期数据天然全是新高）',
+    midB.isNewHigh === null && midB.isNewLow === null, `hi=${midB.isNewHigh}`);
+
+  // ⑥ 真调用：无 PB → broken 为 null（"没抓到"≠"没破净"）
+  const pbB = bwMod.stockBreadth({ close: 10, closes: Array.from({ length: 30 }, () => 10), pb: null });
+  check('市场宽度：无 PB 时破净判定为 null（不是 false）',
+    pbB.broken === null, `broken=${pbB.broken}`);
+
+  // ⑦ 真调用：样本不足 → 比例为 null 且 reliable=false（不得给不可信的比例）
+  const few = Array.from({ length: 10 }, (_, i) => ({ code: String(i), close: 10, closes: Array.from({ length: 30 }, () => 10), pb: null }));
+  const fewB = bwMod.computeBreadth(few);
+  check('市场宽度：样本不足 MIN_SAMPLE 时比例为 null（不是 0）',
+    fewB.reliable === false && fewB.aboveMa.ratio === null, `ratio=${fewB.aboveMa.ratio}`);
+
+  // ⑧ 真调用：PB 源不可用 → 破净率 den=0、ratio=null（绝不填 0）
+  const many = Array.from({ length: 150 }, (_, i) => ({ code: 'c' + i, close: 10, closes: Array.from({ length: 30 }, () => 10), pb: null }));
+  const manyB = bwMod.computeBreadth(many);
+  check('市场宽度：PB 源不可用时破净率为 null（0% 破净是极强信号，必须可区分）',
+    manyB.brokenPb.den === 0 && manyB.brokenPb.ratio === null, `ratio=${manyB.brokenPb.ratio}`);
+
+  // ⑨ 真调用：K 线不足的票被排除在分母外（不得算成"没站上"）
+  const mixed = [...many, ...Array.from({ length: 30 }, (_, i) => ({ code: 's' + i, close: 10, closes: [10, 11], pb: null }))];
+  const mixB = bwMod.computeBreadth(mixed);
+  check('市场宽度：K 线不足的票不进分母（否则等于把"判不出"算成"没站上"）',
+    mixB.aboveMa.den === 150 && mixB.requested === 180, `den=${mixB.aboveMa.den} req=${mixB.requested}`);
+
+  // ⑩ 真调用：给了外部涨跌家数就不再自算（避免两套口径并存）
+  const extB = bwMod.computeBreadth(many, { updown: { up: 3000, down: 1500, flat: 100 } });
+  check('市场宽度：外部已给涨跌家数时不再自算（口径唯一）',
+    extB.updown.src === 'external' && extB.updown.up === 3000, `src=${extB.updown.src}`);
+
+  // ⑪ 真调用：序列无 totalDays 时覆盖率为 null（不得虚报 100%）
+  const ser = bwMod.buildBreadthSeries([
+    { date: 'a', breadth: { reliable: false } },
+    { date: 'b', breadth: { reliable: true, scanned: 400, aboveMa: { ratio: 0.3 }, newHigh: { ratio: 0 }, newLow: { ratio: 0 }, brokenPb: { ratio: null }, updown: null } },
+  ]);
+  const smNoTotal = bwMod.breadthSeriesSummary(ser);
+  check('市场宽度：无 totalDays 时覆盖率为 null（不得虚报 100%）',
+    ser.length === 1 && smNoTotal.coverage === null, `len=${ser.length} cov=${smNoTotal.coverage}`);
+
+  // ⑫ 静态度量不变量：breadth.js 不得从 hot 列表抽数据（宽度必须用全市场 K 线）
+  const bwCode = stripCommentsAud(readFileSync(bwPath, 'utf8'));
+  check('市场宽度：breadth.js 不引用 hot 列表（宽度须用全市场真实行情）',
+    !/\bhot\b\s*[\.\[]/.test(bwCode) && !/d\.hot/.test(bwCode), '');
+
+  // ⑬ 两条写盘路径都必须注入 breadthFn（同源同形态）
+  const pipeSrcB = readFileSync(path.join(ROOT, 'src', 'pipeline.js'), 'utf8');
+  const splitSrcB = readFileSync(path.join(ROOT, 'scripts', 'split_archive.mjs'), 'utf8');
+  check('市场宽度：pipeline 与 split_archive 两条路径都注入 breadthFn（形态一致）',
+    /breadthFn:/.test(pipeSrcB) && /breadthFn:/.test(splitSrcB), '');
+
+  // ⑭ signals-latest.json 必须带 breadth 段结构（或为 null）
+  const sigPathB = path.join(ROOT, 'data', 'signals-latest.json');
+  if (existsSync(sigPathB)) {
+    const sigB = JSON.parse(readFileSync(sigPathB, 'utf8'));
+    const bwOk = sigB.breadth == null
+      || (!!sigB.breadth.snapshot && Array.isArray(sigB.breadth.series) && !!sigB.breadth.verdict);
+    check('市场宽度：signals-latest 的 breadth 段结构完整（或为 null）',
+      bwOk, sigB.breadth == null ? '' : 'breadth 段缺 snapshot/series/verdict');
+  }
+
+  // ⑮ 前端不得重算宽度（第二套口径）
+  const appSrcB = readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const appCodeB = stripCommentsAud(appSrcB);
+  check('市场宽度：前端未自行实现 computeBreadth / MA 计算',
+    !/function\s+computeBreadth\b/.test(appCodeB) && !/stockBreadth\s*\(/.test(appCodeB), '');
+
+  // ⑯ ★ 数值纪律守卫（扩到 breadth.js）：禁止对数据字段裸用 Number.isFinite(+v)
+  const riskyB = [];
+  {
+    const raw = stripCommentsAud(readFileSync(bwPath, 'utf8'));
+    raw.split(/\r?\n/).forEach((ln, i) => {
+      if (!/Number\.isFinite\(\s*\+/.test(ln)) return;
+      if (/==\s*null|!=\s*null|typeof/.test(ln)) return;
+      if (/Number\.isFinite\(\s*\+\s*opts\./.test(ln)) return;
+      if (/Number\.isFinite\(\s*\+\s*v\b/.test(ln)) return; // 已由 num() 包过
+      riskyB.push(`breadth.js:${i + 1} ${ln.trim().slice(0, 60)}`);
+    });
+  }
+  check('数值纪律：breadth.js 数据字段判定不得裸用 Number.isFinite(+v)',
+    riskyB.length === 0, riskyB.length ? `疑似裸用：\n      ${riskyB.join('\n      ')}` : '');
+
+  // ⑰ CI 必须把宽度快照一起提交（漏了＝线上永远没有该面板）
+  const wfSrcB = readFileSync(path.join(ROOT, '.github', 'workflows', 'daily.yml'), 'utf8');
+  check('市场宽度：CI 提交清单含 data/breadth-latest.json（漏了＝线上永远没有该面板）',
+    /data\/breadth-latest\.json/.test(wfSrcB), '');
+  // ⑱ CI 必须跑抓取步
+  check('市场宽度：CI 含 fetch_breadth 抓取步（否则 signals 里 breadth 恒为 null）',
+    /scripts\/fetch_breadth\.mjs/.test(wfSrcB), '');
+  // ⑲ 抓取必须分片（用户的硬要求：不能一把梭）
+  check('市场宽度：抓取脚本支持分片（--shards，断点续跑）',
+    /--shards/.test(readFileSync(path.join(ROOT, 'scripts', 'fetch_breadth.mjs'), 'utf8')), '');
+}
+
+try { await checkBreadth(); } catch (e) {
+  fails.push(`B17 市场宽度检查抛异常：${e.message}`);
+}
+
 // ── C. 结论 ────────────────────────────────────────────────────────────────
 if (warns.length) for (const w of warns) console.log(`⚠ ${w}`);
 if (fails.length) {

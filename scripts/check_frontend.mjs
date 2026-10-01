@@ -2854,6 +2854,54 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
       !/filter\([^)]*changePct[^)]*<\s*0\s*\)[\s\S]{0,30}?\/\s*\w+\.length/.test(code),
       '前端出现翻绿比例算式＝第二套口径');
   }
+
+  // ── 多维市场宽度面板（#3）──
+  //   ① 四个维度必须在屏幕上：站上20日线 / 新高 / 新低 / 破净率
+  //   ② "未计算"必须显式出现（样本不足 or PB 源不可用），**不得退化成 0**
+  //   ③ 前端不得自行计算均线（第二套口径）
+  const bp = $('breadthPanel');
+  check('市场宽度：面板元素存在', !!bp, bp ? '' : '未找到 #breadthPanel');
+  if (bp) {
+    const isUnknown = /bw-unknown/.test(bp.className || '');
+    if (isUnknown) {
+      check('市场宽度：未评估时显式说明"不等于宽度正常"',
+        /没数据/.test(bp.textContent) && /不等于宽度正常/.test(bp.textContent),
+        bp.textContent.slice(0, 90));
+    } else {
+      check('市场宽度：面板已渲染（hidden 已解除）', bp.hidden === false, `hidden=${bp.hidden}`);
+      const lv = ['bw-broad', 'bw-narrow', 'bw-mixed', 'bw-diverged', 'bw-unknown']
+        .filter((c) => new RegExp(c).test(bp.className || ''));
+      check('市场宽度：结论状态类唯一且合法', lv.length === 1, `类名 ${bp.className}`);
+      const txt = bp.textContent || '';
+      // 四个维度必须齐（缺一说明某维度被吞掉）
+      check('市场宽度：四维度齐全（站上20日线/新高/新低/破净率）',
+        /站上20日线/.test(txt) && /创新高/.test(txt) && /创新低/.test(txt) && /破净率/.test(txt), '');
+      // 涨跌家数也应在场（本模块把可用率从 3/241 提升到"扫过的天都有"）
+      check('市场宽度：渲染涨跌家数（自算兜底，不再依赖 3/241 的存档字段）',
+        /上涨家数/.test(txt) && /下跌家数/.test(txt), '');
+      // 缺失必须显示"—"，且必须显式说明"未计算"两类情形
+      check('市场宽度：缺失值以"—"呈现（不得渲染成 0）',
+        /—/.test(txt), '破净率 0% 是"无一家破净"，与"没抓到"含义相反');
+      check('市场宽度：披露「未计算」的两类情形（样本不足 / PB 源不可用）',
+        /未计算/.test(txt), '不披露会让"没抓到"被读成"宽度为 0"');
+      // 口径警示：必须说明"由全市场真实 K 线计算"，且前复权是正确性前提
+      check('市场宽度：面板内披露口径（全市场真实前复权日K）',
+        /前复权/.test(txt) && /全市场/.test(txt), '');
+      // 合规声明
+      check('市场宽度：含合规声明（不构成投资建议）', /不构成投资建议/.test(txt), '');
+    }
+  }
+  // 源码层：前端不得自算均线（第二套口径）
+  {
+    const src = readFileSync(join(ROOT, 'app.js'), 'utf8');
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    check('市场宽度：前端未自行计算均线/新高（只读引擎结果）',
+      !/slice\(\s*-\s*20\s*\)[\s\S]{0,40}?reduce\([\s\S]{0,30}?\/\s*20/.test(code),
+      '前端出现 MA20 算式＝第二套口径');
+    // 宽度不得从 hot 列表推（hot 是涨幅榜，用它算宽度必然全在均线上方）
+    check('市场宽度：前端未用 hot 列表推算宽度',
+      !/hot[\s\S]{0,50}?(aboveMa|maRatio|newHigh)/.test(code), '');
+  }
 }
 
 // jsdom 未实现的 DOM 桩：不判失败，但**必须打印**——否则将来真出现异常时，

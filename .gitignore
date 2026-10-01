@@ -23,3 +23,8 @@ scripts/_diag_*.mjs
 
 # 日K抓取磁盘缓存（可重建，只用于连板回溯时少打接口）
 data/.kline_cache.json
+
+# 全市场宽度扫描的分片 K 线缓存（可重建；断点续跑用，不入库）
+# 为什么不入库：单分片约 1~3MB，8 片就是十几 MB，且完全可由 fetch_breadth.mjs 重抓。
+# 真正要入库的是**汇总结果** data/breadth-latest.json 与 data/breadth-daily.json。
+data/.breadth_kline/

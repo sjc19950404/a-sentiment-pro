@@ -63,6 +63,14 @@ jobs:
       - name: 抓取亏钱效应行情（昨涨停今日表现，收盘后口径）
         run: node scripts/fetch_pain.mjs
         continue-on-error: true
+
+      # 多维市场宽度（#3）：站上20日线占比 / 创新高&新低家数 / 破净率 / 涨跌家数。
+      # **必须分片抓**（全市场约 5400 只，一把梭会被限流且无法断点续跑）：
+      #   分片缓存落 data/.breadth_kline/，失败重跑只补缺的片。
+      # 产出 data/breadth-latest.json（轻量计数）+ data/breadth-daily.json（逐日序列）。
+      - name: 抓取多维市场宽度（分片扫描全市场日K）
+        run: node scripts/fetch_breadth.mjs --shards 8
+        continue-on-error: true
       # 口径守卫：两套龙虎榜净额（当日榜 / 含区间累计榜的全量）不得混用。
       # 放在提交之前——口径一旦漂移，宁可本次运行失败，也不要把错数据推上线。
       - name: 龙虎榜口径守卫（双口径不混用 + 存档可重现）
@@ -73,7 +81,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json
+          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else

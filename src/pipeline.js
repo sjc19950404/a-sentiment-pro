@@ -18,6 +18,7 @@ import { marketAlerts } from './alerts.js';
 import { computeRelative } from './relative.js';
 import { healthReport } from './health.js';
 import { buildSeatSeries, seatSeriesSummary, seatVerdict } from './seats_daily.js';
+import { buildBreadthSeries, breadthSeriesSummary } from './breadth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -398,6 +399,29 @@ export function writeShards(archive, dir = DATA_DIR) {
         const p = path.join(dir, 'pain-latest.json');
         if (!existsSync(p)) return null;
         return JSON.parse(readFileSync(p, 'utf8'));
+      } catch { return null; }
+    },
+    // 市场宽度（#3）：读已落盘的 breadth-latest.json / breadth-daily.json
+    //   （由 scripts/fetch_breadth.mjs 在收盘后分片抓全市场 K 线后汇总）。
+    //   同样**只读不现算**：宽度要扫全市场 K 线，不可能在同步写盘路径里做；
+    //   读不到就是 null，绝不伪造一个"宽度正常"。
+    breadthFn: () => {
+      try {
+        const p = path.join(dir, 'breadth-latest.json');
+        if (!existsSync(p)) return null;
+        const snapshot = JSON.parse(readFileSync(p, 'utf8'));
+        // 逐日序列（可选）：有了才下发，没有就只给快照。
+        let series = [];
+        let summary = null;
+        const dp = path.join(dir, 'breadth-daily.json');
+        if (existsSync(dp)) {
+          const daily = JSON.parse(readFileSync(dp, 'utf8'));
+          series = buildBreadthSeries(daily.rows || []);
+          // 覆盖率分母用**档案里的交易日数**（不是宽度序列长度）——否则滤空行后恒为 100%，
+          // 会虚报覆盖（seats_daily 踩过同一个坑）。
+          summary = breadthSeriesSummary(series, { totalDays: (archive.all_days || []).length });
+        }
+        return { snapshot, series, summary, verdict: snapshot.verdict || null };
       } catch { return null; }
     },
   });

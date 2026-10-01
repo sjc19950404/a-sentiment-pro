@@ -300,6 +300,8 @@ export function buildSignals(archive, opts = {}) {
   // 席位属性序列（#1）与亏钱效应（#2）——同样走注入，保持本模块"不读盘"的纯函数性质。
   const sFn = typeof opts.seatSeriesFn === 'function' ? opts.seatSeriesFn : null;
   const pFn = typeof opts.painFn === 'function' ? opts.painFn : null;
+  // 多维市场宽度（#3）——同上走注入（它的原始 K 线不在档案里，须外部提供）。
+  const bFn = typeof opts.breadthFn === 'function' ? opts.breadthFn : null;
   const score = last.emotion?.value ?? last.emotion?.score ?? null;
   const market = fn ? fn({ emotionScore: score, total: assumedTotal, marketValue: 0 }) : null;
   // 数据健康报告（#115）：随轻量档一起下发，让"盯盘/巡检"的读者不必拉完整档
@@ -320,6 +322,12 @@ export function buildSignals(archive, opts = {}) {
   let pain = null;
   if (pFn) {
     try { pain = pFn(days); } catch { pain = null; }
+  }
+  // 多维市场宽度（#3）：站上均线占比 / 创新高新低 / 破净率 / 涨跌家数 + 逐日序列。
+  //   与席位同理刻意不放分片：宽度快照本身很小（~1KB），序列也只有几行。
+  let breadth = null;
+  if (bFn) {
+    try { breadth = bFn(days); } catch { breadth = null; }
   }
   return {
     kind: 'signals-latest',
@@ -347,6 +355,13 @@ export function buildSignals(archive, opts = {}) {
     painNote: pFn
       ? '昨涨停今日表现基于全市场真实行情（含下跌股），非 hot 涨幅榜口径；样本不足时结论降级为"未知"。'
       : '未生成（调用方未注入 painReport，需实时行情）',
+    // 市场宽度（#3）：{ snapshot, series, summary, verdict }。snapshot 为最新一日的
+    //   站上均线占比/创新高新低/破净率/涨跌家数；series 为逐日累积（同样"历史自然生长"）。
+    breadth,
+    breadthNote: bFn
+      ? '宽度由全市场真实前复权日K计算（非榜单样本）。破净率依赖 PB 源，不可用时为 null（显示"未计算"）而非 0；'
+        + '样本不足时比例同样为 null。占比分母是已扫描样本数，不是全市场总数。'
+      : '未生成（调用方未注入 breadthFn，需全市场 K 线）',
     marketAlerts: market,
     marketAlertsNote: fn
       ? `仅大盘层告警，按假设总资产 ${assumedTotal} 元、空仓计算；持仓层告警需本地账户，见 paper_ui.js`
