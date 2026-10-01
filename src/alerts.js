@@ -309,7 +309,7 @@ export function positionAlerts({ positions, stats, tier, pickCodes } = {}) {
       '浮动盈亏': `${yuan(pnl)} 元（${sp(pnlPct)}）`,
       '占总资产': T > 0 ? pp(conc, 1) : '—',
     };
-    const base = { layer: 'position', code, name, quote };
+    const base = { layer: 'position', code, name, quote, heldQty: qty };
 
     // ① / ② 止损线
     //

@@ -199,6 +199,9 @@ test('持仓层 · 止损但无可卖（T+1）：给出卖出建议同时如实�
   assert.ok(a, '仍应给出止损建议');
   assert.ok(a.text.includes('无可卖数量'), a.text);
   assert.equal(a.qty, 0, '无可卖时不得给出正数卖出股数（否则下单必被拒）');
+  // 但「计分股数」必须是全部持仓——止损的战绩衡量的正是「本应保护多少」，
+  // 若跟着 qty 一起变 0，这条最该被追责的规则就会在台账里消失（已在 alert_log 侧修掉）。
+  assert.equal(a.heldQty, 100, 'heldQty 必须是全部持仓，供收益归因计分');
   assert.ok(find(list, 'pos-t1-locked'), '必须同时给出 T+1 说明（否则用户不知道为什么下不了单）');
 });
 

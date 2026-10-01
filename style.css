@@ -458,6 +458,41 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .al-kv dt { color: var(--muted); }
 .al-kv dd { margin: 0; }
 
+/* 预警战绩（收益归因）：回答「这套预警到底帮我少亏了多少、多赚了多少」。
+   配色刻意分两套语义：
+     · 规避亏损 / 净贡献为正 → 蓝色（--acc）：它是「避免的损失」，既不是涨也不是跌，
+       套用红色会让人误以为在赚钱，套用绿色又像亏损。
+     · 错杀 / 净贡献为负 → 绿（--down）。
+   这样「盈亏方向」与「价格方向」不会互相打架。 */
+.alerts-attr { margin-bottom: 10px; }
+.al-attr { background: var(--card2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
+.al-attr-hd { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 7px; }
+.al-attr-hd b { font-size: 12.5px; }
+.al-attr-hd span { font-size: 11px; }
+.al-attr-cells { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.al-cell { background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px;
+  cursor: pointer; }
+.al-cell:hover, .al-cell:focus-visible { border-color: var(--acc); }
+.al-k { font-size: 10.5px; color: var(--muted); }
+.al-v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 1px 0 2px; }
+.al-n { font-size: 10.5px; line-height: 1.45; }
+.al-blue { color: var(--acc); }
+.al-attr-txt { font-size: 11.5px; color: var(--muted); line-height: 1.6; margin-top: 8px;
+  border-top: 1px dashed var(--line); padding-top: 7px; }
+.al-attr-empty { font-size: 11.5px; color: var(--muted); line-height: 1.7; padding: 8px 4px; }
+@media (max-width: 700px) { .al-attr-cells { grid-template-columns: repeat(2, 1fr); } }
+/* 归因明细抽屉里的逐条流水 */
+.al-lines { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; }
+.al-line { display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline;
+  padding: 4px 6px; background: var(--card2); border-radius: 6px; }
+.al-line-d { color: var(--muted); font-variant-numeric: tabular-nums; }
+.al-line-c { font-weight: 600; }
+.al-line-t { color: var(--acc); font-size: 11px; }
+.al-line-p { color: var(--muted); font-variant-numeric: tabular-nums; }
+.al-line-v { font-variant-numeric: tabular-nums; margin-left: auto; }
+.al-line-b { font-size: 10.5px; }
+@media (max-width: 560px) { .al-line-v { margin-left: 0; } }
+
 /* 研判推荐：一行一只票，左侧排名、中间理由、右侧操作。
    涨跌沿用本页「涨红跌绿」约定；理由标签用 .pk-tag 承载语义色。 */
 .picks-meta { font-size: 11.5px; color: var(--muted); margin-bottom: 8px; line-height: 1.6; }

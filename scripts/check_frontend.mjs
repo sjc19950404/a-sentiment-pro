@@ -612,6 +612,7 @@ escClose();
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/quote\.js';/, '')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/picks\.js';/, '')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/alerts\.js';/, '')
+    .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/alert_log\.js';/, '')
     .replace(/^export\s+/gm, '');
   // src/picks.js（研判推荐引擎）同样是 ESM 纯函数，零依赖。
   // 它 import 了 src/lhb.js 的 RANGE_BOARD_RE / isNewStock（口径唯一出处）。
@@ -649,6 +650,24 @@ escClose();
       .replace(/^import\s+backtestCfg\s+from\s*'\.\/config\.js';/m, '')
       .replace(/^export\s+/gm, '')
     + '\nreturn { buildAlerts, marketAlerts, positionAlerts, MARKET_CFG, POS_CFG, LEVELS, ACTIONS };\n})();';
+  // src/alert_log.js（预警台账与收益归因）：纯函数 ESM，import 了
+  //   · ./alerts.js 的 POS_CFG / MARKET_CFG → 取 window.__alerts__
+  //   · ./paper.js 的 LOT（一手股数，最小计分单位）
+  // LOT 在 engineNoExport 里是裸 const，直接拼会与前面作用域冲突（paper.js 已平铺）……
+  // 实际上 engineNoExport 就在同一作用域，alert_log 包进 IIFE 后从 window.__alerts__ 取 alerts 符号，
+  // 而 LOT 需要显式传入——故把 LOT 作为 IIFE 参数传进去，避免依赖「谁先声明」的隐式顺序。
+  // LOT 不手抄字面量——从 src/paper.js 源码里抽出真实值（与 alert_log 的 minQty 口径同源）。
+  const LOT_LITERAL = (readFileSync(join(ROOT, 'src/paper.js'), 'utf8')
+    .match(/export const LOT\s*=\s*(\d+)/) || [, '100'])[1];
+  const alertLogBundle = `window.__alertlog__ = (function(LOT){\n`
+    + readFileSync(join(ROOT, 'src/alert_log.js'), 'utf8')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/alerts\.js';/m,
+        'const { POS_CFG, MARKET_CFG } = window.__alerts__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/paper\.js';/m, '')
+      .replace(/^export\s+/gm, '')
+    + '\nreturn { appendSignals, evaluateEntry, evaluateMarketEntry, summarizeLog, summarizeText, ACTION_DIR, LOG_CFG, LOG_CAP };\n})('
+    + LOT_LITERAL + ');';
+  const alertLogFlat = `const { appendSignals, summarizeLog, summarizeText, LOG_CAP } = window.__alertlog__;`;
   // quoteSymbol：与 src/sources.js 同口径（沪 6/9 开头、深 0/3、北 4/8/920）
   const quoteSymbolShim = `function quoteSymbol(code){
     const c = String(code || '').trim();
@@ -658,7 +677,7 @@ escClose();
     return null;
   }`;
   try {
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n;(function(){\n${alertsFlat}\n${uiNoImport}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${uiNoImport}\n})();`);
   } catch (e) {
     check('模拟交易：paper_ui.js 在 jsdom 中可执行', false, e.message);
   }
@@ -862,7 +881,7 @@ escClose();
     let threw = null;
     try {
       // 重新执行一遍 paper_ui.js：boot() 会 load() 到上面这份种子 → renderAllPaper()
-      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n;(function(){\n${alertsFlat}\n${uiNoImport}\n})();`);
+      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${alertLogBundle}\n;(function(){\n${alertsFlat}\n${alertLogFlat}\n${uiNoImport}\n})();`);
       await new Promise((r) => setTimeout(r, 800));
     } catch (e) { threw = e; }
     check('模拟交易·持仓：带 pxStale 的种子账本渲染不抛错',
@@ -937,7 +956,64 @@ escClose();
 
     // 脚注：阈值出处 + 不构成投资建议（合规底线）
     check('模拟交易·预警：脚注写明阈值出处且声明不构成投资建议',
-      /不构成投资建议/.test(txt('alertsNote')) && /V5\.2/.test(txt('alertsNote')), txt('alertsNote').slice(-90));
+      /不构成投资建议/.test(txt('alertsNote')) && /V5.2/.test(txt('alertsNote')), txt('alertsNote').slice(-90));
+
+    // ── 预警战绩（收益归因）：预警必须能回答「帮我少亏了多少」 ──
+    //
+    // 这是本轮的核心：预警不只是话术，必须有计分板。断言覆盖
+    //   ① 归因条渲染出来（四个格子）
+    //   ② 台账确实落了账（localStorage 里有记录，且条数与渲染一致）
+    //   ③ 幂等：再次触发渲染不会让台账膨胀（界面重渲染是常态）
+    //   ④ 点格子能打开逐条明细（触发价 → 今日价 → 差额，可核验）
+    //   ⑤ 无价条目不得被算成 0（「不知道」与「没赚没亏」必须可区分）
+    check('模拟交易·预警：战绩归因条渲染出四个指标格',
+      ($('alertsAttr')?.querySelectorAll('.al-cell') || []).length === 4,
+      `${($('alertsAttr')?.querySelectorAll('.al-cell') || []).length} 格`);
+
+    const attrTxt = txt('alertsAttr');
+    check('模拟交易·预警：归因条含四个指标名（规避亏损/错杀/净贡献/命中率）',
+      /已规避亏损/.test(attrTxt) && /错杀/.test(attrTxt) && /净贡献/.test(attrTxt) && /命中率/.test(attrTxt),
+      attrTxt.slice(0, 110));
+
+    // 台账落盘：种子触发了带可执行股数的预警（集中度），必须记账
+    const rawLog = window.localStorage.getItem('paper-alerts-log');
+    let logArr = [];
+    try { logArr = JSON.parse(rawLog || '[]'); } catch (e) { logArr = []; }
+    check('模拟交易·预警：预警台账写入 localStorage（战绩可跨会话累积）',
+      Array.isArray(logArr) && logArr.length > 0, `${logArr?.length ?? 0} 条`);
+    check('模拟交易·预警：台账条目含冻结的触发价（归因基准不可被后续行情改写）',
+      logArr.length > 0 && logArr.every((e) => e.layer === 'market' || Number.isFinite(+e.px)),
+      logArr.map((e) => `${e.type}:${e.px}`).join(' | ').slice(0, 120));
+
+    // 幂等：把「刚刚落盘的那批」再喂一次引擎，台账条数不得增加。
+    // 注意**不能**直接 `window.eval('renderAlerts()')` —— app.js 里也有一个同名的全局
+    // renderAlerts（研报渲染用的），会命中错的那个并抛错。
+    // 这里用「持久化台账 + 从台账反构出的同批预警」走一遍真实路径（recordAlerts 也是这么调的）。
+    const before = logArr.length;
+    const sameBatch = logArr.map((e) => ({
+      layer: e.layer, code: e.code || undefined, name: e.name || undefined,
+      type: e.type, level: e.level, action: e.action, qty: e.qty,
+    }));
+    const idem = window.__alertlog__.appendSignals(logArr, sameBatch, {
+      asOf: logArr[0]?.asOf || null, priceOf: () => 10,
+    });
+    check('模拟交易·预警：重复落账不膨胀台账（幂等）',
+      idem.added === 0 && idem.log.length === before, `added=${idem.added}, ${before} → ${idem.log.length}`);
+
+    // 归因明细抽屉：逐条给出「触发价 → 今日价 → 差额」
+    const cell0 = $('alertsAttr')?.querySelector('.al-cell');
+    if (cell0) {
+      clickEl(cell0);
+      await new Promise((r) => setTimeout(r, 150));
+      const dwAttr = txt('dwBody');
+      check('模拟交易·预警：点战绩格子打开明细抽屉（含按规则拆解与计分口径）',
+        drawerOpen() && /按规则拆解/.test(dwAttr) && /计分口径/.test(dwAttr), txt('dwTitle'));
+      check('模拟交易·预警：明细写明「不含费用」与「不足一手不计分」的口径边界',
+        /不含费用/.test(dwAttr) && /一手/.test(dwAttr), dwAttr.slice(-140));
+      check('模拟交易·预警：归因口径声明「不编造收益数字」（大盘层只记金额不记收益）',
+        /不编造收益数字/.test(dwAttr), dwAttr.slice(-140));
+      escClose();
+    }
 
     // 收尾：清掉种子，避免影响后续用例
     window.localStorage.removeItem(seedKey);

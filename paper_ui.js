@@ -26,6 +26,9 @@ import { recommendPicks, PICK_TOP_N, SCORE_WEIGHTS } from './src/picks.js';
 // 双层预警引擎（大盘层档位偏离 + 持仓层止损/集中度/T+1）。
 // 与 picks.js 同纪律：规则只有一个出处（src/alerts.js），UI 只渲染 + 把动作转成下单区输入。
 import { buildAlerts, MARKET_CFG, POS_CFG, LEVELS } from './src/alerts.js';
+// 预警台账与收益归因——回答「预警到底有没有帮我少亏、多赚」。
+// 同样只有一个出处（src/alert_log.js）：UI 只负责把当前预警喂进台账、把归因结果画出来。
+import { appendSignals, summarizeLog, summarizeText, LOG_CAP } from './src/alert_log.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
@@ -38,6 +41,10 @@ const pct = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—' : `${v > 0
 const cls = (v) => (v == null || !Number.isFinite(+v)) ? 'muted' : (v > 0 ? 'hl' : v < 0 ? 'hl-dn' : 'muted');
 
 const LS_KEY = 'paper-acct-' + PAPER_VERSION;
+// 预警台账 key **不带** PAPER_VERSION：台账记的是「当时预警说了什么、后来价格怎么走」，
+// 这是历史事实，不随交易引擎版本升级而失效。带版本号会导致升级后战绩被清空，
+// 而那恰恰是最该保留的东西（用户要拿它判断「这套预警值不值得继续听」）。
+const AL_KEY = 'paper-alerts-log';
 const INIT_CASH = 1000000;
 const SLIP = DEFAULT_SLIP;
 
@@ -53,6 +60,8 @@ let LAST_DATE = null;     // 存档最新交易日
 let ARC_DAYS = [];        // 存档全部交易日（研判推荐用：取最后一天算推荐，取序列算情绪分）
 let ORDER = { side: 'buy', code: '', qty: 0 };
 let HIST = { view: 'trade' };
+// 预警台账（持久化，跨会话累积）。不放进 ACCT —— 它不是账户状态，导出账本时也不该混进去。
+let ALOG = [];
 
 // ────────────────────────── 持久化 ──────────────────────────
 
@@ -82,6 +91,44 @@ function load() {
 /** 导入后必须写入 localStorage 的格式与导出格式不同（导出是带元信息的可读文件） */
 function persistRaw(acct) {
   try { localStorage.setItem(LS_KEY, JSON.stringify({ ...acct, version: PAPER_VERSION })); } catch (e) { /* 静默 */ }
+}
+
+// ── 预警台账持久化 ──
+//
+// 为什么不放在 ACCT 里：① 台账不是「账户状态」，导出账本时混进去会让导入方多一份无关数据；
+// ② 账户可以随时重置（一键清空），但**预警战绩不该跟着清零**——它衡量的正是规则本身。
+// 读取时逐条做形状校验：任何一条不合规就整条丢弃（不是整份丢弃）——台账是累积记录，
+// 一条脏数据不应该毁掉其余全部历史。
+
+/** 台账条目形状校验（与 src/alert_log.js 的落账字段一一对应） */
+function validLogEntry(e) {
+  return !!e && typeof e === 'object'
+    && typeof e.key === 'string' && e.key
+    && (e.layer === 'market' || e.layer === 'position')
+    && typeof e.type === 'string' && e.type
+    && typeof e.action === 'string' && e.action
+    && (e.layer === 'market' || Number.isFinite(+e.px));
+}
+
+function loadAlertLog() {
+  try {
+    const raw = localStorage.getItem(AL_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(validLogEntry).slice(-LOG_CAP);
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveAlertLog() {
+  try {
+    localStorage.setItem(AL_KEY, JSON.stringify(ALOG));
+  } catch (e) {
+    // 存储不可用/已满：台账只是战绩记录，写不进去不该打断交易流程，但要说清后果
+    msg('预警台账保存失败（' + e.message + '）：本会话的战绩不会被记住', 'warn');
+  }
 }
 
 function msg(text, kind) {
@@ -180,6 +227,8 @@ async function boot() {
 
     // 账户：优先本地账本；没有则新建（起始日 = 存档最新交易日）
     ACCT = load() || emptyAccount(INIT_CASH, LAST_DATE);
+    // 预警台账：与账户相互独立（重置账户不清空战绩——它衡量的是规则本身，不是某一笔交易）
+    ALOG = loadAlertLog();
     // 若本地账户落后于存档（比如隔了一天），自动补结算到最后可用的存档日
     autoCatchUp(days);
 
@@ -708,6 +757,59 @@ function currentAlerts() {
 /** 严重度 → 徽标文案。顺序与 src/alerts.js 的 LEVELS 一致（risk > opp > tip）。 */
 const AL_LABEL = { risk: '风险', opp: '机会', tip: '提示' };
 
+/**
+ * 把当前这批预警落进台账（幂等，重复调用不产生重复条目）。
+ *
+ * 取价用 lookup() —— 与下单区同一口径（实时 > 存档 > 标的池），
+ * 保证「台账里的价格基准」和「用户当时在界面上看到的价格」是同一个数。
+ * 大盘层没有标的价格，传 null 即可（它按仓位金额记账）。
+ *
+ * @returns {number} 本次新增条数（0 表示全是重复或不可归因）
+ */
+function recordAlerts(r) {
+  if (!r || !r.alerts || !r.alerts.length) return 0;
+  const st = accountStats(ACCT);
+  const tier = r.tier || null;
+  const res = appendSignals(ALOG, r.alerts, {
+    asOf: r.asOf,
+    // 大盘层的「当前/目标仓位」必须由 UI 提供——引擎的 quote 是给人看的字符串，
+    // 反解字符串算金额是极易出错的做法（且改文案就会静默算错）。
+    curPos: st.total > 0 ? st.marketValue / st.total : 0,
+    targetPos: tier ? tier.pos : null,
+    total: st.total,
+    now: new Date().toISOString(),
+    priceOf: (code) => {
+      const q = lookup(code);
+      const px = q && q.price != null && Number.isFinite(+q.price) ? +q.price : null;
+      return px;
+    },
+  });
+  if (res.added > 0) {
+    ALOG = res.log;
+    saveAlertLog();
+  }
+  return res.added;
+}
+
+/** 今日真实价（code → 价），供归因结算用。与 recordAlerts 同一取价口径。 */
+function priceMapForLog() {
+  const m = {};
+  for (const e of ALOG) {
+    if (e.layer !== 'position' || !e.code) continue;
+    const q = lookup(e.code);
+    if (q && q.price != null && Number.isFinite(+q.price)) m[e.code] = +q.price;
+  }
+  return m;
+}
+
+/** 当前台账的归因汇总（不缓存：价格一变结论就得跟着变） */
+function currentAttribution() {
+  return summarizeLog(ALOG, null, { priceOf: (code) => {
+    const q = lookup(code);
+    return q && q.price != null && Number.isFinite(+q.price) ? +q.price : null;
+  } });
+}
+
 function renderAlerts() {
   const meta = $('alertsMeta');
   const box = $('alertsList');
@@ -722,6 +824,10 @@ function renderAlerts() {
     return;
   }
 
+  // 先落账再接渲染：这样「归因条」里的条数与下方卡片是同一次计算的产物，不会出现
+  // 「卡片显示 7 条、战绩说 6 条」这种自相矛盾的画面。
+  recordAlerts(r);
+
   if (meta) {
     const tierTxt = r.tier
       ? `<span class="pk-tier ${r.tier.allowNew ? '' : 'warn'}">${esc(r.tier.label)}</span>`
@@ -733,6 +839,8 @@ function renderAlerts() {
       + ` / <span class="hl-dn">机会 ${r.counts.opp || 0}</span>`
       + ` / <span class="muted">提示 ${r.counts.tip || 0}</span>`;
   }
+
+  renderAttribution();
 
   if (!r.alerts.length) {
     box.innerHTML = '<div class="alerts-empty muted">当前无预警：仓位贴合市场档位，持仓未触及止损线或集中度上限。</div>';
@@ -777,6 +885,120 @@ const ACTIONS_CN = {
   buy: '买入', sell: '卖出', add: '加仓', reduce: '减仓',
   clear: '空仓', exit: '清仓', hold: '持有', wait: '等待', watch: '观望',
 };
+
+// ────────────────────────── 预警战绩（收益归因） ──────────────────────────
+//
+// 为什么要有这块：预警的价值不在「说了什么」，而在「说了之后价格怎么走」。
+// 把每条预警触发时的价格冻结进台账，用今天的真实价结算，就能回答用户最关心的问题——
+// **这套预警到底帮我少亏了多少、多赚了多少、准不准**。
+//
+// 三个数字的符号约定（与 src/alert_log.js 一致，UI 不得另立一套）：
+//   · 已规避亏损：卖出/减仓类预警在下跌中避免的损失（越大越好）
+//   · 错杀/错过：卖出后反弹（卖飞）、或加仓后下跌（看错）造成的负贡献
+//   · 净贡献 = 规避 − 错杀；**命中率分母只含已有结论的条目**（待验证的不算分母）
+
+/** 归因汇总的判定类目 → 配色类名。规避亏损用蓝（不是红/绿——它既不是涨也不是跌） */
+const ATTR_CLS = { pos: 'al-blue', neg: 'hl-dn', flat: 'muted' };
+
+function renderAttribution() {
+  const box = $('alertsAttr');
+  if (!box) return;
+
+  const s = currentAttribution();
+  if (!s || !s.n) {
+    box.innerHTML = `<div class="al-attr-empty muted">`
+      + `尚无预警战绩——每触发一条预警就会按当刻真实价记账，后续用真实行情结算，`
+      + `用来回答「这套预警到底帮我少亏了多少、多赚了多少」。</div>`;
+    return;
+  }
+
+  const judged = s.hit + s.miss;
+  const netCls = s.net > 0 ? 'al-blue' : s.net < 0 ? 'hl-dn' : 'muted';
+  const cells = [
+    { k: '已规避亏损', v: s.avoidedLoss > 0 ? `+${num(s.avoidedLoss, 0)}` : '0', c: 'al-blue',
+      note: '卖出/减仓后在下跌中避免的损失', act: 'attr-detail', extra: 'pos' },
+    { k: '错杀 / 错过', v: s.missedGain > 0 ? `−${num(s.missedGain, 0)}` : '0', c: 'hl-dn',
+      note: '卖飞（反弹）或加仓后下跌', act: 'attr-detail', extra: 'neg' },
+    { k: '净贡献', v: `${s.net >= 0 ? '+' : '−'}${num(Math.abs(s.net), 0)}`, c: netCls,
+      note: `规避 − 错杀，按真实行情结算`, act: 'attr-detail', extra: 'net' },
+    { k: '命中率', v: s.hitRate == null ? '待积累' : `${(s.hitRate * 100).toFixed(0)}%`,
+      c: s.hitRate == null ? 'muted' : (s.hitRate >= 0.5 ? 'al-blue' : 'hl-dn'),
+      note: judged ? `${s.hit} 对 / ${s.miss} 错，另有 ${s.flat + s.pending + s.tracked} 条未定` : '暂无已结算条目',
+      act: 'attr-detail', extra: 'rate' },
+  ];
+
+  box.innerHTML = `<div class="al-attr">
+      <div class="al-attr-hd">
+        <b>预警战绩</b>
+        <span class="muted">共记账 ${s.n} 条 · 点数字看逐条明细</span>
+      </div>
+      <div class="al-attr-cells">${cells.map((c) => `<div class="al-cell" data-act="${c.act}" data-k="${esc(c.k)}" tabindex="0" role="button">
+          <div class="al-k">${esc(c.k)}</div>
+          <div class="al-v ${c.c}">${esc(c.v)}</div>
+          <div class="al-n muted">${esc(c.note)}</div>
+        </div>`).join('')}</div>
+      <div class="al-attr-txt">${esc(summarizeText(s))}</div>
+    </div>`;
+}
+
+/** 归因明细表：按规则拆解，每条给出「触发价 → 今日价 → 差额」，全部可核验 */
+function attrDetail() {
+  const s = currentAttribution();
+  if (!s || !s.n) return null;
+
+  const rows = s.byType.map((t) => {
+    const rate = (t.hit + t.miss) > 0 ? `${((t.hit / (t.hit + t.miss)) * 100).toFixed(0)}%` : '—';
+    const netCls = t.net > 0 ? 'al-blue' : t.net < 0 ? 'hl-dn' : 'muted';
+    return `<tr>
+      <td>${esc(t.type)}</td>
+      <td>${esc(ACTIONS_CN[t.action] || t.action)}</td>
+      <td class="num">${t.count}</td>
+      <td class="num ${netCls}">${t.net >= 0 ? '+' : '−'}${num(Math.abs(t.net), 0)}</td>
+      <td class="num">${esc(rate)}</td>
+      <td class="num muted">${t.pending || 0}</td>
+    </tr>`;
+  }).join('');
+
+  // 逐条明细：只列已结算的，未结算的单独计数（避免把「还不知道」混进战绩里）
+  const settled = s.details.filter((d) => d.result && d.result.pnl != null);
+  const list = settled.map((d) => {
+    const r = d.result;
+    const cls2 = r.pnl > 0 ? 'al-blue' : r.pnl < 0 ? 'hl-dn' : 'muted';
+    return `<div class="al-line">
+      <span class="al-line-d">${esc(d.asOf || '—')}</span>
+      <span class="al-line-c">${esc(d.code ? `${d.name || d.code} ${d.code}` : '大盘')}</span>
+      <span class="al-line-t">${esc(d.type)}</span>
+      <span class="al-line-p">${num(r.px)} → ${num(r.finalPx)}（${pct(r.pct)}）</span>
+      <span class="al-line-v ${cls2}">${r.pnl >= 0 ? '+' : '−'}${num(Math.abs(r.pnl), 0)} 元</span>
+      <span class="al-line-b muted">${r.verdict === 'hit' ? '方向对' : r.verdict === 'miss' ? '方向错' : '几乎没动'}</span>
+    </div>`;
+  }).join('') || '<div class="muted">暂无已结算条目（预警需要后续真实价格才能验证）。</div>';
+
+  const body = dwSection('战绩总览',
+    `<div class="dw-note">${esc(summarizeText(s))}</div>`
+    + dwKv([
+      ['已规避亏损', `${num(s.avoidedLoss, 0)} 元`],
+      ['错杀 / 错过', `${num(s.missedGain, 0)} 元`],
+      ['净贡献', `${s.net >= 0 ? '+' : '−'}${num(Math.abs(s.net), 0)} 元`],
+      ['命中率', s.hitRate == null ? '待积累' : `${(s.hitRate * 100).toFixed(0)}%（${s.hit} 对 / ${s.miss} 错）`],
+      ['记账条数', `${s.n} 条（已结算 ${s.hit + s.miss + s.flat} · 待验证 ${s.pending + s.tracked}）`],
+    ]))
+    + dwSection('按规则拆解', `<table class="dw-tb"><thead><tr>
+        <th>规则</th><th>动作</th><th class="num">条数</th><th class="num">净贡献(元)</th><th class="num">命中率</th><th class="num">待验证</th>
+      </tr></thead><tbody>${rows}</tbody></table>`)
+    + dwSection('逐条明细', `<div class="al-lines">${list}</div>`)
+    + dwSection('计分口径',
+      `<div class="dw-note">归因只做「照做 vs 不动」的差额，按<b>股数 × 价差</b>计算，`
+      + `不含费用（费用在两边都发生，做差会抵消）。触发价在记账时冻结、永不被后续行情改写；`
+      + `不足 100 股（一手）的建议不计分——A 股执行不了。`
+      + `大盘层没有单一标的价格，只记「应调整多少金额」，<b>不编造收益数字</b>。</div>`);
+
+  return {
+    title: '预警战绩明细',
+    sub: `记账 ${s.n} 条 · 净贡献 ${s.net >= 0 ? '+' : '−'}${num(Math.abs(s.net), 0)} 元`,
+    body,
+  };
+}
 
 /**
  * 把预警的建议转成下单区输入（**只填不提交**——与「研判推荐」的填入同纪律）。
@@ -823,12 +1045,45 @@ function alertDetail(i) {
     + ` · 严重度 ${esc(AL_LABEL[a.level] || a.level)}`
     + ` · 规则出处 ${esc(a.layer === 'market' ? 'src/alerts.js marketAlerts()' : 'src/alerts.js positionAlerts()')}</div>`)
     + dwSection('触发依据', `<div class="dw-note">${esc(a.why || '—')}</div>`)
-    + dwSection('当时的字段取值', dwKv(Object.entries(a.quote || {}).map(([k, v]) => [k, esc(v)])));
+    + dwSection('当时的字段取值', dwKv(Object.entries(a.quote || {}).map(([k, v]) => [k, esc(v)])))
+    + alertTrackRecord(a, r);
   return {
     title: `${esc(title)}`,
     sub: `${AL_LABEL[a.level] || a.level} · ${ACTIONS_CN[a.action] || a.action} · 数据日 ${esc(r.asOf || '—')}`,
     body,
   };
+}
+
+/**
+ * 这条规则的历史战绩：同类预警过去触发过几次、方向对了几次、累计贡献多少。
+ *
+ * 为什么按 type 聚合而不是只看这一条：单条预警当天还没结算（价格没走出来），
+ * 此时「这一条赚没赚」是无意义的；有意义的是**这条规则历史上准不准**——
+ * 那才是用户决定「要不要照做」的依据。
+ */
+function alertTrackRecord(a, r) {
+  const s = currentAttribution();
+  const t = s && s.byType ? s.byType.find((x) => x.type === a.type) : null;
+  if (!t) {
+    return dwSection('这条规则的历史战绩',
+      `<div class="dw-note muted">本条规则尚无往期记账——本次触发已写入战绩台账，`
+      + `后续用真实行情结算后，这里会显示「照做 vs 不动」的累计差额。</div>`);
+  }
+  const judged = t.hit + t.miss;
+  const netCls = t.net > 0 ? 'al-blue' : t.net < 0 ? 'hl-dn' : 'muted';
+  return dwSection('这条规则的历史战绩',
+    `<div class="dw-note">按规则 <code>${esc(t.type)}</code> 累计，`
+    + `不含本次未结算的部分。</div>`
+    + dwKv([
+      ['累计触发', `${t.count} 次`],
+      ['累计贡献', `${t.net >= 0 ? '+' : '−'}${num(Math.abs(t.net), 0)} 元`],
+      ['方向对/错', judged ? `${t.hit} 对 / ${t.miss} 错` : '—'],
+      ['待验证', `${t.pending || 0} 次`],
+    ])
+    + `<div class="dw-note ${netCls}">${esc(
+      t.net > 0 ? '历史看，按这条规则操作整体是「省下/赚到」的。'
+        : t.net < 0 ? '历史看，这条规则有过「卖飞」或「看错」，请结合当前依据自行判断。'
+          : '历史看，累计贡献接近零。')}</div>`);
 }
 
 // ────────────────────────── 研判推荐（小模块） ──────────────────────────
@@ -1424,6 +1679,8 @@ document.addEventListener('click', (e) => {
   // 交易预警：同上——「填入卖出」只填代码与建议数量，点整行看触发依据
   if (act === 'alert-fill') { e.stopPropagation(); fillAlertToOrder(+el.dataset.i); return; }
   if (act === 'alert') { openPaperDrawer(alertDetail(+el.dataset.i)); return; }
+  // 战绩格子：点开逐条归因明细（含「触发价 → 今日价 → 差额」的完整链路）
+  if (act === 'attr-detail') { openPaperDrawer(attrDetail()); return; }
 });
 
 // 输入满 6 位就抓实时行情（防抖 250ms，避免边打字边发请求）。
