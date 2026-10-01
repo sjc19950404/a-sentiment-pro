@@ -418,8 +418,45 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
    配色沿用本页「价格涨红跌绿」约定（--up 红 / --down 绿），
    因为这里展示的确实是价格与盈亏方向，不是「对 A 股的影响方向」。
    状态标签（.stag）是另一套语义：成交/在途/被拒/失效，用蓝/橙/红/灰区分。 */
-.paper-acct, .paper-order, .paper-pos, .paper-pend, .paper-hist, .paper-perf, .paper-picks { grid-column: span 2; }
-@media (max-width: 860px) { .paper-acct, .paper-order, .paper-pos, .paper-pend, .paper-hist, .paper-perf, .paper-picks { grid-column: span 1; } }
+.paper-acct, .paper-order, .paper-pos, .paper-pend, .paper-hist, .paper-perf, .paper-picks, .paper-alerts { grid-column: span 2; }
+@media (max-width: 860px) { .paper-acct, .paper-order, .paper-pos, .paper-pend, .paper-hist, .paper-perf, .paper-picks, .paper-alerts { grid-column: span 1; } }
+
+/* 交易预警：与「研判推荐」并排的两层结构同款。
+   左色条按严重度分色（风险红 / 机会绿 / 提示灰），让用户一眼扫到最该看的那条；
+   排序在引擎里就做完了（risk > opp > tip），UI 不重排。 */
+.alerts-meta { font-size: 11.5px; color: var(--muted); margin-bottom: 8px; line-height: 1.6; }
+.alerts-meta b { color: var(--txt); }
+.alerts-list { display: flex; flex-direction: column; gap: 6px; }
+.alerts-empty { padding: 12px 4px; font-size: 12px; line-height: 1.7; }
+.alert-row { display: flex; align-items: flex-start; gap: 9px; padding: 8px 10px;
+  background: var(--card2); border: 1px solid var(--line); border-left: 3px solid var(--line);
+  border-radius: 8px; cursor: pointer; }
+.alert-row:hover, .alert-row:focus-visible { border-color: var(--acc); }
+/* 严重度色条：风险=红（--up）、机会=绿（--down）、提示=蓝灰（--muted） */
+.alert-row.risk { border-left-color: var(--up); }
+.alert-row.opp { border-left-color: var(--down); }
+.alert-row.tip { border-left-color: var(--muted); }
+.al-badge { flex: 0 0 auto; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px;
+  margin-top: 1px; white-space: nowrap; }
+.al-badge.risk { background: rgba(240, 97, 109, .18); color: var(--up); }
+.al-badge.opp { background: rgba(63, 185, 80, .16); color: var(--down); }
+.al-badge.tip { background: var(--line); color: var(--muted); }
+.al-main { flex: 1; min-width: 0; }
+.al-head { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
+.al-act { font-size: 11px; padding: 0 5px; border-radius: 4px; border: 1px solid var(--line); color: var(--acc); }
+.al-code { font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.al-text { font-size: 12.5px; line-height: 1.6; margin-top: 2px; }
+.al-why { font-size: 11px; line-height: 1.55; margin-top: 4px; color: var(--muted); }
+.al-actions { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.al-fill { white-space: nowrap; }
+@media (max-width: 560px) {
+  .alert-row { flex-wrap: wrap; }
+  .al-actions { flex-direction: row; align-items: center; width: 100%; justify-content: flex-end; }
+}
+/* 预警详情抽屉里的「触发依据」表 */
+.al-kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 12.5px; }
+.al-kv dt { color: var(--muted); }
+.al-kv dd { margin: 0; }
 
 /* 研判推荐：一行一只票，左侧排名、中间理由、右侧操作。
    涨跌沿用本页「涨红跌绿」约定；理由标签用 .pk-tag 承载语义色。 */

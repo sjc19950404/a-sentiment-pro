@@ -611,19 +611,44 @@ escClose();
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/paper\.js';/, '')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/quote\.js';/, '')
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/picks\.js';/, '')
+    .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/alerts\.js';/, '')
     .replace(/^export\s+/gm, '');
-  // src/picks.js（研判推荐引擎）同样是 ESM 纯函数，零依赖，剥掉 export 即可并入同一作用域。
-  // 它现在 import 了 src/lhb.js 的 RANGE_BOARD_RE / isNewStock（口径唯一出处）。
+  // src/picks.js（研判推荐引擎）同样是 ESM 纯函数，零依赖。
+  // 它 import 了 src/lhb.js 的 RANGE_BOARD_RE / isNewStock（口径唯一出处）。
   // lhb.js 与 paper.js 存在同名内部辅助（r1/r2/sumOf…），直接平铺会「Identifier already declared」，
   // 故把 lhb.js 包进 IIFE，只把它导出的两个符号挂到 window 上，再让 picks.js 从 window 取。
+  // picks.js 也同样包 IIFE：alerts.js 要用它的档位符号，而 paper_ui.js 直接用它的函数——
+  // 两者都需要，所以既挂 window.__picks__，又把符号解构回作用域（见下方 picksFlat）。
   // 绝不手抄实现：手抄一份等于重新引入第二套口径（口径守卫会拦）。
-  const picksNoExport = readFileSync(join(ROOT, 'src/picks.js'), 'utf8')
-    .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhb\.js';/m,
-      'const { RANGE_BOARD_RE, isNewStock } = window.__lhb__;')
-    .replace(/^export\s+/gm, '');
   const lhbBundle = `window.__lhb__ = (function(){\n`
     + readFileSync(join(ROOT, 'src/lhb.js'), 'utf8').replace(/^export\s+/gm, '')
     + '\nreturn { RANGE_BOARD_RE, isNewStock };\n})();';
+  const picksBundle = `window.__picks__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/picks.js'), 'utf8')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhb\.js';/m,
+        'const { RANGE_BOARD_RE, isNewStock } = window.__lhb__;')
+      .replace(/^export\s+/gm, '')
+    + '\nreturn { marketTier, TIER_THRESHOLDS, POSITION_TIERS, recommendPicks, PICK_TOP_N, SCORE_WEIGHTS, suggestWeight };\n})();';
+  // paper_ui.js 直接调用 recommendPicks / PICK_TOP_N / SCORE_WEIGHTS，故从 window.__picks__ 解构回作用域
+  const picksFlat = `const { recommendPicks, PICK_TOP_N, SCORE_WEIGHTS } = window.__picks__;`;
+  // src/alerts.js（双层预警引擎）：纯函数 ESM，import 了
+  //   · ./picks.js 的 marketTier / TIER_THRESHOLDS / POSITION_TIERS → 取 window.__picks__
+  //   · ./config.js 的 default（风控阈值 stopLoss / ddTrigger）
+  // config.js 用 export default，剥掉 export 后是裸对象字面量，并进来只是一条孤立表达式语句
+  // （语法合法但取不到值），故改写成赋给 backtestCfg 再交给 alerts.js——
+  // 绝不手抄阈值（手抄等于第二套口径，与 alerts.test.mjs 的「阈值同源」断言冲突）。
+  const configNoExport = readFileSync(join(ROOT, 'src/config.js'), 'utf8')
+    .replace(/^export\s+default\s*/m, 'var backtestCfg = ')
+    .replace(/^export\s+/gm, '');
+  // paper_ui.js 用到的预警导出
+  const alertsFlat = `const { buildAlerts, MARKET_CFG, POS_CFG, LEVELS } = window.__alerts__;`;
+  const alertsBundle = `window.__alerts__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/alerts.js'), 'utf8')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/picks\.js';/m,
+        'const { marketTier, TIER_THRESHOLDS, POSITION_TIERS } = window.__picks__;')
+      .replace(/^import\s+backtestCfg\s+from\s*'\.\/config\.js';/m, '')
+      .replace(/^export\s+/gm, '')
+    + '\nreturn { buildAlerts, marketAlerts, positionAlerts, MARKET_CFG, POS_CFG, LEVELS, ACTIONS };\n})();';
   // quoteSymbol：与 src/sources.js 同口径（沪 6/9 开头、深 0/3、北 4/8/920）
   const quoteSymbolShim = `function quoteSymbol(code){
     const c = String(code || '').trim();
@@ -633,7 +658,7 @@ escClose();
     return null;
   }`;
   try {
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksNoExport}\n${engineNoExport}\n;(function(){\n${uiNoImport}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n;(function(){\n${alertsFlat}\n${uiNoImport}\n})();`);
   } catch (e) {
     check('模拟交易：paper_ui.js 在 jsdom 中可执行', false, e.message);
   }
@@ -811,27 +836,109 @@ escClose();
     // 存储键在 paper_ui.js 里是 'paper-acct-' + PAPER_VERSION，这里从已装载的 localStorage 里认出来
     const seedKey = Object.keys(window.localStorage).find((k) => k.startsWith('paper-acct-')) || 'paper-acct-paper-v1';
     const arcLast = (arcAll.all_days || []).slice(-1)[0]?.trade_date || '2000-01-04';
+    // 种子账本刻意放两只票，把预警规则的两条主力分支都点亮：
+    //   · 600519：pxStale（无当日行情）——检验渲染不崩、且如实提示估值失真
+    //   · 000001：成本 20 元 / 现价 16 元（浮亏 -20%）→ 必须触发「止损线击穿」（风险级）
+    //     且 qty 40000 / 可卖 0（当日买入）→ 必须同时给出 T+1 提示，且卖出股数不得为正
     const seed = {
-      cash: 900000, freeze: 0, realized: 0, totalFee: 0, trades: [], orders: [], pending: [],
+      // version 必须给：importAccount 先校验 version === PAPER_VERSION，不符直接整份拒绝 →
+      // load() 返回 null → 界面按「新建空账户」渲染（预警只剩大盘层、持仓表为空）。
+      // initCash 同理（校验 +initCash > 0）。两项都漏过，两个坑都踩过一次。
+      version: 'paper-v1',
+      initCash: 1000000,
+      cash: 300000, freeze: 0, realized: 0, totalFee: 0, trades: [], orders: [], pending: [],
       lastSettle: arcLast,
-      nav: [{ date: arcLast, equity: 1025950, cash: 900000, marketValue: 125950 }],
+      nav: [{ date: arcLast, equity: 1025950, cash: 300000, marketValue: 725950 }],
       positions: {
         '600519': { code: '600519', name: '贵州茅台', qty: 100, avail: 100, avgCost: 1259.26,
           cost: 125926, grossBuy: 125900, fee: 26, openDate: '2000-01-04', days: 3,
           lastBuyDate: '2000-01-04', last: 1258.62, lastDate: '2000-01-04', pxStale: true },
+        '000001': { code: '000001', name: '平安银行', qty: 40000, avail: 0, avgCost: 20,
+          cost: 800000, grossBuy: 799800, fee: 200, openDate: arcLast, days: 0,
+          lastBuyDate: arcLast, last: 16, lastDate: arcLast, pxStale: false },
       },
     };
     window.localStorage.setItem(seedKey, JSON.stringify(seed));
     let threw = null;
     try {
       // 重新执行一遍 paper_ui.js：boot() 会 load() 到上面这份种子 → renderAllPaper()
-      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksNoExport}\n${engineNoExport}\n;(function(){\n${uiNoImport}\n})();`);
+      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n;(function(){\n${alertsFlat}\n${uiNoImport}\n})();`);
       await new Promise((r) => setTimeout(r, 800));
     } catch (e) { threw = e; }
     check('模拟交易·持仓：带 pxStale 的种子账本渲染不抛错',
       !threw, threw ? String(threw.message || threw).slice(0, 140) : 'ok');
     check('模拟交易·持仓：持仓说明渲染完整且不含 undefined',
       !/undefined/.test(txt('paperPosNote')), txt('paperPosNote').slice(0, 100));
+    // 守卫：种子必须被 importAccount 接受，否则后续预警断言会在「空账户」上假通过。
+    // 早期种子漏了 initCash，整份被拒 → 界面渲染新账户 → 预警断言全部落空却没人发现。
+    check('模拟交易·持仓：种子账本被引擎接受（持仓明细真实生效，非空账户）',
+      /平安银行|贵州茅台/.test(txt('paperPosCards')) || /平安银行|贵州茅台/.test(txt('paperPosTable')),
+      txt('paperPosNote').slice(0, 90));
+
+    // ── 交易预警（大盘 + 持仓双层）：用上面这份种子点亮止损分支 ──
+    check('模拟交易·预警：预警卡片存在（列表 + 元信息 + 脚注三件套）',
+      !!$('alertsList') && !!$('alertsMeta') && !!$('alertsNote'),
+      [$('alertsList') && 'list', $('alertsMeta') && 'meta', $('alertsNote') && 'note'].filter(Boolean).join('+') || '缺失');
+
+    const aRows = [...($('alertsList')?.querySelectorAll('.alert-row') || [])];
+    check('模拟交易·预警：渲染出预警行', aRows.length > 0, `${aRows.length} 行`);
+
+    const aMeta = txt('alertsMeta');
+    check('模拟交易·预警：元信息写明数据日期/档位/风险-机会-提示计数',
+      /数据日期/.test(aMeta) && /风险/.test(aMeta) && /机会/.test(aMeta) && /提示/.test(aMeta),
+      aMeta.slice(0, 120));
+
+    // 止损分支：种子 000001 浮亏 -20%，必须出现风险级止损预警
+    const stopRow = aRows.find((r) => /止损线/.test(r.textContent || ''));
+    check('模拟交易·预警：浮亏 -20% 触发风险级止损预警', !!stopRow,
+      stopRow ? stopRow.className : '未找到止损行');
+    check('模拟交易·预警：风险级条目带 risk 类（红左色条）',
+      !!stopRow && stopRow.classList.contains('risk'), stopRow?.className || '—');
+
+    // 止损且可卖为 0：卖出按钮不得给出正数数量（否则下单必被拒）
+    const stopFill = stopRow?.querySelector('button[data-act="alert-fill"]');
+    if (stopFill) {
+      const q = Number(stopFill.dataset.qty || 0);
+      check('模拟交易·预警：止损但 T+1 不可卖时，填入数量为 0（不得超卖）', q === 0, `qty=${q}`);
+    }
+    check('模拟交易·预警：同时给出 T+1 不可卖的原因说明',
+      aRows.some((r) => /未解冻|不可卖|T\+1/.test(r.textContent || '')),
+      aRows.map((r) => (r.textContent || '').slice(0, 24)).join(' | ').slice(0, 120));
+
+    // 严重度排序：risk 必须排在 opp / tip 之前（引擎已排序，UI 不得打乱）
+    const lvSeq = aRows.map((r) => (r.classList.contains('risk') ? 0 : r.classList.contains('opp') ? 1 : 2));
+    check('模拟交易·预警：按严重度排序（风险 → 机会 → 提示）',
+      lvSeq.every((v, i) => i === 0 || v >= lvSeq[i - 1]), lvSeq.join(','));
+
+    // 每条都要能追溯到具体字段：抽屉里必须有「触发依据」
+    if (aRows.length) {
+      clickEl(aRows[0]);
+      await new Promise((r) => setTimeout(r, 120));
+      const dwA = txt('dwBody');
+      check('模拟交易·预警：点条目打开抽屉并写明「触发依据」与字段取值',
+        drawerOpen() && /触发依据/.test(dwA) && /当时的字段取值/.test(dwA), txt('dwTitle'));
+      escClose();
+    }
+
+    // 一键动作：只填不提交（与「研判推荐」同纪律）
+    const fillBtn = aRows.map((r) => r.querySelector('button[data-act="alert-fill"]')).find(Boolean);
+    if (fillBtn) {
+      const pendBefore = ($('paperPendTable')?.querySelectorAll('tbody tr') || []).length;
+      const wantCode = aRows.find((r) => r.querySelector('button[data-act="alert-fill"]'))?.querySelector('.al-code')?.textContent || '';
+      clickEl(fillBtn);
+      await new Promise((r) => setTimeout(r, 250));
+      check('模拟交易·预警：点「填入卖出」把代码填入下单区且切到卖出方向',
+        !!$('poCode').value && wantCode.includes($('poCode').value)
+        && window.document.querySelector('#poSide button[data-side="sell"]')?.classList.contains('on'),
+        `poCode=${$('poCode').value} / ${wantCode.trim()}`);
+      const pendAfter = ($('paperPendTable')?.querySelectorAll('tbody tr') || []).length;
+      check('模拟交易·预警：填入不自动下单（委托数不变）', pendAfter === pendBefore, `${pendBefore} → ${pendAfter}`);
+    }
+
+    // 脚注：阈值出处 + 不构成投资建议（合规底线）
+    check('模拟交易·预警：脚注写明阈值出处且声明不构成投资建议',
+      /不构成投资建议/.test(txt('alertsNote')) && /V5\.2/.test(txt('alertsNote')), txt('alertsNote').slice(-90));
+
     // 收尾：清掉种子，避免影响后续用例
     window.localStorage.removeItem(seedKey);
   }
@@ -1089,6 +1196,14 @@ check('样式：图表数据点扩大命中区（含触屏放大）',
 check('样式：席位双侧表并排 + 窄屏堆叠规则齐备',
   cssTxt.includes('.seat-grid') && /grid-template-columns:\s*1fr 1fr/.test(cssTxt)
   && cssTxt.includes('.seat-badge.b') && cssTxt.includes('.seat-badge.s'), '');
+
+// 交易预警：严重度色条 + 窄屏折行。色条规则必须三条齐全（风险/机会/提示），
+// 缺任何一条都会让对应级别的预警失去视觉区分——「一眼扫到最该看的那条」就失效了。
+check('样式：预警严重度色条三档齐全（风险/机会/提示各一条规则）',
+  ['.alert-row.risk', '.alert-row.opp', '.alert-row.tip'].every((s) => cssTxt.includes(s))
+  && cssTxt.includes('.alert-row') && /border-left:\s*3px solid/.test(cssTxt), '');
+check('样式：预警条目窄屏折行（操作按钮整行右对齐）',
+  /@media \(max-width: 560px\)/.test(cssTxt) && cssTxt.includes('.al-actions'), '');
 
 check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' | '));
 

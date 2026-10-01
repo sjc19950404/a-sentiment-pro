@@ -23,6 +23,9 @@ import { fetchQuotes, priceKind, inTradingSession, normalizeCodes } from './src/
 // 研判推荐引擎（把市场研判结论落到具体个股）。
 // 规则同样只有一个出处：src/picks.js。本文件只负责渲染、以及把用户点击转成下单区输入。
 import { recommendPicks, PICK_TOP_N, SCORE_WEIGHTS } from './src/picks.js';
+// 双层预警引擎（大盘层档位偏离 + 持仓层止损/集中度/T+1）。
+// 与 picks.js 同纪律：规则只有一个出处（src/alerts.js），UI 只渲染 + 把动作转成下单区输入。
+import { buildAlerts, MARKET_CFG, POS_CFG, LEVELS } from './src/alerts.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
@@ -279,6 +282,7 @@ function lookup(code) {
 
 function renderAllPaper() {
   renderStats();
+  renderAlerts();
   renderPicks();
   renderPositions();
   renderPending();
@@ -675,6 +679,156 @@ function syncOrderInputs() {
     b.classList.toggle('on', on);
     b.setAttribute('aria-selected', on ? 'true' : 'false');
   });
+}
+
+// ────────────────────────── 交易预警（大盘 + 持仓双层） ──────────────────────────
+
+/**
+ * 当前预警结果。与 currentPicks 同思路：**不缓存**——预警要反映「此刻的仓位与浮盈」，
+ * 而账户和实时行情随时在变（下单、结算、抓价都会改），缓存一天前的结论是危险的。
+ * 引擎是纯函数且规模很小（持仓数量级），每次重算的代价可以忽略。
+ */
+function currentAlerts() {
+  if (!ACCT) return null;
+  const day = ARC_DAYS[ARC_DAYS.length - 1] || {};
+  const score = (day.emotion && day.emotion.value != null) ? day.emotion.value : null;
+  const st = accountStats(ACCT);
+  // 推荐池用于「持仓是否在今日推荐内」的信息提示；取不到就传空（引擎按「无结论」处理，不误报）
+  const picks = currentPicks();
+  const pickCodes = picks && picks.picks ? picks.picks.map((p) => p.code) : [];
+  return buildAlerts({
+    emotionScore: score,
+    account: ACCT,
+    stats: st,
+    pickCodes,
+    asOf: day.trade_date || LAST_DATE || null,
+  });
+}
+
+/** 严重度 → 徽标文案。顺序与 src/alerts.js 的 LEVELS 一致（risk > opp > tip）。 */
+const AL_LABEL = { risk: '风险', opp: '机会', tip: '提示' };
+
+function renderAlerts() {
+  const meta = $('alertsMeta');
+  const box = $('alertsList');
+  const note = $('alertsNote');
+  if (!box) return;
+
+  const r = currentAlerts();
+  if (!r) {
+    if (meta) meta.innerHTML = '<span class="muted">数据未就绪</span>';
+    box.innerHTML = '<div class="alerts-empty muted">等待账户与行情存档加载…</div>';
+    if (note) note.textContent = '';
+    return;
+  }
+
+  if (meta) {
+    const tierTxt = r.tier
+      ? `<span class="pk-tier ${r.tier.allowNew ? '' : 'warn'}">${esc(r.tier.label)}</span>`
+      : '<span class="pk-tier warn">档位未知</span>';
+    meta.innerHTML = `数据日期 <b>${esc(r.asOf || '—')}</b> · 情绪分 <b>${r.score == null ? '—' : r.score.toFixed(1)}</b>`
+      + ` → ${tierTxt} · 共 <b>${r.total}</b> 条`
+      + `${r.truncated ? `（按严重度显示前 ${r.alerts.length} 条）` : ''}`
+      + ` · <span class="hl">风险 ${r.counts.risk || 0}</span>`
+      + ` / <span class="hl-dn">机会 ${r.counts.opp || 0}</span>`
+      + ` / <span class="muted">提示 ${r.counts.tip || 0}</span>`;
+  }
+
+  if (!r.alerts.length) {
+    box.innerHTML = '<div class="alerts-empty muted">当前无预警：仓位贴合市场档位，持仓未触及止损线或集中度上限。</div>';
+  } else {
+    box.innerHTML = r.alerts.map((a, i) => {
+      // 一键动作：只有能转成「下单区输入」的建议才给按钮（绝不自动提交）
+      const canFill = a.action === 'sell' || a.action === 'reduce';
+      const fillQty = a.qty > 0 ? ` data-qty="${a.qty}"` : '';
+      return `<div class="alert-row ${esc(a.level)}" data-act="alert" data-i="${i}" tabindex="0" role="button"
+          title="点击查看该条预警的触发依据">
+        <span class="al-badge ${esc(a.level)}">${esc(AL_LABEL[a.level] || a.level)}</span>
+        <div class="al-main">
+          <div class="al-head">
+            <span class="al-act">${esc(ACTIONS_CN[a.action] || a.action)}</span>
+            ${a.code ? `<b class="al-code">${esc(a.name || a.code)} ${esc(a.code)}</b>` : '<b class="al-code">大盘</b>'}
+          </div>
+          <div class="al-text">${esc(a.text)}</div>
+        </div>
+        ${canFill ? `<div class="al-actions"><button class="mini al-fill" type="button"
+            data-act="alert-fill" data-i="${i}"${fillQty}
+            title="把该股与建议数量填入下单区（不自动提交）">填入卖出</button></div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  if (note) {
+    // 阈值一律从引擎常量取，避免 UI 文案与引擎悄悄漂移
+    note.innerHTML = `<span class="muted">`
+      + `大盘层：档位偏离容忍带 ${(MARKET_CFG.band * 100).toFixed(0)}%、`
+      + `最小可执行差额 ${(MARKET_CFG.minActionPos * 100).toFixed(0)}% · `
+      + `持仓层：止损线 ${(POS_CFG.stopLoss * 100).toFixed(0)}%、`
+      + `单票上限 ${(POS_CFG.concMax * 100).toFixed(0)}%、`
+      + `回撤降仓线 ${(POS_CFG.ddTrigger * 100).toFixed(0)}%`
+      + `</span>`
+      + ` 阈值与 V5.2 回测引擎同源；预警由规则引擎按当档数据与账户实况生成，`
+      + `<b>不构成投资建议</b>，按键只把参数填入下单区，是否下单由你决定。`;
+  }
+}
+
+/** 动作中文名（与 src/alerts.js 的 ACTIONS 一致；UI 侧留一份只为渲染，不参与判断） */
+const ACTIONS_CN = {
+  buy: '买入', sell: '卖出', add: '加仓', reduce: '减仓',
+  clear: '空仓', exit: '清仓', hold: '持有', wait: '等待', watch: '观望',
+};
+
+/**
+ * 把预警的建议转成下单区输入（**只填不提交**——与「研判推荐」的填入同纪律）。
+ * 卖出方向要把数量也带上，否则用户还得自己算「减多少股」。
+ */
+function fillAlertToOrder(i) {
+  const r = currentAlerts();
+  const a = r && r.alerts[i];
+  if (!a) return;
+  if (a.action === 'clear' || a.action === 'exit') {
+    // 空仓/清仓是「一键空仓」那种批量动作，不在这里做——引导用户用账户栏那颗按钮更安全
+    msg('「空仓」涉及全部持仓，请用账户总览的「一键空仓」，避免只卖一只造成误解', 'ok');
+    return;
+  }
+  if (!a.code) return;
+  ORDER = { ...ORDER, code: a.code, side: 'sell', qty: a.qty > 0 ? a.qty : 0 };
+  syncOrderInputs();
+  renderOrderForm();
+  renderQuick();
+  const nm = LIVEQ[a.code]?.name || a.name || '';
+  if (!LIVEQ[a.code] && !LIVE_BUSY) {
+    refreshLive([a.code]).then((res) => {
+      renderOrderForm();
+      renderQuick();
+      msg(res.ok ? `已填入 ${a.code} ${LIVEQ[a.code]?.name || nm} 卖出，请核对数量后提交` : `${a.code} 取不到行情，请核对代码`, res.ok ? 'ok' : 'err');
+    });
+  } else {
+    msg(`已填入 ${a.code} ${nm} 卖出${a.qty > 0 ? ` ${a.qty} 股` : ''}，请核对后提交`, 'ok');
+  }
+  $('poQty')?.focus?.();
+}
+
+/** 预警条目详情抽屉：把引擎给出的触发依据原样展示，便于核对 */
+function alertDetail(i) {
+  const r = currentAlerts();
+  const a = r && r.alerts[i];
+  if (!a) return null;
+  const title = a.code ? `${a.name || a.code} ${a.code}` : '大盘仓位';
+  // 复用抽屉的 dwSection / dwKv（函数声明会提升，放在后面定义也能用）——
+  // 手写一份 HTML 结构等于多一套需要同步维护的版式。
+  const body = dwSection('建议动作',
+    `<div class="dw-note"><b>${esc(ACTIONS_CN[a.action] || a.action)}</b>`
+    + `${a.qty > 0 ? ` · 数量 ${a.qty} 股` : ''}`
+    + ` · 严重度 ${esc(AL_LABEL[a.level] || a.level)}`
+    + ` · 规则出处 ${esc(a.layer === 'market' ? 'src/alerts.js marketAlerts()' : 'src/alerts.js positionAlerts()')}</div>`)
+    + dwSection('触发依据', `<div class="dw-note">${esc(a.why || '—')}</div>`)
+    + dwSection('当时的字段取值', dwKv(Object.entries(a.quote || {}).map(([k, v]) => [k, esc(v)])));
+  return {
+    title: `${esc(title)}`,
+    sub: `${AL_LABEL[a.level] || a.level} · ${ACTIONS_CN[a.action] || a.action} · 数据日 ${esc(r.asOf || '—')}`,
+    body,
+  };
 }
 
 // ────────────────────────── 研判推荐（小模块） ──────────────────────────
@@ -1267,6 +1421,9 @@ document.addEventListener('click', (e) => {
   // 研判推荐：点「填入下单」只填不提交（绝不替用户下单）；点整行看详情
   if (act === 'pick-fill') { e.stopPropagation(); fillPickToOrder(el.dataset.code); return; }
   if (act === 'pick') { openPaperDrawer(pickDetail(el.dataset.code)); return; }
+  // 交易预警：同上——「填入卖出」只填代码与建议数量，点整行看触发依据
+  if (act === 'alert-fill') { e.stopPropagation(); fillAlertToOrder(+el.dataset.i); return; }
+  if (act === 'alert') { openPaperDrawer(alertDetail(+el.dataset.i)); return; }
 });
 
 // 输入满 6 位就抓实时行情（防抖 250ms，避免边打字边发请求）。
