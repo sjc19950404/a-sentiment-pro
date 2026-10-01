@@ -88,6 +88,12 @@ jobs:
         run: node scripts/fetch_global.mjs
       - name: 生成 V5.2 回测档（成本/平滑/风控/网格帕累托/滚动/主线选股）
         run: node scripts/backtest.mjs
+      # ③ 策略收益回测：冰点反转/题材动量/梯队风险偏好 × 沪深300基准（严格 point-in-time）。
+      #   个股日K走 data/.bt_kline/ 缓存（不入库，CI 每次真抓——86 只 top1 题材成员约 2 分钟）。
+      #   产物 data/backtest-strategies.json 入库；样本不足时脚本自行跳过不阻断。
+      - name: 生成策略收益回测（三策略 × 基准，point-in-time）
+        run: node scripts/backtest_strategies.mjs
+        continue-on-error: true
       # 公式版本回归验证集：v4.5 / v5.0 / v5.2 在同一段历史上并行重算，
       # 对次日上证涨跌幅算相关性 + 方向准确率。改公式后跑一次即可看出影响面，
       # 不必再用肉眼看"某天数字好像不对"。
@@ -124,7 +130,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json
+          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else

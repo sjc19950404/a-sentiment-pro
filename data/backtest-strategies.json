@@ -1,0 +1,325 @@
+{
+  "meta": {
+    "generatedAt": "2026-10-01T20:12:55.413Z",
+    "engine": "scripts/backtest_strategies.mjs + src/strategy_bt.js（逐笔交易模型：T日信号 → T+1开盘成交 → N日收盘出场；时点纪律由 test/backtest_strategies.test.mjs 锁定）",
+    "pointInTime": "信号只读 T 日收盘字段（emotion/max_lb/topics）；成交一律 T+1 开盘价；重叠信号不加仓",
+    "costs": "与 V5.2 同口径：佣金 0.0003（双边）+ 印花税 0.0005（卖出）+ 滑点 0.0002，单次往返约 0.150%",
+    "sample": {
+      "realDays": 33,
+      "range": [
+        "2026-08-14",
+        "2026-09-30"
+      ],
+      "excludedBackfillDays": 208,
+      "note": "历史回填天只有 s_net 单因子（非综合分），全部排除。样本期情绪区间 29.9~85.6：无 <10 冰点日、无 >90 过热日——策略 A 触发 0 次是事实，不是 bug。"
+    },
+    "disclaimer": "历史回测 ≠ 未来收益。样本仅 33 个真实交易日（单笔噪声即可主导结论），结果仅用于管线自检与口径演示，不构成投资建议，不当选股依据。"
+  },
+  "benchmark": {
+    "id": "HS300_buyhold",
+    "label": "沪深300 买入持有（同区间）",
+    "total": -0.0657,
+    "annual": -0.4143,
+    "maxDd": 0.0844,
+    "sharpe": -3.46,
+    "winRate": 0,
+    "plRatio": null
+  },
+  "strategies": [
+    {
+      "id": "A_ice_reversal",
+      "label": "冰点反转（<10 买 / >90 避险，持有 3 日）",
+      "holdN": 3,
+      "entry": "T日 emotion<10 → T+1 开盘买沪深300",
+      "exit": "持有 3 日收盘卖；期间 emotion>90 → 次日开盘卖",
+      "triggered": 0,
+      "trades": 0,
+      "total": 0,
+      "annual": 0,
+      "maxDd": 0,
+      "sharpe": null,
+      "winRate": null,
+      "plRatio": null,
+      "tradeList": []
+    },
+    {
+      "id": "B_theme_momentum",
+      "label": "题材动量（top1 题材等权，持有 3 日）",
+      "holdN": 3,
+      "entry": "T日 top1 题材（去噪口径）→ T+1 开盘等权买成员股",
+      "exit": "持有 3 日收盘卖",
+      "triggered": 13,
+      "trades": 5,
+      "droppedMembersTotal": 0,
+      "total": -0.1022,
+      "annual": -0.5722,
+      "maxDd": 0.1611,
+      "sharpe": -2.07,
+      "winRate": 0.6,
+      "plRatio": 0.1385,
+      "tradeList": [
+        {
+          "signalDay": "2026-08-14",
+          "theme": "CPO",
+          "entry": "2026-08-17",
+          "exit": "2026-08-19",
+          "members": 6,
+          "ret": -0.1036
+        },
+        {
+          "signalDay": "2026-09-04",
+          "theme": "海峡两岸",
+          "entry": "2026-09-07",
+          "exit": "2026-09-09",
+          "members": 5,
+          "ret": 0.0044
+        },
+        {
+          "signalDay": "2026-09-11",
+          "theme": "光伏玻璃",
+          "entry": "2026-09-14",
+          "exit": "2026-09-16",
+          "members": 3,
+          "ret": -0.0398
+        },
+        {
+          "signalDay": "2026-09-16",
+          "theme": "光通信",
+          "entry": "2026-09-17",
+          "exit": "2026-09-21",
+          "members": 12,
+          "ret": 0.0214
+        },
+        {
+          "signalDay": "2026-09-22",
+          "theme": "“华”字辈",
+          "entry": "2026-09-23",
+          "exit": "2026-09-28",
+          "members": 10,
+          "ret": 0.004
+        }
+      ]
+    },
+    {
+      "id": "C_ladder_risk",
+      "label": "梯队风险偏好（高度≥4且2板+≥8 买 / 高度≤2 断层卖，持有 3 日）",
+      "holdN": 3,
+      "entry": "T日 max_lb≥4 且 lb2_count≥8 → T+1 开盘买沪深300",
+      "exit": "持有 3 日收盘卖；期间 max_lb≤2 → 次日开盘卖",
+      "triggered": 14,
+      "trades": 5,
+      "total": -0.0465,
+      "annual": -0.3127,
+      "maxDd": 0.0502,
+      "sharpe": -4.19,
+      "winRate": 0.2,
+      "plRatio": 0.8884,
+      "tradeList": [
+        {
+          "signalDay": "2026-09-07",
+          "entry": "2026-09-08",
+          "exit": "2026-09-10",
+          "ret": -0.0075
+        },
+        {
+          "signalDay": "2026-09-10",
+          "entry": "2026-09-11",
+          "exit": "2026-09-15",
+          "ret": -0.0157
+        },
+        {
+          "signalDay": "2026-09-16",
+          "entry": "2026-09-17",
+          "exit": "2026-09-21",
+          "ret": 0.0155
+        },
+        {
+          "signalDay": "2026-09-21",
+          "entry": "2026-09-22",
+          "exit": "2026-09-24",
+          "ret": -0.0301
+        },
+        {
+          "signalDay": "2026-09-24",
+          "entry": "2026-09-28",
+          "exit": "2026-09-30",
+          "ret": -0.0164
+        }
+      ]
+    },
+    {
+      "id": "A_ice_reversal",
+      "label": "冰点反转（<10 买 / >90 避险，持有 5 日）",
+      "holdN": 5,
+      "entry": "T日 emotion<10 → T+1 开盘买沪深300",
+      "exit": "持有 5 日收盘卖；期间 emotion>90 → 次日开盘卖",
+      "triggered": 0,
+      "trades": 0,
+      "total": 0,
+      "annual": 0,
+      "maxDd": 0,
+      "sharpe": null,
+      "winRate": null,
+      "plRatio": null,
+      "tradeList": []
+    },
+    {
+      "id": "B_theme_momentum",
+      "label": "题材动量（top1 题材等权，持有 5 日）",
+      "holdN": 5,
+      "entry": "T日 top1 题材（去噪口径）→ T+1 开盘等权买成员股",
+      "exit": "持有 5 日收盘卖",
+      "triggered": 13,
+      "trades": 4,
+      "droppedMembersTotal": 8,
+      "total": -0.1826,
+      "annual": -0.7956,
+      "maxDd": 0.2039,
+      "sharpe": -3.53,
+      "winRate": 0,
+      "plRatio": null,
+      "tradeList": [
+        {
+          "signalDay": "2026-08-14",
+          "theme": "CPO",
+          "entry": "2026-08-17",
+          "exit": "2026-08-21",
+          "members": 6,
+          "ret": -0.0526
+        },
+        {
+          "signalDay": "2026-09-04",
+          "theme": "海峡两岸",
+          "entry": "2026-09-07",
+          "exit": "2026-09-11",
+          "members": 5,
+          "ret": -0.0937
+        },
+        {
+          "signalDay": "2026-09-11",
+          "theme": "光伏玻璃",
+          "entry": "2026-09-14",
+          "exit": "2026-09-18",
+          "members": 3,
+          "ret": -0.0578
+        },
+        {
+          "signalDay": "2026-09-18",
+          "theme": "次新股",
+          "entry": "2026-09-21",
+          "exit": "2026-09-28",
+          "members": 8,
+          "ret": null
+        }
+      ]
+    },
+    {
+      "id": "C_ladder_risk",
+      "label": "梯队风险偏好（高度≥4且2板+≥8 买 / 高度≤2 断层卖，持有 5 日）",
+      "holdN": 5,
+      "entry": "T日 max_lb≥4 且 lb2_count≥8 → T+1 开盘买沪深300",
+      "exit": "持有 5 日收盘卖；期间 max_lb≤2 → 次日开盘卖",
+      "triggered": 14,
+      "trades": 3,
+      "total": -0.0554,
+      "annual": -0.3617,
+      "maxDd": 0.0564,
+      "sharpe": -4.53,
+      "winRate": 0.3333,
+      "plRatio": 0.3609,
+      "tradeList": [
+        {
+          "signalDay": "2026-09-07",
+          "entry": "2026-09-08",
+          "exit": "2026-09-14",
+          "ret": -0.0224
+        },
+        {
+          "signalDay": "2026-09-14",
+          "entry": "2026-09-15",
+          "exit": "2026-09-21",
+          "ret": 0.0132
+        },
+        {
+          "signalDay": "2026-09-21",
+          "entry": "2026-09-22",
+          "exit": "2026-09-29",
+          "ret": -0.0506
+        }
+      ]
+    },
+    {
+      "id": "A_ice_reversal",
+      "label": "冰点反转（<10 买 / >90 避险，持有 10 日）",
+      "holdN": 10,
+      "entry": "T日 emotion<10 → T+1 开盘买沪深300",
+      "exit": "持有 10 日收盘卖；期间 emotion>90 → 次日开盘卖",
+      "triggered": 0,
+      "trades": 0,
+      "total": 0,
+      "annual": 0,
+      "maxDd": 0,
+      "sharpe": null,
+      "winRate": null,
+      "plRatio": null,
+      "tradeList": []
+    },
+    {
+      "id": "B_theme_momentum",
+      "label": "题材动量（top1 题材等权，持有 10 日）",
+      "holdN": 10,
+      "entry": "T日 top1 题材（去噪口径）→ T+1 开盘等权买成员股",
+      "exit": "持有 10 日收盘卖",
+      "triggered": 13,
+      "trades": 2,
+      "droppedMembersTotal": 0,
+      "total": -0.0842,
+      "annual": -0.4997,
+      "maxDd": 0.1732,
+      "sharpe": -1.26,
+      "winRate": 0,
+      "plRatio": null,
+      "tradeList": [
+        {
+          "signalDay": "2026-08-14",
+          "theme": "CPO",
+          "entry": "2026-08-17",
+          "exit": "2026-08-28",
+          "members": 6,
+          "ret": -0.0422
+        },
+        {
+          "signalDay": "2026-09-04",
+          "theme": "海峡两岸",
+          "entry": "2026-09-07",
+          "exit": "2026-09-18",
+          "members": 5,
+          "ret": -0.0562
+        }
+      ]
+    },
+    {
+      "id": "C_ladder_risk",
+      "label": "梯队风险偏好（高度≥4且2板+≥8 买 / 高度≤2 断层卖，持有 10 日）",
+      "holdN": 10,
+      "entry": "T日 max_lb≥4 且 lb2_count≥8 → T+1 开盘买沪深300",
+      "exit": "持有 10 日收盘卖；期间 max_lb≤2 → 次日开盘卖",
+      "triggered": 14,
+      "trades": 1,
+      "total": -0.008,
+      "annual": -0.061,
+      "maxDd": 0.0275,
+      "sharpe": -1.02,
+      "winRate": 0,
+      "plRatio": null,
+      "tradeList": [
+        {
+          "signalDay": "2026-09-07",
+          "entry": "2026-09-08",
+          "exit": "2026-09-21",
+          "ret": -0.0094
+        }
+      ]
+    }
+  ]
+}
