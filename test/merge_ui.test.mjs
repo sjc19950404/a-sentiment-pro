@@ -8,6 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, rmSync, mkdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -39,6 +40,16 @@ test('merge: 构建产物结构完整（占位符全替换 · 实验室模块全
   }
   for (const mod of ['lab-core.js', 'lab-kline.js', 'lab-realtime.js', 'lab-s11.js', 'vendor/qrcode.min.js']) {
     assert.ok(html.includes(`ui/src/${mod}`), `实验室模块 ${mod} 未拼接`);
+  }
+});
+
+test('merge: 产物内联脚本全部可编译（模板拼接零语法错误——语法错=整页白屏）', () => {
+  // 不执行（无 DOM/网络），只 vm.Script 编译：15 个 lab 模块拼接处最易出括号/逗号错
+  const scripts = [...html.matchAll(/<script(?![^>]*type="application\/json")[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  assert.ok(scripts.length >= 1 && scripts[0].includes('const D = JSON.parse'), '主脚本块缺失（模板结构损坏）');
+  for (let i = 0; i < scripts.length; i++) {
+    assert.doesNotThrow(() => new vm.Script(scripts[i], { filename: `dist-inline-${i}.js` }),
+      `第 ${i + 1} 个内联脚本编译失败（白屏级）`);
   }
 });
 
