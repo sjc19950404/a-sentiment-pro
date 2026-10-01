@@ -885,10 +885,22 @@ check('外围：A50 期货带「A股锚」标记（长假唯一实时锚不能�
   gRow.some((tr) => tr.dataset.key === 'a50' && tr.textContent.includes('A股锚')), '');
 check('外围：涨跌幅列直接渲染快照文案（前端不二次格式化，避免两套口径）',
   gRow.every((tr) => { const q = gq[tr.dataset.key]; return !!q && tr.textContent.includes(q.chgPctText); }), '');
-check('回归：费半收平渲染为 0.00% 而非 -0.00%（收平不被读成下跌）',
-  gq.sox.chgPctText === '0.00%'
-  && (() => { const tr = gRow.find((x) => x.dataset.key === 'sox'); return !!tr && tr.textContent.includes('0.00%') && !tr.textContent.includes('-0.00%'); })(),
-  gq.sox.chgPctText);
+// ★ 本条原为「费半收平渲染为 0.00%」——那是个**把 bug 锁死的断言**。
+//   2026-10-01 事故里，sox 的 "0.00%" 其实是盘前占位（源给 last==prevClose、涨跌幅 0），
+//   不是真收平。旧断言"要求它渲染成 0.00%"，等于要求前端继续骗人。
+//   现改为锁**正确语义**：真收平（有振幅）才渲染 0.00%；未成交一律「盘前无数据」。
+check('回归：涨跌幅为 0 时渲染 0.00% 而非 -0.00%（真收平不被读成下跌）',
+  (() => {
+    const flat = GJSON.quotes.find((q) => q.state === 'ok' && q.chgPct === 0);
+    if (!flat) return true; // 本快照没有真收平品种，跳过（不假装通过）
+    return flat.chgPctText === '0.00%'
+      && !(gRow.find((x) => x.dataset.key === flat.key)?.textContent || '').includes('-0.00%');
+  })(), '');
+check('回归：未成交的美股不得渲染成「0.00%」（0% 是报价，不是"不知道"）',
+  GJSON.quotes.filter((q) => q.state !== 'ok').every((q) => {
+    const tr = gRow.find((x) => x.dataset.key === q.key);
+    return !!tr && !tr.textContent.includes('0.00%') && tr.textContent.includes(q.chgPctText);
+  }), '');
 check('外围：映射表按快照 anchors 逐条渲染（映射关系不在前端重写一份）',
   ($('globMap')?.querySelectorAll('.gmap-row').length || 0) === GJSON.anchors.length, `${GJSON.anchors.length} 条`);
 check('外围：假期跟踪清单列出开市前剩余美股交易日，并写明下次开市日',
@@ -897,6 +909,97 @@ check('外围：假期跟踪清单列出开市前剩余美股交易日，并写�
   `${(GJSON.meta.usSessionDates || []).length} 个交易日 / 开市 ${GJSON.meta.aShareNextOpen}`);
 check('外围：口径备注写明数据源与「非投资建议」',
   txt('globNote').includes('新浪') && txt('globNote').includes('非投资建议'), '');
+
+// ════════════════════════════════════════════════════════════════════════════
+// 外围面板 · 数据缺失三层守卫（2026-10-01 事故）
+//
+// 守的是什么：**"没取到"不得显示成"0%"，也不得显示成"中性"**。
+//   事故回放：北京 21:10（美东 09:10 盘前）抓到新浪的盘前占位
+//   （last==prevClose、chgPct=0、open/high/low=0），被静默渲染成"当日收平 0.00%"，
+//   阈值层再把 0% 判成"无明确方向"→ 用户看到的是"电子链无方向"，
+//   真相是"电子链根本没数据"。三层各自都能吃人：
+//     ① 行情层把 null 写成 0；② 阈值层把缺失当合法值参与判定；③ 前端把 unknown 画成中性灰。
+//   断言一律拿磁盘上的真快照做对照（data/global.json 已由真引擎按盘前占位串生成），
+//   并**真调用**渲染函数后读 DOM —— 不扫源码字面量（扫源码只会证明我写过这行字）。
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const missQ = GJSON.quotes.filter((q) => q.state === 'preopen' || q.state === 'no-trade');
+  const missingKeys = GJSON.watch.missing || [];
+
+  // ① 行情层：未成交的美股，涨跌幅一律 null + 「盘前无数据」，绝不能渲染成 0
+  check('外围·①：未成交的美股涨跌幅为 null（源头就不给 0——0 是真实行情值）',
+    missQ.length > 0 && missQ.every((q) => q.chgPct === null),
+    `${missQ.length} 只未成交：${missQ.map((q) => `${q.key}=${q.chgPct}`).join(' ')}`);
+  check('外围·①：未成交的美股在表里标「盘前无数据」，绝不出现「0.00%」',
+    missQ.length > 0 && missQ.every((q) => {
+      const tr = gRow.find((x) => x.dataset.key === q.key);
+      return !!tr && tr.textContent.includes('盘前无数据') && !tr.textContent.includes('0.00%');
+    }),
+    missQ.map((q) => q.key).join('、'));
+  check('外围·①：详情抽屉分状态说清「盘前无数据 ≠ 0%」（三种缺失不糊成一句）',
+    (() => {
+      const q = missQ[0];
+      if (!q) return false;
+      clickEl(gRow.find((tr) => tr.dataset.key === q.key));
+      const body = txt('dwBody');
+      const okDrawer = drawerOpen() && /行情状态/.test(body) && /不等于|不可混/.test(body)
+        && (q.state === 'preopen' ? /盘前无数据/.test(body) : /无成交/.test(body));
+      escClose();
+      return okDrawer;
+    })(), '');
+
+  // ② 接口层：meta 必须留痕，可核验 —— 前端不得自行编造"无行情"以外的状态
+  check('外围·②：快照 meta 留痕美股就绪状态与「无成交」清单（可审计）',
+    GJSON.meta.usReadiness && GJSON.meta.usReadiness.ready === false
+    && Array.isArray(GJSON.meta.usNoSession) && GJSON.meta.usNoSession.length > 0,
+    `ready=${GJSON.meta.usReadiness && GJSON.meta.usReadiness.ready} usNoSession=${(GJSON.meta.usNoSession || []).length}`);
+  check('外围·②：未就绪时结论条里出现「美股档未就绪」警示（不静默）',
+    !GJSON.meta.usReadiness.ready ? /美股档未就绪/.test(txt('globVerdict')) : true,
+    txt('globVerdict').slice(0, 60));
+  check('外围·②：「无成交」的品种列进 meta.usNoSession，但**不**混进 meta.failed',
+    (GJSON.meta.usNoSession || []).length > 0
+    && !(GJSON.meta.failed || []).some((k) => GJSON.meta.usNoSession.includes(k)),
+    `failed=${JSON.stringify(GJSON.meta.failed)}`);
+
+  // ③ 阈值层 + 前端：缺失 → 结论「判据不足」（独立色）。
+
+  // ③ 阈值层：主锚缺失必须降级为 insufficient，且 bias 不计缺失权重
+  check('外围·③：主锚缺数据 → 结论为「判据不足」，**不是**「外围中性」',
+    (GJSON.watch.mainMissing || []).length > 0
+    && GJSON.watch.verdict.key === 'insufficient'
+    && /判据不足/.test(txt('globVerdict')),
+    `verdict=${GJSON.watch.verdict.key} mainMissing=${JSON.stringify(GJSON.watch.mainMissing)}`);
+  check('外围·③：「判据不足」用独立色调（gv.unk），不得与「中性」的 gv.neu 同色',
+    !!window.document.querySelector('#globVerdict .gv.unk')
+    && !window.document.querySelector('#globVerdict .gv.neu'), '');
+  // 前端渲染的信号节点与快照 signals 一一对应（同一份数据、同一顺序）——
+  //   故按**下标**对齐，再取快照里该条信号的 key/missing/level 做断言。
+  //   不按文案匹配：文案会变，key 不会。
+  const sigNodes = [...($('globSignals')?.querySelectorAll('.gsig') || [])];
+  const sigPairs = GJSON.watch.signals.map((s, i) => ({ s, el: sigNodes[i] }));
+  const missPairs = sigPairs.filter((p) => p.s.missing);
+  check('外围·③：缺失品种在触发式观测里是 unknown 哨兵（虚线 is-missing），不是 info',
+    missPairs.length === missingKeys.length && missPairs.length > 0
+    && missPairs.every((p) => p.el && p.el.classList.contains('unknown')
+      && p.el.classList.contains('is-missing') && !p.el.classList.contains('info')),
+    missPairs.map((p) => p.s.key).join('、'));
+  check('外围·③：缺失哨兵文案是「数据缺失 … 未参与判定」，绝不沿用「无明确方向」',
+    missPairs.length > 0 && missPairs.every((p) => p.el
+      && /数据缺失/.test(p.el.textContent) && /未参与判定/.test(p.el.textContent)
+      && !/无明确方向/.test(p.el.textContent)), '');
+  check('外围·③：主锚缺失的哨兵带「（主锚）」字样（用户能一眼看出缺的是关键锚）',
+    (GJSON.watch.mainMissing || []).every((k) => {
+      const p = sigPairs.find((x) => x.s.key === k);
+      return !!p && /主锚/.test(p.s.text);
+    }) && (GJSON.watch.mainMissing || []).length > 0, '');
+  check('外围·③：结论条明说缺失「未参与判定 / 缺失≠中性」（把"不知道"写在脸上）',
+    /未参与判定/.test(txt('globVerdict')) && /缺失 ?≠ ?中性|缺失不等于/.test(txt('globVerdict')),
+    txt('globVerdict').slice(0, 80));
+  check('外围·③：口径备注把「本会话尚无成交」单独列出并强调"不是 0%"',
+    (GJSON.meta.usNoSession || []).length > 0
+    ? /本会话尚无成交/.test(txt('globNote')) && /不是 0%/.test(txt('globNote'))
+    : true, txt('globNote').slice(-90));
+}
 
 clickEl(gRow.find((tr) => tr.dataset.key === 'sox'));
 check('双端：点外围品种打开详情（含数据源原值比对）',

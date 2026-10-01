@@ -9,7 +9,7 @@
 // 用法：node scripts/fetch_global.mjs
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import config from '../src/config.js';
-import { buildGlobalSnapshot, evaluateGlobalWatch, SINA_URL, SINA_CODES } from '../src/global.js';
+import { buildGlobalSnapshot, evaluateGlobalWatch, SINA_URL, SINA_CODES, usSessionReadiness } from '../src/global.js';
 import { nextSession } from '../src/freshness.js';
 import { todayBeijing, isTradingDay } from '../src/util.js';
 import { resolveHolidays } from '../src/calendar.js';
@@ -79,6 +79,23 @@ async function main() {
   const tradeDate = readTradeDate();
   const prev = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : null;
 
+  // ── 抓取时机自检（2026-10-01 事故的第二重成因）────────────────────────────
+  //   事故回放：脚本在北京 21:10 跑（= 美东 09:10），美股 09:30 才开盘 → 抓到盘前占位，
+  //   last==prevClose、open/high/low 全 0 → 被当成"当日收平 0%"渲染给用户。
+  //   根因不是计算，是**在错误时刻取数**：再准的口径也救不回盘前的空数据。
+  //   处理分两层：
+  //     ① 行情层（src/global.js inferQuoteState）：未成交一律 state=preopen、chgPct=null，
+  //        从源头杜绝"0%" —— 这一层与运行时刻无关，是**硬防线**；
+  //     ② 时刻层（本节）：若此刻美股档未就绪，明确告知"美股档暂不可采信"，
+  //        并在快照 meta 里留痕，让前端/守卫都能看见。
+  //   注意：**不因为美股没收盘就整个跳过抓取** —— A50/汇率/商品是连续交易，
+  //   它们才是长假期间的方向主锚（A50 权重最高），停抓反而丢失关键信息。
+  const now = new Date();
+  const readiness = usSessionReadiness(now);
+  if (!readiness.ready) {
+    console.warn(`⚠ 美股档未就绪（${readiness.reason}）——本次仍抓取，但美股那一档按"无数据"处理`);
+  }
+
   let raw;
   try {
     raw = await fetchSina();
@@ -94,7 +111,6 @@ async function main() {
     return;
   }
 
-  const now = new Date();
   const holidays = resolveHolidays() || [];
   const today = todayBeijing();
   const nextOpen = tradeDate ? nextSession(tradeDate, holidays) : null;
@@ -119,8 +135,13 @@ async function main() {
   writeFileSync(OUT, JSON.stringify(snap, null, 2) + '\n');
   console.log(`已写入 data/global.json：${snap.meta.okCount}/${snap.meta.quoteCount} 个品种`);
   console.log(`  美股会话 ${snap.meta.usSessionDate} · A股存档 ${tradeDate} · 下次开市 ${nextOpen}（开市前还有 ${snap.meta.usSessionsBeforeOpen} 个美股交易日）`);
+  console.log(`  美股档就绪：${snap.meta.usReadiness.ready ? '是' : '否'}（${snap.meta.usReadiness.reason}）`);
+  if (snap.meta.usNoSession.length) {
+    console.warn(`  ⚠ 美股本会话无成交（已标"盘前无数据"，不写 0）：${snap.meta.usNoSession.join(', ')}`);
+  }
   console.log(`  外围研判 ${snap.watch.verdict.label}（bias ${snap.watch.bias}）`);
   for (const s of snap.watch.signals) console.log(`   [${s.level}] ${s.text}`);
+  if (snap.watch.missingNote) console.warn(`  ⚠ ${snap.watch.missingNote}`);
   if (snap.meta.failed.length) console.warn(`  ⚠ 未取到：${snap.meta.failed.join(', ')}（保持 null，不写 0）`);
 }
 

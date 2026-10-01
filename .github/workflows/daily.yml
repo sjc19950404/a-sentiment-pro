@@ -4,8 +4,18 @@ on:
   schedule:
     - cron: '30 10 * * 1-5'   # 北京 18:30（UTC 10:30），仅周一至五；盘后首抓（部分源可能未出当日数据）
     - cron: '0 13 * * 1-5'    # 北京 21:00（UTC 13:00），晚间补抓：深证日K/龙虎榜等延迟数据齐后重抓当日并覆盖，合并时同日替换 + 全档重算
+    # ★ 美股收盘档（2026-10-01 事故修复）：北京次日 04:30 = 美东 16:30（收盘 + 30 分钟结算缓冲）。
+    #   为什么必须单独一条：上面 21:00 那次跑在北京 21:00 = 美东 09:00，**美股还没开盘**
+    #   （09:30 开），数据源给的是盘前占位（last==prevClose、open/high/low=0）。
+    #   旧代码把它当"当日收平 0%"渲染，用户读成"外围没动"——而真相是"这一场还没开"。
+    #   修法是两层：① 行情层未成交一律 null（硬防线，与时刻无关，见 src/global.js）；
+    #   ② 时刻层把美股收盘态那一份快照**单独抓好**，这就是本 cron。
+    #   UTC 20:30 = 北京 04:30（次日）。周一至五 UTC 20:30 对应美股周一至五收盘。
+    #   为什么取 20:30（16:30 ET）而不是 20:00（16:00 ET）：收盘瞬间数据源仍在回填，
+    #   留 30 分钟让结算价稳定，避免抓到"半成品收盘价"。
+    - cron: '30 20 * * 1-5'
     # 盘中轻量快照：北京 09:30~15:00 每 30 分钟（UTC 01:30~07:00 的 :00/:30）。
-    # 与上面两个 cron 的**根本区别**：这条只跑 scripts/snapshot_intraday.mjs，
+    # 与上面几个 cron 的**根本区别**：这条只跑 scripts/snapshot_intraday.mjs，
     # 不跑管道、不碰 archive.json、不重算分位与因子（理由见该脚本文件头）。
     # 覆盖 01:00~07:30 UTC（= 北京 09:00~15:30），脚本内部再按相位闸门过滤出真正的盘中时段。
     - cron: '0,30 1-7 * * 1-5'
@@ -17,7 +27,7 @@ permissions:
 jobs:
   build:
     # 盘后完整管道（18:30 / 21:00 / 手动触发）
-    if: github.event.schedule != '0,30 1-7 * * 1-5'
+    if: github.event.schedule != '0,30 1-7 * * 1-5' && github.event.schedule != '30 20 * * 1-5'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -118,5 +128,37 @@ jobs:
             echo "无变化（非盘中或快照相同），跳过提交"
           else
             git commit -m "chore: 盘中快照 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi
+
+  us-close:
+    # ★ 美股收盘档（2026-10-01 事故修复）：只抓外围，不跑管道。
+    #   为什么单独成一个 job 而不是并进 build：
+    #     · 触发时刻是北京次日 04:30，与 build 的 18:30/21:00 完全不同；
+    #     · 它**只需** scripts/fetch_global.mjs 一步（不碰 archive、不重算因子），
+    #       单独跑 15 秒即可完成，并进 build 会把整条 15 分钟的管道一起拖起来。
+    #   抓取内容：美股的"最近已收盘会话"= 前一交易日收盘价。这正是用户要的完整收盘态。
+    #   时刻换算：UTC 20:30 = 北京 04:30（次日）= 美东 16:30（EDT，收盘+30 分钟）。
+    if: github.event.schedule == '30 20 * * 1-5' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # 脚本自带时机自检：若此刻美股档仍未就绪（早于 16:30 ET），
+      # 会打印警告并把美股那一档按"无数据"处理（chgPct=null，绝不写 0）。
+      - name: 抓取外围行情（美股收盘档）
+        run: node scripts/fetch_global.mjs
+      - name: 提交外围快照
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/global.json
+          if git diff --cached --quiet; then
+            echo "无变化，跳过提交"
+          else
+            git commit -m "chore: 外围(美股收盘档) $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             git push
           fi

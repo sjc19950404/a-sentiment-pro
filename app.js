@@ -2941,11 +2941,20 @@ function renderGlobal(g) {
   const v = w.verdict || {};
   const vbox = $('globVerdict');
   if (vbox) {
-    const cls = v.key === 'positive' ? 'ok' : v.key === 'negative' ? 'bad' : 'neu';
+    // insufficient（判据不足）是独立色调，**不得**归入'neu'（那与"外围中性"同色，
+    //   会让"没看到数据"和"看到了、是中性"在视觉上无法区分——2026-10-01 事故的教训）。
+    const cls = v.key === 'positive' ? 'ok' : v.key === 'negative' ? 'bad'
+      : (v.key === 'insufficient' ? 'unk' : 'neu');
+    const readiness = meta.usReadiness || {};
+    const notReady = readiness.ready === false;
     vbox.innerHTML = `<div class="gv ${cls}">
         <div class="gv-main">外围研判 <b>${esc(v.label || '—')}</b>
           <span class="muted">· 净倾向 ${(w.bias > 0 ? '+' : '') + w.bias}（门槛 ±${w.biasGate}）</span></div>
         <div class="gv-hint">${esc(v.hint || '')}</div>
+        ${w.missingNote ? `<div class="gv-miss">⚠ ${esc(w.missingNote)}</div>` : ''}
+        ${notReady ? `<div class="gv-miss">⚠ 美股档未就绪：${esc(readiness.reason || '')}`
+          + `（就绪条件：${esc(readiness.readyAfterEt || '16:30 ET')}）——此刻美股涨跌幅显示「盘前无数据」，`
+          + `不等于「收平 0%」。</div>` : ''}
         ${meta.aShareHoliday ? '<div class="gv-note">A 股休市中：本卡片每个工作日随隔夜外围刷新，用途就是节后开盘预案。</div>' : ''}
       </div>`;
   }
@@ -2955,8 +2964,9 @@ function renderGlobal(g) {
   if (sbox) {
     const sig = w.signals || [];
     sbox.innerHTML = sig.length
-      ? '<div class="bf-h2">触发式观测（越过阈值才输出）</div>'
-        + sig.map((s) => `<div class="gsig ${esc(s.level)}">${esc(s.text)}</div>`).join('')
+      ? '<div class="bf-h2">触发式观测（越过阈值才输出；缺失项单列且不参与判定）</div>'
+        // level='unknown' 是"数据缺失"哨兵，样式与 info（真·无明确方向）区分开
+        + sig.map((s) => `<div class="gsig ${esc(s.level)}${s.missing ? ' is-missing' : ''}">${esc(s.text)}</div>`).join('')
       : '<div class="muted">无触发项</div>';
   }
 
@@ -2966,8 +2976,12 @@ function renderGlobal(g) {
   if (tb) {
     tb.innerHTML = rows.map((q) => {
       const cls = trendCls(q.chgPct);
-      const marks = (q.role === 'a_share_proxy' ? '<span class="gtag a">A股锚</span>' : '')
-        + (q.ok ? '' : '<span class="gtag n">无行情</span>');
+      // 缺行情的标记要区分三种：真的没抓到 / 盘前无数据 / 无成交。
+      //   旧代码只有"无行情"一种，会把"盘前"说成接口故障，误导排查方向。
+      const missTag = q.state === 'preopen' ? '<span class="gtag n">盘前无数据</span>'
+        : (q.state === 'no-trade' ? '<span class="gtag n">无成交</span>'
+          : (q.ok ? '' : '<span class="gtag n">无行情</span>'));
+      const marks = (q.role === 'a_share_proxy' ? '<span class="gtag a">A股锚</span>' : '') + missTag;
       return `<tr data-act="glob" data-key="${esc(q.key)}" tabindex="0">
         <td>${esc(q.name)}${marks}</td>
         <td class="num ${cls}">${esc(q.lastText)}</td>
@@ -3025,8 +3039,10 @@ function renderGlobal(g) {
   const nbox = $('globNote');
   if (nbox) {
     const failed = meta.failed || [];
+    const noSess = meta.usNoSession || [];
     nbox.innerHTML = '口径备注：' + esc(meta.note || '')
       + (failed.length ? ` <span class="bf-warn">本次未取到：${esc(failed.join('、'))}（保持缺失，不写 0）。</span>` : '')
+      + (noSess.length ? ` <span class="bf-warn">本会话尚无成交：${esc(noSess.join('、'))}（显示「盘前无数据」，**不是 0%**）。</span>` : '')
       + ` 数据源 ${esc(meta.source || '')} · 最近一次尝试 ${esc(String((meta.lastAttempt || {}).outcome || ''))}。`;
   }
 }
@@ -3041,6 +3057,9 @@ function globalDetail(key) {
     dwSection('行情', dwKv([
       ['最新', `<b>${esc(q.lastText)}</b>`],
       ['涨跌幅', `<span class="${trendCls(q.chgPct)}">${esc(q.chgPctText)}</span>`],
+      ['行情状态', q.state === 'ok' ? '有成交（涨跌幅可采信）'
+        : (q.state === 'preopen' ? '<b>盘前无数据</b>（该会话尚未开盘）'
+          : (q.state === 'no-trade' ? '<b>无成交</b>（数据源为平盘占位）' : '<b>未取到</b>'))],
       ['昨收', numOr(q.prevClose)],
       ['涨跌额', q.chg == null ? '—' : `${q.chg > 0 ? '+' : ''}${q.chg}`],
       ['开 / 高 / 低', `${numOr(q.open)} / ${numOr(q.high)} / ${numOr(q.low)}`],
@@ -3058,7 +3077,14 @@ function globalDetail(key) {
     lines.push(dwSection('映射到的 A 股方向', anchors.map((a) => `<div class="dw-note"><b>${esc((a.aSectors || []).join(' · '))}</b>（${a.sign > 0 ? '同向' : a.sign < 0 ? '反向' : '结构参考'}）<br>${esc(a.why)}</div>`).join('')));
   }
   if (q.note) lines.push(dwSection('口径说明', `<div class="dw-note">${esc(q.note)}</div>`));
-  if (!q.ok) lines.push('<div class="dw-note">⚠ 本次未取到该品种行情（保持缺失，不写 0）——缺失与「0 波动」是两件事。</div>');
+  if (!q.ok) {
+    lines.push(q.state === 'preopen'
+      ? '<div class="dw-note">⚠ 该会话尚未开盘，数据源给的是**盘前占位**（昨收即最新、开/高/低全 0）。'
+        + '故涨跌幅显示「盘前无数据」而非 0% —— <b>0% 是"真的没动"，这里是"还不知道"</b>，两者不可混。</div>'
+      : (q.state === 'no-trade'
+        ? '<div class="dw-note">⚠ 该会话无成交（数据源为平盘占位），涨跌幅不作数。</div>'
+        : '<div class="dw-note">⚠ 本次未取到该品种行情（保持缺失，不写 0）——缺失与「0 波动」是两件事。</div>'));
+  }
   return { title: q.name, sub: `外围品种 · ${esc(q.key)} · 会话 ${esc(q.sessionDate || '—')}`, body: lines.join('') };
 }
 
