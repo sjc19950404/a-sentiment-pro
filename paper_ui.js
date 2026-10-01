@@ -1182,22 +1182,38 @@ function renderPicks() {
       + ` → 市场档位 ${tierTxt} · 候选池 <b>${r.pool}</b> 只`
       + ` → 预测筛选：推荐 <b class="hl">${r.picks.length}</b> 只`
       + `、剔除 <b class="hl-dn">${st.rejected == null ? '—' : st.rejected}</b> 只（大概率亏）`
-      + `、未达概率门槛 ${st.below == null ? '—' : st.below} 只`;
+      + `、未达概率门槛 ${st.below == null ? '—' : st.below} 只`
+      // 连板维度单独报：置顶了几只、门槛多少——用户能核对自己看到的排序
+      + (st.streakTop
+        ? ` · 其中 <b class="hl">${st.streakTop}</b> 只 T+1 连板概率 ≥${st.streakTopMin}%（已置顶打标签）`
+        : ` · 无连板概率 ≥${st.streakTopMin == null ? 30 : st.streakTopMin}% 的标的`);
   }
 
   if (!r.picks.length) {
     box.innerHTML = `<div class="picks-empty muted">${esc(r.note.text)}</div>`;
   } else {
+    // 置顶组与普通组之间插一条分隔说明——不插的话用户不知道「为什么上面那几只排前面」
+    const topCnt = r.picks.filter((p) => p.streakTop).length;
+    let rendered = 0;
     box.innerHTML = r.picks.map((p, i) => {
+      // 置顶组结束、普通组开始时插入分隔条（只插一次）
+      let sep = '';
+      if (topCnt > 0 && rendered === topCnt && i === topCnt) {
+        sep = `<div class="pk-sep"><span>以下按上涨概率排序（未达连板门槛）</span></div>`;
+      }
+      if (p.streakTop) rendered++;
       const chg = p.changePct == null ? null : +p.changePct;
       const chgCls = chg == null ? 'muted' : (chg > 0 ? 'hl' : chg < 0 ? 'hl-dn' : 'muted');
       const prob = p.prob || {};
       const band = prob.band || {};
       const bandCls = band.key === 'high' ? 'pb-high' : band.key === 'mid' ? 'pb-mid' : band.key === 'low' ? 'pb-low' : 'pb-poor';
+      const lp = p.limitUp || {};
+      const sb = lp.band || {};
+      const sbCls = sb.key === 'high' ? 'pb-high' : sb.key === 'mid' ? 'pb-mid' : sb.key === 'low' ? 'pb-low' : 'pb-poor';
       const exp = p.exp || {};
       const expC = exp.atClose || {};
       const factorTxt = (prob.factors || []).map((f) => f.label).join(' + ') || '无实测有效因子';
-      return `<div class="pk-row" data-act="pick" data-code="${esc(p.code)}" tabindex="0" role="button"
+      return sep + `<div class="pk-row${p.streakTop ? ' pk-row-top' : ''}" data-act="pick" data-code="${esc(p.code)}" tabindex="0" role="button"
           title="点击查看 ${esc(p.name || p.code)} 的详情">
         <span class="pk-rank${i === 0 ? ' top' : ''}">${i + 1}</span>
         <div class="pk-main">
@@ -1205,12 +1221,16 @@ function renderPicks() {
             <b class="pk-name">${esc(p.name || p.code)}</b>
             <span class="pk-code muted">${esc(p.code)}</span>
             ${chg == null ? '' : `<span class="pk-chg ${chgCls}">${pct(chg)}</span>`}
+            ${p.streakTop
+              ? `<span class="pk-streak ${sbCls}" title="连板概率：历史同特征组（${esc(lp.group || '')}）里 T+1 再次涨停的占比。基准 ${r.streakBaseline == null ? 21.8 : r.streakBaseline}%。">${esc(p.streakText || '大概率连板')}</span>`
+              : ''}
             <span class="pk-prob ${bandCls}" title="上涨概率分：历史同特征组的实际上涨占比（不是主观置信度）">上涨概率 ${prob.score == null ? '—' : prob.score.toFixed(1)}</span>
           </div>
           <div class="pk-reasons">
             <span class="pk-tag muted">依据：${esc(factorTxt)}</span>
             ${expC.median == null ? '' : `<span class="pk-tag hl" title="T 日收盘价买入 → T+1 收盘的实测中位涨幅（同特征分组）">历史同组中位 ${expC.median > 0 ? '+' : ''}${expC.median}%</span>`}
             <span class="pk-tag muted" title="该分组的实测样本量，样本越小可信度越低">样本 ${prob.sample || '—'} 例</span>
+            ${lp.isStreak && lp.n ? `<span class="pk-tag muted" title="连板概率的实测样本量（连板档 × 换手档分层）">连板样本 ${lp.n} 例</span>` : ''}
             ${p.reasons.map((x) => `<span class="pk-tag ${TONE_CLS[x.tone] || 'muted'}">${esc(x.text)}</span>`).join('')}
           </div>
           ${p.risks.length ? `<div class="pk-risks muted">风险：${esc(p.risks.join('；'))}</div>` : ''}
@@ -1253,8 +1273,9 @@ function renderPicks() {
     const n = r.note;
     note.innerHTML = `<span class="${n.level === 'blocked' ? 'bf-warn' : 'muted'}">${esc(n.text)}</span>`
       // 权重一律从引擎常量取，避免 UI 文案与引擎权重悄悄漂移
-      + ` 排序依据：预测上涨概率（基于 ${(r.pred && r.pred.baselineN) || 975} 个涨停样本的实测分组统计，`
-      + `基准上涨占比 ${(r.pred && r.pred.baselineUp) || 55.3}%）。`
+      + ` 排序依据：<b>连板概率达门槛的置顶打标签</b>，其余按预测上涨概率降序`
+      + `（基于 ${(r.pred && r.pred.baselineN) || 975} 个涨停样本，基准上涨占比 ${(r.pred && r.pred.baselineUp) || 55.3}%；`
+      + `连板概率基于同批样本的 ${(r.pred && r.pred.streakBaselineN) || 976} 例分层统计，基准再涨停率 ${r.streakBaseline == null ? 21.8 : r.streakBaseline}%）。`
       + `剔除规则：换手≥25%、连板≥5、北交所、ST、仅小额外资金且无涨停。`
       + `数据取自当日榜（区间累计榜与新股已剔除）。<b>概率是历史统计，不是收益承诺</b>，`
       + `且<b>不构成投资建议</b>，仅供模拟盘练习参考；买卖由你自行判断。`;
@@ -1308,10 +1329,29 @@ function pickDetail(code) {
   const bandCls = (prob.band && prob.band.key) === 'high' ? 'pb-high'
     : (prob.band && prob.band.key) === 'mid' ? 'pb-mid'
       : (prob.band && prob.band.key) === 'low' ? 'pb-low' : 'pb-poor';
+  const lp = p.limitUp || {};
+  const sbCls = (lp.band && lp.band.key) === 'high' ? 'pb-high'
+    : (lp.band && lp.band.key) === 'mid' ? 'pb-mid'
+      : (lp.band && lp.band.key) === 'low' ? 'pb-low' : 'pb-poor';
   return {
     title: `${esc(p.name || code)}　${esc(code)}`,
-    sub: `研判推荐第 ${r.picks.indexOf(p) + 1} 位 · 上涨概率 ${prob.score == null ? '—' : prob.score.toFixed(1)} · 数据日期 ${esc(r.asOf || '—')}`,
-    body: dwSection('预测：为什么认为它大概率会涨', dwKv([
+    sub: `研判推荐第 ${r.picks.indexOf(p) + 1} 位 · 上涨概率 ${prob.score == null ? '—' : prob.score.toFixed(1)}`
+      + `${lp.isStreak && lp.prob != null ? ` · 连板概率 ${lp.prob}%` : ''} · 数据日期 ${esc(r.asOf || '—')}`,
+    body: (p.streakTop
+      ? dwSection('连板预测：T+1 大概率再涨停（已置顶）', dwKv([
+        ['连板概率', `<span class="${sbCls}">${lp.prob == null ? '—' : lp.prob}%</span>`
+          + `　<span class="muted">${esc((lp.band && lp.band.label) || '')}　${esc((lp.band && lp.band.desc) || '')}</span>`],
+        ['这个数是什么', `<span class="muted">历史同特征组里 <b>T+1 再次涨停的占比</b>——与上面的「上涨概率」是两个目标。`
+          + `基准（全部涨停股）为 ${r.streakBaseline == null ? 21.8 : r.streakBaseline}%。</span>`],
+        ['实测分组', `${esc(lp.group || '—')}　<span class="muted">样本 ${lp.n || '—'} 例（连板档 × 换手档分层表）</span>`],
+        ['⚠ 持有风险', `<span class="bf-warn">该组 T+3 中位 ${lp.t3Med == null ? '—' : lp.t3Med}%</span>`
+          + `　<span class="muted">连板是<b>短打逻辑</b>：T+1 冲高不封板就该走，不是「强势可持有」。</span>`],
+      ]) + `<div class="dw-note">${esc(lp.note || '')}</div>`
+        + `<div class="dw-note muted">连板概率高 ≠ 盈利确定：实测 3 板低换手组的再涨停率虽有 54.2%，`
+        + `但该组 T+3 中位 −3.10%——<b>连得上不代表拿得住</b>，请按次日不封板即离场的纪律执行。</div>`
+      )
+      : '')
+      + dwSection('预测：为什么认为它大概率会涨', dwKv([
       ['上涨概率分', `<span class="${bandCls}">${prob.score == null ? '—' : prob.score.toFixed(1)}</span>`
         + `　<span class="muted">${esc((prob.band && prob.band.label) || '—')}　${esc((prob.band && prob.band.desc) || '')}</span>`],
       ['这个分是什么', `<span class="muted">历史同特征组的<b>实际上涨占比</b>——不是主观置信度，也不是收益预测。基准（全部涨停股）为 ${prob.baseline == null ? '—' : prob.baseline}%。</span>`],

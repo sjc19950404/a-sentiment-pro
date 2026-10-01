@@ -20,3 +20,6 @@ tools/backtest/archive_*.csv
 shots/
 scripts/_shot_*.mjs
 scripts/_diag_*.mjs
+
+# 日K抓取磁盘缓存（可重建，只用于连板回溯时少打接口）
+data/.kline_cache.json

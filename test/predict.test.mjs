@@ -9,6 +9,8 @@ import {
   PREDICT_VERSION, PROB_BANDS, probBand, probBandText,
   REJECT_RULES, screenCandidate, BASELINE_UP, BASELINE_N, PREDICT_FACTORS,
   predictUpProb, expectedReturn, suggestStop, predictPicks,
+  STREAK_BASELINE, STREAK_BASELINE_N, STREAK_BANDS, STREAK_TABLE, STREAK_TOP_MIN,
+  streakBand, streakBandText, turnoverBandOf, limitUpProb, isStreakTop, streakTagText,
 } from '../src/predict.js';
 
 // 构造候选。字段名与 picks.js buildCandidates 的输出严格一致，
@@ -415,7 +417,7 @@ test('守卫：把扣非净利润式的「正向净买」判据改成「任何�
 // ────────────────────── 八、回归：常量与口径不得被误改 ──────────────────────
 
 test('回归：版本常量固定（UI 与报告引用它，改了要让两端一起改）', () => {
-  assert.equal(PREDICT_VERSION, 'predict-v1');
+  assert.equal(PREDICT_VERSION, 'predict-v2');
 });
 
 test('回归：概率分语义是「历史上涨占比」，故必须 ≤100 且 ≥0', () => {
@@ -433,4 +435,309 @@ test('回归：概率分语义是「历史上涨占比」，故必须 ≤100 且
 test('回归：基线常量与实测样本量一致（975 个涨停样本）', () => {
   assert.equal(BASELINE_N, 975);
   assert.equal(BASELINE_UP, 55.3);
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// 九、连板概率（T+1 再涨停）—— 与「上涨概率」是两个必须分开的目标
+//
+// 这组用例守的是：连板概率**只认实测分层表**，不外推、不用上涨概率冒充；
+// 置顶只认连板概率，不认连板数量（实测 2 板高换手的再涨停率 16.7% 低于首板 18.2%）。
+// ══════════════════════════════════════════════════════════════════════════
+
+// ────────────────────── 9.1 换手档与连板档取表 ──────────────────────
+
+test('连板·换手档：边界逐点（<12 低 / 12~20 中 / >=20 高）', () => {
+  assert.equal(turnoverBandOf(0), 'low');
+  assert.equal(turnoverBandOf(11.99), 'low');
+  assert.equal(turnoverBandOf(12), 'mid');
+  assert.equal(turnoverBandOf(19.99), 'mid');
+  assert.equal(turnoverBandOf(20), 'high');
+  assert.equal(turnoverBandOf(45), 'high');
+});
+
+test('连板·换手档：缺失/畸形输入返回 null，不猜成 0（否则会被当成「低换手」白拿高概率）', () => {
+  for (const v of [null, undefined, '', NaN, 'abc', true, false, {}]) {
+    assert.equal(turnoverBandOf(v), null, 'turnoverPct=' + JSON.stringify(v) + ' 应判为未知');
+  }
+});
+
+test('连板·分层表自洽：连板档递增、每档样本量与实测值齐全', () => {
+  assert.equal(STREAK_TABLE.length, 4, '四档：首板/2板/3板/4板+');
+  for (const row of STREAK_TABLE) {
+    for (const k of ['low', 'mid', 'high']) {
+      assert.ok(Number.isFinite(row.rows[k].p), row.label + '.' + k + ' 缺概率');
+      assert.ok(row.rows[k].n > 0, row.label + '.' + k + ' 缺样本量');
+      assert.ok(row.rows[k].p >= 0 && row.rows[k].p <= 100, row.label + '.' + k + ' 概率越界');
+    }
+    assert.ok(Number.isFinite(row.all.p) && row.all.n > 0, row.label + ' 缺合计值');
+  }
+});
+
+// ────────────────────── 9.2 连板概率的实测取值（锁死每一个数字） ──────────────────────
+
+test('连板·概率：首板一律「不佳」——首板占候选池 8 成，绝不能标成大概率连板', () => {
+  const cases = [
+    { turnoverPct: 5, label: '低换手' }, { turnoverPct: 15, label: '中换手' }, { turnoverPct: 25, label: '高换手' },
+  ];
+  for (const c of cases) {
+    const lp = limitUpProb(cand({ streak: 1, turnoverPct: c.turnoverPct }));
+    assert.ok(lp.prob < 22, '首板' + c.label + '连板概率 ' + lp.prob + '% 不应达到基准 21.8%');
+    assert.equal(lp.band.key, 'poor');
+    assert.equal(lp.isStreak, true, '首板仍然是涨停股，只是连板概率低');
+  }
+});
+
+test('连板·概率：2 板低换手 = 43.3%（实测值，不是推算）', () => {
+  const lp = limitUpProb(cand({ streak: 2, turnoverPct: 8 }));
+  assert.equal(lp.prob, 43.3);
+  assert.equal(lp.n, 90);
+  assert.equal(lp.band.key, 'mid');   // 43.3 < 45，落「中等」
+  assert.equal(lp.turnoverBand, 'low');
+});
+
+test('连板·概率：3 板低换手 = 54.2%，是唯一落「较高」档的常见组合', () => {
+  const lp = limitUpProb(cand({ streak: 3, turnoverPct: 8 }));
+  assert.equal(lp.prob, 54.2);
+  assert.equal(lp.n, 24);
+  assert.equal(lp.band.key, 'high');
+});
+
+test('连板·概率：换手是强负向调节（同为 2 板，低换手 43.3% → 高换手 16.7%）', () => {
+  const lo = limitUpProb(cand({ streak: 2, turnoverPct: 5 }));
+  const mid = limitUpProb(cand({ streak: 2, turnoverPct: 15 }));
+  const hi = limitUpProb(cand({ streak: 2, turnoverPct: 25 }));
+  assert.ok(lo.prob > mid.prob && mid.prob > hi.prob, '换手越高连板概率必须越低');
+  assert.equal(lo.prob, 43.3);
+  assert.equal(mid.prob, 32.1);
+  assert.equal(hi.prob, 16.7);
+});
+
+test('连板·概率：4 板及以上换手中等骤降到 14.3%（高位+活跃=接力盘最危险）', () => {
+  const lp = limitUpProb(cand({ streak: 5, turnoverPct: 15 }));
+  assert.equal(lp.prob, 14.3);
+  assert.equal(lp.band.key, 'poor');
+});
+
+test('连板·概率：连板数越高概率越高（在换手档固定时单调）', () => {
+  const ps = [1, 2, 3].map((s) => limitUpProb(cand({ streak: s, turnoverPct: 8 })).prob);
+  for (let i = 1; i < ps.length; i++) assert.ok(ps[i] > ps[i - 1], '连板 ' + (i + 1) + ' 档概率未递增：' + ps);
+});
+
+test('连板·概率：换手缺失时用该连板档合计值，不借用相邻档（不猜）', () => {
+  const lp = limitUpProb(cand({ streak: 3, turnoverPct: null }));
+  assert.equal(lp.prob, 43.5, '应取 3 板合计 43.5%');
+  assert.equal(lp.n, 46);
+  assert.equal(lp.turnoverBand, null);
+  assert.ok(/未知/.test(lp.group), lp.group);
+});
+
+test('连板·概率：未涨停的票不给连板概率（null ≠ 0，语义不同）', () => {
+  const lp = limitUpProb(cand({ isZt: false, streak: null, netWan: 50000 }));
+  assert.equal(lp.prob, null);
+  assert.equal(lp.isStreak, false);
+  assert.ok(/未涨停/.test(lp.group));
+  assert.equal(streakTagText(lp), null, '未涨停不得产出连板标签');
+});
+
+test('连板·概率：连板数缺失的涨停股也不给概率（连板数未知 ≠ 首板）', () => {
+  for (const s of [null, undefined, '', NaN, 0, -1]) {
+    const lp = limitUpProb(cand({ isZt: true, streak: s }));
+    assert.equal(lp.prob, null, 'streak=' + JSON.stringify(s) + ' 不应给出连板概率');
+  }
+});
+
+test('连板·概率：note 必须带实测数字与样本量（可核验底线）', () => {
+  const lp = limitUpProb(cand({ streak: 2, turnoverPct: 8 }));
+  assert.ok(new RegExp(String(lp.prob)).test(lp.note), 'note 缺概率值');
+  assert.ok(new RegExp(String(lp.n)).test(lp.note), 'note 缺样本量');
+  assert.ok(/基准/.test(lp.note), 'note 缺基准对照');
+});
+
+test('连板·概率：必须携带 T+3 警告（连板是短打不是持有）', () => {
+  for (const s of [1, 2, 3, 4]) {
+    const lp = limitUpProb(cand({ streak: s, turnoverPct: 8 }));
+    assert.ok(lp.t3Med != null && lp.t3Med < 0, s + ' 板应给出负的 T+3 中位数');
+    assert.ok(/短打|不是持有/.test(lp.note), s + ' 板 note 缺「非持有」警告');
+  }
+});
+
+// ────────────────────── 9.3 置顶判定 ──────────────────────
+
+test('连板·置顶：门槛默认 30，边界逐点（>= 含等号）', () => {
+  assert.equal(STREAK_TOP_MIN, 30);
+  assert.equal(isStreakTop(30), true);
+  assert.equal(isStreakTop(29.99), false);
+  assert.equal(isStreakTop(54.2), true);
+});
+
+test('连板·置顶：null/缺数据不得置顶（无依据不能进置顶组）', () => {
+  for (const v of [null, undefined, NaN, '', 'abc']) {
+    assert.equal(isStreakTop(v), false, JSON.stringify(v) + ' 不应置顶');
+  }
+});
+
+test('连板·置顶：门槛可覆盖，且非法门槛回落到默认值', () => {
+  assert.equal(isStreakTop(35, 40), false);
+  assert.equal(isStreakTop(45, 40), true);
+  assert.equal(isStreakTop(30, null), true, '非法门槛应回落 30');
+  assert.equal(isStreakTop(30, 'abc'), true);
+});
+
+test('连板·档位：边界逐点（45/30/22/0）', () => {
+  assert.equal(streakBand(54.2).key, 'high');
+  assert.equal(streakBand(45).key, 'high');
+  assert.equal(streakBand(44.9).key, 'mid');
+  assert.equal(streakBand(30).key, 'mid');
+  assert.equal(streakBand(29.9).key, 'low');
+  assert.equal(streakBand(22).key, 'low');
+  assert.equal(streakBand(21.9).key, 'poor');
+  assert.equal(streakBand(null).key, 'poor');
+});
+
+test('连板·档位表自洽：按 min 严格降序且最后一档从 0 起', () => {
+  const mins = STREAK_BANDS.map((b) => b.min);
+  for (let i = 1; i < mins.length; i++) assert.ok(mins[i] < mins[i - 1]);
+  assert.equal(mins[mins.length - 1], 0);
+});
+
+test('连板·标签文案：含「大概率连板」与概率数字，缺依据返回 null', () => {
+  const t = streakTagText(limitUpProb(cand({ streak: 3, turnoverPct: 8 })));
+  assert.ok(/大概率连板/.test(t), t);
+  assert.ok(/54\.2/.test(t), t);
+  assert.equal(streakTagText(null), null);
+  assert.equal(streakTagText({ isStreak: true, prob: null }), null);
+});
+
+test('连板·bandText：无依据时给可读文案而非 undefined', () => {
+  assert.ok(!/undefined/.test(streakBandText(null)));
+  assert.ok(/较高/.test(streakBandText(54.2)));
+});
+
+// ────────────────────── 9.4 主入口：连板候选必须置顶 ──────────────────────
+
+const manyCand = () => [
+  // 首板低换手：上涨概率高（+4.0 +4.7），但连板概率只有 18.2% → 不应置顶
+  cand({ code: '300001', streak: 1, turnoverPct: 5, netWan: 60000 }),
+  // 2 板低换手：连板 43.3% → 必须置顶，且排在 3 板之后
+  cand({ code: '600002', streak: 2, turnoverPct: 5, netWan: 60000 }),
+  // 3 板低换手：连板 54.2% → 必须置顶，且排第一
+  cand({ code: '600003', streak: 3, turnoverPct: 5, netWan: 60000 }),
+  // 2 板高换手：连板 16.7% → 不置顶，且上涨概率也低
+  cand({ code: '600004', streak: 2, turnoverPct: 25, netWan: 60000 }),
+];
+
+test('主入口：连板概率达门槛的票置顶，组内按连板概率降序', () => {
+  const r = predictPicks(manyCand(), { topN: 10 });
+  assert.equal(r.picks[0].code, '600003', '3 板低换手（54.2%）应排第一');
+  assert.equal(r.picks[1].code, '600002', '2 板低换手（43.3%）应排第二');
+  assert.ok(r.picks[0].streakTop && r.picks[1].streakTop);
+});
+
+test('主入口：首板即使上涨概率最高也不置顶（不拿上涨概率冒充连板）', () => {
+  const r = predictPicks(manyCand(), { topN: 10 });
+  const first = r.picks.find((p) => p.code === '300001');
+  assert.ok(first, '首板应在推荐内');
+  assert.equal(first.streakTop, false, '首板不得置顶');
+  const idx = r.picks.indexOf(first);
+  assert.ok(idx >= 2, '首板应排在置顶组之后');
+});
+
+test('主入口：2 板高换手不置顶——连板数量不是置顶依据', () => {
+  const r = predictPicks(manyCand(), { topN: 10 });
+  const hi = r.picks.find((p) => p.code === '600004');
+  if (hi) assert.equal(hi.streakTop, false, '2 板高换手（16.7%）不得置顶');
+});
+
+test('主入口：每条推荐都带 limitUp 与 streakTop 字段（UI 不自己重算）', () => {
+  const r = predictPicks(manyCand(), { topN: 10 });
+  for (const p of r.picks) {
+    assert.ok('streakTop' in p, p.code + ' 缺 streakTop');
+    assert.ok(p.limitUp && 'prob' in p.limitUp, p.code + ' 缺 limitUp');
+  }
+});
+
+test('主入口：stats 透出连板维度统计（UI 显示「其中 N 只」要用）', () => {
+  const r = predictPicks(manyCand(), { topN: 10 });
+  assert.equal(r.stats.streakTop, 2, '两只达门槛');
+  assert.equal(r.stats.streakTopMin, 30);
+  assert.equal(r.stats.streakBaseline, STREAK_BASELINE);
+  assert.equal(r.stats.streakBaselineN, STREAK_BASELINE_N);
+});
+
+test('主入口：门槛可覆盖，提高门槛后置顶组收缩', () => {
+  const r = predictPicks(manyCand(), { topN: 10, streakTopMin: 50 });
+  assert.equal(r.stats.streakTop, 1, '门槛 50 时只有 3 板低换手达标');
+  assert.equal(r.picks[0].code, '600003');
+});
+
+test('主入口：排序确定性——同输入两次结果逐字段一致', () => {
+  const a = predictPicks(manyCand(), { topN: 10 });
+  const b = predictPicks(manyCand(), { topN: 10 });
+  assert.deepEqual(a.picks.map((p) => [p.code, p.streakTop, p.prob.score, p.limitUp.prob]),
+    b.picks.map((p) => [p.code, p.streakTop, p.prob.score, p.limitUp.prob]));
+});
+
+test('主入口：无任何连板达标时全部走上涨概率排序，不报错', () => {
+  const r = predictPicks([cand({ code: '300001', streak: 1, turnoverPct: 5 })], { topN: 5 });
+  assert.equal(r.stats.streakTop, 0);
+  assert.equal(r.picks[0].streakTop, false);
+});
+
+// ────────────────────── 9.5 负向注入守卫 ──────────────────────
+
+test('守卫：把「连板概率」偷换成「上涨概率」时会被抓到（两者必须可区分）', () => {
+  // 首板低换手：上涨概率高（≥64），连板概率低（18.2）——若实现里混用就会相等
+  const c = cand({ code: '300001', streak: 1, turnoverPct: 5, netWan: 60000 });
+  const up = predictUpProb(c, { ztCount: 20 }).score;
+  const lp = limitUpProb(c).prob;
+  assert.ok(up > 60, '上涨概率应偏高，实际 ' + up);
+  assert.ok(lp < 22, '连板概率应偏低，实际 ' + lp);
+  assert.notEqual(up, lp, '两个目标绝不能取到同一个数');
+});
+
+test('守卫：按「连板数量」置顶（而非连板概率）时，2 板高换手会混进置顶组', () => {
+  // 若有人把置顶条件改成 streak>=2，这条会失败——而 2 板高换手实测再涨停率仅 16.7%
+  const hi = limitUpProb(cand({ streak: 2, turnoverPct: 25 }));
+  assert.equal(hi.prob, 16.7);
+  assert.equal(isStreakTop(hi.prob), false, '2 板高换手不得置顶');
+  const lo = limitUpProb(cand({ streak: 2, turnoverPct: 5 }));
+  assert.equal(isStreakTop(lo.prob), true, '2 板低换手才该置顶');
+});
+
+test('守卫：换手缺失被当成 0（低换手）时会白拿高连板概率——必须挡住', () => {
+  // 若退化回 Number.isFinite(+v)，turnoverPct:null 会被判成「换手 0%」→ 落 low 档
+  const miss = limitUpProb(cand({ streak: 2, turnoverPct: null }));
+  const lo = limitUpProb(cand({ streak: 2, turnoverPct: 0 }));
+  assert.equal(miss.turnoverBand, null, '缺失必须是未知档');
+  assert.equal(lo.turnoverBand, 'low');
+  assert.notEqual(miss.prob, lo.prob, '未知不得等价于低换手');
+});
+
+test('守卫：未涨停的票若被赋予连板概率，推荐会出现「连板」标签的假信号', () => {
+  const lp = limitUpProb(cand({ isZt: false, streak: 3, turnoverPct: 5, netWan: 60000 }));
+  assert.equal(lp.prob, null);
+  assert.equal(streakTagText(lp), null);
+});
+
+// ────────────────────── 9.6 回归常量 ──────────────────────
+
+test('回归：连板基准常量与实测一致（976 个涨停样本，再涨停率 21.8%）', () => {
+  assert.equal(STREAK_BASELINE, 21.8);
+  assert.equal(STREAK_BASELINE_N, 976);
+});
+
+test('回归：分层表的每个数字都能追溯到回溯脚本的实测输出', () => {
+  // 与 scripts/backtest_limit_up_streak.mjs 的输出逐格对齐
+  const snap = {
+    '1-low': 18.2, '1-mid': 13.0, '1-high': 15.1,
+    '2-low': 43.3, '2-mid': 32.1, '2-high': 16.7,
+    '3-low': 54.2, '3-mid': 30.8, '3-high': 33.3,
+    '4-low': 50.0, '4-mid': 14.3, '4-high': 25.0,
+  };
+  for (const row of STREAK_TABLE) {
+    for (const k of ['low', 'mid', 'high']) {
+      const key = row.streak + '-' + k;
+      assert.equal(row.rows[k].p, snap[key], key + ' 与实测不符');
+    }
+  }
 });

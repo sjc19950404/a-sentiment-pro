@@ -1,9 +1,16 @@
 // 个股上涨预测引擎（唯一来源，ESM 纯函数、零依赖、Node 与浏览器共用）
 //
-// 定位：回答「**这只票买入后大概率会涨吗**」，并把「大概率会亏」的票**直接剔除**。
+// 定位：回答两个**不同**的问题，并各自给出可核验的实测统计量：
+//   ① 「这只票买入后大概率会涨吗」→ predictUpProb（上涨概率，剔除大概率亏的）
+//   ② 「这只票 T+1 大概率会再涨停吗」→ limitUpProb（连板概率，用于置顶与打标签）
+//   两者必须分开：实测有 44.8% 的涨停股 T+1 是下跌的，但它们的连板概率可能只有 18%；
+//   反过来连板概率高的票（3 板低换手 54.2%）其上涨概率也只有 64.7%。混用会误导。
 // 与 src/picks.js 的分工：
-//   picks.js  → 候选池构建（去噪）+ 排序展示（回答「今天有哪些票有资金/共识证据」）
-//   predict.js → **预测与剔除**（回答「这些票里哪些大概率涨、哪些必须扔掉」）
+//   picks.js  → 候选池构建（去噪）+ 调用本引擎 + 组装展示字段
+//   predict.js → **预测、置顶排序与剔除**（规则唯一出处）
+//
+// ⚠ 2026-10-01 升级（predict-v2）：新增「连板概率」，推荐排序改为**连板候选前置**。
+// 用户要求：「推荐个股的个股里面大概率连板的放在前置位置并打标签」。
 //
 // ══════════════════════════════════════════════════════════════════════════
 // 本文件的所有阈值与权重**不是拍脑袋定的**，而是对 data/archive.json 全部 33 个
@@ -57,7 +64,7 @@
 //   既消除环，也让它能在任何环境下独立求值。
 
 /** 预测引擎版本（UI 与报告引用此常量，避免文案与引擎漂移） */
-export const PREDICT_VERSION = 'predict-v1';
+export const PREDICT_VERSION = 'predict-v2';
 
 const r2less = null; // 占位：本文件不需要 r2，保留结构清晰
 
@@ -363,18 +370,29 @@ export function suggestStop(c, opts = {}) {
 /**
  * 对候选池做「预测筛选 + 排序」。
  *
+ * 排序规则（三级，**连板候选前置**）：
+ *   ① 连板概率 ≥ ctx.streakTopMin（默认 30%）的票**置顶**，组内按连板概率降序；
+ *   ② 其余按上涨概率降序；
+ *   ③ 同分时按净买额、代码兜底——保证确定性（同一输入必得同一序）。
+ *
+ * 为什么置顶只认「连板概率」而不认「连板数量」：实测 2 板换手 ≥20% 的再涨停率
+ * 只有 16.7%，比首板的 18.2% 还低。按连板数量置顶会把最差的那类 2 板推到最前面。
+ * 每一行都带 `streakTop` 布尔，UI 据此分组，不靠自己重算。
+ *
  * @param {Array} candidates picks.js buildCandidates 的输出
  * @param {object} [ctx]
  * @param {number} [ctx.ztCount] 当日涨停家数（用于稀缺性因子）
  * @param {number} [ctx.topN]    保留条数
  * @param {number} [ctx.minProb] 概率分下限（低于此分不推荐，默认 57 = 中等档起点）
+ * @param {number} [ctx.streakTopMin] 连板置顶门槛（默认 30）
  * @param {number} [ctx.stopLossPct] 单笔止损线（调用方传 alerts.js 的 POS_CFG.stopLoss 保持同源）
- * @returns {{kept:Array, rejected:Array, stats:object}}
+ * @returns {{picks:Array, rejected:Array, belowThreshold:Array, overflow:Array, stats:object}}
  */
 export function predictPicks(candidates, ctx = {}) {
   const list = Array.isArray(candidates) ? candidates : [];
   const topN = finite(ctx.topN) && +ctx.topN > 0 ? Math.floor(+ctx.topN) : 5;
   const minProb = finite(ctx.minProb) ? +ctx.minProb : 57;
+  const streakTopMin = finite(ctx.streakTopMin) ? +ctx.streakTopMin : STREAK_TOP_MIN;
   const stopOpts = { stopLossPct: ctx.stopLossPct };
 
   const rejected = [];
@@ -397,10 +415,22 @@ export function predictPicks(candidates, ctx = {}) {
     const prob = predictUpProb(c, ctx);
     const exp = expectedReturn(c);
     const stop = suggestStop(c, stopOpts);
-    scored.push({ ...c, prob, exp, stop });
+    // 连板概率与上涨概率是两个独立目标，各自算、各自标注
+    const limitUp = limitUpProb(c);
+    const streakTop = isStreakTop(limitUp.prob, streakTopMin);
+    scored.push({ ...c, prob, exp, stop, limitUp, streakTop });
   }
 
-  scored.sort((a, b) => (b.prob.score - a.prob.score) || ((b.netWan || 0) - (a.netWan || 0)) || String(a.code).localeCompare(String(b.code)));
+  // 三级排序：连板置顶组优先 → 组内连板概率降序 → 其余上涨概率降序 → 净买额 → 代码
+  scored.sort((a, b) => {
+    if (a.streakTop !== b.streakTop) return a.streakTop ? -1 : 1;
+    const ka = a.streakTop ? (a.limitUp.prob || 0) : a.prob.score;
+    const kb = b.streakTop ? (b.limitUp.prob || 0) : b.prob.score;
+    return (kb - ka)
+      || ((b.prob.score || 0) - (a.prob.score || 0))
+      || ((b.netWan || 0) - (a.netWan || 0))
+      || String(a.code).localeCompare(String(b.code));
+  });
 
   // 概率分低于门槛的不进推荐（但仍列入「未达门槛」，让用户看到全貌而不是被静默丢弃）
   const kept = [];
@@ -412,6 +442,7 @@ export function predictPicks(candidates, ctx = {}) {
 
   const picks = kept.slice(0, topN);
   const overflow = kept.slice(topN);
+  const streakKept = kept.filter((s) => s.streakTop);
 
   return {
     picks,
@@ -426,6 +457,11 @@ export function predictPicks(candidates, ctx = {}) {
       minProb,
       baselineUp: BASELINE_UP,
       baselineN: BASELINE_N,
+      // 连板维度统计（UI 显示「其中 N 只大概率连板」）
+      streakTop: streakKept.length,
+      streakTopMin,
+      streakBaseline: STREAK_BASELINE,
+      streakBaselineN: STREAK_BASELINE_N,
     },
   };
 }
@@ -434,4 +470,165 @@ export function predictPicks(candidates, ctx = {}) {
 export function probBandText(score) {
   const b = probBand(score);
   return `${b.label}（${b.desc}）`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// 五、连板概率（T+1 是否能再涨停）—— 与「上涨概率」是两个不同的目标
+//
+// 为什么要单独一套：用户要的是「大概率连板」（T+1 再涨停），不是「大概率上涨」。
+// 两者实测差异巨大：全部涨停股里 **44.8% 的票 T+1 是下跌的**，但只有 78% 不会再涨停；
+// 反过来说「上涨概率 65%」的票，其「连板概率」可能只有 18%（首板低换手组）。
+// 拿上涨概率冒充连板概率会严重误导——所以这里独立统计、独立标注。
+//
+// 数据来源：scripts/backtest_limit_up_streak.mjs（1089 只票 × 33 个交易日，
+// 腾讯前复权日K，T日收盘买入 → T+1 收盘；涨停判定按板段：主板 ≥9.8%、
+// 创业板/科创板 ≥19.8%、北交所 ≥29.8%，与模拟器口径一致）。实测分层表：
+//
+//   【连板档 × 换手档 → T+1 再涨停率（样本量）】
+//                换手<12%      12~20%       >=20%
+//   首板        18.2% (577)  13.0% (139)  15.1% (53)
+//   2 板        43.3% ( 90)  32.1% ( 28)  16.7% (12)
+//   3 板        54.2% ( 24)  30.8% ( 13)  33.3% ( 9)
+//   4 板+       50.0% ( 20)  14.3% (  7)  25.0% ( 4)
+//
+//   基准（全部涨停股）n=976 → 再涨停率 **21.8%**
+//
+//   【两条最重要的结论】
+//   ① **连板高度是主因**：首板 18% → 2 板 43% → 3 板 54%。首板占候选池近 8 成，
+//      但它们本质上「大概率不会连板」——把首板也标成「大概率连板」是欺骗用户。
+//   ② **换手是强负向调节**：同为 2 板，换手 <12% 是 43.3%，≥20% 只剩 16.7%；
+//      4 板+ 换手 ≥12% 更是掉到 14%~25%。低换手 = 筹码锁得牢 = 次日抛压小。
+//   ③ **T+3 中位数转负**（连板组 −1.6% ~ −4.6%）：连板是**短打**，
+//      不是持有逻辑。这个警告必须给用户，否则「连板」会被误读成「强势可持有」。
+// ══════════════════════════════════════════════════════════════════════════
+
+/** 连板概率基准：全部涨停股 T+1 再涨停率（实测） */
+export const STREAK_BASELINE = 21.8;
+/** 基准样本量 */
+export const STREAK_BASELINE_N = 976;
+
+/**
+ * 连板概率分档。阈值按实测分层表切：
+ *   ≥45 → 较高（只有 2 板低换手、3 板低换手、4 板+ 低换手能到）
+ *   ≥30 → 中等（2 板中换手、3 板中换手）
+ *   ≥22 → 偏低（勉强高于基准）
+ *   <22 → 不佳（首板全部落这里）
+ */
+export const STREAK_BANDS = [
+  { min: 45, key: 'high', label: '较高', desc: '历史同特征组 T+1 再涨停率 ≥45%' },
+  { min: 30, key: 'mid', label: '中等', desc: '历史同特征组 T+1 再涨停率 30%~45%' },
+  { min: 22, key: 'low', label: '偏低', desc: '历史同特征组 T+1 再涨停率 22%~30%' },
+  { min: 0, key: 'poor', label: '不佳', desc: '历史同特征组 T+1 再涨停率 <22%' },
+];
+
+/** 连板概率分 → 档位 */
+export function streakBand(score) {
+  if (!Number.isFinite(+score)) return STREAK_BANDS[STREAK_BANDS.length - 1];
+  const s = +score;
+  for (const b of STREAK_BANDS) if (s >= b.min) return b;
+  return STREAK_BANDS[STREAK_BANDS.length - 1];
+}
+
+/**
+ * 实测分层表：连板档 × 换手档 → { prob, n }。
+ * **这张表就是模型的全部**——不做任何外推，命中哪个格子就用那个格子的实测值。
+ * 格子取法的优先级：换手有数据时按换手档取；换手缺失时用该连板档的合计值
+ * （不用相邻档填充，因为「不知道换手」与「换手 15%」不是一回事）。
+ */
+export const STREAK_TABLE = [
+  // streakMin, streakMax（含），换手档 → 实测再涨停率与样本量
+  { streak: 1, label: '首板', rows: { low: { p: 18.2, n: 577 }, mid: { p: 13.0, n: 139 }, high: { p: 15.1, n: 53 } }, all: { p: 17.0, n: 769 } },
+  { streak: 2, label: '2 连板', rows: { low: { p: 43.3, n: 90 }, mid: { p: 32.1, n: 28 }, high: { p: 16.7, n: 12 } }, all: { p: 38.5, n: 130 } },
+  { streak: 3, label: '3 连板', rows: { low: { p: 54.2, n: 24 }, mid: { p: 30.8, n: 13 }, high: { p: 33.3, n: 9 } }, all: { p: 43.5, n: 46 } },
+  { streak: 4, label: '4 连板及以上', rows: { low: { p: 50.0, n: 20 }, mid: { p: 14.3, n: 7 }, high: { p: 25.0, n: 4 } }, all: { p: 38.7, n: 31 } },
+];
+
+/** 换手档判定：<12% 低 / 12~20% 中 / ≥20% 高。缺数据返回 null（不猜）。 */
+export function turnoverBandOf(turnoverPct) {
+  if (!finite(turnoverPct)) return null;
+  const t = +turnoverPct;
+  if (t < 12) return 'low';
+  if (t < 20) return 'mid';
+  return 'high';
+}
+
+/** 连板档取表行；未涨停返回 null（未涨停的票连板概率无意义，不是 0） */
+function streakRowOf(streak) {
+  if (!finite(streak)) return null;
+  const s = +streak;
+  if (s < 1) return null;
+  if (s >= 4) return STREAK_TABLE[3];
+  return STREAK_TABLE.find((r) => r.streak === s) || null;
+}
+
+/**
+ * 计算「T+1 再涨停（连板）概率」。
+ *
+ * 语义：**历史同特征组里，次日再次涨停的占比**——与 predictUpProb 的「上涨占比」
+ * 是两回事，UI 必须分开标注，不能混用。
+ *
+ * @param {object} c 候选（需 isZt / streak / turnoverPct）
+ * @returns {{prob:number|null, band:object|null, n:number, turnoverBand:string|null,
+ *            group:string, isStreak:boolean, note:string, t3Med:number|null}}
+ */
+export function limitUpProb(c) {
+  const c1 = c || {};
+  const miss = {
+    prob: null, band: null, n: 0, turnoverBand: null, group: '未涨停',
+    isStreak: false, note: '当日未涨停，不存在「连板」这一说——不给连板概率，避免把两件事混为一谈。',
+    t3Med: null,
+  };
+  if (!c1.isZt) return miss;
+  const row = streakRowOf(c1.streak);
+  if (!row) return { ...miss, group: '连板数未知', note: '连板数缺失，无法定位实测分组——不给连板概率。' };
+
+  const tb = turnoverBandOf(c1.turnoverPct);
+  const cell = tb ? row.rows[tb] : row.all;
+  if (!cell || !Number.isFinite(cell.p)) {
+    return { ...miss, group: row.label, note: '该分组样本不足，不给连板概率。' };
+  }
+
+  // T+3 中位数：连板组的实测值（用于「连板是短打不是持有」的警告）
+  const t3 = row.streak === 1 ? -1.03 : row.streak === 2 ? -1.83 : row.streak === 3 ? -3.10 : -4.00;
+  const tbTxt = tb === 'low' ? '换手<12%' : tb === 'mid' ? '换手12~20%' : tb === 'high' ? '换手≥20%' : '换手未知';
+  const band = streakBand(cell.p);
+  return {
+    prob: cell.p,
+    band,
+    n: cell.n,
+    turnoverBand: tb,
+    group: `${row.label} · ${tbTxt}`,
+    isStreak: true,
+    t3Med: t3,
+    note: `${row.label}且${tbTxt}的实测样本 ${cell.n} 例，T+1 再涨停率 ${cell.p}%`
+      + `（基准：全部涨停股 ${STREAK_BASELINE}%，n=${STREAK_BASELINE_N}）。`
+      + `该组 T+3 中位 ${t3}%——连板是短打逻辑，不是持有逻辑。`,
+  };
+}
+
+/**
+ * 「值得置顶」判定：连板概率达到门槛才置顶。
+ * 为什么不是「所有 2 板以上都置顶」：实测 2 板换手 ≥20% 的再涨停率只有 16.7%，
+ * 比首板的 18.2% 还低——按连板数置顶等于给用户推最差的那类 2 板。
+ * 所以置顶只认**连板概率**，不认连板数量本身。
+ * @param {number} prob 连板概率
+ * @param {number} [min] 门槛，默认 30（=「中等」档起点）
+ */
+export const STREAK_TOP_MIN = 30;
+export function isStreakTop(prob, min) {
+  const m = finite(min) ? +min : STREAK_TOP_MIN;
+  return finite(prob) && +prob >= m;
+}
+
+/** 连板概率分档的可读说明 */
+export function streakBandText(prob) {
+  if (prob == null || !Number.isFinite(+prob)) return '无连板依据';
+  const b = streakBand(prob);
+  return `${b.label}（${b.desc}）`;
+}
+
+/** 连板概率的置顶标签文案（UI 直接用，不重写） */
+export function streakTagText(lp) {
+  if (!lp || !lp.isStreak || lp.prob == null) return null;
+  return `大概率连板 ${lp.prob}%`;
 }

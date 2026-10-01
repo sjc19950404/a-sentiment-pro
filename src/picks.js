@@ -27,8 +27,11 @@
 // 但 picks.js 是**浏览器也要用**的零依赖模块（paper_ui.js 直接 import），不能引 node 侧依赖——
 // lhb.js 本身是纯函数无 node 依赖，故可直接复用，不再自己写正则（口径守卫会拦重复实现）。
 import { RANGE_BOARD_RE, isNewStock } from './lhb.js';
-// 预测与剔除引擎（上涨概率、预期收益、止损位）。规则唯一出处，本文件不重写任何阈值。
-import { predictPicks, probBandText, PREDICT_VERSION, BASELINE_UP } from './predict.js';
+// 预测与剔除引擎（上涨概率、连板概率、预期收益、止损位）。规则唯一出处，本文件不重写任何阈值。
+import {
+  predictPicks, probBandText, streakBandText, streakTagText,
+  PREDICT_VERSION, BASELINE_UP, STREAK_BASELINE,
+} from './predict.js';
 
 // ────────────────────────── 常量（阈值集中在此，UI 不重写） ──────────────────────────
 
@@ -350,6 +353,7 @@ export function suggestWeight(tier, n, opts = {}) {
  * @param {number} ctx.emotionScore  七因子情绪分（与研判报告同源）
  * @param {number} [ctx.topN]
  * @param {number} [ctx.minProb] 概率分下限（默认取 predict.js 的中等档起点 57）
+ * @param {number} [ctx.streakTopMin] 连板概率置顶门槛（默认 30，来自 predict.js 的 STREAK_TOP_MIN）
  * @param {number} [ctx.stopLossPct] 单笔止损线（调用方传 alerts.js 的 POS_CFG.stopLoss 保持同源；
  *                                   不在这里 import alerts.js 是为了避免 picks ⇄ alerts 互引）
  * @returns {{tier:object|null, score:number|null, picks:Array, rejected:Array,
@@ -369,10 +373,11 @@ export function recommendPicks(day, ctx = {}) {
     return { ...c, score, scoreParts: parts, reasons: reasonsOf(c), risks: risksOf(c) };
   });
 
-  // 交给预测引擎：剔除大概率亏的，其余按上涨概率排序
+  // 交给预测引擎：剔除大概率亏的，连板概率高的置顶，其余按上涨概率排序
   const ztCount = finite(d.summary && d.summary.zt_count) ? +d.summary.zt_count : null;
   const pred = predictPicks(enriched, {
     topN, ztCount, minProb: ctx.minProb, stopLossPct: ctx.stopLossPct,
+    streakTopMin: ctx.streakTopMin,
   });
 
   const picks = pred.picks;
@@ -383,6 +388,9 @@ export function recommendPicks(day, ctx = {}) {
     const factor = p.stop && finite(p.stop.maxPosFactor) ? +p.stop.maxPosFactor : 1;
     p.suggestWeight = Math.round(weight * factor * 1e4) / 1e4;
     p.probText = probBandText(p.prob.score);
+    // 连板标签：只有达到置顶门槛的票才给标签，避免「所有 2 板都贴连板」
+    p.streakText = streakTagText(p.limitUp);
+    p.streakBandText = p.limitUp && p.limitUp.prob != null ? streakBandText(p.limitUp.prob) : null;
   }
 
   // 空态与拒绝态必须说清原因，不能只给一个空列表
@@ -407,7 +415,10 @@ export function recommendPicks(day, ctx = {}) {
     note = {
       level: 'ok',
       text: `当前市场档位「${tier.label}」，建议总仓位 ${Math.round(tier.pos * 100)}%，`
-        + `按 ${picks.length} 只均分即每只约 ${(weight * 100).toFixed(1)}%（单只上限 20%）。`,
+        + `按 ${picks.length} 只均分即每只约 ${(weight * 100).toFixed(1)}%（单只上限 20%）。`
+        + (pred.stats.streakTop
+          ? `其中 ${pred.stats.streakTop} 只 T+1 连板概率 ≥${pred.stats.streakTopMin}%，已置顶并打标签。`
+          : '当日无连板概率达门槛的标的。'),
     };
   } else {
     note = { level: 'unknown', text: '市场情绪分缺失，无法给出仓位建议；下列标的仅按预测上涨概率排序。' };
@@ -425,5 +436,6 @@ export function recommendPicks(day, ctx = {}) {
     overflow: pred.overflow.slice(0, 8),
     note, pool: candidates.length, asOf: d.trade_date || null,
     pred: pred.stats, version: PREDICT_VERSION, baseline: BASELINE_UP,
+    streakBaseline: STREAK_BASELINE,
   };
 }

@@ -524,6 +524,25 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .pk-prob.pb-mid { background: rgba(240, 97, 109, .10); color: var(--up); }
 .pk-prob.pb-low { background: var(--line); color: var(--muted); }
 .pk-prob.pb-poor { background: rgba(210, 153, 34, .16); color: var(--warn); }
+
+/* 连板标签：置顶组的核心标识，必须比上涨概率徽章更醒目（用户一眼要能分出哪些是连板票）。
+   用实心红底+白字做区分——同为红色系（涨红约定），但「实心 vs 淡底」能立刻分开两类标签；
+   刻意不给它加绿色，也不会与上涨概率徽章混淆。 */
+.pk-streak { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px;
+  font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pk-streak.pb-high { background: var(--up); color: #fff; }
+.pk-streak.pb-mid { background: rgba(240, 97, 109, .55); color: #fff; }
+.pk-streak.pb-low { background: rgba(240, 97, 109, .22); color: var(--up); }
+.pk-streak.pb-poor { background: rgba(210, 153, 34, .16); color: var(--warn); }
+
+/* 置顶行：左侧加一条红边，让「排在前面的原因」在视觉上成立，不靠用户读文字 */
+.pk-row-top { border-left: 3px solid var(--up); }
+
+/* 置顶组与普通组的分隔说明 */
+.pk-sep { display: flex; align-items: center; gap: 8px; margin: 8px 0 2px;
+  font-size: 11px; color: var(--muted); }
+.pk-sep::before, .pk-sep::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
 .pk-stop { font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* 已剔除区：折叠面板，避免占满屏但不隐藏事实 */

@@ -637,13 +637,15 @@ escClose();
   const predictBundle = `window.__predict__ = (function(){\n`
     + readFileSync(join(ROOT, 'src/predict.js'), 'utf8').replace(/^export\s+/gm, '')
     + '\nreturn { PREDICT_VERSION, PROB_BANDS, probBand, probBandText, REJECT_RULES, screenCandidate,'
-    + ' BASELINE_UP, BASELINE_N, PREDICT_FACTORS, predictUpProb, expectedReturn, suggestStop, predictPicks };\n})();';
+    + ' BASELINE_UP, BASELINE_N, PREDICT_FACTORS, predictUpProb, expectedReturn, suggestStop, predictPicks,'
+    + ' STREAK_BASELINE, STREAK_BASELINE_N, STREAK_BANDS, STREAK_TABLE, STREAK_TOP_MIN, streakBand, streakBandText,'
+    + ' turnoverBandOf, limitUpProb, isStreakTop, streakTagText };\n})();';
   const picksBundle = `window.__picks__ = (function(){\n`
     + readFileSync(join(ROOT, 'src/picks.js'), 'utf8')
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhb\.js';/m,
         'const { RANGE_BOARD_RE, isNewStock } = window.__lhb__;')
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/predict\.js';/m,
-        'const { predictPicks, probBandText, PREDICT_VERSION, BASELINE_UP } = window.__predict__;')
+        'const { predictPicks, probBandText, streakBandText, streakTagText, PREDICT_VERSION, BASELINE_UP, STREAK_BASELINE } = window.__predict__;')
       .replace(/^export\s+/gm, '')
     + '\nreturn { marketTier, TIER_THRESHOLDS, POSITION_TIERS, recommendPicks, PICK_TOP_N, SCORE_WEIGHTS, suggestWeight };\n})();';
   // paper_ui.js 直接调用 recommendPicks / PICK_TOP_N / SCORE_WEIGHTS，故从 window.__picks__ 解构回作用域
@@ -1197,6 +1199,46 @@ escClose();
     // 止损位必须逐行给出——这是「止损建议」落地为可执行数字的关键
     check('模拟交易·推荐：每行给出止损位数字', /止损\s*-\d+%/.test(txt('picksList')),
       (txt('picksList').match(/止损\s*-?\d+%/) || ['无'])[0]);
+
+    // ── 连板前置与打标签（用户要求：「大概率连板的放在前置位置并打标签」）──
+    const streakBadges = [...($('picksList')?.querySelectorAll('.pk-streak') || [])];
+    const topRows = [...($('picksList')?.querySelectorAll('.pk-row-top') || [])];
+    if (streakBadges.length) {
+      check('模拟交易·推荐·连板：达到门槛的票带「大概率连板」标签',
+        /大概率连板\s*\d+(\.\d+)?%?/.test(streakBadges[0].textContent),
+        streakBadges[0].textContent.trim().slice(0, 40));
+      check('模拟交易·推荐·连板：连板标签带分档样式类（不裸渲染）',
+        /pb-(high|mid|low|poor)/.test(streakBadges[0].className),
+        streakBadges[0].className.trim());
+      // 置顶：带标签的票必须全部排在无标签的票之前
+      const firstNonTop = rows.findIndex((r) => !r.classList.contains('pk-row-top'));
+      const lastTop = rows.map((r) => r.classList.contains('pk-row-top')).lastIndexOf(true);
+      check('模拟交易·推荐·连板：连板票全部前置（置顶组在普通组之前）',
+        firstNonTop === -1 || lastTop < firstNonTop,
+        `置顶 ${topRows.length} 只 / 共 ${rows.length} 只，末位置顶=${lastTop} 首个非置顶=${firstNonTop}`);
+      check('模拟交易·推荐·连板：置顶行有视觉标识（左侧色边，不靠文字说明）',
+        topRows.length > 0, `${topRows.length} 行`);
+      // 分隔说明只在「置顶组与普通组同时存在」时才应出现——全体置顶时不需要分隔
+      const mixed = topRows.length > 0 && topRows.length < rows.length;
+      check('模拟交易·推荐·连板：含分隔说明（用户能看懂为什么上面排前面）',
+        !mixed || !!$('picksList')?.querySelector('.pk-sep'),
+        mixed ? '置顶与普通并存，应有分隔条' : `全体置顶（${topRows.length}/${rows.length}），无需分隔`);
+      check('模拟交易·推荐·连板：元信息报出连板只数与门槛',
+        /连板概率\s*≥\s*\d+%/.test(txt('picksMeta')), txt('picksMeta').slice(-60));
+      check('模拟交易·推荐·连板：标签 title 写明基准（可核验）',
+        /基准\s*\d+(\.\d+)?%/.test(streakBadges[0].getAttribute('title') || ''),
+        (streakBadges[0].getAttribute('title') || '').slice(0, 60));
+      // 连板样本量必须逐行给出（与上涨概率的样本量分开标注，不能混）
+      check('模拟交易·推荐·连板：给出连板概率的实测样本量',
+        /连板样本\s*\d+\s*例/.test(txt('picksList')),
+        (txt('picksList').match(/连板样本\s*\d+\s*例/) || ['无'])[0]);
+    } else {
+      // 当日无连板达标属正常情况，但「无标签」不能是渲染失败的借口：
+      // 元信息必须如实说明「无连板概率达门槛的标的」
+      check('模拟交易·推荐·连板：无达标标的时元信息如实说明（不静默省略）',
+        /连板概率\s*≥\s*\d+%/.test(txt('picksMeta')),
+        txt('picksMeta').slice(-60));
+    }
 
     // 一键填入下单区：点「填入下单」后代码框被填上该股代码，且不自动提交
     const firstCode = rows[0]?.dataset.code;
