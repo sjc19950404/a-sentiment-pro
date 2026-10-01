@@ -95,10 +95,36 @@ for (const rel of files) {
 check('文案守卫：源码不得出现「资金面不参与打分」类整体否定（与 s_net20 权重矛盾）',
   blameHits.length === 0, blameHits.join(' ; '));
 
+// ── A3. 新股剔除的重复实现守卫 ──────────────────────────────────────────────
+// 背景：s_net = tanh(净买/5)*50+50 在 5 亿量级近饱和，**一笔新股大额净买即可把因子推到近满分**
+//       （2026-09-30：力勤资源 +5.04 亿 → 含新股 s_net 95.7 / 剔后 74.6，情绪分虚高 4.20 分，
+//        并把结论从「满仓」推过 65 分档位线）。剔除必须只有一个出处：src/lhb.js 的 splitNewStockNet。
+// 本守卫拦住两种回归：
+//   ① 别处自顾自写一份「无价格涨跌幅限制」过滤（口径会漂移，且历史明细缺失时算错）；
+//   ② summary 里有新股净买、却没把它喂给因子（即「只告警不修正」——本次修复前的状态）。
+const NEW_RE_HITS = [];
+for (const rel of files) {
+  const abs = path.join(ROOT, rel);
+  if (!existsSync(abs)) continue;
+  if (rel === path.join('src', 'lhb.js')) continue;   // 唯一出处
+  const raw = readFileSync(abs, 'utf8');
+  // 允许注释里提到该诱因原文（说明性文字），只拦「正则/字符串字面量里真的在判它」
+  const codeOnly = raw.split('\n')
+    .filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln))
+    .filter((ln) => !/NEW_STOCK_RE|isNewStock|无价格涨跌幅限制/.test(ln) || !/^\s*(\/\/)/.test(ln))
+    .join('\n');
+  if (/无价格涨跌幅限制/.test(codeOnly) && rel !== path.join('app.js')) {
+    // app.js 例外：isNewStock 在那里只用于给「涨幅」列打「新股」徽标（展示），不参与打分
+    NEW_RE_HITS.push(`${rel} 自行判定新股（应 import src/lhb.js 的 isNewStock/splitNewStockNet）`);
+  }
+}
+check('新股判定无重复实现（唯一出处 src/lhb.js；app.js 仅限展示用徽标）',
+  NEW_RE_HITS.length === 0, NEW_RE_HITS.join(' ; '));
+
 // ── B. 存档逐日不变量 ────────────────────────────────────────────────────────
 const arch = JSON.parse(readFileSync(ARCHIVE, 'utf8'));
 const days = (arch.all_days || []).filter((d) => d && (d.lhb || []).length);
-const bad = { missing: [], amt: [], stocks: [], range: [], replay: [], caliber: [], factor: [], sync: [] };
+const bad = { missing: [], amt: [], stocks: [], range: [], replay: [], caliber: [], factor: [], sync: [], newstock: [] };
 const near = (a, b, tol = 0.011) => a != null && b != null && Math.abs(a - b) <= tol;
 
 for (const d of days) {
@@ -128,13 +154,39 @@ for (const d of days) {
   if (dirty.length) bad.caliber.push(`${d.trade_date}:${dirty.length} 行缺 caliber`);
   const mismatch = (d.lhb_aggr || []).filter((l) => l.caliber !== (isRangeBoard(l.reason) ? 'range' : 'daily'));
   if (mismatch.length) bad.caliber.push(`${d.trade_date}:${mismatch.length} 行 caliber 与 reason 不一致`);
-  // 因子必须喂当日榜净额（这是整条链的口径锁）
+  // 因子必须喂「当日榜 + 剔除新股」净额（这是整条链的口径锁）
+  //   ① s_net 必须等于 tanh(剔新股净买/5)*50+50 —— 不是含新股的 lhb_daily_net；
+  //   ② 若该日有新股净买，summary 必须留下证据链（否则就是「只告警不修正」回归）。
   const e = d.emotion || {};
-  if (e.lhb_daily_net != null && e.factors && e.factors.s_net != null) {
+  const ns = e.newStock || {};
+  if (ns.adjusted && ns.netExNew != null && e.factors && e.factors.s_net != null) {
+    const exp = Math.max(0, Math.min(100, Math.tanh(ns.netExNew / 5) * 50 + 50));
+    if (Math.abs(exp - e.factors.s_net) > 0.05) {
+      bad.factor.push(`${d.trade_date} s_net=${e.factors.s_net} 但剔新股净买=${ns.netExNew} 应为 ${exp.toFixed(1)}`);
+    }
+    // 证据链自洽：netRaw − newStockNet == netExNew
+    if (ns.netRaw != null && ns.newStockNet != null
+      && Math.abs(ns.netRaw - ns.newStockNet - ns.netExNew) > 0.011) {
+      bad.newstock.push(`${d.trade_date} netRaw(${ns.netRaw}) − new(${ns.newStockNet}) ≠ netExNew(${ns.netExNew})`);
+    }
+    // summary 必须与 emotion 同源
+    if (!near(s.lhb_new_net, ns.newStockNet)) {
+      bad.newstock.push(`${d.trade_date} summary.lhb_new_net=${s.lhb_new_net} vs emotion=${ns.newStockNet}`);
+    }
+    if (!near(s.lhb_daily_ex_new_net, ns.netExNew)) {
+      bad.newstock.push(`${d.trade_date} summary.ex_new=${s.lhb_daily_ex_new_net} vs emotion=${ns.netExNew}`);
+    }
+  }
+  // 无新股的日子：s_net 应等于含新股净额算出的值（不被无谓改动）
+  if (!ns.adjusted && e.lhb_daily_net != null && e.factors && e.factors.s_net != null) {
     const exp = Math.max(0, Math.min(100, Math.tanh(e.lhb_daily_net / 5) * 50 + 50));
     if (Math.abs(exp - e.factors.s_net) > 0.05) {
-      bad.factor.push(`${d.trade_date} s_net=${e.factors.s_net} 但当日榜净额=${e.lhb_daily_net} 应为 ${exp.toFixed(1)}`);
+      bad.factor.push(`${d.trade_date} 无新股却 s_net=${e.factors.s_net} ≠ ${exp.toFixed(1)}`);
     }
+  }
+  // 只告警不修正的回归：有新股净买却完全没写证据链
+  if (Math.abs(s.lhb_new_net || 0) > 0.001 && !ns.adjusted) {
+    bad.newstock.push(`${d.trade_date} 有新股净买 ${s.lhb_new_net} 亿却没修正 s_net（只告警不修正回归）`);
   }
   if (!near(e.lhb_daily_net, s.lhb_daily_net)) bad.sync.push(`${d.trade_date} emotion=${e.lhb_daily_net} summary=${s.lhb_daily_net}`);
 }
@@ -147,8 +199,9 @@ summarize('当日榜至少 1 只', bad.stocks);
 summarize('区间榜条数 = 全部记录 − 当日榜记录', bad.range);
 summarize('双口径可重现（现算 == 存档）', bad.replay);
 summarize('聚合行 caliber 标签齐备且与 reason 自洽', bad.caliber);
-summarize('因子 s_net 锁当日榜净额', bad.factor);
+summarize('因子 s_net 锁「当日榜 + 剔除新股」净额', bad.factor);
 summarize('emotion 与 summary 的当日榜净额一致', bad.sync);
+summarize('新股剔除证据链自洽（netRaw − new == netExNew；有新股必留痕，禁止只告警不修正）', bad.newstock);
 
 // ── C. 结论 ────────────────────────────────────────────────────────────────
 if (warns.length) for (const w of warns) console.log(`⚠ ${w}`);

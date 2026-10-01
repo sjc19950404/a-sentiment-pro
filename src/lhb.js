@@ -21,6 +21,70 @@ export function isRangeBoard(reason) {
   return RANGE_BOARD_RE.test(String(reason || ''));
 }
 
+// ── 新股/无涨跌幅限制标的判定（唯一出处）────────────────────────────────
+//
+// 东财榜单给出的上榜诱因里，新股/次新走的是「无价格涨跌幅限制的证券」这一条
+// （上市首 5 日不设涨跌幅，与普通个股 ±10%/±20% 的板段不可比）。
+//
+// 为什么必须从 s_net 里剔除（2026-09-30 实测，这是本规则唯一的存在理由）：
+//   · 当日榜净买 +7.74 亿里，力勤资源(001246) 一只贡献 +5.04 亿，占 65%；
+//   · s_net 因子 = tanh(净买/5)*50+50，7.74 亿已推高到 95.7（接近满分）；
+//   · 剔掉这一只后剩 −0.91 亿，因子应为 41.0（由强转弱）——分值虚高 54.7，情绪分虚高 8.58 分；
+//   · 新股首日换手极高、筹码未沉淀，其大额净买衡量的是「打新资金出货承接」，
+//     不是二级市场存量资金的进攻意愿，混入即把「新股放量」误读成「游资进攻」。
+//
+// 判定必须看 reasons 全部上榜原因（同票可因多个原因上榜），不能只看代表那条。
+export const NEW_STOCK_RE = /无价格涨跌幅限制/;
+
+// 一条（通常为已聚合、带 reasons 数组的）记录是否属于新股/无涨跌幅限制
+export function isNewStock(l) {
+  if (!l) return false;
+  const list = Array.isArray(l.reasons) && l.reasons.length ? l.reasons : [l.reason || ''];
+  return list.some((r) => NEW_STOCK_RE.test(String(r)));
+}
+
+// 从「当日榜去重行」里分离新股与存量个股的净买额（单位：亿）。
+// 口径纪律：分子分母都用同一份 rows（必须是当日榜 daily_aggr），不得一处用明细、一处用汇总。
+//   剔新股净买 = 全部当日榜净买 − 新股净买
+//   ratio      = 新股净买 / 全部当日榜净买（分母 ≤0 时无意义，返回 null）
+// 注意「新股净买为负」的情形：此时剔新股后净买反而更高，不做人为截断，如实返回。
+export function splitNewStockNet(dailyRows) {
+  const rows = Array.isArray(dailyRows) ? dailyRows : [];
+  const delisted = [], kept = [];
+  for (const l of rows) (isNewStock(l) ? delisted : kept).push(l);
+  const totalYi = r2(sumOf(rows, (l) => l.net_buy_wan) / 1e4);
+  const newYi = r2(sumOf(delisted, (l) => l.net_buy_wan) / 1e4);
+  const exNewYi = r2(totalYi - newYi);
+  return {
+    total_yi: totalYi,                                   // 含新股的当日榜净买（未修正口径）
+    new_yi: newYi,                                       // 新股贡献的净买
+    ex_new_yi: exNewYi,                                  // ← 喂 s_net 的唯一口径
+    new_stocks: delisted.map((l) => ({ code: l.code, name: l.name, net_yi: r2((l.net_buy_wan || 0) / 1e4) })),
+    total_stocks: rows.length,
+    new_count: delisted.length,
+    ratio: totalYi > 0 ? r2(newYi / totalYi) : null,     // 占当日榜净买比例
+  };
+}
+
+// 新股扰动熔断线：占比 > 25% 视为显著扰动，报告必须显式标注「因子已自动剔除」。
+// 该阈值沿用 app.js 报告端既有的 25% 告警线，不再另立新阈值。
+export const NEW_STOCK_DISTURB_RATIO = 0.25;
+
+// 判定某日是否触发新股扰动熔断（ratio 缺省视为未触发）
+export function isNewStockDisturbed(ratio) {
+  return ratio != null && ratio > NEW_STOCK_DISTURB_RATIO;
+}
+
+// 从某个 day 对象取「当日榜去重行」并完成新股分离。
+// 直接复用 caliberFromDay —— 它已收敛了「明细优先 / 原始记录次之 / 聚合兜底」三级回退，
+// 本函数不再自行拼接数组：早先版本对未去重的 lhb_aggr 再跑一次 aggregateByCode，
+// 会因「同票取 |净额| 最大者」把区间累计榜顶替当日榜（33 天里 30 天数值偏离），
+// 与 511 亿事件是同一个坑。
+export function newStockSplitOfDay(day) {
+  const c = caliberFromDay(day);
+  return splitNewStockNet(c.daily_aggr);
+}
+
 const r1 = (v) => Math.round(v * 10) / 10;
 const r2 = (v) => Math.round(v * 100) / 100;
 
@@ -83,12 +147,21 @@ export function summarizeCalibers(records) {
   const daily = records.filter((l) => !l.is_range);
   const allAggr = aggregateByCode(records);
   const dailyAggr = aggregateByCode(daily);
+  const seg = splitNewStockNet(dailyAggr);
   return {
     // 当日榜
     daily_stocks: dailyAggr.length,
     daily_net_yi: r2(sumOf(dailyAggr, (l) => l.net_buy_wan) / 1e4),
     daily_amt_yi: r2(sumOf(dailyAggr, dealOf) / 1e4),
     daily_aggr: dailyAggr,
+    // 当日榜 · 剔除新股/无涨跌幅限制标的（喂 s_net 的唯一口径）
+    //   为什么必须在汇总层就分开：s_net = tanh(净买/5)*50+50 在 5 亿量级近饱和，
+    //   一笔新股大额净买就能把因子从「转弱」推到「接近满分」（2026-09-30 实测虚高 54.7 分）。
+    daily_ex_new_net_yi: seg.ex_new_yi,
+    daily_new_net_yi: seg.new_yi,
+    daily_new_ratio: seg.ratio,
+    daily_new_stocks: seg.new_stocks,
+    daily_new_count: seg.new_count,
     // 全量（诊断）
     all_stocks: allAggr.length,
     all_net_yi: r2(sumOf(allAggr, (l) => l.net_buy_wan) / 1e4),
@@ -104,6 +177,33 @@ export function summarizeCalibers(records) {
 // 从已落盘的 day 对象重算双口径（历史批量重算专用，与实时抓取走同一套实现）。
 // 存量记录可能没有 is_range / deal_wan：前者用 reason 现判，后者按当日榜等式回退。
 export function caliberFromDay(day) {
+  // ① 明细优先：lhb_daily_aggr 已是「当日榜 + 去重」的行（新数据都有）。
+  //    直接喂 splitNewStockNet，不再二次 aggregateByCode —— 它是聚合产物，不是原始记录。
+  if (Array.isArray(day?.lhb_daily_aggr) && day.lhb_daily_aggr.length) {
+    const rows = day.lhb_daily_aggr;
+    const seg = splitNewStockNet(rows);
+    const dailyNet = r2(sumOf(rows, (l) => l.net_buy_wan) / 1e4);
+    return {
+      daily_stocks: rows.length,
+      daily_net_yi: dailyNet,
+      daily_amt_yi: r2(sumOf(rows, dealOf) / 1e4),
+      daily_aggr: rows,
+      daily_ex_new_net_yi: seg.ex_new_yi,
+      daily_new_net_yi: seg.new_yi,
+      daily_ratio_or_null: seg.ratio,
+      daily_new_ratio: seg.ratio,
+      daily_new_stocks: seg.new_stocks,
+      daily_new_count: seg.new_count,
+      all_stocks: Array.isArray(day?.lhb_aggr) ? day.lhb_aggr.length : rows.length,
+      all_net_yi: ((day?.summary || {}).lhb_all_net != null) ? day.summary.lhb_all_net
+        : r2(sumOf(Array.isArray(day?.lhb_aggr) ? day.lhb_aggr : rows, (l) => l.net_buy_wan) / 1e4),
+      all_pos: ((day?.summary || {}).net_pos != null) ? day.summary.net_pos : null,
+      all_neg: ((day?.summary || {}).net_neg != null) ? day.summary.net_neg : null,
+      all_aggr: Array.isArray(day?.lhb_aggr) ? day.lhb_aggr : rows,
+      total_records: Array.isArray(day?.lhb) ? day.lhb.length : rows.length,
+      range_records: Array.isArray(day?.summary) ? 0 : 0,
+    };
+  }
   const rows = Array.isArray(day?.lhb) ? day.lhb : [];
   if (rows.length) {
     const norm = rows.map((l) => ({

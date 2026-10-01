@@ -20,6 +20,9 @@ export function computeSentiment(raw = {}, weights) {
   const {
     netBuy, upCount, downCount, industryUp, industryTotal,
     limitUp, limitDown, brokenCount, amount, amountMA20, posRatio,
+    // 新股/无涨跌幅限制标的的净买（亿）——由 src/lhb.js 的 splitNewStockNet 唯一产出。
+    // 传入即自动从 s_net 里剔除；不传则视为 0（行为与旧版完全一致，历史种子天不受影响）。
+    newStockNet = 0, newStockRatio = null,
   } = raw;
 
   const upRatio = (upCount != null && downCount != null && upCount + downCount > 0)
@@ -29,8 +32,17 @@ export function computeSentiment(raw = {}, weights) {
   const ldDen = (limitUp != null && limitDown != null) ? limitUp + limitDown : 0;
 
   // s_net20: 龙虎榜净额（亿），tanh 归一
+  //
+  // ⚠ 唯一口径纪律：**必须用剔除新股后的净买**。
+  //   新股（上市首 5 日无涨跌幅限制）首日换手极高、筹码未沉淀，其大额净买衡量的是
+  //   「打新资金出货由谁承接」，不是二级市场存量资金的进攻意愿；且 tanh(x/5) 在 5 亿量级
+  //   已近饱和，一笔新股就能把因子从「转弱」推到「接近满分」。
+  //   实测 2026-09-30：含新股 7.74 亿 → s_net 95.7；剔新股 2.70 亿 → s_net 74.6（虚高 21.1，
+  //   情绪分虚高 4.20 分，且把结论从「满仓」推过了 65 分档位线）。
+  //   全档统计：33 天里 10 天受影响，累计虚增 15.12 分。
+  const netExNew = netBuy != null ? netBuy - (Number.isFinite(+newStockNet) ? +newStockNet : 0) : null;
   const f_net = factor(
-    netBuy != null ? Math.tanh(netBuy / 5) * 50 + 50 : null
+    netExNew != null ? Math.tanh(netExNew / 5) * 50 + 50 : null
   );
   // s_pos10: 涨跌家数（缺则用龙虎榜正负占比 posRatio 代理）
   const f_pos = factor(
@@ -74,5 +86,20 @@ export function computeSentiment(raw = {}, weights) {
     factors: Object.fromEntries(Object.entries(factors).map(([k, f]) => [k, Math.round(f.v * 10) / 10])),
     missing,
     imputedRatio: Math.round((missingCount / 7) * 100) / 100,
+    // 新股扰动元信息：供报告逐日核对「s_net 是否被修正过、修正了多少」
+    //   netRaw         —— 含新股的原始净买（未修正口径，仅留痕）
+    //   netExNew       —— 实际喂给 s_net 的净买
+    //   newStockNet    —— 被剔除的新股净买
+    //   newStockRatio  —— 新股占当日榜净买比例（分母 ≤0 时为 null）
+    //   adjusted       —— 本日 s_net 是否真的被修正（有新股净买且非 0）
+    //   disturbed      —— 是否越过 25% 扰动线（报告须显式标注）
+    newStock: {
+      netRaw: netBuy != null ? Math.round(netBuy * 100) / 100 : null,
+      netExNew: netExNew != null ? Math.round(netExNew * 100) / 100 : null,
+      newStockNet: Math.round((Number.isFinite(+newStockNet) ? +newStockNet : 0) * 100) / 100,
+      newStockRatio: newStockRatio != null ? Math.round(newStockRatio * 100) / 100 : null,
+      adjusted: netBuy != null && Number.isFinite(+newStockNet) && +newStockNet !== 0,
+      disturbed: newStockRatio != null && newStockRatio > 0.25,
+    },
   };
 }

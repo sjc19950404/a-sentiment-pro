@@ -92,15 +92,19 @@ const changed = a.all_days.filter((d, i) => {
   const b = rows.find((r) => r.date === d.trade_date);
   return b && Math.abs((b.beforeFactor ?? -1) - (d.emotion?.factors?.s_net ?? -2)) > 0.05;
 }).length;
-console.log(`\n共 ${rows.length} 天；s_net 因子值发生变化 ${changed} 天（口径由「含区间累计榜」改为「当日榜」）。`);
+const nsChanged = a.all_days.filter((d) => d.emotion?.newStock?.adjusted).length;
+console.log(`\n共 ${rows.length} 天；s_net 因子值发生变化 ${changed} 天`
+  + `（口径：含区间累计榜 → 当日榜 → **当日榜且剔除新股**）；`
+  + `其中因剔除新股而修正的 ${nsChanged} 天。`);
 
 if (DRY) { console.log('（--dry：仅预览，未写盘）'); process.exit(0); }
 a.meta = a.meta || {};
 const stamp = new Date().toISOString().slice(0, 10);
 // note 用「；」分隔，所以本条内容不得再含「；」；按迁移标记词去重，重复运行不会堆叠碎片
-const STALE = /龙虎榜双口径全档重算|当日榜净额输入|lhb_daily_\*|lhb_all_net/;
+const STALE = /龙虎榜双口径全档重算|当日榜净额输入|lhb_daily_\*|lhb_all_net|剔除新股/;
 const entry = '龙虎榜双口径全档重算：当日榜口径写入 lhb_daily_*（权威）、全量口径改名 lhb_all_net（仅诊断）、'
-  + `清除歧义字段 net_total_yi，情绪因子 s_net 改为当日榜净额输入，${rows.length} 天，${stamp}`;
+  + '清除歧义字段 net_total_yi，情绪因子 s_net 改为「当日榜且剔除新股」净额输入'
+  + `（新股/无涨跌幅限制标的自动剥离并留痕 emotion.newStock），${rows.length} 天，${stamp}`;
 a.meta.note = [...String(a.meta.note || '').split('；').map((s) => s.trim()).filter(Boolean)
   .filter((s) => !STALE.test(s)), entry].join('；');
 if (signature() === beforeSig) {

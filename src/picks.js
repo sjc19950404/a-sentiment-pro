@@ -16,6 +16,11 @@
 //   3. **仓位建议与市场档位联动**：市场情绪决定总仓位，个股均分——冰点区就该少拿甚至空仓，
 //      逆着档位推荐重仓是自相矛盾。
 
+// 口径唯一出处：区间榜判别式与新股判定一律走 src/lhb.js。
+// 但 picks.js 是**浏览器也要用**的零依赖模块（paper_ui.js 直接 import），不能引 node 侧依赖——
+// lhb.js 本身是纯函数无 node 依赖，故可直接复用，不再自己写正则（口径守卫会拦重复实现）。
+import { RANGE_BOARD_RE, isNewStock } from './lhb.js';
+
 // ────────────────────────── 常量（阈值集中在此，UI 不重写） ──────────────────────────
 
 /** 推荐条数上限（Top N） */
@@ -125,12 +130,10 @@ export function buildCandidates(day, opts = {}) {
   for (const l of lhbRows) {
     if (!l || !l.code) continue;
     // 区间累计榜：值不是当日值，直接不进候选池（口径纪律，见 src/lhb.js 文件头）
-    const isRange = l.is_range != null
-      ? !!l.is_range
-      : /连续\s*[0-9一二三四五六七八九十]+\s*个交易日|严重异常期间/.test(String(l.reason || ''));
+    const isRange = l.is_range != null ? !!l.is_range : RANGE_BOARD_RE.test(String(l.reason || ''));
     if (isRange) continue;
-    // 新股/无涨跌幅限制：涨跌幅不可比，且板段涨跌停判定会失真
-    if (/无价格涨跌幅限制/.test(String(l.reason || ''))) continue;
+    // 新股/无涨跌幅限制：涨跌幅不可比，且板段涨跌停判定会失真（判定走 lhb.js 唯一出处）
+    if (isNewStock(l)) continue;
 
     const c = ensure(l.code, {
       name: l.name, close: l.close, changePct: l.change_pct,

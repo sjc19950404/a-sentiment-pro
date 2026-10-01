@@ -19,7 +19,8 @@
       "at": "2026-09-30T13:11:50.394Z",
       "outcome": "ok",
       "reason": null
-    }
+    },
+    "note": "龙虎榜双口径全档重算：当日榜口径写入 lhb_daily_*（权威）、全量口径改名 lhb_all_net（仅诊断）、清除歧义字段 net_total_yi，情绪因子 s_net 改为「当日榜且剔除新股」净额输入（新股/无涨跌幅限制标的自动剥离并留痕 emotion.newStock），33 天，2026-10-01"
   },
   "all_days": [
     {
@@ -2031,7 +2032,12 @@
         "lhb_daily_net": 22.71,
         "lhb_daily_amt": 211.46,
         "lhb_range_count": 14,
-        "lhb_all_net": 22.43
+        "lhb_all_net": 22.43,
+        "lhb_daily_ex_new_net": 22.71,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": 0.01,
@@ -2071,7 +2077,15 @@
           "s_amt15"
         ],
         "lhb_daily_net": 22.71,
-        "net_daily_pct_rank": 78.1
+        "net_daily_pct_rank": 78.1,
+        "newStock": {
+          "netRaw": 22.71,
+          "netExNew": 22.71,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -5442,7 +5456,12 @@
         "lhb_daily_net": 13.91,
         "lhb_daily_amt": 246.95,
         "lhb_range_count": 7,
-        "lhb_all_net": 17.89
+        "lhb_all_net": 17.89,
+        "lhb_daily_ex_new_net": 13.91,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": 1.41,
@@ -5463,7 +5482,7 @@
         "hot_count": 110,
         "topic_conc": 6.4,
         "top_topic": "国企改革",
-        "pct_rank": 65.6,
+        "pct_rank": 75,
         "industryCount": 90,
         "factors": {
           "s_net": 99.6,
@@ -5482,7 +5501,15 @@
           "s_amt15"
         ],
         "lhb_daily_net": 13.91,
-        "net_daily_pct_rank": 65.6
+        "net_daily_pct_rank": 65.6,
+        "newStock": {
+          "netRaw": 13.91,
+          "netExNew": 13.91,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -8807,7 +8834,12 @@
         "lhb_daily_net": 5.33,
         "lhb_daily_amt": 162.36,
         "lhb_range_count": 25,
-        "lhb_all_net": 19.42
+        "lhb_all_net": 19.42,
+        "lhb_daily_ex_new_net": 5.33,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": 0.19,
@@ -8847,7 +8879,15 @@
           "s_amt15"
         ],
         "lhb_daily_net": 5.33,
-        "net_daily_pct_rank": 34.4
+        "net_daily_pct_rank": 34.4,
+        "newStock": {
+          "netRaw": 5.33,
+          "netExNew": 5.33,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -12011,7 +12051,12 @@
         "lhb_daily_net": -25.11,
         "lhb_daily_amt": 214.5,
         "lhb_range_count": 19,
-        "lhb_all_net": -26.44
+        "lhb_all_net": -26.44,
+        "lhb_daily_ex_new_net": -25.11,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": null,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": -2.4,
@@ -12051,7 +12096,15 @@
           "s_amt15"
         ],
         "lhb_daily_net": -25.11,
-        "net_daily_pct_rank": 0
+        "net_daily_pct_rank": 0,
+        "newStock": {
+          "netRaw": -25.11,
+          "netExNew": -25.11,
+          "newStockNet": 0,
+          "newStockRatio": null,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -15503,7 +15556,18 @@
         "lhb_daily_net": 19.2,
         "lhb_daily_amt": 137.57,
         "lhb_range_count": 15,
-        "lhb_all_net": 21.25
+        "lhb_all_net": 21.25,
+        "lhb_daily_ex_new_net": 18.29,
+        "lhb_new_net": 0.91,
+        "lhb_new_ratio": 0.05,
+        "lhb_new_count": 1,
+        "lhb_new_stocks": [
+          {
+            "code": "301655",
+            "name": "绿控传动",
+            "net_yi": 0.91
+          }
+        ]
       },
       "indexes": {
         "上证指数": 0.24,
@@ -15512,7 +15576,7 @@
       },
       "emotion": {
         "value": 67.8,
-        "s_net": 100,
+        "s_net": 99.9,
         "s_pos": 50.7,
         "s_brd": 88.9,
         "s_hot": 50,
@@ -15524,10 +15588,10 @@
         "hot_count": 82,
         "topic_conc": 28,
         "top_topic": "创新药",
-        "pct_rank": 59.4,
+        "pct_rank": 62.5,
         "industryCount": 90,
         "factors": {
-          "s_net": 100,
+          "s_net": 99.9,
           "s_pos": 50.7,
           "s_brd": 88.9,
           "s_hot": 50,
@@ -15543,7 +15607,15 @@
           "s_amt15"
         ],
         "lhb_daily_net": 19.2,
-        "net_daily_pct_rank": 71.9
+        "net_daily_pct_rank": 71.9,
+        "newStock": {
+          "netRaw": 19.2,
+          "netExNew": 18.29,
+          "newStockNet": 0.91,
+          "newStockRatio": 0.05,
+          "adjusted": true,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -18613,7 +18685,12 @@
         "lhb_daily_net": 26.97,
         "lhb_daily_amt": 169.34,
         "lhb_range_count": 15,
-        "lhb_all_net": 39.88
+        "lhb_all_net": 39.88,
+        "lhb_daily_ex_new_net": 26.97,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": 0.04,
@@ -18653,7 +18730,15 @@
           "s_amt15"
         ],
         "lhb_daily_net": 26.97,
-        "net_daily_pct_rank": 87.5
+        "net_daily_pct_rank": 87.5,
+        "newStock": {
+          "netRaw": 26.97,
+          "netExNew": 26.97,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -21418,7 +21503,12 @@
         "lhb_daily_net": 2.75,
         "lhb_daily_amt": 129.32,
         "lhb_range_count": 16,
-        "lhb_all_net": 8.94
+        "lhb_all_net": 8.94,
+        "lhb_daily_ex_new_net": 2.75,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": -0.59,
@@ -21458,7 +21548,15 @@
           "s_amt15"
         ],
         "lhb_daily_net": 2.75,
-        "net_daily_pct_rank": 25
+        "net_daily_pct_rank": 25,
+        "newStock": {
+          "netRaw": 2.75,
+          "netExNew": 2.75,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -24445,7 +24543,12 @@
         "lhb_daily_net": 22.86,
         "lhb_daily_amt": 249.97,
         "lhb_range_count": 10,
-        "lhb_all_net": 23.21
+        "lhb_all_net": 23.21,
+        "lhb_daily_ex_new_net": 22.86,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": 0.19,
@@ -24466,7 +24569,7 @@
         "hot_count": 70,
         "topic_conc": 4.3,
         "top_topic": "中报增长",
-        "pct_rank": 71.9,
+        "pct_rank": 78.1,
         "industryCount": 90,
         "factors": {
           "s_net": 100,
@@ -24485,7 +24588,15 @@
           "s_amt15"
         ],
         "lhb_daily_net": 22.86,
-        "net_daily_pct_rank": 81.3
+        "net_daily_pct_rank": 81.3,
+        "newStock": {
+          "netRaw": 22.86,
+          "netExNew": 22.86,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -27426,7 +27537,12 @@
         "lhb_daily_net": 0.86,
         "lhb_daily_amt": 134.02,
         "lhb_range_count": 16,
-        "lhb_all_net": 5.31
+        "lhb_all_net": 5.31,
+        "lhb_daily_ex_new_net": 0.86,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": 0.59,
@@ -27447,7 +27563,7 @@
         "hot_count": 56,
         "topic_conc": 8.9,
         "top_topic": "业绩增长",
-        "pct_rank": 21.9,
+        "pct_rank": 28.1,
         "industryCount": 90,
         "factors": {
           "s_net": 58.5,
@@ -27466,7 +27582,15 @@
           "s_amt15"
         ],
         "lhb_daily_net": 0.86,
-        "net_daily_pct_rank": 18.8
+        "net_daily_pct_rank": 18.8,
+        "newStock": {
+          "netRaw": 0.86,
+          "netExNew": 0.86,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -30497,7 +30621,12 @@
         "lhb_daily_net": 29.09,
         "lhb_daily_amt": 217.48,
         "lhb_range_count": 10,
-        "lhb_all_net": 34.07
+        "lhb_all_net": 34.07,
+        "lhb_daily_ex_new_net": 29.09,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": 1.13,
@@ -30518,7 +30647,7 @@
         "hot_count": 77,
         "topic_conc": 11.7,
         "top_topic": "业绩增长",
-        "pct_rank": 56.3,
+        "pct_rank": 59.4,
         "industryCount": 90,
         "factors": {
           "s_net": 100,
@@ -30537,7 +30666,15 @@
           "s_amt15"
         ],
         "lhb_daily_net": 29.09,
-        "net_daily_pct_rank": 93.8
+        "net_daily_pct_rank": 93.8,
+        "newStock": {
+          "netRaw": 29.09,
+          "netExNew": 29.09,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -33572,7 +33709,12 @@
         "lhb_daily_net": 9.47,
         "lhb_daily_amt": 127.92,
         "lhb_range_count": 14,
-        "lhb_all_net": 9.35
+        "lhb_all_net": 9.35,
+        "lhb_daily_ex_new_net": 9.47,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": -0.11,
@@ -33611,7 +33753,15 @@
           "s_zbl10"
         ],
         "lhb_daily_net": 9.47,
-        "net_daily_pct_rank": 56.3
+        "net_daily_pct_rank": 56.3,
+        "newStock": {
+          "netRaw": 9.47,
+          "netExNew": 9.47,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -36853,7 +37003,12 @@
         "lhb_daily_net": 5.05,
         "lhb_daily_amt": 223.86,
         "lhb_range_count": 18,
-        "lhb_all_net": 8.5
+        "lhb_all_net": 8.5,
+        "lhb_daily_ex_new_net": 5.05,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": 0.86,
@@ -36892,7 +37047,15 @@
           "s_zbl10"
         ],
         "lhb_daily_net": 5.05,
-        "net_daily_pct_rank": 31.3
+        "net_daily_pct_rank": 31.3,
+        "newStock": {
+          "netRaw": 5.05,
+          "netExNew": 5.05,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -40337,7 +40500,23 @@
         "lhb_daily_net": -9.03,
         "lhb_daily_amt": 221.05,
         "lhb_range_count": 18,
-        "lhb_all_net": -5.11
+        "lhb_all_net": -5.11,
+        "lhb_daily_ex_new_net": -11.24,
+        "lhb_new_net": 2.21,
+        "lhb_new_ratio": null,
+        "lhb_new_count": 2,
+        "lhb_new_stocks": [
+          {
+            "code": "301697",
+            "name": "贝特利",
+            "net_yi": 1.21
+          },
+          {
+            "code": "601123",
+            "name": "马矿股份",
+            "net_yi": 1
+          }
+        ]
       },
       "indexes": {
         "上证指数": -0.16,
@@ -40345,8 +40524,8 @@
         "创业板指": -1.32
       },
       "emotion": {
-        "value": 45.4,
-        "s_net": 2.6,
+        "value": 45.1,
+        "s_net": 1.1,
         "s_pos": 53.1,
         "s_brd": 75.6,
         "s_hot": 50,
@@ -40361,7 +40540,7 @@
         "pct_rank": 9.4,
         "industryCount": 90,
         "factors": {
-          "s_net": 2.6,
+          "s_net": 1.1,
           "s_pos": 53.1,
           "s_brd": 75.6,
           "s_hot": 50,
@@ -40376,7 +40555,15 @@
           "s_zbl10"
         ],
         "lhb_daily_net": -9.03,
-        "net_daily_pct_rank": 3.1
+        "net_daily_pct_rank": 3.1,
+        "newStock": {
+          "netRaw": -9.03,
+          "netExNew": -11.24,
+          "newStockNet": 2.21,
+          "newStockRatio": null,
+          "adjusted": true,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -43532,7 +43719,18 @@
         "lhb_daily_net": -4.01,
         "lhb_daily_amt": 162.49,
         "lhb_range_count": 21,
-        "lhb_all_net": -1.92
+        "lhb_all_net": -1.92,
+        "lhb_daily_ex_new_net": -4.81,
+        "lhb_new_net": 0.8,
+        "lhb_new_ratio": null,
+        "lhb_new_count": 1,
+        "lhb_new_stocks": [
+          {
+            "code": "301688",
+            "name": "格林生物",
+            "net_yi": 0.8
+          }
+        ]
       },
       "indexes": {
         "上证指数": -0.97,
@@ -43540,8 +43738,8 @@
         "创业板指": -2.39
       },
       "emotion": {
-        "value": 34.3,
-        "s_net": 16.7,
+        "value": 33.5,
+        "s_net": 12.7,
         "s_pos": 44.3,
         "s_brd": 17.8,
         "s_hot": 50,
@@ -43556,7 +43754,7 @@
         "pct_rank": 6.3,
         "industryCount": 90,
         "factors": {
-          "s_net": 16.7,
+          "s_net": 12.7,
           "s_pos": 44.3,
           "s_brd": 17.8,
           "s_hot": 50,
@@ -43571,7 +43769,15 @@
           "s_zbl10"
         ],
         "lhb_daily_net": -4.01,
-        "net_daily_pct_rank": 6.3
+        "net_daily_pct_rank": 6.3,
+        "newStock": {
+          "netRaw": -4.01,
+          "netExNew": -4.81,
+          "newStockNet": 0.8,
+          "newStockRatio": null,
+          "adjusted": true,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -46520,7 +46726,12 @@
         "lhb_daily_net": 8.04,
         "lhb_daily_amt": 149.24,
         "lhb_range_count": 11,
-        "lhb_all_net": 13.08
+        "lhb_all_net": 13.08,
+        "lhb_daily_ex_new_net": 8.04,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": 0.02,
@@ -46559,7 +46770,15 @@
           "s_zbl10"
         ],
         "lhb_daily_net": 8.04,
-        "net_daily_pct_rank": 53.1
+        "net_daily_pct_rank": 53.1,
+        "newStock": {
+          "netRaw": 8.04,
+          "netExNew": 8.04,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -49282,7 +49501,12 @@
         "lhb_daily_net": 19.43,
         "lhb_daily_amt": 189.21,
         "lhb_range_count": 12,
-        "lhb_all_net": 25.45
+        "lhb_all_net": 25.45,
+        "lhb_daily_ex_new_net": 19.43,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": -0.3,
@@ -49303,7 +49527,7 @@
         "hot_count": 40,
         "topic_conc": 12.5,
         "top_topic": "海峡两岸",
-        "pct_rank": 78.1,
+        "pct_rank": 81.3,
         "industryCount": 90,
         "factors": {
           "s_net": 100,
@@ -49317,7 +49541,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": 19.43,
-        "net_daily_pct_rank": 75
+        "net_daily_pct_rank": 75,
+        "newStock": {
+          "netRaw": 19.43,
+          "netExNew": 19.43,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -52662,7 +52894,18 @@
         "lhb_daily_net": 49.21,
         "lhb_daily_amt": 280.14,
         "lhb_range_count": 16,
-        "lhb_all_net": 69.52
+        "lhb_all_net": 69.52,
+        "lhb_daily_ex_new_net": 49,
+        "lhb_new_net": 0.21,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 1,
+        "lhb_new_stocks": [
+          {
+            "code": "603448",
+            "name": "天博智能",
+            "net_yi": 0.21
+          }
+        ]
       },
       "indexes": {
         "上证指数": 0.07,
@@ -52697,7 +52940,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": 49.21,
-        "net_daily_pct_rank": 100
+        "net_daily_pct_rank": 100,
+        "newStock": {
+          "netRaw": 49.21,
+          "netExNew": 49,
+          "newStockNet": 0.21,
+          "newStockRatio": 0,
+          "adjusted": true,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -55911,7 +56162,12 @@
         "lhb_daily_net": -0.11,
         "lhb_daily_amt": 108.47,
         "lhb_range_count": 16,
-        "lhb_all_net": 13.42
+        "lhb_all_net": 13.42,
+        "lhb_daily_ex_new_net": -0.11,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": null,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": 0.2,
@@ -55932,7 +56188,7 @@
         "hot_count": 73,
         "topic_conc": 8.2,
         "top_topic": "AI应用",
-        "pct_rank": 62.5,
+        "pct_rank": 68.8,
         "industryCount": 90,
         "factors": {
           "s_net": 48.9,
@@ -55946,7 +56202,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": -0.11,
-        "net_daily_pct_rank": 15.6
+        "net_daily_pct_rank": 15.6,
+        "newStock": {
+          "netRaw": -0.11,
+          "netExNew": -0.11,
+          "newStockNet": 0,
+          "newStockRatio": null,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -58805,7 +59069,18 @@
         "lhb_daily_net": -0.28,
         "lhb_daily_amt": 134.92,
         "lhb_range_count": 19,
-        "lhb_all_net": 8.56
+        "lhb_all_net": 8.56,
+        "lhb_daily_ex_new_net": -1.79,
+        "lhb_new_net": 1.51,
+        "lhb_new_ratio": null,
+        "lhb_new_count": 1,
+        "lhb_new_stocks": [
+          {
+            "code": "301699",
+            "name": "洛轴股份",
+            "net_yi": 1.51
+          }
+        ]
       },
       "indexes": {
         "上证指数": 0.28,
@@ -58813,8 +59088,8 @@
         "创业板指": -0.14
       },
       "emotion": {
-        "value": 55.5,
-        "s_net": 47.2,
+        "value": 52.7,
+        "s_net": 32.8,
         "s_pos": 50,
         "s_brd": 33.3,
         "s_hot": 87.3,
@@ -58826,10 +59101,10 @@
         "hot_count": 49,
         "topic_conc": 16.3,
         "top_topic": "业绩增长",
-        "pct_rank": 28.1,
+        "pct_rank": 25,
         "industryCount": 90,
         "factors": {
-          "s_net": 47.2,
+          "s_net": 32.8,
           "s_pos": 50,
           "s_brd": 33.3,
           "s_hot": 87.3,
@@ -58840,7 +59115,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": -0.28,
-        "net_daily_pct_rank": 12.5
+        "net_daily_pct_rank": 12.5,
+        "newStock": {
+          "netRaw": -0.28,
+          "netExNew": -1.79,
+          "newStockNet": 1.51,
+          "newStockRatio": null,
+          "adjusted": true,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -61629,7 +61912,18 @@
         "lhb_daily_net": 6.29,
         "lhb_daily_amt": 136.3,
         "lhb_range_count": 15,
-        "lhb_all_net": 7.71
+        "lhb_all_net": 7.71,
+        "lhb_daily_ex_new_net": 3.24,
+        "lhb_new_net": 3.05,
+        "lhb_new_ratio": 0.48,
+        "lhb_new_count": 1,
+        "lhb_new_stocks": [
+          {
+            "code": "301689",
+            "name": "电科思仪",
+            "net_yi": 3.05
+          }
+        ]
       },
       "indexes": {
         "上证指数": -0.43,
@@ -61637,8 +61931,8 @@
         "创业板指": -0.49
       },
       "emotion": {
-        "value": 55.4,
-        "s_net": 92.5,
+        "value": 52.6,
+        "s_net": 78.5,
         "s_pos": 45.3,
         "s_brd": 11.1,
         "s_hot": 76.1,
@@ -61650,10 +61944,10 @@
         "hot_count": 39,
         "topic_conc": 15.4,
         "top_topic": "业绩增长",
-        "pct_rank": 25,
+        "pct_rank": 21.9,
         "industryCount": 90,
         "factors": {
-          "s_net": 92.5,
+          "s_net": 78.5,
           "s_pos": 45.3,
           "s_brd": 11.1,
           "s_hot": 76.1,
@@ -61664,7 +61958,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": 6.29,
-        "net_daily_pct_rank": 46.9
+        "net_daily_pct_rank": 46.9,
+        "newStock": {
+          "netRaw": 6.29,
+          "netExNew": 3.24,
+          "newStockNet": 3.05,
+          "newStockRatio": 0.48,
+          "adjusted": true,
+          "disturbed": true
+        }
       },
       "lhb_aggr": [
         {
@@ -64410,7 +64712,12 @@
         "lhb_daily_net": 11.58,
         "lhb_daily_amt": 168.02,
         "lhb_range_count": 16,
-        "lhb_all_net": 21.93
+        "lhb_all_net": 21.93,
+        "lhb_daily_ex_new_net": 11.58,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": -1.18,
@@ -64445,7 +64752,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": 11.58,
-        "net_daily_pct_rank": 59.4
+        "net_daily_pct_rank": 59.4,
+        "newStock": {
+          "netRaw": 11.58,
+          "netExNew": 11.58,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -67616,7 +67931,12 @@
         "lhb_daily_net": 34.38,
         "lhb_daily_amt": 181.85,
         "lhb_range_count": 22,
-        "lhb_all_net": 48.71
+        "lhb_all_net": 48.71,
+        "lhb_daily_ex_new_net": 34.38,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": -0.07,
@@ -67651,7 +67971,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": 34.38,
-        "net_daily_pct_rank": 96.9
+        "net_daily_pct_rank": 96.9,
+        "newStock": {
+          "netRaw": 34.38,
+          "netExNew": 34.38,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -70687,7 +71015,12 @@
         "lhb_daily_net": 13.92,
         "lhb_daily_amt": 152.05,
         "lhb_range_count": 19,
-        "lhb_all_net": 16.79
+        "lhb_all_net": 16.79,
+        "lhb_daily_ex_new_net": 13.92,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": -0.54,
@@ -70722,7 +71055,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": 13.92,
-        "net_daily_pct_rank": 68.8
+        "net_daily_pct_rank": 68.8,
+        "newStock": {
+          "netRaw": 13.92,
+          "netExNew": 13.92,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -74088,7 +74429,12 @@
         "lhb_daily_net": 25.36,
         "lhb_daily_amt": 234.26,
         "lhb_range_count": 20,
-        "lhb_all_net": 46.08
+        "lhb_all_net": 46.08,
+        "lhb_daily_ex_new_net": 25.36,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": 0.71,
@@ -74123,7 +74469,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": 25.36,
-        "net_daily_pct_rank": 84.4
+        "net_daily_pct_rank": 84.4,
+        "newStock": {
+          "netRaw": 25.36,
+          "netExNew": 25.36,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -77065,7 +77419,18 @@
         "lhb_daily_net": 2.19,
         "lhb_daily_amt": 191.38,
         "lhb_range_count": 9,
-        "lhb_all_net": 4.85
+        "lhb_all_net": 4.85,
+        "lhb_daily_ex_new_net": 1.81,
+        "lhb_new_net": 0.38,
+        "lhb_new_ratio": 0.17,
+        "lhb_new_count": 1,
+        "lhb_new_stocks": [
+          {
+            "code": "601091",
+            "name": "沈鼓集团",
+            "net_yi": 0.38
+          }
+        ]
       },
       "indexes": {
         "上证指数": -0.41,
@@ -77073,8 +77438,8 @@
         "创业板指": -0.4
       },
       "emotion": {
-        "value": 68.8,
-        "s_net": 70.6,
+        "value": 68.1,
+        "s_net": 67.3,
         "s_pos": 62.3,
         "s_brd": 50,
         "s_hot": 97.9,
@@ -77086,10 +77451,10 @@
         "hot_count": 49,
         "topic_conc": 10.2,
         "top_topic": "汽车零部件",
-        "pct_rank": 71.9,
+        "pct_rank": 65.6,
         "industryCount": 90,
         "factors": {
-          "s_net": 70.6,
+          "s_net": 67.3,
           "s_pos": 62.3,
           "s_brd": 50,
           "s_hot": 97.9,
@@ -77100,7 +77465,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": 2.19,
-        "net_daily_pct_rank": 21.9
+        "net_daily_pct_rank": 21.9,
+        "newStock": {
+          "netRaw": 2.19,
+          "netExNew": 1.81,
+          "newStockNet": 0.38,
+          "newStockRatio": 0.17,
+          "adjusted": true,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -80096,7 +80469,12 @@
         "lhb_daily_net": 27.99,
         "lhb_daily_amt": 165.04,
         "lhb_range_count": 10,
-        "lhb_all_net": 32.71
+        "lhb_all_net": 32.71,
+        "lhb_daily_ex_new_net": 27.99,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": 0.94,
@@ -80131,7 +80509,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": 27.99,
-        "net_daily_pct_rank": 90.6
+        "net_daily_pct_rank": 90.6,
+        "newStock": {
+          "netRaw": 27.99,
+          "netExNew": 27.99,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -83481,7 +83867,12 @@
         "lhb_daily_net": 5.42,
         "lhb_daily_amt": 187.38,
         "lhb_range_count": 14,
-        "lhb_all_net": 7.98
+        "lhb_all_net": 7.98,
+        "lhb_daily_ex_new_net": 5.42,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": 0.97,
@@ -83516,7 +83907,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": 5.42,
-        "net_daily_pct_rank": 37.5
+        "net_daily_pct_rank": 37.5,
+        "newStock": {
+          "netRaw": 5.42,
+          "netExNew": 5.42,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -86766,7 +87165,18 @@
         "lhb_daily_net": 3.74,
         "lhb_daily_amt": 172.34,
         "lhb_range_count": 22,
-        "lhb_all_net": 15.87
+        "lhb_all_net": 15.87,
+        "lhb_daily_ex_new_net": 1.89,
+        "lhb_new_net": 1.85,
+        "lhb_new_ratio": 0.49,
+        "lhb_new_count": 1,
+        "lhb_new_stocks": [
+          {
+            "code": "301686",
+            "name": "中塑股份",
+            "net_yi": 1.85
+          }
+        ]
       },
       "indexes": {
         "上证指数": 0.06,
@@ -86774,8 +87184,8 @@
         "创业板指": 0.01
       },
       "emotion": {
-        "value": 71.1,
-        "s_net": 81.7,
+        "value": 68.4,
+        "s_net": 68,
         "s_pos": 55.4,
         "s_brd": 42.2,
         "s_hot": 95.5,
@@ -86787,10 +87197,10 @@
         "hot_count": 63,
         "topic_conc": 15.9,
         "top_topic": "“华”字辈",
-        "pct_rank": 81.3,
+        "pct_rank": 71.9,
         "industryCount": 90,
         "factors": {
-          "s_net": 81.7,
+          "s_net": 68,
           "s_pos": 55.4,
           "s_brd": 42.2,
           "s_hot": 95.5,
@@ -86801,7 +87211,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": 3.74,
-        "net_daily_pct_rank": 28.1
+        "net_daily_pct_rank": 28.1,
+        "newStock": {
+          "netRaw": 3.74,
+          "netExNew": 1.89,
+          "newStockNet": 1.85,
+          "newStockRatio": 0.49,
+          "adjusted": true,
+          "disturbed": true
+        }
       },
       "lhb_aggr": [
         {
@@ -89925,7 +90343,12 @@
         "lhb_daily_net": 5.95,
         "lhb_daily_amt": 147.71,
         "lhb_range_count": 14,
-        "lhb_all_net": 27.29
+        "lhb_all_net": 27.29,
+        "lhb_daily_ex_new_net": 5.95,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": -0.39,
@@ -89960,7 +90383,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": 5.95,
-        "net_daily_pct_rank": 40.6
+        "net_daily_pct_rank": 40.6,
+        "newStock": {
+          "netRaw": 5.95,
+          "netExNew": 5.95,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -93207,7 +93638,12 @@
         "lhb_daily_net": 6.09,
         "lhb_daily_amt": 157.27,
         "lhb_range_count": 23,
-        "lhb_all_net": 15.74
+        "lhb_all_net": 15.74,
+        "lhb_daily_ex_new_net": 6.09,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": 0,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": -1.22,
@@ -93242,7 +93678,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": 6.09,
-        "net_daily_pct_rank": 43.8
+        "net_daily_pct_rank": 43.8,
+        "newStock": {
+          "netRaw": 6.09,
+          "netExNew": 6.09,
+          "newStockNet": 0,
+          "newStockRatio": 0,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -97394,7 +97838,12 @@
         "lhb_daily_net": -1.83,
         "lhb_daily_amt": 166.49,
         "lhb_range_count": 13,
-        "lhb_all_net": -0.61
+        "lhb_all_net": -0.61,
+        "lhb_daily_ex_new_net": -1.83,
+        "lhb_new_net": 0,
+        "lhb_new_ratio": null,
+        "lhb_new_count": 0,
+        "lhb_new_stocks": []
       },
       "indexes": {
         "上证指数": -1.67,
@@ -97429,7 +97878,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": -1.83,
-        "net_daily_pct_rank": 9.4
+        "net_daily_pct_rank": 9.4,
+        "newStock": {
+          "netRaw": -1.83,
+          "netExNew": -1.83,
+          "newStockNet": 0,
+          "newStockRatio": null,
+          "adjusted": false,
+          "disturbed": false
+        }
       },
       "lhb_aggr": [
         {
@@ -101921,7 +102378,18 @@
         "lhb_daily_net": 11.74,
         "lhb_daily_amt": 148.38,
         "lhb_range_count": 15,
-        "lhb_all_net": 15.53
+        "lhb_all_net": 15.53,
+        "lhb_daily_ex_new_net": 7.54,
+        "lhb_new_net": 4.2,
+        "lhb_new_ratio": 0.36,
+        "lhb_new_count": 1,
+        "lhb_new_stocks": [
+          {
+            "code": "301716",
+            "name": "鸿富诚",
+            "net_yi": 4.2
+          }
+        ]
       },
       "indexes": {
         "上证指数": 0.18,
@@ -101929,8 +102397,8 @@
         "创业板指": 0.09
       },
       "emotion": {
-        "value": 76.7,
-        "s_net": 99.1,
+        "value": 75.9,
+        "s_net": 95.3,
         "s_pos": 64.5,
         "s_brd": 80,
         "s_hot": 85.1,
@@ -101938,7 +102406,7 @@
         "s_zbl": 87.7,
         "s_amt": 29.2,
         "factors": {
-          "s_net": 99.1,
+          "s_net": 95.3,
           "s_pos": 64.5,
           "s_brd": 80,
           "s_hot": 85.1,
@@ -101956,7 +102424,15 @@
         "imputedRatio": 0,
         "missing": [],
         "lhb_daily_net": 11.74,
-        "net_daily_pct_rank": 62.5
+        "net_daily_pct_rank": 62.5,
+        "newStock": {
+          "netRaw": 11.74,
+          "netExNew": 7.54,
+          "newStockNet": 4.2,
+          "newStockRatio": 0.36,
+          "adjusted": true,
+          "disturbed": true
+        }
       },
       "lhb_aggr": [
         {
@@ -107087,7 +107563,18 @@
           "tot_yi": 7.74,
           "pct": 13.7,
           "caliber": "daily"
-        }
+        },
+        "lhb_daily_ex_new_net": 2.7,
+        "lhb_new_net": 5.04,
+        "lhb_new_ratio": 0.65,
+        "lhb_new_count": 1,
+        "lhb_new_stocks": [
+          {
+            "code": "001246",
+            "name": "力勤资源",
+            "net_yi": 5.04
+          }
+        ]
       },
       "indexes": {
         "上证指数": 0.31,
@@ -107095,8 +107582,8 @@
         "创业板指": -0.23
       },
       "emotion": {
-        "value": 68.6,
-        "s_net": 95.7,
+        "value": 64.4,
+        "s_net": 74.6,
         "s_pos": 46.7,
         "s_brd": 53.3,
         "s_hot": 85.2,
@@ -107104,7 +107591,7 @@
         "s_zbl": 81.3,
         "s_amt": 31.5,
         "factors": {
-          "s_net": 95.7,
+          "s_net": 74.6,
           "s_pos": 46.7,
           "s_brd": 53.3,
           "s_hot": 85.2,
@@ -107118,11 +107605,19 @@
         "hot_count": 56,
         "topic_conc": 12.5,
         "top_topic": "业绩增长",
-        "pct_rank": 68.8,
+        "pct_rank": 56.3,
         "net_daily_pct_rank": 50,
         "industryCount": 90,
         "imputedRatio": 0,
-        "missing": []
+        "missing": [],
+        "newStock": {
+          "netRaw": 7.74,
+          "netExNew": 2.7,
+          "newStockNet": 5.04,
+          "newStockRatio": 0.65,
+          "adjusted": true,
+          "disturbed": true
+        }
       },
       "lhb_aggr": [
         {

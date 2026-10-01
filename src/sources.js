@@ -318,6 +318,11 @@ function buildLhbPart(lhbRaw) {
     all_net_yi: c.all_net_yi, net_pos: c.all_pos, net_neg: c.all_neg,
     // 当日榜口径（权威）：日度因子 / 净买率 / 新股扰动一律用它
     daily_net_yi: c.daily_net_yi, daily_amt_yi: c.daily_amt_yi,
+    // 当日榜 · 剔除新股（喂 s_net 的唯一口径）：新股首日无涨跌幅限制、换手极高，
+    // 其净买衡量的是打新出货承接，不是存量资金的进攻意愿（2026-09-30 实测虚增情绪分 4.20 分）
+    daily_ex_new_net_yi: c.daily_ex_new_net_yi, daily_new_net_yi: c.daily_new_net_yi,
+    daily_new_ratio: c.daily_new_ratio, daily_new_stocks: c.daily_new_stocks,
+    daily_new_count: c.daily_new_count,
     range_count: c.range_records,
   };
 }
@@ -337,6 +342,12 @@ export function applyLhb(day, lhbRaw) {
   s.lhb_daily_net = p.daily_net_yi;  // 当日榜口径（权威）
   s.lhb_daily_amt = p.daily_amt_yi;
   s.lhb_range_count = p.range_count;
+  // 新股口径（s_net 已自动剔除）：补抓后同样刷新，避免明细更新而剔除结果留在旧值
+  s.lhb_daily_ex_new_net = p.daily_ex_new_net_yi;
+  s.lhb_new_net = p.daily_new_net_yi;
+  s.lhb_new_ratio = p.daily_new_ratio;
+  s.lhb_new_count = p.daily_new_count;
+  s.lhb_new_stocks = p.daily_new_stocks;
   if (day.emotion) day.emotion.lhb_daily_net = p.daily_net_yi;
   return day;
 }
@@ -422,6 +433,7 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
   const {
     lhb, lhb_aggr, lhb_daily_aggr, all_net_yi, net_pos, net_neg,
     daily_net_yi, daily_amt_yi, range_count,
+    daily_ex_new_net_yi, daily_new_net_yi, daily_new_ratio, daily_new_stocks, daily_new_count,
   } = buildLhbPart(lhbRaw);
 
   const hot = hotRaw.map((x) => ({
@@ -465,9 +477,14 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
   // 七因子：统一走 sentiment.js computeSentiment（唯一公式实现）
   // 净额入参必须是「当日榜」口径：区间累计榜是区间累计值，混进来会让日度因子把三天累计当成一天
   // （实测 2026-09-08 当日榜 -0.11 亿 vs 全量 +13.42 亿 → s_net 从 48.9 被抬到 99.5 并 tanh 饱和）。
+  // 并必须剔除新股/无涨跌幅限制标的：s_net=tanh(x/5)*50+50 在 5 亿量级近饱和，
+  // 一笔新股净买即可把因子从「转弱」推到「接近满分」（2026-09-30：力勤资源 +5.04 亿，
+  // 含新股 s_net 95.7 vs 剔除后 74.6，情绪分虚高 4.20 分并跨过 65 分满仓档位线）。
   const pos_ratio_v = (net_pos + net_neg) > 0 ? net_pos / (net_pos + net_neg) : null;
   const sent = computeSentiment({
     netBuy: daily_net_yi,
+    newStockNet: daily_new_net_yi || 0,
+    newStockRatio: daily_new_ratio ?? null,
     upCount: breadth ? breadth.up : null,
     downCount: breadth ? breadth.down : null,
     posRatio: pos_ratio_v,
@@ -490,6 +507,10 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
     // 当日榜口径（权威）：报告展示、日度因子、净买率、新股扰动全部同源
     lhb_daily_stocks: lhb_daily_aggr.length, lhb_daily_net: daily_net_yi,
     lhb_daily_amt: daily_amt_yi, lhb_range_count: range_count,
+    // 新股口径：s_net 已自动剔除，这三个字段是证据链（报告不再自行现算）
+    lhb_daily_ex_new_net: daily_ex_new_net_yi, lhb_new_net: daily_new_net_yi,
+    lhb_new_ratio: daily_new_ratio, lhb_new_count: daily_new_count,
+    lhb_new_stocks: daily_new_stocks,
     up_count: breadth ? breadth.up : null, down_count: breadth ? breadth.down : null, flat_count: breadth ? breadth.flat : null,
     breadth_scope: '沪深两市A股（不含北交所/ST口径与各平台统计或有出入）',
     hot_count: hot.length, topic_kinds: Object.keys(freq).length,
@@ -509,8 +530,10 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
   const emotion = {
     value, ...facPlain,
     factors: facPlain,
-    // 因子入参同源留痕：这里存的就是喂给 s_net20 的当日榜净额（口径守卫会按它反算校验 s_net）
+    // 因子入参同源留痕：这里存的是喂给 s_net20 的**剔新股后**当日榜净额
+    // （口径守卫会按它反算校验 s_net，并核对 netRaw − newStockNet == netExNew）
     lhb_daily_net: daily_net_yi, pos_ratio: pos_ratio_v != null ? r1(pos_ratio_v * 100) : null,
+    newStock: sent.newStock,
     up_ratio: industry.length ? r1((ind_up / industry.length) * 100) : null,
     hot_count: hot.length,
     topic_conc: r1(topics.length ? (topics[0].count / (hot.length || 1)) * 100 : 0),

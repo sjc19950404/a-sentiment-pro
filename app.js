@@ -609,16 +609,20 @@ function buildBrief(days, arc) {
   }
   // 3日滚动净额（与5日并行，抓资金转向拐点）
   const roll3Sum = nets.slice(-3).reduce((a, b) => a + b, 0);
-  // 新股/独立标的识别与扰动过滤（诱因=无价格涨跌幅限制，上市5日内）
-  // 口径纪律：分子（新股净买）与分母（全榜净买）必须同源，一律当日榜。
-  // 原实现分子取当日榜个股、分母取含区间累计榜的全量数组（9-30：5.04 ÷ 12.11 = 42%），属口径混用；
-  // 同源后为 5.04 ÷ 7.74 = 65%，「剔除新股后的主线净买」也从 7.07 亿修正为 2.70 亿。
-  const aggr = d.lhb_aggr || [];
-  const newStocks = aggr.filter((l) => isNewStock(l) && l.caliber !== 'range');
-  const totNetDaily = s.lhb_daily_net ?? null;   // 当日榜净买（权威口径）
-  const newNet = newStocks.reduce((a, l) => a + (l.net_buy_wan || 0), 0) / 1e4;
-  const mainNet = totNetDaily != null ? totNetDaily - newNet : null;
-  const disturb = totNetDaily != null && totNetDaily > 0 && (newNet / totNetDaily) * 100 > 25;
+  // 新股/独立标的识别与扰动（诱因=无价格涨跌幅限制，上市 5 日内）
+  //
+  // ⚠ 口径已上收到引擎：引擎（src/lhb.js → src/sentiment.js）在打分时就自动剔除了新股，
+  //   本处只做**展示与告警**，不再自行现算。原因：报告端原先从 d.lhb_aggr（全量数组）过滤，
+  //   而 lhb_daily_aggr 明细在部分历史天为空，一旦回退拼接就会把区间累计榜混进来
+  //   （与「511 亿事件」同一个坑）。统一读引擎写出的字段，杜绝两套口径。
+  //   相关字段：summary.lhb_new_net（新股净买）/ lhb_new_ratio（占比）/ lhb_daily_ex_new_net（剔后净买）
+  //             emotion.newStock（{netRaw, netExNew, newStockNet, newStockRatio, adjusted, disturbed}）
+  const nsMeta = (e && e.newStock) || {};
+  const newStocks = Array.isArray(s.lhb_new_stocks) ? s.lhb_new_stocks : [];
+  const totNetDaily = s.lhb_daily_net ?? null;   // 当日榜净买（权威口径，含新股）
+  const newNet = s.lhb_new_net ?? (nsMeta.newStockNet ?? 0);
+  const mainNet = s.lhb_daily_ex_new_net ?? (totNetDaily != null ? totNetDaily - newNet : null);
+  const disturb = nsMeta.disturbed ?? (s.lhb_new_ratio != null ? s.lhb_new_ratio > 0.25 : false);
   // 资金-行情背离校验（有背离才写）
   const divs = [];
   if (curNet > 0 && s.amount_yi != null && ps.amount_yi != null && s.amount_yi < ps.amount_yi * 0.92) divs.push('两市缩量下净流入——资金集中抱团，扩散不足');
@@ -656,8 +660,12 @@ function buildBrief(days, arc) {
     dAmt > 0 ? li(`上榜总成交 ${num(dAmt, 0)} 亿（当日榜 ${nf(s.lhb_daily_stocks)} 只，净买 ${nf(s.lhb_daily_net)} 亿；分子分母同源），净买率 <b>${num(nbRate, 1)}%</b>（${rateTxt}）；近3日滚动净买 ${roll3Sum >= 0 ? '+' : ''}${num(roll3Sum)} 亿`) : '',
     s.lhb_range_count > 0 ? li(`<span class="muted">口径说明：另有 ${s.lhb_range_count} 条「连续 N 个交易日累计」榜记录，其买卖额与净额都是区间累计值（非当日），已单列——不计入上方总成交与净买率，也不计入情绪因子 s_net、近5日净额序列与新股扰动占比（全站日度口径只有「当日榜」一个来源）。</span>`) : '',
     netVerdict ? li(netVerdict + `（结构 ${s.net_pos ?? '—'} 买 / ${s.net_neg ?? '—'} 卖）`) : '',
-    (newStocks.length && totNetDaily != null && totNetDaily > 0) ? li(`新股/独立标的（${newStocks.map((l) => l.name).join('、')}）净买 +${num(newNet, 2)} 亿，占当日龙虎净买 <b>${(newNet / totNetDaily * 100).toFixed(0)}%</b>${disturb ? '，<span class="bf-warn">超 25% 扰动线——主线资金强度需剔除观察</span>' : ''}；剔除后主线净买 ${mainNet >= 0 ? '+' : ''}${num(mainNet, 2)} 亿`) : '',
-    newStocks.length ? li(`<span class="bf-warn">⚠ 备注：当日龙虎净买含新股${newStocks.map((l) => l.name).join('、')}，主线资金需剔除该标的单独评估，规避净额虚高误判</span>`) : '',
+    (newStocks.length && totNetDaily != null && totNetDaily > 0) ? li(`新股/独立标的（${newStocks.map((l) => l.name).join('、')}）净买 +${num(newNet, 2)} 亿，占当日龙虎净买 <b>${(newNet / totNetDaily * 100).toFixed(0)}%</b>${disturb ? '，<span class="bf-warn">超 25% 扰动线</span>' : ''}；剔除后主线净买 ${mainNet >= 0 ? '+' : ''}${num(mainNet, 2)} 亿`) : '',
+    (nsMeta.adjusted && totNetDaily != null) ? (() => {
+      // s_net = tanh(净买/5)*50+50：把修正前后的因子分同屏列出，让「改了多少分」可核验
+      const fNet = (nb) => (nb == null ? '—' : (Math.tanh(+nb / 5) * 50 + 50).toFixed(1));
+      return li(`<span class="muted">✅ 引擎已自动修正：情绪因子 s_net 入参已剔除新股（净买 ${num(totNetDaily, 2)} → <b>${num(nsMeta.netExNew, 2)}</b> 亿），因子分 ${fNet(nsMeta.netRaw)} → <b>${fNet(nsMeta.netExNew)}</b>${nsMeta.disturbed ? '，已触发 25% 扰动熔断' : ''}。本页情绪分与仓位档位即为修正后结果，无需人工二次剔除。</span>`);
+    })() : '',
     topBuy.length ? li('净买头部: ' + topBuy.join('、')) : '',
     seatLines,
     lockLine,

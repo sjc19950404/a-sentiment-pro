@@ -125,9 +125,18 @@ export function recalcAll(days) {
       s.lhb_daily_net = c.daily_net_yi;
       s.lhb_daily_amt = c.daily_amt_yi;
       s.lhb_range_count = c.range_records;
+      // 新股口径：由 src/lhb.js 唯一产出（当日榜去重行 → 分离新股净买）。
+      // 这三个字段是「s_net 已自动剔新股」的证据链，报告与回测都读它们，不再各自现算。
+      s.lhb_daily_ex_new_net = c.daily_ex_new_net_yi;
+      s.lhb_new_net = c.daily_new_net_yi;
+      s.lhb_new_ratio = c.daily_new_ratio;
+      s.lhb_new_count = c.daily_new_count;
+      s.lhb_new_stocks = c.daily_new_stocks;
       if (d.emotion) d.emotion.lhb_daily_net = c.daily_net_yi;
     }
     const netBuy = s.lhb_daily_net ?? null;
+    // 新股净买：优先用上面刚算出的当日榜分离结果；明细缺失的天回退为 0（不阻断，但不虚构数值）
+    const newStockNet = s.lhb_new_net ?? 0;
     // amount MA20：取当日之前最近 20 个有值交易日
     const hist = [];
     for (let j = i - 1; j >= 0 && hist.length < 20; j--) if (amts[j] != null) hist.unshift(amts[j]);
@@ -136,6 +145,8 @@ export function recalcAll(days) {
       ? s.net_pos / (s.net_pos + s.net_neg) : null;
     const sent = computeSentiment({
       netBuy,
+      newStockNet,
+      newStockRatio: s.lhb_new_ratio ?? null,
       upCount: s.up_count ?? null,
       downCount: s.down_count ?? null,
       posRatio,
@@ -157,6 +168,8 @@ export function recalcAll(days) {
       factors: facPlain,
       imputedRatio: sent.imputedRatio,
       missing: sent.missing,
+      // 新股修正留痕（可逐日核对 s_net 是否被动过、动了多少）
+      newStock: sent.newStock,
     };
   });
   recalcRanks(days);

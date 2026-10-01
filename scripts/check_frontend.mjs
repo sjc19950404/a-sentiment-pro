@@ -6,6 +6,8 @@
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createRequire } from 'node:module';
+// 口径唯一出处：新股判定与净买分离一律走 src/lhb.js，本脚本不自行实现（口径守卫会拦）
+import { newStockSplitOfDay } from '../src/lhb.js';
 
 const rootArg = process.argv.indexOf('--root');
 const ROOT = resolve(rootArg >= 0 ? process.argv[rootArg + 1] : '.');
@@ -197,19 +199,25 @@ check('口径：报告首页「当日龙虎净买」取当日榜，不显示全�
     `全量值 ${s0.lhb_all_net} 是否出现在序列中：${allExpected}`);
 }
 {
-  // 新股扰动占比：分子（新股当日净买）与分母（当日全榜净买）必须同为当日榜
-  const aggr = arcAll.all_days.slice(-1)[0]?.lhb_aggr || [];
-  const news = aggr.filter((l) => l.caliber !== 'range'
-    && /无价格涨跌幅限制/.test(String(l.reason || '')));
-  if (news.length && s0.lhb_daily_net > 0) {
-    const newNet = news.reduce((a, l) => a + (l.net_buy_wan || 0), 0) / 1e4;
-    const expectPct = Math.round(newNet / s0.lhb_daily_net * 100);
-    const wrongPct = Math.round(newNet / s0.lhb_all_net * 100);
+  // 新股扰动占比：不再自行判新股 —— 口径唯一出处是 src/lhb.js 的 splitNewStockNet。
+  // 本处只校验「报告展示的占比」与「引擎算出的占比」一致（分子分母同源，且不含区间累计榜）。
+  const lastDay = arcAll.all_days.slice(-1)[0];
+  const split = lastDay ? newStockSplitOfDay(lastDay) : null;
+  if (split && split.new_count && s0.lhb_daily_net > 0) {
+    const expectPct = Math.round(split.new_yi / s0.lhb_daily_net * 100);
+    const wrongPct = Math.round(split.new_yi / s0.lhb_all_net * 100);
     const segI = brief.indexOf('占当日龙虎净买');
     const seg = segI >= 0 ? brief.slice(Math.max(0, segI - 40), segI + 40) : '';
     check('口径：新股扰动占比＝新股当日净买 ÷ 当日榜净额（分子分母同源）',
       segI >= 0 && seg.includes(`${expectPct}%`),
       `期望 ${expectPct}%（混用全量分母会变成 ${wrongPct}%）| ${seg}`);
+  }
+  // 本次修复的核心断言：报告必须显式声明「引擎已自动修正」，而不是「需人工剔除观察」
+  if (split && split.new_count) {
+    const hasAuto = brief.includes('引擎已自动修正') || brief.includes('已自动剔除');
+    const hasManualOnly = brief.includes('需剔除观察') || brief.includes('需剔除该标的单独评估');
+    check('报告：新股扰动已由引擎自动剔除（禁止「只告警需人工剔除」的旧文案）',
+      hasAuto && !hasManualOnly, `自动修正声明=${hasAuto} 残留人工剔除措辞=${hasManualOnly}`);
   }
 }
 check('口径：聚合行带 caliber 标签，区间榜可被 UI 识别',
@@ -605,7 +613,17 @@ escClose();
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*'\.\/src\/picks\.js';/, '')
     .replace(/^export\s+/gm, '');
   // src/picks.js（研判推荐引擎）同样是 ESM 纯函数，零依赖，剥掉 export 即可并入同一作用域。
-  const picksNoExport = readFileSync(join(ROOT, 'src/picks.js'), 'utf8').replace(/^export\s+/gm, '');
+  // 它现在 import 了 src/lhb.js 的 RANGE_BOARD_RE / isNewStock（口径唯一出处）。
+  // lhb.js 与 paper.js 存在同名内部辅助（r1/r2/sumOf…），直接平铺会「Identifier already declared」，
+  // 故把 lhb.js 包进 IIFE，只把它导出的两个符号挂到 window 上，再让 picks.js 从 window 取。
+  // 绝不手抄实现：手抄一份等于重新引入第二套口径（口径守卫会拦）。
+  const picksNoExport = readFileSync(join(ROOT, 'src/picks.js'), 'utf8')
+    .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhb\.js';/m,
+      'const { RANGE_BOARD_RE, isNewStock } = window.__lhb__;')
+    .replace(/^export\s+/gm, '');
+  const lhbBundle = `window.__lhb__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/lhb.js'), 'utf8').replace(/^export\s+/gm, '')
+    + '\nreturn { RANGE_BOARD_RE, isNewStock };\n})();';
   // quoteSymbol：与 src/sources.js 同口径（沪 6/9 开头、深 0/3、北 4/8/920）
   const quoteSymbolShim = `function quoteSymbol(code){
     const c = String(code || '').trim();
@@ -615,7 +633,7 @@ escClose();
     return null;
   }`;
   try {
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${picksNoExport}\n${engineNoExport}\n;(function(){\n${uiNoImport}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksNoExport}\n${engineNoExport}\n;(function(){\n${uiNoImport}\n})();`);
   } catch (e) {
     check('模拟交易：paper_ui.js 在 jsdom 中可执行', false, e.message);
   }
@@ -807,7 +825,7 @@ escClose();
     let threw = null;
     try {
       // 重新执行一遍 paper_ui.js：boot() 会 load() 到上面这份种子 → renderAllPaper()
-      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${picksNoExport}\n${engineNoExport}\n;(function(){\n${uiNoImport}\n})();`);
+      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${picksNoExport}\n${engineNoExport}\n;(function(){\n${uiNoImport}\n})();`);
       await new Promise((r) => setTimeout(r, 800));
     } catch (e) { threw = e; }
     check('模拟交易·持仓：带 pxStale 的种子账本渲染不抛错',
