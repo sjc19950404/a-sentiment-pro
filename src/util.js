@@ -1,4 +1,6 @@
 // 通用工具：重试抓取、时间、数学
+import { isTradingDay as calIsTradingDay } from './calendar.js';
+
 export function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -45,13 +47,21 @@ export function todayBeijing() {
   return d.toISOString().slice(0, 10);
 }
 
-// 是否交易日（周一到周五，且非手动节假日）
-export function isTradingDay(dateStr, manualHolidays = []) {
-  const d = new Date(dateStr + 'T00:00:00');
-  const dow = d.getDay(); // 0=Sun
-  if (dow === 0 || dow === 6) return false;
-  if (manualHolidays.includes(dateStr)) return false;
-  return true;
+// 是否交易日。
+//
+// ⚠ 本函数**保留在 util.js**（而不是搬去 calendar.js）是为了不动十余处调用点的 import 路径。
+//   实现已委托给 src/calendar.js —— 那是交易日判定的**唯一出处**（含调休补班三态判定）。
+//   这里只做一层兼容转接，不得再在本文件里自行实现任何日期判断逻辑。
+//
+// 参数兼容：
+//   · 传数组（旧语义：休市日清单）→ 按"非周末且不在清单内"判定，与改造前逐位一致；
+//   · 传日历对象（resolveHolidays() 的返回值）→ 走完整三态判定（含调休补班）；
+//   · 不传 → 用默认日历（data/calendar.json + config.manualHolidays 兜底）。
+//
+// 注意：本函数是**同步**的，而 calendar.js 的载入也是同步读文件 + 缓存，故无异步化问题。
+export function isTradingDay(dateStr, calendarOrHolidays) {
+  if (calendarOrHolidays === undefined) return calIsTradingDay(dateStr, undefined);
+  return calIsTradingDay(dateStr, calendarOrHolidays);
 }
 
 // 从东财/同花顺风格数字串提取数值（处理亿/万/%）

@@ -12,6 +12,7 @@ import config from '../src/config.js';
 import { buildGlobalSnapshot, evaluateGlobalWatch, SINA_URL, SINA_CODES } from '../src/global.js';
 import { nextSession } from '../src/freshness.js';
 import { todayBeijing, isTradingDay } from '../src/util.js';
+import { resolveHolidays } from '../src/calendar.js';
 import { decodeArchive } from '../src/lhb_codec.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
@@ -94,7 +95,7 @@ async function main() {
   }
 
   const now = new Date();
-  const holidays = config.manualHolidays || [];
+  const holidays = resolveHolidays() || [];
   const today = todayBeijing();
   const nextOpen = tradeDate ? nextSession(tradeDate, holidays) : null;
 

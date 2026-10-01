@@ -11,6 +11,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import config from '../src/config.js';
+import { resolveHolidays, calendarLine } from '../src/calendar.js';
 import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
 import { assessFreshness, applyFreshnessMeta, applyPhaseMeta, marketPhase, PHASE_NOTE,
   freshnessKey, bjDate, bjTime, staleReasonText } from '../src/freshness.js';
@@ -36,8 +37,8 @@ const tradeDate = meta.tradeDate
   || (a.all_days || []).slice(-1)[0]?.trade_date
   || null;
 
-const f = assessFreshness({ tradeDate }, now, config.manualHolidays);
-const ph = marketPhase(now, config.manualHolidays);
+const f = assessFreshness({ tradeDate }, now, resolveHolidays());
+const ph = marketPhase(now, resolveHolidays());
 const STATE_TEXT = {
   fresh: '数据为最新已收盘会话',
   pending: '落后 1 个交易日，但预期更新时刻未到（正常等待 18:30 首抓 / 21:00 补抓）',
@@ -65,15 +66,15 @@ console.log('  旧字段 meta.stale ', meta.stale === true ? 'true（在旧口�
 if (meta.fallbackReason) console.log('  上次回退原因      ', meta.fallbackReason);
 if (meta.lastAttempt) console.log('  最近一次尝试      ', `${meta.lastAttempt.outcome} @ ${meta.lastAttempt.at}${meta.lastAttempt.reason ? ' | ' + meta.lastAttempt.reason : ''}`);
 if (meta.note) console.log('  数据说明(note)    ', meta.note);
-console.log('  判定依据          ', `交易日历含 ${config.manualHolidays.length} 个手动休市日；收盘 15:00；预期更新 19:30`);
+console.log('  判定依据          ', `日历 ${calendarLine(resolveHolidays())}；收盘 15:00；预期更新 19:30`);
 
 if (WRITE) {
   const before = freshnessKey(meta);
-  const nf = applyFreshnessMeta(meta, tradeDate, now, config.manualHolidays, {
+  const nf = applyFreshnessMeta(meta, tradeDate, now, resolveHolidays(), {
     outcome: 'freshness-cli',
     reason: 'scripts/freshness.mjs --write 重算判定',
   });
-  applyPhaseMeta(meta, now, config.manualHolidays);
+  applyPhaseMeta(meta, now, resolveHolidays());
   if (freshnessKey(meta) === before) {
     console.log('[freshness] 判定字段无实质变化，未写入');
   } else {

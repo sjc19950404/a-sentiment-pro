@@ -10,6 +10,7 @@ import { validateArchive } from './validate.js';
 import { fetchLive, recalcRanks, LhbNotPublishedError, applyLhb, fetchLhb, fetchSeats } from './sources.js';
 import { caliberFromDay, dailyRowsOf } from './lhb.js';
 import { todayBeijing, isTradingDay } from './util.js';
+import { resolveHolidays } from './calendar.js';
 import { applyFreshnessMeta, applyPhaseMeta, freshnessKey } from './freshness.js';
 import { buildIndex, buildShards, shardName, buildRecent, buildSignals, RECENT_DAYS, RECENT_FILE, SIGNALS_FILE } from './archive_split.js';
 import { buildReasonCodes, encodeArchive, decodeArchive } from './lhb_codec.js';
@@ -383,7 +384,7 @@ export async function main() {
 
   // 非交易日：live 模式不抓数据，但仍刷新 meta 的新鲜度判定（自愈可能粘着的旧标记）
   const today = todayBeijing();
-  if (mode === 'live' && !isTradingDay(today, config.manualHolidays)) {
+  if (mode === 'live' && !isTradingDay(today, resolveHolidays())) {
     console.log('[skip]', today, '非交易日，保留上次数据');
     refreshMetaOnly(dataPath, now, { outcome: 'non-trading-day', reason: `${today} 非交易日` });
     // 标的池是**日期敏感**的派生物：active（近 30 交易日）与 quoteFresh（== 最新交易日）
@@ -441,8 +442,8 @@ function applyFreshness(archive, now, attempt) {
     || archive.signals?.tradeDate
     || (archive.all_days || []).slice(-1)[0]?.trade_date
     || null;
-  applyFreshnessMeta(archive.meta, tradeDate, now, config.manualHolidays, attempt);
-  applyPhaseMeta(archive.meta, now, config.manualHolidays);
+  applyFreshnessMeta(archive.meta, tradeDate, now, resolveHolidays(), attempt);
+  applyPhaseMeta(archive.meta, now, resolveHolidays());
   return archive;
 }
 

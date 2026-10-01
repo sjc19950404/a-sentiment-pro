@@ -15,6 +15,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { caliberFromDay, isRangeBoard, duplicateKeys } from '../src/lhb.js';
 import { decodeArchive } from '../src/lhb_codec.js';
+import config from '../src/config.js';
+import { SEED_CLOSED } from '../src/calendar.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ARCHIVE = path.join(ROOT, 'data', 'archive.json');
@@ -1197,6 +1199,216 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
   // ⑦ 重建必须跑**同一个脚本**，不得在管道里重写一份构建逻辑
   check('标的池：非交易日重建走 scripts/fetch_universe.mjs（不重写第二份构建逻辑）',
     /fetch_universe\.mjs/.test(pipeSrc) && /spawnSync/.test(pipeSrc), '');
+}
+
+// ── 源码扫描工具（共用）────────────────────────────────────────────────────
+//
+// 为什么必须剥注释再扫：本项目的源码注释里**大量引用**函数名与代码形态（那是文档价值所在），
+// 直接扫原文会把"注释里在说明"误判成"代码里在实现"，报出假阳性——
+// 实测踩过：注释里一句 `factor(..., fallback)` 就让"不得实现第二套因子"的守卫变红。
+const stripCommentsAud = (s) => String(s)
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+// ── B12. 公式版本治理：版本差异必须只体现在「净买原料」，不得出现第二套因子实现 ────
+// 版本可插拔最大的诱惑是「顺手在新版本里把某个因子也改改」——一旦如此，
+//   · 三版对比就不再能归因（分不清差异来自净买口径还是来自因子改动）；
+//   · 报告/回测/推荐会各自绑定不同版本的因子语义，口径彻底失控。
+// 本块把「版本差异只在净买」这条从**注释里的约定**升级为**机器可验的约束**。
+{
+  const fvPath = path.join(ROOT, 'src', 'formula_versions.js');
+  const fvExists = existsSync(fvPath);
+  const fv = fvExists ? readFileSync(fvPath, 'utf8') : '';
+  check('公式版本：src/formula_versions.js 存在（版本唯一出处）', fvExists, '');
+
+  // ① 必须复用 computeSentiment，不得自带因子计算
+  //
+  // ⚠ 源码扫描必须先剥注释：本文件里到处在**解释**这些函数名（"见 sentiment.js 的 factor(..., fallback)"），
+  //   直接扫原文会把注释里的说明当成实现，报假阳性。实测踩过：注释里一句引用就让本项变红，
+  //   而真正的意图（"不得实现第二套因子"）反而没被判到。
+  const stripComments = (s) => s
+    .replace(/\/\*[\s\S]*?\*\//g, '')   // 块注释
+    .replace(/(^|[^:])\/\/.*$/gm, '$1'); // 行注释（不误伤 https:// 里的 //）
+  const fvCode = stripComments(fv);
+  check('公式版本：复用 src/sentiment.js 的 computeSentiment（不得实现第二套七因子）',
+    /import \{ computeSentiment \} from '\.\/sentiment\.js'/.test(fvCode)
+    && !/Math\.tanh/.test(fvCode) && !/\bfactor\(/.test(fvCode),
+    '若在版本文件里出现 tanh / factor(，说明因子被重写了一遍');
+
+  // ② 差异必须收敛到「净买提取」这一个接缝：三版各有一个提取器
+  check('公式版本：三版各有一个净买提取器，差异被收敛到单一接缝',
+    /export function netBuyV45/.test(fv) && /export function netBuyV50/.test(fv)
+    && /export function netBuyV52/.test(fv)
+    && (fv.match(/extractNetBuy: netBuyV/g) || []).length === 3,
+    '');
+
+  // ③ 基线版本号必须与 config.formulaVersion 同步（两处不一致＝报告说 A、算的是 B）
+  const cfg = readFileSync(path.join(ROOT, 'src', 'config.js'), 'utf8');
+  const cfgVer = (cfg.match(/formulaVersion:\s*'([^']+)'/) || [])[1];
+  const baseVer = (fv.match(/export const BASELINE_VERSION = '([^']+)'/) || [])[1];
+  check('公式版本：BASELINE_VERSION 与 config.formulaVersion 一致（否则报告与实算两套口径）',
+    !!cfgVer && cfgVer === baseVer, `config=${cfgVer} baseline=${baseVer}`);
+
+  // ④ 权重键映射必须与 config.factorKeyMap 同义（两处漂移会让因子静默错位）
+  const fvMap = fv.match(/WEIGHT_TO_FACTOR = \{([\s\S]*?)\};/);
+  const cfgMap = cfg.match(/factorKeyMap: \{([\s\S]*?)\},/);
+  const pairsOf = (src) => {
+    const out = [];
+    const re = /(s_[a-z]+)\d*:\s*'(s_[a-z]+)'/g;
+    let m;
+    while ((m = re.exec(src || ''))) out.push(m[1] + '→' + m[2]);
+    return out.sort().join(',');
+  };
+  check('公式版本：WEIGHT_TO_FACTOR 与 config.factorKeyMap 逐键一致',
+    !!fvMap && !!cfgMap && pairsOf(fvMap[1]) === pairsOf(cfgMap[1]) && pairsOf(fvMap[1]) !== '',
+    `fv=[${pairsOf(fvMap && fvMap[1])}] cfg=[${pairsOf(cfgMap && cfgMap[1])}]`);
+
+  // ⑤ 权重键传错必须硬失败（NaN 曾静默传播，把整张相关性表变成 NaN）
+  check('公式版本：分数非有限时硬失败（NaN 不得静默传播）',
+    /Number\.isFinite\(sent\.score\)/.test(fv) && /throw new Error/.test(fv), '');
+
+  // ⑥ 因子键必须从权重键归一成无后缀形式（否则下游 factors.s_net 全是 undefined）
+  check('公式版本：因子键归一为无后缀形式（与存档一致）',
+    /WEIGHT_TO_FACTOR/.test(fv) && /factorsRaw/.test(fv), '');
+
+  // ⑦ 次日收益必须按真实交易日相邻取，且记录跳空（长假陷阱）
+  check('公式版本：次日收益按真实交易日相邻取并记录跳空天数',
+    /export function nextRetOf/.test(fv) && /gap/.test(fv) && /function tradingDayGap/.test(fv), '');
+
+  // ⑧ 可算性必须分级且披露代理天数（否则 33 天样本会被当成 241 天样本读）
+  check('公式版本：可算性分级并披露 breadth 代理天数',
+    /COMPUTE_TIERS/.test(fv) && /hasBreadth/.test(fv) && /breadthProxyDays/.test(readFileSync(path.join(ROOT, 'scripts', 'version_regression.mjs'), 'utf8')), '');
+
+  // ⑨ 回归产物必须自带「样本量不足」的提示，禁止被读成版本优劣结论
+  check('公式版本：回归脚本强制写入样本量不足的提示',
+    /cautions\.push/.test(readFileSync(path.join(ROOT, 'scripts', 'version_regression.mjs'), 'utf8'))
+    && /不足以判定版本优劣|不.*判定/.test(readFileSync(path.join(ROOT, 'scripts', 'version_regression.mjs'), 'utf8')), '');
+
+  // ⑩ 统计口径（pearson/spearman/方向准确率）必须只有一份实现，脚本与单测共用
+  const helper = path.join(ROOT, 'test', '_helpers_regression.mjs');
+  const helperSrc = existsSync(helper) ? readFileSync(helper, 'utf8') : '';
+  const vrSrc = readFileSync(path.join(ROOT, 'scripts', 'version_regression.mjs'), 'utf8');
+  check('公式版本：统计工具只有一份实现（脚本 import，不得内联重写）',
+    existsSync(helper) && /export function pearson/.test(helperSrc)
+    && /from '\.\.\/test\/_helpers_regression\.mjs'/.test(vrSrc)
+    && !/export function pearson/.test(vrSrc), '');
+}
+
+// ── B13. 交易日历：判定必须来自日历，不得再散落"手写手册"式的日期判断 ────────────
+// 日历取代 manualHolidays 的全部价值在于**唯一出处**。若某处仍自行写
+//   `dow !== 0 && dow !== 6 && !manualHolidays.includes(d)`
+// 就会形成第二套判定：日历修了、它没修，两边在长假/调休上给出不同答案，
+// 而差异只体现在"某天没抓数据"上——几乎无法归因。故用源码守卫封死。
+{
+  const calPath = path.join(ROOT, 'src', 'calendar.js');
+  const calExists = existsSync(calPath);
+  const calSrc = calExists ? readFileSync(calPath, 'utf8') : '';
+  const utilSrc = readFileSync(path.join(ROOT, 'src', 'util.js'), 'utf8');
+
+  check('交易日历：src/calendar.js 存在（判定唯一出处）', calExists, '');
+
+  // ① util.isTradingDay 必须委托给日历，不得保留自己的实现
+  //
+  // ⚠ 守卫不能只匹配某一种写法。实测：最初写成
+  //     /getDay\(\)\s*===\s*0\s*\|\|\s*\w+\.getDay\(\)\s*===\s*6/
+  //   要求等号两侧都是 `xxx.getDay()`；而注入 `const dow = new Date(d).getDay();
+  //   if (dow === 0 || dow === 6) return false;` 时**完全逃过**（左侧是裸 `dow`）。
+  //   故改为「出现 getDay() 本身 + 出现与 0/6 的比较」两个条件同时成立即视为在自建周末判断。
+  //   这是有意的宽松：util.js 里除了这一处转接，本来就不该有任何 getDay()。
+  const utilCode = stripCommentsAud(utilSrc);
+  const hasGetDay = /\.getDay\s*\(/.test(utilCode);
+  const comparesWeekend = /(===\s*0\s*\|\|\s*[\w.]+\s*===\s*6)|(===\s*6\s*\|\|\s*[\w.]+\s*===\s*0)|(includes\s*\(\s*6\s*\))/.test(utilCode);
+  check('交易日历：util.isTradingDay 委托 calendar.js（不得保留第二套判定）',
+    /from '\.\/calendar\.js'/.test(utilSrc) && /calIsTradingDay\(dateStr/.test(utilSrc)
+    && !(hasGetDay && comparesWeekend),
+    `util.js 里出现自建周末判断（getDay=${hasGetDay} weekendCmp=${comparesWeekend}）`);
+
+  // ② 三态判定必须存在（否则无法表达调休补班）
+  check('交易日历：三态判定（trading/closed/unknown）齐备',
+    /DAY_KIND\s*=\s*\{/.test(calSrc) && /trading:/.test(calSrc)
+    && /closed:/.test(calSrc) && /unknown:/.test(calSrc), '');
+
+  // ③ 文件缺失/损坏必须降级且留痕，不得静默变"全年无休"
+  check('交易日历：文件缺失/损坏时降级并标记 degraded（不得静默）',
+    /cal\.meta\.degraded = true/.test(calSrc) && /degradedReason/.test(calSrc)
+    && /SEED_CLOSED/.test(calSrc), '');
+
+  // ④ 覆盖范围必须写出（否则读者以为覆盖了未来，跨年后静默用旧日历）
+  const calJsonPath = path.join(ROOT, 'data', 'calendar.json');
+  const calJson = existsSync(calJsonPath) ? JSON.parse(readFileSync(calJsonPath, 'utf8')) : null;
+  check('交易日历：data/calendar.json 已生成且写出覆盖范围',
+    !!calJson && 'coveredTo' in calJson && !!calJson.source, '');
+
+  // ⑤ 「未来不得写进日历」——写 coveredTo 之后的日期会永久污染文件
+  //
+  // ⚠ 这里有个必须说清的区分，否则守卫会误伤：
+  //   · coveredTo 是「日K证据的最后一天」，**不等于**「已知日历的最后一天」。
+  //   · 已由交易所公告确定的未来休市日（如 10-01~10-07 国庆）是**已知事实**，
+  //     写在 coveredTo 之后完全正确 —— 它们不是"猜未来"，而是"照公告登记"。
+  //   · 真正要禁的是「无依据地推断未来休市」：把 coveredTo 之后的**工作日**当休市写进去，
+  //     而那一天既不在公告里、也没有日K证据。那种条目会让下一年真的开市时不认。
+  //   故判据是：coveredTo 之后的 closer 必须能在「已知公告来源」里找到出处 ——
+  //   实现上就是必须在 config.manualHolidays 或 SEED_CLOSED 中。没有出处的即非法。
+  if (calJson) {
+    const covTo = calJson.coveredTo;
+    const declared = new Set([...(config.manualHolidays || [])]);
+    for (const arr of Object.values(SEED_CLOSED)) for (const d of arr) declared.add(d);
+    const beyond = (calJson.closed || [])
+      .filter((d) => covTo && d > covTo)
+      .filter((d) => !declared.has(d));
+    check('交易日历：coveredTo 之后的休市日必须有公告/种子出处（不得凭空推断未来）',
+      beyond.length === 0, beyond.slice(0, 5).join(','));
+  } else {
+    check('交易日历：coveredTo 之后的休市日必须有公告/种子出处（不得凭空推断未来）', false, '缺日历文件，无法判定');
+  }
+
+  // ⑥ config.manualHolidays 必须已降级为「兜底」并在注释里写明，不得仍自称主口径
+  const cfgSrc = readFileSync(path.join(ROOT, 'src', 'config.js'), 'utf8');
+  check('交易日历：config.manualHolidays 已标注为兜底（不得仍自称主口径）',
+    /降级为兜底|已降级为兜底|兜底/.test(cfgSrc) && /calendar\.js/.test(cfgSrc), '');
+
+  // ⑦ 所有调用点必须走 resolveHolidays()，不得再直接引用 config.manualHolidays
+  const callers = ['src/pipeline.js', 'scripts/fetch_global.mjs', 'scripts/freshness.mjs', 'scripts/snapshot_intraday.mjs'];
+  const directRefs = [];
+  for (const f of callers) {
+    const s = readFileSync(path.join(ROOT, f), 'utf8');
+    const code = stripCommentsAud(s);
+    if (/config\.manualHolidays/.test(code)) directRefs.push(f);
+    if (!/resolveHolidays\(\)/.test(code)) directRefs.push(f + '(未接日历)');
+  }
+  check('交易日历：调用点全部走 resolveHolidays()，无直接引用 config.manualHolidays',
+    directRefs.length === 0, directRefs.join(','));
+
+  // ⑧ CI 必须在管道**之前**同步日历（否则管道用旧日历判交易日）
+  //
+  // ⚠ 不能用 indexOf('fetch_calendar.mjs') —— 本审计脚本自身的文字里也提到该文件名，
+  //   而 daily.yml 的 run 步骤里也会在**注释**里提到它。必须按「`run:` 之后的可执行行」
+  //   定位，取第一个真正执行它的步骤位置，否则会拿到注释/文档里的假位置。
+  const wf = readFileSync(path.join(ROOT, '.github', 'workflows', 'daily.yml'), 'utf8');
+  // ⚠ 必须按 /\r?\n/ 切：本项目 CI 文件是 CRLF。用 split('\n') 时行尾会残留 '\r'，
+  //   而 `/^\s*run:\s*(\S.*)$/` 的 `$` 在无 m 标志下锚定「字符串末尾」，
+  //   残留的 \r 使整行无法匹配 → 命中数 0 → 守卫恒报"找不到"，看起来像 CI 没配。
+  //   实测踩过这个坑（命中 0 而 grep 明明能找到 run: 行）。
+  const wfLines = wf.split(/\r?\n/);
+  const firstRunLine = (re) => {
+    for (let i = 0; i < wfLines.length; i++) {
+      const m = wfLines[i].match(/^\s*run:\s*(\S.*)$/);
+      if (m && re.test(m[1])) return i;
+    }
+    return -1;
+  };
+  const iCal = firstRunLine(/fetch_calendar\.mjs/);
+  const iPipe = firstRunLine(/node src\/pipeline\.js/);
+  check('交易日历：CI 在管道之前同步日历（否则用旧日历判交易日）',
+    iCal >= 0 && iPipe >= 0 && iCal < iPipe, `cal@${iCal} pipe@${iPipe}`);
+
+  // ⑨ CI 必须提交日历（本地生成、线上没有 → 线上永远用旧日历）
+  check('交易日历：CI 提交清单含 data/calendar.json', /data\/calendar\.json/.test(wf), '');
+
+  // ⑩ 日历必须有自检（写盘前拒绝自相矛盾的日历）
+  const fcSrc = readFileSync(path.join(ROOT, 'scripts', 'fetch_calendar.mjs'), 'utf8');
+  check('交易日历：抓取脚本写盘前自检（拒绝自相矛盾的日历）',
+    /validateCalendar\(payload\)/.test(fcSrc) && /拒绝写盘/.test(fcSrc), '');
 }
 
 // ── C. 结论 ────────────────────────────────────────────────────────────────

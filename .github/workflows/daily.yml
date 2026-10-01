@@ -25,6 +25,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      # 交易日历：从**上证指数日K**反推真实开市日（休市 = 工作日内无日K）。
+      # ⚠ 必须排在管道**之前**：管道用日历判"今天是不是交易日"，
+      #   日历若还是上次的（比如跨年、或长假前更新过而节后没续），
+      #   会在开市日误判为休市 → 整天不抓数据，且页面上只表现为"没更新"，极难归因。
+      #   （本项由 scripts/audit_lhb_caliber.mjs 的 B13 块按「run: 行先后」机器校验。）
+      - name: 同步交易日历（指数日K反推，含调休补班）
+        run: node scripts/fetch_calendar.mjs
       - name: 运行管道（live 模式，非交易日自动跳过）
         env:
           MODE: live
@@ -38,6 +45,12 @@ jobs:
         run: node scripts/fetch_global.mjs
       - name: 生成 V5.2 回测档（成本/平滑/风控/网格帕累托/滚动/主线选股）
         run: node scripts/backtest.mjs
+      # 公式版本回归验证集：v4.5 / v5.0 / v5.2 在同一段历史上并行重算，
+      # 对次日上证涨跌幅算相关性 + 方向准确率。改公式后跑一次即可看出影响面，
+      # 不必再用肉眼看"某天数字好像不对"。
+      # 样本不足时脚本自行跳过（不阻断），产物自带"样本量小、不排优劣"的披露。
+      - name: 公式版本回归验证（v4.5/v5.0/v5.2 并行重算对比）
+        run: node scripts/version_regression.mjs
       # 模拟交易的标的池：从存档里归纳出「有哪些票、属于哪个板段、最近一次真实收盘价」。
       # 必须在 archive.json 更新之后跑——池子就是存档的派生物，早跑会拿到昨天的价。
       # 脚本内部对板段非法/非股票品种做校验，不合法直接退出，避免把错池子推上线。
@@ -53,7 +66,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/global.json data/paper_universe.json data/paper_universe-lite.json
+          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else

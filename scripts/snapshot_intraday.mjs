@@ -32,6 +32,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import config from '../src/config.js';
+import { resolveHolidays } from '../src/calendar.js';
 import { fetchHot, fetchPools, fetchBreadth } from '../src/sources.js';
 import { marketPhase, bjDate, bjTime } from '../src/freshness.js';
 
@@ -49,7 +50,7 @@ export const SNAPSHOT_VERSION = 1;
 const log = (...a) => console.log('[intraday]', ...a);
 
 // ── ① 相位闸门 ────────────────────────────────────────────────────────────────
-const ph = marketPhase(now, config.manualHolidays);
+const ph = marketPhase(now, resolveHolidays());
 if (ph.phase !== 'live' && !FORCE) {
   log(`相位 ${ph.phase}（北京 ${ph.bjDate} ${ph.bjTime}，${ph.isTradingDay ? '交易日' : '非交易日'}）→ 非盘中，跳过。`);
   log('盘后数据由 18:30 / 21:00 的完整管道负责，本脚本不重复做。');
