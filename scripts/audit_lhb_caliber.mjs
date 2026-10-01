@@ -314,6 +314,107 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     'app.js 仍存在「今日 fresh 比昨日 themes」的错误存活率算法');
 }
 
+// ── B4b. 口径披露完整性守卫（题材 / 锁仓 / 集中度） ──────────────────────────
+// 这三类指标都**不是交易所官方口径**，全部由本系统自定义（题材标签）或按特定样本推算
+// （锁仓样本、集中度分母）。若报告只给数字不给口径，读者会把它当成可与行情软件直接对表的
+// 官方统计——那是最容易被误用的一类输出。故锁死：报告脚注必须逐条写到「怎么算的」。
+// 判据用「关键词共现」，不锁具体措辞（措辞可以改，口径说明不能删）。
+{
+  const appRaw = readFileSync('app.js', 'utf8');
+  // 取口径备注那一整段（bf-foot）作为检查域，避免正文里偶然提到某个词就算通过
+  const footM = appRaw.match(/const foot = `<div class="bf-foot">([\s\S]*?)<\/div>`;/);
+  const foot = footM ? footM[1] : '';
+  check('报告存在口径备注段落（bf-foot）', foot.length > 500, `长度 ${foot.length}`);
+  const need = [
+    ['题材口径披露', /题材/.test(foot) && /(无官方|自定义|平台间|不同平台)/.test(foot)],
+    ['锁仓口径披露', /锁仓/.test(foot) && /(买方席位|近2日|连续上榜)/.test(foot)],
+    ['集中度口径披露', /集中度/.test(foot) && /(前3席位|头部3|剔除.*汇总行|汇总行)/.test(foot)],
+    ['席位样本 vs 当日榜 不可互验', /(不可相互校验|不可互相校验)/.test(foot) && /当日榜/.test(foot)],
+  ];
+  for (const [label, ok] of need) check(`口径披露：${label}`, ok, ok ? '' : '报告脚注缺失该项口径说明');
+}
+
+// ── B4c. 席位样本 ≠ 当日榜样本（两个口径物理上不可互验） ─────────────────────
+// 席位明细与锁仓统计覆盖「当日有席位明细的全部上榜个股」（含区间累计榜个股——它们当日无独立
+// 日榜，但明细仍在披露名单内），只数必然 ≥ 当日榜家数（实测 2026-09-30：席位样本 66 只 /
+// 当日榜 56 只）。若某天席位样本 < 当日榜家数，说明采集把区间榜明细丢了，会让「席位净买 vs
+// 当日榜净买」被误当成可对的账。故锁死：席位样本 ≥ 当日榜家数。
+//
+// 字段名以存档实际为准（曾按 stock_count / seats.count 猜错，两者都不存在）：
+//   · 当日榜家数 → summary.lhb_daily_stocks
+//   · 席位样本数 → summary.seats.universe_n（并应与 seats.detail 的键数一致）
+{
+  const badCov = [];
+  const badDetail = [];
+  let eqDays = 0;
+  for (const d of days) {
+    const s = d.summary || {};
+    const daily = s.lhb_daily_stocks ?? null;
+    const seatN = s.seats?.universe_n ?? null;
+    const detN = s.seats?.detail ? Object.keys(s.seats.detail).length : null;
+    if (daily == null || seatN == null) continue;
+    if (seatN < daily) badCov.push(`${d.trade_date} 席位样本 ${seatN} < 当日榜 ${daily}（区间榜明细可能被丢弃）`);
+    if (seatN === daily) eqDays++;
+    // universe_n 必须等于明细实际只数——不等说明统计口径与落盘明细脱节
+    if (detN != null && detN !== seatN) badDetail.push(`${d.trade_date} seats.universe_n=${seatN} ≠ detail 只数=${detN}`);
+  }
+  summarize('席位样本 ≥ 当日榜家数（区间榜明细未丢失；二者不可互验）', badCov);
+  summarize('席位样本数 = 明细实际只数（universe_n 与落盘明细一致）', badDetail);
+
+  // 报告必须显式声明二者不可互验——否则读者会拿「席位分项之和」去除「当日榜净买」对账
+  const appRaw = readFileSync('app.js', 'utf8');
+  const declared = /不可相互校验|不可互相校验/.test(appRaw);
+  check('报告显式声明「席位分项之和 vs 当日榜净买」不可互验（含样本相等的情形）',
+    declared, declared ? `样本相等的天数 ${eqDays}` : 'app.js 未声明不可互验');
+}
+
+// ── B4d. 锁仓口径守卫：字段必须来自「跨日席位比对」，不得凭空出现 ────────────
+// 锁仓/新进资金占比由「当日买方席位 vs 近2日同票买方席位」比对得出（见 app.js lockLine）。
+// src/lhbfilter.js 里那条「锁仓资金占当日买入 ≥30%」因**存档无锁仓字段**而留痕跳过——
+// 这是用户确认的口径决策。若哪天存档凭空冒出 summary.lock 字段、而席位明细并未支持跨日比对，
+// 说明有人在用单日数据伪造「锁仓」概念（会得出虚高的持续性结论）。
+// 这里锁死：锁仓统计必须以 seats.detail 为原料，且 lhbfilter 的跳过留痕必须保留。
+{
+  const appRaw = readFileSync('app.js', 'utf8');
+  // ① 锁仓统计必须从席位明细推导（出现 lock 计算且引用了 seats/detail/买方席位）
+  const lockCalcOk = /lock\s*=/.test(appRaw) && /(seats|detail|买方|buySeats)/.test(appRaw);
+  check('锁仓统计以席位明细为原料（跨日买方席位比对，非单日杜撰）', lockCalcOk,
+    lockCalcOk ? '' : 'app.js 未见锁仓统计的席位来源');
+
+  // ② lhbfilter 的「锁仓资金占比」必须仍在 skipped 留痕里（数据不足不得静默当成通过）
+  const filterSrc = readFileSync('src/lhbfilter.js', 'utf8');
+  const lockSkipped = /LOCKUP_RATIO/.test(filterSrc) && /SKIPPED_RULES/.test(filterSrc) && /skipped\.push/.test(filterSrc);
+  check('lockup 规则留痕跳过（存档无锁仓字段 → 不得静默参与拦截）', lockSkipped,
+    lockSkipped ? '' : 'src/lhbfilter.js 缺 LOCKUP_RATIO 留痕');
+
+  // ③ 若存档真有 lock 字段，必须带「怎么算的」的说明，不允许裸数字
+  const nakedLock = days.filter((d) => {
+    const lk = d.summary?.lock;
+    return lk != null && typeof lk === 'object' && lk.pct != null && lk.n == null && lk.win == null;
+  }).map((d) => d.trade_date);
+  check('存档锁仓字段（若有）必须带样本量与窗口（不允许裸占比）', nakedLock.length === 0,
+    nakedLock.length ? `${nakedLock.length} 天存在无法核验的裸锁仓占比` : '存档无 lock 字段（留痕跳过，符合预期）');
+}
+
+// ── B4e. 因子分解随题材指标联动（scoreTheme 必须消费 surv） ──────────────────
+// 因子分解里的「题材结构」分（scoreTheme）以昨日新晋存活率 surv 为输入之一。若有人把它从
+// 签名里去掉、或另接一个不同口径的存活率，「题材结构分」就会与 §⑤ 展示的存活率脱节——
+// 页面显示存活率骤降为 20%，因子分解却毫无反应，读者会以为题材风险未传导到情绪分。
+// 这里锁两件事：① scoreTheme 签名保留 surv 形参；② 调用点把 surv（由 prev_fresh 算出）传进去。
+{
+  const appRaw = readFileSync('app.js', 'utf8');
+  const sigOk = /function\s+scoreTheme\s*\([^)]*\bsurv\b[^)]*\)/.test(appRaw);
+  const usesSurv = /if\s*\(\s*surv\s*\)\s*s\s*\+=/.test(appRaw);
+  const callM = appRaw.match(/const\s+scT\s*=\s*scoreTheme\(([^)]*)\)/);
+  const callArgs = callM ? callM[1] : '';
+  const callOk = /\bsurv\b/.test(callArgs);
+  // surv 必须由 prev_fresh 算出（不得改用今日 fresh 或其它源）
+  const survFromPrev = /const\s+surv\s*=\s*\(\(\)\s*=>\s*\{[\s\S]{0,400}?mom\.prev_fresh/.test(appRaw);
+  check('因子分解随题材指标联动：scoreTheme 以 surv（prev_fresh 口径）为输入',
+    sigOk && usesSurv && callOk && survFromPrev,
+    `sig=${sigOk} use=${usesSurv} call=${callOk}(${callArgs.trim()}) fromPrev=${survFromPrev}`);
+}
+
 // ── B5. V5.2-pro 交易规则唯一出处守卫 ────────────────────────────────────────
 // 规则（用户给定）一旦在别处被重新实现，就会出现「页面按 A 阈值过滤、引擎按 B 阈值下单」的分裂——
 // 那会让模拟结果彻底失去可核验性。这里锁三件事：
