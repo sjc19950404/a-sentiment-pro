@@ -35,6 +35,17 @@ NODE_PATH=<任意含 jsdom 的 node_modules> node scripts/check_frontend.mjs  # 
 MODE=live node src/pipeline.js  # 线上模式（需外网）
 ```
 
+## 全局配置（config.json · 唯一事实源）
+
+权重/阈值/风控/端点/假日等全局配置自 2026-10-02 起抽离到根目录 **`config.json`**（`schemaVersion: 1`）：
+
+- **Node 侧**照旧 `import config from './src/config.js'`——薄壳加载层会读 JSON 并做启动校验（权重和≠1、阈值乱序、假日格式错 → 直接 throw，不带病运行）；
+- **前端**由 `paper_ui.js`（module）动态 `import('./config.json')` 挂到 `window.ASENT_CONFIG`（旧浏览器 import attributes 不可用时静默降级走兜底值）；
+- `app.js`（经典脚本）的 `TH_DEFAULT` 等手抄副本仅作最后兜底保留，**与 config.json 的一致性由 `test/config.test.mjs` 的防漂移断言守护**——改了 JSON 忘改兜底会测试红；
+- 审计脚本（`audit_lhb_caliber.mjs` / `check_frontend.mjs`）直接 `JSON.parse` 读值，不再对源码做正则提取。
+
+改配置只改 `config.json` 一处。待收编的存量同值硬编码（下一阶段）：`src/picks.js` 的 `TIER_THRESHOLDS`、`src/paper.js` 的费率/风控常量、`src/health.js` 的 `imputedWarn`、`src/util.js` 的重试默认值。
+
 ## 结构
 
 ```

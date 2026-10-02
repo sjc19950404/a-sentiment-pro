@@ -678,9 +678,16 @@ let lastArc = null; // 最近一次 archive.json：BT 就绪后用它重刷报�
 // 复制一份字符串迟早会漂移，导出层 src/report.js 的 CALIBER_SUMMARY 也是同一份约定。
 const CAL_SUMMARY = '🔍 点击展开查看口径';
 const TH_DEFAULT = { panic: 24, hi: 44, lo: 65, overheat: 80 };
+// config.json 唯一事实源桥：paper_ui.js（module）动态 import config.json 后挂
+// window.ASENT_CONFIG；本文件是经典脚本拿不到 import，运行时从这里读。
+// 兜底链：data/backtest.json 的 params → window.ASENT_CONFIG → TH_DEFAULT 手抄副本。
+// TH_DEFAULT 仍保留（旧浏览器 import attributes 不可用时最后一道防线），
+// 与 config.json 的一致性由 test/config.test.mjs 的防漂移断言守护。
 function getThresholds() {
   const t = BT && BT.params && BT.params.thresholds;
-  return (t && Number.isFinite(+t.overheat)) ? t : TH_DEFAULT;
+  if (t && Number.isFinite(+t.overheat)) return t;
+  const c = window.ASENT_CONFIG && window.ASENT_CONFIG.backtest && window.ASENT_CONFIG.backtest.thresholds;
+  return (c && Number.isFinite(+c.overheat)) ? c : TH_DEFAULT;
 }
 // 仓位档位：严格对齐 src/backtest.js positions() 的**实际行为**（注意 hi 在引擎里是保留但
 // 未参与判档的参数，24~65 同属半仓）：
