@@ -1,18 +1,28 @@
 {
-  "_about": "a-sentiment-pro 全局配置（唯一事实源）。Node 侧经 src/config.js 薄壳加载（含校验）；前端经 paper_ui.js 动态 import 挂 window.ASENT_CONFIG（app.js 兜底优先读之）。改配置只改本文件，勿在别处手抄数值。",
-  "schemaVersion": 1,
+  "_about": "a-sentiment-pro 全局配置（唯一事实源）。Node 侧经 src/config.js 加载（校验 + 冻结 params.live + 组装兼容层）；前端经 paper_ui.js 动态 import 挂 window.ASENT_CONFIG（app.js 从 params.live 读参数）。改配置只改本文件，勿在别处手抄数值。",
+  "schemaVersion": 2,
 
   "formulaVersion": "v5.2-pro",
 
-  "weights": {
-    "s_net20": 0.20,
-    "s_pos10": 0.10,
-    "s_brd20": 0.20,
-    "s_hot10": 0.10,
-    "s_zdt15": 0.15,
-    "s_zbl10": 0.10,
-    "s_amt15": 0.15
+  "params": {
+    "live": {
+      "weights": { "s_net20": 0.2, "s_pos10": 0.1, "s_brd20": 0.2, "s_hot10": 0.1, "s_zdt15": 0.15, "s_zbl10": 0.1, "s_amt15": 0.15 },
+      "thresholds": { "panic": 24, "hi": 44, "lo": 65, "overheat": 80 },
+      "stops": { "maxPos": 1, "stopLoss": -0.08, "ddTrigger": -0.15, "maxPosChg": 0.2 },
+      "lookback": { "rolling": { "trainWindow": 20, "testWindow": 6 }, "momentumRecent": 5, "momentumPrev": 5, "rankWindow": 60, "rankMin": 20 },
+      "costModel": { "comm": 0.0003, "stamp": 0.0005, "slip": 0.0002, "priceLimit": { "enabled": false } }
+    },
+    "train": {
+      "weights": { "s_net20": 0.2, "s_pos10": 0.1, "s_brd20": 0.2, "s_hot10": 0.1, "s_zdt15": 0.15, "s_zbl10": 0.1, "s_amt15": 0.15 },
+      "thresholds": { "panic": 24, "hi": 44, "lo": 65, "overheat": 80 },
+      "stops": { "maxPos": 1, "stopLoss": -0.08, "ddTrigger": -0.15, "maxPosChg": 0.2 },
+      "lookback": { "rolling": { "trainWindow": 20, "testWindow": 6 }, "momentumRecent": 5, "momentumPrev": 5, "rankWindow": 60, "rankMin": 20 },
+      "costModel": { "comm": 0.0003, "stamp": 0.0005, "slip": 0.0002, "priceLimit": { "enabled": false } }
+    },
+    "_note": "过拟合防线（2026-10-02 拍板，#134/#141 配套）：live=生产口径，src/config.js 加载时递归冻结，改动唯一通道 = scripts/promote_params.mjs（样本外 20% 门禁 + params_changelog.json 留痕 who/when/why/验证结果）；train=实验区，调参/网格/walk-forward 只许改这里，scripts/backtest.mjs 寻优锚点已切至 train。结构约束：两块五段（weights/thresholds/stops/lookback/costModel）键集合必须一致（守卫测试锁定），只许改值不许改结构。"
   },
+
+  "_paramsNote": "参数语义备注（JSON 无注释，集中在此）：① 四档阈值（收盘打分、T+1 生效）：≥80 过热只减仓不新建 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓；hi=44 是保留参数——src/backtest.js positions() 未用它判档（24~65 同属半仓），仅历史口径展示，若需独立减仓档须同时改 positions() 并更新回归夹具。② costModel 实盘摩擦预埋：佣金万3双边 / 印花万5卖出 / 滑点万2；priceLimit 为涨跌停约束占位（enabled:false），启用须先回填限价口径。③ lookback.rankWindow/rankMin 与 src/sources.js 的 RANK_WINDOW/RANK_MIN 同源（防前视分位窗口 #134）；rolling 与 walk-forward 同源。",
 
   "factorKeyMap": {
     "s_net20": "s_net",
@@ -25,25 +35,15 @@
   },
 
   "backtest": {
-    "thresholds": { "panic": 24, "hi": 44, "lo": 65, "overheat": 80 },
-    "_thresholdsNote": "四档阈值（收盘打分、T+1 生效）：≥80 过热只减仓不新建 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓。hi=44 是保留参数：src/backtest.js positions() 未用它判档（24~65 同属半仓），仅历史口径展示；若需独立减仓档须同时改 positions() 并更新回归夹具。",
     "assets": ["上证指数", "深证成指", "创业板指"],
-    "costs": { "comm": 0.0003, "stamp": 0.0005, "slip": 0.0002 },
-    "maxPos": 1.0,
-    "stopLoss": -0.08,
-    "ddTrigger": -0.15,
-    "maxPosChg": 0.2,
     "gridSteps": [0.6, 0.8, 1.0, 1.2, 1.4],
-    "rolling": { "trainWindow": 20, "testWindow": 6 }
+    "_note": "thresholds/costs/maxPos/stopLoss/ddTrigger/maxPosChg/rolling 已并入 params.live（对应 thresholds/costModel/stops/lookback 四段），兼容层由 src/config.js 运行时组装——与 live 同一引用，JSON 内不存第二份文本（schemaVersion 2 起顶层不再保留参数键）。"
   },
 
   "missingPolicy": "proxy",
 
   "minThemeStocksGlobal": 2,
   "minThemeStocksWindow": 2,
-
-  "momentumRecent": 5,
-  "momentumPrev": 5,
 
   "healthWarnImputedRatio": 0.34,
 

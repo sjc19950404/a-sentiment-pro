@@ -2,8 +2,8 @@
 //
 // 用法：
 //   node scripts/promote_params.mjs                                 # 检查差异 + 跑样本外 20% 门禁，出报告（不改任何文件）
-//   node scripts/promote_params.mjs --apply --why "理由" [--who 名字] # 门禁通过才把 train 写入 config.js
-//                                                                    #   的 LIVE_PARAMS 块 + 追加 params_changelog.json
+//   node scripts/promote_params.mjs --apply --why "理由" [--who 名字] # 门禁通过才把 train 写入
+//                                                                    #   config.json 的 params.live + 追加 params_changelog.json
 //
 // 门禁规则（「样本外 20%」，与 scripts/backtest.mjs 同一引擎同一口径，不另写第二套）：
 //   · 样本 = archive 里全部**非回填**交易日（回填天只有 s_net 占位值，混入即污染）；
@@ -44,7 +44,7 @@ const changed = BLOCKS.filter((b) => !deepEqual(live[b], train[b]));
 
 if (!changed.length) {
   console.log('[promote] train 与 live 完全一致，无需晋升。');
-  console.log('          要实验：改 config.js 的 TRAIN_PARAMS → 重跑本脚本。');
+  console.log('          要实验：改 config.json 的 params.train → 重跑本脚本。');
   process.exit(0);
 }
 console.log(`[promote] 检测到实验参数差异（${changed.length} 块）：${changed.join(' / ')}`);
@@ -147,25 +147,18 @@ if (!whyArg || !whyArg.trim()) {
   process.exit(1);
 }
 
-// 4a. 机器重写 config.js 的 PROMOTE-MANAGED 块（train 五块 → LIVE_PARAMS）
-const cfgPath = path.join(ROOT, 'src', 'config.js');
-const src = readFileSync(cfgPath, 'utf8');
-const BEGIN = '// ── [PROMOTE-MANAGED:BEGIN]';
-const END = '// ── [PROMOTE-MANAGED:END]';
-const bIdx = src.indexOf(BEGIN);
-const eIdx = src.indexOf(END);
-if (bIdx < 0 || eIdx < 0 || eIdx < bIdx) {
-  console.error('[promote] config.js 中找不到 PROMOTE-MANAGED 标记块 —— 拒绝改写（防误伤）。');
+// 4a. 机器重写 config.json 的 params.live（train 五块 → live；JSON.parse 级重写，
+//     不做文本手术——参数唯一住所自 schemaVersion 2 起就在 JSON，改完即生效。
+//     校验在 src/config.js 加载时兜底：权重和/阈值序/键集合不符会启动即 throw。）
+const cfgPath = path.join(ROOT, 'config.json');
+const rawCfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
+if (!rawCfg.params || !rawCfg.params.live) {
+  console.error('[promote] config.json 缺 params.live —— 拒绝改写（防误伤）。');
   process.exit(1);
 }
 const trainSnapshot = Object.fromEntries(BLOCKS.map((b) => [b, JSON.parse(JSON.stringify(train[b]))]));
-const newBlock = `${BEGIN} ──────────────────────────────────────────────\n`
-  + `  // 本块由 scripts/promote_params.mjs --apply 机器重写：值必须与 params_changelog.json\n`
-  + `  // 最后一条 entry.liveAfter 逐位相等（守卫测试锁定）。手工编辑 = 违规。\n`
-  + `  const LIVE_PARAMS = ${JSON.stringify(trainSnapshot, null, 2)};\n`
-  + `  ${END} ────────────────────────────────────────────────`;
-const next = src.slice(0, bIdx) + newBlock + src.slice(eIdx + END.length);
-writeFileSync(cfgPath, next, 'utf8');
+rawCfg.params.live = trainSnapshot;
+writeFileSync(cfgPath, JSON.stringify(rawCfg, null, 2) + '\n', 'utf8');
 
 // 4b. 追加 changelog entry（含 liveAfter 快照与门禁证据）
 const logPath = path.join(ROOT, 'params_changelog.json');
@@ -178,7 +171,7 @@ if (!who) {
 log.entries.push({
   at: new Date().toISOString(),
   who,
-  what: `晋升实验参数（${changed.join(' / ')}）：TRAIN_PARAMS → LIVE_PARAMS`,
+  what: `晋升实验参数（${changed.join(' / ')}）：params.train → params.live`,
   why: whyArg.trim(),
   validation: {
     type: 'oos-20pct', pass: true, oosDays: n - oosStart,
@@ -190,7 +183,7 @@ log.entries.push({
 });
 writeFileSync(logPath, JSON.stringify(log, null, 2) + '\n', 'utf8');
 
-console.log(`\n[promote] ✅ 晋升完成：LIVE_PARAMS 已更新（${changed.join(' / ')}）`);
+console.log(`\n[promote] ✅ 晋升完成：config.json params.live 已更新（${changed.join(' / ')}）`);
 console.log('          params_changelog.json 已追加记录。');
 console.log('          下一步：node --test 全量回归（golden/lineage/governance 守卫都过才算数）。');
 report.applied = true;

@@ -686,7 +686,9 @@ const TH_DEFAULT = { panic: 24, hi: 44, lo: 65, overheat: 80 };
 function getThresholds() {
   const t = BT && BT.params && BT.params.thresholds;
   if (t && Number.isFinite(+t.overheat)) return t;
-  const c = window.ASENT_CONFIG && window.ASENT_CONFIG.backtest && window.ASENT_CONFIG.backtest.thresholds;
+  // schemaVersion 2 起 config.json 顶层不再保留参数键，阈值唯一住所 = params.live.thresholds
+  const c = window.ASENT_CONFIG && window.ASENT_CONFIG.params && window.ASENT_CONFIG.params.live
+    && window.ASENT_CONFIG.params.live.thresholds;
   return (c && Number.isFinite(+c.overheat)) ? c : TH_DEFAULT;
 }
 // 仓位档位：严格对齐 src/backtest.js positions() 的**实际行为**（注意 hi 在引擎里是保留但

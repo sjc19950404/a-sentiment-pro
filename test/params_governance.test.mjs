@@ -5,7 +5,7 @@
 //   · live 冻结：运行期改参在 ESM 严格模式下直接抛 TypeError（想改只能走 promote 流程）；
 //   · 引用同一：config.weights 等旧路径 = params.live 同一对象（===），杜绝第二份口径漂移；
 //   · 台账锁：params_changelog.json 最后一条 entry.liveAfter 与当前 live 逐位相等——
-//     手改 config.js 的 LIVE_PARAMS 块而不追加 changelog 记录，本测试立刻红；
+//     手改 config.json 的 params.live 而不追加 changelog 记录，本测试立刻红；
 //   · 全链路同源：picks.js 档位阈值 / sources.js 分位窗口与 live 集中块一致。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -76,7 +76,7 @@ test('governance: changelog 台账与 live 逐位相等（手改 live 不留痕 
     assert.ok(last[k] != null, `changelog 最后一条缺 ${k}（who/when/why 缺一不可）`);
   }
   assert.equal(last.validation.pass, true, '最后一条 validation.pass 必须为 true（未过门禁不许留 live 状态）');
-  assert.deepEqual(last.liveAfter, config.params.live, 'live 与 changelog 最后一条 liveAfter 不一致 —— 改了 LIVE_PARAMS 却没走 promote 留痕');
+  assert.deepEqual(last.liveAfter, config.params.live, 'live 与 changelog 最后一条 liveAfter 不一致 —— 改了 params.live 却没走 promote 留痕');
 });
 
 test('governance: 全链路阈值同源（picks 档位 / sources 分位窗口读 live 集中块）', () => {

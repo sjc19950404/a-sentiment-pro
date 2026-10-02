@@ -1,12 +1,12 @@
 {
-  "note": "参数治理台账（过拟合防线 · 2026-10-02 拍板）。规则：改 config.js 的 TRAIN_PARAMS（实验区）→ node scripts/promote_params.mjs（跑样本外 20% 门禁，出报告）→ --apply 才更新 LIVE_PARAMS 块并在此追加记录（who/when/why/验证结果/liveAfter 快照）。直接改 LIVE_PARAMS 不留痕 = 违规，test/params_governance.test.mjs 会红。",
+  "note": "参数治理台账（过拟合防线 · 2026-10-02 拍板）。规则：改 config.json 的 params.train（实验区）→ node scripts/promote_params.mjs（跑样本外 20% 门禁，出报告）→ --apply 才更新 params.live 并在此追加记录（who/when/why/验证结果/liveAfter 快照）。直接改 params.live 不留痕 = 违规，test/params_governance.test.mjs 会红。",
   "schema": {
     "at": "ISO 时间",
     "who": "操作人（git user 或 --who）",
     "what": "改了什么（块级摘要）",
     "why": "为什么改（--why 必填）",
     "validation": { "type": "baseline|oos-20pct", "pass": "bool", "oosDays": "样本外天数", "note": "说明" },
-    "liveAfter": "晋升后的 live 五块快照（weights/thresholds/stops/lookback/costModel），与 config.js LIVE_PARAMS 逐位相等"
+    "liveAfter": "晋升后的 live 五块快照（weights/thresholds/stops/lookback/costModel），与 config.json 的 params.live 逐位相等"
   },
   "entries": [
     {
