@@ -158,6 +158,34 @@ test('buildDailyReport: 涨跌家数缺失时该节标 warn 并列出未采集�
   assert.ok(sec.points.some((p) => /未采集：涨跌家数/.test(p.text)));
 });
 
+test('buildDailyReport: ★ 节三口径披露——指数/成交额/样本范围固定呈现（复盘对比纪律）', () => {
+  // 场景对应 2026-09-30 真实档：上证 +0.31%、成交 14380 亿（前日 14092 → +288 亿）、
+  //   涨 2393/跌 2730/平 167（样本 5290）。此前指数与成交额数据在档但报告从不显示，
+  //   涨跌合计不含平盘（5123）与全市场口径对比时放大差异。
+  const S = fullSignals();
+  S.latest.flat_count = 167;
+  S.latest.amount_yi = 14380.2;
+  S.latest.indexes = { 上证指数: 0.31, 深证成指: -0.11, 创业板指: -0.23 };
+  S.latest.breadth_scope = '沪深两市A股（不含北交所/ST口径与各平台统计或有出入）';
+  S.amountPrevYi = 14092;
+  const sec = buildDailyReport(S).sections.find((s) => s.id === 'breadth');
+  const line = (re) => sec.points.find((p) => re.test(p.text));
+  assert.match(line(/指数/).text, /上证指数 \+0\.3% · 深证成指 -0\.1% · 创业板指 -0\.2%/);
+  assert.match(line(/涨 2393/).text, /涨 2393 \/ 跌 2730 \/ 平 167（样本 5290）/, '合计必须含平盘（真实样本量）');
+  assert.match(line(/成交额/).text, /两市成交额 14380 亿（较前一日 \+288 亿）/);
+  assert.match(line(/口径/).text, /不含北交所/, '必须写明样本范围');
+  assert.match(line(/口径/).text, /样本范围差异/, '必须说明与全市场口径的差异性质');
+});
+
+test('buildDailyReport: ★ 节三——前日成交额缺失时只报当日值，不编增量', () => {
+  const S = fullSignals();
+  S.latest.amount_yi = 14380.2;
+  delete S.amountPrevYi;
+  const sec = buildDailyReport(S).sections.find((s) => s.id === 'breadth');
+  const line = sec.points.find((p) => /成交额/.test(p.text));
+  assert.match(line.text, /^两市成交额 14380 亿$/);
+});
+
 test('buildDailyReport: 亏钱效应 warn 级 → 该节 level=warn', () => {
   const S = fullSignals();
   S.pain.verdict = { level: 'warn', label: '亏钱明显', reason: 'x' };

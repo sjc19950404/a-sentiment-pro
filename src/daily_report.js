@@ -74,7 +74,7 @@ export function buildDailyReport(signals = {}) {
   sections.push(buildSentimentSection(latest, regFull));
 
   // ── 节 3：涨跌与连板结构 ────────────────────────────────────────────────
-  sections.push(buildBreadthSection(latest, S.breadth));
+  sections.push(buildBreadthSection(latest, S.breadth, S));
 
   // ── 节 4：亏钱效应 / 接力 ───────────────────────────────────────────────
   sections.push(buildPainSection(S.pain));
@@ -178,14 +178,32 @@ function buildSentimentSection(latest, reg) {
   return { id: 'sentiment', title: '二、情绪与分位', level: 'info', missing: false, points: pts };
 }
 
-function buildBreadthSection(latest, breadth) {
+function buildBreadthSection(latest, breadth, S = {}) {
   const up = num(latest.up_count), down = num(latest.down_count);
+  const flat = num(latest.flat_count);
   const zt = num(latest.zt_count), dt = num(latest.dt_count), zb = num(latest.zb_count);
   const seal = num(latest.seal_pct);
   const pts = [];
   const missingBits = [];
-  if (up !== null && down !== null) pts.push({ text: `涨 ${up} / 跌 ${down}${up + down ? `（合计 ${up + down}）` : ''}`, kind: 'main' });
-  else missingBits.push('涨跌家数');
+  // 指数表现（市场背景，档案 indexes 直读——此前数据在档但报告从不显示，读者只能外看行情）
+  const idx = (latest.indexes && typeof latest.indexes === 'object') ? latest.indexes : null;
+  if (idx) {
+    const parts = Object.entries(idx)
+      .map(([k, v]) => [k, num(v)]).filter(([, v]) => v !== null)
+      .map(([k, v]) => `${k} ${v > 0 ? '+' : ''}${f1(v)}%`);
+    if (parts.length) pts.push({ text: `指数：${parts.join(' · ')}`, kind: 'evidence' });
+  }
+  if (up !== null && down !== null) {
+    // 合计 = up+down+flat（真实样本量；不含平盘的旧写法 5123 会与全市场口径对比时放大差异）
+    pts.push({ text: `涨 ${up} / 跌 ${down}${flat !== null ? ` / 平 ${flat}` : ''}（样本 ${up + down + (flat ?? 0)}）`, kind: 'main' });
+  } else missingBits.push('涨跌家数');
+  // 两市成交额（档案 amount_yi 直读；增量对照前日——量能是「中性震荡 vs 修复」判读的关键输入）
+  const amt = num(latest.amount_yi);
+  if (amt !== null) {
+    const prev = num(S.amountPrevYi);
+    const delta = prev !== null ? Math.round(amt - prev) : null;
+    pts.push({ text: `两市成交额 ${Math.round(amt)} 亿${delta !== null ? `（较前一日 ${delta >= 0 ? '+' : ''}${delta} 亿）` : ''}`, kind: 'evidence' });
+  }
   if (zt !== null || dt !== null) {
     pts.push({ text: `涨停 ${zt ?? '未采集'} / 跌停 ${dt ?? '未采集'}${zb !== null ? ` / 炸板 ${zb}` : ''}`, kind: 'evidence' });
   } else missingBits.push('涨停跌停');
@@ -197,6 +215,15 @@ function buildBreadthSection(latest, breadth) {
   const bs = breadth && breadth.summary;
   if (bs && bs.latest && bs.latest.maRatio != null) {
     pts.push({ text: `站上 20 日线占比 ${f1(num(bs.latest.maRatio) * 100)}%`, kind: 'evidence' });
+  }
+  // ── 固定口径披露（复盘对比纪律）────────────────────────────────────────
+  //   涨跌家数/涨停跌停的样本范围必须写明：各平台「全市场口径」（含北交所/ST）
+  //   数值系统性更高，不写口径会被当成数据错误。⚠ 值本身不改——全档 241 天的
+  //   s_pos 分位与 pct_rank 都在本口径上计算，改数即口径漂移。
+  if (up !== null || zt !== null) {
+    const scope = latest.breadth_scope || '沪深两市A股（不含北交所/ST）';
+    const pool = latest.pools_caliber === 'kline-rebuild' ? 'K线重建（触板未封口径）' : '东财池';
+    pts.push({ text: `口径：${scope}；涨停/跌停为${pool}同范围。与含北交所/ST 的全市场口径数值更高，属样本范围差异`, kind: 'evidence' });
   }
   if (!pts.length) {
     return { id: 'breadth', title: '三、涨跌与连板结构', level: 'unknown', missing: true, missingReason: '当日无涨跌/连板数据', points: [] };
