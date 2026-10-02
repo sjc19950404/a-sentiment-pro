@@ -279,17 +279,32 @@ function buildQualitySection(S) {
     if (d.dirtyDays > 0) { pts.push({ text: `⚠ 全档有 ${d.dirtyDays} 天存在必剔级脏数据（已从因子入参剔除，原值保留可追溯）`, kind: 'caution' }); level = 'warn'; }
     else if (d.warnDays > 0) { pts.push({ text: `全档 ${d.warnDays} 天存在需人工复核的告警项（只标记、不剔除）`, kind: 'caution' }); level = 'warn'; }
     else { pts.push({ text: `全档 ${d.totalDays} 天校验通过，无脏数据`, kind: 'ok' }); }
+    // 告警复核闭环（scripts/review_alerts.mjs 的 day.review 留痕 → 档案聚合下发）：
+    //   已复核的 WARN 若全部跨源互证通过，读者不必再"人工复核"——结论在此披露，
+    //   与「需人工复核」那句并排放，语义分层：告警仍在（只标记不剔除的纪律），
+    //   但数值真实性已由独立第二源确认。
+    const rv = d.review;
+    if (rv && rv.checked > 0) {
+      if (rv.verified > 0) pts.push({ text: `告警复核：${rv.verified}/${rv.checked} 条已跨源互证销案（板块页采集 vs 年线重算两源一致，孤立源于主题级行情，数据保留）`, kind: 'evidence' });
+      if (rv.mismatch > 0) pts.push({ text: `⚠ 告警复核：${rv.mismatch} 条两源数值不符，维持告警需人工深查`, kind: 'caution' });
+    }
     if (d.recent && d.recent.length) {
       const r0 = d.recent[d.recent.length - 1];
-      if (r0.issues && r0.issues.length) pts.push({ text: `最近留痕 ${r0.date}：${r0.issues.map((i) => i.reason).join('；')}`, kind: 'evidence' });
+      if (r0.issues && r0.issues.length) {
+        // 留痕行带上复核状态：已销案的告警不再以"待复核"口吻呈现（避免读者重复劳动）
+        const suffix = r0.reviewVerdict === 'verified' ? '——已复核销案（跨源互证通过）'
+          : r0.reviewVerdict === 'mismatch' ? '——复核未通过（两源不符，维持告警）' : '';
+        pts.push({ text: `最近留痕 ${r0.date}：${r0.issues.map((i) => i.reason).join('；')}${suffix}`, kind: 'evidence' });
+      }
     }
   } else {
     pts.push({ text: '数据质量未评估', kind: 'unknown' });
     level = 'unknown';
   }
   if (S.health && S.health.summary) {
-    // health.summary 自身可能已带「数据健康：」前缀 → 去重，避免"数据健康：数据健康：…"
-    const hs = String(S.health.summary).replace(/^数据健康[：:]\s*/, '');
+    // health.summary 自身可能已带「数据健康：」前缀（或"近 N 日数据健康：…"中缀）→ 去重，
+    //   避免"数据健康：近 20 日数据健康：…"（实测踩过：只剥行首前缀剥不掉中缀）。
+    const hs = String(S.health.summary).replace(/数据健康[：:]\s*/, '');
     pts.push({ text: `数据健康：${hs}`, kind: 'evidence' });
   }
   const xc = S.crosscheck;

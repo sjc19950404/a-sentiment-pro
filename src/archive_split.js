@@ -405,6 +405,16 @@ export function buildSignals(archive, opts = {}) {
     tagged.forEach((d) => {
       (d.emotion.dirty.fields || []).forEach((f) => fieldAgg.set(f, (fieldAgg.get(f) || 0) + 1));
     });
+    // 告警复核留痕（scripts/review_alerts.mjs 写入 day.review）→ 汇总下发给日报：
+    //   报告据此说"N/M 条已跨源互证销案"，而不是让读者对着已复核的告警重复劳动。
+    //   无复核留痕 → review 为 null（前端/报告显示"未复核"，不冒充"已通过"）。
+    const reviewed = tagged.filter((d) => d.review && d.review.verdict);
+    const review = reviewed.length ? {
+      checked: reviewed.length,
+      verified: reviewed.filter((d) => d.review.verdict === 'verified').length,
+      mismatch: reviewed.filter((d) => d.review.verdict === 'mismatch').length,
+      at: reviewed[reviewed.length - 1].review.checkedAt || null,
+    } : null;
     dirty = {
       // 最近一日的标脏情况（前端首屏展示用）
       latest: (last && last.emotion && last.emotion.dirty) ? last.emotion.dirty : null,
@@ -415,8 +425,9 @@ export function buildSignals(archive, opts = {}) {
       dirtyDays: tagged.filter((d) => d.emotion.dirty.status === 'dirty').length,
       warnDays: tagged.filter((d) => d.emotion.dirty.status === 'warn').length,
       byField: [...fieldAgg.entries()].map(([field, n]) => ({ field, days: n })).sort((a, b) => b.days - a.days),
-      // 明细（最多 20 条，避免轻量档膨胀）
-      recent: tagged.slice(-20).map((d) => ({ date: d.trade_date, ...d.emotion.dirty })),
+      // 明细（最多 20 条，避免轻量档膨胀）；reviewVerdict 带出该日复核结论
+      recent: tagged.slice(-20).map((d) => ({ date: d.trade_date, ...d.emotion.dirty, ...(d.review && d.review.verdict ? { reviewVerdict: d.review.verdict } : {}) })),
+      review,
     };
   } catch { dirty = null; }
   // 跨源一致性互证（#2）：结果由 scripts/fetch_crosscheck.mjs 落盘（需联网取第二源），

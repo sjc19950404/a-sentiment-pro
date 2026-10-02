@@ -185,6 +185,43 @@ test('buildDailyReport: 质量节 —— 无脏数据时给"校验通过"', () =
   assert.ok(sec.points.some((p) => /241 天校验通过/.test(p.text)));
 });
 
+test('buildDailyReport: ★ 质量节 —— 告警复核闭环披露（day.review 聚合下发）', () => {
+  // 场景：5 条 WARN 已由 scripts/review_alerts.mjs 跨源互证全部销案 →
+  //   报告必须披露"N/M 已销案"，最近留痕行必须带销案后缀——
+  //   否则读者对着已复核的告警重复劳动（这就是本测试锁定的行为）。
+  const S = fullSignals();
+  S.dirty = {
+    totalDays: 241, taggedDays: 5, dirtyDays: 0, warnDays: 5,
+    review: { checked: 5, verified: 5, mismatch: 0, at: '2026-10-02' },
+    recent: [{ date: '2026-08-18', issues: [{ reason: '行业数值孤立' }], reviewVerdict: 'verified' }],
+  };
+  const sec = buildDailyReport(S).sections.find((s) => s.id === 'quality');
+  assert.ok(sec.points.some((p) => /告警复核：5\/5 条已跨源互证销案/.test(p.text)), '销案计数行缺失');
+  const trace = sec.points.find((p) => /最近留痕/.test(p.text));
+  assert.match(trace.text, /已复核销案（跨源互证通过）$/, '留痕行必须带销案后缀');
+});
+
+test('buildDailyReport: ★ 质量节 —— 复核未通过维持告警（mismatch → caution，不放行）', () => {
+  const S = fullSignals();
+  S.dirty = {
+    totalDays: 241, taggedDays: 2, dirtyDays: 0, warnDays: 2,
+    review: { checked: 2, verified: 1, mismatch: 1, at: '2026-10-02' },
+    recent: [{ date: '2026-08-18', issues: [{ reason: '行业数值孤立' }], reviewVerdict: 'mismatch' }],
+  };
+  const sec = buildDailyReport(S).sections.find((s) => s.id === 'quality');
+  assert.ok(sec.points.some((p) => p.kind === 'caution' && /1 条两源数值不符，维持告警/.test(p.text)), 'mismatch 必须是 caution');
+  const trace = sec.points.find((p) => /最近留痕/.test(p.text));
+  assert.match(trace.text, /复核未通过（两源不符，维持告警）$/);
+});
+
+test('buildDailyReport: ★ 质量节 —— 无复核留痕时不冒充"已通过"（review 缺失 → 无销案行）', () => {
+  const S = fullSignals();
+  // fullSignals 的 dirty 无 review 字段 → 不得出现销案措辞（缺失≠通过）
+  const sec = buildDailyReport(S).sections.find((s) => s.id === 'quality');
+  assert.ok(!sec.points.some((p) => /已跨源互证销案/.test(p.text)), '无 review 时不得显示销案');
+  assert.ok(!sec.points.some((p) => /已复核销案/.test(p.text)));
+});
+
 test('buildDailyReport: ★ 跨源互证缺失 → 明说"缺失不等于一致"（不放行成 ok）', () => {
   const S = fullSignals();
   S.crosscheck = null;
