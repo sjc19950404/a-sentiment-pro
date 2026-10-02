@@ -82,7 +82,10 @@ test('recalcAll: 有原始数据的天用统一公式重算, 输出 factors', ()
   recalcAll([day]);
   assert.ok(day.emotion.value >= 0 && day.emotion.value <= 100);
   assert.ok(day.emotion.factors && typeof day.emotion.factors.s_net === 'number');
-  assert.equal(typeof day.emotion.pct_rank, 'number');
+  // #134 窗口分位: 单样本 < RANK_MIN(20) → null（缺失显式化, 不给假分位）。
+  // 断言曾为 typeof 'number'——那是全档分位时代的旧语义, 窗口制落地后过时。
+  assert.equal(day.emotion.pct_rank, null);
+  assert.equal(day.emotion.net_daily_pct_rank, null);
 });
 
 test('recalcAll: 无原始数据的种子天标记 legacy 保留原值', () => {
