@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-10-02T04:54:27.904Z",
+    "generatedAt": "2026-10-02T05:16:34.519Z",
     "engine": "scripts/backtest_strategies.mjs + src/strategy_bt.js（逐笔交易模型：T日信号 → T+1开盘成交 → N日收盘出场；时点纪律由 test/backtest_strategies.test.mjs 锁定）",
     "pointInTime": "信号只读 T 日收盘字段（emotion/max_lb/topics）；成交一律 T+1 开盘价；重叠信号不加仓",
     "costs": "与 V5.2 同口径：佣金 0.0003（双边）+ 印花税 0.0005（卖出）+ 滑点 0.0002，单次往返约 0.150%",
@@ -106,14 +106,14 @@
       "holdN": 3,
       "entry": "T日 max_lb≥4 且 lb2_count≥8 → T+1 开盘买沪深300",
       "exit": "持有 3 日收盘卖；期间 max_lb≤2 → 次日开盘卖",
-      "triggered": 192,
-      "trades": 69,
-      "total": -0.0806,
-      "annual": -0.0845,
-      "maxDd": 0.1324,
-      "sharpe": -0.5,
-      "winRate": 0.3768,
-      "plRatio": 1.0443,
+      "triggered": 204,
+      "trades": 73,
+      "total": -0.0983,
+      "annual": -0.1029,
+      "maxDd": 0.1491,
+      "sharpe": -0.61,
+      "winRate": 0.3836,
+      "plRatio": 1.0194,
       "tradeList": [
         {
           "signalDay": "2025-10-13",
@@ -497,7 +497,31 @@
           "signalDay": "2026-08-12",
           "entry": "2026-08-13",
           "exit": "2026-08-17",
-          "ret": -0.011
+          "ret": 0.0036
+        },
+        {
+          "signalDay": "2026-08-17",
+          "entry": "2026-08-18",
+          "exit": "2026-08-20",
+          "ret": -0.0313
+        },
+        {
+          "signalDay": "2026-08-24",
+          "entry": "2026-08-25",
+          "exit": "2026-08-27",
+          "ret": 0.0179
+        },
+        {
+          "signalDay": "2026-08-27",
+          "entry": "2026-08-28",
+          "exit": "2026-09-01",
+          "ret": -0.0025
+        },
+        {
+          "signalDay": "2026-09-01",
+          "entry": "2026-09-02",
+          "exit": "2026-09-04",
+          "ret": -0.0088
         },
         {
           "signalDay": "2026-09-07",
@@ -603,14 +627,14 @@
       "holdN": 5,
       "entry": "T日 max_lb≥4 且 lb2_count≥8 → T+1 开盘买沪深300",
       "exit": "持有 5 日收盘卖；期间 max_lb≤2 → 次日开盘卖",
-      "triggered": 192,
-      "trades": 43,
-      "total": -0.0935,
-      "annual": -0.0979,
-      "maxDd": 0.1305,
-      "sharpe": -0.54,
-      "winRate": 0.4419,
-      "plRatio": 0.8356,
+      "triggered": 204,
+      "trades": 45,
+      "total": -0.1151,
+      "annual": -0.1205,
+      "maxDd": 0.1512,
+      "sharpe": -0.67,
+      "winRate": 0.4444,
+      "plRatio": 0.8211,
       "tradeList": [
         {
           "signalDay": "2025-10-13",
@@ -849,8 +873,20 @@
         {
           "signalDay": "2026-08-12",
           "entry": "2026-08-13",
-          "exit": "2026-08-17",
-          "ret": -0.011
+          "exit": "2026-08-19",
+          "ret": -0.0287
+        },
+        {
+          "signalDay": "2026-08-24",
+          "entry": "2026-08-25",
+          "exit": "2026-08-31",
+          "ret": 0.0167
+        },
+        {
+          "signalDay": "2026-08-31",
+          "entry": "2026-09-01",
+          "exit": "2026-09-07",
+          "ret": -0.0109
         },
         {
           "signalDay": "2026-09-07",
@@ -928,14 +964,14 @@
       "holdN": 10,
       "entry": "T日 max_lb≥4 且 lb2_count≥8 → T+1 开盘买沪深300",
       "exit": "持有 10 日收盘卖；期间 max_lb≤2 → 次日开盘卖",
-      "triggered": 192,
-      "trades": 22,
-      "total": -0.0543,
-      "annual": -0.057,
-      "maxDd": 0.1251,
-      "sharpe": -0.28,
-      "winRate": 0.3636,
-      "plRatio": 1.2216,
+      "triggered": 204,
+      "trades": 23,
+      "total": -0.088,
+      "annual": -0.0922,
+      "maxDd": 0.1352,
+      "sharpe": -0.49,
+      "winRate": 0.3478,
+      "plRatio": 1.2181,
       "tradeList": [
         {
           "signalDay": "2025-10-13",
@@ -1060,14 +1096,20 @@
         {
           "signalDay": "2026-08-12",
           "entry": "2026-08-13",
-          "exit": "2026-08-17",
-          "ret": -0.011
+          "exit": "2026-08-26",
+          "ret": -0.0282
         },
         {
-          "signalDay": "2026-09-07",
-          "entry": "2026-09-08",
-          "exit": "2026-09-21",
-          "ret": -0.0094
+          "signalDay": "2026-08-26",
+          "entry": "2026-08-27",
+          "exit": "2026-09-09",
+          "ret": -0.0063
+        },
+        {
+          "signalDay": "2026-09-09",
+          "entry": "2026-09-10",
+          "exit": "2026-09-23",
+          "ret": -0.0087
         }
       ]
     }

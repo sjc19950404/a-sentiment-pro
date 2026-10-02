@@ -378,6 +378,13 @@ export function recalcAll(days, opts = {}) {
         },
       }),
     };
+    // ⚠ 干净天必须**清掉旧 dirty**（实测抓出的陈旧留痕 bug）：上方 `...d.emotion`
+    //   展开会保留旧键，而 dirty 只在"有情况"时写入、从不在变干净时删除——
+    //   阈值重标定（如 INDUSTRY_CHANGE_ABS_MAX 12→15）后，原本判脏的天经重算
+    //   已是 vres.status='ok'，但旧 ERROR 留痕永久残留，面板永远显示"剔除 2 天"，
+    //   与真实因子状态（s_brd 已恢复真实值）自相矛盾。数据质量面板必须与
+    //   当前口径一致，而不是与历史口径一致。
+    if (vres.status === 'ok') delete d.emotion.dirty;
     // 回填标记双向裁定（见上方 ⚠ 注）：原料已齐的天必须移除旧标记，防止
     // 「七因子真分天」被前端/回测当假分天永久过滤。isBackfillShaped 为本文件私有判据。
     if (!isBackfillShaped(s)) delete d.emotion[BACKFILL_FLAG];
