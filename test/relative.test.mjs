@@ -214,15 +214,22 @@ const arc = haveArc ? JSON.parse(readFileSync(ARC, 'utf8')) : null;
 test('真实档案：有 industry 的天数 == 有 上证指数 的天数（两源同生共死）', { skip: !haveArc }, () => {
   const withInd = arc.all_days.filter((d) => Array.isArray(d.industry) && d.industry.length).length;
   const withIdx = arc.all_days.filter((d) => d.indexes && Number.isFinite(d.indexes['上证指数'])).length;
-  assert.equal(withInd, withIdx, '行业明细与指数应同日采集，数量不等说明有一侧静默失败');
+  // 六因子回填（2026-10-02）后世界变了：208 个历史天的行业明细由同花顺年线回填，
+  // 但指数快照（盘中抓取口径）无法历史重建 → industry 天数（241）≥ 指数天数（真实日）。
+  // 守卫方向随之反转：指数有值的天**必须**也有行业（实时采集同生），反之行业可单独存在（回填）。
+  const idxNoInd = arc.all_days.filter((d) => d.indexes && Number.isFinite(d.indexes['上证指数'])
+    && !(Array.isArray(d.industry) && d.industry.length));
+  assert.equal(idxNoInd.length, 0, '有指数快照却无行业明细——实时采集两源应同日成对，缺一侧说明静默失败');
+  assert.ok(withInd >= withIdx, `行业天数(${withInd})不应少于指数天数(${withIdx})`);
 });
 
-test('真实档案：无 industry 的天 computeRelative 必须为 null（208 天缺口）', { skip: !haveArc }, () => {
+test('真实档案：无 industry 的天 computeRelative 必须为 null（历史缺口已回填后应为零天）', { skip: !haveArc }, () => {
   const noInd = arc.all_days.filter((d) => !Array.isArray(d.industry) || !d.industry.length);
-  assert.ok(noInd.length > 0, '应有历史回填天缺行业明细');
+  // 六因子回填后 241 天全部有行业明细——「缺口天」守卫退化为「若未来再出现缺口天，其 relative 必须为 null」
   for (const d of noInd) {
     assert.equal(computeRelative(d), null, `${d.trade_date} 无行业明细却算出了相对强弱`);
   }
+  assert.equal(noInd.length, 0, `六因子回填后不应再有无行业明细的天（实际 ${noInd.length}）`);
 });
 
 test('真实档案：最新交易日实算，基准与榜单自洽', { skip: !haveArc }, () => {

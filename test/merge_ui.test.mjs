@@ -61,27 +61,37 @@ test('merge: all_days 全部为真实交易日（回填占位日绝不入页面�
   }
 });
 
-test('merge: day 核心字段（情绪/汇总/龙虎榜/强势股/行业/指数——UI KPI 卡与表格直读）', () => {
-  for (const d of DAYS) {
+test('merge: day 核心字段（情绪/汇总/龙虎榜/行业——UI KPI 卡与表格直读）', () => {
+  // 六因子回填（2026-10-02）后页面纳入 241 个七因子真分天，形成两类日：
+  //   · EM 采集天（有 indexes）：hot[]/indexes/hot_count 齐全——题材榜/指数卡直读；
+  //   · K 线回填天（无 indexes）：hot 空、indexes null——题材榜「暂无」降级（UI 已有空态），
+  //     但情绪/龙虎榜/行业/池/量能全字段必须齐（这些正是回填交付物）。
+  const RANK_MIN = 20; // 分位窗口：前 20 天 pct_rank 为 null 是算法事实，不是缺字段
+  DAYS.forEach((d, idx) => {
     assert.equal(typeof d.emotion?.value, 'number', `${d.trade_date} emotion.value`);
-    assert.ok(d.emotion?.pct_rank != null, `${d.trade_date} emotion.pct_rank`);
+    if (idx >= RANK_MIN) assert.ok(d.emotion?.pct_rank != null, `${d.trade_date} emotion.pct_rank`);
     assert.ok(d.emotion?.lhb_daily_net != null, `${d.trade_date} emotion.lhb_daily_net（Tab2 净买柱/S7/S9）`);
     assert.ok(Array.isArray(d.lhb) && d.lhb.length, `${d.trade_date} lhb[]`);
-    assert.ok(Array.isArray(d.hot) && d.hot.length, `${d.trade_date} hot[]`);
     assert.ok(Array.isArray(d.industry) && d.industry.length, `${d.trade_date} industry[]`);
-    assert.ok(d.indexes && d.indexes['上证指数'] != null, `${d.trade_date} indexes['上证指数']`);
+    const emCaptured = !!(d.indexes && d.indexes['上证指数'] != null);
+    if (emCaptured) {
+      assert.ok(Array.isArray(d.hot) && d.hot.length, `${d.trade_date} hot[]（EM 采集天必填）`);
+    } else {
+      // 回填天 hot 是裁剪空壳——但 indexes 必须显式 null（而非 undefined），UI 判据 `d.indexes &&` 才稳
+      assert.ok(!d.indexes || d.indexes['上证指数'] == null, `${d.trade_date} 回填天不应有指数快照`);
+    }
     const s = d.summary || {};
     for (const k of ['lhb_daily_net', 'lhb_all_net', 'lhb_count', 'lhb_stocks', 'net_pos', 'net_neg',
-      'lhb_daily_stocks', 'lhb_range_count', 'ind_up', 'ind_down', 'hot_count', 'amount_yi']) {
+      'lhb_daily_stocks', 'lhb_range_count', 'ind_up', 'ind_down', 'amount_yi']) {
       assert.ok(s[k] != null, `${d.trade_date} summary.${k} 缺失（KPI 卡会显示 undefined）`);
     }
-    // 涨跌停池组：早期日东财池缺失是真实状况（UI 有「⚠️ 池缺失」降级卡，按 s.zt_count==null 整组降级）——
-    // 但必须**整组一致**：半缺（如有 zt_count 无 zbl_pct）会让降级判断失效、渲染出 undefined。
+    if (emCaptured) assert.ok(s.hot_count != null, `${d.trade_date} summary.hot_count（EM 采集天必填）`);
+    // 涨跌停池组：整组一致——半缺（如有 zt_count 无 zbl_pct）会让降级判断失效、渲染出 undefined。
     const poolKeys = ['zt_count', 'dt_count', 'zbl_pct', 'max_lb'];
     const present = poolKeys.filter((k) => s[k] != null);
     assert.ok(present.length === 0 || present.length === poolKeys.length,
       `${d.trade_date} 涨跌停池字段半缺（${present.join(',')}）——UI 按组降级会漏`);
-  }
+  });
 });
 
 test('merge: lhb[]/hot[] 行级字段（全榜表/强势股归因表/个股弹窗直读）', () => {

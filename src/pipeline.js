@@ -378,6 +378,9 @@ export function recalcAll(days, opts = {}) {
         },
       }),
     };
+    // 回填标记双向裁定（见上方 ⚠ 注）：原料已齐的天必须移除旧标记，防止
+    // 「七因子真分天」被前端/回测当假分天永久过滤。isBackfillShaped 为本文件私有判据。
+    if (!isBackfillShaped(s)) delete d.emotion[BACKFILL_FLAG];
     // ── 诊断字段由重算路径刷新（防"算过就不管"的静默陈旧）──────────────────
     //   实测抓出的第二处漂移：`emotion.pos_ratio / up_ratio / hot_count / topic_conc /
     //   top_topic` 只在**实时抓取**（src/sources.js buildDay）时写入，

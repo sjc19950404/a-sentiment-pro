@@ -428,12 +428,25 @@ test('端到端：真实档案三版重算不产生 NaN，且 v5.2 与档案现�
       }
     }
     // 基线必须能复现档案里现存的口径：逐日比对 score（允许 0.1 的四舍五入差）
-    let compared = 0;
-    for (let i = 0; i < ok.length; i++) {
+    // ⚠ MA20 上下文必须取**全档**（与生产 recalcAll 同窗口）：computeAllVersions(ok) 只在
+    //   full 档（有指数的 33 天）内取前 20 个有值 amount——六因子回填（2026-10-02）给 208 个
+    //   历史天补了 amount_yi 后，档案里 2026-08-14 的 s_amt 是按全档 MA20 算出的真值，
+    //   而 tier 过滤窗口里看不到那些回填 amount → 会拿代理 50 误报「不一致」。
+    //   故此处按全档复刻 recalcAll 的 MA20 算法（前 20 个有值交易日均值，不足 10 个为 null），
+    //   用 recomputeDay 逐日喂入，与生产唯一实现逐字对齐。
+    const amtsAll = days.map((d) => (d.summary && d.summary.amount_yi != null) ? d.summary.amount_yi : null);
+    const maOf = (date) => {
+      const i = days.findIndex((d) => d.trade_date === date);
+      const hist = [];
+      for (let j = i - 1; j >= 0 && hist.length < 20; j--) if (amtsAll[j] != null) hist.unshift(amtsAll[j]);
+      return hist.length >= 10 ? hist.reduce((a, b) => a + b, 0) / hist.length : null;
+    };
+    let compared = 0;    for (let i = 0; i < ok.length; i++) {
       const archived = ok[i].emotion?.value;
       if (archived == null) continue;
-      assert.ok(Math.abs(res[BASELINE_VERSION][i].score - archived) <= 0.15,
-        `${ok[i].trade_date} 基线重算 ${res[BASELINE_VERSION][i].score} 与档案 ${archived} 不一致`);
+      const r = recomputeDay(ok[i], BASELINE_VERSION, { amountMA20: maOf(ok[i].trade_date), weights: config.weights });
+      assert.ok(Math.abs(r.score - archived) <= 0.15,
+        `${ok[i].trade_date} 基线重算 ${r.score} 与档案 ${archived} 不一致`);
       compared++;
     }
     assert.ok(compared > 0, '应至少有一天可与档案比对');

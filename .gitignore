@@ -38,3 +38,9 @@ data/.bt_kline/
 
 # 工作区记忆（本地，不入库）
 .workbuddy/
+
+# 六因子历史回填的全市场不复权K线缓存（5901 分片 ~150MB，可由 scripts/fetch_raw_kline.mjs 重抓）
+# 要入库的是**回填结论**：data/archive.json 主档 + data/bt_industry.json（90 板块年线，~500KB，验证门禁的原料）
+data/bt_kline/
+data/bt_kline_fetch.log
+data/bt_kline_fetch.err.log

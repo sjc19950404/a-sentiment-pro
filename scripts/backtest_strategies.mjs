@@ -170,9 +170,13 @@ const report = {
       realDays: realDays.length,
       range: [realDays[0].trade_date, realDays[realDays.length - 1].trade_date],
       excludedBackfillDays: allDays.length - realDays.length,
-      note: '历史回填天只有 s_net 单因子（非综合分），全部排除。样本期情绪区间 29.9~85.6：无 <10 冰点日、无 >90 过热日——策略 A 触发 0 次是事实，不是 bug。',
+      // 样本注记动态生成（2026-10-02 六因子回填后 208 个历史天已是七因子真分，进入样本；
+      // 池字段为 K 线重建口径，见 summary.pools_caliber / data/archive.json meta.note）
+      note: allDays.length - realDays.length > 0
+        ? '历史回填天只有 s_net 单因子（非综合分），全部排除。'
+        : `样本含六因子回填天（K 线重建池口径）。样本期情绪区间 ${Math.min(...realDays.map((d) => d.emotion.value)).toFixed(1)}~${Math.max(...realDays.map((d) => d.emotion.value)).toFixed(1)}。`,
     },
-    disclaimer: '历史回测 ≠ 未来收益。样本仅 33 个真实交易日（单笔噪声即可主导结论），结果仅用于管线自检与口径演示，不构成投资建议，不当选股依据。',
+    disclaimer: `历史回测 ≠ 未来收益。样本 ${realDays.length} 个交易日${allDays.length - realDays.length > 0 ? '（回填天已排除）' : '（含六因子回填天，池字段为 K 线重建口径——较 EM 采集口径 s_zbl 平均偏低 ~4.5 分）'}，结果仅用于管线自检与口径演示，不构成投资建议，不当选股依据。`,
   },
   benchmark: { id: 'HS300_buyhold', label: '沪深300 买入持有（同区间）', ...metrics(benchNav, benchRets) },
   strategies,
