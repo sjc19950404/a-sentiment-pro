@@ -29,5 +29,9 @@ data/.kline_cache.json
 # 真正要入库的是**汇总结果** data/breadth-latest.json 与 data/breadth-daily.json。
 data/.breadth_kline/
 
+# 策略回测（③）的个股/指数日K缓存（可重建，首次运行真抓腾讯 ifzq）
+# 要入库的是**回测结论** data/backtest-strategies.json。
+data/.bt_kline/
+
 # 工作区记忆（本地，不入库）
 .workbuddy/

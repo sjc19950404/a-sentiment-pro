@@ -112,6 +112,49 @@ test/fixtures/sina_global_20260930.txt  外围解析夹具（2026-09-30 美股�
 > 诚实说明：回测样本仅随存档累积（当前 32 个交易日），年化/夏普等指标的统计意义有限，
 > 仅用于管线自检与参数对比，**不构成投资建议**。样本短时两目标可能同向、前沿退化为单点，页面会显式标注。
 
+## 策略收益回测（③ · 三个具体策略 · 2026-10-02）
+
+`node scripts/backtest_strategies.mjs` → `data/backtest-strategies.json`（核心模型在 `src/strategy_bt.js`，
+与单测共享——`test/backtest_strategies.test.mjs` 用「作弊探针」锁死 point-in-time 时点纪律）。
+
+| 策略 | 入场 | 出场 |
+|---|---|---|
+| A 冰点反转 | T日 情绪 < 10 → T+1 开盘买沪深300 | 持有 N 日（3/5/10）收盘卖；期间情绪 > 90 → 次日开盘清仓 |
+| B 题材动量 | T日 top1 题材（去噪口径）→ T+1 开盘等权买成员股 | 持有 N 日收盘卖 |
+| C 梯队风险偏好 | T日 max_lb≥4 且 2板+家数≥8 → T+1 开盘买沪深300 | 持有 N 日收盘卖；期间 max_lb≤2（断层）→ 次日开盘清仓 |
+
+- **point-in-time 铁律**：信号只读 T 日收盘字段；成交一律 T+1 开盘价；重叠信号不加仓；
+  成本与 V5.2 同口径（双边佣金+印花+滑点 ≈0.13%/往返）。
+- **基准**：沪深300 买入持有（同区间）。
+- **如实披露**：当前样本仅 33 个真实交易日（208 个 s_net 单因子回填天全部排除），
+  样本期情绪区间 29.9~85.6——**策略 A 触发 0 次**（无冰点/过热日）是事实不是 bug；
+  B/C 的负收益在基准同期 -6.6% 的下跌段里，样本量不具统计意义。
+- ⚠ **免责**：历史回测 ≠ 未来收益。结果仅用于管线自检与口径演示，不构成投资建议。
+
+## 参数治理（过拟合防线 · 2026-10-02）
+
+`src/config.js` 的调参对象拆成**双套**：
+
+| 块 | 语义 | 谁读 |
+|---|---|---|
+| `params.live` | 生产口径，**递归冻结** | 打分管道 / 研判 / 前端（`config.weights` 等旧路径 = 同一引用） |
+| `params.train` | 实验区 | 网格寻优 / walk-forward（`scripts/backtest.mjs` 锚点已切至此） |
+
+- **晋升唯一通道**：`node scripts/promote_params.mjs` —— 跑「样本外 20%」门禁（与
+  `backtest.mjs` 同一引擎同一口径，真实交易日剔除回填天后 80/20 切分，train 的
+  rankKey 不劣于 live 才放行）→ `--apply --why "理由"` 机器重写 `LIVE_PARAMS` 块
+  （PROMOTE-MANAGED 标记内）+ 追加 `params_changelog.json`（who/when/why/验证结果/liveAfter 快照）。
+- **守卫测试**（`test/params_governance.test.mjs`）：live 冻结（运行期改参抛 TypeError）、
+  兼容层引用同一、changelog 最后一条 `liveAfter` 与 live 逐位相等——**手改 live 不留痕 = CI 红**。
+- **实盘摩擦预埋**：`costModel` 独立块（comm/stamp/slip 已接真实值；`priceLimit.enabled=false`
+  为涨跌停约束占位，引擎实现限价口径时置 true 即接上，不返工）。
+- **运维告警挂钩**（`src/opsalerts.js`）：管道既有拦截器（`meta.lastAttempt` / `freshness` /
+  `imputedRatioLatest` / `emotion.missing` / `dataQuality.*Ok`）的坏事实 → 结构化事件 →
+  `data/ops-alerts-latest.json` 落盘 + 可选企微推送（CI 配 `OPS_WEBHOOK` secret 即生效；
+  未配置零打扰；推送失败绝不炸主管道）。
+- 诚实披露：当前真实样本仅 33 天（OOS ≈ 6 天），门禁是**流程防线**（防「只看样本内调参」
+  这一行为模式），不是统计证明。
+
 ## 研判报告（口径与回测引擎同源）
 
 （正文见页面「研判报告」分区；此处记录报告的三种"带走"方式——内容与屏幕所见**严格同一份**。）

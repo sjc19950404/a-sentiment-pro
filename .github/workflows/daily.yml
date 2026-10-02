@@ -19,15 +19,48 @@ on:
     # 不跑管道、不碰 archive.json、不重算分位与因子（理由见该脚本文件头）。
     # 覆盖 01:00~07:30 UTC（= 北京 09:00~15:30），脚本内部再按相位闸门过滤出真正的盘中时段。
     - cron: '0,30 1-7 * * 1-5'
+    # ② 盘前数据源冒烟（北京 08:30 = UTC 00:30）：六源真打一遍。
+    #   开市前摸门的意义：源悄悄改字段/加风控，盘前就能红出来，带 needs 依赖拦下
+    #   盘后主跑——坏数据不进生产档。这条 cron **只触发 smoke job**（build 的 if 已排除）。
+    - cron: '30 0 * * 1-5'
   workflow_dispatch:        # 手动触发
 
 permissions:
   contents: write
 
 jobs:
+  # ── ② 真实 API 冒烟：六源逐个真打（getharden/东财LHB/同花顺行业/腾讯指数/东财池/同花顺日K）──
+  #   为什么排在 build 之前且 build needs 它：管道容灾会「保留上次快照并标失败」，
+  #   源结构悄悄变化时页面只表现为数据慢慢变旧——等发现已晚。冒烟每天主动摸一遍
+  #   每个源的门：硬失败 → 本 job 红 → build 被拦（不污染生产档）+ CI 邮件当天报警。
+  #   软失败（龙虎榜当日未公布）不算源故障（盘后早跑正常态）。
+  smoke:
+    if: github.event.schedule != '0,30 1-7 * * 1-5'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 六源真实 API 冒烟（不 mock，断言 200+非空+字段契约）
+        run: node scripts/smoke_sources.mjs
+      - name: 冒烟报告落盘留档（data/smoke-latest.json，随仓库可见）
+        if: always()
+        run: |
+          if [ -f data/smoke-latest.json ]; then
+            echo "冒烟摘要："
+            node -e "const r=require('./data/smoke-latest.json'); console.log(r.allOk?'全部通过':'硬失败: '+r.hardFail.join(','), '@', r.tradeDateAnchored)"
+          fi
+
   build:
-    # 盘后完整管道（18:30 / 21:00 / 手动触发）
-    if: github.event.schedule != '0,30 1-7 * * 1-5' && github.event.schedule != '30 20 * * 1-5'
+    # 盘后完整管道（18:30 / 21:00 / 手动触发）—— 必须先过冒烟门禁（源挂了不写生产档）
+    needs: smoke
+    if: >
+      needs.smoke.result == 'success' &&
+      github.event.schedule != '0,30 1-7 * * 1-5' &&
+      github.event.schedule != '30 20 * * 1-5' &&
+      github.event.schedule != '30 0 * * 1-5'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -45,6 +78,9 @@ jobs:
       - name: 运行管道（live 模式，非交易日自动跳过）
         env:
           MODE: live
+          # 运维告警推送通道（降维预埋）：拦截器事件 → 企微机器人。
+          # secret 未配置时为空串 → 脚本内部跳过推送（仅落盘），不会报错。
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         run: node src/pipeline.js
       - name: 数据新鲜度判定（按交易日历，输出可读结论）
         run: node scripts/freshness.mjs
@@ -55,6 +91,12 @@ jobs:
         run: node scripts/fetch_global.mjs
       - name: 生成 V5.2 回测档（成本/平滑/风控/网格帕累托/滚动/主线选股）
         run: node scripts/backtest.mjs
+      # ③ 策略收益回测：冰点反转/题材动量/梯队风险偏好 × 沪深300基准（严格 point-in-time）。
+      #   个股日K走 data/.bt_kline/ 缓存（不入库，CI 每次真抓——86 只 top1 题材成员约 2 分钟）。
+      #   产物 data/backtest-strategies.json 入库；样本不足时脚本自行跳过不阻断。
+      - name: 生成策略收益回测（三策略 × 基准，point-in-time）
+        run: node scripts/backtest_strategies.mjs
+        continue-on-error: true
       # 公式版本回归验证集：v4.5 / v5.0 / v5.2 在同一段历史上并行重算，
       # 对次日上证涨跌幅算相关性 + 方向准确率。改公式后跑一次即可看出影响面，
       # 不必再用肉眼看"某天数字好像不对"。
@@ -91,7 +133,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json
+          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/ops-alerts-latest.json
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else

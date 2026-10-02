@@ -33,8 +33,16 @@ if (days.length < 5) {
 // 回测样本构成留痕：让使用者一眼看出「回测用的是哪一段、排除了多少回填天」
 const BACKFILL_EXCLUDED = (arch.all_days || []).filter((d) => d && d.emotion && d.emotion._backfill).length;
 
-const { thresholds: TH, assets: ASSETS, costs: COSTS, maxPos, stopLoss, ddTrigger, maxPosChg, gridSteps, rolling } = config.backtest;
-const baseW = { ...config.weights };          // s_net20 / s_pos10 / ...（含档位后缀）
+// 过拟合防线（2026-10-02 拍板）：实验锚点一律取 params.train（live 冻结，改动唯一通道
+// = scripts/promote_params.mjs 样本外门禁）。train 与 live 的差异即「待验证实验参数」，
+// 寻优/网格/walk-forward 全部在 train 上做，生产口径（live）不参与扰动扫描。
+const TR = config.params.train;
+const { assets: ASSETS, gridSteps } = config.backtest; // 标的池/扫描精度非调参对象，留在 backtest 块
+const TH = TR.thresholds;
+const COSTS = TR.costModel;
+const { maxPos, stopLoss, ddTrigger, maxPosChg } = TR.stops;
+const rolling = TR.lookback.rolling;
+const baseW = { ...TR.weights };               // s_net20 / s_pos10 / ...（含档位后缀）
 const plainW = {};                             // s_net / s_pos / ...（存档因子键）
 for (const [wk, pk] of Object.entries(config.factorKeyMap)) plainW[pk] = baseW[wk];
 
