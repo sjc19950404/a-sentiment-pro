@@ -3,6 +3,7 @@
 // 例如把最低佣金 5 元去掉、把整手校验放宽、让涨停也能买进。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   LOT, MIN_COMMISSION, COMMISSION_RATE, STAMP_TAX_RATE, TRANSFER_FEE_RATE,
   boardOf, isStName, limitPctOf, isLimitHit, fees, fillPrice,
@@ -658,4 +659,166 @@ test('回归：qtyByAssetPct 传裸价（未含滑点）会算多股数并被资
     { code: '600519', price: 3.33, name: '测试', changePct: 0 });
   assert.equal(vBare.ok, false, '裸价算出的股数应被资金校验拒绝（滑点成本未计入）');
   assert.equal(vSlipped.ok, true, '含滑点价算出的股数应通过校验');
+});
+
+// ────────────────────── T+1 门禁（引擎级防前视，最后防线） ──────────────────────
+// 背景：UI 的 settleByLive 曾可在同日撮合当日提交的委托（submitDate 被记成存档日，
+// 结算日与提交日撞同一天），非交易日也能用上一收盘价「结算」——两处都击穿
+// 「次一交易日按真实价撮合」。引擎不信任调用方：submitDate ≥ 结算日一律顺延。
+
+test('★ T+1 门禁：同日结算不成交——委托顺延留队，次日才撮合', () => {
+  let a = fresh();
+  a = submitOrder(a, { code: '600519', side: 'buy', qty: 100 }, Q('600519', '贵州茅台', 100), { date: '2026-09-30' }).next;
+  // 当天就结算（settleByLive 曾经的作弊路径）：必须顺延，不得成交
+  const r0 = settleDay(a, '2026-09-30', { '600519': Q('600519', '贵州茅台', 105) });
+  assert.equal(r0.fills.length, 0, '同日撮合 = 用已知价成交，必须拦下');
+  assert.equal(r0.t1Hold, 1, '顺延计数如实上报');
+  assert.equal(r0.account.pending.length, 1, '顺延 ≠ 失效：委托留在队列');
+  assert.equal(r0.account.trades.length, 0);
+  // 次一交易日：正常撮合
+  const r1 = settleDay(r0.account, '2026-10-08', { '600519': Q('600519', '贵州茅台', 105) });
+  assert.equal(r1.fills.length, 1);
+  assert.equal(r1.account.pending.length, 0);
+  assert.equal(r1.fills[0].price, fillPrice(105, 'buy'), '成交价是次日真实价 + 滑点');
+});
+
+test('★ T+1 门禁：结算日早于提交日（倒挂）同样顺延——防倒挂撮合', () => {
+  // 场景：假期提交的委托（submitDate=10-02），存档补结算循环若误传更早的日期
+  let a = fresh();
+  a = submitOrder(a, { code: '600519', side: 'buy', qty: 100 }, Q('600519', '贵州茅台', 100), { date: '2026-10-02' }).next;
+  const r = settleDay(a, '2026-09-30', { '600519': Q('600519', '贵州茅台', 100) });
+  assert.equal(r.fills.length, 0, '倒挂撮合 = 用提交前的已知价成交，必须拦下');
+  assert.equal(r.account.pending.length, 1);
+});
+
+test('★ T+1 门禁：旧账本（submitDate=null 的导入单）不误伤——只拦有日期的', () => {
+  let a = fresh();
+  a = submitOrder(a, { code: '600519', side: 'buy', qty: 100 }, Q('600519', '贵州茅台', 100), { date: '2026-09-30' }).next;
+  // 手工构造无 submitDate 的委托（导入档的宽松形态），门禁不得过度拦截
+  const legacy = { ...a, pending: a.pending.map((p) => { const { submitDate, ...rest } = p; return rest; }) };
+  const r = settleDay(legacy, '2026-09-30', { '600519': Q('600519', '贵州茅台', 105) });
+  assert.equal(r.t1Hold, 0, '无日期的旧委托不适用门禁');
+});
+
+// ────────────────────── 行情适配：day.quotes 实时覆盖层 ──────────────────────
+// 背景：paper_ui 的 batchDay() 把腾讯实时价写进 day.quotes，但 quotesFromDay 此前
+// 只读 hot/lhb——实时价注入是死代码：不在当日两榜的票批量买入必被 NO_QUOTE 拦截。
+
+test('★ quotesFromDay：day.quotes 覆盖同名键（实时价优先于存档收盘价）', () => {
+  const day = {
+    trade_date: '2026-10-08',
+    hot: [{ code: '600519', name: '贵州茅台', close: 100, change_pct: 1.0 }],
+    quotes: { '600519': { code: '600519', name: '贵州茅台', price: 103.5, changePct: 3.5, prevClose: 100, src: 'live' } },
+  };
+  const m = quotesFromDay(day);
+  assert.equal(m['600519'].price, 103.5, '实时价必须覆盖存档收盘价（死代码修复的核心断言）');
+  assert.equal(m['600519'].prevClose, 100, 'prevClose 透传给停板判定');
+  assert.equal(m['600519'].src, 'live');
+});
+
+test('★ quotesFromDay：day.quotes 补两榜之外的新票；无价条目不进表', () => {
+  const day = {
+    trade_date: '2026-10-08',
+    quotes: {
+      '300893': { code: '300893', name: '测试A', price: 51.2, changePct: 2, prevClose: 50.2, src: 'live' },
+      '000001': { code: '000001', name: '测试B', price: null },   // 无价 → 不进表
+    },
+  };
+  const m = quotesFromDay(day);
+  assert.ok(m['300893'], '两榜之外的票由覆盖层补上（此前必被 NO_QUOTE 误拦）');
+  assert.ok(!m['000001'], '无价条目绝不进表（缺失显式化）');
+});
+
+test('★ quotesFromDay：纯存档日（无 quotes 字段）行为不变', () => {
+  const day = { trade_date: '2026-09-30', hot: [{ code: '600519', name: '贵州茅台', close: 100 }], lhb: [{ code: '000001', name: '平安银行', close: 20 }] };
+  const m = quotesFromDay(day);
+  assert.equal(m['600519'].price, 100);
+  assert.equal(m['000001'].price, 20);
+  assert.equal(m['600519'].src, 'hot');
+});
+
+// ────────────────────── 精确停板价（isLimitHit 的 prevClose 口径） ──────────────────────
+// 背景：近似口径 |change_pct| ≥ 幅度−0.5pp 会把 20cm 板涨 19.5%~19.99% **未封板**的
+// 收盘误判涨停（买入委托被错误失效）。实时源天然带昨收 → 按真实停板价判。
+
+test('★ 精确停板价：20cm 板涨 19.9% 未封板 → 不是涨停（近似口径会误杀）', () => {
+  // 昨收 50.00 → 停板价 = 60.00；现价 59.95（+19.9%）未封板
+  assert.equal(isLimitHit(19.9, '300750', '宁德时代', 0.5, 59.95, 50.0), null, '精确口径：未到停板价');
+  // 对照：旧近似口径（无 price/prevClose）会误判 up——这是容差的已知代价，测试锁住差异
+  assert.equal(isLimitHit(19.9, '300750', '宁德时代'), 'up', '近似口径确实会误杀（这就是要带昨收的原因）');
+});
+
+test('★ 精确停板价：触及停板价判 up/down；10% 板 9.9% 未封板不误杀', () => {
+  assert.equal(isLimitHit(20.0, '300750', '宁德时代', 0.5, 60.0, 50.0), 'up', '现价=停板价 60.00');
+  assert.equal(isLimitHit(-20.0, '300750', '宁德时代', 0.5, 40.0, 50.0), 'down', '现价=跌停价 40.00');
+  // 昨收 10.00 → 停板价 11.00；现价 10.99（+9.9%）未封板
+  assert.equal(isLimitHit(9.9, '600519', '贵州茅台', 0.5, 10.99, 10.0), null);
+  assert.equal(isLimitHit(10.0, '600519', '贵州茅台', 0.5, 11.0, 10.0), 'up');
+  // 四舍五入边界：昨收 9.99 → 停板价 = round(9.99×1.1)=10.99，现价 10.99 判 up
+  assert.equal(isLimitHit(10.0, '600519', '贵州茅台', 0.5, 10.99, 9.99), 'up');
+});
+
+test('★ 精确停板价：settleDay 用实时源（带 prevClose）时按停板价判，未封板可成交', () => {
+  let a = fresh();
+  a = submitOrder(a, { code: '300750', side: 'buy', qty: 100 }, Q('300750', '宁德时代', 50), { date: '2026-09-30' }).next;
+  // 次日 +19.9%（59.95，未封板，昨收 50）→ 必须成交；近似口径会错误失效
+  const r = settleDay(a, '2026-10-08', { '300750': { code: '300750', name: '宁德时代', price: 59.95, changePct: 19.9, prevClose: 50.0, src: 'live' } });
+  assert.equal(r.fills.length, 1, '未封板的 19.9% 必须可买（20cm 板停板价 60.00）');
+  // 对照：真封板（60.00）→ 买入失效
+  const r2 = settleDay(a, '2026-10-08', { '300750': { code: '300750', name: '宁德时代', price: 60.0, changePct: 20.0, prevClose: 50.0, src: 'live' } });
+  assert.equal(r2.expired.length, 1);
+  assert.match(r2.expired[0].reason, /涨停/);
+});
+
+// ────────────────────── 导出/导入：事件日志随档迁移 ──────────────────────
+// 背景：exportAccount 不含 logs、importAccount 从空账户重建——跨设备迁移丢日志；
+// 更严重的变体：UI 的 save() 存完整账本、load() 经 importAccount 重建 → 每次刷新
+// 页面事件日志都清零。修复后两条路径都必须保住日志。
+
+test('★ 导出再导入：事件日志完整保留（含龙虎拦截/结算流转）', () => {
+  let a = fresh();
+  a = submitOrder(a, { code: '600519', side: 'buy', qty: 100 }, Q('600519', '贵州茅台', 100), { date: '2026-09-29' }).next;
+  a = settleDay(a, '2026-09-30', { '600519': Q('600519', '贵州茅台', 105) }).account;
+  const nLogs = a.logs.length;
+  assert.ok(nLogs >= 2, `前置：账本产生了 ${nLogs} 条日志（提交+成交）`);
+  const r = importAccount(exportAccount(a));
+  assert.equal(r.ok, true);
+  assert.equal(r.account.logs.length, nLogs, '日志条数一条不少');
+  assert.deepEqual(r.account.logs, a.logs, '日志内容逐条一致');
+});
+
+test('★ 导入旧版文件（无 logs 字段）→ 空日志，不报错不伪造', () => {
+  let a = fresh();
+  a = submitOrder(a, { code: '600519', side: 'buy', qty: 100 }, Q('600519', '贵州茅台', 100), { date: '2026-09-29' }).next;
+  const d = JSON.parse(exportAccount(a));
+  delete d.logs;
+  const r = importAccount(JSON.stringify(d));
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.account.logs, [], '缺失如实为空');
+});
+
+test('★ 导入：日志条目形状过滤——脏条目丢弃，不污染整份账本', () => {
+  let a = fresh();
+  a = submitOrder(a, { code: '600519', side: 'buy', qty: 100 }, Q('600519', '贵州茅台', 100), { date: '2026-09-29' }).next;
+  const d = JSON.parse(exportAccount(a));
+  d.logs = [...d.logs, { hack: '不是日志' }, '字符串也不是', null];
+  const r = importAccount(JSON.stringify(d));
+  assert.equal(r.ok, true);
+  assert.ok(r.account.logs.every((x) => x && typeof x.text === 'string'), '只保留形状合法的条目');
+});
+
+// ────────────────────── 口径同源守卫：paper_ui 假期表 ↔ config.js ──────────────────────
+// paper_ui.js 的 HOLIDAYS 与 src/config.js 的 manualHolidays 是并列两份（浏览器模块
+// 加载约束），靠本守卫锁一致——漏更新一处即红，杜绝 2027 年起把休市日当交易日。
+
+test('★ 口径同源：paper_ui.js HOLIDAYS 与 config.js manualHolidays 逐日一致', () => {
+  const ui = readFileSync(new URL('../paper_ui.js', import.meta.url), 'utf8');
+  const cfg = readFileSync(new URL('../src/config.js', import.meta.url), 'utf8');
+  const uiDates = [...ui.matchAll(/'(\d{4}-\d{2}-\d{2})'/g)].map((m) => m[1]);
+  const set = new Set(uiDates);
+  // config.js 里可能有其它日期（如注释里的），取 manualHolidays 数组段内的
+  const seg = cfg.split('manualHolidays')[1] || '';
+  const segDates = [...seg.matchAll(/'(\d{4}-\d{2}-\d{2})'/g)].map((m) => m[1]);
+  assert.ok(segDates.length >= 9, `config.manualHolidays 应有休市日，实际 ${segDates.length}`);
+  for (const d of segDates) assert.ok(set.has(d), `config 有 ${d} 而 paper_ui.HOLIDAYS 没有——两份口径漂移`);
 });

@@ -95,13 +95,24 @@ export function limitPctOf(code, name) {
 }
 
 /**
- * 上涨/下跌停板？以「当日涨跌幅」近似判定。
- * 存档只有 change_pct（无涨跌停价），故按 |change_pct| ≥ 幅度 - 容差 视为触板。
- * 容差 0.5pp：真实涨停价按分位四舍五入，涨幅常为 9.97%~10.03% 而非精确 10。
+ * 上涨/下跌停板？两级口径：
+ *   · 精确口径（现价 + 昨收都可得时，实时源天然带）：停板价 = round(昨收 × (1±幅度), 2)，
+ *     现价触及停板价 ±0.005 即触板。交易所停板价就是四舍五入到分的。
+ *   · 近似口径（只有存档 change_pct 时）：|change_pct| ≥ 幅度 − 0.5pp 视为触板。
+ *     容差 0.5pp 的代价：20cm 板涨 19.5%~19.99% **未封板**的收盘会被误判涨停
+ *     （买入委托被错误失效）；10% 板涨 9.5%~9.99% 同理。故凡拿得到昨收就走精确口径。
  */
-export function isLimitHit(changePct, code, name, tol = 0.5) {
+export function isLimitHit(changePct, code, name, tol = 0.5, price = null, prevClose = null) {
   const lim = limitPctOf(code, name);
-  if (lim == null || changePct == null || !Number.isFinite(+changePct)) return null;
+  if (lim == null) return null;
+  if (Number.isFinite(+prevClose) && +prevClose > 0 && Number.isFinite(+price) && +price > 0) {
+    const up = round2(+prevClose * (1 + lim));
+    const down = round2(+prevClose * (1 - lim));
+    if (+price >= up - 0.005) return 'up';
+    if (+price <= down + 0.005) return 'down';
+    return null;
+  }
+  if (changePct == null || !Number.isFinite(+changePct)) return null;
   const p = Math.abs(+changePct);
   if (p >= lim * 100 - tol) return +changePct > 0 ? 'up' : 'down';
   return null;
@@ -980,7 +991,15 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
   // 每条分支都会 push 进这里，函数末尾统一从 pending 中剔除
   const markDone = (id) => settledIds.add(id);
 
+  // T+1 门禁（引擎级防前视，最后防线）：submitDate ≥ 结算日的委托一律顺延。
+  //   结算价必须晚于「提交时可知」——同日撮合（提交当天就成交）与倒挂撮合（结算日
+  //   早于提交日）都意味着用户用已知价成交，正是设计文档说的「后视镜作弊」。
+  //   UI 侧 settleByLive / autoCatchUp 各有日期把关，但引擎不信任调用方：
+  //   即使调用方传错日期，也绝不撮合。顺延 ≠ 失效——委托原样留在队列等更晚的交易日。
+  let t1Hold = 0;
+
   for (const p of cur.pending || []) {
+    if (p.submitDate && date && String(p.submitDate) >= String(date)) { t1Hold++; continue; }
     const q = quotes[p.code];
     if (!q || q.price == null || !Number.isFinite(+q.price)) {
       log.push({ id: p.id, code: p.code, name: p.name, side: p.side, qty: p.qty, status: 'expired', reason: REJECT.NO_QUOTE, detail: `${date} 无该股真实行情，委托失效并释放冻结` });
@@ -989,7 +1008,8 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
       continue;
     }
     const name = q.name || p.name || '';
-    const hit = isLimitHit(q.changePct, p.code, name);
+    // 停板判定：实时源（有 prevClose）走精确停板价；存档源只有 change_pct 走近似口径
+    const hit = isLimitHit(q.changePct, p.code, name, 0.5, q.price, q.prevClose ?? null);
 
     // 跌停卖不掉 / 涨停买不进——按「该日」的实际情况判定，而非下单日
     if (p.side === 'buy' && hit === 'up') {
@@ -1121,6 +1141,7 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
     account: { ...logged, nav },
     fills: log.filter((x) => x.status === 'filled'),
     expired: log.filter((x) => x.status !== 'filled'),
+    t1Hold,                        // 因 T+1 门禁顺延的委托数（留在 pending，未失效）
     stopLoss: stops.list || [],    missing,
     ...navRow,
   };
@@ -1260,6 +1281,9 @@ export function exportAccount(acct) {
     pending: acct.pending || [],
     orders: acct.orders,
     trades: acct.trades,
+    // 事件日志必须随档迁移：委托/拦截/止损的时间线是「可核验存档」的一半，
+    //   只带账本不带日志，跨设备复盘就断了（orders/trades 都在、偏偏日志丢，口径残缺）
+    logs: Array.isArray(acct.logs) ? acct.logs.slice(-MAX_LOGS) : [],
     nav: acct.nav || [],
     startDate: acct.startDate,
     lastSettle: acct.lastSettle,
@@ -1286,6 +1310,12 @@ export function importAccount(text) {
     if (p.side !== 'buy' && p.side !== 'sell') return { ok: false, error: `待成交委托 ${p.id} 方向非法` };
   }
   const nav = Array.isArray(d.nav) ? d.nav.filter((r) => r && typeof r.date === 'string' && Number.isFinite(+r.equity)) : [];
+  // 事件日志：只收「形状合法」的条目（对象 + text 字符串），截尾到 MAX_LOGS——
+  //   旧版导出没有 logs 字段 → 空数组（缺失如实，不伪造）；来路不明的条目丢弃前不报错，
+  //   因为日志是辅助核验材料，不像 cash/positions 那样错了会污染账本。
+  const logs = Array.isArray(d.logs)
+    ? d.logs.filter((x) => x && typeof x === 'object' && typeof x.text === 'string').slice(-MAX_LOGS)
+    : [];
   return {
     ok: true,
     account: {
@@ -1298,6 +1328,7 @@ export function importAccount(text) {
       pending,
       orders: Array.isArray(d.orders) ? d.orders : [],
       trades: Array.isArray(d.trades) ? d.trades : [],
+      logs,
       nav,
       lastSettle: d.lastSettle || null,
     },
@@ -1323,6 +1354,19 @@ export function quotesFromDay(day) {
     if (l?.code && l.close != null && Number.isFinite(+l.close)) {
       out[l.code] = { code: l.code, name: l.name || '', price: +l.close, changePct: l.change_pct ?? null, reason: l.reason || '', src: 'lhb' };
     }
+  }
+  // 实时价覆盖层：paper_ui 的 batchDay() 会把腾讯实时价写进 day.quotes——
+  //   优先级最高（「今天的真实价」优于存档收盘价），prevClose 一并透传给停板判定。
+  //   ⚠ 此前 batchDay 写的是 day.quotes、而本函数只读 hot/lhb——实时价注入是**死代码**：
+  //   不在当日热点/龙虎榜（各约百只）的票批量买入必被 NO_QUOTE 拦截，
+  //   在榜票则用存档旧价估算冻结金额。现在真正接上。
+  for (const [code, q] of Object.entries(day?.quotes || {})) {
+    if (!code || !q || q.price == null || !Number.isFinite(+q.price)) continue;
+    out[code] = {
+      code, name: q.name || (out[code] && out[code].name) || '',
+      price: +q.price, changePct: q.changePct ?? null, prevClose: q.prevClose ?? null,
+      src: q.src || 'live',
+    };
   }
   return out;
 }
