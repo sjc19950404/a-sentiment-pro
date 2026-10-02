@@ -84,6 +84,7 @@ test('recalcAll: 有原始数据的天用统一公式重算, 输出 factors', ()
   assert.ok(day.emotion.factors && typeof day.emotion.factors.s_net === 'number');
   // #1/#134 防前视分位窗口：不足 RANK_MIN(20) 个有效样本 -> null（缺失显式化，不填 50 冒充中位）
   assert.equal(day.emotion.pct_rank, null);
+  assert.equal(day.emotion.net_daily_pct_rank, null);
 });
 
 test('recalcAll: 样本充足(>=RANK_MIN)后 pct_rank 为数值，且历史日分位不随追加漂移', () => {
@@ -98,6 +99,7 @@ test('recalcAll: 样本充足(>=RANK_MIN)后 pct_rank 为数值，且历史日�
   recalcAll(days);
   // 前置窗口不足的天：null（显式缺失）
   assert.equal(days[0].emotion.pct_rank, null);
+  assert.equal(days[0].emotion.net_daily_pct_rank, null);
   // 达到 RANK_MIN 后：数值分位
   const last = days[N - 1].emotion;
   assert.equal(typeof last.pct_rank, 'number');
