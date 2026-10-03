@@ -2129,8 +2129,12 @@ async function checkDirty() {
     SEVERITY.ERROR === 'error' && SEVERITY.WARN === 'warn', '');
 
   // ⑧ 管线接线：标脏必须在 computeSentiment **之前**、caliberFromDay **之后**
+  // ⚠ 用正则而非精确串匹配：validateDay 现在可带第二参数（opts.reviewedOutliers 销案台账），
+  //   写死 'validateDay(d)' 会把"加了可选参数"误判为"没接线"（守卫锁实现细节的老毛病）。
+  //   本检查的语义要求是：管线**确实调用** validateDay(d, …) 且结果赋给 vres。
+  const mValidate = PIPE_SRC.match(/const vres = validateDay\(\s*d\b/);
   const idxCaliber = PIPE_SRC.indexOf('const c = caliberFromDay(d)');
-  const idxValidate = PIPE_SRC.indexOf('const vres = validateDay(d)');
+  const idxValidate = mValidate ? mValidate.index : -1;
   const idxSent = PIPE_SRC.indexOf('const sent = computeSentiment({');
   check('脏数据：pipeline 已接线 validateDay + sanitizeForFactors',
     idxValidate > 0 && PIPE_SRC.includes('sanitizeForFactors(d, vres)'), '');

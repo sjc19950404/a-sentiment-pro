@@ -21,6 +21,27 @@ import { buildSeatSeries, seatSeriesSummary, seatVerdict } from './seats_daily.j
 // 运维告警（降维预埋 · 2026-10-02）：拦截器（freshness/lastAttempt/imputed/missing/dataQuality）
 // 的坏事实 → 结构化事件 → 落盘 + 可选企微推送（OPS_WEBHOOK 环境变量，未配置则零打扰）。
 import { opsEventsFromArchive, writeOpsAlerts, pushOpsAlerts } from './opsalerts.js';
+// 行业离群「销案」台账：已跨源核验为真实行情的 (日期, 行业) 不再重复报 warn（只影响告警，
+// 不动数值——见 src/outlier_review.js 与 data/industry_outlier_review.json）。
+import { confirmedSet, validateLedger } from './outlier_review.js';
+
+const REVIEWED_OUTLIERS = (() => {
+  try {
+    const p = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'data', 'industry_outlier_review.json');
+    if (!existsSync(p)) return new Set();
+    const ledger = JSON.parse(readFileSync(p, 'utf8'));
+    const v = validateLedger(ledger);
+    if (!v.ok) {
+      // 台账结构坏 = 销案可能静默失效（比不销案更危险）→ 如实报出，但不阻断管线
+      console.warn(`[pipeline] ⚠ 离群复核台账结构异常，本轮不销案：${v.errors.slice(0, 3).join('；')}`);
+      return new Set();
+    }
+    return confirmedSet(ledger);
+  } catch (e) {
+    console.warn(`[pipeline] ⚠ 离群复核台账读取失败，本轮不销案：${e.message}`);
+    return new Set();
+  }
+})();
 import { buildBreadthSeries, breadthSeriesSummary } from './breadth.js';
 import { validateDay, sanitizeForFactors, dirtyArgsOf } from './dirty.js';
 import { BACKFILL_FLAG } from './backfill.js';
@@ -255,7 +276,7 @@ export function recalcAll(days, opts = {}) {
       if (d.emotion) d.emotion.lhb_daily_net = c.daily_net_yi;
     }
     // 字段定稿后校验 + 把脏字段从因子入参里摘掉
-    const vres = validateDay(d);
+    const vres = validateDay(d, { reviewedOutliers: REVIEWED_OUTLIERS });
     const { cleaned, dropped } = sanitizeForFactors(d, vres);
 
     const netBuy = cleaned.netBuy ?? null;
