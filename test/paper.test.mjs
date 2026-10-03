@@ -12,6 +12,7 @@ import {
   exportAccount, importAccount, quotesFromDay, REJECT,
   POS_TIERS, CUT_TIERS, qtyByAssetPct, qtyByHoldPct, DEFAULT_SLIP,
 } from '../src/paper.js';
+import config from '../src/config.js';
 
 const Q = (code, name, price, changePct = 0) => ({ code, name, price, changePct });
 const fresh = (cash = 1000000) => emptyAccount(cash, '2026-09-29');
@@ -807,18 +808,20 @@ test('★ 导入：日志条目形状过滤——脏条目丢弃，不污染整�
   assert.ok(r.account.logs.every((x) => x && typeof x.text === 'string'), '只保留形状合法的条目');
 });
 
-// ────────────────────── 口径同源守卫：paper_ui 假期表 ↔ config.js ──────────────────────
-// paper_ui.js 的 HOLIDAYS 与 src/config.js 的 manualHolidays 是并列两份（浏览器模块
+// ────────────────────── 口径同源守卫：paper_ui 假期表 ↔ config.json ──────────────────────
+// paper_ui.js 的 HOLIDAYS 与 config.json 的 manualHolidays 是并列两份（浏览器模块
 // 加载约束），靠本守卫锁一致——漏更新一处即红，杜绝 2027 年起把休市日当交易日。
+// 注：src/config.js 薄壳化（#142 config.json 单一事实源）后，manualHolidays 不再是
+// config.js 源码里的字面量，故本守卫改为读运行时导出对象（与 test/config.test.mjs 同语义）。
 
-test('★ 口径同源：paper_ui.js HOLIDAYS 与 config.js manualHolidays 逐日一致', () => {
+test('★ 口径同源：paper_ui.js HOLIDAYS 与 config.manualHolidays 逐日一致', () => {
   const ui = readFileSync(new URL('../paper_ui.js', import.meta.url), 'utf8');
-  const cfg = readFileSync(new URL('../src/config.js', import.meta.url), 'utf8');
-  const uiDates = [...ui.matchAll(/'(\d{4}-\d{2}-\d{2})'/g)].map((m) => m[1]);
+  const hm = ui.match(/const HOLIDAYS = new Set\(\[([^\]]+)\]\)/);
+  assert.ok(hm, 'paper_ui.js 缺 HOLIDAYS 定义');
+  const uiDates = [...hm[1].matchAll(/'(\d{4}-\d{2}-\d{2})'/g)].map((m) => m[1]);
   const set = new Set(uiDates);
-  // config.js 里可能有其它日期（如注释里的），取 manualHolidays 数组段内的
-  const seg = cfg.split('manualHolidays')[1] || '';
-  const segDates = [...seg.matchAll(/'(\d{4}-\d{2}-\d{2})'/g)].map((m) => m[1]);
-  assert.ok(segDates.length >= 9, `config.manualHolidays 应有休市日，实际 ${segDates.length}`);
-  for (const d of segDates) assert.ok(set.has(d), `config 有 ${d} 而 paper_ui.HOLIDAYS 没有——两份口径漂移`);
+  const cfgDates = config.manualHolidays;
+  assert.ok(cfgDates.length >= 9, `config.manualHolidays 应有休市日，实际 ${cfgDates.length}`);
+  for (const d of cfgDates) assert.ok(set.has(d), `config 有 ${d} 而 paper_ui.HOLIDAYS 没有——两份口径漂移`);
+  for (const d of set) assert.ok(cfgDates.includes(d), `paper_ui.HOLIDAYS 有 ${d} 而 config.manualHolidays 没有——两份口径漂移`);
 });
