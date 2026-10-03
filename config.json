@@ -1,0 +1,190 @@
+{
+  "_about": "a-sentiment-pro 全局配置（唯一事实源）。Node 侧经 src/config.js 薄壳加载（校验 + params.live 冻结 + 兼容层同引用）；前端经 paper_ui.js 动态 import 挂 window.ASENT_CONFIG（app.js 兜底优先读之）。改配置只改本文件（参数走 scripts/promote_params.mjs），勿在别处手抄数值。",
+  "schemaVersion": 2,
+  "formulaVersion": "v5.2-pro",
+  "_paramsNote": "参数双套：live=生产口径（promote 机器管理，手改违规）；train=实验区。顶层 weights/lookback/backtest.thresholds/costs/rolling/momentum* 是 live 的双写镜像（前端直接读扁平层，守卫锁定与 params.live 逐位相等）。",
+  "params": {
+    "live": {
+      "weights": {
+        "s_net20": 0.2,
+        "s_pos10": 0.1,
+        "s_brd20": 0.2,
+        "s_hot10": 0.1,
+        "s_zdt15": 0.15,
+        "s_zbl10": 0.1,
+        "s_amt15": 0.15
+      },
+      "thresholds": {
+        "panic": 24,
+        "hi": 44,
+        "lo": 65,
+        "overheat": 80
+      },
+      "stops": {
+        "maxPos": 1,
+        "stopLoss": -0.08,
+        "ddTrigger": -0.15,
+        "maxPosChg": 0.2
+      },
+      "lookback": {
+        "rolling": {
+          "trainWindow": 20,
+          "testWindow": 6
+        },
+        "momentumRecent": 5,
+        "momentumPrev": 5,
+        "rankWindow": 60,
+        "rankMin": 20
+      },
+      "costModel": {
+        "comm": 0.0003,
+        "stamp": 0.0005,
+        "slip": 0.0002,
+        "priceLimit": {
+          "enabled": false
+        }
+      }
+    },
+    "train": {
+      "weights": {
+        "s_net20": 0.2,
+        "s_pos10": 0.1,
+        "s_brd20": 0.2,
+        "s_hot10": 0.1,
+        "s_zdt15": 0.15,
+        "s_zbl10": 0.1,
+        "s_amt15": 0.15
+      },
+      "thresholds": {
+        "panic": 24,
+        "hi": 44,
+        "lo": 65,
+        "overheat": 80
+      },
+      "stops": {
+        "maxPos": 1,
+        "stopLoss": -0.08,
+        "ddTrigger": -0.15,
+        "maxPosChg": 0.2
+      },
+      "lookback": {
+        "rolling": {
+          "trainWindow": 20,
+          "testWindow": 6
+        },
+        "momentumRecent": 5,
+        "momentumPrev": 5,
+        "rankWindow": 60,
+        "rankMin": 20
+      },
+      "costModel": {
+        "comm": 0.0003,
+        "stamp": 0.0005,
+        "slip": 0.0002,
+        "priceLimit": {
+          "enabled": false
+        }
+      }
+    },
+    "governance": "live 冻结（薄壳递归 Object.freeze）；改动唯一通道 = scripts/promote_params.mjs --apply（样本外20%门禁 + params_changelog.json 留痕 who/when/why/验证结果）。train 为实验区，寻优锚点已切至 train（scripts/backtest.mjs）。"
+  },
+  "lookback": {
+    "rolling": {
+      "trainWindow": 20,
+      "testWindow": 6
+    },
+    "momentumRecent": 5,
+    "momentumPrev": 5,
+    "rankWindow": 60,
+    "rankMin": 20
+  },
+  "weights": {
+    "s_net20": 0.2,
+    "s_pos10": 0.1,
+    "s_brd20": 0.2,
+    "s_hot10": 0.1,
+    "s_zdt15": 0.15,
+    "s_zbl10": 0.1,
+    "s_amt15": 0.15
+  },
+  "factorKeyMap": {
+    "s_net20": "s_net",
+    "s_pos10": "s_pos",
+    "s_brd20": "s_brd",
+    "s_hot10": "s_hot",
+    "s_zdt15": "s_zdt",
+    "s_zbl10": "s_zbl",
+    "s_amt15": "s_amt"
+  },
+  "backtest": {
+    "thresholds": {
+      "panic": 24,
+      "hi": 44,
+      "lo": 65,
+      "overheat": 80
+    },
+    "_thresholdsNote": "四档阈值（收盘打分、T+1 生效）：≥80 过热只减仓不新建 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓。hi=44 是保留参数：src/backtest.js positions() 未用它判档（24~65 同属半仓），仅历史口径展示；若需独立减仓档须同时改 positions() 并更新回归夹具。",
+    "assets": [
+      "上证指数",
+      "深证成指",
+      "创业板指"
+    ],
+    "costs": {
+      "comm": 0.0003,
+      "stamp": 0.0005,
+      "slip": 0.0002,
+      "priceLimit": {
+        "enabled": false
+      }
+    },
+    "maxPos": 1,
+    "stopLoss": -0.08,
+    "ddTrigger": -0.15,
+    "maxPosChg": 0.2,
+    "gridSteps": [
+      0.6,
+      0.8,
+      1,
+      1.2,
+      1.4
+    ],
+    "rolling": {
+      "trainWindow": 20,
+      "testWindow": 6
+    }
+  },
+  "missingPolicy": "proxy",
+  "minThemeStocksGlobal": 2,
+  "minThemeStocksWindow": 2,
+  "momentumRecent": 5,
+  "momentumPrev": 5,
+  "healthWarnImputedRatio": 0.34,
+  "retry": {
+    "times": 3,
+    "backoff": 1500
+  },
+  "sources": {
+    "eastmoney": {
+      "lhb": "https://datacenter.eastmoney.com/securities/api/data/v1/get",
+      "pool": "https://push2.eastmoney.com/api/qt/clist/get"
+    },
+    "tencent": {
+      "index": "https://qt.gtimg.cn/q="
+    },
+    "ths": {
+      "industry": "https://q.10jqka.com.cn/thshy/"
+    }
+  },
+  "manualHolidays": [
+    "2026-09-25",
+    "2026-09-26",
+    "2026-09-27",
+    "2026-10-01",
+    "2026-10-02",
+    "2026-10-03",
+    "2026-10-04",
+    "2026-10-05",
+    "2026-10-06",
+    "2026-10-07"
+  ]
+}

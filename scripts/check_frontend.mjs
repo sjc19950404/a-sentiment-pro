@@ -1135,12 +1135,11 @@ escClose();
   //   · ./picks.js 的 marketTier / TIER_THRESHOLDS / POSITION_TIERS → 取 window.__picks__
   //   · ./config.js 的 default（风控阈值 stopLoss / ddTrigger）
   //   · ./lhbfilter.js 的 isNetOutflow / FLAG_LHB（持仓票当日净流出告警，第 ⑧ 条）
-  // config.js 用 export default，剥掉 export 后是裸对象字面量，并进来只是一条孤立表达式语句
-  // （语法合法但取不到值），故改写成赋给 backtestCfg 再交给 alerts.js——
+  // 配置唯一事实源已抽为根目录 config.json（src/config.js 是读它的薄壳）——JSON 文本本身
+  // 就是合法对象字面量，直接赋给 backtestCfg 即可，不再对 config.js 源码做正则改写
+  // （旧做法在薄壳化后会拼进 readFileSync 的 Node 专用代码，浏览器侧必炸）。
   // 绝不手抄阈值（手抄等于第二套口径，与 alerts.test.mjs 的「阈值同源」断言冲突）。
-  const configNoExport = readFileSync(join(ROOT, 'src/config.js'), 'utf8')
-    .replace(/^export\s+default\s*/m, 'var backtestCfg = ')
-    .replace(/^export\s+/gm, '');
+  const configNoExport = 'var backtestCfg = ' + readFileSync(join(ROOT, 'config.json'), 'utf8') + ';';
   // paper_ui.js 用到的预警导出
   const alertsFlat = `const { buildAlerts, MARKET_CFG, POS_CFG, LEVELS } = window.__alerts__;`;
   const alertsBundle = `window.__alerts__ = (function(){\n`

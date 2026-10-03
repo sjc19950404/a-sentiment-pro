@@ -1347,15 +1347,18 @@ function versionHasNormalizerOnlyOnCandidate(code) {
     `normalizer 声明 ${normRefs.length} 处`);
 
   // ③ 基线版本号必须与 config.formulaVersion 同步（两处不一致＝报告说 A、算的是 B）
-  const cfg = readFileSync(path.join(ROOT, 'src', 'config.js'), 'utf8');
-  const cfgVer = (cfg.match(/formulaVersion:\s*'([^']+)'/) || [])[1];
+  // 配置唯一事实源已抽为根目录 config.json（src/config.js 是读它的薄壳），守卫改为
+  // 直接 JSON 取值——旧的正则提取在薄壳化后会匹配不到（cfgVer 恒 undefined → 误报）。
+  const cfg = JSON.parse(readFileSync(path.join(ROOT, 'config.json'), 'utf8'));
+  const cfgVer = cfg.formulaVersion;
   const baseVer = (fv.match(/export const BASELINE_VERSION = '([^']+)'/) || [])[1];
   check('公式版本：BASELINE_VERSION 与 config.formulaVersion 一致（否则报告与实算两套口径）',
     !!cfgVer && cfgVer === baseVer, `config=${cfgVer} baseline=${baseVer}`);
 
   // ④ 权重键映射必须与 config.factorKeyMap 同义（两处漂移会让因子静默错位）
   const fvMap = fv.match(/WEIGHT_TO_FACTOR = \{([\s\S]*?)\};/);
-  const cfgMap = cfg.match(/factorKeyMap: \{([\s\S]*?)\},/);
+  const cfgMapSrc = Object.entries(cfg.factorKeyMap || {})
+    .map(([k, v]) => `${k}:'${v}'`).join(', ');
   const pairsOf = (src) => {
     const out = [];
     const re = /(s_[a-z]+)\d*:\s*'(s_[a-z]+)'/g;
@@ -1364,8 +1367,8 @@ function versionHasNormalizerOnlyOnCandidate(code) {
     return out.sort().join(',');
   };
   check('公式版本：WEIGHT_TO_FACTOR 与 config.factorKeyMap 逐键一致',
-    !!fvMap && !!cfgMap && pairsOf(fvMap[1]) === pairsOf(cfgMap[1]) && pairsOf(fvMap[1]) !== '',
-    `fv=[${pairsOf(fvMap && fvMap[1])}] cfg=[${pairsOf(cfgMap && cfgMap[1])}]`);
+    !!fvMap && !!cfgMapSrc && pairsOf(fvMap[1]) === pairsOf(cfgMapSrc) && pairsOf(fvMap[1]) !== '',
+    `fv=[${pairsOf(fvMap && fvMap[1])}] cfg=[${pairsOf(cfgMapSrc)}]`);
 
   // ⑤ 权重键传错必须硬失败（NaN 曾静默传播，把整张相关性表变成 NaN）
   check('公式版本：分数非有限时硬失败（NaN 不得静默传播）',

@@ -1,9 +1,9 @@
-// 参数晋升门禁：TRAIN_PARAMS → LIVE_PARAMS 的唯一合法通道（过拟合防线 · 2026-10-02 拍板）。
+// 参数晋升门禁：params.train → params.live 的唯一合法通道（过拟合防线 · 2026-10-02 拍板）。
 //
 // 用法：
 //   node scripts/promote_params.mjs                                 # 检查差异 + 跑样本外 20% 门禁，出报告（不改任何文件）
-//   node scripts/promote_params.mjs --apply --why "理由" [--who 名字] # 门禁通过才把 train 写入 config.js
-//                                                                    #   的 LIVE_PARAMS 块 + 追加 params_changelog.json
+//   node scripts/promote_params.mjs --apply --why "理由" [--who 名字] # 门禁通过才把 train 写入 config.json
+//                                                                    #   的 params.live 块（+ 同步顶层双写镜像）+ 追加 params_changelog.json
 //
 // 门禁规则（「样本外 20%」，与 scripts/backtest.mjs 同一引擎同一口径，不另写第二套）：
 //   · 样本 = archive 里全部**非回填**交易日（回填天只有 s_net 占位值，混入即污染）；
@@ -44,7 +44,7 @@ const changed = BLOCKS.filter((b) => !deepEqual(live[b], train[b]));
 
 if (!changed.length) {
   console.log('[promote] train 与 live 完全一致，无需晋升。');
-  console.log('          要实验：改 config.js 的 TRAIN_PARAMS → 重跑本脚本。');
+  console.log('          要实验：改 config.json 的 params.train → 重跑本脚本。');
   process.exit(0);
 }
 console.log(`[promote] 检测到实验参数差异（${changed.length} 块）：${changed.join(' / ')}`);
@@ -147,25 +147,36 @@ if (!whyArg || !whyArg.trim()) {
   process.exit(1);
 }
 
-// 4a. 机器重写 config.js 的 PROMOTE-MANAGED 块（train 五块 → LIVE_PARAMS）
-const cfgPath = path.join(ROOT, 'src', 'config.js');
-const src = readFileSync(cfgPath, 'utf8');
-const BEGIN = '// ── [PROMOTE-MANAGED:BEGIN]';
-const END = '// ── [PROMOTE-MANAGED:END]';
-const bIdx = src.indexOf(BEGIN);
-const eIdx = src.indexOf(END);
-if (bIdx < 0 || eIdx < 0 || eIdx < bIdx) {
-  console.error('[promote] config.js 中找不到 PROMOTE-MANAGED 标记块 —— 拒绝改写（防误伤）。');
+// 4a. 机器重写 config.json 的 params.live（train 五块 → live）+ 同步顶层双写镜像。
+//     镜像字段是前端直接读的扁平层（app.js ASENT_CONFIG / check_frontend 平铺 JSON），
+//     漏同步即「报告说 A、算的是 B」——故由本脚本一并机器写入，守卫测试逐位锁定。
+const cfgPath = path.join(ROOT, 'config.json');
+const json = JSON.parse(readFileSync(cfgPath, 'utf8'));
+if (!json.params || !json.params.live || !json.params.train) {
+  console.error('[promote] config.json 缺 params.live/train 双套结构 —— 拒绝改写（防误伤）。');
   process.exit(1);
 }
+for (const b of BLOCKS) {
+  if (!json.params.live[b] || !json.params.train[b]) {
+    console.error(`[promote] config.json params.live/train 缺 ${b} 块 —— 拒绝改写（防误伤）。`);
+    process.exit(1);
+  }
+}
 const trainSnapshot = Object.fromEntries(BLOCKS.map((b) => [b, JSON.parse(JSON.stringify(train[b]))]));
-const newBlock = `${BEGIN} ──────────────────────────────────────────────\n`
-  + `  // 本块由 scripts/promote_params.mjs --apply 机器重写：值必须与 params_changelog.json\n`
-  + `  // 最后一条 entry.liveAfter 逐位相等（守卫测试锁定）。手工编辑 = 违规。\n`
-  + `  const LIVE_PARAMS = ${JSON.stringify(trainSnapshot, null, 2)};\n`
-  + `  ${END} ────────────────────────────────────────────────`;
-const next = src.slice(0, bIdx) + newBlock + src.slice(eIdx + END.length);
-writeFileSync(cfgPath, next, 'utf8');
+json.params.live = trainSnapshot;
+// 顶层双写镜像（与 params.live 逐位相等，test/params_governance.test.mjs 锁定）
+json.weights = trainSnapshot.weights;
+json.lookback = trainSnapshot.lookback;
+json.backtest.thresholds = trainSnapshot.thresholds;
+json.backtest.costs = trainSnapshot.costModel;
+json.backtest.rolling = trainSnapshot.lookback.rolling;
+json.backtest.maxPos = trainSnapshot.stops.maxPos;
+json.backtest.stopLoss = trainSnapshot.stops.stopLoss;
+json.backtest.ddTrigger = trainSnapshot.stops.ddTrigger;
+json.backtest.maxPosChg = trainSnapshot.stops.maxPosChg;
+json.momentumRecent = trainSnapshot.lookback.momentumRecent;
+json.momentumPrev = trainSnapshot.lookback.momentumPrev;
+writeFileSync(cfgPath, JSON.stringify(json, null, 2) + '\n', 'utf8');
 
 // 4b. 追加 changelog entry（含 liveAfter 快照与门禁证据）
 const logPath = path.join(ROOT, 'params_changelog.json');
@@ -190,7 +201,8 @@ log.entries.push({
 });
 writeFileSync(logPath, JSON.stringify(log, null, 2) + '\n', 'utf8');
 
-console.log(`\n[promote] ✅ 晋升完成：LIVE_PARAMS 已更新（${changed.join(' / ')}）`);
+console.log(`\n[promote] ✅ 晋升完成：config.json params.live 已更新（${changed.join(' / ')}）`);
+console.log('          顶层双写镜像（weights/lookback/backtest.*/momentum*）已同步。');
 console.log('          params_changelog.json 已追加记录。');
 console.log('          下一步：node --test 全量回归（golden/lineage/governance 守卫都过才算数）。');
 report.applied = true;

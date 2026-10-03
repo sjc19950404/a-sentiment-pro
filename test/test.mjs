@@ -83,7 +83,9 @@ test('recalcAll: 有原始数据的天用统一公式重算, 输出 factors', ()
   assert.ok(day.emotion.value >= 0 && day.emotion.value <= 100);
   assert.ok(day.emotion.factors && typeof day.emotion.factors.s_net === 'number');
   // #1/#134 防前视分位窗口：不足 RANK_MIN(20) 个有效样本 -> null（缺失显式化，不填 50 冒充中位）
+  // net_daily_pct_rank 同口径（origin/main 8316b8d 的断言语义并入）
   assert.equal(day.emotion.pct_rank, null);
+  assert.equal(day.emotion.net_daily_pct_rank, null);
 });
 
 test('recalcAll: 样本充足(>=RANK_MIN)后 pct_rank 为数值，且历史日分位不随追加漂移', () => {

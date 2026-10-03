@@ -52,6 +52,16 @@ import { REVIEW_VERSION } from './src/paper_review.js';
 // 标的池的 reason 走码表压缩，前端解回明文（见 boot 内注释）
 import { decodeStrField } from './src/lhb_codec.js';
 
+// ── config.json 桥（唯一事实源的前端入口）──
+// 静态 import 失败会挂掉整个 paper_ui（旧浏览器不支持 import attributes），
+// 故用动态 import + 静默降级：拿到就挂 window.ASENT_CONFIG，拿不到就走各处兜底默认值
+// （app.js 的 TH_DEFAULT 等）。app.js 是经典脚本无法 import，运行时从 window 取——
+// module 总在经典脚本之后、DOMContentLoaded 前执行完毕，而 app.js 的阈值消费点
+// （getThresholds 等）都在用户交互/数据加载时才调用，时序安全。
+import('./config.json', { with: { type: 'json' } })
+  .then((m) => { window.ASENT_CONFIG = m.default; })
+  .catch(() => { /* 旧浏览器/异常路径：静默降级，走兜底默认值 */ });
+
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
