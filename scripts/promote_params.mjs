@@ -1,9 +1,9 @@
-// 参数晋升门禁：TRAIN_PARAMS → LIVE_PARAMS 的唯一合法通道（过拟合防线 · 2026-10-02 拍板）。
+// 参数晋升门禁：params.train → params.live 的唯一合法通道（过拟合防线 · 2026-10-02 拍板）。
 //
 // 用法：
 //   node scripts/promote_params.mjs                                 # 检查差异 + 跑样本外 20% 门禁，出报告（不改任何文件）
-//   node scripts/promote_params.mjs --apply --why "理由" [--who 名字] # 门禁通过才把 train 写入
-//                                                                    #   config.json 的 params.live + 追加 params_changelog.json
+//   node scripts/promote_params.mjs --apply --why "理由" [--who 名字] # 门禁通过才把 train 写入 config.json
+//                                                                    #   的 params.live 块（+ 同步顶层双写镜像）+ 追加 params_changelog.json
 //
 // 门禁规则（「样本外 20%」，与 scripts/backtest.mjs 同一引擎同一口径，不另写第二套）：
 //   · 样本 = archive 里全部**非回填**交易日（回填天只有 s_net 占位值，混入即污染）；
@@ -147,18 +147,38 @@ if (!whyArg || !whyArg.trim()) {
   process.exit(1);
 }
 
-// 4a. 机器重写 config.json 的 params.live（train 五块 → live；JSON.parse 级重写，
-//     不做文本手术——参数唯一住所自 schemaVersion 2 起就在 JSON，改完即生效。
-//     校验在 src/config.js 加载时兜底：权重和/阈值序/键集合不符会启动即 throw。）
+// 4a. 机器重写 config.json 的 params.live（train 五块 → live）+ 同步顶层双写镜像。
+//     镜像字段是前端直接读的扁平层（index.html 内联桥挂 ASENT_CONFIG / check_frontend 平铺
+//     config.json），漏同步即「报告说 A、算的是 B」——故由本脚本一并机器写入，守卫测试逐位锁定。
+//     JSON.parse 级重写不做文本手术；结构性错误由 src/config.js 加载时兜底
+//     （权重和/阈值序/键集合不符会启动即 throw）。
 const cfgPath = path.join(ROOT, 'config.json');
-const rawCfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
-if (!rawCfg.params || !rawCfg.params.live) {
-  console.error('[promote] config.json 缺 params.live —— 拒绝改写（防误伤）。');
+const json = JSON.parse(readFileSync(cfgPath, 'utf8'));
+if (!json.params || !json.params.live || !json.params.train) {
+  console.error('[promote] config.json 缺 params.live/train 双套结构 —— 拒绝改写（防误伤）。');
   process.exit(1);
 }
+for (const b of BLOCKS) {
+  if (!json.params.live[b] || !json.params.train[b]) {
+    console.error(`[promote] config.json params.live/train 缺 ${b} 块 —— 拒绝改写（防误伤）。`);
+    process.exit(1);
+  }
+}
 const trainSnapshot = Object.fromEntries(BLOCKS.map((b) => [b, JSON.parse(JSON.stringify(train[b]))]));
-rawCfg.params.live = trainSnapshot;
-writeFileSync(cfgPath, JSON.stringify(rawCfg, null, 2) + '\n', 'utf8');
+json.params.live = trainSnapshot;
+// 顶层双写镜像（与 params.live 逐位相等，test/params_governance.test.mjs 锁定）
+json.weights = trainSnapshot.weights;
+json.lookback = trainSnapshot.lookback;
+json.backtest.thresholds = trainSnapshot.thresholds;
+json.backtest.costs = trainSnapshot.costModel;
+json.backtest.rolling = trainSnapshot.lookback.rolling;
+json.backtest.maxPos = trainSnapshot.stops.maxPos;
+json.backtest.stopLoss = trainSnapshot.stops.stopLoss;
+json.backtest.ddTrigger = trainSnapshot.stops.ddTrigger;
+json.backtest.maxPosChg = trainSnapshot.stops.maxPosChg;
+json.momentumRecent = trainSnapshot.lookback.momentumRecent;
+json.momentumPrev = trainSnapshot.lookback.momentumPrev;
+writeFileSync(cfgPath, JSON.stringify(json, null, 2) + '\n', 'utf8');
 
 // 4b. 追加 changelog entry（含 liveAfter 快照与门禁证据）
 const logPath = path.join(ROOT, 'params_changelog.json');
@@ -184,6 +204,7 @@ log.entries.push({
 writeFileSync(logPath, JSON.stringify(log, null, 2) + '\n', 'utf8');
 
 console.log(`\n[promote] ✅ 晋升完成：config.json params.live 已更新（${changed.join(' / ')}）`);
+console.log('          顶层双写镜像（weights/lookback/backtest.*/momentum*）已同步。');
 console.log('          params_changelog.json 已追加记录。');
 console.log('          下一步：node --test 全量回归（golden/lineage/governance 守卫都过才算数）。');
 report.applied = true;

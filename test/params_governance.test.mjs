@@ -86,3 +86,21 @@ test('governance: 全链路阈值同源（picks 档位 / sources 分位窗口读
   assert.equal(RANK_WINDOW, config.params.live.lookback.rankWindow, 'sources.js RANK_WINDOW 应与 live.lookback 同源');
   assert.equal(RANK_MIN, config.params.live.lookback.rankMin, 'sources.js RANK_MIN 应与 live.lookback 同源');
 });
+
+test('governance: config.json 顶层双写镜像与 params.live 逐位相等（前端扁平层不漂移）', () => {
+  // 前端（app.js ASENT_CONFIG / check_frontend 平铺 config.json）只读顶层扁平字段，
+  // Node 侧读 params.live 同一引用——两份表述必须逐位相等，漂移即「报告说 A、算的是 B」。
+  // 晋升走 scripts/promote_params.mjs 会同步双写；手改一侧必在此红。
+  const raw = JSON.parse(readFileSync(path.join(ROOT, 'config.json'), 'utf8'));
+  assert.deepEqual(raw.weights, config.params.live.weights, '顶层 weights 与 params.live.weights 漂移');
+  assert.deepEqual(raw.lookback, config.params.live.lookback, '顶层 lookback 与 params.live.lookback 漂移');
+  assert.deepEqual(raw.backtest.thresholds, config.params.live.thresholds, 'backtest.thresholds 与 live.thresholds 漂移');
+  assert.deepEqual(raw.backtest.costs, config.params.live.costModel, 'backtest.costs 与 live.costModel 漂移');
+  assert.deepEqual(raw.backtest.rolling, config.params.live.lookback.rolling, 'backtest.rolling 与 live.lookback.rolling 漂移');
+  assert.equal(raw.backtest.maxPos, config.params.live.stops.maxPos, 'backtest.maxPos 与 live.stops.maxPos 漂移');
+  assert.equal(raw.backtest.stopLoss, config.params.live.stops.stopLoss, 'backtest.stopLoss 与 live.stops.stopLoss 漂移');
+  assert.equal(raw.backtest.ddTrigger, config.params.live.stops.ddTrigger, 'backtest.ddTrigger 与 live.stops.ddTrigger 漂移');
+  assert.equal(raw.backtest.maxPosChg, config.params.live.stops.maxPosChg, 'backtest.maxPosChg 与 live.stops.maxPosChg 漂移');
+  assert.equal(raw.momentumRecent, config.params.live.lookback.momentumRecent, 'momentumRecent 与 live.lookback.momentumRecent 漂移');
+  assert.equal(raw.momentumPrev, config.params.live.lookback.momentumPrev, 'momentumPrev 与 live.lookback.momentumPrev 漂移');
+});

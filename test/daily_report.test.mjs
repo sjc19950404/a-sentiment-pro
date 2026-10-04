@@ -158,6 +158,34 @@ test('buildDailyReport: 涨跌家数缺失时该节标 warn 并列出未采集�
   assert.ok(sec.points.some((p) => /未采集：涨跌家数/.test(p.text)));
 });
 
+test('buildDailyReport: ★ 节三口径披露——指数/成交额/样本范围固定呈现（复盘对比纪律）', () => {
+  // 场景对应 2026-09-30 真实档：上证 +0.31%、成交 14380 亿（前日 14092 → +288 亿）、
+  //   涨 2393/跌 2730/平 167（样本 5290）。此前指数与成交额数据在档但报告从不显示，
+  //   涨跌合计不含平盘（5123）与全市场口径对比时放大差异。
+  const S = fullSignals();
+  S.latest.flat_count = 167;
+  S.latest.amount_yi = 14380.2;
+  S.latest.indexes = { 上证指数: 0.31, 深证成指: -0.11, 创业板指: -0.23 };
+  S.latest.breadth_scope = '沪深两市A股（不含北交所/ST口径与各平台统计或有出入）';
+  S.amountPrevYi = 14092;
+  const sec = buildDailyReport(S).sections.find((s) => s.id === 'breadth');
+  const line = (re) => sec.points.find((p) => re.test(p.text));
+  assert.match(line(/指数/).text, /上证指数 \+0\.3% · 深证成指 -0\.1% · 创业板指 -0\.2%/);
+  assert.match(line(/涨 2393/).text, /涨 2393 \/ 跌 2730 \/ 平 167（样本 5290）/, '合计必须含平盘（真实样本量）');
+  assert.match(line(/成交额/).text, /两市成交额 14380 亿（较前一日 \+288 亿）/);
+  assert.match(line(/口径/).text, /不含北交所/, '必须写明样本范围');
+  assert.match(line(/口径/).text, /样本范围差异/, '必须说明与全市场口径的差异性质');
+});
+
+test('buildDailyReport: ★ 节三——前日成交额缺失时只报当日值，不编增量', () => {
+  const S = fullSignals();
+  S.latest.amount_yi = 14380.2;
+  delete S.amountPrevYi;
+  const sec = buildDailyReport(S).sections.find((s) => s.id === 'breadth');
+  const line = sec.points.find((p) => /成交额/.test(p.text));
+  assert.match(line.text, /^两市成交额 14380 亿$/);
+});
+
 test('buildDailyReport: 亏钱效应 warn 级 → 该节 level=warn', () => {
   const S = fullSignals();
   S.pain.verdict = { level: 'warn', label: '亏钱明显', reason: 'x' };
@@ -183,6 +211,43 @@ test('buildDailyReport: 质量节 —— 无脏数据时给"校验通过"', () =
   S.dirty = { totalDays: 241, taggedDays: 0, dirtyDays: 0, warnDays: 0 };
   const sec = buildDailyReport(S).sections.find((s) => s.id === 'quality');
   assert.ok(sec.points.some((p) => /241 天校验通过/.test(p.text)));
+});
+
+test('buildDailyReport: ★ 质量节 —— 告警复核闭环披露（day.review 聚合下发）', () => {
+  // 场景：5 条 WARN 已由 scripts/review_alerts.mjs 跨源互证全部销案 →
+  //   报告必须披露"N/M 已销案"，最近留痕行必须带销案后缀——
+  //   否则读者对着已复核的告警重复劳动（这就是本测试锁定的行为）。
+  const S = fullSignals();
+  S.dirty = {
+    totalDays: 241, taggedDays: 5, dirtyDays: 0, warnDays: 5,
+    review: { checked: 5, verified: 5, mismatch: 0, at: '2026-10-02' },
+    recent: [{ date: '2026-08-18', issues: [{ reason: '行业数值孤立' }], reviewVerdict: 'verified' }],
+  };
+  const sec = buildDailyReport(S).sections.find((s) => s.id === 'quality');
+  assert.ok(sec.points.some((p) => /告警复核：5\/5 条已跨源互证销案/.test(p.text)), '销案计数行缺失');
+  const trace = sec.points.find((p) => /最近留痕/.test(p.text));
+  assert.match(trace.text, /已复核销案（跨源互证通过）$/, '留痕行必须带销案后缀');
+});
+
+test('buildDailyReport: ★ 质量节 —— 复核未通过维持告警（mismatch → caution，不放行）', () => {
+  const S = fullSignals();
+  S.dirty = {
+    totalDays: 241, taggedDays: 2, dirtyDays: 0, warnDays: 2,
+    review: { checked: 2, verified: 1, mismatch: 1, at: '2026-10-02' },
+    recent: [{ date: '2026-08-18', issues: [{ reason: '行业数值孤立' }], reviewVerdict: 'mismatch' }],
+  };
+  const sec = buildDailyReport(S).sections.find((s) => s.id === 'quality');
+  assert.ok(sec.points.some((p) => p.kind === 'caution' && /1 条两源数值不符，维持告警/.test(p.text)), 'mismatch 必须是 caution');
+  const trace = sec.points.find((p) => /最近留痕/.test(p.text));
+  assert.match(trace.text, /复核未通过（两源不符，维持告警）$/);
+});
+
+test('buildDailyReport: ★ 质量节 —— 无复核留痕时不冒充"已通过"（review 缺失 → 无销案行）', () => {
+  const S = fullSignals();
+  // fullSignals 的 dirty 无 review 字段 → 不得出现销案措辞（缺失≠通过）
+  const sec = buildDailyReport(S).sections.find((s) => s.id === 'quality');
+  assert.ok(!sec.points.some((p) => /已跨源互证销案/.test(p.text)), '无 review 时不得显示销案');
+  assert.ok(!sec.points.some((p) => /已复核销案/.test(p.text)));
 });
 
 test('buildDailyReport: ★ 跨源互证缺失 → 明说"缺失不等于一致"（不放行成 ok）', () => {

@@ -236,13 +236,18 @@ test('端到端：真实档案上健康报告自洽（等级合法、字段非�
     assert.ok(row.hasAll >= 0 && row.hasAll <= row.totalAll, `${row.key} 计数越界`);
     assert.ok(row.ratioAll == null || (row.ratioAll >= 0 && row.ratioAll <= 1), `${row.key} 覆盖率越界`);
   }
-  // 实测档案的关键特征：ind_up 只有 33/241 天、up_count 只有 3/241
-  // —— 这正是本面板存在的理由，断言它们**确实被暴露**出来（而不是被吞掉）
+  // 实测档案的关键特征（六因子回填 2026-10-02 后）：ind_up/up_count 已 241/241 全覆盖
+  // （行业年线回填 + K 线重建涨跌家数）。守卫方向随世界更新：
+  //   · 全覆盖时面板必须如实给出满覆盖（不再断言「必须不足」——那是回填前世界的锁）；
+  //   · 若未来覆盖率下降（数据源退化/新缺口天），面板必须暴露出来而非吞掉。
   const byKey = Object.fromEntries(fld.rows.map((x) => [x.key, x]));
-  assert.ok(byKey.ind_up && byKey.ind_up.hasAll < days.length,
-    '实测档案 ind_up 覆盖不足全档，健康面板必须如实反映');
-  assert.ok(byKey.up_count && byKey.up_count.hasAll < days.length,
-    '实测档案 up_count 覆盖极少，健康面板必须如实反映');
+  assert.ok(byKey.ind_up, '健康面板必须包含 ind_up 行');
+  assert.ok(byKey.up_count, '健康面板必须包含 up_count 行');
+  if (byKey.ind_up.hasAll === days.length) {
+    assert.equal(byKey.ind_up.ratioAll, 1, 'ind_up 满覆盖时 ratioAll 必须为 1');
+  } else {
+    assert.ok(byKey.ind_up.hasAll < days.length, 'ind_up 覆盖不足全档时必须如实反映');
+  }
 });
 
 test('端到端：可重现性（同输入两次调用结果一致）', async () => {

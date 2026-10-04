@@ -1,29 +1,112 @@
 {
-  "_about": "a-sentiment-pro 全局配置（唯一事实源）。Node 侧经 src/config.js 加载（校验 + 冻结 params.live + 组装兼容层）；前端经 paper_ui.js 动态 import 挂 window.ASENT_CONFIG（app.js 从 params.live 读参数）。改配置只改本文件，勿在别处手抄数值。",
+  "_about": "a-sentiment-pro 全局配置（唯一事实源）。Node 侧经 src/config.js 薄壳加载（校验 + params.live 递归冻结 + 组装兼容层同引用）；前端经 index.html 内联 module 脚本 import config.json 挂 window.ASENT_CONFIG（app.js 读 params.live；旧浏览器兜底走 TH_DEFAULT——模拟交易台面 paper_ui.js 已于 2026-10-03 下线）。改配置只改本文件（参数走 scripts/promote_params.mjs），勿在别处手抄数值。",
   "schemaVersion": 2,
-
   "formulaVersion": "v5.2-pro",
-
+  "_paramsNote": "参数双套与双写镜像（JSON 无注释，集中在此）：① live=生产口径、train=实验区，两块五段（weights/thresholds/stops/lookback/costModel）键集合必须一致（守卫锁定），只许改值不许改结构；改动唯一通道 = scripts/promote_params.mjs --apply（样本外 20% 门禁 + params_changelog.json 留痕 who/when/why/验证结果），手改 live 不留痕 → test/params_governance.test.mjs 红。② 顶层 weights/lookback/backtest.thresholds/costs/rolling/maxPos/stopLoss/ddTrigger/maxPosChg/momentumRecent/momentumPrev 是 live 的**双写镜像**（前端桥与 check_frontend 平铺 JSON 直接读扁平层），必须与 params.live 逐位相等，漂移即「报告说 A、算的是 B」。③ 四档阈值（收盘打分、T+1 生效）：≥80 过热只减仓不新建 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓；hi=44 是保留参数——src/backtest.js positions() 未用它判档（24~65 同属半仓），仅历史口径展示，若需独立减仓档须同时改 positions() 并更新回归夹具。④ costModel 实盘摩擦预埋：佣金万3双边 / 印花万5卖出 / 滑点万2；priceLimit 为涨跌停约束占位（enabled:false），启用须先回填限价口径，避免届时返工。⑤ lookback.rankWindow/rankMin 与 src/sources.js 的 RANK_WINDOW/RANK_MIN 同源（防前视分位窗口 #134）；rolling 与 walk-forward 同源。",
   "params": {
     "live": {
-      "weights": { "s_net20": 0.2, "s_pos10": 0.1, "s_brd20": 0.2, "s_hot10": 0.1, "s_zdt15": 0.15, "s_zbl10": 0.1, "s_amt15": 0.15 },
-      "thresholds": { "panic": 24, "hi": 44, "lo": 65, "overheat": 80 },
-      "stops": { "maxPos": 1, "stopLoss": -0.08, "ddTrigger": -0.15, "maxPosChg": 0.2 },
-      "lookback": { "rolling": { "trainWindow": 20, "testWindow": 6 }, "momentumRecent": 5, "momentumPrev": 5, "rankWindow": 60, "rankMin": 20 },
-      "costModel": { "comm": 0.0003, "stamp": 0.0005, "slip": 0.0002, "priceLimit": { "enabled": false } }
+      "weights": {
+        "s_net20": 0.2,
+        "s_pos10": 0.1,
+        "s_brd20": 0.2,
+        "s_hot10": 0.1,
+        "s_zdt15": 0.15,
+        "s_zbl10": 0.1,
+        "s_amt15": 0.15
+      },
+      "thresholds": {
+        "panic": 24,
+        "hi": 44,
+        "lo": 65,
+        "overheat": 80
+      },
+      "stops": {
+        "maxPos": 1,
+        "stopLoss": -0.08,
+        "ddTrigger": -0.15,
+        "maxPosChg": 0.2
+      },
+      "lookback": {
+        "rolling": {
+          "trainWindow": 20,
+          "testWindow": 6
+        },
+        "momentumRecent": 5,
+        "momentumPrev": 5,
+        "rankWindow": 60,
+        "rankMin": 20
+      },
+      "costModel": {
+        "comm": 0.0003,
+        "stamp": 0.0005,
+        "slip": 0.0002,
+        "priceLimit": {
+          "enabled": false
+        }
+      }
     },
     "train": {
-      "weights": { "s_net20": 0.2, "s_pos10": 0.1, "s_brd20": 0.2, "s_hot10": 0.1, "s_zdt15": 0.15, "s_zbl10": 0.1, "s_amt15": 0.15 },
-      "thresholds": { "panic": 24, "hi": 44, "lo": 65, "overheat": 80 },
-      "stops": { "maxPos": 1, "stopLoss": -0.08, "ddTrigger": -0.15, "maxPosChg": 0.2 },
-      "lookback": { "rolling": { "trainWindow": 20, "testWindow": 6 }, "momentumRecent": 5, "momentumPrev": 5, "rankWindow": 60, "rankMin": 20 },
-      "costModel": { "comm": 0.0003, "stamp": 0.0005, "slip": 0.0002, "priceLimit": { "enabled": false } }
+      "weights": {
+        "s_net20": 0.2,
+        "s_pos10": 0.1,
+        "s_brd20": 0.2,
+        "s_hot10": 0.1,
+        "s_zdt15": 0.15,
+        "s_zbl10": 0.1,
+        "s_amt15": 0.15
+      },
+      "thresholds": {
+        "panic": 24,
+        "hi": 44,
+        "lo": 65,
+        "overheat": 80
+      },
+      "stops": {
+        "maxPos": 1,
+        "stopLoss": -0.08,
+        "ddTrigger": -0.15,
+        "maxPosChg": 0.2
+      },
+      "lookback": {
+        "rolling": {
+          "trainWindow": 20,
+          "testWindow": 6
+        },
+        "momentumRecent": 5,
+        "momentumPrev": 5,
+        "rankWindow": 60,
+        "rankMin": 20
+      },
+      "costModel": {
+        "comm": 0.0003,
+        "stamp": 0.0005,
+        "slip": 0.0002,
+        "priceLimit": {
+          "enabled": false
+        }
+      }
     },
-    "_note": "过拟合防线（2026-10-02 拍板，#134/#141 配套）：live=生产口径，src/config.js 加载时递归冻结，改动唯一通道 = scripts/promote_params.mjs（样本外 20% 门禁 + params_changelog.json 留痕 who/when/why/验证结果）；train=实验区，调参/网格/walk-forward 只许改这里，scripts/backtest.mjs 寻优锚点已切至 train。结构约束：两块五段（weights/thresholds/stops/lookback/costModel）键集合必须一致（守卫测试锁定），只许改值不许改结构。"
+    "governance": "live 冻结（薄壳递归 Object.freeze）；改动唯一通道 = scripts/promote_params.mjs --apply（样本外20%门禁 + params_changelog.json 留痕 who/when/why/验证结果）。train 为实验区，寻优锚点已切至 train（scripts/backtest.mjs）。"
   },
-
-  "_paramsNote": "参数语义备注（JSON 无注释，集中在此）：① 四档阈值（收盘打分、T+1 生效）：≥80 过热只减仓不新建 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓；hi=44 是保留参数——src/backtest.js positions() 未用它判档（24~65 同属半仓），仅历史口径展示，若需独立减仓档须同时改 positions() 并更新回归夹具。② costModel 实盘摩擦预埋：佣金万3双边 / 印花万5卖出 / 滑点万2；priceLimit 为涨跌停约束占位（enabled:false），启用须先回填限价口径。③ lookback.rankWindow/rankMin 与 src/sources.js 的 RANK_WINDOW/RANK_MIN 同源（防前视分位窗口 #134）；rolling 与 walk-forward 同源。",
-
+  "lookback": {
+    "rolling": {
+      "trainWindow": 20,
+      "testWindow": 6
+    },
+    "momentumRecent": 5,
+    "momentumPrev": 5,
+    "rankWindow": 60,
+    "rankMin": 20
+  },
+  "weights": {
+    "s_net20": 0.2,
+    "s_pos10": 0.1,
+    "s_brd20": 0.2,
+    "s_hot10": 0.1,
+    "s_zdt15": 0.15,
+    "s_zbl10": 0.1,
+    "s_amt15": 0.15
+  },
   "factorKeyMap": {
     "s_net20": "s_net",
     "s_pos10": "s_pos",
@@ -33,22 +116,53 @@
     "s_zbl10": "s_zbl",
     "s_amt15": "s_amt"
   },
-
   "backtest": {
-    "assets": ["上证指数", "深证成指", "创业板指"],
-    "gridSteps": [0.6, 0.8, 1.0, 1.2, 1.4],
-    "_note": "thresholds/costs/maxPos/stopLoss/ddTrigger/maxPosChg/rolling 已并入 params.live（对应 thresholds/costModel/stops/lookback 四段），兼容层由 src/config.js 运行时组装——与 live 同一引用，JSON 内不存第二份文本（schemaVersion 2 起顶层不再保留参数键）。"
+    "thresholds": {
+      "panic": 24,
+      "hi": 44,
+      "lo": 65,
+      "overheat": 80
+    },
+    "_thresholdsNote": "四档阈值（收盘打分、T+1 生效）：≥80 过热只减仓不新建 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓。hi=44 是保留参数：src/backtest.js positions() 未用它判档（24~65 同属半仓），仅历史口径展示；若需独立减仓档须同时改 positions() 并更新回归夹具。",
+    "assets": [
+      "上证指数",
+      "深证成指",
+      "创业板指"
+    ],
+    "costs": {
+      "comm": 0.0003,
+      "stamp": 0.0005,
+      "slip": 0.0002,
+      "priceLimit": {
+        "enabled": false
+      }
+    },
+    "maxPos": 1,
+    "stopLoss": -0.08,
+    "ddTrigger": -0.15,
+    "maxPosChg": 0.2,
+    "gridSteps": [
+      0.6,
+      0.8,
+      1,
+      1.2,
+      1.4
+    ],
+    "rolling": {
+      "trainWindow": 20,
+      "testWindow": 6
+    }
   },
-
   "missingPolicy": "proxy",
-
   "minThemeStocksGlobal": 2,
   "minThemeStocksWindow": 2,
-
+  "momentumRecent": 5,
+  "momentumPrev": 5,
   "healthWarnImputedRatio": 0.34,
-
-  "retry": { "times": 3, "backoff": 1500 },
-
+  "retry": {
+    "times": 3,
+    "backoff": 1500
+  },
   "sources": {
     "eastmoney": {
       "lhb": "https://datacenter.eastmoney.com/securities/api/data/v1/get",
@@ -61,10 +175,16 @@
       "industry": "https://q.10jqka.com.cn/thshy/"
     }
   },
-
   "manualHolidays": [
-    "2026-09-25", "2026-09-26", "2026-09-27",
-    "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04",
-    "2026-10-05", "2026-10-06", "2026-10-07"
+    "2026-09-25",
+    "2026-09-26",
+    "2026-09-27",
+    "2026-10-01",
+    "2026-10-02",
+    "2026-10-03",
+    "2026-10-04",
+    "2026-10-05",
+    "2026-10-06",
+    "2026-10-07"
   ]
 }

@@ -155,6 +155,32 @@ test/fixtures/sina_global_20260930.txt  外围解析夹具（2026-09-30 美股�
 - 诚实披露：当前真实样本仅 33 天（OOS ≈ 6 天），门禁是**流程防线**（防「只看样本内调参」
   这一行为模式），不是统计证明。
 
+## UI 合并（merge/pro-into-ui · 2026-10-02）
+
+本仓库 = **PRO 管线当数据层 + 原系统（a-sentiment）UI 当展示层** 的合并成品（单仓库单部署）。
+
+- **目录**：`ui/`（原系统 UI 资产：`template.html` 已改写为读 PRO schema、`src/lab-*.js` 实验室
+  15 模块、`kline/` 全市场日K分片 5554 片、`guide.html`、`fetch_kline_all.mjs`）；`scripts/build_ui.mjs`
+  为合并构建；`data/board_rank.json`（一年板块排行种子，由每日 `industry[]` 增量滚动）与
+  `data/ui_stocks.json`（上榜股 closes 种子，主源已是 K 线分片）。
+- **构建**：`npm run build:ui` → `dist/index.html`（单文件 8MB：33 真实交易日 + 1314 只个股
+  closes + 一年板块排行 + 简报 + K线分片）。回填占位日**绝不入页面**（`_backfill` 过滤）。
+- **schema 扩展**（合并阶段1）：`day.themeList` = 去噪题材数组 `{tag,count,codes,avg_zf,avg_hs,
+  net,streak,score}`（宽度30+高度30+资金20+持续20，资金取当日榜权威口径）；
+  `signals.momentum` 三态统一 `{theme,stocks}`。UI 题材榜/强度榜/成分股下钻/信号中心直读。
+- **UI 改写要点**（原 schema → PRO schema）：`net_total_yi`→`lhb_daily_net`（权威口径，双口径小字
+  展示全量）、`topics`→`themeList`、`signals.topics.rising/new/fading`→`momentum.continuing/
+  fresh/fading`、`_missing`→`emotion.missing`、`net_pct_rank`→`net_daily_pct_rank`、`lhb_aggr`
+  废弃（PRO lhb[] 五元组合并已内置）、`yzt_chg` 由 K 线分片派生（缺数据日如实 null）。
+  两融/概念榜等 PRO 未接入的源 → 卡片按缺失降级显示，不编数。
+- **部署**：`daily.yml` 单条数据流 = 六源冒烟门禁 → PRO 管道 → K线增量 → UI 构建 →
+  数据提交 + Pages 部署（`dist/` → GitHub Pages，upload-pages-artifact/deploy-pages）。
+  旧系统 fetch-daily 管线与 rsync 推送一并废弃。
+- **守卫**：`test/merge_ui.test.mjs` 端到端集成测——真 archive 跑构建，按 UI 消费字段总表
+  逐项断言（漏字段=UI 白屏 → CI 红）；涨跌停池字段半缺会红（UI 按组降级的前提是组内一致）。
+- 推送目标仓库：`sjc19950404/a-sentiment`（老地址沿用；旧仓库先归档打 tag，PRO 仓库归档或重定向）。
+  冻结点：PRO `pro-premerge-20261002`，原系统 `ui-premerge-20261002`（其仓库已本地 git 化）。
+
 ## 研判报告（口径与回测引擎同源）
 
 （正文见页面「研判报告」分区；此处记录报告的三种"带走"方式——内容与屏幕所见**严格同一份**。）
@@ -660,6 +686,14 @@ T+1 均 −0.30%）。所以每只推荐都同时给两种口径的预期，并�
 销案只停「重复告警」，**不动任何数值、不改 dirty/干净判定**；命中销案的离群会转为
 `suppressedReviews`（可审计：不是"没发现"，是"已核验"）。`--refresh` 才会重写已存在条目
 （人工写的证据链优先于机器）。
+
+⚠ **台账不进档案**（2026-10-04 合流定稿）：`src/pipeline.js` **不得**把台账注入 `validateDay`
+去写 `emotion.dirty`。台账是可变的**人工复核记录**，一旦参与档案判定，「存档可重现」就依赖它，
+且命中销案的天 dirty 留痕会被整条抹掉（销案从"可审计"退化为"静默消失"），幂等守卫
+（`test/pipeline_scope.test.mjs`、审计「逐日 status 存档与现算一致」）也会因"存档口径 ≠ 现算口径"
+而恒红。**档案只存原始判定**；销案的落点是 `day.review`（`scripts/review_alerts.mjs --apply`
+写入，前端经 `signals-latest.json` 的 `dirty.recent[].reviewVerdict` 展示），台账本身则服务于
+`scripts/verify_industry_outliers.mjs` 的待核验队列去重。
 
 ### 告警排查顺序
 

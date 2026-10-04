@@ -106,12 +106,20 @@ test('★ 有邻居印证的强板块 → 完全不告警（簇状同向 = 真�
   assert.equal(r.issues.length, 0);
 });
 
-test('行业硬物理上限仍生效：+15% 直接判脏（ERROR，剔除数据）', () => {
-  const industries = [{ name: 'X', change_pct: 15 }];
-  for (let i = 0; i < 60; i++) industries.push({ name: 't' + i, change_pct: 0.2 });
-  const r = validateDay(day({ industry: industries }));
-  assert.equal(r.status, 'dirty');
-  assert.ok(r.issues.some((i) => i.rule === 'RANGE_INDUSTRY'));
+test('行业硬物理上限仍生效：+18% 判脏（ERROR，剔除数据）；真实极端日 12.23% 不再误判', () => {
+  // 阈值修正回归锁：初版 12% 曾把 2026-03-02/03-03 油气开采及服务 +12.23/+12.22%
+  // （油服股集体顶板的真实极端行情）判成 ERROR 剔除——第二版上调至 15%。
+  const mk = (lead) => {
+    const industries = [{ name: 'X', change_pct: lead }];
+    for (let i = 0; i < 60; i++) industries.push({ name: 't' + i, change_pct: 0.2 });
+    return industries;
+  };
+  const rDirty = validateDay(day({ industry: mk(18) }));
+  assert.equal(rDirty.status, 'dirty');
+  assert.ok(rDirty.issues.some((i) => i.rule === 'RANGE_INDUSTRY'));
+  // 12.23% 不触发 RANGE_INDUSTRY（0.2% 众邻居 → 离群规则另算，此处只锁范围规则）
+  const rReal = validateDay(day({ industry: mk(12.23) }));
+  assert.ok(!rReal.issues.some((i) => i.rule === 'RANGE_INDUSTRY'), '真实极端日不再误判脏值');
 });
 
 test('行业样本不足 MIN_INDUSTRY_SAMPLE → 不做离群判定（宁可不判也不误报）', () => {

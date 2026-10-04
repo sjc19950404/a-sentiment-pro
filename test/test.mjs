@@ -82,8 +82,9 @@ test('recalcAll: 有原始数据的天用统一公式重算, 输出 factors', ()
   recalcAll([day]);
   assert.ok(day.emotion.value >= 0 && day.emotion.value <= 100);
   assert.ok(day.emotion.factors && typeof day.emotion.factors.s_net === 'number');
-  // #134 窗口分位: 单样本 < RANK_MIN(20) → null（缺失显式化, 不给假分位, 不填 50 冒充中位）。
-  // 断言曾为 typeof 'number'——那是全档分位时代的旧语义, 窗口制落地后过时。
+  // #134 窗口分位：单样本 < RANK_MIN(20) → null（缺失显式化，不给假分位，不填 50 冒充中位）；
+  // 断言曾为 typeof 'number'——那是全档分位时代的旧语义，窗口制落地后过时。
+  // net_daily_pct_rank 同口径（origin/main 8316b8d 的断言语义并入）
   assert.equal(day.emotion.pct_rank, null);
   assert.equal(day.emotion.net_daily_pct_rank, null);
 });

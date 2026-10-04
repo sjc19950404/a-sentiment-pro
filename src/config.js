@@ -1,26 +1,29 @@
-// 全局配置加载器——数据唯一事实源：仓库根 config.json（schemaVersion 2 起，
-// 参数唯一住所 = config.json 的 params.live / params.train，顶层不再保留参数键）。
+// 全局配置加载器——数据唯一事实源：仓库根 config.json（schemaVersion 2 起，参数唯一住所
+// = config.json 的 params.live / params.train；顶层另有 live 的双写镜像，供前端直读扁平层）。
 //
 // ── 演进史（两个约束的合流，2026-10-02）─────────────────────────────────────
-//   · #142 抽 JSON：同一批数值曾散落多处（本文件对象字面量、前端手抄兜底、审计
-//     脚本正则），任何一处单独改动都会造成「报告说 A、算的是 B」。JSON 化后 Node /
-//     前端 / 守卫脚本全部只读 config.json 一份文本。
+//   · #142 抽 JSON：同一批数值曾散落多处（本文件对象字面量、前端手抄兜底、审计脚本正则），
+//     任何一处单独改动都会造成「报告说 A、算的是 B」。JSON 化后 Node / 前端 / 守卫脚本
+//     全部只读 config.json 一份文本。
 //   · 过拟合防线：params.live 生产口径**递归冻结**，改动唯一通道 =
 //     scripts/promote_params.mjs（样本外 20% 门禁 + params_changelog.json 留痕
-//     who/when/why/验证结果）；params.train 实验区，寻优锚点（scripts/backtest.mjs）
+//     who/when/why/验证结果）；params.train 为实验区，寻优锚点（scripts/backtest.mjs）
 //     已切至 train。手改 params.live 不留痕 → test/params_governance.test.mjs 红。
-//   · 兼容层：config.weights / config.backtest.* 等旧路径是 live 的**同一引用**
-//     （非拷贝），守卫测试断言 === ——不存在第二份口径。JSON 里参数只存 params.*
-//     一份文本；旧路径在加载时由本文件组装（引用同一），前端桥（paper_ui.js 挂
-//     window.ASENT_CONFIG）同理直接读 params.live。
+//   · 双写镜像：JSON 顶层 weights / lookback / backtest.{thresholds,costs,rolling,maxPos,
+//     stopLoss,ddTrigger,maxPosChg} / momentumRecent / momentumPrev 是 live 的**同一份值**
+//     的扁平表述——前端（index.html 内联 module 桥挂 window.ASENT_CONFIG、check_frontend
+//     平铺 JSON 后交 alerts 消费）读扁平层，Node 侧读 params.live，两边逐位相等
+//     （守卫：test/params_governance.test.mjs 的镜像断言）。
+//   · 兼容层：config.weights / config.backtest.* 等旧路径是 live 的**同一引用**（非拷贝），
+//     守卫测试断言 === —— 不存在第二份口径。
 //
 // manualHolidays 已降级为兜底，不再是主口径——交易日判定由 src/calendar.js +
-// data/calendar.json 承担（上证指数日K反推）；本数组只在日历文件缺失/覆盖范围
-// 之外时参与兜底。漏登记会把休市日误判为交易日 → 反复回退/误报滞后，须随新公告
-// 更新 config.json（来源与完整说明见该文件 _about/_paramsNote）。
+// data/calendar.json 承担（上证指数日K反推）；本数组只在日历文件缺失/覆盖范围之外时参与
+// 兜底。漏登记会把休市日误判为交易日 → 反复回退/误报滞后，须随新公告更新 config.json
+//（来源与完整说明见该文件 _about/_paramsNote）。
 //
-// 校验原则：配置错误必须**快速失败**（启动即 throw），绝不带病运行——权重和≠1、
-// 阈值乱序、缺必需键都在这里拦截，而不是等到算出错误分数后由下游守卫兜出来。
+// 校验原则：配置错误必须**快速失败**（启动即 throw），绝不带病运行——权重和≠1、阈值乱序、
+// 缺必需键、params 双套结构残缺都在这里拦截，而不是等到算出错误分数后由下游守卫兜出来。
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -74,57 +77,22 @@ const __freeze = (o) => {
 const LIVE = __freeze(cfg.params.live); // 生产口径（递归冻结：改它只能走 promote 门禁）
 const TRAIN = cfg.params.train;         // 实验区（可改；晋升须过样本外 20% 门禁）
 
-export default {
-  formulaVersion: cfg.formulaVersion,
-
-  params: {
-    live: LIVE,
-    train: TRAIN,
-    governance: 'live 冻结；改动唯一通道 = scripts/promote_params.mjs（样本外20%门禁 + params_changelog.json 留痕）。train 为实验区，寻优锚点已切至 train。',
-  },
-
-  // ── 兼容层：旧路径 = live 的同一引用（守卫测试断言 ===，杜绝第二份口径）──
-  weights: LIVE.weights,
-  lookback: LIVE.lookback,
-
-  // 权重键（含档位后缀，便于人读权重数值）→ 存档/前端使用的因子键（无后缀）
-  factorKeyMap: cfg.factorKeyMap,
-
-  backtest: {
-    thresholds: LIVE.thresholds,
-    // 标的池：三大指数日涨跌幅（各自独立回测 → 日收益等权合成组合）
-    assets: cfg.backtest.assets,
-    // 交易成本（= params.live.costModel 同一引用；实盘摩擦预埋块）
-    costs: LIVE.costModel,
-    maxPos: LIVE.stops.maxPos, stopLoss: LIVE.stops.stopLoss,
-    ddTrigger: LIVE.stops.ddTrigger, maxPosChg: LIVE.stops.maxPosChg,
-    // 权重网格扰动倍数（以 config.params.train.weights 为锚，归一化后扫描）
-    // 5 档 → 78,125 组（Node 侧约 1.2s）。步长粗时大量权重落在同一阈值档位平台、
-    // 目标值重复，前沿会被平台淹没，故取 5 档换取足够分辨力。
-    gridSteps: cfg.backtest.gridSteps,
-    rolling: LIVE.lookback.rolling,
-  },
-
-  // 缺失数据处理策略：'proxy' = 用代理指标推算；推算不出则中性50并显式标记
-  missingPolicy: cfg.missingPolicy,
-
-  // 题材去噪参数
-  minThemeStocksGlobal: cfg.minThemeStocksGlobal,
-  minThemeStocksWindow: cfg.minThemeStocksWindow,
-
-  // 动量窗口（交易日；= live.lookback 同值，守卫测试锁定）
-  momentumRecent: LIVE.lookback.momentumRecent,
-  momentumPrev: LIVE.lookback.momentumPrev,
-
-  // 数据健康：当日补位因子占比超过此值则告警（运维告警 opsalerts 的判定线之一）
-  healthWarnImputedRatio: cfg.healthWarnImputedRatio,
-
-  // 多源容灾：主源失败重试次数与退避(ms)
-  retry: cfg.retry,
-
-  // 数据源端点（在 sources.js 中使用）
-  sources: cfg.sources,
-
-  // 手动节假日（YYYY-MM-DD，休市日）——**已降级为兜底**，主口径见文件头说明。
-  manualHolidays: cfg.manualHolidays,
+// 导出：JSON 全量 + 冻结双套 + 兼容层覆盖为 live 同一引用。
+// 注意：兼容层与 JSON 顶层扁平层逐位同值（镜像不漂移由 test/params_governance.test.mjs
+// 锁定），故薄壳不会成为第二份口径——「导出 === config.json」在值层面依然成立。
+const out = { ...cfg };
+out.params = { live: LIVE, train: TRAIN, governance: cfg.params.governance };
+out.weights = LIVE.weights;
+out.lookback = LIVE.lookback;
+out.backtest = {
+  ...cfg.backtest,
+  thresholds: LIVE.thresholds,
+  costs: LIVE.costModel,
+  rolling: LIVE.lookback.rolling,
+  maxPos: LIVE.stops.maxPos, stopLoss: LIVE.stops.stopLoss,
+  ddTrigger: LIVE.stops.ddTrigger, maxPosChg: LIVE.stops.maxPosChg,
 };
+out.momentumRecent = LIVE.lookback.momentumRecent;
+out.momentumPrev = LIVE.lookback.momentumPrev;
+
+export default out;

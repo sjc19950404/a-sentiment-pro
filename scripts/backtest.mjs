@@ -90,6 +90,9 @@ const strip = (r) => ({
   annual: Math.round(r.annual * 1e4) / 1e4,
   total: Math.round(r.total * 1e4) / 1e4,
   winRate: Math.round(r.winRate * 1e4) / 1e4,
+  // 盈亏比/索提诺（引擎 src/backtest.js 已算且有 Python 一致性夹具锁定，此前写档漏带——2026-10-02 补）
+  profitRatio: Number.isFinite(r.profitRatio) ? Math.round(r.profitRatio * 1000) / 1000 : 999,
+  sortino: Math.round(r.sortino * 1000) / 1000,
   emptyRatio: Math.round(r.emptyRatio * 1e4) / 1e4,
 });
 const best = sortByRank(scan)[0];

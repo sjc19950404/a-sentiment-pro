@@ -146,6 +146,14 @@ export function latestBrief(d) {
     zb_count: s.zb_count ?? null,
     up_count: s.up_count ?? null,
     down_count: s.down_count ?? null,
+    flat_count: s.flat_count ?? null,
+    // 口径披露（固定口径纪律）：报告据此写明样本范围，防止与「含北交所/ST 的全市场
+    //   口径」对比时被误读为数据错误。null → 报告用默认口径文案，不猜。
+    breadth_scope: s.breadth_scope ?? null,
+    pools_caliber: s.pools_caliber ?? null,
+    seal_pct: s.seal_pct ?? null,
+    // 指数涨跌幅（对象 {上证指数:0.31,...}，仅数键）。日报市场背景行直读。
+    indexes: d.indexes ?? null,
     amount_yi: s.amount_yi ?? null,
     ind_count: s.ind_count ?? null,
     // 板块相对强弱：与 index 档同源同字段名（前端一轮渲染可同时读两档）。
@@ -405,6 +413,16 @@ export function buildSignals(archive, opts = {}) {
     tagged.forEach((d) => {
       (d.emotion.dirty.fields || []).forEach((f) => fieldAgg.set(f, (fieldAgg.get(f) || 0) + 1));
     });
+    // 告警复核留痕（scripts/review_alerts.mjs 写入 day.review）→ 汇总下发给日报：
+    //   报告据此说"N/M 条已跨源互证销案"，而不是让读者对着已复核的告警重复劳动。
+    //   无复核留痕 → review 为 null（前端/报告显示"未复核"，不冒充"已通过"）。
+    const reviewed = tagged.filter((d) => d.review && d.review.verdict);
+    const review = reviewed.length ? {
+      checked: reviewed.length,
+      verified: reviewed.filter((d) => d.review.verdict === 'verified').length,
+      mismatch: reviewed.filter((d) => d.review.verdict === 'mismatch').length,
+      at: reviewed[reviewed.length - 1].review.checkedAt || null,
+    } : null;
     dirty = {
       // 最近一日的标脏情况（前端首屏展示用）
       latest: (last && last.emotion && last.emotion.dirty) ? last.emotion.dirty : null,
@@ -415,8 +433,9 @@ export function buildSignals(archive, opts = {}) {
       dirtyDays: tagged.filter((d) => d.emotion.dirty.status === 'dirty').length,
       warnDays: tagged.filter((d) => d.emotion.dirty.status === 'warn').length,
       byField: [...fieldAgg.entries()].map(([field, n]) => ({ field, days: n })).sort((a, b) => b.days - a.days),
-      // 明细（最多 20 条，避免轻量档膨胀）
-      recent: tagged.slice(-20).map((d) => ({ date: d.trade_date, ...d.emotion.dirty })),
+      // 明细（最多 20 条，避免轻量档膨胀）；reviewVerdict 带出该日复核结论
+      recent: tagged.slice(-20).map((d) => ({ date: d.trade_date, ...d.emotion.dirty, ...(d.review && d.review.verdict ? { reviewVerdict: d.review.verdict } : {}) })),
+      review,
     };
   } catch { dirty = null; }
   // 跨源一致性互证（#2）：结果由 scripts/fetch_crosscheck.mjs 落盘（需联网取第二源），
@@ -453,6 +472,11 @@ export function buildSignals(archive, opts = {}) {
       // 日报需要各段素材；缺什么就少什么（报告自身会标 missing，不编造）
       dailyReport = repFn({
         latest: latestBrief(last),
+        // 前一交易日成交额（亿）：报告「较前一日 ±N 亿」的对照值。取不到 → null，
+        // 报告只报当日值不编增量（缺失显式化，不猜 0）。
+        amountPrevYi: (days.length > 1 && days[days.length - 2].summary)
+          ? days[days.length - 2].summary.amount_yi ?? null
+          : null,
         // regime 序列是压缩态四元组 [date, value, pct, key] → 还原成对象供日报用
       //   （唯一还原点；日报只读 value 序列，故这里只需 value）
       regimeSeries: (regime && Array.isArray(regime.seriesCompact))
@@ -480,7 +504,11 @@ export function buildSignals(archive, opts = {}) {
     meta: (() => {
       const m = archive?.meta;
       if (!m || typeof m !== 'object') return m || {};
-      const { reasonCodes, ...rest } = m;
+      // ⚠ 同款纪律第二例：`note`（历史回填/阈值修正的构建期留痕，实测随修档累积到
+      //   ~4.5KB）也剔除——它是给完整档读者的**数据血缘**，轻量档"只看今日结论"
+      //   的读者不需要；app.js 显示的 meta.note 读的是主档/年分片，与本处无关。
+      //   freshness/phase/version 等前端要显示的字段照常下发。
+      const { reasonCodes, note, ...rest } = m;
       return rest;
     })(),
     signals: archive?.signals || {},

@@ -109,6 +109,13 @@ window.fetch = async (url, opts) => {
     };
   }
   const rel = String(url).replace(/^\.\//, '').split('?')[0];
+  // ★ 外围数据改由**盘前相位夹具**供给：页面的「数据缺失三层守卫」必须在一个确定的
+  //   相位上跑（理由与夹具出处见下方「区五：外围市场」段落头注）。若这里回落到磁盘上的
+  //   data/global.json，则快照一旦被 daily 刷成"美股已收盘"相位，那 11 条断言必然全红。
+  if (rel === 'data/global.json') {
+    const t = readFileSync(join(ROOT, 'test/fixtures/global-preopen.json'), 'utf8');
+    return { ok: true, status: 200, json: async () => JSON.parse(t), text: async () => t };
+  }
   try {
     const txt = readFileSync(join(ROOT, rel), 'utf8');
     return { ok: true, status: 200, json: async () => JSON.parse(txt), text: async () => txt };
@@ -874,10 +881,38 @@ check('PC：/ 聚焦个股搜索框', keyOn('/') === false && window.document.ac
 check('PC：在搜索框内打字不被快捷键抢键', keyOn('2', $('hotSearch')) === true, '');
 
 // ── 区五：外围市场（独立数据文件 data/global.json，A 股休市期间照常更新）──
-// 断言一律拿磁盘上的快照做对照，而不是写死数字——数据每天变，写死的断言第二天就假通过。
-const GJSON = JSON.parse(readFileSync(join(ROOT, 'data/global.json'), 'utf8'));
+//
+// ★ 2026-10-04 修复：本区改读**盘前相位夹具** test/fixtures/global-preopen.json，
+//   而不是磁盘上的 data/global.json。为什么必须这样（实测，非洁癖）：
+//   · 本区的「数据缺失三层守卫」（①未成交=null/「盘前无数据」②meta.usNoSession 留痕
+//     ③主锚缺失→判据不足）**只有在"美股未就绪"相位才可满足**——它们断言
+//     `usReadiness.ready === false`、`usNoSession.length > 0`、`watch.mainMissing.length > 0`。
+//   · 而 data/global.json 是**每天被 daily 流水线刷新**的快照（含北京 04:30 的美股收盘档），
+//     一旦刷成"已收盘"相位（ready=true、无缺失样本），本区 11 条断言必然全红。
+//   · 后果（实测）：main 全是红，staging 因快照停在 2026-09-30 盘前态而绿 ——
+//     门禁结果**取决于哪天提交了一个什么相位的快照**，而不是取决于前端对不对。
+//     这既是假绿（前端坏了也可能蒙对），也必然在「把 main 的每日数据合回 staging」时爆红。
+//   · 夹具来源可追溯：取自真引擎 2026-09-30T13:10Z（美东 09:10 ET 盘前）的真实产物
+//     data/global.json@0508ead，非手写，故仍满足「用真快照、不写死数字」纪律。
+//   · 磁盘上那份"当前快照"另由下方「外围·快照结构」两条断言做**结构有效性**校验：
+//     夹具验证前端语义，结构校验保证线上真正会送出的那份没坏 —— 两件事分开验。
+const GJSON = JSON.parse(readFileSync(join(ROOT, 'test/fixtures/global-preopen.json'), 'utf8'));
+// 线上真正会送出的那份（结构有效性，见下方「外围·快照结构」）
+const GJSON_LIVE = JSON.parse(readFileSync(join(ROOT, 'data/global.json'), 'utf8'));
 const gq = Object.fromEntries(GJSON.quotes.map((q) => [q.key, q]));
 const gRow = [...($('globTable')?.querySelectorAll('tbody tr') || [])];
+
+// 外围·快照结构：夹具验**前端语义**，这两条验**线上真正会送出的那份**没坏（否则夹具会把
+// 一个坏掉的线上快照盖住，等于给门禁开天窗）。只锁跨相位恒定成立的结构与纪律：
+check('外围·快照结构：data/global.json 字段齐备且相位声明自洽',
+  Array.isArray(GJSON_LIVE.quotes) && GJSON_LIVE.quotes.length > 0
+  && GJSON_LIVE.quotes.every((q) => typeof q.state === 'string' && 'chgPct' in q)
+  && !!GJSON_LIVE.meta && !!GJSON_LIVE.meta.usReadiness
+  && (GJSON_LIVE.meta.usReadiness.ready === false || (GJSON_LIVE.meta.usNoSession || []).length === 0),
+  `quotes=${(GJSON_LIVE.quotes || []).length} ready=${GJSON_LIVE.meta && GJSON_LIVE.meta.usReadiness && GJSON_LIVE.meta.usReadiness.ready}`);
+check('外围·快照结构：未成交品种一律无涨跌幅（源头就不给 0——线上快照同样受此约束）',
+  GJSON_LIVE.quotes.filter((q) => q.state === 'preopen' || q.state === 'no-trade').every((q) => q.chgPct === null),
+  GJSON_LIVE.quotes.filter((q) => (q.state === 'preopen' || q.state === 'no-trade') && q.chgPct !== null).map((q) => q.key).join('、'));
 
 check('外围：行情表行数 = 快照品种数（漏渲染会在这里暴露）',
   gRow.length === GJSON.quotes.length, `${gRow.length} 行 / ${GJSON.quotes.length} 品种`);

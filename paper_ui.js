@@ -1091,12 +1091,23 @@ function nextSessionLabel() {
   }
   return '—';
 }
-// 与 src/config.js manualHolidays 同源（该文件的默认导出在浏览器里不易直接 import，故并列一份）
+// 与 src/config.js manualHolidays 同源（该文件的默认导出在浏览器里不易直接 import，故并列一份；
+// test/paper.test.mjs 有同源守卫锁两处一致，漂移即红）
 const HOLIDAYS = new Set([
   '2026-09-25', '2026-09-26', '2026-09-27',
   '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04',
   '2026-10-05', '2026-10-06', '2026-10-07',
 ]);
+
+/** A 股交易日粗判（周末 + 休市表）。settleByLive 的门禁一用它：
+ *  非交易日的「实时价」其实是上一收盘价，拿它结算 = 用已知价成交。 */
+function isTradingDay(iso) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(iso || ''))) return false;
+  const d = new Date(iso + 'T00:00:00Z');
+  const w = d.getUTCDay();
+  if (w === 0 || w === 6) return false;
+  return !HOLIDAYS.has(iso);
+}
 
 /**
  * 数量快捷区（按方向给出不同语义的档位）。
@@ -2236,7 +2247,8 @@ async function runBatch() {
   await refreshLive(items.map((it) => it.code));
 
   const day = batchDay();
-  const opts = { date: LAST_DATE || day.trade_date || bjToday(), applyLhbFilter: applyLhb, checkRisk };
+  // date 同单票路径用真实提交日：风控的「单日累计买入」按此分组，且 T+1 门禁据此顺延
+  const opts = { date: bjToday(), applyLhbFilter: applyLhb, checkRisk };
   // 卖出：不做龙虎过滤（规则原文只对买入做前置过滤），也不做仓位变动风控（降仓必须放行）
   const r = side === 'buy'
     ? batchSubmit(ACCT, items, day, opts)
@@ -2496,7 +2508,10 @@ async function submit() {
     renderOrderForm();
   }
   const q = { code: info.code, name: info.name, price: info.price, changePct: info.changePct };
-  const r = submitOrder(ACCT, { code: info.code, side: ORDER.side, qty: ORDER.qty, slip: SLIP }, q, { date: LAST_DATE });
+  // submitDate 必须用**真实提交日**（北京时间今天），不能用存档最新交易日（LAST_DATE）：
+  //   引擎的 T+1 门禁按 submitDate ≥ 结算日顺延——若记成存档日（盘中时是昨天），
+  //   当天点「按实时价结算」就能同日撮合 = T+0 作弊。存档滞后时两者差着整个交易日。
+  const r = submitOrder(ACCT, { code: info.code, side: ORDER.side, qty: ORDER.qty, slip: SLIP }, q, { date: bjToday() });
   ACCT = r.next;
   save();
   renderAllPaper();
@@ -2669,6 +2684,13 @@ async function settleByLive(date) {
   if (ACCT.lastSettle && today <= ACCT.lastSettle) {
     return { ok: false, reason: `今日（${today}）已结算过，下一交易日再结算` };
   }
+  // ── 门禁一：今天必须是 A 股交易日 ──
+  //   非交易日（周末/休市）时实时源返回的是**上一收盘价**：用它结算 = 用提交时已知的价
+  //   成交，击穿「次一交易日按真实价撮合」的防前视设计。此前没有这道门禁——
+  //   国庆假期（如 10-02）也能把 09-30 提交的委托按 09-30 收盘价「结算」掉。
+  if (!isTradingDay(today)) {
+    return { ok: false, tone: 'warn', reason: `今日（${today}）非 A 股交易日，实时源只有上一收盘价——按已知价结算会击穿防前视设计，拒绝。下一可撮合日 ${nextSessionLabel()}` };
+  }
   // 只抓「待成交委托」涉及的代码——不为了结算去抓全市场
   const codes = normalizeCodes(pending.map((p) => p.code));
   const r = await refreshLive(codes);
@@ -2677,13 +2699,21 @@ async function settleByLive(date) {
   const quotes = {};
   for (const c of codes) {
     const q = LIVEQ[c];
-    if (q && Number.isFinite(+q.price)) quotes[c] = { code: c, name: q.name, price: +q.price, changePct: q.changePct ?? null, src: 'live' };
+    if (q && Number.isFinite(+q.price)) quotes[c] = { code: c, name: q.name, price: +q.price, changePct: q.changePct ?? null, prevClose: q.prevClose ?? null, tickDate: q.tickDate ?? null, src: 'live' };
+  }
+  // ── 门禁二：结算价必须属于结算日当天 ──
+  //   行情自带成交日期（tickDate）：交易日的开盘前，腾讯返回的还是昨收——
+  //   用昨收结算等于跳过今天整个交易日，同样是防前视破口。
+  //   这道门禁还能兜住 HOLIDAYS 表未收录的年份（行情日期自证休市，不靠硬编码表）。
+  const stale = Object.values(quotes).filter((q) => q.tickDate && q.tickDate !== today);
+  if (stale.length) {
+    return { ok: false, tone: 'warn', reason: `行情还是 ${stale[0].tickDate} 的（今日 ${today} 尚无成交价：未开盘或休市）——用旧价结算会击穿防前视设计，拒绝。今日开盘后再结算` };
   }
   const res = settleDay(ACCT, today, quotes);
   ACCT = res.account;
   save();
   renderAllPaper();
-  return { ok: true, date: today, filled: res.fills.length, expired: res.expired.length };
+  return { ok: true, date: today, filled: res.fills.length, expired: res.expired.length, t1Hold: res.t1Hold || 0 };
 }
 
 /** 北京时间「今天」的 YYYY-MM-DD（结算日/行情日期一律用北京时间，与行情源一致） */
@@ -2704,7 +2734,7 @@ function settleNow() {
   // 先试「按今天实时价结算」；没有待成交委托或今天已结算，则回退到「按存档日补齐」
   settleByLive().then((r) => {
     if (r.ok) {
-      msg(`结算完成（${r.date} 实时价）：成交 ${r.filled} 笔、失效 ${r.expired} 笔`, 'ok');
+      msg(`结算完成（${r.date} 实时价）：成交 ${r.filled} 笔、失效 ${r.expired} 笔${r.t1Hold ? `、顺延 ${r.t1Hold} 笔（T+1 未到，下一交易日撮合）` : ''}`, 'ok');
       return;
     }
     // 回退档同样走滚动窗而非完整档：补结算只可能落后几个交易日。
@@ -2715,20 +2745,20 @@ function settleNow() {
       .then((arc) => {
         const days = recentDays(arc);
         const todo = days.filter((d) => d.trade_date > (ACCT.lastSettle || ''));
-        if (!todo.length) { msg(r.reason || '已是最新，无需结算', 'ok'); return; }
+        if (!todo.length) { msg(r.reason || '已是最新，无需结算', r.tone || 'ok'); return; }
         const from = days[0]?.trade_date;
         if (ACCT.lastSettle && from && from > ACCT.lastSettle) {
           msg(`账户最后结算日 ${ACCT.lastSettle} 早于本地滚动窗起点 ${from}，仅结算窗口内交易日；`
             + `如需补齐更早日期，请重跑 node scripts/split_archive.mjs 后刷新`, 'err');
         }
-        let cur = ACCT, filled = 0, expired = 0;
-        for (const d of todo) { const rr = settleDay(cur, d.trade_date, quotesFromDay(d)); cur = rr.account; filled += rr.fills.length; expired += rr.expired.length; }
+        let cur = ACCT, filled = 0, expired = 0, held = 0;
+        for (const d of todo) { const rr = settleDay(cur, d.trade_date, quotesFromDay(d)); cur = rr.account; filled += rr.fills.length; expired += rr.expired.length; held += rr.t1Hold || 0; }
         ACCT = cur;
         QMAP = { ...QMAP, ...quotesFromDay(days[days.length - 1]) };
         LAST_DATE = days[days.length - 1].trade_date;
         save();
         renderAllPaper();
-        msg(`结算完成（存档日）：成交 ${filled} 笔、失效 ${expired} 笔`, 'ok');
+        msg(`结算完成（存档日）：成交 ${filled} 笔、失效 ${expired} 笔${held ? `、顺延 ${held} 笔（T+1 未到，下一交易日撮合）` : ''}`, 'ok');
       })
       .catch((e) => msg('结算失败：' + e.message, 'err'));
   });

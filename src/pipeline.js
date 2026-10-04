@@ -21,27 +21,12 @@ import { buildSeatSeries, seatSeriesSummary, seatVerdict } from './seats_daily.j
 // 运维告警（降维预埋 · 2026-10-02）：拦截器（freshness/lastAttempt/imputed/missing/dataQuality）
 // 的坏事实 → 结构化事件 → 落盘 + 可选企微推送（OPS_WEBHOOK 环境变量，未配置则零打扰）。
 import { opsEventsFromArchive, writeOpsAlerts, pushOpsAlerts } from './opsalerts.js';
-// 行业离群「销案」台账：已跨源核验为真实行情的 (日期, 行业) 不再重复报 warn（只影响告警，
-// 不动数值——见 src/outlier_review.js 与 data/industry_outlier_review.json）。
-import { confirmedSet, validateLedger } from './outlier_review.js';
-
-const REVIEWED_OUTLIERS = (() => {
-  try {
-    const p = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'data', 'industry_outlier_review.json');
-    if (!existsSync(p)) return new Set();
-    const ledger = JSON.parse(readFileSync(p, 'utf8'));
-    const v = validateLedger(ledger);
-    if (!v.ok) {
-      // 台账结构坏 = 销案可能静默失效（比不销案更危险）→ 如实报出，但不阻断管线
-      console.warn(`[pipeline] ⚠ 离群复核台账结构异常，本轮不销案：${v.errors.slice(0, 3).join('；')}`);
-      return new Set();
-    }
-    return confirmedSet(ledger);
-  } catch (e) {
-    console.warn(`[pipeline] ⚠ 离群复核台账读取失败，本轮不销案：${e.message}`);
-    return new Set();
-  }
-})();
+// 行业离群「销案」台账（data/industry_outlier_review.json）**不进本管线**：
+//   ⚠ 判脏/因子入参必须只依赖客观数据（见下方「判脏不得注入销案台账」注）。台账是
+//   告警复核记录，其写入方与去重消费方是 scripts/verify_industry_outliers.mjs；
+//   销案的落点是 day.review（scripts/review_alerts.mjs → signals dirty.recent[].reviewVerdict）。
+//   本文件的任何一处都不得再 import confirmedSet/validateLedger —— 一旦让台账参与
+//   档案判定，"存档可重现" 就依赖一份可变的人工台账，且销案会从可审计退化为静默消失。
 import { buildBreadthSeries, breadthSeriesSummary } from './breadth.js';
 import { validateDay, sanitizeForFactors, dirtyArgsOf } from './dirty.js';
 import { BACKFILL_FLAG } from './backfill.js';
@@ -86,10 +71,13 @@ export function enrich(allDays) {
   const prevMom = byDay.length > 1
     ? computeMomentum(byDay.slice(0, -1), config.momentumRecent, config.momentumPrev, config.minThemeStocksWindow)
     : { fresh: [], continuing: [], fading: [] };
+  // momentum 三态统一为 {theme, stocks}（stocks = 今日覆盖个股数；退潮题材今日已消失 → 0，如实）。
+  // 旧档 continuing/fading 是裸字符串数组，golden 测试只锁 .length —— 元素升级为对象不破坏守卫。
+  const elOf = (t) => ({ theme: t, stocks: (byDay[byDay.length - 1][t] || new Set()).size });
   const momObj = {
-    fresh: mom.fresh.map((t) => ({ theme: t, stocks: [...byDay[byDay.length - 1][t] || []].length || countInWindow(byDay, t, config.momentumRecent) })),
-    continuing: mom.continuing,
-    fading: mom.fading,
+    fresh: mom.fresh.map((t) => ({ theme: t, stocks: [...(byDay[byDay.length - 1][t] || [])].length || countInWindow(byDay, t, config.momentumRecent) })),
+    continuing: mom.continuing.map(elOf),
+    fading: mom.fading.map(elOf),
     // 昨日视角的新晋/延续/退潮（用于「昨日新晋今日存活」的分子分母同源比对）
     prev_fresh: prevMom.fresh,
     prev_continuing: prevMom.continuing,
@@ -97,6 +85,11 @@ export function enrich(allDays) {
   };
   const out = allDays.map((d, i) => {
     const o = { ...d, themes: Object.fromEntries(Object.entries(byDay[i]).map(([k, v]) => [k, v.size])) };
+    // 合并方案阶段1（2026-10-02）：themeList = 去噪题材数组（tag/count/codes/强度组件）。
+    // 算法移植自原系统 template.html topicStrength（宽度30+高度30+资金20+持续20），
+    // 供 UI 题材强度榜/热度榜/成分股下钻直读——前端不再自行拆 reason 词频（丢弃旧口径）。
+    // 资金维度取「当日榜」权威口径（dailyRowsOf），与 summary.lhb_daily_net 同源。
+    o.themeList = themeListOf(byDay, i, d);
     // ⑨ 主线题材龙虎资金占比：主线题材（当日成分股最多）个股龙虎净买 ÷ 全榜单龙虎净买
     // 分子分母都必须取「当日榜」口径（口径守卫会核对本字段与 summary.lhb_daily_net 同源）；
     // 早先误用含区间累计榜的全量数组，同一只票会出现 3 天累计额当日度额，占比随披露节奏跳动。
@@ -119,6 +112,49 @@ export function enrich(allDays) {
     return o;
   });
   return { out, momObj, byDay };
+}
+
+// 题材强度榜（合并方案阶段1）：宽度30 + 高度(均涨幅)30 + 榜上资金20 + 持续性20。
+// 忠实移植原系统 template.html topicStrength——差异仅两处，均为口径修正：
+//   ① 资金维度：旧用 lhb_aggr||lhb（含区间累计榜），改用 dailyRowsOf 当日榜（权威口径）；
+//   ② streak 范围：旧按页面裁剪后的 DAYS 回溯，这里按全档 byDay 回溯（口径更完整）。
+// 输出元素 {tag, count, codes, avg_zf, avg_hs, net, streak, score}，按 score 降序全量返回（UI 自行取 TOP）。
+function themeListOf(byDay, dayIdx, day) {
+  const entries = Object.entries(byDay[dayIdx] || {});
+  if (!entries.length) return [];
+  const hotBy = new Map((day.hot || []).map((h) => [h.code, h]));
+  const lhbMap = new Map();
+  for (const l of dailyRowsOf(day)) lhbMap.set(l.code, l.net_buy_wan || 0);
+  const out = entries.map(([tag, codes]) => {
+    const o = { tag, count: 0, zf: 0, hs: 0, net: 0 };
+    const arr = [...codes];
+    for (const c of arr) {
+      const h = hotBy.get(c);
+      if (!h) continue; // 成分股当日不在强势股池 → 不计宽度/高度（与旧口径一致）
+      o.count++; o.zf += h.change_pct || 0; o.hs += h.huanshou || 0;
+      if (lhbMap.has(c)) o.net += lhbMap.get(c);
+    }
+    if (!o.count) return null;
+    o.codes = arr;
+    o.avg_zf = +(o.zf / o.count).toFixed(2);
+    o.avg_hs = +(o.hs / o.count).toFixed(2);
+    o.net = Math.round(o.net);
+    let streak = 0; // 连续在榜天数（含当日），按去噪 themes 回溯
+    for (let i = dayIdx; i >= 0; i--) {
+      if ((byDay[i] || {})[tag]) streak++; else break;
+    }
+    o.streak = streak;
+    return o;
+  }).filter(Boolean);
+  if (!out.length) return out;
+  const maxC = Math.max(...out.map((o) => o.count), 1);
+  const maxZ = Math.max(...out.map((o) => o.avg_zf), 0.01);
+  const maxN = Math.max(...out.map((o) => o.net), 1);
+  const maxS = Math.max(...out.map((o) => o.streak), 1);
+  for (const o of out) {
+    o.score = Math.round(o.count / maxC * 30 + Math.max(o.avg_zf, 0) / maxZ * 30 + Math.max(o.net, 0) / maxN * 20 + o.streak / maxS * 20);
+  }
+  return out.sort((a, b) => b.score - a.score);
 }
 
 function countInWindow(byDay, theme, n) {
@@ -276,7 +312,22 @@ export function recalcAll(days, opts = {}) {
       if (d.emotion) d.emotion.lhb_daily_net = c.daily_net_yi;
     }
     // 字段定稿后校验 + 把脏字段从因子入参里摘掉
-    const vres = validateDay(d, { reviewedOutliers: REVIEWED_OUTLIERS });
+    //
+    // ⚠ 判脏**不得注入销案台账**（2026-10-04 合流修正；实测缺陷，勿回退）：
+    //   本处曾写作 `validateDay(d, { reviewedOutliers: REVIEWED_OUTLIERS })`，后果三重：
+    //     ① 违背口径承诺 —— src/outlier_review.js 与 README 同款表述：「销案只停重复
+    //        告警，**不动任何数值、不改 dirty/干净判定**」；
+    //     ② 命中销案的天 dirty 留痕被**整条抹掉**（status=ok → 下方 delete），
+    //        销案从"转为可审计的 suppressed 记录"退化为**静默消失**（信息丢失）；
+    //     ③ 档案不再是 recalcAll 的**不动点** —— 审计「全档逐日 status 存档与现算一致」
+    //        的现算走 `validateAll(days)`（不注台账），与注台账的存档口径打架；
+    //        幂等守卫 test/pipeline_scope.test.mjs 同样必红（实测：2026-01-21/23/26、
+    //        02-10、08-18 五天的 warn 留痕被抹，缩范围重算与全档重算结果不再相同）。
+    //   故定稿：**档案只存原始判定** —— 「存档可重现」不得依赖一份可变的人工台账。
+    //   销案的落点是 day.review（scripts/review_alerts.mjs，前端经 signals-latest
+    //   的 dirty.recent[].reviewVerdict 展示）；跨源核验台账 data/industry_outlier_review.json
+    //   仍是 scripts/verify_industry_outliers.mjs 的输入与去重依据。两条链路互不越界。
+    const vres = validateDay(d);
     const { cleaned, dropped } = sanitizeForFactors(d, vres);
 
     const netBuy = cleaned.netBuy ?? null;
@@ -348,6 +399,16 @@ export function recalcAll(days, opts = {}) {
         },
       }),
     };
+    // ⚠ 干净天必须**清掉旧 dirty**（实测抓出的陈旧留痕 bug）：上方 `...d.emotion`
+    //   展开会保留旧键，而 dirty 只在"有情况"时写入、从不在变干净时删除——
+    //   阈值重标定（如 INDUSTRY_CHANGE_ABS_MAX 12→15）后，原本判脏的天经重算
+    //   已是 vres.status='ok'，但旧 ERROR 留痕永久残留，面板永远显示"剔除 2 天"，
+    //   与真实因子状态（s_brd 已恢复真实值）自相矛盾。数据质量面板必须与
+    //   当前口径一致，而不是与历史口径一致。
+    if (vres.status === 'ok') delete d.emotion.dirty;
+    // 回填标记双向裁定（见上方 ⚠ 注）：原料已齐的天必须移除旧标记，防止
+    // 「七因子真分天」被前端/回测当假分天永久过滤。isBackfillShaped 为本文件私有判据。
+    if (!isBackfillShaped(s)) delete d.emotion[BACKFILL_FLAG];
     // ── 诊断字段由重算路径刷新（防"算过就不管"的静默陈旧）──────────────────
     //   实测抓出的第二处漂移：`emotion.pos_ratio / up_ratio / hot_count / topic_conc /
     //   top_topic` 只在**实时抓取**（src/sources.js buildDay）时写入，

@@ -946,7 +946,40 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     const bt = JSON.parse(readFileSync(btPath, 'utf8'));
     const sn = bt.meta && bt.meta.sampleNote;
     const bfCount = days.filter((d) => d.emotion && d.emotion._backfill).length;
-    check('回填：档案里确有回填天（否则这条守卫是空转）', bfCount > 0, String(bfCount));
+
+    // ★ 2026-10-04 合流改判（原「档案里确有回填天（否则这条守卫是空转）」必然恒红）：
+    //   main 线 scripts/backfill_factors.mjs 已把 208 个 lhb 回填天用**可复核原料**
+    //   升级为七因子真分（K 线重建池 + 同花顺 881 年线行业/成交额；--validate 对真实日
+    //   零误差），src/pipeline.js::recalcAll 按原料可得性重新裁定后 emotion._backfill
+    //   归零 —— 这是**正确终态**，不是"标记丢失"（实测 main 原样跑本项即为 0）。
+    //   故断言从"存在回填天"改为真正的不变量，任何一半坏掉都必须红：
+    //     ① 标记 ↔ 形态一致：回填形态的天必须带标记（防重算静默抹标记 → 单因子假分
+    //        混进回测样本）；真分天不得残留标记（防升级成果被前端/回测永久过滤）；
+    //     ② 升级可核验：原生回填天（buildBackfillDay 的 summary.backfilled）必须存在，
+    //        且每一个都带升级来源留痕（summary.backfill_sources）——否则"归零"无法
+    //        与"标记被弄丢"区分，守卫就成了空转。
+    //   判据与 src/pipeline.js::isBackfillShaped 同源，但此处**独立重写**：守卫不得复用
+    //   被验代码的私有函数，否则规则写错时守卫会跟着一起错（老毛病，勿回退）。
+    const isBackfillShapedDay = (d) => {
+      const s = d && d.summary;
+      if (!s) return false;
+      const indCount = s.ind_count;
+      const hasIndustry = indCount != null && Number.isFinite(+indCount) && +indCount > 0;
+      const hasBreadth = s.up_count != null && s.down_count != null;
+      if (hasIndustry || hasBreadth) return false;
+      return s.lhb_daily_net != null || s.lhb_all_net != null;
+    };
+    const shapeCount = days.filter(isBackfillShapedDay).length;
+    const mislabeled = days.filter((d) => isBackfillShapedDay(d) !== !!(d.emotion && d.emotion._backfill));
+    check('回填：标记与形态一致（回填形态必须带标记；真分天不得残留标记）',
+      mislabeled.length === 0,
+      `形态 ${shapeCount} / 标记 ${bfCount}；不一致：${mislabeled.slice(0, 3).map((d) => d.trade_date).join(',')}`);
+    const nativeBackfill = days.filter((d) => d.summary && d.summary.backfilled === true);
+    const withProvenance = nativeBackfill.filter((d) => d.summary.backfill_sources).length;
+    check('回填：档案可核验（有原生回填天，且每条都带升级来源留痕）',
+      nativeBackfill.length > 0 && withProvenance === nativeBackfill.length,
+      `原生 ${nativeBackfill.length} / 带来源 ${withProvenance}`);
+
     if (sn) {
       check('回填：回测样本数 = 档案天数 − 回填天数（三者必须对得上账）',
         sn.archiveDays === days.length && sn.excludedBackfillDays === bfCount
