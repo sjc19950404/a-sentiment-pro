@@ -20,7 +20,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // ── 构造一份「合规」的结构化报告（模拟 parseReport 的输出） ──────────────────
 // 章节标题保持 buildBrief 的真实形态（带历史圆形序号前缀）——
 // 导出层要负责把它翻成公文的「一、」，这正是要验的翻译链路，不能提前替它做掉。
-const secTitles = ['① 情绪定位', '② 资金面', '③ 盈亏效应', '④ 广度与量能', '⑤ 题材结构', '⑥ 综合研判', '⑦ 模拟交易复盘'];
+const secTitles = ['① 情绪定位', '② 资金面', '③ 盈亏效应', '④ 广度与量能', '⑤ 题材结构', '⑥ 综合研判'];
 function goodRep() {
   return {
     meta: '数据日期 2026-09-30 · 样本 33 个交易日',
@@ -91,10 +91,10 @@ test('正向：isAuditPass 与 auditReport().pass 一致', () => {
 });
 
 test('契约：期望章节数是人工声明的常量（若从 DOM 数，缺段永远自洽、永远发现不了）', () => {
-  assert.equal(EXPECTED_SECTIONS, 7);
+  assert.equal(EXPECTED_SECTIONS, 6);
   // 源码里必须是字面量常量，不能是「数出来」的
   const src = readFileSync(path.join(ROOT, 'src', 'report_audit.js'), 'utf8');
-  assert.match(src, /export const EXPECTED_SECTIONS = 7;/);
+  assert.match(src, /export const EXPECTED_SECTIONS = 6;/);
 });
 
 // ────────────────────────── 负向：每种破坏都必须被拦下 ──────────────────────────
@@ -115,9 +115,9 @@ test('负向①：摘要缺失 → abstract-present 拦下', () => {
   mustFail((rep) => { rep.abstract = ''; }, 'abstract-present');
 });
 
-test('负向②：章节只有 6 段（少一段）→ sections-count 拦下并报出实际段数', () => {
-  const hit = mustFail((rep) => { rep.sections = rep.sections.slice(0, 6); }, 'sections-count');
-  assert.match(hit.reason, /6/);
+test('负向②：章节只有 5 段（少一段）→ sections-count 拦下并报出实际段数', () => {
+  const hit = mustFail((rep) => { rep.sections = rep.sections.slice(0, 5); }, 'sections-count');
+  assert.match(hit.reason, /5/);
 });
 
 test('负向③：某段缺口径折叠件 → caliber-per-section 拦下', () => {

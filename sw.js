@@ -13,7 +13,7 @@
 //   （scripts/check_offline_sync.mjs）——复制能保证兼容性，守卫能保证不分叉。
 //   这是全项目唯一一处刻意的代码重复，理由与看门狗都在注释里。
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const SHELL_CACHE = `aspro-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `aspro-data-${CACHE_VERSION}`;
 
@@ -22,11 +22,9 @@ const SHELL_ASSETS = [
   './index.html',
   './app.js',
   './style.css',
-  './paper_ui.js',
   './src/report.js',
   './src/report_audit.js',
   './src/seats.js',
-  './src/paper_review.js',
 ];
 
 const DATA_PREFETCH = [

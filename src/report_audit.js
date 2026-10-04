@@ -24,8 +24,9 @@ export const AUDIT_VERSION = 'report-audit-v2';
  * 用户给定的模板契约里「固定几大章节」。
  * 数字写在这里而不是从 DOM 数出来——若从 DOM 数，少一段时光看数字永远"自洽"，
  * 就永远发现不了缺段。**必须**是人工声明的期望值，才能当判据。
+ * 历史：原为 7（含「⑦ 模拟交易复盘」）；模拟交易台面下线后改为 6，第⑦段不再渲染。
  */
-export const EXPECTED_SECTIONS = 7;
+export const EXPECTED_SECTIONS = 6;
 
 /** 报头名称（与 src/report.js 的 REPORT_TITLE 同值，防漂移） */
 export const MASTHEAD = 'A股市场情绪研判简报';

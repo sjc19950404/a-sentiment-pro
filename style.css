@@ -577,13 +577,6 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .gm-mid { text-align: left; }
 }
 
-/* ── 区六：模拟交易 · 纸上交易台 ──
-   配色沿用本页「价格涨红跌绿」约定（--up 红 / --down 绿），
-   因为这里展示的确实是价格与盈亏方向，不是「对 A 股的影响方向」。
-   状态标签（.stag）是另一套语义：成交/在途/被拒/失效，用蓝/橙/红/灰区分。 */
-.paper-acct, .paper-order, .paper-pos, .paper-pend, .paper-hist, .paper-perf, .paper-picks, .paper-alerts, .paper-batch, .paper-log { grid-column: span 2; }
-@media (max-width: 860px) { .paper-acct, .paper-order, .paper-pos, .paper-pend, .paper-hist, .paper-perf, .paper-picks, .paper-alerts, .paper-batch, .paper-log { grid-column: span 1; } }
-
 /* 交易预警：与「研判推荐」并排的两层结构同款。
    左色条按严重度分色（风险红 / 机会绿 / 提示灰），让用户一眼扫到最该看的那条；
    排序在引擎里就做完了（risk > opp > tip），UI 不重排。 */
@@ -752,29 +745,6 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .pk-row { flex-wrap: wrap; }
   .pk-actions { flex-direction: row; align-items: center; width: 100%; justify-content: flex-end; }
 }
-#paperNavSvg { width: 100%; height: 110px; }
-#paperNavSvg polyline { fill: none; stroke-width: 2; }
-#paperNavSvg line { stroke: var(--line); }
-#paperNavSvg circle { cursor: pointer; opacity: 0; }
-#paperNavSvg circle:hover, #paperNavSvg circle:focus { opacity: 1; }
-.pnav-pt { pointer-events: all; stroke: transparent; stroke-width: 8px; }
-
-.ps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(108px, 1fr)); gap: 8px; }
-.ps-cell { background: var(--card2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px;
-  min-width: 0; cursor: pointer; }
-.ps-cell:hover, .ps-cell:focus-visible { border-color: var(--acc); }
-.ps-cell.wide { grid-column: 1 / -1; cursor: default; }
-.ps-k { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ps-v { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ps-n { font-size: 10.5px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
-.ps-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-.ps-bar #paperMsg { font-size: 11.5px; }
-/* 初始资金：与一排操作按钮同栏。输入框偏窄即可（金额量级大，靠右对齐方便核对位数） */
-.ps-init { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
-.ps-init input { width: 104px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
-  color: var(--txt); padding: 5px 8px; font-size: 12.5px; font-family: inherit; text-align: right;
-  font-variant-numeric: tabular-nums; }
 .ps-init input:focus { border-color: var(--acc); outline: none; }
 
 /* 下单表单 */
@@ -875,12 +845,6 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
   .po-form input { min-height: 34px; }
   .ps-cell { padding: 9px 11px; }
 }
-@media (max-width: 860px) {
-  /* 手机上至少 120px 一格（两列）：金额「1,000,000.00」约 108px 宽，
-     三列排布会被截成「1,000,0…」——金额截断不可接受，宁可少放一列 */
-  .ps-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
-}
-
 /* ── 打印：兜底样式 ──
    主路径是「打印」按钮 → 独立打印窗口（内容就是导出文档那一版，版式最正规）。
    但用户也可能直接按 Ctrl+P，那时打印的是整个深色看板——深色底打印出来是一团黑，
@@ -1419,7 +1383,7 @@ main[aria-hidden="true"] { display: none; }
     --acc: #000; --up: #c0392b; --down: #1e7e34; --warn: #9a6b00; --focus: #000; }
   html, body { background: #fff !important; color: #000 !important; }
   .topbar, .zonenav, #alerts, .foot, .totop, .drawer, .drawer-mask,
-  #zone-overview, #zone-detail, #zone-backtest, #zone-global, #zone-paper { display: none !important; }
+  #zone-overview, #zone-detail, #zone-backtest, #zone-global { display: none !important; }
   .zone { padding: 0 !important; }
   /* 区头前的强调色块在黑白打印里只是一个黑点，去掉；屏幕交互提示同理 */
   #zone-brief .zone-head h3::before { display: none !important; }

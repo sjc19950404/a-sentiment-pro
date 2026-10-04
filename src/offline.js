@@ -18,7 +18,7 @@
 //     断网时回退到最近一次成功缓存的那一份，并在页面上显式标注「离线」。
 //     绝不因离线就用空数据——宁可显示旧数据 + 明确标注。
 
-export const CACHE_VERSION = 'v1';
+export const CACHE_VERSION = 'v2';
 export const SHELL_CACHE = `aspro-shell-${CACHE_VERSION}`;
 export const DATA_CACHE = `aspro-data-${CACHE_VERSION}`;
 
@@ -35,11 +35,9 @@ export const SHELL_ASSETS = Object.freeze([
   './index.html',
   './app.js',
   './style.css',
-  './paper_ui.js',
   './src/report.js',
   './src/report_audit.js',
   './src/seats.js',
-  './src/paper_review.js',
 ]);
 
 /**
