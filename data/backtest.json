@@ -1613,6 +1613,70 @@
   "unknownDays": 2,
   "note": "逐日宽度序列不在 archive（shift 的背离触发源缺失），本段 shift 仅由高潮末段触发，语义偏保守（少触发切换期=帽子偏高）；unknown 日帽子为 null 不压制（天数见 unknownDays）。regime 判定用存档综合分（与前端面板同口径），非 train 权重重算分。"
  },
+ "v53tpPartial": {
+  "w": {
+   "s_net": 0.2,
+   "s_pos": 0.1,
+   "s_brd": 0.2,
+   "s_hot": 0.1,
+   "s_zdt": 0.15,
+   "s_zbl": 0.1,
+   "s_amt": 0.15
+  },
+  "sharpe": -1.525,
+  "maxDd": 0.0577,
+  "calmar": -1.044,
+  "annual": -0.0603,
+  "total": -0.0577,
+  "winRate": 0.0546,
+  "profitRatio": 0.479,
+  "sortino": -1.647,
+  "emptyRatio": 0.0124,
+  "params": {
+   "mode": "partial",
+   "ladder": [
+    [
+     1.08,
+     0.5
+    ],
+    [
+     1.15,
+     0
+    ]
+   ],
+   "semantics": "持仓腿累计涨幅 +8% 压半仓、+15% 清仓；档位只升不降，清仓后信号仍满足则按普通规则重开"
+  },
+  "triggeredDays": 0,
+  "note": "止盈的用武之地在个股语义（腿波动大、8%/回撤 30% 可达）；指数池回测里腿峰值通常 <5%——与单笔止损同款边界：机制已实现并跨语言锁定，但本样本零触发属常态而非失效。"
+ },
+ "v53tpTrail": {
+  "w": {
+   "s_net": 0.2,
+   "s_pos": 0.1,
+   "s_brd": 0.2,
+   "s_hot": 0.1,
+   "s_zdt": 0.15,
+   "s_zbl": 0.1,
+   "s_amt": 0.15
+  },
+  "sharpe": -1.525,
+  "maxDd": 0.0577,
+  "calmar": -1.044,
+  "annual": -0.0603,
+  "total": -0.0577,
+  "winRate": 0.0546,
+  "profitRatio": 0.479,
+  "sortino": -1.647,
+  "emptyRatio": 0.0124,
+  "params": {
+   "mode": "trailing",
+   "trail": 0.3,
+   "activate": 1.05,
+   "semantics": "浮盈 ≥5% 激活后，自持仓峰值回撤 ≥30% 次日离场（浮亏阶段不越权、归止损管）；离场不受仓位平滑约束"
+  },
+  "triggeredDays": 0,
+  "note": "同 v53tpPartial.note：零触发=指数腿无足够浮盈可保护，机制中性（无害）且已由夹具锁定语义。"
+ },
  "best": {
   "w": {
    "s_net": 0.1463,

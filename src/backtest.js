@@ -28,31 +28,54 @@ export const V52_PARAMS = {
 const clamp = (x, lo, hi) => Math.min(Math.max(x, lo), hi);
 
 // ────────────────────────── 仓位（收盘打分 → 次日仓位） ──────────────────────────
-// V5.3 新增两个可选参数（默认关闭，confirmDays=0 / maxPosByDay=null 时与旧版逐位一致，
-// Python parity 夹具锁的是默认行为；新语义由夹具的 v53 参数组锁定）：
+// V5.3 新增三个可选参数（默认关闭，confirmDays=0 / maxPosByDay=null / takeProfit=null
+// 时与旧版逐位一致，Python parity 夹具锁的是默认行为；新语义由夹具的 v53 参数组锁定）：
 //   · confirmDays（右侧二次确认）：从空仓进入**半仓档**（panic<v<lo 的左侧回升区）
 //     需要连续 confirmDays+1 日信号成立——第一日只记账不开仓，杜绝"接飞刀"。
 //     只作用于半仓档开仓：v≥lo 是趋势强信号（右侧本身），止损/过热/清仓路径不受影响。
 //   · maxPosByDay（regime 逐日仓位帽子）：市场状态（src/position_policy.js 的区间
 //     上限）逐日压制 cap——与回撤降仓取更紧者（min）；情绪打分仍是信号主路径，
 //     帽子只做仓位上限（"信号归信号、帽子归帽子"）。
+//   · takeProfit（止盈，V5.3 P1）：两种模式可切换——
+//     partial（分批止盈）：持仓腿累计涨幅 legCum≥ladder[k][0] → cap 压至
+//       ladder[k][1]×maxPos（档位只升不降；[1.08,0.5] 即 +8% 减半、[1.15,0] 再清仓）。
+//     trailing（移动止盈）：legCum 自峰值回撤 ≥trail 且峰值已到 activate（浮盈激活线，
+//       浮亏阶段是止损的职责、不越权）→ 次日清仓，不受仓位平滑约束（风控优先）。
+//     腿状态（legCum/legPeak/tpTier）在 prevTarget===0 的空仓日重置——止盈清仓后
+//     信号仍满足则按普通开仓规则重进（止盈不锁死再入场），重进是新腿从 1 计。
 export function positions(scores, rets, p = BASE_PARAMS) {
   const {
     hi = DEFAULT_TH.hi, lo = DEFAULT_TH.lo,
     panic = DEFAULT_TH.panic, overheat = DEFAULT_TH.overheat,
     maxPos = 1.0, stopLoss = 0, ddTrigger = 0, maxPosChg = 0,
-    confirmDays = 0, maxPosByDay = null,
+    confirmDays = 0, maxPosByDay = null, takeProfit = null,
   } = p;
+  const tpLadder = takeProfit && takeProfit.mode === 'partial' && Array.isArray(takeProfit.ladder)
+    ? takeProfit.ladder : null;
+  const tpTrail = takeProfit && takeProfit.mode === 'trailing'
+    ? { trail: takeProfit.trail ?? 0.3, activate: takeProfit.activate ?? 1.05 } : null;
+  const tpOn = !!(tpLadder || tpTrail); // mode 非法/none → 全部新逻辑旁路（零行为差异）
   const n = scores.length;
   const raw = new Array(n).fill(0);
   let held = false;
   let eq = 1, peak = 1, prevTarget = 0;
   let pending = 0; // 空仓期连续满足 v>panic 的天数（右侧二次确认的计数器）
+  let legCum = 1; // 持仓腿累计价格路径（开仓生效日起 ∏(1+r)）
+  let legPeak = 1; // 持仓期峰值（移动止盈基准）
+  let tpTier = 0; // 分批止盈已触发档数（只升不降；0=未触发）
   for (let i = 0; i < n; i++) {
     const v = scores[i];
     if (rets) { // 当日收盘：先结算昨日目标仓位在当日的盈亏（无前视）
       eq *= 1 + prevTarget * rets[i];
       peak = Math.max(peak, eq);
+    }
+    // 空仓日（昨日决定空仓）→ 持仓腿结束，腿状态重置：
+    // 重置必须在止盈判定/cap 压制**之前**——否则旧腿档位会压制当日的新开仓决定
+    if (tpOn && prevTarget === 0) { legCum = 1; legPeak = 1; tpTier = 0; }
+    // 持仓腿价格路径累积（今日是持仓日才计——T+1 口径与 eq 结算一致）
+    if (tpOn && rets && prevTarget > 0) {
+      legCum *= 1 + rets[i];
+      legPeak = Math.max(legPeak, legCum);
     }
     let cap = maxPos;
     if (ddTrigger < 0 && rets) { // 回撤动态降仓（类凯利）
@@ -67,13 +90,24 @@ export function positions(scores, rets, p = BASE_PARAMS) {
         && maxPosByDay[i] != null && Number.isFinite(+maxPosByDay[i])) {
       cap = Math.min(cap, Math.max(0, +maxPosByDay[i]));
     }
+    // 分批止盈档位升级（只升不降，while 防单日跳档：涨逾两档阈值时连升）
+    if (tpLadder && held) {
+      while (tpTier < tpLadder.length && legCum >= tpLadder[tpTier][0]) tpTier++;
+    }
+    // 分批止盈档位压制：已触发档的系数×maxPos 与各帽子取更紧（dd/regime 同 min 语义）
+    if (tpLadder && tpTier > 0) cap = Math.min(cap, tpLadder[tpTier - 1][1] * maxPos);
+    // 移动止盈：浮盈激活后才跟踪回撤（浮亏阶段归止损管，不越权）
+    let trailHit = false;
+    if (tpTrail && held && legPeak >= tpTrail.activate) {
+      if (1 - legCum / legPeak >= tpTrail.trail) trailHit = true;
+    }
     const stopHit = stopLoss < 0 && held && rets && rets[i] <= stopLoss;
     // 右侧二次确认计数：空仓期 v>panic 连续天数（含强信号日，但强信号日不走半仓档
     // 不消费计数）；一旦 v<=panic 归零重数（反转中断则重新确认）
     if (v > panic && !held) pending++;
     else pending = 0;
     let target;
-    if (stopHit) target = 0;                       // 止损优先于信号
+    if (stopHit || trailHit) target = 0;          // 止损/移动止盈：风控优先于信号
     else if (v >= overheat) target = held ? cap : 0; // 过热只减仓不新建
     else if (v >= lo) target = cap;
     // ⚠ 确认只拦"空仓进场"（held 或已连续确认才给半仓）：持仓中的半仓减仓**不受**确认
@@ -82,7 +116,7 @@ export function positions(scores, rets, p = BASE_PARAMS) {
     //   （夹具由同版 Python 生成），此类"默认行为不变"约束必须配行为锚单测。
     else if (v > panic) target = (held || pending > confirmDays) ? 0.5 * cap : 0;
     else target = 0;
-    if (maxPosChg > 0 && !stopHit) {               // 仓位平滑：止损不受约束
+    if (maxPosChg > 0 && !stopHit && !trailHit) { // 仓位平滑：止损/移动止盈不受约束
       target = clamp(target, prevTarget - maxPosChg, prevTarget + maxPosChg);
     }
     held = target > 0;

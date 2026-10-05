@@ -70,7 +70,7 @@ for name, seed in ASSETS:
 def leg(rr, scores, **kw):
     """单个标的：仓位 → 成本 → 策略收益（与 JS runBacktest 单腿同义）"""
     pos_kw = {k: kw[k] for k in ("max_pos", "stop_loss", "dd_trigger", "max_pos_chg",
-                                  "confirm_days", "max_pos_by_day") if k in kw}
+                                  "confirm_days", "max_pos_by_day", "take_profit") if k in kw}
     p = sb.positions(pd.Series(scores), ret=pd.Series(rr), **TH, **pos_kw)
     cost = sb.turnover_cost(p, kw.get("comm", 0.0), kw.get("stamp", 0.0), kw.get("slip", 0.0))
     return p, cost, pd.Series(rr) * p.values - cost
@@ -112,6 +112,41 @@ out = {
     "pool": pool,
 }
 
+# ── 【V5.3】止盈跨语言锁定（tp 段）：确定性触发路径，不用随机序列 ──────────
+# 随机 40 日序列累计涨幅到不了 8%（σ=1.2%），止盈根本不触发就成了瞎夹具；
+# 这里构造明确路径：partial 走"+8% 减半 → +15% 清仓 → 信号仍在重开"，
+# trail 走"浮盈激活 → 回撤 4%/23% 不触发（防误杀） → 回撤 38.6% 触发离场"。
+TP_N = 20
+TP_SCORES = np.full(TP_N, 70.0)  # 持续强信号：隔离止盈语义（信号路径不添乱）
+TP_PARTIAL_RETS = np.concatenate([np.full(16, 0.01), np.full(4, 0.005)])
+# 1.03^4≈1.1255（≥activate 1.05 激活）；-4% → 回撤 4%；-20%×2 → 回撤 38.6% ≥ 30% 触发
+TP_TRAIL_RETS = np.concatenate([np.full(4, 0.03), [-0.04], np.full(2, -0.20), np.full(13, 0.01)])
+assert len(TP_PARTIAL_RETS) == TP_N and len(TP_TRAIL_RETS) == TP_N
+
+TP_CASES = {
+    "partial": dict(
+        scores=TP_SCORES, rets=TP_PARTIAL_RETS,
+        kw=dict(take_profit=dict(mode="partial", ladder=[[1.08, 0.5], [1.15, 0.0]]))),
+    "trail": dict(
+        scores=TP_SCORES, rets=TP_TRAIL_RETS,
+        kw=dict(take_profit=dict(mode="trailing", trail=0.3, activate=1.05))),
+}
+
+out["tp"] = {}
+for name, c in TP_CASES.items():
+    p, cost, strat = leg(c["rets"], c["scores"], **c["kw"])
+    opens = int(((p > 0) & (p.shift(1) == 0)).sum())
+    out["tp"][name] = {
+        "params": {**TH, **c["kw"]},
+        "scores": [float(x) for x in c["scores"]],
+        "rets": [float(x) for x in c["rets"]],
+        "positions": [round(float(x), 10) for x in p.tolist()],
+        "cost": [round(float(x), 12) for x in cost.tolist()],
+        "strat": [round(float(x), 12) for x in strat.tolist()],
+        "metrics": asdict(sb._metrics(strat, p, opens)),
+    }
+
+
 os.makedirs(os.path.dirname(FIXTURE), exist_ok=True)
 with open(FIXTURE, "w", encoding="utf-8") as f:
     json.dump(out, f, ensure_ascii=False, indent=1)
@@ -122,3 +157,7 @@ for k, v in single.items():
 for k, v in pool.items():
     m = v["metrics"]
     print(f"  pool.{k}:   总收益={m['total_ret']} 夏普={m['sharpe']} 回撤={m['max_dd']} 开仓={m['trades']}")
+for k, v in out["tp"].items():
+    m = v["metrics"]
+    pos = v["positions"]
+    print(f"  tp.{k}:     开仓={m['trades']} 仓位路径(去重)={[x for i, x in enumerate(pos) if i == 0 or x != pos[i-1]]}")

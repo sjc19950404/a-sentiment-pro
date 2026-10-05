@@ -88,7 +88,8 @@ def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
               ret: pd.Series = None, dd_trigger: float = 0.0,
               max_pos_chg: float = 0.0,
               confirm_days: int = 0,
-              max_pos_by_day=None) -> pd.Series:
+              max_pos_by_day=None,
+              take_profit=None) -> pd.Series:
     """收盘打分 → 次日仓位（T+1）。满仓 max_pos / 半仓 0.5*max_pos / 空仓 0。
     过热区(≥overheat)不清仓但禁止新建仓：对已有持仓保持，对空仓者保持空仓。
     止损（stop_loss<0 启用，如 -0.08）：持仓期当日标的收盘跌幅 ≤ 止损线，次日强制清仓。
@@ -101,19 +102,43 @@ def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
     只作用于半仓档开仓（v≥lo 趋势强信号不受限），信号中断（v≤panic）则重新计数。
     【V5.3】regime 逐日仓位帽子（max_pos_by_day 序列启用）：市场状态输出的仓位区间上限
     逐日压制 cap——与回撤降仓取更紧者（min）；缺失日不压制（缺失显式化在调用方）。
+    【V5.3】止盈（take_profit 字典启用，两种模式可切换）：
+      mode='partial'（分批止盈）：持仓腿累计涨幅 legCum≥ladder[k][0] → cap 压至
+        ladder[k][1]×max_pos（档位只升不降，单日跳档连升；腿结束重置）。
+      mode='trailing'（移动止盈）：legCum 自峰值回撤 ≥trail 且峰值已到 activate
+        （浮盈激活线——浮亏阶段归止损管，不越权）→ 次日清仓，不受平滑约束。
+      腿状态在空仓日（prev_target==0）重置——止盈清仓后信号仍满足则按普通开仓规则
+      重进（止盈不锁死再入场），重进是新腿从 1 计。
     全部决策只用当日收盘已知信息（score[i]、ret[i]、截至 ret[i] 的净值），T+1 生效，无前视。
-    confirm_days=0 / max_pos_by_day=None 时与 V5.2 行为逐位一致（parity 锚）。"""
+    confirm_days=0 / max_pos_by_day=None / take_profit=None 时与 V5.2 行为逐位一致（parity 锚）。"""
     pos = pd.Series(np.nan, index=s.index)
     held = False
     r = ret.values if ret is not None else None
     mpd = list(max_pos_by_day) if max_pos_by_day is not None else None
+    tp = take_profit if isinstance(take_profit, dict) else None
+    tp_ladder = list(tp["ladder"]) if tp and tp.get("mode") == "partial" and tp.get("ladder") else None
+    tp_trail = None
+    if tp and tp.get("mode") == "trailing":
+        tp_trail = (float(tp.get("trail", 0.3)), float(tp.get("activate", 1.05)))
+    tp_on = tp_ladder is not None or tp_trail is not None
     eq = peak = 1.0
     prev_target = 0.0
     pending = 0
+    leg_cum = 1.0   # 持仓腿累计价格路径（开仓生效日起 ∏(1+r)）
+    leg_peak = 1.0  # 持仓期峰值（移动止盈基准）
+    tp_tier = 0     # 分批止盈已触发档数（只升不降）
     for i, v in enumerate(s.values):
         if r is not None:                      # 当日收盘：先结算昨日目标仓位的当日盈亏
             eq *= (1.0 + prev_target * r[i])
             peak = max(peak, eq)
+        # 空仓日 → 持仓腿结束，腿状态重置（必须在止盈判定/cap 压制之前，否则旧腿档位压制新开仓）
+        if tp_on and prev_target == 0:
+            leg_cum = leg_peak = 1.0
+            tp_tier = 0
+        # 持仓腿价格路径累积（今日是持仓日才计——T+1 口径与 eq 结算一致）
+        if tp_on and r is not None and prev_target > 0:
+            leg_cum *= (1.0 + r[i])
+            leg_peak = max(leg_peak, leg_cum)
         if dd_trigger < 0 and r is not None:   # 回撤动态降仓（类凯利风控）
             cur_dd = 1.0 - eq / peak
             if cur_dd >= -dd_trigger:
@@ -126,14 +151,26 @@ def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
             cap = max_pos
         if mpd is not None and i < len(mpd) and mpd[i] is not None and np.isfinite(mpd[i]):  # regime 帽子取更紧（None=缺失不压制）
             cap = min(cap, max(0.0, float(mpd[i])))
+        # 分批止盈档位升级（只升不降，while 防单日跳档）
+        if tp_ladder is not None and held:
+            while tp_tier < len(tp_ladder) and leg_cum >= tp_ladder[tp_tier][0]:
+                tp_tier += 1
+        # 分批止盈档位压制：已触发档系数×max_pos 与各帽子取更紧
+        if tp_ladder is not None and tp_tier > 0:
+            cap = min(cap, tp_ladder[tp_tier - 1][1] * max_pos)
+        # 移动止盈：浮盈激活后才跟踪回撤（浮亏阶段归止损管，不越权）
+        trail_hit = False
+        if tp_trail is not None and held and leg_peak >= tp_trail[1]:
+            if 1.0 - leg_cum / leg_peak >= tp_trail[0]:
+                trail_hit = True
         stop_hit = stop_loss < 0 and held and r is not None and r[i] <= stop_loss
         # 右侧二次确认计数：空仓期 v>panic 连续天数；中断归零重新确认
         if v > panic and not held:
             pending += 1
         else:
             pending = 0
-        if stop_hit:
-            target = 0.0                           # 止损优先于信号：次日清仓
+        if stop_hit or trail_hit:
+            target = 0.0                           # 止损/移动止盈优先于信号：次日清仓
         elif v >= overheat:
             target = cap if held else 0.0          # 只减仓不新建
         elif v >= lo:
@@ -145,7 +182,7 @@ def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
             target = 0.5 * cap if (held or pending > confirm_days) else 0.0
         else:
             target = 0.0
-        if max_pos_chg > 0 and not stop_hit:   # 仓位平滑：限制单日跳变（止损除外）
+        if max_pos_chg > 0 and not stop_hit and not trail_hit:   # 平滑：止损/移动止盈不受约束
             target = min(max(target, prev_target - max_pos_chg),
                          prev_target + max_pos_chg)
         held = target > 0 or (held and target > 0)

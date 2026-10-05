@@ -164,6 +164,15 @@ const maxPosByDay = regimeSeries.map((s) => {
 const pV53 = { ...pV52, confirmDays: 1, maxPosByDay };
 const v53 = poolBacktest(scoredBase, retsByAsset, pV53);
 
+// ── V5.3 止盈对照（P1-1：分批/移动两种模式可切换，在 v53 信号+帽子基础上叠加） ──
+// 参数即夹具口径（test/fixtures/parity_v52.json 的 tp 段同款），跨语言逐位锁定：
+//   · partial：+8% 减半、+15% 清仓（档位只升不降，腿结束重置）
+//   · trailing：浮盈 ≥5% 激活后，自峰值回撤 ≥30% 离场（浮亏阶段不越权、归止损管）
+const pV53tpP = { ...pV53, takeProfit: { mode: 'partial', ladder: [[1.08, 0.5], [1.15, 0]] } };
+const pV53tpT = { ...pV53, takeProfit: { mode: 'trailing', trail: 0.3, activate: 1.05 } };
+const v53tpP = poolBacktest(scoredBase, retsByAsset, pV53tpP);
+const v53tpT = poolBacktest(scoredBase, retsByAsset, pV53tpT);
+
 const payload = {
   meta: {
     // 取存档的数据生成时间，而非本次运行时间：archive 未变时 backtest.json 不因时间戳而变，
@@ -211,6 +220,23 @@ const payload = {
       + '语义偏保守（少触发切换期=帽子偏高）；unknown 日帽子为 null 不压制（天数见 unknownDays）。'
       + 'regime 判定用存档综合分（与前端面板同口径），非 train 权重重算分。',
   },
+  // V5.3 止盈口径（P1-1）：在 v53（确认+帽子）基础上叠加，两模式并列供切换对比。
+  // 与 v53 同信号同成本同帽子，差异即止盈机制的净贡献（腿生命周期：累计涨幅/峰值回撤）。
+  // triggeredDays = 与 v53 仓位序列的差异数（止盈实际介入的天数）——零触发时如实
+  // 归零并披露原因，不假装有贡献（本样本实测：指数腿峰值 +1.6%，远低于 5% 激活线）。
+  v53tpPartial: {
+    ...strip({ w: plainW, ...v53tpP.perf }), nav: undefined,
+    params: { mode: 'partial', ladder: [[1.08, 0.5], [1.15, 0]], semantics: '持仓腿累计涨幅 +8% 压半仓、+15% 清仓；档位只升不降，清仓后信号仍满足则按普通规则重开' },
+    triggeredDays: v53tpP.pos.filter((v, i) => Math.abs(v - v53.pos[i]) > 1e-12).length,
+    note: '止盈的用武之地在个股语义（腿波动大、8%/回撤 30% 可达）；指数池回测里腿峰值'
+      + '通常 <5%——与单笔止损同款边界：机制已实现并跨语言锁定，但本样本零触发属常态而非失效。',
+  },
+  v53tpTrail: {
+    ...strip({ w: plainW, ...v53tpT.perf }), nav: undefined,
+    params: { mode: 'trailing', trail: 0.3, activate: 1.05, semantics: '浮盈 ≥5% 激活后，自持仓峰值回撤 ≥30% 次日离场（浮亏阶段不越权、归止损管）；离场不受仓位平滑约束' },
+    triggeredDays: v53tpT.pos.filter((v, i) => Math.abs(v - v53.pos[i]) > 1e-12).length,
+    note: '同 v53tpPartial.note：零触发=指数腿无足够浮盈可保护，机制中性（无害）且已由夹具锁定语义。',
+  },
   best: strip(best),
   pareto: {
     count: pareto.length, uniqueCount: uniqRows.length, scanned: scan.length,
@@ -232,6 +258,7 @@ console.log(`[backtest] ${dates.length} 个交易日 · 标的 ${ASSETS.join('/'
 console.log(`[backtest] 基准年化 ${(base.perf.annual * 100).toFixed(2)}% 回撤 ${(base.perf.maxDd * 100).toFixed(2)}% 夏普 ${base.perf.sharpe}`);
 console.log(`[backtest] V5.2 年化 ${(v52.perf.annual * 100).toFixed(2)}% 回撤 ${(v52.perf.maxDd * 100).toFixed(2)}% 夏普 ${v52.perf.sharpe}`);
 console.log(`[backtest] V5.3 年化 ${(v53.perf.annual * 100).toFixed(2)}% 回撤 ${(v53.perf.maxDd * 100).toFixed(2)}% 夏普 ${v53.perf.sharpe}（regime 帽子 ${JSON.stringify(regimeCounts)}）`);
+console.log(`[backtest] V5.3+止盈分批 年化 ${(v53tpP.perf.annual * 100).toFixed(2)}% 回撤 ${(v53tpP.perf.maxDd * 100).toFixed(2)}% 夏普 ${v53tpP.perf.sharpe}；+移动 年化 ${(v53tpT.perf.annual * 100).toFixed(2)}% 回撤 ${(v53tpT.perf.maxDd * 100).toFixed(2)}% 夏普 ${v53tpT.perf.sharpe}`);
 console.log(`[backtest] 网格 ${nGrid} 组（worker×${GRID_WORKERS}） → 帕累托非支配 ${pareto.length} 组（去重 ${uniqRows.length}）；滚动 ${rollBase.segments.length} 段，其中重寻优换了权重的段 ${refitChanged}/${rollRefit.segments.length}`);
 console.log(`[backtest] 主线：${mainLine.mains.map((m) => `${m.theme}(${m.themeCount})`).join('、')} · 权重口径偏差 ${payload.meta.weightDrift}`);
 console.log(`[backtest] 写出 ${OUT}`);

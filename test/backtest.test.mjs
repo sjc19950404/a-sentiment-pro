@@ -18,6 +18,7 @@ const toParams = (p) => ({
   comm: p.comm ?? 0, stamp: p.stamp ?? 0, slip: p.slip ?? 0,
   confirmDays: p.confirm_days ?? 0,           // V5.3 右侧二次确认（默认 0 = 旧行为）
   maxPosByDay: p.max_pos_by_day ?? null,      // V5.3 regime 逐日帽子（默认 null = 不用）
+  takeProfit: p.take_profit ?? null,          // V5.3 止盈（默认 null = 旧行为；ladder 嵌套数组直传）
 });
 
 const close = (a, b, tol, msg) => assert.ok(Math.abs(a - b) <= tol,
@@ -253,4 +254,98 @@ test('V5.3 夹具 v53 组：右侧确认 + regime 帽子的跨语言逐位一致
   r.pos.forEach((_, i) => close(r.strat[i], c.strat[i], 1e-12, `v53.strat[${i}]`));
   close(r.perf.sharpe, c.metrics.sharpe, 1e-3, 'v53.sharpe');
   assert.equal(r.perf.opens, c.metrics.trades, 'v53.trades');
+});
+
+// ── V5.3 止盈（takeProfit）：分批/移动，默认 null 时与旧版逐位一致 ──────────
+
+test('V5.3 takeProfit=null：默认行为锚——与不带参数的调用逐位一致', () => {
+  // 行为锚（held-bug 教训的固化）：跨语言夹具测不出"两侧同错"，默认路径不变
+  // 必须用独立断言锁死。止盈是状态机扩展（腿路径/档位），错一个重置时机就会
+  // 污染全部旧口径。
+  const scores = [70, 45, 30, 66, 72, 50, 26, 68, 71, 44];
+  const rets = [0.01, -0.02, 0.03, 0.015, -0.01, 0.02, -0.03, 0.01, 0.005, -0.02];
+  for (const base of [BASE_PARAMS, V52_PARAMS]) {
+    const a = positions(scores, rets, base);
+    const b = positions(scores, rets, { ...base, takeProfit: null });
+    const c = positions(scores, rets, { ...base, takeProfit: { mode: 'none' } });
+    assert.deepEqual(b, a, 'takeProfit 显式 null 必须与缺省逐位一致');
+    assert.deepEqual(c, a, 'mode=none（关闭）必须旁路全部止盈逻辑');
+  }
+});
+
+test('V5.3 分批止盈：+8% 减半 → +15% 清仓 → 信号仍在则重开（腿状态重置）', () => {
+  const p = { ...BASE_PARAMS, takeProfit: { mode: 'partial', ladder: [[1.08, 0.5], [1.15, 0]] } };
+  const scores = Array(20).fill(70);            // 持续强信号：隔离止盈语义
+  const rets = [...Array(16).fill(0.01), ...Array(4).fill(0.005)];
+  const pos = positions(scores, rets, p);
+  // T+1 链：day0 决定满仓 → pos[1..8]=1；1.01^8≈1.0829 于 day8 结算触发第一档
+  // → day9 起半仓；1.01^15≈1.1610 于 day15 触发第二档 → day16 清仓；
+  // day16 空仓日腿重置 + 信号仍在 → day17 重开满仓（新腿、tier 归零）
+  assert.equal(pos[8], 1, '触发前满仓');
+  assert.equal(pos[9], 0.5, '+8% 第一档：次日减半');
+  assert.equal(pos[15], 0.5, '持有半仓直到第二档');
+  assert.equal(pos[16], 0, '+15% 第二档：次日清仓');
+  assert.equal(pos[17], 1, '清仓后信号仍满足 → 重开新腿（tier 重置，非 0.5）');
+  assert.equal(pos[19], 1, '新腿满仓');
+});
+
+test('V5.3 分批止盈：档位只升不降（回踩后再涨不重复触发低档）', () => {
+  const p = { ...BASE_PARAMS, takeProfit: { mode: 'partial', ladder: [[1.05, 0.5]] } };
+  const scores = Array(12).fill(70);
+  // 涨 6%（触发第一档）→ 回踩到 +3%（仍持仓半仓）→ 再涨回 +5%：不得再触发/不得恢复满仓
+  const rets = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, -0.03, 0.02, 0.01, 0.01, 0.01, 0.01];
+  const pos = positions(scores, rets, p);
+  const afterRetrace = pos.slice(8, 12);
+  assert.ok(afterRetrace.every((v) => v === 0.5), '回踩后保持半仓（档位不回退、不重复触发）');
+});
+
+test('V5.3 移动止盈：浮盈激活后回撤 ≥trail 离场；未激活/回撤不足不触发（防误杀）', () => {
+  const p = { ...BASE_PARAMS, takeProfit: { mode: 'trailing', trail: 0.3, activate: 1.05 } };
+  const scores = Array(20).fill(70);
+  // 腿从 day1 起累积（day0 只决定、day1 生效——rets[0] 不进腿）：
+  // day1~3 各 +3% → 1.0927（≥activate 激活）；day4 -4% → 回撤 4% 不触发；
+  // day5 -20% → 回撤 23.2% 不触发；day6 -20% → 回撤 38.6% ≥ 30% 触发 → day7 离场；
+  // day7 空仓重置 + 信号在 → day8 重开新腿
+  const rets = [...Array(4).fill(0.03), -0.04, -0.2, -0.2, ...Array(13).fill(0.01)];
+  const pos = positions(scores, rets, p);
+  assert.equal(pos[6], 1, '回撤 23.2%：不足 30% 继续持有');
+  assert.equal(pos[7], 0, '回撤 38.6% ≥ 30%：次日清仓');
+  assert.equal(pos[8], 1, '离场后信号仍满足 → 重开（新腿重新跟踪）');
+  assert.equal(pos[19], 1, '新腿保持');
+});
+
+test('V5.3 移动止盈：浮亏阶段不触发（激活线之下归止损管，不越权）', () => {
+  const p = { ...BASE_PARAMS, takeProfit: { mode: 'trailing', trail: 0.3, activate: 1.05 } };
+  const scores = Array(8).fill(70);
+  // 先 -8%（浮亏，峰值 1.0 从未到 activate）→ 再 -20%（相对峰值回撤巨大但未激活）
+  const rets = [-0.08, -0.2, -0.2, 0.001, 0.001, 0.001, 0.001, 0.001];
+  const pos = positions(scores, rets, p);
+  assert.ok(pos.slice(1, 6).every((v) => v === 1), '浮亏阶段移动止盈不触发（无止损参数时保持仓位）');
+});
+
+test('V5.3 移动止盈：离场不受仓位平滑约束（风控优先，与止损同级）', () => {
+  const p = {
+    ...BASE_PARAMS, maxPosChg: 0.2,
+    takeProfit: { mode: 'trailing', trail: 0.3, activate: 1.05 },
+  };
+  const scores = Array(12).fill(70);
+  const rets = [...Array(4).fill(0.03), -0.04, -0.2, -0.2, ...Array(5).fill(0.01)];
+  const pos = positions(scores, rets, p);
+  assert.equal(pos[7], 0, '回撤触发的清仓必须一日到位（不被 ±0.2 平滑拖住）');
+});
+
+test('V5.3 夹具 tp 段：分批/移动止盈的跨语言逐位一致（parity 锁）', () => {
+  assert.ok(fx.tp && fx.tp.partial && fx.tp.trail, '夹具必须含 tp 段');
+  for (const name of ['partial', 'trail']) {
+    const c = fx.tp[name];
+    const p = toParams(c.params);
+    const r = runBacktest(c.scores, c.rets, p);
+    r.pos.forEach((v, i) => close(v, c.positions[i], 1e-9, `tp.${name}.positions[${i}]`));
+    r.pos.forEach((_, i) => close(r.strat[i], c.strat[i], 1e-12, `tp.${name}.strat[${i}]`));
+    assert.equal(r.perf.opens, c.metrics.trades, `tp.${name}.trades`);
+  }
+  // 夹具触发性守卫：路径必须真的触发过止盈（防"两侧同错且都不触发"的瞎夹具）
+  const pp = fx.tp.partial.positions;
+  assert.ok(pp.includes(0.5) && pp.includes(0), 'partial 夹具必须含减半与清仓形态');
+  assert.ok(pp[pp.length - 1] === 1, 'partial 夹具必须锁定重开新腿形态');
 });
