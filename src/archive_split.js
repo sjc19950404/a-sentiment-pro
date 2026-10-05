@@ -375,6 +375,9 @@ export function buildSignals(archive, opts = {}) {
   const bFn = typeof opts.breadthFn === 'function' ? opts.breadthFn : null;
   // 跨源一致性互证（#2 本轮）——第二行业源不在档案里（且接口无法回溯），故走注入。
   const xFn = typeof opts.crosscheckFn === 'function' ? opts.crosscheckFn : null;
+  // LLM 舆情参考（V5.3 P2 试点）——LLM 事件抽取/情感打分须联网调模型，
+  // 同步写盘路径做不了 → 照 pain/crosscheck 先例只读已落盘缓存，读不到即 null。
+  const lFn = typeof opts.llmFn === 'function' ? opts.llmFn : null;
   const score = last.emotion?.value ?? last.emotion?.score ?? null;
   const market = fn ? fn({ emotionScore: score, total: assumedTotal, marketValue: 0 }) : null;
   // 数据健康报告（#115）：随轻量档一起下发，让"盯盘/巡检"的读者不必拉完整档
@@ -444,6 +447,12 @@ export function buildSignals(archive, opts = {}) {
   if (xFn) {
     try { crosscheck = xFn(days, { meta: archive?.meta || {} }); } catch { crosscheck = null; }
   }
+  // LLM 舆情参考（V5.3 P2）：注入方完成「读缓存 + llmSentimentBlock 转换」（含证据
+  // 日期防伪与生效三规则），本处只透传结果——保持纯拼装纪律（regime 同款分工）。
+  let llm = null;
+  if (lFn) {
+    try { llm = lFn(days); } catch { llm = null; }
+  }
   // 拐点标签（#4）与每日日报（#4）——走注入，保持本模块"纯拼装、不 import 业务逻辑"的性质。
   //   为什么不在本模块直接 import src/regime.js：本模块的既定纪律是**所有需要业务判断的
   //   段落一律走注入**（health/seats/pain/breadth/crosscheck 皆如此）。保持一致 →
@@ -483,6 +492,8 @@ export function buildSignals(archive, opts = {}) {
         ? regime.seriesCompact.map((r) => ({ trade_date: r[0], value: r[1] }))
         : [],
         breadth, pain, seats, crosscheck,
+        // LLM 舆情参考块（V5.3 P2）：原分不动的 ±5 参考修正——日报「八、舆情参考」节消费
+        llm: llm || null,
         // 背离结论**复用**给日报（同一条结论，不在两处各判一次）——
         //   否则将来改判据会漏改一处，出现"面板说背离、日报说同向"。
         divergence: divergence || null,
@@ -557,6 +568,15 @@ export function buildSignals(archive, opts = {}) {
         + '当日两源常态偏移（方法论差异）已扣除，判定针对的是"偏离常态关系的离群"，'
         + '且**只标记不改数**。未覆盖部分=未核对，不等于没问题。第二源无日期参数，故仅最新日有效。'
       : '未生成（调用方未注入 crosscheck，需第二行业源）',
+    // LLM 舆情参考（V5.3 P2）：{ asOfDate, sentimentRaw, adj, effective, original, modified, events, ... }。
+    // 原分不动（emotion.value 零漂移）、±5 上限、观望区/反向不生效；证据日期与
+    // 目标日不符即 null。⚠ null = 未跑 LLM ≠ "舆情中性"——前端/日报按缺失渲染。
+    llm,
+    llmNote: lFn
+      ? 'LLM 舆情为 P2 试点：±5 分参考修正、原分不动、不独立生成买卖信号；'
+        + '仅与原因子同向（≥65 偏多 / <44 偏空）时生效，观望区与反向一律不生效。'
+        + '事件抽取与情感打分由 scripts/fetch_llm_sentiment.mjs 落盘留痕（含证据日期）。'
+      : '未生成（调用方未注入 llmFn，需 LLM API 配置）',
     // 拐点标签（#4）：{ latest, series, counts, rules }。四态 = 冰点/回暖/高潮/退潮，
     //   由「水位 × 方向」两个正交维度判定；水位以**历史分位**为主判据（实测情绪分
     //   分布高度压缩在 40-65，绝对刻度几乎不分类），绝对刻度仅作交叉披露。

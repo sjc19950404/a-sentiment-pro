@@ -19,6 +19,7 @@ import { buildSeatSeries, seatSeriesSummary, seatVerdict } from '../seats_daily.
 import { buildBreadthSeries, breadthSeriesSummary } from '../breadth.js';
 import { buildRegimeBlock, buildDivergenceBlock } from '../regime.js';
 import { buildDailyReport } from '../daily_report.js';
+import { llmSentimentBlock } from '../llm_sentiment.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, '..', '..', 'data'); // <root>/data（与 pipeline.js 同一目录）
@@ -140,6 +141,25 @@ export function writeShards(archive, dir = DATA_DIR) {
         //   此处只裁剪下发给首屏的那一份，避免"为了一个面板把轻量档吹大"。
         const { rows, ...brief } = raw;
         return { ...brief, rowCount: Array.isArray(rows) ? rows.length : 0 };
+      } catch { return null; }
+    },
+    // LLM 舆情参考（V5.3 P2 试点）：只读已落盘的 llm-sentiment-latest.json
+    //   （由 scripts/fetch_llm_sentiment.mjs 收盘后调 LLM 写入）。
+    //   **只读不现调**——同步写盘路径不能 await LLM；读不到就是 null，
+    //   前端显示"未生成"，绝不把"没跑 LLM"渲染成"舆情中性"。
+    //   转换（±5 截断/生效三规则/证据日期防伪）走 src/llm_sentiment.js 唯一出处，
+    //   判定用的 score/tradeDate 取档案最新日——证据与结论对齐同一天。
+    llmFn: () => {
+      try {
+        const p = path.join(dir, 'llm-sentiment-latest.json');
+        if (!existsSync(p)) return null;
+        const raw = JSON.parse(readFileSync(p, 'utf8'));
+        const all = archive.all_days || [];
+        const last = all[all.length - 1] || null;
+        return llmSentimentBlock(raw, {
+          score: last?.emotion?.value ?? last?.emotion?.score ?? null,
+          tradeDate: last?.trade_date ?? null,
+        });
       } catch { return null; }
     },
     // 拐点标签（#4）：**纯函数、只读档案**（不读盘、不联网）→ 每次写档都刷新，

@@ -89,6 +89,11 @@ export function buildDailyReport(signals = {}) {
   // ── 节 7：数据质量与告警 ────────────────────────────────────────────────
   sections.push(buildQualitySection(S));
 
+  // ── 节 8：舆情参考（LLM 试点，V5.3 P2）─────────────────────────────────
+  //   刻意放最后且 title 自带"参考"：±5 修正不进交易信号（原分不动），读者
+  //   须先看完七个量价/结构节再看这条软信息——试点定位，权重天然最低。
+  sections.push(buildLlmSection(S.llm));
+
   // 汇总 caveats（从各节与 regime 收集，集中给用户看）
   if (regFull.caution) caveats.push(regFull.caution);
   if (div.diverged) caveats.push(`${div.label}：${div.reason}`);
@@ -122,6 +127,7 @@ export function buildDailyReport(signals = {}) {
       relative: 'src/relative.js',
       dirty: 'src/dirty.js',
       health: 'src/health.js',
+      llm: 'src/llm_sentiment.js + scripts/fetch_llm_sentiment.mjs（data/llm-sentiment-latest.json）',
     },
     // 免责与口径声明（报告尾部固定输出）
     disclaimer: '本日报只描述市场状态与风险特征，不构成投资建议；所有读数来自当日已归档数据，缺失项一律标注"未采集/未计算"而非补 0。'
@@ -354,6 +360,37 @@ function buildQualitySection(S) {
     pts.push({ text: `新鲜度状态：${meta.freshness.state}`, kind: 'caution' });
   }
   return { id: 'quality', title: '七、数据质量与告警', level, missing: false, points: pts };
+}
+
+// ── 节 8：舆情参考（LLM 试点）─────────────────────────────────────────────
+//   刻意做成「参考」节而非信号节：±5 修正不进交易链路（原分不动），
+//   未生成时 missing=true（与其他节同款显式缺失，不冒充"舆情中性"）。
+function buildLlmSection(llm) {
+  if (!llm) {
+    return {
+      id: 'llm', title: '八、舆情参考（LLM 试点）', level: 'unknown', missing: true,
+      missingNote: '未生成（需收盘后跑 scripts/fetch_llm_sentiment.mjs；未跑 ≠ 舆情中性）',
+    };
+  }
+  const pts = [];
+  // 主读数：原始分 → 参考分（生效时）；不生效时只给原分与原因
+  if (llm.effective) {
+    pts.push({ text: `参考修正分：${llm.original} → ${llm.modified}（${llm.adj > 0 ? '+' : ''}${llm.adj}，±5 分上限内）`, kind: 'evidence' });
+  } else {
+    pts.push({ text: `参考修正分：不生效（${llm.effectNote}）`, kind: 'info' });
+  }
+  if (llm.sentimentRaw != null) {
+    pts.push({ text: `LLM 舆情读数：${llm.sentimentRaw}（-1~1）${llm.confidence != null ? `，置信度 ${llm.confidence}` : ''}`, kind: 'evidence' });
+  }
+  if (llm.reason) pts.push({ text: `依据：${llm.reason}`, kind: 'evidence' });
+  if (Array.isArray(llm.events) && llm.events.length) {
+    pts.push({ text: `事件抽取：${llm.events.map((e) => `${e.type || '?'}（${e.target || '整体'}，${e.tone || '?'}）`).join('；')}`, kind: 'evidence' });
+  }
+  pts.push({ text: `证据日期 ${llm.asOfDate}｜模型 ${llm.model || '未留痕'}`, kind: 'info' });
+  pts.push({ text: '口径：原分不动、仅参考；不独立生成买卖信号，观望区/反向一律不生效（P2 试点）', kind: 'info' });
+  // level：生效且方向向下 → warn（提示风险）；其余 info（试点信息位，不上告警色）
+  const level = llm.effective && llm.direction === 'bearish' ? 'warn' : 'info';
+  return { id: 'llm', title: '八、舆情参考（LLM 试点）', level, missing: false, points: pts };
 }
 
 // ── 首屏一句话结论 ────────────────────────────────────────────────────────

@@ -41,16 +41,16 @@ test('buildDailyReport: 结构完整（date/headline/tag/divergence/sections/cav
   assert.ok(R.headline.includes('2026-09-30'));
   assert.ok(R.tag.key);
   assert.ok(Array.isArray(R.sections));
-  assert.equal(R.sections.length, 7, '应有七节');
+  assert.equal(R.sections.length, 8, '应有八节（V5.3 增节 8 舆情参考）');
   assert.ok(Array.isArray(R.caveats));
   assert.ok(R.sources && R.sources.regime);
   assert.ok(typeof R.disclaimer === 'string' && R.disclaimer.length > 0);
 });
 
-test('buildDailyReport: 七个分节标题齐全且顺序固定', () => {
+test('buildDailyReport: 八个分节标题齐全且顺序固定', () => {
   const R = buildDailyReport(fullSignals());
   const ids = R.sections.map((s) => s.id);
-  assert.deepEqual(ids, ['regime', 'sentiment', 'breadth', 'pain', 'seats', 'theme', 'quality']);
+  assert.deepEqual(ids, ['regime', 'sentiment', 'breadth', 'pain', 'seats', 'theme', 'quality', 'llm']);
 });
 
 test('buildDailyReport: 高潮日 + 宽度窄 → ★ 切换期（V5.3 矛盾覆盖），headline 含"切换期"与"假繁荣"', () => {
@@ -136,7 +136,7 @@ test('buildDailyReport: ★ 全空输入 → 不炸，标签 unknown，headline 
   assert.equal(R.date, null);
   assert.equal(R.tag.key, 'unknown');
   assert.match(R.headline, /数据不足/);
-  assert.ok(R.sections.length === 7);
+  assert.ok(R.sections.length === 8);
 });
 
 test('buildDailyReport: null 输入不炸', () => {
@@ -327,7 +327,7 @@ test('buildDailyReport: ★ 报告不含任何买卖动作指令（只描述状�
 
 test('buildDailyReport: sources 覆盖全部七节的来源模块', () => {
   const R = buildDailyReport(fullSignals());
-  for (const k of ['regime', 'sentiment', 'breadth', 'pain', 'seats', 'relative', 'dirty', 'health']) {
+  for (const k of ['regime', 'sentiment', 'breadth', 'pain', 'seats', 'relative', 'dirty', 'health', 'llm']) {
     assert.ok(R.sources[k], `缺少来源声明：${k}`);
   }
 });
@@ -350,4 +350,49 @@ test('buildDailyReport: 无背离时不往 caveats 塞噪音', () => {
   const R = buildDailyReport(S);
   assert.equal(R.divergence.diverged, false);
   assert.ok(!R.caveats.some((c) => /假繁荣|底部背离/.test(c)));
+});
+
+// ── V5.3 P2：节 8 舆情参考（LLM 试点，原分不动仅参考） ────────────────────
+
+test('buildDailyReport: 无 llm 段 → 节 8 missing（未生成 ≠ 舆情中性）', () => {
+  const R = buildDailyReport(fullSignals());
+  const sec = R.sections.find((x) => x.id === 'llm');
+  assert.ok(sec, '节 8 必须存在（即使缺数据）');
+  assert.equal(sec.missing, true);
+  assert.match(sec.missingNote, /fetch_llm_sentiment\.mjs/);
+  assert.match(sec.missingNote, /未跑 ≠ 舆情中性/);
+});
+
+test('buildDailyReport: llm 生效块 → 节 8 给参考修正分与口径披露', () => {
+  const S = fullSignals();
+  S.llm = {
+    asOfDate: '2026-09-30', model: 'test-model', sentimentRaw: 0.6, adj: 3,
+    effective: true, effectNote: '同向增强：原分 70 偏多，舆情正面 → 参考分上浮/下调 +3',
+    direction: 'bullish', original: 70, modified: 73,
+    events: [{ type: '业绩预告', target: '某板块', tone: 'positive' }],
+    confidence: 0.7, reason: '龙头业绩预增', note: '口径',
+  };
+  const R = buildDailyReport(S);
+  const sec = R.sections.find((x) => x.id === 'llm');
+  assert.equal(sec.missing, false);
+  assert.equal(sec.level, 'info', '同向增强是参考信息不上告警色');
+  assert.ok(sec.points.some((p) => /70 → 73/.test(p.text)), '参考修正分主读数');
+  assert.ok(sec.points.some((p) => /不独立生成买卖信号/.test(p.text)), '口径披露');
+  assert.ok(sec.points.some((p) => /2026-09-30｜模型 test-model/.test(p.text)), '证据日期与模型留痕');
+  // 原分不动：latest.value 仍是 64.4（llm 不写回）
+  assert.equal(S.latest.value, 64.4);
+});
+
+test('buildDailyReport: llm 反向不生效块 → level=info 且只给原因不给修正分', () => {
+  const S = fullSignals();
+  S.llm = {
+    asOfDate: '2026-09-30', model: 'm', sentimentRaw: -0.8, adj: -4,
+    effective: false, effectNote: '方向矛盾：原分 70 偏多 vs 舆情负面——保守起见保持原分，仅提示分歧',
+    direction: 'bullish', original: 70, modified: null,
+    events: [], confidence: 0.5, reason: null, note: '口径',
+  };
+  const R = buildDailyReport(S);
+  const sec = R.sections.find((x) => x.id === 'llm');
+  assert.ok(sec.points.some((p) => /不生效/.test(p.text)));
+  assert.ok(!sec.points.some((p) => /→/.test(p.text)), '不生效时无修正分形态');
 });

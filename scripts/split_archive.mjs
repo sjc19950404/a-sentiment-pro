@@ -21,6 +21,7 @@ import { buildBreadthSeries, breadthSeriesSummary } from '../src/breadth.js';
 import { aggregateByCode } from '../src/lhb.js';
 import { classifySeries, classifyRegime, detectDivergence, buildRegimeBlock, buildDivergenceBlock } from '../src/regime.js';
 import { buildDailyReport } from '../src/daily_report.js';
+import { llmSentimentBlock } from '../src/llm_sentiment.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
@@ -129,6 +130,23 @@ const signals = buildSignals(packed, {
   },
   // 每日日报（#4）：与 pipeline.writeShards 同源同形态。
   reportFn: (payload) => buildDailyReport(payload),
+  // LLM 舆情参考（V5.3 P2）：与 engine/write.js **同源同形态**——都只读同一份
+  //   llm-sentiment-latest.json，转换走 src/llm_sentiment.js 唯一出处（±5 截断/
+  //   生效三规则/证据日期防伪），判定输入取主档最新日。漏注入会被 --check 的
+  //   signals 段一致性校验发现（两条写盘路径必须产出同一种形态）。
+  llmFn: () => {
+    try {
+      const p = join(DATA, 'llm-sentiment-latest.json');
+      if (!existsSync(p)) return null;
+      const raw = JSON.parse(readFileSync(p, 'utf8'));
+      const all = arc.all_days || [];
+      const last = all[all.length - 1] || null;
+      return llmSentimentBlock(raw, {
+        score: last?.emotion?.value ?? last?.emotion?.score ?? null,
+        tradeDate: last?.trade_date ?? null,
+      });
+    } catch { return null; }
+  },
 });
 const years = Object.keys(shards).sort();
 
