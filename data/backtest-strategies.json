@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-10-05T10:46:34.049Z",
+    "generatedAt": "2026-10-05T13:14:23.020Z",
     "engine": "scripts/backtest_strategies.mjs + src/strategy_bt.js（逐笔交易模型：T日信号 → T+1开盘成交 → N日收盘出场；时点纪律由 test/backtest_strategies.test.mjs 锁定）",
     "pointInTime": "信号只读 T 日收盘字段（emotion/max_lb/topics）；成交一律 T+1 开盘价；重叠信号不加仓",
     "costs": "与 V5.2 同口径：佣金 0.0003（双边）+ 印花税 0.0005（卖出）+ 滑点 0.0002，单次往返约 0.150%",
