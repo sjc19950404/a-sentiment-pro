@@ -36,6 +36,16 @@ RETS[25] = -0.075    # 接近止损线但未触发
 assert len(SCORES) == N
 
 # 四个参数组合：基准 / 仅成本 / 全增强 / 更紧的仓位上限与降仓阈值
+# 【V5.3】v53：右侧二次确认（confirm_days=1）+ regime 逐日仓位帽子（max_pos_by_day）——
+# 锁定新语义的跨语言一致性（默认关闭时与旧夹具组逐位一致，故旧组保留不动）。
+MAX_POS_BY_DAY = np.concatenate([
+    np.full(10, 1.0),        # 主升段（climax 帽子 1.0）
+    np.full(8, 0.5),         # 中性段（neutral 0.5）
+    np.full(6, 0.3),         # 切换期段（shift 0.3 强制降仓）
+    np.full(9, 0.2),         # 冰点/退潮段（0.2）
+    np.full(7, 1.0),         # 回暖段
+]).astype(float)
+assert len(MAX_POS_BY_DAY) == N
 PARAM_SETS = {
     "base": {},
     "cost_only": dict(comm=0.0003, stamp=0.0005, slip=0.0002),
@@ -43,6 +53,9 @@ PARAM_SETS = {
                  stop_loss=-0.08, dd_trigger=-0.15, max_pos=1.0),
     "tight": dict(comm=0.0003, stamp=0.0005, slip=0.0002, max_pos_chg=0.35,
                   stop_loss=-0.05, dd_trigger=-0.08, max_pos=0.6),
+    "v53": dict(comm=0.0003, stamp=0.0005, slip=0.0002, max_pos_chg=0.2,
+                stop_loss=-0.08, dd_trigger=-0.15, max_pos=1.0,
+                confirm_days=1, max_pos_by_day=MAX_POS_BY_DAY.tolist()),
 }
 TH = dict(hi=sb.BASE_HI, lo=sb.BASE_LO, panic=sb.PANIC, overheat=sb.OVERHEAT)
 
@@ -56,7 +69,8 @@ for name, seed in ASSETS:
 
 def leg(rr, scores, **kw):
     """单个标的：仓位 → 成本 → 策略收益（与 JS runBacktest 单腿同义）"""
-    pos_kw = {k: kw[k] for k in ("max_pos", "stop_loss", "dd_trigger", "max_pos_chg") if k in kw}
+    pos_kw = {k: kw[k] for k in ("max_pos", "stop_loss", "dd_trigger", "max_pos_chg",
+                                  "confirm_days", "max_pos_by_day") if k in kw}
     p = sb.positions(pd.Series(scores), ret=pd.Series(rr), **TH, **pos_kw)
     cost = sb.turnover_cost(p, kw.get("comm", 0.0), kw.get("stamp", 0.0), kw.get("slip", 0.0))
     return p, cost, pd.Series(rr) * p.values - cost

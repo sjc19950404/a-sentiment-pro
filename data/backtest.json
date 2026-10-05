@@ -1578,6 +1578,41 @@
   "sortino": -1.287,
   "emptyRatio": 0.0041
  },
+ "v53": {
+  "w": {
+   "s_net": 0.2,
+   "s_pos": 0.1,
+   "s_brd": 0.2,
+   "s_hot": 0.1,
+   "s_zdt": 0.15,
+   "s_zbl": 0.1,
+   "s_amt": 0.15
+  },
+  "sharpe": -1.525,
+  "maxDd": 0.0577,
+  "calmar": -1.044,
+  "annual": -0.0603,
+  "total": -0.0577,
+  "winRate": 0.0546,
+  "profitRatio": 0.479,
+  "sortino": -1.647,
+  "emptyRatio": 0.0124,
+  "params": {
+   "confirmDays": 1,
+   "maxPosByDaySource": "src/position_policy.js（regime 档位区间上限）"
+  },
+  "regimeCounts": {
+   "unknown": 2,
+   "ebb": 42,
+   "climax": 57,
+   "ice": 61,
+   "recover": 39,
+   "shift": 18,
+   "neutral": 22
+  },
+  "unknownDays": 2,
+  "note": "逐日宽度序列不在 archive（shift 的背离触发源缺失），本段 shift 仅由高潮末段触发，语义偏保守（少触发切换期=帽子偏高）；unknown 日帽子为 null 不压制（天数见 unknownDays）。regime 判定用存档综合分（与前端面板同口径），非 train 权重重算分。"
+ },
  "best": {
   "w": {
    "s_net": 0.1463,

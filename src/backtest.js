@@ -28,16 +28,26 @@ export const V52_PARAMS = {
 const clamp = (x, lo, hi) => Math.min(Math.max(x, lo), hi);
 
 // ────────────────────────── 仓位（收盘打分 → 次日仓位） ──────────────────────────
+// V5.3 新增两个可选参数（默认关闭，confirmDays=0 / maxPosByDay=null 时与旧版逐位一致，
+// Python parity 夹具锁的是默认行为；新语义由夹具的 v53 参数组锁定）：
+//   · confirmDays（右侧二次确认）：从空仓进入**半仓档**（panic<v<lo 的左侧回升区）
+//     需要连续 confirmDays+1 日信号成立——第一日只记账不开仓，杜绝"接飞刀"。
+//     只作用于半仓档开仓：v≥lo 是趋势强信号（右侧本身），止损/过热/清仓路径不受影响。
+//   · maxPosByDay（regime 逐日仓位帽子）：市场状态（src/position_policy.js 的区间
+//     上限）逐日压制 cap——与回撤降仓取更紧者（min）；情绪打分仍是信号主路径，
+//     帽子只做仓位上限（"信号归信号、帽子归帽子"）。
 export function positions(scores, rets, p = BASE_PARAMS) {
   const {
     hi = DEFAULT_TH.hi, lo = DEFAULT_TH.lo,
     panic = DEFAULT_TH.panic, overheat = DEFAULT_TH.overheat,
     maxPos = 1.0, stopLoss = 0, ddTrigger = 0, maxPosChg = 0,
+    confirmDays = 0, maxPosByDay = null,
   } = p;
   const n = scores.length;
   const raw = new Array(n).fill(0);
   let held = false;
   let eq = 1, peak = 1, prevTarget = 0;
+  let pending = 0; // 空仓期连续满足 v>panic 的天数（右侧二次确认的计数器）
   for (let i = 0; i < n; i++) {
     const v = scores[i];
     if (rets) { // 当日收盘：先结算昨日目标仓位在当日的盈亏（无前视）
@@ -50,12 +60,27 @@ export function positions(scores, rets, p = BASE_PARAMS) {
       if (curDd >= -ddTrigger) cap = 0.4 * maxPos;
       else if (curDd >= 0.6 * -ddTrigger) cap = 0.7 * maxPos;
     }
+    // regime 逐日帽子：与回撤降仓取更紧者（缺失日不压制——缺失显式化在调用方，
+    // 引擎层拿不到帽子数据时不假装有帽子）。⚠ null 必须先判再转数值：
+    // +null === 0 会把"缺帽子"静默当"帽子 0"（dirty.js::num 同款陷阱，实测踩过）。
+    if (maxPosByDay != null && i < maxPosByDay.length
+        && maxPosByDay[i] != null && Number.isFinite(+maxPosByDay[i])) {
+      cap = Math.min(cap, Math.max(0, +maxPosByDay[i]));
+    }
     const stopHit = stopLoss < 0 && held && rets && rets[i] <= stopLoss;
+    // 右侧二次确认计数：空仓期 v>panic 连续天数（含强信号日，但强信号日不走半仓档
+    // 不消费计数）；一旦 v<=panic 归零重数（反转中断则重新确认）
+    if (v > panic && !held) pending++;
+    else pending = 0;
     let target;
     if (stopHit) target = 0;                       // 止损优先于信号
     else if (v >= overheat) target = held ? cap : 0; // 过热只减仓不新建
     else if (v >= lo) target = cap;
-    else if (v > panic) target = 0.5 * cap;
+    // ⚠ 确认只拦"空仓进场"（held 或已连续确认才给半仓）：持仓中的半仓减仓**不受**确认
+    //   约束。第一版漏了 held 条件——持仓中 pending 恒 0，把"半仓持有"误清仓，
+    //   confirmDays=0 时也触发（base/v52 全序列漂移）。跨语言夹具两侧同错测不出
+    //   （夹具由同版 Python 生成），此类"默认行为不变"约束必须配行为锚单测。
+    else if (v > panic) target = (held || pending > confirmDays) ? 0.5 * cap : 0;
     else target = 0;
     if (maxPosChg > 0 && !stopHit) {               // 仓位平滑：止损不受约束
       target = clamp(target, prevTarget - maxPosChg, prevTarget + maxPosChg);

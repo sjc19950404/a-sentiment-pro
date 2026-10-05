@@ -86,7 +86,9 @@ def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
               panic: float = PANIC, overheat: float = OVERHEAT,
               max_pos: float = 1.0, stop_loss: float = 0.0,
               ret: pd.Series = None, dd_trigger: float = 0.0,
-              max_pos_chg: float = 0.0) -> pd.Series:
+              max_pos_chg: float = 0.0,
+              confirm_days: int = 0,
+              max_pos_by_day=None) -> pd.Series:
     """收盘打分 → 次日仓位（T+1）。满仓 max_pos / 半仓 0.5*max_pos / 空仓 0。
     过热区(≥overheat)不清仓但禁止新建仓：对已有持仓保持，对空仓者保持空仓。
     止损（stop_loss<0 启用，如 -0.08）：持仓期当日标的收盘跌幅 ≤ 止损线，次日强制清仓。
@@ -94,12 +96,20 @@ def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
     回撤 ≥ |trigger| → 上限压至 0.4×max_pos；≥ 0.6×|trigger| → 0.7×max_pos；否则正常。
     仓位平滑（max_pos_chg>0 启用，如 0.2）：单日仓位变动相对前日生效仓位最多 ±max_pos_chg，
     避免满仓/空仓一夜跳变；止损不受平滑约束（风控立即执行优先于平滑）。
-    全部决策只用当日收盘已知信息（score[i]、ret[i]、截至 ret[i] 的净值），T+1 生效，无前视。"""
+    【V5.3】右侧二次确认（confirm_days>0 启用，如 1）：从空仓进入半仓档（panic<v<lo
+    的左侧回升区）需连续 confirm_days+1 日信号成立——第一日只记账不开仓，杜绝接飞刀；
+    只作用于半仓档开仓（v≥lo 趋势强信号不受限），信号中断（v≤panic）则重新计数。
+    【V5.3】regime 逐日仓位帽子（max_pos_by_day 序列启用）：市场状态输出的仓位区间上限
+    逐日压制 cap——与回撤降仓取更紧者（min）；缺失日不压制（缺失显式化在调用方）。
+    全部决策只用当日收盘已知信息（score[i]、ret[i]、截至 ret[i] 的净值），T+1 生效，无前视。
+    confirm_days=0 / max_pos_by_day=None 时与 V5.2 行为逐位一致（parity 锚）。"""
     pos = pd.Series(np.nan, index=s.index)
     held = False
     r = ret.values if ret is not None else None
+    mpd = list(max_pos_by_day) if max_pos_by_day is not None else None
     eq = peak = 1.0
     prev_target = 0.0
+    pending = 0
     for i, v in enumerate(s.values):
         if r is not None:                      # 当日收盘：先结算昨日目标仓位的当日盈亏
             eq *= (1.0 + prev_target * r[i])
@@ -114,15 +124,25 @@ def positions(s: pd.Series, hi: float = BASE_HI, lo: float = BASE_LO,
                 cap = max_pos
         else:
             cap = max_pos
+        if mpd is not None and i < len(mpd) and mpd[i] is not None and np.isfinite(mpd[i]):  # regime 帽子取更紧（None=缺失不压制）
+            cap = min(cap, max(0.0, float(mpd[i])))
         stop_hit = stop_loss < 0 and held and r is not None and r[i] <= stop_loss
+        # 右侧二次确认计数：空仓期 v>panic 连续天数；中断归零重新确认
+        if v > panic and not held:
+            pending += 1
+        else:
+            pending = 0
         if stop_hit:
             target = 0.0                           # 止损优先于信号：次日清仓
         elif v >= overheat:
             target = cap if held else 0.0          # 只减仓不新建
         elif v >= lo:
             target = cap
+        # ⚠ 确认只拦"空仓进场"（held 或已连续确认才给半仓）：持仓中的半仓减仓不受确认
+        #   约束。第一版漏了 held 条件——持仓中 pending 恒 0，把"半仓持有"误清仓，
+        #   confirm_days=0 时也触发（base/v52 全序列漂移）。与 JS 侧同修（夹具两侧同错测不出）。
         elif v > panic:
-            target = 0.5 * cap
+            target = 0.5 * cap if (held or pending > confirm_days) else 0.0
         else:
             target = 0.0
         if max_pos_chg > 0 and not stop_hit:   # 仓位平滑：限制单日跳变（止损除外）

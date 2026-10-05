@@ -16,6 +16,8 @@ const toParams = (p) => ({
   maxPos: p.max_pos ?? 1.0, stopLoss: p.stop_loss ?? 0,
   ddTrigger: p.dd_trigger ?? 0, maxPosChg: p.max_pos_chg ?? 0,
   comm: p.comm ?? 0, stamp: p.stamp ?? 0, slip: p.slip ?? 0,
+  confirmDays: p.confirm_days ?? 0,           // V5.3 右侧二次确认（默认 0 = 旧行为）
+  maxPosByDay: p.max_pos_by_day ?? null,      // V5.3 regime 逐日帽子（默认 null = 不用）
 });
 
 const close = (a, b, tol, msg) => assert.ok(Math.abs(a - b) <= tol,
@@ -176,4 +178,79 @@ test('阈值表 ↔ positions 行为一致：研判报告的仓位档位文案�
   assert.equal(at(p.panic - 1), 0, '低于 panic：清仓');
   // 已持有的过热场景：保留仓位而非清仓——这是「只减仓不新建」的关键语义
   assert.equal(positions([p.lo, p.overheat], null, p)[1], 1, '持有中遇过热：保留仓位而非清仓');
+});
+
+// ── V5.3 新语义：右侧二次确认 + regime 逐日帽子（默认关闭时与旧版逐位一致）──
+
+test('V5.3 confirmDays=0：默认行为锚——持仓中半仓档保持 0.5，不因确认计数清仓', () => {
+  // ⚠ 行为锚（非同义反复对照）：第一版实现漏 held 条件，持仓中 pending 恒 0 →
+  //   半仓持有被误清仓，且 confirmDays=0 时也触发——跨语言夹具两侧同错测不出
+  //   （夹具由同版 Python 生成），必须用独立行为断言锁死。
+  const scores = [70, 45, 45, 45, 30, 66];   // 开仓→半仓档持有→回落仍半仓→回升全仓
+  const rets = scores.map(() => 0.005);
+  for (const cd of [0, 1, 3]) {
+    // 用无平滑/无止损的 BASE 口径：直接看确认逻辑本身（平滑会把 0.5 钳到别的值）
+    const pos = positions(scores, rets, { ...BASE_PARAMS, confirmDays: cd });
+    assert.equal(pos[2], 0.5, `confirmDays=${cd}：持仓中半仓档保持半仓（不被确认逻辑清仓）`);
+  }
+  // confirmDays=0（默认）：空仓首日半仓信号次日即进场（与 V5.2 行为一致；
+  // 用无平滑 BASE 口径——平滑会把 0.5 钳到 0.2，那是平滑语义不是确认语义）
+  const p0 = positions([20, 30, 31], [0.001, 0.001, 0.001], BASE_PARAMS);
+  assert.equal(p0[2], 0.5, '默认（confirmDays=0）首日信号次日进场——旧行为');
+});
+
+test('V5.3 confirmDays=1：半仓档开仓需连续 2 日信号（右侧二次确认，杜绝接飞刀）', () => {
+  const p = { ...BASE_PARAMS };
+  const rets = [0.001, 0.001, 0.001, 0.001, 0.001];
+  // 单日脉冲（V 型单点回升）→ 不开仓：反转未确认
+  assert.deepEqual(
+    positions([20, 30, 20, 20, 20], rets, { ...p, confirmDays: 1 }).slice(1),
+    [0, 0, 0, 0], '单日回升脉冲不进场（右侧确认拦截）');
+  // 连续 2 日回升 → 第 2 日确认，T+1 后进场半仓
+  const pos = positions([20, 30, 31, 20, 20], rets, { ...p, confirmDays: 1 });
+  assert.equal(pos[2], 0, '第 1 日信号只记账');
+  assert.equal(pos[3], 0.5, '第 2 日仍成立 → 次日半仓进场');
+  // confirmDays=0（旧行为）：第 1 日即进场——对照证明确认语义真实生效
+  const pos0 = positions([20, 30, 31, 20, 20], rets, p);
+  assert.equal(pos0[2], 0.5, '旧行为第 1 日信号次日即进场');
+  assert.notDeepEqual(pos, pos0, '确认开启与关闭必须产生差异（防探针瞎）');
+});
+
+test('V5.3 confirmDays：强信号（v≥lo）与止损/过热/清仓路径不受确认约束', () => {
+  const p = { ...BASE_PARAMS };
+  const rets = [0.001, 0.001, 0.001, 0.001];
+  // v≥lo 是趋势强信号（右侧本身），不排队确认
+  assert.equal(positions([20, 70, 70, 70], rets, { ...p, confirmDays: 1 })[2], 1, '强信号直接满仓');
+  // 已持仓的过热/清仓照旧（确认只管开仓）
+  assert.equal(positions([70, 85, 20, 20], rets, { ...p, confirmDays: 3 })[2], 1, '持仓过热保留');
+  assert.equal(positions([70, 20, 20, 20], rets, { ...p, confirmDays: 3 })[2], 0, '清仓不受确认影响');
+});
+
+test('V5.3 maxPosByDay：regime 帽子逐日压制 cap（与回撤降仓取更紧）', () => {
+  const p = { ...BASE_PARAMS };
+  const scores = [70, 70, 70, 70];
+  const rets = [0.001, 0.001, 0.001, 0.001];
+  const cap0 = positions(scores, rets, { ...p, maxPosByDay: [1.0, 0.3, 1.0, 1.0] });
+  // T+1：pos[1]=day0 帽子(1.0) → 1；pos[2]=day1 帽子(0.3) → 0.3
+  assert.equal(cap0[1], 1, '帽子 1.0 日不压制');
+  assert.equal(cap0[2], 0.3, '切换期帽子 0.3 压制满仓信号');
+  // 缺失日（null/非有限数）不压制——引擎不假装有帽子
+  const sparse = positions(scores, rets, { ...p, maxPosByDay: [null, 0.3, undefined, NaN] });
+  assert.equal(sparse[1], 1, '帽子缺失日不压制（缺失显式化在调用方）');
+  assert.equal(sparse[2], 0.3);
+  assert.equal(sparse[3], 1, 'NaN/undefined 同样不压制');
+  // 与回撤降仓取更紧：dd cap 0.4 与帽子 0.3 → 0.3
+  const tight = positions(scores, [0.001, 0.001, -0.2, 0.001], { ...p, ddTrigger: -0.15, maxPosByDay: [1, 1, 0.3, 1] });
+  assert.ok(tight[3] <= 0.3, '帽子与降仓取更紧者');
+});
+
+test('V5.3 夹具 v53 组：右侧确认 + regime 帽子的跨语言逐位一致（parity 锁）', () => {
+  const c = fx.single.v53;
+  assert.ok(c.params.confirm_days === 1, '夹具必须携带 v53 新参数');
+  const p = toParams(c.params);
+  const r = runBacktest(fx.scores, fx.rets, p);
+  r.pos.forEach((v, i) => close(v, c.positions[i], 1e-9, `v53.positions[${i}]`));
+  r.pos.forEach((_, i) => close(r.strat[i], c.strat[i], 1e-12, `v53.strat[${i}]`));
+  close(r.perf.sharpe, c.metrics.sharpe, 1e-3, 'v53.sharpe');
+  assert.equal(r.perf.opens, c.metrics.trades, 'v53.trades');
 });
