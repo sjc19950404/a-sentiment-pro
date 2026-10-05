@@ -79,6 +79,11 @@ export const REGIME_LABELS = {
   EBB: { key: 'ebb', label: '退潮', level: 'high', dir: 'down' },
   NEUTRAL: { key: 'neutral', label: '中性', level: 'mid', dir: 'flat' },
   UNKNOWN: { key: 'unknown', label: '数据不足', level: null, dir: null },
+  // V5.3（2026-10-05 拍板）：新增「切换期」——信号矛盾时的保守档。
+  //   设计纪律：这不是第六个"水位×方向"格子，而是**矛盾的显式出口**——
+  //   判据互相打架时，宁可承认"看不清"并保守控仓，也不硬给一个方向性标签。
+  //   level/dir 置 null：矛盾中无单一水位/方向可言（读取端不得对 shift 推导 level）。
+  SHIFT: { key: 'shift', label: '切换期', level: null, dir: null },
 };
 
 // ── 数值加固（与 src/dirty.js::num 同款：拒 +[]===0 / +''===0 / +null===0）──
@@ -199,6 +204,7 @@ export function classifyRegime(ctx = {}, opts = {}) {
       key: REGIME_LABELS.UNKNOWN.key, label: REGIME_LABELS.UNKNOWN.label,
       level: null, dir: null, confidence: 'low',
       evidence: [], caution: null, unknownReasons,
+      shifted: false, shiftReasons: [],
       detail: '判据不足，无法给出状态标签。',
     };
   }
@@ -213,6 +219,7 @@ export function classifyRegime(ctx = {}, opts = {}) {
       evidence: score !== null ? [{ metric: '情绪分', value: score, reading: `${score}（水位${({ low: '偏低', mid: '居中', high: '偏高' })[level] || '未知'}）` }] : [],
       caution: null,
       unknownReasons: [...unknownReasons, '方向不可判（历史不足），状态标签需要"水位 × 方向"两个维度，故不给结论'],
+      shifted: false, shiftReasons: [],
       detail: `情绪分水位${({ low: '偏低', mid: '居中', high: '偏高' })[level] || '未知'}，但历史不足无法判方向，状态标签需要"水位 × 方向"两个维度。`,
     };
   }
@@ -259,10 +266,10 @@ export function classifyRegime(ctx = {}, opts = {}) {
   // ⚠ 用 `|| null` 归一：缺失时 painVerdict 为 undefined，若直接与 null 比较会漏判
   //   （实测踩过：冰点 caution 因 `undefined === null` 为 false 而永不触发）。
   const painLevel = (ctx.painVerdict && ctx.painVerdict.level) || null;
+  const weakSeal = seal !== null && seal < R.SEAL_PCT_WEAK;
+  const painBad = painLevel === 'warn' || painLevel === 'danger';
   if (key === 'climax') {
     // 高潮但亏钱效应已在恶化 / 封板率弱 → 这是"高潮末段"的典型特征，必须说出来
-    const weakSeal = seal !== null && seal < R.SEAL_PCT_WEAK;
-    const painBad = painLevel === 'warn' || painLevel === 'danger';
     if (weakSeal || painBad) {
       caution = `高位但${weakSeal ? `封板率仅 ${seal}%（< ${R.SEAL_PCT_WEAK}%）` : ''}${weakSeal && painBad ? '、' : ''}${painBad ? `亏钱效应${ctx.painVerdict.label}` : ''}，承接在变差，属"高潮末段"特征`;
     }
@@ -279,11 +286,44 @@ export function classifyRegime(ctx = {}, opts = {}) {
       : null;
   }
 
+  // ── ★ 矛盾覆盖 → 切换期（V5.3，2026-10-05 拍板）─────────────────────────
+  //   规则（V5.3 需求：信号矛盾直接判【切换期】，保守控仓）——满足任一强矛盾，
+  //   主标签被覆盖为 shift：
+  //     A. 水位×宽度背离成立（假繁荣 / 底部背离）——判据调 detectDivergence
+  //        （同文件唯一出处，不重写第二把尺子）；背离 = 情绪说热、宽度说冷（或反），
+  //        状态本身就是"两把尺子打架"。
+  //     B. 高潮末段特征（封板率弱 / 亏钱效应 warn|danger）——高潮里的承接恶化。
+  //   ⚠ 刻意**不**触发（防切换期泛滥、稀释标签信息量）：
+  //     · 双尺子（分位 vs 绝对水位）读数分歧——已解释的建模取舍，实测 33.8% 天
+  //       不一致，若算矛盾会让三分之一个月都成"切换期"；它按原口径在第二节披露。
+  //     · 冰点缩量惜售——弱矛盾（"再看一日"级别），保持 caution 不升格。
+  //   shift 语义：不预测拐点，只承认"当下判据打架"；仓位端保守处理（见
+  //   src/position_policy.js）。confidence 封顶 mid——矛盾本身可以很确凿，
+  //       但结论是"方向不明"，不给 high。
+  const shiftReasons = [];
+  const div = detectDivergence({
+    score, pctRank: num(ctx.pctRank), breadthVerdict: ctx.breadthVerdict,
+  }, opts);
+  if (div.diverged) shiftReasons.push(`水位×宽度背离：${div.label}（${div.reason}）`);
+  if (key === 'climax' && (weakSeal || painBad)) shiftReasons.push('高潮末段特征：高位承接变差');
+  let shifted = false;
+  if (shiftReasons.length && key !== 'unknown') {
+    shifted = true;
+    if (caution) shiftReasons.unshift(caution); // 原主标签下的 caution 一并保留（矛盾证据不丢）
+    caution = shiftReasons.join('；');
+  }
+  const finalKey = shifted ? REGIME_LABELS.SHIFT.key : modelKey;
+  const finalMeta = shifted ? REGIME_LABELS.SHIFT : meta;
+  if (shifted && confidence === 'high') confidence = 'mid';
+
   return {
-    key: modelKey, label: meta.label, level, dir, confidence,
+    key: finalKey, label: finalMeta.label, level: shifted ? null : level, dir: shifted ? null : dir, confidence,
     evidence: outEvidence, caution, unknownReasons,
+    shifted, shiftReasons: shifted ? shiftReasons : [],
     levelCheck: { byScore: levelInfo.byScore, byPct: levelInfo.byPct, agree: levelInfo.agree, primary: levelInfo.primary, note: levelInfo.note },
-    detail: buildDetail(meta, level, dir, dirInfo),
+    detail: shifted
+      ? `${buildDetail(meta, level, dir, dirInfo)}，但判据矛盾 → 覆盖为「切换期」（保守控仓，不预测拐点）`
+      : buildDetail(meta, level, dir, dirInfo),
   };
 }
 
@@ -487,6 +527,7 @@ export function buildRegimeBlock(days) {
     labels: Object.fromEntries(Object.values(REGIME_LABELS).map((x) => [x.key, x.label])),
     note: '标签 = 水位（历史分位为主判据）× 方向（较 3 个交易日前变化）；'
       + '水位与方向任一不可判则显示"数据不足"。历史分位为主判据，因实测情绪分分布高度压缩（89% 天数落在 40-65）。'
+      + '判据矛盾（水位×宽度背离 / 高潮末段承接变差）时覆盖为「切换期」（V5.3）。'
       + '标签只描述市场状态，不含买卖建议。',
   };
 }

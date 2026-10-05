@@ -2384,7 +2384,7 @@ function renderDiverge(d, errMsg) {
 //     · null → 显式显示「未生成」，**绝不默认成"中性"**（那会伪造一个结论）。
 //     · 标签码 → 中文一律查 regime.labels（服务端下发的唯一出处），前端不自造。
 //     · 置信度 low（判据不全）必须显式标注，不能让残缺结论看起来和完整结论一样硬。
-const REGIME_TONE = { ice: 'cold', recover: 'warm', climax: 'hot', ebb: 'cool', neutral: 'flat', unknown: 'unknown' };
+const REGIME_TONE = { ice: 'cold', recover: 'warm', climax: 'hot', ebb: 'cool', neutral: 'flat', shift: 'cool', unknown: 'unknown' };
 
 function renderRegime(r, errMsg) {
   const box = $('regimePanel');

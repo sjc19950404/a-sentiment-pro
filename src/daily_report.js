@@ -19,6 +19,7 @@
 //   • **不构成投资建议**：措辞只描述状态与风险，不给买卖动作。
 
 import { classifyRegime, detectDivergence, num } from './regime.js';
+import { positionLine, DISCLAIMER as POSITION_DISCLAIMER } from './position_policy.js';
 
 // 显示层舍入（唯一出处；不改动源数据）
 export const DISPLAY = { pct1: 1, score1: 1 };
@@ -113,6 +114,7 @@ export function buildDailyReport(signals = {}) {
     // 出处：报告里的每个数字从哪来（可追溯，配合 #40 数据血缘）
     sources: {
       regime: 'src/regime.js（本模块判据）',
+      position: 'src/position_policy.js（仓位区间唯一出处）',
       sentiment: 'src/formula_versions.js + src/sentiment.js',
       breadth: 'src/breadth.js',
       pain: 'src/pain.js',
@@ -122,7 +124,8 @@ export function buildDailyReport(signals = {}) {
       health: 'src/health.js',
     },
     // 免责与口径声明（报告尾部固定输出）
-    disclaimer: '本日报只描述市场状态与风险特征，不构成投资建议；所有读数来自当日已归档数据，缺失项一律标注"未采集/未计算"而非补 0。',
+    disclaimer: '本日报只描述市场状态与风险特征，不构成投资建议；所有读数来自当日已归档数据，缺失项一律标注"未采集/未计算"而非补 0。'
+      + POSITION_DISCLAIMER,
   };
 }
 
@@ -132,20 +135,24 @@ function buildRegimeSection(reg, div) {
   const pts = [];
   if (reg.key === 'unknown') {
     return {
-      id: 'regime', title: '一、市场状态', level: 'unknown', missing: true,
+      id: 'regime', title: '一、市场状态判定', level: 'unknown', missing: true,
       missingReason: (reg.unknownReasons || []).join('；') || '判据不足',
-      points: ['状态标签需"水位 × 方向"两个维度，当前判据不足，不给结论（不猜）。'],
+      points: ['状态标签需"水位 × 方向"两个维度，当前判据不足，不给结论（不猜）。', '状态不明 → 无仓位区间意见；按保守档（0%~20%）处理，见风控说明。'],
     };
   }
+  // V5.3 前置块：状态 → 推荐仓位区间（position_policy 唯一出处；shift 为强制降仓档）
+  const pos = positionLine(reg.key);
+  if (pos) pts.push({ text: pos.text, kind: 'main' });
   pts.push({ text: reg.detail, kind: 'main' });
   (reg.evidence || []).forEach((e) => pts.push({ text: `${e.metric}：${e.reading}`, kind: 'evidence' }));
   if (reg.caution) pts.push({ text: `⚠ ${reg.caution}`, kind: 'caution' });
   return {
-    id: 'regime', title: '一、市场状态',
+    id: 'regime', title: '一、市场状态判定',
     level: reg.caution ? 'warn' : 'info',
     missing: false, points: pts,
     tag: reg.label, confidence: reg.confidence,
     levelCheck: reg.levelCheck || null,
+    position: pos ? { range: pos.range, force: pos.force, tone: pos.band.tone } : null,
   };
 }
 
@@ -353,7 +360,10 @@ function buildQualitySection(S) {
 function buildHeadline(reg, div, date, missingCount) {
   const d = date ? `${date} ` : '';
   if (reg.key === 'unknown') return `${d}数据不足，无法给出市场状态判断。`;
-  let s = `${d}市场状态：${reg.label}`;
+  // V5.3 简报格式：【市场状态判定】状态｜推荐仓位区间，情绪得分在第二节展开
+  const pos = positionLine(reg.key);
+  let s = `${d}市场状态：${reg.label}${pos ? `｜推荐仓位区间 ${pos.range}` : ''}`;
+  if (pos && pos.force) s += '（强制降仓）';
   if (reg.confidence === 'low') s += '（判据不全，仅供参考）';
   if (div.diverged) s += `；${div.label}`;
   if (missingCount > 0) s += `（${missingCount} 个区块缺数据）`;

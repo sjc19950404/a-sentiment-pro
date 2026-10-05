@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   REGIME_RULES, REGIME_LABELS,
   num, levelOf, directionOf, classifyRegime, detectDivergence, classifySeries,
-  buildDivergenceBlock,
+  buildDivergenceBlock, buildRegimeBlock,
 } from '../src/regime.js';
 
 // ── num：与 dirty.js 同款陷阱（+[]===0 / +''===0 / +null===0）──────────────
@@ -182,18 +182,23 @@ test('classifyRegime: evidence 读数取原值不改写', () => {
   const pct = r.evidence.find((e) => e.metric === '情绪分历史分位');
   assert.equal(pct.value, 95);
 });
-test('classifyRegime: 高潮 + 封板率弱 → caution（高潮末段特征，不隐藏矛盾）', () => {
+test('classifyRegime: 高潮 + 封板率弱 → ★ 覆盖为切换期（V5.3：高潮末段=强矛盾，保守档）', () => {
   const r = classifyRegime({
     score: 80, pctRank: 95, history: [60, 65, 70, 80], sealPct: 44.8,
     painVerdict: { level: 'warn', label: '多空拉锯' },
   });
-  assert.equal(r.key, 'climax');
+  assert.equal(r.key, 'shift');
+  assert.equal(r.label, '切换期');
+  assert.equal(r.shifted, true);
+  assert.ok(r.shiftReasons.some((s) => /高潮末段/.test(s)), '矛盾原因必须披露');
   assert.ok(r.caution, '高位弱封板必须给 caution');
   assert.match(r.caution, /高潮末段/);
+  assert.match(r.detail, /切换期/);
 });
 test('classifyRegime: 高潮 + 封板率强 + 亏钱效应正常 → 无 caution', () => {
   const r = classifyRegime({ score: 80, pctRank: 95, history: [60, 65, 70, 80], sealPct: 88 });
   assert.equal(r.caution, null);
+  assert.equal(r.key, 'climax', '无矛盾不被覆盖');
 });
 test('classifyRegime: 冰点 + 封板率尚可 → caution（可能是缩量惜售）', () => {
   const r = classifyRegime({ score: 32, pctRank: 5, history: [35, 34, 33, 32], sealPct: 85 });
@@ -289,7 +294,10 @@ test('classifySeries: pct_rank 与 seal_pct 透传到分类', () => {
     { trade_date: 'd', value: 65, pct_rank: 95, seal_pct: 50 },
   ]);
   assert.equal(out[3].pct_rank, 95);
-  assert.equal(out[3].level, 'high', '分位 95 应判 high');
+  // V5.3：pct 95 + 方向 up → 主标签 climax，但封板率 50（< 70）→ 高潮末段强矛盾
+  // → 覆盖为切换期（level 置 null：矛盾中无单一水位）
+  assert.equal(out[3].key, 'shift');
+  assert.equal(out[3].level, null, '切换期不输出单一水位');
   assert.equal(out[3].caution != null, true, '封板率 50 应触发高潮末段 caution');
 });
 test('classifySeries: 空数组不炸', () => {
@@ -301,7 +309,7 @@ test('classifySeries: 空数组不炸', () => {
 test('常量：四态标签 key 唯一且齐全', () => {
   const keys = Object.values(REGIME_LABELS).map((x) => x.key);
   assert.deepEqual([...new Set(keys)].length, keys.length, 'key 必须唯一');
-  for (const k of ['ice', 'recover', 'climax', 'ebb', 'neutral', 'unknown']) {
+  for (const k of ['ice', 'recover', 'climax', 'ebb', 'neutral', 'unknown', 'shift']) {
     assert.ok(keys.includes(k), `缺少 ${k}`);
   }
 });
@@ -485,4 +493,88 @@ test('★ 决策锁：breadth.js 不得被 sentiment.js / formula_versions.js �
     assert.ok(!/from\s+['"]\.\/breadth\.js['"]/.test(code),
       `${f} 引入了 breadth.js —— 多维宽度不得进综合分公式（#3 决策）`);
   }
+});
+
+// ── ⑧ V5.3 切换期（shift）：矛盾覆盖守卫 ──────────────────────────────────
+//   需求口径：信号矛盾直接判【切换期】，保守控仓。必须锁死的反模式：
+//   ① 背离/末段矛盾被静默吞掉（标签照旧 climax）；② 弱矛盾（双尺子分歧、冰点惜售）
+//   也升格切换期——那会让标签泛滥失去信息量。
+
+test('★ shift：假繁荣背离（高位+宽度窄）→ 覆盖为切换期', () => {
+  const r = classifyRegime({
+    score: 70, pctRank: 90, history: [60, 65, 68, 70],
+    breadthVerdict: { level: 'narrow', label: '宽度收窄' },
+  });
+  assert.equal(r.key, 'shift');
+  assert.equal(r.shifted, true);
+  assert.ok(r.shiftReasons.some((s) => /背离/.test(s)), '背离原因必须进 shiftReasons');
+  assert.equal(r.level, null, '切换期无单一水位');
+  assert.equal(r.dir, null, '切换期无单一方向');
+  assert.match(r.detail, /覆盖为「切换期」/);
+});
+
+test('★ shift：底部背离（低位+宽度扩张）→ 同样覆盖为切换期', () => {
+  const r = classifyRegime({
+    score: 32, pctRank: 8, history: [40, 38, 35, 32],
+    breadthVerdict: { level: 'broad', label: '宽度扩张' },
+  });
+  assert.equal(r.key, 'shift');
+  assert.equal(r.shifted, true);
+});
+
+test('★ shift：无矛盾的主标签不被覆盖（灵敏度对照）', () => {
+  const noDiv = classifyRegime({ score: 80, pctRank: 95, history: [60, 65, 70, 80], sealPct: 88 });
+  assert.equal(noDiv.key, 'climax');
+  assert.equal(noDiv.shifted, false);
+  assert.deepEqual(noDiv.shiftReasons, []);
+  // 冰点缩量惜售 = 弱矛盾，保持 ice + caution，不升格（防切换期泛滥）
+  const ice = classifyRegime({ score: 32, pctRank: 5, history: [35, 34, 33, 32], sealPct: 85 });
+  assert.equal(ice.key, 'ice');
+  assert.equal(ice.shifted, false);
+});
+
+test('★ shift：双尺子读数分歧【不】触发切换（已解释的建模取舍，防 1/3 天数变切换期）', () => {
+  // 分位判 high（76.3）而绝对水位判 mid（64.4<65）——两尺子跨档不一致
+  const r = classifyRegime({ score: 64.4, pctRank: 76.3, history: [55, 58, 60, 64.4] });
+  assert.equal(r.key, 'climax', 'mid|high 尺度分歧保持主标签');
+  assert.equal(r.shifted, false);
+  assert.equal(r.levelCheck.agree, false, '分歧本身要如实披露');
+});
+
+test('★ shift：覆盖时 confidence 封顶 mid（矛盾可确凿，但结论是方向不明）', () => {
+  const r = classifyRegime({
+    score: 80, pctRank: 95, history: [60, 65, 70, 80],
+    breadthVerdict: { level: 'narrow', label: '宽度收窄' },
+  });
+  assert.equal(r.key, 'shift');
+  assert.notEqual(r.confidence, 'high');
+});
+
+test('★ shift：unknown 不参与覆盖（判据不足连主标签都没有，无从覆盖）', () => {
+  const r = classifyRegime({ score: 60, pctRank: null, history: [60] });
+  assert.equal(r.key, 'unknown');
+  assert.equal(r.shifted, false);
+});
+
+test('★ shift：classifySeries 逐日标注继承切换期（拐点检测与序列码表自动涵盖）', () => {
+  const days = [
+    { trade_date: '2026-09-26', value: 60 },
+    { trade_date: '2026-09-29', value: 62 },
+    { trade_date: '2026-09-30', value: 64 },
+    { trade_date: '2026-10-05', value: 70 },
+  ];
+  const ctxByDate = { '2026-10-05': { pct_rank: 90, breadthVerdict: { level: 'narrow', label: '宽度收窄' } } };
+  const series = classifySeries(days, ctxByDate);
+  assert.equal(series[3].key, 'shift', '末位矛盾日 → shift');
+  assert.equal(series[2].key !== 'shift', true, '无矛盾日不受影响');
+});
+
+test('★ shift：buildRegimeBlock 的 labels 码表含 shift（前端查表渲染，不自造中文）', () => {
+  const days = mkDays([
+    ['2026-09-29', 60, 50],
+    ['2026-09-30', 80, 95],
+  ]);
+  const b = buildRegimeBlock(days);
+  assert.ok(b.labels.shift === '切换期', '码表必须含 shift 的中文标签');
+  assert.ok(Object.values(b.labels).includes('冰点'), '原有标签不受影响');
 });

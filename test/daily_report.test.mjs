@@ -53,12 +53,35 @@ test('buildDailyReport: 七个分节标题齐全且顺序固定', () => {
   assert.deepEqual(ids, ['regime', 'sentiment', 'breadth', 'pain', 'seats', 'theme', 'quality']);
 });
 
-test('buildDailyReport: 高潮日 + 宽度窄 → headline 含"高潮"与"假繁荣"', () => {
+test('buildDailyReport: 高潮日 + 宽度窄 → ★ 切换期（V5.3 矛盾覆盖），headline 含"切换期"与"假繁荣"', () => {
   const R = buildDailyReport(fullSignals());
-  assert.equal(R.tag.key, 'climax');
-  assert.match(R.headline, /高潮/);
+  // fixture：分位 76.3（high）+ 方向 flat → 主标签 climax；但宽度收窄 → 假繁荣背离
+  // → V5.3 矛盾覆盖为切换期（保守档），背离线索仍完整披露
+  assert.equal(R.tag.key, 'shift');
+  assert.match(R.headline, /切换期/);
   assert.match(R.headline, /假繁荣/);
+  assert.match(R.headline, /推荐仓位区间 0%~30%/, '切换期 → 强制降仓区间');
   assert.equal(R.divergence.diverged, true);
+});
+
+test('buildDailyReport: ★ V5.3 节一带仓位区间（neutral → 30%~50%），unknown 不给区间', () => {
+  const S = fullSignals();
+  // 无背离 + 无末段特征 → neutral 主标签（value 55 / pct 50 / 方向 flat）
+  S.latest = { ...S.latest, value: 55, pct_rank: 50 };
+  S.regimeSeries = [{ value: 54 }, { value: 55 }, { value: 55 }, { value: 55 }];
+  S.breadth = { verdict: { level: 'mid', label: '宽度中性' } };
+  const R = buildDailyReport(S);
+  assert.equal(R.tag.key, 'neutral');
+  assert.match(R.headline, /推荐仓位区间 30%~50%/);
+  const sec = R.sections.find((s) => s.id === 'regime');
+  assert.ok(sec.points.some((p) => /推荐仓位区间 30%~50%/.test(p.text)));
+  assert.equal(sec.title, '一、市场状态判定');
+  assert.ok(sec.position && sec.position.range === '30%~50%');
+  // unknown：不给区间（缺失显式化）
+  const U = buildDailyReport({});
+  const usec = U.sections.find((s) => s.id === 'regime');
+  assert.equal(usec.missing, true);
+  assert.ok(!U.headline.includes('推荐仓位区间'));
 });
 
 test('buildDailyReport: caveats 含背离与（真正的）判据缺口', () => {
@@ -68,8 +91,10 @@ test('buildDailyReport: caveats 含背离与（真正的）判据缺口', () => 
 
 test('buildDailyReport: ★ 双尺子读数差异【不进】caveats（是已解释的建模取舍，不是缺口）', () => {
   const S = fullSignals();
-  // 情绪分 64.4 绝对水位 mid，但分位 76.3 → high，两尺子不一致
+  // 宽度同向（broad）→ 无背离，主标签保持 climax；分位 76.3 high vs 绝对 64.4 mid 两尺子不一致
+  S.breadth = { verdict: { level: 'broad', label: '宽度扩张' } };
   const R = buildDailyReport(S);
+  assert.equal(R.tag.key, 'climax');
   assert.ok(R.tag.level === 'high');
   assert.ok(!R.caveats.some((c) => /判据缺口.*以分位为准/.test(c)),
     '尺度差异已在第二节披露，不应混进缺口清单');
