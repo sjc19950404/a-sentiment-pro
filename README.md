@@ -742,11 +742,35 @@ T+1 均 −0.30%）。所以每只推荐都同时给两种口径的预期，并�
 
 | # | 命令 | 守什么 |
 |---|---|---|
-| ① | `node --test test/*.test.mjs` | 单元测试：Python↔JS 夹具、口径锁、幂等锁、决策锁（当前 1058 条） |
+| ① | `node --test test/*.test.mjs` | 单元测试：Python↔JS 夹具、口径锁、幂等锁、决策锁、**前后端接口契约锚定**（当前 1264 条） |
 | ② | `node scripts/audit_lhb_caliber.mjs` | 龙虎榜双口径不混用 + 存档可重现 + `run` 行先后 + 体积纪律 |
 | ③ | `node scripts/check_frontend.mjs --require-jsdom` | 前端断言：jsdom 里真跑 `index.html` + `app.js` |
 | ④ | `node scripts/version_regression.mjs` | 公式版本回归：v4.5 / v5.0 / v5.2 并行重算对比 |
 | ⑤ | `node scripts/split_archive.mjs --check` | 归档切片一致性 + 首屏体积纪律（主档 < 7MB、`signals-latest` < 32KB） |
+
+### 前后端接口契约（V5.3 同步机制）
+
+后端（Node 管线）与前端的全部接口是 `data/*.json` 数据档——没有 API 层，**数据档即接口**。历史上字段名曾两侧各自演化（`missingNote`→`missingReason`，commit 57a12b7：前端显示"原因未知"，后端文案丢失），根因是没有单一事实源。现以 `schemas/*.json` 契约锁定：
+
+| 契约 | 数据档 | 生产方 | 消费方 |
+|---|---|---|---|
+| `schemas/signals-latest.schema.json` | `data/signals-latest.json` | `src/archive_split.js` `buildSignals` | `app.js` 各面板 + `src/dataset.js` |
+| `schemas/backtest.schema.json` | `data/backtest.json` | `scripts/backtest.mjs` | `app.js` `renderBacktest`（V5.3 对照段/净值曲线） |
+| `schemas/version-regression.schema.json` | `data/version-regression.json` | `scripts/version_regression.mjs` | `app.js` `renderVerCmp`（`satThreshold` 全站唯一出处） |
+| `schemas/archive-index.schema.json` | `data/archive-index.json` | `src/archive_split.js` `buildIndex` | `app.js` 首屏（`REQUIRED_ON_BOOT` 唯一成员） |
+| `schemas/global.schema.json` | `data/global.json` | `scripts/fetch_global.mjs` | `app.js` `renderGlobal`（外围三相位） |
+| `schemas/intraday.schema.json` | `data/intraday.json` | `scripts/snapshot_intraday.mjs` | `app.js` `loadIntraday`（仅 live 相位） |
+
+**契约语义两条**：① `required` = 前端渲染**实际消费**的字段（消费面，非生产面自画像——否则后端漏产、契约跟着漏，锁等于没锁）；② 整段 `anyOf null`（未生成 ≠ 没有，前端有专门缺失分支），但**段一旦存在，段内 required 必须齐**——半缺是最危险形态（渲染静默空白）。
+
+**变更流程（顺序不可反）**：
+
+1. 先改 `schemas/*.json` 契约（字段/类型/枚举），提交信息注明「契约变更」——diff 即对相关方的通知；
+2. 同步改另一端代码：产出方（`src/archive_split.js` / `scripts/*.mjs`）或消费方（`app.js`）；
+3. 跑 `node scripts/check_contract.mjs`——门禁红到两端对齐为止；
+4. 若字段语义变化（不只增删），在 `check_frontend.mjs` 补对应渲染断言（效果级锁）。
+
+自动化拦截：`daily.yml` 在数据档落盘后、提交与 UI 构建前跑 `check_contract.mjs`（坏档不进提交）；`node --test` 含 `test/contract.test.mjs`（磁盘档锚定 + 校验器语义 + 事故重演负向演练），周合并门禁①自动带上。错误输出带 JSON Pointer 路径 + 期望/实际 + 修复顺序指引。跨语言面（Python `tools/backtest/`）由 parity 夹具 + 七因子 schema 测试另行锁定，不在本契约重复。
 
 ### 两处刻意的硬约束
 

@@ -1,0 +1,609 @@
+{
+  "$comment": [
+    "前后端接口契约 · signals-latest.json（V5.3 同步机制 · 2026-10-05）",
+    "生产方：src/archive_split.js buildSignals（经 src/engine/write.js 或 scripts/split_archive.mjs 落盘）",
+    "消费方：app.js loadHealth/renderHealth/renderSeats/renderPain/renderBreadth/renderDirty/renderXcheck/",
+    "renderRegime/renderDailyReport/renderDiverge/renderAlerts + src/dataset.js 导出层",
+    "",
+    "★ 变更流程（不可反序）：",
+    "  1) 先改本契约（字段/类型/枚举），提交信息注明「契约变更」；",
+    "  2) 同步改另一端：生产方=src/archive_split.js 等，消费方=app.js；",
+    "  3) 跑 node scripts/check_contract.mjs（门禁会红到两端对齐为止）；",
+    "  4) 若字段语义变化（不只增删），须在 check_frontend.mjs 补对应渲染断言。",
+    "顺序反了（先改代码后补契约）会被门禁拦下——这正是「通知相关方」的强制形态。",
+    "",
+    "required 语义：= 前端渲染实际消费的字段（消费面，非生产面自画像）。",
+    "整段 anyOf null（如 health 可为 null）：未生成≠没有，前端有专门缺失分支；",
+    "段一旦存在，段内 required 字段必须齐——半缺是最危险形态（渲染静默空白）。"
+  ],
+  "type": "object",
+  "required": [
+    "kind", "version", "meta", "signals", "latest", "relative",
+    "health", "healthNote", "seats", "seatsNote", "pain", "painNote",
+    "breadth", "breadthNote", "dirty", "dirtyNote",
+    "crosscheck", "crosscheckNote", "regime", "regimeNote",
+    "divergence", "divergenceNote", "dailyReport", "dailyReportNote",
+    "llm", "llmNote"
+  ],
+  "properties": {
+    "kind": { "type": "string", "const": "signals-latest" },
+    "version": { "type": "number" },
+
+    "meta": {
+      "type": "object",
+      "required": ["generatedAt", "formulaVersion", "source", "tradeDate", "stale", "phase"],
+      "properties": {
+        "generatedAt": { "type": "string" },
+        "formulaVersion": { "type": "string" },
+        "source": { "type": "string" },
+        "tradeDate": { "type": "string" },
+        "stale": { "type": "boolean" },
+        "staleReason": { "type": ["object", "null"] },
+        "phase": { "type": "string" },
+        "phaseNote": { "type": "string" },
+        "lastAttempt": {
+          "type": ["object", "null"],
+          "properties": {
+            "at": { "type": "string" },
+            "outcome": { "type": "string" },
+            "reason": { "type": ["string", "null"] }
+          }
+        },
+        "freshness": {
+          "type": ["object", "null"],
+          "properties": {
+            "state": { "type": "string" },
+            "stale": { "type": "boolean" },
+            "tradeDate": { "type": ["string", "null"] },
+            "behindSessions": { "type": "number" }
+          }
+        }
+      }
+    },
+
+    "signals": {
+      "type": "object",
+      "required": ["tradeDate", "momentum"],
+      "properties": {
+        "tradeDate": { "type": "string" },
+        "momentum": {
+          "type": "object",
+          "$comment": "fresh=新晋（对象数组带 stocks）；fading=退潮（纯名字字符串数组）；rising 在当前档不存在（形态见 archive_split.js）",
+          "properties": {
+            "fresh": { "type": "array", "items": { "type": "object", "required": ["theme", "stocks"] } },
+            "fading": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+
+    "latest": {
+      "type": "object",
+      "required": ["trade_date", "value", "factors"],
+      "properties": {
+        "trade_date": { "type": "string" },
+        "value": { "type": "number", "minimum": 0, "maximum": 100 },
+        "pct_rank": { "type": ["number", "null"] },
+        "factors": {
+          "type": "object",
+          "required": ["s_net", "s_pos", "s_brd", "s_hot", "s_zdt", "s_zbl", "s_amt"],
+          "properties": {
+            "s_net": { "type": ["number", "null"] },
+            "s_pos": { "type": ["number", "null"] },
+            "s_brd": { "type": ["number", "null"] },
+            "s_hot": { "type": ["number", "null"] },
+            "s_zdt": { "type": ["number", "null"] },
+            "s_zbl": { "type": ["number", "null"] },
+            "s_amt": { "type": ["number", "null"] }
+          }
+        },
+        "zt_count": { "type": ["number", "null"] },
+        "dt_count": { "type": ["number", "null"] },
+        "zb_count": { "type": ["number", "null"] },
+        "up_count": { "type": ["number", "null"] },
+        "down_count": { "type": ["number", "null"] },
+        "seal_pct": { "type": ["number", "null"] },
+        "indexes": { "type": ["object", "null"] }
+      }
+    },
+
+    "relative": {
+      "type": ["object", "null"],
+      "required": ["primary", "degraded", "vsIndex", "vsMedian"],
+      "properties": {
+        "primary": { "type": "string" },
+        "degraded": { "type": "boolean" },
+        "degradedReason": { "type": ["string", "null"] },
+        "vsIndex": {
+          "type": ["object", "null"],
+          "$comment": "超额榜（attack/defense 各 top5 行）；改行结构须同步 app.js 相对强弱表",
+          "required": ["base", "baseLabel", "basePct", "attack", "defense"],
+          "properties": {
+            "base": { "type": "string" },
+            "baseLabel": { "type": "string" },
+            "basePct": { "type": ["number", "null"] },
+            "attack": { "type": "array", "items": { "type": "object", "required": ["name", "change_pct", "excess"] } },
+            "defense": { "type": "array", "items": { "type": "object", "required": ["name", "change_pct", "excess"] } }
+          }
+        },
+        "vsMedian": { "type": ["object", "null"] },
+        "medianPct": { "type": ["number", "null"] },
+        "upCount": { "type": ["number", "null"] },
+        "total": { "type": ["number", "null"] },
+        "topN": { "type": ["number", "null"] }
+      }
+    },
+
+    "health": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["level", "label", "items", "summary"],
+          "properties": {
+            "level": { "type": "string", "enum": ["ok", "warn", "fail", "unknown"] },
+            "label": { "type": "string" },
+            "summary": { "type": "string" },
+            "note": { "type": "string" },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["item", "label", "level", "detail"],
+                "properties": {
+                  "item": { "type": "string" },
+                  "label": { "type": "string" },
+                  "level": { "type": "string" },
+                  "detail": { "type": "string" },
+                  "state": { "type": ["string", "null"] },
+                  "stale": { "type": "boolean" },
+                  "rows": { "type": "array" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "healthNote": { "type": "string" },
+
+    "seats": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["verdict", "series", "summary"],
+          "properties": {
+            "verdict": {
+              "type": "object",
+              "required": ["level", "label", "reason"],
+              "properties": {
+                "level": { "type": "string", "enum": ["inst", "north", "hot", "unknown"] },
+                "label": { "type": "string" },
+                "reason": { "type": "string" },
+                "date": { "type": ["string", "null"] }
+              }
+            },
+            "series": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["date", "ok", "instNet", "northNet", "hotNet", "dominant"],
+                "properties": {
+                  "date": { "type": "string" },
+                  "ok": { "type": "boolean" },
+                  "instNet": { "type": ["number", "null"] },
+                  "northNet": { "type": ["number", "null"] },
+                  "hotNet": { "type": ["number", "null"] },
+                  "dominant": { "type": ["string", "null"] }
+                }
+              }
+            },
+            "summary": {
+              "type": "object",
+              "required": ["okRows", "totalDays", "coverage"],
+              "properties": {
+                "okRows": { "type": "number" },
+                "totalDays": { "type": "number" },
+                "coverage": { "type": ["number", "null"] },
+                "instNet": { "type": ["object", "null"] },
+                "northNet": { "type": ["object", "null"] },
+                "hotNet": { "type": ["object", "null"] }
+              }
+            },
+            "seatsNote": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "seatsNote": { "type": "string" },
+
+    "pain": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["verdict", "perf", "advance", "bigLoss"],
+          "properties": {
+            "verdict": {
+              "type": "object",
+              "required": ["level", "label", "reason"],
+              "properties": {
+                "level": { "type": "string", "enum": ["severe", "weak", "normal", "strong", "unknown"] },
+                "label": { "type": "string" },
+                "reason": { "type": "string" }
+              }
+            },
+            "perf": {
+              "type": "object",
+              "required": ["n", "universe", "reliable", "avg", "median", "lossRatio", "limitUpAgain", "limitDown", "bigLoss"],
+              "properties": {
+                "n": { "type": "number" },
+                "universe": { "type": "number" },
+                "missing": { "type": "number" },
+                "reliable": { "type": "boolean" },
+                "avg": { "type": ["number", "null"] },
+                "median": { "type": ["number", "null"] },
+                "lossRatio": { "type": ["number", "null"] },
+                "worst": { "type": ["number", "null"] },
+                "best": { "type": ["number", "null"] },
+                "limitUpAgain": { "type": ["number", "null"] },
+                "limitDown": { "type": ["number", "null"] },
+                "bigLoss": { "type": ["number", "null"] }
+              }
+            },
+            "advance": {
+              "type": "object",
+              "required": ["failRate", "maxLb"],
+              "properties": {
+                "n": { "type": "number" },
+                "kept": { "type": "number" },
+                "failed": { "type": "number" },
+                "failRate": { "type": ["number", "null"] },
+                "maxLb": { "type": ["number", "null"] },
+                "reliable": { "type": "boolean" },
+                "byTier": { "type": ["object", "null"] }
+              }
+            },
+            "bigLoss": {
+              "type": "object",
+              "required": ["n", "list"],
+              "properties": {
+                "n": { "type": "number" },
+                "list": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["name", "chg"],
+                    "properties": {
+                      "name": { "type": "string" },
+                      "code": { "type": ["string", "null"] },
+                      "chg": { "type": "number" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "painNote": { "type": "string" },
+
+    "breadth": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["snapshot", "series", "summary", "verdict"],
+          "properties": {
+            "snapshot": {
+              "type": "object",
+              "required": ["scanned", "requested", "reliable", "aboveMa", "newHigh", "newLow", "updown"],
+              "properties": {
+                "scanned": { "type": ["number", "null"] },
+                "requested": { "type": ["number", "null"] },
+                "reliable": { "type": "boolean" },
+                "aboveMa": { "type": ["object", "null"] },
+                "newHigh": { "type": ["object", "null"] },
+                "newLow": { "type": ["object", "null"] },
+                "brokenPb": { "type": ["object", "null"] },
+                "updown": { "type": ["object", "null"] },
+                "divergence": { "type": ["number", "null"] },
+                "thresholds": { "type": ["object", "null"] },
+                "verdict": {
+                  "type": "object",
+                  "required": ["level", "label", "detail"],
+                  "properties": {
+                    "level": { "type": "string" },
+                    "label": { "type": "string" },
+                    "detail": { "type": ["string", "null"] }
+                  }
+                }
+              }
+            },
+            "series": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["date", "maRatio", "up", "down"],
+                "properties": {
+                  "date": { "type": "string" },
+                  "maRatio": { "type": ["number", "null"] },
+                  "newHighRatio": { "type": ["number", "null"] },
+                  "newLowRatio": { "type": ["number", "null"] },
+                  "brokenRatio": { "type": ["number", "null"] },
+                  "up": { "type": ["number", "null"] },
+                  "down": { "type": ["number", "null"] }
+                }
+              }
+            },
+            "summary": { "type": ["object", "null"] },
+            "verdict": {
+              "type": "object",
+              "required": ["level", "label"],
+              "properties": {
+                "level": { "type": "string" },
+                "label": { "type": "string" },
+                "detail": { "type": ["string", "null"] }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "breadthNote": { "type": "string" },
+
+    "dirty": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["latest", "totalDays", "taggedDays", "dirtyDays", "warnDays", "byField", "recent"],
+          "properties": {
+            "latest": { "type": ["object", "null"] },
+            "totalDays": { "type": "number" },
+            "taggedDays": { "type": "number" },
+            "dirtyDays": { "type": "number" },
+            "warnDays": { "type": "number" },
+            "byField": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["field", "days"],
+                "properties": {
+                  "field": { "type": "string" },
+                  "days": { "type": "number" }
+                }
+              }
+            },
+            "recent": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["date", "status"],
+                "properties": {
+                  "date": { "type": "string" },
+                  "status": { "type": "string" },
+                  "issues": { "type": "array" },
+                  "reviewVerdict": { "type": ["string", "null"] }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "dirtyNote": { "type": "string" },
+
+    "crosscheck": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["status", "comparable", "coverage", "flagged", "conflictCount"],
+          "properties": {
+            "status": { "type": "string", "enum": ["ok", "diverge", "conflict", "skip", "unknown"] },
+            "comparable": { "type": ["number", "null"] },
+            "coverage": { "type": ["number", "null"] },
+            "offset": { "type": ["number", "null"] },
+            "flagged": { "type": "array" },
+            "conflictCount": { "type": ["number", "null"] },
+            "rows": { "type": "array" },
+            "primaryName": { "type": ["string", "null"] },
+            "secondaryName": { "type": ["string", "null"] },
+            "asOfDate": { "type": ["string", "null"] }
+          }
+        }
+      ]
+    },
+    "crosscheckNote": { "type": "string" },
+
+    "regime": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["latest", "turns", "counts", "totalDays", "labels"],
+          "properties": {
+            "latest": {
+              "type": "object",
+              "required": ["trade_date", "value", "pct_rank", "key", "label", "dir", "confidence"],
+              "properties": {
+                "trade_date": { "type": "string" },
+                "value": { "type": ["number", "null"] },
+                "pct_rank": { "type": ["number", "null"] },
+                "key": { "type": "string", "enum": ["ice", "recover", "climax", "ebb", "neutral", "shift", "unknown"] },
+                "label": { "type": "string" },
+                "level": { "type": "string" },
+                "dir": { "type": "string", "enum": ["up", "flat", "down"] },
+                "confidence": { "type": "string", "enum": ["low", "mid", "high"] },
+                "caution": { "type": ["string", "null"] },
+                "detail": { "type": ["object", "null"] }
+              }
+            },
+            "turns": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["date", "from", "to"],
+                "properties": {
+                  "date": { "type": "string" },
+                  "from": { "type": "string" },
+                  "to": { "type": "string" },
+                  "value": { "type": ["number", "null"] }
+                }
+              }
+            },
+            "counts": { "type": "object" },
+            "totalDays": { "type": "number" },
+            "labels": { "type": "object" },
+            "rules": { "type": ["object", "null"] },
+            "seriesCompact": { "type": "array" },
+            "seriesFields": { "type": "array" }
+          }
+        }
+      ]
+    },
+    "regimeNote": { "type": "string" },
+
+    "divergence": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["diverged", "level", "label", "reason", "history"],
+          "properties": {
+            "diverged": { "type": "boolean" },
+            "level": { "type": "string", "enum": ["ok", "warn", "unknown"] },
+            "kind": { "type": ["string", "null"] },
+            "label": { "type": "string" },
+            "reason": { "type": ["string", "null"] },
+            "history": {
+              "type": ["object", "null"],
+              "required": ["checkedDays", "divergedDays", "ratePct"],
+              "properties": {
+                "checkedDays": { "type": "number" },
+                "divergedDays": { "type": "number" },
+                "ratePct": { "type": ["number", "null"] },
+                "recent": { "type": "array" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "divergenceNote": { "type": "string" },
+
+    "dailyReport": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["date", "headline", "tag", "sections"],
+          "properties": {
+            "date": { "type": "string" },
+            "headline": { "type": "string" },
+            "tag": {
+              "type": "object",
+              "required": ["key", "label"],
+              "properties": {
+                "key": { "type": "string" },
+                "label": { "type": "string" },
+                "level": { "type": "string" },
+                "dir": { "type": "string" },
+                "confidence": { "type": "string" }
+              }
+            },
+            "caveats": { "type": "array" },
+            "disclaimer": { "type": "string" },
+            "sections": {
+              "type": "array",
+              "items": {
+                "$comment": "双形态互斥（anyOf）：missing=false 的节必须带 points（渲染列表本体，漏了=整节空白）；missing=true 的节必须带 missingReason（指引文案，漏了=前端显示「原因未知」——missingNote→missingReason 事故的精确锁点）。const 绑定 missing 值与形态，两边都对不上就两分支全不命中。",
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": ["id", "title", "level", "missing", "points"],
+                    "properties": {
+                      "id": { "type": "string" },
+                      "title": { "type": "string" },
+                      "level": { "type": "string", "enum": ["info", "warn", "ok", "unknown"] },
+                      "missing": { "type": "boolean", "const": false },
+                      "points": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": ["text", "kind"],
+                          "properties": {
+                            "text": { "type": "string" },
+                            "kind": { "type": "string", "enum": ["main", "evidence", "caution", "unknown", "info"] }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": ["id", "title", "level", "missing", "missingReason"],
+                    "properties": {
+                      "id": { "type": "string" },
+                      "title": { "type": "string" },
+                      "level": { "type": "string", "enum": ["info", "warn", "ok", "unknown"] },
+                      "missing": { "type": "boolean", "const": true },
+                      "missingReason": { "type": "string" }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "dailyReportNote": { "type": "string" },
+
+    "llm": {
+      "$comment": "未生成为 null（常态，需收盘后跑 scripts/fetch_llm_sentiment.mjs）；结构由 src/llm_sentiment.js llmSentimentBlock 产出，节 8 由 dailyReport.sections 透出",
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["effective", "direction", "adj", "original", "modified", "effectNote", "asOfDate"],
+          "properties": {
+            "effective": { "type": "boolean" },
+            "direction": { "type": ["string", "null"] },
+            "adj": { "type": ["number", "null"] },
+            "original": { "type": ["number", "null"] },
+            "modified": { "type": ["number", "null"] },
+            "effectNote": { "type": ["string", "null"] },
+            "sentimentRaw": { "type": ["number", "null"] },
+            "confidence": { "type": ["number", "string", "null"] },
+            "reason": { "type": ["string", "null"] },
+            "events": { "type": "array" },
+            "asOfDate": { "type": "string" },
+            "model": { "type": ["string", "null"] }
+          }
+        }
+      ]
+    },
+    "llmNote": { "type": "string" },
+
+    "marketAlerts": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["layer", "level", "type", "action", "text"],
+        "properties": {
+          "layer": { "type": "string" },
+          "level": { "type": "string" },
+          "type": { "type": "string" },
+          "action": { "type": "string" },
+          "text": { "type": "string" },
+          "why": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "marketAlertsNote": { "type": "string" }
+  }
+}

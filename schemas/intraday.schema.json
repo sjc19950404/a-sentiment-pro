@@ -1,0 +1,53 @@
+{
+  "$comment": [
+    "前后端接口契约 · intraday.json（V5.3 同步机制 · 2026-10-05）",
+    "生产方：scripts/snapshot_intraday.mjs（绝不触碰 archive.json；仅 meta.phase==='live' 时前端才拉）",
+    "消费方：app.js loadIntraday——kind:'intraday' 是防串档哨兵（拉到别的档直接判失败）"
+  ],
+  "type": "object",
+  "required": ["kind", "version", "tradeDate", "capturedAtBJ", "hot", "pools", "breadth"],
+  "properties": {
+    "kind": { "type": "string", "const": "intraday" },
+    "version": { "type": "number" },
+    "tradeDate": { "type": "string" },
+    "capturedAtBJ": { "type": "string" },
+    "prevCapturedAtBJ": { "type": ["string", "null"] },
+    "phase": { "type": "string" },
+    "caliberNote": { "type": ["string", "null"] },
+    "hot": {
+      "type": ["object", "null"],
+      "required": ["count"],
+      "properties": {
+        "count": { "type": "number" },
+        "srcDate": { "type": ["string", "null"] },
+        "rows": { "type": "array" }
+      }
+    },
+    "pools": {
+      "type": ["object", "null"],
+      "required": ["zt", "zb", "dt", "max_lb", "lb2"],
+      "properties": {
+        "zt": { "type": ["number", "null"] },
+        "zb": { "type": ["number", "null"] },
+        "dt": { "type": ["number", "null"] },
+        "max_lb": { "type": ["number", "null"] },
+        "lb2": { "type": ["number", "null"] },
+        "seal_pct": { "type": ["number", "null"] },
+        "zt_codes": { "type": "array" }
+      }
+    },
+    "prevPools": {
+      "type": ["object", "null"],
+      "required": ["zt", "zb", "dt", "max_lb", "lb2"],
+      "properties": {
+        "zt": { "type": ["number", "null"] },
+        "zb": { "type": ["number", "null"] },
+        "dt": { "type": ["number", "null"] },
+        "max_lb": { "type": ["number", "null"] },
+        "lb2": { "type": ["number", "null"] }
+      }
+    },
+    "breadth": { "type": ["object", "null"] },
+    "sourcesFailed": { "type": "array" }
+  }
+}
