@@ -1147,6 +1147,43 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
    ══════════════════════════════════════════════════════════════════════════ */
 
 /* 顶部状态横幅。与 #alerts 分开：#alerts 讲盘面，本条约讲数据可信度。 */
+/* ── 轨道回滚横幅（P1/P2-β）：A_fallback 常驻警示（用户规格：红色横幅）。
+   A 态不渲染（零 diff 纪律渲染端体现）。红色 = 风险警示，与 .alert-row 风险色条
+   同惯例（--up 在价格语境=涨、在告警语境=风险红，见上方 591 行注释先例）。── */
+.track-banner { margin: 8px var(--pad) 0; }
+.track-banner[hidden] { display: none; }
+.tb-inner { border: 1px solid var(--up); border-left-width: 3px; border-radius: 8px;
+  background: color-mix(in srgb, var(--up) 8%, transparent); padding: 8px 12px; }
+.tb-head { color: var(--up); margin-bottom: 4px; }
+.tb-lines { font-size: 12px; line-height: 1.65; color: var(--txt); }
+
+/* ── 双轨披露面板（P2-β 渲染接线）：三轨 + 保险账本 ── */
+.dualtrack-panel { margin: 8px 0; }
+.dualtrack-panel[hidden] { display: none; }
+.dt-fold { border: 1px solid var(--line); border-radius: 8px; background: var(--card); overflow: hidden; }
+.dt-fold > summary { cursor: pointer; padding: 9px 12px; display: flex; gap: 10px;
+  align-items: center; flex-wrap: wrap; list-style: none; }
+.dt-fold > summary::-webkit-details-marker { display: none; }
+.dt-fold > summary::before { content: '▸'; color: var(--muted); font-size: 11px; }
+.dt-fold[open] > summary::before { content: '▾'; }
+.dt-head { padding: 9px 12px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.dt-sum { font-size: 11.5px; }
+.dt-body { padding: 0 12px 10px; }
+.dt-chip { font-size: 11px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); }
+.dt-chip.ok { color: var(--up, #3aa675); border-color: var(--up, #3aa675); }
+.dt-chip.info { color: var(--muted); }
+.dt-chip.warn { color: #c9a04e; border-color: #c9a04e; }
+.dt-chip.unknown { color: var(--muted); }
+.dt-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 4px; }
+.dt-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 3px 8px 3px 0; }
+.dt-table td { padding: 3px 8px 3px 0; border-top: 1px solid var(--line); }
+.dt-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dt-sm { font-size: 11px; }
+.dt-ledger { max-width: 420px; }
+.dt-sub { margin-top: 10px; font-size: 11.5px; }
+.dt-note { margin-top: 8px; font-size: 11.5px; line-height: 1.65; }
+.dt-fallback .dt-fold { border-color: var(--up); }
+
 .offline-bar { margin: 8px var(--pad) 0; }
 .offline-bar[hidden] { display: none; }
 .ob-inner { border: 1px solid var(--line); border-left-width: 3px; border-radius: 8px;
@@ -1224,8 +1261,7 @@ main[aria-hidden="true"] { display: none; }
      会让"高潮"看着像"上涨"、"退潮"看着像"下跌"——语义污染。
    ══════════════════════════════════════════════════════════════════════════ */
 .regime-panel { margin: 10px 0; }
-.regime-panel[hidden] { display: none; }
-.rg-fold { border: 1px solid var(--line); border-radius: 8px; background: var(--card); overflow: hidden; }
+.regime-panel[hidden] { display: none; }.rg-fold { border: 1px solid var(--line); border-radius: 8px; background: var(--card); overflow: hidden; }
 .rg-fold > summary { cursor: pointer; padding: 9px 12px; display: flex; gap: 10px; align-items: center; list-style: none; }
 .rg-fold > summary::-webkit-details-marker { display: none; }
 .rg-fold > summary::before { content: '▸'; color: var(--muted); font-size: 11px; }

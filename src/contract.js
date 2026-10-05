@@ -9,6 +9,8 @@
 // 校验规则刻意采用 JSON Schema 的一个**小子集**（见下），零 npm 依赖手写：
 //   · type: 'object'|'array'|'string'|'number'|'boolean'|'null'（或数组=任一命中）
 //   · properties / items / required / enum / const / minimum / maximum
+//   · pattern / minLength（string 节点格式约束——emergency-contacts.phone 类
+//     「格式错=@ 链静默断裂」字段；正则用 schema 自带串，无注入面）
 //   · anyOf: [子schema...]（任一命中即可；用于「段可为 null」的三态语义）
 //   · additionalProperties: false（可选：未声明字段视为漂移，默认不开启——
 //     数据档常带诊断性附加字段，开它会产生噪音；契约只锁"该有的必须在"）
@@ -129,6 +131,22 @@ export function validateContract(data, schema, path = '', root = null) {
     }
     if (schema.maximum !== undefined && data > schema.maximum) {
       errs.push(mk(path, `≤ ${schema.maximum}`, String(data), '数值越上界'));
+    }
+  }
+  // string 节点格式约束（P3 起入集）：pattern=正则（phone 等格式错即静默断裂的字段）、
+  //   minLength=非空下界。失败信息带期望与实际，可直接执行。
+  if (typeof data === 'string') {
+    if (typeof schema.pattern === 'string') {
+      try {
+        if (!new RegExp(schema.pattern).test(data)) {
+          errs.push(mk(path, `匹配正则 ${schema.pattern}`, JSON.stringify(data), '字符串格式违例（pattern）——对照 schemas 契约的格式约定修产出方'));
+        }
+      } catch (e) {
+        errs.push(mk(path, '合法正则', schema.pattern, `schemas 里 pattern 本身写错（${e?.message}）——修契约`));
+      }
+    }
+    if (schema.minLength !== undefined && data.length < schema.minLength) {
+      errs.push(mk(path, `长度 ≥ ${schema.minLength}`, `长度 ${data.length}`, '字符串过短——契约认定非空才有渲染意义'));
     }
   }
 

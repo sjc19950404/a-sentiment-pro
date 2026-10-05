@@ -746,7 +746,7 @@ T+1 均 −0.30%）。所以每只推荐都同时给两种口径的预期，并�
 | ② | `node scripts/audit_lhb_caliber.mjs` | 龙虎榜双口径不混用 + 存档可重现 + `run` 行先后 + 体积纪律 |
 | ③ | `node scripts/check_frontend.mjs --require-jsdom` | 前端断言：jsdom 里真跑 `index.html` + `app.js` |
 | ④ | `node scripts/version_regression.mjs` | 公式版本回归：v4.5 / v5.0 / v5.2 并行重算对比 |
-| ⑤ | `node scripts/split_archive.mjs --check` | 归档切片一致性 + 首屏体积纪律（主档 < 7MB、`signals-latest` < 32KB） |
+| ⑤ | `node scripts/split_archive.mjs --check` | 归档切片一致性 + 首屏体积纪律（主档 < 7MB、`signals-latest` < 36KB） |
 
 ### 前后端接口契约（V5.3 同步机制）
 

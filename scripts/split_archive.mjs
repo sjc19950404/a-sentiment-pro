@@ -22,6 +22,7 @@ import { aggregateByCode } from '../src/lhb.js';
 import { classifySeries, classifyRegime, detectDivergence, buildRegimeBlock, buildDivergenceBlock } from '../src/regime.js';
 import { buildDailyReport } from '../src/daily_report.js';
 import { llmSentimentBlock } from '../src/llm_sentiment.js';
+import { dualTrackDisclosureFn } from '../src/dual_track.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
@@ -72,6 +73,10 @@ const signals = buildSignals(packed, {
       return JSON.parse(readFileSync(p, 'utf8'));
     } catch { return null; }
   },
+  // 双轨披露块（P2-β 渲染接线）：读 data/paper/dual_track_latest.json。
+  //   与 pipeline.writeShards 用**同一工厂产物** dualTrackDisclosureFn(DATA)——
+  //   两路径产出逐字段一致（同一注入纪律，否则 --check 报形态分裂）。
+  dualTrackFn: dualTrackDisclosureFn(DATA),
   // 市场宽度（#3）：与 pipeline.writeShards **同源同形态**——同一批 buildBreadthSeries/
   //   breadthSeriesSummary，读同一份 breadth-latest/daily.json。
   //   两条路径若有一处漏注入，--check 的一致性校验就会发现（signals 段不同）。
@@ -205,12 +210,16 @@ if (check) {
       problems.push('滚动窗 latest 丢了 summary.seats（首屏研判报告要用，不得作为惰性字段剥离）');
     }
   }
-  // 最轻档：必须存在、必须只含一天、体积必须 < 32KB（否则"最轻"名不副实）
+  // 最轻档：必须存在、必须只含一天、体积必须 < 36KB（否则"最轻"名不副实）。
+  //   预算重估（P2-β 渲染接线，2026-10-06）：32→36KB。基底 31.6KB 早已贴顶（regime
+  //   4.4 + dailyReport 6.0 + dirty 2.3 等持续累积），双轨披露块（瘦身后 ~1.1KB，
+  //   框架 §三核心交付）一进来必超——一次性重估到位，避免每加一段就改一次上限。
+  //   上限语义不变：最轻档只放"看一眼"的量，明细仍留在 recent/年分片。
   const sp = join(DATA, SIGNALS_FILE);
   if (!existsSync(sp)) problems.push(`缺少最轻档 ${SIGNALS_FILE}`);
   else {
     const sb = Buffer.byteLength(readFileSync(sp, 'utf8'), 'utf8');
-    if (sb > 32 * 1024) problems.push(`${SIGNALS_FILE} 体积 ${(sb / 1024).toFixed(1)}KB 超过 32KB 上限`);
+    if (sb > 36 * 1024) problems.push(`${SIGNALS_FILE} 体积 ${(sb / 1024).toFixed(1)}KB 超过 36KB 上限`);
     const sg = JSON.parse(readFileSync(sp, 'utf8'));
     if (sg.kind !== 'signals-latest') problems.push(`${SIGNALS_FILE}.kind=${sg.kind}`);
     if (sg.latest && sg.latest.trade_date !== arc.all_days[arc.all_days.length - 1].trade_date) {

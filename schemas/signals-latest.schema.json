@@ -14,7 +14,24 @@
     "",
     "required 语义：= 前端渲染实际消费的字段（消费面，非生产面自画像）。",
     "整段 anyOf null（如 health 可为 null）：未生成≠没有，前端有专门缺失分支；",
-    "段一旦存在，段内 required 字段必须齐——半缺是最危险形态（渲染静默空白）。"
+    "段一旦存在，段内 required 字段必须齐——半缺是最危险形态（渲染静默空白）。",
+    "",
+    "★ P2-β（2026-10-06）：active_track / activeTrackNote 正式字段化。",
+    "  · 事实源 = data/paper/track_state.json（契约 schemas/track-state.schema.json，同一变更流程管理）；",
+    "  · 本字段是展示镜像：抓取管道每轮重写会冲掉 → paper_dual_track.mjs fallback 态每日自愈回写；",
+    "  · 生产方：scripts/rollback_track.mjs（回滚写/恢复清）+ tools/backtest/paper_dual_track.mjs（自愈）；",
+    "  · 消费方：前端回滚横幅（随双轨披露渲染接线，本轮先锁契约）；",
+    "  · 跨档一致性（check_contract.mjs 守卫）：A_fallback 态镜像必须在场；A 态不得带本字段（零 diff 纪律）。",
+    "",
+    "★ P2-β 渲染接线（2026-10-06）：dualTrack / dualTrackNote 正式字段化。",
+    "  · 事实源 = data/paper/dual_track_latest.json（契约 schemas/dual-track-latest.schema.json）；",
+    "  · 生产方：src/dual_track.js::dualTrackDisclosureFn（唯一实现，纯搬运不重算），经 buildSignals 的",
+    "    dualTrackFn 注入——src/engine/write.js 与 scripts/split_archive.mjs 用同一工厂产物（两路径零分裂）；",
+    "  · 消费方：app.js renderDualTrack（三轨披露面板）；",
+    "  · asOf = 双轨账本末日，与 meta.tradeDate 不同步时以 asOf 为披露口径（旁路工具每日一跑，",
+    "    盘中抓取时账本停在上一收盘日——如实披露不隐藏）；",
+    "  · 跨档一致性（check_contract.mjs 守卫 crossCheckDualTrack）：段内 day/ledger/trackState 必须与",
+    "    dual_track_latest.json 逐字段一致（防「报告说 A、算的是 B」的 R4 口径分裂）。"
   ],
   "type": "object",
   "required": [
@@ -23,7 +40,7 @@
     "breadth", "breadthNote", "dirty", "dirtyNote",
     "crosscheck", "crosscheckNote", "regime", "regimeNote",
     "divergence", "divergenceNote", "dailyReport", "dailyReportNote",
-    "llm", "llmNote"
+    "llm", "llmNote", "dualTrack", "dualTrackNote"
   ],
   "properties": {
     "kind": { "type": "string", "const": "signals-latest" },
@@ -604,6 +621,133 @@
         }
       }
     },
-    "marketAlertsNote": { "type": "string" }
+    "marketAlertsNote": { "type": "string" },
+
+    "active_track": {
+      "type": "string",
+      "enum": ["A_fallback"],
+      "$comment": "P2-β 正式字段化（2026-10-06，原为 rollback_track 临时约定）。三态：字段缺席=轨道 A（常态，A 态零 diff 纪律=缺席而非写 'A'）；'A_fallback'=执行面已回滚 V5.2 冻结快照。降级策略：旧版客户端读缺字段 → 默认轨道 A + warn 日志（唯一出处 schemas/track-state.schema.json 头注）。"
+    },
+    "activeTrackNote": {
+      "type": "string",
+      "$comment": "A_fallback 态的提示文案（回滚横幅数据源：快照提交/回滚时刻 since/生效日/触发编号/原因 why 原文/事实源指向——缺项按 [未记录] 显式标注，不静默吞）。缺席=轨道 A 常态。"
+    },
+
+    "dualTrack": {
+      "$comment": "双轨披露块（P2-β 渲染接线，框架 docs/dual_track_framework.md §三）。null = 账本未生成（≠轨道一致，前端按「未生成」渲染）。段一旦存在，day 内 required 必须齐（半缺=渲染静默空白）。数字唯一出处 tools/backtest/paper_dual_track.mjs，本段只搬运不重算。",
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["asOf", "generatedAt", "day", "cum", "trackState", "note"],
+          "properties": {
+            "asOf": {
+              "type": "string",
+              "$comment": "双轨账本末日（YYYY-MM-DD）。与 meta.tradeDate 不同步时以本字段为披露口径。"
+            },
+            "generatedAt": { "type": ["string", "null"] },
+            "day": {
+              "type": "object",
+              "required": ["date", "regime", "trackA", "trackB", "divergence", "trackC"],
+              "properties": {
+                "date": { "type": "string" },
+                "score": { "type": ["number", "null"] },
+                "regime": {
+                  "type": ["object", "null"],
+                  "required": ["key", "label", "cap"],
+                  "properties": {
+                    "key": { "type": "string", "enum": ["ice", "recover", "climax", "ebb", "neutral", "shift", "unknown"] },
+                    "label": { "type": "string" },
+                    "cap": { "type": ["number", "null"] },
+                    "reasons": { "type": "array", "items": { "type": "string" } },
+                    "note": { "type": ["string", "null"] }
+                  }
+                },
+                "trackA": {
+                  "type": "object",
+                  "required": ["targetPos", "poolPos", "executed"],
+                  "properties": {
+                    "targetPos": { "type": "object" },
+                    "poolPos": { "type": "number" },
+                    "executed": { "type": "boolean" }
+                  }
+                },
+                "trackB": {
+                  "type": "object",
+                  "required": ["refPos", "poolPos", "executed"],
+                  "properties": {
+                    "refPos": { "type": "object" },
+                    "poolPos": { "type": "number" },
+                    "executed": { "type": "boolean", "const": false }
+                  }
+                },
+                "divergence": {
+                  "type": "object",
+                  "required": ["posGap", "note"],
+                  "properties": {
+                    "posGap": { "type": "number" },
+                    "note": { "type": "string" }
+                  }
+                },
+                "trackC": {
+                  "type": "object",
+                  "required": ["active", "shadowPos", "biting"],
+                  "properties": {
+                    "active": { "type": "boolean" },
+                    "shadowPos": { "type": "object" },
+                    "biting": { "type": "object" }
+                  }
+                },
+                "dayReturns": {
+                  "$comment": "三轨当日收益（小数：A / B / C0.3 / C0.4 / C0.5）——用户规格「当日净值」的搬运面。曾因 32KB 预算剔除，预算重估 36KB 后恢复全量镜像。",
+                  "type": ["object", "null"]
+                },
+                "ledger": {
+                  "type": "object",
+                  "required": ["since", "premiumCum", "coverageCum", "shadowCum", "episodes", "activeDays"],
+                  "properties": {
+                    "since": { "type": "string" },
+                    "premiumCum": { "type": "number" },
+                    "coverageCum": { "type": "number" },
+                    "shadowCum": { "type": "object" },
+                    "episodes": { "type": "object" },
+                    "activeDays": { "type": "number" }
+                  }
+                }
+              }
+            },
+            "cum": {
+              "$comment": "累计收益（全样本 summary.total 面搬运：trackA/trackB 各一数 + trackC 三线各一数）。null 位 = 账本 summary 缺席（审计面 optional，门禁失败时账本仍写出）≠ 累计为零。提取逻辑唯一出处 src/dual_track.js::cumFromSummary（守卫 crossCheckDualTrack 复用同一函数）。",
+              "type": "object",
+              "required": ["trackA", "trackB", "trackC"],
+              "properties": {
+                "trackA": { "type": ["number", "null"] },
+                "trackB": { "type": ["number", "null"] },
+                "trackC": {
+                  "type": ["object", "null"],
+                  "required": ["0.3", "0.4", "0.5"],
+                  "properties": {
+                    "0.3": { "type": ["number", "null"] },
+                    "0.4": { "type": ["number", "null"] },
+                    "0.5": { "type": ["number", "null"] }
+                  }
+                }
+              }
+            },
+            "trackState": {
+              "type": "object",
+              "required": ["activeTrack", "paramsSource"],
+              "properties": {
+                "activeTrack": { "type": "string", "enum": ["A", "A_fallback"] },
+                "paramsSource": { "type": ["string", "null"] }
+              },
+              "$comment": "轨道状态简版（账本 trackState 的搬运）。完整态事实源 = data/paper/track_state.json。"
+            },
+            "note": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "dualTrackNote": { "type": "string" }
   }
 }

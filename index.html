@@ -45,6 +45,13 @@
 
   <div id="alerts"></div>
 
+  <!-- 轨道回滚横幅（P1/P2-β）：执行面已切 A_fallback（V5.2 冻结快照）时的常驻警示。
+       A 态（常态）不渲染任何内容——零 diff 纪律在渲染端的体现：缺席 ≠ 默认值。
+       数据源：signals-latest.json 的 active_track / activeTrackNote（展示镜像，事实源
+       = data/paper/track_state.json）。与 offlineBar 分开：那条说"数据可信度"，本条说
+       "执行面变了"——语义完全不同，混排会让回滚状态被当成数据告警读过去。 -->
+  <div id="trackBanner" class="track-banner" hidden></div>
+
   <!-- 拐点标签（#4）：用户第一眼要看的"今天这盘是什么状态"——冰点/回暖/高潮/退潮。
        判据 = 水位（历史分位为主）× 方向（较 3 个交易日前变化），两者任一不可判则
        显示「数据不足」（绝不猜一个"中性"顶上）。标签只描述状态，不含买卖建议。
@@ -94,6 +101,17 @@
        主源（同花顺行业）。单源的问题不是"偶尔错"，而是"错了没人知道"；本面板把
        "真轮动 vs 源抽风"变成可判定。未互证时显示「未互证」——绝不放行成「一致」。 -->
   <div id="xcheckPanel" class="xcheck-panel" hidden></div>
+
+  <!-- 双轨披露面板（P2-β 渲染接线 · 框架 docs/dual_track_framework.md §三）：
+       轨道 A = V5.2 唯一执行轨道；轨道 B = V5.3 风险参考线（"若整份买保险，今天会在哪"，
+       永不执行）；轨道 C = shift 次日帽影子（记账不执行）。分歧 = 保险当日保费敞口；
+       账本 = P2 起累计的保险账（保费/保额/影子增益）。
+       数据源：signals-latest.json 的 dualTrack 段（src/dual_track.js 唯一搬运出处，
+       数字唯一出处 = tools/backtest/paper_dual_track.mjs）。
+       ⚠ null = "账本未生成"（≠ 轨道一致）；asOf 可能滞后于 meta.tradeDate（旁路工具
+       每日一跑）——面板如实披露账本末日，不伪装成"今日"。轨道 B/C 是风控参考，
+       不是买卖信号（DISCLAIMER 口径）。 -->
+  <div id="dualTrackPanel" class="dualtrack-panel" hidden></div>
 
   <!-- 致命错误替代区：首屏必需档（archive-index）拿不到时填入。
        刻意放在 <main> **之外** —— fatal 时会给 main 加 aria-hidden（视觉上收起），

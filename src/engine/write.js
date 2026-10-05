@@ -20,6 +20,7 @@ import { buildBreadthSeries, breadthSeriesSummary } from '../breadth.js';
 import { buildRegimeBlock, buildDivergenceBlock } from '../regime.js';
 import { buildDailyReport } from '../daily_report.js';
 import { llmSentimentBlock } from '../llm_sentiment.js';
+import { dualTrackDisclosureFn } from '../dual_track.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, '..', '..', 'data'); // <root>/data（与 pipeline.js 同一目录）
@@ -103,6 +104,11 @@ export function writeShards(archive, dir = DATA_DIR) {
         return JSON.parse(readFileSync(p, 'utf8'));
       } catch { return null; }
     },
+    // 双轨披露块（P2-β 渲染接线）：读已落盘的 data/paper/dual_track_latest.json
+    //   （由 tools/backtest/paper_dual_track.mjs 每日产出）。与 split_archive.mjs 用
+    //   **同一工厂产物**（同一注入 = 两路径产出逐字段一致，否则 --check 报形态分裂）。
+    //   读不到就是 null（前端显示"未生成"，绝不渲染成"轨道一致"）。
+    dualTrackFn: dualTrackDisclosureFn(dir),
     // 市场宽度（#3）：读已落盘的 breadth-latest.json / breadth-daily.json
     //   （由 scripts/fetch_breadth.mjs 在收盘后分片抓全市场 K 线后汇总）。
     //   同样**只读不现算**：宽度要扫全市场 K 线，不可能在同步写盘路径里做；
