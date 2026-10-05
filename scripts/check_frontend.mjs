@@ -882,7 +882,8 @@ check('PC：在搜索框内打字不被快捷键抢键', keyOn('2', $('hotSearch
 // 断言一律拿磁盘上的快照做对照，而不是写死数字——数据每天变，写死的断言第二天就假通过。
 const GJSON = JSON.parse(readFileSync(join(ROOT, 'data/global.json'), 'utf8'));
 const gq = Object.fromEntries(GJSON.quotes.map((q) => [q.key, q]));
-const gRow = [...($('globTable')?.querySelectorAll('tbody tr') || [])];
+// let：区五末尾会用「夹具渲染 → 恢复真快照渲染」来回切，行引用必须可重取
+let gRow = [...($('globTable')?.querySelectorAll('tbody tr') || [])];
 
 check('外围：行情表行数 = 快照品种数（漏渲染会在这里暴露）',
   gRow.length === GJSON.quotes.length, `${gRow.length} 行 / ${GJSON.quotes.length} 品种`);
@@ -933,12 +934,47 @@ check('外围：口径备注写明数据源与「非投资建议」',
 //   阈值层再把 0% 判成"无明确方向"→ 用户看到的是"电子链无方向"，
 //   真相是"电子链根本没数据"。三层各自都能吃人：
 //     ① 行情层把 null 写成 0；② 阈值层把缺失当合法值参与判定；③ 前端把 unknown 画成中性灰。
-//   断言一律拿磁盘上的真快照做对照（data/global.json 已由真引擎按盘前占位串生成），
-//   并**真调用**渲染函数后读 DOM —— 不扫源码字面量（扫源码只会证明我写过这行字）。
+//
+// ★ 自足夹具（2026-10-05 修正）：本段曾依赖磁盘快照恰好处于「盘前占位」态——
+//   CI 抓数时辰恰好对上所以全绿，本地任何时辰复跑必红（收盘后快照全 ok，
+//   missQ=0 → 11 条断言连锁假失败）。审计被数据态骗 = 第四层风险，比前三层更隐蔽：
+//   审计红了没人看，真红也会被当狼来了。现改为：以真快照为底、按引擎同款字段证据
+//   （open/high/low 全 0 = 盘前占位）构造 preopen 态 → **真引擎 evaluateGlobalWatch
+//   重算判据** → **真调 window.renderGlobal 渲染** → 读 DOM 断言。不扫源码字面量
+//   （扫源码只会证明我写过这行字），也不再看磁盘快照的脸色——任何时辰复跑结论一致。
 // ════════════════════════════════════════════════════════════════════════════
 {
-  const missQ = GJSON.quotes.filter((q) => q.state === 'preopen' || q.state === 'no-trade');
-  const missingKeys = GJSON.watch.missing || [];
+  const { evaluateGlobalWatch } = await import('../src/global.js');
+  // 夹具：真快照深拷贝 + 三只美股（含两只主锚 sox/hxc）打成盘前占位态——
+  // 字段与 normalizeQuote/inferQuoteState 对 preopen 的产出逐字段对齐
+  // （chgPct=null、chgPctText/stateText='盘前无数据'、last/prevClose 保留供人工核对）。
+  const GMISS = JSON.parse(JSON.stringify(GJSON));
+  const PREOPEN_KEYS = ['sox', 'ixic', 'hxc'];
+  for (const key of PREOPEN_KEYS) {
+    const q = GMISS.quotes.find((x) => x.key === key);
+    if (!q) continue;
+    Object.assign(q, {
+      open: 0, high: 0, low: 0,
+      ok: false, state: 'preopen', stateText: '盘前无数据',
+      chg: null, chgPct: null, chgPctText: '盘前无数据',
+    });
+  }
+  // meta 与 buildGlobalSnapshot 同语义：usNoSession 单列、failed 不混、就绪态留痕
+  GMISS.meta.usReadiness = {
+    ...(GMISS.meta.usReadiness || {}),
+    ready: false, etText: '09:10 ET', reason: 'before-close（夹具：盘前占位回放）',
+  };
+  GMISS.meta.usNoSession = GMISS.quotes.filter((q) => q.kind === 'us' && q.state !== 'ok').map((q) => q.key);
+  GMISS.meta.failed = (GMISS.meta.failed || []).filter((k) => !GMISS.meta.usNoSession.includes(k));
+  // ★ 真引擎重算：主锚（sox/hxc）缺位 → verdict=insufficient、missing/mainMissing 落位
+  GMISS.watch = evaluateGlobalWatch(GMISS);
+
+  // ★ 真渲染（app.js 经典脚本顶层函数 → window.renderGlobal 可直接调）
+  window.renderGlobal(GMISS);
+  const gRowM = [...($('globTable')?.querySelectorAll('tbody tr') || [])];
+
+  const missQ = GMISS.quotes.filter((q) => q.state === 'preopen' || q.state === 'no-trade');
+  const missingKeys = GMISS.watch.missing || [];
 
   // ① 行情层：未成交的美股，涨跌幅一律 null + 「盘前无数据」，绝不能渲染成 0
   check('外围·①：未成交的美股涨跌幅为 null（源头就不给 0——0 是真实行情值）',
@@ -946,7 +982,7 @@ check('外围：口径备注写明数据源与「非投资建议」',
     `${missQ.length} 只未成交：${missQ.map((q) => `${q.key}=${q.chgPct}`).join(' ')}`);
   check('外围·①：未成交的美股在表里标「盘前无数据」，绝不出现「0.00%」',
     missQ.length > 0 && missQ.every((q) => {
-      const tr = gRow.find((x) => x.dataset.key === q.key);
+      const tr = gRowM.find((x) => x.dataset.key === q.key);
       return !!tr && tr.textContent.includes('盘前无数据') && !tr.textContent.includes('0.00%');
     }),
     missQ.map((q) => q.key).join('、'));
@@ -954,7 +990,7 @@ check('外围：口径备注写明数据源与「非投资建议」',
     (() => {
       const q = missQ[0];
       if (!q) return false;
-      clickEl(gRow.find((tr) => tr.dataset.key === q.key));
+      clickEl(gRowM.find((tr) => tr.dataset.key === q.key));
       const body = txt('dwBody');
       const okDrawer = drawerOpen() && /行情状态/.test(body) && /不等于|不可混/.test(body)
         && (q.state === 'preopen' ? /盘前无数据/.test(body) : /无成交/.test(body));
@@ -964,25 +1000,25 @@ check('外围：口径备注写明数据源与「非投资建议」',
 
   // ② 接口层：meta 必须留痕，可核验 —— 前端不得自行编造"无行情"以外的状态
   check('外围·②：快照 meta 留痕美股就绪状态与「无成交」清单（可审计）',
-    GJSON.meta.usReadiness && GJSON.meta.usReadiness.ready === false
-    && Array.isArray(GJSON.meta.usNoSession) && GJSON.meta.usNoSession.length > 0,
-    `ready=${GJSON.meta.usReadiness && GJSON.meta.usReadiness.ready} usNoSession=${(GJSON.meta.usNoSession || []).length}`);
+    GMISS.meta.usReadiness && GMISS.meta.usReadiness.ready === false
+    && Array.isArray(GMISS.meta.usNoSession) && GMISS.meta.usNoSession.length > 0,
+    `ready=${GMISS.meta.usReadiness && GMISS.meta.usReadiness.ready} usNoSession=${(GMISS.meta.usNoSession || []).length}`);
   check('外围·②：未就绪时结论条里出现「美股档未就绪」警示（不静默）',
-    !GJSON.meta.usReadiness.ready ? /美股档未就绪/.test(txt('globVerdict')) : true,
+    !GMISS.meta.usReadiness.ready ? /美股档未就绪/.test(txt('globVerdict')) : true,
     txt('globVerdict').slice(0, 60));
   check('外围·②：「无成交」的品种列进 meta.usNoSession，但**不**混进 meta.failed',
-    (GJSON.meta.usNoSession || []).length > 0
-    && !(GJSON.meta.failed || []).some((k) => GJSON.meta.usNoSession.includes(k)),
-    `failed=${JSON.stringify(GJSON.meta.failed)}`);
+    (GMISS.meta.usNoSession || []).length > 0
+    && !(GMISS.meta.failed || []).some((k) => GMISS.meta.usNoSession.includes(k)),
+    `failed=${JSON.stringify(GMISS.meta.failed)}`);
 
   // ③ 阈值层 + 前端：缺失 → 结论「判据不足」（独立色）。
 
   // ③ 阈值层：主锚缺失必须降级为 insufficient，且 bias 不计缺失权重
   check('外围·③：主锚缺数据 → 结论为「判据不足」，**不是**「外围中性」',
-    (GJSON.watch.mainMissing || []).length > 0
-    && GJSON.watch.verdict.key === 'insufficient'
+    (GMISS.watch.mainMissing || []).length > 0
+    && GMISS.watch.verdict.key === 'insufficient'
     && /判据不足/.test(txt('globVerdict')),
-    `verdict=${GJSON.watch.verdict.key} mainMissing=${JSON.stringify(GJSON.watch.mainMissing)}`);
+    `verdict=${GMISS.watch.verdict.key} mainMissing=${JSON.stringify(GMISS.watch.mainMissing)}`);
   check('外围·③：「判据不足」用独立色调（gv.unk），不得与「中性」的 gv.neu 同色',
     !!window.document.querySelector('#globVerdict .gv.unk')
     && !window.document.querySelector('#globVerdict .gv.neu'), '');
@@ -990,7 +1026,7 @@ check('外围：口径备注写明数据源与「非投资建议」',
   //   故按**下标**对齐，再取快照里该条信号的 key/missing/level 做断言。
   //   不按文案匹配：文案会变，key 不会。
   const sigNodes = [...($('globSignals')?.querySelectorAll('.gsig') || [])];
-  const sigPairs = GJSON.watch.signals.map((s, i) => ({ s, el: sigNodes[i] }));
+  const sigPairs = GMISS.watch.signals.map((s, i) => ({ s, el: sigNodes[i] }));
   const missPairs = sigPairs.filter((p) => p.s.missing);
   check('外围·③：缺失品种在触发式观测里是 unknown 哨兵（虚线 is-missing），不是 info',
     missPairs.length === missingKeys.length && missPairs.length > 0
@@ -1002,17 +1038,22 @@ check('外围：口径备注写明数据源与「非投资建议」',
       && /数据缺失/.test(p.el.textContent) && /未参与判定/.test(p.el.textContent)
       && !/无明确方向/.test(p.el.textContent)), '');
   check('外围·③：主锚缺失的哨兵带「（主锚）」字样（用户能一眼看出缺的是关键锚）',
-    (GJSON.watch.mainMissing || []).every((k) => {
+    (GMISS.watch.mainMissing || []).every((k) => {
       const p = sigPairs.find((x) => x.s.key === k);
       return !!p && /主锚/.test(p.s.text);
-    }) && (GJSON.watch.mainMissing || []).length > 0, '');
+    }) && (GMISS.watch.mainMissing || []).length > 0, '');
   check('外围·③：结论条明说缺失「未参与判定 / 缺失≠中性」（把"不知道"写在脸上）',
     /未参与判定/.test(txt('globVerdict')) && /缺失 ?≠ ?中性|缺失不等于/.test(txt('globVerdict')),
     txt('globVerdict').slice(0, 80));
   check('外围·③：口径备注把「本会话尚无成交」单独列出并强调"不是 0%"',
-    (GJSON.meta.usNoSession || []).length > 0
+    (GMISS.meta.usNoSession || []).length > 0
     ? /本会话尚无成交/.test(txt('globNote')) && /不是 0%/.test(txt('globNote'))
     : true, txt('globNote').slice(-90));
+
+  // 恢复真快照渲染 + 重取行引用（后续段还要点击 sox 行开抽屉——
+  // 夹具渲染替换过 tbody，旧引用已脱离文档树，点击不会命中新 DOM）
+  window.renderGlobal(GJSON);
+  gRow = [...($('globTable')?.querySelectorAll('tbody tr') || [])];
 }
 
 clickEl(gRow.find((tr) => tr.dataset.key === 'sox'));
