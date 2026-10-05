@@ -14,10 +14,12 @@
 ## 部署（3 步）
 
 1. 把本仓库推到你 GitHub（或 fork 后改名 `a-sentiment-pro`）。
-2. 仓库 **Settings → Pages → Source: Deploy from a branch → `main` / root**。
-3. **Actions** 默认开启，每日北京 18:40 自动跑管道并更新 `data/archive.json`，Pages 自动刷新。
+2. 仓库 **Settings → Pages → Source: Deploy from a branch → `main` / root**（2026-10-06 实测锚定的当前生效形态：云端指纹 = 仓库根档；页面 = 根 `index.html` + `app.js`，运行时 `fetch('./data/*.json')` 取数）。
+3. **Actions** 默认开启，交易日多轮自动跑（北京 18:30 首抓 / 21:00 补抓 / 次日 04:30 美股收盘档；盘中每 30 分钟轻量快照不碰档案），`daily.yml` 更新 `data/*.json` 并提交回 main——数据提交自动触发 Pages 重建（Actions 里表现为 "pages build and deployment · dynamic"）。
+   - **推送 `main` 同样触发 Pages 重建**：分钟级排队 + github.io CDN 边缘缓存，一般 10 分钟内可见——刚推完看云端还是旧版属正常传播滞后，不是丢更。
    - 首次会看到 `data/archive.json`（已随仓库附带演示种子数据），之后由 live 模式覆盖为真实数据。
    - 想立刻看到效果：Actions 页点 `Run workflow` 手动触发一次。
+   - 注：`daily.yml` 内另有 `dist/`（`ui/template.html` 合并版单文件）经 upload-pages-artifact/deploy-pages 的部署线，与 branch 直托管**互斥**——Pages Source 切到 GitHub Actions 前处于休眠（见「UI 合并」节背景）。若未来切换形态，本节第 2 步随之改写。
 
 ## 本地开发
 
