@@ -1,11 +1,17 @@
 // 通用工具：重试抓取、时间、数学
 import { isTradingDay as calIsTradingDay } from './calendar.js';
+import { bjDate } from './time.js';
 
 export function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-// 带重试的 fetch（失败退避）
+// 带重试的 fetch（失败退避）——全仓抓取重试的唯一实现，scripts/ 侧不得再各写一份。
+//
+// opts.read：可选的响应读取器。提供时在**重试范围内**执行（读取/解码/结构校验失败
+// 同样触发退避重试——与各脚本收敛前的手写循环语义一致），并返回其返回值而非
+// Response 本体；不提供则返回 Response。
+// opts.timeout 为单次尝试的超时毫秒数（默认 12000）。
 export async function fetchWithRetry(url, opts = {}, retries = 3, backoff = 1500) {
   let lastErr;
   for (let i = 0; i <= retries; i++) {
@@ -15,6 +21,7 @@ export async function fetchWithRetry(url, opts = {}, retries = 3, backoff = 1500
       const res = await fetch(url, { ...opts, signal: ctrl.signal });
       clearTimeout(t);
       if (!res.ok) throw new Error('HTTP ' + res.status);
+      if (opts.read) return await opts.read(res);
       return res;
     } catch (e) {
       lastErr = e;
@@ -41,10 +48,10 @@ export function pctRank(value, arr) {
   return (below / arr.length) * 100;
 }
 
-// 北京时区 today (YYYY-MM-DD)
-export function todayBeijing() {
-  const d = new Date(Date.now() + 8 * 3600 * 1000);
-  return d.toISOString().slice(0, 10);
+// 北京时区 today (YYYY-MM-DD)。实现委托 src/time.js（BJ 换算全仓唯一出处；与下方
+// isTradingDay 转接 calendar.js 同一模式——本文件只做兼容转接，不自行实现换算）。
+export function todayBeijing(now = new Date()) {
+  return bjDate(now);
 }
 
 // 是否交易日。

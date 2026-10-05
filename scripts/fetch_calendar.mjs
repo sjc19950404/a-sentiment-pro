@@ -27,6 +27,8 @@
 import { writeFileSync } from 'node:fs';
 import config from '../src/config.js';
 import { CALENDAR_FILE, SEED_CLOSED, validateCalendar, DAY_KIND, loadCalendar, calendarSummary } from '../src/calendar.js';
+import { bjDate } from '../src/time.js';
+import { fetchWithRetry } from '../src/util.js';
 
 const args = process.argv.slice(2);
 const argOf = (k, d) => { const i = args.indexOf(k); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
@@ -34,7 +36,7 @@ const OFFLINE = args.includes('--offline');
 const OUT = argOf('--out', CALENDAR_FILE);
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
 
-const thisYear = Number(new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 4));
+const thisYear = Number(bjDate().slice(0, 4));
 const YEARS = (argOf('--years', '') || `${thisYear - 1},${thisYear},${thisYear + 1}`)
   .split(',').map((x) => Number(x.trim())).filter(Number.isFinite).sort();
 
@@ -42,27 +44,19 @@ const YEARS = (argOf('--years', '') || `${thisYear - 1},${thisYear},${thisYear +
 const KLINE = (a, b) => 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get'
   + `?param=sh000001,day,${a},${b},640,qfq`;
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
+// 抓取重试已收敛至 util.fetchWithRetry（全仓唯一实现）。结构校验（缺少
+// data.sh000001.day 视同失败）放进 opts.read，保持在重试范围内——与收敛前手写循环语义一致。
 async function fetchSessions(from, to, retries = 3) {
-  let lastErr;
-  for (let i = 0; i <= retries; i++) {
-    try {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 20000);
-      const r = await fetch(KLINE(from, to), { headers: { 'User-Agent': UA }, signal: ctrl.signal });
-      clearTimeout(t);
-      if (!r.ok) throw new Error('HTTP ' + r.status);
+  return fetchWithRetry(KLINE(from, to), {
+    headers: { 'User-Agent': UA },
+    timeout: 20000,
+    read: async (r) => {
       const j = await r.json();
       const day = j?.data?.sh000001?.day;
       if (!Array.isArray(day)) throw new Error('返回结构异常：缺少 data.sh000001.day');
       return day.map((row) => row[0]).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d));
-    } catch (e) {
-      lastErr = e;
-      if (i < retries) await sleep(1200 * (i + 1));
-    }
-  }
-  throw lastErr;
+    },
+  }, retries, 1200);
 }
 
 const shift = (d, n) => {
@@ -179,7 +173,7 @@ async function main() {
   console.log('  回读：', JSON.stringify(calendarSummary(cal)));
 
   // 超出覆盖范围的提示（不假装覆盖了未来）
-  const today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+  const today = bjDate();
   if (coveredTo && coveredTo < today) {
     console.log(`  ⚠ 日历覆盖到 ${coveredTo}，已早于今天 ${today} —— 请尽快重跑本脚本续期`);
     console.log(`::warning::交易日历覆盖到 ${coveredTo}（早于 ${today}），新日期的休市判定已回退到「非周末即交易日」`);

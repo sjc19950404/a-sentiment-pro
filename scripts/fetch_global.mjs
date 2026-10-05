@@ -11,14 +11,13 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import config from '../src/config.js';
 import { buildGlobalSnapshot, evaluateGlobalWatch, SINA_URL, SINA_CODES, usSessionReadiness } from '../src/global.js';
 import { nextSession } from '../src/freshness.js';
-import { todayBeijing, isTradingDay } from '../src/util.js';
+import { todayBeijing, isTradingDay, fetchWithRetry } from '../src/util.js';
 import { resolveHolidays } from '../src/calendar.js';
 import { decodeArchive } from '../src/lhb_codec.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
 const ARCHIVE = new URL('../data/archive.json', import.meta.url);
 const OUT = new URL('../data/global.json', import.meta.url);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const shiftDay = (dateStr, n) => {
   const d = new Date(dateStr + 'T00:00:00Z');
@@ -26,26 +25,14 @@ const shiftDay = (dateStr, n) => {
   return d.toISOString().slice(0, 10);
 };
 
-/** 带退避的抓取（GBK 解码——新浪仍以 GBK 返回，按 utf-8 解会成乱码） */
+/** 带退避的抓取（重试已收敛至 util.fetchWithRetry，全仓唯一实现）。
+ *  GBK 解码——新浪仍以 GBK 返回，按 utf-8 解会成乱码——放进 opts.read，解码失败同样计入重试范围。 */
 async function fetchSina(retries = 3) {
-  let lastErr;
-  for (let i = 0; i <= retries; i++) {
-    try {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 15000);
-      const r = await fetch(SINA_URL + SINA_CODES, {
-        headers: { 'User-Agent': UA, Referer: 'https://finance.sina.com.cn' },
-        signal: ctrl.signal,
-      });
-      clearTimeout(t);
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return new TextDecoder('gbk').decode(await r.arrayBuffer());
-    } catch (e) {
-      lastErr = e;
-      if (i < retries) await sleep(1200 * (i + 1));
-    }
-  }
-  throw lastErr;
+  return fetchWithRetry(SINA_URL + SINA_CODES, {
+    headers: { 'User-Agent': UA, Referer: 'https://finance.sina.com.cn' },
+    timeout: 15000,
+    read: async (r) => new TextDecoder('gbk').decode(await r.arrayBuffer()),
+  }, retries, 1200);
 }
 
 /** 读 A 股存档当前交易日：外围快照要对齐它，才能算「假期里还攒了几个美股交易日」 */

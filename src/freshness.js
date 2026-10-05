@@ -16,6 +16,7 @@
 // 「预期更新时刻」= 该交易日之后第一个交易日的 PUBLISH_HHMM（北京时区）。
 // 用绝对时间戳下发，前端无需交易日历即可与本地时钟比较，也不受时区影响。
 import { isTradingDay } from './util.js';
+import { bjDate, bjTime, bjInstant } from './time.js';
 
 export const MARKET_CLOSE = '15:00'; // 收盘时刻，用于判定「当日是否已收盘」
 export const MARKET_OPEN = '09:30';  // 连续竞价开始（集合竞价 09:15~09:25 不产生有效盘中快照）
@@ -67,17 +68,10 @@ export function applyPhaseMeta(meta, now = new Date(), holidays = []) {
   return p;
 }
 
-const BJ = 8 * 3600 * 1000;
-
-/** 北京时区日期 YYYY-MM-DD */
-export function bjDate(now = new Date()) {
-  return new Date(now.getTime() + BJ).toISOString().slice(0, 10);
-}
-
-/** 北京时区时刻 HH:MM（两段式比较可当字符串用） */
-export function bjTime(now = new Date()) {
-  return new Date(now.getTime() + BJ).toISOString().slice(11, 16);
-}
+// bjDate/bjTime 的实现已收敛至 src/time.js（BJ 换算全仓唯一出处）。
+// 此处 re-export 维持既有调用方（scripts/snapshot_intraday.mjs、scripts/freshness.mjs
+// 及本文件内部相位判定）import 路径零改动。
+export { bjDate, bjTime };
 
 function shift(dateStr, n) {
   const d = new Date(dateStr + 'T00:00:00Z');
@@ -85,9 +79,7 @@ function shift(dateStr, n) {
   return d.toISOString().slice(0, 10);
 }
 
-function atBJ(dateStr, hhmm) {
-  return Date.parse(`${dateStr}T${hhmm}:00+08:00`);
-}
+// （原私有 atBJ 已并入 src/time.js 的 bjInstant——北京墙上时刻 → 绝对时间点）
 
 /** 上一个交易日（不含 dateStr 自身） */
 export function prevSession(dateStr, holidays = []) {
@@ -132,7 +124,7 @@ export function countSessions(from, to, holidays = []) {
 /** 该交易日数据「预期已更新完毕」的北京时刻（绝对时间戳）；前端可直接与本地时钟比较 */
 export function publishDeadline(tradeDate, holidays = []) {
   const n = nextSession(tradeDate, holidays);
-  return n ? atBJ(n, PUBLISH_HHMM) : null;
+  return n ? bjInstant(n, PUBLISH_HHMM) : null;
 }
 
 /**

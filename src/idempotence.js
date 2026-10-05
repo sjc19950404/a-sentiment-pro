@@ -31,6 +31,9 @@
 //   · **不造假**：判不出来就返回 `unknown` 并给出原因，绝不给一个乐观的默认值。
 //     前端/CI 拿到 unknown 时应当按"需要重算"处理（保守方向），而不是按"不用重算"。
 
+// BJ 时区换算取自 src/time.js——零依赖纯函数叶子模块，不破坏本模块"零业务依赖"纪律。
+import { bjDate, bjTime } from './time.js';
+
 // ── 阈值（唯一出处）─────────────────────────────────────────────────────────
 
 export const IDEMPOTENCE_LIMITS = {
@@ -237,19 +240,13 @@ export function needFetch(day, opts = {}) {
  *  晚间 21:00~24:00（北京时间）这段把"当天"错算成"昨天"，正是补抓窗口。 */
 function isPastFinalized(dateStr, now, finHour) {
   if (!dateStr) return false;
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateStr));
-  if (!m) return false;
-  const [, y, mo, d] = m;
-  // 北京时间 = UTC+8，固定偏移（中国无夏令时），直接算，不依赖宿主时区。
-  const bj = new Date(now.getTime() + 8 * 3600 * 1000);
-  const bjY = bj.getUTCFullYear();
-  const bjMo = String(bj.getUTCMonth() + 1).padStart(2, '0');
-  const bjD = String(bj.getUTCDate()).padStart(2, '0');
-  const bjH = bj.getUTCHours();
-  const today = `${bjY}-${bjMo}-${bjD}`;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateStr))) return false;
+  // 北京时间 = UTC+8，固定偏移（中国无夏令时）。换算统一走 src/time.js（全仓唯一
+  // 出处，不依赖宿主时区）。
+  const today = bjDate(now);
   if (dateStr < today) return true;      // 过去的日子必然已定稿
   if (dateStr > today) return false;     // 未来的日子没定稿一说
-  return bjH >= finHour;                 // 同一天：看是否过了定稿小时
+  return Number(bjTime(now).slice(0, 2)) >= finHour; // 同一天：看是否过了定稿小时
 }
 
 // ── 重算范围：把"全档重算"缩到"真正会变的那几天" ───────────────────────────

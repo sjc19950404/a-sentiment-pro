@@ -26,6 +26,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodeArchive } from '../src/lhb_codec.js';
+import { bjStamp, bjInstant } from '../src/time.js';
 import { recalcAll } from '../src/pipeline.js';
 import {
   digestCompare, dayFingerprint, needFetch, computeRecomputeScope, IDEMPOTENCE_LIMITS,
@@ -52,8 +53,8 @@ function resolveNow() {
     process.exit(2);
   }
   const [, y, mo, d, hh = '00', mm = '00'] = m;
-  // 北京时间 → UTC：减去 8 小时。中国无夏令时，固定偏移。
-  return new Date(Date.UTC(+y, +mo - 1, +d, +hh, +mm) - 8 * 3600 * 1000);
+  // 北京墙上时刻 → 绝对时间点（换算收敛至 src/time.js；中国无夏令时，固定 UTC+8 偏移）。
+  return new Date(bjInstant(`${y}-${mo}-${d}`, `${hh}:${mm}`));
 }
 
 const mainPath = join(ROOT, 'data', 'archive.json');
@@ -118,7 +119,7 @@ if (VERIFY) {
 
 const report = {
   generatedAt: new Date().toISOString(),
-  nowBeijing: new Date(now.getTime() + 8 * 3600 * 1000).toISOString().replace('Z', '+08:00'),
+  nowBeijing: bjStamp(now),
   archive: {
     totalDays: days.length,
     firstDate: sorted[0]?.trade_date ?? null,
