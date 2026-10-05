@@ -1539,7 +1539,8 @@ function versionHasNormalizerOnlyOnCandidate(code) {
     /降级为兜底|已降级为兜底|兜底/.test(cfgSrc) && /calendar\.js/.test(cfgSrc), '');
 
   // ⑦ 所有调用点必须走 resolveHolidays()，不得再直接引用 config.manualHolidays
-  const callers = ['src/pipeline.js', 'scripts/fetch_global.mjs', 'scripts/freshness.mjs', 'scripts/snapshot_intraday.mjs'];
+  // （2026-10-05 引擎拆分：src/engine/write.js 也成为 resolveHolidays 调用点，纳入清单）
+  const callers = ['src/pipeline.js', 'src/engine/write.js', 'scripts/fetch_global.mjs', 'scripts/freshness.mjs', 'scripts/snapshot_intraday.mjs'];
   const directRefs = [];
   for (const f of callers) {
     const s = readFileSync(path.join(ROOT, f), 'utf8');
@@ -1659,7 +1660,8 @@ function versionHasNormalizerOnlyOnCandidate(code) {
     '无数据时必须渲染"未计算"而非 0');
 
   // ⑥ 管线必须重算（否则新增/改口径对存量天永不生效）
-  const pipeSrc = readFileSync(path.join(ROOT, 'src', 'pipeline.js'), 'utf8');
+  // （2026-10-05 引擎拆分：recalcAll 已迁至 src/engine/recalc.js，守卫跟着走）
+  const pipeSrc = readFileSync(path.join(ROOT, 'src', 'engine', 'recalc.js'), 'utf8');
   check('板块相对强弱：管线在写档时重算（派生指标不得只写一次）',
     /computeRelative\(d\)/.test(pipeSrc) && /industry_relative/.test(pipeSrc),
     '只在新抓当天算、不回算存量天 → 改口径后历史天永久停旧值');
@@ -1806,7 +1808,8 @@ function versionHasNormalizerOnlyOnCandidate(code) {
     !/function\s+healthReport\b/.test(appCodeH) && !/imputedWarn|fieldWarnRatio/.test(appCodeH), '');
 
   // ⑥ 两条写盘路径都必须注入 healthFn（否则主档写完的 signals 与切片脚本产出的不一致）
-  const pipeSrcH = readFileSync(path.join(ROOT, 'src', 'pipeline.js'), 'utf8');
+  // （2026-10-05 引擎拆分：writeShards 已迁至 src/engine/write.js，守卫跟着走）
+  const pipeSrcH = readFileSync(path.join(ROOT, 'src', 'engine', 'write.js'), 'utf8');
   const splitSrcH = readFileSync(path.join(ROOT, 'scripts', 'split_archive.mjs'), 'utf8');
   check('数据健康：pipeline 与 split_archive 两条路径都注入 healthFn（形态一致）',
     /healthFn:/.test(pipeSrcH) && /healthFn:/.test(splitSrcH), '');
@@ -1900,7 +1903,8 @@ function versionHasNormalizerOnlyOnCandidate(code) {
     !/function\s+painReport\b/.test(appCodeP) && !/inst_buy\s*-\s*inst_sell/.test(appCodeP), '');
 
   // ⑪ 两条写盘路径都必须注入 seatSeriesFn（同源同形态）
-  const pipeSrcS = readFileSync(path.join(ROOT, 'src', 'pipeline.js'), 'utf8');
+  // （2026-10-05 引擎拆分：writeShards 已迁至 src/engine/write.js，守卫跟着走）
+  const pipeSrcS = readFileSync(path.join(ROOT, 'src', 'engine', 'write.js'), 'utf8');
   const splitSrcS = readFileSync(path.join(ROOT, 'scripts', 'split_archive.mjs'), 'utf8');
   check('资金属性：pipeline 与 split_archive 两条路径都注入 seatSeriesFn（形态一致）',
     /seatSeriesFn:/.test(pipeSrcS) && /seatSeriesFn:/.test(splitSrcS), '');
@@ -2011,7 +2015,8 @@ async function checkBreadth() {
     !/\bhot\b\s*[\.\[]/.test(bwCode) && !/d\.hot/.test(bwCode), '');
 
   // ⑬ 两条写盘路径都必须注入 breadthFn（同源同形态）
-  const pipeSrcB = readFileSync(path.join(ROOT, 'src', 'pipeline.js'), 'utf8');
+  // （2026-10-05 引擎拆分：writeShards 已迁至 src/engine/write.js，守卫跟着走）
+  const pipeSrcB = readFileSync(path.join(ROOT, 'src', 'engine', 'write.js'), 'utf8');
   const splitSrcB = readFileSync(path.join(ROOT, 'scripts', 'split_archive.mjs'), 'utf8');
   check('市场宽度：pipeline 与 split_archive 两条路径都注入 breadthFn（形态一致）',
     /breadthFn:/.test(pipeSrcB) && /breadthFn:/.test(splitSrcB), '');
@@ -2071,7 +2076,8 @@ try { await checkBreadth(); } catch (e) {
 //      防止后续有人"好心"把它们改回 ERROR —— 那会把真实板块轮动当噪声剔掉。
 async function checkDirty() {
   const DIRTY_SRC = readFileSync(path.join(ROOT, 'src', 'dirty.js'), 'utf8');
-  const PIPE_SRC = readFileSync(path.join(ROOT, 'src', 'pipeline.js'), 'utf8');
+  // （2026-10-05 引擎拆分：recalcAll 的标脏时序已迁至 src/engine/recalc.js，守卫跟着走）
+  const PIPE_SRC = readFileSync(path.join(ROOT, 'src', 'engine', 'recalc.js'), 'utf8');
   const mod = await import(pathToFileURL(path.join(ROOT, 'src', 'dirty.js')).href);
   const { validateDay, sanitizeForFactors, validateAll, VALIDATION_RULES, SEVERITY, num } = mod;
 
