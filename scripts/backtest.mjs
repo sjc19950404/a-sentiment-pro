@@ -32,6 +32,9 @@ if (days.length < 5) {
 
 // 回测样本构成留痕：让使用者一眼看出「回测用的是哪一段、排除了多少回填天」
 const BACKFILL_EXCLUDED = (arch.all_days || []).filter((d) => d && d.emotion && d.emotion._backfill).length;
+// K线重建天（pools_caliber=kline-rebuild）：按真值交叉验证视作有效样本（2026-10-05 拍板），
+// 计入回测样本；sampleNote 披露其数量供审计对账（audit B13 断言与档案一致）。
+const KLINE_REBUILD_DAYS = (arch.all_days || []).filter((d) => d && d.summary && d.summary.pools_caliber === 'kline-rebuild').length;
 
 // 过拟合防线（2026-10-02 拍板）：实验锚点一律取 params.train（live 冻结，改动唯一通道
 // = scripts/promote_params.mjs 样本外门禁）。train 与 live 的差异即「待验证实验参数」，
@@ -147,6 +150,7 @@ const payload = {
       archiveDays: (arch.all_days || []).length,
       backtestDays: dates.length,
       excludedBackfillDays: BACKFILL_EXCLUDED,
+      klineRebuildDays: KLINE_REBUILD_DAYS,
     },
     weightDrift: Math.round(recomputeDrift * 1e4) / 1e4,
   },

@@ -160,6 +160,14 @@ function countInWindow(byDay, theme, n) {
 
 // 离线回放：从已有页面快照重建
 export function runOffline(snapshotPath) {
+  // 快照缺失时给出可行动的指引，而不是抛裸 ENOENT 栈（裸跑 node src/pipeline.js
+  // 的默认模式就是 offline——新接手的人第一次跑就该知道往哪走）。
+  if (!existsSync(snapshotPath)) {
+    console.error(`[offline] 缺快照文件：${snapshotPath}`);
+    console.error('[offline] 离线回放需先用 scripts/snapshot_intraday.mjs 保存快照页（SNAPSHOT 环境变量可指定路径）；');
+    console.error('[offline] 生产运行请用 MODE=live node src/pipeline.js（非交易日会自动跳过抓取）。');
+    process.exit(1);
+  }
   const html = readFileSync(snapshotPath, 'utf8');
   const arc = extractArchive(html);
   const allDays = arc.all_days || [];

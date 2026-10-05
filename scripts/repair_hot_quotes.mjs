@@ -12,7 +12,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
+import { decodeArchive, writeArchiveSafely, appendNote } from '../src/lhb_codec.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const P = path.join(ROOT, 'data', 'archive.json');
@@ -55,8 +55,8 @@ if (DRY) { console.log('（--dry：仅预览，未写盘）'); process.exit(0); 
 
 a.meta = a.meta || {};
 const stamp = new Date().toISOString().slice(0, 10);
-a.meta.note = [a.meta.note, `强势股行情空值已按同日龙虎榜明细回填（${fixed.length} 条，${stamp}）`]
-  .filter(Boolean).join('；');
+// appendNote：签名去重——重跑只更新日期与条数，不堆叠重复段
+a.meta.note = appendNote(a, `强势股行情空值已按同日龙虎榜明细回填（${fixed.length} 条，${stamp}）`);
 // 必须重编码写回（直接 stringify 会把压缩档解压成 9.2MB，且丢掉 rc 的可读性）
 writeArchiveSafely(P, a, { writeFileSync });
 console.log(`已写回 ${path.relative(ROOT, P)}`);

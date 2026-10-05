@@ -206,8 +206,11 @@ const payload = {
   caliber: '各版共用 src/sentiment.js 的 computeSentiment（同一函数、同一权重）；版本差异来自两个维度：净买原料口径（由 src/formula_versions.js 的 extractNetBuy 描述）与 s_net 归一方式（tanh5 基线 / 分位映射，由 src/sentiment.js 的 NET_NORMALIZER_* 描述）。次日收益取真实交易日相邻的下一交易日上证涨跌幅。',
 };
 
-writeFileSync(OUT, JSON.stringify(payload, null, 1));
-console.log('[version-regression] 已写出', OUT);
+// writeJsonStable：剥时间戳后内容未变则跳过——回归数字是确定性的，
+// 重跑不再产生纯 generatedAt diff（缩进 1 保持原格式，避免一次性全文件重排）
+const { writeJsonStable } = await import('../src/lhb_codec.js');
+const w = writeJsonStable(OUT, payload, { readFileSync, writeFileSync, indent: 1, log: '[version-regression]' });
+console.log('[version-regression]', w.skipped ? '内容未变，跳过写盘' : '已写出', OUT);
 console.log('  主样本', sampleDays.length, '天（有次日收益', nU, '天）|', sampleDays[0].trade_date, '→', sampleDays[sampleDays.length - 1].trade_date);
 for (const k of keys) {
   const s = stats[k];

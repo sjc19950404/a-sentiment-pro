@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import {
   buildReasonCodes, encodeDay, decodeDay, encodeArchive, decodeArchive,
   deflateDay, inflateDay, pickDay, pendingFields, SUBSCRIBE_FIELDS, compressionStats,
-  writeArchiveSafely, readArchiveForEdit,
+  writeArchiveSafely, readArchiveForEdit, appendNote, dedupeNote, writeJsonStable,
 } from '../src/lhb_codec.js';
 
 /** 键序无关的深比较（数组顺序仍然敏感——顺序承载语义，如 rc 下标序列）。 */
@@ -280,4 +280,82 @@ test('落盘：正常档不得被自检误拦（否则脚本会整体不可用�
   const fsMod = { writeFileSync: (p, text) => written.push(text) };
   assert.doesNotThrow(() => writeArchiveSafely('ignored.json', mkArc(), fsMod));
   assert.equal(written.length, 1);
+});
+
+// ────────────────────── note 留痕（appendNote / dedupeNote）──────────────────────
+// 背景：多个回填脚本各自拼接 meta.note，历史上出现整段重复 ×2。收敛后的不变量：
+//   ① 同签名段只保留最新一次（重跑不堆叠）；② 不同内容段不误伤；③ 存量去重幂等。
+
+test('note：appendNote 同签名段替换不堆叠（重跑只更新日期）', () => {
+  const arc = {};
+  const a1 = appendNote(arc, '六因子历史回填 2026-10-02：208 个回填天的池重建，误差零。');
+  arc.meta.note = a1;
+  // 重跑：日期与计数变了，其余文案相同 → 替换而非追加
+  const a2 = appendNote(arc, '六因子历史回填 2026-10-05：211 个回填天的池重建，误差零。');
+  const segs = a2.split('；').filter(Boolean);
+  assert.equal(segs.length, 1, '同签名段必须替换而非堆叠');
+  assert.ok(a2.includes('2026-10-05'), '保留的是最新一次留痕');
+  assert.ok(!a2.includes('2026-10-02'), '旧日期段被替换掉');
+});
+
+test('note：appendNote 不同内容段各自保留（不误伤）', () => {
+  const arc = {};
+  arc.meta = { note: '板块相对强弱已于 2026-10-01 对存量档回填；口径见 src/relative.js。' };
+  const out = appendNote(arc, '龙虎榜双口径全档重算：当日榜口径写入 lhb_daily_*。');
+  const segs = out.split('；').filter(Boolean);
+  assert.equal(segs.length, 3, '两段原文 + 一段新增');
+  assert.ok(out.includes('板块相对强弱') && out.includes('龙虎榜双口径'), '两段都在');
+});
+
+test('note：dedupeNote 精确重复段去重且幂等', () => {
+  const note = '段甲；段乙；段甲；段丙；段乙';
+  const once = dedupeNote(note);
+  assert.equal(once, '段甲；段乙；段丙', '重复段去重、保序');
+  assert.equal(dedupeNote(once), once, '幂等：再跑不变');
+});
+
+// ────────────────────── 稳定写盘（writeJsonStable）──────────────────────────────
+// 不变量：剥掉时间戳键后内容未变 → 不写盘（文件保留旧 generatedAt，语义=真实生成时刻）；
+// 内容真变 → 必写。fs 用假实现注入（与 writeArchiveSafely 测试同一手法）。
+
+function fakeFs(initial) {
+  const files = { ...initial };
+  return {
+    files,
+    fsMod: {
+      readFileSync: (p) => { if (!(p in files)) { const e = new Error('ENOENT'); e.code = 'ENOENT'; throw e; } return files[p]; },
+      writeFileSync: (p, text) => { files[p] = text; },
+    },
+  };
+}
+
+test('稳定写盘：内容未变（剥时间戳）则跳过，不产生纯时间戳 diff', () => {
+  const old = { meta: { generatedAt: '2026-10-05T01:00:00Z', total: 5 }, rows: [1, 2] };
+  const { fsMod, files } = fakeFs({ 'u.json': JSON.stringify(old) });
+  const fresh = { meta: { generatedAt: '2026-10-06T09:00:00Z', total: 5 }, rows: [1, 2] };
+  const r = writeJsonStable('u.json', fresh, fsMod);
+  assert.equal(r.skipped, true, '剥时间戳后等价 → 跳过');
+  assert.equal(JSON.parse(files['u.json']).meta.generatedAt, '2026-10-05T01:00:00Z', '磁盘保留旧时间戳');
+});
+
+test('稳定写盘：内容真变则必写（不会误跳）', () => {
+  const old = { meta: { generatedAt: '2026-10-05T01:00:00Z', total: 5 }, rows: [1, 2] };
+  const { fsMod, files } = fakeFs({ 'u.json': JSON.stringify(old) });
+  const changed = { meta: { generatedAt: '2026-10-06T09:00:00Z', total: 6 }, rows: [1, 2] };
+  const r = writeJsonStable('u.json', changed, fsMod);
+  assert.equal(r.skipped, false);
+  assert.equal(JSON.parse(files['u.json']).meta.total, 6, '新内容已落盘');
+});
+
+test('稳定写盘：磁盘无旧档照常写（首次生成）', () => {
+  const { fsMod, files } = fakeFs({});
+  const r = writeJsonStable('new.json', { meta: { generatedAt: 'now', v: 1 } }, fsMod);
+  assert.equal(r.skipped, false);
+  assert.ok(files['new.json'], '新档已写');
+});
+
+test('稳定写盘：compact 态无缩进（大档体积纪律）', () => {
+  const { fsMod, files } = fakeFs({});
+  writeJsonStable('u.json', { meta: { generatedAt: 'now', total: 5 }, rows: [1] }, { ...fsMod, compact: true });
+  assert.ok(!/\n\s{2}"/.test(files['u.json']), '紧凑态不得带缩进');
 });

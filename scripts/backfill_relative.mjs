@@ -21,7 +21,7 @@
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
+import { decodeArchive, writeArchiveSafely, appendNote } from '../src/lhb_codec.js';
 import { computeRelative, relativeLine } from '../src/relative.js';
 import * as fsMod from 'fs';
 
@@ -83,9 +83,9 @@ if (CHECK) {
 }
 
 // meta 留痕：让后人知道这 241 天里哪些字段是回填来的，而不是原生采集时就有
-archive.meta = archive.meta || {};
-archive.meta.note = (archive.meta.note ? archive.meta.note + ' ' : '')
-  + `板块相对强弱（industry_relative）已于 ${new Date().toISOString()} 对存量档回填；口径见 src/relative.js。`;
+// （appendNote：签名去重——重跑只更新日期，不堆叠重复段）
+archive.meta.note = appendNote(archive,
+  `板块相对强弱（industry_relative）已于 ${new Date().toISOString()} 对存量档回填；口径见 src/relative.js。`);
 
 writeArchiveSafely(MAIN, archive, fsMod);
 console.log('[backfill-relative] 已写盘（码表 + 提子，含往返自检）');

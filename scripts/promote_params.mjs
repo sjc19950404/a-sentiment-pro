@@ -52,10 +52,17 @@ console.log(`[promote] 检测到实验参数差异（${changed.length} 块）：
 // ── 2. 样本外 20% 门禁（与 backtest.mjs 同一数据口径）────────────────────────
 const arch = decodeArchive(JSON.parse(readFileSync(path.join(ROOT, 'data', 'archive.json'), 'utf8')));
 // 剔除回填天：只有 s_net 占位值不是综合分，混入会让每个指标都错且错得平滑（同 backtest.mjs 注）
+// 样本口径（2026-10-05 拍板）：K线重建天（pools_caliber=kline-rebuild）按真值交叉验证
+// （33 天零误差，src/zt_rebuild.js）视作有效样本计入——与回测/审计同一口径，audit B13 对账。
 const days = (arch.all_days || []).filter((d) => d && d.trade_date && !(d.emotion && d.emotion._backfill));
 if (days.length < 10) {
   console.error(`[promote] 真实样本不足（${days.length} 天 < 10），无法跑样本外门禁 —— 拒绝盲晋升。`);
   process.exit(1);
+}
+{
+  const kr = days.filter((d) => d.summary && d.summary.pools_caliber === 'kline-rebuild').length;
+  console.log(`[promote] 样本口径：${days.length} 天 = EM 真实采集 ${days.length - kr} + K线重建 ${kr}`
+    + '（重建天经 33 天真值交叉验证，视作有效样本——2026-10-05 拍板，见 audit B13）');
 }
 const n = days.length;
 const oosStart = Math.floor(n * 0.8); // 最后 20% 为样本外

@@ -15,7 +15,8 @@
   "sampleNote": {
    "archiveDays": 241,
    "backtestDays": 241,
-   "excludedBackfillDays": 0
+   "excludedBackfillDays": 0,
+   "klineRebuildDays": 223
   },
   "weightDrift": 0.075
  },

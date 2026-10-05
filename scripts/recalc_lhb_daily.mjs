@@ -20,7 +20,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { caliberFromDay, isRangeBoard, mergeDuplicateRecords, duplicateKeys } from '../src/lhb.js';
 import { recalcAll, enrich } from '../src/pipeline.js';
-import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
+import { decodeArchive, writeArchiveSafely, appendNote } from '../src/lhb_codec.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const P = path.join(ROOT, 'data', 'archive.json');
@@ -133,14 +133,16 @@ console.log(`同票多榜重复披露合并：合计合并掉 ${totalMerged} 条
 if (DRY) { console.log('（--dry：仅预览，未写盘）'); process.exit(0); }
 a.meta = a.meta || {};
 const stamp = new Date().toISOString().slice(0, 10);
-// note 用「；」分隔，所以本条内容不得再含「；」；按迁移标记词去重，重复运行不会堆叠碎片
+// 先按迁移标记词清掉**历史改名前**的旧版留痕段（appendNote 的签名替换只认内容相同的段，
+// 历史版本文案不同的段只能靠关键词迁移清理）；再走 appendNote 做签名去重追加。
 const STALE = /龙虎榜双口径全档重算|当日榜净额输入|lhb_daily_\*|lhb_all_net|剔除新股|同票多榜合并/;
 const entry = '龙虎榜双口径全档重算＋同票多榜合并：当日榜口径写入 lhb_daily_*（权威）、全量口径改名 lhb_all_net（仅诊断）、'
   + '清除歧义字段 net_total_yi；lhb 原始数组按五元组(code+is_range+净额+买+卖)同值合并、reasons 数组化，'
   + '消灭同票多榜的重复披露（否则下游按 code 求净买会双算）；情绪因子 s_net 改为「当日榜且剔除新股」净额输入'
   + `（新股/无涨跌幅限制标的自动剥离并留痕 emotion.newStock），${rows.length} 天，${stamp}`;
-a.meta.note = [...String(a.meta.note || '').split('；').map((s) => s.trim()).filter(Boolean)
-  .filter((s) => !STALE.test(s)), entry].join('；');
+a.meta.note = String(a.meta.note || '').split('；').map((s) => s.trim()).filter(Boolean)
+  .filter((s) => !STALE.test(s)).join('；');
+a.meta.note = appendNote(a, entry);
 if (signature() === beforeSig) {
   console.log('存档已是最新口径（无实际变化），未写盘。');
   process.exit(0);

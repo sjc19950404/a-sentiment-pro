@@ -355,3 +355,79 @@ export function writeArchiveSafely(filePath, archive, fsMod) {
   writeFileSync(filePath, text, 'utf8');
   return { codes: codes.length, days: days.length, bytes: Buffer.byteLength(text) };
 }
+
+// ── meta.note 追加与去重（存档留痕的单一出口）─────────────────────────────────
+// 背景：note 由多个回填/修复脚本各自追加，历史上出现过三种拼接风格（' ' 直拼、
+// '；'.join、STALE 正则过滤），互不感知 → 实测档内 13 段里 3 段整段重复 ×2。
+// 收敛规则：
+//   · 段落 = 按 '；' 切分（历史档的实际分隔符）；
+//   · 签名 = 段落剥掉日期/时间戳/数字后的文本（重跑同一脚本只改日期与计数，
+//     签名不变 → **替换**旧段而非追加，留痕始终是"最新一次"而非 N 次）；
+//   · 签名不同才追加；重复签名已由替换覆盖，天然去重。
+const noteSegments = (note) => String(note || '').split('；').map((s) => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+const noteSignature = (seg) => seg
+  .replace(/\d{4}-\d{2}-\d{2}T[\d:.]+Z?/g, '') // ISO 时间戳（含毫秒）
+  .replace(/\d{4}-\d{2}-\d{2}/g, '')           // 日期
+  .replace(/\d+/g, '')                          // 计数（天数/条数随重跑变化）
+  .replace(/\s+/g, ' ')
+  .trim();
+
+/** 一次性去重存量 note（段级精确去重，不改变段落顺序语义）。返回去重后的字符串。 */
+export function dedupeNote(note) {
+  const seen = new Set();
+  const out = [];
+  for (const seg of noteSegments(note)) {
+    const key = noteSignature(seg);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(seg);
+  }
+  return out.join('；');
+}
+
+/**
+ * 追加留痕段到 archive.meta.note（带签名去重：同签名旧段被新段替换）。
+ * 所有写存档的脚本统一走这里，别再各自手拼字符串。
+ * @returns {string} 追加后的 note 全文（调用方直接赋给 archive.meta.note）。
+ */
+export function appendNote(archive, text) {
+  archive.meta = archive.meta || {};
+  const segs = noteSegments(archive.meta.note);
+  const sig = noteSignature(text);
+  const kept = segs.filter((s) => noteSignature(s) !== sig);
+  kept.push(text.replace(/\s+/g, ' ').trim());
+  return dedupeNote(kept.join('；'));
+}
+
+// ── 稳定写盘（P5：剥掉时间戳字段后内容未变则跳过）────────────────────────────
+// 背景：paper_universe*.json / version-regression.json 等档的 generatedAt 让每次
+// 重跑都产生纯时间戳 diff（CI 提交历史混入无信息量提交）。本函数剥掉指定键后
+// 与磁盘现存内容比对，未变则**不写**（文件保留旧 generatedAt，语义 = 真实生成时刻）。
+// 注意：含时延/耗时类字段的档（如 smoke-latest.json 的毫秒延迟）内容天然每次都变，
+// 用本函数不会误跳——只是起不到降噪作用，属预期行为。
+// fs 以参数传入（本模块保持浏览器可平铺：不 import node:fs，同 readArchiveForEdit 惯例）。
+export function writeJsonStable(filePath, data, { readFileSync, writeFileSync, stampKeys = ['generatedAt'], compact = false, indent = 2, log }) {
+  const strip = (v) => {
+    if (Array.isArray(v)) return v.map(strip);
+    if (v && typeof v === 'object') {
+      const o = {};
+      for (const [k, val] of Object.entries(v)) {
+        if (stampKeys.includes(k)) continue;
+        o[k] = strip(val);
+      }
+      return o;
+    }
+    return v;
+  };
+  const nextStable = JSON.stringify(strip(data));
+  try {
+    const prev = JSON.parse(readFileSync(filePath, 'utf8'));
+    if (JSON.stringify(strip(prev)) === nextStable) {
+      if (log) console.log(`${log} 内容未变（剥时间戳后），跳过写盘`);
+      return { skipped: true, reason: 'unchanged' };
+    }
+  } catch { /* 磁盘无旧档或旧档损坏 → 照常写 */ }
+  // compact：紧凑态（无缩进，大档省体积——universe 全量池 1.6MB 缩进会白吃 ~20%）
+  writeFileSync(filePath, compact ? JSON.stringify(data) : (JSON.stringify(data, null, indent) + '\n'), 'utf8');
+  return { skipped: false };
+}

@@ -920,12 +920,19 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
   check('回填：回测脚本显式排除 emotion._backfill 天（否则 208 天假情绪分会污染每个指标）',
     /_backfill/.test(btRaw) && /filter\(\(d\) => d && d\.trade_date && !\(d\.emotion && d\.emotion\._backfill\)\)/.test(btRaw), '');
   // 交叉核对产物：backtest.json 的 sampleNote 必须与档案实际构成对得上账
+  // 2026-10-05 口径拍板：10-02 全档重建后 _backfill 天已清零（升级为 kline-rebuild 天），
+  //   原守卫「档案里确有回填天」前提失效——改为条件式：两类重建天至少存在其一，
+  //   否则回填类守卫整体空转。K线重建天按真值交叉验证（33 天零误差，见
+  //   scripts/backfill_factors.mjs 与 src/zt_rebuild.js）视作有效样本，OOS 门禁
+  //   （promote_params.mjs）与回测同口径包含之。
   const btPath = path.join(ROOT, 'data', 'backtest.json');
   if (existsSync(btPath)) {
     const bt = JSON.parse(readFileSync(btPath, 'utf8'));
     const sn = bt.meta && bt.meta.sampleNote;
     const bfCount = days.filter((d) => d.emotion && d.emotion._backfill).length;
-    check('回填：档案里确有回填天（否则这条守卫是空转）', bfCount > 0, String(bfCount));
+    const krCount = days.filter((d) => d.summary && d.summary.pools_caliber === 'kline-rebuild').length;
+    check('回填：档案里确有回填天或K线重建天（否则回填类守卫整体空转）',
+      bfCount + krCount > 0, `backfill=${bfCount} kline-rebuild=${krCount}`);
     if (sn) {
       check('回填：回测样本数 = 档案天数 − 回填天数（三者必须对得上账）',
         sn.archiveDays === days.length && sn.excludedBackfillDays === bfCount
@@ -933,6 +940,8 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
         );
       check('回填：回测样本里不含任何回填天',
         (bt.series && bt.series.dates ? bt.series.dates.length : -1) === sn.backtestDays, '');
+      check('回填：sampleNote 披露K线重建天数（样本构成对账，防口径静默漂移）',
+        sn.klineRebuildDays === krCount, `sampleNote=${sn.klineRebuildDays} 档案=${krCount}`);
     } else {
       check('回填：backtest.json 必须带 meta.sampleNote（否则口径无法对账）', false, 'missing');
     }

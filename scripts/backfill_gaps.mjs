@@ -14,7 +14,7 @@
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
+import { decodeArchive, writeArchiveSafely, appendNote } from '../src/lhb_codec.js';
 import { recalcAll } from '../src/pipeline.js';
 import { rebuildPoolsByDate, poolsOf } from '../src/zt_rebuild.js';
 import * as fsMod from 'node:fs';
@@ -112,8 +112,9 @@ const noZt = days.filter((d) => d.summary?.zt_count == null).length;
 console.log(`[gap] 重算后: up_count 缺 ${noUp} · zt_count 缺 ${noZt}`);
 
 archive.meta = archive.meta || {};
-archive.meta.note = (archive.meta.note ? archive.meta.note + ' ' : '')
-  + `真实日字段缺口补齐 ${at.slice(0, 10)}：${fillA + fillB} 个真实采集日（${gapA[0]?.trade_date}~${gapB[gapB.length - 1]?.trade_date}）的缺口由不复权K线重建——${fillA} 天整池缺失（EM 采集失败，zt/dt/zb/宽度全补，summary.pools_caliber=kline-rebuild）、${fillB} 天仅涨跌家数缺失（EM 池真值保留不动，只补 up/down/flat）；门禁对 ${ctrl.length} 个对照日重建 vs 真值零异常。情绪分经 recalcAll 生产路径重算。`;
+// appendNote：签名去重——重跑只更新日期与计数，不堆叠重复段
+archive.meta.note = appendNote(archive,
+  `真实日字段缺口补齐 ${at.slice(0, 10)}：${fillA + fillB} 个真实采集日（${gapA[0]?.trade_date}~${gapB[gapB.length - 1]?.trade_date}）的缺口由不复权K线重建——${fillA} 天整池缺失（EM 采集失败，zt/dt/zb/宽度全补，summary.pools_caliber=kline-rebuild）、${fillB} 天仅涨跌家数缺失（EM 池真值保留不动，只补 up/down/flat）；门禁对 ${ctrl.length} 个对照日重建 vs 真值零异常。情绪分经 recalcAll 生产路径重算。`);
 
 writeArchiveSafely(MAIN, archive, fsMod);
 console.log('[gap] 已写盘（码表+提子，含往返自检）');

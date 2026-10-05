@@ -17,7 +17,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { boardOf, isStName, limitPctOf, PAPER_VERSION } from '../src/paper.js';
-import { decodeArchive, encodeStrField } from '../src/lhb_codec.js';
+import { decodeArchive, encodeStrField, writeJsonStable } from '../src/lhb_codec.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -146,8 +146,9 @@ const out = {
 };
 
 // 紧凑写盘：缩进 1 会白吃压缩收益（实测 1.6MB 里约 20% 是空白）
+// writeJsonStable：剥掉 generatedAt 后内容未变则跳过——非交易日每天重跑不再产生纯时间戳 diff
 const text = JSON.stringify(out);
-writeFileSync(OUT, text);
+const wFull = writeJsonStable(OUT, out, { readFileSync, writeFileSync, compact: true, log: '[universe]' });
 
 // ───────────── 精简池（首屏用） ─────────────
 // 只留 code + name，其余一律不写。**刻意不写板段/幅度**：它们由 boardOf/limitPctOf 纯函数推导，
@@ -166,10 +167,10 @@ const lite = {
   symbols: list.map((x) => ({ code: x.code, name: x.name })),
 };
 const liteText = JSON.stringify(lite);
-writeFileSync(OUT_LITE, liteText);
+const wLite = writeJsonStable(OUT_LITE, lite, { readFileSync, writeFileSync, compact: true, log: '[universe-lite]' });
 
-console.log(`标的池已写出：${path.relative(ROOT, OUT)}（${(Buffer.byteLength(text) / 1024).toFixed(1)}KB）`);
-console.log(`  精简池：${path.relative(ROOT, OUT_LITE)}（${(Buffer.byteLength(liteText) / 1024).toFixed(1)}KB · 仅 code+name · 省 ${(100 - Buffer.byteLength(liteText) / Buffer.byteLength(text) * 100).toFixed(1)}%）`);
+console.log(`标的池${wFull.skipped ? '内容未变，跳过写盘' : '已写出'}：${path.relative(ROOT, OUT)}（${(Buffer.byteLength(text) / 1024).toFixed(1)}KB）`);
+console.log(`  精简池${wLite.skipped ? '内容未变，跳过写盘' : '已写出'}：${path.relative(ROOT, OUT_LITE)}（${(Buffer.byteLength(liteText) / 1024).toFixed(1)}KB · 仅 code+name · 省 ${(100 - Buffer.byteLength(liteText) / Buffer.byteLength(text) * 100).toFixed(1)}%）`);
 console.log(`  最近交易日 ${lastDate} · 合计 ${out.meta.total} 只 · 活跃 ${out.meta.active} 只 · 当日有价 ${out.meta.fresh} 只`);
 const byBoard = {};
 for (const x of list) {

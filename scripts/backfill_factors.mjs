@@ -20,7 +20,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
+import { decodeArchive, writeArchiveSafely, appendNote } from '../src/lhb_codec.js';
 import { recalcAll } from '../src/pipeline.js';
 import { rebuildPoolsByDate, poolsOf, industryRowsFromCache } from '../src/zt_rebuild.js';
 import { fetchAmountMap } from '../src/sources.js';
@@ -181,10 +181,10 @@ const stillBackfill = days.filter((d) => d.emotion && d.emotion[BACKFILL_FLAG]).
 const realNow = days.filter((d) => d.emotion && !d.emotion[BACKFILL_FLAG] && !d.emotion._legacy).length;
 console.log(`[bf] 重算后: 真实七因子天 ${realNow} · 仍回填（原料不全）${stillBackfill}`);
 
-// meta 留痕
+// meta 留痕（appendNote：签名去重——重跑只更新日期与计数，不堆叠重复段）
 archive.meta = archive.meta || {};
-archive.meta.note = (archive.meta.note ? archive.meta.note + ' ' : '')
-  + `六因子历史回填 ${new Date().toISOString().slice(0, 10)}：${filled} 个回填天的池/涨跌家数由不复权K线重建（腾讯日K，交易所涨停价规则精确判定，见 src/zt_rebuild.js；--validate 对 ${realDays.length} 个真实日与东财池真值交叉验证：zt 逐日零误差、涨跌家数/成交额零误差），行业广度取同花顺881板块年线，成交额取指数年线；情绪分经 recalcAll 生产路径重算。已知口径残差：zb 为「触板未封」口径（较真实日的 EM「封板后炸开」口径偏多，s_zbl 因子平均偏低 ~4.5 分、情绪分影响 ≤0.5 且方向保守，summary.pools_caliber 留痕）；除权日涨停漏判、ST 历史状态、板块构成变动为个位数量级残差。`;
+archive.meta.note = appendNote(archive,
+  `六因子历史回填 ${new Date().toISOString().slice(0, 10)}：${filled} 个回填天的池/涨跌家数由不复权K线重建（腾讯日K，交易所涨停价规则精确判定，见 src/zt_rebuild.js；--validate 对 ${realDays.length} 个真实日与东财池真值交叉验证：zt 逐日零误差、涨跌家数/成交额零误差），行业广度取同花顺881板块年线，成交额取指数年线；情绪分经 recalcAll 生产路径重算。已知口径残差：zb 为「触板未封」口径（较真实日的 EM「封板后炸开」口径偏多，s_zbl 因子平均偏低 ~4.5 分、情绪分影响 ≤0.5 且方向保守，summary.pools_caliber 留痕）；除权日涨停漏判、ST 历史状态、板块构成变动为个位数量级残差。`);
 
 writeArchiveSafely(MAIN, archive, fsMod);
 console.log('[bf] 已写盘（码表+提子，含往返自检）');
