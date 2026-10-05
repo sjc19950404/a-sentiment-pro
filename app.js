@@ -1748,25 +1748,39 @@ function drawNav(svg, series, dates = []) {
 
 function renderBacktest(bt) {
   const m = bt.meta || {}, P = bt.params || {}, v52 = P.v52 || {};
+  // V5.3 动态仓位口径（右侧确认 + regime 帽子；止盈两段叠加其上）——
+  // 旧档（无 v53 段）不渲染该列，宽表降级回 3 列（向后兼容，渐进上线）。
+  const v53 = bt.v53 || null;
+  const tpP = bt.v53tpPartial || null;
+  const tpT = bt.v53tpTrail || null;
+  const hasV53 = !!v53;
   const cmp = [
-    ['年化收益', bt.base.annual, bt.v52.annual],
-    ['最大回撤', bt.base.maxDd, bt.v52.maxDd],
-    ['夏普比率', bt.base.sharpe, bt.v52.sharpe],
-    ['Calmar', bt.base.calmar, bt.v52.calmar],
-    ['持仓日胜率', bt.base.winRate, bt.v52.winRate],
-    ['空仓占比', bt.base.emptyRatio, bt.v52.emptyRatio],
+    ['年化收益', bt.base.annual, bt.v52.annual, v53 && v53.annual],
+    ['最大回撤', bt.base.maxDd, bt.v52.maxDd, v53 && v53.maxDd],
+    ['夏普比率', bt.base.sharpe, bt.v52.sharpe, v53 && v53.sharpe],
+    ['Calmar', bt.base.calmar, bt.v52.calmar, v53 && v53.calmar],
+    ['持仓日胜率', bt.base.winRate, bt.v52.winRate, v53 && v53.winRate],
+    ['空仓占比', bt.base.emptyRatio, bt.v52.emptyRatio, v53 && v53.emptyRatio],
   ];
   const fmt = (v, i) => (i === 2 || i === 3) ? numS(v) : pctS(v, 1);
-  $('btMetrics').innerHTML = '<table><thead><tr><th>指标</th><th>V5 基准口径</th><th>V5.2 增强口径</th></tr></thead><tbody>'
-    + cmp.map((r, i) => `<tr><td class="muted">${r[0]}</td><td>${fmt(r[1], i)}</td><td>${fmt(r[2], i)}</td></tr>`).join('')
-    + '</tbody></table>';
+  $('btMetrics').innerHTML = '<table><thead><tr><th>指标</th><th>V5 基准口径</th><th>V5.2 增强口径</th>'
+    + (hasV53 ? '<th>V5.3 动态仓位</th>' : '')
+    + '</tr></thead><tbody>'
+    + cmp.map((r, i) => `<tr><td class="muted">${r[0]}</td><td>${fmt(r[1], i)}</td><td>${fmt(r[2], i)}</td>`
+      + (hasV53 ? `<td>${fmt(r[3], i)}</td>` : '') + '</tr>').join('')
+    + '</tbody></table>'
+    // V5.3 与 V5.2 的回撤差是核心读数（P0 验收线"最大回撤显著降低"），直接给结论行
+    + (hasV53 && Number.isFinite(+v53.maxDd) && Number.isFinite(+bt.v52.maxDd)
+      ? `<div class="bf-foot">V5.3 相对 V5.2：年化 ${pctS(v53.annual - bt.v52.annual, 2)}｜回撤 ${pctS(v53.maxDd - bt.v52.maxDd, 2)}`
+        + `（确认 + regime 帽子的净贡献；regime 分布 ${Object.entries(v53.regimeCounts || {}).map(([k, n]) => `${k}${n}`).join('/')}）</div>` : '');
 
   const s = bt.series || {};
   const series = [
     { name: 'V5 基准（无成本/无风控）', values: s.navBase || [], color: 'var(--muted)', dash: true },
     { name: 'V5.2 增强（成本+平滑+风控）', values: s.navV52 || [], color: 'var(--acc)' },
-    { name: '等权指数买入持有', values: s.navHold || [], color: 'var(--warn)', dash: true },
   ];
+  if (s.navV53 && s.navV53.length) series.push({ name: 'V5.3 动态仓位（确认+市场状态帽子）', values: s.navV53, color: 'var(--ok)' });
+  series.push({ name: '等权指数买入持有', values: s.navHold || [], color: 'var(--warn)', dash: true });
   drawNav($('btNavSvg'), series, s.dates || []);
   $('btLegend').innerHTML = series.map((x) => `<span><i style="background:${x.color}"></i>${x.name}</span>`).join('')
     + `<span>样本 ${m.days || 0} 个交易日（${(s.dates || [])[0] || '—'} ~ ${(s.dates || []).slice(-1)[0] || '—'}）</span>`;
@@ -1775,7 +1789,14 @@ function renderBacktest(bt) {
   $('btParams').innerHTML = [
     `阈值：过热 ${numS(P.thresholds?.overheat, 0)} / 满仓 ${numS(P.thresholds?.lo, 0)} / 半仓 ${numS(P.thresholds?.panic, 0)}~${numS(P.thresholds?.lo, 0)} / 清仓 ${numS(P.thresholds?.panic, 0)}（收盘打分，T+1 生效；hi=${numS(P.thresholds?.hi, 0)} 为保留参数，引擎判档未使用）`,
     `风控：最大仓位 ${numS(v52.maxPos, 2)}｜单笔止损 ${pctS(v52.stopLoss, 0) || '—'}｜回撤降仓触发 ${pctS(v52.ddTrigger, 0) || '—'}｜单日仓位变动 ≤ ${numS(v52.maxPosChg, 2)}`,
-  ].join('<br>');
+  ].join('<br>')
+    // V5.3 止盈两模式（可切换）：叠加在动态仓位口径之上；triggeredDays 披露实际介入
+    // 天数——零触发时数值与 V5.3 相同是机制中性（指数腿浮盈不足 5%），不是失效。
+    + (tpP ? `<br>止盈·分批（${(tpP.params && tpP.params.ladder || []).map((l) => `+${Math.round((l[0] - 1) * 100)}%→${l[1] === 0 ? '清仓' : (l[1] * 100 + '%仓')}`).join('，')}）：`
+      + `年化 ${pctS(tpP.annual, 2)}｜回撤 ${pctS(tpP.maxDd, 2)}｜实际介入 ${tpP.triggeredDays ?? '—'} 天` : '')
+    + (tpT ? `<br>止盈·移动（浮盈 ≥5% 激活后峰值回撤 ≥30% 离场）：`
+      + `年化 ${pctS(tpT.annual, 2)}｜回撤 ${pctS(tpT.maxDd, 2)}｜实际介入 ${tpT.triggeredDays ?? '—'} 天`
+      + ((tpT.triggeredDays ?? 1) === 0 ? '（指数池腿浮盈不足激活线，零触发属常态——机制已由跨语言夹具锁定）' : '') : '');
   $('btNote').textContent = `口径备注：${m.caveat || ''}`;
 
   const p = bt.pareto || {};

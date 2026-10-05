@@ -141,8 +141,11 @@ check('原有区块未受影响：情绪分已渲染', txt('emScore') !== '' && 
 check('原有区块未受影响：研判报告已生成', txt('briefBody').length > 300, `${txt('briefBody').length} 字`);
 check('原有区块未受影响：热点表已填充', rows('hotTable') > 0, `${rows('hotTable')} 行`);
 check('新增·策略回测：指标对比表 6 行', rows('btMetrics') === 6, `${rows('btMetrics')} 行`);
-check('新增·策略回测：净值曲线 3 条序列', $('btNavSvg')?.querySelectorAll('polyline').length === 3,
+// V5.3：基准/V5.2/V5.3 动态仓位 三条策略线 + 等权持有 = 4 条（旧档无 v53 段时降级 3 条）
+check('新增·策略回测：净值曲线 4 条序列（含 V5.3 动态仓位线）', $('btNavSvg')?.querySelectorAll('polyline').length === 4,
   `${$('btNavSvg')?.querySelectorAll('polyline').length} 条`);
+check('新增·策略回测：V5.3 对照列与回撤结论行', txt('btMetrics').includes('V5.3') && txt('btMetrics').includes('V5.3 相对 V5.2'),
+  txt('btMetrics').slice(0, 60));
 check('新增·策略回测：卡内参数行已渲染（阈值/风控，完整参数收进抽屉）',
   txt('btParams').includes('阈值') && txt('btParams').includes('风控') && !!$('btMore'), txt('btParams').slice(0, 40));
 check('新增·策略回测：数据加载成功（非降级提示）',
