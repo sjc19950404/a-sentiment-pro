@@ -6,8 +6,9 @@ import config from '../src/config.js';
 import { decodeArchive } from '../src/lhb_codec.js';
 import {
   BASE_PARAMS, V52_PARAMS, DEFAULT_TH,
-  scoreWith, poolBacktest, gridSearch, paretoFrontier, rollingTest, selectMainLine, weightGrid, sortByRank,
+  scoreWith, poolBacktest, paretoFrontier, rollingTest, selectMainLine, sortByRank,
 } from '../src/backtest.js';
+import { parallelGridSearch, parallelRollingTest, defaultWorkers } from '../src/grid_parallel.js';
 
 const args = process.argv.slice(2);
 const argOf = (k, d) => {
@@ -83,7 +84,10 @@ const navHold = (() => {
 
 // ── 权重网格 + 帕累托（信号 = 七因子按候选权重重算，非固定情绪分） ──
 // 注意：网格权重与因子同为无后缀键（s_net…），与 plainW 同口径
-const scan = gridSearch(factorsByDay, retsByAsset, plainW, pV52, gridSteps);
+// 网格走 worker 池（src/grid_parallel.js）：与串行 gridSearch 逐位一致（等价性测试锁定），
+// 78,125 组从串行数十秒缩到按核数缩减；GRID_WORKERS=1 可退回串行。
+const GRID_WORKERS = defaultWorkers();
+const scan = await parallelGridSearch(factorsByDay, retsByAsset, plainW, pV52, gridSteps, { workers: GRID_WORKERS });
 const pareto = paretoFrontier(scan);
 const strip = (r) => ({
   w: Object.fromEntries(Object.entries(r.w).map(([k, v]) => [k, Math.round(v * 1e4) / 1e4])),
@@ -114,7 +118,9 @@ const gridRows = [...uniqRows]
 
 // ── 滚动样本外（固定权重 vs 逐窗重寻优 walk-forward） ──
 const rollBase = rollingTest(factorsByDay, retsByAsset, plainW, pV52, { ...rolling, refit: false });
-const rollRefit = rollingTest(factorsByDay, retsByAsset, plainW, pV52, { ...rolling, refit: true, steps: gridSteps });
+// refit 每段都要跑一轮全网格——与上面的 scan 共用 worker 池语义（并行版与串行逐位一致）
+const rollRefit = await parallelRollingTest(factorsByDay, retsByAsset, plainW, pV52,
+  { ...rolling, refit: true, steps: gridSteps }, { workers: GRID_WORKERS });
 const segOut = (s) => ({
   testStart: dates[s.testStart], testEnd: dates[s.testEnd - 1],
   trainDays: rolling.trainWindow, testDays: rolling.testWindow,
@@ -130,7 +136,7 @@ const refitChanged = rollRefit.segments.filter((s, i) => {
 
 const latest = days[days.length - 1];
 const mainLine = selectMainLine(latest, 2);
-const nGrid = weightGrid(baseW, gridSteps).length;
+const nGrid = scan.length; // 网格行数 = weightGrid 组合数（免再生成一遍 78k 对象只为计数）
 
 const payload = {
   meta: {
@@ -187,6 +193,6 @@ writeFileSync(OUT, JSON.stringify(payload, null, 1));
 console.log(`[backtest] ${dates.length} 个交易日 · 标的 ${ASSETS.join('/')}`);
 console.log(`[backtest] 基准年化 ${(base.perf.annual * 100).toFixed(2)}% 回撤 ${(base.perf.maxDd * 100).toFixed(2)}% 夏普 ${base.perf.sharpe}`);
 console.log(`[backtest] V5.2 年化 ${(v52.perf.annual * 100).toFixed(2)}% 回撤 ${(v52.perf.maxDd * 100).toFixed(2)}% 夏普 ${v52.perf.sharpe}`);
-console.log(`[backtest] 网格 ${nGrid} 组 → 帕累托非支配 ${pareto.length} 组（去重 ${uniqRows.length}）；滚动 ${rollBase.segments.length} 段，其中重寻优换了权重的段 ${refitChanged}/${rollRefit.segments.length}`);
+console.log(`[backtest] 网格 ${nGrid} 组（worker×${GRID_WORKERS}） → 帕累托非支配 ${pareto.length} 组（去重 ${uniqRows.length}）；滚动 ${rollBase.segments.length} 段，其中重寻优换了权重的段 ${refitChanged}/${rollRefit.segments.length}`);
 console.log(`[backtest] 主线：${mainLine.mains.map((m) => `${m.theme}(${m.themeCount})`).join('、')} · 权重口径偏差 ${payload.meta.weightDrift}`);
 console.log(`[backtest] 写出 ${OUT}`);
