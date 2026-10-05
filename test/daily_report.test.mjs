@@ -359,8 +359,8 @@ test('buildDailyReport: 无 llm 段 → 节 8 missing（未生成 ≠ 舆情中�
   const sec = R.sections.find((x) => x.id === 'llm');
   assert.ok(sec, '节 8 必须存在（即使缺数据）');
   assert.equal(sec.missing, true);
-  assert.match(sec.missingNote, /fetch_llm_sentiment\.mjs/);
-  assert.match(sec.missingNote, /未跑 ≠ 舆情中性/);
+  assert.match(sec.missingReason, /fetch_llm_sentiment\.mjs/);
+  assert.match(sec.missingReason, /未跑 ≠ 舆情中性/);
 });
 
 test('buildDailyReport: llm 生效块 → 节 8 给参考修正分与口径披露', () => {

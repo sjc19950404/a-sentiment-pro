@@ -369,7 +369,9 @@ function buildLlmSection(llm) {
   if (!llm) {
     return {
       id: 'llm', title: '八、舆情参考（LLM 试点）', level: 'unknown', missing: true,
-      missingNote: '未生成（需收盘后跑 scripts/fetch_llm_sentiment.mjs；未跑 ≠ 舆情中性）',
+      // 字段名与其余六节统一为 missingReason——前端 renderDailyReport 读的就是它
+      //   （读 missingNote 会显示"原因未知"，字段名对不上=前端与后端不同步的隐性形态）。
+      missingReason: '未生成（需收盘后跑 scripts/fetch_llm_sentiment.mjs；未跑 ≠ 舆情中性）',
     };
   }
   const pts = [];

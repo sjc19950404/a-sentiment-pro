@@ -3215,6 +3215,13 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
       check('每日日报：提供打印/导出动作', !!$('rpPrint'), '缺 #rpPrint');
       check('每日日报：披露"缺失不补 0"的口径',
         /未采集|未计算/.test(ptxt), '不披露会让"缺"被读成 0');
+      // V5.3 P2：节 8 舆情参考（LLM 试点）——前后端同步守卫。后端 daily_report.js
+      //   生成该节，前端 renderDailyReport 是通用 sections 渲染器（自动透出）；
+      //   此断言锁两件事：节标题在屏上 + 缺失态显示 missingReason 文案而非
+      //   "原因未知"（字段名对不上=前后端不同步的隐性形态，曾真实发生过）。
+      check('每日日报：节 8 舆情参考（LLM 试点）在屏（缺证据时显式"未生成"而非"原因未知"）',
+        /舆情参考（LLM 试点）/.test(ptxt) && !/未生成：原因未知/.test(ptxt),
+        ptxt.includes('舆情参考') ? '节8已渲染' : '节8缺失');
     } else {
       check('每日日报：未知态显式说明「未生成」', /未生成/.test(ptxt), '');
     }
