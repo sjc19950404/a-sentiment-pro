@@ -81,7 +81,7 @@ export function yearSummary(days) {
  * 生成索引文件：轻到可以随首屏无条件拉取。
  *
  * 刻意**不含**任何 all_days 明细：索引一旦变肥，拆分的意义就没了。
- * 体积守卫（scripts/audit_lhb_caliber.mjs B9）会断言 < 32KB。
+ * 体积守卫（scripts/audit_lhb_caliber.mjs B9）会断言 < 36KB（32→36 重估：P2-β 渲染接线）。
  */
 export function buildIndex(archive) {
   const days = (archive && archive.all_days) || [];
@@ -360,6 +360,10 @@ export const SIGNALS_FILE = 'signals-latest.json';
  * @param {Function} [opts.marketAlertsFn] 注入 marketAlerts（保持本模块纯函数、可单测）
  * @param {Function} [opts.healthFn] 注入 health.healthReport（同上，纯函数注入）
  *        签名：healthFn(days, { meta }) → health 报告对象
+ * @param {Function} [opts.dualTrackFn] 注入双轨披露块（P2-β 渲染接线，读盘注入——
+ *        数据源 data/paper/dual_track_latest.json 而非 days，入参忽略）。
+ *        唯一实现 src/dual_track.js::dualTrackDisclosureFn(dataDir)，两条写盘路径
+ *        必须传**同一工厂产物**（否则 split_archive --check 报两路径形态分裂）。
  */
 export function buildSignals(archive, opts = {}) {
   const days = (archive && archive.all_days) || [];
@@ -475,6 +479,16 @@ export function buildSignals(archive, opts = {}) {
   if (dFn) {
     try { divergence = dFn(days, { breadth, latest: latestBrief(last) }); } catch { divergence = null; }
   }
+  // 双轨披露块（P2-β 渲染接线）：三轨披露 + 保险账本，来自 data/paper/dual_track_latest.json
+  //   （tools/backtest/paper_dual_track.mjs 产出）。走注入保持本模块纯拼装、可单测——
+  //   与 painFn 读盘注入同款（数据源是账本文件而非 days，注入函数忽略入参）。
+  //   ⚠ 数字唯一出处 = paper_dual_track.mjs；本段只搬运不重算（R4 口径分裂防线）。
+  //   null = 账本未生成（旁路工具未跑），≠"轨道一致"——渲染层显式区分。
+  let dualTrack = null;
+  const dtFn = typeof opts.dualTrackFn === 'function' ? opts.dualTrackFn : null;
+  if (dtFn) {
+    try { dualTrack = dtFn(days, { meta: archive?.meta || {} }); } catch { dualTrack = null; }
+  }
   let dailyReport = null;
   if (repFn) {
     try {
@@ -510,7 +524,7 @@ export function buildSignals(archive, opts = {}) {
     //   主档 meta 里带 `reasonCodes`（77 条码表，实测 5.4KB），它是**构建期**解压 rc
     //   下标用的（lhb_codec 在 decode 时消费），前端读 signals-latest 时**完全用不到**
     //   ——reason 早已在切片/滚动窗里是明文。原样透传等于把一张只在服务端用的
-    //   码表塞进"只看一眼"的轻量档，白占 5.4KB（占 32KB 预算的 17%）。
+    //   码表塞进"只看一眼"的轻量档，白占 5.4KB（占 36KB 预算的 15%）。
     //   故此处剔除；其余 meta 字段照常（前端要显示新鲜度/相位/版本）。
     meta: (() => {
       const m = archive?.meta;
@@ -605,6 +619,17 @@ export function buildSignals(archive, opts = {}) {
     dailyReportNote: repFn
       ? '日报是"翻译层"：所有读数来自当日已归档数据，缺失项标注"未采集/未计算"而非补 0；不构成投资建议。'
       : '未生成（调用方未注入 reportFn）',
+    // 双轨披露（P2-β 渲染接线 · 框架 docs/dual_track_framework.md §三）：
+    //   { asOf, generatedAt, day, ledger, trackState, note }。轨道 A = 唯一执行轨道；
+    //   轨道 B = V5.3 风险参考线（永不执行）；轨道 C = shift 次日帽影子（记账不执行）。
+    //   ⚠ asOf 是账本末日，可能与 meta.tradeDate 不同（旁路工具每日一跑）——如实披露。
+    //     null = 未生成 ≠ "轨道一致"；段一旦存在，day 内字段必须齐（半缺=渲染静默空白）。
+    dualTrack,
+    dualTrackNote: dtFn
+      ? '轨道 B/C 为风控参考与影子记账，不是买卖信号；分歧=保险当日保费敞口，账本为 P2 起累计。'
+        + 'asOf 是双轨账本末日（旁路工具每日一跑），与 meta.tradeDate 不同步时以 asOf 为披露口径。'
+        + '数字唯一出处 tools/backtest/paper_dual_track.mjs（本段只搬运不重算）。'
+      : '未生成（调用方未注入 dualTrackFn，需 tools/backtest/paper_dual_track.mjs 产出 data/paper/dual_track_latest.json）',
     marketAlerts: market,
     marketAlertsNote: fn
       ? `仅大盘层告警，按假设总资产 ${assumedTotal} 元、空仓计算；持仓层告警依赖本地模拟账户（模拟交易台面已下线），本轮不提供`

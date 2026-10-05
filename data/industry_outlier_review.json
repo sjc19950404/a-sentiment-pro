@@ -75,6 +75,40 @@
       "note": "春节档预期驱动（2026 年春节假期前后档期），真实主题集中。"
     },
     {
+      "date": "2026-03-03",
+      "industry": "油气开采及服务",
+      "changePct": 12.22,
+      "nearestGap": null,
+      "verdict": "confirmed-real",
+      "method": "cross-source",
+      "evidence": {
+        "source": "同花顺行业指数 881107 油气开采及服务（d.10jqka.com.cn 日K）",
+        "code": "881107",
+        "recomputed": 12.219,
+        "delta": 0.001,
+        "detail": "本日收盘/前收复算涨跌幅 12.219%，与档案 12.22% 相差 0.001pp（容差 0.05pp）。"
+      },
+      "reviewedAt": "2026-10-05",
+      "note": "自动跨源核验：真实行情（脚本 verify_industry_outliers.mjs）。"
+    },
+    {
+      "date": "2026-03-03",
+      "industry": "燃气",
+      "changePct": 9.47,
+      "nearestGap": null,
+      "verdict": "confirmed-real",
+      "method": "cross-source",
+      "evidence": {
+        "source": "同花顺行业指数 881146 燃气（d.10jqka.com.cn 日K）",
+        "code": "881146",
+        "recomputed": 9.4711,
+        "delta": 0.0011,
+        "detail": "本日收盘/前收复算涨跌幅 9.4711%，与档案 9.47% 相差 0.0011pp（容差 0.05pp）。"
+      },
+      "reviewedAt": "2026-10-05",
+      "note": "自动跨源核验：真实行情（脚本 verify_industry_outliers.mjs）。"
+    },
+    {
       "date": "2026-08-18",
       "industry": "种植业与林业",
       "changePct": 9.36,

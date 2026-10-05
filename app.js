@@ -1785,6 +1785,12 @@ let REPORT = null;
 //   ⚠ 三态：diverged=true / diverged=false（同向，已比对）/ level='unknown'（未评估）。
 //     最后一种**不是**"一致"——宽度判定缺失时无从比对，渲染层必须显示"未评估"。
 let DIVERGE = null;
+// 双轨披露块（P2-β 渲染接线 · 框架 docs/dual_track_framework.md §三）：同源同次取。
+//   ⚠ null = "账本未生成"（旁路工具未跑），**不是**"轨道一致"——渲染层显式区分。
+//   asOf 是双轨账本末日：与 meta.tradeDate 不同步时如实披露（不伪装成"今日"）。
+//   渲染纪律：数字只展示不重算（唯一出处 = tools/backtest/paper_dual_track.mjs），
+//   轨道 B/C 一律带"风控参考，非买卖信号"的免责标注（DISCLAIMER 口径）。
+let DUALTRACK = null;
 // 整份 signals-latest（不只是 health 段）：数据导出（src/dataset.js）要读
 //   breadth/series、seats/series、crosscheck/flagged、dirty/recent 等段。
 //   让它与各面板共用**同一次 fetch 结果**，避免"导出时再现拉一次"造成两处不一致。
@@ -1821,6 +1827,11 @@ async function loadHealth() {
     // 宽度背离告警（#3 决策）同源同次取。**独立于日报**——日报缺失时它照常显示。
     DIVERGE = s && s.divergence ? s.divergence : null;
     renderDiverge(DIVERGE);
+    // 双轨披露块（P2-β 渲染接线）同源同次取；回滚横幅读 active_track 镜像
+    //   （缺席 = 轨道 A 常态 = 不渲染——零 diff 纪律在渲染端的体现）。
+    DUALTRACK = s && s.dualTrack ? s.dualTrack : null;
+    renderDualTrack(DUALTRACK);
+    renderTrackBanner(s);
     noteLoad('signals-latest', true);
     // 健康档到位后重刷离线/陈旧横幅：横幅要并进 health 的告警摘要，
     //   而横幅首次渲染发生在 ARC 就绪时（那时 HEALTH 还是 null）。
@@ -1842,7 +1853,8 @@ async function loadHealth() {
     renderRegime(null, e.message);
     renderDailyReport(null, e.message);
     renderDiverge(null, e.message);
-    renderOfflineBar(null);
+    renderDualTrack(null, e.message);
+    renderTrackBanner(null);
   }
 }
 
@@ -2501,6 +2513,122 @@ function fmtSigned(v, d) {
   const s = n.toFixed(d);
   const z = (0).toFixed(d);
   return (n > 0 ? '+' : '') + (s === '-' + z ? z : s);
+}
+
+// ── 双轨披露面板（P2-β 渲染接线 · 框架 docs/dual_track_framework.md §三）────────
+//
+// 数据源：signals-latest.json 的 dualTrack 段（src/dual_track.js 唯一搬运出处，
+// 数字唯一出处 = tools/backtest/paper_dual_track.mjs——前端只展示不重算）。
+//
+// ⚠ 渲染纪律（与各面板同源）：
+//   · null = "账本未生成"（旁路工具未跑），**不是**"轨道一致"——显式区分，绝不借绿；
+//   · asOf 是双轨账本末日：与 meta.tradeDate 不同步时如实披露滞后（旁路工具每日一跑），
+//     伪装成"今日"才是事故（缺失显式化原则）；
+//   · 轨道 B/C 一律带"风控参考，非买卖信号"标注（DISCLAIMER 口径）；
+//   · 保险账本读数（保费/保额/影子增益）为 P2 起累计——不是当日值，单位 pp。
+function renderDualTrack(dt, errMsg) {
+  const box = $('dualTrackPanel');
+  if (!box) return;
+  if (!dt || !dt.day) {
+    box.hidden = false;
+    box.className = 'dualtrack-panel dt-unknown';
+    box.innerHTML = `<div class="dt-head"><b>双轨披露（V5.2 执行 × V5.3 参考线）</b>`
+      + `<span class="dt-chip unknown">未生成</span>`
+      + `<span class="muted">${esc(errMsg || 'signals-latest.json 缺少 dualTrack 段（需收盘后跑 tools/backtest/paper_dual_track.mjs）')}`
+      + `——这是"账本未生成"，不等于"两条轨道一致"</span></div>`;
+    return;
+  }
+  const day = dt.day || {};
+  const A = day.trackA || {}, B = day.trackB || {}, C = day.trackC || {};
+  const div = day.divergence || {};
+  const led = day.ledger || {};
+  const st = dt.trackState || {};
+  const fb = st.activeTrack === 'A_fallback';
+  // 当日收益（dayReturns：三轨当日，小数 → pp）与累计收益（cum：summary.total 面搬运）。
+  //   null 位 = 账本 summary 缺席 / 该轨未产出——显示"未计算"，绝不补 0。
+  const dr = day.dayReturns || {};
+  const cum = dt.cum || {};
+  const pp = (v, d = 2) => (v == null || !Number.isFinite(Number(v))) ? '未计算' : fmtSigned(Number(v) * 100, d) + 'pp';
+  const threeLine = (obj, keys, d) => keys.map((k) => `${k}:${pp(obj && obj[k], d)}`).join(' ');
+  // asOf 常显（账本口径日期）：滞后与否都要标——同日不显示也是一种"伪装成今日"
+  const lag = (SIGNALS && SIGNALS.meta && SIGNALS.meta.tradeDate && dt.asOf && SIGNALS.meta.tradeDate !== dt.asOf)
+    ? `（落后于档案日 ${esc(SIGNALS.meta.tradeDate)}）`
+    : '';
+  // 三轨仓位表：A=执行（targetPos 压 poolPos 后的实际池仓位）；B=参考线（refPos 同口径压帽）；
+  //   当日/累计两列 = 用户规格「当日净值 / 累计收益」（数字唯一出处账本，本面板只搬运）
+  const posRow = (name, pos, pool, daily, cumTxt, tag, note) => `<tr>`
+    + `<td>${esc(name)}${tag}</td>`
+    + `<td class="dt-num">${pos == null ? '未计算' : esc((pos * 100).toFixed(0)) + '%'}</td>`
+    + `<td class="dt-num">${pool == null ? '未计算' : esc((pool * 100).toFixed(0)) + '%'}</td>`
+    + `<td class="dt-num dt-sm">${esc(daily)}</td>`
+    + `<td class="dt-num dt-sm">${esc(cumTxt)}</td>`
+    + `<td class="muted">${esc(note)}</td></tr>`;
+  const aPos = A.poolPos, bPos = B.poolPos;
+  const shadow = C.active
+    ? Object.entries(C.shadowPos || {}).map(([k, v]) => `${esc(k)}帽 ${esc((v * 100).toFixed(0))}%`).join(' · ')
+    : '未激活（前一日 regime ≠ shift）';
+  const biteTxt = C.active
+    ? Object.entries(C.biting || {}).filter(([, v]) => v).map(([k]) => k).join('、') || '无（当日未真压到轨道 A）'
+    : '—';
+  const cCum = cum.trackC ? threeLine(cum.trackC, ['0.3', '0.4', '0.5'], 1) : '未计算';
+  // 保险账本（P2 起累计）：premiumCum=保费（Σ A−B 日收益）/ coverageCum=保额（回撤差）/
+  //   shadowCum=影子增益（Σ A−C）。三线影子同号才不算帽值过拟合（框架 §四门禁 2）。
+  const sc = led.shadowCum || {};
+  const scRows = ['0.3', '0.4', '0.5'].map((k) => [k, sc[k]]).filter(([, v]) => v != null);
+  const ledRows = [
+    ['累计保费（Σ A−B）', led.premiumCum == null ? '未计算' : fmtSigned(led.premiumCum * 100, 2) + 'pp'],
+    ['累计保额（回撤差）', led.coverageCum == null ? '未计算' : fmtSigned(led.coverageCum * 100, 2) + 'pp'],
+    ...(scRows.length ? scRows.map(([k, v]) => [`影子增益 C=${esc(k)}`, fmtSigned(v * 100, 2) + 'pp']) : []),
+    ['影子生效日', led.activeDays == null ? '未计算' : `${esc(led.activeDays)} 天（晋升门槛分母）`],
+  ].map(([k, v]) => `<tr><td>${esc(k)}</td><td class="dt-num">${esc(v)}</td></tr>`).join('');
+  box.hidden = false;
+  box.className = `dualtrack-panel ${fb ? 'dt-fallback' : 'dt-a'}`;
+  box.innerHTML = `<details class="dt-fold" open>`
+    + `<summary><b>双轨披露（V5.2 执行 × V5.3 参考线）</b>`
+    + `<span class="dt-chip ${fb ? 'warn' : 'ok'}">${fb ? 'A_fallback' : '轨道 A'}</span>`
+    + `<span class="muted dt-sum">账本截至 ${esc(dt.asOf || '—')}${lag} · 分歧 ${div.posGap == null ? '未计算' : esc((div.posGap * 100).toFixed(0)) + 'pp'} = 当日保费敞口</span></summary>`
+    + `<div class="dt-body">`
+    + `<table class="dt-table"><thead><tr><th>轨道</th><th>目标仓位</th><th>池仓位</th><th>当日</th><th>累计</th><th>口径</th></tr></thead><tbody>`
+    + posRow('A · V5.2 主信号', Object.values(A.targetPos || {})[0] ?? null, aPos,
+      pp(dr.A), pp(cum.trackA, 1),
+      '<span class="dt-chip ok">执行</span>', '唯一执行轨道（P2 模拟资金曲线）')
+    + posRow('B · V5.3 参考线', Object.values(B.refPos || {})[0] ?? null, bPos,
+      pp(dr.B), pp(cum.trackB, 1),
+      '<span class="dt-chip info">参考</span>', '若整份买保险今天会在哪 · 永不执行')
+    + posRow('C · shift 次日帽（影子）', null, null,
+      ['C0.3', 'C0.4', 'C0.5'].map((k) => `${k.slice(1)}:${pp(dr[k])}`).join(' '), cCum,
+      '<span class="dt-chip info">记账</span>', shadow + (C.active ? ` · 真压：${esc(biteTxt)}` : ''))
+    + `</tbody></table>`
+    + `<div class="dt-sub muted">保险账本（P2 起累计 · since ${esc(led.since || '—')}）</div>`
+    + `<table class="dt-table dt-ledger"><tbody>${ledRows || '<tr><td class="muted">账本未生成</td></tr>'}</tbody></table>`
+    + `<div class="dt-note muted">${esc(dt.note || '')}`
+    + `<br>口径：分歧 = A池仓位 − B池仓位（当日保费敞口）；帽值只引用 POSITION_BANDS（轨道 C 的 0.3/0.4/0.5 为实验扫描区间，晋升前不得收窄）。`
+    + `<br>轨道 B/C 均为<b>风控参考，不是买卖信号</b>；影子晋升须过框架 §四门禁（生效日结构占比 ≥50%、三线同号、残差纪律）。`
+    + `<br>数字唯一出处 tools/backtest/paper_dual_track.mjs，本面板只展示不重算。</div>`
+    + `</div></details>`;
+}
+
+// ── 轨道回滚横幅（P1/P2-β）：执行面已切 A_fallback 的常驻警示 ──────────────────
+//
+// 数据源：signals-latest.json 的 active_track / activeTrackNote（展示镜像；事实源 =
+// data/paper/track_state.json，回滚/恢复唯一通道 = scripts/rollback_track.mjs）。
+// 渲染纪律：**缺席 = 轨道 A 常态 = 不渲染任何内容**（零 diff 纪律在渲染端的体现——
+// 绝不写 "active_track: 'A'" 这种显式常态值）。幂等：每次调用重判，恢复后自动消失。
+function renderTrackBanner(sig) {
+  const box = $('trackBanner');
+  if (!box) return;
+  if (!(sig && sig.active_track === 'A_fallback')) {
+    // A 态（或加载失败）：清空并隐藏。加载失败时宁可少一条横幅也不伪造"已回滚"。
+    box.hidden = true;
+    box.innerHTML = '';
+    return;
+  }
+  box.hidden = false;
+  box.innerHTML = `<div class="tb-inner">`
+    + `<div class="tb-head"><b>⚠ 执行面已回滚：轨道 A → A_fallback（V5.2 冻结快照）</b></div>`
+    + `<div class="tb-lines">${esc(sig.activeTrackNote || '（镜像缺提示文案）')}</div>`
+    + `<div class="tb-lines muted">唯一事实源 data/paper/track_state.json · 回滚/恢复唯一通道 scripts/rollback_track.mjs · 恢复条件：连续 5 个交易日无异常亏损后人工审核 --restore</div>`
+    + `</div>`;
 }
 
 async function loadVersionRegression() {  const foot = $('verCaution');

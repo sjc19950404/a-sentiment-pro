@@ -44,6 +44,26 @@ const KLINE_REBUILD_DAYS = (arch.all_days || []).filter((d) => d && d.summary &&
 // 寻优/网格/walk-forward 全部在 train 上做，生产口径（live）不参与扰动扫描。
 const TR = config.params.train;
 const { assets: ASSETS, gridSteps } = config.backtest; // 标的池/扫描精度非调参对象，留在 backtest 块
+
+// ── 收益覆盖守卫（2026-10-05 诊断事故修复）─────────────────────────────────────
+// 事故：archive 的 indexes 只覆盖 33/241 天，其余 208 天被本脚本的 `: 0` 回退按
+//   **0 收益日**处理——V5.2 的胜率/夏普/归因全部失真，且当时全部门禁放行（数据
+//   缺失是门禁盲区）。缺失必须显式失败，不允许静默填 0 后产出"看似正常"的档。
+// 门禁：覆盖率 = 三指数任一有值的天数 / 回测样本天数；低于下限直接 exit 1。
+//   下限默认 0.8，可用 BACKTEST_MIN_COVERAGE 环境变量显式放行（如新档案初期
+//   数据天然稀缺——放行是运维决策，必须显式留痕，不能是默认行为）。
+const COVERED_DAYS = days.filter((d) => ASSETS.some((a) => Number.isFinite(d.indexes?.[a]))).length;
+const INDEX_COVERAGE = days.length ? COVERED_DAYS / days.length : 0;
+const MIN_COVER = parseFloat(process.env.BACKTEST_MIN_COVERAGE || '0.8');
+if (days.length >= 30 && INDEX_COVERAGE < MIN_COVER) {
+  console.error(`[backtest] ✗ 指数收益覆盖率 ${COVERED_DAYS}/${days.length}（${(INDEX_COVERAGE * 100).toFixed(1)}%）低于下限 ${(MIN_COVER * 100).toFixed(0)}%：`);
+  console.error('    缺失日将被按 0 收益回退——胜率/夏普/归因会系统性失真（详见 2026-10-05 诊断事故）。拒绝生成。');
+  console.error('    补救：node scripts/backfill_indexes.mjs（历史缺口回填）；确属预期可用 BACKTEST_MIN_COVERAGE=x 显式放行。');
+  process.exit(1);
+}
+if (INDEX_COVERAGE < 1) {
+  console.warn(`[backtest] ⚠ 指数收益覆盖 ${COVERED_DAYS}/${days.length}（${(INDEX_COVERAGE * 100).toFixed(1)}%）——${days.length - COVERED_DAYS} 天按 0 收益回退，指标偏低估市场成分，meta.indexCoverage 已披露`);
+}
 const TH = TR.thresholds;
 const COSTS = TR.costModel;
 const { maxPos, stopLoss, ddTrigger, maxPosChg } = TR.stops;
@@ -194,6 +214,13 @@ const payload = {
       klineRebuildDays: KLINE_REBUILD_DAYS,
     },
     weightDrift: Math.round(recomputeDrift * 1e4) / 1e4,
+    // 收益覆盖（守卫配套披露）：缺失日按 0 收益回退会系统性扭曲胜率/夏普/归因，
+    // 覆盖率必须进档（契约：schemas/backtest.schema.json meta.indexCoverage）。
+    indexCoverage: {
+      coveredDays: COVERED_DAYS,
+      totalDays: days.length,
+      ratio: Math.round(INDEX_COVERAGE * 1e4) / 1e4,
+    },
   },
   params: {
     thresholds: TH, base: pBase, v52: pV52, weights: plainW, gridSteps, scanned: nGrid, rolling,

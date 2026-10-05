@@ -62,10 +62,12 @@ test('merge: all_days 全部为真实交易日（回填占位日绝不入页面�
 });
 
 test('merge: day 核心字段（情绪/汇总/龙虎榜/行业——UI KPI 卡与表格直读）', () => {
-  // 六因子回填（2026-10-02）后页面纳入 241 个七因子真分天，形成两类日：
-  //   · EM 采集天（有 indexes）：hot[]/indexes/hot_count 齐全——题材榜/指数卡直读；
-  //   · K 线回填天（无 indexes）：hot 空、indexes null——题材榜「暂无」降级（UI 已有空态），
-  //     但情绪/龙虎榜/行业/池/量能全字段必须齐（这些正是回填交付物）。
+  // 六因子回填（2026-10-02）+ 指数收益回填（2026-10-05）后页面纳入 241 个七因子真分天，
+  // 按指数快照的口径分三类日：
+  //   · EM 采集天（indexes 有值且无 indexes_caliber 留痕）：hot[]/indexes/hot_count 齐全；
+  //   · 指数K线回填天（summary.indexes_caliber='kline-backfill'）：indexes 由指数日K回填、
+  //     可直读（回测/回归的次日收益原料），但 hot 仍是裁剪空壳——题材榜走既有空态；
+  //   · 无指数日（两轮回填后应绝迹）：indexes 显式 null（而非 undefined），UI 判据 `d.indexes &&` 才稳。
   const RANK_MIN = 20; // 分位窗口：前 20 天 pct_rank 为 null 是算法事实，不是缺字段
   DAYS.forEach((d, idx) => {
     assert.equal(typeof d.emotion?.value, 'number', `${d.trade_date} emotion.value`);
@@ -73,14 +75,18 @@ test('merge: day 核心字段（情绪/汇总/龙虎榜/行业——UI KPI 卡�
     assert.ok(d.emotion?.lhb_daily_net != null, `${d.trade_date} emotion.lhb_daily_net（Tab2 净买柱/S7/S9）`);
     assert.ok(Array.isArray(d.lhb) && d.lhb.length, `${d.trade_date} lhb[]`);
     assert.ok(Array.isArray(d.industry) && d.industry.length, `${d.trade_date} industry[]`);
-    const emCaptured = !!(d.indexes && d.indexes['上证指数'] != null);
+    const s = d.summary || {};
+    const idxBackfilled = s.indexes_caliber === 'kline-backfill';
+    const emCaptured = !!(d.indexes && d.indexes['上证指数'] != null) && !idxBackfilled;
     if (emCaptured) {
       assert.ok(Array.isArray(d.hot) && d.hot.length, `${d.trade_date} hot[]（EM 采集天必填）`);
+    } else if (idxBackfilled) {
+      // 留痕与值必须成对出现：有痕无值 = 半缺，UI 判据 `d.indexes &&` 会把它当无数据
+      assert.ok(d.indexes && ['上证指数', '深证成指', '创业板指'].every((a) => Number.isFinite(d.indexes[a])),
+        `${d.trade_date} 指数回填留痕但三指数值缺失（半缺）`);
     } else {
-      // 回填天 hot 是裁剪空壳——但 indexes 必须显式 null（而非 undefined），UI 判据 `d.indexes &&` 才稳
-      assert.ok(!d.indexes || d.indexes['上证指数'] == null, `${d.trade_date} 回填天不应有指数快照`);
+      assert.ok(!d.indexes || d.indexes['上证指数'] == null, `${d.trade_date} 无留痕不应有指数快照`);
     }
-    const s = d.summary || {};
     for (const k of ['lhb_daily_net', 'lhb_all_net', 'lhb_count', 'lhb_stocks', 'net_pos', 'net_neg',
       'lhb_daily_stocks', 'lhb_range_count', 'ind_up', 'ind_down', 'amount_yi']) {
       assert.ok(s[k] != null, `${d.trade_date} summary.${k} 缺失（KPI 卡会显示 undefined）`);

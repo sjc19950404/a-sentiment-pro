@@ -1,10 +1,12 @@
-// 行业离群 warn（OUTLIER_INDUSTRY）跨源自动核验 + 自动销案。
+// 行业离群 warn（OUTLIER_INDUSTRY / COUNTER_INDEX）跨源自动核验 + 自动销案。
 //
-// 背景：src/dirty.js 的 OUTLIER_INDUSTRY 是 WARN——「数值孤立」与「主题集中」在数值形态上
-//   无法可靠区分（见 dirty.js 内规则演进注释），故只标不剔除、交人工复核。代价是真实行情的
-//   离群会重复报，久了会被忽略。本脚本把「复核」自动化：
+// 背景：src/dirty.js 的 OUTLIER_INDUSTRY 与 COUNTER_INDEX 都是 WARN——「数值孤立」
+//   与「主题集中」「系统性波动下的链条式逆势轮动」在数值形态上无法可靠区分
+//   （见 dirty.js 内两条规则的演进注释；COUNTER_INDEX 于 2026-10-05 因 2026-03-03
+//   能源链逆势大涨跨源核验 Δ=0.00 实锤而降级），故只标不剔除、交人工复核。
+//   代价是真实行情的离群会重复报，久了会被忽略。本脚本把「复核」自动化：
 //
-//   ① 扫全档，收集所有未被销案的 OUTLIER_INDUSTRY 告警；
+//   ① 扫全档，收集所有未被销案的 OUTLIER_INDUSTRY / COUNTER_INDEX 告警；
 //   ② 逐条去**同花顺行业指数（881xxx）**拉该日历史日K，独立复算当日涨跌幅；
 //   ③ 复算值与档案值在容差内 → confirmed-real（自动销案，写入 data/industry_outlier_review.json）；
 //      超容差 → data-error（**不销案**，exit 1 报警——这是真采集异常，须查数据源）。
@@ -83,7 +85,7 @@ const pending = [];
 for (const d of days) {
   const r = validateDay(d, { reviewedOutliers: already }); // 已销案的不再进入待核验队列
   for (const it of r.issues || []) {
-    if (it.rule !== 'OUTLIER_INDUSTRY') continue;
+    if (it.rule !== 'OUTLIER_INDUSTRY' && it.rule !== 'COUNTER_INDEX') continue;
     const mm = /行业「([^」]+)」([\d.-]+)%/.exec(it.reason || '');
     pending.push({
       date: d.trade_date,

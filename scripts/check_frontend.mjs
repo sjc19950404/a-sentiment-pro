@@ -1933,6 +1933,81 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
 //   故断言：unknown 有独立颜色类；数据缺失文案含"没检查/不等于正常"字样。
 // ════════════════════════════════════════════════════════════════════════════
 {
+  // ── 双轨披露面板 + 回滚横幅（P2-β 渲染接线 · 2026-10-06）──────────────────
+  // 守三件事：
+  //   ① 账本在场 → 面板渲染三轨 + 保险账本（缺一轨 = 搬运白名单漂移）；
+  //   ② A 态常态 → 回滚横幅隐藏且为空（零 diff 纪律渲染端体现：缺席 ≠ 默认值）；
+  //   ③ 轨道 B/C 必须带免责标注（风控参考 ≠ 买卖信号）。
+  const dp = $('dualTrackPanel');
+  const sigJson = existsSync(join(ROOT, 'data', 'signals-latest.json'))
+    ? JSON.parse(readFileSync(join(ROOT, 'data', 'signals-latest.json'), 'utf8')) : null;
+  if (dp) {
+    const txt = dp.textContent || '';
+    if (sigJson && sigJson.dualTrack) {
+      check('双轨披露：面板已渲染（hidden 已解除）', dp.hidden === false, `hidden=${dp.hidden}`);
+      check('双轨披露：三轨都渲染（执行/参考/影子）',
+        /轨道 A|V5\.2 主信号/.test(txt) && /参考/.test(txt) && /影子|记账/.test(txt),
+        txt.slice(0, 80));
+      check('双轨披露：保险账本在渲染（保费/保额）',
+        /累计保费/.test(txt) && /累计保额/.test(txt), '');
+      check('双轨披露：带免责标注（轨道 B/C 非买卖信号）',
+        /不是买卖信号/.test(txt) || /非买卖信号/.test(txt), '');
+      // asOf 滞后如实披露：账本末日必须出现在面板（不伪装成"今日"）
+      check('双轨披露：asOf 账本口径在场（滞后如实标注）',
+        (sigJson.dualTrack.asOf || '').length === 10 && (txt.includes(sigJson.dualTrack.asOf) || /账本截至/.test(txt)),
+        `asOf=${sigJson.dualTrack.asOf}`);
+      // 用户规格「当日净值 / 累计收益」：dayReturns（当日）与 cum（累计）两列必须渲染——
+      //   缺列 = 搬运白名单漂移或渲染漏读（半缺静默空白类事故）
+      check('双轨披露：当日收益列渲染（dayReturns 搬运，pp 口径）',
+        /当日/.test(txt) && /pp/.test(txt), txt.slice(0, 120));
+      check('双轨披露：累计收益列渲染（cum 搬运，三轨齐）',
+        /累计/.test(txt) && (sigJson.dualTrack.cum
+          ? (sigJson.dualTrack.cum.trackA != null ? txt.includes('pp') : true)
+          : true), '');
+      // cum 数字必须在场：trackA 累计非 null 时，三轨表格里应渲染出它的 pp 值
+      //   （fmtSigned 带符号；jsdom 文本即渲染结果——找不到 = 渲染漏读）
+      if (sigJson.dualTrack.cum && sigJson.dualTrack.cum.trackA != null) {
+        const v = sigJson.dualTrack.cum.trackA * 100;
+        const want = (v > 0 ? '+' : '') + v.toFixed(1);
+        const tbl = (dp.querySelector('.dt-table') || {}).textContent || '';
+        check('双轨披露：累计收益数值渲染（trackA 累计在场，非"未计算"顶替）',
+          tbl.includes(want), `期望含 ${want}pp`);
+      }
+    } else {
+      check('双轨披露：账本未生成时显式说明（不等于轨道一致）',
+        /未生成/.test(txt) && /轨道一致|不等于/.test(txt), txt.slice(0, 80));
+    }
+  } else {
+    check('双轨披露：面板元素存在', false, '未找到 #dualTrackPanel');
+  }
+  const tb = $('trackBanner');
+  if (tb) {
+    if (sigJson && sigJson.active_track === 'A_fallback') {
+      check('回滚横幅：A_fallback 态常驻显示（hidden 解除 + 提示文案在场）',
+        tb.hidden === false && /回滚/.test(tb.textContent || ''),
+        `hidden=${tb.hidden}`);
+      // 用户规格「回滚原因 + 时间戳」：note 须含回滚时刻与原因原文（生产端 writeMirror 契约）
+      check('回滚横幅：含回滚时刻与原因（时间戳/原因不静默吞）',
+        /回滚于/.test(tb.textContent || '') && /原因/.test(tb.textContent || ''),
+        (tb.textContent || '').slice(0, 60));
+    } else {
+      // A 态常态：横幅必须隐藏且为空——绝不渲染 "active_track: 'A'" 这种显式常态
+      check('回滚横幅：A 态常态隐藏且为空（零 diff 纪律渲染端体现）',
+        tb.hidden === true && !(tb.textContent || '').trim(),
+        `hidden=${tb.hidden} text="${(tb.textContent || '').slice(0, 40)}"`);
+    }
+  } else {
+    check('回滚横幅：元素存在', false, '未找到 #trackBanner');
+  }
+  // 用户规格「红色横幅」：样式层断言（jsdom 不计算 CSS，查源码）——
+  //   .tb-inner 必须用 var(--up)（风险红，与 alert-row 风险色条同惯例），不得退回琥珀
+  {
+    const css = readFileSync(join(ROOT, 'style.css'), 'utf8');
+    const tbInner = css.match(/\.tb-inner\s*\{[^}]*\}/);
+    check('回滚横幅：红色警示样式（var(--up)，用户规格）',
+      !!tbInner && /var\(--up\)/.test(tbInner[0]), tbInner ? tbInner[0].slice(0, 60) : '未找到 .tb-inner');
+  }
+
   const hp = $('healthPanel');
   check('数据健康：面板元素存在', !!hp, hp ? '' : '未找到 #healthPanel');
   if (hp) {

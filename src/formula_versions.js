@@ -37,6 +37,7 @@
 // 这正是"同一段历史、多版并行重算"能做出有意义对比的前提。
 
 import { computeSentiment, NET_NORMALIZER_TANH5, NET_NORMALIZER_PCTL } from './sentiment.js';
+import { validateDay, sanitizeForFactors } from './dirty.js';
 import {
   caliberFromDay, mergeDuplicateRecords, aggregateByCode, isNewStock,
 } from './lhb.js';
@@ -188,7 +189,18 @@ export function recomputeDay(day, versionKey, ctx = {}) {
   const v = versionOf(versionKey);
   if (!v) throw new Error('未知公式版本：' + versionKey);
   const s = day?.summary || {};
-  const { netBuy, newStockNet, label, evidence } = v.extractNetBuy(day);
+  const { netBuy: exNetBuy, newStockNet, label, evidence } = v.extractNetBuy(day);
+  // 判脏摘除（2026-10-05 补齐，与生产 recalcAll 对齐）：
+  //   recalcAll 喂因子前先 validateDay + sanitizeForFactors——被判脏的字段（原始值保留
+  //   在档）不再进入 computeSentiment，因子走 missing/代理通道。本函数此前直接读
+  //   s.* 原始值，于是在「industry[].change_pct 被判脏」的天上，v5.2 基线重算与档案
+  //   存值分叉（实测 2026-03-03：s_brd 主值 10 vs 生产代理 10.6，总差 0.2 分）。
+  //   该缺陷在样本只有 33 个 full 档天时不可见——指数收益回填把比对样本扩到全档后
+  //   被守卫抓出。基线复现（version_regression 的 v5.2 列、formula_version.test 的
+  //   档案一致性断言）都必须是生产同款原料，否则"复现"是假的。
+  //   版本间对比不受影响：四版共用同一份 cleaned 入参（差异只在 s_net 提取与归一）。
+  const { cleaned, dropped } = sanitizeForFactors(day, validateDay(day));
+  const netBuy = dropped.includes('netBuy') ? null : exNetBuy;
   // 归一器：版本未声明就走历史基线（tanh5），保证 v4.5/v5.0/v5.2 行为逐位不变。
   // ctx.netNormalizer 可覆盖（单测/前端预览用），但**常规路径一律取版本声明**——
   // 否则同一版本在不同调用点会算出不同因子，版本对比失去意义。
@@ -197,16 +209,15 @@ export function recomputeDay(day, versionKey, ctx = {}) {
     netBuy,
     newStockNet,
     newStockRatio: evidence?.newRatio ?? null,
-    upCount: s.up_count ?? null,
-    downCount: s.down_count ?? null,
-    posRatio: (s.net_pos != null && s.net_neg != null && (s.net_pos + s.net_neg) > 0)
-      ? s.net_pos / (s.net_pos + s.net_neg) : null,
-    industryUp: s.ind_up ?? null,
-    industryTotal: s.ind_count ?? null,
-    limitUp: s.zt_count ?? null,
-    limitDown: s.dt_count ?? null,
-    brokenCount: s.zb_count ?? null,
-    amount: s.amount_yi ?? null,
+    upCount: cleaned.upCount ?? null,
+    downCount: cleaned.downCount ?? null,
+    posRatio: cleaned.posRatio ?? null,
+    industryUp: cleaned.industryUp ?? null,
+    industryTotal: cleaned.industryTotal ?? null,
+    limitUp: cleaned.limitUp ?? null,
+    limitDown: cleaned.limitDown ?? null,
+    brokenCount: cleaned.brokenCount ?? null,
+    amount: cleaned.amount ?? null,
     amountMA20: ctx.amountMA20 ?? null,
     // 分位映射需要的历史净买序列（不含当日）。不传 → 归一器自己判「算不出」并返回 null，
     // 由 computeSentiment 的 factor() 走 missing/代理路径（不会静默填 50 冒充"算过"）。

@@ -1179,7 +1179,7 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     const sraw = readFileSync(sigPath, 'utf8');
     const sg = JSON.parse(sraw);
     const skb = Buffer.byteLength(sraw) / 1024;
-    check('切片：signals-latest.json < 32KB（只放"看一眼"的量）', skb < 32, `${skb.toFixed(1)}KB`);
+    check('切片：signals-latest.json < 36KB（只放"看一眼"的量；32→36 重估见 split_archive.mjs 注释）', skb < 36, `${skb.toFixed(1)}KB`);
     check('切片：signals 的交易日 = 主档最新日',
       sg.latest && sg.latest.trade_date === (arch.all_days || [])[arch.all_days.length - 1]?.trade_date,
       String(sg.latest && sg.latest.trade_date));

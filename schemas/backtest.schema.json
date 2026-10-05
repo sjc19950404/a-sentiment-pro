@@ -18,7 +18,17 @@
         "formulaVersion": { "type": "string" },
         "generatedAt": { "type": "string" },
         "assets": { "type": "array" },
-        "caveat": { "type": "string" }
+        "caveat": { "type": "string" },
+        "indexCoverage": {
+          "$comment": "收益覆盖守卫（2026-10-05）：缺失 indexes 的交易日按 0 收益回退参与回测，会系统性扭曲胜率/夏普/归因。coveredDays/totalDays 显式披露，低于 BACKTEST_MIN_COVERAGE（默认 0.8）时后端直接拒产。回填历史见 scripts/backfill_indexes.mjs。",
+          "type": "object",
+          "required": ["coveredDays", "totalDays", "ratio"],
+          "properties": {
+            "coveredDays": { "type": "number", "minimum": 0 },
+            "totalDays": { "type": "number", "minimum": 1 },
+            "ratio": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        }
       }
     },
     "params": {

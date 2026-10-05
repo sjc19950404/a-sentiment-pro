@@ -239,7 +239,17 @@ export function validateDay(day, opts = {}) {
   });
   // (c) 行业涨跌幅与「同源指数」的**方向性**矛盾：仅在指数也大幅波动时才有意义。
   //     指数动 >2% 说明当日确有系统性行情；此时若出现**反向且离群**的行业值，
-  //     比"指数不动而行业动"更可疑（轮动不会逆着系统性大涨/大跌走极端）。
+  //     比"指数不动而行业动"更可疑。
+  //     ⚠ 严重度：WARN 而非 ERROR（2026-10-05 降级，实测第三例打脸）：
+  //       2026-03-03 深证 -3.07% / 创业板 -2.57% 的系统性下跌中，能源链条逆势大涨
+  //       （油气开采 +12.22 / 燃气 +9.47 / 港口航运 +4.81 / 石油加工 +4.58 / 煤炭
+  //       +3.04）。经同花顺行业指数（881xxx）日K 收盘口径独立复算，五个值全部
+  //       Δ=0.00 精确吻合——真实主题行情（系统性下跌中资金轮动进能源/防御链）。
+  //       本规则原前提「轮动不会逆着系统性大跌走极端」被实证证伪，与 (b) 的两例
+  //       （8-18 农林牧渔链、贵金属链）同构：链条式逆势大涨是真实行情形态。
+  //       判 ERROR 会剔除 industryUp（s_brd 退化为 upRatio 代理）＝把信号当噪声
+  //       （头号纪律）。降为 WARN：只标记、不剔除，交人工复核 + 跨源核验销案
+  //       （scripts/verify_industry_outliers.mjs 已纳入本规则的自动核验收集）。
   const idxChange = indexChangePct(day);
   if (idxChange != null && Math.abs(idxChange) > R.INDEX_SYSTEMIC_MOVE) {
     industries.forEach((it) => {
@@ -247,8 +257,17 @@ export function validateDay(day, opts = {}) {
       if (c == null) return;
       if (Math.abs(c) > R.INDUSTRY_DIVERGENCE_MAX && Math.sign(c) !== Math.sign(idxChange)
           && Math.abs(c - idxChange) > R.INDUSTRY_COUNTER_MAX) {
-        issues.push(issue('industry[].change_pct', 'COUNTER_INDEX', SEVERITY.ERROR,
-          `行业「${it.name || '?'}」${round2(c)}% 与大盘 ${round2(idxChange)}% 反向且幅度异常（指数系统性波动下逆势极端）`, c, `同向`));
+        const key = reviewKey(day.trade_date, it.name);
+        if (reviewed.has(key)) {
+          suppressed.push({
+            rule: 'COUNTER_INDEX', industry: it.name || null,
+            changePct: round2(c), indexChange: round2(idxChange),
+            reason: '已跨源核验为真实行情，销案（data/industry_outlier_review.json）',
+          });
+        } else {
+          issues.push(issue('industry[].change_pct', 'COUNTER_INDEX', SEVERITY.WARN,
+            `行业「${it.name || '?'}」${round2(c)}% 与大盘 ${round2(idxChange)}% 反向且幅度异常（系统性波动下逆势极端，需复核是否主题轮动）`, c, `同向`));
+        }
       }
     });
   }

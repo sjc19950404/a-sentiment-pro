@@ -11,12 +11,13 @@
 //
 // ⚠ 样本量纪律（本脚本最重要的设计约束）：
 //   三版差异**只在 s_net 一项**。要让差异显形，样本天必须有齐全的原始量。
-//   实测当前档案 241 天里，只有 33 天（2026-08-14 起）同时具备 ind_up / amount_yi / indexes，
-//   其中 s_pos 的真原料（up_count）只有 3 天。故本脚本：
-//     · 主统计样本 = 33 天（full 档），并**显式披露**其中多少天 s_pos 走了代理；
-//     · 33 天在统计上不足以得出"某版更好"的结论 —— 报告里把这一点写在最前面，
-//       不给任何"版本优劣排序"的结论性表述，只给数字与置信度提示。
-//   这不是保守，是诚实：拿 33 天（且 30 天 s_pos 是代理）去宣称公式优劣，就是自欺。
+//   历史现状：2026-10-05 指数收益回填（scripts/backfill_indexes.mjs）之前，241 天里
+//   只有 33 天（2026-08-14 起）同时具备 ind_up / amount_yi / indexes（次日收益原料）；
+//   回填后主样本恢复到全档（~240 天，仅末日无次日收益）。故本脚本：
+//     · 主统计样本 = full 档天数，并**显式披露**其中多少天 s_pos 走了代理；
+//     · 样本量警示按 nU 自适应（<60 天 → 自由度极低话术；≥60 → 实算置信区间宽度），
+//       任何情况下都不给"版本优劣排序"的结论性表述，只给数字与置信度提示。
+//   这不是保守，是诚实：拿样本内相关去宣称公式优劣，就是自欺。
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import config from '../src/config.js';
@@ -148,7 +149,12 @@ const breadthProxyDays = meta.filter((m) => sampleDays.some((d) => d.trade_date 
 // 置信度提示：n 与自由度
 const nU = retsU.length;
 const cautions = [];
-cautions.push(`主样本仅 ${nU} 个交易日（含次日收益），统计自由度极低，任何相关系数的 95% 置信区间都宽于 ±0.35——本报告只用于**发现异常**（如某版 s_net 全部饱和、某版分数与收益反向），不足以判定版本优劣。`);
+if (nU < 60) {
+  cautions.push(`主样本仅 ${nU} 个交易日（含次日收益），统计自由度极低，任何相关系数的 95% 置信区间都宽于 ±0.35——本报告只用于**发现异常**（如某版 s_net 全部饱和、某版分数与收益反向），不足以判定版本优劣。`);
+} else {
+  const ci = (1.96 / Math.sqrt(Math.max(1, nU - 3))).toFixed(2);
+  cautions.push(`主样本 ${nU} 个交易日（含次日收益），相关系数的 95% 置信区间约 ±${ci}——足以暴露量级差异与方向性异常，但版本间小幅差异仍不足以判定优劣，需样本外证据佐证。`);
+}
 if (breadthProxyDays > 0) {
   cautions.push(`本样本中有 ${breadthProxyDays}/${sampleDays.length} 天缺少涨跌家数真值（up_count/down_count），s_pos 因子走 posRatio 代理——版本间差异会被代理值稀释，真实差异应大于本表所示。`);
 }
@@ -224,7 +230,7 @@ for (const k of keys) {
     + `  方向 ${s.direction ? (s.direction.acc * 100).toFixed(1) + '%' : '  —  '}`
     + `  [${s.normalizer}]`);
 }
-console.log('  ⚠ 样本量小，只看异常，不排优劣。');
+console.log(`  ⚠ 样本 ${nU} 天，只看异常，不排优劣。`);
 console.log(`  饱和判定阈值：s_net ≥ ${SAT_THRESHOLD}`);
 for (const k of Object.keys(shifts)) {
   const s = shifts[k];
