@@ -11,6 +11,13 @@ import { recalcRanks } from '../sources.js';
 import { computeRelative } from '../relative.js';
 import { validateDay, sanitizeForFactors } from '../dirty.js';
 import { BACKFILL_FLAG } from '../backfill.js';
+// 行业离群「销案」台账（data/industry_outlier_review.json）**不进本引擎**：
+//   ⚠ 判脏/因子入参必须只依赖客观数据（见下方「判脏不得注入销案台账」注）。台账是
+//   告警复核记录，其写入方与去重消费方是 scripts/verify_industry_outliers.mjs；
+//   销案的落点是 day.review（scripts/review_alerts.mjs → signals dirty.recent[].reviewVerdict）。
+//   本模块的任何一处都不得再 import confirmedSet/validateLedger —— 一旦让台账参与
+//   档案判定，"存档可重现" 就依赖一份可变的人工台账，且销案会从可审计退化为静默消失。
+//   （自 origin/main 合入：原文在 src/pipeline.js，判脏体搬至本模块后注释随行。）
 
 // ── 供 recalcAll 使用的小工具（模块级，不在 forEach 里重复创建）────────────
 const r1s = (v) => (v == null || !Number.isFinite(+v) ? null : Math.round(v * 10) / 10);
@@ -133,6 +140,22 @@ export function recalcAll(days, opts = {}) {
       if (d.emotion) d.emotion.lhb_daily_net = c.daily_net_yi;
     }
     // 字段定稿后校验 + 把脏字段从因子入参里摘掉
+    //
+    // ⚠ 判脏**不得注入销案台账**（2026-10-04 合流修正；实测缺陷，勿回退）：
+    //   本处曾写作 `validateDay(d, { reviewedOutliers: REVIEWED_OUTLIERS })`，后果三重：
+    //     ① 违背口径承诺 —— src/outlier_review.js 与 README 同款表述：「销案只停重复
+    //        告警，**不动任何数值、不改 dirty/干净判定**」；
+    //     ② 命中销案的天 dirty 留痕被**整条抹掉**（status=ok → 下方 delete），
+    //        销案从"转为可审计的 suppressed 记录"退化为**静默消失**（信息丢失）；
+    //     ③ 档案不再是 recalcAll 的**不动点** —— 审计「全档逐日 status 存档与现算一致」
+    //        的现算走 `validateAll(days)`（不注台账），与注台账的存档口径打架；
+    //        幂等守卫 test/pipeline_scope.test.mjs 同样必红（实测：2026-01-21/23/26、
+    //        02-10、08-18 五天的 warn 留痕被抹，缩范围重算与全档重算结果不再相同）。
+    //   故定稿：**档案只存原始判定** —— 「存档可重现」不得依赖一份可变的人工台账。
+    //   销案的落点是 day.review（scripts/review_alerts.mjs，前端经 signals-latest
+    //   的 dirty.recent[].reviewVerdict 展示）；跨源核验台账 data/industry_outlier_review.json
+    //   仍是 scripts/verify_industry_outliers.mjs 的输入与去重依据。两条链路互不越界。
+    //   （自 origin/main 合入：判脏体自 src/pipeline.js 搬至本模块，注释随行。）
     const vres = validateDay(d);
     const { cleaned, dropped } = sanitizeForFactors(d, vres);
 
