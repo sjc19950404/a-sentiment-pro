@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import {
   parseReport, toPlainText, toMarkdown, toStandaloneHtml, reportFileName,
-  REPORT_TITLE, REPORT_ORG, STANDALONE_CSS, CALIBER_SUMMARY, MARKERS,
+  REPORT_TITLE, REPORT_ORG, STANDALONE_CSS, CALIBER_SUMMARY, CALIBER_SUMMARY_DOC, MARKERS,
   DOC_SPEC, h1Mark, h2Mark, h3Mark, h4Mark, sectionNo, sectionTitle, foldTitle,
   briefSerial, cnBracket, docDate,
 } from '../src/report.js';
@@ -143,6 +143,34 @@ test('report: 明日跟踪项解析为 todo（模板④，与普通 li 区分）
   const kinds = rep.sections[1].lines.map((l) => l.kind);
   assert.deepEqual(kinds, ['li', 'sub', 'todo', 'todo']);
   assert.ok(rep.sections[1].lines[2].text.includes('守住正轴'));
+});
+
+// ★ 回归：表格被 .bf-li 包住时也必须解析为表格（不许摊平成一行文字）
+//   真实 bug：报告 §4「板块相对强弱」原先把 <table> 放进 li() 里（.bf-li > .bf-table），
+//   而 extractLines 只认 .bf-body 的**直接子**表格 → 该表掉进 kind:'li' → 被 inline() 摊平，
+//   导出的 Markdown/HTML 里只剩「超额进攻（前 5）涨跌幅超额攻0↑+1.00%…」一坨无结构文本，
+//   表格在文档里整块消失（用户报的"表格有缺失"）。
+test('report: .bf-li 内嵌的表格仍解析为表格（★ 不许摊平成文字）', { skip: needDom }, () => {
+  const html = '<div class="bf-body">'
+    + '<div class="bf-li">板块相对强弱（基准 上证指数 +0.31%）</div>'
+    + '<div class="bf-li"><table class="bf-table rel-table" data-caption="板块相对强弱（基准 上证指数 +0.31%） · 超额进攻（前 5）">'
+    + '<thead><tr><th>超额进攻（前 5）</th><th>涨跌幅</th><th>超额</th></tr></thead>'
+    + '<tbody><tr><td>生物制品</td><td class="bf-up">+4.63%</td><td class="bf-up"><b>+4.32</b></td></tr>'
+    + '<tr><td>医疗服务</td><td class="bf-up">+3.11%</td><td class="bf-up"><b>+2.80</b></td></tr></tbody>'
+    + '</table></div></div>';
+  const d = new JSDOM(`<div id="b"><div class="bf-sec" id="s4"><div class="bf-h">'
+    + '<span class="bf-sec-no">四、</span><span class="bf-sec-t">广度与量能</span></div>${html}</div></div>`);
+  const rep = parseReport(d.window.document.querySelector('#b'));
+  const lines = rep.sections[0].lines;
+  const tbl = lines.find((l) => l.kind === 'table');
+  assert.ok(tbl, '内嵌 .bf-li 的表格未被识别为表格（会退化成一行摊平文字）');
+  assert.deepEqual(tbl.head, ['超额进攻（前 5）', '涨跌幅', '超额'], '表头解析错误');
+  assert.equal(tbl.rows.length, 2, '数据行数应为 2');
+  assert.equal(tbl.rows[0][0], '生物制品');
+  assert.ok(tbl.caption.includes('超额进攻'), 'data-caption 未解析');
+  // 反面：绝不允许这一行被摊平成 li 文本
+  const flat = lines.find((l) => l.kind === 'li' && /涨跌幅超额/.test(l.text));
+  assert.equal(flat, undefined, '表格被摊平成了 li 文本（正是要修的那条 bug）');
 });
 
 test('report: 段内小标题（.bf-h2）识别为 sub 而非 li', { skip: needDom }, () => {
@@ -311,7 +339,9 @@ test('模板③：每个章节口径收进 <details>，文末有独立折叠附�
   assert.equal(open, close, `<details> 未配对：开 ${open} 闭 ${close}`);
   // 三个章节各一个折叠件 + 1 个文末附录
   assert.ok(open >= 4, `折叠件数量不足：${open}`);
-  assert.ok(md.includes(`<summary>${CALIBER_SUMMARY}</summary>`), '章节折叠件标题必须与约定一致');
+  assert.ok(md.includes(`<summary>${CALIBER_SUMMARY_DOC}</summary>`), '章节折叠件标题必须与约定一致');
+  // ★ 导出文档不得出现"点击展开"字样：静态文档里"点击"是一句做不到的邀请
+  assert.ok(!md.includes('点击展开'), '导出 Markdown 不应出现「点击展开」字样（读者无从点击）');
   assert.ok(md.includes('口径附录'), '缺文末独立口径附录');
   // 默认收起 = 每处口径都必须落在 <details>…</details> 之间，而不是裸露在正文里
   for (const cal of REP_DATA.sections.map((s) => s.caliber).filter(Boolean)) {
@@ -366,12 +396,16 @@ test('模板·降级：纯文本渲染不了折叠，口径一律平铺并带 [�
 test('模板·HTML：<details> 折叠件无需脚本即可用（导出文档仍然无 JS）', () => {
   const html = toStandaloneHtml(REP_DATA, {});
   assert.ok(html.includes('<details class="caliber"'), 'HTML 缺折叠件');
-  assert.ok(html.includes(`<summary>${CALIBER_SUMMARY}</summary>`), '折叠件标题必须与约定一致');
+  assert.ok(html.includes(`<summary>${CALIBER_SUMMARY_DOC}</summary>`), '折叠件标题必须与约定一致');
+  assert.ok(!html.includes('点击展开'), '导出 HTML 不应出现「点击展开」字样（读者无从点击）');
   assert.ok(html.includes('details.caliber'), '样式表缺折叠件样式');
   assert.equal(/<script/i.test(html), false, '折叠件是原生 HTML，不该为此引入脚本');
   // 打印时折叠件必须强制展开（收起着打出来会缺口径）
-  assert.ok(/details\.caliber\s*>\s*p[^}]*display:\s*block\s*!important/.test(STANDALONE_CSS),
-    '打印样式未强制展开口径件');
+  // ★ 断言必须用**全量兜底**选择器 `> *:not(summary)`，不能只认 p/ul：
+  //   旧版只写了 `> p` 与 `> ul`，口径正文一旦含表格/多段就漏掉 —— 这正是
+  //   "打印时看不到全部内容"的根因（且它还能通过旧断言，属于守卫自己锁住了 bug）。
+  assert.ok(/details\.caliber\s*>\s*\*:not\(summary\)[^}]*display:\s*block\s*!important/.test(STANDALONE_CSS),
+    '打印样式未用全量选择器强制展开口径件（只写 p/ul 会漏掉表格等）');
 });
 
 test('模板·HTML：表格与复选框清单渲染为语义标签', () => {
@@ -567,13 +601,16 @@ test('公文·页码：4 号半角阿拉伯数字，单页右放、双页左放�
 
 test('公文·折叠口径模块：默认收起 <details>，标题与约定一致', () => {
   const html = toStandaloneHtml(REP_DATA, {});
-  assert.ok(html.includes(`<summary>${CALIBER_SUMMARY}</summary>`), '折叠件标题必须与约定一致');
+  assert.ok(html.includes(`<summary>${CALIBER_SUMMARY_DOC}</summary>`), '折叠件标题必须与约定一致');
+  assert.ok(!html.includes('点击展开'), '导出 HTML 不应出现「点击展开」字样（读者无从点击）');
   // 章节口径必须默认收起（没有 open 属性）；只有文末附录是展开的
   assert.ok(/<details class="caliber"><summary>/.test(html), '章节折叠件不应默认展开');
   assert.ok(/<details class="caliber appendix" open>/.test(html), '文末附录应默认展开');
-  // 打印时必须强制展开，否则打出来缺口径
-  assert.ok(/details\.caliber\s*>\s*p, details\.caliber\s*>\s*ul\s*\{\s*display:\s*block\s*!important/.test(STANDALONE_CSS),
-    '打印样式未强制展开口径件');
+  // 打印时必须强制展开，否则打出来缺口径。
+  // ★ 断言全量兜底选择器（而非只认 p/ul）：旧断言写死了 `> p, > ul`，
+  //   于是"只展开这两种"这个 bug 恰好能通过守卫——守卫自己锁住了 bug。
+  assert.ok(/details\.caliber\s*>\s*\*:not\(summary\)[^}]*display:\s*block\s*!important/.test(STANDALONE_CSS),
+    '打印样式未用全量选择器强制展开口径件（只写 p/ul 会漏掉表格等）');
 });
 
 test('公文·三条标记：关键数值加粗 / 风险前置 ⚠ / 跟踪清单复选框', () => {

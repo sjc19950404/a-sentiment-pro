@@ -23,6 +23,13 @@
 //   只在双源齐备的日子可用（当前行业明细 33 天）。两层是串联关系：#2 的输出可直接
 //   喂进本层的 `extraDirty` 参数，共用同一套标脏语义与同一份报告结构。
 
+// ── 销案台账主键（唯一实现在 src/outlier_review.js，零依赖工具层）──────────
+//   OUTLIER_INDUSTRY 是 WARN（只标不剔除）：真实行情的离群会重复报，久了会被忽略。
+//   data/industry_outlier_review.json 记录「已跨源核验为真实」的 (日期, 行业)，
+//   扫描时命中即不再重复报，转为 suppressedReviews（诚实披露：不是没发现，是已销案）。
+//   ⚠ 销案只影响是否重复报警，不动任何数值、不改 dirty/干净判定。
+import { reviewKey } from './outlier_review.js';
+
 // ── 阈值唯一出处 ──────────────────────────────────────────────────────────
 
 export const VALIDATION_RULES = {
@@ -140,8 +147,14 @@ function issue(field, rule, severity, reason, value, expected = null, code = nul
 // （这是既有的、已测试的"缺失显式化"通道），而不是被脏值污染。
 export function validateDay(day, opts = {}) {
   const issues = [];
+  // 销案集合：Set<'date|industry'>（由 src/outlier_review.js 的 confirmedSet 生成）。
+  // 未注入 = 空集 = 全部照常报警（缺省不销案——销案必须显式）。
+  const reviewed = opts.reviewedOutliers instanceof Set
+    ? opts.reviewedOutliers
+    : new Set(Array.isArray(opts.reviewedOutliers) ? opts.reviewedOutliers : []);
+  const suppressed = [];
   if (!day || typeof day !== 'object') {
-    return { date: null, status: 'dirty', dirtyFields: [], warnFields: [], issues: [issue('day', 'STRUCTURE', SEVERITY.ERROR, '不是对象', null)], checked: { days: 0, rules: 0 } };
+    return { date: null, status: 'dirty', dirtyFields: [], warnFields: [], issues: [issue('day', 'STRUCTURE', SEVERITY.ERROR, '不是对象', null)], suppressedReviews: [], checked: { days: 0, rules: 0 } };
   }
   const s = day.summary || {};
   const em = day.emotion || {};
@@ -205,9 +218,22 @@ export function validateDay(day, opts = {}) {
         //   本规则退为 WARN：**只标记、不剔除、不污染情绪分**，交人工复核。
         //   真正的源抽风检测交给 #2 跨源互证（同一行业在两个独立源的值直接比对），
         //   那才是"同一事实的两个独立测量"，形态清晰。
-        issues.push(issue('industry[].change_pct', 'OUTLIER_INDUSTRY', SEVERITY.WARN,
-          `行业「${it.name || '?'}」${round2(c)}% 与最近的其他行业相距 ${round2(nearest)} 个百分点（数值孤立，需人工复核是否主题集中）`,
-          c, `与其他行业相距 ≤${gapThreshold}`));
+        //
+        //   销案（v2）：若该 (日期, 行业) 已在 data/industry_outlier_review.json 中
+        //   经**跨源复算**确认为真实行情 → 不再重复报 warn，转为 suppressedReviews。
+        //   缺省（未注入台账）一律照报——销案必须显式，不存在"默认闭嘴"。
+        const key = reviewKey(day.trade_date, it.name);
+        if (reviewed.has(key)) {
+          suppressed.push({
+            rule: 'OUTLIER_INDUSTRY', industry: it.name || null,
+            changePct: round2(c), nearest: round2(nearest),
+            reason: '已跨源核验为真实行情，销案（data/industry_outlier_review.json）',
+          });
+        } else {
+          issues.push(issue('industry[].change_pct', 'OUTLIER_INDUSTRY', SEVERITY.WARN,
+            `行业「${it.name || '?'}」${round2(c)}% 与最近的其他行业相距 ${round2(nearest)} 个百分点（数值孤立，需人工复核是否主题集中）`,
+            c, `与其他行业相距 ≤${gapThreshold}`));
+        }
       }
     }
   });
@@ -384,6 +410,8 @@ export function validateDay(day, opts = {}) {
     dirtyFields: errFields,
     warnFields,
     issues,
+    // 已销案的复核项（真实行情、台账已核验）：不是"没发现"，是"已核验不再重复报"
+    suppressedReviews: suppressed.map((s) => ({ date: day.trade_date || null, ...s })),
     checked: { days: 1, rules: Object.keys(VALIDATION_RULES).length },
   };
 }
@@ -447,10 +475,11 @@ export function validateAll(days, opts = {}) {
   const fieldCounts = new Map();
   let ok = 0, warn = 0, dirty = 0;
   const extraMap = opts.extraDirtyByDate || null;
+  const reviewed = opts.reviewedOutliers || null; // 销案台账（Set 或数组），逐日透传
 
   list.forEach((d) => {
     const extra = extraMap && d.trade_date ? extraMap[d.trade_date] : (opts.extraDirty || []);
-    const r = validateDay(d, { extraDirty: extra });
+    const r = validateDay(d, { extraDirty: extra, reviewedOutliers: reviewed });
     perDay.push(r);
     if (r.status === 'ok') ok++;
     else if (r.status === 'warn') warn++;
@@ -471,8 +500,10 @@ export function validateAll(days, opts = {}) {
     dirtyDates,
     byField,
     perDay,
+    // 已销案的复核项总数（跨日汇总；明细在 perDay[].suppressedReviews）
+    suppressed: perDay.reduce((a, r) => a + ((r.suppressedReviews && r.suppressedReviews.length) || 0), 0),
     // 汇总口径声明（报告引用，不得下游重写）
-    scope: '单源内部校验：范围/单位/重复/逻辑一致性（不含跨源互证）',
+    scope: '单源内部校验：范围/单位/重复/逻辑一致性（不含跨源互证）；suppressed = 已跨源核验销案的重复告警',
   };
 }
 

@@ -1,8 +1,8 @@
 {
-  "_about": "a-sentiment-pro 全局配置（唯一事实源）。Node 侧经 src/config.js 薄壳加载（校验 + params.live 冻结 + 兼容层同引用）；前端经 paper_ui.js 动态 import 挂 window.ASENT_CONFIG（app.js 兜底优先读之）。改配置只改本文件（参数走 scripts/promote_params.mjs），勿在别处手抄数值。",
+  "_about": "a-sentiment-pro 全局配置（唯一事实源）。Node 侧经 src/config.js 薄壳加载（校验 + params.live 递归冻结 + 组装兼容层同引用）；前端经 index.html 内联 module 脚本 import config.json 挂 window.ASENT_CONFIG（app.js 读 params.live；旧浏览器兜底走 TH_DEFAULT——模拟交易台面 paper_ui.js 已于 2026-10-03 下线）。改配置只改本文件（参数走 scripts/promote_params.mjs），勿在别处手抄数值。",
   "schemaVersion": 2,
   "formulaVersion": "v5.2-pro",
-  "_paramsNote": "参数双套：live=生产口径（promote 机器管理，手改违规）；train=实验区。顶层 weights/lookback/backtest.thresholds/costs/rolling/momentum* 是 live 的双写镜像（前端直接读扁平层，守卫锁定与 params.live 逐位相等）。",
+  "_paramsNote": "参数双套与双写镜像（JSON 无注释，集中在此）：① live=生产口径、train=实验区，两块五段（weights/thresholds/stops/lookback/costModel）键集合必须一致（守卫锁定），只许改值不许改结构；改动唯一通道 = scripts/promote_params.mjs --apply（样本外 20% 门禁 + params_changelog.json 留痕 who/when/why/验证结果），手改 live 不留痕 → test/params_governance.test.mjs 红。② 顶层 weights/lookback/backtest.thresholds/costs/rolling/maxPos/stopLoss/ddTrigger/maxPosChg/momentumRecent/momentumPrev 是 live 的**双写镜像**（前端桥与 check_frontend 平铺 JSON 直接读扁平层），必须与 params.live 逐位相等，漂移即「报告说 A、算的是 B」。③ 四档阈值（收盘打分、T+1 生效）：≥80 过热只减仓不新建 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓；hi=44 是保留参数——src/backtest.js positions() 未用它判档（24~65 同属半仓），仅历史口径展示，若需独立减仓档须同时改 positions() 并更新回归夹具。④ costModel 实盘摩擦预埋：佣金万3双边 / 印花万5卖出 / 滑点万2；priceLimit 为涨跌停约束占位（enabled:false），启用须先回填限价口径，避免届时返工。⑤ lookback.rankWindow/rankMin 与 src/sources.js 的 RANK_WINDOW/RANK_MIN 同源（防前视分位窗口 #134）；rolling 与 walk-forward 同源。",
   "params": {
     "live": {
       "weights": {

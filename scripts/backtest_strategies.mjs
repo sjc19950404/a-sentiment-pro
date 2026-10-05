@@ -125,6 +125,7 @@ for (const holdN of HOLDINGS) {
       holdN, entry: 'T日 emotion<10 → T+1 开盘买沪深300', exit: `持有 ${holdN} 日收盘卖；期间 emotion>90 → 次日开盘卖`,
       triggered: entryCount(entryA), trades: trades.length,
       ...metrics(nav, tr.map((x) => x.ret)),
+      nav: nav.map(r4), // 逐日净值曲线（与顶层 navDates 同锚；r4 精度足够画图）
       tradeList: trades.map((t, j) => ({ signalDay: t.signalDay, entry: HS300[t.entryK].date, exit: HS300[t.exitK].date, ret: tr[j] ? r4(tr[j].ret) : null })),
     });
   }
@@ -141,6 +142,7 @@ for (const holdN of HOLDINGS) {
       triggered: entryCount(entryB), trades: trades.length,
       droppedMembersTotal: tradeReturns(trades, klineOf).reduce((a, x) => a + (x.dropped || 0), 0),
       ...metrics(nav, tr.map((x) => x.ret)),
+      nav: nav.map(r4),
       tradeList: trades.map((t, j) => ({ signalDay: t.signalDay, theme: themeOfDay(t.signalDay), entry: HS300[t.entryK].date, exit: HS300[t.exitK].date, members: t.members ? t.members.length : null, ret: tr[j] ? r4(tr[j].ret) : null })),
     });
   }
@@ -154,6 +156,7 @@ for (const holdN of HOLDINGS) {
       holdN, entry: 'T日 max_lb≥4 且 lb2_count≥8 → T+1 开盘买沪深300', exit: `持有 ${holdN} 日收盘卖；期间 max_lb≤2 → 次日开盘卖`,
       triggered: entryCount(entryC), trades: trades.length,
       ...metrics(nav, tr.map((x) => x.ret)),
+      nav: nav.map(r4),
       tradeList: trades.map((t, j) => ({ signalDay: t.signalDay, entry: HS300[t.entryK].date, exit: HS300[t.exitK].date, ret: tr[j] ? r4(tr[j].ret) : null })),
     });
   }
@@ -178,7 +181,9 @@ const report = {
     },
     disclaimer: `历史回测 ≠ 未来收益。样本 ${realDays.length} 个交易日${allDays.length - realDays.length > 0 ? '（回填天已排除）' : '（含六因子回填天，池字段为 K 线重建口径——较 EM 采集口径 s_zbl 平均偏低 ~4.5 分）'}，结果仅用于管线自检与口径演示，不构成投资建议，不当选股依据。`,
   },
-  benchmark: { id: 'HS300_buyhold', label: '沪深300 买入持有（同区间）', ...metrics(benchNav, benchRets) },
+  benchmark: { id: 'HS300_buyhold', label: '沪深300 买入持有（同区间）', ...metrics(benchNav, benchRets), nav: benchNav.map(r4) },
+  // 净值曲线共用日期锚（strategies[].nav 与 benchmark.nav 的 x 轴，同一 K 线区间）
+  navDates: HS300.slice(k0, k1 + 1).map((k) => k.date),
   strategies,
 };
 writeFileSync(OUT, JSON.stringify(report, null, 2) + '\n', 'utf8');

@@ -718,13 +718,34 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     check(`模板契约：${label} 在屏幕层落地`, re.test(appRaw2), re.test(appRaw2) ? '' : 'app.js 缺该结构');
   }
 
-  // 折叠件标题只能有一份约定（app.js 常量 + report.js 常量；两处值必须相等，防漂移）
+  // 折叠件标题：屏幕与导出**各有约定**，两者都必须存在、且都必须含"口径"二字。
+  //
+  // ★ 这里曾经断言"两处取值必须相等"，现已**刻意改为断言两者不同**（真实需求）：
+  //   屏幕说得「点击展开查看口径」——那是一个真能点的交互提示；
+  //   导出/打印稿说得「口径说明（附）」——静态文档里"点击"是一句做不到的邀请。
+  //   若哪天有人图省事把两者重新合并成一个串，要么屏幕失去可点击的提示、要么
+  //   纸面上出现点不动的"点击展开"，两种都是回归。故这条守卫反向锁死"必须不同"。
   {
     const appTitle = appRaw2.match(/const CAL_SUMMARY = '([^']+)'/);
-    const rptTitle = reportSrc.match(/CALIBER_SUMMARY = '([^']+)'/);
-    check('模板契约：折叠件标题在屏幕层与导出层取值一致（防止两处文案漂移）',
-      !!appTitle && !!rptTitle && appTitle[1] === rptTitle[1],
-      appTitle && rptTitle ? `app「${appTitle[1]}」/ report「${rptTitle[1]}」` : '未找到常量');
+    const rptScrTitle = reportSrc.match(/export const CALIBER_SUMMARY = '([^']+)'/);
+    const rptDocTitle = reportSrc.match(/export const CALIBER_SUMMARY_DOC = '([^']+)'/);
+    check('模板契约：屏幕/导出各自持有折叠件标题常量，且都含「口径」语义',
+      !!appTitle && !!rptScrTitle && !!rptDocTitle
+      && /口径/.test(appTitle[1]) && /口径/.test(rptScrTitle[1]) && /口径/.test(rptDocTitle[1]),
+      appTitle && rptScrTitle && rptDocTitle
+        ? `app「${appTitle[1]}」/ report屏幕「${rptScrTitle[1]}」/ report导出「${rptDocTitle[1]}」`
+        : '未找到常量');
+    check('模板契约：导出文案不含「点击」（静态文档里点不动，是一句做不到的邀请）',
+      !/点击/.test(rptDocTitle[1]),
+      rptDocTitle ? `导出折叠件标题「${rptDocTitle[1]}」` : '未找到常量');
+    check('模板契约：屏幕与导出的折叠件标题**必须不同**（防被重新合并成一份文案）',
+      !!rptScrTitle && !!rptDocTitle && rptScrTitle[1] !== rptDocTitle[1],
+      '两者取值相同了——要么屏幕失去可点提示，要么纸面出现点不动的「点击展开」');
+    // 导出实现里不得再引用屏幕串（否则会把"点击展开"漏进文档）
+    const exportBody = reportSrc.slice(reportSrc.indexOf('export function toMarkdown'));
+    check('模板契约：导出实现不引用屏幕用折叠件标题（防「点击展开」漏进文档）',
+      !/CALIBER_SUMMARY(?!_DOC)/.test(exportBody),
+      '');
   }
 }
 
@@ -933,6 +954,42 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     const krCount = days.filter((d) => d.summary && d.summary.pools_caliber === 'kline-rebuild').length;
     check('回填：档案里确有回填天或K线重建天（否则回填类守卫整体空转）',
       bfCount + krCount > 0, `backfill=${bfCount} kline-rebuild=${krCount}`);
+
+    // ★ 2026-10-04 合流改判（原「档案里确有回填天（否则这条守卫是空转）」必然恒红）：
+    //   main 线 scripts/backfill_factors.mjs 已把 208 个 lhb 回填天用**可复核原料**
+    //   升级为七因子真分（K 线重建池 + 同花顺 881 年线行业/成交额；--validate 对真实日
+    //   零误差），src/pipeline.js::recalcAll 按原料可得性重新裁定后 emotion._backfill
+    //   归零 —— 这是**正确终态**，不是"标记丢失"（实测 main 原样跑本项即为 0）。
+    //   故断言从"存在回填天"改为真正的不变量，任何一半坏掉都必须红：
+    //     ① 标记 ↔ 形态一致：回填形态的天必须带标记（防重算静默抹标记 → 单因子假分
+    //        混进回测样本）；真分天不得残留标记（防升级成果被前端/回测永久过滤）；
+    //     ② 升级可核验：原生回填天（buildBackfillDay 的 summary.backfilled）必须存在，
+    //        且每一个都带升级来源留痕（summary.backfill_sources）——否则"归零"无法
+    //        与"标记被弄丢"区分，守卫就成了空转。
+    //   判据与 src/pipeline.js::isBackfillShaped 同源，但此处**独立重写**：守卫不得复用
+    //   被验代码的私有函数，否则规则写错时守卫会跟着一起错（老毛病，勿回退）。
+    //   （合并注：isBackfillShaped 原文在 src/pipeline.js，engine 拆分后其判脏体在
+    //   src/engine/recalc.js；本守卫仍独立重写、不复用任何一侧私有函数。）
+    const isBackfillShapedDay = (d) => {
+      const s = d && d.summary;
+      if (!s) return false;
+      const indCount = s.ind_count;
+      const hasIndustry = indCount != null && Number.isFinite(+indCount) && +indCount > 0;
+      const hasBreadth = s.up_count != null && s.down_count != null;
+      if (hasIndustry || hasBreadth) return false;
+      return s.lhb_daily_net != null || s.lhb_all_net != null;
+    };
+    const shapeCount = days.filter(isBackfillShapedDay).length;
+    const mislabeled = days.filter((d) => isBackfillShapedDay(d) !== !!(d.emotion && d.emotion._backfill));
+    check('回填：标记与形态一致（回填形态必须带标记；真分天不得残留标记）',
+      mislabeled.length === 0,
+      `形态 ${shapeCount} / 标记 ${bfCount}；不一致：${mislabeled.slice(0, 3).map((d) => d.trade_date).join(',')}`);
+    const nativeBackfill = days.filter((d) => d.summary && d.summary.backfilled === true);
+    const withProvenance = nativeBackfill.filter((d) => d.summary.backfill_sources).length;
+    check('回填：档案可核验（有原生回填天，且每条都带升级来源留痕）',
+      nativeBackfill.length > 0 && withProvenance === nativeBackfill.length,
+      `原生 ${nativeBackfill.length} / 带来源 ${withProvenance}`);
+
     if (sn) {
       check('回填：回测样本数 = 档案天数 − 回填天数（三者必须对得上账）',
         sn.archiveDays === days.length && sn.excludedBackfillDays === bfCount
@@ -2123,8 +2180,12 @@ async function checkDirty() {
     SEVERITY.ERROR === 'error' && SEVERITY.WARN === 'warn', '');
 
   // ⑧ 管线接线：标脏必须在 computeSentiment **之前**、caliberFromDay **之后**
+  // ⚠ 用正则而非精确串匹配：validateDay 现在可带第二参数（opts.reviewedOutliers 销案台账），
+  //   写死 'validateDay(d)' 会把"加了可选参数"误判为"没接线"（守卫锁实现细节的老毛病）。
+  //   本检查的语义要求是：管线**确实调用** validateDay(d, …) 且结果赋给 vres。
+  const mValidate = PIPE_SRC.match(/const vres = validateDay\(\s*d\b/);
   const idxCaliber = PIPE_SRC.indexOf('const c = caliberFromDay(d)');
-  const idxValidate = PIPE_SRC.indexOf('const vres = validateDay(d)');
+  const idxValidate = mValidate ? mValidate.index : -1;
   const idxSent = PIPE_SRC.indexOf('const sent = computeSentiment({');
   check('脏数据：pipeline 已接线 validateDay + sanitizeForFactors',
     idxValidate > 0 && PIPE_SRC.includes('sanitizeForFactors(d, vres)'), '');

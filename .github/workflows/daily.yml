@@ -129,6 +129,14 @@ jobs:
       # 放在提交之前——口径一旦漂移，宁可本次运行失败，也不要把错数据推上线。
       - name: 龙虎榜口径守卫（双口径不混用 + 存档可重现）
         run: node scripts/audit_lhb_caliber.mjs
+      # 行业离群告警跨源自动核验：扫全档 OUTLIER_INDUSTRY（warn），逐条去同花顺行业指数
+      # 拉该日历史日K 独立复算 → 一致即自动销案（写入 data/industry_outlier_review.json，
+      # 此后不再重复报）；不一致标 data-error（**不销案**）并 exit 1。
+      # 只影响是否重复告警，不动任何数值。失败不阻断数据管线（continue-on-error），
+      # 但日志 ✗ 与台账 diff 都会留痕——异常排查见 data-error 条目。
+      - name: 行业离群告警跨源自动核验（真实销案 / 异常报警）
+        run: node scripts/verify_industry_outliers.mjs
+        continue-on-error: true
       - name: 单元测试（含 Python↔JS 一致性夹具比对 + 合并版 UI schema 守卫）
         run: node --test
       # ── 合并版（merge/pro-into-ui · 2026-10-02）：K线增量 + UI 构建 + Pages 部署 ──
@@ -146,7 +154,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/ops-alerts-latest.json data/board_rank.json ui/kline
+          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/ops-alerts-latest.json data/industry_outlier_review.json data/board_rank.json ui/kline
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else

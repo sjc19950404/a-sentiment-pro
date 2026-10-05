@@ -33,15 +33,14 @@
     </div>
   </header>
 
-  <!-- 分区导航（sticky）：12 张卡片分 4 区，避免长页面里找不到内容 -->
+  <!-- 分区导航（sticky）：分区跳转，避免长页面里找不到内容 -->
   <nav class="zonenav" id="zoneNav" aria-label="页面分区导航">
     <a class="zn on" href="#zone-overview" data-zone="zone-overview">概览</a>
     <a class="zn" href="#zone-detail" data-zone="zone-detail">个股与题材</a>
     <a class="zn" href="#zone-backtest" data-zone="zone-backtest">策略回测 V5.2</a>
     <a class="zn" href="#zone-brief" data-zone="zone-brief">研判报告</a>
     <a class="zn" href="#zone-global" data-zone="zone-global">外围预案</a>
-    <a class="zn" href="#zone-paper" data-zone="zone-paper">模拟交易</a>
-    <span class="zn-note" id="navNote">表格行 / 题材标签 / 图上数据点 / 权重行 均可点击查看详情 · 快捷键 1-6 跳分区、/ 聚焦搜索</span>
+    <span class="zn-note" id="navNote">表格行 / 题材标签 / 图上数据点 / 权重行 均可点击查看详情 · 快捷键 1-5 跳分区、/ 聚焦搜索</span>
   </nav>
 
   <div id="alerts"></div>
@@ -318,188 +317,10 @@
       </div>
     </section>
 
-    <!-- ── 区六：模拟交易（除资金为虚拟外，价格/规则/日历全部真实） ── -->
-    <section class="zone" id="zone-paper">
-      <div class="zone-head">
-        <h3>模拟交易 · 纸上交易台</h3>
-        <span class="zone-sub" id="paperSub">仅初始资金为虚拟 · 行情来源：腾讯实时行情（全市场 A 股）· 交易规则对齐 A 股现行制度</span>
-      </div>
-      <div class="grid">
-        <section class="card paper-acct">
-          <h2>账户总览 <span class="bf-auto">点指标看计算口径</span></h2>
-          <div id="paperStats" class="ps-grid"></div>
-          <div class="ps-bar">
-            <label class="ps-init">初始资金
-              <input id="paperInitCash" type="number" inputmode="numeric" min="1000" step="10000"
-                value="1000000" aria-label="模拟交易初始资金（元）" />
-              元
-            </label>
-            <button id="paperApplyInit" class="mini" type="button">按此金额新建账户</button>
-            <button id="paperReset" class="mini" type="button">重置账户</button>
-            <button id="paperExport" class="mini" type="button">导出账本</button>
-            <button id="paperImport" class="mini" type="button">导入账本</button>
-            <button id="paperCloseAll" class="mini" type="button">一键空仓</button>
-            <button id="paperSettle" class="mini" type="button">按实时价结算挂单</button>
-            <span id="paperMsg" class="muted"></span>
-          </div>
-          <div id="paperNote" class="bf-foot"></div>
-        </section>
-
-        <section class="card paper-alerts">
-          <h2>交易预警 <span class="bf-auto">大盘 + 持仓双层 · 点条目看触发依据</span></h2>
-          <div id="alertsAttr" class="alerts-attr"></div>
-          <div id="alertsMeta" class="alerts-meta"></div>
-          <div id="alertsList" class="alerts-list"></div>
-          <div id="alertsNote" class="bf-foot"></div>
-        </section>
-
-        <section class="card paper-picks">
-          <h2>研判推荐 <span class="bf-auto">大概率连板置顶打标签 · 其余按上涨概率排序 · 大概率亏的已剔除 · 点个股看详情</span></h2>
-          <div id="picksMeta" class="picks-meta"></div>
-          <div id="picksList" class="picks-list"></div>
-          <div id="picksRejected" class="picks-rejected"></div>
-          <div id="picksNote" class="bf-foot"></div>
-        </section>
-
-        <section class="card paper-order">
-          <h2>下单 <span class="bf-auto">T+1 撮合：次日按真实收盘价成交</span></h2>
-          <div class="po-form">
-            <label>代码<input id="poCode" type="text" inputmode="numeric" maxlength="6" placeholder="6 位代码，如 600519" /></label>
-            <div id="poQuote" class="po-quote muted">输入 6 位代码查询实时行情 —— 沪深北交所全市场 A 股，取到价即可下单</div>
-            <div class="po-row">
-              <div class="seg" id="poSide" role="tablist" aria-label="买卖方向">
-                <button class="on" data-side="buy" role="tab" aria-selected="true">买入</button>
-                <button data-side="sell" role="tab" aria-selected="false">卖出</button>
-              </div>
-              <label>数量<input id="poQty" type="number" step="100" min="0" placeholder="100 的整数倍" /></label>
-            </div>
-            <div id="poGate" class="po-gate" hidden></div>
-            <div class="po-quick" id="poQuick"></div>
-            <div id="poPreview" class="po-preview"></div>
-            <button id="poSubmit" class="mini primary" type="button">提交委托</button>
-          </div>
-          <div id="poHint" class="po-hint muted"></div>
-        </section>
-
-        <section class="card paper-batch">
-          <h2>批量下单 <span class="bf-auto">一次多只 · 每只独立走龙虎过滤与账户风控 · 只提交不自动成交</span></h2>
-          <div class="bt-form">
-            <div class="bt-head">
-              <div class="seg bt-sideseg" id="btSide" role="tablist" aria-label="批量方向">
-                <button class="on" data-side="buy" role="tab" aria-selected="true">批量买入</button>
-                <button data-side="sell" role="tab" aria-selected="false">批量卖出</button>
-              </div>
-              <div class="seg bt-modeseg" id="btMode" role="tablist" aria-label="数量口径">
-                <button class="on" data-mode="pct" role="tab" aria-selected="true">按仓位比例</button>
-                <button data-mode="qty" role="tab" aria-selected="false">按股数</button>
-              </div>
-            </div>
-            <textarea id="btInput" class="bt-input" rows="5" spellcheck="false"
-              placeholder="每行一只，格式：代码,值&#10;例（按比例）：600519,10&#10;例（按股数）：600519,200&#10;值可省略：600519（买入默认 5% 仓位，卖出默认全部可卖）&#10;同批次内重复代码会自动去重"></textarea>
-            <div class="bt-row">
-              <label>买入按比例时单只默认仓位<input id="btDefaultPct" type="number" step="1" min="0" max="100" value="5" /> %</label>
-              <label class="bt-chk"><input id="btApplyLhb" type="checkbox" checked /> 执行龙虎榜前置过滤</label>
-              <label class="bt-chk"><input id="btCheckRisk" type="checkbox" checked /> 执行账户全局风控</label>
-            </div>
-            <div class="bt-actions">
-              <button id="btFillPicks" class="mini" type="button">从研判推荐填入</button>
-              <button id="btFillPos" class="mini" type="button">从持仓填入</button>
-              <button id="btClear" class="mini" type="button">清空输入</button>
-              <button id="btSubmit" class="mini primary" type="button">批量提交委托</button>
-            </div>
-          </div>
-          <div id="btSummary" class="bt-summary"></div>
-          <div class="table-wrap tall">
-            <table id="btTable">
-              <thead><tr><th>代码</th><th>名称</th><th>方向</th><th class="num">股数</th><th>结果</th><th>说明</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-          <div id="btHint" class="po-hint muted"></div>
-        </section>
-
-        <section class="card paper-pos">
-          <h2>持仓 <span class="bf-auto">点行看成本构成与 T+1 可卖明细</span></h2>
-          <div class="table-wrap">
-            <table id="paperPosTable">
-              <thead><tr><th>代码</th><th>名称</th><th class="num">持仓</th><th class="num">可卖</th><th class="num">成本</th><th class="num">现价</th><th class="num">浮动盈亏</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-          <div class="cardlist" id="paperPosCards" aria-label="持仓卡片列表"></div>
-          <div id="paperPosNote" class="bf-foot"></div>
-        </section>
-
-        <section class="card paper-pend">
-          <h2>待成交委托 <span class="bf-auto">次日开盘前有效；点行看预估与冻结</span></h2>
-          <div class="table-wrap">
-            <table id="paperPendTable">
-              <thead><tr><th>提交日</th><th>代码</th><th>名称</th><th>方向</th><th class="num">数量</th><th class="num">预估价</th><th class="num">冻结</th><th>操作</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-          <div class="cardlist" id="paperPendCards" aria-label="待成交委托卡片列表"></div>
-          <div id="paperPendNote" class="bf-foot"></div>
-        </section>
-
-        <section class="card paper-hist">
-          <h2>成交与委托记录 <span class="bf-auto">含被拒单原因 · 点行看费用明细</span></h2>
-          <div class="tbar">
-            <div class="seg" id="paperTabs" role="tablist" aria-label="记录视图">
-              <button class="on" data-view="trade" role="tab" aria-selected="true">成交</button>
-              <button data-view="order" role="tab" aria-selected="false">全部委托（含被拒）</button>
-            </div>
-            <span id="paperHistCount" class="muted"></span>
-          </div>
-          <div class="table-wrap tall">
-            <table id="paperHistTable">
-              <thead><tr id="paperHistHead"></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-          <div class="cardlist" id="paperHistCards" aria-label="成交与委托卡片列表"></div>
-        </section>
-
-        <section class="card paper-log">
-          <h2>事件日志 <span class="bf-auto">每笔委托与每次拦截自动留痕 · 可按阶段过滤 · 可追加进研判报告</span></h2>
-          <div class="tbar">
-            <div class="seg" id="logTabs" role="tablist" aria-label="日志阶段过滤">
-              <button class="on" data-stage="" role="tab" aria-selected="true">全部</button>
-              <button data-stage="lhb" role="tab" aria-selected="false">龙虎过滤</button>
-              <button data-stage="risk" role="tab" aria-selected="false">风控</button>
-              <button data-stage="order" role="tab" aria-selected="false">委托</button>
-              <button data-stage="settle" role="tab" aria-selected="false">结算</button>
-              <button data-stage="stop" role="tab" aria-selected="false">止损</button>
-            </div>
-            <span id="logCount" class="muted"></span>
-          </div>
-          <div class="bt-actions">
-            <button id="logExport" class="mini" type="button">导出日志（Markdown）</button>
-            <button id="logCopy" class="mini" type="button">复制到剪贴板</button>
-            <button id="logClear" class="mini" type="button">清空日志</button>
-          </div>
-          <div class="table-wrap tall">
-            <table id="logTable">
-              <thead><tr><th>时间</th><th>交易日</th><th>代码</th><th>名称</th><th>方向</th><th class="num">股数</th><th>阶段</th><th>结果</th><th>说明</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-          <div class="cardlist" id="logCards" aria-label="事件日志卡片列表"></div>
-          <div id="logNote" class="bf-foot"></div>
-        </section>
-
-        <section class="card paper-perf">
-          <h2>账户净值 <span class="bf-auto">与策略回测同口径指标</span></h2>
-          <div id="paperPerf" class="ps-grid"></div>
-          <svg id="paperNavSvg" viewBox="0 0 300 90" preserveAspectRatio="none" role="img" aria-label="账户净值曲线"></svg>
-          <div id="paperPerfNote" class="bf-foot"></div>
-        </section>
-      </div>
-    </section>
   </main>
 
   <footer class="foot muted">
-    七因子情绪模型 v5.2-pro · 题材去噪 + 缺失代理 + 多源容灾 · 研判报告与回测引擎同源（阈值/仓位档位）· 策略回测 V5.2（成本/平滑/风控/帕累托）· 外围市场观测（A股休市期间照常更新）· 模拟交易（仅资金虚拟，价格/规则/日历均真实）· 数据仅供参考，非投资建议
+    七因子情绪模型 v5.2-pro · 题材去噪 + 缺失代理 + 多源容灾 · 研判报告与回测引擎同源（阈值/仓位档位）· 策略回测 V5.2（成本/平滑/风控/帕累托）· 外围市场观测（A股休市期间照常更新）· 数据仅供参考，非投资建议
   </footer>
 
   <button id="toTop" class="totop" type="button" title="回到顶部" aria-label="回到顶部">↑</button>
@@ -542,16 +363,17 @@
     window.Seats = Seats;
     window.dispatchEvent(new Event('seats-ready'));
   </script>
-  <!-- 模拟交易复盘引擎同理：报告（app.js）要读「账户 + 台账」算「为什么赚/为什么亏」，
-       但那是 ESM、app.js 不能 import，故挂到 window。数据本身来自 paper_ui.js 发布的
-       window.__paperSnapshot（账户、台账、实时价、情绪分）。挂载完成前报告的第⑦段
-       会如实降级为「尚未开始模拟交易」，不会拼出半截结论。 -->
+  <!-- config.json 桥（唯一事实源的前端入口）。
+       原先由 paper_ui.js 兼任；模拟交易台面下线后 paper_ui.js 不再被页面加载，
+       改由这段独立模块脚本承担：动态 import + 静默降级——拿到就挂 window.ASENT_CONFIG，
+       拿不到就走各处兜底默认值（app.js 的 TH_DEFAULT 等）。app.js 是经典脚本无法 import，
+       运行时从 window 取——module 总在经典脚本之后、DOMContentLoaded 前执行完毕，
+       而 app.js 的阈值消费点（getThresholds 等）都在用户交互/数据加载时才调用，时序安全。 -->
   <script type="module">
-    import * as PaperReview from './src/paper_review.js';
-    window.PaperReview = PaperReview;
-    window.dispatchEvent(new Event('paper-review-ready'));
+    import('./config.json', { with: { type: 'json' } })
+      .then((m) => { window.ASENT_CONFIG = m.default; })
+      .catch(() => { /* 旧浏览器/异常路径：静默降级，走兜底默认值 */ });
   </script>
-  <script type="module" src="./paper_ui.js"></script>
   <!-- 数据导出引擎（src/dataset.js）：同样是 ESM 纯函数、浏览器与 Node 共用。
        app.js 是经典脚本不能 import，故挂到 window。
        ⚠ 导出件与屏幕同源这件事，就靠"两边都调同一个 buildDataset"来保证——

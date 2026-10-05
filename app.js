@@ -673,12 +673,11 @@ function setHotView(v) {
 let BT = null;      // data/backtest.json 缓存，loadBacktest 成功后赋值
 let lastArc = null; // 最近一次 archive.json：BT 就绪后用它重刷报告，让阈值/主线切到引擎口径
 
-// 模板③规定的口径折叠件标题。放模块级（而非 buildBrief 内部）是因为第⑦段
-// 「模拟交易复盘」由 buildPaperReviewSection() 单独生成，两处必须用同一个标题——
+// 模板③规定的口径折叠件标题。放模块级是因为多个章节的 cal() 共用同一标题——
 // 复制一份字符串迟早会漂移，导出层 src/report.js 的 CALIBER_SUMMARY 也是同一份约定。
 const CAL_SUMMARY = '🔍 点击展开查看口径';
 const TH_DEFAULT = { panic: 24, hi: 44, lo: 65, overheat: 80 };
-// config.json 唯一事实源桥：paper_ui.js（module）动态 import config.json 后挂
+// config.json 唯一事实源桥：index.html 的 config 桥模块脚本动态 import config.json 后挂
 // window.ASENT_CONFIG；本文件是经典脚本拿不到 import，运行时从这里读。
 // 兜底链：data/backtest.json 的 params → window.ASENT_CONFIG → TH_DEFAULT 手抄副本。
 // TH_DEFAULT 仍保留（旧浏览器 import attributes 不可用时最后一道防线），
@@ -686,7 +685,9 @@ const TH_DEFAULT = { panic: 24, hi: 44, lo: 65, overheat: 80 };
 function getThresholds() {
   const t = BT && BT.params && BT.params.thresholds;
   if (t && Number.isFinite(+t.overheat)) return t;
-  const c = window.ASENT_CONFIG && window.ASENT_CONFIG.backtest && window.ASENT_CONFIG.backtest.thresholds;
+  // schemaVersion 2 起 config.json 顶层不再保留参数键，阈值唯一住所 = params.live.thresholds
+  const c = window.ASENT_CONFIG && window.ASENT_CONFIG.params && window.ASENT_CONFIG.params.live
+    && window.ASENT_CONFIG.params.live.thresholds;
   return (c && Number.isFinite(+c.overheat)) ? c : TH_DEFAULT;
 }
 // 仓位档位：严格对齐 src/backtest.js positions() 的**实际行为**（注意 hi 在引擎里是保留但
@@ -1032,6 +1033,7 @@ function buildBrief(days, arc) {
   // 必须显示「未计算」，绝不能渲染成 0：0 是"与基准完全同步"的确定结论，
   // 缺失是"不知道"，二者含义相反，混同就是编造数据。
   const REL = s.industry_relative;
+  // ★ 返回的是「一行说明 + 两张并列的表」，不是一张表——原因见下方 col/tbl 注释。
   const relTbl = (() => {
     if (!REL) return li(`<span class="muted">板块相对强弱：未计算——该日无行业明细（历史回填天仅有情绪分，不含行业涨跌幅）。</span>`);
     const b = (REL.primary === 'median' ? REL.vsMedian : REL.vsIndex) || REL.vsMedian || REL.vsIndex;
@@ -1041,24 +1043,34 @@ function buildBrief(days, arc) {
     // 不新造类名——新类名在导出/打印样式里不会有定义，会退化成无色。
     const cls = (v) => (v >= 0 ? 'bf-up' : 'bf-dn');
     const scls = (v) => (v > 0 ? 'bf-up' : v < 0 ? 'bf-dn' : 'muted');
-    // 攻/防两栏并排：读者最需要的两个动作是"跟谁"和"避谁"，放在同一屏。
-    const col = (rows) => rows.map((r) => `<tr>`
+    const rowsOf = (rows, label) => rows.map((r) => `<tr>`
       + `<td>${esc(r.name)}</td>`
       + `<td class="num ${scls(r.change_pct)}">${f2(r.change_pct)}%</td>`
       + `<td class="num ${cls(r.excess)}"><b>${f2(r.excess)}</b></td>`
       + `</tr>`).join('');
-    const tbl = `<table class="bf-table rel-table" data-caption="板块相对强弱（基准 ${esc(b.baseLabel)} ${f2(b.basePct)}%）">`
-      + `<thead><tr><th>超额进攻（前 ${REL.topN}）</th><th>涨跌幅</th><th>超额</th></tr></thead>`
-      + `<tbody>${col(b.attack)}</tbody>`
-      + `<thead><tr><th>超额防御（后 ${REL.topN}）</th><th>涨跌幅</th><th>超额</th></tr></thead>`
-      + `<tbody>${col(b.defense)}</tbody></table>`;
+    // ★ 为什么是**两张表**而不是一张带双表头的表（这是一个真实 bug 的修复）：
+    //   原先写成「一个 <table> 里放两组 <thead>+<tbody>」。这有两处坏：
+    //   ① 一张表只允许一个 <thead>，第二个表头在真实浏览器里会被移位/丢弃 → 屏幕上看就"缺一块"；
+    //   ② 导出层按「所有 thead th 拼成一个表头 + 所有 tbody tr 作为数据行」解析，
+    //      于是得到"6 列表头 vs 3 单元格数据行"，而且解析器还会把它摊平成一行连续文字
+    //      （因为表格被包在 .bf-li 里，见 report.js::extractLines 的说明）。
+    //   拆成两张各自合法的表后，表头与数据行数一一对应，屏幕、导出、打印三处都正常。
+    const tbl = (caption, headLabel, rows) =>
+      `<table class="bf-table rel-table" data-caption="${esc(caption)}">`
+      + `<thead><tr><th>${esc(headLabel)}</th><th>涨跌幅</th><th>超额</th></tr></thead>`
+      + `<tbody>${rowsOf(rows)}</tbody></table>`;
+    const baseCap = `板块相对强弱（基准 ${b.baseLabel} ${f2(b.basePct)}%）`;
     const degraded = REL.degraded
       ? `<span class="muted">（⚠ ${esc(REL.degradedReason)}，主榜已降级）</span>` : '';
     const head = li(`板块相对强弱（基准 <b>${esc(b.baseLabel)}</b> ${f2(b.basePct)}%）：`
       + `<b>超额进攻</b> ${esc(b.attack[0] ? b.attack[0].name : '—')} ${b.attack[0] ? f2(b.attack[0].excess) : ''}；`
       + `<b>超额防御</b> ${esc(b.defense[0] ? b.defense[0].name : '—')} ${b.defense[0] ? f2(b.defense[0].excess) : ''}`
       + `。行业红盘中位 ${f2(REL.medianPct)}%（${REL.upCount}/${REL.total} 个行业飘红）${degraded}`);
-    return head + tbl;
+    // 两张表**裸传**（不经 li() 包裹）：导出层只把 .bf-body 的**直接子** .bf-table 认作表格，
+    // 套一层 .bf-li 会让它退化成一条被摊平的纯文本（同 连板天梯 的做法，见 sec3 的 ladderTbl）。
+    return head
+      + tbl(`${baseCap} · 超额进攻（前 ${REL.topN}）`, `超额进攻（前 ${REL.topN}）`, b.attack)
+      + tbl(`${baseCap} · 超额防御（后 ${REL.topN}）`, `超额防御（后 ${REL.topN}）`, b.defense);
   })();
 
   const sec4 = [
@@ -1180,14 +1192,6 @@ function buildBrief(days, arc) {
     + li(ico(tierKind, tier ? `仓位档位 ${tier.label}（七因子情绪分 ${num(mainScoreV)}）` : '仓位档位待定'))
     + cal(`仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额 20%／涨跌家数 10%／板块涨比 20%／涨停强度 10%／涨跌停对比 15%／封板质量 10%／量能 15%，与页面情绪分、回测引擎同源），阈值 过热 ${num(thr.overheat, 0)}／满仓 ${num(thr.lo, 0)}／半仓 ${num(thr.panic, 0)}~${num(thr.lo, 0)}／清仓 ${num(thr.panic, 0)}，收盘打分、T+1 生效，并叠加止损 -8%、回撤 ≥15% 动态降仓、单日仓位变动 ≤20%、佣金万 3 + 印花税万 5 + 滑点万 2 的实盘约束。因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定（该五模块口径<b>不含资金面</b>，切勿据此误判资金面在整体打分中的地位）；<b>资金面（龙虎榜净额）是 V5.2 主分数 s_net 的组成部分，权重 20%</b>，与 §② 的资金面观测同为一股数据、同一口径，二者不冲突。明日跟踪项由九条触发规则动态生成（触发才输出，非固定列表）。`);
 
-  // 7. 模拟交易复盘（为什么赚 / 为什么亏 + 止损与优化建议）
-  //
-  // 数据来自 paper_ui.js 发布的 window.__paperSnapshot（账户 + 台账 + 实时价 + 情绪分），
-  // 归因由 src/paper_review.js 计算——本处只负责把结构化结论拼成报告段落，
-  // **不重算任何指标**（口径漂移是这一层最容易犯的错）。
-  // 三种降级都要如实说清：引擎未就绪 / 快照未就绪 / 尚未开始交易。
-  const sec7 = buildPaperReviewSection();
-
   // 口径正文（**文字一字未改**，只是从"包在 .bf-foot 里的独立段落"改为"折叠附录的正文"）：
   //   · 屏幕：收进文末 <details class="bf-appendix" open> 折叠附录（模板③：文末独立折叠附录汇总全部口径）
   //   · 导出：同样渲染为 <details>（纯文本形态平铺 + [口径] 前缀）
@@ -1239,8 +1243,16 @@ function buildBrief(days, arc) {
   // ── 模板③：文末独立折叠附录（汇总全部口径）──
   // 与各章节折叠件是**同一份口径文本**：章节处给"这一段怎么算"，附录给"全报告统一口径"。
   // 附录默认展开（它是给要核对口径的人用的，藏起来等于没有），章节折叠件默认收起。
+  //
+  // ★ modelNote 直接落成平铺段落，**不再套一层折叠件**（这是一个真实 bug 的修复）：
+  //   旧写法是 cal(modelNote).replace(/<details class="bf-caliber">/, '<div class="bf-flat">')…
+  //   ——它只换掉了外层 <details> 标签，却把里面的 <summary>🔍 点击展开查看口径</summary>
+  //   留了下来。于是文末附录里凭空多出一句"点击展开查看口径"，而它后面根本没有可折叠的东西
+  //   （外层已 open、且标签已被换成 div）。导出成文档后，这句"点击"就成了一句做不到的邀请。
+  //   现在直接按附录正文的形态输出，结构与文案都对得上。
   const appendix = `<details class="bf-caliber bf-appendix" open><summary>📚 口径附录（全报告统一口径汇总）</summary><div class="bf-cal-body">`
-    + footBody + cal(modelNote).replace(/<details class="bf-caliber">/, '<div class="bf-flat">').replace(/<\/details>$/, '</div>')
+    + footBody
+    + `<div class="bf-flat">${modelNote}</div>`
     + `</div></details>`;
 
   // ── 公文体例：报头（简报名称 + 编号，编号居右）+ 主标题（2 号小标宋，居中） ──
@@ -1263,209 +1275,11 @@ function buildBrief(days, arc) {
     ['广度与量能（核心因子·20%）', sec4, 'bfsec4'],
     ['题材结构（核心因子·20%）', sec5, 'bfsec5'],
     ['综合研判（含 V5.2 仓位档位）', sec6, 'bfsec6'],
-    ['模拟交易复盘（为什么赚/为什么亏 · 止损与优化建议）', sec7, 'bfsec7'],
   ];
   const CN = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
   return head + stamp + absBlock + healthBlock
     + S.map(([t, b, id], i) => seg({ no: `${CN[i]}、`, text: t }, b, id)).join('')
     + appendix;
-}
-
-/**
- * 生成报告第⑦段「模拟交易复盘」的正文 HTML。
- *
- * 分工：本函数**只做渲染**（结构化结论 → HTML 行），归因与建议全部来自
- * src/paper_review.js 的 buildPaperReview()。这样报告里的每个数字都能在两个地方复现：
- * 页面上的复盘、导出的文档、以及 Node 单测，三者同源。
- *
- * 降级链（任一环缺失都必须如实说明，绝不拼半截结论）：
- *   1) 复盘引擎未挂载（离线打开、模块加载失败）→ 说明引擎未就绪
- *   2) 账户快照未发布（paper_ui.js 尚未 boot 完成）→ 说明账户未就绪
- *   3) 快照有但没有交易 → 由引擎的 headline 如实说「尚未开始模拟交易」
- */
-function buildPaperReviewSection() {
-  const eng = PR();
-  const snap = PSNAP();
-  const li2 = (t) => `<div class="bf-li">${t}</div>`;
-
-  // 三条降级路径都必须带上口径折叠件：模板③要求「每个章节配置 <details> 折叠组件」，
-  // 第⑦段若因引擎/账户未就绪就少一个折叠件，七段版式就破了。降级的是**结论**，不是版式。
-  if (!eng || typeof eng.buildPaperReview !== 'function') {
-    return li2('<span class="muted">复盘引擎未就绪（页面可能被离线打开或模块加载失败）。刷新后可自动生成。</span>')
-      + paperCaliber(null);
-  }
-  if (!snap || !snap.account) {
-    return li2('<span class="muted">模拟交易账户未就绪——先在「模拟交易台」完成一次建仓，本段会在账户产生后自动生成复盘。</span>')
-      + paperCaliber(eng);
-  }
-
-  let r;
-  try {
-    r = eng.buildPaperReview({
-      account: snap.account,
-      log: snap.log,
-      priceMap: snap.priceMap,
-      emotionScore: snap.emotionScore == null ? null : snap.emotionScore,
-      asOf: snap.asOf,
-    });
-  } catch (e) {
-    // 引擎异常绝不能把整份报告打挂（第⑦段只是附加内容）；如实说明并保留其余六段。
-    return li2(`<span class="bf-warn">复盘生成失败：${String(e && e.message || e)}（其余段落不受影响）</span>`)
-      + paperCaliber(eng);
-  }
-
-  const out = [];
-  const N = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—' : (+v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
-  const Y = (v) => (v == null || !Number.isFinite(+v)) ? '—' : (v >= 0 ? '+' : '−') + Math.round(Math.abs(+v)).toLocaleString('en-US');
-  const P = (v, d = 1) => (v == null || !Number.isFinite(+v)) ? '—' : `${(+v * 100).toFixed(d)}%`;
-  const SP = (v, d = 1) => (v == null || !Number.isFinite(+v)) ? '—' : `${+v > 0 ? '+' : ''}${(+v * 100).toFixed(d)}%`;
-  const tone = (v) => v > 0 ? 'bf-up' : v < 0 ? 'bf-dn' : 'muted';
-
-  // ── 结论行（引擎 headline，唯一出处） ──
-  out.push(li2(`<b>结论</b>：${r.headline}`));
-
-  if (!r.started) {
-    out.push(li2('<span class="muted">账户尚无成交记录，暂无收益归因可分析。建仓并产生成交后，本段会自动给出「为什么赚/为什么亏」的拆解与止损、优化建议。</span>'));
-    out.push(paperCaliber(eng));
-    return out.join('');
-  }
-
-  // ── ① 收益来源拆解 ──
-  const a = r.account;
-  const dirTxt = a.direction === 'gain' ? '盈利' : a.direction === 'loss' ? '亏损' : '持平';
-  out.push(`<div class="bf-h2">收益归因（为什么${a.direction === 'loss' ? '亏' : '赚'}）</div>`);
-  out.push(li2(`账户总盈亏 <b class="${tone(a.netPnl)}">${Y(a.netPnl)}</b> 元`
-    + `（收益率 <b class="${tone(a.retPct)}">${SP(a.retPct)}</b>，初始本金 ${N(a.initCash, 0)} 元）→ 整体${dirTxt}。`));
-  out.push(li2(`拆成三块：`)
-    + a.items.map((it) => li2(`&nbsp;&nbsp;· <b>${it.label}</b> <span class="${tone(it.value)}">${Y(it.value)}</span> 元`
-      + `<span class="muted">（${it.note}）</span>`)).join(''));
-  if (a.dominant && Math.abs(a.dominant.value) > 1) {
-    out.push(li2(`主导项是 <b>${a.dominant.label}</b>（${Y(a.dominant.value)} 元）——${a.dominant.value < 0
-      ? '这一项是主要亏损来源，改善它对本金的边际效果最大。'
-      : '这一项是主要盈利来源，注意它是否可持续（浮动部分会随价格回吐）。'}`));
-  }
-  if (a.feeDrag != null && a.feeDrag >= 0.005) {
-    out.push(li2(`<span class="bf-warn">交易费用累计 ${N(a.totalFee, 0)} 元，占初始本金 ${P(a.feeDrag, 2)}</span>`
-      + `——这是确定性的负收益，与行情无关。`));
-  }
-  if (Math.abs(a.residual) >= 1) {
-    // 残差大小决定措辞：正常情况下只有「持仓买入费被重复计入费用」的量级（几元~本金的千分之几）；
-    // 若残差显著偏大，说明账本本身不自洽（外部导入、手工编辑），应如实提示，而不是含糊说「小额差异」。
-    const big = a.initCash > 0 && Math.abs(a.residual) / a.initCash > 0.005;
-    out.push(li2(`<span class="muted">口径说明：三块之和与总盈亏存在 ${Y(a.residual)} 元差异`
-      + `（占本金 ${a.initCash > 0 ? P(Math.abs(a.residual) / a.initCash, 2) : '—'}）——`
-      + `已实现盈亏按加权平均成本法结转，而「全部费用」含尚未卖出持仓的买入费，二者有一次交集；`
-      + `差异不分配到任何一项，避免把不可归因的零头说成某个来源。`
-      + `${big ? '<span class="bf-warn">该差异偏大，账户记录可能存在外部导入或手工编辑导致的成本/现金不一致。</span>' : ''}</span>`));
-  }
-
-  // ── ② 逐笔复盘 ──
-  const t = r.trades;
-  out.push(`<div class="bf-h2">逐笔复盘（平仓盈亏）</div>`);
-  if (t.closedCount === 0) {
-    out.push(li2('<span class="muted">尚无平仓记录——逐笔胜率与盈亏比需要至少一笔卖出才能计算。</span>'));
-  } else {
-    out.push(li2(`已平仓 <b>${t.closedCount}</b> 笔：盈利 <b class="bf-up">${t.wins}</b> 笔 / 亏损 <b class="bf-dn">${t.losses}</b> 笔`
-      + `${t.flats ? ` / 持平 ${t.flats} 笔` : ''}，`
-      + `胜率 <b>${P(t.winRate, 0)}</b>`
-      + `${!t.samplesEnough ? `<span class="muted">（样本 ${t.judged} 笔，不足 ${eng.REVIEW_CFG ? eng.REVIEW_CFG.minTradesForWinRate : 3} 笔，胜率仅供参考）</span>` : ''}。`));
-    if (t.avgWin != null && t.avgLoss != null) {
-      out.push(li2(`平均盈利 <span class="bf-up">${Y(t.avgWin)}</span> 元 / 平均亏损 <span class="bf-dn">${Y(t.avgLoss)}</span> 元`
-        + `${t.plRatio != null ? `，盈亏比 <b>${N(t.plRatio, 2)}</b>` : ''}`
-        + `${t.profitFactor != null ? `，盈利因子 <b>${N(t.profitFactor, 2)}</b>` : ''}。`
-        + `${t.avgWin < Math.abs(t.avgLoss) ? '<span class="bf-warn">平均亏损大于平均盈利——典型的「截断利润、放任亏损」。</span>' : ''}`));
-    }
-    if (t.best && t.best.pnl > 0) {
-      out.push(li2(`最赚的一笔：<b>${t.best.name}</b>（${t.best.code}）${Y(t.best.pnl)} 元`
-        + `（成本 ${N(t.best.costPx, 3)} → 卖出 ${N(t.best.sellPx, 2)}，${SP(t.best.pct)}）`
-        + `${t.best.reason ? `<span class="muted">买入依据：${t.best.reason}</span>` : ''}`));
-    }
-    if (t.worst && t.worst.pnl < 0) {
-      out.push(li2(`最亏的一笔：<b>${t.worst.name}</b>（${t.worst.code}）${Y(t.worst.pnl)} 元`
-        + `（成本 ${N(t.worst.costPx, 3)} → 卖出 ${N(t.worst.sellPx, 2)}，${SP(t.worst.pct)}）`
-        + `${t.worst.reason ? `<span class="muted">买入依据：${t.worst.reason}</span>` : ''}`));
-    }
-    if (t.maxLossStreak >= 2) {
-      out.push(li2(`最长连亏 <b class="bf-dn">${t.maxLossStreak}</b> 笔。`));
-    }
-    if (t.orphanSell > 0) {
-      out.push(li2(`<span class="muted">有 ${t.orphanSell} 笔卖出找不到对应买入记录（导入账本或买入记录被裁剪），未纳入逐笔统计——不猜成本。</span>`));
-    }
-  }
-
-  // ── ③ 持仓诊断 ──
-  const p = r.positions;
-  out.push(`<div class="bf-h2">持仓诊断（浮动盈亏与集中度）</div>`);
-  if (!p.rows.length) {
-    out.push(li2('<span class="muted">当前无持仓（已清仓）——无浮动盈亏可诊断。</span>'));
-  } else {
-    out.push(li2(`持有 <b>${p.posCount}</b> 只，总市值 ${N(p.totalMv, 0)} 元，浮动盈亏合计 `
-      + `<b class="${tone(p.totalPnl)}">${Y(p.totalPnl)}</b> 元。`
-      + `${p.curPos != null ? `仓位占比 ${P(p.curPos)}` : ''}`
-      + `${p.targetPos != null ? `，档位建议 ${P(p.targetPos, 0)}` : ''}`
-      + `${p.tierVerdict === 'over' ? '，<span class="bf-warn">超配</span>' : p.tierVerdict === 'under' ? '，低配' : p.tierVerdict === 'fit' ? '，与档位贴合' : ''}。`));
-    // 贡献排序（最多列 5 只，避免报告过长）
-    const top = p.rows.slice(0, 5);
-    out.push(li2('逐票贡献（按浮动盈亏降序）：')
-      + top.map((x) => li2(`&nbsp;&nbsp;· <b>${x.name}</b>（${x.code}）${x.qty} 股，市值 ${N(x.mv, 0)} 元，`
-        + `浮动 <span class="${tone(x.pnl)}">${Y(x.pnl)}</span> 元（${SP(x.pnlPct)}）`
-        + `${x.conc != null ? `，占总资产 ${P(x.conc)}` : ''}`
-        + `${x.pxStale ? '<span class="bf-warn">取不到当日行情，按成本估</span>' : ''}`)).join(''));
-    if (p.rows.length > 5) out.push(li2(`&nbsp;&nbsp;<span class="muted">…另有 ${p.rows.length - 5} 只（见页面「持仓」明细）</span>`));
-    if (p.overConc.length) {
-      out.push(li2(`<span class="bf-warn">单票超配：${p.overConc.map((x) => `${x.name} ${P(x.conc)}`).join('、')}（上限 ${P(0.20, 0)}）</span>`));
-    }
-  }
-
-  // ── ④ 预警战绩（台账归因，来自 src/alert_log.js） ──
-  if (r.attribution && r.attribution.n > 0) {
-    const g = r.attribution;
-    out.push(`<div class="bf-h2">预警战绩（台账计分板）</div>`);
-    out.push(li2(`台账累计 <b>${g.n}</b> 条预警：已规避亏损 <span class="bf-up">${N(g.avoidedLoss, 0)}</span> 元 / `
-      + `错杀与错过 <span class="bf-dn">${N(g.missedGain, 0)}</span> 元，净贡献 `
-      + `<b class="${tone(g.net)}">${Y(g.net)}</b> 元。`
-      + `${g.hitRate != null ? `命中率 <b>${P(g.hitRate, 0)}</b>（${g.hit} 对 / ${g.miss} 错）` : '<span class="muted">命中率待积累</span>'}`
-      + `${g.pending + g.tracked > 0 ? `，另有 ${g.pending + g.tracked} 条待价格验证` : ''}。`));
-    const bt = g.byType.filter((x) => Math.abs(x.net) > 1 || x.count >= 2).slice(0, 4);
-    if (bt.length) {
-      out.push(li2('按规则拆解：' + bt.map((x) => `${x.type} ${x.count} 条（净 ${Y(x.net)} 元）`).join('；') + '。'));
-    }
-  }
-
-  // ── ⑤ 止损与优化建议 ──
-  out.push(`<div class="bf-h2">止损与优化建议</div>`);
-  if (!r.advice.length) {
-    out.push(li2('当前无需要处理的纪律问题：未击穿止损线、无单票超配、仓位与档位一致。'));
-  } else {
-    const lvTxt = { risk: '<span class="bf-warn">[风险]</span>', opp: '<span class="bf-up">[机会]</span>', tip: '<span class="muted">[提示]</span>' };
-    for (const ad of r.advice) {
-      out.push(li2(`${lvTxt[ad.level] || ''} <b>${ad.title}</b>——${ad.text}`));
-      out.push(li2(`&nbsp;&nbsp;<span class="muted">依据：${ad.why}</span>`));
-    }
-  }
-
-  // ── ⑥ 口径与免责 ──
-  // 模板③要求「每个章节配置折叠口径」——第⑦段的口径原本以普通 li2 裸露在正文里，
-  // 现改为与其他六段同构的 <details class="bf-caliber">（口径原文一字未改，只是收进折叠件）。
-  out.push(paperCaliber(eng));
-
-  return out.join('');
-}
-
-/**
- * 第⑦段的口径折叠件正文（模板③）。
- * 抽成函数是为了让「尚未开始交易」的提前返回路径也能挂上折叠件——
- * 否则第⑦段会变成七段里唯一没有口径件的，模板契约就破了。
- * 口径文字与「已开始交易」路径完全一致，只有 eng 的仓位配置可能为 null（用兜底值）。
- */
-function paperCaliber(eng) {
-  const cfg = (eng && eng.POS_CFG) || null;
-  return `<details class="bf-caliber"><summary>${CAL_SUMMARY}</summary><div class="bf-cal-body">`
-    + `复盘口径：收益拆解 = 浮动盈亏 + 已实现盈亏 − 交易费用（费用含尚未卖出持仓的买入费，故三块之和与总盈亏可能有小额差异，已单列）；`
-    + `逐笔盈亏按 <b>FIFO 先进先出</b> 配对（卖出净额 − 结转的含费成本），与账本的加权平均成本法在全部清仓时结果一致、部分减仓时逐笔口径更可解释；`
-    + `止损线 ${cfg ? (cfg.stopLoss * 100).toFixed(0) : -8}%、单票上限 ${cfg ? (cfg.concMax * 100).toFixed(0) : 20}% 与预警引擎（src/alerts.js）、回测引擎同源；`
-    + `档位阈值与研判报告同源（≥80 过热 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓）。模拟资金仅为虚拟，交易规则与费用口径对齐 A 股现行制度。本段为规则引擎自动生成的复盘，非投资建议。`
-    + `</div></details>`;
 }
 
 // ── 研判报告「出厂质检」闸门 ────────────────────────────────────────────────
@@ -2804,11 +2618,10 @@ function loadJson(url) {
  * 失败时 resolve(null) 而非 reject —— 首屏已由索引渲染完毕，
  * 明细拿不到不该把整页打成错误态（降级显示"需刷新"比白屏有用）。
  *
- * ⚠ 去重必须**跨模块**：`paper_ui.js`（同一文档，但以 type=module 加载、
- *   晚于本文件求值）也会拉这份文件。两边各去重一次的结果就是网络上两次 204KB 请求
- *   ——真浏览器实测确认过（首屏 1056KB，其中一份 204KB 是纯重复）。
- *   故本文件（在 index.html 里是**先求值的普通 script**）负责建立共享入口
- *   `window.__loadRecentArchive`，paper_ui.js 复用；两边共用一个 promise。
+ * ⚠ 去重按调用点收敛：历史上 paper_ui.js（type=module，晚于本文件求值）也会拉这份
+ *   文件，两边各去重一次就是网络上两次 204KB 请求——真浏览器实测确认过。故本文件负责
+ *   建立共享入口 `window.__loadRecentArchive` 供各处复用；模拟交易台面下线后该入口
+ *   仍保留（成本为零，对未来的多调用点依旧正确）。
  */
 function loadRecentArchiveShared() {
   if (!window.__recentPromise) {
@@ -2824,8 +2637,7 @@ function loadRecentArchiveShared() {
 }
 window.__loadRecentArchive = loadRecentArchiveShared;
 
-// 标的池分档完成时，paper_ui.js 需要**只**重刷这块披露（不能调 renderAll ——
-// 那会重跑全部 7 段渲染与 3 个网络加载，只为改一行文案）。
+// 只重刷披露块的钩子（历史上供 paper_ui.js 在标的池补全后调用；台面下线后保留，成本为零）。
 window.__renderScope = renderScope;
 
 function loadRecent() {
@@ -3171,25 +2983,19 @@ function backfillInfo(arc) {
 function renderScope(arc) {
   const scope = $('loadScope');
   if (!scope) return;
-  const staged = typeof window !== 'undefined' && window.__uniStaged;
-  const uniNote = staged
-    ? `<span class="scope-note" title="模拟器标的池首屏只加载代码+名称（137KB）；板段/涨跌停幅度由 src/paper.js 的代码规则直接判定（始终有效），最近收盘价/换手等明细在首屏之后补拉（1059KB）">`
-      + `· 标的池：精简档（明细后台补全中）</span>`
-    : '';
   const days = (arc && arc.all_days) || [];
   scope.innerHTML = (arc && arc._partial
     ? `<span class="scope-note" title="档案已按年切片，首屏只加载最近 ${days.length} 个交易日的明细；完整档共 ${arc._totalDays} 个交易日">`
       + `⚡ 分层加载：已载入最近 <b>${days.length}</b> / ${arc._totalDays} 个交易日`
       + `<button class="mini" type="button" data-act="loadfull">载入完整档</button></span>`
-    : `<span class="scope-note ok">✓ 完整档：${days.length} 个交易日</span>`) + uniNote;
+    : `<span class="scope-note ok">✓ 完整档：${days.length} 个交易日</span>`);
   scope.hidden = false;
 }
 
 function renderAll(arc) {
   lastArc = arc; // 供 loadBacktest 完成后按引擎口径重刷报告
   ARC = arc;     // 供个股明细表与详情抽屉使用
-  // 也挂到 window：paper_ui.js 在标的池补全完成后要单独重刷 #loadScope，
-  // 而它拿不到 app.js 的模块作用域变量。只放只读引用，不构成第二份口径。
+  // 也挂到 window（历史：曾供 paper_ui.js 重刷 #loadScope；台面下线后保留只读引用，成本为零）。
   if (typeof window !== 'undefined') window.__lastArc = arc;
   const days = displayDays(arc);
   const latest = days[days.length - 1] || {};
@@ -3982,7 +3788,7 @@ $('dwClose')?.addEventListener('click', closeDrawer);
 $('drawerMask')?.addEventListener('click', closeDrawer);
 
 // 键盘：Esc 关抽屉；Enter/Space 触发带 tabindex 的可点元素（表格行、卡片、chip、数据点）；
-// PC 端另有快捷键：1-6 跳分区、/ 聚焦个股搜索（在输入框内不抢键，不影响正常打字）
+// PC 端另有快捷键：1-5 跳分区、/ 聚焦个股搜索（在输入框内不抢键，不影响正常打字）
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { closeDrawer(); closeExportMenu(); return; }
   const t = e.target;
@@ -4054,13 +3860,6 @@ $('briefToggle')?.addEventListener('click', () => {
 
 /** 导出引擎由 index.html 的模块脚本挂到 window（app.js 是经典脚本，不能 import） */
 const RPT = () => window.ReportExport || null;
-// 模拟交易复盘引擎（ESM，由 index.html 挂到 window）。
-// 与 RPT 同纪律：报告端只负责「把快照喂进去、把结果拼成段落」，归因口径全部在 src/paper_review.js。
-// 兼容两种挂载名：生产用 window.PaperReview（index.html 模块脚本），
-// 前端断言脚本用 window.__paperreview__（它在同一 window 里平铺求值，不跑模块脚本）。
-const PR = () => window.PaperReview || window.__paperreview__ || null;
-// 当前账户快照（由 paper_ui.js 在每次账户变更后发布）。**只读**——报告端绝不改写它。
-const PSNAP = () => window.__paperSnapshot || null;
 
 /** 引擎尚未挂载时提示，而不是静默失败 */
 function needRpt() {
@@ -4120,7 +3919,7 @@ function briefIssueNo() {
   return i >= 0 ? i + 1 : undefined;
 }
 
-/** 下载一个文本文件（与 paper_ui.js 的账本导出同一套做法） */
+/** 下载一个文本文件（报告/数据导出共用的同一套做法） */
 function downloadText(text, filename, mime) {
   const blob = new Blob([text], { type: mime + ';charset=utf-8' });
   const a = document.createElement('a');
@@ -4462,22 +4261,4 @@ function onScroll() {
 window.addEventListener('scroll', onScroll, { passive: true });
 $('toTop')?.addEventListener('click', () => {
   if (typeof window.scrollTo === 'function') window.scrollTo({ top: 0, behavior: 'smooth' });
-});
-
-// 模拟交易账户变化 → 刷新报告第⑦段「模拟交易复盘」。
-// paper_ui.js 在每次账户变更后发布 window.__paperSnapshot 并派发 paper-snapshot。
-// 这里只重渲染 #briefBody（并重建目录 chip），不动其它区块——账户变化与行情无关。
-window.addEventListener('paper-snapshot', () => {
-  const dd = displayDays(ARC);
-  if (!dd.length) return;
-  renderBrief(dd, ARC);
-});
-
-// 复盘引擎是 ESM、由 index.html 的模块脚本挂到 window；而 app.js（经典脚本）先执行、
-// 首次 renderBrief 时它可能还没挂上（首次渲染会如实降级为「引擎未就绪」）。
-// 挂载完成时补刷一次，保证首屏就能看到第⑦段的真实内容。
-window.addEventListener('paper-review-ready', () => {
-  const dd = displayDays(ARC);
-  if (!dd.length) return;
-  renderBrief(dd, ARC);
 });

@@ -155,8 +155,10 @@ if (!whyArg || !whyArg.trim()) {
 }
 
 // 4a. 机器重写 config.json 的 params.live（train 五块 → live）+ 同步顶层双写镜像。
-//     镜像字段是前端直接读的扁平层（app.js ASENT_CONFIG / check_frontend 平铺 JSON），
-//     漏同步即「报告说 A、算的是 B」——故由本脚本一并机器写入，守卫测试逐位锁定。
+//     镜像字段是前端直接读的扁平层（index.html 内联桥挂 ASENT_CONFIG / check_frontend 平铺
+//     config.json），漏同步即「报告说 A、算的是 B」——故由本脚本一并机器写入，守卫测试逐位锁定。
+//     JSON.parse 级重写不做文本手术；结构性错误由 src/config.js 加载时兜底
+//     （权重和/阈值序/键集合不符会启动即 throw）。
 const cfgPath = path.join(ROOT, 'config.json');
 const json = JSON.parse(readFileSync(cfgPath, 'utf8'));
 if (!json.params || !json.params.live || !json.params.train) {
@@ -196,7 +198,7 @@ if (!who) {
 log.entries.push({
   at: new Date().toISOString(),
   who,
-  what: `晋升实验参数（${changed.join(' / ')}）：TRAIN_PARAMS → LIVE_PARAMS`,
+  what: `晋升实验参数（${changed.join(' / ')}）：params.train → params.live`,
   why: whyArg.trim(),
   validation: {
     type: 'oos-20pct', pass: true, oosDays: n - oosStart,

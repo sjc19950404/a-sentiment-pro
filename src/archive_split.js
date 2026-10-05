@@ -346,7 +346,7 @@ function pickKeys(obj, keys) {
 // 服务端生成时根本看不到。硬要在服务端算，就得把账户上传——那是另一个量级的隐私变更。
 // 故本文件只放 marketAlerts()：输入只有情绪分与总资产，服务端可算，且与前端同源
 // （同一个 marketAlerts 函数，不存在"服务端口径 vs 前端口径"两套）。
-// 持仓层告警仍由前端用本地账户算，见 paper_ui.js currentAlerts()。
+// 持仓层告警原由前端本地账户计算（模拟交易台面已下线，前端不再提供持仓层）。
 // ════════════════════════════════════════════════════════════════════════════
 
 export const SIGNALS_FILE = 'signals-latest.json';
@@ -607,7 +607,7 @@ export function buildSignals(archive, opts = {}) {
       : '未生成（调用方未注入 reportFn）',
     marketAlerts: market,
     marketAlertsNote: fn
-      ? `仅大盘层告警，按假设总资产 ${assumedTotal} 元、空仓计算；持仓层告警需本地账户，见 paper_ui.js`
+      ? `仅大盘层告警，按假设总资产 ${assumedTotal} 元、空仓计算；持仓层告警依赖本地模拟账户（模拟交易台面已下线），本轮不提供`
       : '未生成（调用方未注入 marketAlerts）',
   };
 }

@@ -12,6 +12,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createRequire } from 'node:module';
+import { EXPECTED_SECTIONS } from '../src/report_audit.js';
 // 口径唯一出处：新股判定与净买分离一律走 src/lhb.js，本脚本不自行实现（口径守卫会拦）
 import { newStockSplitOfDay, aggregateByCode } from '../src/lhb.js';
 import { decodeArchive } from '../src/lhb_codec.js';
@@ -108,6 +109,13 @@ window.fetch = async (url, opts) => {
     };
   }
   const rel = String(url).replace(/^\.\//, '').split('?')[0];
+  // ★ 外围数据改由**盘前相位夹具**供给：页面的「数据缺失三层守卫」必须在一个确定的
+  //   相位上跑（理由与夹具出处见下方「区五：外围市场」段落头注）。若这里回落到磁盘上的
+  //   data/global.json，则快照一旦被 daily 刷成"美股已收盘"相位，那 11 条断言必然全红。
+  if (rel === 'data/global.json') {
+    const t = readFileSync(join(ROOT, 'test/fixtures/global-preopen.json'), 'utf8');
+    return { ok: true, status: 200, json: async () => JSON.parse(t), text: async () => t };
+  }
   try {
     const txt = readFileSync(join(ROOT, rel), 'utf8');
     return { ok: true, status: 200, json: async () => JSON.parse(txt), text: async () => txt };
@@ -489,12 +497,12 @@ check('研判报告·主线题材归属标注需人工核对',
     abs ? `${abs.textContent.trim().slice(0, 60)}` : '缺 .bf-abstract');
 
   const cals = [...window.document.querySelectorAll('#briefBody .bf-sec .bf-caliber')];
-  check('研判报告·每个章节都有口径折叠件（模板③，7 段 7 件）',
-    cals.length === 7, `${cals.length} 件`);
+  check(`研判报告·每个章节都有口径折叠件（模板③，${EXPECTED_SECTIONS} 段 ${EXPECTED_SECTIONS} 件）`,
+    cals.length === EXPECTED_SECTIONS, `${cals.length} 件`);
   check('研判报告·口径折叠件标题统一为「🔍 点击展开查看口径」',
     cals.length > 0 && cals.every((d) => (d.querySelector('summary')?.textContent || '').includes('🔍 点击展开查看口径')),
     cals[0]?.querySelector('summary')?.textContent || '');
-  check('研判报告·口径默认收起（7 段无一件带 open）',
+  check(`研判报告·口径默认收起（${EXPECTED_SECTIONS} 段无一件带 open）`,
     cals.every((d) => !d.hasAttribute('open')), cals.filter((d) => d.hasAttribute('open')).length + ' 件默认展开');
 
   const appx = window.document.querySelector('#briefBody .bf-appendix');
@@ -504,7 +512,7 @@ check('研判报告·主线题材归属标注需人工核对',
     appx ? `${(appx.querySelector('.bf-cal-body').textContent || '').length} 字` : '缺 .bf-appendix');
   // 附录必须在全部章节之后（顺序错了就不是"文末"）
   check('研判报告·独立附录排在全部章节之后',
-    !!appx && !!(window.document.getElementById('bfsec7').compareDocumentPosition(appx) & 4), '');
+    !!appx && !!(window.document.getElementById('bfsec' + EXPECTED_SECTIONS)?.compareDocumentPosition(appx) & 4), '');
 
   const todos = [...window.document.querySelectorAll('#briefBody .bf-todo')];
   check('研判报告·明日跟踪项为复选框清单（模板④）',
@@ -549,21 +557,14 @@ const keyEl = (key) => window.document.dispatchEvent(new window.KeyboardEvent('k
 const drawerOpen = () => !!$('drawer') && $('drawer').classList.contains('open');
 const escClose = () => keyEl('Escape');
 
-check('布局：6 个分区 + 6 个锚点导航已就位',
-  ['zone-overview', 'zone-detail', 'zone-backtest', 'zone-brief', 'zone-global', 'zone-paper'].every((id) => !!$(id))
-  && window.document.querySelectorAll('#zoneNav .zn[data-zone]').length === 6, '');
+check('布局：5 个分区 + 5 个锚点导航已就位（模拟交易台面已下线）',
+  ['zone-overview', 'zone-detail', 'zone-backtest', 'zone-brief', 'zone-global'].every((id) => !!$(id))
+  && window.document.querySelectorAll('#zoneNav .zn[data-zone]').length === 5, '');
 check('布局：详情抽屉与遮罩骨架存在（初始关闭）',
   !!$('drawer') && !!$('drawerMask') && !!$('dwTitle') && !!$('dwBody') && !drawerOpen(), '');
 check('布局：个股表已升级为整行卡片且含工具条（视图切换/搜索/计数）',
   !!$('hotTabs') && !!$('hotSearch') && !!$('hotCount') && !!$('hotHead'), '');
 check('布局：报告卡含目录与折叠控制', !!$('briefNav') && !!$('briefToggle'), '');
-// V5.2-pro 规则第五/六块的两张面板必须真实存在于 DOM（只在 JS 里定义而不给容器，
-// 渲染会静默落空——用户看不到任何东西，但守卫不会报错，是最隐蔽的一类回归）。
-check('布局：模拟交易区含批量下单与事件日志两张卡片（V5.2-pro 第五/六块）',
-  !!window.document.querySelector('#zone-paper .paper-batch')
-  && !!window.document.querySelector('#zone-paper .paper-log')
-  && !!$('btInput') && !!$('logTable'), '');
-
 // 1) 表格行 → 个股详情
 const firstRow = $('hotTable').querySelector('tbody tr.clickable');
 const firstCode = firstRow?.dataset.code || '';
@@ -744,12 +745,12 @@ if (c779) {
 }
 
 // 9) 报告目录跳转与一键折叠
-check('布局：报告目录 chip 数 = 段落数（7）',
-  $('briefNav').querySelectorAll('button[data-act="brsec"]').length === 7,
+check(`布局：报告目录 chip 数 = 段落数（${EXPECTED_SECTIONS}）`,
+  $('briefNav').querySelectorAll('button[data-act="brsec"]').length === EXPECTED_SECTIONS,
   `${$('briefNav').querySelectorAll('button').length} 个`);
 clickEl($('briefToggle'));
-check('交互：一键折叠报告全部 7 段',
-  window.document.querySelectorAll('#briefBody .bf-sec.collapsed').length === 7, '');
+check(`交互：一键折叠报告全部 ${EXPECTED_SECTIONS} 段`,
+  window.document.querySelectorAll('#briefBody .bf-sec.collapsed').length === EXPECTED_SECTIONS, '');
 clickEl($('briefToggle'));
 check('交互：一键展开报告全部段落',
   window.document.querySelectorAll('#briefBody .bf-sec.collapsed').length === 0, '');
@@ -876,17 +877,46 @@ escClose();
 // PC 端快捷键（输入框内不抢键）；dispatchEvent 返回 false 表示事件被接管
 const keyOn = (key, target) => (target || window.document).dispatchEvent(
   new window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
-check('PC：数字键 1-6 跳分区（事件被接管）', keyOn('2') === false && keyOn('6') === false, '');
+check('PC：数字键 1-5 跳分区（事件被接管；第 6 分区已随台面下线，键 6 不再接管）',
+  keyOn('2') === false && keyOn('5') === false && keyOn('6') === true, '');
 $('hotSearch').value = '';
 check('PC：/ 聚焦个股搜索框', keyOn('/') === false && window.document.activeElement === $('hotSearch'), '');
 check('PC：在搜索框内打字不被快捷键抢键', keyOn('2', $('hotSearch')) === true, '');
 
 // ── 区五：外围市场（独立数据文件 data/global.json，A 股休市期间照常更新）──
-// 断言一律拿磁盘上的快照做对照，而不是写死数字——数据每天变，写死的断言第二天就假通过。
-const GJSON = JSON.parse(readFileSync(join(ROOT, 'data/global.json'), 'utf8'));
+//
+// ★ 2026-10-04 修复：本区改读**盘前相位夹具** test/fixtures/global-preopen.json，
+//   而不是磁盘上的 data/global.json。为什么必须这样（实测，非洁癖）：
+//   · 本区的「数据缺失三层守卫」（①未成交=null/「盘前无数据」②meta.usNoSession 留痕
+//     ③主锚缺失→判据不足）**只有在"美股未就绪"相位才可满足**——它们断言
+//     `usReadiness.ready === false`、`usNoSession.length > 0`、`watch.mainMissing.length > 0`。
+//   · 而 data/global.json 是**每天被 daily 流水线刷新**的快照（含北京 04:30 的美股收盘档），
+//     一旦刷成"已收盘"相位（ready=true、无缺失样本），本区 11 条断言必然全红。
+//   · 后果（实测）：main 全是红，staging 因快照停在 2026-09-30 盘前态而绿 ——
+//     门禁结果**取决于哪天提交了一个什么相位的快照**，而不是取决于前端对不对。
+//     这既是假绿（前端坏了也可能蒙对），也必然在「把 main 的每日数据合回 staging」时爆红。
+//   · 夹具来源可追溯：取自真引擎 2026-09-30T13:10Z（美东 09:10 ET 盘前）的真实产物
+//     data/global.json@0508ead，非手写，故仍满足「用真快照、不写死数字」纪律。
+//   · 磁盘上那份"当前快照"另由下方「外围·快照结构」两条断言做**结构有效性**校验：
+//     夹具验证前端语义，结构校验保证线上真正会送出的那份没坏 —— 两件事分开验。
+const GJSON = JSON.parse(readFileSync(join(ROOT, 'test/fixtures/global-preopen.json'), 'utf8'));
+// 线上真正会送出的那份（结构有效性，见下方「外围·快照结构」）
+const GJSON_LIVE = JSON.parse(readFileSync(join(ROOT, 'data/global.json'), 'utf8'));
 const gq = Object.fromEntries(GJSON.quotes.map((q) => [q.key, q]));
 // let：区五末尾会用「夹具渲染 → 恢复真快照渲染」来回切，行引用必须可重取
 let gRow = [...($('globTable')?.querySelectorAll('tbody tr') || [])];
+
+// 外围·快照结构：夹具验**前端语义**，这两条验**线上真正会送出的那份**没坏（否则夹具会把
+// 一个坏掉的线上快照盖住，等于给门禁开天窗）。只锁跨相位恒定成立的结构与纪律：
+check('外围·快照结构：data/global.json 字段齐备且相位声明自洽',
+  Array.isArray(GJSON_LIVE.quotes) && GJSON_LIVE.quotes.length > 0
+  && GJSON_LIVE.quotes.every((q) => typeof q.state === 'string' && 'chgPct' in q)
+  && !!GJSON_LIVE.meta && !!GJSON_LIVE.meta.usReadiness
+  && (GJSON_LIVE.meta.usReadiness.ready === false || (GJSON_LIVE.meta.usNoSession || []).length === 0),
+  `quotes=${(GJSON_LIVE.quotes || []).length} ready=${GJSON_LIVE.meta && GJSON_LIVE.meta.usReadiness && GJSON_LIVE.meta.usReadiness.ready}`);
+check('外围·快照结构：未成交品种一律无涨跌幅（源头就不给 0——线上快照同样受此约束）',
+  GJSON_LIVE.quotes.filter((q) => q.state === 'preopen' || q.state === 'no-trade').every((q) => q.chgPct === null),
+  GJSON_LIVE.quotes.filter((q) => (q.state === 'preopen' || q.state === 'no-trade') && q.chgPct !== null).map((q) => q.key).join('、'));
 
 check('外围：行情表行数 = 快照品种数（漏渲染会在这里暴露）',
   gRow.length === GJSON.quotes.length, `${gRow.length} 行 / ${GJSON.quotes.length} 品种`);
@@ -1247,956 +1277,11 @@ escClose();
     return null;
   }`;
   try {
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n})();`);
   } catch (e) {
-    check('模拟交易：paper_ui.js 在 jsdom 中可执行', false, e.message);
-  }
-  await new Promise((r) => setTimeout(r, 500)); // 等 boot() 的 fetch + 渲染
-
-  const pRows = (id) => [...($(id)?.querySelectorAll('tbody tr') || [])]
-    .filter((tr) => !tr.classList.contains('empty-row')).length;
-
-  check('模拟交易：账户总览已渲染（初始资金 100 万、无持仓）',
-    $('paperStats')?.querySelectorAll('.ps-cell').length >= 6
-    && txt('paperStats').includes('1,000,000'),
-    `${$('paperStats')?.querySelectorAll('.ps-cell').length} 格 | ${txt('paperStats').slice(0, 50)}`);
-  check('模拟交易：副标题写明「仅初始资金虚拟」与实时行情来源',
-    txt('paperSub').includes('仅初始资金为虚拟') && txt('paperSub').includes('腾讯实时行情'),
-    txt('paperSub').slice(0, 80));
-  check('模拟交易：标的池仍装载（作参考/快速选择，不再作为可下单白名单）',
-    Number.isFinite(uniObj?.meta?.total) && Object.keys(uniObj.symbols || {}).length > 0,
-    `池 ${uniObj?.meta?.total} 只 / 当日有价 ${uniObj?.meta?.fresh} 只`);
-  // 标的池在实时行情架构下已从「可下单白名单」降级为「参考/快速选择」：
-  // 能否下单只看「有没有取到真实价格」。这里断言副标题不再把存档日期当成交价依据。
-  check('模拟交易：副标题不再宣称价格取自存档（已改为实时行情）',
-    !txt('paperSub').includes('价格取自真实行情存档'), txt('paperSub').slice(0, 80));
-
-  // 下单表单：输入真实代码 → 显示真实行情与可交易性
-  const pick = (uniObj.symbols && Object.values(uniObj.symbols)
-    .find((s) => s.quoteFresh && s.tradable && !s.excluded)) || null;
-  check('前置：标的池中存在「当日有价 且 可交易」的股票（下单用例前提）', !!pick,
-    pick ? `${pick.code} ${pick.name}` : '当日无此标的');
-  if (pick) {
-    const codeInp = $('poCode');
-    codeInp.value = pick.code;
-    codeInp.dispatchEvent(new window.Event('input', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 120));
-    check('模拟交易：输入真实代码后显示当日真实行情',
-      txt('poQuote').includes(String(pick.code)) || txt('poQuote').includes(pick.name),
-      txt('poQuote').slice(0, 70));
-
-    // 提交一张买单 → 进入待成交（T+1：当日不成交）
-    const qtyInp = $('poQty');
-    qtyInp.value = '100';
-    qtyInp.dispatchEvent(new window.Event('input', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 60));
-    clickEl($('poSubmit'));
-    await new Promise((r) => setTimeout(r, 120));
-    check('模拟交易：提交委托后进入「待成交」（T+1，当日不成交）',
-      pRows('paperPendTable') === 1, `${pRows('paperPendTable')} 条待成交`);
-    check('模拟交易：待成交表格含冻结金额（买单预冻资金）',
-      txt('paperPendTable').includes('冻结') || pRows('paperPendTable') === 1, '');
-    check('双端：待成交卡片与表格同数量',
-      window.document.querySelectorAll('#paperPendCards .card-row').length === pRows('paperPendTable'), '');
-
-    // 撤单 → 待成交清空、冻结释放
-    const cancelBtn = $('paperPendTable').querySelector('tbody tr button');
-    clickEl(cancelBtn);
-    await new Promise((r) => setTimeout(r, 120));
-    check('模拟交易：撤单后待成交清空（冻结资金释放）',
-      pRows('paperPendTable') === 0, `${pRows('paperPendTable')} 条`);
-    check('模拟交易：账本仍为 100% 现金（撤单未产生任何成本）',
-      txt('paperStats').includes('1,000,000'), txt('paperStats').slice(0, 40));
+    check('模拟交易引擎模块在 jsdom 中可加载（台面 UI 已下线，引擎守卫保留）', false, e.message);
   }
 
-  // ── 本次修复的核心回归：不在标的池里的票，也必须能按实时价下单 ──
-  // 旧 bug：lookup() 把「在不在标的池」当成可下单前提，而池只覆盖当日上榜股（约 100 只），
-  // 于是 1200+ 只正常股票全被判「无真实行情，不可下单」。现在能否下单只看「取没取到真实价」。
-  {
-    const outsideCode = ['600519', '000001', '601318', '000002', '002415']
-      .find((c) => !uniObj.symbols?.[c]) || null;
-    check('前置：存在一只「不在标的池中」的股票（验证白名单已废除）', !!outsideCode,
-      outsideCode || '池覆盖了全部候选，换一组再试');
-    if (outsideCode) {
-      const codeInp = $('poCode');
-      codeInp.value = outsideCode;
-      codeInp.dispatchEvent(new window.Event('input', { bubbles: true }));
-      // 等 250ms 防抖 + 实时 fetch 落地
-      await new Promise((r) => setTimeout(r, 600));
-      const t = txt('poQuote');
-      check('模拟交易·回归：池外代码通过实时行情取得价格（不再报「无真实行情」）',
-        t.includes(outsideCode) && !t.includes('取不到'), t.slice(0, 80));
-      check('模拟交易·回归：实时价徽章可见（用户能分辨价格来源）',
-        !!$('poQuote').querySelector('.gtag.live, .gtag.close'),
-        $('poQuote').querySelector('.gtag.live, .gtag.close')?.className || '无徽章');
-
-      // 池外代码同样可以下单（提交后进入待成交）
-      const qtyInp = $('poQty');
-      qtyInp.value = '100';
-      qtyInp.dispatchEvent(new window.Event('input', { bubbles: true }));
-      await new Promise((r) => setTimeout(r, 60));
-      clickEl($('poSubmit'));
-      await new Promise((r) => setTimeout(r, 200));
-      check('模拟交易·回归：池外代码可成功挂单（T+1，进入待成交）',
-        pRows('paperPendTable') === 1, `${pRows('paperPendTable')} 条待成交`);
-      // 清掉这张单，避免影响后续断言
-      const cb = $('paperPendTable')?.querySelector('tbody tr button');
-      if (cb) { clickEl(cb); await new Promise((r) => setTimeout(r, 120)); }
-    }
-  }
-
-  // ── 仓位档位：买入给「轻仓/半仓/重仓/满仓」，卖出给「减仓/清仓」，账户给「一键空仓」 ──
-  // 旧版只有「1万/5万/10万/全仓」绝对金额，且卖出只有「1/4、1/2、全部」，缺少仓位语义。
-  {
-    // 确保在买入方向、且有可用的池外代码（沿用上面的 outsideCode）
-    clickEl(window.document.querySelector('#poSide button[data-side="buy"]'));
-    await new Promise((r) => setTimeout(r, 80));
-    const tierLabels = () => [...$('poQuick').querySelectorAll('button[data-act="pqty"]')]
-      .map((b) => b.textContent.trim());
-
-    // 需要一个有价代码才能算出档位
-    const codeInp = $('poCode');
-    if (!codeInp.value) {
-      codeInp.value = '600519';
-      codeInp.dispatchEvent(new window.Event('input', { bubbles: true }));
-      await new Promise((r) => setTimeout(r, 600));
-    } else {
-      codeInp.dispatchEvent(new window.Event('input', { bubbles: true }));
-      await new Promise((r) => setTimeout(r, 120));
-    }
-    const labels = tierLabels();
-    check('模拟交易·仓位：买入区提供四档仓位选项（轻仓/半仓/重仓/满仓）',
-      ['轻仓', '半仓', '重仓', '满仓'].every((k) => labels.some((l) => l.startsWith(k))),
-      labels.join(' | '));
-    check('模拟交易·仓位：档位副标签写明以总资产为分母',
-      txt('poQuick').includes('按仓位') && /总资产/.test(txt('poQuick')), txt('poQuick').slice(0, 60));
-
-    // 档位股数必须为整手，且四档严格递增
-    const qtys = [...$('poQuick').querySelectorAll('button[data-act="pqty"]')]
-      .map((b) => +b.dataset.qty);
-    check('模拟交易·仓位：各档股数为 100 股整数倍', qtys.length > 0 && qtys.every((q) => q % 100 === 0),
-      qtys.join(','));
-    check('模拟交易·仓位：四档股数严格递增（轻仓 < 半仓 < 重仓 < 满仓）',
-      qtys.length === 4 && qtys.every((q, i) => i === 0 || q > qtys[i - 1]), qtys.join('<'));
-
-    // 点「半仓」按钮 → 数量框被填入
-    const halfBtn = [...$('poQuick').querySelectorAll('button[data-act="pqty"]')]
-      .find((b) => b.textContent.trim().startsWith('半仓'));
-    clickEl(halfBtn);
-    await new Promise((r) => setTimeout(r, 80));
-    check('模拟交易·仓位：点档位按钮后数量框填入对应股数',
-      +$('poQty').value === +halfBtn.dataset.qty, `qty=${$('poQty').value} 期望=${halfBtn.dataset.qty}`);
-
-    // 切到卖出：无持仓时应如实提示而不是给出无效档位
-    clickEl(window.document.querySelector('#poSide button[data-side="sell"]'));
-    await new Promise((r) => setTimeout(r, 80));
-    const sellTxt = txt('poQuick');
-    check('模拟交易·仓位：卖出无持仓时如实提示（不给出无效减仓档位）',
-      /无持仓|无可卖/.test(sellTxt), sellTxt.slice(0, 60));
-
-    // ── 自定义比例买入（四档之外的任意百分比）──
-    // 切回买入并重新取值，避免用卖出方向下的渲染结果
-    clickEl(window.document.querySelector('#poSide button[data-side="buy"]'));
-    await new Promise((r) => setTimeout(r, 80));
-    const pctInp = $('poPct');
-    check('模拟交易·仓位：单独下单区提供「按比例买入」输入框（四档之外可填任意百分比）',
-      !!pctInp, pctInp ? '有' : '缺失');
-    const pctBtn = $('poQuick')?.querySelector('button[data-act="pqty-pct"]');
-    check('模拟交易·仓位：按比例买入有「算数量」按钮', !!pctBtn, pctBtn ? '有' : '缺失');
-
-    if (pctInp && pctBtn) {
-      // 注入一个非整档比例（15%），并触发 input 事件走真实的实时算量路径
-      pctInp.value = '15';
-      pctInp.dispatchEvent(new window.Event('input', { bubbles: true }));
-      await new Promise((r) => setTimeout(r, 120));
-      const hint = txt('poPctHint');
-      check('模拟交易·仓位：填比例后实时给出股数（不等点按钮）',
-        /=\s*\d+\s*股/.test(hint), hint.slice(0, 80) || '无提示');
-
-      clickEl(pctBtn);
-      await new Promise((r) => setTimeout(r, 150));
-      const qty15 = +$('poQty').value || 0;
-      check('模拟交易·仓位：按 15% 算出的股数为 100 整数倍',
-        qty15 > 0 && qty15 % 100 === 0, `poQty=${qty15}`);
-
-      // 与引擎同口径复算：15% × 总资产预算，整手向下取整（规则唯一出处）
-      const eng = window.__engine__ || {};
-      const ctx = window.__paperCtx || {};
-      const acct = ctx.account ? ctx.account() : null;
-      const st2 = ctx.stats ? ctx.stats() : eng.accountStats(acct);
-      const info2 = ctx.lookup ? ctx.lookup($('poCode').value) : null;
-      if (info2 && info2.price) {
-        const px2 = eng.fillPrice(info2.price, 'buy', eng.DEFAULT_SLIP);
-        const exp = eng.qtyByAssetPct(st2.total, 0.15, px2, { cash: acct.cash });
-        check('模拟交易·仓位：按比例算出的股数与引擎 qtyByAssetPct 同口径一致',
-          exp.qty === qty15, `页面=${qty15} 引擎=${exp.qty}（15% 预算 ${Math.round(st2.total * 0.15)} 元）`);
-        check('模拟交易·仓位：按比例的占用不超该比例预算（取最大整手数）',
-          exp.need <= st2.total * 0.15 + 1e-6 || exp.capped,
-          `占用≈${exp.need} 预算=${Math.round(st2.total * 0.15)}`);
-      }
-
-      // 比例与四档口径必须同源：15% 的股数应落在轻仓(10%)与半仓(50%)之间
-      const t10 = [...$('poQuick').querySelectorAll('button[data-act="pqty"]')]
-        .find((b) => b.textContent.trim().startsWith('轻仓'));
-      if (t10) {
-        check('模拟交易·仓位：15% 股数落在轻仓(10%)与半仓(50%)之间（比例单调）',
-          qty15 > +t10.dataset.qty && qty15 < qtys[1],
-          `10%=${t10.dataset.qty} < 15%=${qty15} < 50%=${qtys[1]}`);
-      }
-
-      // 越界比例必须被夹紧而不是算出荒谬股数（>100% 不得买超满仓）
-      pctInp.value = '300';
-      pctInp.dispatchEvent(new window.Event('input', { bubbles: true }));
-      await new Promise((r) => setTimeout(r, 100));
-      clickEl(pctBtn);
-      await new Promise((r) => setTimeout(r, 150));
-      const qty300 = +$('poQty').value || 0;
-      check('模拟交易·仓位：比例超 100% 被夹到 100%（不买超满仓）',
-        qty300 > 0 && qty300 === qtys[3], `300%→${qty300} 满仓=${qtys[3]}`);
-
-      // 0% 必须算不出数量（而不是给出 0 股委托）
-      pctInp.value = '0';
-      pctInp.dispatchEvent(new window.Event('input', { bubbles: true }));
-      await new Promise((r) => setTimeout(r, 100));
-      clickEl(pctBtn);
-      await new Promise((r) => setTimeout(r, 150));
-      check('模拟交易·仓位：比例填 0 时不产生数量并给出原因',
-        (+$('poQty').value || 0) === 0, `poQty=${$('poQty').value} 提示=${txt('poPctHint').slice(0, 50)}`);
-
-      // 收尾：恢复一个可提交状态，避免影响后续断言
-      pctInp.value = '15';
-      pctInp.dispatchEvent(new window.Event('input', { bubbles: true }));
-      await new Promise((r) => setTimeout(r, 100));
-      clickEl(pctBtn);
-      await new Promise((r) => setTimeout(r, 150));
-    }
-  }
-
-  // ── 批量下单面板（V5.2-pro 规则第五块）：全链路留在引擎，UI 只解析与渲染 ──
-  {
-    check('模拟交易·批量：批量下单卡片三件套齐备（输入 / 汇总 / 结果表）',
-      !!$('btInput') && !!$('btSummary') && !!$('btTable') && !!$('btSubmit'),
-      [$('btInput') && 'input', $('btSummary') && 'summary', $('btTable') && 'table', $('btSubmit') && 'submit']
-        .filter(Boolean).join('+') || '缺失');
-
-    // 方向/口径分段控件必须齐备：side 决定走 batchSubmit 还是 batchSell，mode 决定第 2 列语义
-    check('模拟交易·批量：方向与数量口径两组分段控件齐备',
-      $('btSide')?.querySelectorAll('button[data-side]').length === 2
-      && $('btMode')?.querySelectorAll('button[data-mode]').length === 2,
-      `side=${$('btSide')?.querySelectorAll('button[data-side]').length} mode=${$('btMode')?.querySelectorAll('button[data-mode]').length}`);
-
-    // 买入（默认）：填两行「代码,比例」→ 提交 → 结果表逐行给出结构化结果
-    const ta = $('btInput');
-    ta.value = '300893,5\n000001,5';
-    $('btSubmit').click();
-    await new Promise((r) => setTimeout(r, 900));
-
-    const btRows = pRows('btTable');
-    check('模拟交易·批量：提交后结果表逐只列出（每只一行）', btRows >= 1, `${btRows} 行`);
-    check('模拟交易·批量：汇总条给出「已挂单 / 被拦」计数与当日仓位变动上限',
-      /已挂单/.test(txt('btSummary')) && /被拦/.test(txt('btSummary'))
-      && /当日已买入/.test(txt('btSummary')) && /上限 20%/.test(txt('btSummary')),
-      txt('btSummary').slice(0, 140));
-    check('模拟交易·批量：脚注写明龙虎过滤版本与三档档位口径',
-      /龙虎榜前置过滤版本/.test(txt('btHint')) && /主池/.test(txt('btHint'))
-      && /备选观察/.test(txt('btHint')) && /剔除/.test(txt('btHint')),
-      txt('btHint').slice(0, 140));
-    check('模拟交易·批量：脚注写明批量卖出不做龙虎过滤（该规则只约束买入）',
-      /批量卖出不做龙虎过滤/.test(txt('btHint')), txt('btHint').slice(-80));
-
-    // 被拦的行必须说清「在哪一步、因为什么」，不能只给一句「未通过」
-    const blockedRow = [...$('btTable').querySelectorAll('tbody tr')]
-      .find((tr) => /已拦截/.test(tr.textContent || ''));
-    if (blockedRow) {
-      const t = blockedRow.textContent || '';
-      check('模拟交易·批量：被拦行写明拦截阶段与原因（不是一句空泛「未通过」）',
-        /龙虎过滤|风控|行情|持仓|股数|委托/.test(t) && t.length > 12, t.slice(0, 120));
-    } else {
-      check('模拟交易·批量：被拦行写明拦截阶段与原因（本轮无被拦行，跳过语义断言）', true, '无被拦行');
-    }
-
-    // 从研判推荐填入：只填不提交（纪律：绝不替用户下单）
-    const pendBefore = pRows('paperPendTable');
-    if ($('btFillPicks')) {
-      clickEl($('btFillPicks'));
-      await new Promise((r) => setTimeout(r, 120));
-      const filled = ($('btInput')?.value || '').split('\n').filter(Boolean).length;
-      const pendAfter = pRows('paperPendTable');
-      check('模拟交易·批量：「从研判推荐填入」只填输入框、不产生任何委托',
-        filled >= 1 && pendAfter === pendBefore, `填入 ${filled} 行 / 待成交 ${pendBefore}→${pendAfter}`);
-    }
-
-    // 切到卖出方向：批量卖出恒为「全部可卖」，没有比例/股数口径之分。
-    // 此时「按比例/按股数」控件必须被禁用 —— 否则用户会以为「卖出按比例 10%」生效了，
-    // 而实际挂出去的是全部持仓，这是最危险的一种误解。
-    clickEl(window.document.querySelector('#btSide button[data-side="sell"]'));
-    await new Promise((r) => setTimeout(r, 120));
-    const modeBtns = [...$('btMode').querySelectorAll('button')];
-    const modeDisabled = modeBtns.length === 2 && modeBtns.every((b) => b.disabled);
-    check('模拟交易·批量：卖出方向下「按比例/按股数」口径控件被禁用（卖出恒为全部可卖）',
-      modeDisabled, modeDisabled ? 'ok' : '仍可点，易被误解为按比例卖出');
-    // 禁用态下点击不得改变口径（不能只是视觉禁用但逻辑仍生效）
-    clickEl(modeBtns.find((b) => b.dataset.mode === 'qty'));
-    await new Promise((r) => setTimeout(r, 80));
-    check('模拟交易·批量：卖出方向下点口径钮不改变模式（禁用是真禁用）',
-      modeBtns.filter((b) => b.classList.contains('on')).length === 1
-      && modeBtns.find((b) => b.classList.contains('on'))?.dataset.mode === 'pct',
-      modeBtns.map((b) => `${b.dataset.mode}${b.classList.contains('on') ? '*' : ''}`).join('|'));
-    // 默认比例输入在卖出时隐藏（卖出不读它，留着会让人以为生效）
-    const defWrap = $('btDefaultPct')?.closest('label');
-    check('模拟交易·批量：卖出方向下隐藏「默认仓位%」输入（不读它就别显示它）',
-      !!defWrap && defWrap.style.display === 'none', defWrap ? `display=${defWrap.style.display || '(空)'}` : '缺失');
-
-    // 切回买入，避免影响后续断言
-    clickEl(window.document.querySelector('#btSide button[data-side="buy"]'));
-    await new Promise((r) => setTimeout(r, 80));
-    check('模拟交易·批量：切换方向会清空上一次结果表（避免卖出的结果留在屏上被当成买）',
-      pRows('btTable') === 0, `${pRows('btTable')} 行`);
-    check('模拟交易·批量：切回买入后口径控件恢复可用',
-      [...$('btMode').querySelectorAll('button')].every((b) => !b.disabled), 'ok');
-  }
-
-  // ── 事件日志面板（V5.2-pro 规则第六块）：日志由引擎自动写，UI 只读 + 过滤 + 导出 ──
-  {
-    check('模拟交易·日志：事件日志卡片三件套齐备（过滤 / 表 / 说明）',
-      !!$('logTabs') && !!$('logTable') && !!$('logNote') && !!$('logExport'),
-      [$('logTabs') && 'tabs', $('logTable') && 'table', $('logNote') && 'note', $('logExport') && 'export']
-        .filter(Boolean).join('+') || '缺失');
-
-    const stageBtns = [...($('logTabs')?.querySelectorAll('button[data-stage]') || [])];
-    check('模拟交易·日志：阶段过滤覆盖全部/龙虎过滤/风控/委托/结算/止损六档',
-      stageBtns.length === 6
-      && ['', 'lhb', 'risk', 'order', 'settle', 'stop'].every((s) => stageBtns.some((b) => (b.dataset.stage || '') === s)),
-      stageBtns.map((b) => b.dataset.stage || '全部').join('|'));
-
-    // 上一步批量提交已产生日志 → 日志表必须有行
-    const allRows = pRows('logTable');
-    check('模拟交易·日志：委托流转后自动产生日志行（引擎写入，不依赖面板开关）',
-      allRows >= 1, `${allRows} 行`);
-    check('模拟交易·日志：计数写明条数与上限（超出自动丢弃最早记录）',
-      /上限/.test(txt('logCount')), txt('logCount').slice(0, 90));
-
-    // 按阶段过滤：切「委托」后行数应 ≤ 全部
-    clickEl(stageBtns.find((b) => b.dataset.stage === 'order'));
-    await new Promise((r) => setTimeout(r, 100));
-    const orderRows = pRows('logTable');
-    check('模拟交易·日志：按「委托」阶段过滤后行数不超过全部',
-      orderRows <= allRows && orderRows >= 0, `委托 ${orderRows} ≤ 全部 ${allRows}`);
-    check('模拟交易·日志：过滤计数标明「阶段 x 条 / 全部 y 条」',
-      /全部/.test(txt('logCount')), txt('logCount').slice(0, 90));
-
-    // 切回全部
-    clickEl(stageBtns.find((b) => (b.dataset.stage || '') === ''));
-    await new Promise((r) => setTimeout(r, 100));
-    check('模拟交易·日志：切回「全部」后恢复完整行数',
-      pRows('logTable') === allRows, `${pRows('logTable')} vs ${allRows}`);
-
-    // 导出必须真的生成 Markdown 文本（含阶段中文名与「###」标题）
-    const src = readFileSync(join(ROOT, 'src/paper.js'), 'utf8');
-    check('模拟交易·日志：导出走引擎 logsToReport（UI 不自己拼日志文案）',
-      /logsToReport/.test(readFileSync(join(ROOT, 'paper_ui.js'), 'utf8'))
-      && /export function logsToReport/.test(src), 'ok');
-  }
-
-  // ── 一键空仓：T+1 下必须「能卖的全挂、卖不掉的如实告知」 ──
-  {
-    check('模拟交易·空仓：账户区有「一键空仓」按钮', !!$('paperCloseAll'),
-      $('paperCloseAll')?.textContent || '缺失');
-    // 无持仓时点它应提示无需空仓，而不是报错
-    const before = txt('paperMsg');
-    $('paperCloseAll').click();
-    await new Promise((r) => setTimeout(r, 200));
-    check('模拟交易·空仓：无持仓时提示「无需空仓」（不误报错）',
-      /无需空仓/.test(txt('paperMsg')) || /无需空仓/.test(before), txt('paperMsg').slice(0, 60));
-  }
-
-  // ── 持仓渲染守护：renderPositions 的「旧价」提示不得读错对象层级 ──
-  // 回归：rows 里装的是原始持仓对象，曾经的 x.p.pxStale 会在「结算后重渲染」时抛
-  // TypeError: Cannot read properties of undefined (reading 'pxStale')，把整个渲染链打断
-  // （表现是「点了结算但界面没反应」——用户以为结算按钮失效，实际是渲染崩了）。
-  //
-  // 这条路径只在「持仓取不到实时价」时触发，而 jsdom 的行情 shim 对任何代码都返回价格，
-  // 无法在 DOM 层复现「pxStale=true」。所以分两层守：
-  //   ① 结构层：源码里不得再出现 x.p.pxStale / rows[].p.* 这类「对原始持仓对象取 .p」
-  //   ② 行为层：真塞一份带 pxStale 的种子账本重新 boot，渲染不得抛错
-  {
-    const uiSrc = readFileSync(join(ROOT, 'paper_ui.js'), 'utf8');
-    const badPattern = /\.filter\s*\(\s*\(\s*\w+\s*\)\s*=>\s*\w+\.p\.pxStale\s*\)/;
-    check('模拟交易·持仓：源码不再对原始持仓对象误取 .p.pxStale（回归 339 行崩溃）',
-      !badPattern.test(uiSrc), badPattern.test(uiSrc) ? '仍存在 x.p.pxStale' : 'ok');
-
-    // 存储键在 paper_ui.js 里是 'paper-acct-' + PAPER_VERSION，这里从已装载的 localStorage 里认出来
-    const seedKey = Object.keys(window.localStorage).find((k) => k.startsWith('paper-acct-')) || 'paper-acct-paper-v1';
-    const arcLast = (arcAll.all_days || []).slice(-1)[0]?.trade_date || '2000-01-04';
-    // 种子账本刻意放两只票，把预警规则的两条主力分支都点亮：
-    //   · 600519：pxStale（无当日行情）——检验渲染不崩、且如实提示估值失真
-    //   · 000001：成本 20 元 / 现价 16 元（浮亏 -20%）→ 必须触发「止损线击穿」（风险级）
-    //     且 qty 40000 / 可卖 0（当日买入）→ 必须同时给出 T+1 提示，且卖出股数不得为正
-    const seed = {
-      // version 必须给：importAccount 先校验 version === PAPER_VERSION，不符直接整份拒绝 →
-      // load() 返回 null → 界面按「新建空账户」渲染（预警只剩大盘层、持仓表为空）。
-      // initCash 同理（校验 +initCash > 0）。两项都漏过，两个坑都踩过一次。
-      version: 'paper-v1',
-      initCash: 1000000,
-      cash: 300000, freeze: 0, realized: 0, totalFee: 0, trades: [], orders: [], pending: [],
-      lastSettle: arcLast,
-      nav: [{ date: arcLast, equity: 1025950, cash: 300000, marketValue: 725950 }],
-      positions: {
-        '600519': { code: '600519', name: '贵州茅台', qty: 100, avail: 100, avgCost: 1259.26,
-          cost: 125926, grossBuy: 125900, fee: 26, openDate: '2000-01-04', days: 3,
-          lastBuyDate: '2000-01-04', last: 1258.62, lastDate: '2000-01-04', pxStale: true },
-        '000001': { code: '000001', name: '平安银行', qty: 40000, avail: 0, avgCost: 20,
-          cost: 800000, grossBuy: 799800, fee: 200, openDate: arcLast, days: 0,
-          lastBuyDate: arcLast, last: 16, lastDate: arcLast, pxStale: false },
-      },
-    };
-    window.localStorage.setItem(seedKey, JSON.stringify(seed));
-    let threw = null;
-    try {
-      // 重新执行一遍 paper_ui.js：boot() 会 load() 到上面这份种子 → renderAllPaper()
-      window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n${uiNoImport}\n})();`);
-      await new Promise((r) => setTimeout(r, 800));
-    } catch (e) { threw = e; }
-    check('模拟交易·持仓：带 pxStale 的种子账本渲染不抛错',
-      !threw, threw ? String(threw.message || threw).slice(0, 140) : 'ok');
-    check('模拟交易·持仓：持仓说明渲染完整且不含 undefined',
-      !/undefined/.test(txt('paperPosNote')), txt('paperPosNote').slice(0, 100));
-    // 守卫：种子必须被 importAccount 接受，否则后续预警断言会在「空账户」上假通过。
-    // 早期种子漏了 initCash，整份被拒 → 界面渲染新账户 → 预警断言全部落空却没人发现。
-    check('模拟交易·持仓：种子账本被引擎接受（持仓明细真实生效，非空账户）',
-      /平安银行|贵州茅台/.test(txt('paperPosCards')) || /平安银行|贵州茅台/.test(txt('paperPosTable')),
-      txt('paperPosNote').slice(0, 90));
-
-    // ── 交易预警（大盘 + 持仓双层）：用上面这份种子点亮止损分支 ──
-    check('模拟交易·预警：预警卡片存在（列表 + 元信息 + 脚注三件套）',
-      !!$('alertsList') && !!$('alertsMeta') && !!$('alertsNote'),
-      [$('alertsList') && 'list', $('alertsMeta') && 'meta', $('alertsNote') && 'note'].filter(Boolean).join('+') || '缺失');
-
-    const aRows = [...($('alertsList')?.querySelectorAll('.alert-row') || [])];
-    check('模拟交易·预警：渲染出预警行', aRows.length > 0, `${aRows.length} 行`);
-
-    const aMeta = txt('alertsMeta');
-    check('模拟交易·预警：元信息写明数据日期/档位/风险-机会-提示计数',
-      /数据日期/.test(aMeta) && /风险/.test(aMeta) && /机会/.test(aMeta) && /提示/.test(aMeta),
-      aMeta.slice(0, 120));
-
-    // 止损分支：种子 000001 浮亏 -20%，必须出现风险级止损预警
-    const stopRow = aRows.find((r) => /止损线/.test(r.textContent || ''));
-    check('模拟交易·预警：浮亏 -20% 触发风险级止损预警', !!stopRow,
-      stopRow ? stopRow.className : '未找到止损行');
-    check('模拟交易·预警：风险级条目带 risk 类（红左色条）',
-      !!stopRow && stopRow.classList.contains('risk'), stopRow?.className || '—');
-
-    // 止损且可卖为 0：卖出按钮不得给出正数数量（否则下单必被拒）
-    const stopFill = stopRow?.querySelector('button[data-act="alert-fill"]');
-    if (stopFill) {
-      const q = Number(stopFill.dataset.qty || 0);
-      check('模拟交易·预警：止损但 T+1 不可卖时，填入数量为 0（不得超卖）', q === 0, `qty=${q}`);
-    }
-    check('模拟交易·预警：同时给出 T+1 不可卖的原因说明',
-      aRows.some((r) => /未解冻|不可卖|T\+1/.test(r.textContent || '')),
-      aRows.map((r) => (r.textContent || '').slice(0, 24)).join(' | ').slice(0, 120));
-
-    // 严重度排序：risk 必须排在 opp / tip 之前（引擎已排序，UI 不得打乱）
-    const lvSeq = aRows.map((r) => (r.classList.contains('risk') ? 0 : r.classList.contains('opp') ? 1 : 2));
-    check('模拟交易·预警：按严重度排序（风险 → 机会 → 提示）',
-      lvSeq.every((v, i) => i === 0 || v >= lvSeq[i - 1]), lvSeq.join(','));
-
-    // 每条都要能追溯到具体字段：抽屉里必须有「触发依据」
-    if (aRows.length) {
-      clickEl(aRows[0]);
-      await new Promise((r) => setTimeout(r, 120));
-      const dwA = txt('dwBody');
-      check('模拟交易·预警：点条目打开抽屉并写明「触发依据」与字段取值',
-        drawerOpen() && /触发依据/.test(dwA) && /当时的字段取值/.test(dwA), txt('dwTitle'));
-      escClose();
-    }
-
-    // 一键动作：只填不提交（与「研判推荐」同纪律）
-    const fillBtn = aRows.map((r) => r.querySelector('button[data-act="alert-fill"]')).find(Boolean);
-    if (fillBtn) {
-      const pendBefore = ($('paperPendTable')?.querySelectorAll('tbody tr') || []).length;
-      const wantCode = aRows.find((r) => r.querySelector('button[data-act="alert-fill"]'))?.querySelector('.al-code')?.textContent || '';
-      clickEl(fillBtn);
-      await new Promise((r) => setTimeout(r, 250));
-      check('模拟交易·预警：点「填入卖出」把代码填入下单区且切到卖出方向',
-        !!$('poCode').value && wantCode.includes($('poCode').value)
-        && window.document.querySelector('#poSide button[data-side="sell"]')?.classList.contains('on'),
-        `poCode=${$('poCode').value} / ${wantCode.trim()}`);
-      const pendAfter = ($('paperPendTable')?.querySelectorAll('tbody tr') || []).length;
-      check('模拟交易·预警：填入不自动下单（委托数不变）', pendAfter === pendBefore, `${pendBefore} → ${pendAfter}`);
-    }
-
-    // 脚注：阈值出处 + 不构成投资建议（合规底线）
-    check('模拟交易·预警：脚注写明阈值出处且声明不构成投资建议',
-      /不构成投资建议/.test(txt('alertsNote')) && /V5.2/.test(txt('alertsNote')), txt('alertsNote').slice(-90));
-
-    // ── 预警战绩（收益归因）：预警必须能回答「帮我少亏了多少」 ──
-    //
-    // 这是本轮的核心：预警不只是话术，必须有计分板。断言覆盖
-    //   ① 归因条渲染出来（四个格子）
-    //   ② 台账确实落了账（localStorage 里有记录，且条数与渲染一致）
-    //   ③ 幂等：再次触发渲染不会让台账膨胀（界面重渲染是常态）
-    //   ④ 点格子能打开逐条明细（触发价 → 今日价 → 差额，可核验）
-    //   ⑤ 无价条目不得被算成 0（「不知道」与「没赚没亏」必须可区分）
-    check('模拟交易·预警：战绩归因条渲染出四个指标格',
-      ($('alertsAttr')?.querySelectorAll('.al-cell') || []).length === 4,
-      `${($('alertsAttr')?.querySelectorAll('.al-cell') || []).length} 格`);
-
-    const attrTxt = txt('alertsAttr');
-    check('模拟交易·预警：归因条含四个指标名（规避亏损/错杀/净贡献/命中率）',
-      /已规避亏损/.test(attrTxt) && /错杀/.test(attrTxt) && /净贡献/.test(attrTxt) && /命中率/.test(attrTxt),
-      attrTxt.slice(0, 110));
-
-    // 台账落盘：种子触发了带可执行股数的预警（集中度），必须记账
-    const rawLog = window.localStorage.getItem('paper-alerts-log');
-    let logArr = [];
-    try { logArr = JSON.parse(rawLog || '[]'); } catch (e) { logArr = []; }
-    check('模拟交易·预警：预警台账写入 localStorage（战绩可跨会话累积）',
-      Array.isArray(logArr) && logArr.length > 0, `${logArr?.length ?? 0} 条`);
-    check('模拟交易·预警：台账条目含冻结的触发价（归因基准不可被后续行情改写）',
-      logArr.length > 0 && logArr.every((e) => e.layer === 'market' || Number.isFinite(+e.px)),
-      logArr.map((e) => `${e.type}:${e.px}`).join(' | ').slice(0, 120));
-
-    // 幂等：把「刚刚落盘的那批」再喂一次引擎，台账条数不得增加。
-    // 注意**不能**直接 `window.eval('renderAlerts()')` —— app.js 里也有一个同名的全局
-    // renderAlerts（研报渲染用的），会命中错的那个并抛错。
-    // 这里用「持久化台账 + 从台账反构出的同批预警」走一遍真实路径（recordAlerts 也是这么调的）。
-    const before = logArr.length;
-    const sameBatch = logArr.map((e) => ({
-      layer: e.layer, code: e.code || undefined, name: e.name || undefined,
-      type: e.type, level: e.level, action: e.action, qty: e.qty,
-    }));
-    const idem = window.__alertlog__.appendSignals(logArr, sameBatch, {
-      asOf: logArr[0]?.asOf || null, priceOf: () => 10,
-    });
-    check('模拟交易·预警：重复落账不膨胀台账（幂等）',
-      idem.added === 0 && idem.log.length === before, `added=${idem.added}, ${before} → ${idem.log.length}`);
-
-    // 归因明细抽屉：逐条给出「触发价 → 今日价 → 差额」
-    const cell0 = $('alertsAttr')?.querySelector('.al-cell');
-    if (cell0) {
-      clickEl(cell0);
-      await new Promise((r) => setTimeout(r, 150));
-      const dwAttr = txt('dwBody');
-      check('模拟交易·预警：点战绩格子打开明细抽屉（含按规则拆解与计分口径）',
-        drawerOpen() && /按规则拆解/.test(dwAttr) && /计分口径/.test(dwAttr), txt('dwTitle'));
-      check('模拟交易·预警：明细写明「不含费用」与「不足一手不计分」的口径边界',
-        /不含费用/.test(dwAttr) && /一手/.test(dwAttr), dwAttr.slice(-140));
-      check('模拟交易·预警：归因口径声明「不编造收益数字」（大盘层只记金额不记收益）',
-        /不编造收益数字/.test(dwAttr), dwAttr.slice(-140));
-      escClose();
-    }
-
-    // 收尾：清掉种子，避免影响后续用例
-    window.localStorage.removeItem(seedKey);
-  }
-
-  // ── 报告第⑦段「模拟交易复盘」：引擎在浏览器里可执行、快照桥接通、降级如实 ──
-  {
-    // ① 引擎已挂到 window（index.html 的模块脚本）
-    check('报告·复盘：paper_review 引擎挂载到 window（供经典脚本 app.js 使用）',
-      !!window.__paperreview__ && typeof window.__paperreview__.buildPaperReview === 'function',
-      typeof window.__paperreview__);
-
-    // ② 快照桥接：paper_ui.js 在每次账户变更后发布 window.__paperSnapshot
-    const snap = window.__paperSnapshot;
-    check('报告·复盘：paper_ui 发布账户快照 window.__paperSnapshot',
-      !!snap && snap.version === window.__paperreview__.REVIEW_VERSION,
-      snap ? `version=${snap.version}` : '缺失');
-    check('报告·复盘：快照含账户 / 台账 / 实时价 / 情绪分四要素',
-      !!snap && !!snap.account && Array.isArray(snap.log) && typeof snap.priceMap === 'object' && 'emotionScore' in snap,
-      snap ? Object.keys(snap).join(',') : '');
-    check('报告·复盘：快照是只读拷贝（不含可变委托数组）',
-      !!snap && snap.account.orders === undefined && snap.account.pending === undefined,
-      '');
-
-    // ③ 报告段落：编号 ⑦ 存在，且在 ⑥ 之后、口径备注之前
-    const secs = [...$('briefBody').querySelectorAll('.bf-sec')];
-    check('报告·复盘：第⑦段已渲染（.bf-sec #bfsec7）',
-      !!$('bfsec7'), secs.map((s) => s.id).join(','));
-    check('报告·复盘：⑦段标题含「模拟交易复盘」',
-      /模拟交易复盘/.test($('bfsec7')?.querySelector('.bf-h')?.textContent || ''),
-      $('bfsec7')?.querySelector('.bf-h')?.textContent || '');
-    check('报告·复盘：⑦段排在⑥段之后（顺序不被插错）',
-      secs.findIndex((s) => s.id === 'bfsec6') < secs.findIndex((s) => s.id === 'bfsec7'),
-      secs.map((s) => s.id).join(','));
-
-    // ④ 段落内容：必须给出「为什么赚/为什么亏」的拆解或如实降级
-    const s7 = txt('bfsec7');
-    check('报告·复盘：段落给出结论行（不空转）', s7.length > 60, `${s7.length} 字`);
-    check('报告·复盘：未开始交易时如实降级（不编造收益）',
-      /尚未开始模拟交易|尚无成交记录|尚无平仓记录|复盘|收益归因|持仓诊断/.test(s7),
-      s7.slice(0, 80));
-    check('报告·复盘：段落包含收益归因三块之一（浮动/已实现/费用）或如实说明无记录',
-      /浮动盈亏|已实现盈亏|交易费用|尚无成交记录/.test(s7), s7.slice(0, 120));
-    check('报告·复盘：段落写明口径（FIFO / 止损线 / 单票上限）或降级说明',
-      /FIFO|止损线|单票上限|尚未开始|尚无成交/.test(s7), s7.slice(0, 100));
-
-    // ⑤ 建议必须可追溯（风险级建议带「依据」；无建议时须说明无问题）
-    const s7html = $('bfsec7').innerHTML;
-    check('报告·复盘：建议带「依据」而非空泛措辞',
-      !/止损与优化建议/.test(s7) || (/依据：/.test(s7) || /无需要处理的纪律问题/.test(s7)),
-      /依据：/.test(s7) ? '有依据' : '无建议或未触发');
-
-    // ⑥ 负向守卫：段落不得出现「注意风险」这类无法执行的话
-    check('报告·复盘：段落不含空泛措辞（注意风险 / 综合来看）',
-      !/注意风险|综合来看|有待改进/.test(s7), '');
-
-    // ⑦ 引擎在浏览器环境可跑通并返回结构完整的结论
-    try {
-      const r = window.__paperreview__.buildPaperReview({
-        account: snap ? snap.account : null,
-        log: snap ? snap.log : [],
-        priceMap: snap ? snap.priceMap : {},
-        emotionScore: snap ? snap.emotionScore : null,
-        asOf: snap ? snap.asOf : null,
-      });
-      check('报告·复盘：引擎在浏览器环境返回完整结构',
-        !!r && typeof r.headline === 'string' && Array.isArray(r.advice)
-        && !!r.account && !!r.trades && !!r.positions,
-        r && r.headline ? r.headline.slice(0, 60) : '');
-      check('报告·复盘：引擎的置信边界清晰（hasAccount / started 为布尔）',
-        typeof r.hasAccount === 'boolean' && typeof r.started === 'boolean',
-        `hasAccount=${r.hasAccount} started=${r.started}`);
-      // 建议的每条都必须带 level/text/why（可核验）
-      check('报告·复盘：每条建议都带 level/text/why 三要素',
-        r.advice.every((a) => a.level && a.text && a.why),
-        `${r.advice.length} 条`);
-    } catch (e) {
-      check('报告·复盘：引擎在浏览器环境返回完整结构', false, e.message);
-    }
-
-    // ⑧ 引擎与报告阈值同源：报告里写的止损线来自 POS_CFG，不是手抄
-    const pc = window.__paperreview__.POS_CFG;
-    check('报告·复盘：阈值与预警引擎同源（POS_CFG.stopLoss / concMax）',
-      pc && pc.stopLoss === -0.08 && pc.concMax === 0.20,
-      pc ? `stopLoss=${pc.stopLoss} concMax=${pc.concMax}` : '缺失');
-
-    // ⑨ 端到端：模拟一笔成交后，快照与第⑦段必须跟着变（不能是死数据）
-    const before = txt('bfsec7');
-    const acct = JSON.parse(JSON.stringify(snap.account));
-    const code = Object.keys(acct.positions)[0];
-    if (code) {
-      // 用一只已持仓票反向注入：把成本抬高 20% 制造浮亏，看段落是否变化
-      acct.positions[code].cost = Math.round(acct.positions[code].cost * 1.2 * 100) / 100;
-      acct.positions[code].avgCost = Math.round(acct.positions[code].avgCost * 1.2 * 1000) / 1000;
-      const r2 = window.__paperreview__.buildPaperReview({
-        account: acct, log: [], priceMap: snap.priceMap, emotionScore: snap.emotionScore, asOf: snap.asOf,
-      });
-      check('报告·复盘：浮亏注入后引擎结论随之改变（归因是现算，不是写死）',
-        r2.account.floatPnl < 0 || r2.account.netPnl !== before,
-        `floatPnl=${r2.account.floatPnl}`);
-    } else {
-      check('报告·复盘：当前无持仓（跳过浮亏注入用例）', true, '无持仓');
-    }
-  }
-
-  // ── 研判推荐（模拟交易区小模块）：由系统研判生成、可填入下单、可点看详情 ──
-  {
-    check('模拟交易·推荐：推荐卡片存在（列表 + 元信息 + 脚注三件套）',
-      !!$('picksList') && !!$('picksMeta') && !!$('picksNote'),
-      [$('picksList') && 'list', $('picksMeta') && 'meta', $('picksNote') && 'note'].filter(Boolean).join('+') || '缺失');
-
-    const rows = [...($('picksList')?.querySelectorAll('.pk-row') || [])];
-    check('模拟交易·推荐：渲染出推荐个股行（含排名/名称/代码）', rows.length > 0, `${rows.length} 行`);
-
-    const metaTxt = txt('picksMeta');
-    check('模拟交易·推荐：元信息写明数据日期与市场档位',
-      /数据日期/.test(metaTxt) && /市场档位|档位/.test(metaTxt) && /情绪分/.test(metaTxt),
-      metaTxt.slice(0, 90));
-
-    // 每行必须给出理由（不能只给代码了事）
-    const withReasons = rows.filter((r) => (r.querySelectorAll('.pk-tag') || []).length > 0).length;
-    check('模拟交易·推荐：每只推荐股都给出可核验的入选理由',
-      rows.length > 0 && withReasons === rows.length, `${withReasons}/${rows.length} 行有理由`);
-
-    // 每行必须有风险或说明；且页面不得出现空泛措辞
-    const anyRisk = rows.some((r) => r.querySelector('.pk-risks'));
-    check('模拟交易·推荐：给出具体风险提示（不用「注意风险」这类空话）',
-      anyRisk && !/注意风险(?!，)/.test(txt('picksList')),
-      anyRisk ? '有风险行' : '无风险行');
-
-    // 上涨概率徽章存在且是数字（排序主依据已从「加权综合分」改为「上涨概率」）
-    const probTxt = rows[0]?.querySelector('.pk-prob')?.textContent?.trim() || '';
-    check('模拟交易·推荐：显示上涨概率分（预测主依据）', /上涨概率\s*\d+(\.\d+)?/.test(probTxt), probTxt);
-
-    // 概率分档位色调必须是「高=红、低=中性/警示」，绝不能给低概率上绿色
-    // （绿色在本页表示「跌」，用在概率上会被误读成「跌的概率」）
-    const probCls = rows[0]?.querySelector('.pk-prob')?.className || '';
-    check('模拟交易·推荐：概率徽章带分档样式类（不裸渲染）',
-      /pb-(high|mid|low|poor)/.test(probCls), probCls.trim());
-
-    // 每行必须给出「依据」（命中的实测因子），这是可核验性的最低要求
-    check('模拟交易·推荐：每行给出预测依据与样本量',
-      /依据：/.test(txt('picksList')) && /样本\s*\d+\s*例/.test(txt('picksList')),
-      txt('picksList').slice(0, 80));
-
-    // 止损位必须逐行给出——这是「止损建议」落地为可执行数字的关键
-    check('模拟交易·推荐：每行给出止损位数字', /止损\s*-\d+%/.test(txt('picksList')),
-      (txt('picksList').match(/止损\s*-?\d+%/) || ['无'])[0]);
-
-    // ── 连板前置与打标签（用户要求：「大概率连板的放在前置位置并打标签」）──
-    const streakBadges = [...($('picksList')?.querySelectorAll('.pk-streak') || [])];
-    const topRows = [...($('picksList')?.querySelectorAll('.pk-row-top') || [])];
-    if (streakBadges.length) {
-      check('模拟交易·推荐·连板：达到门槛的票带「大概率连板」标签',
-        /大概率连板\s*\d+(\.\d+)?%?/.test(streakBadges[0].textContent),
-        streakBadges[0].textContent.trim().slice(0, 40));
-      check('模拟交易·推荐·连板：连板标签带分档样式类（不裸渲染）',
-        /pb-(high|mid|low|poor)/.test(streakBadges[0].className),
-        streakBadges[0].className.trim());
-      // 置顶：带标签的票必须全部排在无标签的票之前
-      const firstNonTop = rows.findIndex((r) => !r.classList.contains('pk-row-top'));
-      const lastTop = rows.map((r) => r.classList.contains('pk-row-top')).lastIndexOf(true);
-      check('模拟交易·推荐·连板：连板票全部前置（置顶组在普通组之前）',
-        firstNonTop === -1 || lastTop < firstNonTop,
-        `置顶 ${topRows.length} 只 / 共 ${rows.length} 只，末位置顶=${lastTop} 首个非置顶=${firstNonTop}`);
-      check('模拟交易·推荐·连板：置顶行有视觉标识（左侧色边，不靠文字说明）',
-        topRows.length > 0, `${topRows.length} 行`);
-      // 分隔说明只在「置顶组与普通组同时存在」时才应出现——全体置顶时不需要分隔
-      const mixed = topRows.length > 0 && topRows.length < rows.length;
-      check('模拟交易·推荐·连板：含分隔说明（用户能看懂为什么上面排前面）',
-        !mixed || !!$('picksList')?.querySelector('.pk-sep'),
-        mixed ? '置顶与普通并存，应有分隔条' : `全体置顶（${topRows.length}/${rows.length}），无需分隔`);
-      check('模拟交易·推荐·连板：元信息报出连板只数与门槛',
-        /连板概率\s*≥\s*\d+%/.test(txt('picksMeta')), txt('picksMeta').slice(-60));
-      check('模拟交易·推荐·连板：标签 title 写明基准（可核验）',
-        /基准\s*\d+(\.\d+)?%/.test(streakBadges[0].getAttribute('title') || ''),
-        (streakBadges[0].getAttribute('title') || '').slice(0, 60));
-      // 连板样本量必须逐行给出（与上涨概率的样本量分开标注，不能混）
-      check('模拟交易·推荐·连板：给出连板概率的实测样本量',
-        /连板样本\s*\d+\s*例/.test(txt('picksList')),
-        (txt('picksList').match(/连板样本\s*\d+\s*例/) || ['无'])[0]);
-    } else {
-      // 当日无连板达标属正常情况，但「无标签」不能是渲染失败的借口：
-      // 元信息必须如实说明「无连板概率达门槛的标的」
-      check('模拟交易·推荐·连板：无达标标的时元信息如实说明（不静默省略）',
-        /连板概率\s*≥\s*\d+%/.test(txt('picksMeta')),
-        txt('picksMeta').slice(-60));
-    }
-
-    // 一键填入下单区：点「填入下单」后代码框被填上该股代码，且不自动提交
-    const firstCode = rows[0]?.dataset.code;
-    const fillBtn = rows[0]?.querySelector('button[data-act="pick-fill"]');
-    check('模拟交易·推荐：每行有「填入下单」按钮', !!fillBtn, fillBtn ? '有' : '缺失');
-    if (fillBtn) {
-      const pendBefore = ($('paperPendTable')?.querySelectorAll('tbody tr') || []).length;
-      clickEl(fillBtn);
-      await new Promise((r) => setTimeout(r, 200));
-      check('模拟交易·推荐：点「填入下单」把代码填入下单区',
-        $('poCode').value === firstCode, `poCode=${$('poCode').value} 期望=${firstCode}`);
-      const pendAfter = ($('paperPendTable')?.querySelectorAll('tbody tr') || []).length;
-      check('模拟交易·推荐：填入不自动下单（委托数不变）',
-        pendAfter === pendBefore, `${pendBefore} → ${pendAfter}`);
-
-      // ── 填入下单时按「建议比例」自动算量（用户要求：自动按建议比例填数量，
-      //    非 100 整数倍时取「不超过该比例的最大整手数」）──
-      // 口径必须来自引擎（src/paper.js 的 qtyByAssetPct），页面上不许另写一套取整：
-      // 这里用页面同款函数复算一遍作对照，而不是自己再写一遍公式。
-      const eng = window.__engine__ || {};
-      const lotSize = eng.LOT;
-      const qtyFilled = +$('poQty').value || 0;
-      check('模拟交易·推荐：填入下单区自动带上买入数量（不再留 0 让人手填）',
-        qtyFilled > 0, `poQty=${qtyFilled}`);
-      check('模拟交易·推荐：自动数量必为 100 股整数倍（A 股整手约束）',
-        qtyFilled > 0 && lotSize > 0 && qtyFilled % lotSize === 0,
-        `poQty=${qtyFilled} LOT=${lotSize}`);
-
-      // 期望值用「建议比例」在引擎里复算：suggestWeight 已含宽波动打折，
-      // 是「建议填多少」的唯一出处，绝不在断言里另设一个比例。
-      const pct = +rows[0]?.dataset?.suggestWeight || 0;
-      if (pct > 0 && qtyFilled > 0) {
-        // 引擎符号走 window.__engine__（paper.js 平铺在 jsdom 全局，脚本 module scope 取不到）；
-        // ACCT / lookup 在 paper_ui 的 IIFE 内，走 window.__paperCtx 桥接。
-        const ctx = window.__paperCtx || {};
-        const acct = ctx.account ? ctx.account() : null;
-        const st = ctx.stats ? ctx.stats() : eng.accountStats(acct);
-        const info = ctx.lookup ? ctx.lookup(firstCode) : null;
-        const px = eng.fillPrice(info.price, 'buy', eng.DEFAULT_SLIP);
-        // 同一引擎口径、同一比例、同一含滑点价 + 可用资金上限
-        const expect = eng.qtyByAssetPct(st.total, pct, px, { cash: acct.cash });
-        check('模拟交易·推荐：自动数量与引擎 qtyByAssetPct 同口径复算一致（规则唯一出处）',
-          expect.qty === qtyFilled, `页面=${qtyFilled} 引擎=${expect.qty}（比例 ${(pct * 100).toFixed(2)}%）`);
-        check('模拟交易·推荐：自动数量不超过建议比例预算（即「不超过该比例的最大整手数」）',
-          expect.need <= st.total * pct + 1e-6 || expect.capped,
-          `占用≈${expect.need} 预算=${Math.round(st.total * pct)}${expect.capped ? '（受可用资金限制）' : ''}`);
-        // 再买一手必然超预算 —— 证明取的是「最大」整手数而非保守缩水
-        if (!expect.capped) {
-          const gross2 = (expect.qty + lotSize) * px;
-          check('模拟交易·推荐：已取到该比例下「最大」整手数（再多一手会超预算）',
-            gross2 > st.total * pct + 1e-6,
-            `+1 手成交额≈${Math.round(gross2)} 预算=${Math.round(st.total * pct)}`);
-        }
-      } else {
-        check('模拟交易·推荐：首只推荐股带有可读的「建议比例」（自动填量的依据）',
-          false, `suggestWeight=${pct} poQty=${qtyFilled}`);
-      }
-
-      // 提示：必须告诉用户数量是按建议比例算出来的（避免被误认为手填）
-      const fillMsg = txt('paperMsg') || '';
-      check('模拟交易·推荐：填入后提示写明「建议 N.N% → M 股」（口径对用户可见）',
-        /建议\s*\d+(\.\d+)?%/.test(fillMsg) && /股/.test(fillMsg), fillMsg.slice(0, 90) || '无提示');
-
-      // 降级路径：建议比例为 0（当前档位不建议新建仓）→ 数量留空但不报错崩溃
-      const zeroBtn = [...($('picksList')?.querySelectorAll('button[data-act="pick-fill"]') || [])]
-        .find((b) => (+b.closest('.pk-row')?.dataset?.suggestWeight || 0) === 0);
-      if (zeroBtn) {
-        clickEl(zeroBtn);
-        await new Promise((r) => setTimeout(r, 200));
-        check('模拟交易·推荐：建议比例为 0 的票填入后数量留空（不硬凑一手）',
-          (+$('poQty').value || 0) === 0, `poQty=${$('poQty').value} code=${zeroBtn.dataset.code}`);
-      } else {
-        check('模拟交易·推荐：建议比例为 0 的降级路径（当日首只均有比例，用例跳过）',
-          true, '当日推荐均有建议比例');
-      }
-    }
-
-    // 点击整行 → 打开详情抽屉，且含「为什么入选」「评分构成」「风险」
-    clickEl(rows[0]);
-    await new Promise((r) => setTimeout(r, 120));
-    const dw = txt('dwBody');
-    check('模拟交易·推荐：点推荐行打开个股详情抽屉', drawerOpen() && dw.length > 60, txt('dwTitle'));
-    check('模拟交易·推荐：详情含「预测」「预期收益」「止损」「为什么入选」「风险提示」五段',
-      /为什么认为它大概率会涨/.test(dw) && /预期收益/.test(dw) && /止损与仓位/.test(dw)
-      && /为什么入选/.test(dw) && /风险提示/.test(dw),
-      dw.slice(0, 60));
-    check('模拟交易·推荐：详情写明「概率是历史统计，不是收益承诺」（诚实边界）',
-      /历史统计/.test(dw) && /不是收益承诺/.test(dw), dw.slice(-100));
-    check('模拟交易·推荐：详情区分「收盘价买入」与「开盘价买入」两种口径',
-      /T 日收盘买入/.test(dw) && /T\+1 开盘买入/.test(dw), '两种口径均已标注');
-    escClose();
-
-    // 脚注必须写明不构成投资建议（合规底线）
-    check('模拟交易·推荐：脚注声明不构成投资建议',
-      /不构成投资建议/.test(txt('picksNote')), txt('picksNote').slice(-60));
-    check('模拟交易·推荐：脚注写明「概率是历史统计，不是收益承诺」',
-      /概率是历史统计/.test(txt('picksNote')) && /不是收益承诺/.test(txt('picksNote')),
-      txt('picksNote').slice(0, 80));
-    check('模拟交易·推荐：脚注列出剔除规则（用户可核对筛掉了什么）',
-      /换手≥25%/.test(txt('picksNote')) && /连板≥5/.test(txt('picksNote')),
-      txt('picksNote').slice(0, 120));
-  }
-
-  // 剔除清单：必须在页面上可见（折叠面板），不能被静默丢弃
-  {
-    const rejBox = $('picksRejected');
-    const rejTxt = txt('picksRejected');
-    const hasRej = /已剔除\s*\d+\s*只/.test(rejTxt);
-    check('模拟交易·推荐：被剔除的「大概率亏」标的在页面可见（折叠面板，非静默丢弃）',
-      !!rejBox && (hasRej || rejTxt.trim() === ''), rejTxt.slice(0, 60) || '当日无剔除');
-    if (hasRej) {
-      check('模拟交易·推荐：剔除清单逐条给出剔除原因',
-        /换手过高|连板过高|北交所|ST|仅小额外资金|无涨停也无有效净买/.test(rejTxt),
-        (rejTxt.match(/换手过高|连板过高|北交所|ST|仅小额外资金|无涨停也无有效净买/) || ['无'])[0]);
-      check('模拟交易·推荐：剔除原因带实测依据（不是空泛措辞）',
-        /实测|T\+1|上涨占比|均收益|回撤/.test(rejTxt), rejTxt.slice(0, 100));
-    }
-  }
-
-  // 记录页签：成交 / 全部委托（含被拒）切换
-  clickEl($('paperTabs').querySelector('button[data-view="order"]'));
-  await new Promise((r) => setTimeout(r, 80));
-  check('模拟交易：可切到「全部委托（含被拒）」视图',
-    $('paperHistHead').querySelectorAll('th').length >= 8,
-    `${$('paperHistHead').querySelectorAll('th').length} 列`);
-
-  // 详情抽屉：点账户指标看口径
-  const firstStat = $('paperStats').querySelector('.ps-cell[data-act="pstat"]');
-  clickEl(firstStat);
-  check('模拟交易：点账户指标打开详情抽屉（写明计算口径）',
-    drawerOpen() && txt('dwBody').length > 40, txt('dwTitle'));
-  escClose();
-
-  // 净值曲线骨架（无成交时可能样本不足，但不该抛异常）
-  check('模拟交易：净值卡渲染（样本不足时给出提示而非空白）',
-    ($('paperPerf')?.querySelectorAll('.ps-cell').length || 0) >= 1, txt('paperPerf').slice(0, 40));
-
-  // 重置按钮可用
-  check('模拟交易：账户总览工具条按钮齐备（重置/导出/导入/结算）',
-    !!$('paperReset') && !!$('paperExport') && !!$('paperImport') && !!$('paperSettle'), '');
-
-  // ── 初始资金自定义（默认 100 万）──
-  const initInp = $('paperInitCash');
-  const initBtn = $('paperApplyInit');
-  check('模拟交易·初始资金：提供自定义输入框与「新建账户」按钮',
-    !!initInp && !!initBtn, [initInp && 'input', initBtn && 'btn'].filter(Boolean).join('+') || '缺失');
-  check('模拟交易·初始资金：输入框回显账户实际初始资金（不是写死的默认值）',
-    !!initInp && Math.round(+initInp.value) === Math.round(+window.__paperCtx.account().initCash),
-    initInp ? `input=${initInp.value} acct=${window.__paperCtx.account().initCash}` : '缺失');
-
-  if (initInp && initBtn) {
-    // 越界金额必须被拒绝且不改账户（不静默夹紧）。
-    // 注意：本脚本会对 paper_ui.js 做**两次** window.eval（一次常规、一次种账本），
-    // 于是同一个输入框上挂了两个 change 监听。disptach 一次 change 两个都会跑，
-    // 前者回填输入框、后者再读到回填后的合法值 → 会假报成功。
-    // 所以这里直接验证**拦截点**（偏好存储）与**动作点**（新建账户）两处，
-    // 不依赖监听器个数——这才是真正要守的契约。
-    const beforeCash = window.__paperCtx.account().initCash;
-    const setPref = window.__paperInitTest?.saveInitCash;
-    if (typeof setPref === 'function') {
-      check('模拟交易·初始资金：低于下限被拒绝且不写入偏好',
-        setPref(10) === null && window.localStorage.getItem('paper-init-cash') == null,
-        `saveInitCash(10)=${setPref(10)} ls=${window.localStorage.getItem('paper-init-cash')}`);
-      check('模拟交易·初始资金：高于上限被拒绝且不写入偏好',
-        setPref(999999999999) === null, `saveInitCash(1e12)=${setPref(999999999999)}`);
-      check('模拟交易·初始资金：合法金额写入偏好（如 50 万）',
-        setPref(500000) === 500000 && window.localStorage.getItem('paper-init-cash') === '500000',
-        `ls=${window.localStorage.getItem('paper-init-cash')}`);
-    } else {
-      check('模拟交易·初始资金：测试钩子 window.__paperInitTest 可用', false, '未挂载');
-    }
-
-    // 输入框值本身也要能承载越界输入（不被 min/max 属性挡掉，好让 JS 给出可读原因）
-    initInp.value = '10';
-    initInp.dispatchEvent(new window.Event('change', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 80));
-    check('模拟交易·初始资金：越界输入不会改动账户',
-      Math.round(+window.__paperCtx.account().initCash) === Math.round(beforeCash),
-      `acct=${window.__paperCtx.account().initCash}（应保持 ${beforeCash}）`);
-
-    // 合法金额 → 新建账户（confirm 自动确认）
-    window.confirm = () => true;
-    initInp.value = '500000';
-    await new Promise((r) => setTimeout(r, 80));
-    check('模拟交易·初始资金：只改输入框不会立刻动账户（先设后建）',
-      Math.round(+window.__paperCtx.account().initCash) === Math.round(beforeCash),
-      `acct=${window.__paperCtx.account().initCash}`);
-
-    clickEl(initBtn);
-    await new Promise((r) => setTimeout(r, 200));
-    const a2 = window.__paperCtx.account();
-    check('模拟交易·初始资金：点「新建账户」后按新金额建户',
-      Math.round(+a2.initCash) === 500000 && Math.round(+a2.cash) === 500000,
-      `initCash=${a2.initCash} cash=${a2.cash}`);
-    check('模拟交易·初始资金：新账户总资产 = 新初始资金（总览随之刷新）',
-      window.__paperCtx.stats().total === 500000, `total=${window.__paperCtx.stats().total}`);
-    check('模拟交易·初始资金：新账户无持仓无成交（确实是全新账户）',
-      Object.keys(a2.positions || {}).length === 0 && (a2.trades || []).length === 0,
-      `positions=${Object.keys(a2.positions || {}).length} trades=${(a2.trades || []).length}`);
-
-    // 重置应保留「账户自己的初始资金」，而不是回落到默认 100 万
-    clickEl($('paperReset'));
-    await new Promise((r) => setTimeout(r, 200));
-    check('模拟交易·初始资金：重置账户保留原初始资金（不回落到默认 100 万）',
-      Math.round(+window.__paperCtx.account().initCash) === 500000,
-      `initCash=${window.__paperCtx.account().initCash}`);
-
-    // 副标题也要跟着变——只更新总览、副标题挂旧金额，两处数字打架比不显示更糟
-    check('模拟交易·初始资金：副标题同步报出新的初始资金（不与总览打架）',
-      txt('paperSub').includes('500,000') && !txt('paperSub').includes('1,000,000'),
-      txt('paperSub').slice(0, 70));
-
-    // 还原到 100 万，避免影响后续断言（下方多处断言写死 1,000,000）
-    initInp.value = '1000000';
-    initInp.dispatchEvent(new window.Event('change', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 80));
-    clickEl(initBtn);
-    await new Promise((r) => setTimeout(r, 200));
-    check('模拟交易·初始资金：可改回 100 万（默认值未被写死）',
-      Math.round(+window.__paperCtx.account().initCash) === 1000000,
-      `initCash=${window.__paperCtx.account().initCash}`);
-  }
 }
 
 // ── 研判报告：复制 / 导出文档 / 打印 ──
@@ -2231,8 +1316,8 @@ escClose();
   if (Report) {
     const rep = Report.parseReport($('briefBody'));
     const opts = { dataDate: '2026-09-30', generatedAt: '2026-10-01 10:00', url: 'http://localhost/' };
-    check('报告导出：能解析出全部 7 个段落',
-      rep.sections.length === 7, `${rep.sections.length} 段`);
+    check(`报告导出：能解析出全部 ${EXPECTED_SECTIONS} 个段落`,
+      rep.sections.length === EXPECTED_SECTIONS, `${rep.sections.length} 段`);
     // 公文体例：屏幕把序号「一、」放在独立的 .bf-sec-no 里，标题文本不含序号；
     // 导出层只翻译屏幕 DOM，序号由版式层重加。故断言分两层：
     //   ① 导出标题 = 屏幕**内容 span** 的文本（一字不差，证明是翻译而非重写）；
@@ -2242,10 +1327,10 @@ escClose();
     const screenNos = [...$('briefBody').querySelectorAll('.bf-sec > .bf-h .bf-sec-no')]
       .map((n) => n.textContent.trim());
     check('报告导出：段落标题与屏幕一致（内容 span 逐段相同）',
-      screenTitles.length === 7 && rep.sections.every((s, i) => s.title === screenTitles[i]),
+      screenTitles.length === EXPECTED_SECTIONS && rep.sections.every((s, i) => s.title === screenTitles[i]),
       `屏幕 ${screenTitles.length} 段 / 导出 ${rep.sections.length} 段`);
     check('报告导出：屏幕段序号为公文「一、」（圆形序号已退役）',
-      screenNos.join('') === ['一、', '二、', '三、', '四、', '五、', '六、', '七、'].join(''),
+      screenNos.join('') === ['一、', '二、', '三、', '四、', '五、', '六、'].slice(0, EXPECTED_SECTIONS).join(''),
       screenNos.join(' ') || '未找到 .bf-sec-no');
     check('报告导出：导出标题不含序号（序号由版式层统一重加，防双序号）',
       rep.sections.every((s) => !/^[一二三四五六七八九十]+、/.test(s.title) && !/[①②③④⑤⑥⑦]/.test(s.title)),
@@ -2295,7 +1380,9 @@ escClose();
       /\|\s*板数\s*\|\s*只数\s*\|\s*个股\s*\|/.test(md) && /\|\s*---\s*\|/.test(md), '');
     check('模板③·导出：章节口径收进 <details>，文末有独立折叠附录',
       (md.match(/<details>/g) || []).length === (md.match(/<\/details>/g) || []).length
-      && md.includes('<summary>🔍 点击展开查看口径</summary>')
+      && md.includes('<summary>📎 口径说明（附）</summary>')
+      // ★ 导出/打印稿里不能出现"点击展开"：静态文档里它是一句做不到的邀请
+      && !md.includes('点击展开')
       && md.includes('口径附录'), `details ${(md.match(/<details>/g) || []).length} 个`);
     check('模板③·导出：HTML 折叠件为原生 <details>（无脚本也能折叠）',
       html.includes('<details class="caliber"') && !/<script/i.test(html), '');
@@ -2357,8 +1444,8 @@ escClose();
     /(^|\s)通过 \d+\/\d+ 项/.test($('briefAudit')?.textContent || '')
     && !/未通过/.test($('briefAudit')?.textContent || ''),
     $('briefAudit')?.textContent || '(空)');
-  check('报告质检：正常数据下报告真的渲染在屏幕上（7 段齐备）',
-    window.document.querySelectorAll('#briefBody .bf-sec').length === 7,
+  check(`报告质检：正常数据下报告真的渲染在屏幕上（${EXPECTED_SECTIONS} 段齐备）`,
+    window.document.querySelectorAll('#briefBody .bf-sec').length === EXPECTED_SECTIONS,
     `${window.document.querySelectorAll('#briefBody .bf-sec').length} 段`);
   check('报告质检：审计结论挂在 body[data-brief-audit] 上供外部读取',
     window.document.body.dataset.briefAudit === 'pass',
@@ -2403,7 +1490,7 @@ if (window.ReportAudit && window.ReportExport && typeof window.__renderBriefHtml
   const savedHtml = $body.innerHTML;
   const savedBlocked = $body.classList.contains('audit-blocked');
 
-  // 注入一份「少一段 + 缺摘要」的坏报告 HTML：模板①（摘要）与模板②（固定 7 段）同时被破坏
+  // 注入一份「少一段 + 缺摘要」的坏报告 HTML：模板①（摘要）与模板②（固定段数）同时被破坏
   const evil = '<div class="bf-meta">数据日期 2026-09-30</div>'
     + '<div class="bf-sec" id="bfsec1"><div class="bf-h">① 情绪定位</div>'
     + '<div class="bf-body"><div class="bf-li">情绪 62.3</div></div></div>';
@@ -2548,75 +1635,24 @@ check('样式：预警严重度色条三档齐全（风险/机会/提示各一�
 check('样式：预警条目窄屏折行（操作按钮整行右对齐）',
   /@media \(max-width: 560px\)/.test(cssTxt) && cssTxt.includes('.al-actions'), '');
 
-// ── 降级规则（龙虎榜净买入 ≤ 0）：扣分 + 告警标签 + 人工复核门槛 ──
-// 这一组断言守的是**用户裁定的处置**，而不是某段实现：
-//   ① 不禁止委托（不能回到 rejectedBy）；② 扣固定分；③ 有告警标签；④ 复核后才放行。
+// ── 降级规则（龙虎榜净买入 ≤ 0）：扣分 + 告警标签 ──
+// 这组断言守的是**用户裁定的处置**（① 不禁止委托；② 扣固定分；③ 有告警标签；
+// ④ 净买 ≤ 0 落观察池而非剔除桶）。模拟交易台面下线后，UI 侧的复核状态机
+// （paper_ui.js 的 REVIEW_OK，原挂在 window.__reviewGate）不再进页面，
+// 故改为**直读规则引擎**断言常量本身——规则保留一天，守卫就有效一天。
 {
-  const RG = dom.window.__reviewGate;
-  const LF = dom.window.__lhbfilter__;
-  const PK = dom.window.__picks__;
-  check('降级：复核门槛句柄已桥接（__reviewGate）', !!(RG && typeof RG.outflowOf === 'function'), '');
-  if (RG && LF) {
-    // 常量必须同源：UI 侧读到的扣分值就是 lhbfilter 的常量，不是渲染层另写的字面量
-    check('降级：扣分值经桥接读到的与规则引擎同源',
-      RG.PENALTY.SCORE === LF.LHB_NET_OUTFLOW_PENALTY.SCORE
-      && RG.PENALTY.PROB === LF.LHB_NET_OUTFLOW_PENALTY.PROB
-      && RG.PENALTY.SCORE === 10 && RG.PENALTY.PROB === 8,
-      `${RG.PENALTY.SCORE}/${RG.PENALTY.PROB}`);
-    check('降级：告警标签文案与 FLAG_LHB 同源',
-      RG.TAG === LF.FLAG_LHB.NET_OUTFLOW && /龙虎当日资金净流出/.test(RG.TAG) && RG.TAG.startsWith('⚠'), RG.TAG);
-    // 桶的归属：净买 ≤ 0 必须是 watch（可展示、禁自动下单），不是 rejected
-    check('降级：净买 ≤ 0 落备选观察池而非剔除桶',
-      LF.BUCKET.WATCH === 'watch' && LF.BUCKET.REJECTED === 'rejected', '');
-  }
-  // picks 侧标签符号可用（供推荐卡片渲染）
+  const LF = await import('../src/lhbfilter.js').catch(() => null);
+  const PK = await import('../src/picks.js').catch(() => null);
+  check('降级：扣分值与规则引擎同源（SCORE 10 / PROB 8）',
+    !!LF && LF.LHB_NET_OUTFLOW_PENALTY.SCORE === 10 && LF.LHB_NET_OUTFLOW_PENALTY.PROB === 8,
+    LF ? `${LF.LHB_NET_OUTFLOW_PENALTY.SCORE}/${LF.LHB_NET_OUTFLOW_PENALTY.PROB}` : 'lhbfilter 加载失败');
+  check('降级：告警标签文案与 FLAG_LHB 同源',
+    !!LF && /龙虎当日资金净流出/.test(LF.FLAG_LHB.NET_OUTFLOW) && LF.FLAG_LHB.NET_OUTFLOW.startsWith('⚠'),
+    LF ? LF.FLAG_LHB.NET_OUTFLOW : 'lhbfilter 加载失败');
+  check('降级：净买 ≤ 0 落备选观察池而非剔除桶',
+    !!LF && LF.BUCKET.WATCH === 'watch' && LF.BUCKET.REJECTED === 'rejected', '');
   check('降级：推荐引擎透出告警标签常量（NET_OUTFLOW_TAG）',
-    !!(PK && PK.NET_OUTFLOW_TAG === '⚠龙虎当日资金净流出，谨慎开仓'), PK ? PK.NET_OUTFLOW_TAG : 'missing');
-}
-
-// 复核门槛的**状态机**：按代码记账、一次性、换代码作废。
-// 这四条不涉及行情，纯逻辑，故可以脱开账户直接断言。
-{
-  const RG = dom.window.__reviewGate;
-  if (RG) {
-    RG.clear();
-    check('复核门槛：初始为「未复核」', RG.passed('600001') === false, '');
-    RG.mark('600001');
-    check('复核门槛：确认后该票放行', RG.passed('600001') === true, '');
-    check('复核门槛：确认按代码记账，不波及其他票', RG.passed('600002') === false, '');
-    RG.clear();
-    check('复核门槛：clear 后回到未复核（换代码/换方向即作废）', RG.passed('600001') === false, '');
-  }
-}
-
-// 下单区必须真的挂了复核提示条的容器，否则门槛只拦不解释，用户无从"复核"
-check('降级：下单区存在复核提示条容器（#poGate）', htmlTxt.includes('id="poGate"'), '');
-check('样式：复核提示条有未复核/已复核两态样式',
-  cssTxt.includes('.po-gate') && cssTxt.includes('.po-gate.ok') && cssTxt.includes('.po-gate-btn'), '');
-check('样式：降级告警标签有独立样式类（.pk-outflow）', cssTxt.includes('.pk-outflow'), '');
-
-// ── 历史回填天（emotion._backfill）不得进入展示层 ──
-// 回填天只有 lhb 与 s_net，其 emotion.value 是 **s_net 单因子占位值、不是综合分**。
-// 一旦混进走势图/报告，会被读成「那天情绪分只有 12 分」——一个凭空捏造的结论。
-// 守两头：① 展示过滤函数存在且真的按 _backfill 过滤；② 报告样本数不含回填天。
-{
-  const src = readFileSync(join(ROOT, 'app.js'), 'utf8');
-  check('回填：展示层过滤函数 displayDays 存在且按 _backfill 过滤',
-    /function displayDays\(arc\)/.test(src) && /_backfill/.test(src)
-    && /return all\.filter\(\(d\) => !\(d\.emotion && d\.emotion\._backfill\)\)/.test(src), '');
-  check('回填：报告/走势/抽屉不再直接消费 ARC.all_days（只剩 fingerprint 全量用）',
-    (src.match(/displayDays\(ARC\)|displayDays\(arc\)|displayDays\(lastArc\)/g) || []).length >= 12, '');
-  const body = (dom.window.document.querySelector('#briefBody') || {}).textContent || '';
-  const m = body.match(/样本\s*(\d+)\s*个交易日/);
-  const n = m ? Number(m[1]) : null;
-  // 期望值从**页面同款视图**推导，不写死常量：分层加载后页面持有的是最近 30 日，
-  // 写死 33（已加载天数）会在切片窗口变化时假失败，写死 241（完整档）则永远是错的。
-  const viewFull = arcView.all_days.filter((d) => !(d.emotion && d.emotion._backfill)).length;
-  check('回填：报告样本交易日数不含回填天（＝已加载视图的非回填天数）',
-    n !== null && n === viewFull && n < arcAll.all_days.length,
-    `报告 ${n} · 视图非回填 ${viewFull} · 完整档 ${arcAll.all_days.length}`);
-  check('回填：报告未出现「241 个交易日」这类被回填天数污染的说法',
-    !/241\s*个交易日/.test(body), '');
+    !!PK && PK.NET_OUTFLOW_TAG === '⚠龙虎当日资金净流出，谨慎开仓', PK ? PK.NET_OUTFLOW_TAG : 'missing');
 }
 
 // ── 分层加载：跨模块不得重复拉滚动窗 ──────────────────────────────────────
@@ -2700,14 +1736,10 @@ check('样式：降级告警标签有独立样式类（.pk-outflow）', cssTxt.i
     fullIdx >= 0 && /loadFullUniverse\(\)\.then/.test(paperRaw), '');
   check('标的池：完整池只拉一次（模块级 promise 槽位；无槽位＝每次输入代码都重拉 1MB）',
     /__uniFullPromise/.test(paperRaw), '');
-  // ⑦ 运行时：完整池在整个页面生命周期内只被拉一次
-  const uniHits = fetchCalls.filter((u) => u === 'data/paper_universe.json').length;
-  check('标的池：完整池运行时拉取 ≤ 1 次（分档的另一半守卫）',
-    uniHits <= 1, `${uniHits} 次`);
-  // ⑧ 运行时：精简池必须真的被拉过（否则就是"以为省了，其实还在拉 1MB"）
-  check('标的池：精简池运行时确实被拉取（首屏走的是它）',
-    fetchCalls.some((u) => u === 'data/paper_universe-lite.json'),
-    fetchCalls.filter((u) => /paper_universe/.test(u)).join(' , ') || '一个都没拉');
+  // ⑦ 运行时：台面下线后前端不应再拉任何池子（池子仅由 CI 构建与提交）
+  const uniHits = fetchCalls.filter((u) => /paper_universe/.test(u)).length;
+  check('标的池：运行时前端不拉池子（>0 说明有人复活了旧链路）',
+    uniHits === 0, `${uniHits} 次`);
   // ⑨ 软依赖不得参与下单判定：这是分档的**安全前提**。
   //    active/quoteFresh/lastSeen/srcs/reason/huanshou 全部只影响展示文案；
   //    一旦有人拿 u.active 去拦下单，分档就变成"先看到的信息决定能不能下单"。
@@ -2722,18 +1754,18 @@ check('样式：降级告警标签有独立样式类（.pk-outflow）', cssTxt.i
   // ⑪ 分档必须被**披露**：分档本身没问题，"用户不知道现在是哪一档"才是。
   //    #loadScope 是唯一披露点，两条分档链（档案深度 / 标的池档位）都要在里面。
   const appRaw2 = readFileSync(join(ROOT, 'app.js'), 'utf8');
-  check('标的池：分档状态在 #loadScope 里被披露（用户要知道数字来自哪一档）',
-    /function renderScope\(/.test(appRaw2) && /__uniStaged/.test(appRaw2)
-    && /标的池：精简档/.test(appRaw2), '');
+  check('标的池：前端披露已与标的池解耦（不再宣称「标的池：精简档」）',
+    /function renderScope\(/.test(appRaw2) && !/__uniStaged/.test(appRaw2)
+    && !/标的池：精简档/.test(appRaw2), '');
   // ⑫ 补全完成后要能**只**重刷披露块，而不是重跑整页渲染
-  check('标的池：补全后只重刷披露块（window.__renderScope，不重跑 7 段渲染）',
+  check('标的池：披露块重刷钩子仍在（window.__renderScope；台面下线后为零成本保留）',
     /window\.__renderScope\s*=\s*renderScope/.test(appRaw2)
     && /window\.__renderScope\(/.test(paperRaw), '');
-  // 运行时：首屏披露里确实带上了"精简档"
+  // 运行时：首屏披露只讲档案深度，不再提标的池
   {
     const scopeTxt = txt('loadScope');
-    check('标的池：首屏 #loadScope 文案含"标的池：精简档"（运行时可见）',
-      /标的池：精简档/.test(scopeTxt) || /精简池缺失/.test(scopeTxt),
+    check('标的池：首屏 #loadScope 不再出现标的池字样（台面已下线）',
+      !/标的池/.test(scopeTxt),
       scopeTxt.slice(0, 90));
   }
 }
@@ -2767,19 +1799,42 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
     check('板块相对强弱：超额列全部带符号（+ 或 −）', exs.length === 10 && exs.every((e) => /^[+\-−]/.test(e)),
       exs.join(','));
   }
-  // 报告表格
-  const relTbl = window.document.querySelector('table.rel-table');
-  check('板块相对强弱：报告内 rel-table 已渲染', !!relTbl, relTbl ? '' : '未找到 .rel-table');
-  if (relTbl) {
-    const cap = relTbl.getAttribute('data-caption') || '';
-    check('板块相对强弱：报告表格 data-caption 标注基准（口径可追溯）',
-      /基准/.test(cap) && /上证指数|行业中位数/.test(cap), cap.slice(0, 60));
-    check('板块相对强弱：报告表格 10 个数据行', relTbl.querySelectorAll('tbody tr').length === 10,
-      `${relTbl.querySelectorAll('tbody tr').length} 行`);
+  // 报告表格 —— ★ 攻/防现在是**两张各自合法的表**（一张表只允许一个 <thead>，
+  //   原先塞两组 thead 会让真实浏览器移位/丢表头，导出层也会解析成"6 列表头 vs 3 列数据"）。
+  const relTbls = [...window.document.querySelectorAll('table.rel-table')];
+  check('板块相对强弱：报告内 rel-table 已渲染', relTbls.length > 0, relTbls.length ? '' : '未找到 .rel-table');
+  if (relTbls.length) {
+    check('板块相对强弱：攻/防拆为两张表（一张表只允许一个 <thead>）', relTbls.length === 2,
+      `${relTbls.length} 张 .rel-table`);
+    // 每张表都必须自洽：表头列数 == 数据行单元格数（防"表头 3 列、数据 2 格"的错位）
+    const misaligned = relTbls.filter((t) => {
+      const nTh = t.querySelectorAll('thead th').length;
+      return [...t.querySelectorAll('tbody tr')].some((tr) => tr.children.length !== nTh);
+    });
+    check('板块相对强弱：每张表表头列数 == 数据行单元格数（无错位）', misaligned.length === 0,
+      `${misaligned.length} 张表列数不符`);
+    // 每张表只能有一个 thead/tbody（多表头是本次修的 bug 根源）
+    const multiHead = relTbls.filter((t) => t.querySelectorAll('thead').length !== 1
+      || t.querySelectorAll('tbody').length !== 1);
+    check('板块相对强弱：每张表恰一个 thead + 一个 tbody', multiHead.length === 0,
+      `${multiHead.length} 张表结构异常`);
+    const allRows = relTbls.reduce((a, t) => a + t.querySelectorAll('tbody tr').length, 0);
+    check('板块相对强弱：报告表格 10 个数据行', allRows === 10, `${allRows} 行`);
     // 列头须点明是"超额进攻/超额防御"，而非泛泛的"涨幅榜"
-    const heads = [...relTbl.querySelectorAll('thead th')].map((x) => x.textContent.trim()).join('|');
+    const heads = relTbls.map((t) => [...t.querySelectorAll('thead th')].map((x) => x.textContent.trim()).join('|')).join(' / ');
     check('板块相对强弱：表头含"超额进攻"与"超额防御"', /超额进攻/.test(heads) && /超额防御/.test(heads),
-      heads.slice(0, 70));
+      heads.slice(0, 90));
+    // data-caption 逐表标注基准（口径可追溯）
+    const caps = relTbls.map((t) => t.getAttribute('data-caption') || '');
+    check('板块相对强弱：报告表格 data-caption 标注基准（口径可追溯）',
+      caps.every((c) => /基准/.test(c) && /上证指数|行业中位数/.test(c)), caps.map((c) => c.slice(0, 40)).join(' / '));
+  }
+  // ★ 回归：报告 §4 的 rel 表必须是**真表格节点**，不得被导出层摊平成一行文字
+  {
+    const flat = [...window.document.querySelectorAll('#briefBody .bf-li')]
+      .some((el) => /涨跌幅超额/.test(el.textContent));
+    check('板块相对强弱：报告 §4 的表格未被摊平成一行文字（★ 真实 bug 回归）', !flat,
+      flat ? '发现被摊平的「涨跌幅超额…」文本行' : '');
   }
   // 源码层：前端不得自行相减（口径唯一出处守卫的运行时补充）
   {

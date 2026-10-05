@@ -160,8 +160,20 @@ export function sectionTitle(secTitle) {
     .replace(/^[一二三四五六七八九十]+、\s*/, '');
 }
 
-/** 章节口径折叠件的统一标题（模板规定，屏幕与导出必须一致） */
+/** 章节口径折叠件的统一标题——**屏幕**用（.bf-caliber 的 <summary>）。模板规定，屏幕必须用它。 */
 export const CALIBER_SUMMARY = '🔍 点击展开查看口径';
+
+/**
+ * 章节口径折叠件的标题——**导出文档/打印稿**用。
+ *
+ * 为什么不与屏幕共用同一个串：屏幕上的字面是「点击展开查看口径」，那是一个**真能点的**
+ * 交互提示（<details> 确实可展开）。但导出的 .html/.md 是拿去发邮件、进知识库、直接
+ * 打印成 PDF 的：在纸面或静态文档里"点击展开"是一句**做不到的邀请**——读者找不到可点的
+ * 东西，只会以为是文档坏了。所以导出侧改用不带动作词的静态标签，只说明这一段是什么。
+ *
+ * 保留「口径」二字是刻意的：审计规则 caliber-summary-text 依赖它来确认折叠件语义没被换掉。
+ */
+export const CALIBER_SUMMARY_DOC = '📎 口径说明（附）';
 
 /**
  * 三档"配色标记"（模板预留）：
@@ -240,17 +252,31 @@ export function parseReport(rootEl) {
    * .bf-table 是表格。**只遍历直接子节点**，保持行的粒度（口语：一行是一行）。
    * 表格单独作为 { kind:'table', head, rows } 返回，导出层负责渲染成真表格，
    * 不做「表格摊平成一行文字」那种丢结构的降级。
+   *
+   * ★ 表格被 .bf-li 包住时也要认出来（真实 bug 的修复）：
+   *   页面侧的写法有两种——`sec3` 的连板天梯是**裸传**（.bf-body 的直接子就是 .bf-table），
+   *   而 `sec4` 的板块相对强弱原先写成 `li(head + table)`，表格落在 .bf-li **里面**。
+   *   只认直接子的话，后者会掉进 `kind:'li'` 分支，被 inline() 摊平成
+   *   「超额进攻（前 5）涨跌幅超额攻0↑+1.00%…」这样一坨无结构文本——
+   *   表格在导出文档里**整块消失**，只剩一串粘在一起的表头与数字。
+   *   故这里再探一层：.bf-li 内部若恰有一个 .bf-table，按表格处理（行内其余文字忽略，
+   *   因为那本就是表格的标题行，仍在页面上以 .bf-li 形式单独存在）。
    */
   const extractLines = (bodyEl) => {
     const lines = [];
     if (!bodyEl) return lines;
     for (const child of bodyEl.children) {
       const cls = child.className || '';
-      if (/\bbf-table\b/.test(cls)) {
-        const head = [...child.querySelectorAll('thead th, thead td')].map((th) => clean(th.textContent));
-        const rows = [...child.querySelectorAll('tbody tr')].map((tr) =>
+      // 直接子就是表格，或 .bf-li 里恰好只有一个表格（后者是历史写法，兼容之）
+      const tblEl = /\bbf-table\b/.test(cls)
+        ? child
+        : (/\bbf-li\b/.test(cls) && child.querySelectorAll('.bf-table').length === 1
+          ? child.querySelector('.bf-table') : null);
+      if (tblEl) {
+        const head = [...tblEl.querySelectorAll('thead th, thead td')].map((th) => clean(th.textContent));
+        const rows = [...tblEl.querySelectorAll('tbody tr')].map((tr) =>
           [...tr.children].map((td) => tidyWarn(clean(inline(td)))));
-        lines.push({ kind: 'table', head, rows, caption: clean(child.getAttribute('data-caption') || '') });
+        lines.push({ kind: 'table', head, rows, caption: clean(tblEl.getAttribute('data-caption') || '') });
       } else if (/\bbf-todo\b/.test(cls)) {
         lines.push({ kind: 'todo', text: tidyWarn(clean(inline(child))) });
       } else if (/\bbf-li\b/.test(cls)) {
@@ -417,7 +443,7 @@ export function toMarkdown(rep, opts = {}) {
     if (sec.caliber) {
       L.push('');
       L.push(`<details>`);
-      L.push(`<summary>${CALIBER_SUMMARY}</summary>`);
+      L.push(`<summary>${CALIBER_SUMMARY_DOC}</summary>`);
       L.push('');
       L.push(stripMark(sec.caliber, true));
       L.push('');
@@ -442,7 +468,7 @@ export function toMarkdown(rep, opts = {}) {
   if (rep.foot) {
     L.push('---'); L.push('');
     L.push('<details>');
-    L.push('<summary>🔍 点击展开查看口径（备注）</summary>');
+    L.push(`<summary>${CALIBER_SUMMARY_DOC}（备注）</summary>`);
     L.push('');
     L.push(rep.foot);
     L.push('');
@@ -585,7 +611,7 @@ export function toStandaloneHtml(rep, opts = {}) {
     flush();
     // 章节口径折叠件（默认收起，仅展示指标）——打印时由 CSS 强制展开
     if (sec.caliber) {
-      body.push(`<details class="caliber"><summary>${escHtml(CALIBER_SUMMARY)}</summary>`);
+      body.push(`<details class="caliber"><summary>${escHtml(CALIBER_SUMMARY_DOC)}</summary>`);
       body.push(`<p>${inlineToHtml(sec.caliber)}</p>`);
       body.push(`</details>`);
     }
@@ -601,7 +627,7 @@ export function toStandaloneHtml(rep, opts = {}) {
   }
   // 兼容历史形态的口径备注
   if (rep.foot) {
-    body.push(`<details class="caliber appendix"><summary>🔍 点击展开查看口径（备注）</summary>`);
+    body.push(`<details class="caliber appendix"><summary>${escHtml(CALIBER_SUMMARY_DOC)}（备注）</summary>`);
     body.push(`<p>${escHtml(rep.foot)}</p>`);
     body.push(`</details>`);
   }
@@ -754,11 +780,28 @@ b, strong { font-weight: 700; color: #000; }
   a { color: inherit; text-decoration: none; }
   .sec h2.h1, .sec h3.h2 { break-after: avoid; }
   .doc-foot { break-inside: avoid; }
-  /* 折叠着打印会缺内容：口径件一律强制展开，并隐藏可点击的提示文案 */
+
+  /* ★ 折叠着打印会缺内容——这是本轮修的第二个真实 bug。
+     旧写法只对 "> p" 与 "> ul" 加了 display:block，看起来「展开」了，但其实没用：
+     一个**未 open** 的 <details> 在 Chromium 里根本不为子内容生成盒子
+     （内容落在 UA 的 slot 里被 content-visibility 隐掉），
+     所以无论后代怎么写 display，打印出来都还是缺的。
+     正确做法是让 details **自身**在打印时表现为常开容器：
+       ① 把 <summary> 的三角标记去掉（纸面上没有可折叠的语义）；
+       ② 用 "details.caliber > *:not(summary)" 全量兜住，而不是逐个数 p/ul——
+          口径正文可能含表格、列表、多段，漏一种就少一块（这正是"打印看不到全部内容"的由来）。
+     不依赖 JS、不依赖文档里是否写了 open，纯 CSS 保证纸面完整。 */
+  details.caliber { border: none; background: transparent; }
   details.caliber > summary { list-style: none; }
-  details.caliber > p, details.caliber > ul { display: block !important; }
+  details.caliber > summary::-webkit-details-marker { display: none; }
+  details.caliber > summary::marker { content: ''; }
+  /* 关键：把折叠件的全部内容强制显示（含未 open 的 details） */
+  details.caliber > *:not(summary) { display: block !important; }
+  details.caliber > :not(summary) { break-inside: avoid; }
+
   .rep-tbl { break-inside: avoid; }
   .rep-tbl thead { display: table-header-group; }
+  .rep-tbl tr { break-inside: avoid; }
 }
 `;
 
