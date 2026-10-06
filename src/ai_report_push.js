@@ -30,6 +30,10 @@ export const PUSH_CONSTS = {
   MSG_CAP: 2000,                   // 企微 text ~2048 字节，留余量
   FRESH_WINDOW_MS: 15 * 60 * 1000, // --latest 新鲜度窗口：只推"本次运行刚生成"的报告
   WEBHOOK_ENV: 'OPS_WEBHOOK',      // 复用现有运维通道 secret
+  // 盘前"数据截至"附注阈值（自然日）：gap>3 才附"假期无更新"。周末 gap=3 不附——
+  // 每周一都带"假期"字样是周性噪音，且"数据截至 X 收盘"基础行已消歧（2026-10-07
+  // 用户提议 >1 天附注，按噪音权衡定 3，一行可改；调 1 即恢复用户原提议）。
+  STALE_NOTE_GAP_DAYS: 3,
 };
 
 // ── 指纹（内容去重键）──────────────────────────────────────────────────
@@ -129,7 +133,7 @@ export function renderPushText(report) {
         const genDay = Date.parse(report.generated_at);
         const gap = Number.isFinite(dataDay) && Number.isFinite(genDay)
           ? Math.floor((genDay - dataDay) / 86400000) : null;
-        lines.push(`数据截至 ${txt(report.date)} 收盘${gap != null && gap > 3 ? `（距生成 ${gap} 天，假期无更新）` : ''}`);
+        lines.push(`数据截至 ${txt(report.date)} 收盘${gap != null && gap > PUSH_CONSTS.STALE_NOTE_GAP_DAYS ? `（距生成 ${gap} 天，假期无更新）` : ''}`);
       }
       { const s = simLine(p); if (s) lines.push(s); }
       lines.push(`前日盈亏 ${pct(p.pnl_daily)} · 累计 ${pct(p.pnl_cumulative)} · 前日净值 ${p.prev_nav != null ? p.prev_nav.toFixed(4) : '—'}`);
