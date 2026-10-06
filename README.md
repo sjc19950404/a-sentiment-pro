@@ -14,12 +14,13 @@
 ## 部署（3 步）
 
 1. 把本仓库推到你 GitHub（或 fork 后改名 `a-sentiment-pro`）。
-2. 仓库 **Settings → Pages → Source: Deploy from a branch → `main` / root**（2026-10-06 实测锚定的当前生效形态：云端指纹 = 仓库根档；页面 = 根 `index.html` + `app.js`，运行时 `fetch('./data/*.json')` 取数）。
-3. **Actions** 默认开启，交易日多轮自动跑（北京 18:30 首抓 / 21:00 补抓 / 次日 04:30 美股收盘档；盘中每 30 分钟轻量快照不碰档案），`daily.yml` 更新 `data/*.json` 并提交回 main——数据提交自动触发 Pages 重建（Actions 里表现为 "pages build and deployment · dynamic"）。
-   - **推送 `main` 同样触发 Pages 重建**：分钟级排队 + github.io CDN 边缘缓存，一般 10 分钟内可见——刚推完看云端还是旧版属正常传播滞后，不是丢更。
+2. 仓库 **Settings → Pages → Build and deployment → Source: GitHub Actions**（2026-10-06 部署治理切换：由 branch 直托管切到 Actions 单通道）。**切换是一次性手工一击**——切换前原生分支构建照常触发（任何 push 都构建、慢、且与 Actions 通道互打）；切换后原生停摆，部署只走 `deploy-pages.yml`。
+3. **Actions** 默认开启，交易日多轮自动跑（北京 18:30 首抓 / 21:00 补抓 / 次日 04:30 美股收盘档；盘中每 30 分钟轻量快照不碰档案），`daily.yml` 更新 `data/*.json` 并提交回 main——数据提交命中 `deploy-pages.yml` 的 paths（`data/**`）自动触发页面刷新。
+   - **部署单通道**（`deploy-pages.yml`）：paths 正向白名单 = web 面（`index.html`/`app.js`/`style.css`/`sw.js` + SW 外壳资产 + `data/**`）——纯文档变更（`**.md`、`docs/`、scripts/test 等）**不触发任何部署**。
+   - **并发防覆盖**：`concurrency group "pages" + cancel-in-progress`——连续 push 只保留最后一次部署，进行中的旧部署就地取消（旧形态两通道互相覆盖的实录与决策见该文件头注）。
    - 首次会看到 `data/archive.json`（已随仓库附带演示种子数据），之后由 live 模式覆盖为真实数据。
-   - 想立刻看到效果：Actions 页点 `Run workflow` 手动触发一次。
-   - 注：`daily.yml` 内另有 `dist/`（`ui/template.html` 合并版单文件）经 upload-pages-artifact/deploy-pages 的部署线，与 branch 直托管**互斥**——Pages Source 切到 GitHub Actions 前处于休眠（见「UI 合并」节背景）。若未来切换形态，本节第 2 步随之改写。
+   - 想立刻看到效果：Actions 页点 `deploy-pages` → `Run workflow` 手动触发一次。
+   - 注：页面 = 根 `index.html` + `app.js`，运行时 `fetch('./data/*.json')` 取数；`daily.yml` 构建的 `dist/`（合并版 UI 单文件）不再部署（通道收口决策见 `daily.yml` 内注释与 `deploy-pages.yml` 头注）。
 
 ## 本地开发
 
@@ -178,6 +179,10 @@ test/fixtures/sina_global_20260930.txt  外围解析夹具（2026-09-30 美股�
 - **部署**：`daily.yml` 单条数据流 = 六源冒烟门禁 → PRO 管道 → K线增量 → UI 构建 →
   数据提交 + Pages 部署（`dist/` → GitHub Pages，upload-pages-artifact/deploy-pages）。
   旧系统 fetch-daily 管线与 rsync 推送一并废弃。
+  （2026-10-06 部署治理勘误：`dist/` 部署线已从 `daily.yml` 移除——云端实际页面 = 仓库根
+  web 面（branch 直托管期的既成形态），且 dist 部署与原生分支构建互相覆盖（实录见
+  `deploy-pages.yml` 头注）。现行单通道 = `deploy-pages.yml` 部署根 web 面；合并版 UI
+  的 dist 产物仍由 `daily.yml` 构建落盘，启用它 = 在 `deploy-pages.yml` 换产物源。）
 - **守卫**：`test/merge_ui.test.mjs` 端到端集成测——真 archive 跑构建，按 UI 消费字段总表
   逐项断言（漏字段=UI 白屏 → CI 红）；涨跌停池字段半缺会红（UI 按组降级的前提是组内一致）。
 - 推送目标仓库：`sjc19950404/a-sentiment`（老地址沿用；旧仓库先归档打 tag，PRO 仓库归档或重定向）。

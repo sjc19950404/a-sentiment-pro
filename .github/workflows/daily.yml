@@ -25,10 +25,17 @@ on:
     - cron: '30 0 * * 1-5'
   workflow_dispatch:        # 手动触发
 
+# 调度重叠治理（2026-10-06 部署治理配套）：18:30 首抓若未跑完（六源慢/重试），21:00 补抓
+# 会在旁并行——两条管线同时写 data/ 再各自 git 提交是竞态。数据写入不可中断，故**排队不取消**
+# （cancel-in-progress: false）：后到者等先到者收尾再跑。盘中快照（30 分钟一拍）同受此治理。
+concurrency:
+  group: daily-sentiment
+  cancel-in-progress: false
+
 permissions:
   contents: write
-  pages: write        # 合并版：GitHub Pages 部署（dist → Pages）
-  id-token: write
+  # pages/id-token 权限已移除（2026-10-06 部署治理）：Pages 部署收口至 deploy-pages.yml
+  # 单通道——本工作流回归纯数据生产，部署由数据提交（bot push）经 paths(data/**) 触发。
 
 jobs:
   # ── ② 真实 API 冒烟：六源逐个真打（getharden/东财LHB/同花顺行业/腾讯指数/东财池/同花顺日K）──
@@ -152,10 +159,10 @@ jobs:
         run: node ui/fetch_kline_all.mjs
       - name: 合并构建 UI（PRO 管线数据层 + 原系统 UI 展示层 → dist/）
         run: node scripts/build_ui.mjs
-      - name: 上传 Pages 部署产物（dist/）
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
+      # Pages 部署产物上传已移除（2026-10-06 部署治理）：dist 部署通道收口至
+      # deploy-pages.yml（双通道互相覆盖的实录与决策见该文件头注）。build_ui 保留——
+      # dist/ 产物与 board_rank 写回仍是数据面的一部分；下面的数据提交（bot push）
+      # 会经 deploy-pages.yml 的 paths(data/**) 自动触发页面刷新，闭环不变。
       - name: 提交最新数据
         run: |
           git config user.name "github-actions[bot]"
@@ -173,21 +180,14 @@ jobs:
       - name: 数据新鲜度门禁（真滞后则本次运行失败）
         run: node scripts/freshness.mjs --require-fresh
 
-  deploy-pages:
-    # 合并版：dist/（单文件 index.html + guide + kline 分片）→ GitHub Pages。
-    # 单部署闭环：仓库 = sjc19950404/a-sentiment，一个 daily.yml，一条数据流
-    # （六源冒烟门禁 → PRO 管道 → K线增量 → UI 构建 → 提交 + Pages）。
-    # 旧系统的 rsync/gh-pages 推送与 fetch-daily 旧管线一并废弃（见 params 历史与 merge plan）。
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: 部署到 GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+  # deploy-pages job 已移除（2026-10-06 部署治理）：
+  #   旧双通道 = 本 job（dist 合并版 UI 单文件）+ Settings 原生分支构建（main/root 仓库根），
+  #   两者**互相覆盖**：2026-10-05 13:12 run 实录——本 job success 部署 dist → 同轮数据提交
+  #   触发的原生分支构建完成于其后 → 云端被盖回分支内容；最终态取决于谁后完成（非确定）。
+  #   现行单通道 = deploy-pages.yml（部署仓库根 web 面 = 当前云端页面形态，paths 白名单
+  #   过滤文档类变更 + concurrency group "pages" 防覆盖，实录与设计见其文件头注）。
+  #   本工作流回归纯数据生产：数据提交（bot push）→ deploy-pages.yml 自动触发部署。
+  #   若未来启用合并版 UI（dist 单文件形态），在 deploy-pages.yml 换产物源即可——一处切换。
 
   intraday:
     # 盘中轻量快照：只抓 hot/pools/breadth 三个实时源，写 data/intraday.json。
