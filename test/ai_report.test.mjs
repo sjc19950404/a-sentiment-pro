@@ -228,21 +228,32 @@ test('真实档冒烟：四源真实 JSON → 盘后报告契约通过 + 搬运�
 
 // ═══════════ S1.5：模拟选股层（决议 7/8）═══════════════════════════════
 
-// ── 9. mapPhase 五期映射（决议 7）─────────────────────────────────────
-test('mapPhase：recover 细分 / 直映射 / shift·unknown 外透不硬塞', () => {
+// ── 9. mapPhase 五期映射（决议 7；2026-10-06 拍板：phase 英文枚举 + phase_label 中文）──
+test('mapPhase：recover 细分 / 直映射 / shift·unknown 外透不硬塞 + 四字段自洽', () => {
   // recover 细分（阈值 STARTUP_PCT_RANK_MAX=30：指令"<50"与示例"44.1=发酵"矛盾，按已拍板 v1.1 判据，常量一行可改）
-  assert.deepEqual(mapPhase('recover', { pct_rank: 25, dir: 'up' }), { phase: PHASE_LABELS.startup, regime_raw: 'recover' });
-  assert.deepEqual(mapPhase('recover', { pct_rank: 44.1, dir: 'up' }), { phase: PHASE_LABELS.fermentation, regime_raw: 'recover' }, '09-30 实况：44.1·up → 发酵期（与设计示例一致）');
-  assert.deepEqual(mapPhase('recover', { pct_rank: 75, dir: 'up' }), { phase: PHASE_LABELS.fermentation, regime_raw: 'recover' });
-  assert.deepEqual(mapPhase('recover', { pct_rank: 20, dir: 'down' }), { phase: PHASE_LABELS.fermentation, regime_raw: 'recover' }, '方向非 up → 发酵');
-  // 直映射
-  assert.deepEqual(mapPhase('climax'), { phase: PHASE_LABELS.climax, regime_raw: 'climax' });
-  assert.deepEqual(mapPhase('ebb'), { phase: PHASE_LABELS.decline, regime_raw: 'ebb' });
-  assert.deepEqual(mapPhase('ice'), { phase: PHASE_LABELS.freezing, regime_raw: 'ice' });
-  // 外透不硬塞（regime_raw 追溯链保留）
-  assert.deepEqual(mapPhase('shift'), { phase: 'shift', regime_raw: 'shift' });
-  assert.deepEqual(mapPhase('unknown'), { phase: 'unknown', regime_raw: 'unknown' });
-  assert.deepEqual(mapPhase(null), { phase: 'unknown', regime_raw: 'unknown' });
+  assert.deepEqual(mapPhase('recover', { pct_rank: 25, dir: 'up' }), { phase: 'startup', phase_label: '启动期', regime_raw: 'recover' });
+  assert.deepEqual(mapPhase('recover', { pct_rank: 44.1, dir: 'up' }), { phase: 'fermentation', phase_label: '发酵期', regime_raw: 'recover' }, '09-30 实况：44.1·up → 发酵期（与设计示例一致）');
+  assert.deepEqual(mapPhase('recover', { pct_rank: 75, dir: 'up' }), { phase: 'fermentation', phase_label: '发酵期', regime_raw: 'recover' });
+  assert.deepEqual(mapPhase('recover', { pct_rank: 20, dir: 'down' }), { phase: 'fermentation', phase_label: '发酵期', regime_raw: 'recover' }, '方向非 up → 发酵');
+  // 直映射（英文枚举键 + 中文标签）
+  assert.deepEqual(mapPhase('climax'), { phase: 'climax', phase_label: '高潮期', regime_raw: 'climax' });
+  assert.deepEqual(mapPhase('ebb'), { phase: 'decline', phase_label: '退潮期', regime_raw: 'ebb' });
+  assert.deepEqual(mapPhase('ice'), { phase: 'freezing', phase_label: '冰点期', regime_raw: 'ice' });
+  // 外透不硬塞（phase=原 key、phase_label=null：无五期标签可给，追溯链保留）
+  assert.deepEqual(mapPhase('shift'), { phase: 'shift', phase_label: null, regime_raw: 'shift' });
+  assert.deepEqual(mapPhase('unknown'), { phase: 'unknown', phase_label: null, regime_raw: 'unknown' });
+  assert.deepEqual(mapPhase(null), { phase: 'unknown', phase_label: null, regime_raw: 'unknown' });
+  // 四字段一致性不变式：phase∈PHASE_ENUM ⇔ phase_label===PHASE_LABELS[phase]；regime_raw 恒为入参原值
+  for (const rg of ['recover', 'climax', 'ebb', 'ice', 'shift', 'unknown', null, 'whatever']) {
+    for (const sub of [{ pct_rank: 25, dir: 'up' }, { pct_rank: 44.1, dir: 'up' }, {}, null]) {
+      const { phase, phase_label, regime_raw } = mapPhase(rg, sub);
+      const inEnum = Object.values(PHASE_LABELS).includes(phase) || Object.keys(PHASE_LABELS).includes(phase);
+      if (phase in PHASE_LABELS) assert.equal(phase_label, PHASE_LABELS[phase], `映射内 ${phase} 标签必须同步`);
+      else assert.equal(phase_label, null, `映射外 ${phase} 标签必须为 null`);
+      assert.equal(regime_raw, rg ?? 'unknown', 'regime_raw 恒等于入参原值（翻译层不丢信息）');
+      assert.ok(inEnum || phase === regime_raw, 'phase 要么是五期枚举要么等于透出的原 key');
+    }
+  }
 });
 
 // ── 10. buildScripts 三剧本模板 ───────────────────────────────────────
@@ -308,8 +319,10 @@ test('buildCandidatePool：连板降序 5-10 只、selection_reason 必填、基
 test('buildSimulationStock：09-30 夹具 → 发酵期/neutral/候选池齐 + 信封契约通过', () => {
   const input = mkInput();
   const sim = buildSimulationStock(input, {});
-  assert.equal(sim.sentiment_cycle.phase, '发酵期', 'recover 44.1 up → 发酵期');
+  assert.equal(sim.sentiment_cycle.phase, 'fermentation', 'recover 44.1 up → 发酵期（英文枚举，契约稳定键）');
+  assert.equal(sim.sentiment_cycle.phase_label, '发酵期', '中文标签由 phase_label 承载');
   assert.equal(sim.sentiment_cycle.regime_raw, 'recover', '七态原始值保留（决议 7 追溯链）');
+  assert.match(sim.sentiment_cycle.phase_source, /recover/, 'phase_source 记映射依据');
   assert.equal(sim.sentiment_cycle.limit_up_count, 52);
   assert.equal(sim.sentiment_cycle.highest_chain, 6);
   assert.equal(sim.position_suggestion, 'neutral', 'cap 0.5 → neutral');
@@ -318,11 +331,36 @@ test('buildSimulationStock：09-30 夹具 → 发酵期/neutral/候选池齐 + �
   assert.equal(sim.review, null, '复盘 S3 录入前 → null 不造数');
   const r = generatePostMarket(input, { generatedAt: GEN_AT, simulationStock: sim });
   mustPass(r, 'post_market + simulation_stock');
-  assert.equal(r.payload.simulation_stock.sentiment_cycle.phase, '发酵期');
+  assert.equal(r.payload.simulation_stock.sentiment_cycle.phase, 'fermentation');
+  assert.equal(r.payload.simulation_stock.sentiment_cycle.phase_label, '发酵期');
   // 未注入 → null（信封字段仍必须在场）
   const bare = generateIntraday(mkInput(), { generatedAt: GEN_AT });
   assert.equal(bare.payload.simulation_stock, null);
   mustPass(bare, 'intraday 无 sim 段');
+});
+
+// ── 12b. 绑定联查（写入由 S3 UI 触发，本模块只读注入；script_name 填持仓跟踪）──
+test('buildSimulationStock 绑定联查：bindings 注入填 script_name，缺席/不匹配 → null', () => {
+  const acctWithPos = { ...ACCT, positions: { '600825': { code: '600825', name: '新华传媒', avgCost: 10, last: 10.5, qty: 500, days: 2 } } };
+  const input = mkInput({ paperAccount: acctWithPos });
+  const bindings = [
+    makeBinding({ date: '2026-09-30', code: '600825', script_name: 'A' }),
+    makeBinding({ date: '2026-09-29', code: '600825', script_name: 'B' }), // 非当日 → 不匹配
+  ];
+  const sim = buildSimulationStock(input, { bindings });
+  assert.equal(sim.simulation_positions.length, 1);
+  const pos = sim.simulation_positions[0];
+  assert.equal(pos.code, '600825');
+  assert.equal(pos.name, '新华传媒');
+  assert.ok(Math.abs(pos.unrealized_pnl - 250) < 1e-9, '(10.5-10)×500=250');
+  assert.equal(pos.script_name, 'A', '当日 code 匹配的绑定填入 script_name');
+  assert.equal(pos.stop_loss_triggered, null, '触发回放 S3 接线前 null 不造数');
+  // 无绑定注入 → null；绑定日期不匹配 → null
+  assert.equal(buildSimulationStock(input, {}).simulation_positions[0].script_name, null);
+  assert.equal(buildSimulationStock(input, { bindings: [makeBinding({ date: '2026-09-28', code: '600825', script_name: 'C' })] }).simulation_positions[0].script_name, null);
+  const r = generatePostMarket(input, { generatedAt: GEN_AT, simulationStock: sim });
+  mustPass(r, 'post_market + sim(绑定联查)');
+  assert.equal(r.payload.simulation_stock.simulation_positions[0].script_name, 'A');
 });
 
 // ── 13. 绑定记录（决议 6：人工输入 + 系统记录，独立 key）───────────────

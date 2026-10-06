@@ -173,12 +173,13 @@
             "sentiment_cycle": {
               "type": "object",
               "required": [
-                "phase", "regime_raw", "phase_source", "limit_up_count",
+                "phase", "phase_label", "regime_raw", "phase_source", "limit_up_count",
                 "highest_chain", "broken_limit_ratio", "yesterday_chain_performance",
                 "warning_signals"
               ],
               "properties": {
-                "phase": { "type": ["string"], "description": "五期中文枚举（启动期/发酵期/高潮期/退潮期/冰点期）；映射外状态原样透出七态 key，不硬塞" },
+                "phase": { "type": ["string"], "description": "五期英文枚举（startup/fermentation/climax/decline/freezing，契约稳定键，2026-10-06 拍板）；映射外状态原样透出七态 key（shift/unknown），不硬塞" },
+                "phase_label": { "type": ["string", "null"], "enum": ["启动期", "发酵期", "高潮期", "退潮期", "冰点期", null], "description": "五期中文标签（展示用）；映射外状态为 null（无五期标签可给）" },
                 "regime_raw": { "type": "string", "description": "七态原始值（决议 7：复盘追溯，翻译层不丢信息）" },
                 "phase_source": { "type": "string" },
                 "limit_up_count": { "type": ["number", "null"] },

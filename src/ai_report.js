@@ -527,9 +527,10 @@ export function mergeReports(a, b) {
 //   STARTUP_PCT_RANK_MAX 常量，一行可改。
 // ═══════════════════════════════════════════════════════════════════════
 
-// 五期中文标签（phase 为中文枚举：S1.5 指令明确"phase（五期中文枚举）"，
-// 覆盖原需求 spec 的英文枚举；regime_raw 保留七态原始值供复盘追溯——决议 7）
+// 五期英文枚举 → 中文标签（phase 保持英文枚举不动、phase_label 承载中文——
+// 2026-10-06 用户拍板：契约稳定性优先；regime_raw 保留七态原始值供复盘追溯——决议 7）
 export const PHASE_LABELS = { startup: '启动期', fermentation: '发酵期', climax: '高潮期', decline: '退潮期', freezing: '冰点期' };
+export const PHASE_ENUM = Object.keys(PHASE_LABELS);
 export const STARTUP_PCT_RANK_MAX = 30; // recover 细分阈值（矛盾裁决见上）
 export const POSITION_SUGGESTION_ENUM = ['aggressive', 'neutral', 'defensive', 'wait'];
 export const BINDINGS_KEY = 'airpt_sim_bindings_v1'; // 独立 localStorage key，不动现有账本 key
@@ -547,24 +548,29 @@ export const SIM_SCRIPT_CONSTS = {
 
 /**
  * 五期映射（决议 7 · 翻译层，判据唯一出处）。
- *   recover + pct_rank<30 + up → 启动期；其余 recover → 发酵期；
- *   climax→高潮期、ebb→退潮期、ice→冰点期；
- *   shift/unknown/其他 → phase 原样透出系统 key（不硬塞五期，进 warning_signals 由调用侧处理）。
+ *   recover + pct_rank<30 + up → startup；其余 recover → fermentation；
+ *   climax→climax、ebb→decline、ice→freezing；
+ *   shift/unknown/其他 → phase 原样透出系统 key、phase_label=null（不硬塞五期，
+ *   由调用侧进 warning_signals）。
  * @param {string} regime 七态 key（dualTrack.day.regime.key / signals.regime.latest.key）
  * @param {{pct_rank:number|null, dir:string|null}} substate 分位与方向（signals.regime.latest）
- * @returns {{phase:string, regime_raw:string}} phase 为中文枚举或透出的原始 key
+ * @returns {{phase:string, phase_label:string|null, regime_raw:string}}
+ *   phase 英文枚举（契约稳定键）+ phase_label 中文（展示）+ regime_raw 七态原值（追溯）。
+ *   四字段自洽不变式（单测锁定）：phase∈PHASE_ENUM ⇔ phase_label===PHASE_LABELS[phase]，
+ *   且 regime_raw 恒等于入参原值（翻译层不丢信息）。
  */
 export function mapPhase(regime, substate = {}) {
   const raw = regime ?? 'unknown';
   const pct = Number.isFinite(substate?.pct_rank) ? substate.pct_rank : null;
   const dir = substate?.dir ?? null;
+  const out = (phase) => ({ phase, phase_label: PHASE_LABELS[phase] ?? null, regime_raw: raw });
   if (raw === 'recover') {
     const startup = pct != null && pct < STARTUP_PCT_RANK_MAX && dir === 'up';
-    return { phase: startup ? PHASE_LABELS.startup : PHASE_LABELS.fermentation, regime_raw: raw };
+    return out(startup ? 'startup' : 'fermentation');
   }
-  const direct = { climax: PHASE_LABELS.climax, ebb: PHASE_LABELS.decline, ice: PHASE_LABELS.freezing }[raw];
-  if (direct) return { phase: direct, regime_raw: raw };
-  return { phase: raw, regime_raw: raw }; // shift / unknown / 未识别 → 原样透出
+  const direct = { climax: 'climax', ebb: 'decline', ice: 'freezing' }[raw];
+  if (direct) return out(direct);
+  return { phase: raw, phase_label: null, regime_raw: raw }; // shift / unknown / 未识别 → 原样透出，无五期标签
 }
 
 /** 仓位建议映射（regime cap 的翻译，非新增风控规则；§9.2）。 */
@@ -650,12 +656,13 @@ export function buildCandidatePool(signals, opts = {}) {
  *   即时轨（input.live）才填 simulation_positions（paperAccount.positions）；
  *   review 首期 null（复盘归因 S3 录入后才有数据，不造数）。
  * @param {object} input buildInput 产物
- * @param {{nameMap?:object}} opts paper_universe.symbols 注入（CI 侧读取）
+ * @param {{nameMap?:object, bindings?:Array}} opts paper_universe.symbols 注入（CI 侧读取）；
+ *   bindings = loadBindings 读出的绑定记录（当日 code→script_name 联查填持仓跟踪，读取由调用方完成）
  */
 export function buildSimulationStock(input, opts = {}) {
   const regimeKey = pick(input, 'dualTrack.day.regime.key') ?? pick(input, 'signals.regime.latest.key');
   const sub = pick(input, 'signals.regime.latest') ?? {};
-  const { phase, regime_raw } = mapPhase(regimeKey, { pct_rank: sub.pct_rank, dir: sub.dir });
+  const { phase, phase_label, regime_raw } = mapPhase(regimeKey, { pct_rank: sub.pct_rank, dir: sub.dir });
   const cap = pick(input, 'dualTrack.day.regime.cap');
   const zt = pick(input, 'signals.latest.zt_count');
   const zb = pick(input, 'signals.latest.zb_count');
@@ -667,9 +674,10 @@ export function buildSimulationStock(input, opts = {}) {
   if (Array.isArray(bigLoss) && bigLoss.length) warnings.push(`大面 ${bigLoss.length} 只：${bigLoss.map((b) => `${b.name} ${b.chg}%`).join('、')}`);
   const breadthDetail = pick(input, 'signals.breadth.snapshot.verdict.detail');
   if (breadthDetail) warnings.push(`宽度收窄（${breadthDetail}）`);
-  if (phase === regime_raw && !(phase in PHASE_LABELS)) warnings.push(`情绪周期映射外状态 ${regime_raw} 原样透出（不硬塞五期，决议 7）`);
+  if (phase === regime_raw && phase_label == null) warnings.push(`情绪周期映射外状态 ${regime_raw} 原样透出（不硬塞五期，决议 7）`);
   const sentiment_cycle = {
     phase,
+    phase_label,
     regime_raw,
     phase_source: `regime=${regimeKey} · 分位 ${Number.isFinite(sub.pct_rank) ? sub.pct_rank : '未知'} · 方向 ${sub.dir ?? '未知'}${regimeKey === 'recover' ? `（recover 细分阈值 <${STARTUP_PCT_RANK_MAX} 为启动期）` : ''}`,
     limit_up_count: num(zt),
@@ -681,11 +689,16 @@ export function buildSimulationStock(input, opts = {}) {
   const pool = buildCandidatePool(input.signals, { nameMap: opts.nameMap, regimeCap: cap });
   let simulation_positions = null;
   if (input.live && input.paperAccount?.positions) {
+    // 绑定联查（读写职责边界）：绑定写入由 S3 前端 UI 在用户确认剧本时触发
+    // （saveBindings 仅为 UI 复用的工具函数，本模块生成流程只读不写）；
+    // 此处用调用方注入的 bindings（loadBindings 产物）按当日 code 联查，
+    // 同日同股多条绑定取首条（UI 一次只确认一个剧本）。
+    const bindings = Array.isArray(opts.bindings) ? opts.bindings : [];
     simulation_positions = Object.values(input.paperAccount.positions).map((p) => ({
       code: p.code, name: p.name ?? null, cost_price: num(p.avgCost), current_price: num(p.last),
       volume: num(p.qty), unrealized_pnl: num((p.last - p.avgCost) * p.qty), holding_days: num(p.days),
-      script_name: null, // 绑定记录（BINDINGS_KEY）由 S3 录入后联查，此处不猜
-      stop_loss_triggered: null, take_profit_triggered: null,
+      script_name: bindings.find((b) => b && b.date === input.tradeDate && b.code === p.code)?.script_name ?? null,
+      stop_loss_triggered: null, take_profit_triggered: null, // 触发回放依赖盘中实时价采样（S3 接线），首期 null 不造数
     }));
   }
   return {
@@ -728,7 +741,11 @@ export function loadBindings(storage) {
   } catch { return []; }
 }
 
-/** 写绑定（storage 注入，同上）。 */
+/**
+ * 写绑定（storage 注入，同上）。职责边界（2026-10-06 拍板）：写入时机由 S3 前端
+ * UI 在用户确认剧本时触发调用；本模块的报告生成流程只读（loadBindings）不写，
+ * makeBinding/mergeBindings/saveBindings 仅为 UI 层复用的纯函数工具。
+ */
 export function saveBindings(storage, bindings) {
   storage?.setItem?.(BINDINGS_KEY, JSON.stringify(bindings));
   return bindings;
