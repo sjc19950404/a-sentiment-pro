@@ -32,6 +32,14 @@ on:
     - cron: '5 1 * * 1-5'
   workflow_dispatch:        # 手动触发
 
+# ── 模拟选股层总开关（S2 · 2026-10-07 用户拍板）────────────────────────────
+# 默认 'true'；GitHub 仓库 Settings → Secrets and variables → Actions → Variables
+# 里设 SIMULATION_MODE=false 即全局关闭（盘前/盘中/盘后/周报四挂点一起），
+# 不用动本文件——回测期间临时关闭、复测完改回，零 workflow 改动。
+# 单次强制开：手动 dispatch 命令里加 --sim（CLI flag 优先于 env）。
+env:
+  SIMULATION_MODE: ${{ vars.SIMULATION_MODE || 'true' }}
+
 # 调度重叠治理（2026-10-06 部署治理配套）：18:30 首抓若未跑完（六源慢/重试），21:00 补抓
 # 会在旁并行——两条管线同时写 data/ 再各自 git 提交是竞态。数据写入不可中断，故**排队不取消**
 # （cancel-in-progress: false）：后到者等先到者收尾再跑。盘中快照（30 分钟一拍）同受此治理。
@@ -170,10 +178,11 @@ jobs:
       # ── AI 报告（S2 · 归档轨挂 build 末尾，设计文档 §3.3）───────────────────
       # 盘后 + 周报：18:30 首抓与 21:00 补抓都生成（补抓数据更全时覆盖同日文件）。
       # 周报自带闸门：tradeDate 非本周最后交易日（周五或节前最后一天）自动跳过。
+      # 模拟选股段由顶层 env SIMULATION_MODE 控制（默认开，仓库 Variables 可关）。
       - name: 生成盘后 AI 报告（含模拟选股段）
-        run: node scripts/build_ai_report.mjs --type post_market --sim
+        run: node scripts/build_ai_report.mjs --type post_market
       - name: 生成周报 AI 报告（非本周最后交易日自动跳过）
-        run: node scripts/build_ai_report.mjs --type weekly --sim
+        run: node scripts/build_ai_report.mjs --type weekly
       # 推送只在 21:00 补抓与手动触发：18:30 首抓常缺龙虎榜/深证日K，推半成品
       # 不如等 2.5 小时推全量（"收盘 5 分钟"语义由页面即时轨 15:05 版补位，
       # 双轨时点约束见设计文档 §3.3）。指纹去重保证 21:00 与 18:30 内容未变时不重推。
@@ -239,7 +248,7 @@ jobs:
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         run: |
-          node scripts/build_ai_report.mjs --type intraday --sim
+          node scripts/build_ai_report.mjs --type intraday
           node scripts/push_ai_report.mjs --latest intraday
       - name: 提交盘中快照
         run: |
@@ -272,7 +281,7 @@ jobs:
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         run: |
-          node scripts/build_ai_report.mjs --type pre_market --sim
+          node scripts/build_ai_report.mjs --type pre_market
           node scripts/push_ai_report.mjs --latest pre_market
       - name: 提交盘前报告
         run: |

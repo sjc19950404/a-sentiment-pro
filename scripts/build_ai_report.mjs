@@ -40,7 +40,10 @@ const has = (name) => process.argv.includes(`--${name}`);
 const TYPE = arg('type') || 'post_market';
 const WEEK_START = arg('week-start') || null;
 const IS_SAMPLE = has('sample');
-const WITH_SIM = has('sim'); // 模拟选股层（S1.5）：注入 candidate_pool / sentiment_cycle / 剧本模板
+// 模拟选股层开关（S1.5）：CLI --sim 强制开，或 env SIMULATION_MODE=true。
+//   env 由 daily.yml 顶层注入（默认 'true'，可被 GitHub 仓库 Variables 的
+//   SIMULATION_MODE 覆盖——回测期间想临时关掉，改仓库变量即可，不动 workflow）。
+const WITH_SIM = has('sim') || process.env.SIMULATION_MODE === 'true';
 const FORCE = has('force');  // 跳过调度闸门（示例重生成/维护用；同 snapshot_intraday.mjs --force 惯例）
 
 // 模拟选股缺失披露（信封级汇总；字段级缺失由 null + pool_basis/phase_source 承载）

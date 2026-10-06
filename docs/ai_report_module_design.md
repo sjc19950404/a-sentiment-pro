@@ -2,7 +2,7 @@
 
 版本：design-v1.5（2026-10-06）｜状态：**八项决议全部拍板；S1 + S1.5 + S2 已实施**（`src/ai_report.js` 模拟选股层、`src/ai_report_push.js` 推送与调度闸门、schema、单测 25/25、全量回归 1303/1303 绿、daily.yml 四挂点 + 企微推送、`data/reports/` 09-30 四类示例）
 范围：只读取交易系统已有数据，生成盘前/盘中/盘后/周报四类报告并展示；不修改网格策略、风控规则、回测引擎与实盘下单逻辑。
-变更记录：v1.1 增补"模拟选股"第五分层（§9）；v1.2 固化决议 7/8；v1.3 落地 S1.5（模拟选股并入 `src/ai_report.js`、判据常量化、`STARTUP_PCT_RANK_MAX=30` 矛盾裁决见 §9.2）；v1.4 口径锁定：`phase` 保持英文枚举不动、`phase_label` 承载中文（契约稳定性优先），绑定读写职责边界固化（写入由 S3 UI 用户确认剧本时触发，模块生成流程只读联查）；v1.5 落地 S2：盘前 cron 卡北京 09:05、盘中 hot 榜联查（候选池 `intraday_chg`）、CI 侧推送直走 OPS_WEBHOOK + 内容指纹防风暴（§6.1）。
+变更记录：v1.1 增补"模拟选股"第五分层（§9）；v1.2 固化决议 7/8；v1.3 落地 S1.5（模拟选股并入 `src/ai_report.js`、判据常量化、`STARTUP_PCT_RANK_MAX=30` 矛盾裁决见 §9.2）；v1.4 口径锁定：`phase` 保持英文枚举不动、`phase_label` 承载中文（契约稳定性优先），绑定读写职责边界固化（写入由 S3 UI 用户确认剧本时触发，模块生成流程只读联查）；v1.5 落地 S2：盘前 cron 卡北京 09:05、盘中 hot 榜联查（候选池 `intraday_chg`）、CI 侧推送直走 OPS_WEBHOOK + 内容指纹防风暴（§6.1）。2026-10-07 增补：模拟选股层总开关 env `SIMULATION_MODE`（daily.yml 顶层 `${{ vars.SIMULATION_MODE || 'true' }}`——仓库 Variables 可全局关闭四挂点，不动 workflow；CLI `--sim` 优先于 env，单次强制开）。
 
 ---
 
