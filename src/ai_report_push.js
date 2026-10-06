@@ -121,6 +121,16 @@ export function renderPushText(report) {
   switch (report?.report_type) {
     case 'pre_market':
       lines.push(`【AI 报告 · 盘前】${report.date}`);
+      { // 数据截至标注（2026-10-07 拍板）：盘前报告恒为**前一交易日收盘口径**，
+        // 头部日期即数据日期，但读者易误读为"生成当日"。恒加一行点破；间隔超
+        // 3 个自然日（节后首日/小长假）再附"假期无更新"——A 股休市期间情绪面
+        // 数据本来就不产生，不是漏抓。间隔按自然日近似（UTC 日界，仅作标注用）。
+        const dataDay = Date.parse(`${report.date}T00:00:00Z`);
+        const genDay = Date.parse(report.generated_at);
+        const gap = Number.isFinite(dataDay) && Number.isFinite(genDay)
+          ? Math.floor((genDay - dataDay) / 86400000) : null;
+        lines.push(`数据截至 ${txt(report.date)} 收盘${gap != null && gap > 3 ? `（距生成 ${gap} 天，假期无更新）` : ''}`);
+      }
       { const s = simLine(p); if (s) lines.push(s); }
       lines.push(`前日盈亏 ${pct(p.pnl_daily)} · 累计 ${pct(p.pnl_cumulative)} · 前日净值 ${p.prev_nav != null ? p.prev_nav.toFixed(4) : '—'}`);
       lines.push(`隔夜: A50 ${overseas(p, 'a50')} · 费半 ${overseas(p, 'sox')} · 净敞口分歧 ${txt(p.overnight_exposure?.posGap)}`);

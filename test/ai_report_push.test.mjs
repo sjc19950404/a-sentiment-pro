@@ -121,6 +121,14 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；缺失披
   assert.match(pre, /前日盈亏 — · 累计 —/, 'null → —，不冒充 0');
   assert.match(pre, /A50 \+0\.09%/);
   assert.match(pre, /缺失披露 0 项/);
+  assert.ok(pre.includes('数据截至 2026-09-30 收盘\n'), '盘前恒标数据截至（前收口径，头部日期即数据日期）');
+  assert.ok(!pre.includes('假期无更新'), '常规隔夜（gap≤3 自然日）不加假期附注');
+  const preHoliday = renderPushText(mkReport({
+    report_type: 'pre_market', date: '2026-09-30', generated_at: '2026-10-08T01:05:00.000Z',
+    payload: { date: '2026-09-30', pnl_daily: null, pnl_cumulative: null, prev_nav: null, overseas: [], overnight_exposure: { posGap: null }, simulation_stock: null },
+    missing_notes: [],
+  }));
+  assert.ok(preHoliday.includes('数据截至 2026-09-30 收盘（距生成 8 天，假期无更新）'), '节后首日（gap>3）附假期无更新——10-08 盘前实况');
 
   const intra = renderPushText(mkReport({
     report_type: 'intraday', trigger: 'event:circuit_breaker', urgent: true,
