@@ -42,7 +42,8 @@
       "required": [
         "date", "status", "pnl_daily", "pnl_cumulative", "max_drawdown_daily",
         "grid_triggers", "counter_trend_losses", "trend_switch_hits", "cost_ratio",
-        "slippage_avg", "slippage_source", "regime", "circuit_breaker", "overseas"
+        "slippage_avg", "slippage_source", "regime", "circuit_breaker", "overseas",
+        "simulation_stock"
       ],
       "properties": {
         "date": { "type": ["string", "null"] },
@@ -160,7 +161,115 @@
             "shadow_note": { "type": ["string", "null"] }
           }
         },
-        "param_suggestions": { "type": "array" }
+        "param_suggestions": { "type": "array" },
+        "simulation_stock": {
+          "type": ["object", "null"],
+          "description": "模拟选股层（S1.5 · 决议 7/8）。null = 未生成；对象一旦在场其内字段必须齐（半缺是最危险形态）",
+          "required": [
+            "sentiment_cycle", "position_suggestion", "pool_basis",
+            "candidate_pool", "simulation_positions", "review"
+          ],
+          "properties": {
+            "sentiment_cycle": {
+              "type": "object",
+              "required": [
+                "phase", "regime_raw", "phase_source", "limit_up_count",
+                "highest_chain", "broken_limit_ratio", "yesterday_chain_performance",
+                "warning_signals"
+              ],
+              "properties": {
+                "phase": { "type": ["string"], "description": "五期中文枚举（启动期/发酵期/高潮期/退潮期/冰点期）；映射外状态原样透出七态 key，不硬塞" },
+                "regime_raw": { "type": "string", "description": "七态原始值（决议 7：复盘追溯，翻译层不丢信息）" },
+                "phase_source": { "type": "string" },
+                "limit_up_count": { "type": ["number", "null"] },
+                "highest_chain": { "type": ["number", "null"] },
+                "broken_limit_ratio": { "type": ["number", "null"] },
+                "yesterday_chain_performance": { "type": ["number", "null"] },
+                "warning_signals": { "type": "array" }
+              }
+            },
+            "position_suggestion": {
+              "type": "string",
+              "enum": ["aggressive", "neutral", "defensive", "wait"],
+              "description": "regime cap 的翻译，非新增风控规则（§9.2）"
+            },
+            "pool_basis": { "type": "string" },
+            "candidate_pool": {
+              "type": "array",
+              "description": "5-10 只（不足时如实给出实际数量）",
+              "items": {
+                "type": "object",
+                "required": [
+                  "code", "name", "themes", "selection_reason", "fundamentals",
+                  "fund_flow_note", "scripts", "risks"
+                ],
+                "properties": {
+                  "code": { "type": "string" },
+                  "name": { "type": ["string", "null"] },
+                  "themes": { "type": ["array", "null"], "description": "题材标签无个股级数据源 → null 占位" },
+                  "selection_reason": { "type": "string", "minLength": 1, "description": "入选理由必填（决议 8）：盘后复盘据此归因选股逻辑" },
+                  "fundamentals": {
+                    "type": "object",
+                    "description": "八字段 null 占位（决议 8）：键常驻，接数据源后直接填充不改 schema",
+                    "required": ["roe", "revenue_growth", "net_profit_growth", "pe", "pb", "peg", "market_cap", "moat_note"],
+                    "properties": {
+                      "roe": { "type": ["number", "null"] },
+                      "revenue_growth": { "type": ["number", "null"] },
+                      "net_profit_growth": { "type": ["number", "null"] },
+                      "pe": { "type": ["number", "null"] },
+                      "pb": { "type": ["number", "null"] },
+                      "peg": { "type": ["number", "null"] },
+                      "market_cap": { "type": ["number", "null"] },
+                      "moat_note": { "type": ["string", "null"] }
+                    }
+                  },
+                  "fund_flow_note": { "type": ["string", "null"], "description": "席位级真实数据旁注；个股级主力净流入系统无数据" },
+                  "scripts": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["name", "trigger_condition", "position_ratio", "stop_loss", "take_profit", "invalid_condition", "script_source"],
+                      "properties": {
+                        "name": { "type": "string", "enum": ["A", "B", "C"] },
+                        "trigger_condition": { "type": "string" },
+                        "position_ratio": { "type": ["number", "null"] },
+                        "stop_loss": { "type": ["number", "null"], "description": "B 剧本为条件位（破 5 日线）→ null 不造数" },
+                        "take_profit": { "type": ["number", "null"], "description": "B/C 指令未给数值 → null" },
+                        "invalid_condition": { "type": "string" },
+                        "script_source": { "type": "string", "const": "template" }
+                      }
+                    }
+                  },
+                  "risks": { "type": "array" }
+                }
+              }
+            },
+            "simulation_positions": {
+              "type": ["array", "null"],
+              "description": "即时轨（localStorage 账本）才有；归档轨 null",
+              "items": {
+                "type": "object",
+                "required": ["code", "name", "cost_price", "current_price", "volume", "unrealized_pnl", "holding_days", "script_name", "stop_loss_triggered", "take_profit_triggered"],
+                "properties": {
+                  "code": { "type": "string" },
+                  "name": { "type": ["string", "null"] },
+                  "cost_price": { "type": ["number", "null"] },
+                  "current_price": { "type": ["number", "null"] },
+                  "volume": { "type": ["number", "null"] },
+                  "unrealized_pnl": { "type": ["number", "null"] },
+                  "holding_days": { "type": ["number", "null"] },
+                  "script_name": { "type": ["string", "null"], "description": "绑定记录（airpt_sim_bindings_v1）联查；未绑定 → null" },
+                  "stop_loss_triggered": { "type": ["boolean", "null"] },
+                  "take_profit_triggered": { "type": ["boolean", "null"] }
+                }
+              }
+            },
+            "review": {
+              "type": ["object", "null"],
+              "description": "复盘归因（S3 录入后才有数据）；win_rate 口径 = 剧本命中/总执行（决议 4），缺席恒 null"
+            }
+          }
+        }
       }
     },
     "missing_notes": {

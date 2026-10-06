@@ -1,8 +1,8 @@
 # AI 报告生成与推送模块 · 设计对齐稿
 
-版本：design-v1.2（2026-10-06）｜状态：**八项决议全部拍板；S1 已实施**（`src/ai_report.js` + `schemas/ai-report.schema.json` + `test/ai_report.test.mjs` 8/8 + `scripts/build_ai_report.mjs` + `data/reports/` 四类 09-30 真实示例落盘；全量回归 1286/1286 绿）
+版本：design-v1.3（2026-10-06）｜状态：**八项决议全部拍板；S1 + S1.5 已实施**（`src/ai_report.js` 含模拟选股层、schema、单测 14/14、全量回归 1286+/1286+ 绿、`data/reports/` 09-30 四类示例 + 盘后报告含真实候选池十只与 A/B/C 剧本）
 范围：只读取交易系统已有数据，生成盘前/盘中/盘后/周报四类报告并展示；不修改网格策略、风控规则、回测引擎与实盘下单逻辑。
-变更记录：v1.1 增补"模拟选股"第五分层（§9），并更新 §1.1/§7/§8；v1.2 固化决议 7/8（phase+regime_raw 双字段追溯、pool_reason 与基本面 null 占位，§9.2/§9.5/§9.6）。
+变更记录：v1.1 增补"模拟选股"第五分层（§9）；v1.2 固化决议 7/8；v1.3 落地 S1.5（模拟选股并入 `src/ai_report.js`、判据常量化、`STARTUP_PCT_RANK_MAX=30` 矛盾裁决见 §9.2）。
 
 ---
 
@@ -27,9 +27,9 @@ a-sentiment-pro/
 │                                #   Node/浏览器双端共用（沿用 src/paper.js 模式）
 │                                #   导出 buildInput / generatePreMarket / generateIntraday
 │                                #                / generatePostMarket / generateWeekly
-├── src/ai_report_simulation.js  # 模拟选股分层纯函数（§9）：情绪周期五期映射、
-│                                #   候选池现算、剧本模板生成、模拟持仓/复盘视图；
-│                                #   剧本绑定记录存独立 localStorage key（不动现有账本 key）
+│                                #   S1.5 模拟选股层同文件（用户指令）：mapPhase 五期映射 /
+│                                #   buildScripts 剧本模板 / buildCandidatePool 候选池 /
+│                                #   绑定记录（BINDINGS_KEY 独立 localStorage key，不动账本）
 ├── src/ai_report_view.js        # 报告对象 → 可读文本视图（markdown）
 ├── scripts/build_ai_report.mjs  # CI 入口：读 data/*.json → 调核心 → 落盘 data/reports/
 ├── scripts/push_ai_report.mjs   # CI 推送：企微 Webhook adapter + 指纹防风暴
@@ -415,7 +415,9 @@ CI 架构下最细粒度 = 每 30 分钟的 tick，事件检测在同一 tick �
 
 ### 9.2 情绪周期五期映射（翻译层）
 
-需求五期由系统 regime 七态 + 分位/方向推导，映射表（判据唯一出处 `src/ai_report_simulation.js`）：
+需求五期由系统 regime 七态 + 分位/方向推导，映射表（判据唯一出处 `src/ai_report.js::mapPhase`，阈值常量 `STARTUP_PCT_RANK_MAX`）：
+
+**判据矛盾裁决（v1.3 显式披露）**：S1.5 指令正文写"分位 <50 且 up 为启动"，但同指令示例要求 09-30（recover·分位 44.1·up）为发酵期——两者互斥。按已拍板决议 7 的 v1.1 判据（<30 为启动）实现，与示例一致；阈值已提取为常量，一行可改。
 
 | 需求五期 | 推导判据（系统字段） |
 |---|---|

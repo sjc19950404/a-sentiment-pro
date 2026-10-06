@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { validateContract } from '../src/contract.js';
 import {
   buildInput, generatePreMarket, generateIntraday, generatePostMarket, generateWeekly,
+  buildSimulationStock,
 } from '../src/ai_report.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -33,6 +34,14 @@ const has = (name) => process.argv.includes(`--${name}`);
 const TYPE = arg('type') || 'post_market';
 const WEEK_START = arg('week-start') || null;
 const IS_SAMPLE = has('sample');
+const WITH_SIM = has('sim'); // 模拟选股层（S1.5）：注入 candidate_pool / sentiment_cycle / 剧本模板
+
+// 模拟选股缺失披露（信封级汇总；字段级缺失由 null + pool_basis/phase_source 承载）
+const SIM_MISSING_NOTE = {
+  field: 'simulation_stock.candidate_pool[].themes/fundamentals(八字段)/个股级主力资金',
+  reason: '系统无基本面选股模块与个股级题材/主力资金数据源；基本面键 null 占位（决议 8），接数据源后直接填充不改 schema',
+  ref: 'docs/ai_report_module_design.md#9.3',
+};
 
 const read = (rel) => {
   const p = join(ROOT, rel);
@@ -51,6 +60,12 @@ const input = buildInput({
 });
 
 const opts = { generatedAt: new Date().toISOString(), generatedBy: 'ci' };
+if (WITH_SIM) {
+  // paper_universe.symbols 注入名称映射（code→{name, appearances}）；缺档则名称 null（不造数）
+  opts.simulationStock = buildSimulationStock(input, {
+    nameMap: read('data/paper_universe.json')?.symbols ?? null,
+  });
+}
 const generators = {
   pre_market: () => generatePreMarket(input, opts),
   intraday: () => generateIntraday(input, { ...opts, trigger: arg('trigger') || 'schedule' }),
@@ -71,6 +86,7 @@ if (errs.length) {
   for (const e of errs) console.error(`  ${e.path}: ${e.expect}（got ${e.got}）${e.hint || ''}`);
   process.exit(1);
 }
+if (WITH_SIM) report.missing_notes.push(SIM_MISSING_NOTE);
 
 const file = `${TYPE}_${report.date}.json`;
 mkdirSync(OUT_DIR, { recursive: true });

@@ -16,7 +16,7 @@
 //
 // 接线：scripts/build_ai_report.mjs（CI 归档轨）与页面 S3（即时轨）调用同一
 //   组生成函数；本模块自身零 IO，测试用内联夹具 + 真实档冒烟双轨覆盖。
-import { accountStats, DEFAULT_SLIP } from './paper.js';
+import { accountStats, DEFAULT_SLIP, HARD_STOP_LOSS, exportAccount } from './paper.js';
 
 export const SCHEMA_VERSION = '1.0';
 export const REPORT_TYPES = ['pre_market', 'intraday', 'post_market', 'weekly'];
@@ -230,10 +230,11 @@ export function buildDataCompleteness(payload, overrides = {}) {
 }
 
 // ── 信封 ───────────────────────────────────────────────────────────────
-function envelope({ type, trigger, date, generatedAt, generatedBy, payload, input, extraNotes = [], sourceOverrides = {} }) {
+function envelope({ type, trigger, date, generatedAt, generatedBy, payload, input, extraNotes = [], sourceOverrides = {}, simulationStock = null }) {
   if (!REPORT_TYPES.includes(type)) throw new Error(`非法 report_type: ${type}`);
   if (!TRIGGER_ENUM.includes(trigger)) throw new Error(`非法 trigger: ${trigger}（urgent 触发条件限定四类，决议 3）`);
   const status = deriveStatus(input, payload);
+  payload.simulation_stock = simulationStock ?? null; // 模拟选股段（S1.5）：注入式，四类报告均可携带
   const base = BASE_MISSING_NOTES;
   const notes = [...base, ...extraNotes];
   if (!input.live) notes.push(LIVE_ONLY_NOTE);
@@ -348,6 +349,7 @@ export function generatePreMarket(input, opts = {}) {
     input,
     extraNotes: [PRE_MARKET_MISSING_NOTE],
     sourceOverrides: overrides,
+    simulationStock: opts.simulationStock ?? null,
   });
 }
 
@@ -376,6 +378,7 @@ export function generateIntraday(input, opts = {}) {
     payload,
     input,
     sourceOverrides: overrides,
+    simulationStock: opts.simulationStock ?? null,
   });
 }
 
@@ -405,6 +408,7 @@ export function generatePostMarket(input, opts = {}) {
     input,
     extraNotes: [{ field: 'counter_trend_loss_ratio', reason: '旁注：当日分歧 posGap（保费敞口）见 overnight/pre 段', ref: 'data/paper/dual_track_latest.json' }],
     sourceOverrides: overrides,
+    simulationStock: opts.simulationStock ?? null,
   });
 }
 
@@ -465,6 +469,7 @@ export function generateWeekly(input, opts = {}) {
     input,
     extraNotes: extra,
     sourceOverrides: overrides,
+    simulationStock: opts.simulationStock ?? null,
   });
 }
 
@@ -507,4 +512,236 @@ export function mergeReports(a, b) {
     merged_from: [base.generated_by, older.generated_by],
     backfilled_fields: backfilled,
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// 模拟选股层（S1.5 · 2026-10-06 决议 7/8 + 用户 S1.5 指令）
+//
+// 定位：只输出候选池、情绪判断、资金旁注、交易剧本与绑定记录，
+//   不自动下单、不替代实盘决策、不保证候选上涨（非目标铁律）。
+//   剧本是本模块的**生成物**（模板，script_source: 'template'），非信号。
+//
+// 判据矛盾裁决（显式披露）：S1.5 指令正文写"分位 <50 且 up 为启动"，但同指令
+//   的示例要求 09-30（recover·分位 44.1·up）为**发酵期**——两者互斥。按已拍板
+//   决议 7 的 v1.1 判据（<30 为启动）实现，与示例一致；阈值提取为
+//   STARTUP_PCT_RANK_MAX 常量，一行可改。
+// ═══════════════════════════════════════════════════════════════════════
+
+// 五期中文标签（phase 为中文枚举：S1.5 指令明确"phase（五期中文枚举）"，
+// 覆盖原需求 spec 的英文枚举；regime_raw 保留七态原始值供复盘追溯——决议 7）
+export const PHASE_LABELS = { startup: '启动期', fermentation: '发酵期', climax: '高潮期', decline: '退潮期', freezing: '冰点期' };
+export const STARTUP_PCT_RANK_MAX = 30; // recover 细分阈值（矛盾裁决见上）
+export const POSITION_SUGGESTION_ENUM = ['aggressive', 'neutral', 'defensive', 'wait'];
+export const BINDINGS_KEY = 'airpt_sim_bindings_v1'; // 独立 localStorage key，不动现有账本 key
+
+// 剧本模板参数（唯一出处；除前两个复用系统常量外均为模板结构参数，非风控规则）
+export const SIM_SCRIPT_CONSTS = {
+  hard_stop_loss: HARD_STOP_LOSS,        // -0.08（src/paper.js 系统常量，复用）
+  take_profit_a_multiple: 2,             // A 剧本止盈 = 2×|止损|（指令指定）
+  script_c_stop_loss: -0.05,             // C 剧本止损 -5%（S1.5 指令指定；剧本模板参数，非系统风控常量）
+  b_position_factor: 0.5,                // B 剧本 = cap×0.5（半仓试探）
+  c_position_factor: 0.2,                // C 剧本 = cap×0.2（轻仓反核）
+  pool_max: 10,                          // 候选池上限（5-10 只，指令口径）
+  pool_min: 5,
+};
+
+/**
+ * 五期映射（决议 7 · 翻译层，判据唯一出处）。
+ *   recover + pct_rank<30 + up → 启动期；其余 recover → 发酵期；
+ *   climax→高潮期、ebb→退潮期、ice→冰点期；
+ *   shift/unknown/其他 → phase 原样透出系统 key（不硬塞五期，进 warning_signals 由调用侧处理）。
+ * @param {string} regime 七态 key（dualTrack.day.regime.key / signals.regime.latest.key）
+ * @param {{pct_rank:number|null, dir:string|null}} substate 分位与方向（signals.regime.latest）
+ * @returns {{phase:string, regime_raw:string}} phase 为中文枚举或透出的原始 key
+ */
+export function mapPhase(regime, substate = {}) {
+  const raw = regime ?? 'unknown';
+  const pct = Number.isFinite(substate?.pct_rank) ? substate.pct_rank : null;
+  const dir = substate?.dir ?? null;
+  if (raw === 'recover') {
+    const startup = pct != null && pct < STARTUP_PCT_RANK_MAX && dir === 'up';
+    return { phase: startup ? PHASE_LABELS.startup : PHASE_LABELS.fermentation, regime_raw: raw };
+  }
+  const direct = { climax: PHASE_LABELS.climax, ebb: PHASE_LABELS.decline, ice: PHASE_LABELS.freezing }[raw];
+  if (direct) return { phase: direct, regime_raw: raw };
+  return { phase: raw, regime_raw: raw }; // shift / unknown / 未识别 → 原样透出
+}
+
+/** 仓位建议映射（regime cap 的翻译，非新增风控规则；§9.2）。 */
+export function mapPositionSuggestion(cap, phase) {
+  if (!Number.isFinite(cap)) return 'wait';
+  if (cap >= 0.7) return 'aggressive';
+  if (cap >= 0.5) return 'neutral';
+  if (cap >= 0.3) return 'defensive';
+  return 'wait'; // cap≤0.2；映射外 phase 由调用方在 warning_signals 披露，仓位仍按帽
+}
+
+/**
+ * A/B/C 三剧本模板（唯一出处；阈值全部来自 SIM_SCRIPT_CONSTS，不引入散落魔数）。
+ *   A 顺势：高开/放量突破 → cap 仓位，止损 HARD_STOP_LOSS，止盈 2×止损；
+ *   B 分歧：平开震荡 → 半仓试探，止损为条件位（破 5 日线，数字不可预知 → null，条件写进文本）；
+ *   C 核按钮：低开/竞价弱 → 轻仓反核或观望，止损 -5%（指令指定）。
+ * B/C 止盈指令未给数值 → null（条件文本描述），不造数。
+ * @param {{code:string}} stock 候选股（code 仅用于剧本文本定位）
+ * @param {{regimeCap:number}} ctx cap（dualTrack.day.regime.cap）
+ */
+export function buildScripts(stock, ctx = {}) {
+  const cap = Number.isFinite(ctx.regimeCap) ? ctx.regimeCap : 0;
+  const c = SIM_SCRIPT_CONSTS;
+  const mk = (name, trigger_condition, position_ratio, stop_loss, take_profit, invalid_condition) => ({
+    name, trigger_condition, position_ratio: Math.round(position_ratio * 1000) / 1000,
+    stop_loss, take_profit, invalid_condition, script_source: 'template',
+  });
+  return [
+    mk('A', `高开 >2% 或放量突破昨收上沿（${stock.code}，即时轨实时价判定）`,
+      cap, c.hard_stop_loss, Math.abs(c.hard_stop_loss) * c.take_profit_a_multiple,
+      '低开 >3% 或午前跌破昨收 -2%'),
+    mk('B', '平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）',
+      cap * c.b_position_factor, null, null, '放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）'),
+    mk('C', '低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）',
+      cap * c.c_position_factor, c.script_c_stop_loss, null, '断板次日翻绿或 seats 转机构撤离'),
+  ];
+}
+
+/** 基本面八字段 null 占位（决议 8：键常驻，后续接数据源直接填充，不改 schema）。 */
+export function emptyFundamentals() {
+  return {
+    roe: null, revenue_growth: null, net_profit_growth: null,
+    pe: null, pb: null, peg: null, market_cap: null, moat_note: null,
+  };
+}
+
+/**
+ * 候选池现算（决议 8 口径）：pain.advance.detail（连板活跃明细）按连板数降序取 5-10 只。
+ *   · selection_reason 必填（连板数+当日涨跌+晋级结果，全部真实字段，复盘归因用）；
+ *   · themes/fundamentals null 占位；name 经 opts.nameMap（paper_universe.symbols）注入，缺则 null；
+ *   · 资金流向仅席位级真实数据作 fund_flow_note，个股级主力资金 null；
+ *   · risks 只填系统可验证项（晋级失败率/大面/席位属性），解禁减持业绩雷不编造。
+ * @param {object} signals signals-latest.json
+ * @param {{nameMap?:object, regimeCap?:number, seatNote?:string, advanceFailRate?:number}} opts
+ */
+export function buildCandidatePool(signals, opts = {}) {
+  const detail = Array.isArray(signals?.pain?.advance?.detail) ? signals.pain.advance.detail : [];
+  const rows = [...detail].sort((a, b) => (b.lb ?? 0) - (a.lb ?? 0)).slice(0, SIM_SCRIPT_CONSTS.pool_max);
+  if (!rows.length) return [];
+  const failRate = Number.isFinite(opts.advanceFailRate) ? opts.advanceFailRate : Number.isFinite(signals?.pain?.advance?.failRate) ? signals.pain.advance.failRate : null;
+  const seatNote = opts.seatNote ?? (signals?.seats?.verdict ? `${signals.seats.verdict.label}（席位级：instNet/northNet/hotNet 真值；个股级主力净流入系统无数据）` : null);
+  const pool = rows.map((r) => {
+    const meta = opts.nameMap?.[r.code] ?? null;
+    const kept = r.kept ? '晋级成功' : '晋级失败';
+    return {
+      code: r.code,
+      name: meta?.name ?? null,
+      themes: null, // 题材标签无个股级数据源（momentum.fresh 只有题材名无成分股）
+      selection_reason: `${r.lb} 连板（当日 ${r.chg}%，${kept}${meta?.appearances ? `，近期上榜 ${meta.appearances} 次` : ''}）`,
+      fundamentals: emptyFundamentals(),
+      fund_flow_note: seatNote,
+      scripts: buildScripts({ code: r.code }, { regimeCap: opts.regimeCap ?? 0 }),
+      risks: [
+        r.kept ? `${r.lb} 板高位，连板晋级失败率 ${failRate != null ? `${Math.round(failRate * 100)}%` : '未知'}` : `昨日 ${r.lb} 板已晋级失败（chg ${r.chg}%），反核属逆势剧本`,
+      ],
+    };
+  });
+  return pool;
+}
+
+/**
+ * 模拟选股段组装（sentiment_cycle + 仓位建议 + 候选池 + 模拟持仓 + 复盘占位）。
+ *   即时轨（input.live）才填 simulation_positions（paperAccount.positions）；
+ *   review 首期 null（复盘归因 S3 录入后才有数据，不造数）。
+ * @param {object} input buildInput 产物
+ * @param {{nameMap?:object}} opts paper_universe.symbols 注入（CI 侧读取）
+ */
+export function buildSimulationStock(input, opts = {}) {
+  const regimeKey = pick(input, 'dualTrack.day.regime.key') ?? pick(input, 'signals.regime.latest.key');
+  const sub = pick(input, 'signals.regime.latest') ?? {};
+  const { phase, regime_raw } = mapPhase(regimeKey, { pct_rank: sub.pct_rank, dir: sub.dir });
+  const cap = pick(input, 'dualTrack.day.regime.cap');
+  const zt = pick(input, 'signals.latest.zt_count');
+  const zb = pick(input, 'signals.latest.zb_count');
+  const brokenRatio = Number.isFinite(zt) && Number.isFinite(zb) && zt + zb > 0 ? zb / (zt + zb) : null;
+  const warnings = [];
+  const painReason = pick(input, 'signals.pain.verdict.reason');
+  if (painReason) warnings.push(painReason);
+  const bigLoss = pick(input, 'signals.pain.bigLoss.list');
+  if (Array.isArray(bigLoss) && bigLoss.length) warnings.push(`大面 ${bigLoss.length} 只：${bigLoss.map((b) => `${b.name} ${b.chg}%`).join('、')}`);
+  const breadthDetail = pick(input, 'signals.breadth.snapshot.verdict.detail');
+  if (breadthDetail) warnings.push(`宽度收窄（${breadthDetail}）`);
+  if (phase === regime_raw && !(phase in PHASE_LABELS)) warnings.push(`情绪周期映射外状态 ${regime_raw} 原样透出（不硬塞五期，决议 7）`);
+  const sentiment_cycle = {
+    phase,
+    regime_raw,
+    phase_source: `regime=${regimeKey} · 分位 ${Number.isFinite(sub.pct_rank) ? sub.pct_rank : '未知'} · 方向 ${sub.dir ?? '未知'}${regimeKey === 'recover' ? `（recover 细分阈值 <${STARTUP_PCT_RANK_MAX} 为启动期）` : ''}`,
+    limit_up_count: num(zt),
+    highest_chain: num(pick(input, 'signals.pain.advance.maxLb')),
+    broken_limit_ratio: brokenRatio,
+    yesterday_chain_performance: num(pick(input, 'signals.pain.perf.avg')),
+    warning_signals: warnings,
+  };
+  const pool = buildCandidatePool(input.signals, { nameMap: opts.nameMap, regimeCap: cap });
+  let simulation_positions = null;
+  if (input.live && input.paperAccount?.positions) {
+    simulation_positions = Object.values(input.paperAccount.positions).map((p) => ({
+      code: p.code, name: p.name ?? null, cost_price: num(p.avgCost), current_price: num(p.last),
+      volume: num(p.qty), unrealized_pnl: num((p.last - p.avgCost) * p.qty), holding_days: num(p.days),
+      script_name: null, // 绑定记录（BINDINGS_KEY）由 S3 录入后联查，此处不猜
+      stop_loss_triggered: null, take_profit_triggered: null,
+    }));
+  }
+  return {
+    sentiment_cycle,
+    position_suggestion: mapPositionSuggestion(cap, phase),
+    pool_basis: 'pain.advance.detail 连板活跃明细按连板数降序（情绪面规则现算，决议 8：人工输入模式的辅助建议，可一键采纳不自动生效）',
+    candidate_pool: pool,
+    simulation_positions,
+    review: null, // 复盘归因 S3 录入后才有数据；win_rate 口径 = 剧本命中/总执行（决议 4），缺席恒 null
+  };
+}
+
+// ── 绑定记录（决议 6：人工输入 + 系统记录；独立 key，不动现有账本）────────
+/**
+ * 构造一条绑定记录（纯函数，不碰 storage）。
+ * @returns {{date:string, code:string, script_name:string, note:string, bound_at:string}}
+ */
+export function makeBinding({ date, code, script_name, note = '', boundAt = new Date().toISOString() }) {
+  if (!date || !code || !script_name) throw new Error('绑定记录必须含 date/code/script_name（人工输入三要素）');
+  return { date, code, script_name, note, bound_at: boundAt };
+}
+
+/**
+ * 绑定列表合并（幂等：同 date+code+script_name 不重复追加，返回新数组）。
+ * @param {Array} list 现有绑定（可 null）
+ * @param {object} binding makeBinding 产物
+ */
+export function mergeBindings(list, binding) {
+  const arr = Array.isArray(list) ? list : [];
+  const dup = arr.some((b) => b && b.date === binding.date && b.code === binding.code && b.script_name === binding.script_name);
+  return dup ? arr : [...arr, binding];
+}
+
+/** 读绑定（storage 注入：浏览器传 localStorage，Node 测试传 mock；坏 JSON → 空表，不 throw）。 */
+export function loadBindings(storage) {
+  try {
+    const raw = storage?.getItem?.(BINDINGS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
+/** 写绑定（storage 注入，同上）。 */
+export function saveBindings(storage, bindings) {
+  storage?.setItem?.(BINDINGS_KEY, JSON.stringify(bindings));
+  return bindings;
+}
+
+/**
+ * 模拟导出（复用 exportAccount 机制，指令第 4 条）：账户导出串 + 绑定记录合并为一份 JSON。
+ * @param {object} acct 模拟账户（src/paper.js 账本）
+ * @param {Array} bindings 绑定记录列表
+ * @returns {string} JSON（{ account: <exportAccount 反解>, bindings, exported_at }）
+ */
+export function exportSimulation(acct, bindings) {
+  let account = null;
+  try { account = JSON.parse(exportAccount(acct)); } catch (e) { account = { error: `账户导出失败：${e.message}` }; }
+  return JSON.stringify({ account, bindings: Array.isArray(bindings) ? bindings : [], exported_at: new Date().toISOString() });
 }

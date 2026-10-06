@@ -8,6 +8,9 @@ import { readFileSync, existsSync } from 'node:fs';
 import {
   buildInput, generatePreMarket, generateIntraday, generatePostMarket, generateWeekly,
   mergeReports, buildDataCompleteness, TRIGGER_ENUM, DD_TIER_EDGES, SCHEMA_VERSION,
+  mapPhase, buildScripts, buildCandidatePool, buildSimulationStock, emptyFundamentals,
+  makeBinding, mergeBindings, loadBindings, saveBindings, exportSimulation, BINDINGS_KEY,
+  PHASE_LABELS, SIM_SCRIPT_CONSTS, STARTUP_PCT_RANK_MAX,
 } from '../src/ai_report.js';
 import { validateContract } from '../src/contract.js';
 
@@ -46,7 +49,10 @@ const SIG = {
   ] },
   dailyReport: { sections: [{ id: 'regime', position: { range: '30%~50%' } }] },
   breadth: { snapshot: { verdict: { label: '宽度收窄', detail: '站上20日线仅 30.1%' } } },
-  pain: { verdict: { label: '多空拉锯', reason: '翻绿 49%' } },
+  pain: { verdict: { label: '多空拉锯', reason: '翻绿 49%' }, advance: { maxLb: 6, failRate: 0.4, detail: [
+    { code: '600825', lb: 6, chg: 9.99, kept: true },
+    { code: '000678', lb: 3, chg: 9.98, kept: true },
+  ] }, perf: { avg: 1.3 } },
   seats: { verdict: { label: '游资主导' } },
 };
 const GLOBAL = { meta: { aShareTradeDate: '2026-09-30' }, quotes: [
@@ -218,4 +224,152 @@ test('真实档冒烟：四源真实 JSON → 盘后报告契约通过 + 搬运�
   const weekly = generateWeekly(input, { generatedAt: GEN_AT, weekStart: input.tradeDate });
   mustPass(weekly, 'real-data weekly(单日)');
   assert.equal(weekly.payload.nav_series.length, 1);
+});
+
+// ═══════════ S1.5：模拟选股层（决议 7/8）═══════════════════════════════
+
+// ── 9. mapPhase 五期映射（决议 7）─────────────────────────────────────
+test('mapPhase：recover 细分 / 直映射 / shift·unknown 外透不硬塞', () => {
+  // recover 细分（阈值 STARTUP_PCT_RANK_MAX=30：指令"<50"与示例"44.1=发酵"矛盾，按已拍板 v1.1 判据，常量一行可改）
+  assert.deepEqual(mapPhase('recover', { pct_rank: 25, dir: 'up' }), { phase: PHASE_LABELS.startup, regime_raw: 'recover' });
+  assert.deepEqual(mapPhase('recover', { pct_rank: 44.1, dir: 'up' }), { phase: PHASE_LABELS.fermentation, regime_raw: 'recover' }, '09-30 实况：44.1·up → 发酵期（与设计示例一致）');
+  assert.deepEqual(mapPhase('recover', { pct_rank: 75, dir: 'up' }), { phase: PHASE_LABELS.fermentation, regime_raw: 'recover' });
+  assert.deepEqual(mapPhase('recover', { pct_rank: 20, dir: 'down' }), { phase: PHASE_LABELS.fermentation, regime_raw: 'recover' }, '方向非 up → 发酵');
+  // 直映射
+  assert.deepEqual(mapPhase('climax'), { phase: PHASE_LABELS.climax, regime_raw: 'climax' });
+  assert.deepEqual(mapPhase('ebb'), { phase: PHASE_LABELS.decline, regime_raw: 'ebb' });
+  assert.deepEqual(mapPhase('ice'), { phase: PHASE_LABELS.freezing, regime_raw: 'ice' });
+  // 外透不硬塞（regime_raw 追溯链保留）
+  assert.deepEqual(mapPhase('shift'), { phase: 'shift', regime_raw: 'shift' });
+  assert.deepEqual(mapPhase('unknown'), { phase: 'unknown', regime_raw: 'unknown' });
+  assert.deepEqual(mapPhase(null), { phase: 'unknown', regime_raw: 'unknown' });
+});
+
+// ── 10. buildScripts 三剧本模板 ───────────────────────────────────────
+test('buildScripts：A/B/C 齐全，阈值全部来自常量，B 条件位止损为 null 不造数', () => {
+  const cap = 0.5;
+  const scripts = buildScripts({ code: '600825' }, { regimeCap: cap });
+  assert.equal(scripts.length, 3);
+  const [a, b, c] = scripts;
+  assert.deepEqual(scripts.map((s) => s.name), ['A', 'B', 'C']);
+  for (const s of scripts) {
+    assert.equal(s.script_source, 'template', '模板产物恒标 template（非信号）');
+    assert.ok(s.trigger_condition.length > 0 && s.invalid_condition.length > 0);
+  }
+  assert.equal(a.position_ratio, cap, 'A 仓位 = regime cap');
+  assert.equal(a.stop_loss, SIM_SCRIPT_CONSTS.hard_stop_loss, 'A 止损 = HARD_STOP_LOSS(-0.08) 系统常量');
+  assert.equal(a.take_profit, 0.16, 'A 止盈 = 2×|止损|');
+  assert.equal(b.position_ratio, cap * SIM_SCRIPT_CONSTS.b_position_factor, 'B = cap×0.5 半仓试探');
+  assert.equal(b.stop_loss, null, 'B 止损为破5日线条件位 → null 不造数');
+  assert.equal(b.take_profit, null, 'B 止盈指令未给数值 → null');
+  assert.equal(c.position_ratio, cap * SIM_SCRIPT_CONSTS.c_position_factor, 'C = cap×0.2 轻仓');
+  assert.equal(c.stop_loss, SIM_SCRIPT_CONSTS.script_c_stop_loss, 'C 止损 -5%（指令指定的模板参数）');
+});
+
+// ── 11. buildCandidatePool 候选池（决议 8）────────────────────────────
+test('buildCandidatePool：连板降序 5-10 只、selection_reason 必填、基本面 null 占位', () => {
+  const signals = {
+    pain: {
+      advance: {
+        failRate: 0.4,
+        detail: [
+          { code: '600825', lb: 6, chg: 9.99, kept: true },
+          { code: '000678', lb: 3, chg: 9.98, kept: true },
+          { code: '603949', lb: 4, chg: -9.98, kept: false },
+          { code: '002912', lb: 2, chg: -8.65, kept: false },
+          { code: '600032', lb: 2, chg: -5.75, kept: false },
+        ],
+      },
+    },
+    seats: { verdict: { label: '游资/其他主导' } },
+  };
+  const nameMap = { '600825': { name: '新华传媒', appearances: 8 }, '000678': { name: '襄阳轴承', appearances: 5 } };
+  const pool = buildCandidatePool(signals, { nameMap, regimeCap: 0.5 });
+  assert.ok(pool.length >= SIM_SCRIPT_CONSTS.pool_min || pool.length === signals.pain.advance.detail.length, '5-10 只（源不足时如实给实际数）');
+  assert.deepEqual(pool.map((p) => p.code), ['600825', '603949', '000678', '002912', '600032'], '按连板数降序');
+  for (const p of pool) {
+    assert.ok(typeof p.selection_reason === 'string' && p.selection_reason.length > 0, 'selection_reason 必填');
+    assert.deepEqual(Object.keys(p.fundamentals), Object.keys(emptyFundamentals()), '基本面八字段键常驻');
+    for (const v of Object.values(p.fundamentals)) assert.equal(v, null, '基本面字段全 null 占位');
+    assert.equal(p.themes, null, '题材标签无数据源 → null');
+    assert.ok(p.scripts.length === 3);
+    assert.ok(p.risks.length > 0, '风险提示必带（系统可验证项）');
+  }
+  assert.equal(pool[0].name, '新华传媒', 'nameMap 注入名称');
+  assert.match(pool[0].selection_reason, /6 连板/);
+  assert.match(pool[0].selection_reason, /晋级成功/);
+  assert.match(pool[1].selection_reason, /晋级失败/, '失败也如实进理由（复盘归因用）');
+  assert.match(pool[0].fund_flow_note, /游资/, '席位级真实数据作旁注');
+  // 空源 → 空池（不造数）
+  assert.deepEqual(buildCandidatePool({ pain: {} }), []);
+});
+
+// ── 12. buildSimulationStock 组装 + 注入信封后契约 ─────────────────────
+test('buildSimulationStock：09-30 夹具 → 发酵期/neutral/候选池齐 + 信封契约通过', () => {
+  const input = mkInput();
+  const sim = buildSimulationStock(input, {});
+  assert.equal(sim.sentiment_cycle.phase, '发酵期', 'recover 44.1 up → 发酵期');
+  assert.equal(sim.sentiment_cycle.regime_raw, 'recover', '七态原始值保留（决议 7 追溯链）');
+  assert.equal(sim.sentiment_cycle.limit_up_count, 52);
+  assert.equal(sim.sentiment_cycle.highest_chain, 6);
+  assert.equal(sim.position_suggestion, 'neutral', 'cap 0.5 → neutral');
+  assert.equal(sim.candidate_pool.length, 2, '夹具 advance.detail 2 只');
+  assert.equal(sim.simulation_positions, null, '归档轨无账本 → null');
+  assert.equal(sim.review, null, '复盘 S3 录入前 → null 不造数');
+  const r = generatePostMarket(input, { generatedAt: GEN_AT, simulationStock: sim });
+  mustPass(r, 'post_market + simulation_stock');
+  assert.equal(r.payload.simulation_stock.sentiment_cycle.phase, '发酵期');
+  // 未注入 → null（信封字段仍必须在场）
+  const bare = generateIntraday(mkInput(), { generatedAt: GEN_AT });
+  assert.equal(bare.payload.simulation_stock, null);
+  mustPass(bare, 'intraday 无 sim 段');
+});
+
+// ── 13. 绑定记录（决议 6：人工输入 + 系统记录，独立 key）───────────────
+test('绑定记录：makeBinding 三要素 / mergeBindings 幂等 / storage 注入读写 / 导出合并', () => {
+  const b1 = makeBinding({ date: '2026-09-30', code: '600825', script_name: 'A', boundAt: GEN_AT });
+  assert.equal(b1.code, '600825');
+  assert.throws(() => makeBinding({ date: '2026-09-30', code: '600825' }), /三要素/, '缺 script_name 必须红');
+  const list = mergeBindings(null, b1);
+  assert.equal(list.length, 1);
+  const dup = mergeBindings(list, makeBinding({ date: '2026-09-30', code: '600825', script_name: 'A' }));
+  assert.equal(dup.length, 1, '同 date+code+script 幂等不重复');
+  const list2 = mergeBindings(dup, makeBinding({ date: '2026-09-30', code: '600825', script_name: 'B' }));
+  assert.equal(list2.length, 2);
+  // storage 注入（模拟 localStorage）
+  const store = new Map();
+  const storageLike = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+  saveBindings(storageLike, list2);
+  assert.ok(store.has(BINDINGS_KEY), `独立 key ${BINDINGS_KEY}（不动现有账本 key）`);
+  assert.deepEqual(loadBindings(storageLike), list2);
+  storageLike.setItem(BINDINGS_KEY, '{bad json');
+  assert.deepEqual(loadBindings(storageLike), [], '坏 JSON → 空表不 throw');
+  // 导出复用 exportAccount（账户 + 绑定合并一份）
+  const exported = JSON.parse(exportSimulation(ACCT, list2));
+  assert.ok(exported.account && exported.account.version, 'account 段来自 exportAccount');
+  assert.equal(exported.bindings.length, 2);
+  assert.ok(exported.exported_at);
+});
+
+// ── 14. 真实档模拟选股冒烟（09-30 真实连板池）─────────────────────────
+test('真实档冒烟：buildSimulationStock 过契约 + 真实断言（不写死池内容）', { skip: !existsSync(new URL('../data/paper/dual_track_latest.json', import.meta.url)) }, () => {
+  const read = (p) => JSON.parse(readFileSync(new URL(`../data/${p}`, import.meta.url), 'utf8'));
+  const input = buildInput({
+    dualTrack: read('paper/dual_track_latest.json'),
+    signals: read('signals-latest.json'),
+    global: read('global.json'),
+    opsAlerts: read('ops-alerts-latest.json'),
+  });
+  const nameMap = read('paper_universe.json').symbols;
+  const sim = buildSimulationStock(input, { nameMap });
+  const r = generatePostMarket(input, { generatedAt: GEN_AT, simulationStock: sim });
+  mustPass(r, 'real sim post_market');
+  const sc = sim.sentiment_cycle;
+  assert.equal(sc.regime_raw, input.dualTrack.day.regime.key, 'regime_raw 搬运七态原值');
+  assert.equal(sc.limit_up_count, read('signals-latest.json').latest.zt_count, '涨停数搬运');
+  assert.ok(sim.candidate_pool.length >= 1 && sim.candidate_pool.length <= SIM_SCRIPT_CONSTS.pool_max);
+  for (const p of sim.candidate_pool) {
+    assert.match(p.selection_reason, /连板/, '入选理由必含连板事实');
+    if (nameMap[p.code]?.name) assert.equal(p.name, nameMap[p.code].name, '名称来自 paper_universe 映射');
+  }
 });
