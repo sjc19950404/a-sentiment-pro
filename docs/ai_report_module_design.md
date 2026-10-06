@@ -1,8 +1,8 @@
 # AI 报告生成与推送模块 · 设计对齐稿
 
-版本：design-v1.4（2026-10-06）｜状态：**八项决议全部拍板；S1 + S1.5 已实施**（`src/ai_report.js` 含模拟选股层、schema、单测 15/15、全量回归 1293/1293 绿、`data/reports/` 09-30 四类示例 + 盘后报告含真实候选池十只与 A/B/C 剧本）
+版本：design-v1.5（2026-10-06）｜状态：**八项决议全部拍板；S1 + S1.5 + S2 已实施**（`src/ai_report.js` 模拟选股层、`src/ai_report_push.js` 推送与调度闸门、schema、单测 25/25、全量回归 1303/1303 绿、daily.yml 四挂点 + 企微推送、`data/reports/` 09-30 四类示例）
 范围：只读取交易系统已有数据，生成盘前/盘中/盘后/周报四类报告并展示；不修改网格策略、风控规则、回测引擎与实盘下单逻辑。
-变更记录：v1.1 增补"模拟选股"第五分层（§9）；v1.2 固化决议 7/8；v1.3 落地 S1.5（模拟选股并入 `src/ai_report.js`、判据常量化、`STARTUP_PCT_RANK_MAX=30` 矛盾裁决见 §9.2）；v1.4 口径锁定：`phase` 保持英文枚举不动、`phase_label` 承载中文（契约稳定性优先），绑定读写职责边界固化（写入由 S3 UI 用户确认剧本时触发，模块生成流程只读联查）。
+变更记录：v1.1 增补"模拟选股"第五分层（§9）；v1.2 固化决议 7/8；v1.3 落地 S1.5（模拟选股并入 `src/ai_report.js`、判据常量化、`STARTUP_PCT_RANK_MAX=30` 矛盾裁决见 §9.2）；v1.4 口径锁定：`phase` 保持英文枚举不动、`phase_label` 承载中文（契约稳定性优先），绑定读写职责边界固化（写入由 S3 UI 用户确认剧本时触发，模块生成流程只读联查）；v1.5 落地 S2：盘前 cron 卡北京 09:05、盘中 hot 榜联查（候选池 `intraday_chg`）、CI 侧推送直走 OPS_WEBHOOK + 内容指纹防风暴（§6.1）。
 
 ---
 
@@ -30,12 +30,18 @@ a-sentiment-pro/
 │                                #   S1.5 模拟选股层同文件（用户指令）：mapPhase 五期映射 /
 │                                #   buildScripts 剧本模板 / buildCandidatePool 候选池 /
 │                                #   绑定记录（BINDINGS_KEY 独立 localStorage key，不动账本）
-├── src/ai_report_view.js        # 报告对象 → 可读文本视图（markdown）
-├── scripts/build_ai_report.mjs  # CI 入口：读 data/*.json → 调核心 → 落盘 data/reports/
-├── scripts/push_ai_report.mjs   # CI 推送：企微 Webhook adapter + 指纹防风暴
+├── src/ai_report_view.js        # 报告对象 → 可读文本视图（markdown，S3）
+├── src/ai_report_push.js        # S2 推送与调度闸门（Node/CI 专用，不入浏览器 bundle：
+│                                #   import node:fs 与 freshness/calendar）：内容指纹防风暴 /
+│                                #   urgent 直达 / 四类企微文本渲染 / pushReports 出口 /
+│                                #   gatePreMarket·gateIntraday·gateWeekly 三闸门
+├── scripts/build_ai_report.mjs  # CI 入口：读 data/*.json → 闸门 → 调核心 → 落盘 data/reports/
+│                                #   （--force 旁路闸门：示例重生成/维护用）
+├── scripts/push_ai_report.mjs   # S2 CI 推送：--latest <type>（新鲜度窗口）/ 显式文件模式
 ├── schemas/ai-report.schema.json# 契约（纳入 scripts/check_contract.mjs 校验）
 ├── data/reports/                # 落盘目录
 │   ├── index.json               #   各类型最新一期索引 + 首屏示例标记
+│   ├── push_state.json          #   推送指纹记忆（30 天 TTL，随 bot 提交 = 无状态 runner 共享）
 │   ├── post_market_2026-09-30.json   # 首发示例报告（随仓库提交）
 │   └── ...
 └── (后续 UI 阶段) index.html 加 #aiReportPanel 分区 + app.js 渲染
@@ -123,14 +129,14 @@ buildInput({
 
 | 报告 | 触发 | cron（UTC） | 数据窗口 |
 |---|---|---|---|
-| 盘前 | 交易日 09:15（北京） | `15 1 * * 1-5` 新增独立 job | 前日 dual_track + 凌晨美股档（04:30 已落库）+ global 夜盘 |
-| 盘中 | 每 30 分钟 | 复用现有 `0,30 1-7` 盘中快照 job 追加一步 | intraday + dual_track + global |
-| 盘中·立即 | 事件触发 | 同上 job 内做前后状态 diff | 熔断/趋势切换/回撤阈值三类事件（见 3.3） |
+| 盘前 | 交易日 09:05（北京，v1.5 实施口径：卡 9:00-9:10 窗口，早于 09:15 集合竞价） | `5 1 * * 1-5` 独立 `premarket` job（S2 已实施） | 前日 dual_track + 凌晨美股档（04:30 已落库）+ global 夜盘 |
+| 盘中 | 每 30 分钟（09:30~15:00） | 复用现有 `0,30 1-7` 盘中快照 job 追加一步（S2 已实施） | intraday（hot 榜当日快照 → 候选池 `intraday_chg` 联查）+ dual_track + global |
+| 盘中·立即 | 四类 urgent 事件 | **即时轨（页面 S3）职责**——CI 归档轨盘中无实时源（见 3.3 诚实披露） | 熔断/regime 切换/回撤阈值/剧本命中（见 3.3） |
 | 盘后·即时轨 | 15:05（北京） | 页面端本地合成（无 cron） | __paperSnapshot |
-| 盘后·归档轨 | ~18:35（北京） | 挂现有 build job（`30 10`）末尾 | 当日全量数据（收盘档 18:30 落库后） |
-| 周报 | 本周最后交易日 build 后 | 挂 build job，周五或节前末日条件步 | dual_track.json 本周 days 切片 |
+| 盘后·归档轨 | 18:30 首抓 + 21:00 补抓各生成一次（同日覆盖）；**推送只在 21:00**（首抓常缺龙虎榜/深证日K，不推半成品） | 挂现有 build job（`30 10` / `0 13`）末尾（S2 已实施） | 当日全量数据 |
+| 周报 | 本周最后交易日 build 后（周五或节前末日，闸门自动判定） | 挂 build job 条件步（S2 已实施） | dual_track.json 本周 days 切片（week-start 自动取 ISO 周一） |
 
-**时点约束（诚实披露）**："收盘后 5 分钟内"只有即时轨做得到——CI 端当日行情要到 18:30 抓取后才完备。归档轨盘后版在 build job 末尾生成，两轨以 `generated_at` 区分。周报判"本周最后交易日"而非死板周五（遇节假日自动前移）。
+**时点约束（诚实披露）**："收盘后 5 分钟内"只有即时轨做得到——CI 端当日行情要到 18:30 抓取后才完备。归档轨盘后版在 build job 末尾生成，两轨以 `generated_at` 区分。周报判"本周最后交易日"而非死板周五（遇节假日自动前移）。盘前 09:05 受 GitHub 定时可能延迟数分钟影响（平台已知行为）——数据为昨收口径不随竞价变化，延迟不损内容正确性，推送有指纹去重兜底。
 
 ### 3.2 生成流水（归档轨，单次运行）
 
@@ -144,13 +150,14 @@ buildInput({
 
 ### 3.3 事件触发（盘中"立即生成"）
 
-CI 架构下最细粒度 = 每 30 分钟的 tick，事件检测在同一 tick 内做前后对比：
-- **熔断**：`ops-alerts-latest.json` 新增 risk/error 级事件（对比上一份盘中报告快照的事件指纹）
-- **趋势切换**：`signals.regime.latest.key` 变化
-- **回撤接近阈值**：即时轨 `drawdown` 距 `DD_TIERS` 档位（9%/15%）剩 <1pp；归档轨以 dual_track A 轨回撤近似
+**诚实披露（v1.5 实施后修正）**：四类 urgent 条件在 CI 归档轨上**均无实时数据源**——盘中 signals/regime/ops-alerts 全部是昨收盘口径（18:30 才更新），账户回撤与剧本绑定记录在浏览器 localStorage。故盘中"立即生成"是**即时轨（页面 S3）的职责**；CI 盘中报告只有 30 分钟例行版（`trigger: "schedule"`），其真实时成分 = 候选池 `intraday_chg`（hot 强势榜联查，§9.5）。四类 urgent 触发条件（schema trigger 枚举锁死，决议 3）：
+
+- **熔断**：即时轨 ops-alerts 事件 diff（页面常开时延迟 0）
+- **趋势切换**：`signals.regime.latest.key` 变化（即时轨刷新时判定）
+- **回撤接近阈值**：即时轨 `drawdown` 距 `DD_TIERS` 档位（9%/15%）剩 <1pp
 - **剧本命中**：剧本触发条件回放为真（§9 绑定记录）
 
-命中任一 → 立即生成 `trigger: "event:<原因>"` 的盘中报告并标记 `urgent: true`（推送通道对 urgent 可免防风暴直达）。延迟上界 30 分钟（页面端常开时为 0），文档如实披露。
+命中任一 → 生成 `trigger: "event:<原因>"` 的盘中报告并标记 `urgent: true`（推送免防风暴直达，§6.1）。CI 侧延迟上界 30 分钟（下一拍例行报告会把变化带出来，但 `trigger` 仍为 schedule——变化与事件在归档轨上不可区分，如实标注不冒充事件）。
 
 ### 3.4 首屏示例
 
@@ -359,6 +366,31 @@ CI 架构下最细粒度 = 每 30 分钟的 tick，事件检测在同一 tick �
 
 ## 6. 推送链路（复制 → 云端推送）
 
+### 6.1 CI 侧推送（S2 已实施 · 2026-10-06 用户拍板：四类报告统一企微 Webhook）
+
+```
+daily.yml 四挂点（盘前 09:05 / 盘中每 30 分钟 / 盘后+周报 21:00）
+  → scripts/build_ai_report.mjs 生成（闸门跳过 = 正常退出）
+  → scripts/push_ai_report.mjs --latest <type>（可重复多类型）
+      → src/ai_report_push.js::pushReports（Node/CI 专用，不入浏览器 bundle）
+          通道：env OPS_WEBHOOK（现有运维企微机器人，零新增 secret）
+          防风暴：内容指纹去重（sha256 of report_type|date|trigger|status|payload|
+                   missing_notes——generated_at 等易变字段剔除）：同内容重跑不重推，
+                   数据真变了（21:00 补抓 vs 18:30 首抓）→ 新指纹 → 照推。
+                   30 天指纹记忆（data/reports/push_state.json，随 bot 提交入库 = 无状态
+                   runner 间共享记忆）
+          urgent（event:* 四类）：免防风暴直达（决议 3）
+          失败自愈：fetch 失败/HTTP 非 2xx 不 throw、不记指纹 → 下拍自然重试；
+                   推送永不红 CI（数据管线优先），参数错误才 exit 1
+          --latest 新鲜度窗口（15 分钟）：只推"本次运行刚生成"的报告——防把闸门
+                   跳过后 index 残留的上一期旧报告当新一期重推（另有指纹去重双保险）
+      文本：renderPushText 四类各一版简讯（null → —，缺失披露数 + 数据状态进尾注）
+```
+
+**盘后推送时点**：18:30 首抓只生成不推送（常缺龙虎榜/深证日K），21:00 补抓推送全量版；"收盘 5 分钟"语义由页面即时轨 15:05 版补位（双轨时点约束 §3.1）。**盘中推送粒度**：归档轨盘中内容仅随 hot 榜变化（候选池 `intraday_chg`），榜变才推、榜不变不推——CI 侧盘中推送天然稀疏，密集实时推送是即时轨（S3）的事。
+
+### 6.2 页面侧推送（S3/S4 · 复制按钮 → 云端）
+
 ```
 页面「复制内容」按钮
   → navigator.clipboard.writeText(文本视图)
@@ -367,32 +399,29 @@ CI 架构下最细粒度 = 每 30 分钟的 tick，事件检测在同一 tick �
           adapter A（默认，推荐）：云函数/Worker 转发（页面只持代理 URL+token，
                                    Webhook secret 存云端，不落静态页面）
           adapter B（最小可用）：GitHub repository_dispatch 触发 CI push job
-  → CI scripts/push_ai_report.mjs
-      读 data/reports/<id>.json → 渲染文本 → 企微 Webhook（env AI_REPORT_WEBHOOK，
-      与 OPS_WEBHOOK 通道隔离）→ 指纹防风暴（指纹 = report_type|date|generated_at，
-      天然幂等；urgent 报告免风暴直达；重推需显式 --force）
+  → CI scripts/push_ai_report.mjs（同一指纹与防风暴，显式文件模式无新鲜度检查）
   → 推送结果回显在按钮旁（推送失败不回滚复制，仅提示重试）
 ```
 
-安全边界：静态页面**永不**持有 Webhook secret。防风暴状态存 `data/reports/push-state.json`（沿用 ops-alerts 模式）。
+安全边界：静态页面**永不**持有 Webhook secret（CI 侧直推走 GitHub secrets，与页面侧互不越界）。防风暴状态存 `data/reports/push_state.json`（沿用 ops-alerts 模式，两侧共享同一份指纹记忆）。
 
 ---
 
 ## 7. 实施切分（对齐通过后）
 
-| 阶段 | 内容 | 依赖 |
-|---|---|---|
-| S1 | `src/ai_report.js` + schema + 09-30 示例落盘 + 单测（纯函数，Node 直测） | 本文档定稿 |
-| S1.5 | `src/ai_report_simulation.js`（五期映射/候选池现算/剧本模板）+ schema 增补 + 单测 | S1 |
-| S2 | `scripts/build_ai_report.mjs` + daily.yml 挂点（盘前 job + 盘中/盘后/周报追加步） | S1 / S1.5 |
-| S3 | UI：`#aiReportPanel` 四分层 + 模拟选股第五标签展示 + 分层「复制内容」按钮（复制仅写剪切板，推送 stub）；剧本绑定录入与导出 | S2 |
-| S4 | 推送：代理端点/adapter + `push_ai_report.mjs` + 防风暴 | S3 |
-| S5 | 参数调整与推送流程测试（用户指定：放在推送流程之后） | S4 |
+| 阶段 | 内容 | 依赖 | 状态 |
+|---|---|---|---|
+| S1 | `src/ai_report.js` + schema + 09-30 示例落盘 + 单测（纯函数，Node 直测） | 本文档定稿 | ✅ 完成 |
+| S1.5 | 模拟选股层（五期映射/候选池现算/剧本模板，并入 `src/ai_report.js`）+ schema 增补 + 单测 | S1 | ✅ 完成 |
+| S2 | `src/ai_report_push.js`（推送/指纹/闸门）+ `scripts/push_ai_report.mjs` + daily.yml 四挂点（premarket job 09:05 + 盘中/盘后/周报步）+ CI 侧企微推送 | S1 / S1.5 | ✅ 完成（2026-10-06） |
+| S3 | UI：`#aiReportPanel` 四分层 + 模拟选股第五标签展示 + 分层「复制内容」按钮（复制仅写剪切板，推送 stub）；剧本绑定录入与导出；即时轨合成与 mergeReports 合并 | S2 | ⬜ 下一步 |
+| S4 | 页面侧推送 adapter（云函数代理）+ `push_ai_report.mjs` 显式文件模式接线 | S3 | ⬜ |
+| S5 | 参数调整与推送流程测试（用户指定：放在推送流程之后） | S4 | ⬜ |
 
 ## 8. 决议记录（2026-10-06 用户拍板，六项全部落定）
 
 1. **双轨主从**：即时轨为一等公民，归档轨为兜底；页面加载时以 `generated_at` 去重合并（字段级：较新者为基座，其 null 字段从较旧轨回填，轨道与来源记入 `data_completeness`）。实现：`src/ai_report.js::mergeReports`。
-2. **推送通道**：云函数代理（adapter A）为正式方案；repository_dispatch（adapter B）仅作临时方案。
+2. **推送通道**：云函数代理（adapter A）为正式方案；repository_dispatch（adapter B）仅作临时方案。补充（v1.5）：CI 侧四类报告直推现有 `OPS_WEBHOOK`（同一企微机器人，零新增 secret）已随 S2 落地（§6.1）；云函数代理仍是页面侧（S3/S4）的正式通道（§6.2）。
 3. **盘中粒度与 urgent**：30 分钟粒度可接受。urgent 触发条件**限定四类**：熔断、regime 切换、单日回撤超阈值、剧本命中（`trigger` 枚举锁死，见 schema）。
 4. **周报胜率口径**：`win_rate = 剧本命中次数 / 总剧本执行次数`（依赖剧本绑定记录）；另保留 `profit_trade_ratio`（盈利交易占比）作辅助指标。绑定记录缺席时 `win_rate=null`，不降级为日收益口径。
 5. **data_completeness**：信封新增 `data_completeness` 字段，逐字段标注 `{source: live|archived|derived|assumed|missing, confidence: measured|assumed|missing}`（§4.1）。

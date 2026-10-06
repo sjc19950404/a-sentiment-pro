@@ -201,7 +201,7 @@
               "items": {
                 "type": "object",
                 "required": [
-                  "code", "name", "themes", "selection_reason", "fundamentals",
+                  "code", "name", "themes", "selection_reason", "intraday_chg", "fundamentals",
                   "fund_flow_note", "scripts", "risks"
                 ],
                 "properties": {
@@ -209,6 +209,7 @@
                   "name": { "type": ["string", "null"] },
                   "themes": { "type": ["array", "null"], "description": "题材标签无个股级数据源 → null 占位" },
                   "selection_reason": { "type": "string", "minLength": 1, "description": "入选理由必填（决议 8）：盘后复盘据此归因选股逻辑" },
+                  "intraday_chg": { "type": ["number", "null"], "description": "盘中涨幅%（S2：intraday.json::hot.rows 强势榜联查；**不在榜 = null ≠ 0**，缺席与不涨严格区分；仅盘中报告注入，盘前/盘后恒 null" },
                   "fundamentals": {
                     "type": "object",
                     "description": "八字段 null 占位（决议 8）：键常驻，接数据源后直接填充不改 schema",

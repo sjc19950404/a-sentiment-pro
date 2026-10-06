@@ -527,6 +527,15 @@ export function mergeReports(a, b) {
 //   STARTUP_PCT_RANK_MAX 常量，一行可改。
 // ═══════════════════════════════════════════════════════════════════════
 
+/** ISO 周周一（纯日期运算，浏览器安全；S2 周报 week-start 推导）：'2026-09-30' → '2026-09-28'。 */
+export function isoWeekStart(dateStr) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr || '');
+  if (!m) return null;
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); // 回退到周一（0=周日 → 6 天）
+  return d.toISOString().slice(0, 10);
+}
+
 // 五期英文枚举 → 中文标签（phase 保持英文枚举不动、phase_label 承载中文——
 // 2026-10-06 用户拍板：契约稳定性优先；regime_raw 保留七态原始值供复盘追溯——决议 7）
 export const PHASE_LABELS = { startup: '启动期', fermentation: '发酵期', climax: '高潮期', decline: '退潮期', freezing: '冰点期' };
@@ -622,9 +631,11 @@ export function emptyFundamentals() {
  *   · selection_reason 必填（连板数+当日涨跌+晋级结果，全部真实字段，复盘归因用）；
  *   · themes/fundamentals null 占位；name 经 opts.nameMap（paper_universe.symbols）注入，缺则 null；
  *   · 资金流向仅席位级真实数据作 fund_flow_note，个股级主力资金 null；
- *   · risks 只填系统可验证项（晋级失败率/大面/席位属性），解禁减持业绩雷不编造。
+ *   · risks 只填系统可验证项（晋级失败率/大面/席位属性），解禁减持业绩雷不编造；
+ *   · opts.intradayHot（S2）：{code: 盘中涨幅%} 映射（intraday.json::hot.rows 的 change_pct），
+ *     注入则逐股填 intraday_chg——**不在强势榜 = null（不是 0）**，缺席与不涨严格区分。
  * @param {object} signals signals-latest.json
- * @param {{nameMap?:object, regimeCap?:number, seatNote?:string, advanceFailRate?:number}} opts
+ * @param {{nameMap?:object, regimeCap?:number, seatNote?:string, advanceFailRate?:number, intradayHot?:object}} opts
  */
 export function buildCandidatePool(signals, opts = {}) {
   const detail = Array.isArray(signals?.pain?.advance?.detail) ? signals.pain.advance.detail : [];
@@ -635,11 +646,13 @@ export function buildCandidatePool(signals, opts = {}) {
   const pool = rows.map((r) => {
     const meta = opts.nameMap?.[r.code] ?? null;
     const kept = r.kept ? '晋级成功' : '晋级失败';
+    const hot = opts.intradayHot ? opts.intradayHot[r.code] : undefined;
     return {
       code: r.code,
       name: meta?.name ?? null,
       themes: null, // 题材标签无个股级数据源（momentum.fresh 只有题材名无成分股）
       selection_reason: `${r.lb} 连板（当日 ${r.chg}%，${kept}${meta?.appearances ? `，近期上榜 ${meta.appearances} 次` : ''}）`,
+      intraday_chg: hot === undefined ? null : Number.isFinite(hot) ? hot : null, // S2：不在强势榜 = null ≠ 0
       fundamentals: emptyFundamentals(),
       fund_flow_note: seatNote,
       scripts: buildScripts({ code: r.code }, { regimeCap: opts.regimeCap ?? 0 }),
@@ -686,7 +699,7 @@ export function buildSimulationStock(input, opts = {}) {
     yesterday_chain_performance: num(pick(input, 'signals.pain.perf.avg')),
     warning_signals: warnings,
   };
-  const pool = buildCandidatePool(input.signals, { nameMap: opts.nameMap, regimeCap: cap });
+  const pool = buildCandidatePool(input.signals, { nameMap: opts.nameMap, regimeCap: cap, intradayHot: opts.intradayHot });
   let simulation_positions = null;
   if (input.live && input.paperAccount?.positions) {
     // 绑定联查（读写职责边界）：绑定写入由 S3 前端 UI 在用户确认剧本时触发

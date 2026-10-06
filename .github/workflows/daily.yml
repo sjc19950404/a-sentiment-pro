@@ -23,6 +23,13 @@ on:
     #   开市前摸门的意义：源悄悄改字段/加风控，盘前就能红出来，带 needs 依赖拦下
     #   盘后主跑——坏数据不进生产档。这条 cron **只触发 smoke job**（build 的 if 已排除）。
     - cron: '30 0 * * 1-5'
+    # ③ 盘前 AI 报告（S2 · 2026-10-06）：北京 09:05（UTC 01:05）——用户指定
+    #   9:00-9:10 窗口：早于 09:15 集合竞价留出阅读时间；晚于 08:30 冒烟（昨收
+    #   口径数据已定）；错开 09:00 盘中 tick 首拍（不同 cron 字符串 = 独立 run，
+    #   job 级 if 路由，互不掺和）。非交易日由脚本内闸门自动跳过（exit 0 不红）。
+    #   ⚠ GitHub 定时可能延迟数分钟（平台已知行为）：数据为昨收口径不随竞价变化，
+    #     延迟不损内容正确性；推送有指纹去重兜底不重复。
+    - cron: '5 1 * * 1-5'
   workflow_dispatch:        # 手动触发
 
 # 调度重叠治理（2026-10-06 部署治理配套）：18:30 首抓若未跑完（六源慢/重试），21:00 补抓
@@ -44,7 +51,7 @@ jobs:
   #   每个源的门：硬失败 → 本 job 红 → build 被拦（不污染生产档）+ CI 邮件当天报警。
   #   软失败（龙虎榜当日未公布）不算源故障（盘后早跑正常态）。
   smoke:
-    if: github.event.schedule != '0,30 1-7 * * 1-5'
+    if: github.event.schedule != '0,30 1-7 * * 1-5' && github.event.schedule != '5 1 * * 1-5'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -69,7 +76,8 @@ jobs:
       needs.smoke.result == 'success' &&
       github.event.schedule != '0,30 1-7 * * 1-5' &&
       github.event.schedule != '30 20 * * 1-5' &&
-      github.event.schedule != '30 0 * * 1-5'
+      github.event.schedule != '30 0 * * 1-5' &&
+      github.event.schedule != '5 1 * * 1-5'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -159,15 +167,32 @@ jobs:
         run: node ui/fetch_kline_all.mjs
       - name: 合并构建 UI（PRO 管线数据层 + 原系统 UI 展示层 → dist/）
         run: node scripts/build_ui.mjs
+      # ── AI 报告（S2 · 归档轨挂 build 末尾，设计文档 §3.3）───────────────────
+      # 盘后 + 周报：18:30 首抓与 21:00 补抓都生成（补抓数据更全时覆盖同日文件）。
+      # 周报自带闸门：tradeDate 非本周最后交易日（周五或节前最后一天）自动跳过。
+      - name: 生成盘后 AI 报告（含模拟选股段）
+        run: node scripts/build_ai_report.mjs --type post_market --sim
+      - name: 生成周报 AI 报告（非本周最后交易日自动跳过）
+        run: node scripts/build_ai_report.mjs --type weekly --sim
+      # 推送只在 21:00 补抓与手动触发：18:30 首抓常缺龙虎榜/深证日K，推半成品
+      # 不如等 2.5 小时推全量（"收盘 5 分钟"语义由页面即时轨 15:05 版补位，
+      # 双轨时点约束见设计文档 §3.3）。指纹去重保证 21:00 与 18:30 内容未变时不重推。
+      - name: 推送盘后/周报 AI 报告（企微 + 指纹防风暴）
+        if: github.event.schedule == '0 13 * * 1-5' || github.event_name == 'workflow_dispatch'
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+        run: node scripts/push_ai_report.mjs --latest post_market --latest weekly
       # Pages 部署产物上传已移除（2026-10-06 部署治理）：dist 部署通道收口至
       # deploy-pages.yml（双通道互相覆盖的实录与决策见该文件头注）。build_ui 保留——
       # dist/ 产物与 board_rank 写回仍是数据面的一部分；下面的数据提交（bot push）
       # 会经 deploy-pages.yml 的 paths(data/**) 自动触发页面刷新，闭环不变。
+      # data/reports/ 一并提交（AI 报告档 + 推送指纹状态）：落 data/** 白名单内，
+      # 页面首屏示例与最新报告随数据提交自动上线。
       - name: 提交最新数据
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/ops-alerts-latest.json data/industry_outlier_review.json data/board_rank.json ui/kline
+          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/ops-alerts-latest.json data/industry_outlier_review.json data/board_rank.json data/reports ui/kline
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else
@@ -204,15 +229,60 @@ jobs:
       # （该接口在非交易日会静默返回上一交易日数据）；③ 三源全失败则不覆盖上次成功快照。
       - name: 抓盘中快照（非盘中自动跳过）
         run: node scripts/snapshot_intraday.mjs
+      # ── 盘中 AI 报告（S2）：同一 tick 追加，复用刚抓的 intraday.json 做候选池
+      #   盘中涨幅联查（hot 强势榜 change_pct → intraday_chg；不在榜 = null ≠ 0）。
+      #   报告闸门与快照同源（相位 live 才生成）；urgent 四类事件（熔断/regime 切换/
+      #   回撤接近/剧本命中）依赖实时价与账本，归档轨 CI 无源 → 由页面即时轨（S3）
+      #   负责，CI 只出 30 分钟例行版（trigger=schedule）。
+      #   指纹去重的实际效果：归档轨盘中内容随 hot 榜变化，榜变才推、榜不变不推。
+      - name: 生成并推送盘中 AI 报告（相位非 live 自动跳过）
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+        run: |
+          node scripts/build_ai_report.mjs --type intraday --sim
+          node scripts/push_ai_report.mjs --latest intraday
       - name: 提交盘中快照
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/intraday.json
+          git add data/intraday.json data/reports
           if git diff --cached --quiet; then
             echo "无变化（非盘中或快照相同），跳过提交"
           else
-            git commit -m "chore: 盘中快照 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git commit -m "chore: 盘中快照+AI报告 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi
+
+  premarket:
+    # ── 盘前 AI 报告（S2 · 2026-10-06）：北京 09:05 生成并推送 ──────────────
+    #   cron '5 1 * * 1-5'（UTC 01:05）。为什么单独一个 job 而不是塞进 intraday：
+    #   ① 触发时刻在 09:00/09:30 两拍之间，与盘中 tick 错峰；② 盘前读的是**昨收
+    #   口径**全档（dual_track/signals/global），不依赖刚抓的 intraday.json；
+    #   ③ 相位 09:05 是 pre（非 live），塞 intraday 会被它的相位闸门拦掉。
+    #   闸门：非交易日脚本自跳（exit 0）；推送与生成同 step（原子性：生成失败不推）。
+    if: github.event.schedule == '5 1 * * 1-5' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 生成并推送盘前 AI 报告（非交易日自动跳过）
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+        run: |
+          node scripts/build_ai_report.mjs --type pre_market --sim
+          node scripts/push_ai_report.mjs --latest pre_market
+      - name: 提交盘前报告
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/reports
+          if git diff --cached --quiet; then
+            echo "无变化（非交易日），跳过提交"
+          else
+            git commit -m "chore: 盘前AI报告 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             git push
           fi
 
