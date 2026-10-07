@@ -2774,7 +2774,10 @@ function loadRecent() {
 
 /**
  * 取完整档（按年分片）。只在用户点了"回看更早交易日"时才调。
- * 返回合并后的 all_days（新→旧按年拼接，再按日期升序），语义与旧 archive.all_days 一致。
+ * 返回 { days, latestReasonCodes }：days 为合并后的 all_days（新→旧按年拼接，再按
+ * 日期升序），语义与旧 archive.all_days 一致；latestReasonCodes 是**最新日所属
+ * 分片**的 rc 码表（上榜原因下标表，在分片顶层 meta 里）——年分片的 _sub.lhb 是
+ * rc 压缩态，loadFullArchive 现算 lhb_aggr 兜底时解码用（仅随行带回，零额外请求）。
  */
 async function loadFull(arc, years) {
   const want = (years && years.length) ? years : (arc.years || []);
@@ -2782,7 +2785,11 @@ async function loadFull(arc, years) {
   const days = [];
   for (const p of parts) if (p && Array.isArray(p.all_days)) days.push(...p.all_days);
   days.sort((a, b) => String(a.trade_date).localeCompare(String(b.trade_date)));
-  return days;
+  const lastDay = days[days.length - 1] || null;
+  const owner = lastDay
+    ? parts.find((p) => p && Array.isArray(p.all_days) && p.all_days.includes(lastDay))
+    : null;
+  return { days, latestReasonCodes: (owner && owner.meta && owner.meta.reasonCodes) || null };
 }
 
 /**
@@ -2862,7 +2869,7 @@ function lazyNoticeHTML() {
   const pend = Object.keys(lazy).filter((k) => !lazyWanted.has(k) && !lazyValuePresent(displayDays(ARC), k));
   if (!pend.length) return '';
   const txt = pend.map((k) => `${LAZY_FIELD_LAB[k] || k}（${(lazy[k] / 1024).toFixed(0)}KB）`).join('、');
-  return `<span class="lazy-note" title="这些字段已从首屏剥离，点开相关详情时会自动补齐；当前显示为空是'未加载'而非'无数据'">⌛ ${txt}未加载</span>`;
+  return `<span class="lazy-note" title="原始榜数据位于惰性槽（不随首屏下发），当前视图未加载；显示为空是'未加载'而非'无数据'">⌛ ${txt}未加载</span>`;
 }
 
 let INDEX_CACHE = null;
@@ -3895,6 +3902,35 @@ function needsLazy(field) {
 void needsLazy;
 
 /**
+ * 从年分片最新日的惰性槽（_sub.lhb，rc 码表压缩态）现算 lhb_aggr。
+ * 口径与切片侧（src/archive_split.js::buildRecent 注入 aggregateByCode）逐字同构：
+ * decodeRc（码表 = 分片顶层 meta.reasonCodes，loadFull 随行带回）→ aggregateByCode
+ * （src/lhb.js 纯函数，经典脚本动态 import）。2026-10-07 实测：79 条原始 → 66 条
+ * 聚合，与切片侧产物**逐位一致**（tmp 验证脚本）。任何一步缺料/失败 → null，
+ * 调用方如实披露，不冒充。
+ */
+async function aggregateLhbFromSub(day, reasonCodes) {
+  try {
+    const raw = Array.isArray(day && day.lhb) ? day.lhb
+      : (day && day._sub && Array.isArray(day._sub.lhb)) ? day._sub.lhb : [];
+    if (!raw.length || !Array.isArray(reasonCodes)) return null;
+    // decodeRcRows 同款（src/archive_split.js 内联实现，逐字对齐）：rc 下标 → 明文
+    // reasons。不解码直接聚合会产出 reasons:[null] → 新股标记全部失配（切片侧
+    // 注释里实测红过的坑，不再踩）。
+    const decoded = raw.map((l) => {
+      if (!l || !Array.isArray(l.rc)) return l;
+      const reasons = l.rc.map((i) => reasonCodes[i]).filter((x) => typeof x === 'string');
+      const { rc, ...rest } = l;
+      return { ...rest, reasons, reason: reasons[0] ?? '—' };
+    });
+    const { aggregateByCode } = await import('./src/lhb.js');
+    return aggregateByCode(decoded);
+  } catch {
+    return null; // 动态 import 失败（如离线且 sw 未缓存 src/lhb.js）→ 调用方披露
+  }
+}
+
+/**
  * 用户显式请求"完整档"：拉全部年份分片（几 MB），用完整 all_days 重渲染。
  *
  * 这是三档里的最后一档，**只在用户点按钮时**发生——绝不能因为"反正都拉一次"
@@ -3903,8 +3939,32 @@ void needsLazy;
 async function loadFullArchive(btn) {
   if (btn) { btn.disabled = true; btn.textContent = '载入中…'; }
   try {
-    const days = await loadFull(INDEX_CACHE || lastArc, (INDEX_CACHE || lastArc)?.years);
+    // 修复（2026-10-07 · 龙虎榜资金栏空档）：年分片按体积纪律不存 lhb_aggr（主档
+    // 241 天全存 +4.2MB 体积翻倍，只在滚动窗切片最新日现算，见 src/archive_split.js
+    // 的体积纪律注），整替 all_days 会把滚动窗 latest 的 lhb_aggr 一起丢掉 →
+    // 龙虎榜资金视图（hotRows 取 last.lhb_aggr || last.lhb）双空。装载侧兜底两层：
+    //   ① 继承：替换前 ARC 的最后一天 = 滚动窗 latest（切片侧已现算 lhb_aggr），
+    //      年分片最新日日期一致 → 直接继承，零重算零请求；
+    //   ② 现算：日期不一致（滚动窗比年分片新，如盘中 recent 刚更新）→ 从 _sub.lhb
+    //      现算（aggregateLhbFromSub，与切片侧同口径）。两层都落空 → 如实披露。
+    const prevDays = displayDays(ARC);
+    const prevLast = prevDays[prevDays.length - 1] || null;
+    const inherit = (prevLast && Array.isArray(prevLast.lhb_aggr))
+      ? { date: prevLast.trade_date, rows: prevLast.lhb_aggr } : null;
+    const full = await loadFull(INDEX_CACHE || lastArc, (INDEX_CACHE || lastArc)?.years);
+    const days = full.days;
     if (!days.length) throw new Error('分片为空');
+    const last = days[days.length - 1];
+    if (last && !Array.isArray(last.lhb_aggr)) {
+      let rows = (inherit && inherit.date === last.trade_date) ? inherit.rows : null;
+      if (!rows) rows = await aggregateLhbFromSub(last, full.latestReasonCodes);
+      if (rows) {
+        days[days.length - 1] = { ...last, lhb_aggr: rows };
+      } else {
+        const scope = $('loadScope');
+        if (scope) scope.insertAdjacentHTML('beforeend', ` <span class="bf-warn">龙虎榜资金：该日原始榜缺失，无法聚合（显示为空 ≠ 无数据）</span>`);
+      }
+    }
     RECENT_CACHE = { days };
     const merged = mergeArc(INDEX_CACHE || lastArc, null);
     merged.all_days = days;
