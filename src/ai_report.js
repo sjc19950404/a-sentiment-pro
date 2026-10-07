@@ -121,12 +121,21 @@ function buildOverseas(global) {
     if (!q) return null;
     return {
       key: q.key, name: q.name,
-      chgPct: q.ok && Number.isFinite(q.chgPct) ? q.chgPct : null,
+      // 单位换算（S3-5 逮住的 S1 既有 bug）：data/global.json 的 chgPct 是**百分数值**
+      // （src/global.js::normalizeQuote 现算 chg/prevClose×100，如 0.4942 = +0.4942%），
+      // 报告层约定小数（push_text pct() 再 ×100）——搬运边界必须 ÷100，否则虚报 100 倍。
+      chgPct: q.ok && Number.isFinite(q.chgPct) ? q.chgPct / 100 : null,
       state: q.state || (q.ok ? 'ok' : 'unknown'),
     };
   };
   const out = [mk('a50'), mk('sox')].filter(Boolean); // A50=夜盘代理；费半=与 A 股科技链同源度最高
   return out.length ? out : null;
+}
+
+/** global.quotes 里取一资产涨跌幅（buildOverseas 同款判定 + ÷100 单位换算，缺 → null） */
+function quoteOf(input, key) {
+  const q = (Array.isArray(input?.global?.quotes) ? input.global.quotes : []).find((x) => x && x.key === key);
+  return q && q.ok && Number.isFinite(q.chgPct) ? q.chgPct / 100 : null;
 }
 
 function buildRegime(input) {
@@ -334,6 +343,12 @@ export function generatePreMarket(input, opts = {}) {
   payload.overnight_exposure = {
     a50_chgPct: num((payload.overseas || []).find((q) => q.key === 'a50')?.chgPct),
     posGap: num(pick(day, 'divergence.posGap')),
+    // S3-5 盘前推送增强：隔夜外围全景（数据源 data/global.json，04:30 美股收盘档
+    // cron 专抓、usReadiness ≥16:30 ET 才采信收盘态）。ok:false / chgPct 缺失 → null
+    // （与 buildOverseas 同款判定，不冒充）。渲染端聚合一行展示（push_text.js）。
+    us_close: { dji: quoteOf(input, 'dji'), spx: quoteOf(input, 'spx'), ixic: quoteOf(input, 'ixic') },
+    cn_overnight: { hxc: quoteOf(input, 'hxc'), fxi: quoteOf(input, 'fxi') },
+    cnh_chgPct: quoteOf(input, 'cnh'),
   };
   payload.key_levels = null;
   payload.events_today = null;

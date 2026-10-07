@@ -102,7 +102,7 @@ test('盘后报告：信封字段齐 + 数字只搬运 + 结构性 null 不补 0
   assert.equal(r.payload.slippage_avg, 0.0002, '假设常量 = src/paper.js DEFAULT_SLIP');
   assert.equal(r.payload.backtest_deviation.delta, 0);
   assert.equal(r.payload.regime.position_range, '30%~50%');
-  assert.equal(r.payload.overseas[0].chgPct, 0.0915);
+  assert.equal(r.payload.overseas[0].chgPct, 0.000915); // global chgPct 百分数 0.0915 → 报告小数（÷100，S3-5 修复）
   assert.equal(r.payload.overseas[1].chgPct, null, '盘前无数据 = null 绝不写 0');
   assert.equal(r.status, 'degraded', '归档轨 live-only 字段 null → degraded（与 09-30 示例一致）');
   const noteFields = r.missing_notes.map((n) => n.field).join(';');
@@ -130,10 +130,37 @@ test('盘前报告：prev_nav 派生 / 隔夜敞口 / ATR 系结构性 null', ()
   const r = generatePreMarket(mkInput(), { generatedAt: GEN_AT });
   mustPass(r, 'pre_market');
   assert.ok(Math.abs(r.payload.prev_nav - (1 + DT.summary.trackA.total) / (1 + DT.day.dayReturns.A)) < 1e-12, 'prev_nav=(1+cum)/(1+dayRet) 派生可逆');
-  assert.deepEqual(r.payload.overnight_exposure, { a50_chgPct: 0.0915, posGap: 0.2 });
+  assert.deepEqual(r.payload.overnight_exposure, {
+    a50_chgPct: 0.000915, posGap: 0.2,                 // global 百分数 0.0915 → 报告小数（÷100）
+    us_close: { dji: null, spx: null, ixic: null },     // fixture 无美股资产 → null（不冒充）
+    cn_overnight: { hxc: null, fxi: null },
+    cnh_chgPct: null,
+  });
   assert.equal(r.payload.positions.poolPos, 0.5);
   for (const k of ['key_levels', 'events_today', 'atr', 'suggested_step']) assert.equal(r.payload[k], null, `${k} 恒 null`);
   assert.equal(r.data_completeness.atr.source, 'missing');
+});
+
+// ── 3b. 盘前推送增强（S3-5）：隔夜外围全景逐位对齐 + 降级判定 ──────────────
+test('盘前报告：外围收盘全景（dji/spx/ixic/hxc/fxi/cnh）逐位搬运 + ok:false 降级 null', () => {
+  const GLOBAL_FULL = { meta: { aShareTradeDate: '2026-09-30' }, quotes: [
+    { key: 'a50', name: '富时中国A50期货', ok: true, state: 'ok', chgPct: 0.0915 },
+    { key: 'sox', name: '费城半导体指数', ok: false, state: 'preopen', chgPct: null },
+    { key: 'dji', name: '道琼斯', ok: true, state: 'ok', chgPct: 0.4942 },
+    { key: 'spx', name: '标普500', ok: true, state: 'ok', chgPct: 0.5786 },
+    { key: 'ixic', name: '纳斯达克', ok: true, state: 'ok', chgPct: 0.4458 },
+    { key: 'hxc', name: '纳斯达克中国金龙指数', ok: true, state: 'ok', chgPct: 0.3142 },
+    { key: 'fxi', name: '富时中国ETF（FXI）', ok: true, state: 'ok', chgPct: -0.2363 },
+    { key: 'cnh', name: '美元/离岸人民币', ok: false, state: 'unknown', chgPct: 0.5 }, // ok:false → null（有值也不采）
+  ] };
+  const r = generatePreMarket(mkInput({ global: GLOBAL_FULL }), { generatedAt: GEN_AT });
+  mustPass(r, 'pre_market');
+  const oe = r.payload.overnight_exposure;
+  const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-12, `${a} ≈ ${b}`);
+  near(oe.us_close.dji, 0.004942); near(oe.us_close.spx, 0.005786); near(oe.us_close.ixic, 0.004458);
+  near(oe.cn_overnight.hxc, 0.003142); near(oe.cn_overnight.fxi, -0.002363);
+  assert.equal(oe.cnh_chgPct, null, 'ok:false → null（buildOverseas 同款判定，不冒充）');
+  near(oe.a50_chgPct, 0.000915);
 });
 
 // ── 4. 盘中 + trigger 枚举（决议 3）───────────────────────────────────

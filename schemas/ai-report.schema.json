@@ -97,7 +97,23 @@
           "required": ["a50_chgPct", "posGap"],
           "properties": {
             "a50_chgPct": { "type": ["number", "null"] },
-            "posGap": { "type": ["number", "null"] }
+            "posGap": { "type": ["number", "null"] },
+            "us_close": {
+              "type": ["object", "null"],
+              "properties": {
+                "dji": { "type": ["number", "null"] },
+                "spx": { "type": ["number", "null"] },
+                "ixic": { "type": ["number", "null"] }
+              }
+            },
+            "cn_overnight": {
+              "type": ["object", "null"],
+              "properties": {
+                "hxc": { "type": ["number", "null"] },
+                "fxi": { "type": ["number", "null"] }
+              }
+            },
+            "cnh_chgPct": { "type": ["number", "null"] }
           }
         },
         "key_levels": { "type": "null" },

@@ -130,6 +130,18 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；缺失披
   }));
   assert.ok(preHoliday.includes('数据截至 2026-09-30 收盘（距生成 8 天，假期无更新）'), '节后首日（gap>3）附假期无更新——10-08 盘前实况');
 
+  // S3-5 外围收盘聚合行：有值渲染（cnh null → —）、老档/全缺整行省略、上限内
+  const preFull = renderPushText(mkReport({
+    report_type: 'pre_market',
+    payload: { date: '2026-09-30', pnl_daily: null, pnl_cumulative: null, prev_nav: null, overseas: [{ key: 'a50', chgPct: 0.001853 }],
+      overnight_exposure: { posGap: 4, us_close: { dji: 0.004942, spx: 0.005786, ixic: 0.004458 }, cn_overnight: { hxc: 0.003142, fxi: -0.002363 }, cnh_chgPct: null },
+      simulation_stock: null },
+    missing_notes: [],
+  }));
+  assert.match(preFull, /外围收盘: 道 \+0\.49% · 标普 \+0\.58% · 纳指 \+0\.45% · 金龙 \+0\.31% · FXI -0\.24% · 离岸人民币 —/, '聚合一行 + null → —');
+  assert.ok(preFull.length <= PUSH_CONSTS.MSG_CAP, '企微 text 上限内（2000 留余量）');
+  assert.ok(!pre.includes('外围收盘'), '无新字段段（fixture 夹具）→ 整行省略，不留一排 — 噪音行');
+
   const intra = renderPushText(mkReport({
     report_type: 'intraday', trigger: 'event:circuit_breaker', urgent: true,
     payload: { date: '2026-09-30', drawdown_vs_threshold: { dd_now: 0.088, distance_pp: 0.2, basis: '归档轨 trackA.maxDd' }, pnl_daily: 0.0002, pnl_cumulative: -0.015, overseas: [], simulation_stock: { ...mkReport().payload.simulation_stock, candidate_pool: [{ code: '600825', name: '新华传媒', intraday_chg: 3.3 }] } },

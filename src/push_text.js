@@ -53,6 +53,15 @@ export function renderPushText(report) {
       { const s = simLine(p); if (s) lines.push(s); }
       lines.push(`前日盈亏 ${pct(p.pnl_daily)} · 累计 ${pct(p.pnl_cumulative)} · 前日净值 ${p.prev_nav != null ? p.prev_nav.toFixed(4) : '—'}`);
       lines.push(`隔夜: A50 ${overseas(p, 'a50')} · 费半 ${overseas(p, 'sox')} · 净敞口分歧 ${txt(p.overnight_exposure?.posGap)}`);
+      { // S3-5 外围收盘全景（overnight_exposure 扩展段，聚合一行不逐条罗列）：
+        // 任一在场才推（数据源挂/老档无此段 → 整行省略，不留一排 — 的噪音行）。
+        const oe = p.overnight_exposure || {};
+        const us = oe.us_close || {}, cn = oe.cn_overnight || {};
+        if ([us.dji, us.spx, us.ixic, cn.hxc, cn.fxi, oe.cnh_chgPct].some((v) => v != null)) {
+          lines.push(`外围收盘: 道 ${pct(us.dji)} · 标普 ${pct(us.spx)} · 纳指 ${pct(us.ixic)}`
+            + ` · 金龙 ${pct(cn.hxc)} · FXI ${pct(cn.fxi)} · 离岸人民币 ${pct(oe.cnh_chgPct)}`);
+        }
+      }
       lines.push(`最高连板 ${txt(p.simulation_stock?.sentiment_cycle?.highest_chain)} · 炸板率 ${pct(p.simulation_stock?.sentiment_cycle?.broken_limit_ratio)}`);
       break;
     case 'intraday':
