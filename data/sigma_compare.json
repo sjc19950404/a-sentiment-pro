@@ -1935,5 +1935,15 @@
       "theme": "PCB",
       "days": 1
     }
-  ]
+  ],
+  "threshold_drift": {
+    "start": 0,
+    "end": 10.6,
+    "max": 12.49,
+    "max_date": "2026-09-29",
+    "days_above_10": 6,
+    "days_above_12": 1,
+    "trigger_rate_above_10": 16.7,
+    "trigger_rate_above_12": 0
+  }
 }

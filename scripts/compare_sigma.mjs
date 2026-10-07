@@ -137,6 +137,28 @@ for (const r of perDay) {
 }
 const themeStatsArr = [...themeStats.values()].sort((a, b) => b.days - a.days || a.theme.localeCompare(b.theme));
 
+// 阈值漂移监控：gating 后 up_threshold 的区间/峰值/高阈值天数与对应触发率。
+// 单 σ → 直接对象；多 σ → 按 σ 字符串分组（结构同）。触发率分母为 0 时为 null（无样本不猜）。
+const driftOf = (sigma) => {
+  const seq = perDay.map((r) => ({ date: r.date, up: r.by_sigma[String(sigma)].up_threshold, hit: r.by_sigma[String(sigma)].triggered }));
+  let max = -Infinity, maxDate = null;
+  for (const x of seq) if (Number.isFinite(x.up) && x.up > max) { max = x.up; maxDate = x.date; }
+  const above10 = seq.filter((x) => x.up >= 10);
+  const above12 = seq.filter((x) => x.up >= 12);
+  const rate = (arr) => arr.length ? Math.round((arr.filter((x) => x.hit).length / arr.length) * 1000) / 10 : null;
+  return {
+    start: seq.length ? seq[0].up : null,
+    end: seq.length ? seq[seq.length - 1].up : null,
+    max: maxDate != null ? max : null,
+    max_date: maxDate,
+    days_above_10: above10.length,
+    days_above_12: above12.length,
+    trigger_rate_above_10: rate(above10),
+    trigger_rate_above_12: rate(above12),
+  };
+};
+const driftBySigma = SIGMAS.map((s) => [String(s), driftOf(s)]);
+
 // ── 终端报告 ──
 console.log(`\n[compare_sigma] 样本：${total} 个非回填交易日（${perDay[0]?.date} ~ ${perDay[perDay.length - 1]?.date}），lookback=${config.mainLine.lookback_days}，min_sample=${config.mainLine.min_sample_days}\n`);
 const pad = (v, w) => String(v).padEnd(w, ' ');
@@ -173,6 +195,14 @@ if (COMPARE) {
     }
   }
 }
+console.log(`\n阈值漂移监控：`);
+for (const [key, dr] of driftBySigma) {
+  const rateTxt = (r) => (r == null ? '—' : r + '%');
+  console.log(`  ${COMPARE ? `σ${key} ` : ''}区间：${dr.start} → ${dr.end}，最高 ${dr.max}${dr.max_date ? `（${dr.max_date}）` : ''}`);
+  console.log(`  阈值≥10：${dr.days_above_10} 天，触发率 ${rateTxt(dr.trigger_rate_above_10)}`);
+  console.log(`  阈值≥12：${dr.days_above_12} 天，触发率 ${rateTxt(dr.trigger_rate_above_12)}`);
+}
+console.log(`  提示：若阈值持续>12 且触发率<30%，建议复核 lookback 或 σ`);
 
 // ── 落盘（完整逐日明细，供人工/后续脚本分析） ──
 const payload = {
@@ -192,6 +222,8 @@ const payload = {
   summary,
   per_day: perDay,
   theme_stats: themeStatsArr.map((x) => ({ ...x })),
+  // 单 σ：直接对象；多 σ：按 σ 分组（结构同 driftOf 返回值）
+  threshold_drift: COMPARE ? Object.fromEntries(driftBySigma) : driftBySigma[0][1],
   disagreements: COMPARE ? disagreements.map((r) => r.date) : undefined,
 };
 writeFileSync(OUT_PATH, JSON.stringify(payload, null, 2) + '\n');
