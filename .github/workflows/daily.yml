@@ -30,6 +30,17 @@ on:
     #   ⚠ GitHub 定时可能延迟数分钟（平台已知行为）：数据为昨收口径不随竞价变化，
     #     延迟不损内容正确性；推送有指纹去重兜底不重复。
     - cron: '5 1 * * 1-5'
+    # ④ 盘中定时推送（S3-6 · 2026-10-07）：三个关键决策窗口强制触发快照 + 推送判断，
+    #   北京 10:15（早盘定局）/ 13:45（午后开盘）/ 14:45（尾盘前瞻）。
+    #   分-时耦合不同（02:15 / 05:45 / 06:45 UTC）无法写成一条，最省两条：
+    #   '15 2 * * 1-5' = 10:15；'45 5,6 * * 1-5' = 13:45 + 14:45。
+    #   与 tick（:00/:30 网格）的关系：tick 每半小时已 build+push intraday 报告，
+    #   三个时点在网格缝里加拍——新快照刚抓，hot 榜若更新则指纹变即推送（变才推，
+    #   防风暴纪律不变）；榜没变不推。非 live 相位由 gateIntraday 自动跳过（exit 0）。
+    #   ⚠ smoke/build 是排除式 if——新 cron 字符串必须同步加排除（见各自 if），
+    #     否则 10:15 会误跑六源冒烟 + 全量管道重算。
+    - cron: '15 2 * * 1-5'
+    - cron: '45 5,6 * * 1-5'
   workflow_dispatch:        # 手动触发
 
 # ── 模拟选股层总开关（S2 · 2026-10-07 用户拍板）────────────────────────────
@@ -59,7 +70,9 @@ jobs:
   #   每个源的门：硬失败 → 本 job 红 → build 被拦（不污染生产档）+ CI 邮件当天报警。
   #   软失败（龙虎榜当日未公布）不算源故障（盘后早跑正常态）。
   smoke:
-    if: github.event.schedule != '0,30 1-7 * * 1-5' && github.event.schedule != '5 1 * * 1-5'
+    # S3-6：盘中推送三时点（'15 2' / '45 5,6'）已加排除——冒烟是盘前 08:30 摸门语义，
+    # 盘中重跑纯浪费且占 daily-sentiment 并发槽（会延迟同拍 intraday job）。
+    if: github.event.schedule != '0,30 1-7 * * 1-5' && github.event.schedule != '5 1 * * 1-5' && github.event.schedule != '15 2 * * 1-5' && github.event.schedule != '45 5,6 * * 1-5'
     runs-on: ubuntu-latest
     # 5 → 8：重试兜底后最坏路径 = 首跑（≤2 分钟）+ 60s 退避 + 重跑，留足余量不误触超时。
     timeout-minutes: 8
@@ -104,7 +117,9 @@ jobs:
       github.event.schedule != '0,30 1-7 * * 1-5' &&
       github.event.schedule != '30 20 * * 1-5' &&
       github.event.schedule != '30 0 * * 1-5' &&
-      github.event.schedule != '5 1 * * 1-5'
+      github.event.schedule != '5 1 * * 1-5' &&
+      github.event.schedule != '15 2 * * 1-5' &&
+      github.event.schedule != '45 5,6 * * 1-5'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -245,7 +260,10 @@ jobs:
   intraday:
     # 盘中轻量快照：只抓 hot/pools/breadth 三个实时源，写 data/intraday.json。
     # 绝不触碰 archive.json —— 盘中涨跌家数未定盘，写进情绪因子会让分数反复跳变、分位失去意义。
-    if: github.event.schedule == '0,30 1-7 * * 1-5' || github.event_name == 'workflow_dispatch'
+    # S3-6（2026-10-07）：除 tick 网格（:00/:30）外，三个决策时点（10:15 / 13:45 / 14:45
+    # 北京 = '15 2' / '45 5,6' UTC）也走本 job 全流程（快照 → 报告 → 推送 → 提交）——
+    # 推送仍受指纹去重约束（榜变才推），闸门 gateIntraday 过滤非 live 相位。
+    if: github.event.schedule == '0,30 1-7 * * 1-5' || github.event.schedule == '15 2 * * 1-5' || github.event.schedule == '45 5,6 * * 1-5' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
