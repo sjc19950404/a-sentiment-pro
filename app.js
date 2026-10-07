@@ -1692,6 +1692,14 @@ function renderBacktest(bt) {
   const ml = bt.mainLine || {};
   const box = $('mainLineBody');
   box.innerHTML = '';
+  if (!(ml.mains || []).length) {
+    // 动态阈值（2026-10-07）下的诚实空态：当日无题材达标就不是主线，不冒充 topN。
+    const th = ml.threshold;
+    const none = document.createElement('div');
+    none.className = 'empty';
+    none.textContent = `今日无主线题材（最强题材未达动态阈值${th ? `：涨停 ≥${Math.round(th.up_count_threshold * 10) / 10} 家且密集度 ≥${(th.density_threshold * 100).toFixed(1)}%（${th.mode === 'fallback' ? '样本不足，降级固定阈值' : `近 ${th.samples} 日分布 均值+${1}σ`}）` : ''}）`;
+    box.appendChild(none);
+  }
   (ml.mains || []).forEach((mn) => {
     const head = document.createElement('div');
     head.className = 'ml-head';
@@ -1725,7 +1733,7 @@ function renderBacktest(bt) {
   box.appendChild(ind);
   const note = document.createElement('div');
   note.className = 'bf-foot';
-  note.textContent = `口径：主线题材按当日题材榜涨停家数取前 N；标的清单取热点榜中诱因含该题材的强势股，按当日涨幅降序。`
+  note.textContent = `口径：主线题材须达动态阈值（近 N 个交易日最强题材分布的 均值+σ×标准差，配置 config.json::mainLine）后再按涨停家数取前 N；标的清单取热点榜中诱因含该题材的强势股，按当日涨幅降序。`
     + `强度分 = 主线涨停家数 × 密集度（该题材涨停数 ÷ 当日全题材涨停数），与离线 Python 版 find_main_line 的「涨停家数 × 涨停密度」同形，但数据源不同，绝对量级不可直接比较。数据截至 ${ml.tradeDate || '—'}。`;
   box.appendChild(note);
 }

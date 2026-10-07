@@ -68,6 +68,31 @@ if (typeof cfg.params.live.costModel.priceLimit?.enabled !== 'boolean') {
 if (!Array.isArray(cfg.manualHolidays) || cfg.manualHolidays.some((d) => !/^\d{4}-\d{2}-\d{2}$/.test(d))) {
   throw new Error('[config] manualHolidays 必须为 YYYY-MM-DD 数组');
 }
+// 主线识别动态阈值（2026-10-07）：块缺失不炸（引擎有 fixedFallback 语义兜底），
+// 但**给了就必须给对**——数字类型与下界不符直接启动失败，绝不带病运行。
+if (cfg.mainLine != null) {
+  if (typeof cfg.mainLine !== 'object' || Array.isArray(cfg.mainLine)) {
+    throw new Error('[config] mainLine 必须为对象');
+  }
+  const ML_NUMS = [
+    ['lookback_days', 1], ['sigma_multiplier', 0], ['min_sample_days', 1],
+  ];
+  for (const [k, min] of ML_NUMS) {
+    const v = cfg.mainLine[k];
+    if (!Number.isFinite(+v) || +v < min) {
+      throw new Error(`[config] mainLine.${k} 必须为 ≥${min} 的有限数，实际 ${v}`);
+    }
+  }
+  if (+cfg.mainLine.min_sample_days > +cfg.mainLine.lookback_days) {
+    throw new Error('[config] mainLine.min_sample_days 不得大于 lookback_days（降级线永远不可达）');
+  }
+  const fb = cfg.mainLine.fixedFallback;
+  if (fb == null || typeof fb !== 'object'
+    || !Number.isFinite(+fb.up_count_threshold) || +fb.up_count_threshold < 0
+    || !Number.isFinite(+fb.density_threshold) || +fb.density_threshold < 0 || +fb.density_threshold > 1) {
+    throw new Error('[config] mainLine.fixedFallback 必须含 up_count_threshold≥0 与 density_threshold∈[0,1]');
+  }
+}
 
 // ── 冻结与组装 ──────────────────────────────────────────────────────────────
 const __freeze = (o) => {
@@ -94,5 +119,10 @@ out.backtest = {
 };
 out.momentumRecent = LIVE.lookback.momentumRecent;
 out.momentumPrev = LIVE.lookback.momentumPrev;
+// 主线识别动态阈值（可缺省：引擎缺配置时按 fixedFallback 语义处理，见 src/backtest.js）
+out.mainLine = cfg.mainLine || {
+  lookback_days: 60, sigma_multiplier: 1.0, min_sample_days: 20,
+  fixedFallback: { up_count_threshold: 6, density_threshold: 0.1 },
+};
 
 export default out;

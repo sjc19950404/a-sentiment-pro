@@ -314,12 +314,79 @@ export function rollingTest(factorsByDay, retsByAsset, baseWeights, p = BASE_PAR
 // 口径：题材榜按涨停家数取主线 → 用热点榜该题材成分股作标的清单（与页面 scoreMainStructure 同源）；
 // 强度分 = 主线涨停家数 × 题材密集度（该题材涨停数 ÷ 全题材涨停数），形态对齐 Python find_main_line
 // （涨停家数 × 涨停密度），数据源不同故绝对量级不可直接比较。
-export function selectMainLine(day, topN = 1) {
+
+/**
+ * 主线识别动态阈值（2026-10-07）：滚动窗口 = 「过去 N 个交易日最强题材」的分布，
+ * 当日门槛 = 均值 + sigma_multiplier × 标准差。冷市分布低 → 门槛自适应下移（弱市也能
+ * 识别出相对强的主线）；热市分布高 → 门槛上移（题材烂大街的交易日不滥竽充数）。
+ * 纯函数（不碰缓存/降级/采样器），输入输出完全显式，可独立单测。
+ *
+ * @param {{date: string, theme_up_count: number, theme_density: number}[]} historyData
+ *   历史样本（升序，尾端最新；调用方负责剔除当日——用过去分布定今日门槛）。
+ *   theme_up_count = 当日题材榜第一名的涨停家数；theme_density = 其涨停数 ÷ 当日全题材涨停数
+ *   （与 selectMainLine 的 density 同式）。
+ * @param {{lookback_days: number, sigma_multiplier: number, min_sample_days: number,
+ *          fixedFallback?: {up_count_threshold: number, density_threshold: number}}} config
+ * @returns {{up_count_threshold: number, density_threshold: number, mode: 'dynamic'|'fallback',
+ *            samples: number, window?: {up_mean: number, up_std: number, dn_mean: number, dn_std: number}}}
+ *   有效样本 < min_sample_days → 降级返回 fixedFallback（mode='fallback'，前端如实披露）。
+ */
+export function computeDynamicThreshold(historyData, config) {
+  const fb = (config && config.fixedFallback) || { up_count_threshold: 6, density_threshold: 0.1 };
+  const lookback = Math.max(1, +config?.lookback_days || 60);
+  const sigma = +config?.sigma_multiplier;
+  const sigmaMul = Number.isFinite(sigma) && sigma >= 0 ? sigma : 1.0;
+  const minSample = Math.max(1, +config?.min_sample_days || 20);
+
+  const arr = Array.isArray(historyData) ? historyData : [];
+  const win = arr.slice(-lookback).filter((d) => d
+    && Number.isFinite(+d.theme_up_count) && Number.isFinite(+d.theme_density));
+
+  if (win.length < minSample) {
+    return {
+      up_count_threshold: Math.max(0, +fb.up_count_threshold || 0),
+      density_threshold: Math.min(1, Math.max(0, +fb.density_threshold || 0)),
+      mode: 'fallback', samples: win.length,
+    };
+  }
+
+  const stat = (pick) => {
+    const xs = win.map(pick);
+    const mean = xs.reduce((a, b) => a + b, 0) / xs.length;
+    // 总体标准差（÷N）：单样本时 std=0（阈值退化为均值），避免样本 std（÷N-1）的 N=1 NaN
+    const std = Math.sqrt(xs.reduce((a, b) => a + (b - mean) ** 2, 0) / xs.length);
+    return { mean, std };
+  };
+  const up = stat((d) => +d.theme_up_count);
+  const dn = stat((d) => +d.theme_density);
+  // clamp ≥ 0：全零历史 → 阈值 0（不为负）；density 另 clamp ≤ 1（占比语义）
+  return {
+    up_count_threshold: Math.max(0, up.mean + sigmaMul * up.std),
+    density_threshold: Math.min(1, Math.max(0, dn.mean + sigmaMul * dn.std)),
+    mode: 'dynamic', samples: win.length,
+    window: {
+      up_mean: up.mean, up_std: up.std, dn_mean: dn.mean, dn_std: dn.std,
+    },
+  };
+}
+
+/**
+ * 当日主线。topN 取题材榜前 N；threshold（computeDynamicThreshold 产物）存在时
+ * 先过滤（涨停家数 ≥ up_count_threshold 且密集度 ≥ density_threshold）再取前 N，
+ * 全部不达标 → mains 为空（"今日无主线"，由调用方如实披露，不冒充）。
+ * threshold 缺省（null/undefined）→ 保持历史行为（仅排序取 topN），兼容既有调用与测试。
+ */
+export function selectMainLine(day, topN = 1, threshold = null) {
   const themes = day.themes || {};
   const hot = day.hot || [];
   const industry = day.industry || [];
   const total = Object.values(themes).reduce((a, b) => a + b, 0) || 1;
-  const ranked = Object.entries(themes).sort((a, b) => b[1] - a[1]).slice(0, Math.max(topN, 1));
+  let ranked = Object.entries(themes).sort((a, b) => b[1] - a[1]);
+  if (threshold) {
+    ranked = ranked.filter(([name, cnt]) =>
+      cnt >= threshold.up_count_threshold && (cnt / total) >= threshold.density_threshold);
+  }
+  ranked = ranked.slice(0, Math.max(topN, 1));
   const mains = ranked.map(([name, cnt]) => {
     const stocks = hot
       .filter((h) => String(h.reason || '').includes(name))
@@ -333,5 +400,5 @@ export function selectMainLine(day, topN = 1) {
     };
   });
   const topIndustries = [...industry].sort((a, b) => (b.change_pct || 0) - (a.change_pct || 0)).slice(0, 5);
-  return { tradeDate: day.trade_date, mains, topIndustries };
+  return { tradeDate: day.trade_date, mains, topIndustries, ...(threshold ? { threshold } : {}) };
 }

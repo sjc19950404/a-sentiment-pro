@@ -9,7 +9,7 @@ import { classifySeries } from '../src/regime.js';
 import { bandFor } from '../src/position_policy.js';
 import {
   BASE_PARAMS, V52_PARAMS, DEFAULT_TH,
-  scoreWith, poolBacktest, paretoFrontier, rollingTest, selectMainLine, sortByRank,
+  scoreWith, poolBacktest, paretoFrontier, rollingTest, selectMainLine, computeDynamicThreshold, sortByRank,
 } from '../src/backtest.js';
 import { parallelGridSearch, parallelRollingTest, defaultWorkers } from '../src/grid_parallel.js';
 
@@ -158,7 +158,21 @@ const refitChanged = rollRefit.segments.filter((s, i) => {
 }).length;
 
 const latest = days[days.length - 1];
-const mainLine = selectMainLine(latest, 2);
+// ── 主线识别：滚动窗口动态阈值（2026-10-07）────────────────────────────────
+// 废除"无条件取 topN"：题材须达「过去 lookback_days 个交易日最强题材分布的 均值 +
+// sigma_multiplier×标准差」才算当日主线。历史样本**不含当日**（用过去分布定今日门槛，
+// 防当日突增自我抬高门槛把当日主线自己滤掉）；样本不足 min_sample_days 时
+// computeDynamicThreshold 内部降级 fixedFallback（config.mainLine，见 config.json _note）。
+// 样本口径与 selectMainLine 的强度分同式：up_count = 当日题材榜第一名的涨停家数，
+// density = 该涨停数 ÷ 当日全题材涨停数。
+const mlHistory = days.slice(0, -1).map((d) => {
+  const entries = Object.entries(d.themes || {}).filter(([, c]) => Number.isFinite(+c));
+  const tot = entries.reduce((a, [, c]) => a + (+c), 0) || 1;
+  const maxCnt = entries.length ? Math.max(...entries.map(([, c]) => +c)) : 0;
+  return { date: d.trade_date, theme_up_count: maxCnt, theme_density: maxCnt / tot };
+});
+const mlThreshold = computeDynamicThreshold(mlHistory, config.mainLine);
+const mainLine = selectMainLine(latest, 2, mlThreshold);
 const nGrid = scan.length; // 网格行数 = weightGrid 组合数（免再生成一遍 78k 对象只为计数）
 
 // ── V5.3 动态仓位对照（P1-2：市场状态 → 仓位区间，情绪打分仍是信号主路径） ──

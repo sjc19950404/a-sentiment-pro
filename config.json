@@ -153,6 +153,16 @@
       "testWindow": 6
     }
   },
+  "mainLine": {
+    "_note": "主线识别动态阈值（2026-10-07）：题材须达「近 lookback_days 个交易日最强题材分布的 均值 + sigma_multiplier×标准差」才算当日主线（废除无条件取 topN）。历史样本不足 min_sample_days 条时降级 fixedFallback（固定阈值，取页面既有规格口径：主线涨停 ≥6 只为强势）。历史窗口不含当日（用过去分布定今日门槛，防当日突增自我抬高门槛把当日主线滤掉）。",
+    "lookback_days": 60,
+    "sigma_multiplier": 1.0,
+    "min_sample_days": 20,
+    "fixedFallback": {
+      "up_count_threshold": 6,
+      "density_threshold": 0.1
+    }
+  },
   "missingPolicy": "proxy",
   "minThemeStocksGlobal": 2,
   "minThemeStocksWindow": 2,
