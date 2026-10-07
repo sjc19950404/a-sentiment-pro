@@ -1,7 +1,7 @@
 # ── 临时：推送代理 Worker 上线验证（一次性，跑完即删）──────────────────────
-# 背景：本机网络到 workers.dev 被阻断（DNS 污染 + SNI），改从 GitHub runner
-#   （海外网络，也是 S3-1 接入后的真实调用方）验证。2026-10-07 部署收尾用。
-# 触发：本文件被 push 即跑；删除提交带 [skip ci] 不再触发。
+# 背景：本机网络到 workers.dev / wrangler tail 通道均被阻断（DNS 污染 + SNI），
+#   改从 GitHub runner（海外网络，也是 S3-1 接入后的真实调用方）验证与诊断。
+#   2026-10-07 部署收尾用；触发：本文件被 push 即跑；删除提交带 [skip ci]。
 name: verify-push-proxy
 on:
   push:
@@ -28,6 +28,18 @@ jobs:
           echo "HTTP $code / $(cat /tmp/bad.json)"
           [ "$code" = "400" ]
 
+      - name: 对照 · runner 海外 IP 直连企微
+        run: |
+          printf '%s' '{"msgtype":"text","text":{"content":"[verify-push-proxy] runner 海外 IP 直连企微：通（对照组，与 Cloudflare 边缘同网络地位）"}}' > /tmp/wecom.json
+          resp=$(curl -s --max-time 30 -X POST -H 'Content-Type: application/json' \
+            --data @/tmp/wecom.json "$OPS_WEBHOOK" || echo 'CURL_FAILED')
+          echo "企微响应: $resp"
+          case "$resp" in
+            *errcode*0*errmsg*ok*) echo "海外→企微：通" ;;
+            CURL_FAILED) echo "::warning::repo secret OPS_WEBHOOK 缺失或 curl 失败" ;;
+            *) echo "::warning::企微拒绝海外 IP 或返回错误：$resp" ;;
+          esac
+
       - name: 真实推送（schedule 路径，走 KV 指纹）
         run: |
           code=$(curl -s -o /tmp/p1.json -w '%{http_code}' --max-time 60 \
@@ -35,10 +47,9 @@ jobs:
             --data @data/reports/post_market_2026-09-30.json "$WORKER_URL/push")
           body=$(cat /tmp/p1.json)
           echo "HTTP $code / $body"
-          # 响应体直达企微（失败诊断 + 推送链路双重验证）
+          printf '%s' "{\"msgtype\":\"text\",\"text\":{\"content\":\"[verify-push-proxy] /push → HTTP $code $body\"}}" > /tmp/wecom1.json
           curl -s --max-time 30 -X POST -H 'Content-Type: application/json' \
-            -d "{\"msgtype\":\"text\",\"text\":{\"content\":\"[verify-push-proxy] /push → HTTP $code $body\"}}" \
-            "$OPS_WEBHOOK" > /dev/null
+            --data @/tmp/wecom1.json "$OPS_WEBHOOK" > /dev/null || true
           [ "$code" = "200" ] && jq -e '.pushed == true' /tmp/p1.json > /dev/null
 
       - name: 同内容重推 → 指纹去重（生产 KV 生效证明）
@@ -48,9 +59,9 @@ jobs:
             --data @data/reports/post_market_2026-09-30.json "$WORKER_URL/push")
           body=$(cat /tmp/p2.json)
           echo "HTTP $code / $body"
+          printf '%s' "{\"msgtype\":\"text\",\"text\":{\"content\":\"[verify-push-proxy] 重推 → HTTP $code $body\"}}" > /tmp/wecom2.json
           curl -s --max-time 30 -X POST -H 'Content-Type: application/json' \
-            -d "{\"msgtype\":\"text\",\"text\":{\"content\":\"[verify-push-proxy] 重推 → HTTP $code $body\"}}" \
-            "$OPS_WEBHOOK" > /dev/null
+            --data @/tmp/wecom2.json "$OPS_WEBHOOK" > /dev/null || true
           [ "$code" = "200" ] && jq -e '.pushed == false' /tmp/p2.json > /dev/null
           jq -e '.reason | contains("指纹去重")' /tmp/p2.json > /dev/null
 
