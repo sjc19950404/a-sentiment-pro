@@ -32,6 +32,9 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 //   'name'            = data/{name}.json ↔ schemas/{name}.schema.json（缺席即红）
 //   { name, data, optionalReason } = 子目录档 + 设计性缺席（缺席打印原因跳过，
 //     存在则结构校验——track_state.json 缺席 = 轨道 A 常态，非缺口）。
+//   { name, dir, skip, optionalReason } = 目录形态：dir 下每个 .json（skip 名单
+//     除外）逐个按同名契约校验——报告档按 {type}_{date}.json 一天多份，单文件
+//     形态装不下（ai-report · 2026-10-07 补登记）。
 const CONTRACTED = [
   'signals-latest',
   'backtest',
@@ -45,6 +48,12 @@ const CONTRACTED = [
   // P3 应急联系人（2026-10-06 宣告确认）：**required 非 optional**——用户已确认联系人
   // 与值班链，此后缺席/损坏 = 红（告警 @ 链断裂是静默事故，门禁常驻拦截）。
   { name: 'emergency-contacts', data: 'config/emergency_contacts.json' },
+  // S1 AI 报告信封（2026-10-07 补登记）：S1 引入 schemas/ai-report.schema.json 时
+  // 漏登清单，10-07 18:30 build 首跑契约守卫爆孤儿红（此前 build 均在 S1 之前
+  // 的代码上跑）。data/reports/ 下报告档一天多份（{type}_{date}.json），走目录
+  // 形态逐个校验；index.json（目录索引）与 push_state.json（推送状态）自有
+  // 结构非报告信封，在 skip 名单。
+  { name: 'ai-report', dir: 'data/reports', skip: ['index.json', 'push_state.json'], optionalReason: '首跑前无报告档属设计（S2 四挂点首次运行后才产出）' },
 ];
 
 // ── 跨档一致性守卫（P2-β · 纯函数，test/contract.test.mjs 负向演练同一逻辑）────
@@ -136,17 +145,63 @@ const isMain = (() => {
 
 if (isMain) {
 for (const entry of CONTRACTED) {
-  const { name, data: dataRel, optionalReason } = typeof entry === 'string'
+  const { name, data: dataRel, dir: dirRel, skip = [], optionalReason } = typeof entry === 'string'
     ? { name: entry, data: `data/${entry}.json`, optionalReason: null }
     : entry;
   if (filter && !name.includes(filter)) continue;
-  const dataPath = join(ROOT, dataRel);
   const schemaPath = join(ROOT, 'schemas', `${name}.schema.json`);
 
   if (!existsSync(schemaPath)) {
     failures.push(`[contract] 契约缺失：schemas/${name}.schema.json 不存在（CONTRACTED 清单里有它）`);
     continue;
   }
+
+  // 目录形态（ai-report 等）：dir 下每个 .json（skip 除外）逐个按信封契约校验
+  if (dirRel) {
+    const dirPath = join(ROOT, dirRel);
+    if (!existsSync(dirPath)) {
+      if (optionalReason) {
+        skipped++;
+        console.log(`[contract] ${dirRel}/ 缺席（${optionalReason}）——跳过结构校验`);
+      } else {
+        failures.push(`[contract] 数据目录缺失：${dirRel}/ 不存在（契约要求它在）`);
+      }
+      continue;
+    }
+    let schema;
+    try { schema = JSON.parse(readFileSync(schemaPath, 'utf8')); } catch (e) {
+      failures.push(`[contract] schemas/${name}.schema.json JSON 解析失败：${e.message}`);
+      continue;
+    }
+    const files = readdirSync(dirPath).filter((f) => f.endsWith('.json') && !skip.includes(f)).sort();
+    if (!files.length) {
+      if (optionalReason) {
+        skipped++;
+        console.log(`[contract] ${dirRel}/ 无报告档（${optionalReason}）——跳过结构校验`);
+      } else {
+        failures.push(`[contract] 数据目录为空：${dirRel}/ 无可校验档`);
+      }
+      continue;
+    }
+    for (const f of files) {
+      const p = join(dirPath, f);
+      let data;
+      try { data = JSON.parse(readFileSync(p, 'utf8')); } catch (e) {
+        failures.push(`[contract] ${dirRel}/${f} JSON 解析失败：${e.message}`);
+        continue;
+      }
+      checked++;
+      const errs = validateContract(data, schema);
+      if (errs.length) {
+        failures.push(formatContractErrors(`${dirRel}/${f}`, errs));
+      } else {
+        console.log(`[contract] ${dirRel}/${f} ✓ 契约通过`);
+      }
+    }
+    continue;
+  }
+
+  const dataPath = join(ROOT, dataRel);
   // intraday：仅 live 相位必须存在（盘后档不产是设计，不是缺口）
   if (!existsSync(dataPath)) {
     if (name === 'intraday') {
