@@ -85,6 +85,14 @@ jobs:
           cp src/dataset.js src/dual_track.js src/error_boundary.js site/src/
           # 数据面（运行时 fetch('./data/*.json') 的全部消费档，含 paper/ 双轨账本）
           cp -r data/. site/data/
+          # SW 版本指纹注入（2026-10-07）：SW 更新由「sw.js 字节变化」触发（规范 byte-diff，
+          # CACHE_VERSION 只命名缓存、不参与触发）。但若某次部署只改了 shell 资产而 sw.js
+          # 一字未动，install 不会重跑——新增的 SHELL_ASSETS 项不入缓存（SWR 后台刷新只
+          # 覆盖已存在的 key）。注入 commit hash 后，**每次部署 site/sw.js 字节必变**：
+          # install 必重跑、外壳全量重 add，activate 的 staleCaches 按前缀清掉旧版本名。
+          # 源文件（sw.js / src/offline.js）保持 'v2' 不动——一致性守卫在源上跑，不受影响。
+          sed -E -i "s/^const CACHE_VERSION = 'v[0-9a-z-]*';/const CACHE_VERSION = 'v2-${GITHUB_SHA::7}';/" site/sw.js
+          grep -q "CACHE_VERSION = 'v2-${GITHUB_SHA::7}'" site/sw.js  # 注入失败（源形态变了）→ fail-fast
           # 产物体积留痕（Actions 日志可直接核对）
           du -sh site
       - name: 上传 Pages 部署产物（site/）

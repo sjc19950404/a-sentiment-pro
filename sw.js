@@ -13,6 +13,11 @@
 //   （scripts/check_offline_sync.mjs）——复制能保证兼容性，守卫能保证不分叉。
 //   这是全项目唯一一处刻意的代码重复，理由与看门狗都在注释里。
 
+// 版本号语义：SW 更新由「本文件字节变化」触发（浏览器对主脚本做 byte-diff），版本号
+// 只命名缓存、不参与触发——源文件保持 'v2'（test/offline.test.mjs 断言本行与
+// src/offline.js 一致）。部署链（deploy-pages.yml）会在产物上注入 commit hash（如
+// 'v2-95a5fbc'）保证每次部署字节必变：install 必重跑、外壳全量重 add，activate 按
+// /^aspro-(?:shell|data)-/ 前缀清掉旧版本名（任意版本串兼容）。
 const CACHE_VERSION = 'v2';
 const SHELL_CACHE = `aspro-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `aspro-data-${CACHE_VERSION}`;
