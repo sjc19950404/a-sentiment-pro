@@ -792,7 +792,7 @@ window.__v43dbg = { divergence, topicStrength }; // 测试钩子（只读）
   {
     const fr=(META.freshness||{});
     const b=document.createElement('span');
-    if(fr.state==='stale'){ b.className='badge stale'; b.textContent='⚠ 数据滞后 '+fr.behindSessions+' 个会话'+(META.staleReason?' · '+META.staleReason:''); }
+    if(fr.state==='behind'){ b.className='badge stale'; b.textContent='⚠ 数据滞后 '+fr.behindSessions+' 个会话'+(META.staleReason?' · '+META.staleReason:''); } // H-5：合法值是 behind（fresh/pending/behind/unknown）——曾误判 'stale' 成死分支
     else { b.className='badge fresh'; b.textContent='✓ 数据新鲜（'+(fr.latestClosed||CUR.trade_date)+' 已收盘口径）'; }
     $id('st-date').after(b);
   }

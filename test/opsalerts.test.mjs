@@ -34,7 +34,10 @@ test('ops: 抓取失败（回退档）→ error 事件，含原因', () => {
 
 test('ops: 数据滞后 → warn；补位超标 → warn（判定线可注入，与 config 同源）', () => {
   const ev = opsEventsFromArchive(
-    mkArchive({ meta: { freshness: { state: 'stale' } }, signals: { imputedRatioLatest: 0.5 } }),
+    // H-5：合法值是 'behind'（freshness.state ∈ fresh|pending|behind|unknown）——
+    // 历史上这里与实现犯同一个错（都写 'stale'），两边互相印证成假绿：实现永不触发，
+    // 测试也从未真正验证过告警分支。
+    mkArchive({ meta: { freshness: { state: 'behind' } }, signals: { imputedRatioLatest: 0.5 } }),
     { warnImputedRatio: 0.34 },
   );
   assert.equal(ev.length, 2);
@@ -72,7 +75,7 @@ test('ops: 事件按 severity 排序（error → warn → info）', () => {
   const ev = opsEventsFromArchive(mkArchive({
     meta: {
       lastAttempt: { outcome: 'failed', reason: 'x' },
-      freshness: { state: 'stale' },
+      freshness: { state: 'behind' },
       dataQuality: { industrySourceOk: false },
     },
     signals: { imputedRatioLatest: 0.9 },
@@ -89,7 +92,7 @@ test('ops: 事件按 severity 排序（error → warn → info）', () => {
 
 test('ops: formatOpsText —— 头部计数 + 超长截断', () => {
   const ev = opsEventsFromArchive(mkArchive({
-    meta: { lastAttempt: { outcome: 'failed', reason: 'r' }, freshness: { state: 'stale' } },
+    meta: { lastAttempt: { outcome: 'failed', reason: 'r' }, freshness: { state: 'behind' } },
   }));
   const text = formatOpsText(ev);
   assert.ok(text.includes('运维告警') && text.includes('2 条'));

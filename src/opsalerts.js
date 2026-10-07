@@ -44,10 +44,14 @@ export function opsEventsFromArchive(archive, { warnImputedRatio = 0.34, now = n
   }
 
   // ② 数据滞后：存档交易日落后于最近已收盘交易日（源悄悄挂掉/连续失败的表现形态）
-  if (meta.freshness?.state === 'stale') {
+  // H-5（2026-10-07）：freshness.state 的合法值域是 fresh | pending | behind | unknown
+  //（生成端 src/freshness.js:145），历史上这里误判 === 'stale'——永不触发的死分支，
+  // 数据滞后告警形同虚设。stale 不是 state 的值，而是旁边那个独立布尔字段
+  //（freshness.js:148 stale: state === 'behind'）。
+  if (meta.freshness?.state === 'behind') {
     ev.push({
       at: now, severity: 'warn', kind: 'data-stale', source: 'freshness',
-      detail: `存档已滞后（stale）${meta.staleReason ? '：' + meta.staleReason : ''}`,
+      detail: `存档已滞后（behind，落后 ${meta.freshness?.behindSessions ?? '?'} 个会话）${meta.staleReason ? '：' + meta.staleReason : ''}`,
     });
   }
 
