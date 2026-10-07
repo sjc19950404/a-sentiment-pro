@@ -1720,7 +1720,10 @@ function renderBacktest(bt) {
         c.dataset.code = st.code;
         c.tabIndex = 0;
         c.title = `点击查看 ${st.name} 的席位与资金详情`;
-        c.innerHTML = `${esc(st.name)} <span class="${trendCls(st.changePct)}">${numS(st.changePct, 2)}%</span>`;
+        // 仓位管理（第三步）：ATR 波动分档 + 建议仓位（数据不足 → ATR —，权重取 mid 默认）
+        const atrTxt = st.atr_pct != null ? `ATR ${numS(st.atr_pct, 1)}%` : 'ATR —';
+        c.innerHTML = `${esc(st.name)} <span class="${trendCls(st.changePct)}">${numS(st.changePct, 2)}%</span>`
+          + ` <span class="muted">${atrTxt} / 建议仓位 ${numS(st.suggested_weight, 0)}%</span>`;
         wrap.appendChild(c);
       });
       box.appendChild(wrap);
@@ -1733,8 +1736,10 @@ function renderBacktest(bt) {
   box.appendChild(ind);
   const note = document.createElement('div');
   note.className = 'bf-foot';
+  const mlCfg = (window.ASENT_CONFIG && window.ASENT_CONFIG.mainLine) || {};
   note.textContent = `口径：主线题材须达动态阈值（近 N 个交易日最强题材分布的 均值+σ×标准差，配置 config.json::mainLine）后再按涨停家数取前 N；标的清单取热点榜中诱因含该题材的强势股，按当日涨幅降序。`
-    + `强度分 = 主线涨停家数 × 密集度（该题材涨停数 ÷ 当日全题材涨停数），与离线 Python 版 find_main_line 的「涨停家数 × 涨停密度」同形，但数据源不同，绝对量级不可直接比较。数据截至 ${ml.tradeDate || '—'}。`;
+    + `强度分 = 主线涨停家数 × 密集度（该题材涨停数 ÷ 当日全题材涨停数），与离线 Python 版 find_main_line 的「涨停家数 × 涨停密度」同形，但数据源不同，绝对量级不可直接比较。`
+    + `建议仓位 = 按 ATR 波动分档（atr_pct ≤${mlCfg.atr_low_threshold ?? 3}% 低波 / >${mlCfg.atr_high_threshold ?? 8}% 高波，Wilder 平滑，周期 ${mlCfg.atr_period ?? 10} 日）；ATR 基于热点榜收盘价序列（无日内高低价，退化为收盘价波幅口径），在榜不足一个周期的标的显示 ATR — 并按中波动默认权重处理。数据截至 ${ml.tradeDate || '—'}。`;
   box.appendChild(note);
 }
 

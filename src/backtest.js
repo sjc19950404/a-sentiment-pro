@@ -460,6 +460,89 @@ export function applyMainLineGating(threshold, states, config) {
 }
 
 /**
+ * 仓位管理①：ATR（Wilder 平滑法，纯函数，2026-10-07 第三步）。
+ * TR_i = max(高-低, |高-昨收|, |低-昨收|)；ATR₀ = 前 period 个 TR 简单均值，
+ * 之后 ATR = (前ATR × (period-1) + TR) / period（Wilder 递推）。
+ * 数据不足 period+1 条（或数组长度不一致/含非有限数）→ null（规格：不猜）。
+ * 生产接入以热点榜收盘序列构造（archive 无日内高低价，见 scripts/backtest.mjs
+ * 的口径披露），函数本身只认数值。
+ *
+ * @param {number[]} highs 最高价数组（按时间升序，最新在最后）
+ * @param {number[]} lows 最低价数组
+ * @param {number[]} closes 收盘价数组
+ * @param {number} period ATR 周期
+ * @returns {number | null}
+ */
+export function computeATR(highs, lows, closes, period) {
+  const P = Math.trunc(+period);
+  if (!Array.isArray(highs) || !Array.isArray(lows) || !Array.isArray(closes)
+    || !Number.isFinite(P) || P < 1
+    || closes.length !== highs.length || closes.length !== lows.length
+    || closes.length < P + 1) return null;
+  if (highs.some((v) => !Number.isFinite(+v)) || lows.some((v) => !Number.isFinite(+v))
+    || closes.some((v) => !Number.isFinite(+v))) return null;
+  const tr = (i) => Math.max(
+    +highs[i] - +lows[i],
+    Math.abs(+highs[i] - +closes[i - 1]),
+    Math.abs(+lows[i] - +closes[i - 1]),
+  );
+  let atr = 0;
+  for (let i = 1; i <= P; i++) atr += tr(i);
+  atr /= P; // 初始 ATR：前 P 个 TR 简单均值
+  for (let i = P + 1; i < closes.length; i++) atr = (atr * (P - 1) + tr(i)) / P; // Wilder 平滑
+  return atr;
+}
+
+/**
+ * 仓位管理②：按 ATR 波动分档给每只标的建议仓位权重（纯函数）。
+ * 输出原数组深拷贝（structuredClone），每项追加：
+ *   atr_10d：ATR 值（数据不足为 null；字段名沿用规格，周期实际由 config.atr_period 决定）
+ *   atr_pct：ATR / 最新收盘 × 100（百分比；不足为 null）
+ *   volatility_bucket：'low'（atr_pct ≤ atr_low_threshold）| 'mid'（中间）
+ *                     | 'high'（> atr_high_threshold）| 'unknown'（ATR 为 null）
+ *   suggested_weight：对应权重百分比；unknown 取 mid 默认值（规格：不足数据给中性仓位）
+ * 防御：historyData 缺该 code / 该股票历史不足 → atr 为 null，不影响其他股票；
+ *       权重配置缺失 → 默认 15/10/5，不报错。
+ *
+ * @param {{code?: string}[]} stocks 选股结果数组
+ * @param {Object<string, {highs?: number[], lows?: number[], closes?: number[]}>} historyData 按 code 索引的历史日线
+ * @param {{atr_period?: number, atr_low_threshold?: number, atr_high_threshold?: number,
+ *          weight_low_vol?: number, weight_mid_vol?: number, weight_high_vol?: number}} config
+ * @returns {object[]} 深拷贝并追加字段后的新数组
+ */
+export function assignPositionWeights(stocks, historyData, config) {
+  const arr = Array.isArray(stocks) ? stocks : [];
+  if (!arr.length) return [];
+  const num = (v, dft) => (Number.isFinite(+v) ? +v : dft);
+  const period = Math.max(1, Math.trunc(num(config?.atr_period, 10)));
+  const lowT = num(config?.atr_low_threshold, 3);
+  const highT = num(config?.atr_high_threshold, 8);
+  const wLow = num(config?.weight_low_vol, 15);
+  const wMid = num(config?.weight_mid_vol, 10);
+  const wHigh = num(config?.weight_high_vol, 5);
+  const out = structuredClone(arr);
+  for (const s of out) {
+    const h = s && historyData ? historyData[s.code] : null;
+    const closes = Array.isArray(h?.closes) ? h.closes : [];
+    const atr = h ? computeATR(h.highs, h.lows, h.closes, period) : null;
+    const last = closes.length ? +closes[closes.length - 1] : NaN;
+    const atrPct = atr != null && Number.isFinite(last) && last > 0 ? (atr / last) * 100 : null;
+    let bucket = 'unknown';
+    let weight = wMid; // unknown → mid 默认（规格）
+    if (atrPct != null) {
+      if (atrPct <= lowT) { bucket = 'low'; weight = wLow; }
+      else if (atrPct > highT) { bucket = 'high'; weight = wHigh; }
+      else { bucket = 'mid'; weight = wMid; }
+    }
+    s.atr_10d = atr;
+    s.atr_pct = atrPct == null ? null : Math.round(atrPct * 100) / 100;
+    s.volatility_bucket = bucket;
+    s.suggested_weight = weight;
+  }
+  return out;
+}
+
+/**
  * 当日主线。topN 取题材榜前 N；threshold（computeDynamicThreshold 产物）存在时
  * 先过滤（涨停家数 ≥ up_count_threshold 且密集度 ≥ density_threshold）再取前 N，
  * 全部不达标 → mains 为空（"今日无主线"，由调用方如实披露，不冒充）。

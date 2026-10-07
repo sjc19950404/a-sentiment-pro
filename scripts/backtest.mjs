@@ -10,7 +10,8 @@ import { bandFor } from '../src/position_policy.js';
 import {
   BASE_PARAMS, V52_PARAMS, DEFAULT_TH,
   scoreWith, poolBacktest, paretoFrontier, rollingTest, selectMainLine, computeDynamicThreshold,
-  assessMarketState, assessSentimentState, applyMainLineGating, sortByRank,
+  assessMarketState, assessSentimentState, applyMainLineGating,
+  assignPositionWeights, sortByRank,
 } from '../src/backtest.js';
 import { parallelGridSearch, parallelRollingTest, defaultWorkers } from '../src/grid_parallel.js';
 
@@ -206,6 +207,33 @@ mainLine.gating = {
   base_up_count_threshold: mlThreshold.up_count_threshold,
   base_density_threshold: mlThreshold.density_threshold,
 };
+// ── 仓位管理（2026-10-07 第三步）：ATR 波动分档 → 建议仓位权重 ──
+// 口径限制（如实披露）：archive 无个股日内高低价，唯一可得序列 = 每日热点榜快照的
+// close。故对「最新日起连续 atr_period+1 日在榜」的标的，用 close 序列构造
+// highs=lows=closes 的退化 K 线——TR 退化为 |Δclose|，ATR 即「收盘价真实波幅」的
+// Wilder 平滑（方向性与真 ATR 一致，量级略低估）。断档/在榜不足 period+1 日 →
+// 该标的 atr 为 null（unknown 档，权重取 mid 默认）。采集管线补齐个股 K 线后，
+// 只需替换下面的 atrHistory 构造，分档与权重逻辑零改动。
+const ATR_PERIOD = Number.isInteger(+config.mainLine.atr_period) && +config.mainLine.atr_period >= 1
+  ? +config.mainLine.atr_period : 10;
+const atrHistory = {};
+for (const mn of mainLine.mains) {
+  for (const st of mn.stocks || []) {
+    if (!st?.code || atrHistory[st.code]) continue;
+    const closes = [];
+    for (let i = days.length - 1; i >= 0 && closes.length < ATR_PERIOD + 1; i--) {
+      const hit = (days[i].hot || []).find((h) => String(h.code) === String(st.code));
+      if (!hit || !Number.isFinite(+hit.close)) break; // 断档即止（连续口径）
+      closes.unshift(+hit.close);
+    }
+    if (closes.length >= ATR_PERIOD + 1) {
+      atrHistory[st.code] = { highs: closes, lows: closes, closes };
+    }
+  }
+}
+for (const mn of mainLine.mains) {
+  mn.stocks = assignPositionWeights(mn.stocks, atrHistory, config.mainLine);
+}
 const nGrid = scan.length; // 网格行数 = weightGrid 组合数（免再生成一遍 78k 对象只为计数）
 
 // ── V5.3 动态仓位对照（P1-2：市场状态 → 仓位区间，情绪打分仍是信号主路径） ──

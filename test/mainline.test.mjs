@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import {
   computeDynamicThreshold, selectMainLine,
   assessMarketState, assessSentimentState, applyMainLineGating,
+  computeATR, assignPositionWeights,
 } from '../src/backtest.js';
 import config from '../src/config.js';
 
@@ -194,4 +195,93 @@ test('总阀门·边界：density 调节 clamp ≤1（占比语义）；gating �
   assert.equal(g.threshold.density_threshold, 1); // 0.98 + 0.05 → clamp 1
   assert.equal(th.density_threshold, 0.98);        // 原对象不动
   assert.equal(g.threshold.mode, 'dynamic');       // 附加字段保留（前端披露用）
+});
+
+// ─────────────────── 仓位管理（第三步）：ATR 与建议权重 ───────────────────
+
+// 构造 n 根 K 线使每根 TR = tr、收盘恒为 last（首根为基期不产 TR）。
+// n=3、period=2 时 ATR = (TR1+TR2)/2 = tr，atr_pct = tr/last×100，可逐位手算核对。
+const mkK = (tr, last = 100, n = 3) => {
+  const o = { highs: [], lows: [], closes: [] };
+  const h = last + tr / 2, l = last - tr / 2;
+  for (let i = 0; i < n; i++) { o.highs.push(h); o.lows.push(l); o.closes.push(last); }
+  return o;
+};
+
+test('仓位管理·computeATR：Wilder 平滑手算闭环（period=2，5 根 K 线）', () => {
+  // TR1=4, TR2=5, TR3=3, TR4=4（逐根手算：max(高-低,|高-昨收|,|低-昨收|)）
+  // ATR₀=(4+5)/2=4.5 → ATR₁=(4.5+3)/2=3.75 → ATR₂=(3.75+4)/2=3.875
+  const H = [12, 13, 15, 14, 16], L = [8, 9, 10, 11, 12], C = [10, 11, 14, 13, 15];
+  assert.equal(computeATR(H, L, C, 2), 3.875);
+  // 恰 period+1 根（无平滑步）：ATR = 前 P 个 TR 简单均值
+  assert.equal(computeATR(H.slice(0, 3), L.slice(0, 3), C.slice(0, 3), 2), 4.5);
+});
+
+test('仓位管理·computeATR：数据不足 / 长度不一致 / 含 NaN → null，不报错', () => {
+  const k = mkK(4, 100, 3);
+  assert.equal(computeATR(k.highs.slice(0, 2), k.lows.slice(0, 2), k.closes.slice(0, 2), 2), null); // 2 根 < period+1
+  assert.equal(computeATR(k.highs, k.lows, k.closes.slice(0, 2), 2), null); // 长度不一致
+  assert.equal(computeATR([...k.highs, NaN], [...k.lows, 96], [...k.closes, 100], 2), null);
+  assert.equal(computeATR(null, null, null, 10), null);
+});
+
+test('仓位管理·场景①：正常数据 → ATR/分档/权重逐位匹配（low/mid/high 三档）', () => {
+  const hist = {
+    A: mkK(2, 100),   // atr_pct=2 ≤3 → low → 15
+    B: mkK(4, 100),   // 3<4≤8 → mid → 10
+    C: mkK(10, 100),  // 10>8 → high → 5
+  };
+  const out = assignPositionWeights(
+    [{ code: 'A' }, { code: 'B' }, { code: 'C' }], hist, { ...CFG, atr_period: 2 });
+  assert.deepEqual(
+    out.map((s) => [s.atr_pct, s.volatility_bucket, s.suggested_weight]),
+    [[2, 'low', 15], [4, 'mid', 10], [10, 'high', 5]]);
+  assert.equal(out[0].atr_10d, 2); // ATR 原值 = TR（3 根 period=2：均值化）
+});
+
+test('仓位管理·场景②：数据不足 → atr 为 null，分档 unknown，权重取 mid 默认', () => {
+  const out = assignPositionWeights([{ code: 'X' }], { X: mkK(2, 100, 2) }, CFG); // 2 根 < 11
+  assert.equal(out[0].atr_10d, null);
+  assert.equal(out[0].atr_pct, null);
+  assert.equal(out[0].volatility_bucket, 'unknown');
+  assert.equal(out[0].suggested_weight, CFG.weight_mid_vol);
+});
+
+test('仓位管理·场景③边界值：atr_pct 恰等于阈值 → 归入对应档位（≤low 为 low；=high 为 mid）', () => {
+  const hist = { P: mkK(3, 100), Q: mkK(8, 100) }; // 恰 3%、恰 8%
+  const out = assignPositionWeights([{ code: 'P' }, { code: 'Q' }], hist, { ...CFG, atr_period: 2 });
+  assert.equal(out[0].volatility_bucket, 'low');  // 3 ≤ 3 → low
+  assert.equal(out[0].suggested_weight, CFG.weight_low_vol);
+  assert.equal(out[1].volatility_bucket, 'mid');  // 8 不 > 8 → mid
+  assert.equal(out[1].suggested_weight, CFG.weight_mid_vol);
+});
+
+test('仓位管理·场景④：空股票数组 → 返回空数组，不报错', () => {
+  assert.deepEqual(assignPositionWeights([], {}, CFG), []);
+  assert.deepEqual(assignPositionWeights(null, null, CFG), []); // 极端入参
+});
+
+test('仓位管理·场景⑤：某股票历史数据缺失 → 该项 atr 为 null，不影响其他股票', () => {
+  const out = assignPositionWeights(
+    [{ code: 'OK' }, { code: 'MISSING' }], { OK: mkK(10, 100) }, { ...CFG, atr_period: 2 });
+  assert.equal(out[0].volatility_bucket, 'high');
+  assert.equal(out[1].atr_10d, null);
+  assert.equal(out[1].volatility_bucket, 'unknown');
+  assert.equal(out[1].suggested_weight, CFG.weight_mid_vol);
+});
+
+test('仓位管理·场景⑥：权重配置项缺失 → 默认 15/10/5，不报错', () => {
+  const hist = { A: mkK(2, 100, 11), B: mkK(4, 100, 11), C: mkK(10, 100, 11) }; // 11 根走默认周期 10
+  const out = assignPositionWeights(
+    [{ code: 'A' }, { code: 'B' }, { code: 'C' }], hist, {});
+  assert.deepEqual(out.map((s) => s.suggested_weight), [15, 10, 5]);
+});
+
+test('仓位管理·纯度：深拷贝不改原数组；选股排序逻辑零改动（原字段原样保留）', () => {
+  const stocks = [{ code: 'A', name: '甲', changePct: 9.9 }, { code: 'B', name: '乙', changePct: 5 }];
+  const out = assignPositionWeights(stocks, { A: mkK(4, 100) }, CFG);
+  assert.ok(!('atr_10d' in stocks[0]));        // 原对象未被追加字段
+  assert.notEqual(out[0], stocks[0]);           // 返回的是深拷贝
+  assert.equal(out[0].name, '甲');              // 原字段保留（排序依据不动）
+  assert.equal(out[0].changePct, 9.9);
 });

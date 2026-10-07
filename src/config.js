@@ -110,6 +110,28 @@ if (cfg.mainLine != null) {
     && (!Number.isInteger(+cfg.mainLine.weak_mode_max_output) || +cfg.mainLine.weak_mode_max_output < 1)) {
     throw new Error('[config] mainLine.weak_mode_max_output 必须为 ≥1 的整数');
   }
+  // 仓位管理（第三步，同日）：ATR 波动分档与建议权重。缺键不炸（引擎有默认 15/10/5），
+  // 给了就必须给对。分档区间 low ≤ high 是数学硬约束（否则 mid 区间为空）；
+  // 权重递减（低波动 ≥ 中 ≥ 高）是风控惯例但非数学错误，不加校验、由配置者自担。
+  if (cfg.mainLine.atr_period != null
+    && (!Number.isInteger(+cfg.mainLine.atr_period) || +cfg.mainLine.atr_period < 1)) {
+    throw new Error('[config] mainLine.atr_period 必须为 ≥1 的整数');
+  }
+  if (cfg.mainLine.atr_low_threshold != null && !Number.isFinite(+cfg.mainLine.atr_low_threshold)) {
+    throw new Error('[config] mainLine.atr_low_threshold 必须为有限数');
+  }
+  if (cfg.mainLine.atr_high_threshold != null && !Number.isFinite(+cfg.mainLine.atr_high_threshold)) {
+    throw new Error('[config] mainLine.atr_high_threshold 必须为有限数');
+  }
+  if (cfg.mainLine.atr_low_threshold != null && cfg.mainLine.atr_high_threshold != null
+    && +cfg.mainLine.atr_low_threshold > +cfg.mainLine.atr_high_threshold) {
+    throw new Error('[config] mainLine.atr_low_threshold 不得大于 atr_high_threshold（mid 区间为空）');
+  }
+  for (const k of ['weight_low_vol', 'weight_mid_vol', 'weight_high_vol']) {
+    if (cfg.mainLine[k] != null && (!Number.isFinite(+cfg.mainLine[k]) || +cfg.mainLine[k] < 0)) {
+      throw new Error(`[config] mainLine.${k} 必须为 ≥0 的有限数`);
+    }
+  }
 }
 
 // ── 冻结与组装 ──────────────────────────────────────────────────────────────

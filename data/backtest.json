@@ -3826,24 +3826,7 @@
  },
  "mainLine": {
   "tradeDate": "2026-09-30",
-  "mains": [
-   {
-    "theme": "业绩线",
-    "themeCount": 8,
-    "density": 0.1026,
-    "mainScore": 0.82,
-    "stocks": [],
-    "stockCount": 0
-   },
-   {
-    "theme": "国企改革",
-    "themeCount": 5,
-    "density": 0.0641,
-    "mainScore": 0.32,
-    "stocks": [],
-    "stockCount": 0
-   }
-  ],
+  "mains": [],
   "topIndustries": [
    {
     "name": "生物制品",
@@ -3865,6 +3848,25 @@
     "name": "化学制药",
     "change_pct": 2.11
    }
-  ]
+  ],
+  "threshold": {
+   "up_count_threshold": 16.500213672287018,
+   "density_threshold": 0.12735556540715234,
+   "mode": "dynamic",
+   "samples": 60,
+   "window": {
+    "up_mean": 6.7,
+    "up_std": 7.800213672287018,
+    "dn_mean": 0.06256149111112036,
+    "dn_std": 0.06479407429603198
+   }
+  },
+  "gating": {
+   "market_state": "weak",
+   "sentiment_state": "stable",
+   "max_output": 1,
+   "base_up_count_threshold": 14.500213672287018,
+   "base_density_threshold": 0.12735556540715234
+  }
  }
 }
