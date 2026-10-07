@@ -154,9 +154,9 @@
     }
   },
   "mainLine": {
-    "_note": "主线识别动态阈值（2026-10-07）：题材须达「近 lookback_days 个交易日最强题材分布的 均值 + sigma_multiplier×标准差」才算当日主线（废除无条件取 topN）。历史样本不足 min_sample_days 条时降级 fixedFallback（固定阈值，取页面既有规格口径：主线涨停 ≥6 只为强势）。历史窗口不含当日（用过去分布定今日门槛，防当日突增自我抬高门槛把当日主线滤掉）。第二步（同日）加「总阀门」：assessMarketState（量能×指数趋势）与 assessSentimentState（昨日老主线龙头今日表现）双状态调节阈值与输出上限——市场弱势时门槛上调且最多出 weak_mode_max_output 条主线；老龙头退潮时密集度门槛上调（接力题材须更强的抱团证据）。sentiment_rise_pct 超出规格清单但遵循「参数不硬编码」总纲（涨幅 >3% 判 rising 的 3 也入配置）。「指数在均线下方」因 archive 无指数点位序列，接入层以「近10日累计涨跌 < 0」为趋势代理（口径见 scripts/backtest.mjs），纯函数仍收数值保持可测。第三步（同日）加「仓位管理」：computeATR（Wilder 平滑）+ assignPositionWeights 按 ATR% 分档（low ≤ atr_low_threshold / > atr_high_threshold 为 high / 中间 mid / 数据不足 unknown 取 mid 默认权重）给建议仓位——archive 无个股日内高低价，接入层用热点榜收盘序列构造退化 K 线（TR=|Δclose|，量级略低估真 ATR），断档或在榜不足 atr_period+1 日 → unknown；补齐 K 线数据后仅需替换接入层构造，分档逻辑零改动。",
+    "_note": "主线识别动态阈值（2026-10-07）：题材须达「近 lookback_days 个交易日最强题材分布的 均值 + sigma_multiplier×标准差」才算当日主线（废除无条件取 topN）。历史样本不足 min_sample_days 条时降级 fixedFallback（固定阈值，取页面既有规格口径：主线涨停 ≥6 只为强势）。历史窗口不含当日（用过去分布定今日门槛，防当日突增自我抬高门槛把当日主线滤掉）。第二步（同日）加「总阀门」：assessMarketState（量能×指数趋势）与 assessSentimentState（昨日老主线龙头今日表现）双状态调节阈值与输出上限——市场弱势时门槛上调且最多出 weak_mode_max_output 条主线；老龙头退潮时密集度门槛上调（接力题材须更强的抱团证据）。sentiment_rise_pct 超出规格清单但遵循「参数不硬编码」总纲（涨幅 >3% 判 rising 的 3 也入配置）。「指数在均线下方」因 archive 无指数点位序列，接入层以「近10日累计涨跌 < 0」为趋势代理（口径见 scripts/backtest.mjs），纯函数仍收数值保持可测。第三步（同日）加「仓位管理」：computeATR（Wilder 平滑）+ assignPositionWeights 按 ATR% 分档（low ≤ atr_low_threshold / > atr_high_threshold 为 high / 中间 mid / 数据不足 unknown 取 mid 默认权重）给建议仓位——archive 无个股日内高低价，接入层用热点榜收盘序列构造退化 K 线（TR=|Δclose|，量级略低估真 ATR），断档或在榜不足 atr_period+1 日 → unknown；补齐 K 线数据后仅需替换接入层构造，分档逻辑零改动。sigma_multiplier 2026-10-07 由 1.0 调至 0.5：scripts/compare_sigma.mjs 60 日对比回测显示 10 个不一致日全部为 σ0.5 触发 / σ1 漏报（σ1 于 9 月仅 1 天触发，且不一致集中于 normal/strong 日、非弱势门槛效应，纯阈值敏感度问题），σ1 门槛过苛。",
     "lookback_days": 60,
-    "sigma_multiplier": 1.0,
+    "sigma_multiplier": 0.5,
     "min_sample_days": 20,
     "fixedFallback": {
       "up_count_threshold": 6,

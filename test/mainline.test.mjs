@@ -25,7 +25,7 @@ const mk = (n, base = 8, dBase = 0.2) => Array.from({ length: n }, (_, i) => ({
 test('配置：mainLine 块存在且形态正确（config.json 是唯一事实源，不硬编码）', () => {
   assert.ok(CFG && typeof CFG === 'object');
   assert.equal(CFG.lookback_days, 60);
-  assert.equal(CFG.sigma_multiplier, 1.0);
+  assert.equal(CFG.sigma_multiplier, 0.5); // 2026-10-07 拍板：σ 对比回测（scripts/compare_sigma.mjs，60 日）显示 10 个不一致日全部为 σ0.5 触发 / σ1 漏报，σ1 于 9 月仅 1 天触发，门槛过苛
   assert.equal(CFG.min_sample_days, 20);
   assert.ok(Number.isFinite(FIXED.up_count_threshold) && Number.isFinite(FIXED.density_threshold));
 });

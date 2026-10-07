@@ -3850,8 +3850,8 @@
    }
   ],
   "threshold": {
-   "up_count_threshold": 16.500213672287018,
-   "density_threshold": 0.12735556540715234,
+   "up_count_threshold": 12.60010683614351,
+   "density_threshold": 0.09495852825913635,
    "mode": "dynamic",
    "samples": 60,
    "window": {
@@ -3865,8 +3865,8 @@
    "market_state": "weak",
    "sentiment_state": "stable",
    "max_output": 1,
-   "base_up_count_threshold": 14.500213672287018,
-   "base_density_threshold": 0.12735556540715234
+   "base_up_count_threshold": 10.60010683614351,
+   "base_density_threshold": 0.09495852825913635
   }
  }
 }
