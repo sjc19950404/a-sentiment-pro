@@ -2813,7 +2813,12 @@ window.__loadRecentArchive = loadRecentArchiveShared;
 window.__renderScope = renderScope;
 
 function loadRecent() {
-  return loadRecentArchiveShared().catch(() => null);
+  // 中危5（2026-10-07）：首拉失败降级为 null 是调用方约定（按"无明细"渲染），但
+  // 不能无痕——与 H-2 的过期刷新失败同口径，静默吞错 = 排障时两眼一抹黑。
+  return loadRecentArchiveShared().catch((e) => {
+    console.warn('[recent] 拉取失败，本次按无明细降级（下次调用自动重试）：', (e && e.message) || e);
+    return null;
+  });
 }
 
 /**

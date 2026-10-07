@@ -95,12 +95,16 @@ function staleCaches(allNames, keep) {
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const shell = await caches.open(SHELL_CACHE);
-    // 逐个 add：一个文件 404 不该让整次安装失败（addAll 是原子的，会全盘放弃）
+    // 逐个 add：一个文件 404 不该让整次安装失败（addAll 是原子的，会全盘放弃）。
+    // 中危5（2026-10-07）：catch 后打 warn——容错语义保留（SW 照常安装、下次部署重试），
+    // 但"该资产离线不可用"必须可诊断（SW 日志在 devtools → Application → Service Workers），
+    // 不能静默降级。最常见的失败根因（SHELL_ASSETS 漏部署）已由 test/deploy_manifest.test.mjs
+    // 前置拦截，这里兜的是运行时网络抖动/瞬时 5xx。
     await Promise.all(SHELL_ASSETS.map((u) =>
-      shell.add(new Request(u, { cache: 'reload' })).catch(() => null)));
+      shell.add(new Request(u, { cache: 'reload' })).catch((e) => console.warn('[sw] 外壳预缓存失败（该资产离线不可用，下次部署重试）：', u, (e && e.message) || e))));
     const data = await caches.open(DATA_CACHE);
     await Promise.all(DATA_PREFETCH.map((u) =>
-      data.add(new Request(u, { cache: 'reload' })).catch(() => null)));
+      data.add(new Request(u, { cache: 'reload' })).catch((e) => console.warn('[sw] 数据档预取失败（断网回退将缺该档，下次部署重试）：', u, (e && e.message) || e))));
     // 立刻接管，不必等所有标签页关闭（否则用户要刷两次才拿到新外壳）
     await self.skipWaiting();
   })());
@@ -186,7 +190,7 @@ self.addEventListener('message', (event) => {
   if (d.type === 'prefetch') {
     event.waitUntil((async () => {
       const data = await caches.open(DATA_CACHE);
-      await Promise.all(DATA_PREFETCH.map((u) => data.add(new Request(u, { cache: 'reload' })).catch(() => null)));
+      await Promise.all(DATA_PREFETCH.map((u) => data.add(new Request(u, { cache: 'reload' })).catch((e) => console.warn('[sw] 数据档预取失败（断网回退将缺该档，下次部署重试）：', u, (e && e.message) || e))));
     })());
   }
 });
