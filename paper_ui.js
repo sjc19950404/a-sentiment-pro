@@ -360,7 +360,10 @@ function loadRecentArchive() {
     if (!window.__recentPromise) {
       window.__recentPromise = fetch('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
         .then((res) => (res.ok ? res.json() : Promise.reject(new Error('HTTP ' + res.status))))
-        .catch((e) => { window.__recentPromise = null; throw e; });
+        // H-2：成功时刻记入共享时间戳（与 app.js 同一槽位）——TTL 过期判定
+        // 统一由 app.js 的读取端负责，本兜底只保证写入的档不比正常路径活得"更久"。
+        .then((d) => { window.__recentPromiseAt = Date.now(); return d; })
+        .catch((e) => { window.__recentPromise = null; window.__recentPromiseAt = null; throw e; });
     }
     return window.__recentPromise;
   }

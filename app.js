@@ -2751,13 +2751,41 @@ function loadJson(url) {
  *   建立共享入口 `window.__loadRecentArchive` 供各处复用；模拟交易台面下线后该入口
  *   仍保留（成本为零，对未来的多调用点依旧正确）。
  */
+// H-2（2026-10-07）：滚动窗共享缓存的存活期。此前该 promise 成功后**永不失效**——
+// 5 分钟轮询每次都新拉 index，明细却永远用首屏那份：指纹由「新 index + 旧 recent」
+// 合成，错判"数据已更新"，提示与表格自相矛盾。TTL 与轮询周期 POLL_MS 对齐：
+// 每次轮询时明细必然已过期 → 重拉，与 index 同鲜。可按需调整（如调试时设 1000）。
+const RECENT_PROMISE_TTL_MS = 5 * 60 * 1000;
+
 function loadRecentArchiveShared() {
+  const stale = window.__recentPromise;
+  // TTL 过期 → 强制失效重拉。先清时间戳再发请求：「槽位非空 + 时间戳为空」表示
+  // "刷新中"，并发调用看到即直接复用新 promise——同一时刻多处调用仍只发一次请求
+  // （去重语义不变，这正是本函数存在的意义）。
+  if (stale && window.__recentPromiseAt != null && Date.now() - window.__recentPromiseAt > RECENT_PROMISE_TTL_MS) {
+    const staleAt = window.__recentPromiseAt;
+    window.__recentPromiseAt = null;
+    window.__recentPromise = fetch('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+      .then((d) => { window.__recentPromiseAt = Date.now(); return d; })
+      .catch((e) => {
+        // 刷新失败**不清旧缓存**（降级兜底）：旧明细比"无明细"有用；回滚时间戳让
+        // 下次调用继续重试。但矛盾必须可见——静默沿用等于继续骗人，故必须 warn。
+        window.__recentPromise = stale;
+        window.__recentPromiseAt = staleAt;
+        console.warn('[recent] 滚动窗 TTL 已过期但刷新失败，降级沿用旧明细（下次调用将继续重试）：', (e && e.message) || e);
+        return stale;
+      });
+    return window.__recentPromise;
+  }
   if (!window.__recentPromise) {
     window.__recentPromise = fetch('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+      .then((d) => { window.__recentPromiseAt = Date.now(); return d; })
       .catch((e) => {
         // 不缓存失败：清空让下一次调用能真的重试（否则一次抖动会把整页锁死在"无明细"）
         window.__recentPromise = null;
+        window.__recentPromiseAt = null;
         throw e;
       });
   }
