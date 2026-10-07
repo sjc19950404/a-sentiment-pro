@@ -3164,6 +3164,7 @@ function renderAll(arc) {
   loadVersionRegression(); // 公式版本对比（独立数据文件；缺失时卡内显示生成命令，不影响其他区块）
   loadHealth(); // 数据健康 + 资金属性 + 亏钱效应（同一份 signals-latest.json，一次 fetch）
   loadIntraday(meta); // 盘中快照（独立数据文件；仅盘中相位且有文件时显示）
+  loadAiReportCard(meta); // S3-4 AI 盘中报告卡（归档基座 + live 相位实时替换）
 }
 
 // ── 盘中快照卡 ──────────────────────────────────────────────────────────────
@@ -3250,6 +3251,78 @@ function renderIntradayLive() {
 window.addEventListener('intraday-live-update', renderIntradayLive);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderIntradayLive);
 else renderIntradayLive();
+
+// ── S3-4 AI 盘中报告卡（生成器复用：src/report_card_live.js 挂 window.ReportCardLive）──
+// 双态渲染，一个形态：归档基座 + 实时替换。
+//   ① 归档基座：data/reports/index.json → 最新 intraday 报告信封 → cardData 投影 → 渲染。
+//      与 CI/推送收到的报告同一份 JSON，盘后/非交易也可见（看报告是正当需求，与快照卡不同）；
+//   ② phase === 'live' 且桥就绪 → buildLiveReport（6 源 + 桥，任一失败整体降级回 ①）；
+//   ③ 降级三态沿用 S3-1：非交易显示归档口径、采样未就绪标注"实时轨待采样"不冒充、
+//      午休/收盘后保留最后采样值并标注时刻。
+// 数值与"距风控档"永远与报告信封同尺（同一 generateIntraday 产出，卡面零自算）。
+let aiReportCardMeta = null;
+let aiReportLastLiveBuild = 0;
+
+function renderAiReportCard(d) {
+  const card = $('aiReportCard'), body = $('aiReportCardBody');
+  if (!card || !body || !d) return;
+  const pct = (v, fix = 2) => (v == null || !Number.isFinite(+v)) ? '—' : ((+v) * 100).toFixed(fix) + '%';
+  const hhmm = (iso) => { try { return String(iso || '').replace('T', ' ').slice(11, 16); } catch { return '—'; } };
+  const st = { ok: 'ok', degraded: '降级', missing: '缺源' }[d.status] || d.status || '—';
+  const rows = [
+    ['实时权益', d.navRealtime != null ? (+d.navRealtime).toFixed(0) + ' 元' : '—', '当日回撤', pct(d.maxDrawdownDaily)],
+    ['总回撤', pct(d.ddNow), '距风控档', d.distancePp != null ? (Number.isFinite(+d.distancePp) ? (+d.distancePp).toFixed(2) + 'pp（越过为负）' : '—') : '—'],
+    ['当日', pct(d.pnlDaily), '累计', pct(d.pnlCumulative)],
+    ['剧本命中', d.trendSwitchHits != null ? d.trendSwitchHits + ' 次' : '—', '外围', (d.overseas || []).map((q) => `${q.name} ${pct(q.chgPct)}`).join(' · ') || '—'],
+  ];
+  body.innerHTML =
+    `<div class="idu-head">生成 <b>${hhmm(d.generatedAt)}</b> · 状态 <b>${st}</b> · 口径 <b>${esc(d.basis || '—')}</b>`
+    + (d.isValuation ? '<span class="idu-warn">实时估值 · 估值非结算（昨收锚 × 仓位 × 指数实时涨幅）</span>' : '<span class="idu-warn">归档口径（CI 落库）</span>')
+    + `</div>`
+    + `<table class="idu-tbl"><tbody>${rows.map((r) =>
+      `<tr><th>${r[0]}</th><td>${r[1]}</td><th>${r[2]}</th><td>${r[3]}</td></tr>`).join('')}</tbody></table>`
+    + (d.missingNotes.length
+      ? `<div class="idu-note">缺失披露 ${d.missingNotes.length} 条：${d.missingNotes.slice(0, 2).map((n) => esc(n.field)).join('；')}${d.missingNotes.length > 2 ? ' …' : ''}</div>` : '');
+  card.hidden = false;
+}
+
+/** 实时替换尝试：live 相位 + 桥就绪 → buildLiveReport（60s 节流，与采样同步）。 */
+async function tryLiveAiReport() {
+  if (!aiReportCardMeta || aiReportCardMeta.phase !== 'live') return; // 收盘/非交易：归档卡不动
+  const RCL = window.ReportCardLive;
+  if (!RCL || !window.__intradayLive) { // 模块/桥未就绪 → 归档卡 + 待采样标注（不冒充）
+    const body = $('aiReportCardBody');
+    if (body && !body.querySelector('[data-live-pending]')) {
+      body.insertAdjacentHTML('afterbegin', '<div class="idu-head" data-live-pending="1">实时轨待采样（估值锚 / 实时行情未就绪）——以下为最近一期归档报告</div>');
+    }
+    return;
+  }
+  const now = Date.now();
+  if (now - aiReportLastLiveBuild < 60000) return;
+  aiReportLastLiveBuild = now;
+  let env = null;
+  try { env = await RCL.buildLiveReport(window.__intradayLive); } catch { env = null; } // 整体降级
+  const d = env ? RCL.cardData(env) : null;
+  if (d) renderAiReportCard(d); // 失败（null）→ 保持归档渲染（不冒充实时）
+}
+
+async function loadAiReportCard(meta) {
+  const card = $('aiReportCard'), body = $('aiReportCardBody');
+  if (!card || !body) return;
+  aiReportCardMeta = meta || null;
+  // 归档基座：最新一期 CI 报告（fetch 失败 → 整卡隐藏，不显示空壳）
+  let env = null;
+  try {
+    const idx = await loadJson('./data/reports/index.json?_=' + Date.now());
+    const f = idx && idx.reports && idx.reports.intraday && idx.reports.intraday.file;
+    if (f) env = await loadJson('./data/reports/' + f + '?_=' + Date.now());
+  } catch { env = null; }
+  const d = (window.ReportCardLive && env) ? window.ReportCardLive.cardData(env) : null;
+  if (!d) { card.hidden = true; return; }
+  renderAiReportCard(d);
+  tryLiveAiReport(); // live 相位才实际替换
+}
+window.addEventListener('intraday-live-update', () => { tryLiveAiReport(); });
 
 // 拉取档案并渲染全页。返回 {arc, changed, first, hhmm, degraded}；失败抛出。
 // 抽成独立函数是为了让「研判报告单独刷新」能复用同一条拉取/指纹链路，

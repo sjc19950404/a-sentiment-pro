@@ -29,6 +29,10 @@ const SHELL_ASSETS = [
   './src/quote.js',
   './src/intraday_live.js',
   './src/intraday_sampler.js',
+  './src/ai_report.js',
+  './src/lhbfilter.js',
+  './src/lhb.js',
+  './src/report_card_live.js',
 ];
 
 const DATA_PREFETCH = [

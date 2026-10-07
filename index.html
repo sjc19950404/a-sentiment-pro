@@ -180,6 +180,15 @@
                #intradayBody（loadIntraday 整体重写不冲掉）；随本卡 phase!=='live' 隐藏。 -->
           <div id="intradayLiveRow" hidden></div>
         </section>
+        <!-- S3-4 AI 盘中报告卡（生成器复用）：归档基座 = data/reports/ 最新 intraday
+             报告（与推送收到的同一份 JSON）；live 相位且桥就绪 → app.js 调
+             window.ReportCardLive.buildLiveReport（6 源 + __intradayLive →
+             buildInput + generateIntraday，信封唯一出处）实时替换。与快照卡不同：
+             盘后/非交易不隐藏（看报告是正当需求），显示归档口径并标注。 -->
+        <section class="card ai-report" id="aiReportCard" hidden>
+          <h2>AI 盘中报告 <span class="bf-auto">四类报告 · 盘中实时 / 盘后归档</span></h2>
+          <div id="aiReportCardBody"></div>
+        </section>
       </div>
     </section>
 
@@ -403,6 +412,15 @@
        浏览器与 Node 同源）。加载失败静默——桥缺席 = 即时轨待命，归档面不受影响。 -->
   <script type="module">
     import('./src/intraday_sampler.js').catch(() => { /* 静默：即时轨待命 */ });
+  </script>
+  <!-- S3-4 报告卡实时装配引擎（src/report_card_live.js）：ESM 纯装配层，
+       import 链 = ai_report → paper → lhbfilter → lhb/seats（全纯函数，浏览器与
+       Node 同源）。app.js 是经典脚本不能 import，故与 report.js 等同款挂 window。
+       挂载失败静默——卡片自动停留在归档基座（loadAiReportCard 的降级分支）。 -->
+  <script type="module">
+    import * as ReportCardLive from './src/report_card_live.js';
+    window.ReportCardLive = ReportCardLive;
+    window.dispatchEvent(new Event('report-card-live-ready'));
   </script>
   <!-- 数据导出引擎（src/dataset.js）：同样是 ESM 纯函数、浏览器与 Node 共用。
        app.js 是经典脚本不能 import，故挂到 window。

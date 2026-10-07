@@ -45,6 +45,10 @@ on:
       - 'src/quote.js'
       - 'src/intraday_live.js'
       - 'src/intraday_sampler.js'
+      - 'src/ai_report.js'
+      - 'src/lhbfilter.js'
+      - 'src/lhb.js'
+      - 'src/report_card_live.js'
       - 'data/**'
   workflow_dispatch:
 
@@ -74,6 +78,7 @@ jobs:
           cp index.html app.js style.css sw.js paper_ui.js manifest.webmanifest site/
           cp src/report.js src/report_audit.js src/seats.js site/src/
           cp src/paper.js src/quote.js src/intraday_live.js src/intraday_sampler.js site/src/
+          cp src/ai_report.js src/lhbfilter.js src/lhb.js src/report_card_live.js site/src/
           # 数据面（运行时 fetch('./data/*.json') 的全部消费档，含 paper/ 双轨账本）
           cp -r data/. site/data/
           # 产物体积留痕（Actions 日志可直接核对）
