@@ -61,14 +61,33 @@ jobs:
   smoke:
     if: github.event.schedule != '0,30 1-7 * * 1-5' && github.event.schedule != '5 1 * * 1-5'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # 5 → 8：重试兜底后最坏路径 = 首跑（≤2 分钟）+ 60s 退避 + 重跑，留足余量不误触超时。
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: 六源真实 API 冒烟（不 mock，断言 200+非空+字段契约）
-        run: node scripts/smoke_sources.mjs
+      # ── 瞬时抖动重试（2026-10-07）────────────────────────────────────────────
+      #   实录：北京 10-07 04:41 那班冒烟因 UND_ERR_SOCKET 型网络抖动 53s 失败 →
+      #   半夜报警邮件；同 commit 一小时后复跑 6/6 全绿（自愈）。dns ipv4first 只能
+      #   降频不能绝根，故 step 层兜底：失败 → 退避 60s 重跑一次。
+      #     · 重试通过 = 抖动自愈 → job 绿，夜间误报清零；
+      #     · 重试仍败 = 真实源故障 → exit 1 照旧拦 build（真挂的源连挂两次照样红，
+      #       不会因重试被放过）。
+      #   覆盖所有班次而非仅凌晨：18:30/21:00 的冒烟失败同样会误拦主跑，重试让瞬时
+      #   抖动不再打断数据管线（代价仅 +2 分钟，远低于整班 build 被拦的损失）。
+      #   重跑会覆盖 data/smoke-latest.json 为最终态（首败证据在日志里可见）。
+      - name: 六源真实 API 冒烟（不 mock，断言 200+非空+字段契约；瞬时抖动重试一次）
+        run: |
+          if node scripts/smoke_sources.mjs; then exit 0; fi
+          echo "⚠ 第一次冒烟失败——疑似瞬时网络抖动，退避 60 秒后重试一次"
+          sleep 60
+          if ! node scripts/smoke_sources.mjs; then
+            echo "✗ 重试后仍失败——判定为真实源故障，硬失败照旧拦下主跑"
+            exit 1
+          fi
+          echo "✓ 重试通过——第一次失败为瞬时抖动自愈，非源故障"
       - name: 冒烟报告落盘留档（data/smoke-latest.json，随仓库可见）
         if: always()
         run: |
