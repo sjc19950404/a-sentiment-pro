@@ -34,6 +34,7 @@
 //   两者在 CI（GitHub Actions）上均正常。
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { computeBreadth, breadthVerdict, buildBreadthSeries, BREADTH_THRESHOLDS, MIN_BARS } from '../src/breadth.js';
@@ -169,7 +170,7 @@ async function fetchShards(universe) {
         process.stderr.write(`\r[breadth] 分片 ${s + 1}/${SHARDS}  ${Math.min(i + CONC, slice.length)}/${slice.length}  `);
       }
     }
-    if (!DRY) writeFileSync(file, JSON.stringify(store));
+    if (!DRY) atomicWriteJSON(file, JSON.stringify(store));
     for (const [code, kl] of Object.entries(store)) live.set(code, kl);
     fetched += slice.length;
     total += Object.keys(store).length;
@@ -297,7 +298,7 @@ const payload = {
   ...breadth,
   verdict,
 };
-writeFileSync(OUT, JSON.stringify(payload, null, 0));
+atomicWriteJSON(OUT, JSON.stringify(payload, null, 0));
 console.log(`[breadth] 已写出 ${OUT}（${(Buffer.byteLength(JSON.stringify(payload)) / 1024).toFixed(1)}KB）`);
 
 // 逐日累积序列（append/更新当日）
@@ -312,6 +313,6 @@ daily.rows.push({
 });
 daily.rows.sort((a, b) => (a.date < b.date ? -1 : 1));
 daily.meta = { updatedAt: new Date().toISOString(), days: daily.rows.length };
-writeFileSync(DAILY, JSON.stringify(daily));
+atomicWriteJSON(DAILY, JSON.stringify(daily));
 const series = buildBreadthSeries(daily.rows);
 console.log(`[breadth] 已写出 ${DAILY}（累积 ${series.length} 天，最新 ${series.length ? series[series.length - 1].date : '—'}）`);

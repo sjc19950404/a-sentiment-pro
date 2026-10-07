@@ -1263,6 +1263,7 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
       // 允许：写的是**别的**文件（如 backtest.json / paper_universe.json / 缓存）
       const line = src.slice(Math.max(0, m.index - 200), m.index + 40);
       const targetsArchive = /writeFileSync\(\s*(ARCHIVE|FILE|P|dataPath)\b/.test(line)
+        || /atomicWriteJSON\(\s*(ARCHIVE|FILE|P|dataPath)\b/.test(line)
         || /archive\.json/.test(line);
       const isArchiveVar = /\b(JSON\.stringify\((?:a|arc|archive|packed|out)\b)/.test(m[0]);
       if (targetsArchive && isArchiveVar) bad.push(`${rel}: ${m[0].slice(0, 40)}`);
@@ -1270,8 +1271,11 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     // ② 读主档的地方必须 decodeArchive
     if (/readFileSync\([^)]*archive\.json/.test(src) && !/decodeArchive/.test(src)) missingDecode.push(rel);
     // ③ 写主档的地方必须"重编码"：或走 writeArchiveSafely（改存量档的脚本），
-    //    或至少显式调 encodeArchive（pipeline.js 是从零构造整档的生产端，本就持有对象）
+    //    或至少显式调 encodeArchive（pipeline.js 是从零构造整档的生产端，本就持有对象）。
+    //    H-4（2026-10-07）后写点可能经 atomicWriteJSON（原子写）——判定形态同步扩展，
+    //    不得因改写而漏检（漏检方向是"不再要求重编码"，属守卫削弱，不可接受）。
     const writesArchive = /writeFileSync\(\s*(ARCHIVE|FILE|P|dataPath)\b/.test(src)
+      || /atomicWriteJSON\(\s*(ARCHIVE|FILE|P|dataPath)\b/.test(src)
       || /archive\.json[^)]*\).*writeFileSync/s.test(src);
     if (writesArchive && !/writeArchiveSafely|encodeArchive/.test(src)) missingSafe.push(rel);
   }
@@ -1285,8 +1289,9 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
   const codecSrc = readFileSync(path.join(ROOT, 'src', 'lhb_codec.js'), 'utf8');
   check('回写：writeArchiveSafely 存在且带往返自检（不一致时拒绝写盘）',
     /export function writeArchiveSafely/.test(codecSrc) && /ROUNDTRIP_MISMATCH/.test(codecSrc), '');
-  check('回写：writeArchiveSafely 紧凑写盘（不得带缩进参数）',
-    /writeFileSync\(filePath,\s*text/.test(codecSrc), '');
+  check('回写：writeArchiveSafely 紧凑写盘（不得带缩进参数；H-4 原子化后形态为 atomicSwap）',
+    /atomicSwap\(fsMod,\s*filePath,\s*text/.test(codecSrc)
+      && /const text = JSON\.stringify\(packed\);/.test(codecSrc), '');
 }
 
 // ── B11. 标的池分档：精简池与完整池必须同源生成，且 CI 必须把两份都提交 ────────

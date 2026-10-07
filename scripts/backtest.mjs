@@ -2,6 +2,7 @@
 // 权重网格+帕累托/滚动样本外/主线自动选股）预计算为静态 JSON，供前端零构建渲染。
 // 用法：node scripts/backtest.mjs [--archive data/archive.json] [--out data/backtest.json]
 import { readFileSync, writeFileSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import config from '../src/config.js';
 import { decodeArchive } from '../src/lhb_codec.js';
 import { classifySeries } from '../src/regime.js';
@@ -282,7 +283,7 @@ const payload = {
   mainLine,
 };
 
-writeFileSync(OUT, JSON.stringify(payload, null, 1));
+atomicWriteJSON(OUT, JSON.stringify(payload, null, 1));
 console.log(`[backtest] ${dates.length} 个交易日 · 标的 ${ASSETS.join('/')}`);
 console.log(`[backtest] 基准年化 ${(base.perf.annual * 100).toFixed(2)}% 回撤 ${(base.perf.maxDd * 100).toFixed(2)}% 夏普 ${base.perf.sharpe}`);
 console.log(`[backtest] V5.2 年化 ${(v52.perf.annual * 100).toFixed(2)}% 回撤 ${(v52.perf.maxDd * 100).toFixed(2)}% 夏普 ${v52.perf.sharpe}`);

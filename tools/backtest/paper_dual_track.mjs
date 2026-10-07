@@ -45,6 +45,7 @@
 //       账本随 archive 增长自动延长）。P2_START 目前为 null——模拟盘启动日
 //       回填后，账本将增加以该日为基期的第二套累计（框架 §四门禁只认 P2 起的证据）。
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { atomicWriteJSON } from '../../src/fsutil.js';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -350,8 +351,8 @@ const outJson = {
   days: records,
 };
 mkdirSync(join(ROOT, 'data', 'paper'), { recursive: true });
-writeFileSync(join(ROOT, 'data', 'paper', 'dual_track.json'), JSON.stringify(outJson), 'utf8');
-writeFileSync(join(ROOT, 'data', 'paper', 'dual_track_latest.json'), JSON.stringify({
+atomicWriteJSON(join(ROOT, 'data', 'paper', 'dual_track.json'), JSON.stringify(outJson));
+atomicWriteJSON(join(ROOT, 'data', 'paper', 'dual_track_latest.json'), JSON.stringify({
   tool: 'paper_dual_track',
   generatedAt: outJson.generatedAt,
   trackState: outJson.trackState,
@@ -486,7 +487,7 @@ if (FALLBACK) {
       sig.active_track = 'A_fallback';
       sig.activeTrackNote = note;
       if (block) sig.dualTrack = block;
-      writeFileSync(sigPath, JSON.stringify(sig, null, 2) + '\n', 'utf8');
+      atomicWriteJSON(sigPath, JSON.stringify(sig, null, 2) + '\n');
       console.log('[paper] 已自愈 signals-latest.json 的 active_track 镜像 + dualTrack 披露块（按事实源逐字对账）');
     }
   } catch (e) { console.error(`[paper] ⚠ 镜像自愈失败（不阻塞账本）：${e.message}`); }

@@ -12,7 +12,7 @@
 //   ③ 集中度：按净化后的买方明细重算 buy_top3_pct 与 conc_top（这两项只依赖买方，可安全重算）。
 //
 // 用法：node scripts/repair_seats_aggregate_rows.mjs [--dry]
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
 import { isAggregateSeatRow } from '../src/seats.js';
 import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
 
@@ -100,6 +100,6 @@ console.log(`整理：${touchedDays} 天受影响，剔除 ${removedRows} 行汇
 if (DRY) console.log('（--dry 未写盘）');
 else {
   // 必须重编码写回（直接 stringify 会把压缩档解压成 9.2MB，且丢掉 rc 的可读性）
-  writeArchiveSafely(FILE, a, { writeFileSync });
+  writeArchiveSafely(FILE, a, { writeFileSync, renameSync, unlinkSync });
   console.log('已写盘', FILE);
 }

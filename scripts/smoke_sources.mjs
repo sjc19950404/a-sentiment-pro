@@ -21,7 +21,7 @@
 //
 // 用法：node scripts/smoke_sources.mjs   （任一源硬失败 → exit 1，CI 拦主跑）
 import dns from 'node:dns';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, unlinkSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -171,7 +171,7 @@ mkdirSync(path.dirname(OUT), { recursive: true });
 // writeJsonStable：剥时间戳后内容未变则跳过（冒烟含毫秒时延字段，天然每次都变——
 // 此处接线只为统一出口；真正受益的是 universe / version-regression 这类确定性产物）
 const { writeJsonStable } = await import('../src/lhb_codec.js');
-const w = writeJsonStable(OUT, report, { readFileSync, writeFileSync, log: '[smoke]' });
+const w = writeJsonStable(OUT, report, { readFileSync, writeFileSync, renameSync, unlinkSync, log: '[smoke]' });
 if (w.skipped) console.log('[smoke] 报告内容未变（剥时间戳后），跳过写盘');
 
 console.log(`\n[smoke] ${results.length - hard.length}/${results.length} 源通过${lhbSoftSkip ? '（LHB 当日未公布按软态计）' : ''}`);

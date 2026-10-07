@@ -18,6 +18,7 @@
 //   node scripts/fetch_crosscheck.mjs --dry      # 只打印不写盘
 //   node scripts/fetch_crosscheck.mjs --check    # CI：只校验已有结果文件的自洽性（不联网）
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import { decodeArchive } from '../src/lhb_codec.js';
 import { fetchSecondIndustry } from '../src/sources.js';
 import { crossCheck, summarizeCrossCheck, DIVERGENCE_RULES, XCHECK_LEVEL } from '../src/crosscheck.js';
@@ -71,7 +72,7 @@ if (!primary.length) {
     asOfDate: last.trade_date, fetchedAt: new Date().toISOString(),
     rules: DIVERGENCE_RULES, ...res,
   };
-  if (!DRY) writeFileSync(OUT, JSON.stringify(out, null, 2), 'utf8');
+  if (!DRY) atomicWriteJSON(OUT, JSON.stringify(out, null, 2));
   console.log(`[crosscheck] 主源无行业数据 → ${res.status}（不写"一致"）`);
   process.exit(0);
 }
@@ -107,5 +108,5 @@ for (const f of (res.flagged || []).slice(0, 8)) {
 if (fetchErr) console.log(`[crosscheck] ⚠ 第二源抓取失败：${fetchErr}`);
 
 if (DRY) { console.log('[crosscheck] --dry：未写盘'); process.exit(0); }
-writeFileSync(OUT, JSON.stringify(out, null, 2), 'utf8');
+atomicWriteJSON(OUT, JSON.stringify(out, null, 2));
 console.log('[crosscheck] 写出 ' + OUT);

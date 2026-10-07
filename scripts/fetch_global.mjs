@@ -8,6 +8,7 @@
 //
 // 用法：node scripts/fetch_global.mjs
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import config from '../src/config.js';
 import { buildGlobalSnapshot, evaluateGlobalWatch, SINA_URL, SINA_CODES, usSessionReadiness } from '../src/global.js';
 import { nextSession } from '../src/freshness.js';
@@ -93,7 +94,7 @@ async function main() {
     if (prev) {
       prev.meta = prev.meta || {};
       prev.meta.lastAttempt = { at: new Date().toISOString(), outcome: 'failed', reason: e.message };
-      writeFileSync(OUT, JSON.stringify(prev, null, 2) + '\n');
+      atomicWriteJSON(OUT, JSON.stringify(prev, null, 2) + '\n');
     }
     return;
   }
@@ -119,7 +120,7 @@ async function main() {
     return;
   }
 
-  writeFileSync(OUT, JSON.stringify(snap, null, 2) + '\n');
+  atomicWriteJSON(OUT, JSON.stringify(snap, null, 2) + '\n');
   console.log(`已写入 data/global.json：${snap.meta.okCount}/${snap.meta.quoteCount} 个品种`);
   console.log(`  美股会话 ${snap.meta.usSessionDate} · A股存档 ${tradeDate} · 下次开市 ${nextOpen}（开市前还有 ${snap.meta.usSessionsBeforeOpen} 个美股交易日）`);
   console.log(`  美股档就绪：${snap.meta.usReadiness.ready ? '是' : '否'}（${snap.meta.usReadiness.reason}）`);

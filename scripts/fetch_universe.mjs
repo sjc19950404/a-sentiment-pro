@@ -13,7 +13,7 @@
 //     区分活跃/历史标的——历史标的仍可卖出（持仓必须能平），但买入会提示行情陈旧。
 //   · ST 幅度按名称当次出现时判定，记在 st 字段；不做历史 ST 变更回溯（存档无该信息）。
 
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, renameSync, unlinkSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { boardOf, isStName, limitPctOf, PAPER_VERSION } from '../src/paper.js';
@@ -148,7 +148,7 @@ const out = {
 // 紧凑写盘：缩进 1 会白吃压缩收益（实测 1.6MB 里约 20% 是空白）
 // writeJsonStable：剥掉 generatedAt 后内容未变则跳过——非交易日每天重跑不再产生纯时间戳 diff
 const text = JSON.stringify(out);
-const wFull = writeJsonStable(OUT, out, { readFileSync, writeFileSync, compact: true, log: '[universe]' });
+const wFull = writeJsonStable(OUT, out, { readFileSync, writeFileSync, renameSync, unlinkSync, compact: true, log: '[universe]' });
 
 // ───────────── 精简池（首屏用） ─────────────
 // 只留 code + name，其余一律不写。**刻意不写板段/幅度**：它们由 boardOf/limitPctOf 纯函数推导，
@@ -167,7 +167,7 @@ const lite = {
   symbols: list.map((x) => ({ code: x.code, name: x.name })),
 };
 const liteText = JSON.stringify(lite);
-const wLite = writeJsonStable(OUT_LITE, lite, { readFileSync, writeFileSync, compact: true, log: '[universe-lite]' });
+const wLite = writeJsonStable(OUT_LITE, lite, { readFileSync, writeFileSync, renameSync, unlinkSync, compact: true, log: '[universe-lite]' });
 
 console.log(`标的池${wFull.skipped ? '内容未变，跳过写盘' : '已写出'}：${path.relative(ROOT, OUT)}（${(Buffer.byteLength(text) / 1024).toFixed(1)}KB）`);
 console.log(`  精简池${wLite.skipped ? '内容未变，跳过写盘' : '已写出'}：${path.relative(ROOT, OUT_LITE)}（${(Buffer.byteLength(liteText) / 1024).toFixed(1)}KB · 仅 code+name · 省 ${(100 - Buffer.byteLength(liteText) / Buffer.byteLength(text) * 100).toFixed(1)}%）`);

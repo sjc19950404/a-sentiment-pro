@@ -21,6 +21,7 @@
 //   环境变量：LLM_API_URL（如 https://api.deepseek.com/v1）
 //             LLM_API_KEY、LLM_MODEL（如 deepseek-chat）
 import { readFileSync, existsSync, writeFileSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import { decodeArchive } from '../src/lhb_codec.js';
 import { bjStamp } from '../src/time.js';
 import { fetchWithRetry } from '../src/util.js';
@@ -147,7 +148,7 @@ const payload = {
     + '本文件只是证据留痕，sentiment 原始值不经截断。',
 };
 
-writeFileSync(OUT, JSON.stringify(payload, null, 1));
+atomicWriteJSON(OUT, JSON.stringify(payload, null, 1));
 console.log(`[llm-sent] ${day.trade_date} 舆情 sentiment=${payload.sentiment}`
   + `（置信度 ${payload.confidence}，事件 ${payload.events.length} 条）`);
 console.log(`[llm-sent] 依据：${payload.reason}`);

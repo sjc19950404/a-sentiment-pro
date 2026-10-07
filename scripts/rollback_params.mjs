@@ -42,6 +42,7 @@
 //   目标耗时：单命令 < 10s（远低于 5 分钟 SLA）；真正的 5 分钟预算留给人读
 //   只读预览 + 决策 --why。
 import { readFileSync, writeFileSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -147,7 +148,7 @@ console.log(`          理由：${whyArg.trim()}`);
 
 // ── 4a. 备份当前 live（第二恢复通道，先于任何写操作）────────────────────────
 const backupPath = path.join(ROOT, 'data', 'params_rollback_backup.json');
-writeFileSync(backupPath, JSON.stringify({
+atomicWriteJSON(backupPath, JSON.stringify({
   at: new Date().toISOString(),
   note: '回滚前 live 快照（rollback_params.mjs 自动备份；恢复 = rollback --to 指向回滚 entry，或手工取本文件五块）',
   liveBefore: liveSnap,
@@ -173,7 +174,7 @@ json.backtest.ddTrigger = targetSnap.stops.ddTrigger;
 json.backtest.maxPosChg = targetSnap.stops.maxPosChg;
 json.momentumRecent = targetSnap.lookback.momentumRecent;
 json.momentumPrev = targetSnap.lookback.momentumPrev;
-writeFileSync(cfgPath, JSON.stringify(json, null, 2) + '\n', 'utf8');
+atomicWriteJSON(cfgPath, JSON.stringify(json, null, 2) + '\n');
 console.log('[rollback] config.json params.live 已更新（顶层双写镜像同步）');
 
 // ── 4c. 追加 changelog entry（liveBefore 快照 → 回滚可逆）───────────────────
@@ -193,7 +194,7 @@ entries.push({
   liveBefore: liveSnap,
   liveAfter: targetSnap,
 });
-writeFileSync(logPath, JSON.stringify(log, null, 2) + '\n', 'utf8');
+atomicWriteJSON(logPath, JSON.stringify(log, null, 2) + '\n');
 console.log('[rollback] params_changelog.json 已追加回滚记录（entry ' + (entries.length - 1) + '，含 liveBefore → 本操作可逆）');
 
 // ── 5. 三重验证（任一失败大声报警 + 恢复指令）───────────────────────────────
@@ -263,7 +264,7 @@ const failed0 = verifications.filter(([, ok]) => !ok);
 const rbEntry = entries[entries.length - 1];
 rbEntry.validation.pass = failed0.length === 0;
 rbEntry.validation.checks = verifications.map(([name, ok]) => ({ name, ok }));
-writeFileSync(logPath, JSON.stringify(log, null, 2) + '\n', 'utf8');
+atomicWriteJSON(logPath, JSON.stringify(log, null, 2) + '\n');
 
 // ── 5d 治理守卫最后跑（镜像逐位锁定 + changelog 台账一致性；失败则回写 pass=false，
 //       保证 changelog 最终态如实反映「验证未过的 live 变更」→ 守卫持续红逼人工介入）──
@@ -279,7 +280,7 @@ writeFileSync(logPath, JSON.stringify(log, null, 2) + '\n', 'utf8');
     console.error(`[rollback] 验证 ✗ ${name}：${msg}`);
     rbEntry.validation.pass = false;
   }
-  writeFileSync(logPath, JSON.stringify(log, null, 2) + '\n', 'utf8');
+  atomicWriteJSON(logPath, JSON.stringify(log, null, 2) + '\n');
 }
 const failed = verifications.filter(([, ok]) => !ok);
 

@@ -17,6 +17,7 @@
 //   缺失 null 不补 0；脚本自身不做任何数值计算（生成器纯函数的唯一入口）。
 //   闸门跳过 = 正常退出（exit 0），不是错误——CI 步骤不因"今天不该出报告"变红。
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateContract } from '../src/contract.js';
@@ -134,13 +135,13 @@ if (WITH_SIM) report.missing_notes.push(SIM_MISSING_NOTE);
 
 const file = `${TYPE}_${report.date}.json`;
 mkdirSync(OUT_DIR, { recursive: true });
-writeFileSync(join(OUT_DIR, file), JSON.stringify(report, null, 1) + '\n');
+atomicWriteJSON(join(OUT_DIR, file), JSON.stringify(report, null, 1) + '\n');
 
 // index.json：各类型最新一期索引（首屏示例标记）
 const index = existsSync(INDEX_FILE) ? JSON.parse(readFileSync(INDEX_FILE, 'utf8')) : { schema_version: '1.0', reports: {} };
 index.generatedAt = report.generated_at;
 index.reports[TYPE] = { date: report.date, file, is_sample: Boolean(IS_SAMPLE) || Boolean(index.reports[TYPE]?.is_sample) };
 if (IS_SAMPLE) index.sampleNote = `首屏示例：首次打开页面时显示 ${report.date} 报告（docs/ai_report_module_design.md §3.4）`;
-writeFileSync(INDEX_FILE, JSON.stringify(index, null, 1) + '\n');
+atomicWriteJSON(INDEX_FILE, JSON.stringify(index, null, 1) + '\n');
 
 console.log(`[ai-report] ${TYPE} ${report.date} → data/reports/${file}（status=${report.status}，${report.missing_notes.length} 条缺失披露，${IS_SAMPLE ? '首屏示例 ' : ''}契约通过）`);

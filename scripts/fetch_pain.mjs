@@ -14,6 +14,7 @@
 // ⚠ 必须在**收盘后**运行（含 ca盘后固定价格成交），否则拿到的是盘中快照，
 //   翻绿比例会随分时波动。脚本会校验行情 tickDate 与目标日一致，不一致则拒绝写盘。
 import { readFileSync, writeFileSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import { painReport } from '../src/pain.js';
 import { fetchQuotes } from '../src/quote.js';
 import { decodeArchive } from '../src/lhb_codec.js';
@@ -79,6 +80,6 @@ console.log(`大面股 ${report.bigLoss.n} 只 / 天地板 ${report.skyFloor.n} 
 console.log(`★ ${report.verdict.label} — ${report.verdict.reason}`);
 
 if (DRY) { console.log('\n[pain] --dry，未写盘'); } else {
-  writeFileSync(OUT, JSON.stringify(report, null, 1), 'utf8');
+  atomicWriteJSON(OUT, JSON.stringify(report, null, 1));
   console.log(`\n[pain] 已写出 ${OUT}`);
 }

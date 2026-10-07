@@ -12,6 +12,7 @@
 //   node scripts/fetch_raw_kline.mjs --refresh  # 重抓末根非 2026-09-30 的分片
 //   node scripts/fetch_raw_kline.mjs --limit 20 # 小样测试
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -76,7 +77,7 @@ async function worker() {
       } catch { await sleep(600); }
     }
     if (bars) {
-      writeFileSync(path.join(OUT_DIR, code + '.json'), JSON.stringify({ c: code, n: names.get(code) || '', bars }));
+      atomicWriteJSON(path.join(OUT_DIR, code + '.json'), JSON.stringify({ c: code, n: names.get(code) || '', bars }));
       done++;
     } else fail.push(code);
     if ((done + fail.length) % 500 === 0) console.log(`[kline] 进度 ${done + fail.length}/${todo.length} · 失败 ${fail.length}`);

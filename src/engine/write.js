@@ -7,6 +7,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { atomicWriteJSON } from '../fsutil.js';
 import { validateArchive } from '../validate.js';
 import { resolveHolidays } from '../calendar.js';
 import { assessFreshness } from '../freshness.js';
@@ -45,7 +46,9 @@ export function writeArchive(archive, filePath) {
   const packed = encodeArchive(archive, codes, { deflate: true });
   // 紧凑写盘：`rc` 是数字下标数组，加 2 空格缩进会被 JSON 展开成一行一个数字，
   // 缩进开销足以吃掉码表 92% 的收益（实测 4.99MB → 9.44MB，比压缩前还大）。
-  writeFileSync(p, JSON.stringify(packed), 'utf8');
+  // H-4（2026-10-07）：原子替换（同目录 tmp + rename）——裸写中途被杀会留半截主档，
+  // 且下游读到损坏档会静默回退旧快照。
+  atomicWriteJSON(p, JSON.stringify(packed));
   // 切片与主档**同源生成**：每次写主档都重建切片，杜绝"两个文件各自演化"。
   // 只在写默认主档时生成——--out 到别处（测试/临时）不该污染 data/ 下的切片。
   let shards = null;
@@ -66,16 +69,16 @@ export function writeShards(archive, dir = DATA_DIR) {
   const index = buildIndex(archive);
   const shards = buildShards(archive);
   const years = Object.keys(shards).sort();
-  writeFileSync(path.join(dir, 'archive-index.json'), JSON.stringify(index), 'utf8');
+  atomicWriteJSON(path.join(dir, 'archive-index.json'), JSON.stringify(index));
   for (const y of years) {
-    writeFileSync(path.join(dir, shardName(y)), JSON.stringify(shards[y]), 'utf8');
+    atomicWriteJSON(path.join(dir, shardName(y)), JSON.stringify(shards[y]));
   }
   // 滚动窗：走势图/抽屉只需最近 30 个交易日，不该为它拉整年分片（2026 年分片仍 >4MB）
   // 注入 aggregateByCode：主档不再持久化 lhb_aggr（体积纪律，见 recalc_lhb_daily.mjs），
   //   而滚动窗「最新日」是展示层唯一入口，需带 lhb_aggr 一屏。这里现从当日 lhb 聚合，
   //   只算 1 天，代价 O(条数)。本模块保持零业务依赖（与 marketAlertsFn 同款注入）。
   const recent = buildRecent(archive, RECENT_DAYS, { aggregateFn: aggregateByCode });
-  writeFileSync(path.join(dir, RECENT_FILE), JSON.stringify(recent), 'utf8');
+  atomicWriteJSON(path.join(dir, RECENT_FILE), JSON.stringify(recent));
   // 最轻档：只含最新日 + 动量 + 大盘告警 + 数据健康（~14KB）。给"不跑前端只看今日结论"的读者。
   // marketAlerts / healthReport 都是**纯函数**，注入进来而不是让本模块 import 业务依赖 —— 保持 archive_split 无业务依赖。
   // 健康报告注入 assessFreshness + meta：新鲜度那一项需要日历与"当前时刻"，
@@ -195,7 +198,7 @@ export function writeShards(archive, dir = DATA_DIR) {
     // 每日日报（#4）：纯渲染，输入是上面各段已算好的素材 → 同源同形态。
     reportFn: (payload) => buildDailyReport(payload),
   });
-  if (signals) writeFileSync(path.join(dir, SIGNALS_FILE), JSON.stringify(signals), 'utf8');
+  if (signals) atomicWriteJSON(path.join(dir, SIGNALS_FILE), JSON.stringify(signals));
   // 清理被淘汰的年份分片（年份集合会变），避免前端拉到过期数据
   try {
     const keep = new Set([...years.map((y) => shardName(y)), RECENT_FILE, SIGNALS_FILE]);

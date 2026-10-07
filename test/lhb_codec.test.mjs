@@ -359,3 +359,53 @@ test('稳定写盘：compact 态无缩进（大档体积纪律）', () => {
   writeJsonStable('u.json', { meta: { generatedAt: 'now', total: 5 }, rows: [1] }, { ...fsMod, compact: true });
   assert.ok(!/\n\s{2}"/.test(files['u.json']), '紧凑态不得带缩进');
 });
+
+// ── 原子写（H-4 · 2026-10-07）：注入 renameSync 时必须走 tmp→rename，失败必清理 ──
+
+test('原子写：writeJsonStable 注入 renameSync 时走 tmp→rename（目标文件无中间态）', () => {
+  const calls = [];
+  const files = {};
+  const fsMod = {
+    readFileSync: () => { const e = new Error('ENOENT'); e.code = 'ENOENT'; throw e; },
+    writeFileSync: (p, t) => { calls.push(['write', p]); files[p] = t; },
+    renameSync: (a, b) => { calls.push(['rename', a, b]); files[b] = files[a]; delete files[a]; },
+    unlinkSync: (p) => { calls.push(['unlink', p]); delete files[p]; },
+  };
+  const r = writeJsonStable('u.json', { meta: { generatedAt: 'now', v: 1 } }, fsMod);
+  assert.equal(r.skipped, false);
+  assert.deepEqual(calls, [['write', 'u.json.tmp'], ['rename', 'u.json.tmp', 'u.json']], '必须是「写 tmp → 原子替换」两步');
+  assert.ok(files['u.json'], '目标已落盘');
+  assert.ok(!files['u.json.tmp'], '无 tmp 残留');
+});
+
+test('原子写：writeArchiveSafely 注入 renameSync 时走 tmp→rename', () => {
+  const calls = [];
+  const files = {};
+  const fsMod = {
+    writeFileSync: (p, t) => { calls.push(['write', p]); files[p] = t; },
+    renameSync: (a, b) => { calls.push(['rename', a, b]); files[b] = files[a]; delete files[a]; },
+  };
+  const arc = mkArc();
+  writeArchiveSafely('arch.json', arc, fsMod);
+  assert.equal(calls[0][0] + '>' + calls[1][0], 'write>rename', '首步写 tmp、次步原子替换');
+  assert.ok(String(calls[0][1]).endsWith('.tmp'), 'tmp 与目标同目录（rename 原子性前提）');
+  assert.ok(files['arch.json'], '目标已落盘');
+  assert.ok(!files['arch.json.tmp'], '无 tmp 残留');
+});
+
+test('原子写：rename 失败时清理残留 tmp 并抛明确错误（原档保持完好）', () => {
+  const files = { 'arch.json': 'ORIGINAL' };
+  const fsMod = {
+    writeFileSync: (p, t) => { files[p] = t; },
+    renameSync: () => { throw new Error('EPERM: cross-device link'); },
+    unlinkSync: (p) => { delete files[p]; },
+    existsSync: (p) => p in files,
+  };
+  assert.throws(
+    () => writeArchiveSafely('arch.json', mkArc(), fsMod),
+    (e) => /atomicSwap.*原子替换失败/.test(e.message),
+    '错误必须带 atomicSwap 上下文，不得静默吞',
+  );
+  assert.equal(files['arch.json'], 'ORIGINAL', '原档未被破坏');
+  assert.ok(!files['arch.json.tmp'], '失败路径清理了 tmp');
+});

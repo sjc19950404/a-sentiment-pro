@@ -6,7 +6,7 @@
 //
 // 注意：会向东方财富发起 66 只 × 2 请求 × NATIVE_DAYS 天，请勿频繁运行。
 // 用法：node scripts/refetch_seats_clean.mjs [--days 2026-09-30] [--dry]
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
 import { fetchSeats } from '../src/sources.js';
 import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
 
@@ -49,7 +49,7 @@ if (DRY) console.log('\n（--dry 未写盘）');
 else {
   // 重编码 + 写前往返自检 + 紧凑写盘（统一走 writeArchiveSafely，见 src/lhb_codec.js）
   try {
-    const info = writeArchiveSafely(FILE, a, { writeFileSync });
+    const info = writeArchiveSafely(FILE, a, { writeFileSync, renameSync, unlinkSync });
     console.log(`\n已写盘 ${FILE}（码表 ${info.codes} 条 · 往返自检通过：${info.days} 天 · ${(info.bytes / 1048576).toFixed(2)}MB）`);
   } catch (e) {
     console.error(`\n[refetch_seats] 中止：${e.message}`);

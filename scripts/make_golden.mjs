@@ -11,6 +11,7 @@
 //   · 改口径是合法操作（公式版本迭代），刷新 golden 必须显式跑本脚本并在 commit message 里
 //     说明漂移来源；测试不会静默跳过缺失的 golden。
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { enrich, recalcAll } from '../src/pipeline.js';
@@ -38,7 +39,7 @@ const fixture = {
   },
   all_days: allDays,
 };
-writeFileSync(path.join(FIX_DIR, 'golden_input.json'), JSON.stringify(fixture), 'utf8');
+atomicWriteJSON(path.join(FIX_DIR, 'golden_input.json'), JSON.stringify(fixture));
 
 // ── golden：期望输出摘要（只存关键值，不存全档——diff 要能一眼看出哪里漂了）──
 const realDays = out.filter((d) => d.emotion && !d.emotion._backfill);
@@ -80,7 +81,7 @@ const golden = {
     continuing: momObj.continuing ? momObj.continuing.length : null,
   },
 };
-writeFileSync(path.join(FIX_DIR, 'golden_summary.json'), JSON.stringify(golden, null, 2), 'utf8');
+atomicWriteJSON(path.join(FIX_DIR, 'golden_summary.json'), JSON.stringify(golden, null, 2));
 
 console.log(`fixture: ${out.length} 天（真实 ${realDays.length} / 回填 ${out.length - realDays.length}）`);
 console.log(`golden:  最新日 ${golden.latest.date} 情绪 ${golden.latest.value} · 动量 fresh/fading/continuing = ${golden.momentum.fresh}/${golden.momentum.fading}/${golden.momentum.continuing}`);

@@ -7,7 +7,7 @@
 //
 // 为什么需要它：管道在「跳过 / 非交易日」路径上不产生新数据，旧口径只在那时保留 meta 不动，
 // 于是 stale 会粘着不动（页面长期误报）。这个脚本可按同一套日历口径重算并刷新。
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, unlinkSync, existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import config from '../src/config.js';
@@ -79,7 +79,7 @@ if (WRITE) {
     console.log('[freshness] 判定字段无实质变化，未写入');
   } else {
     // 必须重编码写回（直接 stringify 会把压缩档解压成 9.2MB 且丢掉 rc 的可读性）
-    writeArchiveSafely(P, a, { writeFileSync });
+    writeArchiveSafely(P, a, { writeFileSync, renameSync, unlinkSync });
     console.log('[freshness] 已写回判定字段 →', nf.state, '| phase =', meta.phase, '| stale =', nf.stale,
       staleReasonText(nf) ? '| ' + staleReasonText(nf) : '');
   }

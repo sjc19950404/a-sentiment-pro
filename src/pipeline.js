@@ -23,6 +23,7 @@ import { computeRecomputeScope, needFetch } from './idempotence.js';
 import { recalcAll } from './engine/recalc.js';
 import { enrich } from './engine/enrich.js';
 import { writeArchive, writeShards } from './engine/write.js';
+import { atomicWriteJSON } from './fsutil.js';
 
 // 引擎 re-export（兼容层）：新代码请直接 import './engine/*.js'
 export { recalcAll } from './engine/recalc.js';
@@ -326,7 +327,9 @@ function refreshMetaOnly(dataPath, now, attempt) {
   }
   // 刷新 meta 也必须走压缩写盘，否则会把刚压好的主档「解压」回中文原文（体积翻数倍）。
   // 这里重新编码是幂等的：entries 已带 rc 时 encodeDay 原样返回。
-  writeFileSync(dataPath, JSON.stringify(encodeArchive(a, buildReasonCodes(a.all_days))), 'utf8');
+  // H-4（2026-10-07）：原子替换——裸写 meta 刷新（全档重编码）中途被杀会留半截主档，
+  // 读取端 catch 会静默回退旧快照，损坏被降级成"旧但合法"。
+  atomicWriteJSON(dataPath, JSON.stringify(encodeArchive(a, buildReasonCodes(a.all_days))));
   // 切片必须跟着刷新：首屏读的是 archive-index.json 的 meta（相位/新鲜度），
   // 只更新主档会让页面顶部的相位标签与 STALE 标记停在旧值上——而这两者恰恰是
   // 「数据是否可信」的唯一提示，过期比没有更危险。

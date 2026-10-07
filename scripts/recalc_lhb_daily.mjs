@@ -15,7 +15,7 @@
 // 存量 lhb 记录没有 BILLBOARD_DEAL_AMT，但当日榜记录满足 DEAL == BUY + SELL（已对源核验），由 lhb.js 回退。
 //
 // 用法：node scripts/recalc_lhb_daily.mjs [--dry]
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { caliberFromDay, isRangeBoard, mergeDuplicateRecords, duplicateKeys } from '../src/lhb.js';
@@ -148,5 +148,5 @@ if (signature() === beforeSig) {
   process.exit(0);
 }
 // 必须重编码写回（直接 stringify 会把压缩档解压成 9.2MB 且丢掉 rc 的可读性）
-writeArchiveSafely(P, a, { writeFileSync });
+writeArchiveSafely(P, a, { writeFileSync, renameSync, unlinkSync });
 console.log(`已写回 ${path.relative(ROOT, P)}`);

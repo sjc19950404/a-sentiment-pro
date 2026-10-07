@@ -19,6 +19,7 @@
 //
 // 用法：node scripts/verify_industry_outliers.mjs [--refresh] [--dry]
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodeArchive } from '../src/lhb_codec.js';
@@ -153,7 +154,7 @@ for (const p of pending) {
 // ── ③ 落盘（幂等合并）──────────────────────────────────────────────────────
 if (newEntries.length && !DRY) {
   const next = mergeEntries(ledger, newEntries);
-  writeFileSync(LEDGER, JSON.stringify(next, null, 2) + '\n', 'utf8');
+  atomicWriteJSON(LEDGER, JSON.stringify(next, null, 2) + '\n');
   console.log(`[verify] 台账已更新：新增/更新 ${newEntries.length} 条（共 ${next.entries.length} 条）`);
 } else {
   console.log(`[verify] 无台账变更${DRY ? '（--dry 演练）' : ''}。`);

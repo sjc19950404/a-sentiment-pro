@@ -33,6 +33,7 @@
 //                                                      #   快照样例）并立即处理推送
 //   未配置 OPS_WEBHOOK → error 级也只高亮+日志，提示「推送跳过（未配置）」——本地零打扰。
 import { readFileSync, writeFileSync, appendFileSync, mkdirSync, statSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -131,7 +132,7 @@ function saveState(st) {
   st.updatedAt = ts();
   st.history = (st.history || []).slice(-100); // 推送史 cap=100（审计用）
   mkdirSync(path.dirname(STATE_FILE), { recursive: true });
-  writeFileSync(STATE_FILE, JSON.stringify(st, null, 2) + '\n', 'utf8');
+  atomicWriteJSON(STATE_FILE, JSON.stringify(st, null, 2) + '\n');
 }
 
 // ── 单趟处理 ──

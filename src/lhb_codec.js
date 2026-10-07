@@ -307,6 +307,33 @@ export function readArchiveForEdit(filePath, readFileSync) {
   return decodeArchive(raw);
 }
 
+// ── 原子落盘（注入式 · 自查报告 H-4）────────────────────────────────────────
+// 背景：裸 writeFileSync 写大档中途被杀（CI SIGTERM/断电）会留半截文件，且下游
+// 读到损坏档会静默回退旧快照——损坏被降级成"旧但合法"。
+//
+// 本模块是浏览器可平铺的（不 import node:fs），故沿用既有注入惯例：调用方传
+// fsMod。注入了 renameSync（真实 fs 或完整 mock）→ tmp + rename 原子替换；只注入
+// writeFileSync（历史测试 mock）→ 降级直写——测试环境无所谓原子性，语义（往返
+// 自检、紧凑写盘）不变。失败时清理残留 tmp 并抛带上下文的错误，决不静默吞。
+function atomicSwap(fsMod, filePath, text) {
+  const tmp = filePath + '.tmp'; // 同目录：rename 原子性的前提
+  try {
+    fsMod.writeFileSync(tmp, text, 'utf8');
+  } catch (e) {
+    try { if (fsMod.unlinkSync && fsMod.existsSync && fsMod.existsSync(tmp)) fsMod.unlinkSync(tmp); } catch { /* 尽力清理 */ }
+    throw new Error(`[atomicSwap] 写临时文件失败（${tmp}）：${e.message}`);
+  }
+  try {
+    fsMod.renameSync(tmp, filePath);
+  } catch (e) {
+    try { if (fsMod.unlinkSync && fsMod.existsSync && fsMod.existsSync(tmp)) fsMod.unlinkSync(tmp); } catch { /* 同上 */ }
+    throw new Error(`[atomicSwap] 原子替换失败（${tmp} → ${filePath}）：${e.message}`);
+  }
+}
+
+// fsMod 是否具备原子替换能力（缺 renameSync 的测试 mock 走降级直写）。
+const canAtomic = (fsMod) => fsMod && typeof fsMod.renameSync === 'function';
+
 /** 占位符：decodeDay 在 rc 解析不出字符串时给出的值（即"原因丢失"的信号）。 */
 export const REASON_PLACEHOLDER = '\u2014'; // —
 
@@ -324,7 +351,6 @@ export const REASON_PLACEHOLDER = '\u2014'; // —
  * @throws 往返不一致时抛错，**不写盘**
  */
 export function writeArchiveSafely(filePath, archive, fsMod) {
-  const { writeFileSync } = fsMod;
   const days = archive.all_days || [];
   // 编码前：收集每天的 (日期 → reason 文本集合)，作为"语义指纹"
   const fingerprint = (list) => list.map((d) => [
@@ -352,7 +378,10 @@ export function writeArchiveSafely(filePath, archive, fsMod) {
     throw e;
   }
   const text = JSON.stringify(packed); // 紧凑：缩进会白吃压缩收益（4.99MB → 9.22MB）
-  writeFileSync(filePath, text, 'utf8');
+  // H-4：原子替换（注入了 renameSync 时 tmp+rename；测试 mock 缺它则降级直写——
+  // 老形态 `writeFileSync(filePath, text, 'utf8')` 只在降级分支保留，语义不变）。
+  if (canAtomic(fsMod)) atomicSwap(fsMod, filePath, text);
+  else fsMod.writeFileSync(filePath, text, 'utf8');
   return { codes: codes.length, days: days.length, bytes: Buffer.byteLength(text) };
 }
 
@@ -406,7 +435,7 @@ export function appendNote(archive, text) {
 // 注意：含时延/耗时类字段的档（如 smoke-latest.json 的毫秒延迟）内容天然每次都变，
 // 用本函数不会误跳——只是起不到降噪作用，属预期行为。
 // fs 以参数传入（本模块保持浏览器可平铺：不 import node:fs，同 readArchiveForEdit 惯例）。
-export function writeJsonStable(filePath, data, { readFileSync, writeFileSync, stampKeys = ['generatedAt'], compact = false, indent = 2, log }) {
+export function writeJsonStable(filePath, data, { readFileSync, writeFileSync, renameSync, stampKeys = ['generatedAt'], compact = false, indent = 2, log }) {
   const strip = (v) => {
     if (Array.isArray(v)) return v.map(strip);
     if (v && typeof v === 'object') {
@@ -428,6 +457,9 @@ export function writeJsonStable(filePath, data, { readFileSync, writeFileSync, s
     }
   } catch { /* 磁盘无旧档或旧档损坏 → 照常写 */ }
   // compact：紧凑态（无缩进，大档省体积——universe 全量池 1.6MB 缩进会白吃 ~20%）
-  writeFileSync(filePath, compact ? JSON.stringify(data) : (JSON.stringify(data, null, indent) + '\n'), 'utf8');
+  // H-4：注入了 renameSync 则原子替换（tmp+rename），否则降级直写（测试 mock）。
+  const text = compact ? JSON.stringify(data) : (JSON.stringify(data, null, indent) + '\n');
+  if (renameSync) atomicSwap({ writeFileSync, renameSync }, filePath, text);
+  else writeFileSync(filePath, text, 'utf8');
   return { skipped: false };
 }

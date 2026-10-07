@@ -10,6 +10,7 @@
 // 数据源：腾讯前复权日K（web.ifzq.gtimg.cn），单只查询（多只分号拼接会 param error）。
 // 用法：node scripts/backtest_limit_up_streak.mjs [--archive data/archive.json] [--out data/streak_backtest.json]
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import { dirname } from 'node:path';
 import { decodeArchive } from '../src/lhb_codec.js';
 
@@ -119,7 +120,7 @@ for (let i = 0; i < codes.length; i += CONC) {
   done += Math.min(CONC, codes.length - i);
   if (done % 80 === 0 || done === codes.length) process.stderr.write(`  ${done}/${codes.length}\n`);
 }
-if (cacheDirty) writeFileSync(CACHE, JSON.stringify(cache));
+if (cacheDirty) atomicWriteJSON(CACHE, JSON.stringify(cache));
 
 // ── 逐条算 T+1 涨幅 / 是否再涨停 / T+3 ──
 const recs = [];
@@ -220,7 +221,7 @@ const meta = {
 };
 
 if (!existsSync(dirname(OUT))) mkdirSync(dirname(OUT), { recursive: true });
-writeFileSync(OUT, JSON.stringify({ meta, all, ztAll, groups, scarcity, grid, raw: recs }, null, 0));
+atomicWriteJSON(OUT, JSON.stringify({ meta, all, ztAll, groups, scarcity, grid, raw: recs }, null, 0));
 
 process.stdout.write(`[streak] ${meta.dateFrom} ~ ${meta.dateTo}（${meta.tradeDays} 个交易日）\n`);
 process.stdout.write(`[streak] 候选 ${meta.candidates} 条，有 T+1 数据 ${meta.withT1} 条，去重 ${meta.uniqueCodes} 只\n\n`);

@@ -16,6 +16,7 @@
 // 诚实披露：当前真实样本仅 33 个交易日 → OOS ≈ 6 天。门禁是**流程防线**（防止
 // 「改参数只看样本内」这一行为模式），不是统计证明。报告里如实写样本量。
 import { readFileSync, writeFileSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -137,7 +138,7 @@ const report = {
   applied: false,
   disclaimer: '历史回测 ≠ 未来；样本外 20% 门禁为流程防线（防只看样本内调参），非统计证明。',
 };
-writeFileSync(path.join(ROOT, 'data', 'params_promotion_report.json'), JSON.stringify(report, null, 2) + '\n', 'utf8');
+atomicWriteJSON(path.join(ROOT, 'data', 'params_promotion_report.json'), JSON.stringify(report, null, 2) + '\n');
 console.log(`\n报告已写入 data/params_promotion_report.json`);
 
 // ── 4. --apply：过门禁才执行晋升（机器重写 LIVE_PARAMS + 追加 changelog）───
@@ -185,7 +186,7 @@ json.backtest.ddTrigger = trainSnapshot.stops.ddTrigger;
 json.backtest.maxPosChg = trainSnapshot.stops.maxPosChg;
 json.momentumRecent = trainSnapshot.lookback.momentumRecent;
 json.momentumPrev = trainSnapshot.lookback.momentumPrev;
-writeFileSync(cfgPath, JSON.stringify(json, null, 2) + '\n', 'utf8');
+atomicWriteJSON(cfgPath, JSON.stringify(json, null, 2) + '\n');
 
 // 4b. 追加 changelog entry（含 liveAfter 快照与门禁证据）
 const logPath = path.join(ROOT, 'params_changelog.json');
@@ -208,12 +209,12 @@ log.entries.push({
   },
   liveAfter: trainSnapshot,
 });
-writeFileSync(logPath, JSON.stringify(log, null, 2) + '\n', 'utf8');
+atomicWriteJSON(logPath, JSON.stringify(log, null, 2) + '\n');
 
 console.log(`\n[promote] ✅ 晋升完成：config.json params.live 已更新（${changed.join(' / ')}）`);
 console.log('          顶层双写镜像（weights/lookback/backtest.*/momentum*）已同步。');
 console.log('          params_changelog.json 已追加记录。');
 console.log('          下一步：node --test 全量回归（golden/lineage/governance 守卫都过才算数）。');
 report.applied = true;
-writeFileSync(path.join(ROOT, 'data', 'params_promotion_report.json'), JSON.stringify(report, null, 2) + '\n', 'utf8');
+atomicWriteJSON(path.join(ROOT, 'data', 'params_promotion_report.json'), JSON.stringify(report, null, 2) + '\n');
 process.exit(0);

@@ -12,6 +12,7 @@
 // 免责纪律：历史回测 ≠ 未来；可用样本仅 33 个真实交易日（208 个回填天只有 s_net 单因子，
 // 被排除——混入会让每个指标都错且错得平滑）。触发次数为 0 的策略如实输出 0，不硬凑。
 import dns from 'node:dns';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,7 +47,7 @@ async function getKline(sym, minLen = 20) {
       const k = rows.map((r) => ({ date: String(r[0]), open: +r[1], close: +r[2] }))
         .filter((x) => Number.isFinite(x.open) && x.open > 0 && Number.isFinite(x.close) && x.close > 0);
       mkdirSync(KDIR, { recursive: true });
-      writeFileSync(cache, JSON.stringify(k), 'utf8');
+      atomicWriteJSON(cache, JSON.stringify(k));
       return k;
     } catch (e) {
       if (att === 2) throw new Error(`${sym} 日K获取失败: ${e.message}`);
@@ -186,7 +187,7 @@ const report = {
   navDates: HS300.slice(k0, k1 + 1).map((k) => k.date),
   strategies,
 };
-writeFileSync(OUT, JSON.stringify(report, null, 2) + '\n', 'utf8');
+atomicWriteJSON(OUT, JSON.stringify(report, null, 2) + '\n');
 
 console.log(`\n[bt-strategies] 样本 ${realDays.length} 个真实交易日（${report.meta.sample.range[0]} ~ ${report.meta.sample.range[1]}），基准区间 K 线 ${k1 - k0 + 1} 日`);
 console.log(`基准 沪深300: 总收益 ${report.benchmark.total} · 最大回撤 ${report.benchmark.maxDd} · 夏普 ${report.benchmark.sharpe}`);

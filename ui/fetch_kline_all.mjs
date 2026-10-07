@@ -9,6 +9,7 @@
 // 改动相对原 fetch-kline-all.js：CommonJS→ESM（PRO 仓库 type:module）；熔断分支引用不在作用域的
 // fresh 计数改为 done（原代码该路径会 ReferenceError，仅 60 连败触发）；其余逻辑一字未动。
 import fs from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -160,7 +161,7 @@ async function runInit() {
   if (!list) {
     console.log('代码清单: 枚举候选区间 ' + candidateRanges().length + ' 个…');
     list = await enumMarket();
-    if (!DRY) fs.writeFileSync(LIST_FILE, JSON.stringify({ generated: Date.now(), generatedAt: new Date().toISOString().slice(0, 10), note: '沪深A股清单（北交所 v4.8 未含），qt.gtimg 批量行情枚举', codes: list }));
+    if (!DRY) atomicWriteJSON(LIST_FILE, JSON.stringify({ generated: Date.now(), generatedAt: new Date().toISOString().slice(0, 10), note: '沪深A股清单（北交所 v4.8 未含），qt.gtimg 批量行情枚举', codes: list }));
     console.log('代码清单: 识别 ' + list.length + ' 只沪深A股');
   }
   if (LIMIT) { list = list.slice(0, LIMIT); console.log('（SENT_KLINE_LIMIT 限 ' + LIMIT + ' 只）'); }
@@ -172,7 +173,7 @@ async function runInit() {
     if (fs.existsSync(fp)) { skip++; return; }
     const bars = await fetchHistory(it.c);
     if (!bars || bars.length < 5) return;                     // 长期停牌/新股无数据 → 跳过不留空壳
-    fs.writeFileSync(fp, JSON.stringify({ c: it.c, n: it.n, bars }));
+    atomicWriteJSON(fp, JSON.stringify({ c: it.c, n: it.n, bars }));
     fresh++;
     if (fresh % 800 === 0) gitCommitShards(fresh);            // 每 800 只分批提交：再被封禁也不丢进度
   });
@@ -233,7 +234,7 @@ async function runDaily() {
     if (bars.length && last && bar[0] > last && bars.length > 700) bars.shift();   // 硬顶 700 条防无限膨胀
     bars.push(bar);
     shard.n = it.n || shard.n;
-    fs.writeFileSync(fp, JSON.stringify(shard));
+    atomicWriteJSON(fp, JSON.stringify(shard));
     added++; updated++;
   });
   console.log('══ K线增量完成: 追加 ' + added + ' · 当日无成交 ' + missing + ' · 已在档 ' + unchanged + ' · 失败 ' + errs.length + ' ══');

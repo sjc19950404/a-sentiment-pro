@@ -25,6 +25,7 @@
 //   node scripts/fetch_calendar.mjs --offline   # 只重算种子，不联网（CI 兜底/本地调试）
 
 import { writeFileSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import config from '../src/config.js';
 import { CALENDAR_FILE, SEED_CLOSED, validateCalendar, DAY_KIND, loadCalendar, calendarSummary } from '../src/calendar.js';
 import { bjDate } from '../src/time.js';
@@ -162,7 +163,7 @@ async function main() {
     process.exit(1);
   }
 
-  writeFileSync(OUT, JSON.stringify(payload, null, 1));
+  atomicWriteJSON(OUT, JSON.stringify(payload, null, 1));
   console.log(`[calendar] 已写出 ${OUT}`);
   console.log(`  来源 ${source} | 覆盖 ${payload.coveredFrom || '—'} → ${payload.coveredTo || '—'} | 年份 ${coveredYears.join(',')}`);
   console.log(`  交易日 ${trading.size} 个（调休补班）| 休市日 ${closed.size} 个 | 日K ${sessions.length} 条`);

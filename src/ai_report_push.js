@@ -21,6 +21,7 @@
 //   gateIntraday  —— 相位 live（09:30-15:00）才生成（盘中 tick 用）；
 //   gateWeekly    —— tradeDate 为本周最后交易日才生成（周五，或节前最后一天）。
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { atomicWriteJSON } from './fsutil.js';
 import { createHash } from 'node:crypto';
 import { dirname } from 'node:path';
 import { marketPhase } from './freshness.js';
@@ -92,7 +93,7 @@ export function loadPushState(file) {
 
 export function savePushState(file, state) {
   mkdirSync(dirname(file), { recursive: true });
-  writeFileSync(file, JSON.stringify(pruneState(state), null, 1) + '\n');
+  atomicWriteJSON(file, JSON.stringify(pruneState(state), null, 1) + '\n');
   return state;
 }
 

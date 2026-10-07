@@ -19,6 +19,7 @@ import { resolveHolidays } from '../src/calendar.js';
 import { buildSeatSeries, seatSeriesSummary, seatVerdict } from '../src/seats_daily.js';
 import { buildBreadthSeries, breadthSeriesSummary } from '../src/breadth.js';
 import { aggregateByCode } from '../src/lhb.js';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import { classifySeries, classifyRegime, detectDivergence, buildRegimeBlock, buildDivergenceBlock } from '../src/regime.js';
 import { buildDailyReport } from '../src/daily_report.js';
 import { llmSentimentBlock } from '../src/llm_sentiment.js';
@@ -250,16 +251,16 @@ for (const f of existing) {
   }
 }
 
-writeFileSync(INDEX, JSON.stringify(index), 'utf8');
+atomicWriteJSON(INDEX, JSON.stringify(index));
 console.log(`[split] 写出 archive-index.json ${kb(index)}KB`);
 for (const y of years) {
-  writeFileSync(join(DATA, shardName(y)), JSON.stringify(shards[y]), 'utf8');
+  atomicWriteJSON(join(DATA, shardName(y)), JSON.stringify(shards[y]));
   console.log(`[split] 写出 ${shardName(y)} ${kb(shards[y])}KB · ${shards[y].all_days.length} 天`);
 }
-writeFileSync(join(DATA, RECENT_FILE), JSON.stringify(recent), 'utf8');
+atomicWriteJSON(join(DATA, RECENT_FILE), JSON.stringify(recent));
 console.log(`[split] 写出 ${RECENT_FILE} ${kb(recent)}KB · 曲线 ${recent.days.length} 点 + 最新日 ${recent.latest ? recent.latest.trade_date : '—'}`);
 if (signals) {
-  writeFileSync(join(DATA, SIGNALS_FILE), JSON.stringify(signals), 'utf8');
+  atomicWriteJSON(join(DATA, SIGNALS_FILE), JSON.stringify(signals));
   console.log(`[split] 写出 ${SIGNALS_FILE} ${kb(signals)}KB · 最新日 + 动量 + 大盘告警 ${signals.marketAlerts ? signals.marketAlerts.length : 0} 条`);
 }
 const total = [index, recent, signals, ...years.map((y) => shards[y])]

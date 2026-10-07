@@ -2,7 +2,7 @@
 // 报告「昨日新晋题材存活率」需要昨日视角的 fresh 名单，老存档没有这个字段 → 回填。
 //
 // 用法：node scripts/backfill_prev_momentum.mjs [--dry]
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
 import { enrich } from '../src/pipeline.js';
 import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
 
@@ -34,6 +34,6 @@ a.signals.momentum = momObj;
 if (DRY) console.log('\n（--dry 未写盘）');
 else {
   // 必须重编码写回（直接 stringify 会把压缩档解压成 9.2MB 且丢掉 rc 的可读性）
-  writeArchiveSafely(FILE, a, { writeFileSync });
+  writeArchiveSafely(FILE, a, { writeFileSync, renameSync, unlinkSync });
   console.log('\n已写盘', FILE);
 }

@@ -40,7 +40,7 @@
 //   node scripts/backfill_lhb_history.mjs --months 12 --overwrite # 覆盖已有天
 //   node scripts/backfill_lhb_history.mjs --months 1 --no-ranks  # 不重算分位（调试用）
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, unlinkSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { fetchLhb, LhbNotPublishedError, recalcRanks } from '../src/sources.js';
@@ -258,7 +258,7 @@ async function main() {
     console.log('[backfill] 内容无变化，未写盘。');
     return;
   }
-  const info = writeArchiveSafely(ARCHIVE, out, { writeFileSync });
+  const info = writeArchiveSafely(ARCHIVE, out, { writeFileSync, renameSync, unlinkSync });
   console.log(`[backfill] 已写盘 ${ARCHIVE}：${mb(before)}MB → ${mb(after)}MB，`
     + `总天数 ${days.length} → ${merged.length}（码表 ${info.codes} 条 · 往返自检通过）`);
 }

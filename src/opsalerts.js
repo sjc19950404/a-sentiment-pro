@@ -12,6 +12,7 @@
 //   · 事件构造（opsEventsFromArchive）是纯函数可单测；副作用（fs / fetch）集中在
 //     writeOpsAlerts / pushOpsAlerts 两个出口，且都由调用方包 try-catch（双保险）。
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { atomicWriteJSON } from './fsutil.js';
 import path from 'node:path';
 
 // 事件严重度：error = 数据已坏（抓取失败/源失效）；warn = 可用但该看（滞后/补位超标）；info = 边界告知
@@ -110,7 +111,7 @@ export function writeOpsAlerts(events, file, { cap = 50, now = new Date().toISOS
   const merged = [...history, ...list].slice(-cap);
   const out = { updatedAt: now, count: merged.length, events: merged };
   mkdirSync(path.dirname(file), { recursive: true });
-  writeFileSync(file, JSON.stringify(out, null, 2) + '\n', 'utf8');
+  atomicWriteJSON(file, JSON.stringify(out, null, 2) + '\n');
   return { updatedAt: now, count: merged.length };
 }
 

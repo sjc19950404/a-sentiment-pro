@@ -19,7 +19,7 @@
 //       任何情况下都不给"版本优劣排序"的结论性表述，只给数字与置信度提示。
 //   这不是保守，是诚实：拿样本内相关去宣称公式优劣，就是自欺。
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
 import config from '../src/config.js';
 import { decodeArchive } from '../src/lhb_codec.js';
 import {
@@ -215,7 +215,7 @@ const payload = {
 // writeJsonStable：剥时间戳后内容未变则跳过——回归数字是确定性的，
 // 重跑不再产生纯 generatedAt diff（缩进 1 保持原格式，避免一次性全文件重排）
 const { writeJsonStable } = await import('../src/lhb_codec.js');
-const w = writeJsonStable(OUT, payload, { readFileSync, writeFileSync, indent: 1, log: '[version-regression]' });
+const w = writeJsonStable(OUT, payload, { readFileSync, writeFileSync, renameSync, unlinkSync, indent: 1, log: '[version-regression]' });
 console.log('[version-regression]', w.skipped ? '内容未变，跳过写盘' : '已写出', OUT);
 console.log('  主样本', sampleDays.length, '天（有次日收益', nU, '天）|', sampleDays[0].trade_date, '→', sampleDays[sampleDays.length - 1].trade_date);
 for (const k of keys) {

@@ -28,7 +28,8 @@
 //                                                     #   填值后必须全档重算一次才能恢复
 //                                                     #   「磁盘 = recalcAll 规范形」的幂等不变量）
 import dns from 'node:dns';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
+import { readFileSync, writeFileSync, renameSync, unlinkSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodeArchive, writeArchiveSafely, appendNote } from '../src/lhb_codec.js';
@@ -65,7 +66,7 @@ async function getKline(sym, minLen = 380) {
       const k = rows.map((r) => ({ date: String(r[0]), open: +r[1], close: +r[2] }))
         .filter((x) => Number.isFinite(x.open) && x.open > 0 && Number.isFinite(x.close) && x.close > 0);
       mkdirSync(KDIR, { recursive: true });
-      writeFileSync(cache, JSON.stringify(k), 'utf8');
+      atomicWriteJSON(cache, JSON.stringify(k));
       return k;
     } catch (e) {
       if (att === 2) throw new Error(`${sym} 指数日K获取失败: ${e.message}`);
@@ -179,7 +180,7 @@ arc.meta.note = appendNote(arc,
   + '回测/回归的次日收益原料自此覆盖全档（此前 208 天缺失被按 0 收益回退，见 2026-10-05 诊断事故）。'
   + '派生字段经 recalcAll 全档重算（industry_relative 由中位数降级恢复 vs 上证双基准）。');
 
-writeArchiveSafely(MAIN, arc, { writeFileSync });
+writeArchiveSafely(MAIN, arc, { writeFileSync, renameSync, unlinkSync });
 console.log(`[idx-backfill] ✔ 已写入 ${written} 天新增（累计回填 ${backfilledTotal} 天），主档 ${MAIN}`);
 
 // 切片重建（主档变了，切片必须同源——与 backfill_gaps 同款 spawn）

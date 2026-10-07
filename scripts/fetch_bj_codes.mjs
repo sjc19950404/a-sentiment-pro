@@ -1,6 +1,7 @@
 // 北交所存活代码枚举：qt.gtimg 批量行情探测（43/83/87/92 段）+ 腾讯 bj K 线可达性
 // 产物：data/bt_bj_codes.json = [["bj430047","代码名"],...]
 import { writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -53,5 +54,5 @@ for (const [a, b] of ranges) {
 }
 // 去重
 const map = new Map(live);
-writeFileSync(OUT, JSON.stringify([...map.entries()], null, 1));
+atomicWriteJSON(OUT, JSON.stringify([...map.entries()], null, 1));
 console.log(`北交所存活: ${map.size} 只 → ${OUT}`);

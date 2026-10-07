@@ -54,6 +54,7 @@
 //   node scripts/rollback_track.mjs --apply --trigger manual --why "…"
 //   node scripts/rollback_track.mjs --restore --why "…"[ --force]
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -93,7 +94,7 @@ function readState() {
 function writeState(st) {
   st.updatedAt = ts();
   mkdirSync(PAPER, { recursive: true });
-  writeFileSync(STATE_FILE, JSON.stringify(st, null, 2) + '\n', 'utf8');
+  atomicWriteJSON(STATE_FILE, JSON.stringify(st, null, 2) + '\n');
 }
 const state = readState();
 const activeTrack = state?.activeTrack === 'A_fallback' ? 'A_fallback' : 'A';
@@ -114,7 +115,7 @@ function ensureSnapshot() {
   }
   if (!snap) {
     snap = { commit: FREEZE_COMMIT, extractedAt: ts(), params };
-    writeFileSync(SNAP_FILE, JSON.stringify(snap, null, 2) + '\n', 'utf8');
+    atomicWriteJSON(SNAP_FILE, JSON.stringify(snap, null, 2) + '\n');
     console.log(`[track] A_fallback 快照已提取冻结 → ${path.relative(ROOT, SNAP_FILE)}（@${FREEZE_COMMIT}）`);
   }
   return snap;
@@ -176,7 +177,7 @@ function writeMirror(snap, fallback) {
   // 文案唯一出处 src/dual_track.js::buildTrackNote（E2E 终测抓出「模板六要素、
   // 调用只传两参 → since/why 落 [未记录]」的传参缺口后收口）
   sig.activeTrackNote = buildTrackNote(fallback, snap.commit);
-  writeFileSync(SIG_FILE, JSON.stringify(sig, null, 2) + '\n', 'utf8');
+  atomicWriteJSON(SIG_FILE, JSON.stringify(sig, null, 2) + '\n');
 }
 function clearMirror() {
   if (!existsSync(SIG_FILE)) return;
@@ -184,7 +185,7 @@ function clearMirror() {
   if (!('active_track' in sig) && !('activeTrackNote' in sig)) return;
   delete sig.active_track;
   delete sig.activeTrackNote;
-  writeFileSync(SIG_FILE, JSON.stringify(sig, null, 2) + '\n', 'utf8');
+  atomicWriteJSON(SIG_FILE, JSON.stringify(sig, null, 2) + '\n');
 }
 
 // ── 次一交易日（calendar 判定；找不到 → null + 人工确认）──
@@ -297,7 +298,7 @@ if (APPLY) {
 
   // 回滚日志（规格第 3 条：触发原因 / 回滚前仓位 / 回滚后目标仓位）
   mkdirSync(LOGS, { recursive: true });
-  writeFileSync(path.join(ROOT, logFile), JSON.stringify({
+  atomicWriteJSON(path.join(ROOT, logFile), JSON.stringify({
     at: ts(), event: 'rollback', who,
     trigger: { key: trigger, detail: triggerDetail, evaluatedAt: ev.lastDate, t1: ev.t1.value, t2: ev.t2.value, t3: ev.t3.value },
     why: whyArg.trim(),
@@ -370,7 +371,7 @@ if (RESTORE) {
   }
 
   mkdirSync(LOGS, { recursive: true });
-  writeFileSync(path.join(ROOT, logFile), JSON.stringify({
+  atomicWriteJSON(path.join(ROOT, logFile), JSON.stringify({
     at: ts(), event: 'restore', who, why: whyArg.trim(),
     readiness: rr, forced: !rr.ready && FORCE,
     action: { from: 'A_fallback', to: 'A', stateFile: path.relative(ROOT, STATE_FILE) },

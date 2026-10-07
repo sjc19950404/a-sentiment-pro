@@ -6,6 +6,7 @@
 // 产物：data/bt_industry.json = [{code, name, bars: [[YYYYMMDD, close], ...]}, ...]
 // 用法：node scripts/fetch_industry_history.mjs   （幂等：缓存存在即跳过，--force 强制重抓）
 import { writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -68,5 +69,5 @@ async function worker() {
 }
 await Promise.all(Array.from({ length: WORKERS }, () => worker()));
 if (out.length < 50) { console.error(`[industry] 成功过少: ${out.length}/${boards.length}`); process.exit(1); }
-writeFileSync(OUT, JSON.stringify(out));
+atomicWriteJSON(OUT, JSON.stringify(out));
 console.log(`[industry] 完成: ${out.length} 板块 · 失败 ${fail} → ${OUT}`);

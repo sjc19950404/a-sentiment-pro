@@ -16,6 +16,7 @@
 //   权威口径、themeList 去噪题材+强度分、lhb[] 五元组合并、hot[]、industry[]、indexes）+ build 派生
 //   summary.yzt_chg（昨日涨停组合今日均涨幅，由 K 线分片计算——PRO 无此源，派生而非编数）。
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import config from '../src/config.js';
@@ -234,7 +235,7 @@ mkdirSync(distDir, { recursive: true });
 writeFileSync(OUT, tpl, 'utf8');
 // board_rank 种子增量写回（当日 industry[] 已并入——CI 提交后历史滚动积累；测试模式禁写）
 if (!process.env.SENT_NO_WRITEBACK) {
-  writeFileSync(path.join(ROOT, 'data', 'board_rank.json'), JSON.stringify(boardRank) + '\n', 'utf8');
+  atomicWriteJSON(path.join(ROOT, 'data', 'board_rank.json'), JSON.stringify(boardRank) + '\n');
 }
 const lastDate = Object.keys(briefs).sort().pop();
 writeFileSync(path.join(distDir, 'brief-latest.txt'), briefs[lastDate] + '\n', 'utf8');

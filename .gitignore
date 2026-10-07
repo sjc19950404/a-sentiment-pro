@@ -51,3 +51,6 @@ data/bt_kline_fetch.err.log
 
 .dev.vars
 .wrangler/
+
+# H-4 原子写（2026-10-07）：极端场景（进程在写 tmp 后、清理前被 SIGKILL）的残留临时档
+*.tmp

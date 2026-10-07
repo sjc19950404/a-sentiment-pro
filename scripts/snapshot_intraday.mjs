@@ -29,6 +29,7 @@
 //   node scripts/snapshot_intraday.mjs --force    忽略相位判定（测试用）
 //   node scripts/snapshot_intraday.mjs --at <iso> 按指定时刻判定相位（测试用）
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { atomicWriteJSON } from '../src/fsutil.js';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import config from '../src/config.js';
@@ -129,7 +130,7 @@ if (!anyOk) {
   if (prev) {
     prev.lastFailedAt = now.toISOString();
     prev.sourcesFailed = errs;
-    if (!DRY) writeFileSync(OUT, JSON.stringify(prev, null, 2), 'utf8');
+    if (!DRY) atomicWriteJSON(OUT, JSON.stringify(prev, null, 2));
     log('已仅追加失败留痕，保留上次成功快照（' + (prev.capturedAtBJ || '?') + '）。');
   } else {
     log('无历史快照且本次全失败 → 不生成文件。');
@@ -147,5 +148,5 @@ if (snapshot.pools?.seal_pct != null) log(`盘中封板率 ${snapshot.pools.seal
 
 if (DRY) { log('（--dry：仅预览，未写盘）'); process.exit(0); }
 mkdirSync(dirname(OUT), { recursive: true });
-writeFileSync(OUT, JSON.stringify(snapshot, null, 2), 'utf8');
+atomicWriteJSON(OUT, JSON.stringify(snapshot, null, 2));
 log('已写回', OUT, `（${(JSON.stringify(snapshot).length / 1024).toFixed(1)} KB）`);
