@@ -1,9 +1,14 @@
 // 主线识别动态阈值单测（2026-10-07）：computeDynamicThreshold 纯函数 + selectMainLine
 // 阈值过滤行为。覆盖六个规格场景：充足/不足样本、全零历史、零标准差、单日突增、
 // 连续无主线（阈值自适应下调），另锁配置读取与降级口径。
+// 第二步（同日）追加：总阀门三纯函数（assessMarketState / assessSentimentState /
+// applyMainLineGating）的六个规格场景。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeDynamicThreshold, selectMainLine } from '../src/backtest.js';
+import {
+  computeDynamicThreshold, selectMainLine,
+  assessMarketState, assessSentimentState, applyMainLineGating,
+} from '../src/backtest.js';
 import config from '../src/config.js';
 
 const CFG = config.mainLine;
@@ -109,4 +114,84 @@ test('接入形态：computeDynamicThreshold 产物可直接喂 selectMainLine�
   const day = { trade_date: '2026-10-08', themes: { 强题材: 9, 弱题材: 3 }, hot: [], industry: [] };
   const r = selectMainLine(day, 2, th);
   assert.equal(r.mains.map((m) => m.theme).join(), '强题材'); // 9 ≥ 8 且 density 0.75 ≥ 0.2
+});
+
+// ─────────────────── 总阀门（第二步）：三纯函数的规格场景 ───────────────────
+
+// 市场状态基础判定矩阵（供下面场景复用）：近10日成交额均值 = 100
+const VOL10 = Array.from({ length: 10 }, () => 100);
+const MK = (volume, price, ma) => ({ volume, index_price: price, index_ma: ma });
+
+test('总阀门·市场状态：量能×指数双弱 → weak；仅其一 → normal；均强 → strong', () => {
+  assert.equal(assessMarketState(MK(70, 2900, 3000), VOL10, CFG), 'weak');    // 70 < 100×0.8 且点位 < 均线
+  assert.equal(assessMarketState(MK(70, 3100, 3000), VOL10, CFG), 'normal');  // 仅量能弱
+  assert.equal(assessMarketState(MK(120, 3100, 3000), VOL10, CFG), 'strong'); // 均不弱
+});
+
+test('总阀门·市场状态：index_below_ma=false → 指数条件不参与，量能弱单独即 weak', () => {
+  const cfgOff = { ...CFG, market_weak_index_below_ma: false };
+  assert.equal(assessMarketState(MK(70, 2900, 3000), VOL10, cfgOff), 'weak');
+  assert.equal(assessMarketState(MK(120, 2900, 3000), VOL10, cfgOff), 'strong');
+});
+
+test('总阀门·情绪状态：跌 ≤ -5 → retreating；涨 > 3 → rising；其余 stable（边界逐位）', () => {
+  const yMain = { theme: '旧题材', stocks: [{ code: '600000', name: '龙头', changePct: 6 }] };
+  assert.equal(assessSentimentState(yMain, { changePct: -5 }, CFG), 'retreating');   // 恰 -5 ≤ -5
+  assert.equal(assessSentimentState(yMain, { changePct: -4.99 }, CFG), 'stable');
+  assert.equal(assessSentimentState(yMain, { changePct: 3.01 }, CFG), 'rising');
+  assert.equal(assessSentimentState(yMain, { changePct: 3 }, CFG), 'stable');       // 恰 3 不算 rising
+});
+
+test('总阀门·场景①：市场强势 + 情绪上升 → 阈值不变，输出正常（maxOutput=null 沿用 topN）', () => {
+  const th = computeDynamicThreshold(mk(60, 8, 0.2), CFG);
+  const g = applyMainLineGating(th, { market_state: 'strong', sentiment_state: 'rising' }, CFG);
+  assert.deepEqual(
+    { up: g.threshold.up_count_threshold, dn: g.threshold.density_threshold },
+    { up: th.up_count_threshold, dn: th.density_threshold });
+  assert.equal(g.maxOutput, null);
+});
+
+test('总阀门·场景②：市场弱势 → up 阈值 +2，max_output 压到 1', () => {
+  const th = computeDynamicThreshold(mk(60, 8, 0.2), CFG);
+  const g = applyMainLineGating(th, { market_state: 'weak', sentiment_state: 'stable' }, CFG);
+  assert.equal(g.threshold.up_count_threshold, th.up_count_threshold + CFG.weak_mode_threshold_boost);
+  assert.equal(g.threshold.density_threshold, th.density_threshold); // density 不动
+  assert.equal(g.maxOutput, CFG.weak_mode_max_output);
+});
+
+test('总阀门·场景③：老龙头退潮 → density 阈值 +0.05，up 阈值与输出上限不动', () => {
+  const th = computeDynamicThreshold(mk(60, 8, 0.2), CFG);
+  const g = applyMainLineGating(th, { market_state: 'normal', sentiment_state: 'retreating' }, CFG);
+  assert.ok(Math.abs(g.threshold.density_threshold - (th.density_threshold + CFG.dragon_retreat_density_boost)) < 1e-12);
+  assert.equal(g.threshold.up_count_threshold, th.up_count_threshold);
+  assert.equal(g.maxOutput, null);
+});
+
+test('总阀门·场景④：市场弱势 + 老龙头退潮 → 双重收紧（up +2 且 density +0.05）', () => {
+  const th = computeDynamicThreshold(mk(60, 8, 0.2), CFG);
+  const g = applyMainLineGating(th, { market_state: 'weak', sentiment_state: 'retreating' }, CFG);
+  assert.equal(g.threshold.up_count_threshold, th.up_count_threshold + CFG.weak_mode_threshold_boost);
+  assert.ok(Math.abs(g.threshold.density_threshold - (th.density_threshold + CFG.dragon_retreat_density_boost)) < 1e-12);
+  assert.equal(g.maxOutput, CFG.weak_mode_max_output);
+});
+
+test('总阀门·场景⑤：无昨日主线数据 → 情绪默认 stable，不报错', () => {
+  assert.equal(assessSentimentState(null, { changePct: -9 }, CFG), 'stable');
+  assert.equal(assessSentimentState({ theme: 'x', stocks: [] }, { changePct: -9 }, CFG), 'stable');
+  // 有主线龙头但今日无行情 → 同样 stable
+  assert.equal(assessSentimentState({ stocks: [{ code: '600000' }] }, null, CFG), 'stable');
+});
+
+test('总阀门·场景⑥：历史成交额不足 10 日 → 市场状态默认 normal，不报错', () => {
+  assert.equal(assessMarketState(MK(70, 2900, 3000), [100, 90, 80], CFG), 'normal');
+  assert.equal(assessMarketState(MK(70, 2900, 3000), [], CFG), 'normal');
+  assert.equal(assessMarketState(null, null, CFG), 'normal'); // 极端：全空入参也不炸
+});
+
+test('总阀门·边界：density 调节 clamp ≤1（占比语义）；gating 不改原对象（纯函数）', () => {
+  const th = { up_count_threshold: 5, density_threshold: 0.98, mode: 'dynamic' };
+  const g = applyMainLineGating(th, { market_state: 'normal', sentiment_state: 'retreating' }, CFG);
+  assert.equal(g.threshold.density_threshold, 1); // 0.98 + 0.05 → clamp 1
+  assert.equal(th.density_threshold, 0.98);        // 原对象不动
+  assert.equal(g.threshold.mode, 'dynamic');       // 附加字段保留（前端披露用）
 });

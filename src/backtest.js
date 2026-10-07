@@ -371,6 +371,95 @@ export function computeDynamicThreshold(historyData, config) {
 }
 
 /**
+ * 总阀门①：市场状态评估（纯函数，2026-10-07 第二步）。
+ * 量能弱势 = 今日成交额 < 过去10日均值 × market_weak_volume_ratio；
+ * 指数弱势 = 指数点位 < 均线（接入层负责把真实数据换算成这两个数值——archive 无点位
+ * 序列，生产接入以「近10日累计涨跌 < 0」为趋势代理，见 scripts/backtest.mjs）。
+ * 两者皆弱 → 'weak'；仅其一 → 'normal'；均不弱 → 'strong'。
+ * market_weak_index_below_ma=false → 指数条件不参与，量能弱势单独即判 weak。
+ * 防御：历史成交额不足 10 条或数值非法 → 'normal'（不猜、不报错）。
+ *
+ * @param {{volume?: number, index_price?: number, index_ma?: number}} todayMarketData
+ * @param {number[]} historyMarketData 过去10日成交额
+ * @param {{market_weak_volume_ratio?: number, market_weak_index_below_ma?: boolean}} config
+ * @returns {'strong' | 'normal' | 'weak'}
+ */
+export function assessMarketState(todayMarketData, historyMarketData, config) {
+  const ratio = +config?.market_weak_volume_ratio > 0 ? +config.market_weak_volume_ratio : 0.8;
+  const useIndex = config?.market_weak_index_below_ma !== false; // 缺省 true：指数条件参与
+  const hist = Array.isArray(historyMarketData)
+    ? historyMarketData.filter((v) => Number.isFinite(+v)) : [];
+  const todayVol = +todayMarketData?.volume;
+  // 历史不足 10 条 → 默认 normal（规格：不报错、不猜）
+  if (hist.length < 10 || !Number.isFinite(todayVol)) return 'normal';
+  const avg10 = hist.reduce((a, b) => a + b, 0) / hist.length;
+  const volWeak = todayVol < avg10 * ratio;
+  const idxWeak = Number.isFinite(+todayMarketData.index_price)
+    && Number.isFinite(+todayMarketData.index_ma)
+    && +todayMarketData.index_price < +todayMarketData.index_ma;
+  if (!useIndex) return volWeak ? 'weak' : 'strong'; // 指数条件关闭 → 退化单条件判定
+  if (volWeak && idxWeak) return 'weak';
+  if (volWeak || idxWeak) return 'normal';
+  return 'strong';
+}
+
+/**
+ * 总阀门②：情绪状态评估（纯函数）。看昨日老主线龙头今日表现：
+ * 跌幅 ≤ sentiment_old_dragon_drop → 'retreating'（老龙头退潮）；
+ * 涨幅 > sentiment_rise_pct → 'rising'；其余 → 'stable'。
+ * 防御：无昨日主线 / 龙头无成分股 / 今日找不到该龙头行情 → 'stable'（规格：不报错）。
+ *
+ * @param {{stocks?: {code?: string, name?: string, changePct?: number}[]}?} yesterdayMainLine
+ *   昨日主线对象（selectMainLine 输出的单条 main；龙头 = stocks[0]，接入层已按涨幅降序）。
+ * @param {{changePct?: number}?} todayStockData 今日该龙头行情（changePct 单位 %）。
+ * @param {{sentiment_old_dragon_drop?: number, sentiment_rise_pct?: number}} config
+ * @returns {'rising' | 'stable' | 'retreating'}
+ */
+export function assessSentimentState(yesterdayMainLine, todayStockData, config) {
+  const leader = yesterdayMainLine?.stocks?.[0];
+  const chg = +todayStockData?.changePct;
+  if (!leader || !Number.isFinite(chg)) return 'stable'; // 无数据不猜（规格默认）
+  const drop = Number.isFinite(+config?.sentiment_old_dragon_drop)
+    ? +config.sentiment_old_dragon_drop : -5;
+  const rise = Number.isFinite(+config?.sentiment_rise_pct) ? +config.sentiment_rise_pct : 3;
+  if (chg <= drop) return 'retreating';
+  if (chg > rise) return 'rising';
+  return 'stable';
+}
+
+/**
+ * 总阀门③：双状态 → 阈值/输出上限调节（纯函数，不碰调用方对象）。
+ * market_state==='weak' → up_count 阈值 + weak_mode_threshold_boost，输出上限压到 weak_mode_max_output；
+ * sentiment_state==='retreating' → density 阈值 + dragon_retreat_density_boost（clamp ≤1，占比语义）。
+ * 其余状态不动阈值。strong/rising/stable → 原样返回（maxOutput=null 表示不限制，沿用调用方 topN）。
+ *
+ * @param {{up_count_threshold: number, density_threshold: number}} threshold computeDynamicThreshold 产物
+ * @param {{market_state: string, sentiment_state: string}} states
+ * @param {{weak_mode_threshold_boost?: number, weak_mode_max_output?: number,
+ *          dragon_retreat_density_boost?: number}} config
+ * @returns {{threshold: object, maxOutput: number | null}}
+ */
+export function applyMainLineGating(threshold, states, config) {
+  const up0 = +threshold?.up_count_threshold;
+  const dn0 = +threshold?.density_threshold;
+  let up = Number.isFinite(up0) ? up0 : 0;
+  let dn = Number.isFinite(dn0) ? dn0 : 0;
+  let maxOutput = null;
+  if (states?.market_state === 'weak') {
+    const boost = +config?.weak_mode_threshold_boost > 0 ? +config.weak_mode_threshold_boost : 2;
+    up += boost;
+    const cap = Number.isInteger(+config?.weak_mode_max_output) && +config.weak_mode_max_output >= 1
+      ? +config.weak_mode_max_output : 1;
+    maxOutput = cap;
+  }
+  if (states?.sentiment_state === 'retreating') {
+    const db = +config?.dragon_retreat_density_boost > 0 ? +config.dragon_retreat_density_boost : 0.05;
+    dn = Math.min(1, dn + db);
+  }
+  return { threshold: { ...threshold, up_count_threshold: up, density_threshold: dn }, maxOutput };
+}
+
+/**
  * 当日主线。topN 取题材榜前 N；threshold（computeDynamicThreshold 产物）存在时
  * 先过滤（涨停家数 ≥ up_count_threshold 且密集度 ≥ density_threshold）再取前 N，
  * 全部不达标 → mains 为空（"今日无主线"，由调用方如实披露，不冒充）。

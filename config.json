@@ -154,14 +154,21 @@
     }
   },
   "mainLine": {
-    "_note": "主线识别动态阈值（2026-10-07）：题材须达「近 lookback_days 个交易日最强题材分布的 均值 + sigma_multiplier×标准差」才算当日主线（废除无条件取 topN）。历史样本不足 min_sample_days 条时降级 fixedFallback（固定阈值，取页面既有规格口径：主线涨停 ≥6 只为强势）。历史窗口不含当日（用过去分布定今日门槛，防当日突增自我抬高门槛把当日主线滤掉）。",
+    "_note": "主线识别动态阈值（2026-10-07）：题材须达「近 lookback_days 个交易日最强题材分布的 均值 + sigma_multiplier×标准差」才算当日主线（废除无条件取 topN）。历史样本不足 min_sample_days 条时降级 fixedFallback（固定阈值，取页面既有规格口径：主线涨停 ≥6 只为强势）。历史窗口不含当日（用过去分布定今日门槛，防当日突增自我抬高门槛把当日主线滤掉）。第二步（同日）加「总阀门」：assessMarketState（量能×指数趋势）与 assessSentimentState（昨日老主线龙头今日表现）双状态调节阈值与输出上限——市场弱势时门槛上调且最多出 weak_mode_max_output 条主线；老龙头退潮时密集度门槛上调（接力题材须更强的抱团证据）。sentiment_rise_pct 超出规格清单但遵循「参数不硬编码」总纲（涨幅 >3% 判 rising 的 3 也入配置）。「指数在均线下方」因 archive 无指数点位序列，接入层以「近10日累计涨跌 < 0」为趋势代理（口径见 scripts/backtest.mjs），纯函数仍收数值保持可测。",
     "lookback_days": 60,
     "sigma_multiplier": 1.0,
     "min_sample_days": 20,
     "fixedFallback": {
       "up_count_threshold": 6,
       "density_threshold": 0.1
-    }
+    },
+    "market_weak_volume_ratio": 0.8,
+    "market_weak_index_below_ma": true,
+    "sentiment_old_dragon_drop": -5,
+    "sentiment_rise_pct": 3,
+    "weak_mode_threshold_boost": 2,
+    "weak_mode_max_output": 1,
+    "dragon_retreat_density_boost": 0.05
   },
   "missingPolicy": "proxy",
   "minThemeStocksGlobal": 2,

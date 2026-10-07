@@ -9,7 +9,8 @@ import { classifySeries } from '../src/regime.js';
 import { bandFor } from '../src/position_policy.js';
 import {
   BASE_PARAMS, V52_PARAMS, DEFAULT_TH,
-  scoreWith, poolBacktest, paretoFrontier, rollingTest, selectMainLine, computeDynamicThreshold, sortByRank,
+  scoreWith, poolBacktest, paretoFrontier, rollingTest, selectMainLine, computeDynamicThreshold,
+  assessMarketState, assessSentimentState, applyMainLineGating, sortByRank,
 } from '../src/backtest.js';
 import { parallelGridSearch, parallelRollingTest, defaultWorkers } from '../src/grid_parallel.js';
 
@@ -172,7 +173,39 @@ const mlHistory = days.slice(0, -1).map((d) => {
   return { date: d.trade_date, theme_up_count: maxCnt, theme_density: maxCnt / tot };
 });
 const mlThreshold = computeDynamicThreshold(mlHistory, config.mainLine);
-const mainLine = selectMainLine(latest, 2, mlThreshold);
+// ── 总阀门（2026-10-07 第二步）：市场/情绪双状态调节主线门槛与输出上限 ──
+// ① 市场状态：量能 = summary.amount_yi（两市成交额，亿元）；「指数在均线下方」因
+//    archive 无指数点位序列，以「近10日上证累计涨跌 < 0」为趋势代理（index_price=
+//    累计涨跌、index_ma=0），口径限制在 config.json::mainLine._note 如实披露。
+//    防御：历史不足 10 日或数值缺失 → assessMarketState 内部默认 'normal'。
+const GATE_IDX = '上证指数';
+const gateWin = days.slice(-11, -1); // 昨日及以前共 10 日（不含当日）
+const volHist = gateWin.map((d) => +d.summary?.amount_yi);
+const cumIdx = gateWin.reduce((a, d) => a + (+(d.indexes?.[GATE_IDX]) || 0), 0);
+const marketState = assessMarketState(
+  { volume: +latest.summary?.amount_yi, index_price: cumIdx, index_ma: 0 },
+  volHist, config.mainLine);
+// ② 情绪状态：昨日主线（旧口径排序第一，无阈值——「昨日龙头是谁」是事实不是门槛）
+//    的最强成分股 = 老龙头；看它今日涨跌。无昨日 / 今日 hot 榜找不到该股 → 'stable'。
+const yday = days[days.length - 2];
+let sentimentState = 'stable';
+if (yday) {
+  const yMain = selectMainLine(yday, 1).mains[0] || null;
+  const yLeader = yMain?.stocks?.[0] || null;
+  const yQuote = yLeader ? (latest.hot || []).find((h) => String(h.code) === String(yLeader.code)) : null;
+  sentimentState = assessSentimentState(yMain, yQuote ? { changePct: yQuote.change_pct } : null, config.mainLine);
+}
+// ③ 调节：weak → up 阈值上调 + 输出上限压缩；retreating → density 阈值上调。
+//    selectMainLine 本身不动（纯排序逻辑），只喂调节后的阈值与 topN。
+const gated = applyMainLineGating(mlThreshold, { market_state: marketState, sentiment_state: sentimentState }, config.mainLine);
+const mainLineTopN = gated.maxOutput != null ? Math.min(2, gated.maxOutput) : 2;
+const mainLine = selectMainLine(latest, mainLineTopN, gated.threshold);
+mainLine.gating = {
+  market_state: marketState, sentiment_state: sentimentState,
+  max_output: mainLineTopN,
+  base_up_count_threshold: mlThreshold.up_count_threshold,
+  base_density_threshold: mlThreshold.density_threshold,
+};
 const nGrid = scan.length; // 网格行数 = weightGrid 组合数（免再生成一遍 78k 对象只为计数）
 
 // ── V5.3 动态仓位对照（P1-2：市场状态 → 仓位区间，情绪打分仍是信号主路径） ──

@@ -92,6 +92,24 @@ if (cfg.mainLine != null) {
     || !Number.isFinite(+fb.density_threshold) || +fb.density_threshold < 0 || +fb.density_threshold > 1) {
     throw new Error('[config] mainLine.fixedFallback 必须含 up_count_threshold≥0 与 density_threshold∈[0,1]');
   }
+  // 总阀门（第二步，同日）：缺键不炸（引擎有默认语义），但给了就必须给对。
+  if (cfg.mainLine.market_weak_volume_ratio != null
+    && (!Number.isFinite(+cfg.mainLine.market_weak_volume_ratio) || +cfg.mainLine.market_weak_volume_ratio <= 0)) {
+    throw new Error('[config] mainLine.market_weak_volume_ratio 必须为 >0 的有限数');
+  }
+  if (cfg.mainLine.market_weak_index_below_ma != null && typeof cfg.mainLine.market_weak_index_below_ma !== 'boolean') {
+    throw new Error('[config] mainLine.market_weak_index_below_ma 必须为布尔');
+  }
+  const ML_GATE = ['sentiment_old_dragon_drop', 'sentiment_rise_pct', 'weak_mode_threshold_boost', 'dragon_retreat_density_boost'];
+  for (const k of ML_GATE) {
+    if (cfg.mainLine[k] != null && !Number.isFinite(+cfg.mainLine[k])) {
+      throw new Error(`[config] mainLine.${k} 必须为有限数`);
+    }
+  }
+  if (cfg.mainLine.weak_mode_max_output != null
+    && (!Number.isInteger(+cfg.mainLine.weak_mode_max_output) || +cfg.mainLine.weak_mode_max_output < 1)) {
+    throw new Error('[config] mainLine.weak_mode_max_output 必须为 ≥1 的整数');
+  }
 }
 
 // ── 冻结与组装 ──────────────────────────────────────────────────────────────
