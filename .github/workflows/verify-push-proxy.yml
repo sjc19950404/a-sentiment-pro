@@ -2,6 +2,8 @@
 # 背景：本机网络到 workers.dev / wrangler tail 通道均被阻断（DNS 污染 + SNI），
 #   改从 GitHub runner（海外网络，也是 S3-1 接入后的真实调用方）验证与诊断。
 #   2026-10-07 部署收尾用；触发：本文件被 push 即跑；删除提交带 [skip ci]。
+#   本轮：OPS_WEBHOOK secret 曾被 PowerShell 管道 BOM 污染（Invalid URL → 502），
+#   已用无 BOM 输入重传，本 run 为修复后重验。
 name: verify-push-proxy
 on:
   push:
