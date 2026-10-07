@@ -20,7 +20,7 @@ workers_dev = true
 
 [[kv_namespaces]]
 binding = "PUSH_STATE"
-id = "00000000000000000000000000000000"  # 占位：部署前 wrangler kv namespace create 替换
+id = "328b5211480d4d0b839e660c4e4afb44"  # 2026-10-07 创建（title: PUSH_STATE，生产命名空间）
 
 [vars]
 # ALLOWED_ORIGIN = "https://sjc19950404.github.io"
