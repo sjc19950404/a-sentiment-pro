@@ -18,20 +18,31 @@ const nf = (v) => (v == null || v === '') ? '—' : (Number.isFinite(+v) ? Strin
 // src/seats.js 是 ESM 纯函数（席位解析的唯一来源），index.html 用模块脚本挂到 window.Seats。
 // app.js 是经典脚本、不能 import，模块脚本又是异步加载的，所以这里做一层薄桥接：
 // 已就绪就直接用；尚未就绪则用**同口径**的内联降级实现，绝不让抽屉因为时序问题白屏。
-// 两组实现只在「是否有 window.Seats」上分叉，逻辑逐字对齐，Node 侧测试覆盖的是模块本体。
+// 两组实现只在「是否有 window.Seats」上分叉，读取口径（含类别汇总行过滤）逐字对齐，
+// Node 侧测试覆盖的是模块本体；副本↔主模块的行为一致性由 test/seats_parity.test.mjs 守卫。
 function seatsMod() {
   if (window.Seats) return window.Seats;
   // 降级：与 src/seats.js 同逻辑的最小实现（仅读取与身份解析，够抽屉用）
   const normPair = (p) => (Array.isArray(p)
     ? [String(p[0] ?? ''), Number(p[1]) || 0]
     : [String(p?.name ?? ''), Number(p?.v ?? p?.amount ?? 0) || 0]);
+  // H-3（2026-10-07）：类别汇总行过滤。东财席位明细在部分票（区间榜尤其）里混有
+  // 「自然人 / 机构 / 中小投资者…」这类交易所投资者结构统计行——它们不是席位，金额
+  // 与整票成交同阶。此前降级副本漏了这道过滤（主模块 src/seats.js 一直有）：模块脚本
+  // 未就绪的窗口期打开抽屉，这些污染行会顶着 23 倍虚增的金额直接上屏。词表与判据
+  // （全等匹配 + trim）和 src/seats.js 的 AGGREGATE_ROW_NAMES / isAggregateSeatRow 逐字一致。
+  const AGGREGATE_ROW_NAMES = new Set([
+    '自然人', '机构', '中小投资者', '其他自然人', '其他机构', '专业机构', '个人投资者', '非金融类上市公司',
+  ]);
+  const isAggregateSeatRow = (name) => AGGREGATE_ROW_NAMES.has(String(name || '').trim());
+  const keepSeat = ([nm]) => !isAggregateSeatRow(nm);
   return {
     seatsOf(detailMap, code) {
       const raw = detailMap && code != null ? detailMap[code] : null;
       if (!raw) return { b: [], s: [], hasSell: false };
-      if (Array.isArray(raw)) return { b: raw.map(normPair), s: [], hasSell: false };
-      const b = Array.isArray(raw.b) ? raw.b.map(normPair) : [];
-      const s = Array.isArray(raw.s) ? raw.s.map(normPair) : [];
+      if (Array.isArray(raw)) return { b: raw.map(normPair).filter(keepSeat), s: [], hasSell: false };
+      const b = Array.isArray(raw.b) ? raw.b.map(normPair).filter(keepSeat) : [];
+      const s = Array.isArray(raw.s) ? raw.s.map(normPair).filter(keepSeat) : [];
       return { b, s, hasSell: s.length > 0 };
     },
     sideStats(pairs) {
