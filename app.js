@@ -3456,6 +3456,8 @@ async function checkUpdate(manual) {
 // （差 30 秒安全边际），否则轮询 tick 时缓存恰好未过期，明细隔轮才刷新（见其注释）。
 const POLL_MS = 5 * 60 * 1000; // 每 5 分钟自动检查一次云端档是否更新
 checkUpdate(false);
+// 中危1（2026-10-07）审计：本页非 SPA（无路由/组件销毁/模块重载），经典脚本仅执行
+// 一次——此轮询为页面级单例，随页面卸载由平台整体回收，无需 clearInterval。
 setInterval(() => checkUpdate(false), POLL_MS);
 $('refreshBtn').addEventListener('click', () => checkUpdate(true));
 

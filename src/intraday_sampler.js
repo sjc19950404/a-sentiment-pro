@@ -130,8 +130,14 @@ async function loadAnchor() {
 }
 
 // ── 自启动 ──
+// ── 自启动 ──
 loadAnchor();
-setInterval(() => { loadAnchor(); tick(); }, TICK_MS);
+// 中危1（2026-10-07）审计：定时器清理策略说明。本项目是经典整页文档（非 SPA：
+// 无路由 / 无组件销毁周期 / 无模块热重载），本模块经 index.html 动态 import
+// 仅评估一次（ESM 模块映射保证）——定时器是页面级单例，**随页面卸载由平台整体
+// 回收**（浏览器保证 JS 堆与全部定时器一起销毁），无需 clearInterval。
+// timer 槽位保留：它是未来停用即时轨（如 SIMULATION_MODE 扩展到前端）的抓手。
+timer = setInterval(() => { loadAnchor(); tick(); }, TICK_MS);
 if (document.visibilitychange !== undefined) {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
 }
