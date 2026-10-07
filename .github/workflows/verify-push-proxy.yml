@@ -30,20 +30,30 @@ jobs:
 
       - name: 真实推送（schedule 路径，走 KV 指纹）
         run: |
-          code=$(curl -s -o /tmp/p1.json -w '%{http_code}' --max-time 30 \
+          code=$(curl -s -o /tmp/p1.json -w '%{http_code}' --max-time 60 \
             -X POST -H 'Content-Type: application/json' \
             --data @data/reports/post_market_2026-09-30.json "$WORKER_URL/push")
-          echo "HTTP $code / $(cat /tmp/p1.json)"
+          body=$(cat /tmp/p1.json)
+          echo "HTTP $code / $body"
+          # 响应体直达企微（失败诊断 + 推送链路双重验证）
+          curl -s --max-time 30 -X POST -H 'Content-Type: application/json' \
+            -d "{\"msgtype\":\"text\",\"text\":{\"content\":\"[verify-push-proxy] /push → HTTP $code $body\"}}" \
+            "$OPS_WEBHOOK" > /dev/null
           [ "$code" = "200" ] && jq -e '.pushed == true' /tmp/p1.json > /dev/null
 
       - name: 同内容重推 → 指纹去重（生产 KV 生效证明）
         run: |
-          code=$(curl -s -o /tmp/p2.json -w '%{http_code}' --max-time 30 \
+          code=$(curl -s -o /tmp/p2.json -w '%{http_code}' --max-time 60 \
             -X POST -H 'Content-Type: application/json' \
             --data @data/reports/post_market_2026-09-30.json "$WORKER_URL/push")
-          echo "HTTP $code / $(cat /tmp/p2.json)"
+          body=$(cat /tmp/p2.json)
+          echo "HTTP $code / $body"
+          curl -s --max-time 30 -X POST -H 'Content-Type: application/json' \
+            -d "{\"msgtype\":\"text\",\"text\":{\"content\":\"[verify-push-proxy] 重推 → HTTP $code $body\"}}" \
+            "$OPS_WEBHOOK" > /dev/null
           [ "$code" = "200" ] && jq -e '.pushed == false' /tmp/p2.json > /dev/null
           jq -e '.reason | contains("指纹去重")' /tmp/p2.json > /dev/null
 
     env:
       WORKER_URL: https://a-sentiment-push.sjc19950404.workers.dev
+      OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
