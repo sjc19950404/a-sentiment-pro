@@ -48,3 +48,6 @@ data/bt_kline_fetch.err.log
 # 本地前端验证临时产物（点火验证用的静态服务脚本与日志，用完即删）
 .dev-server.tmp.mjs
 .dev-server.log.tmp
+
+.dev.vars
+.wrangler/
