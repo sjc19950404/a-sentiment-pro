@@ -2861,12 +2861,31 @@ function lazyValuePresent(days, field) {
   return false;
 }
 
+/** 惰性字段的"展示就位"判定：字段在**本表**（龙虎榜资金视图）的展示入口已有真实值
+ *  时，视为数据就位，无需再提示"未加载"（原始字段本身只是审计数据，展示层零消费）。
+ *  lhb 的展示入口是聚合榜 lhb_aggr——滚动窗切片最新日现算（src/archive_split.js），
+ *  完整档装载兜底补（loadFullArchive 继承/现算，2026-10-07）。aggr 与原始榜双缺
+ *  （视图真的会显示空）时返回 false → 提示保留。 */
+const LAZY_FIELD_READY = {
+  lhb: (days) => {
+    const last = days[days.length - 1] || {};
+    return Array.isArray(last.lhb_aggr) || Array.isArray(last.lhb);
+  },
+};
+
 /** 惰性字段的"未加载"提示 HTML（无待加载字段时返回空串）。 */
 function lazyNoticeHTML() {
   const idx = INDEX_CACHE;
   const lazy = (idx && idx.lazy) || null;
   if (!lazy) return '';
-  const pend = Object.keys(lazy).filter((k) => !lazyWanted.has(k) && !lazyValuePresent(displayDays(ARC), k));
+  const days = displayDays(ARC);
+  const pend = Object.keys(lazy).filter((k) => {
+    if (lazyWanted.has(k)) return false;
+    if (lazyValuePresent(days, k)) return false;
+    // 展示入口已就位（如 lhb_aggr 在场）→ 本表无列依赖原始字段，提示是噪音
+    const ready = LAZY_FIELD_READY[k];
+    return !(ready && ready(days));
+  });
   if (!pend.length) return '';
   const txt = pend.map((k) => `${LAZY_FIELD_LAB[k] || k}（${(lazy[k] / 1024).toFixed(0)}KB）`).join('、');
   return `<span class="lazy-note" title="原始榜数据位于惰性槽（不随首屏下发），当前视图未加载；显示为空是'未加载'而非'无数据'">⌛ ${txt}未加载</span>`;
