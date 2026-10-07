@@ -33,6 +33,11 @@ const SHELL_ASSETS = [
   './src/lhbfilter.js',
   './src/lhb.js',
   './src/report_card_live.js',
+  // H-1（2026-10-07）：同 src/offline.js 的 SHELL_ASSETS——本文件是其内联副本，
+  // test/offline.test.mjs ⑤ 断言两边逐项一致，必须同步改。
+  './src/dataset.js',
+  './src/dual_track.js',
+  './src/error_boundary.js',
 ];
 
 const DATA_PREFETCH = [

@@ -46,6 +46,12 @@ export const SHELL_ASSETS = Object.freeze([
   './src/lhbfilter.js',
   './src/lhb.js',
   './src/report_card_live.js',
+  // H-1（2026-10-07）：导出引擎 / 双轨披露 / 错误边界——index.html 内联 module 引用，
+  // 但此前不在预缓存里：SW 的 cache-first 兜底会把 JS 请求落到 index.html（HTML 顶替
+  // JS 响应），离线时这三块能力静默失效。与 sw.js / deploy-pages.yml（paths + cp）同步改。
+  './src/dataset.js',
+  './src/dual_track.js',
+  './src/error_boundary.js',
 ]);
 
 /**
