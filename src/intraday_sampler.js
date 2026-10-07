@@ -14,7 +14,7 @@
 //   · fetch/JSONP 失败 → 本轮跳过，下轮重试（60 秒节拍不变）
 import { inTradingSession } from './quote.js';
 import {
-  intradayEquity, buildLiveAccount, liveAccountStats, dailyDrawdown,
+  intradayEquity, buildLiveAccount, liveAccountStats, dailyDrawdown, riskTierDistance,
   seriesKey, appendSample, deserializeSeries,
 } from './intraday_live.js';
 
@@ -88,14 +88,16 @@ function publish() {
       initCash: anchor.init_cash,
     })
     : null;
+  const stats = account ? liveAccountStats(account) : null;
   window.__intradayLive = account
     ? {
       updatedAt: new Date().toISOString(),
       valuation: anchor,                    // 估值锚（equity_prev / pos_today / pool）
       samples,                               // 当日权益序列
       account,                              // accountStats 形态（generateIntraday input.live）
-      stats: liveAccountStats(account),      // 便捷快照（total / drawdown / …）
+      stats,                                 // 便捷快照（total / drawdown / …）
       drawdownDaily: dailyDrawdown(samples), // 当日高点回撤（null = 不足两点）
+      ddDistance: riskTierDistance(stats.drawdown), // 距下一档风控线（总回撤实时版口径，与报告同尺）
     }
     : null;
   window.dispatchEvent(new Event('intraday-live-update'));

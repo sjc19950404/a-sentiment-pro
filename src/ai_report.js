@@ -54,7 +54,7 @@ const SOURCE_REFS = {
   pnl_daily: 'data/paper/dual_track_latest.json::day.dayReturns.A（即时轨覆盖为账本 nav 当日变化）',
   pnl_cumulative: 'data/paper/dual_track_latest.json::summary.trackA.total（即时轨覆盖为 accountStats.ret）',
   close_drawdown: 'data/paper/dual_track_latest.json::summary.trackA.maxDd',
-  max_drawdown_daily: '即时轨 nav 当日 equity 序列峰谷（日内采样 S3 注入前恒 null）',
+  max_drawdown_daily: '即时轨当日 equity 序列峰谷（S3-1 注入：opts.drawdownDaily ← window.__intradayLive.drawdownDaily ← src/intraday_live.js::dailyDrawdown）',
   trend_switch_hits: 'data/signals-latest.json::regime.turns',
   overseas: 'data/global.json::quotes（A50 + 费半；美股仅美东 16:30 后可信）',
   backtest_deviation: 'data/backtest.json::v52 vs dual_track summary.trackA',
@@ -267,7 +267,7 @@ function buildBase(input, opts = {}) {
     ...structuralNulls(),
     pnl_daily: num(pick(day, 'dayReturns.A')),
     pnl_cumulative: num(pick(summary, 'trackA.total')),
-    max_drawdown_daily: null, // 日内 equity 采样未接入（S3 UI 层注入前恒 null，不造数）
+    max_drawdown_daily: null, // 恒 null 底座：盘中报告由 generateIntraday 注入（opts.drawdownDaily，S3-1），其余类型无日内语义不造数
     trend_switch_hits: input.tradeDate ? turnsIn(input, input.tradeDate, input.tradeDate).length : null,
     cost_ratio: null,
     slippage_avg: DEFAULT_SLIP, // 归档轨假设常量（口径唯一出处 src/paper.js）
@@ -357,6 +357,14 @@ export function generatePreMarket(input, opts = {}) {
 export function generateIntraday(input, opts = {}) {
   const { payload, overrides } = buildBase(input);
   if (!input.live) payload.nav_realtime = null; // 归档轨无指数点位合成源（intraday.json 无指数），S1 诚实置 null
+  // S3-1 注入（取数+赋值一行）：当日 equity 序列峰谷回撤。数据链 = 浏览器采样器
+  // window.__intradayLive.drawdownDaily（src/intraday_live.js::dailyDrawdown）→ 装配方
+  // opts 传入。opts 缺/序列不足两点 → null（不冒充，data_completeness 呈 missing）。
+  payload.max_drawdown_daily = input.live ? num(opts.drawdownDaily) : null;
+  const extraNotes = [];
+  if (input.live && payload.max_drawdown_daily == null) {
+    extraNotes.push({ field: 'max_drawdown_daily', reason: '即时轨当日权益序列不足两点（采样刚启动/实时行情降级），无日内回撤语义', ref: 'src/intraday_live.js::dailyDrawdown' });
+  }
   payload.approx = false;
   const stats = opts.stats ?? (input.live ? accountStats(input.paperAccount) : null);
   const ddNow = input.live && Number.isFinite(stats?.drawdown)
@@ -377,6 +385,7 @@ export function generateIntraday(input, opts = {}) {
     generatedBy: opts.generatedBy,
     payload,
     input,
+    extraNotes,
     sourceOverrides: overrides,
     simulationStock: opts.simulationStock ?? null,
   });

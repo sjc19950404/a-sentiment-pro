@@ -3218,6 +3218,39 @@ async function loadIntraday(meta) {
   card.hidden = false;
 }
 
+// ── S3-1 即时轨展示行（轨道 A 估值 · 快照卡内独立容器）─────────────────────
+// 数据源 window.__intradayLive（src/intraday_sampler.js 盘中每 60 秒采样发布，
+// 'intraday-live-update' 事件驱动刷新）。口径纪律（与 loadIntraday 同族）：
+//   ① 不自行判相位——本行在 #intradayCard 内，收盘/非交易时段整卡隐藏
+//     （loadIntraday 的 phase !== 'live' 分支），不会出现"收盘了还跳的实时数字"；
+//   ② 采样器待命（锚未加载/实时行情缺）→ 如实显示待命，绝不显示 0 或占位数；
+//   ③ 午休/收盘后保留最后采样值并标注时刻——那是最后真实采样，不是"现在"；
+//   ④ 估值非结算（basis 在桥数据 valuation 里如实可溯），权益是锚×仓位×指数涨幅。
+function renderIntradayLive() {
+  const row = $('intradayLiveRow');
+  if (!row) return;
+  const live = window.__intradayLive;
+  if (!live || !live.stats) {
+    row.innerHTML = '<span class="idu-warn">轨道A即时估值待采样（估值锚 / 实时行情未就绪）</span>';
+    row.hidden = false;
+    return;
+  }
+  const s = live.stats;
+  const pct = (v) => (v == null || !Number.isFinite(+v)) ? '—' : ((+v) * 100).toFixed(2) + '%';
+  const hhmm = (iso) => { try { return new Date(iso).toTimeString().slice(0, 5); } catch { return '—'; } };
+  row.innerHTML =
+    `<div class="idu-head"><b>轨道A即时估值</b> 权益 <b>${s.total != null ? (+s.total).toFixed(0) : '—'}</b> 元`
+    + ` · 当日回撤 <b>${pct(live.drawdownDaily)}</b>（日内高点）`
+    + ` · 总回撤 <b>${pct(s.drawdown)}</b>`
+    + ` · 距风控档 <b>${pct(live.ddDistance)}</b>（越过为负）`
+    + ` · 采样 <b>${hhmm(live.updatedAt)}</b>`
+    + `<span class="idu-warn">估值非结算（昨收锚 × 仓位 × 指数实时涨幅）</span></div>`;
+  row.hidden = false;
+}
+window.addEventListener('intraday-live-update', renderIntradayLive);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderIntradayLive);
+else renderIntradayLive();
+
 // 拉取档案并渲染全页。返回 {arc, changed, first, hhmm, degraded}；失败抛出。
 // 抽成独立函数是为了让「研判报告单独刷新」能复用同一条拉取/指纹链路，
 // 而不是各写一份 fetch（两份必然漂移：缓存参数、指纹口径、错误处理都会分叉）。

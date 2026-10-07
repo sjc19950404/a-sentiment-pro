@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
-  intradayEquity, buildLiveAccount, liveAccountStats, dailyDrawdown,
+  intradayEquity, buildLiveAccount, liveAccountStats, dailyDrawdown, riskTierDistance,
   seriesKey, appendSample, deserializeSeries, SERIES_KEY_PREFIX, PORTFOLIO_CODE,
 } from '../src/intraday_live.js';
 import { accountStats, DD_TIERS } from '../src/paper.js';
@@ -36,6 +36,7 @@ const SIG = {
 };
 const GLOBAL = { meta: { aShareTradeDate: '2026-09-30' }, quotes: [] };
 const mkInput = (extra = {}) => buildInput({ dualTrack: DT, signals: SIG, global: GLOBAL, backtest: { meta: {} }, opsAlerts: { count: 0, events: [] }, ...extra });
+const GEN_AT = '2026-09-30T02:35:00.000Z';
 
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} ≉ ${b}`);
 
@@ -175,4 +176,46 @@ test('当日回撤：(日内高点 − 当前) ÷ 高点；单点/空/新高 →
   assert.equal(dailyDrawdown([]), null);
   assert.equal(dailyDrawdown(null), null);
   near(dailyDrawdown([{ equity: 100 }, { equity: 90 }, { equity: 95 }, { equity: 91 }]), 9 / 100, 1e-12, '高点 100 当前 91');
+});
+
+// ── 6. 风控档距离（快照卡"距风控档"与报告同尺）─────────────────────────
+test('riskTierDistance：派生自 DD_TIERS，与 ai_report 的 DD_TIER_EDGES 逐项一致', async () => {
+  const { DD_TIER_EDGES } = await import('../src/ai_report.js');
+  // 派生边沿一致性：DD_TIERS thresholds（>0 升序）≡ DD_TIER_EDGES
+  const { DD_TIERS } = await import('../src/paper.js');
+  assert.deepEqual(DD_TIERS.map((t) => t.threshold).filter((t) => t > 0).sort((a, b) => a - b), DD_TIER_EDGES);
+  near(riskTierDistance(0.05), 0.04);            // 9% 档前 4pp
+  near(riskTierDistance(0.09), 0);              // 恰在档线 → 0
+  near(riskTierDistance(0.10), 0.05);            // 15% 档前 5pp
+  near(riskTierDistance(0.18), -0.03, 1e-12);    // 越过最深档 → 负（已超线 3pp）
+  assert.equal(riskTierDistance(null), null);
+  assert.equal(riskTierDistance(-0.01), null);
+  // 与报告 distance_pp 同构：同一 drawdown 两口径差恒为 ×100（基准点对齐）
+  const dd = 0.07;
+  const r = generateIntraday(mkInput({ paperAccount: buildLiveAccount({ navSeries: [{ date: '2026-09-30', equity: 930000 }], equityRealtime: 930000, tradeDate: '2026-09-30', initCash: 1000000 }) }), { generatedAt: GEN_AT });
+  near(r.payload.drawdown_vs_threshold.distance_pp, riskTierDistance(0.07) * 100, 1e-9);
+});
+
+// ── 7. max_drawdown_daily 注入（S3-1 第二步：取数+赋值一行，零逻辑扩散）──
+test('注入：live + opts.drawdownDaily → 真值搬运（source=live）；缺 → null + 披露', () => {
+  const mkAcct = () => buildLiveAccount({
+    navSeries: [{ date: '2026-09-29', equity: 985000 }],
+    equityRealtime: 986965.14,
+    tradeDate: '2026-09-30',
+    initCash: 1000000,
+  });
+  const withVal = generateIntraday(mkInput({ paperAccount: mkAcct() }), { generatedAt: GEN_AT, drawdownDaily: 0.03123 });
+  assert.equal(withVal.payload.max_drawdown_daily, 0.03123, '逐位搬运桥数据');
+  assert.equal(withVal.data_completeness.max_drawdown_daily.source, 'live');
+  assert.ok(!withVal.missing_notes.some((n) => n.field === 'max_drawdown_daily'), '真值在 → 不披露缺失');
+  const noVal = generateIntraday(mkInput({ paperAccount: mkAcct() }), { generatedAt: GEN_AT });
+  assert.equal(noVal.payload.max_drawdown_daily, null, '序列不足两点（桥 null）→ 不冒充');
+  assert.equal(noVal.data_completeness.max_drawdown_daily.source, 'missing');
+  assert.ok(noVal.missing_notes.some((n) => n.field === 'max_drawdown_daily'), '缺 → missing_notes 披露在场');
+});
+
+test('归档轨零变化：无 paperAccount 时传 drawdownDaily 也不注入', () => {
+  const r = generateIntraday(mkInput(), { generatedAt: GEN_AT, drawdownDaily: 0.05 });
+  assert.equal(r.payload.max_drawdown_daily, null, '归档轨恒 null（live-only 字段纪律）');
+  assert.ok(r.missing_notes.some((n) => /max_drawdown_daily/.test(n.field)), 'LIVE_ONLY_NOTE 披露仍在场');
 });

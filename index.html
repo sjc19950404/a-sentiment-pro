@@ -175,6 +175,10 @@
         <section class="card intraday" id="intradayCard" hidden>
           <h2>盘中快照 <span class="bf-auto">实时值 · 不参与打分</span></h2>
           <div id="intradayBody"></div>
+          <!-- S3-1 即时轨（轨道 A 估值）：src/intraday_sampler.js 每 60 秒采样发布
+               window.__intradayLive，app.js::renderIntradayLive 渲染本行。独立于
+               #intradayBody（loadIntraday 整体重写不冲掉）；随本卡 phase!=='live' 隐藏。 -->
+          <div id="intradayLiveRow" hidden></div>
         </section>
       </div>
     </section>

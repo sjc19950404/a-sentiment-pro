@@ -21,10 +21,27 @@
 // 当日序列：浏览器采样器每分钟追加一个权益点（localStorage 当日键，跨日重置），
 //   dailyDrawdown() 给「当日相对日内高点回撤」（S3-1 第二步 max_drawdown_daily）。
 // 降级纪律：任一池资产实时涨幅缺失 → 整体 null（不冒充，不兜底填充）。
-import { accountStats } from './paper.js';
+import { accountStats, DD_TIERS } from './paper.js';
 
 /** 合成持仓代码（accountStats 兼容形态的唯一虚拟标的，不出现在任何真实行情里） */
 export const PORTFOLIO_CODE = '__PORTFOLIO__';
+
+/** 风控档边沿（升序），派生自 src/paper.js::DD_TIERS——与 ai_report.js::DD_TIER_EDGES
+ *  同源（单测锁死逐项一致），页面快照卡与报告的"距风控档"永远同尺。 */
+const DD_EDGES = DD_TIERS.map((t) => t.threshold).filter((t) => t > 0).sort((a, b) => a - b);
+
+/**
+ * 距下一档风控线的距离（与 generateIntraday::drawdown_vs_threshold.distance_pp 同构，小数口径）。
+ * @param {number} drawdown  总回撤实时版（0~小数）
+ * @returns {number | null}  nearest_edge − drawdown；越过全部档位 → 负值（最深档之上）；
+ *   入参非法 → null。DD_TIERS 定义变更时同步（单测对齐 ai_report）。
+ */
+export function riskTierDistance(drawdown) {
+  if (drawdown == null || !Number.isFinite(+drawdown) || +drawdown < 0) return null; // null 前置：+null===0 会把缺失当零回撤
+  const dd = +drawdown;
+  const nearest = DD_EDGES.find((e) => e >= dd) ?? DD_EDGES[DD_EDGES.length - 1];
+  return nearest - dd;
+}
 
 /** 当日权益序列的 localStorage 键前缀（完整键 = 前缀 + YYYY-MM-DD，跨日即换键自然重置） */
 export const SERIES_KEY_PREFIX = 'asent-ilv-';
