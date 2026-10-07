@@ -191,6 +191,14 @@ console.log(`[paper] 披露口径核查：unknown ${unknownIdx.length} 日（${u
 // （实测 2.86pp vs 2.21pp）——按"账本必须与锚点可逆"纪律改净值差，待框架勘误确认。
 const records = [];
 let navA = 1, navB = 1, peakA = 1, peakB = 1;
+// ── S3-1 即时轨估值锚（2026-10-07）：页面日内权益的数字唯一出处 ──
+// 轨道 A 是账户级仓位模拟（指数池 × targetPos，无个股持仓），当日日内权益 =
+//   equity_prev × (1 + Σ pos_today[a] × 指数实时涨幅% ÷ 池资产数)
+// （消费端 src/intraday_live.js，公式两端单测锁死）。nav_series 为全史日权益
+// （元口径 = Π(1+dayReturns.A) × INIT_CASH），供 accountStats 历史峰值口径用。
+const INIT_CASH = 1000000; // 元口径基期（轨道 A 本体是 1.0 基期比例模拟，元化只为报告可读）
+const IDX_CODE = { 上证指数: 'sh000001', 深证成指: 'sz399001', 创业板指: 'sz399006' }; // 腾讯行情代码映射（未知资产 code=null → 页面该资产跳过并如实降级）
+const navSeries = [];
 const navC = { 0.3: 1, 0.4: 1, 0.5: 1 };
 let premiumCum = 0;
 const shadowCum = { 0.3: 0, 0.4: 0, 0.5: 0 };
@@ -199,6 +207,7 @@ let activeRun = 0;
 for (let i = 0; i < n; i++) {
   navA *= 1 + A.strat[i];
   navB *= 1 + Bdisc.strat[i];
+  navSeries.push({ date: dates[i], equity: r(navA * INIT_CASH, 2) }); // S3-1 估值锚（元口径，分位精度）
   for (const c of SHADOW) navC[c] *= 1 + C[c].strat[i];
   peakA = Math.max(peakA, navA);
   peakB = Math.max(peakB, navB);
@@ -349,6 +358,15 @@ writeFileSync(join(ROOT, 'data', 'paper', 'dual_track_latest.json'), JSON.string
   sample: outJson.sample,
   gates: outJson.gates,
   day: records[n - 1],
+  // S3-1 即时轨估值锚（optional 段，schemas/dual-track-latest.schema.json 同步）：
+  // 老档无此段 → 页面采样器待命不冒充；新档 = 页面 fetch 本文件即齐活（免拉全史 dual_track.json）。
+  intraday_valuation: {
+    equity_prev: navSeries[n - 1].equity,
+    init_cash: INIT_CASH,
+    pos_today: records[n - 1].trackA.targetPos,
+    pool: ASSETS.map((a) => ({ name: a, code: IDX_CODE[a] ?? null })),
+    nav_series: navSeries,
+  },
   summary: outJson.summary,
   notes: NOTES,
 }), 'utf8');

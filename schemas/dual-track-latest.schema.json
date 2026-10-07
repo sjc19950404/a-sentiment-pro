@@ -110,6 +110,45 @@
         }
       }
     },
+    "intraday_valuation": {
+      "$comment": [
+        "S3-1 即时轨估值锚（2026-10-07，optional——老档无此段 → 页面采样器待命不冒充）。",
+        "轨道 A 是账户级仓位模拟（指数池 × targetPos，无个股持仓），页面日内权益 =",
+        "equity_prev × (1 + Σ pos_today[name] × 指数实时涨幅% ÷ 池资产数)——公式消费端",
+        "src/intraday_live.js，单测两端锁死。nav_series = 全史日权益（元口径，",
+        "Π(1+dayReturns.A) × init_cash），供 accountStats 历史峰值口径（数字唯一出处=生产方）。",
+        "pool[].code 为腾讯行情代码（null = 未知资产，页面跳过该资产并如实降级）。"
+      ],
+      "type": ["object", "null"],
+      "required": ["equity_prev", "init_cash", "pos_today", "pool", "nav_series"],
+      "properties": {
+        "equity_prev": { "type": "number" },
+        "init_cash": { "type": "number" },
+        "pos_today": { "type": "object" },
+        "pool": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "code"],
+            "properties": {
+              "name": { "type": "string" },
+              "code": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "nav_series": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["date", "equity"],
+            "properties": {
+              "date": { "type": "string" },
+              "equity": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
     "summary": {
       "$comment": "全样本三轨汇总（total/maxDd/sharpe）——total 面被披露块 cum 搬运（src/dual_track.js::cumFromSummary），maxDd/sharpe 留审计面。optional：门禁失败时账本仍写出（此时披露块 cum 各位 null）",
       "type": ["object", "null"]

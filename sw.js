@@ -25,6 +25,10 @@ const SHELL_ASSETS = [
   './src/report.js',
   './src/report_audit.js',
   './src/seats.js',
+  './src/paper.js',
+  './src/quote.js',
+  './src/intraday_live.js',
+  './src/intraday_sampler.js',
 ];
 
 const DATA_PREFETCH = [

@@ -392,6 +392,14 @@
       .then((m) => { window.ASENT_CONFIG = m.default; })
       .catch(() => { /* 旧浏览器/异常路径：静默降级，走兜底默认值 */ });
   </script>
+  <!-- S3-1 即时轨采样器（src/intraday_sampler.js）：拉估值锚 + 腾讯指数实时涨幅，
+       60 秒采样当日权益序列（localStorage 当日键），发布 window.__intradayLive
+      （accountStats 形态的 live 账本，S3-4 报告卡片 input.live 的数据源）。
+       静态 import 依赖 quote.js / intraday_live.js / paper.js（ESM 纯函数链，
+       浏览器与 Node 同源）。加载失败静默——桥缺席 = 即时轨待命，归档面不受影响。 -->
+  <script type="module">
+    import('./src/intraday_sampler.js').catch(() => { /* 静默：即时轨待命 */ });
+  </script>
   <!-- 数据导出引擎（src/dataset.js）：同样是 ESM 纯函数、浏览器与 Node 共用。
        app.js 是经典脚本不能 import，故挂到 window。
        ⚠ 导出件与屏幕同源这件事，就靠"两边都调同一个 buildDataset"来保证——
