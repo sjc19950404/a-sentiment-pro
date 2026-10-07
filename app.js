@@ -2764,9 +2764,14 @@ function loadJson(url) {
  */
 // H-2（2026-10-07）：滚动窗共享缓存的存活期。此前该 promise 成功后**永不失效**——
 // 5 分钟轮询每次都新拉 index，明细却永远用首屏那份：指纹由「新 index + 旧 recent」
-// 合成，错判"数据已更新"，提示与表格自相矛盾。TTL 与轮询周期 POLL_MS 对齐：
-// 每次轮询时明细必然已过期 → 重拉，与 index 同鲜。可按需调整（如调试时设 1000）。
-const RECENT_PROMISE_TTL_MS = 5 * 60 * 1000;
+// 合成，错判"数据已更新"，提示与表格自相矛盾。
+// 中危2（2026-10-07）修正：TTL 必须**严格小于**轮询周期 POLL_MS（5 分钟），而非相等。
+// 边界机理：过期判定是严格大于（>），而时间戳记录在 resolve 成功时刻——比轮询 tick
+// 晚 ε（204KB 的网络延迟）。若 TTL == POLL_MS，每个 tick 的 elapsed ≈ POLL_MS - ε，
+// 永远不大于 TTL → 命中缓存，要隔一个 tick 才重拉（明细 10 分钟才刷新，index 5 分钟，
+// H-2 要修的矛盾隔轮复现）。预留 30 秒安全边际盖住 ε 与定时器漂移，保证每个 tick
+// 必然过期 → 重拉，与 index 同鲜。⚠ 若调整 POLL_MS，本值必须同步（保持严格小于）。
+const RECENT_PROMISE_TTL_MS = 5 * 60 * 1000 - 30 * 1000;
 
 function loadRecentArchiveShared() {
   const stale = window.__recentPromise;
@@ -3442,6 +3447,8 @@ async function checkUpdate(manual) {
   }
 }
 
+// ⚠ 与 RECENT_PROMISE_TTL_MS（滚动窗缓存存活期）耦合：TTL 必须严格小于本值
+// （差 30 秒安全边际），否则轮询 tick 时缓存恰好未过期，明细隔轮才刷新（见其注释）。
 const POLL_MS = 5 * 60 * 1000; // 每 5 分钟自动检查一次云端档是否更新
 checkUpdate(false);
 setInterval(() => checkUpdate(false), POLL_MS);
