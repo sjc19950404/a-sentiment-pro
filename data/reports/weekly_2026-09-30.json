@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-09-30",
- "generated_at": "2026-10-06T16:08:50.891Z",
+ "generated_at": "2026-10-07T13:20:57.418Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -140,7 +140,7 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": 0.1191,
+    "chgPct": -0.003675,
     "state": "ok"
    },
    {
@@ -756,7 +756,7 @@
   "pnl_daily": "data/paper/dual_track_latest.json::day.dayReturns.A（即时轨覆盖为账本 nav 当日变化）",
   "pnl_cumulative": "data/paper/dual_track_latest.json::summary.trackA.total（即时轨覆盖为 accountStats.ret）",
   "close_drawdown": "data/paper/dual_track_latest.json::summary.trackA.maxDd",
-  "max_drawdown_daily": "即时轨 nav 当日 equity 序列峰谷（日内采样 S3 注入前恒 null）",
+  "max_drawdown_daily": "即时轨当日 equity 序列峰谷（S3-1 注入：opts.drawdownDaily ← window.__intradayLive.drawdownDaily ← src/intraday_live.js::dailyDrawdown）",
   "trend_switch_hits": "data/signals-latest.json::regime.turns",
   "overseas": "data/global.json::quotes（A50 + 费半；美股仅美东 16:30 后可信）",
   "backtest_deviation": "data/backtest.json::v52 vs dual_track summary.trackA",
