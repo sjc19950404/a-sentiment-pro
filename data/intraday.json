@@ -2,8 +2,8 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-08",
-  "capturedAt": "2026-10-08T04:15:14.181Z",
-  "capturedAtBJ": "2026-10-08 12:15",
+  "capturedAt": "2026-10-08T04:46:55.768Z",
+  "capturedAtBJ": "2026-10-08 12:46",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
@@ -405,7 +405,7 @@
     "flat": 174
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-08 11:48",
+  "prevCapturedAtBJ": "2026-10-08 12:15",
   "prevPools": {
     "zt": 41,
     "zb": 28,
