@@ -2,18 +2,26 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-08",
-  "capturedAt": "2026-10-08T06:20:14.186Z",
-  "capturedAtBJ": "2026-10-08 14:20",
+  "capturedAt": "2026-10-08T06:52:52.429Z",
+  "capturedAtBJ": "2026-10-08 14:52",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 43,
+    "count": 44,
     "srcDate": "2026-10-08",
     "rows": [
       {
+        "code": "002490",
+        "name": "山东墨龙",
+        "reason": "油气装备+海外订单+H股配售",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
         "code": "603189",
         "name": "*ST网达",
-        "reason": "AI智能体+低空经济+大视频",
+        "reason": "AI智能体+大视频+低空经济",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -38,14 +46,6 @@
         "code": "603788",
         "name": "宁波高发",
         "reason": "制动踏板+汽车控制系统+摩洛哥基地",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "002149",
-        "name": "西部材料",
-        "reason": "拟定增募资+稀有金属+可控核聚变+商业航天",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -102,6 +102,14 @@
         "code": "920627",
         "name": "力王股份",
         "reason": "锂电池+固态电池+锌锰电池",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "603200",
+        "name": "上海洗霸",
+        "reason": "固态电池+液冷服务器+水处理",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -357,11 +365,11 @@
     ]
   },
   "pools": {
-    "zt": 41,
+    "zt": 42,
     "zb": 33,
     "dt": 14,
     "max_lb": 8,
-    "lb2": 9,
+    "lb2": 10,
     "zt_codes": [
       "002058",
       "002242",
@@ -394,29 +402,30 @@
       "600722",
       "601956",
       "001336",
+      "603200",
       "920627",
       "600310",
-      "002149",
       "600400",
       "000869",
       "300530",
       "688196",
       "603788",
       "603906",
-      "002702"
+      "002702",
+      "002490"
     ],
-    "seal_pct": 55.4
+    "seal_pct": 56
   },
   "breadth": {
-    "up": 1399,
-    "down": 3769,
-    "flat": 118
+    "up": 1524,
+    "down": 3652,
+    "flat": 110
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-08 13:55",
+  "prevCapturedAtBJ": "2026-10-08 14:20",
   "prevPools": {
-    "zt": 40,
-    "zb": 34,
-    "seal_pct": 54.1
+    "zt": 41,
+    "zb": 33,
+    "seal_pct": 55.4
   }
 }
