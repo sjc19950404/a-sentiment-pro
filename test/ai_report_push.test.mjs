@@ -211,6 +211,54 @@ test('pushReports：无 webhook 跳过 / 成功记指纹 / 二次去重 / 失败
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
+// ── 6b. 企微 errcode 解析：HTTP OK 但 errcode≠0（93xxx 静默丢包）→ 不记指纹、重试自愈 ──
+test('pushReports：企微 HTTP 200 + errcode≠0 静默丢包 → 不记指纹、不抛、reason 暴露 errcode', async () => {
+  const r = mkReport();
+  const dir = mkdtempSync(join(tmpdir(), 'airpt-errcode-'));
+  const stateFile = join(dir, 's.json');
+  try {
+    // 模拟企微：HTTP 200 + errcode=93000（机器人被拉起/群解散——企微的"假成功"陷阱）
+    const failWechat = async () => ({
+      ok: true, status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ errcode: 93000, errmsg: '机器人被移除，请先补群' }),
+    });
+    const fail = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: failWechat, stateFile, now: new Date('2026-10-08T13:30:00Z') });
+    assert.equal(fail.pushed, 0, 'errcode≠0 → 不算成功');
+    assert.match(fail.results[0].reason, /errcode=93000/, 'reason 暴露 errcode，便于排查（这是漏洞修复的核心证据）');
+    assert.match(fail.results[0].reason, /未记指纹/, '同 HTTP 失败：失败不记指纹');
+    assert.equal(loadPushState(stateFile).pushed.length, 0, '状态文件干净（不记指纹 → 下拍重试自愈）');
+
+    // 模拟正常：HTTP 200 + errcode=0 → 成功 + 记指纹（与未升级前行为一致）
+    const okWechat = async () => ({
+      ok: true, status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ errcode: 0, errmsg: 'ok' }),
+    });
+    const ok = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: okWechat, stateFile, now: new Date('2026-10-08T13:30:00Z') });
+    assert.equal(ok.pushed, 1, 'errcode=0 → 推送成功');
+    assert.match(ok.results[0].reason, /new_content/);
+    assert.equal(loadPushState(stateFile).pushed.length, 1, '记指纹');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// ── 6c. 缺 .json/.text 的旧 mock 仍能跑通（防御性解析不打破现有注入约定）────
+test('pushReports：fetchImpl 返回 { ok, status } 无 body 方法时，行为与未升级前一致', async () => {
+  const r = mkReport();
+  const dir = mkdtempSync(join(tmpdir(), 'airpt-legacy-mock-'));
+  try {
+    // 失败路径（先做，避免被后置成功去重）：{ ok:false, status:502 } → 走原 HTTP reason
+    const bad = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ({ ok: false, status: 502 }), stateFile: join(dir, 'bad.json'), now: new Date('2026-10-08T13:30:00Z') });
+    assert.equal(bad.pushed, 0);
+    assert.match(bad.results[0].reason, /HTTP 502/, '无 body 方法时仍报 HTTP reason');
+
+    // 成功路径（独立 stateFile）：{ ok: true } 无 .json → 仍应算成功（errcode 未暴露 → 不算失败）
+    const ok = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ({ ok: true }), stateFile: join(dir, 'ok.json'), now: new Date('2026-10-08T13:30:00Z') });
+    assert.equal(ok.pushed, 1, '无 body 方法 + res.ok=true → 成功（与升级前兼容）');
+    assert.equal(loadPushState(join(dir, 'ok.json')).pushed.length, 1);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 // ── 7. 调度闸门 ───────────────────────────────────────────────────────
 test('gatePreMarket/gateIntraday：交易日 + 相位三态（判据与 snapshot_intraday 同源）', () => {
   const THU_PRE = new Date('2026-10-08T01:05:00Z');  // 北京周四 09:05（pre）

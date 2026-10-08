@@ -131,9 +131,22 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ msgtype: 'text', text: { content: renderPushText(report) } }),
       });
-      if (!res.ok) {
+      // 解析企微响应体（fetch 注入的 mock 可能没有 .json()/.text()，标准 Response 两者俱在）
+      let wechat = {};
+      try {
+        if (typeof res?.json === 'function') wechat = await res.json();
+        else if (typeof res?.text === 'function') { try { wechat = JSON.parse(await res.text()); } catch { /* swallow: 落到空对象 */ } }
+      } catch { wechat = {}; }
+      console.log(`[企微推送结果] ${report.report_type} ${report.date} → HTTP ${res.status}, errcode: ${wechat.errcode}, errmsg: ${wechat.errmsg}`);
+      // 失败判据：HTTP 非 2xx OR 企微 errcode ≠ 0（93xxx 静默丢包场景：企微常以 HTTP 200 + errcode 9xxxx 表示群解散/机器人被拉起）
+      const httpFail = !res.ok;
+      const apiFail = wechat.errcode !== undefined && wechat.errcode !== 0;
+      if (httpFail || apiFail) {
         // 失败不记指纹 → 下个 tick 内容未变仍会重试（自愈）
-        results.push({ type: report.report_type, date: report.date, pushed: false, reason: `webhook HTTP ${res.status}（未记指纹，下拍重试）` });
+        const reason = httpFail
+          ? `webhook HTTP ${res.status}（未记指纹，下拍重试）`
+          : `企微 errcode=${wechat.errcode} errmsg=${wechat.errmsg}（未记指纹，下拍重试）`;
+        results.push({ type: report.report_type, date: report.date, pushed: false, reason });
         continue;
       }
       pushed += 1;
