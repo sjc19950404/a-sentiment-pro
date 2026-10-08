@@ -2,14 +2,22 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-08",
-  "capturedAt": "2026-10-08T04:46:55.768Z",
-  "capturedAtBJ": "2026-10-08 12:46",
+  "capturedAt": "2026-10-08T05:15:03.783Z",
+  "capturedAtBJ": "2026-10-08 13:15",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 42,
+    "count": 41,
     "srcDate": "2026-10-08",
     "rows": [
+      {
+        "code": "603788",
+        "name": "宁波高发",
+        "reason": "汽车控制系统+新能源车配套+摩洛哥基地",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
       {
         "code": "002149",
         "name": "西部材料",
@@ -30,6 +38,14 @@
         "code": "300530",
         "name": "领湃科技",
         "reason": "新能源电池模组+新能源EPC+储能+衡阳国资",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "600400",
+        "name": "红豆股份",
+        "reason": "服装+养老机器人",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -78,14 +94,6 @@
         "code": "601956",
         "name": "东贝集团",
         "reason": "制冷压缩机+机器人电机+高效变频",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "603002",
-        "name": "宏昌电子",
-        "reason": "高速覆铜板+GBF膜材+定增扩产",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -219,14 +227,6 @@
         "huanshou": null
       },
       {
-        "code": "605177",
-        "name": "东亚药业",
-        "reason": "化学原料药+头孢+制剂拓展+海外出口",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
         "code": "002774",
         "name": "快意电梯",
         "reason": "旧梯更新+海外电梯+高速电梯",
@@ -299,14 +299,6 @@
         "huanshou": null
       },
       {
-        "code": "002923",
-        "name": "润都股份",
-        "reason": "鼠疫+创新药+化学制药+业绩扭亏",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
         "code": "605303",
         "name": "园林股份",
         "reason": "重大重组+复牌+存储芯片+园林工程",
@@ -349,18 +341,17 @@
     ]
   },
   "pools": {
-    "zt": 41,
-    "zb": 28,
-    "dt": 7,
+    "zt": 40,
+    "zb": 31,
+    "dt": 8,
     "max_lb": 8,
-    "lb2": 8,
+    "lb2": 9,
     "zt_codes": [
       "002058",
       "002242",
       "600812",
       "600825",
       "605303",
-      "002923",
       "002687",
       "600663",
       "002951",
@@ -370,11 +361,9 @@
       "300522",
       "002733",
       "002866",
-      "605177",
       "002774",
       "603928",
       "603863",
-      "601872",
       "301697",
       "002565",
       "603137",
@@ -387,25 +376,27 @@
       "001300",
       "600408",
       "600722",
-      "603002",
       "601956",
       "001336",
       "002973",
       "600310",
       "002149",
+      "600400",
       "000869",
       "300530",
-      "688196"
+      "688196",
+      "603788",
+      "603906"
     ],
-    "seal_pct": 59.4
+    "seal_pct": 56.3
   },
   "breadth": {
-    "up": 1996,
-    "down": 3116,
-    "flat": 174
+    "up": 1767,
+    "down": 3362,
+    "flat": 157
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-08 12:15",
+  "prevCapturedAtBJ": "2026-10-08 12:46",
   "prevPools": {
     "zt": 41,
     "zb": 28,
