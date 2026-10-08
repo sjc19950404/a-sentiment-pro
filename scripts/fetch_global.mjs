@@ -7,7 +7,9 @@
 //   在 CI 里每个工作日都跑，与 A 股是否开市无关。
 //
 // 用法：node scripts/fetch_global.mjs
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { atomicWriteJSON } from '../src/fsutil.js';
 import config from '../src/config.js';
 import { buildGlobalSnapshot, evaluateGlobalWatch, SINA_URL, SINA_CODES, usSessionReadiness } from '../src/global.js';
@@ -64,6 +66,14 @@ function contentKey(s) {
 }
 
 async function main() {
+  // 写入前确保 data/ 目录存在（CI 全新 checkout 时可能未创建 → atomicWriteJSON ENOENT）。
+  // 放在开头，主路径与容灾路径（保留上次快照）两处 atomicWriteJSON 都被覆盖。
+  const outPath = fileURLToPath(OUT);
+  const outDir = path.dirname(outPath);
+  if (!existsSync(outDir)) {
+    mkdirSync(outDir, { recursive: true });
+  }
+
   const tradeDate = readTradeDate();
   const prev = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : null;
 
