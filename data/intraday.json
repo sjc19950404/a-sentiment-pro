@@ -2,14 +2,30 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-08",
-  "capturedAt": "2026-10-08T02:14:00.611Z",
-  "capturedAtBJ": "2026-10-08 10:14",
+  "capturedAt": "2026-10-08T02:25:02.311Z",
+  "capturedAtBJ": "2026-10-08 10:25",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 48,
+    "count": 45,
     "srcDate": "2026-10-08",
     "rows": [
+      {
+        "code": "002182",
+        "name": "宝武镁业",
+        "reason": "镁合金+机器人+汽车轻量化",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "600310",
+        "name": "广西能源",
+        "reason": "电力主业+业绩扭亏+抽水蓄能",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
       {
         "code": "920627",
         "name": "力王股份",
@@ -43,14 +59,6 @@
         "huanshou": null
       },
       {
-        "code": "603073",
-        "name": "彩蝶实业",
-        "reason": "涤纶面料+功能性面料+埃及产能",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
         "code": "002580",
         "name": "圣阳股份",
         "reason": "固态电池+液冷储能+算力+山东国资",
@@ -70,14 +78,6 @@
         "code": "601956",
         "name": "东贝集团",
         "reason": "制冷压缩机+机器人电机+高效变频",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "600289",
-        "name": "ST信通",
-        "reason": "算力卡定制+AI服务器+AI智能体",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -163,14 +163,6 @@
         "huanshou": null
       },
       {
-        "code": "002285",
-        "name": "世联行",
-        "reason": "房地产服务+大资管+珠海国资",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
         "code": "605378",
         "name": "野马电池",
         "reason": "锌锰电池+锂电池+海外基地",
@@ -206,14 +198,6 @@
         "code": "605069",
         "name": "正和生态",
         "reason": "生态水利+垂直大模型+水务机器人",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "601872",
-        "name": "招商轮船",
-        "reason": "新签长期运输协议+油气运输+干散货运输+航运龙头",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -291,9 +275,9 @@
         "huanshou": null
       },
       {
-        "code": "603020",
-        "name": "爱普股份",
-        "reason": "半导体材料+香精香料+鱼油原料",
+        "code": "600617",
+        "name": "国新能源",
+        "reason": "天然气管网+新能源+业绩增长",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -371,14 +355,6 @@
         "huanshou": null
       },
       {
-        "code": "002316",
-        "name": "亚联发展",
-        "reason": "诉讼进展+智慧电网+生物纤维素+粮食概念",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
         "code": "002242",
         "name": "九阳股份",
         "reason": "厨房小家电+机器人投资+太空科技",
@@ -397,15 +373,14 @@
     ]
   },
   "pools": {
-    "zt": 48,
-    "zb": 14,
-    "dt": 5,
+    "zt": 46,
+    "zb": 19,
+    "dt": 6,
     "max_lb": 8,
-    "lb2": 11,
+    "lb2": 9,
     "zt_codes": [
       "002058",
       "002242",
-      "002316",
       "600812",
       "600825",
       "605303",
@@ -417,7 +392,6 @@
       "600026",
       "600617",
       "600241",
-      "603020",
       "300522",
       "002733",
       "002866",
@@ -432,7 +406,6 @@
       "603137",
       "605378",
       "002805",
-      "002285",
       "603269",
       "002669",
       "605298",
@@ -449,21 +422,22 @@
       "001336",
       "300619",
       "002973",
-      "603200",
-      "920627"
+      "920627",
+      "600310",
+      "002182"
     ],
-    "seal_pct": 77.4
+    "seal_pct": 70.8
   },
   "breadth": {
-    "up": 2726,
-    "down": 2316,
-    "flat": 244
+    "up": 2712,
+    "down": 2386,
+    "flat": 188
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-08 09:46",
+  "prevCapturedAtBJ": "2026-10-08 10:14",
   "prevPools": {
-    "zt": 37,
-    "zb": 9,
-    "seal_pct": 80.4
+    "zt": 48,
+    "zb": 14,
+    "seal_pct": 77.4
   }
 }
