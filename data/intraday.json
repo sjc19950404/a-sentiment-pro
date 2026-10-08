@@ -2,18 +2,146 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-08",
-  "capturedAt": "2026-10-08T01:46:09.702Z",
-  "capturedAtBJ": "2026-10-08 09:46",
+  "capturedAt": "2026-10-08T02:14:00.611Z",
+  "capturedAtBJ": "2026-10-08 10:14",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 34,
+    "count": 48,
     "srcDate": "2026-10-08",
     "rows": [
       {
+        "code": "920627",
+        "name": "力王股份",
+        "reason": "锂电池+固态电池+锌锰电池",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "002973",
+        "name": "侨银股份",
+        "reason": "人形机器人+算力服务+城市服务",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "300619",
+        "name": "金银河",
+        "reason": "固态电池+锂电设备+高纯铷铯盐",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "001336",
+        "name": "楚环科技",
+        "reason": "废气治理+半导体环保+航空航天投资",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "603073",
+        "name": "彩蝶实业",
+        "reason": "涤纶面料+功能性面料+埃及产能",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "002580",
+        "name": "圣阳股份",
+        "reason": "固态电池+液冷储能+算力+山东国资",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "001317",
+        "name": "三羊马",
+        "reason": "“羊”字辈+汽车物流+多式联运+国际物流",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "601956",
+        "name": "东贝集团",
+        "reason": "制冷压缩机+机器人电机+高效变频",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "600289",
+        "name": "ST信通",
+        "reason": "算力卡定制+AI服务器+AI智能体",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "603002",
+        "name": "宏昌电子",
+        "reason": "高速覆铜板+GBF膜材+定增扩产",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "600722",
+        "name": "金牛化工",
+        "reason": "甲醇+甲醇价格+风电项目",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "600408",
+        "name": "安泰集团",
+        "reason": "焦炭+型钢+受托加工",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "601975",
+        "name": "招商南油",
+        "reason": "成品油运输+MR船队+业绩增长",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "001300",
+        "name": "三柏硕",
+        "reason": "蹦床+健身器材+外销",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "603823",
+        "name": "百合花",
+        "reason": "光刻胶+有机颜料+业绩增长",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "002869",
+        "name": "金溢科技",
+        "reason": "车路协同+电子收费+低空智联",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
         "code": "605298",
         "name": "必得科技",
-        "reason": "轨道交通+股份转让+专精特新",
+        "reason": "轨道交通+半导体注入猜测+股份转让",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -38,6 +166,14 @@
         "code": "002285",
         "name": "世联行",
         "reason": "房地产服务+大资管+珠海国资",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "605378",
+        "name": "野马电池",
+        "reason": "锌锰电池+锂电池+海外基地",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -70,6 +206,14 @@
         "code": "605069",
         "name": "正和生态",
         "reason": "生态水利+垂直大模型+水务机器人",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "601872",
+        "name": "招商轮船",
+        "reason": "新签长期运输协议+油气运输+干散货运输+航运龙头",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -109,7 +253,7 @@
       {
         "code": "605177",
         "name": "东亚药业",
-        "reason": "化学原料药+制剂拓展+海外出口",
+        "reason": "化学原料药+头孢+制剂拓展+海外出口",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -117,7 +261,7 @@
       {
         "code": "002774",
         "name": "快意电梯",
-        "reason": "海外电梯+旧梯更新+高速电梯",
+        "reason": "旧梯更新+海外电梯+高速电梯",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -126,14 +270,6 @@
         "code": "002687",
         "name": "乔治白",
         "reason": "职业装+校服+通勤服",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "000523",
-        "name": "红棉股份",
-        "reason": "食糖业务+代糖饮料+业绩增长",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -158,22 +294,6 @@
         "code": "603020",
         "name": "爱普股份",
         "reason": "半导体材料+香精香料+鱼油原料",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "601208",
-        "name": "东材科技",
-        "reason": "高速树脂+眉山量产+MLCC 离型膜",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "600617",
-        "name": "国新能源",
-        "reason": "天然气管网+新能源+业绩增长",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -235,14 +355,6 @@
         "huanshou": null
       },
       {
-        "code": "603739",
-        "name": "蔚蓝生物",
-        "reason": "新兽药+动物保健+酶制剂",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
         "code": "600825",
         "name": "新华传媒",
         "reason": "拟收购界面财联社+财经新媒体+上海国资",
@@ -261,7 +373,7 @@
       {
         "code": "002316",
         "name": "亚联发展",
-        "reason": "诉讼进展+智慧电网+生物纤维素+医疗器械",
+        "reason": "诉讼进展+智慧电网+生物纤维素+粮食概念",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -285,21 +397,21 @@
     ]
   },
   "pools": {
-    "zt": 37,
-    "zb": 9,
-    "dt": 1,
+    "zt": 48,
+    "zb": 14,
+    "dt": 5,
     "max_lb": 8,
-    "lb2": 10,
+    "lb2": 11,
     "zt_codes": [
       "002058",
       "002242",
       "002316",
+      "600812",
       "600825",
       "605303",
       "002923",
       "002687",
       "600663",
-      "601208",
       "000011",
       "002951",
       "600026",
@@ -310,7 +422,6 @@
       "002733",
       "002866",
       "605177",
-      "000523",
       "002774",
       "603928",
       "603863",
@@ -319,28 +430,40 @@
       "301697",
       "002565",
       "603137",
+      "605378",
       "002805",
       "002285",
       "603269",
       "002669",
       "605298",
+      "601975",
       "603823",
       "002869",
       "001300",
-      "600408"
+      "600408",
+      "600722",
+      "603002",
+      "601956",
+      "001317",
+      "002580",
+      "001336",
+      "300619",
+      "002973",
+      "603200",
+      "920627"
     ],
-    "seal_pct": 80.4
+    "seal_pct": 77.4
   },
   "breadth": {
-    "up": 3874,
-    "down": 1261,
-    "flat": 151
+    "up": 2726,
+    "down": 2316,
+    "flat": 244
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-09-30 10:30",
+  "prevCapturedAtBJ": "2026-10-08 09:46",
   "prevPools": {
-    "zt": 52,
-    "zb": 12,
-    "seal_pct": 81.3
+    "zt": 37,
+    "zb": 9,
+    "seal_pct": 80.4
   }
 }
