@@ -2,14 +2,46 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-08",
-  "capturedAt": "2026-10-08T02:44:44.083Z",
-  "capturedAtBJ": "2026-10-08 10:44",
+  "capturedAt": "2026-10-08T03:14:50.236Z",
+  "capturedAtBJ": "2026-10-08 11:14",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 39,
+    "count": 38,
     "srcDate": "2026-10-08",
     "rows": [
+      {
+        "code": "002149",
+        "name": "西部材料",
+        "reason": "稀有金属+可控核聚变+商业航天",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "688196",
+        "name": "卓越新能",
+        "reason": "生物柴油+绿色燃料+海外扩产",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "300530",
+        "name": "领湃科技",
+        "reason": "新能源电池模组+新能源EPC+储能+衡阳国资",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "000869",
+        "name": "张裕A",
+        "reason": "葡萄酒+营收增长+回购注销",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
       {
         "code": "600310",
         "name": "广西能源",
@@ -30,14 +62,6 @@
         "code": "001336",
         "name": "楚环科技",
         "reason": "废气治理+半导体环保+航空航天投资",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "001317",
-        "name": "三羊马",
-        "reason": "“羊”字辈+汽车物流+多式联运+国际物流",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -83,14 +107,6 @@
         "huanshou": null
       },
       {
-        "code": "603823",
-        "name": "百合花",
-        "reason": "光刻胶+有机颜料+业绩增长",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
         "code": "002869",
         "name": "金溢科技",
         "reason": "车路协同+电子收费+低空智联",
@@ -102,14 +118,6 @@
         "code": "605298",
         "name": "必得科技",
         "reason": "轨道交通+半导体注入猜测+股份转让",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "002669",
-        "name": "康达新材",
-        "reason": "PCB材料+风电胶粘剂+胶粘剂主业",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -142,14 +150,6 @@
         "code": "002565",
         "name": "顺灏股份",
         "reason": "太空算力+新型烟草+环保包装",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "605069",
-        "name": "正和生态",
-        "reason": "生态水利+垂直大模型+水务机器人",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -267,14 +267,6 @@
         "huanshou": null
       },
       {
-        "code": "000011",
-        "name": "深物业A",
-        "reason": "房地产开发+物业管理+深圳国资",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
         "code": "002923",
         "name": "润都股份",
         "reason": "鼠疫+创新药+化学制药+业绩扭亏",
@@ -325,11 +317,11 @@
     ]
   },
   "pools": {
-    "zt": 41,
-    "zb": 26,
+    "zt": 38,
+    "zb": 31,
     "dt": 7,
     "max_lb": 8,
-    "lb2": 9,
+    "lb2": 8,
     "zt_codes": [
       "002058",
       "002242",
@@ -339,7 +331,6 @@
       "002923",
       "002687",
       "600663",
-      "000011",
       "002951",
       "600026",
       "600617",
@@ -351,40 +342,38 @@
       "002774",
       "603928",
       "603863",
-      "605069",
       "301697",
       "002565",
       "603137",
       "605378",
       "002805",
-      "603269",
-      "002669",
       "605298",
       "601975",
-      "603823",
       "002869",
       "001300",
       "600408",
       "600722",
       "601956",
-      "001317",
       "001336",
       "002973",
       "600310",
-      "000869"
+      "002149",
+      "000869",
+      "300530",
+      "688196"
     ],
-    "seal_pct": 61.2
+    "seal_pct": 55.1
   },
   "breadth": {
-    "up": 1882,
-    "down": 3212,
-    "flat": 192
+    "up": 1966,
+    "down": 3147,
+    "flat": 173
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-08 10:25",
+  "prevCapturedAtBJ": "2026-10-08 10:44",
   "prevPools": {
-    "zt": 46,
-    "zb": 19,
-    "seal_pct": 70.8
+    "zt": 41,
+    "zb": 26,
+    "seal_pct": 61.2
   }
 }
