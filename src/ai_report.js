@@ -392,14 +392,31 @@ export function generateIntraday(input, opts = {}) {
     distance_pp: ddNow != null ? Math.round(((nearest - ddNow) * 100 + Number.EPSILON) * 100) / 100 : null,
     basis: input.live ? '即时轨 accountStats.drawdown（运行回撤）' : '归档轨 trackA.maxDd（运行回撤，非当日）',
   };
+  // ── 盘中身份日期修复（2026-10-08 实录：盘中推送标「09-30」）────────────
+  // 设计语义（test/intraday_live.test.mjs §4 注释 / build_ai_report.mjs
+  // intradayHot 注入门同款）：盘中报告的**身份日期 = 快照交易日（当日）**。
+  // buildInput 的统一 tradeDate 锚定盘后主档（盘中时点恒为昨日），此前直接
+  // 拿它当信封 date 造成四层错位：
+  //   ① 推送文案标昨日（push_text.js 盘中行首）；
+  //   ② 文件名逐日错位——盘中报告永远落「昨日名」，假期主档滞后时直接
+  //     覆盖同名旧档（10-08 实录：当日 6 拍连续踩坏 09-30 首屏示例档）；
+  //   ③ 指纹含 date（fingerprintOf）→ 去重台账日期失真；
+  //   ④ data_health.sources.intraday 误标 stale——「当日快照 vs 昨日主档」
+  //     必不相等，最新鲜的源反被判过期。
+  // 修法：身份日期取快照 tradeDate，缺席兜底主档日期（防御性，不炸）；
+  //   payload.date 保持主档口径（盘中盈亏恒为昨收口径，推送文案已点破）；
+  //   intraday 源健康改为在场性判定——陈旧快照在写入侧已被三重保险拒绝
+  //   （snapshot_intraday：非 live 相位/交易日不符/三源全败均不落盘），
+  //   「在场即当日」，与盘后主档比对对盘中源必错位，纯误报。
+  const intraDate = pick(input, 'intraday.tradeDate') ?? null;
   return envelope({
     type: 'intraday',
     trigger: opts.trigger || 'schedule',
-    date: input.tradeDate,
+    date: intraDate ?? input.tradeDate,
     generatedAt: opts.generatedAt || new Date().toISOString(),
     generatedBy: opts.generatedBy,
     payload,
-    input,
+    input: { ...input, sources: { ...input.sources, intraday: sourceHealth(input.intraday, null, null) } },
     extraNotes,
     sourceOverrides: overrides,
     simulationStock: opts.simulationStock ?? null,

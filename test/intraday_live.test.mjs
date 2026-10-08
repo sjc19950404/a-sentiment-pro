@@ -168,6 +168,23 @@ test('集成：generateIntraday(input.live) 消费组装账本 → nav_realtime 
   assert.ok(DD_TIER_EDGES.includes(0.09) && DD_TIERS.length === 3, '风控档位常量在位（第二步距离刷新用）');
 });
 
+// ── 4.5 盘中身份日期（2026-10-08 严查修复：推送标昨日 + 示例档被踩）───────
+// 回归背景：信封 date 曾取盘后主档 tradeDate（盘中时点恒为昨日）→ 推送文案
+// 标「09-30」、文件名落「昨日名」逐日错位覆盖、指纹日期失真、当日快照被
+// data_health 误标 stale。四断言锁死：身份日期=快照日、口径日期=主档日
+// （语义分离，不混）、快照在场即 fresh、缺席兜底主档不炸。
+test('盘中身份日期 = 快照交易日（≠ 主档昨收口径日）；快照在场不误标 stale', () => {
+  const intra = { tradeDate: '2026-10-08', phase: 'live', hot: { rows: [] } };
+  const r = generateIntraday(mkInput({ intraday: intra }), { generatedAt: GEN_AT });
+  assert.equal(r.date, '2026-10-08', '信封 date = 快照交易日（当日）');
+  assert.equal(r.payload.date, '2026-09-30', 'payload.date 保持主档口径（盘中盈亏恒昨收口径，推送文案已点破）');
+  assert.equal(r.data_health.sources.intraday, 'fresh', '当日快照不得因「≠ 昨日主档」被误标 stale');
+  assert.deepEqual(validateContract(r, SCHEMA), [], '契约不因日期改动破');
+  const bare = generateIntraday(mkInput(), { generatedAt: GEN_AT });
+  assert.equal(bare.date, '2026-09-30', '快照缺席 → 兜底主档日期（防御性不炸）');
+  assert.equal(bare.data_health.sources.intraday, 'missing', '快照缺席 → missing 照旧');
+});
+
 // ── 5. 当日高点回撤（第二步 max_drawdown_daily 的数据面）────────────────
 test('当日回撤：(日内高点 − 当前) ÷ 高点；单点/空/新高 → null 或 0 不冒充', () => {
   near(dailyDrawdown([{ equity: 100 }, { equity: 110 }, { equity: 105 }]), 5 / 110, 1e-12);
