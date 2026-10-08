@@ -301,7 +301,7 @@ export function validMarketPair(a, b) {
   const lo = Math.min(a, b), hi = Math.max(a, b);
   return lo > 0 && hi > 0 && lo >= hi * 0.2;
 }
-export async function fetchAmountMap() {
+export async function fetchAmountMap({ anchor } = {}) {
   // 分指数抓取，合并时要求两市同日都有值——防单市缺数据被当全市（2026-09-29 事故：深证延迟只出上证 6617 亿）
   const byCode = {};
   const years = [2025, 2026];
@@ -326,6 +326,26 @@ export async function fetchAmountMap() {
   for (const dt of dates) {
     const a = byCode.zs_1A0001[dt], b = byCode.zs_399001[dt];
     if (validMarketPair(a, b)) map[dt] = a + b; // 单市缺/脏 → 该日不收，交由兜底/missing 处理
+  }
+  // 截断防护（2026-10-08 病因B，第三批）：同花顺年线接口间歇性返回截断序列
+  //   （当晚实录两形态：截到 20251231 缺 9 个月 / 截到 0930 缺当日；前后直连又全好，
+  //   CDN 节点数据不同步），CI 18:30/21:00 两班 smoke 两连挂（60s run 级重试救不了
+  //   小时级劣化）。原兜底散装挂在 fetchLive（缺当日才补），smoke / backfill_factors
+  //   直接调本函数无防护——此处下沉为唯一出入口：调用方传 anchor（期望覆盖的
+  //   交易日 YYYYMMDD），序列最新键 < anchor 即截断 → 腾讯实时两市补当日。
+  //   备源不选东财 push2his：本机实测 3/3 TLS 断连不可达，无法本地验证的源不进生产。
+  //   腾讯源自身带两市比值护栏（validMarketPair）+ 合理区间护栏，单市缺/脏拒收。
+  const sorted = Object.keys(map).sort();
+  const latest = sorted[sorted.length - 1];
+  if (anchor && (!sorted.length || latest < anchor)) {
+    console.warn(`[amount] 同花顺序列未覆盖锚点（最新 ${latest ?? '空'} < 锚点 ${anchor}）→ 腾讯实时两市兜底当日值`);
+    const fb = await fetchAmountTencentFallback(anchor);
+    if (fb && fb[anchor] != null) {
+      map[anchor] = fb[anchor];
+      console.warn(`[amount] 腾讯兜底成功：${anchor} = ${fb[anchor]} 亿`);
+    } else {
+      console.warn('[amount] 腾讯兜底也未取得当日值——当日成交额走 missing 中性（宁缺勿假）');
+    }
   }
   return Object.keys(map).length ? map : null;
 }
@@ -773,15 +793,13 @@ export async function fetchLive() {
     fetchBoards(date),
     fetchIndexes(date),
     fetchPools(date),
-    fetchAmountMap(),
+    // 截断防护下沉（2026-10-08 病因B）：锚点当日值缺失/序列截断时 fetchAmountMap
+    //   内部走腾讯实时两市兜底——原散装兜底（此处 if 补齐）与 smoke 直调路径分裂，
+    //   收敛为唯一出处后主路/冒烟/回填同一行为。
+    fetchAmountMap({ anchor: date.replace(/-/g, '') }),
     fetchBreadth(),
   ]);
-  let amountYi = amountMap ? (amountMap[date.replace(/-/g, '')] || null) : null;
-  if (amountYi == null) {
-    const fb = await fetchAmountTencentFallback(date.replace(/-/g, ''));
-    if (fb && amountMap) { Object.assign(amountMap, fb); amountYi = fb[date.replace(/-/g, '')] || null; }
-    else if (fb) amountYi = fb[date.replace(/-/g, '')] || null;
-  }
+  const amountYi = amountMap ? (amountMap[date.replace(/-/g, '')] || null) : null;
   const day = buildDay(date, lhbRaw, hotEnriched, industry, indexes, pools, amountYi, amountMap, breadth,
     await fetchSeats(date, buildLhbPart(lhbRaw).lhb_aggr.map((l) => ({ code: l.code, name: l.name, net_buy_wan: l.net_buy_wan }))));
   return { newDays: [day], tradeDate: date };
