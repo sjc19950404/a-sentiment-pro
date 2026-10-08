@@ -2,34 +2,18 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-08",
-  "capturedAt": "2026-10-08T02:25:02.311Z",
-  "capturedAtBJ": "2026-10-08 10:25",
+  "capturedAt": "2026-10-08T02:44:44.083Z",
+  "capturedAtBJ": "2026-10-08 10:44",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 45,
+    "count": 39,
     "srcDate": "2026-10-08",
     "rows": [
-      {
-        "code": "002182",
-        "name": "宝武镁业",
-        "reason": "镁合金+机器人+汽车轻量化",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
       {
         "code": "600310",
         "name": "广西能源",
         "reason": "电力主业+业绩扭亏+抽水蓄能",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "920627",
-        "name": "力王股份",
-        "reason": "锂电池+固态电池+锌锰电池",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -43,25 +27,9 @@
         "huanshou": null
       },
       {
-        "code": "300619",
-        "name": "金银河",
-        "reason": "固态电池+锂电设备+高纯铷铯盐",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
         "code": "001336",
         "name": "楚环科技",
         "reason": "废气治理+半导体环保+航空航天投资",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "002580",
-        "name": "圣阳股份",
-        "reason": "固态电池+液冷储能+算力+山东国资",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -78,14 +46,6 @@
         "code": "601956",
         "name": "东贝集团",
         "reason": "制冷压缩机+机器人电机+高效变频",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "603002",
-        "name": "宏昌电子",
-        "reason": "高速覆铜板+GBF膜材+定增扩产",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -142,14 +102,6 @@
         "code": "605298",
         "name": "必得科技",
         "reason": "轨道交通+半导体注入猜测+股份转让",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "603269",
-        "name": "海鸥股份",
-        "reason": "数据中心液冷+订单增长+冷却塔业务",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -325,7 +277,7 @@
       {
         "code": "002923",
         "name": "润都股份",
-        "reason": "创新药+化学制药+业绩扭亏",
+        "reason": "鼠疫+创新药+化学制药+业绩扭亏",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -349,7 +301,7 @@
       {
         "code": "600812",
         "name": "华北制药",
-        "reason": "抗生素+创新药+集采",
+        "reason": "鼠疫+抗生素+创新药+集采",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -373,9 +325,9 @@
     ]
   },
   "pools": {
-    "zt": 46,
-    "zb": 19,
-    "dt": 6,
+    "zt": 41,
+    "zb": 26,
+    "dt": 7,
     "max_lb": 8,
     "lb2": 9,
     "zt_codes": [
@@ -400,7 +352,6 @@
       "603928",
       "603863",
       "605069",
-      "601872",
       "301697",
       "002565",
       "603137",
@@ -415,29 +366,25 @@
       "001300",
       "600408",
       "600722",
-      "603002",
       "601956",
       "001317",
-      "002580",
       "001336",
-      "300619",
       "002973",
-      "920627",
       "600310",
-      "002182"
+      "000869"
     ],
-    "seal_pct": 70.8
+    "seal_pct": 61.2
   },
   "breadth": {
-    "up": 2712,
-    "down": 2386,
-    "flat": 188
+    "up": 1882,
+    "down": 3212,
+    "flat": 192
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-08 10:14",
+  "prevCapturedAtBJ": "2026-10-08 10:25",
   "prevPools": {
-    "zt": 48,
-    "zb": 14,
-    "seal_pct": 77.4
+    "zt": 46,
+    "zb": 19,
+    "seal_pct": 70.8
   }
 }
