@@ -82,8 +82,16 @@ export async function crossCheckVolume(main, { mainDate = null, fetchImpl = null
   return out;
 }
 
-/** 对账结果 → 企微事件（opsalerts 通道；PASS 静默不发，异常才构造给调用方）。 */
-export function crossCheckEvent(result, { at = new Date().toISOString() } = {}) {
-  return { at, severity: 'error', kind: 'cross-check', source: 'volume',
-    detail: `跨源对账异常：${result.reason}` };
+/**
+ * 对账结果 → 企微事件（opsalerts 通道；PASS 静默不发，异常才构造给调用方）。
+ * 正文按定稿明细格式：理由 + 主源/备源/差值分行（UNAVAILABLE 场景 null 段自动省略）。
+ * @param {object} result crossCheckVolume 产物
+ * @param {object} [o] { mainDate?: 'YYYYMMDD', at?: string }
+ */
+export function crossCheckEvent(result, { mainDate = null, at = new Date().toISOString() } = {}) {
+  const lines = [`跨源对账异常：${result.reason}`];
+  if (result.main != null) lines.push(`主源｜${result.main} 亿${mainDate ? `（${mainDate}）` : ''}`);
+  if (result.backup != null) lines.push(`备源｜${result.backup} 亿`);
+  if (result.diffPct != null) lines.push(`差值｜${result.diffPct}%`);
+  return { at, severity: 'error', kind: 'cross-check', source: 'volume', detail: lines.join('\n') };
 }

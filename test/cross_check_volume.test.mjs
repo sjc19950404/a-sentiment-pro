@@ -98,12 +98,15 @@ test('crossCheckVolume：主源值不可用 → UNAVAILABLE（对账无从谈起
 });
 
 // ── ③ 告警事件与 issue 载荷 ────────────────────────────────────────────
-test('crossCheckEvent + buildIssuePayload：对账告警 labels 含 cross-check，title 前缀「跨源对账」', async () => {
+test('crossCheckEvent + buildIssuePayload：对账告警 labels 含 cross-check，title 前缀「跨源对账」，正文带主/备/差值明细', async () => {
   const r = await crossCheckVolume(16821.3, { mainDate: '20261008', backup: bk(15100) });
-  const ev = crossCheckEvent(r);
+  const ev = crossCheckEvent(r, { mainDate: '20261008' });
   assert.equal(ev.severity, 'error');
   assert.equal(ev.kind, 'cross-check');
   assert.match(ev.detail, /差值 10\.\d+%/);
+  assert.match(ev.detail, /主源｜16821\.3 亿（20261008）/, '定稿明细格式：主源分行带交易日');
+  assert.match(ev.detail, /备源｜15100 亿/);
+  assert.match(ev.detail, /差值｜10\.\d+%/, '定稿明细格式：差值分行');
   const p = buildIssuePayload(
     { status: r.verdict, reason: r.reason, event: ev },
     { titlePrefix: '跨源对账', labels: ['guard', 'cross-check'] },
@@ -111,4 +114,13 @@ test('crossCheckEvent + buildIssuePayload：对账告警 labels 含 cross-check�
   assert.match(p.title, /^🛡️ 跨源对账 WARN: /);
   assert.deepEqual(p.labels, ['guard', 'cross-check'], '验收：labels 含 cross-check');
   assert.match(p.body, /状态: WARN/);
+});
+
+test('crossCheckEvent：UNAVAILABLE 场景 null 段省略（备源不可用不显示空备源行）', async () => {
+  const r = await crossCheckVolume(16821.3, { mainDate: '20261008', backup: { ok: false, amountYi: null, date: null, error: 'fetch failed' } });
+  const ev = crossCheckEvent(r, { mainDate: '20261008' });
+  assert.match(ev.detail, /备用源不可用：fetch failed/);
+  assert.match(ev.detail, /主源｜16821\.3 亿/);
+  assert.doesNotMatch(ev.detail, /备源｜/, '无备源值不渲染备源行');
+  assert.doesNotMatch(ev.detail, /差值｜/, '无差值不渲染差值行');
 });

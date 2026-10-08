@@ -51,8 +51,9 @@ if (result.ok) {
 }
 
 // WARN / UNAVAILABLE → 双通道告警（差值超阈或备源不可用，都是「主源数值可信度」
-// 的事实变化，值得建 issue 留痕——但不拦 build，纯观测）。
-const event = crossCheckEvent(result);
+// 的事实变化，值得建 issue 留痕——但不拦 build，纯观测）。正文按定稿明细格式：
+// 理由 + 主源/备源/差值分行（UNAVAILABLE 场景 null 段自动省略）。
+const event = crossCheckEvent(result, { mainDate: anchor.date });
 console.log(`[cross-check] ⚠ ${event.detail}`);
 
 // 通道 1：企微
