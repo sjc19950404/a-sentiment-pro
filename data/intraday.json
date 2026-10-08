@@ -2,14 +2,22 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-08",
-  "capturedAt": "2026-10-08T05:55:36.256Z",
-  "capturedAtBJ": "2026-10-08 13:55",
+  "capturedAt": "2026-10-08T06:20:14.186Z",
+  "capturedAtBJ": "2026-10-08 14:20",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 41,
+    "count": 43,
     "srcDate": "2026-10-08",
     "rows": [
+      {
+        "code": "603189",
+        "name": "*ST网达",
+        "reason": "AI智能体+低空经济+大视频",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
       {
         "code": "002702",
         "name": "海欣食品",
@@ -91,9 +99,9 @@
         "huanshou": null
       },
       {
-        "code": "002973",
-        "name": "侨银股份",
-        "reason": "人形机器人+算力服务+城市服务",
+        "code": "920627",
+        "name": "力王股份",
+        "reason": "锂电池+固态电池+锌锰电池",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -299,6 +307,14 @@
         "huanshou": null
       },
       {
+        "code": "600513",
+        "name": "联环药业",
+        "reason": "“超级细菌”+创新药+仿创结合",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
         "code": "605303",
         "name": "园林股份",
         "reason": "重大重组+复牌+存储芯片+园林工程",
@@ -341,9 +357,9 @@
     ]
   },
   "pools": {
-    "zt": 40,
-    "zb": 34,
-    "dt": 11,
+    "zt": 41,
+    "zb": 33,
+    "dt": 14,
     "max_lb": 8,
     "lb2": 9,
     "zt_codes": [
@@ -354,6 +370,7 @@
       "605303",
       "002687",
       "600663",
+      "600513",
       "002951",
       "600026",
       "600617",
@@ -377,7 +394,7 @@
       "600722",
       "601956",
       "001336",
-      "002973",
+      "920627",
       "600310",
       "002149",
       "600400",
@@ -388,15 +405,15 @@
       "603906",
       "002702"
     ],
-    "seal_pct": 54.1
+    "seal_pct": 55.4
   },
   "breadth": {
-    "up": 1533,
-    "down": 3616,
-    "flat": 137
+    "up": 1399,
+    "down": 3769,
+    "flat": 118
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-08 13:45",
+  "prevCapturedAtBJ": "2026-10-08 13:55",
   "prevPools": {
     "zt": 40,
     "zb": 34,
