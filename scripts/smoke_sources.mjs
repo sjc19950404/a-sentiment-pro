@@ -142,6 +142,7 @@ await guard('s5', '东财涨跌停/炸板池 push2ex', async () => {
 });
 
 // ── 源6: 同花顺大盘日K → 成交额表 ──
+let amountAnchor = null; // 主源锚点值（s6 顺产，对账 step 白嫖，s6 崩则保持 null）
 await guard('s6', '同花顺大盘日K（两市成交额）', async () => {
   const anchor = (tradeDate || '').replace(/-/g, '');
   // 截断防护（2026-10-08 病因B）：同花顺年线间歇截断 → fetchAmountMap 内部腾讯实时
@@ -153,6 +154,12 @@ await guard('s6', '同花顺大盘日K（两市成交额）', async () => {
   // 样本量降级为 warn（不拦构建）：当日值 + 两市护栏才是硬判据；样本不足时
   //   MA20/分位缺料走 missing 中性（宁缺勿假），不该用「样本量」把整条 CI 拦死。
   if (keys.length < 200) console.log(`    ⚠ [s6] 样本量 ${keys.length} 天 < 200——MA20/分位将走中性，不拦构建`);
+  // 锚点值落盘（跨源对账 2026-10-08）：主源锚点日成交额优先，退化取最新日；
+  // s6 崩则保持 null（对账 step 读到 null 自动跳过——s6 硬失败时守卫先说话，
+  // 对账不重复告警）。
+  const anchorVal = m[anchor] ?? m[latest] ?? null;
+  amountAnchor = anchorVal != null
+    ? { date: m[anchor] != null ? anchor : (latest || null), amountYi: anchorVal } : null;
   return [
     ck('HTTP 200（fetchAmountMap 内建）', true),
     ck('覆盖到冒烟锚点交易日', latest >= anchor, `最新 ${latest} vs 锚点 ${anchor}`),
@@ -169,6 +176,10 @@ const report = {
   allOk: hard.length === 0,
   hardFail: hard.map((r) => r.id),
   lhbNotPublished: lhbSoftSkip,
+  // 主源锚点值（跨源对账 2026-10-08）：s6 顺产的锚点交易日两市成交额（亿）——
+  //   对账 step 用它 vs 东财备源互核，差值超阈值建 issue（纯观测不拦 build）。
+  //   null = s6 未产出（对账 step 自动跳过，守卫先说话不重复告警）。
+  amountAnchor,
   note: '冒烟与生产同源实现（src/sources.js）。任一硬失败 → CI needs 关系拦下主跑，不污染生产档。软失败（当日未公布）不算源故障。',
   sources: results,
 };

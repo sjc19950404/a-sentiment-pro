@@ -114,6 +114,21 @@ jobs:
             echo "冒烟摘要："
             node -e "const r=require('./data/smoke-latest.json'); console.log(r.allOk?'全部通过':'硬失败: '+r.hardFail.join(','), '@', r.tradeDateAnchored)"
           fi
+      # ⑤ 两市成交额跨源对账（2026-10-08 对账任务）：smoke 之后 build 之前的独立
+      #   观测——东财 push2his 备源（上证+深证两 secid 相加）核验主源（s6 顺产落盘
+      #   的 amountAnchor）当日值，差值超 5% 或备源不可用 → 企微+issue 双通道告警。
+      #   纯观测不拦 build：恒 exit 0（+ continue-on-error 双保险），CI 红只属于守卫；
+      #   主源值缺失（s6 硬失败）自动跳过——守卫先说话，对账不重复告警。
+      - name: 跨源对账（两市成交额，差值超阈值建 issue，不拦 build）
+        if: always()
+        continue-on-error: true
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/cross_check.mjs \
+            --run-id "${{ github.run_id }}" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       # ②+③ 守卫结果双通道通知（2026-10-08 合并交付）：PASS/BLOCK/ERROR 三态全覆盖，
       #   企微 + GitHub issue 双通道。替代 alert_smoke_fail.mjs 单通道时代（其企微正文
       #   由 smokeFailEvent 继续 carry，语义零漂移；避免 BLOCK 时双企微打扰）。
