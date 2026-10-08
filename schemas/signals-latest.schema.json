@@ -85,10 +85,11 @@
         "tradeDate": { "type": "string" },
         "momentum": {
           "type": "object",
-          "$comment": "fresh=新晋（对象数组带 stocks）；fading=退潮（纯名字字符串数组）；rising 在当前档不存在（形态见 archive_split.js）",
+          "$comment": "momentum 三态统一 {theme, stocks} 对象数组（enrich.js：退潮题材今日已消失 → stocks=0 如实披露；消费端 app.js chips() 双形态兼容）。fresh/fading 契约自 33482e5，continuing/fading 自 4c57901 引擎拆分起实际为对象数组，2026-10-08 契约对齐实现（节后首日 fading 首次非空暴露缺口）。rising 在当前档不存在（形态见 archive_split.js）",
           "properties": {
             "fresh": { "type": "array", "items": { "type": "object", "required": ["theme", "stocks"] } },
-            "fading": { "type": "array", "items": { "type": "string" } }
+            "continuing": { "type": "array", "items": { "type": "object", "required": ["theme", "stocks"] } },
+            "fading": { "type": "array", "items": { "type": "object", "required": ["theme", "stocks"] } }
           }
         }
       }
