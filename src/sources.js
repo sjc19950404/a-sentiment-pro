@@ -325,17 +325,43 @@ async function fetchAmountTencentFallback(ymd) {
     try {
       const t = await (await fetch('https://qt.gtimg.cn/q=sh000001,sz399001&r=' + Date.now(),
         { headers: { 'User-Agent': UA } })).text();
-      let sum = 0, any = false;
+      // 两市各自解析到有效值才返回（2026-10-08 事故：深证行缺失/解析失败时旧逻辑
+      // any=true 即收，只加了沪市 8301 亿——单市冒充两市混入两市口径序列（近 20 日均
+      // ≈1.8 万亿，比值 0.46）→ s_amt=12.5 反向拖低情绪分 ~5 分并污染分位/判档。
+      // 与主路 fetchAmountMap 的「两市同日都有值」约束对齐，任一市缺失 → null 走
+      // missing，宁缺毋假。09-29 主路单市事故只修了主路，兜底漏配，本处补齐）。
+      let sh = 0, sz = 0;
       for (const p of t.split(';')) {
         if (!p.includes('~')) continue;
         const amt = +p.split('~')[37]; // f[37]=成交额(万元)；f[38] 盘后为 0，勿用
-        if (Number.isFinite(amt) && amt > 0) { sum += amt / 1e4; any = true; }
+        if (!(Number.isFinite(amt) && amt > 0)) continue;
+        if (p.includes('sh000001')) sh = amt / 1e4;
+        else if (p.includes('sz399001')) sz = amt / 1e4;
       }
-      if (any && sum > 3000 && sum < 90000) return { [ymd]: r1(sum) }; // 两市额合理区间护栏
+      const sum = sh + sz;
+      if (sh > 0 && sz > 0 && sum > 3000 && sum < 90000) return { [ymd]: r1(sum) }; // 两市额合理区间护栏
     } catch (e) { /* 重试 */ }
     await sleep(500);
   }
   return null;
+}
+
+// 口径守卫（纯函数，供单测）：当日两市成交额 vs 近 20 日均比值异常的二道防线。
+// 主修在 fetchAmountTencentFallback（两市各自有效），此处兜「主路/兜底本身被污染」
+// 的残余风险。判脏条件：比值 < 0.7 且非长假后首日（与前一有效交易日自然日差
+// ≤ 3 天——长假后首日常见真缩量，放行不误杀；10-08 长假首日 gap 8 天即豁免，
+// 该场景由主修兜住）。返回 null（放行）或拦截原因（供 warn 与 _missing 留痕）。
+export function amountCaliberGuard(amountYi, amountMap, ymd) {
+  if (amountYi == null || !amountMap) return null;
+  const prior = Object.keys(amountMap).filter((k) => k < ymd && amountMap[k] > 0).sort();
+  if (prior.length < 10) return null; // 均值样本不足（与 buildDay amt_ma 的 ≥10 门槛同口径）
+  const ma = prior.slice(-20).reduce((a, k) => a + amountMap[k], 0) / Math.min(prior.length, 20);
+  if (!(ma > 0) || amountYi / ma >= 0.7) return null;
+  const iso = (k) => `${k.slice(0, 4)}-${k.slice(4, 6)}-${k.slice(6, 8)}`;
+  const gap = (Date.parse(iso(ymd)) - Date.parse(iso(prior[prior.length - 1]))) / 86400e3;
+  return gap <= 3
+    ? `当日 ${r1(amountYi)}亿 < 0.7×近20日均 ${r1(ma)}亿（前有效日 ${prior[prior.length - 1]}，gap ${gap} 天），单市冒充两市特征，判脏丢弃`
+    : null;
 }
 
 // day 组装（七因子 + 题材原始计数）
@@ -557,7 +583,12 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
   const zb_pct = seal_pct != null ? r1(100 - seal_pct) : null;
   const zbl_pct = zb_pct; // 兼容旧字段名（语义=炸板率，与旧报告渲染一致）
   const ymdNum = date.replace(/-/g, '');
-  const amount_yi = amountYi != null ? r1(amountYi) : null;
+  let amount_yi = amountYi != null ? r1(amountYi) : null;
+  const amtGuardHit = amountCaliberGuard(amount_yi, amountMap, ymdNum);
+  if (amtGuardHit) {
+    console.warn(`[amount] 口径守卫拦截 ${date}: ${amtGuardHit}`);
+    amount_yi = null; // 判脏丢弃走 missing（s_amt 中性 50 + summary._missing 留痕）
+  }
   if (amount_yi == null) missing.push('amount');
   const histAmts = amountMap ? Object.keys(amountMap).filter((k) => k < ymdNum && amountMap[k] > 0).sort().slice(-20) : [];
   const amt_ma = histAmts.length >= 10 ? histAmts.reduce((a, k) => a + amountMap[k], 0) / histAmts.length : null;

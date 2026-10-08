@@ -7,6 +7,38 @@ import { classifySeat } from '../src/sources.js';
 import { recalcAll } from '../src/pipeline.js';
 import { applyLhb } from '../src/sources.js';
 import { isRangeBoard, aggregateByCode, summarizeCalibers, mergeDuplicateRecords, duplicateKeys, normalizeRecord } from '../src/lhb.js';
+import { amountCaliberGuard } from '../src/sources.js';
+
+// ── 成交额口径守卫（2026-10-08 事故回归：腾讯兜底只解析到沪市 8301 亿冒充两市）──
+// 事故链：兜底 any=true 即收 → 单市值混入两市序列（MA20≈1.8 万亿，比值 0.46）
+// → s_amt=12.5 反向拖低情绪分 ~5 分并污染分位/判档。守卫二道防线锁定四种行为：
+// 日常单市特征拦截、长假后首日豁免（真缩量常态，10-08 的 gap 8 天即此场景）、
+// 比值正常放行、样本不足放行。
+test('amountCaliberGuard: 日常单市冒充拦截 / 长假首日豁免 / 正常放行', () => {
+  const mkMap = (lastDay, n = 12) => {
+    const iso = (k) => `${k.slice(0, 4)}-${k.slice(4, 6)}-${k.slice(6, 8)}`;
+    const m = {};
+    for (let i = n; i >= 1; i--) {
+      const dt = new Date(Date.parse(`${iso(lastDay)}T00:00:00Z`) - i * 86400e3)
+        .toISOString().slice(0, 10).replace(/-/g, '');
+      m[dt] = 16000; // 两市口径历史（~1.6 万亿/日）
+    }
+    return m;
+  };
+  // ① 日常场景（gap 1 天）：单市量级 8301 混入两市序列 → 拦截并给出原因
+  const hit = amountCaliberGuard(8301, mkMap('20260916'), '20260916');
+  assert.ok(hit && hit.includes('0.7'), `日常单市应拦截，实际: ${hit}`);
+  // ② 长假后首日（gap 8 天）：真缩量常态 → 豁免放行（该场景由兜底主修兜住）
+  const holidayMap = { ...mkMap('20260930'), '20260930': 14380 };
+  assert.equal(amountCaliberGuard(8301, holidayMap, '20261008'), null, '长假后首日豁免，不误杀真缩量');
+  // ③ 比值正常（两市全量 16821 vs MA≈16000 → 1.05）→ 放行
+  assert.equal(amountCaliberGuard(16821, mkMap('20260916'), '20260916'), null, '比值 ≥0.7 放行');
+  // ④ 均值样本不足（<10 个历史日）→ 放行不猜
+  const thin = { '20260901': 16000, '20260902': 16000, '20260903': 15000 };
+  assert.equal(amountCaliberGuard(8301, thin, '20260904'), null, '样本不足放行');
+  assert.equal(amountCaliberGuard(null, mkMap('20260916'), '20260916'), null, 'amountYi null 放行');
+});
+
 
 test('sentiment: 全因子正常 -> 0-100', () => {
   const r = computeSentiment({

@@ -3228,7 +3228,14 @@ function renderAll(arc) {
         : meta.phase === 'pre' ? 'PRE' : 'LIVE';
   tag.textContent = tagText;
   tag.className = 'tag ' + (tagText === 'STALE' ? 'stale' : tagText.startsWith('LIVE') ? 'live' : '');
-  $('genTime').textContent = meta.generatedAt ? '更新 ' + meta.generatedAt.replace('T', ' ').slice(0, 16) : '';
+  // UTC → 北京时间（2026-10-08 实录：曾直接展示 generatedAt 原文 10:56Z，被误读成
+  // 「上午 10:56 盘中快照」，实为本地 18:56 写档）。与上方 freshness 渲染的 +8h 惯例同款。
+  {
+    const d = meta.generatedAt ? new Date(meta.generatedAt) : null;
+    $('genTime').textContent = (d && !Number.isNaN(d.getTime()))
+      ? '更新 ' + new Date(d.getTime() + 8 * 3600e3).toISOString().replace('T', ' ').slice(0, 16)
+      : '';
+  }
 
   // 分层加载的**诚实披露**：当前页只加载了最近 N 日明细，"样本 N 个交易日"这类
   // 会随加载深度变化的数字必须显式说明来源，否则读者会把 30 读成 241。
