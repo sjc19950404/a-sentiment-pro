@@ -54,3 +54,9 @@ data/bt_kline_fetch.err.log
 
 # H-4 原子写（2026-10-07）：极端场景（进程在写 tmp 后、清理前被 SIGKILL）的残留临时档
 *.tmp
+
+# 涨停池三模块的历史产物档（emotion/old_dragon/main_theme）——可由 ztpool_history.json + archive.json 完全重建，
+# 且每次 daily_fetch 重跑都只改 generatedAt（churn 无内容），不入库避免 stash 折腾。原始积累 ztpool_history.json 照常入库。
+data/emotion_history.json
+data/old_dragon_history.json
+data/main_theme_history.json

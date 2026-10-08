@@ -50,9 +50,12 @@ export function writeArchive(archive, filePath) {
   // 且下游读到损坏档会静默回退旧快照。
   atomicWriteJSON(p, JSON.stringify(packed));
   // 切片与主档**同源生成**：每次写主档都重建切片，杜绝"两个文件各自演化"。
-  // 只在写默认主档时生成——--out 到别处（测试/临时）不该污染 data/ 下的切片。
+  // 判据是"写的是默认主档"（按解析后绝对路径比对）——pipeline 恒传默认路径，
+  // 必须生成切片；测试/临时 --out 写别的位置时不污染 data/ 下的切片。
+  // 历史坑（2026-10-08 实录）：旧判据 `if (!filePath)` 在 pipeline 显式传路径时恒为
+  //   false → 本地跑 pipeline 只写主档、切片永不刷新 → 前端一直显示旧交易日。
   let shards = null;
-  if (!filePath) {
+  if (path.resolve(p) === path.join(DATA_DIR, 'archive.json')) {
     try {
       shards = writeShards(packed);
     } catch (e) {
