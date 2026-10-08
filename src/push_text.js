@@ -89,6 +89,11 @@ export function renderPushText(report) {
     default:
       lines.push(`【AI 报告 · ${txt(report?.report_type)}】${txt(report?.date)}`);
   }
+  // MA20 降级红警（2026-10-08 推送前校验 ①）：量能因子走中性 50 → 推送里显式
+  //   标红，一眼识别「降级版」（当日成交额缺或量能历史不足；判据唯一出处
+  //   ai_report.js envelope 的 ma20_degraded）。企微 text 消息不支持
+  //   markdown <font color>，用 🔴 emoji 替代；文案短促不挤占 MSG_CAP。
+  if (p.ma20_degraded) lines.push('🔴 MA20 降级版：量能因子按中性 50 计（当日成交额缺或量能历史不足）');
   const degraded = report?.status && report.status !== 'ok' ? ` · 数据状态 ${report.status}` : '';
   lines.push(`缺失披露 ${report?.missing_notes?.length ?? 0} 项${degraded}（完整版见页面 · 不构成投资建议）`);
   let text = lines.join('\n');

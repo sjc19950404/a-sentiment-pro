@@ -59,6 +59,18 @@ test('fingerprintOf：generated_at/易变字段不进指纹，payload 变化必�
   assert.notEqual(fingerprintOf(r), fingerprintOf(urgent), 'trigger 进指纹（事件版是另一份报告）');
 });
 
+// ── 1.5 MA20 降级红警（2026-10-08 推送前校验 ①）─────────────────────
+// 主验证链：renderPushText 消费 report.payload.ma20_degraded——降级版（s_amt
+// 中性 50）推送必现红警行；正常版（s_amt=44）不显示不添乱（老档无此键 → falsy 兼容）。
+test('MA20 降级红警：ma20_degraded=true 推送含红警行，false 不含', () => {
+  const base = mkReport();
+  const degraded = renderPushText(mkReport({ payload: { ...base.payload, ma20_degraded: true } }));
+  assert.match(degraded, /MA20 降级版/, '降级版红警行一定在');
+  assert.match(degraded, /中性 50/, '量能因子中性 50 文案在场');
+  const normal = renderPushText(base);
+  assert.doesNotMatch(normal, /MA20/, '正常推送不出现 MA20 警示字样');
+});
+
 // ── 2. 防风暴判定 ─────────────────────────────────────────────────────
 test('shouldPush：新内容放行 / 30 天内同内容拦截 / TTL 过期放行 / urgent 直达', () => {
   const r = mkReport();

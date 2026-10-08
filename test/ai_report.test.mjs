@@ -42,7 +42,7 @@ const DAYS = [
 const SIG = {
   meta: { tradeDate: '2026-09-30' },
   signals: { latestEmotion: { value: 64.4 } },
-  latest: { pct_rank: 44.1, up_count: 2393, down_count: 2730, flat_count: 167, amount_yi: 14380.2, zt_count: 52, dt_count: 9, indexes: { '上证指数': 0.31 } },
+  latest: { pct_rank: 44.1, up_count: 2393, down_count: 2730, flat_count: 167, amount_yi: 14380.2, zt_count: 52, dt_count: 9, indexes: { '上证指数': 0.31 }, factors: { s_amt: 44 } },
   regime: { turns: [
     { date: '2026-09-28', from: '退潮', to: '冰点' },
     { date: '2026-09-29', from: '冰点', to: '回暖' },
@@ -108,6 +108,21 @@ test('盘后报告：信封字段齐 + 数字只搬运 + 结构性 null 不补 0
   const noteFields = r.missing_notes.map((n) => n.field).join(';');
   assert.match(noteFields, /grid_triggers/, '常驻缺失披露必须在场');
   assert.match(noteFields, /max_drawdown_daily/, '归档轨 live-only 披露必须在场');
+});
+
+// ── 1.5 MA20 降级标志（2026-10-08 推送前校验 ①）─────────────────────
+// 判据唯一出处：signals.latest.factors.s_amt == null → 量能因子中性 50（当日
+// 成交额缺或历史 <10 日），报告 payload 携带 ma20_degraded 供推送红警行消费；
+// bool 恒有值不进 deriveStatus（status 语义保持，本组第一测仍 degraded 由
+// live-only 字段驱动而非本标志）。
+test('MA20 降级标志：s_amt 有值 false / s_amt null true（四类报告信封统一携带）', () => {
+  const ok = generatePostMarket(mkInput(), { generatedAt: GEN_AT });
+  assert.equal(ok.payload.ma20_degraded, false, 'SIG 夹具 s_amt=44 → 正常版');
+  const degradedInput = mkInput({ signals: { ...SIG, latest: { ...SIG.latest, factors: { s_amt: null } } } });
+  const degraded = generatePostMarket(degradedInput, { generatedAt: GEN_AT });
+  assert.equal(degraded.payload.ma20_degraded, true, 's_amt null → 降级版标志');
+  const pre = generatePreMarket(degradedInput, { generatedAt: GEN_AT });
+  assert.equal(pre.payload.ma20_degraded, true, '盘前报告同样携带（推送四类全覆盖）');
 });
 
 // ── 2. data_completeness（决议 5）──────────────────────────────────────

@@ -227,6 +227,7 @@ const FIELD_SOURCE_DEFAULTS = {
   grid_trigger_detail: 'missing', counter_trend_loss_ratio: 'missing',
   max_drawdown_intraday: 'live', close_drawdown: 'archived',
   backtest_deviation: 'derived', market_context: 'archived',
+  ma20_degraded: 'derived',
   week_return: 'derived', nav_series: 'archived', max_drawdown_week: 'derived',
   win_rate: 'live', win_rate_note: 'derived', profit_trade_ratio: 'live', cost_ratio_week: 'live',
   trend_switch_effect: 'archived', param_suggestions: 'archived',
@@ -255,6 +256,12 @@ function envelope({ type, trigger, date, generatedAt, generatedBy, payload, inpu
   if (!TRIGGER_ENUM.includes(trigger)) throw new Error(`非法 trigger: ${trigger}（urgent 触发条件限定四类，决议 3）`);
   const status = deriveStatus(input, payload);
   payload.simulation_stock = simulationStock ?? null; // 模拟选股段（S1.5）：注入式，四类报告均可携带
+  // MA20 降级标志（2026-10-08 推送前校验 ①）：s_amt 因子 null = 当日成交额缺或
+  // 量能 MA20 历史不足（<10 个有值交易日）→ 因子中性 50——这是量能降级唯一的
+  // 管道判据（src/sentiment.js:143），比 smoke 旁路样本量更权威。bool 恒有值，
+  // 不进 deriveStatus 的 variably-null 判定（status 语义保持）；推送侧据此打
+  // 红警行，报告 JSON 同步留字段供页面/核查用（老档无此键 → falsy，兼容）。
+  payload.ma20_degraded = pick(input, 'signals.latest.factors.s_amt') == null;
   const base = BASE_MISSING_NOTES;
   const notes = [...base, ...extraNotes];
   if (!input.live) notes.push(LIVE_ONLY_NOTE);
