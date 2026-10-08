@@ -2,18 +2,18 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-08",
-  "capturedAt": "2026-10-08T03:14:50.236Z",
-  "capturedAtBJ": "2026-10-08 11:14",
+  "capturedAt": "2026-10-08T03:48:02.829Z",
+  "capturedAtBJ": "2026-10-08 11:48",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 38,
+    "count": 42,
     "srcDate": "2026-10-08",
     "rows": [
       {
         "code": "002149",
         "name": "西部材料",
-        "reason": "稀有金属+可控核聚变+商业航天",
+        "reason": "拟定增募资+稀有金属+可控核聚变+商业航天",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -30,6 +30,14 @@
         "code": "300530",
         "name": "领湃科技",
         "reason": "新能源电池模组+新能源EPC+储能+衡阳国资",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "002630",
+        "name": "*ST华西",
+        "reason": "超临界锅炉+生物质锅炉+老挝电站合同",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -70,6 +78,14 @@
         "code": "601956",
         "name": "东贝集团",
         "reason": "制冷压缩机+机器人电机+高效变频",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "603002",
+        "name": "宏昌电子",
+        "reason": "高速覆铜板+GBF膜材+定增扩产",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -123,6 +139,14 @@
         "huanshou": null
       },
       {
+        "code": "002669",
+        "name": "康达新材",
+        "reason": "PCB材料+风电胶粘剂+胶粘剂主业",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
         "code": "605378",
         "name": "野马电池",
         "reason": "锌锰电池+锂电池+海外基地",
@@ -150,6 +174,14 @@
         "code": "002565",
         "name": "顺灏股份",
         "reason": "太空算力+新型烟草+环保包装",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "601872",
+        "name": "招商轮船",
+        "reason": "新签长期运输协议+油气运输+干散货运输+航运龙头",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -317,8 +349,8 @@
     ]
   },
   "pools": {
-    "zt": 38,
-    "zb": 31,
+    "zt": 41,
+    "zb": 28,
     "dt": 7,
     "max_lb": 8,
     "lb2": 8,
@@ -342,17 +374,20 @@
       "002774",
       "603928",
       "603863",
+      "601872",
       "301697",
       "002565",
       "603137",
       "605378",
       "002805",
+      "002669",
       "605298",
       "601975",
       "002869",
       "001300",
       "600408",
       "600722",
+      "603002",
       "601956",
       "001336",
       "002973",
@@ -362,18 +397,16 @@
       "300530",
       "688196"
     ],
-    "seal_pct": 55.1
+    "seal_pct": 59.4
   },
-  "breadth": {
-    "up": 1966,
-    "down": 3147,
-    "flat": 173
-  },
-  "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-08 10:44",
+  "breadth": null,
+  "sourcesFailed": [
+    "breadth: undefined"
+  ],
+  "prevCapturedAtBJ": "2026-10-08 11:14",
   "prevPools": {
-    "zt": 41,
-    "zb": 26,
-    "seal_pct": 61.2
+    "zt": 38,
+    "zb": 31,
+    "seal_pct": 55.1
   }
 }
