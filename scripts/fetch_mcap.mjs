@@ -20,6 +20,7 @@
 // 用法：node scripts/fetch_mcap.mjs [--archive data/archive.json] [--date 20260930]
 //   --date 不传则取档案最新交易日。盘中运行拿的是**实时**市值（约等于当日收盘值）。
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { atomicWriteJSON } from '../src/fsutil.js';
 import { decodeArchive } from '../src/lhb_codec.js';
 import { bjStamp } from '../src/time.js';
@@ -126,7 +127,7 @@ const payload = {
     + '判据在样本足够前一律输出 null（缺失显式化，不拿中位数猜）。',
 };
 
-atomicWriteJSON(OUT_LATEST, JSON.stringify(payload, null, 1));
+atomicWriteJSON(fileURLToPath(OUT_LATEST), JSON.stringify(payload, null, 1));
 
 // 逐日累积（幂等：同日覆盖）
 let daily = { days: [] };
@@ -141,7 +142,7 @@ const compact = {
 const idx = daily.days.findIndex((d) => d.date === payload.date);
 if (idx >= 0) daily.days[idx] = compact; else daily.days.push(compact);
 daily.days.sort((a, b) => (a.date < b.date ? -1 : 1));
-atomicWriteJSON(OUT_DAILY, JSON.stringify(daily, null, 1));
+atomicWriteJSON(fileURLToPath(OUT_DAILY), JSON.stringify(daily, null, 1));
 
 console.log(`[mcap] ${payload.date} 领涨标的 ${rows.length}/${ztCodes.length} 只`
   + `${misses.length ? `（${misses.length} 只拉取失败已记 misses）` : ''}`);

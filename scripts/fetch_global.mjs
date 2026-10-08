@@ -21,6 +21,10 @@ import { decodeArchive } from '../src/lhb_codec.js';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
 const ARCHIVE = new URL('../data/archive.json', import.meta.url);
 const OUT = new URL('../data/global.json', import.meta.url);
+// ⚠ OUT 是 URL 对象：readFileSync(URL) 官方支持；但 atomicWriteJSON 只收字符串路径——
+//   H-4 原子写改造（10-07 78f1376）把 writeFileSync(OUT) 换成 atomicWriteJSON(OUT) 后，
+//   URL 被当相对路径拼接 → Windows 下 ENOENT 崩、CI 04:40 美股班实录挂掉。
+//   写入一律 fileURLToPath(OUT)（10-08 修复），读取保持 URL。
 
 const shiftDay = (dateStr, n) => {
   const d = new Date(dateStr + 'T00:00:00Z');
@@ -104,7 +108,7 @@ async function main() {
     if (prev) {
       prev.meta = prev.meta || {};
       prev.meta.lastAttempt = { at: new Date().toISOString(), outcome: 'failed', reason: e.message };
-      atomicWriteJSON(OUT, JSON.stringify(prev, null, 2) + '\n');
+      atomicWriteJSON(fileURLToPath(OUT), JSON.stringify(prev, null, 2) + '\n');
     }
     return;
   }
@@ -130,7 +134,7 @@ async function main() {
     return;
   }
 
-  atomicWriteJSON(OUT, JSON.stringify(snap, null, 2) + '\n');
+  atomicWriteJSON(fileURLToPath(OUT), JSON.stringify(snap, null, 2) + '\n');
   console.log(`已写入 data/global.json：${snap.meta.okCount}/${snap.meta.quoteCount} 个品种`);
   console.log(`  美股会话 ${snap.meta.usSessionDate} · A股存档 ${tradeDate} · 下次开市 ${nextOpen}（开市前还有 ${snap.meta.usSessionsBeforeOpen} 个美股交易日）`);
   console.log(`  美股档就绪：${snap.meta.usReadiness.ready ? '是' : '否'}（${snap.meta.usReadiness.reason}）`);
