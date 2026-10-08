@@ -60,6 +60,11 @@ concurrency:
 
 permissions:
   contents: write
+  # issues: write（2026-10-08 守卫双通道 ③）：守卫 BLOCK/ERROR 时 guard_notify 建
+  # 兜底 issue（GITHUB_TOKEN 由 CI 自动注入，零新增 secret）。issue 是企微通道挂掉
+  # （secrets 失效/网络墙）时的最后触达面——本工作流三班 smoke，异常静默一天的
+  # 代价远大于一次 API 调用。
+  issues: write
   # pages/id-token 权限已移除（2026-10-06 部署治理）：Pages 部署收口至 deploy-pages.yml
   # 单通道——本工作流回归纯数据生产，部署由数据提交（bot push）经 paths(data/**) 触发。
 
@@ -92,6 +97,7 @@ jobs:
       #   抖动不再打断数据管线（代价仅 +2 分钟，远低于整班 build 被拦的损失）。
       #   重跑会覆盖 data/smoke-latest.json 为最终态（首败证据在日志里可见）。
       - name: 六源真实 API 冒烟（不 mock，断言 200+非空+字段契约；瞬时抖动重试一次）
+        id: smoke
         run: |
           if node scripts/smoke_sources.mjs; then exit 0; fi
           echo "⚠ 第一次冒烟失败——疑似瞬时网络抖动，退避 60 秒后重试一次"
@@ -108,21 +114,26 @@ jobs:
             echo "冒烟摘要："
             node -e "const r=require('./data/smoke-latest.json'); console.log(r.allOk?'全部通过':'硬失败: '+r.hardFail.join(','), '@', r.tradeDateAnchored)"
           fi
-      # ① smoke 终态失败 → 企微告警（2026-10-08 第三批）：CI 一挂三个离线模块集体停摆
-      #   且零告警的「无声停摆」终结者。
-      #   · if: failure() 只在 job 终态失败（两次重试后仍败）时触发——重试成功 = job
-      #     绿 = 不发，历史告警绝不补发（防刷屏；与 smoke 重试策略的边界严丝合缝）；
-      #   · continue-on-error: true：告警自身失败（webhook 未配/网络挂）绝不把 CI 再
-      #     拖成失败——告警通道永远不是新的单点；
-      #   · 正文读本 run 刚落盘的 smoke-latest.json（hardFail 摘要 + 通过率），
-      #     带 档案日 / run / workflow 链接 / 「⚠ 宽度/主线档今日未刷新（build 被拦）」。
-      - name: smoke 终态失败 → 企微告警（宽度/主线档今日未刷新）
-        if: failure()
+      # ②+③ 守卫结果双通道通知（2026-10-08 合并交付）：PASS/BLOCK/ERROR 三态全覆盖，
+      #   企微 + GitHub issue 双通道。替代 alert_smoke_fail.mjs 单通道时代（其企微正文
+      #   由 smokeFailEvent 继续 carry，语义零漂移；避免 BLOCK 时双企微打扰）。
+      #   · if: always()——冒烟 step 无论成败（含超时 kill）通知必发：通知器独立于
+      #     守卫进程，读 outcome + 落盘报告交叉判定，脚本崩掉也有 issue 兜底（这是
+      #     通知函数放守卫脚本内部做不到的）；
+      #   · continue-on-error: true——通知自身失败（webhook 未配/issue API 拒绝）绝不
+      #     把 CI 再拖红，红只留给「守卫本身没过」；
+      #   · PASS 只发企微心跳（首跑盯防刚需，嫌吵 GUARD_PASS_NOTIFY=false 关）；issue
+      #     只兜 BLOCK/ERROR——smoke 每天三班，PASS 流水 issue 会淹没真异常台账；
+      #   · issue 用 GITHUB_TOKEN（自动注入）+ 顶层 issues: write 权限，零新增 secret。
+      - name: 守卫结果双通道通知（PASS 心跳 / BLOCK+ERROR 企微+issue 兜底）
+        if: always()
         continue-on-error: true
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          node scripts/alert_smoke_fail.mjs \
+          node scripts/guard_notify.mjs \
+            --step-outcome "${{ steps.smoke.outcome }}" \
             --run-id "${{ github.run_id }}" \
             --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
