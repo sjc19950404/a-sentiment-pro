@@ -2089,8 +2089,12 @@ function renderBreadth(b, errMsg) {
     ['创新高', pct(snap.newHigh && snap.newHigh.ratio), '', snap.newHigh && snap.newHigh.den],
     ['创新低', pct(snap.newLow && snap.newLow.ratio), '', snap.newLow && snap.newLow.den],
     ['破净率', pct(snap.brokenPb && snap.brokenPb.ratio), snap.brokenPb && snap.brokenPb.ratio == null ? 'bw-na' : '', snap.brokenPb && snap.brokenPb.den],
-    ['上涨家数', snap.updown ? snap.updown.up : '—', 'pos', null],
-    ['下跌家数', snap.updown ? snap.updown.down : '—', 'neg', null],
+    // 口径区隔（2026-10-08 实录）：此处涨/跌是**宽度扫描样本口径**（当日有效 K 线
+    // 样本，剔除停牌/陈旧），与日报主文的沪深两市口径涨跌家数（1654/3516）样本不同、
+    // 数值可不同（10-08 实录 1634/3466 同日并存）——与「昨涨停最高板 vs 最高连板」
+    // 同病同名不同样，标签区隔 + 底注说明，读者不再当成自相矛盾。
+    ['样本内上涨', snap.updown ? snap.updown.up : '—', 'pos', null],
+    ['样本内下跌', snap.updown ? snap.updown.down : '—', 'neg', null],
     ['有效样本', snap.scanned ?? '—', '', snap.requested],
     ['分化度', pct(snap.divergence), '', null],
   ].map(([k, val, c, den]) => `<div class="bw-kpi ${c}"><span class="bw-k">${esc(k)}</span>`
@@ -2115,8 +2119,9 @@ function renderBreadth(b, errMsg) {
     + `<div class="bw-body">`
     + `<div class="bw-kpis">${kpis}</div>`
     + (rows ? `<table class="bw-table"><thead><tr><th>日期</th><th>站上20日线</th><th>新高</th><th>新低</th><th>破净</th><th>涨/跌</th></tr></thead><tbody>${rows}</tbody></table>` : '')
-    + `<div class="bw-note muted">口径：由全市场**真实前复权日K**计算（前复权是本口径的正确性前提——不复权时除权日的假暴跌会同时打掉均线并伪造新低）。`
+    + `<div class="bw-note muted">口径：由全市场真实前复权日K计算（前复权是本口径的正确性前提——不复权时除权日的假暴跌会同时打掉均线并伪造新低）。`
     + `占比分母是当次扫描的有效样本数，不是全市场总数。`
+    + `「样本内上涨/下跌」为宽度扫描样本口径（剔除停牌/陈旧后当日有效 K 线样本），与日报主文的沪深两市口径涨跌家数样本不同、数值可不同。`
     + `<br>⚠ 「未计算」出现在两类情形：① 有效样本 &lt; ${esc((snap.thresholds && snap.thresholds.MIN_SAMPLE) ?? 100)} 只；② 破净率依赖 PB 源不可用。`
     + `两者都**不填 0**——破净率 0% 是"无一家破净"（极强信号），与"没抓到"含义相反。`
     + `<br>序列 ${sm.days ?? series.length} 天有数据${sm.coverage == null ? '' : `（覆盖 ${(sm.coverage * 100).toFixed(1)}%）`}，逐日累积、历史自然生长。`
