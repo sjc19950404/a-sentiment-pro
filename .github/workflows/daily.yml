@@ -108,6 +108,23 @@ jobs:
             echo "冒烟摘要："
             node -e "const r=require('./data/smoke-latest.json'); console.log(r.allOk?'全部通过':'硬失败: '+r.hardFail.join(','), '@', r.tradeDateAnchored)"
           fi
+      # ① smoke 终态失败 → 企微告警（2026-10-08 第三批）：CI 一挂三个离线模块集体停摆
+      #   且零告警的「无声停摆」终结者。
+      #   · if: failure() 只在 job 终态失败（两次重试后仍败）时触发——重试成功 = job
+      #     绿 = 不发，历史告警绝不补发（防刷屏；与 smoke 重试策略的边界严丝合缝）；
+      #   · continue-on-error: true：告警自身失败（webhook 未配/网络挂）绝不把 CI 再
+      #     拖成失败——告警通道永远不是新的单点；
+      #   · 正文读本 run 刚落盘的 smoke-latest.json（hardFail 摘要 + 通过率），
+      #     带 档案日 / run / workflow 链接 / 「⚠ 宽度/主线档今日未刷新（build 被拦）」。
+      - name: smoke 终态失败 → 企微告警（宽度/主线档今日未刷新）
+        if: failure()
+        continue-on-error: true
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+        run: |
+          node scripts/alert_smoke_fail.mjs \
+            --run-id "${{ github.run_id }}" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   build:
     # 盘后完整管道（18:30 / 21:00 / 手动触发）—— 必须先过冒烟门禁（源挂了不写生产档）
@@ -150,6 +167,15 @@ jobs:
         run: node scripts/fetch_global.mjs
       - name: 生成 V5.2 回测档（成本/平滑/风控/网格帕累托/滚动/主线选股）
         run: node scripts/backtest.mjs
+      # ⑥ 双轨账本重放（2026-10-08 第三批接入 CI）：三轨道每日纪面账（A 执行/B 参考/C 影子）。
+      #   之前只在本地手动跑——CI 断供时旧值顶替当日值（第二批 09-30 名/10-08 内容事故的
+      #   供应侧根源）。紧贴 backtest.mjs：账本三重门禁要读 data/backtest.json::v52。
+      #   continue-on-error：重放挂（如数据延伸导致锚点漂移）只影响披露不影响核心数据面，
+      #   不阻断 CI；真滞后由末尾 freshness --require-fresh 三模块门禁标红（通知语义，
+      #   数据在前一步已提交不丢），消费端守卫（②）同步把旧值拦在叙事之外。
+      - name: 双轨账本重放（A执行/B参考/C影子，滞后不阻断）
+        run: node tools/backtest/paper_dual_track.mjs
+        continue-on-error: true
       # ③ 策略收益回测：冰点反转/题材动量/梯队风险偏好 × 沪深300基准（严格 point-in-time）。
       #   个股日K走 data/.bt_kline/ 缓存（不入库，CI 每次真抓——86 只 top1 题材成员约 2 分钟）。
       #   产物 data/backtest-strategies.json 入库；样本不足时脚本自行跳过不阻断。
@@ -235,7 +261,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/ops-alerts-latest.json data/industry_outlier_review.json data/board_rank.json data/reports ui/kline
+          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/ops-alerts-latest.json data/industry_outlier_review.json data/board_rank.json data/paper data/reports ui/kline
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else

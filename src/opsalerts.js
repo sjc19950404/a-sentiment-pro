@@ -19,6 +19,37 @@ import path from 'node:path';
 export const OPS_SEVERITIES = ['error', 'warn', 'info'];
 
 /**
+ * ① smoke 终态失败事件（2026-10-08 第三批；CI smoke job 的 if: failure() step 调用，
+ * 脚本入口 scripts/alert_smoke_fail.mjs）。纯函数：不读盘不推网——IO 由调用方负责。
+ *
+ * 语义边界：只描述「冒烟两次重试后仍败」这一事实及其下游影响（build 被拦 → 宽度/
+ * 主线档当日不刷新）；账本接入 CI（⑥）后同被 build 拦，但正文按用户拍板只写
+ * 宽度/主线，账本滞后走 ② 守卫的产出路径（freshness 门禁 + 消费端 missing），
+ * 不在告警里混淆因果。
+ *
+ * @param {object|null} smoke data/smoke-latest.json（失败 run 刚落盘的形态：tradeDateAnchored /
+ *                           allOk / hardFail[] / sources[]）；读不到传 null（正文自动降级）
+ * @param {object} [o] { runId?: string, runUrl?: string, at?: string }
+ * @returns {{at,severity,kind,source,detail}} 企微事件（kind: 'smoke-fail'）
+ */
+export function smokeFailEvent(smoke, { runId = null, runUrl = null, at = new Date().toISOString() } = {}) {
+  const day = typeof smoke?.tradeDateAnchored === 'string' ? smoke.tradeDateAnchored : null;
+  const hard = Array.isArray(smoke?.hardFail) ? smoke.hardFail.filter(Boolean) : [];
+  const srcs = Array.isArray(smoke?.sources) ? smoke.sources : [];
+  const pass = srcs.length ? `${srcs.filter((x) => x && x.ok).length}/${srcs.length}` : null;
+  const lines = [
+    `冒烟终态失败（含重试）@ 档案日 ${day ?? '未知'}` + (runId ? ` · run ${runId}` : ''),
+    hard.length ? `硬失败源：${hard.join('；')}`
+      : smoke && smoke.allOk !== false ? '落盘冒烟档为成功态（可能被后续 run 覆盖），失败详情见 run 日志'
+      : '硬失败明细不可读（见 run 日志）',
+    pass ? `通过率 ${pass}` : null,
+    runUrl || null,
+    '⚠ 宽度/主线档今日未刷新（build 被拦）',
+  ].filter(Boolean);
+  return { at, severity: 'error', kind: 'smoke-fail', source: 'smoke', detail: lines.join('\n') };
+}
+
+/**
  * 从存档构造运维告警事件（纯函数）。
  * @param {object} archive 管道产物（data/archive.json 结构：meta / signals / all_days）
  * @param {object} [opts]

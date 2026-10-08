@@ -15,6 +15,7 @@ import { resolveHolidays, calendarLine } from '../src/calendar.js';
 import { decodeArchive, writeArchiveSafely } from '../src/lhb_codec.js';
 import { assessFreshness, applyFreshnessMeta, applyPhaseMeta, marketPhase, PHASE_NOTE,
   freshnessKey, bjDate, bjTime, staleReasonText } from '../src/freshness.js';
+import { moduleTradeDate, MODULE_PROBES, assessModulesFreshness, modulesBehind } from '../src/module_freshness.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
@@ -82,6 +83,38 @@ if (WRITE) {
     writeArchiveSafely(P, a, { writeFileSync, renameSync, unlinkSync });
     console.log('[freshness] 已写回判定字段 →', nf.state, '| phase =', meta.phase, '| stale =', nf.stale,
       staleReasonText(nf) ? '| ' + staleReasonText(nf) : '');
+  }
+}
+
+if (REQUIRE_FRESH) {
+  // ② 离线模块门禁（2026-10-08 第三批）：宽度/主线/账本三模块只在 build 里产出，
+  //   build 被拦（smoke 挂）或模块步骤失败被吞时旧值顶替当日值——收尾门禁把
+  //   「今日未刷新」红出来（exit 1 = 本次运行标红通知，数据在前一步已提交不丢）。
+  //   判定复用 assessFreshness 相位语义：18:30 首抓窗口的「还没到点」= pending
+  //   不误伤；过预期更新时刻仍落后 = behind 才红。模块档缺失/字段缺失 = unknown 同样红
+  //   （无法自证新鲜即判脏）。判据锚定档案日期体系，假期同停天然不误杀。
+  //   仅 --require-fresh 模式执行：18:30 的中途判定（无此 flag）时宽度还没抓，
+  //   此时打印模块判定只会制造「恒滞后」噪音。
+  const moduleList = MODULE_PROBES.map((m) => {
+    const mp = join(dirname(P), m.file);
+    let date = null;
+    if (existsSync(mp)) {
+      try { date = moduleTradeDate(JSON.parse(readFileSync(mp, 'utf8'))); } catch { date = null; }
+    }
+    return { key: m.key, label: m.label, date };
+  });
+  const assessed = assessModulesFreshness(moduleList, { now, holidays: resolveHolidays() });
+  console.log('[freshness] 离线模块门禁（宽度/主线/账本，档案日期体系，假期同停不误杀）');
+  for (const a of assessed) {
+    const mark = (a.state === 'behind' || a.state === 'unknown') ? '✗' : '✓';
+    const extra = a.state === 'behind' ? `（落后 ${a.behindSessions} 个交易日）`
+      : a.state === 'unknown' ? '（日期缺失：档不存在或字段缺失）' : '';
+    console.log(`  ${mark} ${a.label.padEnd(4, '　')} ${a.date ?? '(无日期)'}  ${a.state}${extra}`);
+  }
+  const bad = modulesBehind(assessed);
+  if (bad.length) {
+    console.error(`[freshness] 离线模块门禁失败：${bad.map((b) => b.label).join('、')}今日未刷新——旧值不得顶替当日值`);
+    process.exit(1);
   }
 }
 

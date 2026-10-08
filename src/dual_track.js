@@ -19,6 +19,7 @@
 // （本项目铁律：没检查 ≠ 没问题）。
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { guardModuleFreshness } from './module_freshness.js';
 
 // 披露口径注解（沿用 DISCLAIMER 口径，轨道 B/C 是风控参考不是买卖信号）
 const DISCLOSURE_NOTE = '轨道 B/C 为风控参考与影子记账，非买卖信号；分歧=当日保费敞口，账本 P2 起累计。'
@@ -94,14 +95,25 @@ export function dualTrackBlock(lt) {
 /**
  * 注入函数工厂：两条写盘路径共用（同一注入 = 同一形态）。
  * @param {string} dataDir <root>/data 绝对路径（write.js 的 DATA_DIR / split_archive 的 DATA）
+ * @param {string|null} archiveDate 档案锚日（②新鲜度守卫 2026-10-08：账本 day.date 落后于
+ *   档案日 → 披露块置 null 走「未生成」——旧值不得顶替当日值进 signals。null = 不设防
+ *   （历史调用方兼容），writeShards 一律传 archive.all_days 末日 trade_date）。
  * @returns {Function} () => block|null（签名与 buildSignals 注入约定兼容，忽略入参——
  *   本段数据源是账本文件而非 days，这正是「读盘注入」与「纯函数注入」的唯一差异）
  */
-export function dualTrackDisclosureFn(dataDir) {
+export function dualTrackDisclosureFn(dataDir, archiveDate = null) {
   return () => {
     try {
       const p = join(dataDir, 'paper', 'dual_track_latest.json');
-      return dualTrackBlock(JSON.parse(readFileSync(p, 'utf8')));
+      const raw = JSON.parse(readFileSync(p, 'utf8'));
+      if (archiveDate != null) {
+        const g = guardModuleFreshness(raw?.day?.date, archiveDate);
+        if (!g.ok) {
+          console.warn(`[dual-track] 账本档未过新鲜度守卫（${g.reason}：${g.moduleDate ?? '(无日期)'} vs 档案日 ${archiveDate}）→ 披露块置 missing`);
+          return null;
+        }
+      }
+      return dualTrackBlock(raw);
     } catch {
       return null; // 文件不存在/JSON 损坏 → 未生成（不伪造、不抛出拖垮整份 signals）
     }

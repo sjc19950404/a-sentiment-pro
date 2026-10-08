@@ -17,6 +17,7 @@
 // 接线：scripts/build_ai_report.mjs（CI 归档轨）与页面 S3（即时轨）调用同一
 //   组生成函数；本模块自身零 IO，测试用内联夹具 + 真实档冒烟双轨覆盖。
 import { accountStats, DEFAULT_SLIP, HARD_STOP_LOSS, exportAccount } from './paper.js';
+import { guardModuleFreshness } from './module_freshness.js';
 
 export const SCHEMA_VERSION = '1.0';
 export const REPORT_TYPES = ['pre_market', 'intraday', 'post_market', 'weekly'];
@@ -85,17 +86,27 @@ function sourceHealth(v, dateField, expectDate) {
  * @param {object} s { dualTrack, dualTrackDays, signals, global, backtest, opsAlerts, intraday, paperAccount }
  */
 export function buildInput(s = {}) {
-  const tradeDate = pick(s, 'dualTrack.day.date') ?? pick(s, 'signals.meta.tradeDate') ?? null;
+  // ★ 锚点反转（第二批事故真凶修复 · 2026-10-08 第三批）：signals.meta.tradeDate 优先。
+  //   旧序 dualTrack.day.date 优先——账本滞后时把报告锚拖回旧日，曾生成
+  //   「09-30 名 / 10-08 内容」的报告。账本只作为滞后披露项，绝不当日期锚。
+  const tradeDate = pick(s, 'signals.meta.tradeDate') ?? pick(s, 'dualTrack.day.date') ?? null;
+  // ② 离线模块新鲜度守卫（判据唯一出处 src/module_freshness.js，纯字符串比较）：
+  //   账本/主线档日期落后于锚 → 旧值不进叙事，置 null 走 missing 中性披露
+  //   （与 s_amt 缺失 → 中性 50 同一路径）；sources 标 stale 供报告披露「今日未刷新」。
+  const gDt = guardModuleFreshness(pick(s, 'dualTrack.day.date'), tradeDate);
+  const gBt = guardModuleFreshness(pick(s, 'backtest.meta.tradeDate'), tradeDate);
+  const dualTrack = gDt.ok ? s.dualTrack : null;
+  const backtest = gBt.ok ? s.backtest : null;
   const sources = {
-    dual_track: sourceHealth(s.dualTrack, 'day.date', tradeDate),
+    dual_track: gDt.ok ? sourceHealth(s.dualTrack, 'day.date', tradeDate) : 'stale',
     signals: sourceHealth(s.signals, 'meta.tradeDate', tradeDate),
     global: sourceHealth(s.global, 'meta.aShareTradeDate', tradeDate),
-    backtest: sourceHealth(s.backtest, 'meta.tradeDate', tradeDate),
+    backtest: gBt.ok ? sourceHealth(s.backtest, 'meta.tradeDate', tradeDate) : 'stale',
     ops_alerts: sourceHealth(s.opsAlerts, null, null),
     intraday: sourceHealth(s.intraday, 'tradeDate', tradeDate),
     paper_account: s.paperAccount && typeof s.paperAccount === 'object' ? 'live' : 'missing',
   };
-  return { ...s, tradeDate, sources, live: sources.paper_account === 'live' };
+  return { ...s, dualTrack, backtest, tradeDate, sources, live: sources.paper_account === 'live' };
 }
 
 function deriveStatus(input, payload) {

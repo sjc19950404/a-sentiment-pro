@@ -22,6 +22,7 @@ import { buildRegimeBlock, buildDivergenceBlock } from '../regime.js';
 import { buildDailyReport } from '../daily_report.js';
 import { llmSentimentBlock } from '../llm_sentiment.js';
 import { dualTrackDisclosureFn } from '../dual_track.js';
+import { guardModule } from '../module_freshness.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, '..', '..', 'data'); // <root>/data（与 pipeline.js 同一目录）
@@ -72,6 +73,11 @@ export function writeShards(archive, dir = DATA_DIR) {
   const index = buildIndex(archive);
   const shards = buildShards(archive);
   const years = Object.keys(shards).sort();
+  // ② 离线模块新鲜度守卫的档案锚（2026-10-08 第三批）：宽度/主线/账本三模块只在
+  //   CI build 里产出，本步读盘注入时若档日期落后于档案日（smoke 拦 build / 模块步骤
+  //   失败被 continue-on-error 吞掉），旧值不得顶替当日值进 signals——一律置 missing
+  //   走中性（与 s_amt 缺失 → 中性 50 同路径）。判据纯字符串比较，假期同停不误杀。
+  const archiveDate = (archive?.all_days || []).slice(-1)[0]?.trade_date ?? null;
   atomicWriteJSON(path.join(dir, 'archive-index.json'), JSON.stringify(index));
   for (const y of years) {
     atomicWriteJSON(path.join(dir, shardName(y)), JSON.stringify(shards[y]));
@@ -113,8 +119,9 @@ export function writeShards(archive, dir = DATA_DIR) {
     // 双轨披露块（P2-β 渲染接线）：读已落盘的 data/paper/dual_track_latest.json
     //   （由 tools/backtest/paper_dual_track.mjs 每日产出）。与 split_archive.mjs 用
     //   **同一工厂产物**（同一注入 = 两路径产出逐字段一致，否则 --check 报形态分裂）。
-    //   读不到就是 null（前端显示"未生成"，绝不渲染成"轨道一致"）。
-    dualTrackFn: dualTrackDisclosureFn(dir),
+    //   读不到就是 null（前端显示"未生成"，绝不渲染成"轨道一致"）；
+    //   ②守卫：账本 day.date 落后于档案锚 → 同样置 null（旧值不进当日 signals）。
+    dualTrackFn: dualTrackDisclosureFn(dir, archiveDate),
     // 市场宽度（#3）：读已落盘的 breadth-latest.json / breadth-daily.json
     //   （由 scripts/fetch_breadth.mjs 在收盘后分片抓全市场 K 线后汇总）。
     //   同样**只读不现算**：宽度要扫全市场 K 线，不可能在同步写盘路径里做；
@@ -124,6 +131,14 @@ export function writeShards(archive, dir = DATA_DIR) {
         const p = path.join(dir, 'breadth-latest.json');
         if (!existsSync(p)) return null;
         const snapshot = JSON.parse(readFileSync(p, 'utf8'));
+        // ② 新鲜度守卫：宽度档日期落后于档案锚 → 旧值不进 signals（null = 前端
+        //   「未计算」，与档缺失同一语义）。真滞后由 CI 的 freshness --require-fresh
+        //   门禁另行标红；这里只保证「不冒充当日值」。
+        const g = guardModule(snapshot, archiveDate);
+        if (!g.ok) {
+          console.warn(`[split] 宽度档未过新鲜度守卫（${g.reason}：${g.moduleDate ?? '(无日期)'} vs 档案日 ${archiveDate ?? '(无)'}）→ breadth 置 missing`);
+          return null;
+        }
         // 逐日序列（可选）：有了才下发，没有就只给快照。
         let series = [];
         let summary = null;
@@ -187,13 +202,20 @@ export function writeShards(archive, dir = DATA_DIR) {
         const bp = path.join(dir, 'breadth-latest.json');
         if (existsSync(bp)) {
           const snapshot = JSON.parse(readFileSync(bp, 'utf8'));
-          let series = [];
-          const dp = path.join(dir, 'breadth-daily.json');
-          if (existsSync(dp)) series = buildBreadthSeries(JSON.parse(readFileSync(dp, 'utf8')).rows || []);
-          // verdict 取 breadth-latest.json 的**对象形态** { level, label, detail }——
-          //   buildBreadthSeries 产出的是字符串 verdict，只够上色、没有 label 文案可比对。
-          //   与上面 breadthFn 读同一份文件，不存在"两处各算一次宽度"。
-          breadth = { snapshot, series, verdict: snapshot.verdict || null };
+          // ② 新鲜度守卫（与 breadthFn 同判据同出处）：宽度档落后 → breadth 置 null，
+          //   背离判定走「无宽度读数」中性路径，绝不用旧宽度给当日情绪定背离结论。
+          const g = guardModule(snapshot, archiveDate);
+          if (g.ok) {
+            let series = [];
+            const dp = path.join(dir, 'breadth-daily.json');
+            if (existsSync(dp)) series = buildBreadthSeries(JSON.parse(readFileSync(dp, 'utf8')).rows || []);
+            // verdict 取 breadth-latest.json 的**对象形态** { level, label, detail }——
+            //   buildBreadthSeries 产出的是字符串 verdict，只够上色、没有 label 文案可比对。
+            //   与上面 breadthFn 读同一份文件，不存在"两处各算一次宽度"。
+            breadth = { snapshot, series, verdict: snapshot.verdict || null };
+          } else {
+            console.warn(`[split] 宽度档未过新鲜度守卫（${g.reason}：${g.moduleDate ?? '(无日期)'} vs 档案日 ${archiveDate ?? '(无)'}）→ 背离判定 breadth 置 null 走中性`);
+          }
         }
       } catch { breadth = null; }
       return buildDivergenceBlock(ds, breadth);
