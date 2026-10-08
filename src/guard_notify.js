@@ -73,12 +73,14 @@ export function shouldCreateIssue(verdict, { passIssue = false } = {}) {
 
 /**
  * 守卫结果 → GitHub issue 载荷（纯函数；POST /repos/{owner}/{repo}/issues 的 body）。
- * @param {{status,reason,event}} verdict guardVerdict 产物
- * @param {object} [o] { repo?: 'owner/name', runId?: string, runUrl?: string, at?: string }
- *   repo/runId 用于 runUrl 缺失时拼装（GITHUB_SERVER_URL/REPOSITORY/RUN_ID 三件套，
- *   CI 自动注入；runUrl 显式传入优先）
+ * @param {{status,reason,event}} verdict guardVerdict 产物（或同形对象：东财探测等
+ *   其他观察者传 { status: 'OK'|'FAIL', reason, event }）
+ * @param {object} [o] { repo?: 'owner/name', runId?: string, runUrl?: string,
+ *   at?: string, titlePrefix?: string, labels?: string[] }
+ *   titlePrefix/labels 默认守卫口径（「守卫」/['guard']）；探测等其他观察者按
+ *   语义覆盖（如「东财探测」），台账标签可共用 guard 也可细分
  */
-export function buildIssuePayload(verdict, { repo = null, runId = null, runUrl = null } = {}) {
+export function buildIssuePayload(verdict, { repo = null, runId = null, runUrl = null, titlePrefix = '守卫', labels = ['guard'] } = {}) {
   const url = runUrl
     || (repo && runId ? `https://github.com/${repo}/actions/runs/${runId}` : null);
   const body = [
@@ -92,9 +94,9 @@ export function buildIssuePayload(verdict, { repo = null, runId = null, runUrl =
     '> 脚本自身 ERROR 时仍可触达）。处理完请关闭本 issue。',
   ].filter((x) => x !== null).join('\n');
   return {
-    title: `🛡️ 守卫 ${verdict.status}: ${verdict.reason}`.slice(0, 256), // GitHub title 上限语义截断
+    title: `🛡️ ${titlePrefix} ${verdict.status}: ${verdict.reason}`.slice(0, 256), // GitHub title 上限语义截断
     body,
-    labels: ['guard'],
+    labels,
   };
 }
 

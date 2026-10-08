@@ -389,6 +389,22 @@ jobs:
       # 会打印警告并把美股那一档按"无数据"处理（chgPct=null，绝不写 0）。
       - name: 抓取外围行情（美股收盘档）
         run: node scripts/fetch_global.mjs
+      # ③ 东财 push2his 连通性探测（2026-10-08 第三件）：观察者不是门禁——结果只
+      #   通知不拦截，恒 exit 0（+ continue-on-error 双保险），绝不拖红美股收盘档。
+      #   为什么挂这班：04:30 是源可用性观测的自然班次（与守卫通知同窗，一眼对账）；
+      #   s6 量能备源（东财/同花顺互切）依赖 push2his，而 10-08 实测部分网络下 TLS
+      #   被断/返回空——每日探测为备源决策攒可用性事实。通知复用 guard_notify 双通道：
+      #   OK→企微心跳；FAIL→企微+issue 兜底（labels guard+eastmoney）。
+      - name: 东财 push2his 连通性探测（独立观察者，结果双通道通知）
+        if: always()
+        continue-on-error: true
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/check_eastmoney.mjs \
+            --run-id "${{ github.run_id }}" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       - name: 提交外围快照
         run: |
           git config user.name "github-actions[bot]"
