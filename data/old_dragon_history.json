@@ -1,7 +1,7 @@
 {
  "meta": {
-  "generatedAt": "2026-10-07T16:58:55.638Z",
-  "days": 1,
+  "generatedAt": "2026-10-08T10:18:58.827Z",
+  "days": 2,
   "candidate_days": 0,
   "candidates_total": 0,
   "dragon_source": "ztpool_history.json 派生（首次 lbc≥5，波内取最大连板）",
@@ -11,6 +11,10 @@
  "days": [
   {
    "date": "20260930",
+   "old_dragons": []
+  },
+  {
+   "date": "20261008",
    "old_dragons": []
   }
  ]

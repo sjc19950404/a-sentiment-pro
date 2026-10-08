@@ -1,7 +1,7 @@
 {
  "meta": {
-  "generatedAt": "2026-10-07T16:58:55.719Z",
-  "days": 1,
+  "generatedAt": "2026-10-08T10:18:58.936Z",
+  "days": 2,
   "theme_days": 0,
   "strength_dist": {},
   "rotation_days": 0,
@@ -11,6 +11,12 @@
  "days": [
   {
    "date": "20260930",
+   "main_themes": [],
+   "rotation": false,
+   "prev_main_theme": null
+  },
+  {
+   "date": "20261008",
    "main_themes": [],
    "rotation": false,
    "prev_main_theme": null
