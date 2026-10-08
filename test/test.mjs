@@ -7,7 +7,16 @@ import { classifySeat } from '../src/sources.js';
 import { recalcAll } from '../src/pipeline.js';
 import { applyLhb } from '../src/sources.js';
 import { isRangeBoard, aggregateByCode, summarizeCalibers, mergeDuplicateRecords, duplicateKeys, normalizeRecord } from '../src/lhb.js';
-import { amountCaliberGuard } from '../src/sources.js';
+import { amountCaliberGuard, validMarketPair } from '../src/sources.js';
+
+// ── 市级有效性（2026-10-08 二次事故：深证 bar 在场但成交额脏小值，>0 判定穿透）──
+test('validMarketPair: 两市体量同数量级才有效（单市缺/脏都拒收）', () => {
+  assert.ok(validMarketPair(8301, 8520), '正常两市过');
+  assert.ok(validMarketPair(2000, 2500), '地量日过（比值 0.8 ≫ 0.2）');
+  assert.ok(!validMarketPair(8301, 0), '单市缺失拒收');
+  assert.ok(!validMarketPair(8301, 0.01), '单市脏小值拒收（10-08 实录形态）');
+  assert.ok(!validMarketPair(8301, 500), '体量差 16 倍拒收（疑似单市冒充）');
+});
 
 // ── 成交额口径守卫（2026-10-08 事故回归：腾讯兜底只解析到沪市 8301 亿冒充两市）──
 // 事故链：兜底 any=true 即收 → 单市值混入两市序列（MA20≈1.8 万亿，比值 0.46）

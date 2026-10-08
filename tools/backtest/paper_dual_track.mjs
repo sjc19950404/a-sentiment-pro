@@ -159,26 +159,37 @@ gateAnchor(A, refJson.v52, '① 轨道A ↔ v52');
 gateAnchor(Bref, refJson.v53, '② 轨道B（锚点口径 unknown→null） ↔ v53');
 
 // 门禁③：影子线 ↔ 框架表 T1（experiment_dual_track 实测数的两位小数舍入值）
+// 锚点样本截止日：锚点验证的是「实现一致性」（影子轨代码 ↔ 实验 T1 实测），
+// 必须在**同一样本窗**上比对；实验窗之后新增的交易日不参与锚点比对——否则
+// 数据一延伸必挂（2026-10-08 实录：total -1.17%≠-0.68% 不是实现漂移，是样本
+// 窗不同；当天账本被锁死无法滚动 → 下游 post_market 报告日期锚定滞后）。
+// 锚点滚动需人工更新 T1REF/T1_END 并附 experiment 复跑证据。样本窗内行为与
+// 历史版本完全一致（窗口等于全样本时退化为此前的全样本比对）。
+const T1_END = '2026-09-30';
 const T1REF = { 0.3: { total: -0.0068, maxDd: 0.1403 }, 0.4: { total: 0.0002, maxDd: 0.1361 } };
+// 锚点样本窗末日下标（不含）：首个 trade_date > T1_END 的位置，无则全样本
+const t1Cut = (() => { const idx = days.findIndex((d) => d.trade_date > T1_END); return idx === -1 ? n : idx; })();
 let episodes = { 0.3: 0, 0.4: 0, 0.5: 0 };
 let activeDays = 0;
 for (let i = 1; i < n; i++) {
   const active = regimeKeys[i - 1] === 'shift';
   if (!active) continue;
   activeDays++;
-  for (const c of SHADOW) if (C[c].pos[i] < A.pos[i] - 1e-9) episodes[c]++;
+  if (i < t1Cut) for (const c of SHADOW) if (C[c].pos[i] < A.pos[i] - 1e-9) episodes[c]++;
 }
 for (const c of [0.3, 0.4]) {
+  // 锚点比对用截断窗绩效（total/maxDd 只由 strat 累乘得出，opens 不参与，截断重算安全）
+  const perfT1 = t1Cut >= n ? C[c].perf : metrics(C[c].strat.slice(0, t1Cut), C[c].pos.slice(0, t1Cut), 0, 0);
   const bad = [];
-  if (Math.abs(C[c].perf.total - T1REF[c].total) > 2e-4) bad.push(`total ${pct(C[c].perf.total)}≠${pct(T1REF[c].total)}`);
-  if (Math.abs(C[c].perf.maxDd - T1REF[c].maxDd) > 2e-4) bad.push(`maxDd ${pct(C[c].perf.maxDd)}≠${pct(T1REF[c].maxDd)}`);
-  if (bad.length) { console.error(`[paper] 门禁失败：③ 影子C${c} ↔ 实验T1 → ${bad.join('；')}，终止`); process.exit(1); }
+  if (Math.abs(perfT1.total - T1REF[c].total) > 2e-4) bad.push(`total ${pct(perfT1.total)}≠${pct(T1REF[c].total)}`);
+  if (Math.abs(perfT1.maxDd - T1REF[c].maxDd) > 2e-4) bad.push(`maxDd ${pct(perfT1.maxDd)}≠${pct(T1REF[c].maxDd)}`);
+  if (bad.length) { console.error(`[paper] 门禁失败：③ 影子C${c} ↔ 实验T1（样本窗截至 ${T1_END}）→ ${bad.join('；')}，终止`); process.exit(1); }
 }
 if (episodes[0.3] !== 18) {
   console.error(`[paper] 门禁失败：③ 影子C0.3 生效日 ${episodes[0.3]} ≠ 实验T1 的 18，终止`);
   process.exit(1);
 }
-console.log(`[paper] 门禁通过：③ 影子C0.3 ↔ 实验T1（${pct(C[0.3].perf.total)} / ${pct(C[0.3].perf.maxDd)} / ${episodes[0.3]} 生效日）；C0.4 ${pct(C[0.4].perf.total)} / ${pct(C[0.4].perf.maxDd)}`);
+console.log(`[paper] 门禁通过：③ 影子C0.3 ↔ 实验T1 样本窗 ${T1_END}（${pct(t1Cut >= n ? C[0.3].perf.total : metrics(C[0.3].strat.slice(0, t1Cut), C[0.3].pos.slice(0, t1Cut), 0, 0).total)} / ${episodes[0.3]} 生效日；全样本现为 ${pct(C[0.3].perf.total)} / ${pct(C[0.3].perf.maxDd)}）；C0.4 全样本 ${pct(C[0.4].perf.total)} / ${pct(C[0.4].perf.maxDd)}`);
 
 // 披露口径 vs 锚点口径差（unknown 日的保守性量化）
 const unknownIdx = regimeKeys.map((k, i) => (k === 'unknown' ? i : -1)).filter((i) => i >= 0);

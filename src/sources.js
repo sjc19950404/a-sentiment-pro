@@ -290,6 +290,17 @@ async function fetchBreadth() {
 }
 
 // 源7: 同花顺大盘日K → 两市成交额 Map（YYYYMMDD → 亿）
+// 市级有效性（2026-10-08 二次事故实录）：单市「在场但脏」护栏。此前 `a>0 && b>0`
+// 只防「缺失」（09-29：深证 bar 未出 → 该日不收），防不住「bar 已出但成交额字段是
+// 极小脏值」（10-08 20 时实录：399001 当日 bar 成交额 ≈0.01 亿级，>0 判定穿透 →
+// map[20261008]=8301 几乎纯沪市冒充两市 → s_amt=12.5 二次污染，仅隔 28 分钟重跑
+// 即复现）。两市体量恒同数量级（沪/深日额比长期 0.9~1.1，极端亦 >0.2），比值护栏
+// 不依赖绝对量级假设——未来市场缩量到地量（单市千二百亿）也不误杀。
+// 纯函数导出，供主路与腾讯兜底共用同一判定（两处口径必须一致），并供单测锁定。
+export function validMarketPair(a, b) {
+  const lo = Math.min(a, b), hi = Math.max(a, b);
+  return lo > 0 && hi > 0 && lo >= hi * 0.2;
+}
 export async function fetchAmountMap() {
   // 分指数抓取，合并时要求两市同日都有值——防单市缺数据被当全市（2026-09-29 事故：深证延迟只出上证 6617 亿）
   const byCode = {};
@@ -314,7 +325,7 @@ export async function fetchAmountMap() {
   const dates = new Set([...Object.keys(byCode.zs_1A0001), ...Object.keys(byCode.zs_399001)]);
   for (const dt of dates) {
     const a = byCode.zs_1A0001[dt], b = byCode.zs_399001[dt];
-    if (a > 0 && b > 0) map[dt] = a + b; // 单市缺 → 该日不收，交由兜底/missing 处理
+    if (validMarketPair(a, b)) map[dt] = a + b; // 单市缺/脏 → 该日不收，交由兜底/missing 处理
   }
   return Object.keys(map).length ? map : null;
 }
@@ -339,7 +350,8 @@ async function fetchAmountTencentFallback(ymd) {
         else if (p.includes('sz399001')) sz = amt / 1e4;
       }
       const sum = sh + sz;
-      if (sh > 0 && sz > 0 && sum > 3000 && sum < 90000) return { [ymd]: r1(sum) }; // 两市额合理区间护栏
+      // 市级有效性用与主路同一判定（validMarketPair）：单市缺或「在场但脏」都拒收
+      if (validMarketPair(sh, sz) && sum > 3000 && sum < 90000) return { [ymd]: r1(sum) }; // 两市额合理区间护栏
     } catch (e) { /* 重试 */ }
     await sleep(500);
   }

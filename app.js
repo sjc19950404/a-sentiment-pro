@@ -1104,7 +1104,7 @@ function buildBrief(days, arc) {
   const mainDensity = topTheme ? topTheme[1] / themeTotal : null;
   const mainScore = topTheme ? Math.round(topTheme[1] * mainDensity * 100) / 100 : null;
   let focus = '';
-  if (contN && freshN) focus = contN > freshN * 1.5 ? '延续远多于新晋——资金聚焦而非轮动，主线成色足' :
+  if (contN && freshN) focus = contN > freshN * 1.5 ? '延续远多于新晋——资金聚焦而非轮动，题材成色足' :
     freshN > contN ? '新晋多于延续——题材轮动发散，追首板胜率低' : '新晋延续均衡——题材消化中';
   // 昨日新晋题材存活率（题材口径）
   // 正确口径：分子分母都必须来自「昨日视角的新晋名单」（signals.momentum.prev_fresh，引擎用切的
@@ -1122,7 +1122,7 @@ function buildBrief(days, arc) {
   })();
   const sec5 = [
     li(`新晋 ${freshN} / 延续 ${contN} / 退潮 ${fadeN}。<span class="muted">（引擎自定义标签：题材在近5日窗口内覆盖个股数≥2 视为「存在」，与前一5日窗口比对定新晋/延续/退潮；交易所无官方题材标准，平台间题材划分不同会改变此三数）</span>${focus}`),
-    topTheme ? li(`今日最强题材: ${topTheme[0]}（${mainZt} 只涨停）——${mainZt >= 6 ? '主线强势' : mainZt >= 3 ? '主线强度中等' : '主线弱化'}<span class="muted">（归属为引擎自动归类，需人工核对当日涨停股，无官方唯一标准）</span>`) : '',
+    topTheme ? li(`今日最强题材: ${topTheme[0]}（${mainZt} 只涨停）——题材涨停强度${mainZt >= 6 ? '强势' : mainZt >= 3 ? '中等' : '弱化'}<span class="muted">（归属为引擎自动归类，需人工核对当日涨停股，无官方唯一标准。此处只述当日题材涨停强度的相对水平；是否列为「主线」由「主线自动选股」卡的动态阈值单独判定——两判据口径不同：最强题材可以不达主线阈值（如 10-08 新能源 8 只 < 阈值 10.7 只），不构成矛盾）</span>`) : '',
     (topTheme && mainDensity != null) ? li(`主线强度分 <b>${mainScore}</b>（涨停 ${mainZt} × 密集度 ${(mainDensity * 100).toFixed(1)}%，与引擎 selectMainLine 同式）——标的清单见「主线自动选股」卡`) : '',
     surv ? li(`昨日新晋题材存活 ${surv.alive}/${surv.n}（${surv.pct}%）——${surv.pct >= 50 ? '题材延续性强' : surv.pct >= 30 ? '延续性中等' : '题材一日游风险高'}<span class="muted">（分子＝昨日新晋名单，分母＝该名单今日仍在题材覆盖表内的只数；两侧同一动量口径，可逐题材核对）</span>`) : '',
   ].join('') + cal('<b>题材标签（新晋/延续/退潮、主线归属、涨停题材归类）为引擎自定义分类，沪深交易所无官方题材标准</b>，标签由「近 5 日窗口内覆盖个股数≥2」的存在性比对自动生成，不同平台的题材划分会影响该口径下的数字，仅供参考。主线强度分＝涨停家数 × 密集度（该题材涨停数 ÷ 当日全题材涨停数），与引擎 selectMainLine 同式。昨日新晋题材存活率＝昨日视角新晋名单（引擎用截至昨日数据重算动量所得）中今日仍存在的只数 ÷ 该名单只数，两侧同一口径；阈值：≥50% 延续性强／30~50% 中等／<30% 一日游风险高。');
@@ -2018,7 +2018,11 @@ function renderPain(p, errMsg) {
     ['跌停', (perf.limitDown ?? '—') + ' 只', (perf.limitDown || 0) > 0 ? 'pn-bad' : ''],
     ['大面股', (perf.bigLoss ?? '—') + ' 只', ''],
     ['连板晋级失败', pct(adv.failRate), adv.failRate != null && adv.failRate > 0.5 ? 'pn-bad' : ''],
-    ['最高连板', (adv.maxLb ?? '—') + ' 板', ''],
+    // 口径区隔（2026-10-08 实录）：本卡 maxLb 是「昨日涨停名单今日达到的最高连板」
+    // （追高视角），与涨停结构卡「最高连板」（当日全市场涨停股的最高连板，10-08 实例
+    // 8 板 vs 6 板）样本不同、数值本可不同。曾同名并排被读者当成自相矛盾——改名区隔，
+    // 与上方「昨涨停今日均涨」同款命名风格。
+    ['昨涨停最高板', (adv.maxLb ?? '—') + ' 板', ''],
   ].map(([k, val, c]) => `<div class="pn-kpi ${c}"><span class="pn-k">${esc(k)}</span><span class="pn-v">${esc(val)}</span></div>`).join('');
 
   // 大面股名单（若有）

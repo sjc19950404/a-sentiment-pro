@@ -1,10 +1,10 @@
 {
  "schema_version": "1.0",
- "report_type": "intraday",
+ "report_type": "post_market",
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-08",
- "generated_at": "2026-10-08T12:59:23.661Z",
+ "generated_at": "2026-10-08T12:59:23.782Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -72,17 +72,41 @@
    "source": "archived",
    "confidence": "measured"
   },
-  "nav_realtime": {
+  "close_drawdown": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "max_drawdown_intraday": {
    "source": "missing",
    "confidence": "missing"
   },
-  "approx": {
+  "grid_trigger_detail": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "counter_trend_loss_ratio": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "backtest_deviation": {
    "source": "derived",
    "confidence": "measured"
   },
-  "drawdown_vs_threshold": {
-   "source": "derived",
+  "market_context": {
+   "source": "archived",
    "confidence": "measured"
+  },
+  "fee_total": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "slippage_total": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "net_pnl": {
+   "source": "missing",
+   "confidence": "missing"
   },
   "simulation_stock": {
    "source": "missing",
@@ -126,17 +150,34 @@
     "state": "preopen"
    }
   ],
-  "nav_realtime": null,
-  "approx": false,
-  "drawdown_vs_threshold": {
-   "dd_now": 0.141616,
-   "tier_edges": [
-    0.09,
-    0.15
-   ],
-   "distance_pp": 0.84,
-   "basis": "归档轨 trackA.maxDd（运行回撤，非当日）"
+  "close_drawdown": 0.141616,
+  "max_drawdown_intraday": null,
+  "grid_trigger_detail": null,
+  "counter_trend_loss_ratio": null,
+  "backtest_deviation": {
+   "live_cum": -0.019927,
+   "backtest_v52": -0.0199,
+   "delta": -0.000027,
+   "note": "执行轨 vs 回测 v52 锚点（零偏差为设计约束）"
   },
+  "market_context": {
+   "emotion": 58.3,
+   "pct_rank": 32.2,
+   "indexes": {
+    "上证指数": -0.79,
+    "深证成指": -2.07,
+    "创业板指": -3.15
+   },
+   "up_down": "1654/3516/116",
+   "amount_yi": 16821.3,
+   "zt_dt": "43/13",
+   "breadth": "站上20日线仅 31.5%",
+   "pain": "多空拉锯",
+   "seats": "游资/其他（营业部·分公司·自营）主导"
+  },
+  "fee_total": null,
+  "slippage_total": null,
+  "net_pnl": null,
   "simulation_stock": null,
   "status": "degraded"
  },
@@ -149,6 +190,11 @@
   {
    "field": "counter_trend_losses / counter_trend_loss_ratio",
    "reason": "无逆势加仓/亏损记账；参考 divergence.posGap（保费敞口）",
+   "ref": "data/paper/dual_track_latest.json"
+  },
+  {
+   "field": "counter_trend_loss_ratio",
+   "reason": "旁注：当日分歧 posGap（保费敞口）见 overnight/pre 段",
    "ref": "data/paper/dual_track_latest.json"
   },
   {
