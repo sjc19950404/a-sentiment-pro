@@ -167,12 +167,16 @@ export function renderPushText(report) {
   //   服务端超限截断会丢尾部免责声明）。字符闸（MSG_CAP）保底；字节闸按**整行**回退
   //   ——从尾部删整行直到含标注 ≤ 2000 字节，绝不半行腰斩、绝不丢免责尾行语义。
   const BYTE_CAP = 2000;
-  if (Buffer.byteLength(text, 'utf8') > BYTE_CAP) {
+  // 跨端字节长度：TextEncoder 是 Web 标准（Node ≥11 / Workers / 浏览器全局原生），
+  //   原 Buffer.byteLength 仅 Node 可用——本模块承诺零 Node 依赖三端同构，
+  //   2026-10-09 Workers 线上首跑即 ReferenceError 实测踩坑。
+  const utf8Len = (s) => new TextEncoder().encode(s).length;
+  if (utf8Len(text) > BYTE_CAP) {
     const suffix = '\n…（超长截断）';
     const parts = text.split('\n');
     const kept = [];
     for (const ln of parts) {
-      if (Buffer.byteLength([...kept, ln].join('\n') + suffix, 'utf8') > BYTE_CAP) break;
+      if (utf8Len([...kept, ln].join('\n') + suffix) > BYTE_CAP) break;
       kept.push(ln);
     }
     text = (kept.length ? kept.join('\n') : parts[0].slice(0, 600)) + suffix;
