@@ -76,4 +76,45 @@ const fbt = ztd?.fbt != null ? String(ztd.fbt).padStart(6, '0') : null;
 
 ---
 
+## 数据层迁移第一阶段（2026-10-10 凌晨追加）
+
+旧接口直连全部退役（eastmoney-probe / push2his / 同花顺 getharen / 腾讯 qt.gtimg），
+盘中六源改走 Python 数据层，`scripts/snapshot_intraday.mjs` 经 `src/sources_qd.mjs` 桥接
+`python market_data.py intraday-raw`（契约与旧六 fetch 逐字段一致，组装/三态校验/落盘逻辑零改动）。
+
+**降级链与实测（本机墙内网络）**：
+
+| 环节 | 主路 | 兜底一 | 兜底二 | 本机实测 |
+|---|---|---|---|---|
+| 全市场快照 | QuantDash CN_Stock（**付费**，免费 403） | AkShare spot_em（push2 族，墙内不可达） | QuantDash symbols 500/批×8（免费可用） | ✅ 3309 行/13.9s |
+| 候选二次校验 | QuantDash symbols POST | 快照切片 | — | ✅ 5/5 |
+| 涨停/炸板/跌停池 | AkShare zt_pool 族（push2ex 可达） | — | — | ✅ 69/14/8 与 10-09 收盘档吻合 |
+| 主力净流入 | AkShare fund_flow_rank（push2 族） | — | — | ⛔ 本机不可达 → null（CI 可达） |
+| 历史日线 | BaoStock（收盘口径权威） | — | — | ✅ |
+
+**关键事实（与外部口径的出入，均已按 API 自报为准）**：
+- QuantDash 免费版配额实为 **10 次/分钟**（非 120）；universe 模式为付费功能。
+  限速器按 10/min 阻塞式节流；universe 403 进程级短路省配额。
+- 全市场 symbols 兜底 = 8 请求/轮，配额内刚好一轮；CI 上 AkShare 主路 1 请求搞定。
+- `fbt` 从 AkShare 出来已是六位数字串（'092500'），与一字判据直接兼容；历史数字档防线不变。
+
+**周一 9:35 验收新增核验点**：
+1. CI intraday job 首跑新数据层：日志应见 `pip install -r requirements-data.txt` +
+   降级链输出（CI 上预期 akshare 主路直通、无降级）；
+2. 快照 `hot.rows` 带 `liangbi/pe_ttm/pb/main_net` 真值（CI 全源）——本地 dry 为 null
+   属预期（宁缺毋假），**不要拿本地 dry 结果当验收失败**；
+3. `QUANTDASH_API_KEY` 已入 GitHub secrets（免费 key 仅 symbols 模式可用，CI 量比/主力
+   净流入实际由 AkShare 承担）；
+4. 冒烟四项随时可跑：`python candidate_pool.py smoke`（快照/候选池/历史日线/降级日志）。
+
+**顺带修复（迁移过程中暴露的预存缺陷）**：`buildIntradayPool` 宇宙为空早退分支缺
+`streak_pool/streak_basis` 字段——旧架构下 hot+screener 双失败同样崩（正是「空数据导致
+崩溃」同类），已补齐（`src/ai_report.js`），48/48 单测通过。
+
+**未迁移边界（后续批次）**：盘后 EOD 管道（LHB/席位/行业/指数/量能——`src/sources.js`
+其余函数）仍走原源直连；`datacenter`/`d.10jqka`/`qt.gtimg`（指数）不在本批禁用清单内的
+调用暂保留，动它们会牵连 18:30/21:00 完整管道与题材 lineage，须单独立项。
+
+---
+
 *归档：2026-10-10（P1 数据源断供事件闭环）*

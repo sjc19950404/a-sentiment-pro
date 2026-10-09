@@ -335,15 +335,25 @@ jobs:
     # 报告-run 快照+报告），concurrency 组内串行、先后无冲突。
     if: github.event.schedule == '0,30 1-7 * * 1-5' || github.event.schedule == '35 1 * * 1-5' || github.event.schedule == '30 2 * * 1-5' || github.event.schedule == '0 6 * * 1-5' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      # 数据层迁移（2026-10-10）：盘中六源改走 python market_data.py intraday-raw
+      # （QuantDash 主 + AkShare 兜底 + BaoStock 历史），旧直连源全部退役。
+      #   key 缺席时 QuantDash 主路自动降级 AkShare（fail-safe，不红 job）。
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 安装新数据层依赖
+        run: pip install --only-binary :all: -r requirements-data.txt
       # 脚本自带三重保险：① 相位非 live 直接跳过；② 强势股返回交易日 ≠ 北京当日则跳过
       # （该接口在非交易日会静默返回上一交易日数据）；③ 三源全失败则不覆盖上次成功快照。
       - name: 抓盘中快照（非盘中自动跳过）
+        env:
+          QUANTDASH_API_KEY: ${{ secrets.QUANTDASH_API_KEY }}
         run: node scripts/snapshot_intraday.mjs
       # ── 任务二 · 盘中候选池（2026-10-09 拆分）：三时点各触发一次，全量重算。
       #   复用刚抓的当日快照（涨幅/量比/主力净流入/PE/PB），筛选口径见
@@ -423,22 +433,9 @@ jobs:
       # 会打印警告并把美股那一档按"无数据"处理（chgPct=null，绝不写 0）。
       - name: 抓取外围行情（美股收盘档）
         run: node scripts/fetch_global.mjs
-      # ③ 东财 push2his 连通性探测（2026-10-08 第三件）：观察者不是门禁——结果只
-      #   通知不拦截，恒 exit 0（+ continue-on-error 双保险），绝不拖红美股收盘档。
-      #   为什么挂这班：04:30 是源可用性观测的自然班次（与守卫通知同窗，一眼对账）；
-      #   s6 量能备源（东财/同花顺互切）依赖 push2his，而 10-08 实测部分网络下 TLS
-      #   被断/返回空——每日探测为备源决策攒可用性事实。通知复用 guard_notify 双通道：
-      #   OK→企微心跳；FAIL→企微+issue 兜底（labels guard+eastmoney）。
-      - name: 东财 push2his 连通性探测（独立观察者，结果双通道通知）
-        if: always()
-        continue-on-error: true
-        env:
-          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          node scripts/check_eastmoney.mjs \
-            --run-id "${{ github.run_id }}" \
-            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      # ③ 东财 push2his 连通性探测——已于 2026-10-10 数据层迁移中退役：
+      #   push2his 属禁用旧接口，探测对象不复存在（新栈可用性由 market_data
+      #   降级日志 + candidate_pool.py smoke 承担）。
       - name: 提交外围快照
         run: |
           git config user.name "github-actions[bot]"

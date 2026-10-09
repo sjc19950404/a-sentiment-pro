@@ -60,3 +60,8 @@ data/bt_kline_fetch.err.log
 data/emotion_history.json
 data/old_dragon_history.json
 data/main_theme_history.json
+
+# Python 数据层（2026-10-10 迁移）
+__pycache__/
+*.pyc
+data/intraday_scan.json

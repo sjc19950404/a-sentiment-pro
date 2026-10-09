@@ -12,8 +12,11 @@
 //   data/intraday.json，并在 meta 里明确标注这是盘中快照而非收盘口径。
 //
 // 抓什么 / 不抓什么（判据是"盘中是否真实可得"+"是否会被误当成收盘值"）：
-//   抓：hot（同花顺强势股，兼交易日探测）、pools（东财涨跌停/炸板池，盘中实时）、
-//       breadth（东财涨跌家数，盘中实时）。三者都是**当下时点的快照**，语义天然与时间绑定。
+//   抓：hot（全市场快照派生涨幅榜，兼交易日探测）、pools（AkShare 涨跌停/炸板池，盘中实时）、
+//       breadth（快照内涨跌家数统计，盘中实时）。三者都是**当下时点的快照**，语义天然与时间绑定。
+//   数据层（2026-10-10 迁移）：全市场快照 QuantDash 主/AkShare 兜底 + QuantDash symbols
+//   分批第三兜底；主力净流入 AkShare 批量榜。旧直连源（同花顺 getharden/腾讯 qt.gtimg/
+//   东财 push2·push2his/eastmoney-probe）全部退役。
 //   不抓：lhb / seats / industry / indexes / amount 日序列 —— 盘中或未发布、或不是当日值，
 //         抓回来只会制造"看起来是当日收盘值"的假数据。
 //
@@ -35,7 +38,7 @@ import { fileURLToPath } from 'node:url';
 import dns from 'node:dns';
 import config from '../src/config.js';
 import { resolveHolidays } from '../src/calendar.js';
-import { fetchHot, fetchPools, fetchBreadth, fetchHotQuotes, fetchMainNet, fetchScreenerTopMainNet } from '../src/sources.js';
+import { fetchIntradayRaw } from '../src/sources_qd.mjs';
 import { marketPhase, bjDate, bjTime } from '../src/freshness.js';
 import { buildIntradayPool, minutesToCloseBJ } from '../src/ai_report.js';
 import { computeEmotion } from '../src/emotion_cycle.js';
@@ -74,17 +77,23 @@ if (ph.phase !== 'live' && !FORCE) {
 }
 log(`相位 ${FORCE && ph.phase !== 'live' ? ph.phase + '（--force 强制）' : ph.phase}，北京 ${ph.bjDate} ${ph.bjTime}`);
 
-// ── ② 抓取三个盘中源（互不阻塞：各自 try，全失败才算失败）────────────────────
-const [hotR, poolsR, breadthR] = await Promise.allSettled([fetchHot(), fetchPools(ph.bjDate), fetchBreadth()]);
+// ── ② 抓取盘中源（2026-10-10 数据层迁移：一次 python 进程拉齐六源——全市场快照
+//     QuantDash 主/AkShare 兜底、涨跌停池 AkShare、主力净流入榜 AkShare，全部批量；
+//     旧源（同花顺 getharden/腾讯 qt.gtimg/东财 push2 直连/eastmoney-probe）退役）──
+let raw = null;
+try {
+  raw = await fetchIntradayRaw();
+} catch (e) {
+  log('数据层整体失败 →', String(e?.message || e));
+}
 
-const hot = hotR.status === 'fulfilled' ? hotR.value : null;
-const pools = poolsR.status === 'fulfilled' ? poolsR.value : null;
-const breadth = breadthR.status === 'fulfilled' ? breadthR.value : null;
+const hot = raw?.hot ?? null;
+const pools = raw?.pools ?? null;
+const breadth = raw?.breadth ?? null;
 
-const errs = [];
-if (!hot) errs.push('hot: ' + String(hotR.reason?.message || hotR.reason));
-if (!pools) errs.push('pools: ' + String(poolsR.reason?.message || poolsR.reason));
-if (!breadth) errs.push('breadth: ' + String(breadthR.reason?.message || breadthR.reason));
+const errs = raw?.meta?.errors?.length ? [...raw.meta.errors] : [];
+if (!raw) errs.push('market_data: 数据层进程失败（六源全部缺席，保留上次快照）');
+else if (raw.meta?.degradations?.length) log('数据层降级链 →', raw.meta.degradations.map((d) => `${d.chain}`).join(' ⇄ '));
 for (const e of errs) log('源失败 →', e);
 
 // ── ③ 交易日核验：强势股返回的 date 必须等于北京当日 ──────────────────────────
@@ -102,21 +111,15 @@ if (!anyOk) {
   log('三个源全部失败 → 本次不覆盖已有快照（避免网络抖动把页面刷成空白）。');
 }
 
-// ── ③b 盘中候选池数据源（任务二 · 2026-10-09 拆分）───────────────────────────
-//   腾讯行情批量补量比/PE-TTM/PB（同 payload 零新增请求）+ 东财 push2 主力净流入。
-//   任一失败 = 对应字段 null（不造数）；报告层按「筛选条件核验不了 = 不入选」处理。
-//   gtimg 仅在 getharen 缺值时兜底 close/change_pct/huanshou（补缺不覆盖）。
-let quoteX = {}, mainNet = {};
-if (hot && hot.length) {
-  const codes = [...new Set(hot.map((x) => x.code).filter(Boolean))];
-  try { quoteX = await fetchHotQuotes(codes); } catch (e) { quoteX = {}; log('腾讯行情补充失败 → 量比/估值字段为 null'); }
-  try { mainNet = await fetchMainNet(codes); } catch (e) { mainNet = {}; log('东财主力净流入失败 → main_net 为 null'); }
-}
-// 全市场筛选榜（任务二主数据源）：按主力净流入降序前 100，自带量比/PE/PB/行业。
-//   失败 = screener:null → 报告层回落 hot 榜口径并如实报因（宁缺毋假）。
-let screener = null;
-try { screener = await fetchScreenerTopMainNet(); } catch (e) { screener = null; }
-if (screener === null) log('全市场筛选榜失败 → 候选池回落 hot 榜口径（本次无全市场底座）');
+// ── ③b 盘中候选池数据源（2026-10-10 数据层迁移）───────────────────────────────
+//   量比/PE-TTM/PB 与主力净流入：新数据层在 intraday-raw 进程内已派生（零新增请求）。
+//   缺席 = null（不造数）；报告层按「筛选条件核验不了 = 不入选」处理。
+const quoteX = raw?.quotes || {};
+const mainNet = raw?.mainNet || {};
+// 全市场筛选榜（主力净流入降序前 100）。失败/缺席 = screener:null → 报告层回落
+//   hot 榜口径并如实报因（宁缺毋假）。
+const screener = raw?.screener ?? null;
+if (screener === null) log('全市场筛选榜缺席 → 候选池回落 hot 榜口径（本次无全市场底座）');
 
 // ── ④ 组装快照（只放「当下时点」语义明确的量，并逐项标注探测时点）──────────
 const snapshot = {

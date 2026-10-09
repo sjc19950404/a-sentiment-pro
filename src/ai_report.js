@@ -837,13 +837,21 @@ export function buildIntradayPool(intraday, opts = {}) {
   const ztLbTotal = ztLb
     ? Object.values(ztLb).filter((v) => Number.isFinite(+v) && Math.trunc(+v) >= SF.min_lb).length : 0;
   if (!universe.length) {
+    // 契约补齐（2026-10-10 数据层迁移实测暴露）：早退分支必须与正常返回同构
+    //   （pool/streak_pool/basis/streak_basis/mode/minutes 全齐）——此前缺
+    //   streak_pool/streak_basis，宇宙为空（hot/screener 双缺席）时调用方
+    //   读 built.streak_pool.length 直接 TypeError，属「空数据 → 崩溃」同类。
     return {
       pool: [],
-      trend_pool_mode: tomorrowWatch ? 'tomorrow_watch' : 'trend',
-      minutes_to_close: minsToClose,
+      streak_pool: [],
       basis: stale
         ? `当日盘中快照缺席/陈旧（tradeDate ${intraday?.tradeDate ?? '无'} ≠ ${opts.tradeDate ?? '?'}），本轮不出候选池——不回落昨收口径（任务一/二数据源物理隔离）`
         : '盘中快照 hot.rows/screener 均缺席，本轮不出候选池（不回落昨收口径，数据源物理隔离）',
+      streak_basis: stale
+        ? `连板池无底座：快照缺席/陈旧（tradeDate ${intraday?.tradeDate ?? '无'} ≠ ${opts.tradeDate ?? '?'}）`
+        : '连板池无底座：hot.rows/screener 均缺席，本轮空池（宁缺毋假）',
+      trend_pool_mode: tomorrowWatch ? 'tomorrow_watch' : 'trend',
+      minutes_to_close: minsToClose,
     };
   }
   // 题材维度按宇宙取：screener = 行业(f100，东财行业分类)；hot = reason '+' 拆标签
