@@ -3,7 +3,8 @@
 // 覆盖：① 路由（healthz/404/OPTIONS 预检）；② 无 webhook 静默跳过；
 //   ③ 成功推送记 KV（指纹 + 日计数）；④ 同内容 30 天去重；⑤ urgent（决议 3）
 //   免指纹直达；⑥ 来源闸（ALLOWED_ORIGIN）；⑦ 请求体校验（方法/JSON/类型/超限）；
-//   ⑧ 每日上限；⑨ webhook 失败不记指纹（自愈语义）。
+//   ⑧ 每日上限；⑨ webhook 失败不记指纹（自愈语义）；⑩ 企微静默丢包判据
+//   （HTTP 200 + errcode≠0 → 拒收不记指纹不计数，2026-10-09 线上真实踩坑补齐）。
 // 全部用 Node 18+ 原生 Request/Response（与 Workers 同构），Mock KV/fetch——
 //   零网络零磁盘，CI 与本地 node --test 直跑。
 import { test } from 'node:test';
@@ -29,9 +30,12 @@ const mkKV = () => {
     put: async (k, v) => { m.set(k, String(v)); },
   };
 };
-const mkFetch = (ok = true) => {
+const mkFetch = (ok = true, wechatBody = null) => {
   const calls = [];
-  const fn = async (url, init) => { calls.push({ url, init }); return { ok, status: ok ? 200 : 500 }; };
+  const fn = async (url, init) => {
+    calls.push({ url, init });
+    return { ok, status: ok ? 200 : 500, ...(wechatBody ? { json: async () => wechatBody } : {}) };
+  };
   return { calls, fn };
 };
 const post = (body, { origin, env = {} } = {}) => new Request('http://w/push', {
@@ -147,4 +151,33 @@ test('渲染层三端同源：push_text.js 与 ai_report_push.js re-export 是�
   assert.strictEqual(nodeSide.renderPushText, renderPushText, 'Node 侧 re-export 即 Worker 侧直取');
   assert.strictEqual(nodeSide.PUSH_CONSTS, PUSH_CONSTS);
   assert.equal(handleHealth().status, 200);
+});
+
+// ── 10. 企微静默丢包判据（HTTP 200 + errcode≠0 → 拒收；2026-10-09 线上踩坑）──
+test('HTTP 200 + errcode 93000 → pushed:false + 502，不记 KV 指纹不计日配额（换 key 后同内容可重推）', async () => {
+  const kv = mkKV();
+  const env = { OPS_WEBHOOK: 'https://wecom/example', PUSH_STATE: kv };
+  const f = mkFetch(true, { errcode: 93000, errmsg: 'invalid webhook url' });
+  const r = await handlePush(post(mkReport()), env, { now: NOW, fetchImpl: f.fn });
+  assert.equal(r.status, 502);
+  const body = await r.json();
+  assert.equal(body.pushed, false, '企微拒收不算送达');
+  assert.match(body.reason, /errcode 93000/);
+  assert.match(body.reason, /invalid webhook url/);
+  assert.ok(![...kv.m.keys()].some((k) => k.startsWith('fp:')), '拒收不记指纹');
+  assert.ok(![...kv.m.keys()].some((k) => k.startsWith('day:')), '拒收不计日配额');
+  // 换 key 后（errcode 0）同内容重推 → 送达并补记指纹（自愈语义）
+  const f2 = mkFetch(true, { errcode: 0, errmsg: 'ok' });
+  const retry = await handlePush(post(mkReport()), env, { now: NOW, fetchImpl: f2.fn });
+  assert.equal((await retry.json()).pushed, true, 'errcode 0 → 送达，同内容可重推');
+  assert.ok([...kv.m.keys()].some((k) => k.startsWith('fp:')), '送达后补记指纹');
+});
+
+test('HTTP 200 + errcode 0（显式成功响应体）→ 正常送达', async () => {
+  const kv = mkKV();
+  const f = mkFetch(true, { errcode: 0, errmsg: 'ok' });
+  const r = await handlePush(post(mkReport()), { OPS_WEBHOOK: 'https://wecom/example', PUSH_STATE: kv }, { now: NOW, fetchImpl: f.fn });
+  const body = await r.json();
+  assert.equal(body.pushed, true);
+  assert.ok([...kv.m.keys()].some((k) => k.startsWith('fp:')), '成功记指纹');
 });

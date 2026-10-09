@@ -13,6 +13,8 @@
 //   · 内容指纹去重（同稳定域哈希，KV 存 30 天）——同内容重推被拦；
 //   · urgent（trigger ≠ 'schedule'，决议 3 四类事件）免指纹直达；
 //   · fetch 失败不记指纹 → 调用方重试自愈；
+//   · 企微静默丢包判据：HTTP 2xx ≠ 送达——body errcode≠0（93xxx：key 失效/
+//     群变更/机器人被移除）视为失败，不记指纹（对齐 ai_report_push.js）；
 //   · 滥用面三闸：来源校验（ALLOWED_ORIGIN）/ 请求体上限 / 每日推送上限。
 //
 // 防护说明（个人系统威胁模型，如实记录）：secret 只在 Worker 侧；
@@ -137,6 +139,19 @@ export async function handlePush(request, env, { now = new Date(), fetchImpl } =
       body: JSON.stringify({ msgtype: 'text', text: { content: renderPushText(report) } }),
     });
     if (!res.ok) return json({ ok: false, reason: `webhook HTTP ${res.status}（未记指纹，可重试）` }, 502, corsHeaders(env));
+    // 企微静默丢包判据：HTTP 2xx 不代表送达——key 失效/群变更/机器人被移除时
+    //   企微返回 HTTP 200 + body errcode≠0（93xxx）。对齐 ai_report_push.js 同款
+    //   判据；mock fetch 可能没有 .json()/.text()（旧测试夹具），解析不出 body
+    //   时按「无 errcode」放行，非企微端点/旧 mock 不受影响。
+    let wechat = {};
+    try {
+      if (typeof res?.json === 'function') wechat = await res.json();
+      else if (typeof res?.text === 'function') { try { wechat = JSON.parse(await res.text()); } catch { wechat = {}; } }
+    } catch { wechat = {}; }
+    if (wechat.errcode !== undefined && wechat.errcode !== 0) {
+      // 企微拒收：不写 KV 指纹、不计日配额 → 调用方重试/换 key 后同内容可重推
+      return json({ ok: false, pushed: false, reason: `企微拒收 errcode ${wechat.errcode}: ${wechat.errmsg || '无 errmsg'}（未记指纹，可重试）`, fingerprint: fp }, 502, corsHeaders(env));
+    }
     if (kv) {
       try {
         if (!urgent) await kv.put(fpKey, now.toISOString(), { expirationTtl: PROXY_CONSTS.DEDUP_TTL_S });
