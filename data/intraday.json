@@ -2,26 +2,58 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-09",
-  "capturedAt": "2026-10-09T02:45:21.046Z",
-  "capturedAtBJ": "2026-10-09 10:45",
+  "capturedAt": "2026-10-09T03:14:50.370Z",
+  "capturedAtBJ": "2026-10-09 11:14",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 27,
+    "count": 28,
     "srcDate": "2026-10-09",
     "rows": [
       {
-        "code": "603101",
-        "name": "汇嘉时代",
-        "reason": "超市调改+新疆零售+商业综合体",
+        "code": "920627",
+        "name": "力王股份",
+        "reason": "锂电池+固态电池+锌锰电池",
         "close": null,
         "change_pct": null,
         "huanshou": null
       },
       {
-        "code": "002675",
-        "name": "东诚药业",
-        "reason": "核医药+创新药+股份回购",
+        "code": "300340",
+        "name": "科恒股份",
+        "reason": "固态电池装备+正极材料+珠海国资",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "000546",
+        "name": "金圆股份",
+        "reason": "盐湖提锂+锂矿布局+固废危废资源化",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "300981",
+        "name": "中红医疗",
+        "reason": "医用手套+业绩高增+海外产能",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "600408",
+        "name": "安泰集团",
+        "reason": "焦炭+焦炉煤气制氢+型钢",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "603101",
+        "name": "汇嘉时代",
+        "reason": "超市调改+新疆零售+商业综合体",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -86,14 +118,6 @@
         "code": "600843",
         "name": "上工申贝",
         "reason": "缝制设备+机器人缝制+轻型飞机",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "603155",
-        "name": "新亚强",
-        "reason": "有机硅+电子化学品+国资控股",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -171,25 +195,9 @@
         "huanshou": null
       },
       {
-        "code": "603630",
-        "name": "拉芳家化",
-        "reason": "洗护用品+品牌优化+业绩改善",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
         "code": "600812",
         "name": "华北制药",
         "reason": "鼠疫+抗生素+创新药+集采",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "002242",
-        "name": "九阳股份",
-        "reason": "机器人投资+厨房小家电+内容电商",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -229,16 +237,15 @@
     ]
   },
   "pools": {
-    "zt": 27,
-    "zb": 9,
-    "dt": 11,
+    "zt": 28,
+    "zb": 13,
+    "dt": 18,
     "max_lb": 9,
-    "lb2": 11,
+    "lb2": 12,
     "zt_codes": [
       "002058",
       "600241",
       "600825",
-      "603630",
       "001300",
       "600812",
       "002733",
@@ -250,7 +257,6 @@
       "001336",
       "600478",
       "300821",
-      "603155",
       "600843",
       "300111",
       "600127",
@@ -260,19 +266,24 @@
       "600371",
       "002702",
       "603101",
-      "002675",
-      "600408"
+      "600408",
+      "300981",
+      "000546",
+      "300340",
+      "920627"
     ],
-    "seal_pct": 75
+    "seal_pct": 68.3
   },
-  "breadth": null,
-  "sourcesFailed": [
-    "breadth: undefined"
-  ],
-  "prevCapturedAtBJ": "2026-10-09 10:25",
+  "breadth": {
+    "up": 876,
+    "down": 4289,
+    "flat": 122
+  },
+  "sourcesFailed": [],
+  "prevCapturedAtBJ": "2026-10-09 10:45",
   "prevPools": {
-    "zt": 23,
-    "zb": 7,
-    "seal_pct": 76.7
+    "zt": 27,
+    "zb": 9,
+    "seal_pct": 75
   }
 }
