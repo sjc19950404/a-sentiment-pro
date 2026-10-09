@@ -1,0 +1,52 @@
+# 一次性运维工具（用完即删）：验证 Worker OPS_WEBHOOK secret 有效性。
+# 背景：2026-10-09 补推踩坑——Worker 旧版只查 HTTP 状态，企微 key 失效时返回
+#   HTTP 200 + errcode 93000（静默丢包）被误判 pushed:true。errcode 判据已上线
+#   （版本 01d0a26c），本工具发一条 urgent 测试信封（trigger≠schedule 免指纹直达，
+#   绕开今晚假成功记入 KV 的坏账指纹）：key 有效 → 群里收到下述渲染文本；
+#   key 无效 → 502 + errcode 93000 实锤。仅 workflow_dispatch，不进自动触发链。
+name: worker-verify (one-shot)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 构造 urgent 测试信封并渲染预览
+        run: |
+          set -euo pipefail
+          cat > /tmp/verify_envelope.json <<'EOF'
+          {
+            "report_type": "intraday",
+            "trigger": "event:channel_verify",
+            "date": "2026-10-09",
+            "generated_at": "2026-10-09T15:30:00.000Z",
+            "status": "ok",
+            "payload": {
+              "pnl_daily": 0,
+              "pnl_cumulative": 0,
+              "drawdown_vs_threshold": { "dd_now": 0, "distance_pp": 0, "basis": "通道测试" },
+              "overseas": []
+            },
+            "missing_notes": []
+          }
+          EOF
+          echo "信封体量: $(du -h /tmp/verify_envelope.json | cut -f1)"
+
+      - name: POST /push（urgent 免指纹直达）
+        run: |
+          set -euo pipefail
+          HTTP_CODE=$(curl -sS --max-time 60 -o /tmp/verify_resp.json -w '%{http_code}' \
+            -X POST "https://a-sentiment-push.sjc19950404.workers.dev/push" \
+            -H 'Content-Type: application/json' \
+            --data-binary "@/tmp/verify_envelope.json")
+          echo "HTTP $HTTP_CODE"
+          cat /tmp/verify_resp.json
+          echo
+          case "$HTTP_CODE" in
+            200) echo "✅ Worker 受理成功——若 pushed:true 且无 errcode 字段 → 企微已送达，请到群里核对「event:channel_verify」消息" ;;
+            *) echo "❌ Worker 拒收/失败——响应体即根因（errcode 93000 = key 失效实锤）"; exit 1 ;;
+          esac
