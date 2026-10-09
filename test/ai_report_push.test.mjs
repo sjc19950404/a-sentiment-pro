@@ -116,13 +116,16 @@ test('loadPushState/savePushState：roundtrip / 缺档空态 / 坏 JSON 空态�
 });
 
 // ── 5. 文本渲染（四类）────────────────────────────────────────────────
-test('renderPushText：四类各成版式；null → — 不冒充 0；缺失披露进尾注', () => {
+test('renderPushText：四类各成版式；null → — 不冒充 0；工程告警不进决策正文', () => {
   const post = renderPushText(mkReport());
   assert.match(post, /【AI 报告 · 盘后】2026-09-30/);
   assert.match(post, /当日盈亏 \+0\.02%/);
   assert.match(post, /收盘回撤 \+13\.79%/);
   assert.match(post, /情绪周期: 发酵期\(recover\)/);
-  assert.match(post, /缺失披露 1 项 · 数据状态 degraded/, '降级状态如实进尾注');
+  assert.doesNotMatch(post, /缺失披露|数据状态/, '工程健康告警不进决策正文（2026-10-09 指令：归工程通道）');
+  assert.match(post, /完整版见页面 · 不构成投资建议/, '免责声明尾行保留');
+  assert.match(post, /候选池 1 只（按连板数排序，Top 1）：/, '候选池清单展开（盘后版）');
+  assert.match(post, / 1\. 600825 新华传媒 · 得分 — · 入选理由 — · 估值 —/, 'null 字段按 — 占位（不造数纪律）');
 
   const pre = renderPushText(mkReport({
     report_type: 'pre_market',
@@ -132,7 +135,7 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；缺失披
   assert.match(pre, /【AI 报告 · 盘前】2026-09-30/);
   assert.match(pre, /前日盈亏 — · 累计 —/, 'null → —，不冒充 0');
   assert.match(pre, /A50 \+0\.09%/);
-  assert.match(pre, /缺失披露 0 项/);
+  assert.doesNotMatch(pre, /候选池/, 'simulation_stock 缺席 → 无候选池清单（不留噪音行）');
   assert.ok(pre.includes('数据截至 2026-09-30 收盘\n'), '盘前恒标数据截至（前收口径，头部日期即数据日期）');
   assert.ok(!pre.includes('假期无更新'), '常规隔夜（gap≤3 自然日）不加假期附注');
   const preHoliday = renderPushText(mkReport({
@@ -161,7 +164,8 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；缺失披
   }));
   assert.match(intra, /【AI 报告 · 盘中】2026-09-30 · event:circuit_breaker/, 'urgent 触发源进标题');
   assert.match(intra, /运行回撤 \+8\.80% · 距 DD 档位 0\.2pp/);
-  assert.match(intra, /候选池盘中\(强势榜在列\)/, '强势榜在列候选股进盘中版式');
+  assert.match(intra, /候选池 1 只（按连板数排序，Top 1）：/, '候选池清单展开（盘中版）');
+  assert.match(intra, / 1\. 600825 新华传媒 · 得分 — · 入选理由 — · 估值 — · 盘中 \+3\.3%/, '盘中涨幅并入清单逐股展示（百分数值口径，不过 pct()×100）');
 
   const week = renderPushText(mkReport({
     report_type: 'weekly',
@@ -173,9 +177,31 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；缺失披
   assert.match(week, /胜率 —（剧本口径，绑定缺席则 null）/, '胜率 null 口径如实披露');
   assert.match(week, /趋势切换 2 次/);
 
-  // 超长截断：缺失披露塞爆 → 不超企微上限
-  const fat = mkReport({ missing_notes: Array.from({ length: 200 }, (_, i) => ({ field: `f${i}`, reason: 'r'.repeat(30), ref: '-' })) });
-  assert.ok(renderPushText(fat).length <= PUSH_CONSTS.MSG_CAP, '超长截断至上限内');
+  // 超长截断：候选池塞爆（30 只 + 超长理由）→ Top 10 截取 + 不超企微上限
+  const fatPool = Array.from({ length: 30 }, (_, i) => ({
+    code: `6009${String(i).padStart(2, '0')}`, name: `压测票${i}`,
+    selection_reason: `${i + 1} 连板（当日 9.99%，晋级成功，${'理由'.repeat(20)}）`,
+  }));
+  const base = mkReport();
+  const fat = mkReport({ payload: { ...base.payload, simulation_stock: { ...base.payload.simulation_stock, candidate_pool: fatPool } } });
+  const fatText = renderPushText(fat);
+  assert.ok(fatText.length <= PUSH_CONSTS.MSG_CAP, '超长截断至上限内');
+  assert.doesNotMatch(fatText, /11\. /, '正文只展示 Top 10（指令口径）');
+});
+
+// ── 5.5 候选池清单（2026-10-09 指令：纯数字摘要 → 逐股清单）──────────
+test('renderPushText：候选池清单——字段全有时完整展示（得分/题材/PE），缺失按 — 占位不造数', () => {
+  const base = mkReport();
+  const pool = [
+    { code: '600519', name: '贵州茅台', score: 0.87, themes: ['消费龙头'], selection_reason: '3 连板（当日 10.00%，晋级成功）', fundamentals: { pe: 22, pb: null } },
+    { code: '000001', name: '平安银行', score: 0.82, themes: null, selection_reason: '2 连板（当日 5.00%，晋级成功）', fundamentals: { pe: null, pb: 0.6 } },
+    { code: '300750', name: null, selection_reason: null, fundamentals: null },
+  ];
+  const out = renderPushText(mkReport({ payload: { ...base.payload, simulation_stock: { ...base.payload.simulation_stock, candidate_pool: pool } } }));
+  assert.match(out, /候选池 3 只（按连板数排序，Top 3）：/);
+  assert.match(out, / 1\. 600519 贵州茅台 · 得分 0\.87 · 题材：消费龙头 · 入选：3 连板（当日 10\.00%，晋级成功） · 估值 PE 22x/, '字段齐全：得分/题材/入选理由/PE');
+  assert.match(out, / 2\. 000001 平安银行 · 得分 0\.82 · 入选：2 连板（当日 5\.00%，晋级成功） · 估值 PB 0\.6x/, 'PE 缺 → PB 回退；themes null → 走入选理由');
+  assert.match(out, / 3\. 300750 — · 得分 — · 入选理由 — · 估值 —/, '名称/理由/估值全缺 → —，不造数');
 });
 
 // ── 6. pushReports（fetch 注入零网络）─────────────────────────────────

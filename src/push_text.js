@@ -22,17 +22,48 @@ export const PUSH_CONSTS = {
 const pct = (v, digits = 2) => (v == null || !Number.isFinite(v) ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(digits)}%`);
 const txt = (v) => (v == null ? '—' : String(v));
 const overseas = (p, key) => pct((p.overseas || []).find((q) => q && q.key === key)?.chgPct);
-const simLine = (p) => {
+// 估值展示：PE 优先、PB 回退、双缺 → —（fundamentals 键常驻 null 占位，
+// 数据源接入后自动展示——决议 8「键常驻，不改 schema」口径）。
+const valoOf = (c) => {
+  const f = c?.fundamentals || {};
+  if (f.pe != null) return `PE ${f.pe}x`;
+  if (f.pb != null) return `PB ${f.pb}x`;
+  return '—';
+};
+// 候选池清单展开（2026-10-09 用户指令）：纯数字摘要升级为逐股清单，正文 Top 10。
+//   字段口径：代码/名称/入选理由/盘中涨幅是 buildCandidatePool 真实字段；
+//   综合得分（c.score）数据层暂无——按「缺失用 —，不造数」纪律占位，
+//   接入后自动展示。排序沿用数据层既定口径（buildCandidatePool 按连板数
+//   降序），渲染层不重排。
+const poolBlock = (sim) => {
+  const pool = Array.isArray(sim?.candidate_pool) ? sim.candidate_pool : [];
+  if (!pool.length) return [];
+  const top = pool.slice(0, 10); // 正文展示 Top 10（指令口径）
+  const lines = [`候选池 ${pool.length} 只（按连板数排序，Top ${top.length}）：`];
+  top.forEach((c, i) => {
+    const theme = Array.isArray(c?.themes) ? c.themes.filter(Boolean).join('/') : (c?.themes || null);
+    // intraday_chg 是百分数值口径（hot 榜 change_pct 原值，9.99 = +9.99%），
+    // 不能过 pct()（那是分数口径，×100 会渲成 +999%——旧三股摘要行的潜伏 bug，顺手修复）。
+    const intr = c?.intraday_chg != null && Number.isFinite(+c.intraday_chg)
+      ? ` · 盘中 ${+c.intraday_chg >= 0 ? '+' : ''}${+c.intraday_chg}%` : '';
+    lines.push(` ${i + 1}. ${txt(c?.code)} ${txt(c?.name)} · 得分 ${c?.score != null ? c.score : '—'} · `
+      + `${theme ? `题材：${theme} · ` : ''}${c?.selection_reason ? `入选：${c.selection_reason}` : '入选理由 —'}`
+      + ` · 估值 ${valoOf(c)}${intr}`);
+  });
+  return lines;
+};
+const simBlock = (p) => {
   const sim = p.simulation_stock;
-  if (!sim?.sentiment_cycle) return null;
+  if (!sim?.sentiment_cycle) return [];
   const sc = sim.sentiment_cycle;
   const phase = sc.phase_label ?? sc.phase;
-  return `情绪周期: ${phase}(${sc.regime_raw ?? '—'}) · 建议仓位: ${sim.position_suggestion ?? '—'} · 候选池 ${sim.candidate_pool?.length ?? 0} 只`;
+  return [`情绪周期: ${phase}(${sc.regime_raw ?? '—'}) · 建议仓位: ${sim.position_suggestion ?? '—'} · 候选池 ${sim.candidate_pool?.length ?? 0} 只`,
+    ...poolBlock(sim)];
 };
 
 /**
  * 报告 → 企微 text 消息（简版；完整 JSON/页面视图不进推送）。
- * 四类各自的行集 + 通用尾注（缺失披露数与数据状态）。
+ * 四类各自的行集 + 候选池清单 + 通用免责尾注（工程健康告警不进决策正文）。
  */
 export function renderPushText(report) {
   const p = report?.payload || {};
@@ -50,7 +81,7 @@ export function renderPushText(report) {
           ? Math.floor((genDay - dataDay) / 86400000) : null;
         lines.push(`数据截至 ${txt(report.date)} 收盘${gap != null && gap > PUSH_CONSTS.STALE_NOTE_GAP_DAYS ? `（距生成 ${gap} 天，假期无更新）` : ''}`);
       }
-      { const s = simLine(p); if (s) lines.push(s); }
+      { lines.push(...simBlock(p)); }
       lines.push(`前日盈亏 ${pct(p.pnl_daily)} · 累计 ${pct(p.pnl_cumulative)} · 前日净值 ${p.prev_nav != null ? p.prev_nav.toFixed(4) : '—'}`);
       lines.push(`隔夜: A50 ${overseas(p, 'a50')} · 费半 ${overseas(p, 'sox')} · 净敞口分歧 ${txt(p.overnight_exposure?.posGap)}`);
       { // S3-5 外围收盘全景（overnight_exposure 扩展段，聚合一行不逐条罗列）：
@@ -66,19 +97,16 @@ export function renderPushText(report) {
       break;
     case 'intraday':
       lines.push(`【AI 报告 · 盘中】${report.date}${report.trigger !== 'schedule' ? ` · ${report.trigger}` : ''}`);
-      { const s = simLine(p); if (s) lines.push(s); }
+      { lines.push(...simBlock(p)); }
       lines.push(`运行回撤 ${pct(p.drawdown_vs_threshold?.dd_now)} · 距 DD 档位 ${p.drawdown_vs_threshold?.distance_pp != null ? `${p.drawdown_vs_threshold.distance_pp}pp` : '—'}（${p.drawdown_vs_threshold?.basis ?? '—'}）`);
       lines.push(`昨收口径: 当日 ${pct(p.pnl_daily)} · 累计 ${pct(p.pnl_cumulative)} · A50 ${overseas(p, 'a50')}`);
-      { const hot = (p.simulation_stock?.candidate_pool || []).filter((c) => c.intraday_chg != null)
-          .slice(0, 3).map((c) => `${c.name ?? c.code} ${pct(c.intraday_chg)}`).join(' · ');
-        if (hot) lines.push(`候选池盘中(强势榜在列): ${hot}`); }
       break;
     case 'post_market':
       lines.push(`【AI 报告 · 盘后】${report.date}`);
       lines.push(`当日盈亏 ${pct(p.pnl_daily)} · 累计 ${pct(p.pnl_cumulative)} · 收盘回撤 ${pct(p.close_drawdown)}`);
       if (p.market_context) lines.push(`市场: 涨跌 ${txt(p.market_context.up_down)} · 涨停/跌停 ${txt(p.market_context.zt_dt)} · 亏钱效应 ${txt(p.market_context.pain)}`);
       if (p.backtest_deviation) lines.push(`vs 回测 v52: delta ${pct(p.backtest_deviation.delta)}`);
-      { const s = simLine(p); if (s) lines.push(s); }
+      { lines.push(...simBlock(p)); }
       break;
     case 'weekly':
       lines.push(`【AI 报告 · 周报】截至 ${report.date}`);
@@ -94,8 +122,9 @@ export function renderPushText(report) {
   //   ai_report.js envelope 的 ma20_degraded）。企微 text 消息不支持
   //   markdown <font color>，用 🔴 emoji 替代；文案短促不挤占 MSG_CAP。
   if (p.ma20_degraded) lines.push('🔴 MA20 降级版：量能因子按中性 50 计（当日成交额缺或量能历史不足）');
-  const degraded = report?.status && report.status !== 'ok' ? ` · 数据状态 ${report.status}` : '';
-  lines.push(`缺失披露 ${report?.missing_notes?.length ?? 0} 项${degraded}（完整版见页面 · 不构成投资建议）`);
+  // 工程健康告警（缺失披露数/数据状态）已移出决策正文（2026-10-09 用户指令：
+  // 运行监控归工程通道，不进面向决策的推送文案）；免责声明尾行保留。
+  lines.push('完整版见页面 · 不构成投资建议');
   let text = lines.join('\n');
   if (text.length > PUSH_CONSTS.MSG_CAP) text = `${text.slice(0, PUSH_CONSTS.MSG_CAP - 20)}\n…（超长截断）`;
   return text;
