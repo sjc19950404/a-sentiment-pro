@@ -2,14 +2,38 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-09",
-  "capturedAt": "2026-10-09T01:47:21.487Z",
-  "capturedAtBJ": "2026-10-09 09:47",
+  "capturedAt": "2026-10-09T02:14:40.832Z",
+  "capturedAtBJ": "2026-10-09 10:14",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 17,
+    "count": 20,
     "srcDate": "2026-10-09",
     "rows": [
+      {
+        "code": "600629",
+        "name": "华建集团",
+        "reason": "工程设计+城市更新+上海国资",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "600127",
+        "name": "金健米业",
+        "reason": "粮油食品+健康食品+粮食储备",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "300111",
+        "name": "向日葵",
+        "reason": "抗感染药+药品获批+医药产业链",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
       {
         "code": "600843",
         "name": "上工申贝",
@@ -93,7 +117,7 @@
       {
         "code": "002692",
         "name": "远程股份",
-        "reason": "电线电缆+电网应用+数据中心电缆",
+        "reason": "电线电缆+电网应用+数据中心电缆+参股半导体",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -149,9 +173,9 @@
     ]
   },
   "pools": {
-    "zt": 17,
-    "zb": 4,
-    "dt": 3,
+    "zt": 20,
+    "zb": 8,
+    "dt": 10,
     "max_lb": 9,
     "lb2": 8,
     "zt_codes": [
@@ -171,18 +195,23 @@
       "600478",
       "300821",
       "603155",
-      "600843"
+      "600843",
+      "300111",
+      "600127",
+      "600629"
     ],
-    "seal_pct": 81
+    "seal_pct": 71.4
   },
-  "breadth": null,
-  "sourcesFailed": [
-    "breadth: undefined"
-  ],
-  "prevCapturedAtBJ": "2026-10-08 14:52",
+  "breadth": {
+    "up": 836,
+    "down": 4339,
+    "flat": 112
+  },
+  "sourcesFailed": [],
+  "prevCapturedAtBJ": "2026-10-09 09:47",
   "prevPools": {
-    "zt": 42,
-    "zb": 33,
-    "seal_pct": 56
+    "zt": 17,
+    "zb": 4,
+    "seal_pct": 81
   }
 }
