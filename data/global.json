@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-10-09T21:53:35.788Z",
+    "generatedAt": "2026-10-09T22:10:45.745Z",
     "source": "sina",
     "sourceUrl": "https://hq.sinajs.cn/list=",
     "usSessionDate": "2026-10-09",
@@ -10,8 +10,8 @@
     "failed": [],
     "usReadiness": {
       "ready": true,
-      "etText": "17:53 ET",
-      "reason": "美东 17:53 ET 已收盘（≥16:30 ET），可采信当日收盘",
+      "etText": "18:10 ET",
+      "reason": "美东 18:10 ET 已收盘（≥16:30 ET），可采信当日收盘",
       "readyAfterEt": "16:30 ET（收盘 + 30 分钟结算缓冲）= 北京次日 04:30"
     },
     "usNoSession": [],
@@ -21,7 +21,7 @@
     "usSessionDates": [],
     "usSessionsBeforeOpen": 0,
     "lastAttempt": {
-      "at": "2026-10-09T21:53:35.788Z",
+      "at": "2026-10-09T22:10:45.745Z",
       "outcome": "ok",
       "reason": null
     }
@@ -234,7 +234,7 @@
       "chgReported": 0.79,
       "hi52": 40.907,
       "lo52": 31.19,
-      "quoteTime": "2026-10-10 05:53:24",
+      "quoteTime": "2026-10-10 06:09:09",
       "sessionDate": "2026-10-09",
       "open": 33.92,
       "high": 34.37,
@@ -442,22 +442,22 @@
       "ok": true,
       "state": "ok",
       "stateText": "",
-      "last": 104.529,
+      "last": 104.595,
       "prevClose": 104.28,
-      "chg": 0.249,
-      "chgPct": 0.2388,
+      "chg": 0.315,
+      "chgPct": 0.3021,
       "chgPctReported": null,
       "chgReported": null,
       "hi52": null,
       "lo52": null,
-      "quoteTime": "05:52:56",
+      "quoteTime": "05:59:59",
       "sessionDate": "2026-10-10",
       "open": 103.87,
       "high": 105.09,
       "low": 102.33,
       "dp": 2,
-      "lastText": "104.53",
-      "chgPctText": "+0.24%"
+      "lastText": "104.59",
+      "chgPctText": "+0.30%"
     }
   ],
   "rmb": {
