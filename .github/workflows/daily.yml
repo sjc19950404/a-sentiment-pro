@@ -307,6 +307,11 @@ jobs:
             echo "无变化，跳过提交"
           else
             git commit -m "chore: 更新情绪数据 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            # bot push 竞态加固（2026-10-09 实录：手动 dispatch 全 job 并跑，us-close
+            # 先推外围快照，build 数据提交后到被 non-fast-forward 拒——生产排期各 job
+            # 时间带错开不相遇，手动验收必撞）。rebase 同分支远端新提交再推（main 副本
+            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。
+            git pull --rebase origin "$GITHUB_REF_NAME"
             git push
           fi
       # 放在提交之后：数据已安全落库，再判定滞后。真滞后 → 本次运行标红（GitHub 会发失败通知），
@@ -392,6 +397,11 @@ jobs:
             echo "无变化（非盘中或快照相同），跳过提交"
           else
             git commit -m "chore: 盘中快照+AI报告 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            # bot push 竞态加固（2026-10-09 实录：手动 dispatch 全 job 并跑，us-close
+            # 先推外围快照，build 数据提交后到被 non-fast-forward 拒——生产排期各 job
+            # 时间带错开不相遇，手动验收必撞）。rebase 同分支远端新提交再推（main 副本
+            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。
+            git pull --rebase origin "$GITHUB_REF_NAME"
             git push
           fi
 
@@ -426,6 +436,11 @@ jobs:
             echo "无变化（非交易日），跳过提交"
           else
             git commit -m "chore: 盘前AI报告 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            # bot push 竞态加固（2026-10-09 实录：手动 dispatch 全 job 并跑，us-close
+            # 先推外围快照，build 数据提交后到被 non-fast-forward 拒——生产排期各 job
+            # 时间带错开不相遇，手动验收必撞）。rebase 同分支远端新提交再推（main 副本
+            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。
+            git pull --rebase origin "$GITHUB_REF_NAME"
             git push
           fi
 
@@ -461,5 +476,10 @@ jobs:
             echo "无变化，跳过提交"
           else
             git commit -m "chore: 外围(美股收盘档) $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            # bot push 竞态加固（2026-10-09 实录：手动 dispatch 全 job 并跑，us-close
+            # 先推外围快照，build 数据提交后到被 non-fast-forward 拒——生产排期各 job
+            # 时间带错开不相遇，手动验收必撞）。rebase 同分支远端新提交再推（main 副本
+            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。
+            git pull --rebase origin "$GITHUB_REF_NAME"
             git push
           fi
