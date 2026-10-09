@@ -2,18 +2,58 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-09",
-  "capturedAt": "2026-10-09T04:46:56.871Z",
-  "capturedAtBJ": "2026-10-09 12:46",
+  "capturedAt": "2026-10-09T05:14:40.731Z",
+  "capturedAtBJ": "2026-10-09 13:14",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 27,
+    "count": 34,
     "srcDate": "2026-10-09",
     "rows": [
       {
-        "code": "920627",
-        "name": "力王股份",
-        "reason": "锂电池+固态电池+锌锰电池",
+        "code": "603067",
+        "name": "振华股份",
+        "reason": "SOFC材料+金属铬扩产+铬盐龙头",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "605188",
+        "name": "国光连锁",
+        "reason": "零售主业+商业综合体+半年报增长",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "002212",
+        "name": "天融信",
+        "reason": "人工智能安全+智算云+网络安全",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "600882",
+        "name": "妙可蓝多",
+        "reason": "业绩增长+奶酪深加工+奶酪产品",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "600865",
+        "name": "百大集团",
+        "reason": "商业零售+物业租赁+政府补助",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "300369",
+        "name": "绿盟科技",
+        "reason": "人工智能安全+智算中心+网络安全",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -67,6 +107,14 @@
         "huanshou": null
       },
       {
+        "code": "002675",
+        "name": "东诚药业",
+        "reason": "核医药+创新药+股份回购",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
         "code": "600371",
         "name": "万向德农",
         "reason": "玉米种业+转基因玉米+新品研发",
@@ -110,6 +158,14 @@
         "code": "600843",
         "name": "上工申贝",
         "reason": "缝制设备+机器人缝制+轻型飞机",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "603155",
+        "name": "新亚强",
+        "reason": "有机硅+电子化学品+国资控股",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -229,11 +285,11 @@
     ]
   },
   "pools": {
-    "zt": 27,
-    "zb": 15,
-    "dt": 17,
+    "zt": 35,
+    "zb": 14,
+    "dt": 8,
     "max_lb": 9,
-    "lb2": 11,
+    "lb2": 10,
     "zt_codes": [
       "002058",
       "600241",
@@ -249,6 +305,7 @@
       "001336",
       "600478",
       "300821",
+      "603155",
       "600843",
       "600127",
       "300530",
@@ -256,22 +313,29 @@
       "601086",
       "600371",
       "603101",
+      "002675",
       "600408",
       "300981",
       "002709",
       "000546",
       "300340",
-      "920627"
+      "300369",
+      "600865",
+      "600882",
+      "002212",
+      "605188",
+      "603067",
+      "601069"
     ],
-    "seal_pct": 64.3
+    "seal_pct": 71.4
   },
   "breadth": {
-    "up": 1018,
-    "down": 4148,
-    "flat": 121
+    "up": 1587,
+    "down": 3569,
+    "flat": 131
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-09 12:16",
+  "prevCapturedAtBJ": "2026-10-09 12:46",
   "prevPools": {
     "zt": 27,
     "zb": 15,
