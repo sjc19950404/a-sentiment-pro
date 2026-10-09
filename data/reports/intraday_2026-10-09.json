@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-09",
- "generated_at": "2026-10-09T05:46:44.473Z",
+ "generated_at": "2026-10-09T07:18:35.655Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -158,29 +158,32 @@
     ]
    },
    "position_suggestion": "neutral",
-   "pool_basis": "pain.advance.detail 连板活跃明细按连板数降序（情绪面规则现算，决议 8：人工输入模式的辅助建议，可一键采纳不自动生效）",
+   "pool_basis": "全市场筛选榜（东财 clist 主力净流入降序前 100） 实时现算（每轮全量重算，不沿用上轮）：涨幅 3-7% · 量比 >2 · 未涨停（pools.zt_codes）· 主力净流入为正；扫 100 只，剔除——带外 28 / 量比不足 21 / 已涨停 40 / 净流出或无源 0 / 字段缺失 0；得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）",
    "candidate_pool": [
     {
-     "code": "600825",
-     "name": "新华传媒",
-     "themes": null,
-     "selection_reason": "6 连板（当日 9.99%，晋级成功，近期上榜 8 次）",
-     "intraday_chg": null,
+     "code": "301292",
+     "name": "海科新源",
+     "score": 0.8,
+     "themes": [
+      "电池"
+     ],
+     "selection_reason": "量比 3.94",
+     "intraday_chg": 5.18,
      "fundamentals": {
       "roe": null,
       "revenue_growth": null,
       "net_profit_growth": null,
-      "pe": null,
-      "pb": null,
+      "pe": 48.95,
+      "pb": 4.38,
       "peg": null,
       "market_cap": null,
       "moat_note": null
      },
-     "fund_flow_note": "游资/其他（营业部·分公司·自营）主导（席位级：instNet/northNet/hotNet 真值；个股级主力净流入系统无数据）",
+     "fund_flow_note": "主力净流入 +14812 万（东财 push2 盘中实时）",
      "scripts": [
       {
        "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（600825，即时轨实时价判定）",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（301292，即时轨实时价判定）",
        "position_ratio": 0.5,
        "stop_loss": -0.08,
        "take_profit": 0.16,
@@ -207,30 +210,33 @@
       }
      ],
      "risks": [
-      "6 板高位，连板晋级失败率 40%"
+      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
      ]
     },
     {
-     "code": "603949",
-     "name": "雪龙集团",
-     "themes": null,
-     "selection_reason": "4 连板（当日 -9.98%，晋级失败，近期上榜 7 次）",
-     "intraday_chg": null,
+     "code": "002812",
+     "name": "恩捷股份",
+     "score": 0.76,
+     "themes": [
+      "电池"
+     ],
+     "selection_reason": "量比 3.7",
+     "intraday_chg": 4.36,
      "fundamentals": {
       "roe": null,
       "revenue_growth": null,
       "net_profit_growth": null,
-      "pe": null,
-      "pb": null,
+      "pe": 44.46,
+      "pb": 1.8,
       "peg": null,
       "market_cap": null,
       "moat_note": null
      },
-     "fund_flow_note": "游资/其他（营业部·分公司·自营）主导（席位级：instNet/northNet/hotNet 真值；个股级主力净流入系统无数据）",
+     "fund_flow_note": "主力净流入 +21153 万（东财 push2 盘中实时）",
      "scripts": [
       {
        "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（603949，即时轨实时价判定）",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（002812，即时轨实时价判定）",
        "position_ratio": 0.5,
        "stop_loss": -0.08,
        "take_profit": 0.16,
@@ -257,30 +263,33 @@
       }
      ],
      "risks": [
-      "昨日 4 板已晋级失败（chg -9.98%），反核属逆势剧本"
+      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
      ]
     },
     {
-     "code": "000678",
-     "name": "襄阳轴承",
-     "themes": null,
-     "selection_reason": "3 连板（当日 9.98%，晋级成功，近期上榜 5 次）",
-     "intraday_chg": null,
+     "code": "603026",
+     "name": "石大胜华",
+     "score": 0.69,
+     "themes": [
+      "电池"
+     ],
+     "selection_reason": "量比 4.22",
+     "intraday_chg": 5.95,
      "fundamentals": {
       "roe": null,
       "revenue_growth": null,
       "net_profit_growth": null,
-      "pe": null,
-      "pb": null,
+      "pe": 27.87,
+      "pb": 2.69,
       "peg": null,
       "market_cap": null,
       "moat_note": null
      },
-     "fund_flow_note": "游资/其他（营业部·分公司·自营）主导（席位级：instNet/northNet/hotNet 真值；个股级主力净流入系统无数据）",
+     "fund_flow_note": "主力净流入 +13047 万（东财 push2 盘中实时）",
      "scripts": [
       {
        "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（000678，即时轨实时价判定）",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（603026，即时轨实时价判定）",
        "position_ratio": 0.5,
        "stop_loss": -0.08,
        "take_profit": 0.16,
@@ -307,30 +316,33 @@
       }
      ],
      "risks": [
-      "3 板高位，连板晋级失败率 40%"
+      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
      ]
     },
     {
-     "code": "002912",
-     "name": "中新赛克",
-     "themes": null,
-     "selection_reason": "2 连板（当日 -8.65%，晋级失败，近期上榜 9 次）",
-     "intraday_chg": null,
+     "code": "002083",
+     "name": "孚日股份",
+     "score": 0.65,
+     "themes": [
+      "纺织制造"
+     ],
+     "selection_reason": "量比 4.55",
+     "intraday_chg": 5.14,
      "fundamentals": {
       "roe": null,
       "revenue_growth": null,
       "net_profit_growth": null,
-      "pe": null,
-      "pb": null,
+      "pe": 16.52,
+      "pb": 2,
       "peg": null,
       "market_cap": null,
       "moat_note": null
      },
-     "fund_flow_note": "游资/其他（营业部·分公司·自营）主导（席位级：instNet/northNet/hotNet 真值；个股级主力净流入系统无数据）",
+     "fund_flow_note": "主力净流入 +13004 万（东财 push2 盘中实时）",
      "scripts": [
       {
        "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（002912，即时轨实时价判定）",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（002083，即时轨实时价判定）",
        "position_ratio": 0.5,
        "stop_loss": -0.08,
        "take_profit": 0.16,
@@ -357,30 +369,33 @@
       }
      ],
      "risks": [
-      "昨日 2 板已晋级失败（chg -8.65%），反核属逆势剧本"
+      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
      ]
     },
     {
-     "code": "600032",
-     "name": "浙江新能",
-     "themes": null,
-     "selection_reason": "2 连板（当日 -5.75%，晋级失败，近期上榜 11 次）",
-     "intraday_chg": null,
+     "code": "002407",
+     "name": "多氟多",
+     "score": 0.62,
+     "themes": [
+      "化学制品"
+     ],
+     "selection_reason": "量比 3.08",
+     "intraday_chg": 5.76,
      "fundamentals": {
       "roe": null,
       "revenue_growth": null,
       "net_profit_growth": null,
-      "pe": null,
-      "pb": null,
+      "pe": 56.19,
+      "pb": 4.36,
       "peg": null,
       "market_cap": null,
       "moat_note": null
      },
-     "fund_flow_note": "游资/其他（营业部·分公司·自营）主导（席位级：instNet/northNet/hotNet 真值；个股级主力净流入系统无数据）",
+     "fund_flow_note": "主力净流入 +31650 万（东财 push2 盘中实时）",
      "scripts": [
       {
        "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（600032，即时轨实时价判定）",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（002407，即时轨实时价判定）",
        "position_ratio": 0.5,
        "stop_loss": -0.08,
        "take_profit": 0.16,
@@ -407,30 +422,33 @@
       }
      ],
      "risks": [
-      "昨日 2 板已晋级失败（chg -5.75%），反核属逆势剧本"
+      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
      ]
     },
     {
-     "code": "600488",
-     "name": "津药药业",
-     "themes": null,
-     "selection_reason": "2 连板（当日 -3.04%，晋级失败，近期上榜 23 次）",
-     "intraday_chg": null,
+     "code": "300769",
+     "name": "德方纳米",
+     "score": 0.62,
+     "themes": [
+      "电池"
+     ],
+     "selection_reason": "量比 3.5",
+     "intraday_chg": 6.2,
      "fundamentals": {
       "roe": null,
       "revenue_growth": null,
       "net_profit_growth": null,
-      "pe": null,
-      "pb": null,
+      "pe": 499.88,
+      "pb": 2.33,
       "peg": null,
       "market_cap": null,
       "moat_note": null
      },
-     "fund_flow_note": "游资/其他（营业部·分公司·自营）主导（席位级：instNet/northNet/hotNet 真值；个股级主力净流入系统无数据）",
+     "fund_flow_note": "主力净流入 +14776 万（东财 push2 盘中实时）",
      "scripts": [
       {
        "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（600488，即时轨实时价判定）",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（300769，即时轨实时价判定）",
        "position_ratio": 0.5,
        "stop_loss": -0.08,
        "take_profit": 0.16,
@@ -457,30 +475,33 @@
       }
      ],
      "risks": [
-      "昨日 2 板已晋级失败（chg -3.04%），反核属逆势剧本"
+      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
      ]
     },
     {
-     "code": "600241",
-     "name": "时代万恒",
-     "themes": null,
-     "selection_reason": "2 连板（当日 9.95%，晋级成功，近期上榜 3 次）",
-     "intraday_chg": null,
+     "code": "002702",
+     "name": "海欣食品",
+     "score": 0.54,
+     "themes": [
+      "食品加工"
+     ],
+     "selection_reason": "量比 4.61",
+     "intraday_chg": 4.05,
      "fundamentals": {
       "roe": null,
       "revenue_growth": null,
       "net_profit_growth": null,
-      "pe": null,
-      "pb": null,
+      "pe": -79.64,
+      "pb": 3.39,
       "peg": null,
       "market_cap": null,
       "moat_note": null
      },
-     "fund_flow_note": "游资/其他（营业部·分公司·自营）主导（席位级：instNet/northNet/hotNet 真值；个股级主力净流入系统无数据）",
+     "fund_flow_note": "主力净流入 +13537 万（东财 push2 盘中实时）",
      "scripts": [
       {
        "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（600241，即时轨实时价判定）",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（002702，即时轨实时价判定）",
        "position_ratio": 0.5,
        "stop_loss": -0.08,
        "take_profit": 0.16,
@@ -507,30 +528,33 @@
       }
      ],
      "risks": [
-      "2 板高位，连板晋级失败率 40%"
+      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
      ]
     },
     {
-     "code": "000011",
-     "name": "深物业A",
-     "themes": null,
-     "selection_reason": "2 连板（当日 9.97%，晋级成功，近期上榜 9 次）",
-     "intraday_chg": null,
+     "code": "300373",
+     "name": "扬杰科技",
+     "score": 0.52,
+     "themes": [
+      "半导体"
+     ],
+     "selection_reason": "量比 2.31",
+     "intraday_chg": 3.83,
      "fundamentals": {
       "roe": null,
       "revenue_growth": null,
       "net_profit_growth": null,
-      "pe": null,
-      "pb": null,
+      "pe": 32,
+      "pb": 4.56,
       "peg": null,
       "market_cap": null,
       "moat_note": null
      },
-     "fund_flow_note": "游资/其他（营业部·分公司·自营）主导（席位级：instNet/northNet/hotNet 真值；个股级主力净流入系统无数据）",
+     "fund_flow_note": "主力净流入 +14003 万（东财 push2 盘中实时）",
      "scripts": [
       {
        "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（000011，即时轨实时价判定）",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（300373，即时轨实时价判定）",
        "position_ratio": 0.5,
        "stop_loss": -0.08,
        "take_profit": 0.16,
@@ -557,30 +581,33 @@
       }
      ],
      "risks": [
-      "2 板高位，连板晋级失败率 40%"
+      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
      ]
     },
     {
-     "code": "002242",
-     "name": "九阳股份",
-     "themes": null,
-     "selection_reason": "2 连板（当日 10.04%，晋级成功，近期上榜 5 次）",
-     "intraday_chg": null,
+     "code": "600095",
+     "name": "湘财股份",
+     "score": 0.42,
+     "themes": [
+      "证券Ⅱ"
+     ],
+     "selection_reason": "量比 2.28",
+     "intraday_chg": 4.09,
      "fundamentals": {
       "roe": null,
       "revenue_growth": null,
       "net_profit_growth": null,
-      "pe": null,
-      "pb": null,
+      "pe": 29.87,
+      "pb": 1.98,
       "peg": null,
       "market_cap": null,
       "moat_note": null
      },
-     "fund_flow_note": "游资/其他（营业部·分公司·自营）主导（席位级：instNet/northNet/hotNet 真值；个股级主力净流入系统无数据）",
+     "fund_flow_note": "主力净流入 +11710 万（东财 push2 盘中实时）",
      "scripts": [
       {
        "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（002242，即时轨实时价判定）",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（600095，即时轨实时价判定）",
        "position_ratio": 0.5,
        "stop_loss": -0.08,
        "take_profit": 0.16,
@@ -607,30 +634,33 @@
       }
      ],
      "risks": [
-      "2 板高位，连板晋级失败率 40%"
+      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
      ]
     },
     {
-     "code": "301190",
-     "name": "善水科技",
-     "themes": null,
-     "selection_reason": "2 连板（当日 20.01%，晋级成功，近期上榜 6 次）",
-     "intraday_chg": null,
+     "code": "300085",
+     "name": "银之杰",
+     "score": 0.42,
+     "themes": [
+      "软件开发"
+     ],
+     "selection_reason": "量比 2.35",
+     "intraday_chg": 3.58,
      "fundamentals": {
       "roe": null,
       "revenue_growth": null,
       "net_profit_growth": null,
-      "pe": null,
-      "pb": null,
+      "pe": -200.02,
+      "pb": 48.3,
       "peg": null,
       "market_cap": null,
       "moat_note": null
      },
-     "fund_flow_note": "游资/其他（营业部·分公司·自营）主导（席位级：instNet/northNet/hotNet 真值；个股级主力净流入系统无数据）",
+     "fund_flow_note": "主力净流入 +11132 万（东财 push2 盘中实时）",
      "scripts": [
       {
        "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（301190，即时轨实时价判定）",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（300085，即时轨实时价判定）",
        "position_ratio": 0.5,
        "stop_loss": -0.08,
        "take_profit": 0.16,
@@ -657,7 +687,7 @@
       }
      ],
      "risks": [
-      "2 板高位，连板晋级失败率 40%"
+      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
      ]
     }
    ],
@@ -684,8 +714,8 @@
    "ref": "paper_ui.js __paperSnapshot"
   },
   {
-   "field": "simulation_stock.candidate_pool[].themes/fundamentals(八字段)/个股级主力资金",
-   "reason": "系统无基本面选股模块与个股级题材/主力资金数据源；基本面键 null 占位（决议 8），接数据源后直接填充不改 schema",
+   "field": "simulation_stock.candidate_pool[].fundamentals（roe/增速/peg/market_cap/moat_note）",
+   "reason": "量比/PE-TTM/PB/主力净流入已接腾讯+东财实时源；基本面其余五字段无数据源 → null 占位（决议 8），接源后直接填充",
    "ref": "docs/ai_report_module_design.md#9.3"
   }
  ],
