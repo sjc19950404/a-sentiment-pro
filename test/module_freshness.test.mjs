@@ -14,6 +14,7 @@ import config from '../src/config.js';
 import {
   moduleTradeDate, guardModuleFreshness, guardModule,
   MODULE_PROBES, assessModulesFreshness, modulesBehind,
+  boardRankTradeDate, probeDate,
 } from '../src/module_freshness.js';
 import { smokeFailEvent } from '../src/opsalerts.js';
 import { buildInput } from '../src/ai_report.js';
@@ -74,9 +75,9 @@ test('guardModule：对象级组合（读档对象 + 锚 → 同一结论）', (
   assert.equal(guardModule({}, '2026-10-08').reason, 'module-date-missing');
 });
 
-test('MODULE_PROBES：三模块探测表齐（宽度/主线/账本），file 落 data/ 相对路径', () => {
+test('MODULE_PROBES：五模块探测表齐（宽度/主线/账本/亏钱效应/板块排行），file 落 data/ 相对路径', () => {
   const keys = MODULE_PROBES.map((m) => m.key);
-  assert.deepEqual(keys, ['breadth', 'mainline', 'dual_track']);
+  assert.deepEqual(keys, ['breadth', 'mainline', 'dual_track', 'pain', 'board_rank']);
   assert.ok(MODULE_PROBES.every((m) => m.file && m.label && m.field));
 });
 
@@ -117,6 +118,47 @@ test('门禁·unknown：日期缺失（档不存在/字段缺失）→ unknown�
     { now: bj('2026-10-08T21:00'), holidays: HOL });
   assert.equal(r[0].state, 'unknown');
   assert.deepEqual(modulesBehind(r).map((x) => x.key), ['dual_track']);
+});
+
+// ── 3b. P1 断供门禁补齐（2026-10-10 用户指令「并入 v4 快照批」）：pain/board_rank ──
+//   实录锚定：pain-latest 自 09-30 口径断供整周（fetch_pain exit 2 被 continue-on-error
+//   吞掉）、board_rank 自 10-02 大合并后零增长——两者断供期间 CI 全绿零告警。
+test('pain 探针：新鲜度锚 = curDate（行情目标日），date「昨日」锚绝不参与判定', () => {
+  const painProbe = MODULE_PROBES.find((m) => m.key === 'pain');
+  // 正常收盘口径：curDate=10-08（行情目标日）、date=10-07（昨涨停名单日）→ 探针取
+  //   10-08。若误用 date 锚会恒落后一个交易日 → 天天误红——这就是必须自定义 pick 的原因。
+  assert.equal(probeDate({ date: '2026-10-07', curDate: '2026-10-08' }, painProbe), '2026-10-08');
+  assert.equal(probeDate({ date: '2026-10-07' }, painProbe), null, 'curDate 缺失 → null 判脏，绝不回落 date 昨日锚');
+  assert.equal(probeDate({ curDate: '2026/10/08' }, painProbe), null, '脏值不认（格式非法）');
+  const r = assessModulesFreshness([{ key: 'pain', label: '亏钱效应', date: '2026-10-08' }],
+    { now: bj('2026-10-08T21:00'), holidays: HOL });
+  assert.equal(r[0].state, 'fresh');
+  assert.deepEqual(modulesBehind(r), []);
+});
+
+test('pain 断供红名单：curDate 停 09-30、评估 10-08 21:05 → behind（本周实录断供 6 交易日必红）', () => {
+  const r = assessModulesFreshness([{ key: 'pain', label: '亏钱效应', date: '2026-09-30' }],
+    { now: bj('2026-10-08T21:05'), holidays: HOL });
+  assert.equal(r[0].state, 'behind');
+  assert.deepEqual(modulesBehind(r).map((x) => x.key), ['pain']);
+});
+
+test('boardRankTradeDate：累积字典取末位日期键；脏键/空档/数组形态 → null', () => {
+  assert.equal(boardRankTradeDate({ '2026-09-30': [], '2026-10-08': [] }), '2026-10-08');
+  assert.equal(boardRankTradeDate({ '2026-09-30': [], bad: [], '2026-10-08': [] }), '2026-10-08', '非日期键不参与');
+  assert.equal(boardRankTradeDate({}), null);
+  assert.equal(boardRankTradeDate(null), null);
+  assert.equal(boardRankTradeDate(['2026-10-08']), null, '数组形态不认');
+});
+
+test('board_rank 假期同停不误杀：末键停 09-30、评估 10-05 假期 → fresh；交易日 10-08 断供 → behind', () => {
+  const hol = assessModulesFreshness([{ key: 'board_rank', label: '板块排行', date: '2026-09-30' }],
+    { now: bj('2026-10-05T20:00'), holidays: HOL });
+  assert.equal(hol[0].state, 'fresh', '假期档案与模块同停 → 不误杀（判据锚定档案日而非今天）');
+  const behind = assessModulesFreshness([{ key: 'board_rank', label: '板块排行', date: '2026-09-30' }],
+    { now: bj('2026-10-08T21:05'), holidays: HOL });
+  assert.equal(behind[0].state, 'behind', '10-08 实录：board_rank 停 09-30 → 断供当天必红');
+  assert.deepEqual(modulesBehind(behind).map((x) => x.key), ['board_rank']);
 });
 
 // ── 4. buildInput 接线（ai_report.js）：锚点反转 + stale 置 null ────────

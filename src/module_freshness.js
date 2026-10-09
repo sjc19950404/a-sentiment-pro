@@ -62,6 +62,28 @@ export function guardModule(m, archiveDate) {
 }
 
 /**
+ * 板块排行档（data/board_rank.json）交易日提取：结构为「YYYY-MM-DD 日期键 → 当日
+ * 行业涨幅表」的累积字典（build_ui 增量写入），新鲜度锚 = 字典序最大键（末键恒为
+ * 最近并入日）。无合法日期键 → null（调用方按判脏处理）。
+ */
+export function boardRankTradeDate(m) {
+  if (m == null || typeof m !== 'object' || Array.isArray(m)) return null;
+  let max = null;
+  for (const k of Object.keys(m)) {
+    if (isDateStr(k) && (max === null || k > max)) max = k;
+  }
+  return max;
+}
+
+/**
+ * 探针级日期提取：探测表条目可携带 pick 定制提取口（形态特异的档不走
+ * moduleTradeDate 通配候选）；未携带 → 回落通用识别口。CI 门禁唯一读档入口。
+ */
+export function probeDate(m, probe) {
+  return typeof probe?.pick === 'function' ? probe.pick(m) : moduleTradeDate(m);
+}
+
+/**
  * CI 门禁探测表（scripts/freshness.mjs --require-fresh 用）。
  * file 相对于存档所在目录解析（--archive 测试目录同构）。
  */
@@ -69,6 +91,17 @@ export const MODULE_PROBES = [
   { key: 'breadth', label: '宽度扫描', file: 'breadth-latest.json', field: 'meta.tradeDate' },
   { key: 'mainline', label: '主线回测', file: 'backtest.json', field: 'meta.tradeDate' },
   { key: 'dual_track', label: '双轨账本', file: 'paper/dual_track_latest.json', field: 'day.date' },
+  // ── P1 断供门禁补齐（2026-10-10 用户指令「并入 v4 快照批一揽子解决」）──────────
+  //   实录：pain-latest 自 09-30 口径起断供整周零告警——fetch_pain 拒写盘 exit 2
+  //   在 daily.yml 里是 continue-on-error，红了也不红 job；board_rank 自 10-02
+  //   大合并后零增长同样无门禁。两档并入后：交易日过 21:00 补抓仍停旧日 →
+  //   behind → --require-fresh exit 1 → CI 红，断供当天可见。
+  { key: 'pain', label: '亏钱效应', file: 'pain-latest.json', field: 'curDate',
+    // ⚠ pain-latest.date 是「昨日」锚（昨涨停名单日）——用它判新会恒落后一个
+    //   交易日、天天误红；新鲜度锚必须是 curDate（行情目标日 = 档案描述的当日）。
+    pick: (m) => (isDateStr(m?.curDate) ? m.curDate : null) },
+  { key: 'board_rank', label: '板块排行', file: 'board_rank.json', field: '末位日期键',
+    pick: boardRankTradeDate },
 ];
 
 /**
