@@ -348,7 +348,10 @@ jobs:
         with:
           python-version: '3.12'
       - name: 安装新数据层依赖
-        run: pip install --only-binary :all: -r requirements-data.txt
+        # ★ 2026-10-10 教训：run 值必须整体加引号——未引号标量里的 ":all:"（尾冒号+空格）
+        #   会被 YAML 解析器当 "mapping value" 语法，整个 workflow 触发器注册静默失败
+        #   （workflow_dispatch 一直 422 的统一根因，PyYAML line351 col44 复现）。
+        run: "pip install --only-binary=:all: -r requirements-data.txt"
       # ── 数据层四项冒烟（2026-10-10 验收配套）：仅手动 workflow_dispatch 触发。
       #   周末/盘后随时手动跑一遍 CI 真网络全链验证：AkShare push2 族在 CI 预期
       #   可达（快照源应落 akshare-spot_em）；QuantDash universe 免费版 403 会记
