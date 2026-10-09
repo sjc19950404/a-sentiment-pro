@@ -39,7 +39,8 @@ const pctRaw = (v) => v != null && Number.isFinite(+v) ? `${+v >= 0 ? '+' : ''}$
 //   降序），渲染层不重排。
 const poolBlock = (sim, o = {}) => {
   const pool = Array.isArray(sim?.candidate_pool) ? sim.candidate_pool : [];
-  if (!pool.length) return [];
+  // 0 只显式报（2026-10-09 用户指令）：绝不静默省略候选池段、绝不凑数塞垃圾。
+  if (!pool.length) return [`${o.poolLabel ?? '候选池'} 0 只 · 今日无符合条件标的（宁缺毋假）`];
   const top = pool.slice(0, 10); // 正文展示 Top 10（指令口径）
   const label = o.poolLabel ?? '候选池';
   const sortLabel = o.sortLabel ?? '按连板数排序';
@@ -53,9 +54,13 @@ const poolBlock = (sim, o = {}) => {
     const intr = c?.intraday_chg != null && Number.isFinite(+c.intraday_chg)
       ? ` · 盘中 ${pctRaw(c.intraday_chg)}` : '';
     const score = c?.score != null ? c.score : '—';
+    // 数据完整度标记（2026-10-09 用户指令）：题材/估值/资金三要素清点，行尾直标——
+    //   ✅ 齐全 / ⚠️ 缺X（缺啥标啥）。仅盘中候选池（任务二）携带该字段。
+    const comp = c?.data_completeness;
+    const mark = !comp ? '' : comp.level === 'full' ? ' · ✅' : ` · ⚠️ 缺${(comp.missing || []).join('/')}`;
     if (compact) {
       lines.push(` ${i + 1}. ${txt(c?.code)} ${txt(c?.name)} · 得分 ${score} · `
-        + `${theme ? `题材：${theme} · ` : ''}${c?.selection_reason || '入选理由 —'} · ${valoOf(c)}${intr}`);
+        + `${theme ? `题材：${theme} · ` : ''}${c?.selection_reason || '入选理由 —'} · ${valoOf(c)}${intr}${mark}`);
     } else {
       lines.push(` ${i + 1}. ${txt(c?.code)} ${txt(c?.name)} · 得分 ${score} · `
         + `${theme ? `题材：${theme} · ` : ''}${c?.selection_reason ? `入选：${c.selection_reason}` : '入选理由 —'}`

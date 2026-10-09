@@ -170,13 +170,25 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
     report_type: 'intraday', trigger: 'event:circuit_breaker', urgent: true,
     payload: { date: '2026-09-30', drawdown_vs_threshold: { dd_now: 0.088, distance_pp: 0.2, basis: '归档轨 trackA.maxDd' }, pnl_daily: 0.0002, pnl_cumulative: -0.015, overseas: [],
       simulation_stock: { ...mkReport().payload.simulation_stock, candidate_pool: [
-        { code: '600825', name: '新华传媒', score: 0.87, themes: ['半导体投资', '国产替代'], selection_reason: '量比 3.2', intraday_chg: 5.2, fundamentals: { pe: 22, pb: null }, fund_flow_note: '主力净流入 +5210 万（东财 push2 盘中实时）' }] } },
+        { code: '600825', name: '新华传媒', score: 0.87, themes: ['半导体投资', '国产替代'], selection_reason: '量比 3.2', intraday_chg: 5.2, fundamentals: { pe: 22, pb: null }, fund_flow_note: '主力净流入 +5210 万（东财 push2 盘中实时）', data_completeness: { level: 'full', missing: [] } },
+        { code: '000002', name: '样本B', score: 0.5, themes: null, selection_reason: '量比 2.5', intraday_chg: 4.0, fundamentals: { pe: null, pb: null }, data_completeness: { level: 'partial', missing: ['估值'] } }] } },
     missing_notes: [],
   }));
   assert.match(intra, /【AI 盘中 · 候选池】2026-09-30 · event:circuit_breaker/, 'urgent 触发源进标题');
   assert.match(intra, /运行回撤 \+8\.80% · 距 DD 档位 0\.2pp/);
-  assert.match(intra, /盘中候选池 1 只（按综合得分排序，Top 1 · 涨幅3-7% · 量比>2 · 未涨停 · 主力净流入为正）：/, '任务二标签+筛选口径进标题（输出物理隔离）');
-  assert.match(intra, / 1\. 600825 新华传媒 · 得分 0\.87 · 题材：半导体投资\/国产替代 · 量比 3\.2 · PE 22x · 盘中 \+5\.2%/, '紧凑行：得分/题材/量比/估值/盘中涨幅');
+  assert.match(intra, /盘中候选池 2 只（按综合得分排序，Top 2 · 涨幅3-7% · 量比>2 · 未涨停 · 主力净流入为正）：/, '任务二标签+筛选口径进标题（输出物理隔离）');
+  assert.match(intra, / 1\. 600825 新华传媒 · 得分 0\.87 · 题材：半导体投资\/国产替代 · 量比 3\.2 · PE 22x · 盘中 \+5\.2% · ✅/, '齐全股行尾 ✅（题材/估值/资金三要素清点通过）');
+  assert.match(intra, / 2\. 000002 样本B · 得分 0\.5 · 量比 2\.5 · — · 盘中 \+4% · ⚠️ 缺估值/, '缺估值股行尾 ⚠️ 直标缺失项（部分数据不冒充完整画像）');
+
+  // 0 只显式报（2026-10-09 用户指令）：候选池空 → 推送正文直接报「今日无符合条件标的」，
+  //   绝不静默省略、绝不凑数塞垃圾。
+  const intraEmpty = renderPushText(mkReport({
+    report_type: 'intraday',
+    payload: { date: '2026-09-30', drawdown_vs_threshold: { dd_now: 0.088, distance_pp: 0.2, basis: '归档轨 trackA.maxDd' }, pnl_daily: 0.0002, pnl_cumulative: -0.015, overseas: [],
+      simulation_stock: { ...mkReport().payload.simulation_stock, candidate_pool: [] } },
+    missing_notes: [],
+  }));
+  assert.match(intraEmpty, /盘中候选池 0 只 · 今日无符合条件标的（宁缺毋假）/, '空池显式话术，不静默省略候选池段');
 
   const week = renderPushText(mkReport({
     report_type: 'weekly',

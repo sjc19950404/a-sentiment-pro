@@ -107,3 +107,42 @@ test('INTRADAY_POOL_FILTERS：指令口径常量（3-7% / 量比 2.0 / Top 10）
   assert.equal(INTRADAY_POOL_FILTERS.liangbi_min, 2.0);
   assert.equal(INTRADAY_POOL_FILTERS.top, 10);
 });
+
+// ── is_valid 硬闸 + 0 只显式话术（2026-10-09 用户指令）─────────────────
+test('buildIntradayPool：is_valid 硬闸——空串/null 核验字段被拦（不冒充 0），name 空串 → null', () => {
+  const rows = [
+    row({ code: '600401', change_pct: '' }),   // 空串涨幅 → unverifiable（'' 是 +''===0 陷阱）
+    row({ code: '600402', liangbi: undefined }), // undefined 量比 → unverifiable
+    row({ code: '600403', main_net: NaN }),       // NaN 主力净流入 → unverifiable
+    row({ code: '600404', name: '   ', pe_ttm: '', pb: '' }), // 入选但展示字段缺失
+  ];
+  const { pool, basis } = buildIntradayPool(snap(rows), {});
+  assert.deepEqual(pool.map((p) => p.code), ['600404'], '核验字段不过闸的三只全剔（宁缺毋假）');
+  const [p] = pool;
+  assert.equal(p.name, null, 'name 空白串 → null（渲染 —），不脑补');
+  assert.equal(p.fundamentals.pe, null, 'pe 空串 → null（不冒充 0，负 PE 才是真实值保留）');
+  assert.equal(p.fundamentals.pb, null, 'pb 空串 → null');
+  assert.ok(basis.includes('字段缺失 3'), 'unverifiable 计数如实（3 只）');
+});
+
+test('buildIntradayPool：筛后 0 只 → basis 首句显式报「今日无符合条件标的」，不凑数', () => {
+  // 全宇宙带外（2.9% < 3）——扫过但无一入选
+  const rows = [row({ code: '600410', change_pct: 2.9 }), row({ code: '600411', change_pct: 7.1 })];
+  const { pool, basis } = buildIntradayPool(snap(rows), {});
+  assert.deepEqual(pool, [], '0 只就是 0 只，绝不往里塞垃圾凑数');
+  assert.ok(basis.startsWith('今日无符合条件标的'), 'basis 首句显式话术');
+  assert.ok(basis.includes('带外 2'), '剔除明细如实披露');
+});
+
+test('buildIntradayPool：数据完整度标记——题材/估值/资金三要素清点，缺啥标啥', () => {
+  const rows = [
+    row({ code: '600501' }),                                       // 三要素齐全 → full
+    row({ code: '600502', pe_ttm: null, pb: null }),               // 估值双缺 → partial
+    row({ code: '600503', reason: '', pe_ttm: null, pb: null }),   // 无题材 + 估值双缺 → partial 两项
+  ];
+  const { pool } = buildIntradayPool(snap(rows), {});
+  const by = Object.fromEntries(pool.map((p) => [p.code, p]));
+  assert.deepEqual(by['600501'].data_completeness, { level: 'full', missing: [] }, '题材/估值/资金全 → full');
+  assert.deepEqual(by['600502'].data_completeness, { level: 'partial', missing: ['估值'] }, 'PE/PB 双缺 → partial 缺估值');
+  assert.deepEqual(by['600503'].data_completeness, { level: 'partial', missing: ['题材', '估值'] }, 'reason 空 → 无题材；双缺如实清点（不冒充完整画像）');
+});

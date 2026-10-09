@@ -734,6 +734,14 @@ export function buildWatchlist(input, opts = {}) {
 /** 盘中候选池筛选阈值（任务二指令口径：涨幅 3-7%、量比 >2.0、主力净流入为正、未涨停）。 */
 export const INTRADAY_POOL_FILTERS = { chg_min: 3, chg_max: 7, liangbi_min: 2.0, top: 10 };
 
+/** is_valid 数值硬闸（2026-10-09 用户指令）：null / undefined / 空串 / 非有限数一律不放行。
+ *  缺失就是缺失——核验字段缺失 = 剔除（unverifiable），展示字段缺失 = null 渲染 —，
+ *  严禁默认值、推算或「+null===0」冒充（0 是真实行情值，负 PE 同理是真实值，保真不保齐）。 */
+const isValidNum = (v) => v != null && v !== '' && Number.isFinite(+v);
+
+/** is_valid 文本硬闸：null / 空白串 → null（渲染 —），不脑补名称。 */
+const isValidText = (v) => (v == null || String(v).trim() === '') ? null : String(v).trim();
+
 /**
  * 盘中候选池（任务二）：实时口径，每轮全量重算（不沿用上轮）。
  * 数据源只认 intraday 快照（hot.rows 实时榜 + pools.zt_codes 涨停名单）——与任务一
@@ -745,6 +753,9 @@ export const INTRADAY_POOL_FILTERS = { chg_min: 3, chg_max: 7, liangbi_min: 2.0,
  *   涨幅位置 0.3（带内 5% 中枢，1-|chg-5|/2）+ 量比 0.3（min(liangbi,5)/5）
  *   + 主力净流入 0.2（池内最大值为 1 的相对值）+ 板块热度 0.2（题材标签在强势榜家数占比）
  * 估值 PE-TTM/PB 与量比来自腾讯行情快照字段，缺失 → null（渲染 —）。
+ * is_valid 硬闸（2026-10-09 用户指令）：全部字段先过闸——核验字段不过 = 剔除、展示字段
+ *   不过 = null 渲染 —；题材无标签就空着、估值缺失就 —，严禁默认值/推算/脑补填充。
+ *   筛后 0 只 → basis 首句显式报「今日无符合条件标的」，不凑数塞垃圾。
  * @param {object|null} intraday data/intraday.json（当日快照；null/陈旧 = 空池）
  * @param {{regimeCap?:number, tradeDate?:string}} opts regimeCap（剧本模板）；tradeDate 北京当日（陈旧校验）
  */
@@ -782,10 +793,11 @@ export function buildIntradayPool(intraday, opts = {}) {
   const cands = [];
   for (const r of universe) {
     if (!r?.code) continue;
-    // ⚠ +null === 0：先判 null 再数值化，否则缺席字段被冒充成 0（0 是真实行情值）
-    const chg = r.change_pct != null && Number.isFinite(+r.change_pct) ? +r.change_pct : null;
-    const lb = r.liangbi != null && Number.isFinite(+r.liangbi) ? +r.liangbi : null;
-    const mn = r.main_net != null && Number.isFinite(+r.main_net) ? +r.main_net : null;
+    // is_valid 硬闸：核验字段（涨幅/量比/主力净流入）任一不过闸 → 剔除计数（宁缺毋假）。
+    //   ⚠ +null === 0 的变体防线：''/null/undefined 全被 isValidNum 拦下，0 只能是真实 0。
+    const chg = isValidNum(r.change_pct) ? +r.change_pct : null;
+    const lb = isValidNum(r.liangbi) ? +r.liangbi : null;
+    const mn = isValidNum(r.main_net) ? +r.main_net : null;
     if (chg == null || lb == null || mn == null) { rejected.unverifiable++; continue; }
     // 涨停判定先于带外：~10% 的涨停股同时也在 3-7 带外，先归类「已涨停」台账更有信息量
     // （zt_codes 是权威名单；chg≥9.9 是名单缺席时的兜底——正常涨停涨幅恒 >7）
@@ -810,24 +822,38 @@ export function buildIntradayPool(intraday, opts = {}) {
       : null;
     return { ...c, score };
   }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || b.mn - a.mn).slice(0, F.top);
-  const pool = scored.map(({ r, chg, lb, mn, tags, score }) => ({
-    code: String(r.code),
-    name: r.name ?? null,
-    score,
-    themes: tags.length ? tags : null,
-    selection_reason: `量比 ${lb}`, // 推送行紧凑（口径在标题行；主力净流入在 fund_flow_note，页面完整版可见）
-    intraday_chg: chg,
-    fundamentals: {
-      ...emptyFundamentals(),
-      pe: r.pe_ttm != null && Number.isFinite(+r.pe_ttm) ? +r.pe_ttm : null,
-      pb: r.pb != null && Number.isFinite(+r.pb) ? +r.pb : null,
-    },
-    fund_flow_note: `主力净流入 +${Math.round(mn / 1e4)} 万（东财 push2 盘中实时）`,
-    scripts: buildScripts({ code: String(r.code) }, { regimeCap: opts.regimeCap ?? 0 }),
-    risks: ['盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化',
-      chg >= 6.5 ? '贴近带内上沿（≥6.5%），追高风险放大' : null].filter(Boolean),
-  }));
-  const basis = `${universeName} 实时现算（每轮全量重算，不沿用上轮）：涨幅 ${F.chg_min}-${F.chg_max}% · 量比 >${F.liangbi_min} · 未涨停（pools.zt_codes）· 主力净流入为正；`
+  const pool = scored.map(({ r, chg, lb, mn, tags, score }) => {
+    const pe = isValidNum(r.pe_ttm) ? +r.pe_ttm : null;
+    const pb = isValidNum(r.pb) ? +r.pb : null;
+    // 数据完整度（2026-10-09 用户指令）：题材/估值/资金三要素逐项清点，缺啥标啥——
+    //   决不让「部分数据」冒充「完整画像」，推送行尾 ✅/⚠️ 一眼可辨。
+    const missing = [
+      ...(tags.length ? [] : ['题材']),
+      ...(pe == null && pb == null ? ['估值'] : []),
+      ...(mn == null ? ['资金'] : []), // 筛选硬条件下恒在场，仍按实况清点、不假设
+    ];
+    return {
+      code: String(r.code),
+      name: isValidText(r.name), // 空名 → null 渲染 —，不脑补
+      score,
+      themes: tags.length ? tags : null, // 题材：接口无标签 = null（渲染 —），不猜行业
+      selection_reason: `量比 ${lb}`, // 推送行紧凑（口径在标题行；主力净流入在 fund_flow_note，页面完整版可见）
+      intraday_chg: chg,
+      fundamentals: {
+        ...emptyFundamentals(),
+        // 估值（PE-TTM/PB）：is_valid 过闸才放行；亏损股负 PE 是真实值保留，缺失 = null 渲染 —
+        pe,
+        pb,
+      },
+      data_completeness: { level: missing.length ? 'partial' : 'full', missing },
+      fund_flow_note: `主力净流入 +${Math.round(mn / 1e4)} 万（东财 push2 盘中实时）`,
+      scripts: buildScripts({ code: String(r.code) }, { regimeCap: opts.regimeCap ?? 0 }),
+      risks: ['盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化',
+        chg >= 6.5 ? '贴近带内上沿（≥6.5%），追高风险放大' : null].filter(Boolean),
+    };
+  });
+  const basis = (pool.length ? '' : '今日无符合条件标的（宁缺毋假，不凑数填充）；')
+    + `${universeName} 实时现算（每轮全量重算，不沿用上轮）：涨幅 ${F.chg_min}-${F.chg_max}% · 量比 >${F.liangbi_min} · 未涨停（pools.zt_codes）· 主力净流入为正；`
     + `扫 ${universe.length} 只，剔除——带外 ${rejected.chg_band} / 量比不足 ${rejected.liangbi} / 已涨停 ${rejected.zt} / 净流出或无源 ${rejected.main_net} / 字段缺失 ${rejected.unverifiable}；`
     + `得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）`;
   return { pool, basis };

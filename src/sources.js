@@ -95,13 +95,15 @@ export async function fetchHotQuotes(codes) {
       const txt = await fetchGBK('https://qt.gtimg.cn/q=' + batch.join(','));
       for (const m of txt.matchAll(/v_(?:sh|sz|bj)(\d{6})="([^"]*)"/g)) {
         const f = m[2].split('~');
-        const close = parseFloat(f[3]), pre = parseFloat(f[4]), chg = parseFloat(f[32]), hs = parseFloat(f[38]);
+        const close = parseFloat(f[3]), chg = parseFloat(f[32]), hs = parseFloat(f[38]);
         const pe = parseFloat(f[39]), pb = parseFloat(f[46]), lbr = parseFloat(f[49]);
         if (isNaN(close) || close <= 0) continue;
         out[m[1]] = {
           close,
-          change_pct: !isNaN(chg) ? chg : (pre > 0 ? r2((close / pre - 1) * 100) : 0),
-          huanshou: isNaN(hs) ? 0 : hs,
+          // is_valid 硬闸（2026-10-09 用户指令）：解析不出 = null，不推算、不兜底 0
+          //   ——0 是真实行情值，冒充即造假；下游按「缺失渲染 — / 核验不了不入选」处理。
+          change_pct: isNaN(chg) ? null : chg,
+          huanshou: isNaN(hs) ? null : hs,
           pe_ttm: isNaN(pe) ? null : pe,   // 亏损股负 PE 是真实值，保留
           pb: isNaN(pb) ? null : pb,
           liangbi: isNaN(lbr) || lbr < 0 ? null : lbr,
