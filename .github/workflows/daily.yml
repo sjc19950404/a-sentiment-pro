@@ -310,8 +310,11 @@ jobs:
             # bot push 竞态加固（2026-10-09 实录：手动 dispatch 全 job 并跑，us-close
             # 先推外围快照，build 数据提交后到被 non-fast-forward 拒——生产排期各 job
             # 时间带错开不相遇，手动验收必撞）。rebase 同分支远端新提交再推（main 副本
-            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。
-            git pull --rebase origin "$GITHUB_REF_NAME"
+            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。-X theirs：rebase 中
+            # theirs=本 run 刚生成的数据档——us-close 与 build 同轮各抓一份 global.json
+            # 必冲突，生成型档以较新的本 run 产物为准（23:15 run 实录：裸 rebase 在
+            # data/global.json 上 CONFLICT 卡死）。
+            git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
             git push
           fi
       # 放在提交之后：数据已安全落库，再判定滞后。真滞后 → 本次运行标红（GitHub 会发失败通知），
@@ -400,8 +403,11 @@ jobs:
             # bot push 竞态加固（2026-10-09 实录：手动 dispatch 全 job 并跑，us-close
             # 先推外围快照，build 数据提交后到被 non-fast-forward 拒——生产排期各 job
             # 时间带错开不相遇，手动验收必撞）。rebase 同分支远端新提交再推（main 副本
-            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。
-            git pull --rebase origin "$GITHUB_REF_NAME"
+            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。-X theirs：rebase 中
+            # theirs=本 run 刚生成的数据档——us-close 与 build 同轮各抓一份 global.json
+            # 必冲突，生成型档以较新的本 run 产物为准（23:15 run 实录：裸 rebase 在
+            # data/global.json 上 CONFLICT 卡死）。
+            git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
             git push
           fi
 
@@ -439,8 +445,11 @@ jobs:
             # bot push 竞态加固（2026-10-09 实录：手动 dispatch 全 job 并跑，us-close
             # 先推外围快照，build 数据提交后到被 non-fast-forward 拒——生产排期各 job
             # 时间带错开不相遇，手动验收必撞）。rebase 同分支远端新提交再推（main 副本
-            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。
-            git pull --rebase origin "$GITHUB_REF_NAME"
+            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。-X theirs：rebase 中
+            # theirs=本 run 刚生成的数据档——us-close 与 build 同轮各抓一份 global.json
+            # 必冲突，生成型档以较新的本 run 产物为准（23:15 run 实录：裸 rebase 在
+            # data/global.json 上 CONFLICT 卡死）。
+            git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
             git push
           fi
 
@@ -479,7 +488,10 @@ jobs:
             # bot push 竞态加固（2026-10-09 实录：手动 dispatch 全 job 并跑，us-close
             # 先推外围快照，build 数据提交后到被 non-fast-forward 拒——生产排期各 job
             # 时间带错开不相遇，手动验收必撞）。rebase 同分支远端新提交再推（main 副本
-            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。
-            git pull --rebase origin "$GITHUB_REF_NAME"
+            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。-X theirs：rebase 中
+            # theirs=本 run 刚生成的数据档——us-close 与 build 同轮各抓一份 global.json
+            # 必冲突，生成型档以较新的本 run 产物为准（23:15 run 实录：裸 rebase 在
+            # data/global.json 上 CONFLICT 卡死）。
+            git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
             git push
           fi
