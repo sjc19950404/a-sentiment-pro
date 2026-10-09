@@ -2,18 +2,34 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-09",
-  "capturedAt": "2026-10-09T02:14:40.832Z",
-  "capturedAtBJ": "2026-10-09 10:14",
+  "capturedAt": "2026-10-09T02:25:17.333Z",
+  "capturedAtBJ": "2026-10-09 10:25",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 20,
+    "count": 23,
     "srcDate": "2026-10-09",
     "rows": [
       {
+        "code": "600371",
+        "name": "万向德农",
+        "reason": "玉米种业+转基因玉米+新品研发",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "601086",
+        "name": "国芳集团",
+        "reason": "连锁零售+消费场景+营收增长",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
         "code": "600629",
         "name": "华建集团",
-        "reason": "工程设计+城市更新+上海国资",
+        "reason": "上海微电子相关+工程设计+子公司重整获批+上海国资",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -139,6 +155,14 @@
         "huanshou": null
       },
       {
+        "code": "002242",
+        "name": "九阳股份",
+        "reason": "机器人投资+厨房小家电+内容电商",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
         "code": "001300",
         "name": "三柏硕",
         "reason": "蹦床+健身器材+外销",
@@ -173,17 +197,18 @@
     ]
   },
   "pools": {
-    "zt": 20,
-    "zb": 8,
-    "dt": 10,
+    "zt": 23,
+    "zb": 7,
+    "dt": 11,
     "max_lb": 9,
-    "lb2": 8,
+    "lb2": 9,
     "zt_codes": [
       "002058",
       "600241",
       "600825",
       "603630",
       "001300",
+      "002242",
       "600812",
       "002733",
       "002692",
@@ -198,20 +223,22 @@
       "600843",
       "300111",
       "600127",
-      "600629"
+      "600629",
+      "601086",
+      "600371"
     ],
-    "seal_pct": 71.4
+    "seal_pct": 76.7
   },
   "breadth": {
-    "up": 836,
-    "down": 4339,
-    "flat": 112
+    "up": 892,
+    "down": 4288,
+    "flat": 107
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-09 09:47",
+  "prevCapturedAtBJ": "2026-10-09 10:14",
   "prevPools": {
-    "zt": 17,
-    "zb": 4,
-    "seal_pct": 81
+    "zt": 20,
+    "zb": 8,
+    "seal_pct": 71.4
   }
 }
