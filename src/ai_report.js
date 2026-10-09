@@ -372,6 +372,9 @@ export function generatePreMarket(input, opts = {}) {
   payload.events_today = null;
   payload.atr = null;
   payload.suggested_step = null;
+  // 任务一（2026-10-09 拆分）：今日观察清单——昨收口径只呈现事实，不含操作建议。
+  //   与任务二（盘中候选池）数据源物理隔离：只读昨收档，不碰 intraday 实时源。
+  payload.watchlist = opts.watchlist ?? null;
   return envelope({
     type: 'pre_market',
     trigger: opts.trigger || 'schedule',
@@ -685,6 +688,151 @@ export function emptyFundamentals() {
   };
 }
 
+// ── 任务一/任务二拆分（2026-10-09 用户指令）──────────────────────────────────
+//   任务一 = 盘前观察清单（buildWatchlist）：昨收口径、只呈现事实、不含操作建议，
+//            数据源只读昨收档（pain 连板梯队 + 既有外围档）。
+//   任务二 = 盘中候选池（buildIntradayPool）：实时口径、每轮全量重算不沿用上轮，
+//            数据源只认 data/intraday.json 当日快照。
+//   两者的数据源 / 调度时间 / 输出标题物理隔离（daily.yml 各自独立 job + cron）。
+
+/**
+ * 盘前观察清单（任务一）：昨收口径只呈现事实，不含操作建议（不产 position_suggestion）。
+ *   · ladder：pain.advance.detail（昨收连板梯队）按连板数降序 Top 10——代码/名称/
+ *     连板数/晋级结果/当日涨幅/近期上榜次数，全部真实字段；
+ *   · 封板质量：个股级封单额无档案（pools 落档仅计数）→ 以晋级结果+上榜频次代理，
+ *     basis 如实标注，不造数；
+ *   · overnight_sectors：隔夜消息面→热点板块映射——系统无资讯数据源，恒 null
+ *     （missing_notes 披露），接源后填充不改 schema；
+ *   · 外围影响不在此装（payload.overseas / overnight_exposure 既有真实档，渲染端同报）。
+ * @param {object} input buildInput 产物（signals/global 等昨收档）
+ * @param {{nameMap?:object}} opts paper_universe.symbols 注入（code→{name,appearances}）
+ */
+export function buildWatchlist(input, opts = {}) {
+  const detail = Array.isArray(input?.signals?.pain?.advance?.detail) ? input.signals.pain.advance.detail : [];
+  const rows = [...detail].sort((a, b) => (b.lb ?? 0) - (a.lb ?? 0)).slice(0, 10);
+  const zt = num(pick(input, 'signals.latest.zt_count'));
+  const zb = num(pick(input, 'signals.latest.zb_count'));
+  return {
+    basis: 'pain.advance.detail 昨收口径连板梯队（封板质量以晋级结果+近期上榜频次代理，个股级封单额无档案）；不含操作建议',
+    ladder: rows.map((r) => {
+      const meta = opts.nameMap?.[r.code] ?? null;
+      return {
+        code: String(r.code),
+        name: meta?.name ?? null,
+        lb: r.lb != null && Number.isFinite(+r.lb) ? +r.lb : null,
+        kept: typeof r.kept === 'boolean' ? r.kept : null,
+        chg: r.chg != null && Number.isFinite(+r.chg) ? +r.chg : null,
+        appearances: meta?.appearances != null && Number.isFinite(+meta.appearances) ? +meta.appearances : null,
+      };
+    }),
+    overnight_sectors: null, // 无隔夜资讯数据源（missing_notes 披露），接源后填充
+    max_lb: num(pick(input, 'signals.pain.advance.maxLb')),
+    broken_limit_ratio: Number.isFinite(zt) && Number.isFinite(zb) && zt + zb > 0 ? zb / (zt + zb) : null,
+  };
+}
+
+/** 盘中候选池筛选阈值（任务二指令口径：涨幅 3-7%、量比 >2.0、主力净流入为正、未涨停）。 */
+export const INTRADAY_POOL_FILTERS = { chg_min: 3, chg_max: 7, liangbi_min: 2.0, top: 10 };
+
+/**
+ * 盘中候选池（任务二）：实时口径，每轮全量重算（不沿用上轮）。
+ * 数据源只认 intraday 快照（hot.rows 实时榜 + pools.zt_codes 涨停名单）——与任务一
+ * （昨收档）物理隔离；快照缺席/陈旧时**不回落昨收口径**，返回空池并如实报因。
+ * 筛选（全部条件可核验才入选；核验不了 = 剔除并计数——宁缺毋假）：
+ *   ① 涨幅 3%-7%（未涨停的启动带）② 量比 > 2.0（放量确认）
+ *   ③ 未涨停（pools.zt_codes 权威 + 涨幅兜底）④ 主力净流入为正（东财 push2 f62）
+ * 综合得分（权重内缺席重归一；有效分量 <2 → null 不硬算）：
+ *   涨幅位置 0.3（带内 5% 中枢，1-|chg-5|/2）+ 量比 0.3（min(liangbi,5)/5）
+ *   + 主力净流入 0.2（池内最大值为 1 的相对值）+ 板块热度 0.2（题材标签在强势榜家数占比）
+ * 估值 PE-TTM/PB 与量比来自腾讯行情快照字段，缺失 → null（渲染 —）。
+ * @param {object|null} intraday data/intraday.json（当日快照；null/陈旧 = 空池）
+ * @param {{regimeCap?:number, tradeDate?:string}} opts regimeCap（剧本模板）；tradeDate 北京当日（陈旧校验）
+ */
+export function buildIntradayPool(intraday, opts = {}) {
+  const F = INTRADAY_POOL_FILTERS;
+  const stale = intraday && opts.tradeDate && intraday.tradeDate !== opts.tradeDate;
+  // 扫描宇宙（任务二）：全市场筛选榜优先（screener——主力净流入降序前 100，带齐
+  //   量比/PE/PB/行业），缺席才回落 hot 强势榜（≈涨停集中营，3-7% 启动带几乎恒空，
+  //   仅作降级底座）。两个宇宙字段名同构，筛选/得分代码共用。
+  const screenRows = !stale && Array.isArray(intraday?.screener?.rows) ? intraday.screener.rows : null;
+  const boardRows = !stale && Array.isArray(intraday?.hot?.rows) ? intraday.hot.rows : [];
+  const useScreen = !!(screenRows && screenRows.length);
+  const universe = useScreen ? screenRows : boardRows;
+  const universeName = useScreen
+    ? `全市场筛选榜（东财 clist 主力净流入降序前 ${screenRows.length}）`
+    : (boardRows.length ? 'hot 强势榜（全市场筛选榜缺席的降级底座；≈涨停集中营，3-7% 带几乎恒空）' : '无底座');
+  const ztCodes = new Set(Array.isArray(intraday?.pools?.zt_codes) ? intraday.pools.zt_codes.map(String) : []);
+  if (!universe.length) {
+    return {
+      pool: [],
+      basis: stale
+        ? `当日盘中快照缺席/陈旧（tradeDate ${intraday?.tradeDate ?? '无'} ≠ ${opts.tradeDate ?? '?'}），本轮不出候选池——不回落昨收口径（任务一/二数据源物理隔离）`
+        : '盘中快照 hot.rows/screener 均缺席，本轮不出候选池（不回落昨收口径，数据源物理隔离）',
+    };
+  }
+  // 题材维度按宇宙取：screener = 行业(f100，东财行业分类)；hot = reason '+' 拆标签
+  //   （同花顺题材）。全宇宙计数 = 板块热度（同题材/同行业在榜家数）。
+  const tagsOf = useScreen
+    ? (r) => (r.industry ? [String(r.industry)] : [])
+    : (r) => String(r?.reason || '').split('+').map((s) => s.trim()).filter(Boolean);
+  const tagCount = {};
+  for (const r of universe) for (const t of tagsOf(r)) tagCount[t] = (tagCount[t] || 0) + 1;
+  const maxTag = Math.max(1, ...Object.values(tagCount));
+  const rejected = { chg_band: 0, liangbi: 0, zt: 0, main_net: 0, unverifiable: 0 };
+  const cands = [];
+  for (const r of universe) {
+    if (!r?.code) continue;
+    // ⚠ +null === 0：先判 null 再数值化，否则缺席字段被冒充成 0（0 是真实行情值）
+    const chg = r.change_pct != null && Number.isFinite(+r.change_pct) ? +r.change_pct : null;
+    const lb = r.liangbi != null && Number.isFinite(+r.liangbi) ? +r.liangbi : null;
+    const mn = r.main_net != null && Number.isFinite(+r.main_net) ? +r.main_net : null;
+    if (chg == null || lb == null || mn == null) { rejected.unverifiable++; continue; }
+    // 涨停判定先于带外：~10% 的涨停股同时也在 3-7 带外，先归类「已涨停」台账更有信息量
+    // （zt_codes 是权威名单；chg≥9.9 是名单缺席时的兜底——正常涨停涨幅恒 >7）
+    if (ztCodes.has(String(r.code)) || chg >= 9.9) { rejected.zt++; continue; }
+    if (chg < F.chg_min || chg > F.chg_max) { rejected.chg_band++; continue; }
+    if (lb <= F.liangbi_min) { rejected.liangbi++; continue; }
+    if (mn <= 0) { rejected.main_net++; continue; }
+    cands.push({ r, chg, lb, mn, tags: tagsOf(r) });
+  }
+  const maxMn = cands.length ? Math.max(...cands.map((c) => c.mn)) : 0;
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
+  const scored = cands.map((c) => {
+    const parts = [
+      [0.3, 1 - Math.abs(c.chg - 5) / 2],
+      [0.3, Math.min(c.lb, 5) / 5],
+      [0.2, maxMn > 0 ? c.mn / maxMn : 0],
+      [0.2, c.tags.length ? Math.max(...c.tags.map((t) => (tagCount[t] || 1) / maxTag)) : null],
+    ].filter(([, v]) => v != null && Number.isFinite(v));
+    const wsum = parts.reduce((s, [w]) => s + w, 0);
+    const score = parts.length >= 2 && wsum > 0
+      ? Math.round((parts.reduce((s, [w, v]) => s + w * clamp01(v), 0) / wsum) * 100) / 100
+      : null;
+    return { ...c, score };
+  }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || b.mn - a.mn).slice(0, F.top);
+  const pool = scored.map(({ r, chg, lb, mn, tags, score }) => ({
+    code: String(r.code),
+    name: r.name ?? null,
+    score,
+    themes: tags.length ? tags : null,
+    selection_reason: `量比 ${lb}`, // 推送行紧凑（口径在标题行；主力净流入在 fund_flow_note，页面完整版可见）
+    intraday_chg: chg,
+    fundamentals: {
+      ...emptyFundamentals(),
+      pe: r.pe_ttm != null && Number.isFinite(+r.pe_ttm) ? +r.pe_ttm : null,
+      pb: r.pb != null && Number.isFinite(+r.pb) ? +r.pb : null,
+    },
+    fund_flow_note: `主力净流入 +${Math.round(mn / 1e4)} 万（东财 push2 盘中实时）`,
+    scripts: buildScripts({ code: String(r.code) }, { regimeCap: opts.regimeCap ?? 0 }),
+    risks: ['盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化',
+      chg >= 6.5 ? '贴近带内上沿（≥6.5%），追高风险放大' : null].filter(Boolean),
+  }));
+  const basis = `${universeName} 实时现算（每轮全量重算，不沿用上轮）：涨幅 ${F.chg_min}-${F.chg_max}% · 量比 >${F.liangbi_min} · 未涨停（pools.zt_codes）· 主力净流入为正；`
+    + `扫 ${universe.length} 只，剔除——带外 ${rejected.chg_band} / 量比不足 ${rejected.liangbi} / 已涨停 ${rejected.zt} / 净流出或无源 ${rejected.main_net} / 字段缺失 ${rejected.unverifiable}；`
+    + `得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）`;
+  return { pool, basis };
+}
+
 /**
  * 候选池现算（决议 8 口径）：pain.advance.detail（连板活跃明细）按连板数降序取 5-10 只。
  *   · selection_reason 必填（连板数+当日涨跌+晋级结果，全部真实字段，复盘归因用）；
@@ -758,7 +906,17 @@ export function buildSimulationStock(input, opts = {}) {
     yesterday_chain_performance: num(pick(input, 'signals.pain.perf.avg')),
     warning_signals: warnings,
   };
-  const pool = buildCandidatePool(input.signals, { nameMap: opts.nameMap, regimeCap: cap, intradayHot: opts.intradayHot });
+  // 候选池口径（2026-10-09 任务拆分）：盘中报告用实时池（任务二，每轮重算），
+  //   其余类型沿用 pain 连板口径（决议 8）。opts.poolMode==='realtime' 但当日快照
+  //   缺席/陈旧 → 空池如实报因，**不回落昨收口径**（数据源物理隔离）。
+  let pool, poolBasis;
+  if (opts.poolMode === 'realtime') {
+    const built = buildIntradayPool(opts.intradaySnapshot ?? null, { regimeCap: cap, tradeDate: opts.tradeDate });
+    pool = built.pool; poolBasis = built.basis;
+  } else {
+    pool = buildCandidatePool(input.signals, { nameMap: opts.nameMap, regimeCap: cap, intradayHot: opts.intradayHot });
+    poolBasis = 'pain.advance.detail 连板活跃明细按连板数降序（情绪面规则现算，决议 8：人工输入模式的辅助建议，可一键采纳不自动生效）';
+  }
   let simulation_positions = null;
   if (input.live && input.paperAccount?.positions) {
     // 绑定联查（读写职责边界）：绑定写入由 S3 前端 UI 在用户确认剧本时触发
@@ -776,7 +934,7 @@ export function buildSimulationStock(input, opts = {}) {
   return {
     sentiment_cycle,
     position_suggestion: mapPositionSuggestion(cap, phase),
-    pool_basis: 'pain.advance.detail 连板活跃明细按连板数降序（情绪面规则现算，决议 8：人工输入模式的辅助建议，可一键采纳不自动生效）',
+    pool_basis: poolBasis,
     candidate_pool: pool,
     simulation_positions,
     review: null, // 复盘归因 S3 录入后才有数据；win_rate 口径 = 剧本命中/总执行（决议 4），缺席恒 null

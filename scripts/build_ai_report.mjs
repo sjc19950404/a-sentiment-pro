@@ -25,7 +25,7 @@ import { bjDate } from '../src/freshness.js';
 import { gatePreMarket, gateIntraday, gateWeekly } from '../src/ai_report_push.js';
 import {
   buildInput, generatePreMarket, generateIntraday, generatePostMarket, generateWeekly,
-  buildSimulationStock, isoWeekStart,
+  buildSimulationStock, buildWatchlist, isoWeekStart,
 } from '../src/ai_report.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -48,9 +48,21 @@ const WITH_SIM = has('sim') || process.env.SIMULATION_MODE === 'true';
 const FORCE = has('force');  // 跳过调度闸门（示例重生成/维护用；同 snapshot_intraday.mjs --force 惯例）
 
 // 模拟选股缺失披露（信封级汇总；字段级缺失由 null + pool_basis/phase_source 承载）
+//   2026-10-09 任务拆分后按类型分野：盘中池已接腾讯行情（量比/PE/PB）+ 东财主力净流入
+//   真实源；盘前观察清单的隔夜资讯与个股级封单额仍是缺口，如实披露。
 const SIM_MISSING_NOTE = {
   field: 'simulation_stock.candidate_pool[].themes/fundamentals(八字段)/个股级主力资金',
   reason: '系统无基本面选股模块与个股级题材/主力资金数据源；基本面键 null 占位（决议 8），接数据源后直接填充不改 schema',
+  ref: 'docs/ai_report_module_design.md#9.3',
+};
+const WATCHLIST_MISSING_NOTE = {
+  field: 'watchlist.overnight_sectors + watchlist.ladder[].封板质量（个股级封单额）',
+  reason: '系统无隔夜资讯数据源（消息面→板块映射无法核验，恒 null 不造数）；封单额个股级无档案（pools 落档仅计数），以晋级结果+上榜频次代理',
+  ref: 'docs/ai_report_module_design.md#9.3',
+};
+const INTRADAY_SIM_MISSING_NOTE = {
+  field: 'simulation_stock.candidate_pool[].fundamentals（roe/增速/peg/market_cap/moat_note）',
+  reason: '量比/PE-TTM/PB/主力净流入已接腾讯+东财实时源；基本面其余五字段无数据源 → null 占位（决议 8），接源后直接填充',
   ref: 'docs/ai_report_module_design.md#9.3',
 };
 
@@ -98,18 +110,22 @@ const opts = { generatedAt: new Date().toISOString(), generatedBy: 'ci' };
 if (WITH_SIM) {
   // paper_universe.symbols 注入名称映射（code→{name, appearances}）；缺档则名称 null（不造数）
   const simOpts = { nameMap: read('data/paper_universe.json')?.symbols ?? null };
-  if (TYPE === 'intraday') {
-    // 盘中候选股联查（S2）：hot 强势榜的 change_pct 注入 → 候选池逐股 intraday_chg。
-    // 只认**北京当日**快照（intraday.tradeDate 对得上才注入）——昨日的陈旧榜宁缺毋假，
-    // 盘前/盘后报告不注入（intraday_chg 恒 null，非盘中语义）。
+  if (TYPE === 'pre_market') {
+    // 任务一（2026-10-09 拆分）：盘前只出观察清单（昨收口径、不含操作建议），
+    //   不携带模拟选股段/仓位建议——与任务二（盘中实时候选池）数据源物理隔离。
+    opts.watchlist = buildWatchlist(input, simOpts);
+  } else if (TYPE === 'intraday') {
+    // 任务二：盘中候选池走实时口径（每轮全量重算，不沿用上轮）。
+    //   只认**北京当日**快照（tradeDate 对得上才用）——陈旧/缺席则空池如实报因，
+    //   绝不回落昨收口径（pain 连板池是任务一的语义，物理隔离）。
     const intra = read('data/intraday.json');
-    if (intra && Array.isArray(intra.hot?.rows) && intra.tradeDate === bjDate(new Date())) {
-      simOpts.intradayHot = Object.fromEntries(
-        intra.hot.rows.filter((r) => r && r.code).map((r) => [r.code, Number.isFinite(r.change_pct) ? r.change_pct : null]),
-      );
-    }
+    simOpts.poolMode = 'realtime';
+    simOpts.intradaySnapshot = intra && intra.tradeDate === bjDate(new Date()) ? intra : null;
+    simOpts.tradeDate = bjDate(new Date());
+    opts.simulationStock = buildSimulationStock(input, simOpts);
+  } else {
+    opts.simulationStock = buildSimulationStock(input, simOpts);
   }
-  opts.simulationStock = buildSimulationStock(input, simOpts);
 }
 const generators = {
   pre_market: () => generatePreMarket(input, opts),
@@ -131,7 +147,11 @@ if (errs.length) {
   for (const e of errs) console.error(`  ${e.path}: ${e.expect}（got ${e.got}）${e.hint || ''}`);
   process.exit(1);
 }
-if (WITH_SIM) report.missing_notes.push(SIM_MISSING_NOTE);
+if (WITH_SIM) {
+  if (TYPE === 'pre_market') report.missing_notes.push(WATCHLIST_MISSING_NOTE);
+  else if (TYPE === 'intraday') report.missing_notes.push(INTRADAY_SIM_MISSING_NOTE);
+  else report.missing_notes.push(SIM_MISSING_NOTE);
+}
 
 const file = `${TYPE}_${report.date}.json`;
 mkdirSync(OUT_DIR, { recursive: true });

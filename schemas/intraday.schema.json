@@ -47,6 +47,33 @@
       }
     },
     "breadth": { "type": ["object", "null"] },
+    "screener": {
+      "type": ["object", "null"],
+      "$comment": "全市场筛选榜（任务二盘中候选池主数据源 · 2026-10-09 拆分）：东财 clist 主力净流入降序前 100，自带量比/PE-TTM/PB/行业；抓取失败 = null（报告层回落 hot 榜口径并报因，宁缺毋假）",
+      "required": ["count", "rows"],
+      "properties": {
+        "count": { "type": "number" },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["code", "name", "close", "change_pct", "liangbi", "pe_ttm", "pb", "main_net", "industry"],
+            "properties": {
+              "code": { "type": "string" },
+              "name": { "type": ["string", "null"] },
+              "close": { "type": ["number", "null"] },
+              "change_pct": { "type": ["number", "null"] },
+              "huanshou": { "type": ["number", "null"] },
+              "liangbi": { "type": ["number", "null"] },
+              "pe_ttm": { "type": ["number", "null"] },
+              "pb": { "type": ["number", "null"] },
+              "main_net": { "type": ["number", "null"] },
+              "industry": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
     "sourcesFailed": { "type": "array" }
   }
 }

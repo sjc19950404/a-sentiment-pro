@@ -92,6 +92,32 @@
         },
         "prev_nav": { "type": ["number", "null"] },
         "positions": { "type": ["object", "null"] },
+        "watchlist": {
+          "type": ["object", "null"],
+          "$comment": "盘前观察清单（任务一 · 2026-10-09 拆分）：昨收口径只呈现事实，不含操作建议；仅 pre_market 在场，其余类型缺席。",
+          "required": ["basis", "ladder", "overnight_sectors"],
+          "properties": {
+            "basis": { "type": "string" },
+            "ladder": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["code", "name", "lb", "kept", "chg", "appearances"],
+                "properties": {
+                  "code": { "type": "string" },
+                  "name": { "type": ["string", "null"] },
+                  "lb": { "type": ["number", "null"] },
+                  "kept": { "type": ["boolean", "null"] },
+                  "chg": { "type": ["number", "null"] },
+                  "appearances": { "type": ["number", "null"] }
+                }
+              }
+            },
+            "overnight_sectors": { "type": ["array", "null"], "description": "隔夜消息面→热点板块映射；无资讯数据源恒 null，接源后填充" },
+            "max_lb": { "type": ["number", "null"] },
+            "broken_limit_ratio": { "type": ["number", "null"] }
+          }
+        },
         "overnight_exposure": {
           "type": ["object", "null"],
           "required": ["a50_chgPct", "posGap"],
@@ -223,7 +249,8 @@
                 "properties": {
                   "code": { "type": "string" },
                   "name": { "type": ["string", "null"] },
-                  "themes": { "type": ["array", "null"], "description": "题材标签无个股级数据源 → null 占位" },
+                  "score": { "type": ["number", "null"], "description": "综合得分（任务二盘中候选池：涨幅位置/量比/主力净流入/板块热度加权，缺席重归一；盘后连板池无此字段 → null）" },
+                  "themes": { "type": ["array", "null"], "description": "题材标签：盘中池来自 hot 榜 reason 拆分（真实）；盘后池无个股级数据源 → null 占位" },
                   "selection_reason": { "type": "string", "minLength": 1, "description": "入选理由必填（决议 8）：盘后复盘据此归因选股逻辑" },
                   "intraday_chg": { "type": ["number", "null"], "description": "盘中涨幅%（S2：intraday.json::hot.rows 强势榜联查；**不在榜 = null ≠ 0**，缺席与不涨严格区分；仅盘中报告注入，盘前/盘后恒 null" },
                   "fundamentals": {

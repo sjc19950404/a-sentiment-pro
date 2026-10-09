@@ -30,35 +30,67 @@ const valoOf = (c) => {
   if (f.pb != null) return `PB ${f.pb}x`;
   return '—';
 };
+// 百分数值口径（9.99 = +9.99%）直拼——不过 pct()（那是分数口径 ×100）。
+const pctRaw = (v) => v != null && Number.isFinite(+v) ? `${+v >= 0 ? '+' : ''}${+v}%` : '—';
 // 候选池清单展开（2026-10-09 用户指令）：纯数字摘要升级为逐股清单，正文 Top 10。
 //   字段口径：代码/名称/入选理由/盘中涨幅是 buildCandidatePool 真实字段；
 //   综合得分（c.score）数据层暂无——按「缺失用 —，不造数」纪律占位，
 //   接入后自动展示。排序沿用数据层既定口径（buildCandidatePool 按连板数
 //   降序），渲染层不重排。
-const poolBlock = (sim) => {
+const poolBlock = (sim, o = {}) => {
   const pool = Array.isArray(sim?.candidate_pool) ? sim.candidate_pool : [];
   if (!pool.length) return [];
   const top = pool.slice(0, 10); // 正文展示 Top 10（指令口径）
-  const lines = [`候选池 ${pool.length} 只（按连板数排序，Top ${top.length}）：`];
+  const label = o.poolLabel ?? '候选池';
+  const sortLabel = o.sortLabel ?? '按连板数排序';
+  // 紧凑模式（任务二盘中候选池）：口径进标题行、个股行只留代码/名称/得分/题材/
+  //   入选要点/估值/盘中——10 只 CJK 展开后字符闸挡不住字节超限，行内瘦身必要。
+  const compact = !!o.compact;
+  const criteria = o.criteria ? ` · ${o.criteria}` : '';
+  const lines = [`${label} ${pool.length} 只（${sortLabel}，Top ${top.length}${criteria}）：`];
   top.forEach((c, i) => {
     const theme = Array.isArray(c?.themes) ? c.themes.filter(Boolean).join('/') : (c?.themes || null);
-    // intraday_chg 是百分数值口径（hot 榜 change_pct 原值，9.99 = +9.99%），
-    // 不能过 pct()（那是分数口径，×100 会渲成 +999%——旧三股摘要行的潜伏 bug，顺手修复）。
     const intr = c?.intraday_chg != null && Number.isFinite(+c.intraday_chg)
-      ? ` · 盘中 ${+c.intraday_chg >= 0 ? '+' : ''}${+c.intraday_chg}%` : '';
-    lines.push(` ${i + 1}. ${txt(c?.code)} ${txt(c?.name)} · 得分 ${c?.score != null ? c.score : '—'} · `
-      + `${theme ? `题材：${theme} · ` : ''}${c?.selection_reason ? `入选：${c.selection_reason}` : '入选理由 —'}`
-      + ` · 估值 ${valoOf(c)}${intr}`);
+      ? ` · 盘中 ${pctRaw(c.intraday_chg)}` : '';
+    const score = c?.score != null ? c.score : '—';
+    if (compact) {
+      lines.push(` ${i + 1}. ${txt(c?.code)} ${txt(c?.name)} · 得分 ${score} · `
+        + `${theme ? `题材：${theme} · ` : ''}${c?.selection_reason || '入选理由 —'} · ${valoOf(c)}${intr}`);
+    } else {
+      lines.push(` ${i + 1}. ${txt(c?.code)} ${txt(c?.name)} · 得分 ${score} · `
+        + `${theme ? `题材：${theme} · ` : ''}${c?.selection_reason ? `入选：${c.selection_reason}` : '入选理由 —'}`
+        + ` · 估值 ${valoOf(c)}${intr}`);
+    }
   });
   return lines;
 };
-const simBlock = (p) => {
+const simBlock = (p, o = {}) => {
   const sim = p.simulation_stock;
   if (!sim?.sentiment_cycle) return [];
   const sc = sim.sentiment_cycle;
   const phase = sc.phase_label ?? sc.phase;
-  return [`情绪周期: ${phase}(${sc.regime_raw ?? '—'}) · 建议仓位: ${sim.position_suggestion ?? '—'} · 候选池 ${sim.candidate_pool?.length ?? 0} 只`,
-    ...poolBlock(sim)];
+  const label = o.poolLabel ?? '候选池';
+  return [`情绪周期: ${phase}(${sc.regime_raw ?? '—'}) · 建议仓位: ${sim.position_suggestion ?? '—'} · ${label} ${sim.candidate_pool?.length ?? 0} 只`,
+    ...poolBlock(sim, o)];
+};
+// 任务一（2026-10-09 拆分）：盘前观察清单——昨收口径只呈现事实，不含操作建议。
+//   数据源物理隔离：只读昨收档（pain 连板梯队），与任务二（盘中实时候选池）互不掺和。
+const watchlistBlock = (p) => {
+  const w = p.watchlist;
+  if (!w) return [];
+  const lines = [];
+  if (Array.isArray(w.ladder) && w.ladder.length) {
+    lines.push(`今日观察清单（昨收口径 · ${w.ladder.length} 只，不含操作建议）：`);
+    w.ladder.forEach((s, i) => {
+      lines.push(` ${i + 1}. ${txt(s.code)} ${txt(s.name)} · ${s.lb != null ? `${s.lb} 连板` : '—'}`
+        + ` · ${s.kept == null ? '晋级 —' : s.kept ? '晋级成功' : '晋级失败'} · 当日 ${pctRaw(s.chg)}`
+        + `${s.appearances != null ? ` · 上榜 ${s.appearances} 次` : ''}`);
+    });
+  } else {
+    lines.push('今日观察清单：昨收连板梯队缺席（数据源未就绪，不造数）');
+  }
+  // 最高连板/炸板率不在此渲染——case 体已有带 sim→watchlist 回退的同一行，避免重复。
+  return lines;
 };
 
 /**
@@ -70,7 +102,7 @@ export function renderPushText(report) {
   const lines = [];
   switch (report?.report_type) {
     case 'pre_market':
-      lines.push(`【AI 报告 · 盘前】${report.date}`);
+      lines.push(`【AI 盘前 · 今日观察清单】${report.date}`);
       { // 数据截至标注（2026-10-07 拍板）：盘前报告恒为**前一交易日收盘口径**，
         // 头部日期即数据日期，但读者易误读为"生成当日"。恒加一行点破；间隔超
         // 3 个自然日（节后首日/小长假）再附"假期无更新"——A 股休市期间情绪面
@@ -81,7 +113,7 @@ export function renderPushText(report) {
           ? Math.floor((genDay - dataDay) / 86400000) : null;
         lines.push(`数据截至 ${txt(report.date)} 收盘${gap != null && gap > PUSH_CONSTS.STALE_NOTE_GAP_DAYS ? `（距生成 ${gap} 天，假期无更新）` : ''}`);
       }
-      { lines.push(...simBlock(p)); }
+      { lines.push(...watchlistBlock(p)); }
       lines.push(`前日盈亏 ${pct(p.pnl_daily)} · 累计 ${pct(p.pnl_cumulative)} · 前日净值 ${p.prev_nav != null ? p.prev_nav.toFixed(4) : '—'}`);
       lines.push(`隔夜: A50 ${overseas(p, 'a50')} · 费半 ${overseas(p, 'sox')} · 净敞口分歧 ${txt(p.overnight_exposure?.posGap)}`);
       { // S3-5 外围收盘全景（overnight_exposure 扩展段，聚合一行不逐条罗列）：
@@ -93,11 +125,11 @@ export function renderPushText(report) {
             + ` · 金龙 ${pct(cn.hxc)} · FXI ${pct(cn.fxi)} · 离岸人民币 ${pct(oe.cnh_chgPct)}`);
         }
       }
-      lines.push(`最高连板 ${txt(p.simulation_stock?.sentiment_cycle?.highest_chain)} · 炸板率 ${pct(p.simulation_stock?.sentiment_cycle?.broken_limit_ratio)}`);
+      lines.push(`最高连板 ${txt(p.simulation_stock?.sentiment_cycle?.highest_chain ?? p.watchlist?.max_lb)} · 炸板率 ${pct(p.simulation_stock?.sentiment_cycle?.broken_limit_ratio ?? p.watchlist?.broken_limit_ratio)}`);
       break;
     case 'intraday':
-      lines.push(`【AI 报告 · 盘中】${report.date}${report.trigger !== 'schedule' ? ` · ${report.trigger}` : ''}`);
-      { lines.push(...simBlock(p)); }
+      lines.push(`【AI 盘中 · 候选池】${report.date}${report.trigger !== 'schedule' ? ` · ${report.trigger}` : ''}`);
+      { lines.push(...simBlock(p, { poolLabel: '盘中候选池', sortLabel: '按综合得分排序', compact: true, criteria: '涨幅3-7% · 量比>2 · 未涨停 · 主力净流入为正' })); }
       lines.push(`运行回撤 ${pct(p.drawdown_vs_threshold?.dd_now)} · 距 DD 档位 ${p.drawdown_vs_threshold?.distance_pp != null ? `${p.drawdown_vs_threshold.distance_pp}pp` : '—'}（${p.drawdown_vs_threshold?.basis ?? '—'}）`);
       lines.push(`昨收口径: 当日 ${pct(p.pnl_daily)} · 累计 ${pct(p.pnl_cumulative)} · A50 ${overseas(p, 'a50')}`);
       break;
@@ -126,6 +158,21 @@ export function renderPushText(report) {
   // 运行监控归工程通道，不进面向决策的推送文案）；免责声明尾行保留。
   lines.push('完整版见页面 · 不构成投资建议');
   let text = lines.join('\n');
-  if (text.length > PUSH_CONSTS.MSG_CAP) text = `${text.slice(0, PUSH_CONSTS.MSG_CAP - 20)}\n…（超长截断）`;
+  // 双闸截断（2026-10-09 候选池展开后实测可超）：企微 text 实测上限 2048 字节（utf-8，
+  //   服务端超限截断会丢尾部免责声明）。字符闸（MSG_CAP）保底；字节闸按**整行**回退
+  //   ——从尾部删整行直到含标注 ≤ 2000 字节，绝不半行腰斩、绝不丢免责尾行语义。
+  const BYTE_CAP = 2000;
+  if (Buffer.byteLength(text, 'utf8') > BYTE_CAP) {
+    const suffix = '\n…（超长截断）';
+    const parts = text.split('\n');
+    const kept = [];
+    for (const ln of parts) {
+      if (Buffer.byteLength([...kept, ln].join('\n') + suffix, 'utf8') > BYTE_CAP) break;
+      kept.push(ln);
+    }
+    text = (kept.length ? kept.join('\n') : parts[0].slice(0, 600)) + suffix;
+  } else if (text.length > PUSH_CONSTS.MSG_CAP) {
+    text = `${text.slice(0, PUSH_CONSTS.MSG_CAP - 20)}\n…（超长截断）`;
+  }
   return text;
 }

@@ -83,7 +83,9 @@ export function quoteSymbol(code) {
 }
 
 // 源2辅助: 腾讯批量行情（60只/批）补全强势股 close/涨跌幅/换手
-async function fetchHotQuotes(codes) {
+//   2026-10-09 盘中候选池（任务二拆分）：同一 payload 顺带提取 PE-TTM(f39)/PB(f46)/
+//   量比(f49)——零新增请求（腾讯 qt 格式固定位）；解析不出 = null，不造数。
+export async function fetchHotQuotes(codes) {
   const out = {};
   const sym = quoteSymbol;
   for (let i = 0; i < codes.length; i += 60) {
@@ -94,14 +96,85 @@ async function fetchHotQuotes(codes) {
       for (const m of txt.matchAll(/v_(?:sh|sz|bj)(\d{6})="([^"]*)"/g)) {
         const f = m[2].split('~');
         const close = parseFloat(f[3]), pre = parseFloat(f[4]), chg = parseFloat(f[32]), hs = parseFloat(f[38]);
+        const pe = parseFloat(f[39]), pb = parseFloat(f[46]), lbr = parseFloat(f[49]);
         if (isNaN(close) || close <= 0) continue;
         out[m[1]] = {
           close,
           change_pct: !isNaN(chg) ? chg : (pre > 0 ? r2((close / pre - 1) * 100) : 0),
           huanshou: isNaN(hs) ? 0 : hs,
+          pe_ttm: isNaN(pe) ? null : pe,   // 亏损股负 PE 是真实值，保留
+          pb: isNaN(pb) ? null : pb,
+          liangbi: isNaN(lbr) || lbr < 0 ? null : lbr,
         };
       }
     } catch (e) { /* 单批失败容错 */ }
+    await sleep(300);
+  }
+  return out;
+}
+
+// 源2d: 东财 clist 全市场筛选榜（任务二数据源 · 2026-10-09）——按主力净流入(f62)
+//   降序取前 100（pz 上限 100），一次性带齐盘中候选池全字段：涨幅(f3)/量比(f10)/
+//   PE-TTM(f115)/PB(f23)/换手(f8)/行业(f100)。用户口径「主力净流入居前」的字面实现。
+//   ⚠ 同花顺强势榜（fetchHot）≈ 涨停集中营，3-7% 启动带在其中几乎恒为空集——
+//   候选池的扫描底座必须用全市场榜（本函数），hot 榜仅作题材标签补充。
+//   主机回退链与 fetchMainNet 同款（push2 主域部分网络下 TLS 被断）。
+export async function fetchScreenerTopMainNet() {
+  const hosts = ['push2.eastmoney.com', '1.push2.eastmoney.com', '2.push2.eastmoney.com'];
+  const url = (host) => `https://${host}/api/qt/clist/get?pn=1&pz=100&po=1&np=1&fltt=2&invt=2&fid=f62`
+    + '&fs=m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23' // 沪深 A（主板/创业板/科创板）
+    + '&fields=f2,f3,f8,f10,f12,f14,f23,f62,f100,f115';
+  const nOrNull = (v) => (v === '-' || v == null || !Number.isFinite(+v)) ? null : +v;
+  for (const host of hosts) {
+    try {
+      const j = await fetchJSON(url(host), { headers: { 'User-Agent': UA, Referer: 'https://quote.eastmoney.com/' } });
+      const diff = j && j.data && Array.isArray(j.data.diff) ? j.data.diff : null;
+      if (!diff) continue; // 返回异常 → 换下一镜像
+      return diff.map((d) => ({
+        code: String(d.f12 ?? ''),
+        name: d.f14 ?? null,
+        close: nOrNull(d.f2),
+        change_pct: nOrNull(d.f3),
+        huanshou: nOrNull(d.f8),
+        liangbi: nOrNull(d.f10),
+        pe_ttm: nOrNull(d.f115),
+        pb: nOrNull(d.f23),
+        main_net: nOrNull(d.f62), // 主力净流入（元）
+        industry: d.f100 && d.f100 !== '-' ? String(d.f100) : null, // 行业（题材维度）
+      })).filter((r) => r.code);
+    } catch (e) { /* 主机失败 → 下一镜像 */ }
+  }
+  return null; // 全部主机失败 → 调用方按缺席处理（宁缺毋假）
+}
+// 源2c: 东财 push2 批量个股主力净流入（f62，元）——盘中候选池筛选条件之一（2026-10-09）。
+//   ulist.np 批量 100 只/次；只打沪深（北交所 secid 市场码不稳 → 跳过，缺席 = null，
+//   报告层按「筛选条件核验不了 = 不入选」处理，宁缺毋假）。
+//   主机回退链：push2 主域在部分网络下 TLS 被断（10-08 push2his 同款实录），编号
+//   镜像（1./2. push2）数据同源同构——逐个试，全败才算失败（批失败返回已得部分）。
+export async function fetchMainNet(codes) {
+  const out = {};
+  const secids = [];
+  for (const c of codes) {
+    const s = String(c ?? '');
+    if (!/^\d{6}$/.test(s)) continue;
+    if (s[0] === '6') secids.push('1.' + s);            // 沪
+    else if (s[0] === '0' || s[0] === '3') secids.push('0.' + s); // 深（含创业板）
+  }
+  const hosts = ['push2.eastmoney.com', '1.push2.eastmoney.com', '2.push2.eastmoney.com'];
+  for (let i = 0; i < secids.length; i += 100) {
+    let got = false;
+    for (const host of hosts) {
+      try {
+        const j = await fetchJSON(`https://${host}/api/qt/ulist.np/get?fltt=2&invt=2&fields=f12,f62&secids=`
+          + secids.slice(i, i + 100).join(','), { headers: { 'User-Agent': UA, Referer: 'https://quote.eastmoney.com/' } });
+        const diff = j && j.data && Array.isArray(j.data.diff) ? j.data.diff : null;
+        if (!diff) continue; // 返回异常 → 换下一镜像
+        for (const d of diff) if (d && d.f12) out[String(d.f12)] = Number.isFinite(+d.f62) ? +d.f62 : null;
+        got = true;
+        break;
+      } catch (e) { /* 主机失败 → 下一镜像 */ }
+    }
+    if (!got) console.error('[main-net] 批量主力净流入全部主机失败（secids ' + i + '起）');
     await sleep(300);
   }
   return out;

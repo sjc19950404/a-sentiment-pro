@@ -129,13 +129,22 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
 
   const pre = renderPushText(mkReport({
     report_type: 'pre_market',
-    payload: { date: '2026-09-30', pnl_daily: null, pnl_cumulative: null, prev_nav: null, overseas: [{ key: 'a50', chgPct: 0.0009 }], overnight_exposure: { posGap: null }, simulation_stock: null },
+    payload: { date: '2026-09-30', pnl_daily: null, pnl_cumulative: null, prev_nav: null, overseas: [{ key: 'a50', chgPct: 0.0009 }], overnight_exposure: { posGap: null }, simulation_stock: null,
+      watchlist: { basis: 'pain.advance.detail 昨收口径连板梯队（不含操作建议）', ladder: [
+        { code: '600825', name: '新华传媒', lb: 6, kept: true, chg: 9.99, appearances: 8 },
+        { code: '603949', name: '雪龙集团', lb: 4, kept: false, chg: -9.98, appearances: null },
+      ], overnight_sectors: null, max_lb: 6, broken_limit_ratio: 0.1875 } },
     missing_notes: [],
   }));
-  assert.match(pre, /【AI 报告 · 盘前】2026-09-30/);
+  assert.match(pre, /【AI 盘前 · 今日观察清单】2026-09-30/, '任务一标题（不叫候选池）');
+  assert.match(pre, /今日观察清单（昨收口径 · 2 只，不含操作建议）：/);
+  assert.match(pre, / 1\. 600825 新华传媒 · 6 连板 · 晋级成功 · 当日 \+9\.99% · 上榜 8 次/);
+  assert.match(pre, / 2\. 603949 雪龙集团 · 4 连板 · 晋级失败 · 当日 -9\.98%/, 'appearances null → 无上榜段（—不硬塞）');
+  assert.match(pre, /最高连板 6 · 炸板率 \+18\.75%/, 'sim 缺席回退 watchlist 数据源');
   assert.match(pre, /前日盈亏 — · 累计 —/, 'null → —，不冒充 0');
   assert.match(pre, /A50 \+0\.09%/);
-  assert.doesNotMatch(pre, /候选池/, 'simulation_stock 缺席 → 无候选池清单（不留噪音行）');
+  assert.doesNotMatch(pre, /建议仓位|情绪周期/, '观察清单不含操作建议（任务一语义）');
+  assert.doesNotMatch(pre, /候选池/, '标题/正文不出现候选池字样（输出物理隔离）');
   assert.ok(pre.includes('数据截至 2026-09-30 收盘\n'), '盘前恒标数据截至（前收口径，头部日期即数据日期）');
   assert.ok(!pre.includes('假期无更新'), '常规隔夜（gap≤3 自然日）不加假期附注');
   const preHoliday = renderPushText(mkReport({
@@ -159,13 +168,15 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
 
   const intra = renderPushText(mkReport({
     report_type: 'intraday', trigger: 'event:circuit_breaker', urgent: true,
-    payload: { date: '2026-09-30', drawdown_vs_threshold: { dd_now: 0.088, distance_pp: 0.2, basis: '归档轨 trackA.maxDd' }, pnl_daily: 0.0002, pnl_cumulative: -0.015, overseas: [], simulation_stock: { ...mkReport().payload.simulation_stock, candidate_pool: [{ code: '600825', name: '新华传媒', intraday_chg: 3.3 }] } },
+    payload: { date: '2026-09-30', drawdown_vs_threshold: { dd_now: 0.088, distance_pp: 0.2, basis: '归档轨 trackA.maxDd' }, pnl_daily: 0.0002, pnl_cumulative: -0.015, overseas: [],
+      simulation_stock: { ...mkReport().payload.simulation_stock, candidate_pool: [
+        { code: '600825', name: '新华传媒', score: 0.87, themes: ['半导体投资', '国产替代'], selection_reason: '量比 3.2', intraday_chg: 5.2, fundamentals: { pe: 22, pb: null }, fund_flow_note: '主力净流入 +5210 万（东财 push2 盘中实时）' }] } },
     missing_notes: [],
   }));
-  assert.match(intra, /【AI 报告 · 盘中】2026-09-30 · event:circuit_breaker/, 'urgent 触发源进标题');
+  assert.match(intra, /【AI 盘中 · 候选池】2026-09-30 · event:circuit_breaker/, 'urgent 触发源进标题');
   assert.match(intra, /运行回撤 \+8\.80% · 距 DD 档位 0\.2pp/);
-  assert.match(intra, /候选池 1 只（按连板数排序，Top 1）：/, '候选池清单展开（盘中版）');
-  assert.match(intra, / 1\. 600825 新华传媒 · 得分 — · 入选理由 — · 估值 — · 盘中 \+3\.3%/, '盘中涨幅并入清单逐股展示（百分数值口径，不过 pct()×100）');
+  assert.match(intra, /盘中候选池 1 只（按综合得分排序，Top 1 · 涨幅3-7% · 量比>2 · 未涨停 · 主力净流入为正）：/, '任务二标签+筛选口径进标题（输出物理隔离）');
+  assert.match(intra, / 1\. 600825 新华传媒 · 得分 0\.87 · 题材：半导体投资\/国产替代 · 量比 3\.2 · PE 22x · 盘中 \+5\.2%/, '紧凑行：得分/题材/量比/估值/盘中涨幅');
 
   const week = renderPushText(mkReport({
     report_type: 'weekly',
@@ -186,6 +197,8 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
   const fat = mkReport({ payload: { ...base.payload, simulation_stock: { ...base.payload.simulation_stock, candidate_pool: fatPool } } });
   const fatText = renderPushText(fat);
   assert.ok(fatText.length <= PUSH_CONSTS.MSG_CAP, '超长截断至上限内');
+  assert.ok(Buffer.byteLength(fatText, 'utf8') <= 2000, '字节闸：企微 text 实测 2048 字节上限，2000 留余量（CJK 展开后字符闸挡不住）');
+  assert.match(fatText, /超长截断/, '字节闸触发时如实标注');
   assert.doesNotMatch(fatText, /11\. /, '正文只展示 Top 10（指令口径）');
 });
 

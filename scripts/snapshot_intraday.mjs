@@ -32,13 +32,18 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { atomicWriteJSON } from '../src/fsutil.js';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import dns from 'node:dns';
 import config from '../src/config.js';
 import { resolveHolidays } from '../src/calendar.js';
-import { fetchHot, fetchPools, fetchBreadth } from '../src/sources.js';
+import { fetchHot, fetchPools, fetchBreadth, fetchHotQuotes, fetchMainNet, fetchScreenerTopMainNet } from '../src/sources.js';
 import { marketPhase, bjDate, bjTime } from '../src/freshness.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'intraday.json');
+// IPv4 优先（与 smoke/probe/backfill 同款）：默认 verbatim 在部分网络下对东财 push2
+// 域间歇 UND_ERR_SOCKET，会把「DNS 路由问题」误判成「源不可用」。CI 无害，本机/同款
+// 网络下恢复 breadth 与主力净流入两源。
+dns.setDefaultResultOrder('ipv4first');
 const argv = process.argv.slice(2);
 const DRY = argv.includes('--dry');
 const FORCE = argv.includes('--force');
@@ -46,7 +51,9 @@ const ai = argv.indexOf('--at');
 const now = ai >= 0 ? new Date(argv[ai + 1]) : new Date();
 
 // 快照版本：字段增删时递增，便于下游判断能读到什么（老快照缺新字段时不冒充完整）
-export const SNAPSHOT_VERSION = 1;
+//   v2（2026-10-09 任务二拆分）：hot.rows 增 pe_ttm/pb/liangbi（腾讯行情同 payload）
+//   与 main_net（东财 push2 主力净流入，元）——盘中候选池筛选条件的唯一数据底座。
+export const SNAPSHOT_VERSION = 2;
 
 const log = (...a) => console.log('[intraday]', ...a);
 
@@ -87,6 +94,22 @@ if (!anyOk) {
   log('三个源全部失败 → 本次不覆盖已有快照（避免网络抖动把页面刷成空白）。');
 }
 
+// ── ③b 盘中候选池数据源（任务二 · 2026-10-09 拆分）───────────────────────────
+//   腾讯行情批量补量比/PE-TTM/PB（同 payload 零新增请求）+ 东财 push2 主力净流入。
+//   任一失败 = 对应字段 null（不造数）；报告层按「筛选条件核验不了 = 不入选」处理。
+//   gtimg 仅在 getharen 缺值时兜底 close/change_pct/huanshou（补缺不覆盖）。
+let quoteX = {}, mainNet = {};
+if (hot && hot.length) {
+  const codes = [...new Set(hot.map((x) => x.code).filter(Boolean))];
+  try { quoteX = await fetchHotQuotes(codes); } catch (e) { quoteX = {}; log('腾讯行情补充失败 → 量比/估值字段为 null'); }
+  try { mainNet = await fetchMainNet(codes); } catch (e) { mainNet = {}; log('东财主力净流入失败 → main_net 为 null'); }
+}
+// 全市场筛选榜（任务二主数据源）：按主力净流入降序前 100，自带量比/PE/PB/行业。
+//   失败 = screener:null → 报告层回落 hot 榜口径并如实报因（宁缺毋假）。
+let screener = null;
+try { screener = await fetchScreenerTopMainNet(); } catch (e) { screener = null; }
+if (screener === null) log('全市场筛选榜失败 → 候选池回落 hot 榜口径（本次无全市场底座）');
+
 // ── ④ 组装快照（只放「当下时点」语义明确的量，并逐项标注探测时点）──────────
 const snapshot = {
   version: SNAPSHOT_VERSION,
@@ -102,12 +125,19 @@ const snapshot = {
     count: hot.length,
     srcDate: hotDate,
     // 只留报告要用的字段，控制文件体积（<200KB）
-    rows: hot.slice(0, 200).map((x) => ({
-      code: x.code, name: x.name, reason: x.reason || '',
-      close: x.close != null ? +x.close : null,
-      change_pct: x.zhangfu != null ? +x.zhangfu : null,
-      huanshou: x.huanshou != null ? +x.huanshou : null,
-    })),
+    rows: hot.slice(0, 200).map((x) => {
+      const q = quoteX[x.code] || {};
+      return {
+        code: x.code, name: x.name, reason: x.reason || '',
+        close: x.close != null ? +x.close : (q.close ?? null),
+        change_pct: x.zhangfu != null ? +x.zhangfu : (q.change_pct ?? null),
+        huanshou: x.huanshou != null ? +x.huanshou : (q.huanshou ?? null),
+        pe_ttm: q.pe_ttm ?? null,
+        pb: q.pb ?? null,
+        liangbi: q.liangbi ?? null,
+        main_net: mainNet[x.code] ?? null, // 主力净流入（元，东财 push2 f62）
+      };
+    }),
   } : null,
   pools: pools ? {
     zt: pools.zt, zb: pools.zb, dt: pools.dt,
@@ -117,6 +147,9 @@ const snapshot = {
     seal_pct: (pools.zt != null && pools.zb != null && (pools.zt + pools.zb) > 0)
       ? Math.round((pools.zt / (pools.zt + pools.zb)) * 1000) / 10 : null,
   } : null,
+  // 全市场筛选榜（任务二主数据源）：主力净流入降序前 100，自带候选池全字段。
+  //   只在 live 相位有值；失败/缺席 = null（报告层回落 hot 榜口径并报因）。
+  screener: screener ? { count: screener.length, rows: screener } : null,
   breadth: breadth ? { up: breadth.up, down: breadth.down, flat: breadth.flat } : null,
   sourcesFailed: errs.length ? errs : [],
 };

@@ -23,24 +23,27 @@ on:
     #   开市前摸门的意义：源悄悄改字段/加风控，盘前就能红出来，带 needs 依赖拦下
     #   盘后主跑——坏数据不进生产档。这条 cron **只触发 smoke job**（build 的 if 已排除）。
     - cron: '30 0 * * 1-5'
-    # ③ 盘前 AI 报告（S2 · 2026-10-06）：北京 09:05（UTC 01:05）——用户指定
-    #   9:00-9:10 窗口：早于 09:15 集合竞价留出阅读时间；晚于 08:30 冒烟（昨收
-    #   口径数据已定）；错开 09:00 盘中 tick 首拍（不同 cron 字符串 = 独立 run，
-    #   job 级 if 路由，互不掺和）。非交易日由脚本内闸门自动跳过（exit 0 不红）。
-    #   ⚠ GitHub 定时可能延迟数分钟（平台已知行为）：数据为昨收口径不随竞价变化，
+    # ③ 任务一 · 盘前观察清单（2026-10-09 拆分）：北京 09:00（UTC 01:00）——用户指定。
+    #   数据源物理隔离：只读昨收口径档（pain 连板梯队 + global 外围），不碰 intraday
+    #   实时源；输出「今日观察清单」（不含操作建议），与任务二的候选池语义彻底分野。
+    #   非交易日由脚本内闸门自动跳过（exit 0 不红）。⚠ 与 09:00 tick 首拍同刻——
+    #   不同 cron 字符串 = 独立 run，job 级 if 路由互不掺和（concurrency 组内串行）。
+    #   ⚠ GitHub 定时可能延迟数分钟（平台已知行为）：昨收口径数据不随竞价变化，
     #     延迟不损内容正确性；推送有指纹去重兜底不重复。
-    - cron: '5 1 * * 1-5'
-    # ④ 盘中定时推送（S3-6 · 2026-10-07）：三个关键决策窗口强制触发快照 + 推送判断，
-    #   北京 10:15（早盘定局）/ 13:45（午后开盘）/ 14:45（尾盘前瞻）。
-    #   分-时耦合不同（02:15 / 05:45 / 06:45 UTC）无法写成一条，最省两条：
-    #   '15 2 * * 1-5' = 10:15；'45 5,6 * * 1-5' = 13:45 + 14:45。
-    #   与 tick（:00/:30 网格）的关系：tick 每半小时已 build+push intraday 报告，
-    #   三个时点在网格缝里加拍——新快照刚抓，hot 榜若更新则指纹变即推送（变才推，
-    #   防风暴纪律不变）；榜没变不推。非 live 相位由 gateIntraday 自动跳过（exit 0）。
-    #   ⚠ smoke/build 是排除式 if——新 cron 字符串必须同步加排除（见各自 if），
-    #     否则 10:15 会误跑六源冒烟 + 全量管道重算。
-    - cron: '15 2 * * 1-5'
-    - cron: '45 5,6 * * 1-5'
+    - cron: '0 1 * * 1-5'
+    # ④ 任务二 · 盘中候选池（2026-10-09 拆分）：北京 09:35 / 10:30 / 14:00 三时点
+    #   各触发一次（分-时耦合无法写成一条，三条独立 cron）。
+    #   每次触发：先抓新快照（腾讯行情补量比/PE/PB + 东财主力净流入）→ 全量重算
+    #   候选池（涨幅 3-7% · 量比>2 · 未涨停 · 主力净流入为正，按综合得分 Top 10）
+    #   ——不沿用上一轮结果；数据源与任务一物理隔离（只认 intraday 当日快照，
+    #   缺席则空池报因，绝不回落昨收口径）。
+    #   tick 网格（:00/:30）此后回归**纯快照职责**：只抓数据不出报告（报告层
+    #   与数据层解耦，三时点报告读的就是最近一拍快照——9:35 报告用本 cron 自抓的新拍）。
+    #   旧 S3-6 决策时点 cron（'15 2' / '45 5,6'）随之退役（推送判断被三时点取代）。
+    #   ⚠ smoke/build 是排除式 if——cron 字符串变更必须同步（见各自 if），否则误跑。
+    - cron: '35 1 * * 1-5'
+    - cron: '30 2 * * 1-5'
+    - cron: '0 6 * * 1-5'
   workflow_dispatch:        # 手动触发
 
 # ── 模拟选股层总开关（S2 · 2026-10-07 用户拍板）────────────────────────────
@@ -75,9 +78,9 @@ jobs:
   #   每个源的门：硬失败 → 本 job 红 → build 被拦（不污染生产档）+ CI 邮件当天报警。
   #   软失败（龙虎榜当日未公布）不算源故障（盘后早跑正常态）。
   smoke:
-    # S3-6：盘中推送三时点（'15 2' / '45 5,6'）已加排除——冒烟是盘前 08:30 摸门语义，
-    # 盘中重跑纯浪费且占 daily-sentiment 并发槽（会延迟同拍 intraday job）。
-    if: github.event.schedule != '0,30 1-7 * * 1-5' && github.event.schedule != '5 1 * * 1-5' && github.event.schedule != '15 2 * * 1-5' && github.event.schedule != '45 5,6 * * 1-5'
+    # 任务一/任务二触发时点（'0 1' 盘前 / '35 1'/'30 2'/'0 6' 盘中三时点）已加排除
+    # ——冒烟是盘前 08:30 摸门语义，任务时点重跑纯浪费且占 daily-sentiment 并发槽。
+    if: github.event.schedule != '0,30 1-7 * * 1-5' && github.event.schedule != '0 1 * * 1-5' && github.event.schedule != '35 1 * * 1-5' && github.event.schedule != '30 2 * * 1-5' && github.event.schedule != '0 6 * * 1-5'
     runs-on: ubuntu-latest
     # 5 → 8：重试兜底后最坏路径 = 首跑（≤2 分钟）+ 60s 退避 + 重跑，留足余量不误触超时。
     timeout-minutes: 8
@@ -160,9 +163,10 @@ jobs:
       github.event.schedule != '0,30 1-7 * * 1-5' &&
       github.event.schedule != '30 20 * * 1-5' &&
       github.event.schedule != '30 0 * * 1-5' &&
-      github.event.schedule != '5 1 * * 1-5' &&
-      github.event.schedule != '15 2 * * 1-5' &&
-      github.event.schedule != '45 5,6 * * 1-5'
+      github.event.schedule != '0 1 * * 1-5' &&
+      github.event.schedule != '35 1 * * 1-5' &&
+      github.event.schedule != '30 2 * * 1-5' &&
+      github.event.schedule != '0 6 * * 1-5'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -310,12 +314,15 @@ jobs:
   #   若未来启用合并版 UI（dist 单文件形态），在 deploy-pages.yml 换产物源即可——一处切换。
 
   intraday:
-    # 盘中轻量快照：只抓 hot/pools/breadth 三个实时源，写 data/intraday.json。
-    # 绝不触碰 archive.json —— 盘中涨跌家数未定盘，写进情绪因子会让分数反复跳变、分位失去意义。
-    # S3-6（2026-10-07）：除 tick 网格（:00/:30）外，三个决策时点（10:15 / 13:45 / 14:45
-    # 北京 = '15 2' / '45 5,6' UTC）也走本 job 全流程（快照 → 报告 → 推送 → 提交）——
-    # 推送仍受指纹去重约束（榜变才推），闸门 gateIntraday 过滤非 live 相位。
-    if: github.event.schedule == '0,30 1-7 * * 1-5' || github.event.schedule == '15 2 * * 1-5' || github.event.schedule == '45 5,6 * * 1-5' || github.event_name == 'workflow_dispatch'
+    # 盘中轻量快照：只抓 hot/pools/breadth 三个实时源（+腾讯行情量比/PE/PB、东财
+    # 主力净流入），写 data/intraday.json。绝不触碰 archive.json —— 盘中涨跌家数
+    # 未定盘，写进情绪因子会让分数反复跳变、分位失去意义。
+    # 任务二拆分（2026-10-09）：tick 网格（:00/:30）回归**纯快照职责**——只抓
+    # 数据不出报告；盘中 AI 报告只在三时点（北京 9:35/10:30/14:00 = '35 1'/
+    # '30 2'/'0 6' UTC）各触发一次，先抓新快照再全量重算候选池（不沿用上轮）。
+    # 10:30/14:00 与 tick 网格同刻会双 run（job 路由分流：tick-run 只快照，
+    # 报告-run 快照+报告），concurrency 组内串行、先后无冲突。
+    if: github.event.schedule == '0,30 1-7 * * 1-5' || github.event.schedule == '35 1 * * 1-5' || github.event.schedule == '30 2 * * 1-5' || github.event.schedule == '0 6 * * 1-5' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -327,13 +334,13 @@ jobs:
       # （该接口在非交易日会静默返回上一交易日数据）；③ 三源全失败则不覆盖上次成功快照。
       - name: 抓盘中快照（非盘中自动跳过）
         run: node scripts/snapshot_intraday.mjs
-      # ── 盘中 AI 报告（S2）：同一 tick 追加，复用刚抓的 intraday.json 做候选池
-      #   盘中涨幅联查（hot 强势榜 change_pct → intraday_chg；不在榜 = null ≠ 0）。
-      #   报告闸门与快照同源（相位 live 才生成）；urgent 四类事件（熔断/regime 切换/
-      #   回撤接近/剧本命中）依赖实时价与账本，归档轨 CI 无源 → 由页面即时轨（S3）
-      #   负责，CI 只出 30 分钟例行版（trigger=schedule）。
-      #   指纹去重的实际效果：归档轨盘中内容随 hot 榜变化，榜变才推、榜不变不推。
-      - name: 生成并推送盘中 AI 报告（相位非 live 自动跳过）
+      # ── 任务二 · 盘中候选池（2026-10-09 拆分）：三时点各触发一次，全量重算。
+      #   复用刚抓的当日快照（涨幅/量比/主力净流入/PE/PB），筛选口径见
+      #   buildIntradayPool；快照缺席/陈旧 → 空池报因（不回落昨收口径——与任务一
+      #   数据源物理隔离）。相位非 live 由 gateIntraday 自动跳过（exit 0）。
+      #   指纹去重保留（防风暴纪律）：内容未变不重推。
+      - name: 生成并推送盘中 AI 报告（任务二三时点，每轮重算）
+        if: github.event.schedule == '35 1 * * 1-5' || github.event.schedule == '30 2 * * 1-5' || github.event.schedule == '0 6 * * 1-5' || github.event_name == 'workflow_dispatch'
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         run: |
@@ -352,13 +359,14 @@ jobs:
           fi
 
   premarket:
-    # ── 盘前 AI 报告（S2 · 2026-10-06）：北京 09:05 生成并推送 ──────────────
-    #   cron '5 1 * * 1-5'（UTC 01:05）。为什么单独一个 job 而不是塞进 intraday：
-    #   ① 触发时刻在 09:00/09:30 两拍之间，与盘中 tick 错峰；② 盘前读的是**昨收
-    #   口径**全档（dual_track/signals/global），不依赖刚抓的 intraday.json；
-    #   ③ 相位 09:05 是 pre（非 live），塞 intraday 会被它的相位闸门拦掉。
+    # ── 任务一 · 盘前观察清单（2026-10-09 拆分）：北京 09:00 生成并推送 ──────
+    #   cron '0 1 * * 1-5'（UTC 01:00）。为什么单独一个 job 而不是塞进 intraday：
+    #   ① 数据源物理隔离——盘前只读**昨收口径**全档（dual_track/signals/global
+    #   /pain 连板梯队），不依赖 intraday.json 实时源；② 相位 09:00 是 pre（非
+    #   live），塞 intraday 会被它的相位闸门拦掉；③ 输出「今日观察清单」语义
+    #   （不含操作建议），与任务二候选池彻底分野。
     #   闸门：非交易日脚本自跳（exit 0）；推送与生成同 step（原子性：生成失败不推）。
-    if: github.event.schedule == '5 1 * * 1-5' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '0 1 * * 1-5' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
