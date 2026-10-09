@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-10-09T22:57:03.349Z",
+    "generatedAt": "2026-10-09T23:08:29.908Z",
     "source": "sina",
     "sourceUrl": "https://hq.sinajs.cn/list=",
     "usSessionDate": "2026-10-09",
@@ -10,8 +10,8 @@
     "failed": [],
     "usReadiness": {
       "ready": true,
-      "etText": "18:57 ET",
-      "reason": "美东 18:57 ET 已收盘（≥16:30 ET），可采信当日收盘",
+      "etText": "19:08 ET",
+      "reason": "美东 19:08 ET 已收盘（≥16:30 ET），可采信当日收盘",
       "readyAfterEt": "16:30 ET（收盘 + 30 分钟结算缓冲）= 北京次日 04:30"
     },
     "usNoSession": [],
@@ -21,7 +21,7 @@
     "usSessionDates": [],
     "usSessionsBeforeOpen": 0,
     "lastAttempt": {
-      "at": "2026-10-09T22:57:03.349Z",
+      "at": "2026-10-09T23:08:29.908Z",
       "outcome": "ok",
       "reason": null
     }
@@ -234,7 +234,7 @@
       "chgReported": 0.79,
       "hi52": 40.907,
       "lo52": 31.19,
-      "quoteTime": "2026-10-10 06:53:24",
+      "quoteTime": "2026-10-10 07:08:24",
       "sessionDate": "2026-10-09",
       "open": 33.92,
       "high": 34.37,
