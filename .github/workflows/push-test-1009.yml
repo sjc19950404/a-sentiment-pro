@@ -1,0 +1,21 @@
+# ── 一次性推送测试 workflow（用完即删 · 对齐 worker-verify 三启三删惯例）───────
+# 目的：10-09 盘中档案真实投递到群（零污染测试语义：stateFile=null 不落指纹、
+#       不写档案、不走推送前校验写回——与 scripts/test_push.mjs 同款纪律）。
+#       背景：本机无 OPS_WEBHOOK 且 workers.dev 不可达 → 借 CI 现成 secret 出口。
+name: push-test-1009
+on:
+  workflow_dispatch:
+jobs:
+  push-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 零污染测试推送 10-09 盘中档案（原样，stateFile:null）
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+        run: |
+          node --input-type=module -e 'import { readFileSync } from "node:fs"; import { pushReports, renderPushText } from "./src/ai_report_push.js"; const report = JSON.parse(readFileSync("data/reports/intraday_2026-10-09.json", "utf8")); console.log(renderPushText(report)); const r = await pushReports([report], { stateFile: null }); for (const x of r.results) console.log("[push-test] " + x.type + " " + x.date + ": " + (x.pushed ? "已推送" : "未推送（" + x.reason + "）")); if (!r.results.some((x) => x.pushed)) process.exit(1);'
