@@ -47,3 +47,15 @@ node scripts/daily_fetch.mjs
 | `data/ztpool_history.json` | 每日涨停池原始快照（`{date, pool}` 数组，幂等追加） |
 | `data/emotion_history.json` | 全部交易日情绪历史（精确/近似双轨，口径见文件 `meta`） |
 | `data/old_dragon_history.json` | 逐日老龙头候选（五条件口径见文件 `meta`） |
+
+## 6. 本地任务与 CI 的分工（免死金牌，2026-10-09）
+
+> **`\ASentiment-dailyfetch-1600`（Windows 计划任务，每日 16:00）是与 GitHub Actions CI 并存的必要本地任务，不是冗余，不要禁用。**
+
+- **CI 完全不覆盖本入口**：`.github/workflows/*` 中搜不到 `daily_fetch / emotion_history / scan_old_dragon / main_theme_history` 任何一个（2026-10-09 已逐一核实）。CI 只负责 archive/信号/报告链路（daily.yml 的 18:30 盘后首抓、21:00 补抓等）。
+- **数据不可回补**：`ztpool_history.json` 依赖东财 `getTopicZTPool`，只返回最近交易日（见 §4）。本地任务停更一天 = 永久缺一天，老龙头判定所需的 ≥10 交易日冷却链直接断裂。
+- **入库规则**：仅 `ztpool_history.json` 入库；`emotion_history / old_dragon_history / main_theme_history` 三档可由 ztpool + archive 完全重建，`.gitignore` 已规定不入库。当日采集需人工（或后续自动化）`git add data/ztpool_history.json` 提交。
+- **当前部署**：本机 Windows 计划任务 `\ASentiment-dailyfetch-1600`（每日 16:00，SYSTEM 主体，XML 备份存仓外 brain 目录）。`crontab.example` 的 15:30 是 Linux 部署示例，语义等价。
+- **姊妹任务 `\ASentiment-pipeline-1530`**（每日 15:30，`MODE=live` 写 archive.json）产物被 CI 完整覆盖（daily.yml:294 会提交），属真冗余，已于 2026-10-09 禁用——**它和本任务命运相反，勿混淆**。
+- **历史教训（2026-10-09）**：本任务曾差点被误判为"CI 冗余"而禁用，且当日 `ztpool_history.json`（+1454 行）差点被 `git checkout --` 丢弃，拦截依据即以上各条。**清理工作区前先核对这份清单。**
+- **长期方向**：把本入口迁进 CI（runner 跑 + 自动 commit）是终极解法，但需先验证 GitHub runner 对东财接口的连通性，验证通过前不动。
