@@ -777,8 +777,14 @@ check('交互：点报告目录跳转并展开该段', !sec1.classList.contains(
 // 故标的断言按当日实际数据条件化，不写死"必须存在"，否则数据一变就假失败。
 const mlThemeChips = window.document.querySelectorAll('#mainLineBody [data-act="theme"]').length;
 const mlStockChips = window.document.querySelectorAll('#mainLineBody [data-act="stock"]').length;
+const mlHasMains = (bt.mainLine?.mains || []).length > 0;
 const mlHasStocks = (bt.mainLine?.mains || []).some((m) => (m.stocks || []).length > 0);
-check('交互：主线卡的题材标签可点（可下钻题材成分）', mlThemeChips > 0, `${mlThemeChips} 个题材 chip`);
+// 题材标签同款条件化：当日主线为空（mains=[]，如 2026-10-09 动态阈值未达标无主线）时
+// 页面本就不该有 chip——写死 >0 会随数据波动假失败（与本节开头案例同类，10-05 合并后
+// staging 数据变化即实录挂过门禁③）。
+check('交互：主线卡的题材标签可点（可下钻题材成分）',
+  mlHasMains ? mlThemeChips > 0 : true,
+  mlHasMains ? `${mlThemeChips} 个题材 chip` : '当日主线题材为空（mains=[]）→ 按数据跳过');
 check('交互：主线标的清单可点（当日主线确有成分股时）',
   mlHasStocks ? mlStockChips > 0 : true,
   mlHasStocks ? `${mlStockChips} 个标的` : '当日主线题材名未命中任何诱因文本 → 成分股为空，该项按数据跳过');
@@ -823,10 +829,15 @@ check('回归：龙虎榜买入/卖出与净买同为「亿」单位（buy − s
     && Math.abs(r.buy - r.sell - r.net) <= 0.02),
   lhbNum.slice(0, 2).map((r) => `买${r.buy}−卖${r.sell}=${(r.buy - r.sell).toFixed(2)} / 净${r.net}`).join(' ; '));
 
-// 新股无涨跌幅限制，龙虎榜里会出现 +653% 这类看着像错的涨幅，必须显式标注来源
+// 新股无涨跌幅限制，龙虎榜里会出现 +653% 这类看着像错的涨幅，必须显式标注来源。
+// 前提条件化：只有当日 hot 榜真有无涨跌幅限制标的时才要求徽标在场。判定经
+// window.__isNewStock 桥接**直接复用 app.js 的判据本体**（同 seatsMod/Seats 桥接先例）
+// ——不另写副本：副本会被 audit_lhb_caliber 的「新股判定唯一出处」扫描命中，且口径
+// 漂移无感知。没有新股的交易日强求 .newb>0 是数据态假失败（2026-10-09 实录）。
+const expectNewb = (d0.hot || []).filter(window.__isNewStock).length;
 check('回归：无涨跌幅限制的新股在涨幅列打「新股」标记',
-  $('hotTable').querySelectorAll('.newb').length > 0,
-  `${$('hotTable').querySelectorAll('.newb').length} 只`);
+  expectNewb > 0 ? $('hotTable').querySelectorAll('.newb').length > 0 : true,
+  expectNewb > 0 ? `${$('hotTable').querySelectorAll('.newb').length} 只` : '当日 hot 榜无无涨跌幅限制标的 → 按数据跳过');
 clickEl($('hotTabs').querySelector('button[data-view="hot"]'));
 
 // 搜索联动（与上方表格搜索用同一个动态词，两处结论必须一致）
@@ -1545,17 +1556,23 @@ if (window.ReportAudit && window.ReportExport && typeof window.__renderBriefHtml
   const detMap = lastDay.summary?.seats?.detail || {};
   const anyCode = Object.keys(detMap)[0] || null;
 
-  // 点热点表第一行打开个股抽屉（表行本身即 data-act="stock"）
+  // 点热点表里**第一只带席位明细的票**打开个股抽屉（表行本身即 data-act="stock"）。
+  // 不盲点第一行：第一行是否落在当日席位明细集里随数据波动（10-05 档恰好命中、
+  // 10-08 档不中 → 席位区空 0 行假失败）。全表都无明细票时按数据跳过（无可验证对象）。
   // ⚠ 分层加载后个股抽屉是异步的（席位明细惰性），必须等一拍再断言席位行。
-  const firstRow = $('hotTable')?.querySelector('tbody tr.clickable');
-  if (firstRow) await clickAndSettle(firstRow);
+  const hotRows = [...($('hotTable')?.querySelectorAll('tbody tr.clickable') || [])];
+  const withSeats = hotRows.find((tr) => detMap[tr.dataset.code] != null) || null;
+  if (withSeats) await clickAndSettle(withSeats);
   const drewStock = drawerOpen();
   check('席位：个股抽屉可打开', drewStock || !!anyCode, `code=${anyCode}`);
 
   const seatRowsOf = () => [...($('dwBody')?.querySelectorAll('tr[data-act="seat"]') || [])];
   let seatRows = seatRowsOf();
+  // 前提条件化：热点表里找得到席位明细票（withSeats）才要求行在场——席位明细是惰性
+  // 字段且接口仅保留最近数日，当日热点与明细集的交集随数据波动，写死 >0 是数据态假失败。
   check('席位：抽屉内席位行可点击（买卖两侧都挂了 data-act="seat"）',
-    seatRows.length > 0, `${seatRows.length} 行`);
+    withSeats ? seatRows.length > 0 : true,
+    withSeats ? `${seatRows.length} 行` : '当日热点表无席位明细票 → 按数据跳过');
 
   if (seatRows.length) {
     check('席位：抽屉含"买卖双侧席位明细"标题', txt('dwBody').includes('买卖双侧席位明细'), '');
@@ -1589,8 +1606,10 @@ if (window.ReportAudit && window.ReportExport && typeof window.__renderBriefHtml
     }
     escClose();
   } else {
-    check('席位：抽屉内席位行可点击（买卖两侧都挂了 data-act="seat"）', false,
-      '最新档没有票带席位明细，无法验证下钻');
+    // 走到这里 seatRows=0：withSeats 存在 → 上方第一条已红（有明细票却渲染 0 行 = 真回归），
+    // 此处不重复计失败；withSeats 为 null → 纯数据前提缺失（非回归），显式说明跳过。
+    check('席位：无席位明细数据的交易日按数据跳过（非回归）', !withSeats,
+      withSeats ? '有明细票却渲染 0 行（上方已计失败）' : '当日热点表无席位明细票，无法验证下钻');
   }
   escClose();
 

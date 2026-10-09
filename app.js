@@ -718,6 +718,10 @@ function posTier(score, t) {
 // ── 研判报告：规则引擎，全部由当档数据推导，无手写文案 ──
 // 新股/独立标的：上市首5日无涨跌幅限制（东财榜单诱因原话）
 const isNewStock = (l) => (l.reasons || [l.reason || '']).some((r) => String(r).includes('无价格涨跌幅限制'));
+// 只读桥接（同 seatsMod 的 window.Seats 先例）：暴露判据本体给 check_frontend 的
+// 「当日有无新股」前提判定复用——不另写副本（副本会被 audit A3 唯一出处扫描命中，
+// 且口径漂移无感知）。仅展示/测试用途，不参与打分。
+window.__isNewStock = isNewStock;
 
 // 锁仓/新进资金口径（规格阈值：新进占比 >70% 短线脉冲 / 50~70% 中等 / <50% 锁仓偏好强）
 // 当日买方席位与近2日同票买方席位比对，未重复出现=新进；样本=有席位明细的连续上榜股
