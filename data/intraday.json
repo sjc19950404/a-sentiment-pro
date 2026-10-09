@@ -2,12 +2,12 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-09",
-  "capturedAt": "2026-10-09T03:14:50.370Z",
-  "capturedAtBJ": "2026-10-09 11:14",
+  "capturedAt": "2026-10-09T03:48:01.995Z",
+  "capturedAtBJ": "2026-10-09 11:48",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 28,
+    "count": 27,
     "srcDate": "2026-10-09",
     "rows": [
       {
@@ -35,6 +35,14 @@
         "huanshou": null
       },
       {
+        "code": "002709",
+        "name": "天赐材料",
+        "reason": "H股上市+电解液+固态电池+业绩增长",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
         "code": "300981",
         "name": "中红医疗",
         "reason": "医用手套+业绩高增+海外产能",
@@ -54,14 +62,6 @@
         "code": "603101",
         "name": "汇嘉时代",
         "reason": "超市调改+新疆零售+商业综合体",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "002702",
-        "name": "海欣食品",
-        "reason": "速冻食品+山姆渠道+营收增长+海峡两岸",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -102,14 +102,6 @@
         "code": "600127",
         "name": "金健米业",
         "reason": "粮油食品+健康食品+粮食储备",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "300111",
-        "name": "向日葵",
-        "reason": "抗感染药+药品获批+医药产业链",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -237,11 +229,11 @@
     ]
   },
   "pools": {
-    "zt": 28,
-    "zb": 13,
-    "dt": 18,
+    "zt": 27,
+    "zb": 15,
+    "dt": 17,
     "max_lb": 9,
-    "lb2": 12,
+    "lb2": 11,
     "zt_codes": [
       "002058",
       "600241",
@@ -258,32 +250,31 @@
       "600478",
       "300821",
       "600843",
-      "300111",
       "600127",
       "300530",
       "600629",
       "601086",
       "600371",
-      "002702",
       "603101",
       "600408",
       "300981",
+      "002709",
       "000546",
       "300340",
       "920627"
     ],
-    "seal_pct": 68.3
+    "seal_pct": 64.3
   },
   "breadth": {
-    "up": 876,
-    "down": 4289,
-    "flat": 122
+    "up": 1018,
+    "down": 4148,
+    "flat": 121
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-09 10:45",
+  "prevCapturedAtBJ": "2026-10-09 11:14",
   "prevPools": {
-    "zt": 27,
-    "zb": 9,
-    "seal_pct": 75
+    "zt": 28,
+    "zb": 13,
+    "seal_pct": 68.3
   }
 }
