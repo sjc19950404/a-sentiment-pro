@@ -2,18 +2,106 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-09",
-  "capturedAt": "2026-10-09T05:14:40.731Z",
-  "capturedAtBJ": "2026-10-09 13:14",
+  "capturedAt": "2026-10-09T05:46:41.863Z",
+  "capturedAtBJ": "2026-10-09 13:46",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 34,
+    "count": 44,
     "srcDate": "2026-10-09",
     "rows": [
       {
+        "code": "002811",
+        "name": "郑中设计",
+        "reason": "半导体投资+室内设计+软装增长",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "605287",
+        "name": "德才股份",
+        "reason": "AI漫剧+火山引擎合作+建筑装饰",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "601566",
+        "name": "九牧王",
+        "reason": "男裤龙头+零售消费+太空裤",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "605177",
+        "name": "东亚药业",
+        "reason": "抗生素+头孢产品+制剂一体化",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "002912",
+        "name": "中新赛克",
+        "reason": "AI安全+网络安全+数据安全",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "002105",
+        "name": "信隆健康",
+        "reason": "外骨骼机器人+自行车配件+半年报扭亏",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "601519",
+        "name": "大智慧",
+        "reason": "互联网金融+湘财吸收合并+人工智能",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "600621",
+        "name": "华鑫股份",
+        "reason": "证券经纪+金融科技+上海国资",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "600354",
+        "name": "敦煌种业",
+        "reason": "玉米种业+核心品种+商业化育种",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "000420",
+        "name": "吉林化纤",
+        "reason": "碳纤维+粘胶长丝+国企",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "601069",
+        "name": "西部黄金",
+        "reason": "黄金业务+股东合并+业绩增长",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
         "code": "603067",
         "name": "振华股份",
-        "reason": "SOFC材料+金属铬扩产+铬盐龙头",
+        "reason": "SOFC+金属铬+铬盐龙头",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -59,25 +147,9 @@
         "huanshou": null
       },
       {
-        "code": "300340",
-        "name": "科恒股份",
-        "reason": "固态电池装备+正极材料+珠海国资",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
         "code": "000546",
         "name": "金圆股份",
         "reason": "盐湖提锂+锂矿布局+固废危废资源化",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "002709",
-        "name": "天赐材料",
-        "reason": "H股上市+电解液+固态电池+业绩增长",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -251,6 +323,14 @@
         "huanshou": null
       },
       {
+        "code": "002242",
+        "name": "九阳股份",
+        "reason": "机器人投资+厨房小家电+内容电商",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
         "code": "001300",
         "name": "三柏硕",
         "reason": "蹦床+健身器材+外销",
@@ -285,16 +365,17 @@
     ]
   },
   "pools": {
-    "zt": 35,
-    "zb": 14,
-    "dt": 8,
+    "zt": 44,
+    "zb": 16,
+    "dt": 7,
     "max_lb": 9,
-    "lb2": 10,
+    "lb2": 11,
     "zt_codes": [
       "002058",
       "600241",
       "600825",
       "001300",
+      "002242",
       "600812",
       "002733",
       "002692",
@@ -316,29 +397,37 @@
       "002675",
       "600408",
       "300981",
-      "002709",
       "000546",
-      "300340",
       "300369",
       "600865",
       "600882",
       "002212",
       "605188",
       "603067",
-      "601069"
+      "601069",
+      "600354",
+      "000420",
+      "600621",
+      "601519",
+      "002105",
+      "002912",
+      "605177",
+      "601566",
+      "605287",
+      "605577"
     ],
-    "seal_pct": 71.4
+    "seal_pct": 73.3
   },
   "breadth": {
-    "up": 1587,
-    "down": 3569,
-    "flat": 131
+    "up": 1971,
+    "down": 3178,
+    "flat": 138
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-09 12:46",
+  "prevCapturedAtBJ": "2026-10-09 13:14",
   "prevPools": {
-    "zt": 27,
-    "zb": 15,
-    "seal_pct": 64.3
+    "zt": 35,
+    "zb": 14,
+    "seal_pct": 71.4
   }
 }
