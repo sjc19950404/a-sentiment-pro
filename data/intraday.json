@@ -4,6 +4,7 @@
  "tradeDate": "2026-10-09",
  "capturedAt": "2026-10-09T19:33:01.797Z",
  "capturedAtBJ": "2026-10-09 14:53",
+ "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
  "hot": {
   "count": 69,
   "srcDate": "2026-10-09",
