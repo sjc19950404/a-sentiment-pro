@@ -1,0 +1,753 @@
+{
+ "schema_version": "1.0",
+ "report_type": "intraday",
+ "trigger": "schedule",
+ "urgent": false,
+ "date": "2026-10-09",
+ "generated_at": "2026-10-09T19:33:01.830Z",
+ "generated_by": "ci",
+ "status": "degraded",
+ "track": "A",
+ "data_health": {
+  "sources": {
+   "dual_track": "fresh",
+   "signals": "fresh",
+   "global": "fresh",
+   "backtest": "fresh",
+   "ops_alerts": "fresh",
+   "intraday": "fresh",
+   "paper_account": "missing"
+  }
+ },
+ "data_completeness": {
+  "date": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "grid_triggers": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "counter_trend_losses": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "pnl_daily": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "pnl_cumulative": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "max_drawdown_daily": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "trend_switch_hits": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "cost_ratio": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "slippage_avg": {
+   "source": "assumed",
+   "confidence": "assumed"
+  },
+  "slippage_source": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "regime": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "circuit_breaker": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "overseas": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "nav_realtime": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "approx": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "drawdown_vs_threshold": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "simulation_stock": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "ma20_degraded": {
+   "source": "derived",
+   "confidence": "measured"
+  }
+ },
+ "payload": {
+  "date": "2026-10-08",
+  "grid_triggers": null,
+  "counter_trend_losses": null,
+  "pnl_daily": -0.004997,
+  "pnl_cumulative": -0.019927,
+  "max_drawdown_daily": null,
+  "trend_switch_hits": 0,
+  "cost_ratio": null,
+  "slippage_avg": 0.0002,
+  "slippage_source": "assumed_constant",
+  "regime": {
+   "key": "recover",
+   "label": "回暖",
+   "cap": 0.5,
+   "position_range": "30%~50%"
+  },
+  "circuit_breaker": {
+   "dd_tier": null,
+   "hard_stop_triggered": null,
+   "risk_events": 0,
+   "note": "归档轨无账户日内回撤与止损记录，档位未知；ops-alerts 事件计数如上"
+  },
+  "overseas": [
+   {
+    "key": "a50",
+    "name": "富时中国A50期货",
+    "chgPct": -0.002817,
+    "state": "ok"
+   },
+   {
+    "key": "sox",
+    "name": "费城半导体指数",
+    "chgPct": -0.033861,
+    "state": "ok"
+   }
+  ],
+  "nav_realtime": null,
+  "approx": false,
+  "drawdown_vs_threshold": {
+   "dd_now": 0.141616,
+   "tier_edges": [
+    0.09,
+    0.15
+   ],
+   "distance_pp": 0.84,
+   "basis": "归档轨·运行回撤（非当日）"
+  },
+  "simulation_stock": {
+   "sentiment_cycle": {
+    "phase": "fermentation",
+    "phase_label": "发酵期",
+    "regime_raw": "recover",
+    "phase_source": "regime=recover · 分位 32.2 · 方向 up（recover 细分阈值 <30 为启动期）",
+    "limit_up_count": 43,
+    "highest_chain": 6,
+    "broken_limit_ratio": 0.4266666666666667,
+    "yesterday_chain_performance": 1.3,
+    "warning_signals": [
+     "昨涨停今日翻绿 49%、高位板晋级失败 40%，追高盈亏各半",
+     "大面 4 只：澳弘电子 -10%、协和电子 -10%、雪龙集团 -9.98%、中新赛克 -8.65%",
+     "宽度收窄（站上20日线仅 31.5%）"
+    ]
+   },
+   "position_suggestion": "neutral",
+   "pool_basis": "今日无符合条件标的（宁缺毋假，不凑数填充）；hot 强势榜（全市场筛选榜缺席的降级底座；≈涨停集中营，3-7% 带几乎恒空） 实时现算（每轮全量重算，不沿用上轮）：涨幅 3-7% · 量比 >2 · 未涨停未一字（pools.zt_codes）· 主力净流入为正 · 已滤昨日涨停 43 只黑名单；扫 69 只，剔除——带外 0 / 量比不足 0 / 已涨停 57 / 跌停 0 / 昨日涨停 0 / 净流出或无源 0 / 字段缺失 0；得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）；距收盘 7 分钟（<30）→ 趋势池自动降级为「明日观察池」（观察语义，不作当日买入依据——2026-10-10 用户指令）",
+   "candidate_pool": [],
+   "streak_pool": [
+    {
+     "code": "600825",
+     "name": "新华传媒",
+     "score": null,
+     "streak_score": 1,
+     "seal_amount": 1421176407,
+     "themes": [
+      "出版"
+     ],
+     "selection_reason": "9 连板",
+     "intraday_chg": 10.01,
+     "fundamentals": {
+      "roe": null,
+      "revenue_growth": null,
+      "net_profit_growth": null,
+      "pe": 306.79,
+      "pb": 5.21,
+      "peg": null,
+      "market_cap": null,
+      "moat_note": null
+     },
+     "data_completeness": {
+      "level": "full",
+      "missing": []
+     },
+     "fund_flow_note": "主力净流入 +142118 万（东财 push2 盘中实时）",
+     "scripts": [
+      {
+       "name": "A",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（600825，即时轨实时价判定）",
+       "position_ratio": 0.5,
+       "stop_loss": -0.08,
+       "take_profit": 0.16,
+       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+       "script_source": "template"
+      },
+      {
+       "name": "B",
+       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+       "position_ratio": 0.25,
+       "stop_loss": null,
+       "take_profit": null,
+       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+       "script_source": "template"
+      },
+      {
+       "name": "C",
+       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+       "position_ratio": 0.1,
+       "stop_loss": -0.05,
+       "take_profit": null,
+       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+       "script_source": "template"
+      }
+     ],
+     "risks": [
+      "连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）",
+      "连板高度越高，晋级失败风险越大（断板负反馈）"
+     ]
+    },
+    {
+     "code": "002242",
+     "name": "九阳股份",
+     "score": null,
+     "streak_score": 0.35,
+     "seal_amount": 74005656,
+     "themes": [
+      "小家电"
+     ],
+     "selection_reason": "5 连板",
+     "intraday_chg": 10.04,
+     "fundamentals": {
+      "roe": null,
+      "revenue_growth": null,
+      "net_profit_growth": null,
+      "pe": 173.11,
+      "pb": 3.57,
+      "peg": null,
+      "market_cap": null,
+      "moat_note": null
+     },
+     "data_completeness": {
+      "level": "full",
+      "missing": []
+     },
+     "fund_flow_note": "主力净流入 +7401 万（东财 push2 盘中实时）",
+     "scripts": [
+      {
+       "name": "A",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（002242，即时轨实时价判定）",
+       "position_ratio": 0.5,
+       "stop_loss": -0.08,
+       "take_profit": 0.16,
+       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+       "script_source": "template"
+      },
+      {
+       "name": "B",
+       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+       "position_ratio": 0.25,
+       "stop_loss": null,
+       "take_profit": null,
+       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+       "script_source": "template"
+      },
+      {
+       "name": "C",
+       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+       "position_ratio": 0.1,
+       "stop_loss": -0.05,
+       "take_profit": null,
+       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+       "script_source": "template"
+      }
+     ],
+     "risks": [
+      "连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）",
+      "连板高度越高，晋级失败风险越大（断板负反馈）"
+     ]
+    },
+    {
+     "code": "001336",
+     "name": "楚环科技",
+     "score": null,
+     "streak_score": 0.23,
+     "seal_amount": 336338541,
+     "themes": [
+      "环保设备"
+     ],
+     "selection_reason": "2 连板",
+     "intraday_chg": 10.02,
+     "fundamentals": {
+      "roe": null,
+      "revenue_growth": null,
+      "net_profit_growth": null,
+      "pe": 56.07,
+      "pb": 2.91,
+      "peg": null,
+      "market_cap": null,
+      "moat_note": null
+     },
+     "data_completeness": {
+      "level": "full",
+      "missing": []
+     },
+     "fund_flow_note": "主力净流入 +33634 万（东财 push2 盘中实时）",
+     "scripts": [
+      {
+       "name": "A",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（001336，即时轨实时价判定）",
+       "position_ratio": 0.5,
+       "stop_loss": -0.08,
+       "take_profit": 0.16,
+       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+       "script_source": "template"
+      },
+      {
+       "name": "B",
+       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+       "position_ratio": 0.25,
+       "stop_loss": null,
+       "take_profit": null,
+       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+       "script_source": "template"
+      },
+      {
+       "name": "C",
+       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+       "position_ratio": 0.1,
+       "stop_loss": -0.05,
+       "take_profit": null,
+       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+       "script_source": "template"
+      }
+     ],
+     "risks": [
+      "连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）",
+      "连板高度越高，晋级失败风险越大（断板负反馈）"
+     ]
+    },
+    {
+     "code": "600812",
+     "name": "华北制药",
+     "score": null,
+     "streak_score": 0.17,
+     "seal_amount": 119195793,
+     "themes": [
+      "化学制药"
+     ],
+     "selection_reason": "2 连板",
+     "intraday_chg": 10.04,
+     "fundamentals": {
+      "roe": null,
+      "revenue_growth": null,
+      "net_profit_growth": null,
+      "pe": 83.84,
+      "pb": 1.87,
+      "peg": null,
+      "market_cap": null,
+      "moat_note": null
+     },
+     "data_completeness": {
+      "level": "full",
+      "missing": []
+     },
+     "fund_flow_note": "主力净流入 +11920 万（东财 push2 盘中实时）",
+     "scripts": [
+      {
+       "name": "A",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（600812，即时轨实时价判定）",
+       "position_ratio": 0.5,
+       "stop_loss": -0.08,
+       "take_profit": 0.16,
+       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+       "script_source": "template"
+      },
+      {
+       "name": "B",
+       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+       "position_ratio": 0.25,
+       "stop_loss": null,
+       "take_profit": null,
+       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+       "script_source": "template"
+      },
+      {
+       "name": "C",
+       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+       "position_ratio": 0.1,
+       "stop_loss": -0.05,
+       "take_profit": null,
+       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+       "script_source": "template"
+      }
+     ],
+     "risks": [
+      "连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）",
+      "连板高度越高，晋级失败风险越大（断板负反馈）"
+     ]
+    },
+    {
+     "code": "002805",
+     "name": "丰元股份",
+     "score": null,
+     "streak_score": 0.16,
+     "seal_amount": 88444224,
+     "themes": [
+      "电池"
+     ],
+     "selection_reason": "2 连板",
+     "intraday_chg": 10.02,
+     "fundamentals": {
+      "roe": null,
+      "revenue_growth": null,
+      "net_profit_growth": null,
+      "pe": -56.71,
+      "pb": 5.43,
+      "peg": null,
+      "market_cap": null,
+      "moat_note": null
+     },
+     "data_completeness": {
+      "level": "full",
+      "missing": []
+     },
+     "fund_flow_note": "主力净流入 +8844 万（东财 push2 盘中实时）",
+     "scripts": [
+      {
+       "name": "A",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（002805，即时轨实时价判定）",
+       "position_ratio": 0.5,
+       "stop_loss": -0.08,
+       "take_profit": 0.16,
+       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+       "script_source": "template"
+      },
+      {
+       "name": "B",
+       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+       "position_ratio": 0.25,
+       "stop_loss": null,
+       "take_profit": null,
+       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+       "script_source": "template"
+      },
+      {
+       "name": "C",
+       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+       "position_ratio": 0.1,
+       "stop_loss": -0.05,
+       "take_profit": null,
+       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+       "script_source": "template"
+      }
+     ],
+     "risks": [
+      "连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）",
+      "连板高度越高，晋级失败风险越大（断板负反馈）"
+     ]
+    },
+    {
+     "code": "300530",
+     "name": "领湃科技",
+     "score": null,
+     "streak_score": 0.14,
+     "seal_amount": 38023007,
+     "themes": [
+      "电池"
+     ],
+     "selection_reason": "2 连板",
+     "intraday_chg": 20.02,
+     "fundamentals": {
+      "roe": null,
+      "revenue_growth": null,
+      "net_profit_growth": null,
+      "pe": -72.65,
+      "pb": 56.82,
+      "peg": null,
+      "market_cap": null,
+      "moat_note": null
+     },
+     "data_completeness": {
+      "level": "full",
+      "missing": []
+     },
+     "fund_flow_note": "主力净流入 +3802 万（东财 push2 盘中实时）",
+     "scripts": [
+      {
+       "name": "A",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（300530，即时轨实时价判定）",
+       "position_ratio": 0.5,
+       "stop_loss": -0.08,
+       "take_profit": 0.16,
+       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+       "script_source": "template"
+      },
+      {
+       "name": "B",
+       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+       "position_ratio": 0.25,
+       "stop_loss": null,
+       "take_profit": null,
+       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+       "script_source": "template"
+      },
+      {
+       "name": "C",
+       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+       "position_ratio": 0.1,
+       "stop_loss": -0.05,
+       "take_profit": null,
+       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+       "script_source": "template"
+      }
+     ],
+     "risks": [
+      "连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）",
+      "连板高度越高，晋级失败风险越大（断板负反馈）"
+     ]
+    },
+    {
+     "code": "600408",
+     "name": "安泰集团",
+     "score": null,
+     "streak_score": 0.14,
+     "seal_amount": 34150406,
+     "themes": [
+      "焦炭Ⅱ"
+     ],
+     "selection_reason": "2 连板",
+     "intraday_chg": 9.88,
+     "fundamentals": {
+      "roe": null,
+      "revenue_growth": null,
+      "net_profit_growth": null,
+      "pe": -13.55,
+      "pb": 3.36,
+      "peg": null,
+      "market_cap": null,
+      "moat_note": null
+     },
+     "data_completeness": {
+      "level": "full",
+      "missing": []
+     },
+     "fund_flow_note": "主力净流入 +3415 万（东财 push2 盘中实时）",
+     "scripts": [
+      {
+       "name": "A",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（600408，即时轨实时价判定）",
+       "position_ratio": 0.5,
+       "stop_loss": -0.08,
+       "take_profit": 0.16,
+       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+       "script_source": "template"
+      },
+      {
+       "name": "B",
+       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+       "position_ratio": 0.25,
+       "stop_loss": null,
+       "take_profit": null,
+       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+       "script_source": "template"
+      },
+      {
+       "name": "C",
+       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+       "position_ratio": 0.1,
+       "stop_loss": -0.05,
+       "take_profit": null,
+       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+       "script_source": "template"
+      }
+     ],
+     "risks": [
+      "连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）",
+      "连板高度越高，晋级失败风险越大（断板负反馈）"
+     ]
+    },
+    {
+     "code": "600400",
+     "name": "红豆股份",
+     "score": null,
+     "streak_score": 0.14,
+     "seal_amount": 32983772,
+     "themes": [
+      "服装家纺"
+     ],
+     "selection_reason": "2 连板",
+     "intraday_chg": 9.94,
+     "fundamentals": {
+      "roe": null,
+      "revenue_growth": null,
+      "net_profit_growth": null,
+      "pe": -21.69,
+      "pb": 7.1,
+      "peg": null,
+      "market_cap": null,
+      "moat_note": null
+     },
+     "data_completeness": {
+      "level": "full",
+      "missing": []
+     },
+     "fund_flow_note": "主力净流入 +3298 万（东财 push2 盘中实时）",
+     "scripts": [
+      {
+       "name": "A",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（600400，即时轨实时价判定）",
+       "position_ratio": 0.5,
+       "stop_loss": -0.08,
+       "take_profit": 0.16,
+       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+       "script_source": "template"
+      },
+      {
+       "name": "B",
+       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+       "position_ratio": 0.25,
+       "stop_loss": null,
+       "take_profit": null,
+       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+       "script_source": "template"
+      },
+      {
+       "name": "C",
+       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+       "position_ratio": 0.1,
+       "stop_loss": -0.05,
+       "take_profit": null,
+       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+       "script_source": "template"
+      }
+     ],
+     "risks": [
+      "连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）",
+      "连板高度越高，晋级失败风险越大（断板负反馈）"
+     ]
+    },
+    {
+     "code": "001300",
+     "name": "三柏硕",
+     "score": null,
+     "streak_score": 0.14,
+     "seal_amount": 17108318,
+     "themes": [
+      "文娱用品"
+     ],
+     "selection_reason": "2 连板",
+     "intraday_chg": 9.99,
+     "fundamentals": {
+      "roe": null,
+      "revenue_growth": null,
+      "net_profit_growth": null,
+      "pe": -36.83,
+      "pb": 3.82,
+      "peg": null,
+      "market_cap": null,
+      "moat_note": null
+     },
+     "data_completeness": {
+      "level": "full",
+      "missing": []
+     },
+     "fund_flow_note": "主力净流入 +1711 万（东财 push2 盘中实时）",
+     "scripts": [
+      {
+       "name": "A",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（001300，即时轨实时价判定）",
+       "position_ratio": 0.5,
+       "stop_loss": -0.08,
+       "take_profit": 0.16,
+       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+       "script_source": "template"
+      },
+      {
+       "name": "B",
+       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+       "position_ratio": 0.25,
+       "stop_loss": null,
+       "take_profit": null,
+       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+       "script_source": "template"
+      },
+      {
+       "name": "C",
+       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+       "position_ratio": 0.1,
+       "stop_loss": -0.05,
+       "take_profit": null,
+       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+       "script_source": "template"
+      }
+     ],
+     "risks": [
+      "连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）",
+      "连板高度越高，晋级失败风险越大（断板负反馈）"
+     ]
+    }
+   ],
+   "streak_pool_basis": "连板池实时现算（hot 强势榜（全市场筛选榜缺席的降级底座；≈涨停集中营，3-7% 带几乎恒空） ∩ zt_lb 连板≥2，白名单=昨日涨停且今日非一字）：连板≥2（昨日涨停蕴含）· 今日非一字（fbt>09:25）· 量比 >2 · 主力净流入为正——不套涨幅带、不剔已涨停（连板池语义，2026-10-10 用户指令）；zt_lb 连板≥2 共 12 只，宇宙在榜 12 只，剔除——一字 0 / 量比不足 3 / 净流出或无源 0 / 字段缺失 0；梯队分=连板高度0.6+主力净流入0.4（缺席重归一，与趋势池量价评分物理独立）；封单质量=seal_amount（东财 fund）",
+   "trend_pool_mode": "tomorrow_watch",
+   "snapshotAtBJ": "2026-10-09 14:53",
+   "live_emotion": null,
+   "simulation_positions": null,
+   "review": null
+  },
+  "ma20_degraded": false,
+  "status": "degraded"
+ },
+ "missing_notes": [
+  {
+   "field": "grid_triggers / grid_trigger_detail",
+   "reason": "系统无网格交易引擎（grid_parallel 是参数寻优并行器，非交易网格）",
+   "ref": "src/grid_parallel.js"
+  },
+  {
+   "field": "counter_trend_losses / counter_trend_loss_ratio",
+   "reason": "无逆势加仓/亏损记账；参考 divergence.posGap（保费敞口）",
+   "ref": "data/paper/dual_track_latest.json"
+  },
+  {
+   "field": "max_drawdown_daily / fee_total / net_pnl / cost_ratio / slippage 实测",
+   "reason": "个人账本成交与日内 equity 仅存在于浏览器 localStorage（即时轨一等公民，决议 1）",
+   "ref": "paper_ui.js __paperSnapshot"
+  }
+ ],
+ "concepts": {
+  "trend_switch": "regime 状态机（src/regime.js）",
+  "circuit_breaker": "DD_TIERS + HARD_STOP_LOSS + ops-alerts（src/paper.js / src/opsalerts.js）"
+ },
+ "sources": {
+  "date": "data/paper/dual_track_latest.json::day.date",
+  "pnl_daily": "data/paper/dual_track_latest.json::day.dayReturns.A（即时轨覆盖为账本 nav 当日变化）",
+  "pnl_cumulative": "data/paper/dual_track_latest.json::summary.trackA.total（即时轨覆盖为 accountStats.ret）",
+  "close_drawdown": "data/paper/dual_track_latest.json::summary.trackA.maxDd",
+  "max_drawdown_daily": "即时轨当日 equity 序列峰谷（S3-1 注入：opts.drawdownDaily ← window.__intradayLive.drawdownDaily ← src/intraday_live.js::dailyDrawdown）",
+  "trend_switch_hits": "data/signals-latest.json::regime.turns",
+  "overseas": "data/global.json::quotes（A50 + 费半；美股仅美东 16:30 后可信）",
+  "backtest_deviation": "data/backtest.json::v52 vs dual_track summary.trackA",
+  "market_context": "data/signals-latest.json::latest / breadth / pain / seats",
+  "circuit_breaker": "data/ops-alerts-latest.json::events + src/paper.js::DD_TIERS",
+  "regime": "data/paper/dual_track_latest.json::day.regime + signals.dailyReport（仓位区间）",
+  "slippage_avg": "src/paper.js::DEFAULT_SLIP（归档轨假设常量）/ orders×trades 逐笔实测（即时轨）",
+  "cost_ratio": "即时轨当日 trades 费用合计 / 成交额合计；归档轨无成交明细 → null",
+  "win_rate": "口径 = 剧本命中次数 / 总剧本执行次数（决议 4，2026-10-06 拍板）；剧本绑定记录（airpt_sim_bindings_v1）缺席 → null，不降级为日收益口径"
+ },
+ "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。"
+}
