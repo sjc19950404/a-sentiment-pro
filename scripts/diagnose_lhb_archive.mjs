@@ -4,12 +4,17 @@
 //   · summary.lhb_daily_net（当日榜，权威）→ 日度因子 s_net / 净买率 / 新股扰动 / 近5日序列 / 主线资金占比
 //   · summary.lhb_all_net  （全量，含区间累计榜）→ 仅诊断展示，禁止参与任何计算
 // 人工阅读或批量重算时把两者混用，会造成因子偏移（2026-09-30：511 亿事件 + s_net 被区间累计值顶替）。
-// 本脚本在 CI 里拦住三类回归：
+// 本脚本拦住三类回归：
 //   A. 源码重新引入歧义字段名 / 在前端或脚本里另写一份区间榜判别式
 //   B. 存档字段缺失、自相矛盾，或与原始记录对不上（说明被手改或口径漂移）
 //   C. 因子 s_net 与当日榜净额脱钩（口径再次被换掉）
 //
-// 用法：node scripts/audit_lhb_caliber.mjs
+// 定位（2026-10-09 转正）：本地/按需诊断工具——「第二双眼睛」，不进 CI 主链路。
+//   与 scripts/audit_lhb_caliber.mjs（CI 正式审计）为两套独立口径，交叉验证：
+//   正式审计是 CI 守门员（每日跑、绿才放行）；本诊断覆盖更细的事后核查
+//   （存档一致性/复算链路/源码卫生），按需手动跑，输出恒不阻断任何流程。
+//
+// 用法：node scripts/diagnose_lhb_archive.mjs
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -40,12 +45,10 @@ const walk = (dir, acc = []) => {
   return acc;
 };
 const files = [...SRC_DIRS.flatMap((d) => walk(d)), 'app.js', 'index.html']
-  .filter((f) => f !== path.join('scripts', 'audit_lhb_caliber.mjs')) // 本文件自带判别式探针，跳过自检
-  // 常驻诊断工具 diagnose_lhb_archive.mjs（原 _audit_main_probe.mjs，2026-10-09 转正）：
-  // 自带判别式与字面量特征（AGG_NAMES/歧义字段名/新股正则均为检查器素材非生产判据），
-  // 扫它必自指。原 _ 前缀豁免随重命名失效，故在 files 构造层显式豁免——与豁免本审计
-  // 自身同理：检查器不检查检查器。它定位为本地/按需工具，不进 CI 主链路。
-  .filter((f) => f !== path.join('scripts', 'diagnose_lhb_archive.mjs'));
+  .filter((f) => f !== path.join('scripts', 'audit_lhb_caliber.mjs')) // 正式审计自带判别式，互不扫描
+  .filter((f) => f !== path.join('scripts', 'diagnose_lhb_archive.mjs')); // 本诊断自带判别式与字面量
+  // 特征（AGG_NAMES/歧义字段名/新股正则均为检查器素材），扫自己必自指——files 构造层
+  // 豁免后，下方 A1/A2/A3/B3 的全部源码扫描都跳过本文件（检查器不检查检查器）。
 // 唯一允许提到歧义字段名的文件：它是负责把该字段从存量里清除掉的「清扫器」（只 delete，不读写）
 const PURGER = path.join('scripts', 'recalc_lhb_daily.mjs');
 const hits = [];
@@ -353,27 +356,16 @@ summarize('席位明细已净化（不含「自然人/中小投资者/机构」�
 
 // 源码守卫：净化判据只在 src/seats.js 出现一次，别处必须 import。
 // 注意：① 只查**代码**，文案/口径备注里提到这些词是合理的（报告要解释剔了什么）；
-//       ② 跳过临时探针脚本（_ 前缀）与本审计自身——它们本来就是来复现/检查这件事的；
-//       ③ app.js **有守卫豁免**（2026-10-09）：其 seatsMod() 内联副本是有意设计——
-//         index.html 的 window.Seats 是异步模块脚本，未就绪窗口期若无可过滤的降级
-//         副本，H-3 类别汇总行会顶着 23 倍虚增金额上屏（2026-10-07 实录）。豁免的
-//         合法性**不来自形式，来自 test/seats_parity.test.mjs 的行为守卫**——提取
-//         app.js 真实函数文本在 vm 里强制走降级分支，与主模块逐字比对 + 污染行剔除
-//         绝对断言。守卫被删/被弱化 → 下方检查失败，豁免自动失效。
+//       ② 本诊断与正式审计已在 files 构造层互豁免（检查器不检查检查器）；
+//       ③ app.js 有守卫豁免（2026-10-09 f19a1fc）：seatsMod() 内联降级副本是有意设计，
+//         合法性由 test/seats_parity.test.mjs 行为守卫背书（提取真实函数文本 + vm 强制
+//         降级分支 + 污染行剔除绝对断言）——与正式审计同口径放行，不重复设卡。
 {
-  const PARITY = path.join(ROOT, 'test', 'seats_parity.test.mjs');
-  const parityOk = existsSync(PARITY) && (() => {
-    const t = readFileSync(PARITY, 'utf8');
-    return /function seatsMod\(\)/.test(t)   // 提取 app.js 真实函数文本（非复制品）
-      && /window:\s*\{\}/.test(t)             // vm 强制走降级分支（window.Seats 缺位）
-      && /确实被剔除/.test(t);                 // 污染行剔除绝对断言（防两边同错的假绿）
-  })();
-  check('豁免前提：app.js 席位降级副本受 seats_parity.test.mjs 行为守卫（真实文本提取 + 降级分支 + 剔除绝对断言）',
-    parityOk, parityOk ? '守卫三要素齐备：提取真实函数文本 / vm 强制降级分支 / 污染剔除绝对断言' : '守卫测试缺失或被弱化——app.js 豁免不成立，须恢复重复判据扫描或修复守卫');
   const GLOBAL = files.filter((f) => !/seats\.js$/.test(f)
     && !/audit_lhb_caliber\.mjs$/.test(f)
-    && !/(^|\/)_/.test(f)
-    && f !== 'app.js'); // 受 parity 守卫的有意降级副本（见上），非无凭据的重复实现
+    && !/diagnose_lhb_archive\.mjs$/.test(f)
+    && !/(^|[\\/])_/.test(f) // [\\/] 跨平台：Windows path.join 产生反斜杠，只认 / 会漏豁免
+    && f !== 'app.js'); // 受 seats_parity 行为守卫的有意降级副本（同 f19a1fc 决策）
   const dup = [];
   for (const rel of GLOBAL) {
     const abs = path.join(ROOT, rel);
@@ -1182,10 +1174,8 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     `${rawDisk.all_days.filter((d) => d.lhb != null).length} 天顶层带 lhb`);
   // ⚠ 修正常见误读：提子对**主档体积零收益**（只是改名 lhb → _sub.lhb，多 7 字节/天）。
   //   真正省体积的是码表这一级。此处锁住"提子不得让体积回涨"，防止将来把它当省钱手段。
-  // 阈值对齐（2026-10-09）：原 <6MB 是码表上线时（档约 4.6MB）按当时体积留的余量，
-  //   数据自然增长到 6.27MB 后成了误报——全档各字段（_sub/summary/industry…）均为
-  //   有效数据。红线以 B19 的 <7MB（体积纪律：防派生字段翻倍）为准，两处同阈值
-  //   同口径，不留"两个红线"的分叉空间。
+  // 阈值对齐（2026-10-09 f19a1fc）：原 <6MB 是码表上线时（档约 4.6MB）留的余量，数据
+  //   自然增长到 6.27MB 后成误报；红线统一 <7MB（与下方 B19 体积纪律同口径，不分叉）。
   const rawMb = Buffer.byteLength(readFileSync(ARCHIVE, 'utf8')) / 1048576;
   check('切片：主档体积 < 7MB（与 B19 体积纪律同红线；码表是唯一有效手段，提子只是改名）',
     rawMb < 7, `${rawMb.toFixed(2)}MB`);
@@ -2348,8 +2338,8 @@ try { checkVolume(); } catch (e) {
 // ── C. 结论 ────────────────────────────────────────────────────────────────
 if (warns.length) for (const w of warns) console.log(`⚠ ${w}`);
 if (fails.length) {
-  console.error(`\n[audit-lhb-caliber] 失败 ${fails.length} 项：${fails.join('、')}`);
+  console.error(`\n[diagnose-lhb-archive] 失败 ${fails.length} 项：${fails.join('、')}`);
   console.error('提示：若为存档问题，用 node scripts/recalc_lhb_daily.mjs 全档重算；若为源码问题，禁止自行相加，走 src/lhb.js。');
   process.exit(1);
 }
-console.log(`\n[audit-lhb-caliber] 通过：${days.length} 个交易日、双口径可重现、因子锁定当日榜口径。`);
+console.log(`\n[diagnose-lhb-archive] 通过：${days.length} 个交易日、双口径可重现、因子锁定当日榜口径。`);
