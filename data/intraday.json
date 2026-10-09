@@ -2,14 +2,126 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-09",
-  "capturedAt": "2026-10-09T05:56:27.109Z",
-  "capturedAtBJ": "2026-10-09 13:56",
+  "capturedAt": "2026-10-09T06:19:53.821Z",
+  "capturedAtBJ": "2026-10-09 14:19",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 45,
+    "count": 59,
     "srcDate": "2026-10-09",
     "rows": [
+      {
+        "code": "001330",
+        "name": "博纳影业",
+        "reason": "AI短剧+AIGC+电影制作+院线影院",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "688152",
+        "name": "麒麟信安",
+        "reason": "信息安全+国产操作系统+智算一体机",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "002181",
+        "name": "粤传媒",
+        "reason": "AI视频+微短剧+体育传媒",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "603533",
+        "name": "掌阅科技",
+        "reason": "AI短剧+短剧出海+数字阅读",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "300364",
+        "name": "中文在线",
+        "reason": "AI短剧+AI视频+海外短剧",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "002317",
+        "name": "众生药业",
+        "reason": "减肥药+脂肪肝药+创新药",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "601811",
+        "name": "新华文轩",
+        "reason": "教科书发行+数字教育+收购整合",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "603232",
+        "name": "格尔软件",
+        "reason": "AI安全+抗量子密码+PKI安全",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "000892",
+        "name": "欢瑞世纪",
+        "reason": "AI漫剧+互动影游+影视制作",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "000710",
+        "name": "贝瑞基因",
+        "reason": "AI医疗+三代测序+基因检测",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "603096",
+        "name": "新经典",
+        "reason": "图书出版+AI应用+内容IP",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "002082",
+        "name": "ST万邦",
+        "reason": "创新药+神经用药+协议转让",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "603838",
+        "name": "*ST四通",
+        "reason": "陶瓷制造+锆钛精炼+摘帽申请",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "601929",
+        "name": "吉视传媒",
+        "reason": "智慧广电+AI微短剧+AI应用+算力租赁",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
       {
         "code": "601595",
         "name": "上海电影",
@@ -22,6 +134,14 @@
         "code": "605577",
         "name": "龙版传媒",
         "reason": "AI漫剧+出版发行+黑龙江国资",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "002811",
+        "name": "郑中设计",
+        "reason": "半导体投资+室内设计+软装增长",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -54,14 +174,6 @@
         "code": "002912",
         "name": "中新赛克",
         "reason": "AI安全+网络安全+数据安全",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "002105",
-        "name": "信隆健康",
-        "reason": "外骨骼机器人+自行车配件+半年报扭亏",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -373,9 +485,9 @@
     ]
   },
   "pools": {
-    "zt": 46,
+    "zt": 58,
     "zb": 16,
-    "dt": 10,
+    "dt": 5,
     "max_lb": 9,
     "lb2": 11,
     "zt_codes": [
@@ -387,6 +499,7 @@
       "600812",
       "002733",
       "002692",
+      "601811",
       "605136",
       "600207",
       "605399",
@@ -417,27 +530,38 @@
       "000420",
       "600621",
       "601519",
-      "002105",
       "002912",
       "605177",
+      "002811",
       "601566",
       "605287",
       "605577",
       "601595",
-      "601929"
+      "601929",
+      "603096",
+      "000710",
+      "000892",
+      "603232",
+      "002317",
+      "300364",
+      "603533",
+      "002181",
+      "688152",
+      "001330",
+      "002343"
     ],
-    "seal_pct": 74.2
+    "seal_pct": 78.4
   },
   "breadth": {
-    "up": 1967,
-    "down": 3172,
-    "flat": 148
+    "up": 3113,
+    "down": 2042,
+    "flat": 132
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-09 13:46",
+  "prevCapturedAtBJ": "2026-10-09 13:56",
   "prevPools": {
-    "zt": 44,
+    "zt": 46,
     "zb": 16,
-    "seal_pct": 73.3
+    "seal_pct": 74.2
   }
 }
