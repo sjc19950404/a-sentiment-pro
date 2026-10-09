@@ -12,7 +12,10 @@
 //   · 未配置 OPS_WEBHOOK → 静默跳过（200 + pushed:false，本地零打扰）；
 //   · 内容指纹去重（同稳定域哈希，KV 存 30 天）——同内容重推被拦；
 //   · urgent（trigger ≠ 'schedule'，决议 3 四类事件）免指纹直达；
-//   · fetch 失败不记指纹 → 调用方重试自愈；
+//   · 指数退避重试（2026-10-10 通道加固）：瞬时 5xx/网络抖动/企微系统繁忙
+//     2s→4s→8s 就地重试；白名单外（4xx/93xxx）零重试不消耗；
+//   · 重试耗尽不丢消息：失败信封落 KV failed_pushes（TTL 7 天），下次任意
+//     推送请求经 ctx.waitUntil 后台自动补推（不阻塞本次推送）；
 //   · 企微静默丢包判据：HTTP 2xx ≠ 送达——body errcode≠0（93xxx：key 失效/
 //     群变更/机器人被移除）视为失败，不记指纹（对齐 ai_report_push.js）；
 //   · 滥用面三闸：来源校验（ALLOWED_ORIGIN）/ 请求体上限 / 每日推送上限。
@@ -29,6 +32,100 @@ export const PROXY_CONSTS = {
   DAILY_CAP: 100,                 // 每日推送上限（KV 计数兜底，防代理被滥用刷量）
   REPORT_TYPES: ['pre_market', 'intraday', 'post_market', 'weekly'],
 };
+
+// ── 通道加固（2026-10-10 用户指令第二轮）：重试退避 + failed_pushes 落盘 + 补推 ──
+export const RETRY_CONSTS = {
+  BACKOFF_MS: [2000, 4000, 8000], // 指数退避：2s → 4s → 8s（1 次首发 + 3 次重试）
+  RETRYABLE_ERRCODES: [-1],       // 企微 errcode -1 = 系统繁忙（官方判据建议重试）；93xxx 参数/配置错误不重试
+  FAILED_TTL_S: 7 * 86400,         // failed_pushes 落盘保存 7 天（过期即弃，防无限堆积）
+  REPLAY_LIMIT: 5,                // 单轮补推上限（防失败堆积风暴一次灌爆群）
+};
+
+/** 可重试白名单：网络异常（fetch throw）/ 5xx / 429 / 企微系统繁忙（errcode -1）
+ *  → 瞬时，重试可自愈；4xx 参数错误 / 93xxx → 永久，重试只是无效消耗（不重试，
+ *  但同样落 failed_pushes——换 key / 修配置后补推仍能救回，不丢消息）。 */
+export function isRetryable(outcome = {}) {
+  if (outcome.errcode != null) return RETRY_CONSTS.RETRYABLE_ERRCODES.includes(outcome.errcode);
+  if (outcome.httpStatus != null) return outcome.httpStatus === 429 || outcome.httpStatus >= 500;
+  return true; // fetch throw（网络异常）按瞬时处理
+}
+
+/**
+ * 指数退避发送（2s → 4s → 8s）：瞬时失败逐次退避重试，白名单外失败立即返回。
+ * @returns {{ok:boolean, res?:object, wechat?:object, threw?:Error,
+ *   attempts:number, retryable:boolean}} ok=true 才记指纹；false 由调用方落
+ *   failed_pushes（重试耗尽不丢消息）。
+ */
+export async function sendWithRetry(fetchImpl, url, init, opts = {}) {
+  const backoff = opts.backoffMs ?? RETRY_CONSTS.BACKOFF_MS;
+  const sleep = opts.sleepImpl ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
+  const onAttempt = opts.onAttempt ?? null;
+  let attempt = 0;
+  for (;;) {
+    attempt += 1;
+    try {
+      const res = await fetchImpl(url, init);
+      let wechat = {};
+      try {
+        if (typeof res?.json === 'function') wechat = await res.json();
+        else if (typeof res?.text === 'function') { try { wechat = JSON.parse(await res.text()); } catch { wechat = {}; } }
+      } catch { wechat = {}; }
+      const errcode = wechat?.errcode;
+      if (res.ok && errcode === undefined) return { ok: true, res, wechat, attempts: attempt, retryable: false };
+      if (res.ok && errcode === 0) return { ok: true, res, wechat, attempts: attempt, retryable: false };
+      const retryable = isRetryable({ httpStatus: res.status, errcode: errcode ?? null });
+      if (retryable && attempt <= backoff.length) {
+        if (onAttempt) onAttempt({ attempt, retryable, httpStatus: res.status, errcode: errcode ?? null });
+        await sleep(backoff[attempt - 1]);
+        continue;
+      }
+      return { ok: false, res, wechat, attempts: attempt, retryable };
+    } catch (e) {
+      if (attempt <= backoff.length) {
+        if (onAttempt) onAttempt({ attempt, retryable: true, error: e?.message ?? String(e) });
+        await sleep(backoff[attempt - 1]);
+        continue;
+      }
+      return { ok: false, threw: e, attempts: attempt, retryable: true };
+    }
+  }
+}
+
+/** 补推（ctx.waitUntil 后台执行，不阻塞本次推送）：遍历 failed:* 落盘信封，
+ *  非 urgent 且期间已有同指纹直推成功的 → 弃（防重复进群）；其余照送，
+ *  成功即清账。单轮上限 REPLAY_LIMIT。 */
+export async function replayFailedPushes(env, opts = {}) {
+  const kv = env?.PUSH_STATE ?? null;
+  if (!kv) return { replayed: 0, note: '无 KV 绑定，无账可补' };
+  const url = env?.OPS_WEBHOOK ? sanitizeWebhookUrl(env.OPS_WEBHOOK) : null;
+  if (!url) return { replayed: 0, note: 'webhook 未配置/非法，无通道可补' };
+  const fetchImpl = opts.fetchImpl ?? (typeof fetch === 'function' ? fetch : null);
+  if (!fetchImpl) return { replayed: 0, note: '当前环境无 fetch' };
+  let listed;
+  try { listed = await kv.list({ prefix: 'failed:' }); } catch { return { replayed: 0, note: 'KV list 故障，本轮跳过' }; }
+  const keys = (listed?.keys ?? []).slice(0, opts.limit ?? RETRY_CONSTS.REPLAY_LIMIT);
+  let replayed = 0; let skippedDup = 0; const remained = [];
+  for (const { name } of keys) {
+    let entry = null;
+    try { entry = JSON.parse((await kv.get(name)) || 'null'); } catch { entry = null; }
+    if (!entry?.report) { try { await kv.delete(name); } catch { /* 脏账清不掉留着下轮 */ } continue; }
+    const fp = proxyFingerprint(entry.report);
+    const urgent = entry.report?.trigger && entry.report.trigger !== 'schedule';
+    if (!urgent) {
+      let dup = false;
+      try { dup = Boolean(await kv.get(`fp:${fp}`)); } catch { dup = false; }
+      if (dup) { skippedDup += 1; try { await kv.delete(name); } catch { /* 同上 */ } continue; }
+    }
+    const sent = await sendWithRetry(fetchImpl, url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ msgtype: 'text', text: { content: renderPushText(entry.report) } }),
+    }, { sleepImpl: opts.sleepImpl });
+    if (sent.ok) { replayed += 1; try { await kv.delete(name); } catch { /* 下轮幂等再清 */ } }
+    else remained.push({ key: name, attempts: sent.attempts });
+  }
+  return { replayed, skippedDup, remaining: remained.length + Math.max(0, (listed?.keys ?? []).length - keys.length) };
+}
 
 /** 稳定域抽取（与 ai_report_push.js::fingerprintOf 同域：易变字段剔除）。 */
 function stableOf(report) {
@@ -86,9 +183,10 @@ function bjDayKey(now) {
  * @param {Request} request 标准 Fetch Request
  * @param {{OPS_WEBHOOK?:string, ALLOWED_ORIGIN?:string, PUSH_STATE?:object}} env
  *   Worker 绑定：OPS_WEBHOOK=secret，ALLOWED_ORIGIN=var，PUSH_STATE=KV namespace
- * @param {{now?:Date, fetchImpl?:Function}} opts 测试注入
+ * @param {{now?:Date, fetchImpl?:Function, sleepImpl?:Function, ctx?:object}} opts
+ *   测试注入；ctx = Workers 执行上下文（waitUntil 后台补推，不阻塞本次推送）
  */
-export async function handlePush(request, env, { now = new Date(), fetchImpl } = {}) {
+export async function handlePush(request, env, { now = new Date(), fetchImpl, sleepImpl, ctx } = {}) {
   if (request.method !== 'POST') return json({ ok: false, reason: '仅接受 POST' }, 405, corsHeaders(env));
   const allow = env?.ALLOWED_ORIGIN;
   if (allow) {
@@ -122,6 +220,12 @@ export async function handlePush(request, env, { now = new Date(), fetchImpl } =
   if (!fetchFn) return json({ ok: false, reason: '当前环境无 fetch' }, 500, corsHeaders(env));
 
   const kv = env?.PUSH_STATE ?? null;
+  // 补推调度（ctx.waitUntil · 2026-10-10 通道加固）：上一轮重试耗尽落盘的失败
+  //   推送，本轮任意请求顺带补投——不 await，补推绝不阻塞本次推送；无 ctx
+  //   （本地直调/旧测试）→ 跳过不炸。
+  if (kv && ctx?.waitUntil) {
+    try { ctx.waitUntil(replayFailedPushes(env, { fetchImpl, sleepImpl }).catch(() => {})); } catch { /* waitUntil 抛错不挡主流程 */ }
+  }
   const fp = proxyFingerprint(report);
   const urgent = report?.trigger && report.trigger !== 'schedule'; // 决议 3：urgent 免指纹直达
   const fpKey = `fp:${fp}`;
@@ -136,36 +240,39 @@ export async function handlePush(request, env, { now = new Date(), fetchImpl } =
     } catch { /* KV 故障不拦推送 */ }
   }
 
-  try {
-    const res = await fetchFn(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ msgtype: 'text', text: { content: renderPushText(report) } }),
-    });
-    if (!res.ok) return json({ ok: false, reason: `webhook HTTP ${res.status}（未记指纹，可重试）` }, 502, corsHeaders(env));
-    // 企微静默丢包判据：HTTP 2xx 不代表送达——key 失效/群变更/机器人被移除时
-    //   企微返回 HTTP 200 + body errcode≠0（93xxx）。对齐 ai_report_push.js 同款
-    //   判据；mock fetch 可能没有 .json()/.text()（旧测试夹具），解析不出 body
-    //   时按「无 errcode」放行，非企微端点/旧 mock 不受影响。
-    let wechat = {};
-    try {
-      if (typeof res?.json === 'function') wechat = await res.json();
-      else if (typeof res?.text === 'function') { try { wechat = JSON.parse(await res.text()); } catch { wechat = {}; } }
-    } catch { wechat = {}; }
-    if (wechat.errcode !== undefined && wechat.errcode !== 0) {
-      // 企微拒收：不写 KV 指纹、不计日配额 → 调用方重试/换 key 后同内容可重推
-      return json({ ok: false, pushed: false, reason: `企微拒收 errcode ${wechat.errcode}: ${wechat.errmsg || '无 errmsg'}（未记指纹，可重试）`, fingerprint: fp }, 502, corsHeaders(env));
-    }
+  // 指数退避重试（2s → 4s → 8s · 2026-10-10 通道加固）：瞬时 5xx / 网络抖动 /
+  //   企微系统繁忙（errcode -1）就地自愈；白名单外（4xx / 93xxx）零重试。
+  //   终态失败一律 failed_pushes 落盘（TTL 7 天）——下次任意推送请求经
+  //   ctx.waitUntil 自动补推，重试耗尽不丢消息；指纹照旧不记（同内容可重推）。
+  const sent = await sendWithRetry(fetchFn, url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ msgtype: 'text', text: { content: renderPushText(report) } }),
+  }, { sleepImpl });
+  if (sent.ok) {
     if (kv) {
       try {
         if (!urgent) await kv.put(fpKey, now.toISOString(), { expirationTtl: PROXY_CONSTS.DEDUP_TTL_S });
         const used = (Number(await kv.get(dayKey)) || 0) + 1;
         await kv.put(dayKey, String(used), { expirationTtl: 86400 });
+        // 直推成功顺手清 failed 残账（防后台补推把同内容再送一遍进群）
+        try { await kv.delete(`failed:${fp}`); } catch { /* 清账失败不挡主流程，补推侧有 fp 去重兜底 */ }
       } catch { /* 记账失败不影响已完成的推送 */ }
     }
-    return json({ ok: true, pushed: true, fingerprint: fp, urgent }, 200, corsHeaders(env));
-  } catch (e) {
-    // 失败不记指纹 → 调用方重试即自愈（与 CI pushReports 同纪律）
-    return json({ ok: false, reason: `推送失败: ${e?.message || e}（未记指纹，可重试）` }, 502, corsHeaders(env));
+    return json({ ok: true, pushed: true, fingerprint: fp, urgent, attempts: sent.attempts }, 200, corsHeaders(env));
   }
+  const failReason = sent.wechat?.errcode !== undefined && sent.wechat.errcode !== 0
+    ? `企微拒收 errcode ${sent.wechat.errcode}: ${sent.wechat.errmsg || '无 errmsg'}`
+    : sent.threw ? `网络异常: ${sent.threw?.message || sent.threw}`
+      : `webhook HTTP ${sent.res?.status}`;
+  if (kv) {
+    try {
+      await kv.put(`failed:${fp}`, JSON.stringify({
+        failedAt: now.toISOString(), attempts: sent.attempts, retryable: sent.retryable, reason: failReason, report,
+      }), { expirationTtl: RETRY_CONSTS.FAILED_TTL_S });
+    } catch {
+      return json({ ok: false, pushed: false, reason: `${failReason}（重试 ${Math.max(0, sent.attempts - 1)} 次耗尽；⚠ failed_pushes 落盘亦失败，本次消息丢失）`, fingerprint: fp }, 502, corsHeaders(env));
+    }
+  }
+  return json({ ok: false, pushed: false, reason: `${failReason}（重试 ${Math.max(0, sent.attempts - 1)} 次耗尽，已落 failed_pushes，下次推送自动补推）`, fingerprint: fp }, 502, corsHeaders(env));
 }

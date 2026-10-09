@@ -411,7 +411,8 @@ export function generateIntraday(input, opts = {}) {
     dd_now: ddNow,
     tier_edges: DD_TIER_EDGES,
     distance_pp: ddNow != null ? Math.round(((nearest - ddNow) * 100 + Number.EPSILON) * 100) / 100 : null,
-    basis: input.live ? '即时轨 accountStats.drawdown（运行回撤）' : '归档轨 trackA.maxDd（运行回撤，非当日）',
+    // 全中文（2026-10-10 用户指令）：字段名 trackA.maxDd 不进推送文案——运行回撤语义不变
+    basis: input.live ? '即时轨·运行回撤' : '归档轨·运行回撤（非当日）',
   };
   // ── 盘中身份日期修复（2026-10-08 实录：盘中推送标「09-30」）────────────
   // 设计语义（test/intraday_live.test.mjs §4 注释 / build_ai_report.mjs
@@ -853,7 +854,7 @@ export function buildIntradayPool(intraday, opts = {}) {
   const tagCount = {};
   for (const r of universe) for (const t of tagsOf(r)) tagCount[t] = (tagCount[t] || 0) + 1;
   const maxTag = Math.max(1, ...Object.values(tagCount));
-  const rejected = { chg_band: 0, liangbi: 0, zt: 0, prev_zt: 0, main_net: 0, unverifiable: 0 };
+  const rejected = { chg_band: 0, liangbi: 0, zt: 0, dt: 0, prev_zt: 0, main_net: 0, unverifiable: 0 };
   const streakRejected = { yizi: 0, liangbi: 0, main_net: 0, unverifiable: 0 }; // 连板池轨剔除台账
   const cands = [];
   const streakCands = [];
@@ -888,6 +889,10 @@ export function buildIntradayPool(intraday, opts = {}) {
     //   信息量（zt_codes 是权威名单；chg≥9.9 是名单缺席时的兜底——正常涨停涨幅恒 >7）。
     //   一字板是今日涨停的子集（集合竞价封死），此闸一并覆盖「未涨停未一字」。
     if (ztCodes.has(String(r.code)) || chg >= 9.9) { rejected.zt++; continue; }
+    // 跌停硬剔（2026-10-10 P0 用户指令「isLimitDown 直接剔除」）：不再依赖涨幅带兜底——
+    //   台账显式归类（雪龙式断板跌停此前混在「带外」桶，归因不清）；-9.9 与校验层
+    //   同款主板口径（ST 跌停 -5% 仍由涨幅带自然拦下，不另设分档）。
+    if (chg <= -9.9) { rejected.dt++; continue; }
     // 昨日涨停黑名单（2026-10-10 P0 用户指令）：断板股（昨日涨停今日回落/跌停）当日
     //   若落进 3-7% 带即交叉污染趋势池（10-09 事故：雪龙 4 连板 -9.98% 跌停在池）。
     //   prev_zt_codes 缺席 → 不可核验即不剔（宁缺毋假，basis 报因）。
@@ -945,7 +950,7 @@ export function buildIntradayPool(intraday, opts = {}) {
   const basis = (pool.length ? '' : '今日无符合条件标的（宁缺毋假，不凑数填充）；')
     + `${universeName} 实时现算（每轮全量重算，不沿用上轮）：涨幅 ${F.chg_min}-${F.chg_max}% · 量比 >${F.liangbi_min} · 未涨停未一字（pools.zt_codes）· 主力净流入为正`
     + (prevZtCodes ? ` · 已滤昨日涨停 ${prevZtCodes.size} 只黑名单` : ' · ⚠ 昨日涨停黑名单缺席（旧快照无 prev_zt_codes）——断板股可能漏进趋势池')
-    + `；扫 ${universe.length} 只，剔除——带外 ${rejected.chg_band} / 量比不足 ${rejected.liangbi} / 已涨停 ${rejected.zt} / 昨日涨停 ${rejected.prev_zt} / 净流出或无源 ${rejected.main_net} / 字段缺失 ${rejected.unverifiable}；`
+    + `；扫 ${universe.length} 只，剔除——带外 ${rejected.chg_band} / 量比不足 ${rejected.liangbi} / 已涨停 ${rejected.zt} / 跌停 ${rejected.dt} / 昨日涨停 ${rejected.prev_zt} / 净流出或无源 ${rejected.main_net} / 字段缺失 ${rejected.unverifiable}；`
     + `得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）`
     + (tomorrowWatch ? `；距收盘 ${minsToClose} 分钟（<30）→ 趋势池自动降级为「明日观察池」（观察语义，不作当日买入依据——2026-10-10 用户指令）` : '');
   // ── 连板池装配（2026-10-10 双池拆分；P0 梯队评分）─────────────────────────────

@@ -10,7 +10,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import worker from '../worker/index.js';
-import { handlePush, handleHealth, proxyFingerprint, PROXY_CONSTS } from '../worker/push_proxy.js';
+import {
+  handlePush, handleHealth, proxyFingerprint, PROXY_CONSTS,
+  sendWithRetry, replayFailedPushes, isRetryable, RETRY_CONSTS,
+} from '../worker/push_proxy.js';
 import { renderPushText, PUSH_CONSTS } from '../src/push_text.js';
 
 // ── 夹具 ─────────────────────────────────────────────────────────────
@@ -28,6 +31,8 @@ const mkKV = () => {
     m,
     get: async (k) => m.get(k) ?? null,
     put: async (k, v) => { m.set(k, String(v)); },
+    delete: async (k) => { m.delete(k); },
+    list: async ({ prefix } = {}) => ({ keys: [...m.keys()].filter((k) => k.startsWith(prefix ?? '')).map((name) => ({ name })) }),
   };
 };
 const mkFetch = (ok = true, wechatBody = null) => {
@@ -170,9 +175,11 @@ test('每日上限 429；webhook 失败 502 且不记指纹（重试自愈）', 
   const capped = await handlePush(post(mkReport()), { OPS_WEBHOOK: 'https://wecom/example', PUSH_STATE: kv }, { now: NOW, fetchImpl: mkFetch().fn });
   assert.equal(capped.status, 429);
   const kv2 = mkKV(); const bad = mkFetch(false);
-  const fail = await handlePush(post(mkReport()), { OPS_WEBHOOK: 'https://wecom/example', PUSH_STATE: kv2 }, { now: NOW, fetchImpl: bad.fn });
+  const fail = await handlePush(post(mkReport()), { OPS_WEBHOOK: 'https://wecom/example', PUSH_STATE: kv2 }, { now: NOW, fetchImpl: bad.fn, sleepImpl: async () => {} });
   assert.equal(fail.status, 502);
+  assert.equal(bad.calls.length, 4, '首发 + 3 次退避重试（2s→4s→8s 注入假 sleep）');
   assert.ok(![...kv2.m.keys()].some((k) => k.startsWith('fp:')), '失败不记指纹');
+  assert.ok([...kv2.m.keys()].some((k) => k.startsWith('failed:')), '重试耗尽 → failed_pushes 落盘（不丢消息）');
   const retry = await handlePush(post(mkReport()), { OPS_WEBHOOK: 'https://wecom/example', PUSH_STATE: kv2 }, { now: NOW, fetchImpl: mkFetch(true).fn });
   assert.equal((await retry.json()).pushed, true, '重试同内容照推（自愈）');
 });
@@ -220,4 +227,86 @@ test('HTTP 200 + errcode 0（显式成功响应体）→ 正常送达', async ()
   const body = await r.json();
   assert.equal(body.pushed, true);
   assert.ok([...kv.m.keys()].some((k) => k.startsWith('fp:')), '成功记指纹');
+});
+
+// ── 11. 通道加固（2026-10-10 用户指令第二轮）：指数退避 + failed_pushes 补推 ──
+test('sendWithRetry：瞬时 5xx×2 → 第 3 次自愈；退避序列 2s→4s（白名单内）', async () => {
+  const sleeps = [];
+  const seq = [500, 500, 200];
+  const fn = async () => { const s = seq.shift(); return { ok: s === 200, status: s }; };
+  const r = await sendWithRetry(fn, 'https://x.test', {}, { sleepImpl: async (ms) => sleeps.push(ms) });
+  assert.equal(r.ok, true, '瞬时 5xx 重试可自愈');
+  assert.equal(r.attempts, 3);
+  assert.deepEqual(sleeps, [2000, 4000], '指数退避 2s → 4s（第 3 次成功不再睡 8s）');
+});
+
+test('isRetryable 白名单：4xx/93xxx 永久不重试（零无效消耗）；网络异常/-1/5xx/429 可重试', async () => {
+  assert.equal(isRetryable({ httpStatus: 400 }), false);
+  assert.equal(isRetryable({ httpStatus: 403 }), false);
+  assert.equal(isRetryable({ errcode: 93000 }), false, 'key 失效类重试无效');
+  assert.equal(isRetryable({ httpStatus: 500 }), true);
+  assert.equal(isRetryable({ httpStatus: 502 }), true);
+  assert.equal(isRetryable({ httpStatus: 429 }), true, '限频退避后再试');
+  assert.equal(isRetryable({ errcode: -1 }), true, '企微系统繁忙官方建议重试');
+  assert.equal(isRetryable({}), true, 'fetch throw（网络异常）按瞬时处理');
+  // 白名单外零重试实证：4xx 一次即终
+  let n = 0;
+  const r = await sendWithRetry(async () => { n += 1; return { ok: false, status: 400 }; }, 'https://x.test', {}, { sleepImpl: async () => {} });
+  assert.equal(r.attempts, 1);
+  assert.equal(n, 1);
+});
+
+test('重试耗尽 → failed_pushes 落盘；replayFailedPushes 恢复后自动补推清账', async () => {
+  const kv = mkKV();
+  const env = { OPS_WEBHOOK: 'https://wecom/example', PUSH_STATE: kv };
+  const always500 = async () => ({ ok: false, status: 500 });
+  const fail = await handlePush(post(mkReport()), env, { now: NOW, fetchImpl: always500, sleepImpl: async () => {} });
+  assert.equal(fail.status, 502);
+  const body = await fail.json();
+  assert.match(body.reason, /已落 failed_pushes/, '响应如实披露补推安排');
+  const failedKey = [...kv.m.keys()].find((k) => k.startsWith('failed:'));
+  assert.ok(failedKey, '信封落 KV');
+  const entry = JSON.parse(kv.m.get(failedKey));
+  assert.equal(entry.report.report_type, 'intraday', '失败信封含完整报告（补推可原样重发）');
+  assert.equal(entry.attempts, 4, '首发 + 3 次重试耗尽');
+  assert.ok(entry.failedAt && entry.reason, '失败时间与原因入账');
+  // 补推：通道恢复 → 后台补投成功、failed 账清
+  const f = mkFetch(true);
+  const replay = await replayFailedPushes(env, { fetchImpl: f.fn, sleepImpl: async () => {} });
+  assert.equal(replay.replayed, 1, '补推成功 1 条');
+  assert.equal(f.calls.length, 1, '补推只送失败信封');
+  assert.ok(JSON.parse(f.calls[0].init.body).text.content.includes('【AI 盘中'), '补推文案经同一渲染层');
+  assert.ok(![...kv.m.keys()].some((k) => k.startsWith('failed:')), '补推成功清账');
+});
+
+test('补推防重：失败期间同内容已被直推成功（fp 已记）→ 补推弃单不重复进群', async () => {
+  const kv = mkKV();
+  const env = { OPS_WEBHOOK: 'https://wecom/example', PUSH_STATE: kv };
+  const always500 = async () => ({ ok: false, status: 500 });
+  await handlePush(post(mkReport()), env, { now: NOW, fetchImpl: always500, sleepImpl: async () => {} });
+  // 模拟期间调用方直推成功（记 fp、清 failed 残账——handlePush 成功路径职责）
+  const fp = [...kv.m.keys()].find((k) => k.startsWith('failed:')).slice('failed:'.length);
+  kv.m.set(`fp:${fp}`, NOW.toISOString());
+  const f = mkFetch(true);
+  const replay = await replayFailedPushes(env, { fetchImpl: f.fn, sleepImpl: async () => {} });
+  assert.equal(replay.replayed, 0, '同指纹已送达 → 不补');
+  assert.equal(replay.skippedDup, 1, '弃单计数如实');
+  assert.equal(f.calls.length, 0, '未向企微发任何请求');
+});
+
+test('handlePush：ctx.waitUntil 调度补推（不阻塞本次）；成功推送顺手清 failed 残账', async () => {
+  const kv = mkKV();
+  const env = { OPS_WEBHOOK: 'https://wecom/example', PUSH_STATE: kv };
+  // 先制造一笔 failed 账
+  const always500 = async () => ({ ok: false, status: 500 });
+  await handlePush(post(mkReport({ trigger: 'event:circuit_breaker' })), env, { now: NOW, fetchImpl: always500, sleepImpl: async () => {} });
+  // 正常请求 + ctx：waitUntil 必须被调用（补推后台调度），主响应即时返回
+  let waited = null;
+  const ctx = { waitUntil: (p) => { waited = p; } };
+  const f = mkFetch(true);
+  const r = await handlePush(post(mkReport({ date: '2026-10-09' })), env, { now: NOW, fetchImpl: f.fn, sleepImpl: async () => {}, ctx });
+  assert.equal((await r.json()).pushed, true, '主推送不受补推影响');
+  assert.ok(waited, 'waitUntil 已调度补推（后台执行）');
+  await waited; // 补推消化 failed 账（urgent 信封不走 fp 去重，直接重发）
+  assert.ok(![...kv.m.keys()].some((k) => k.startsWith('failed:')), 'failed 账已消化');
 });

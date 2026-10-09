@@ -59,16 +59,16 @@ test('fingerprintOf：generated_at/易变字段不进指纹，payload 变化必�
   assert.notEqual(fingerprintOf(r), fingerprintOf(urgent), 'trigger 进指纹（事件版是另一份报告）');
 });
 
-// ── 1.5 MA20 降级红警（2026-10-08 推送前校验 ①）─────────────────────
+// ── 1.5 20日均线降级红警（2026-10-08 推送前校验 ①；2026-10-10 全中文改名）──
 // 主验证链：renderPushText 消费 report.payload.ma20_degraded——降级版（s_amt
 // 中性 50）推送必现红警行；正常版（s_amt=44）不显示不添乱（老档无此键 → falsy 兼容）。
-test('MA20 降级红警：ma20_degraded=true 推送含红警行，false 不含', () => {
+test('20日均线降级红警：ma20_degraded=true 推送含红警行，false 不含', () => {
   const base = mkReport();
   const degraded = renderPushText(mkReport({ payload: { ...base.payload, ma20_degraded: true } }));
-  assert.match(degraded, /MA20 降级版/, '降级版红警行一定在');
+  assert.match(degraded, /20日均线降级版/, '降级版红警行一定在');
   assert.match(degraded, /中性 50/, '量能因子中性 50 文案在场');
   const normal = renderPushText(base);
-  assert.doesNotMatch(normal, /MA20/, '正常推送不出现 MA20 警示字样');
+  assert.doesNotMatch(normal, /20日均线|MA20/, '正常推送不出现 20日均线警示字样');
 });
 
 // ── 2. 防风暴判定 ─────────────────────────────────────────────────────
@@ -121,10 +121,11 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
   assert.match(post, /【AI 报告 · 盘后】2026-09-30/);
   assert.match(post, /当日盈亏 \+0\.02%/);
   assert.match(post, /收盘回撤 \+13\.79%/);
-  assert.match(post, /情绪周期: 发酵期\(recover\)/);
+  assert.match(post, /情绪周期: 发酵期 · 建议仓位: 中性/, '英文枚举在渲染层翻中文（2026-10-10 全中文指令）');
+  assert.ok(!post.includes('recover') && !post.includes('neutral'), 'phase/position 英文键不进文案');
   assert.doesNotMatch(post, /缺失披露|数据状态/, '工程健康告警不进决策正文（2026-10-09 指令：归工程通道）');
   assert.match(post, /完整版见页面 · 不构成投资建议/, '免责声明尾行保留');
-  assert.match(post, /候选池 1 只（按连板数排序，Top 1）：/, '候选池清单展开（盘后版）');
+  assert.match(post, /候选池 1 只（按连板数排序，前 1 名）：/, '候选池清单展开（盘后版·全中文「前 N 名」）');
   assert.match(post, / 1\. 600825 新华传媒 · 得分 — · 入选理由 — · 估值 —/, 'null 字段按 — 占位（不造数纪律）');
 
   const pre = renderPushText(mkReport({
@@ -142,7 +143,7 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
   assert.match(pre, / 2\. 603949 雪龙集团 · 4 连板 · 晋级失败 · 当日 -9\.98%/, 'appearances null → 无上榜段（—不硬塞）');
   assert.match(pre, /最高连板 6 · 炸板率 \+18\.75%/, 'sim 缺席回退 watchlist 数据源');
   assert.match(pre, /前日盈亏 — · 累计 —/, 'null → —，不冒充 0');
-  assert.match(pre, /A50 \+0\.09%/);
+  assert.match(pre, /富时A50 \+0\.09%/, 'A50 → 富时A50（全中文）');
   assert.doesNotMatch(pre, /建议仓位|情绪周期/, '观察清单不含操作建议（任务一语义）');
   assert.doesNotMatch(pre, /候选池/, '标题/正文不出现候选池字样（输出物理隔离）');
   assert.ok(pre.includes('数据截至 2026-09-30 收盘\n'), '盘前恒标数据截至（前收口径，头部日期即数据日期）');
@@ -162,7 +163,7 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
       simulation_stock: null },
     missing_notes: [],
   }));
-  assert.match(preFull, /外围收盘: 道 \+0\.49% · 标普 \+0\.58% · 纳指 \+0\.45% · 金龙 \+0\.31% · FXI -0\.24% · 离岸人民币 —/, '聚合一行 + null → —');
+  assert.match(preFull, /外围收盘: 道 \+0\.49% · 标普 \+0\.58% · 纳指 \+0\.45% · 金龙 \+0\.31% · 中国大盘ETF -0\.24% · 离岸人民币 —/, '聚合一行 + null → —（FXI → 中国大盘ETF）');
   assert.ok(preFull.length <= PUSH_CONSTS.MSG_CAP, '企微 text 上限内（2000 留余量）');
   assert.ok(!pre.includes('外围收盘'), '无新字段段（fixture 夹具）→ 整行省略，不留一排 — 噪音行');
 
@@ -174,10 +175,10 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
         { code: '000002', name: '样本B', score: 0.5, themes: null, selection_reason: '量比 2.5', intraday_chg: 4.0, fundamentals: { pe: null, pb: null }, data_completeness: { level: 'partial', missing: ['估值'] } }] } },
     missing_notes: [],
   }));
-  assert.match(intra, /【AI 盘中 · 候选池】2026-09-30 · event:circuit_breaker/, 'urgent 触发源进标题');
-  assert.match(intra, /运行回撤 \+8\.80% · 距 DD 档位 0\.2pp/);
-  assert.match(intra, /趋势池 2 只（按综合得分排序，Top 2 · 涨幅3-7% · 量比>2 · 未涨停未一字 · 主力净流入为正（已滤昨日涨停））：/, '趋势池标签+四条件进标题（2026-10-10 双池拆分；标题=该池实际筛选口径）');
-  assert.match(intra, / 1\. 600825 新华传媒 · 得分 0\.87 · 题材：半导体投资\/国产替代 · 量比 3\.2 · PE 22x · 盘中 \+5\.2% · ✅/, '齐全股行尾 ✅（题材/估值/资金三要素清点通过）');
+  assert.match(intra, /【AI 盘中 · 候选池】2026-09-30 · 熔断警报/, 'urgent 触发源进标题（event:circuit_breaker → 熔断警报，全中文）');
+  assert.match(intra, /运行回撤 \+8\.80% · 距回撤档位 0\.2 个百分点/);
+  assert.match(intra, /趋势池 2 只（按综合得分排序，前 2 名 · 涨幅3-7% · 量比>2 · 未涨停未一字 · 主力净流入为正（已滤昨日涨停））：/, '趋势池标签+四条件进标题（2026-10-10 双池拆分；标题=该池实际筛选口径）');
+  assert.match(intra, / 1\. 600825 新华传媒 · 得分 0\.87 · 题材：半导体投资\/国产替代 · 量比 3\.2 · 市盈率 22 · 盘中 \+5\.2% · ✅/, '齐全股行尾 ✅（题材/估值/资金三要素清点通过；PE → 市盈率）');
   assert.match(intra, / 2\. 000002 样本B · 得分 0\.5 · 量比 2\.5 · — · 盘中 \+4% · ⚠️ 缺估值/, '缺估值股行尾 ⚠️ 直标缺失项（部分数据不冒充完整画像）');
 
   // 0 只显式报（2026-10-09 用户指令）：候选池空 → 推送正文直接报「今日无符合条件标的」，
@@ -197,7 +198,7 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
   }));
   assert.match(week, /【AI 报告 · 周报】截至 2026-09-30/);
   assert.match(week, /周收益 -1\.10% · 周最大回撤 \+2\.00% · 盈利日占比 \+40\.00%/);
-  assert.match(week, /胜率 —（剧本口径，绑定缺席则 null）/, '胜率 null 口径如实披露');
+  assert.match(week, /胜率 —（剧本口径，绑定缺席则无值）/, '胜率 null 口径如实披露（全中文）');
   assert.match(week, /趋势切换 2 次/);
 
   // 超长截断：候选池塞爆（30 只 + 超长理由）→ Top 10 截取 + 不超企微上限
@@ -223,9 +224,9 @@ test('renderPushText：候选池清单——字段全有时完整展示（得分
     { code: '300750', name: null, selection_reason: null, fundamentals: null },
   ];
   const out = renderPushText(mkReport({ payload: { ...base.payload, simulation_stock: { ...base.payload.simulation_stock, candidate_pool: pool } } }));
-  assert.match(out, /候选池 3 只（按连板数排序，Top 3）：/);
-  assert.match(out, / 1\. 600519 贵州茅台 · 得分 0\.87 · 题材：消费龙头 · 入选：3 连板（当日 10\.00%，晋级成功） · 估值 PE 22x/, '字段齐全：得分/题材/入选理由/PE');
-  assert.match(out, / 2\. 000001 平安银行 · 得分 0\.82 · 入选：2 连板（当日 5\.00%，晋级成功） · 估值 PB 0\.6x/, 'PE 缺 → PB 回退；themes null → 走入选理由');
+  assert.match(out, /候选池 3 只（按连板数排序，前 3 名）：/);
+  assert.match(out, / 1\. 600519 贵州茅台 · 得分 0\.87 · 题材：消费龙头 · 入选：3 连板（当日 10\.00%，晋级成功） · 估值 市盈率 22/, '字段齐全：得分/题材/入选理由/市盈率');
+  assert.match(out, / 2\. 000001 平安银行 · 得分 0\.82 · 入选：2 连板（当日 5\.00%，晋级成功） · 估值 市净率 0\.6/, '市盈率缺 → 市净率回退；themes null → 走入选理由');
   assert.match(out, / 3\. 300750 — · 得分 — · 入选理由 — · 估值 —/, '名称/理由/估值全缺 → —，不造数');
 });
 
@@ -421,10 +422,10 @@ test('renderPushText 双池：连板池/趋势池分块渲染，各块标题=该
   // 头部计数：两池数量都进首行
   assert.match(out, /情绪周期:.* · 建议仓位: .* · 连板池 1 · 趋势池 1 只/, '双池计数进情绪周期行');
   // 连板池标题 = 自身口径（不含涨幅带/未涨停）——标题与标的一致的硬断言
-  assert.match(out, /连板池 1 只（按梯队分排序，Top 1 · 连板≥2 · 今日非一字 · 量比>2 · 主力净流入为正）：/, '连板池标题=连板池口径（只写筛选条件本身）');
+  assert.match(out, /连板池 1 只（按梯队分排序，前 1 名 · 连板≥2 · 今日非一字 · 量比>2 · 主力净流入为正）：/, '连板池标题=连板池口径（只写筛选条件本身）');
   assert.match(out, / 1\. 600601 三连板股 · 梯队分 — · 题材：电池 · 3 连板/, '连板池标的行（streak_score 缺席 → 梯队分 —）');
   // 趋势池标题 = 四条件（原口径不变）
-  assert.match(out, /趋势池 1 只（按综合得分排序，Top 1 · 涨幅3-7% · 量比>2 · 未涨停未一字 · 主力净流入为正（已滤昨日涨停））：/, '趋势池标题=四条件');
+  assert.match(out, /趋势池 1 只（按综合得分排序，前 1 名 · 涨幅3-7% · 量比>2 · 未涨停未一字 · 主力净流入为正（已滤昨日涨停））：/, '趋势池标题=四条件');
   assert.match(out, / 1\. 600603 首板趋势股 · 得分 0\.8 · 题材：出行 · 量比 3\.2/, '趋势池标的行');
   // 一致性反证：连板池标题行绝不含趋势池的涨幅带/未涨停字样
   const streakTitle = (out.match(/连板池 1 只（[^：]*）：/) || [''])[0];
@@ -457,7 +458,8 @@ test('renderPushText：live_emotion 在场 → 情绪行渲染盘中实时六状
   assert.ok(!/情绪周期: 发酵期\(recover\)/.test(out), '有实时值时昨收口径行退场（两行互斥，防误读）');
   // 缺席 → 回落昨收口径（不冒充、不静默省略）
   const fb = renderPushText(mkReport({ report_type: 'intraday', payload: { ...base.payload }, missing_notes: [] }));
-  assert.match(fb, /情绪周期: [^（(]+\(recover\)/, 'live_emotion 缺席 → 昨收五期标签照旧');
+  assert.match(fb, /情绪周期: 发酵期/, 'live_emotion 缺席 → 昨收五期标签照旧');
+  assert.ok(!fb.includes('recover'), '昨收口径行也不再携带英文枚举（2026-10-10 全中文）');
 });
 
 test('renderPushText：trend_pool_mode=tomorrow_watch → 趋势池标签换「明日观察池」，口径行明示降级', () => {
@@ -472,7 +474,7 @@ test('renderPushText：trend_pool_mode=tomorrow_watch → 趋势池标签换「�
     payload: { ...base.payload, simulation_stock: sim },
     missing_notes: [],
   }));
-  assert.match(out, /明日观察池 1 只（按综合得分排序，Top 1 · 原四条件筛选·距收盘不足30分钟自动降级（明日观察，不作当日买入依据））：/, '降级标签+口径（标题=语义）');
+  assert.match(out, /明日观察池 1 只（按综合得分排序，前 1 名 · 原四条件筛选·距收盘不足30分钟自动降级（明日观察，不作当日买入依据））：/, '降级标签+口径（标题=语义）');
   assert.match(out, / 1\. 600801 尾盘趋势股 · 得分 0\.7/, '标的行照常渲染（观察语义换标签，不换标的）');
   assert.ok(!out.includes('趋势池 1 只'), '降级后不再出现「趋势池」标签（一词一义，不混用）');
 });

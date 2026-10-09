@@ -9,11 +9,13 @@ const notFound = () => new Response(JSON.stringify({ ok: false, reason: 'not fou
 });
 
 export default {
-  async fetch(request, env) {
+  // ctx = Workers 执行上下文：waitUntil 供 handlePush 后台补推 failed_pushes
+  //   （2026-10-10 通道加固）——补推不阻塞本次推送，主响应即时返回。
+  async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(env) });
     if (pathname === '/healthz') return handleHealth();
-    if (pathname === '/push' || pathname === '/api/push') return handlePush(request, env);
+    if (pathname === '/push' || pathname === '/api/push') return handlePush(request, env, { ctx });
     return notFound();
   },
 };
