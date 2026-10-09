@@ -1,0 +1,49 @@
+# 一次性运维工具（用完即删）：经 Cloudflare Worker /push 补推当日报告信封。
+# 背景：本机网络对 workers.dev 存在 DNS 污染 + SNI 阻断（2026-10-09 实测三条路全断），
+#   GitHub runner 在海外无墙可直达 Worker。此 workflow 仅在手动 workflow_dispatch 时运行，
+#   不进任何 schedule/push 触发链；执行完由操作者删除本文件并提交。
+# 已知效果：CI 直连通道（push_state.json）今天已推过同内容，但 Worker KV 指纹体系独立、
+#   无此记录——本次推送会真实送达企微群（同内容第二渠道），并计入 Worker KV 指纹记忆。
+name: worker-repush (one-shot)
+
+on:
+  workflow_dispatch:
+    inputs:
+      report_file:
+        description: '要经 Worker 补推的报告信封路径（相对仓库根）'
+        required: true
+        default: 'data/reports/intraday_2026-10-09.json'
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 探活 Worker healthz
+        run: |
+          set -euo pipefail
+          curl -sS --max-time 30 "https://a-sentiment-push.sjc19950404.workers.dev/healthz" \
+            | tee /tmp/healthz.json
+          echo
+
+      - name: POST /push 补推报告信封
+        env:
+          REPORT_FILE: ${{ inputs.report_file }}
+        run: |
+          set -euo pipefail
+          test -f "$REPORT_FILE"
+          echo "信封体量: $(du -h "$REPORT_FILE" | cut -f1)"
+          HTTP_CODE=$(curl -sS --max-time 60 -o /tmp/push_resp.json -w '%{http_code}' \
+            -X POST "https://a-sentiment-push.sjc19950404.workers.dev/push" \
+            -H 'Content-Type: application/json' \
+            --data-binary "@$REPORT_FILE")
+          echo "HTTP $HTTP_CODE"
+          cat /tmp/push_resp.json
+          echo
+          # Worker 失败码（405/403/413/400/502/500）与成功码（200）都要把响应体亮出来；
+          # 2xx 之外的 4xx/5xx 视为失败，让 run 红出来便于追查。
+          case "$HTTP_CODE" in
+            2*) echo "✅ Worker 已受理" ;;
+            *) echo "❌ Worker 受理失败"; exit 1 ;;
+          esac
