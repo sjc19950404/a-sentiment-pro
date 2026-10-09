@@ -348,11 +348,27 @@ summarize('席位明细已净化（不含「自然人/中小投资者/机构」�
 
 // 源码守卫：净化判据只在 src/seats.js 出现一次，别处必须 import。
 // 注意：① 只查**代码**，文案/口径备注里提到这些词是合理的（报告要解释剔了什么）；
-//       ② 跳过临时探针脚本（_ 前缀）与本审计自身——它们本来就是来复现/检查这件事的。
+//       ② 跳过临时探针脚本（_ 前缀）与本审计自身——它们本来就是来复现/检查这件事的；
+//       ③ app.js **有守卫豁免**（2026-10-09）：其 seatsMod() 内联副本是有意设计——
+//         index.html 的 window.Seats 是异步模块脚本，未就绪窗口期若无可过滤的降级
+//         副本，H-3 类别汇总行会顶着 23 倍虚增金额上屏（2026-10-07 实录）。豁免的
+//         合法性**不来自形式，来自 test/seats_parity.test.mjs 的行为守卫**——提取
+//         app.js 真实函数文本在 vm 里强制走降级分支，与主模块逐字比对 + 污染行剔除
+//         绝对断言。守卫被删/被弱化 → 下方检查失败，豁免自动失效。
 {
+  const PARITY = path.join(ROOT, 'test', 'seats_parity.test.mjs');
+  const parityOk = existsSync(PARITY) && (() => {
+    const t = readFileSync(PARITY, 'utf8');
+    return /function seatsMod\(\)/.test(t)   // 提取 app.js 真实函数文本（非复制品）
+      && /window:\s*\{\}/.test(t)             // vm 强制走降级分支（window.Seats 缺位）
+      && /确实被剔除/.test(t);                 // 污染行剔除绝对断言（防两边同错的假绿）
+  })();
+  check('豁免前提：app.js 席位降级副本受 seats_parity.test.mjs 行为守卫（真实文本提取 + 降级分支 + 剔除绝对断言）',
+    parityOk, parityOk ? '守卫三要素齐备：提取真实函数文本 / vm 强制降级分支 / 污染剔除绝对断言' : '守卫测试缺失或被弱化——app.js 豁免不成立，须恢复重复判据扫描或修复守卫');
   const GLOBAL = files.filter((f) => !/seats\.js$/.test(f)
     && !/audit_lhb_caliber\.mjs$/.test(f)
-    && !/(^|\/)_/.test(f));
+    && !/(^|\/)_/.test(f)
+    && f !== 'app.js'); // 受 parity 守卫的有意降级副本（见上），非无凭据的重复实现
   const dup = [];
   for (const rel of GLOBAL) {
     const abs = path.join(ROOT, rel);
@@ -1161,9 +1177,13 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     `${rawDisk.all_days.filter((d) => d.lhb != null).length} 天顶层带 lhb`);
   // ⚠ 修正常见误读：提子对**主档体积零收益**（只是改名 lhb → _sub.lhb，多 7 字节/天）。
   //   真正省体积的是码表这一级。此处锁住"提子不得让体积回涨"，防止将来把它当省钱手段。
+  // 阈值对齐（2026-10-09）：原 <6MB 是码表上线时（档约 4.6MB）按当时体积留的余量，
+  //   数据自然增长到 6.27MB 后成了误报——全档各字段（_sub/summary/industry…）均为
+  //   有效数据。红线以 B19 的 <7MB（体积纪律：防派生字段翻倍）为准，两处同阈值
+  //   同口径，不留"两个红线"的分叉空间。
   const rawMb = Buffer.byteLength(readFileSync(ARCHIVE, 'utf8')) / 1048576;
-  check('切片：主档体积 < 6MB（码表是唯一有效手段；提子只是改名，不省体积）',
-    rawMb < 6, `${rawMb.toFixed(2)}MB`);
+  check('切片：主档体积 < 7MB（与 B19 体积纪律同红线；码表是唯一有效手段，提子只是改名）',
+    rawMb < 7, `${rawMb.toFixed(2)}MB`);
   check('切片：主档 meta.reasonCodes 与记录引用一致（码表缺失会让解码整体回退成 undefined）',
     Array.isArray(arch.meta?.reasonCodes) && arch.meta.reasonEncoding === 'rc-v1'
     && origDays.every((d) => (d.lhb || []).every((r) => (r.rc || []).every((i) => i >= 0 && i < arch.meta.reasonCodes.length))),
