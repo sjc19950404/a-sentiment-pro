@@ -19,6 +19,27 @@ export const PUSH_CONSTS = {
   STALE_NOTE_GAP_DAYS: 3,
 };
 
+/**
+ * OPS_WEBHOOK secret 值清洗（2026-10-10 线上真实踩坑根治）。
+ * 背景：secret 经管道写入时混入两个 U+FEFF（BOM），Worker fetch 报
+ *   Invalid URL → 502，GitHub Actions 判校验失败。消费端（Worker
+ *   push_proxy / CI ai_report_push）读 secret 一律过本函数——无论写入
+ *   路径怎么污染，读到的都是干净 URL（写入侧另有 scripts/set_ops_webhook.mjs
+ *   固化码位验证，双层防御）。
+ * 规则：剥零宽家族（BOM/零宽空格/方向覆盖/软连字符）→ 剥首尾控制与空白；
+ *   内部仍残留控制字符 = 重度污染，拒绝（静默修复会掩盖问题）；
+ *   须以 https:// 开头（企微 webhook 纪律），否则 null。
+ * 消费端契约：raw 为空 → 走「未配置」静默分支；raw 非空但清洗后 null →
+ *   明确报「值非法」，**不得**降级为静默跳过（那是静默丢推送）。
+ */
+export function sanitizeWebhookUrl(raw) {
+  if (typeof raw !== 'string' || !raw) return null;
+  let s = raw.replace(/[\uFEFF\u200B-\u200F\u202A-\u202E\u2060\u00AD]/g, '');
+  s = s.replace(/^[\u0000-\u0020\u007F]+|[\u0000-\u0020\u007F]+$/g, '');
+  if (/[\u0000-\u001F\u007F]/.test(s)) return null;
+  return /^https:\/\//.test(s) ? s : null;
+}
+
 const pct = (v, digits = 2) => (v == null || !Number.isFinite(v) ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(digits)}%`);
 const txt = (v) => (v == null ? '—' : String(v));
 const overseas = (p, key) => pct((p.overseas || []).find((q) => q && q.key === key)?.chgPct);

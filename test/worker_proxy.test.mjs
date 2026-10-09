@@ -68,6 +68,46 @@ test('无 OPS_WEBHOOK → 200 + pushed:false，不碰 KV 与网络', async () =>
   assert.equal(kv.m.size, 0);
 });
 
+// ── 2b. sanitizeWebhookUrl：BOM/零宽清洗（2026-10-10 线上真实踩坑根治）─────
+test('sanitizeWebhookUrl：剥 BOM/零宽/首尾控制；内部控制/非 https 拒绝', async () => {
+  const { sanitizeWebhookUrl } = await import('../src/push_text.js');
+  const GOOD = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=k';
+  // 线上事故原样：两个 U+FEFF 前缀 → 清洗后恢复可用
+  assert.equal(sanitizeWebhookUrl(`\uFEFF\uFEFF${GOOD}`), GOOD);
+  assert.equal(sanitizeWebhookUrl(`\u200B\u200C${GOOD}\u200D\uFEFF`), GOOD);
+  assert.equal(sanitizeWebhookUrl(`  \n\t${GOOD}\r\n `), GOOD);
+  assert.equal(sanitizeWebhookUrl(GOOD), GOOD);
+  // 非法：非字符串/空/非 https/内部控制字符（重度污染不静默修）
+  assert.equal(sanitizeWebhookUrl(undefined), null);
+  assert.equal(sanitizeWebhookUrl(''), null);
+  assert.equal(sanitizeWebhookUrl(`http://${GOOD.slice(8)}`), null);
+  assert.equal(sanitizeWebhookUrl(`https://a\u0001b.c`), null);
+});
+
+// ── 2c. BOM 污染的 secret 自愈：Worker 收到的 URL 是干净的（事故回归）─────
+test('OPS_WEBHOOK 带 BOM/零宽污染 → 清洗自愈推送，fetch 收到干净 URL', async () => {
+  const kv = mkKV(); const f = mkFetch();
+  const r = await handlePush(post(mkReport()), { OPS_WEBHOOK: `\uFEFF\uFEFFhttps://wecom/example\u200B`, PUSH_STATE: kv }, { now: NOW, fetchImpl: f.fn });
+  const body = await r.json();
+  assert.equal(r.status, 200);
+  assert.equal(body.pushed, true);
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls[0].url, 'https://wecom/example', 'fetch 必须收到清洗后的 URL（BOM 已剥）');
+});
+
+// ── 2d. 重度污染不静默：非 https/内部脏 → 502 明确报错，不 fetch 不记指纹 ───
+test('OPS_WEBHOOK 清洗后仍非法 → 502 值非法报错（不降级为静默跳过）', async () => {
+  const kv = mkKV(); const f = mkFetch();
+  const r = await handlePush(post(mkReport()), { OPS_WEBHOOK: '\u0001http://not-https.example', PUSH_STATE: kv }, { now: NOW, fetchImpl: f.fn });
+  const body = await r.json();
+  assert.equal(r.status, 502);
+  assert.equal(body.pushed, false);
+  assert.match(body.reason, /OPS_WEBHOOK 值非法/);
+  assert.equal(f.calls.length, 0, '不 fetch');
+  assert.equal(kv.m.size, 0, '不记指纹');
+});
+
+
 // ── 3. 成功推送：文案经 renderPushText、KV 记指纹 + 日计数 ─────────────
 test('成功推送：msgtype=text + renderPushText 文案；KV 记 fp 与 day 计数', async () => {
   const kv = mkKV(); const f = mkFetch();

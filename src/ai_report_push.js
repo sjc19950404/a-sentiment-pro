@@ -26,7 +26,7 @@ import { createHash } from 'node:crypto';
 import { dirname } from 'node:path';
 import { marketPhase } from './freshness.js';
 import { resolveHolidays } from './calendar.js';
-import { PUSH_CONSTS, renderPushText } from './push_text.js';
+import { PUSH_CONSTS, renderPushText, sanitizeWebhookUrl } from './push_text.js';
 
 export { PUSH_CONSTS, renderPushText }; // 纯渲染层 re-export（Worker/浏览器经 push_text.js 直取，既有 import 路径零改动）
 
@@ -112,12 +112,20 @@ export function savePushState(file, state) {
  */
 export async function pushReports(reports, { env = process.env, fetchImpl, stateFile = null, now = new Date() } = {}) {
   const list = (Array.isArray(reports) ? reports : [reports]).filter(Boolean);
-  const url = env?.[PUSH_CONSTS.WEBHOOK_ENV];
+  const rawWebhook = env?.[PUSH_CONSTS.WEBHOOK_ENV];
+  // secret 值清洗（对齐 Worker push_proxy，2026-10-10 BOM 踩坑根治）：
+  //   轻度污染（BOM/零宽/首尾空白）自愈；raw 非空但清洗后非法 → 全员标记
+  //   「值非法」跳过推送，绝不静默把脏值当未配置（那是丢推送）。
+  const url = rawWebhook ? sanitizeWebhookUrl(rawWebhook) : null;
   let state = stateFile ? loadPushState(stateFile) : { schema_version: '1.0', pushed: [] };
   const results = [];
   let pushed = 0;
-  if (!url) {
+  if (!rawWebhook) {
     for (const report of list) results.push({ type: report.report_type, date: report.date, pushed: false, reason: '未配置 OPS_WEBHOOK，仅落盘' });
+    return { results, pushed: 0, skipped: list.length, state };
+  }
+  if (!url) {
+    for (const report of list) results.push({ type: report.report_type, date: report.date, pushed: false, reason: 'OPS_WEBHOOK 值非法（不可见字符清洗后仍不合法）——用 scripts/set_ops_webhook.mjs 码位验证后重写（未记指纹）' });
     return { results, pushed: 0, skipped: list.length, state };
   }
   const fetchFn = fetchImpl || (typeof fetch === 'function' ? fetch : null);

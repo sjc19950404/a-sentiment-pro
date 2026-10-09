@@ -20,8 +20,8 @@
 // 防护说明（个人系统威胁模型，如实记录）：secret 只在 Worker 侧；
 //   ALLOWED_ORIGIN 未配置时放行（本地 dev / 初次部署期），上线后应在
 //   wrangler.toml [vars] 设页面部署域——这不是强认证，是低摩擦滥用闸。
-export { PUSH_CONSTS, renderPushText } from '../src/push_text.js';
-import { renderPushText } from '../src/push_text.js'; // re-export 不入本模块作用域，本地渲染需显式 import
+export { PUSH_CONSTS, renderPushText, sanitizeWebhookUrl } from '../src/push_text.js';
+import { renderPushText, sanitizeWebhookUrl } from '../src/push_text.js'; // re-export 不入本模块作用域，本地渲染/清洗需显式 import
 
 export const PROXY_CONSTS = {
   BODY_CAP: 64 * 1024,            // 请求体上限（信封 JSON 远小于此，防投毒）
@@ -112,8 +112,12 @@ export async function handlePush(request, env, { now = new Date(), fetchImpl } =
     return json({ ok: false, reason: '报告信封不合法（report_type/payload 缺失）' }, 400, corsHeaders(env));
   }
 
-  const url = env?.OPS_WEBHOOK;
-  if (!url) return json({ ok: true, pushed: false, reason: '未配置 OPS_WEBHOOK，仅校验通过' }, 200, corsHeaders(env));
+  const rawWebhook = env?.OPS_WEBHOOK;
+  // secret 值清洗（2026-10-10 BOM 踩坑根治）：零宽/首尾控制剥除——轻度污染自愈；
+  //   raw 非空但清洗后非法（重度污染/非 https）→ 502 明确报错，不静默跳过。
+  const url = rawWebhook ? sanitizeWebhookUrl(rawWebhook) : null;
+  if (!rawWebhook) return json({ ok: true, pushed: false, reason: '未配置 OPS_WEBHOOK，仅校验通过' }, 200, corsHeaders(env));
+  if (!url) return json({ ok: false, pushed: false, reason: 'OPS_WEBHOOK 值非法（不可见字符清洗后仍不合法）——用 scripts/set_ops_webhook.mjs 码位验证后重写' }, 502, corsHeaders(env));
   const fetchFn = fetchImpl || (typeof fetch === 'function' ? fetch : null);
   if (!fetchFn) return json({ ok: false, reason: '当前环境无 fetch' }, 500, corsHeaders(env));
 

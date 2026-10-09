@@ -305,6 +305,36 @@ test('pushReports：企微 HTTP 200 + errcode≠0 静默丢包 → 不记指纹�
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
+// ── 6c. OPS_WEBHOOK BOM/零宽污染（2026-10-10 线上真实踩坑）：清洗自愈 + 非法不静默 ──
+test('pushReports：webhook 带 BOM 清洗自愈；清洗后非法 → 值非法跳过（非静默）', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'airpt-bom-'));
+  const stateFile = join(dir, 's.json');
+  try {
+    const r = mkReport();
+    // 事故原样：两个 U+FEFF 前缀 + 尾部零宽 → 清洗后照常推送，fetch 收到干净 URL
+    const calls = [];
+    const ok = await pushReports([r], {
+      env: { OPS_WEBHOOK: '\uFEFF\uFEFFhttps://example.test/hook\u200B' },
+      fetchImpl: async (u) => { calls.push(u); return { ok: true }; },
+      stateFile, now: new Date('2026-10-08T13:30:00Z'),
+    });
+    assert.equal(ok.pushed, 1, 'BOM 剥除后推送成功（消费端自愈）');
+    assert.equal(calls[0], 'https://example.test/hook', 'fetch 收到清洗后的 URL');
+    assert.equal(loadPushState(stateFile).pushed.length, 1, '记指纹（干净推送）');
+
+    // 清洗后仍非法（http:// 非 https）→ 全员标记「值非法」跳过，不 fetch 不记指纹
+    const stateFile2 = join(dir, 's2.json');
+    const bad = await pushReports([mkReport()], {
+      env: { OPS_WEBHOOK: 'http://not-https.test/hook' },
+      fetchImpl: async () => { throw new Error('不该 fetch'); },
+      stateFile: stateFile2, now: new Date('2026-10-08T13:30:00Z'),
+    });
+    assert.equal(bad.pushed, 0);
+    assert.match(bad.results[0].reason, /OPS_WEBHOOK 值非法/);
+    assert.equal(loadPushState(stateFile2).pushed.length, 0, '不记指纹');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 // ── 6c. 缺 .json/.text 的旧 mock 仍能跑通（防御性解析不打破现有注入约定）────
 test('pushReports：fetchImpl 返回 { ok, status } 无 body 方法时，行为与未升级前一致', async () => {
   const r = mkReport();
