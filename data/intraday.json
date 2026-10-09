@@ -2,14 +2,102 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-09",
-  "capturedAt": "2026-10-09T06:19:53.821Z",
-  "capturedAtBJ": "2026-10-09 14:19",
+  "capturedAt": "2026-10-09T06:53:04.765Z",
+  "capturedAtBJ": "2026-10-09 14:53",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 59,
+    "count": 71,
     "srcDate": "2026-10-09",
     "rows": [
+      {
+        "code": "600400",
+        "name": "红豆股份",
+        "reason": "牛散持股+服装+养老机器人",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "605058",
+        "name": "澳弘电子",
+        "reason": "PCB+AI服务器电源+具身智能",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "603398",
+        "name": "*ST沐邦",
+        "reason": "重整投资+光伏硅片+益智玩具",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "000736",
+        "name": "中交发展",
+        "reason": "轻资产运营+物业服务+中交集团协同",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "600715",
+        "name": "文投控股",
+        "reason": "AI漫剧+影视院线+北京国资",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "603216",
+        "name": "梦天家居",
+        "reason": "全屋定制+智能制造+功率半导体投资",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "002979",
+        "name": "雷赛智能",
+        "reason": "人形机器人+伺服系统+半年报增长",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "605168",
+        "name": "三人行",
+        "reason": "数据中心+AI营销+体育营销",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "300413",
+        "name": "芒果超媒",
+        "reason": "AIGC长剧+微短剧+长视频",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "002696",
+        "name": "百洋股份",
+        "reason": "水产品加工+水产饲料+青岛国资",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "002343",
+        "name": "慈文传媒",
+        "reason": "微短剧+影视IP+泛文化",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
       {
         "code": "001330",
         "name": "博纳影业",
@@ -267,6 +355,14 @@
         "huanshou": null
       },
       {
+        "code": "002480",
+        "name": "新筑股份",
+        "reason": "清洁能源+重大重组+四川国资",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
         "code": "000546",
         "name": "金圆股份",
         "reason": "盐湖提锂+锂矿布局+固废危废资源化",
@@ -485,11 +581,11 @@
     ]
   },
   "pools": {
-    "zt": 58,
-    "zb": 16,
-    "dt": 5,
+    "zt": 69,
+    "zb": 14,
+    "dt": 8,
     "max_lb": 9,
-    "lb2": 11,
+    "lb2": 12,
     "zt_codes": [
       "002058",
       "600241",
@@ -519,6 +615,7 @@
       "600408",
       "300981",
       "000546",
+      "002480",
       "300369",
       "600865",
       "600882",
@@ -548,20 +645,30 @@
       "002181",
       "688152",
       "001330",
-      "002343"
+      "300413",
+      "002343",
+      "002696",
+      "002979",
+      "605168",
+      "603216",
+      "600715",
+      "000736",
+      "605058",
+      "600400",
+      "601118"
     ],
-    "seal_pct": 78.4
+    "seal_pct": 83.1
   },
   "breadth": {
-    "up": 3113,
-    "down": 2042,
-    "flat": 132
+    "up": 3024,
+    "down": 2124,
+    "flat": 139
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-09 13:56",
+  "prevCapturedAtBJ": "2026-10-09 14:19",
   "prevPools": {
-    "zt": 46,
+    "zt": 58,
     "zb": 16,
-    "seal_pct": 74.2
+    "seal_pct": 78.4
   }
 }
