@@ -1,115 +1,43 @@
 {
   "version": 1,
   "kind": "intraday",
-  "tradeDate": "2026-10-08",
-  "capturedAt": "2026-10-08T06:52:52.429Z",
-  "capturedAtBJ": "2026-10-08 14:52",
+  "tradeDate": "2026-10-09",
+  "capturedAt": "2026-10-09T01:47:21.487Z",
+  "capturedAtBJ": "2026-10-09 09:47",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 44,
-    "srcDate": "2026-10-08",
+    "count": 17,
+    "srcDate": "2026-10-09",
     "rows": [
       {
-        "code": "002490",
-        "name": "山东墨龙",
-        "reason": "油气装备+海外订单+H股配售",
+        "code": "600843",
+        "name": "上工申贝",
+        "reason": "缝制设备+机器人缝制+轻型飞机",
         "close": null,
         "change_pct": null,
         "huanshou": null
       },
       {
-        "code": "603189",
-        "name": "*ST网达",
-        "reason": "AI智能体+大视频+低空经济",
+        "code": "603155",
+        "name": "新亚强",
+        "reason": "有机硅+电子化学品+国资控股",
         "close": null,
         "change_pct": null,
         "huanshou": null
       },
       {
-        "code": "002702",
-        "name": "海欣食品",
-        "reason": "速冻食品+山姆渠道+营收增长+海峡两岸",
+        "code": "300821",
+        "name": "东岳硅材",
+        "reason": "三季报预增+有机硅+全产业链",
         "close": null,
         "change_pct": null,
         "huanshou": null
       },
       {
-        "code": "603906",
-        "name": "龙蟠科技",
-        "reason": "磷酸铁锂+固态电池材料+液冷+半年报扭亏",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "603788",
-        "name": "宁波高发",
-        "reason": "制动踏板+汽车控制系统+摩洛哥基地",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "688196",
-        "name": "卓越新能",
-        "reason": "生物柴油+绿色燃料+海外扩产",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "300530",
-        "name": "领湃科技",
-        "reason": "新能源电池模组+新能源EPC+储能+衡阳国资",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "600400",
-        "name": "红豆股份",
-        "reason": "服装+养老机器人",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "002630",
-        "name": "*ST华西",
-        "reason": "超临界锅炉+生物质锅炉+老挝电站合同",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "000869",
-        "name": "张裕A",
-        "reason": "葡萄酒+营收增长+回购注销",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "600310",
-        "name": "广西能源",
-        "reason": "电力主业+业绩扭亏+抽水蓄能",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "920627",
-        "name": "力王股份",
-        "reason": "锂电池+固态电池+锌锰电池",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "603200",
-        "name": "上海洗霸",
-        "reason": "固态电池+液冷服务器+水处理",
+        "code": "600478",
+        "name": "科力远",
+        "reason": "固态电池+储能电站+电池材料",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -117,79 +45,7 @@
       {
         "code": "001336",
         "name": "楚环科技",
-        "reason": "废气治理+半导体环保+航空航天投资",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "601956",
-        "name": "东贝集团",
-        "reason": "制冷压缩机+机器人电机+高效变频",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "600722",
-        "name": "金牛化工",
-        "reason": "甲醇+甲醇价格+风电项目",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "600408",
-        "name": "安泰集团",
-        "reason": "焦炭+型钢+受托加工",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "601975",
-        "name": "招商南油",
-        "reason": "成品油运输+MR船队+业绩增长",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "001300",
-        "name": "三柏硕",
-        "reason": "蹦床+健身器材+外销",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "002869",
-        "name": "金溢科技",
-        "reason": "车路协同+电子收费+低空智联",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "605298",
-        "name": "必得科技",
-        "reason": "轨道交通+半导体注入猜测+股份转让",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "605378",
-        "name": "野马电池",
-        "reason": "锌锰电池+锂电池+海外基地",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "603137",
-        "name": "恒尚节能",
-        "reason": "存储模组+建筑幕墙+光伏幕墙",
+        "reason": "废气治理+半导体环保+航空航天投资+股价被操纵",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -197,63 +53,31 @@
       {
         "code": "002805",
         "name": "丰元股份",
-        "reason": "磷酸铁锂+固态电池+产能扩张",
+        "reason": "固态电池+磷酸铁锂+比亚迪合作",
         "close": null,
         "change_pct": null,
         "huanshou": null
       },
       {
-        "code": "002565",
-        "name": "顺灏股份",
-        "reason": "太空算力+新型烟草+环保包装",
+        "code": "605399",
+        "name": "晨光新材",
+        "reason": "功能性硅烷+多基地产能",
         "close": null,
         "change_pct": null,
         "huanshou": null
       },
       {
-        "code": "301697",
-        "name": "贝特利",
-        "reason": "半导体材料+低温光伏浆料+三季报预增",
+        "code": "605136",
+        "name": "丽人丽妆",
+        "reason": "化妆品电商+海外总代+业绩扭亏",
         "close": null,
         "change_pct": null,
         "huanshou": null
       },
       {
-        "code": "002866",
-        "name": "传艺科技",
-        "reason": "固态电池+钠离子电池+AI PC键盘",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "603928",
-        "name": "兴业股份",
-        "reason": "光刻胶树脂+合成树脂+业绩增长",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "603863",
-        "name": "松炀资源",
-        "reason": "高强瓦楞纸+主业调整+业绩减亏",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "002774",
-        "name": "快意电梯",
-        "reason": "旧梯更新+海外电梯+高速电梯",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "002687",
-        "name": "乔治白",
-        "reason": "职业装+校服+通勤服",
+        "code": "600207",
+        "name": "安彩高科",
+        "reason": "光伏玻璃+资产出售+高透产品",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -267,73 +91,17 @@
         "huanshou": null
       },
       {
-        "code": "300522",
-        "name": "世名科技",
-        "reason": "PCB材料+LCD光刻胶+纳米分散体",
+        "code": "002692",
+        "name": "远程股份",
+        "reason": "电线电缆+电网应用+数据中心电缆",
         "close": null,
         "change_pct": null,
         "huanshou": null
       },
       {
-        "code": "600617",
-        "name": "国新能源",
-        "reason": "天然气管网+新能源+业绩增长",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "600241",
-        "name": "时代万恒",
-        "reason": "新能源电池+圆柱锂电+镍氢电池",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "600026",
-        "name": "中远海能",
-        "reason": "油运景气+LNG运输+上海LNG增资",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "002951",
-        "name": "金时科技",
-        "reason": "超级电容+复合储能+独立储能电站",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "600663",
-        "name": "陆家嘴",
-        "reason": "房地产开发+商办物业+浦东国资",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "600513",
-        "name": "联环药业",
-        "reason": "“超级细菌”+创新药+仿创结合",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "605303",
-        "name": "园林股份",
-        "reason": "重大重组+复牌+存储芯片+园林工程",
-        "close": null,
-        "change_pct": null,
-        "huanshou": null
-      },
-      {
-        "code": "600825",
-        "name": "新华传媒",
-        "reason": "拟收购界面财联社+财经新媒体+上海国资",
+        "code": "603630",
+        "name": "拉芳家化",
+        "reason": "洗护用品+品牌优化+业绩改善",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -347,9 +115,25 @@
         "huanshou": null
       },
       {
-        "code": "002242",
-        "name": "九阳股份",
-        "reason": "厨房小家电+机器人投资+太空科技",
+        "code": "001300",
+        "name": "三柏硕",
+        "reason": "蹦床+健身器材+外销",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "600825",
+        "name": "新华传媒",
+        "reason": "拟收购财联社+重大资产重组+图书发行",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "600241",
+        "name": "时代万恒",
+        "reason": "新能源电池+圆柱锂电+辽宁国资",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -365,67 +149,40 @@
     ]
   },
   "pools": {
-    "zt": 42,
-    "zb": 33,
-    "dt": 14,
-    "max_lb": 8,
-    "lb2": 10,
+    "zt": 17,
+    "zb": 4,
+    "dt": 3,
+    "max_lb": 9,
+    "lb2": 8,
     "zt_codes": [
       "002058",
-      "002242",
-      "600812",
-      "600825",
-      "605303",
-      "002687",
-      "600663",
-      "600513",
-      "002951",
-      "600026",
-      "600617",
       "600241",
-      "300522",
-      "002733",
-      "002866",
-      "002774",
-      "603928",
-      "603863",
-      "301697",
-      "002565",
-      "603137",
-      "605378",
-      "002805",
-      "605298",
-      "601975",
-      "002869",
+      "600825",
+      "603630",
       "001300",
-      "600408",
-      "600722",
-      "601956",
+      "600812",
+      "002733",
+      "002692",
+      "605136",
+      "600207",
+      "605399",
+      "002805",
       "001336",
-      "603200",
-      "920627",
-      "600310",
-      "600400",
-      "000869",
-      "300530",
-      "688196",
-      "603788",
-      "603906",
-      "002702",
-      "002490"
+      "600478",
+      "300821",
+      "603155",
+      "600843"
     ],
-    "seal_pct": 56
+    "seal_pct": 81
   },
-  "breadth": {
-    "up": 1524,
-    "down": 3652,
-    "flat": 110
-  },
-  "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-08 14:20",
+  "breadth": null,
+  "sourcesFailed": [
+    "breadth: undefined"
+  ],
+  "prevCapturedAtBJ": "2026-10-08 14:52",
   "prevPools": {
-    "zt": 41,
+    "zt": 42,
     "zb": 33,
-    "seal_pct": 55.4
+    "seal_pct": 56
   }
 }
