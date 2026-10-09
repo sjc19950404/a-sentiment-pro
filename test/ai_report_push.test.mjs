@@ -176,7 +176,7 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
   }));
   assert.match(intra, /【AI 盘中 · 候选池】2026-09-30 · event:circuit_breaker/, 'urgent 触发源进标题');
   assert.match(intra, /运行回撤 \+8\.80% · 距 DD 档位 0\.2pp/);
-  assert.match(intra, /趋势池 2 只（按综合得分排序，Top 2 · 涨幅3-7% · 量比>2 · 未涨停 · 主力净流入为正）：/, '趋势池标签+四条件进标题（2026-10-10 双池拆分；标题=该池实际筛选口径）');
+  assert.match(intra, /趋势池 2 只（按综合得分排序，Top 2 · 涨幅3-7% · 量比>2 · 未涨停未一字 · 主力净流入为正（已滤昨日涨停））：/, '趋势池标签+四条件进标题（2026-10-10 双池拆分；标题=该池实际筛选口径）');
   assert.match(intra, / 1\. 600825 新华传媒 · 得分 0\.87 · 题材：半导体投资\/国产替代 · 量比 3\.2 · PE 22x · 盘中 \+5\.2% · ✅/, '齐全股行尾 ✅（题材/估值/资金三要素清点通过）');
   assert.match(intra, / 2\. 000002 样本B · 得分 0\.5 · 量比 2\.5 · — · 盘中 \+4% · ⚠️ 缺估值/, '缺估值股行尾 ⚠️ 直标缺失项（部分数据不冒充完整画像）');
 
@@ -421,10 +421,10 @@ test('renderPushText 双池：连板池/趋势池分块渲染，各块标题=该
   // 头部计数：两池数量都进首行
   assert.match(out, /情绪周期:.* · 建议仓位: .* · 连板池 1 · 趋势池 1 只/, '双池计数进情绪周期行');
   // 连板池标题 = 自身口径（不含涨幅带/未涨停）——标题与标的一致的硬断言
-  assert.match(out, /连板池 1 只（按连板数排序，Top 1 · 连板≥2 · 量比>2 · 主力净流入为正）：/, '连板池标题=连板池口径（只写筛选条件本身）');
-  assert.match(out, / 1\. 600601 三连板股 · 得分 — · 题材：电池 · 3 连板/, '连板池标的行（score null → 得分 —）');
+  assert.match(out, /连板池 1 只（按梯队分排序，Top 1 · 连板≥2 · 今日非一字 · 量比>2 · 主力净流入为正）：/, '连板池标题=连板池口径（只写筛选条件本身）');
+  assert.match(out, / 1\. 600601 三连板股 · 梯队分 — · 题材：电池 · 3 连板/, '连板池标的行（streak_score 缺席 → 梯队分 —）');
   // 趋势池标题 = 四条件（原口径不变）
-  assert.match(out, /趋势池 1 只（按综合得分排序，Top 1 · 涨幅3-7% · 量比>2 · 未涨停 · 主力净流入为正）：/, '趋势池标题=四条件');
+  assert.match(out, /趋势池 1 只（按综合得分排序，Top 1 · 涨幅3-7% · 量比>2 · 未涨停未一字 · 主力净流入为正（已滤昨日涨停））：/, '趋势池标题=四条件');
   assert.match(out, / 1\. 600603 首板趋势股 · 得分 0\.8 · 题材：出行 · 量比 3\.2/, '趋势池标的行');
   // 一致性反证：连板池标题行绝不含趋势池的涨幅带/未涨停字样
   const streakTitle = (out.match(/连板池 1 只（[^：]*）：/) || [''])[0];
@@ -490,12 +490,12 @@ test('renderPushText：push_verification（applied·有剔除/降级）→ 台�
     push_verification: {
       applied: true, snapshotAtBJ: '2026-10-12 14:53', checkedAtBJ: '14:54',
       minutes_to_close: 6, mode_degraded: true, trend_pool_mode: 'tomorrow_watch',
-      trend: { checked: 2, removed: [{ code: '600802', name: '已涨停股', reason: '已涨停（最新快照现 10%）' }] },
+      trend: { checked: 2, removed: [{ code: '600802', name: '已涨停股', reason: '已涨停（最新快照现 10%）', kind: 'structural' }] },
       streak: { checked: 0, removed: [] },
     },
     missing_notes: [],
   }));
-  assert.match(out, /⚠ 推送前校验（快照 2026-10-12 14:53）：剔除 1 只（600802 已涨停（最新快照现 10%））；趋势池→明日观察池（距收盘 6 分钟）/, '台账行：剔除明细 + 降级');
+  assert.match(out, /推送前校验（快照 2026-10-12 14:53）：⛔ 结构违背剔除 1 只（600802 已涨停（最新快照现 10%））；趋势池→明日观察池（距收盘 6 分钟）/, '台账行：结构剔除明细 + 降级');
   // 零变动（applied 但无剔除无降级）→ 不刷屏
   const quiet = renderPushText(mkReport({
     report_type: 'intraday',
@@ -537,7 +537,7 @@ test('renderPushText 置信度标签（2026-10-10 用户指令）：与 push_ver
     push_verification: { applied: false, note: '快照非报告构建拍 → 跨拍仅审计不剔除', trend: { checked: 1, removed: [] }, streak: { checked: 0, removed: [] } },
     missing_notes: [],
   }));
-  assert.ok(low.includes('置信度 低（跨拍/校验缺席，未应用剔除）'), '未应用 → 低（不冒充）');
+  assert.ok(low.includes('置信度 低（时点核验缺席，结构预筛已过）'), '未应用 → 低（不冒充）');
   // 无 push_verification（旧档）→ 不渲染置信度段（不冒充已校验）
   const old = renderPushText(mkReport({ report_type: 'intraday', payload: { ...base.payload, simulation_stock: sim }, missing_notes: [] }));
   assert.ok(!old.includes('置信度'), '旧档无台账 → 置信度标签缺席');

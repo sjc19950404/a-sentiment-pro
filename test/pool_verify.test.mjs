@@ -21,12 +21,12 @@ const mkSim = ({ trend = [], streak = [], mode = 'trend', snapAt = '2026-10-12 1
 const trendItem = (code, over = {}) => ({ code, name: `股${code}`, score: 0.6, selection_reason: '量比 3.0', ...over });
 const streakItem = (code, over = {}) => ({ code, name: `股${code}`, score: null, selection_reason: '3 连板', ...over });
 
-const mkSnap = (rows, { zt = [], ztlb = {}, at = '2026-10-12 10:00' } = {}) => ({
+const mkSnap = (rows, { zt = [], ztlb = {}, at = '2026-10-12 10:00', prevZt = null, ztDetail = null } = {}) => ({
   tradeDate: '2026-10-12',
   capturedAtBJ: at,
   hot: { rows },
   screener: null,
-  pools: { zt_codes: zt, zt_lb: ztlb },
+  pools: { zt_codes: zt, zt_lb: ztlb, prev_zt_codes: prevZt, zt_detail: ztDetail },
 });
 const row = (code, over = {}) => ({ code, name: `股${code}`, change_pct: 5, liangbi: 3, main_net: 1e7, ...over });
 
@@ -39,11 +39,12 @@ test('verify：四条件全过 → 零剔除，patched 同池（幂等基线）'
   assert.deepEqual(patched.candidate_pool.map((x) => x.code), ['600001', '600002']);
 });
 
-test('verify：已涨停（zt_codes 名单）→ 剔除并留 reason（带内涨幅也剔——名单权威）', () => {
+test('verify：已涨停（zt_codes 名单）→ 结构违背恒剔除并留 reason（带内涨幅也剔——名单权威）', () => {
   const r = mkReport(mkSim({ trend: [trendItem('600001')] }));
   const { summary, patched } = verifyIntradayPools(r, mkSnap([row('600001', { change_pct: 6 })], { zt: ['600001'] }));
   assert.deepEqual(patched.candidate_pool, []);
-  assert.equal(summary.trend.removed[0].reason, '已涨停（最新快照现 6%）');
+  assert.equal(summary.trend.removed[0].reason, '已涨停（最新快照现 6%）——结构违背恒剔除');
+  assert.equal(summary.trend.removed[0].kind, 'structural', 'kind=structural（P0：恒剔不受同拍守卫）');
 });
 
 test('verify：四条件各剔一种——涨幅出带/量比不足/主力转负/掉出底座', () => {
@@ -137,14 +138,13 @@ test('verify：非 intraday 报告（post_market）→ 跳过（推送前校验�
 });
 
 // ── 同拍守卫（周六本地冒烟实录：跨拍误剔 10/10 → 修复）──────────────────────
-test('verify：跨拍（快照拍 ≠ 档案构建拍）→ patched=null 绝不应用，removed 仅观察台账', () => {
+test('verify：跨拍（快照拍 ≠ 档案构建拍）→ 时点判据不剔除不记台账；结构违背跨拍仍恒剔除（P0）', () => {
   // 档案构建于 10:00 拍（标的在池），复核快照已是 14:53 拍（标的已掉出底座）
   const r = mkReport(mkSim({ trend: [trendItem('600001')], snapAt: '2026-10-12 10:00' }));
   const { summary, patched } = verifyIntradayPools(r, mkSnap([row('600999')], { at: '2026-10-12 14:53' }));
-  assert.equal(patched, null, '跨拍不应用——掉出底座是时点差不是违规，剔除会改写历史档案');
-  assert.ok(summary.note.includes('跨拍仅审计不剔除'));
-  assert.equal(summary.trend.removed.length, 1, '观察台账照记（审计可对照「若同拍会剔谁」）');
-  assert.equal(summary.trend.removed[0].reason, '掉出数据底座（最新快照已无此股）');
+  assert.equal(patched, null, '跨拍纯时点差 → patched=null（时点剔除会改写历史档案）');
+  assert.ok(summary.note.includes('时点判据不剔除'), 'note 披露跨拍语义（P0 收窄后）');
+  assert.equal(summary.trend.removed.length, 0, '跨拍掉底座不进 removed（时点差不是违规）');
 });
 
 test('verify：旧档案（无 snapshotAtBJ 字段）→ 同样只审计不剔除（保护历史）', () => {
@@ -237,4 +237,66 @@ test('closeout：ztpool 无当日行（16:00 本地任务未入库）→ note �
 test('closeout：无 simulation_stock（模拟选股关闭日）→ note 跳过', () => {
   const rv = closeoutReview({ report_type: 'intraday', date: '2026-10-12', payload: {} }, ztpoolDays, {});
   assert.ok(rv.note.includes('无 simulation_stock'));
+});
+
+// ── P0 双池物理拆分（2026-10-10 实盘事故）：结构违背恒剔除，不受同拍守卫 ──────────
+test('P0 结构预筛：旧档连板股混入趋势池（reason 自称连板）→ 快照缺席仍恒剔除并应用', () => {
+  // 10-09 事故原样：旧档 candidate_pool 全是连板股（新华传媒 6 连板 9.99% / 雪龙 4 连板 -9.98% 跌停），
+  // 快照已换日——档案自证字段（selection_reason/intraday_chg）是唯一防线。
+  const sim = mkSim({
+    trend: [
+      trendItem('600825', { selection_reason: '6 连板（当日 9.99%，晋级成功，近期上榜 8 次）', intraday_chg: 9.99 }),
+      trendItem('603949', { selection_reason: '4 连板（当日 -9.98%，晋级失败，近期上榜 7 次）', intraday_chg: -9.98 }),
+      trendItem('600100', { selection_reason: '量比 3.0', intraday_chg: 5.2 }), // 干净标的
+    ],
+    snapAt: null, // 旧档无 snapshotAtBJ
+  });
+  const r = mkReport(sim);
+  const { summary, patched } = verifyIntradayPools(r, null);
+  assert.equal(summary.trend.removed.length, 2, '连板股 + 跌停股双双结构剔除');
+  assert.ok(summary.trend.removed.every((x) => x.kind === 'structural'), 'kind=structural');
+  assert.match(summary.trend.removed[0].reason, /连板股混入趋势池（档案自称 6 连板）/);
+  // 雪龙型（4 连板 -9.98% 跌停）：连板声称判据先行命中——「连板混入」即本质报因
+  assert.match(summary.trend.removed[1].reason, /连板股混入趋势池（档案自称 4 连板）/);
+  assert.deepEqual(patched.candidate_pool.map((x) => x.code), ['600100'], '干净标的保留——剔除错误数据不是清空档案');
+  assert.ok(summary.note.includes('结构预筛照常执行'), 'note 披露快照缺席但结构预筛生效');
+});
+
+test('P0 跨拍：快照在场非构建拍，连板身份股（zt_lb）仍恒剔除；时点掉底座保留', () => {
+  const sim = mkSim({
+    trend: [
+      trendItem('600001'),                                // 掉出底座（时点差）→ 跨拍保留
+      trendItem('600003', { selection_reason: '量比 3' }), // 在底座但 zt_lb 连板身份 → 结构剔除
+    ],
+    snapAt: '2026-10-12 10:00',
+  });
+  const r = mkReport(sim);
+  const snap = mkSnap([row('600003', { change_pct: 6 })], { at: '2026-10-12 14:53', ztlb: { 600003: 3 } });
+  const { summary, patched } = verifyIntradayPools(r, snap);
+  assert.deepEqual(patched.candidate_pool.map((x) => x.code), ['600001'], '结构剔除跨拍应用；时点掉底座保留');
+  assert.equal(summary.trend.removed.filter((x) => x.kind === 'structural').length, 1);
+  assert.ok(summary.trend.removed[0].reason.includes('连板身份'), '连板身份结构剔除');
+});
+
+test('P0 昨日涨停黑名单：prev_zt_codes 断板股混入趋势池 → 结构恒剔除', () => {
+  const r = mkReport(mkSim({ trend: [trendItem('600001')] }));
+  const snap = mkSnap([row('600001', { change_pct: 5 })], { prevZt: ['600001'] });
+  const { summary, patched } = verifyIntradayPools(r, snap);
+  assert.deepEqual(patched.candidate_pool, [], '断板股（昨日涨停今日回落）结构剔除——10-09 雪龙型污染');
+  assert.match(summary.trend.removed[0].reason, /昨日涨停断板股（黑名单）——结构违背恒剔除/);
+});
+
+test('P0 连板池一字板：zt_detail fbt<=092500 → 结构恒剔除（今日非一字白名单）', () => {
+  const r = mkReport(mkSim({ streak: [streakItem('600005'), streakItem('600006')] }));
+  const snap = mkSnap([row('600005'), row('600006')], {
+    zt: ['600005', '600006'],
+    ztlb: { 600005: 3, 600006: 2 },
+    ztDetail: [
+      { c: '600005', lbc: 3, fbt: '092500', fund: 5e7 },  // 一字（集合竞价封死）→ 剔
+      { c: '600006', lbc: 2, fbt: '101530', fund: 3e7 },  // 盘中封板 → 留
+    ],
+  });
+  const { summary, patched } = verifyIntradayPools(r, snap);
+  assert.deepEqual(patched.streak_pool.map((x) => x.code), ['600006'], '一字无买入窗口结构剔除');
+  assert.match(summary.streak.removed[0].reason, /今日一字（fbt 092500/);
 });

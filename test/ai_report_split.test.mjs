@@ -41,7 +41,12 @@ test('buildWatchlist：空梯队/缺档 → ladder 空数组（不炸不造数�
 const snap = (rows, pools = {}) => ({
   tradeDate: '2026-10-09',
   hot: { rows },
-  pools: { zt_codes: pools.zt_codes ?? [], ...(pools.zt_lb ? { zt_lb: pools.zt_lb } : {}) },
+  pools: {
+    zt_codes: pools.zt_codes ?? [],
+    ...(pools.zt_lb ? { zt_lb: pools.zt_lb } : {}),
+    ...(pools.prev_zt_codes ? { prev_zt_codes: pools.prev_zt_codes } : {}),
+    ...(pools.zt_detail ? { zt_detail: pools.zt_detail } : {}),
+  },
 });
 const row = (o) => ({ code: '600001', name: '样本股', reason: '半导体+国产替代', change_pct: 5, liangbi: 3, main_net: 5e7, pe_ttm: 22, pb: 1.4, ...o });
 
@@ -236,4 +241,56 @@ test('buildIntradayPool 降级：nowBJ/capturedAtBJ 距收盘<30分钟 → trend
   const noT = buildIntradayPool(snap(rows), {});
   assert.equal(noT.trend_pool_mode, 'trend', '时间不可知 → 按趋势池渲染（不猜测降级）');
   assert.equal(noT.minutes_to_close, null);
+});
+
+// ── P0 双池物理拆分（2026-10-10 实盘事故）：黑名单/白名单/独立评分 ──────────────
+test('P0 buildIntradayPool：昨日涨停断板股混进 3-7% 带 → prev_zt_codes 黑名单剔除', () => {
+  // 10-09 事故形态：雪龙 4 连板今日 -9.98% 是带外；更隐蔽的是断板后回落到 +5% 的股——
+  // 四条件全过但本质是连板余温，不属普通趋势股。黑名单 = ztpool_history 昨日收盘涨停。
+  const rows = [
+    row({ code: '603949', change_pct: 5 }),   // 昨日涨停今日 +5% 带内 → 黑名单剔
+    row({ code: '600100', change_pct: 5.5 }), // 普通趋势股 → 留
+  ];
+  const { pool, basis } = buildIntradayPool(snap(rows, { prev_zt_codes: ['603949'] }), {});
+  assert.deepEqual(pool.map((p) => p.code), ['600100'], '断板股被黑名单拦截，普通趋势股保留');
+  assert.ok(basis.includes('昨日涨停 1'), '剔除台账计 prev_zt');
+  assert.ok(basis.includes('已滤昨日涨停 1 只黑名单'), 'basis 披露黑名单规模');
+});
+
+test('P0 buildIntradayPool：昨日涨停黑名单缺席（旧快照）→ 不剔不冒充，basis 报因', () => {
+  const rows = [row({ code: '603949', change_pct: 5 })];
+  const { pool, basis } = buildIntradayPool(snap(rows), {}); // v3 旧快照无 prev_zt_codes
+  assert.equal(pool.length, 1, '不可核验即不剔（宁缺毋假不等于乱剔）');
+  assert.ok(basis.includes('昨日涨停黑名单缺席'), 'basis 如实披露防线缺席');
+});
+
+test('P0 buildIntradayPool：连板池白名单——今日一字（fbt<=092500）剔除；梯队分/封单装配', () => {
+  const rows = [
+    row({ code: '600601', change_pct: 10.02, main_net: 6e7 }), // 3 连板 盘中封板 → 留
+    row({ code: '600602', change_pct: 9.98, main_net: 3e7 }),  // 2 连板 一字 → 剔
+  ];
+  const zt_lb = { 600601: 3, 600602: 2 };
+  const zt_detail = [
+    { c: '600601', lbc: 3, fbt: '101530', fund: 5e7 },
+    { c: '600602', lbc: 2, fbt: '092500', fund: 9e7 },
+  ];
+  const { streak_pool, streak_basis } = buildIntradayPool(snap(rows, { zt_lb, zt_detail }), {});
+  assert.deepEqual(streak_pool.map((p) => p.code), ['600601'], '一字无买入窗口剔除（白名单：今日非一字）');
+  assert.ok(streak_basis.includes('一字 1'), '一字剔除台账');
+  // 梯队分 = 0.6×(lbc/maxLbc) + 0.4×(mn/maxMn)：单只留存 → 0.6×1 + 0.4×1 = 1
+  assert.equal(streak_pool[0].streak_score, 1, '梯队分（连板高度0.6+主力0.4，缺席重归一）');
+  assert.equal(streak_pool[0].seal_amount, 5e7, '封单额（东财 fund 原值）透传');
+  assert.equal(streak_pool[0].score, null, '趋势池综合分不套连板池');
+});
+
+test('P0 buildIntradayPool：梯队分独立于趋势池综合分——连板高度优先', () => {
+  const rows = [
+    row({ code: '600601', change_pct: 10.02, main_net: 4e7 }), // 4 连板
+    row({ code: '600602', change_pct: 10.02, main_net: 8e7 }), // 2 连板（主力更强）
+  ];
+  const zt_lb = { 600601: 4, 600602: 2 };
+  const zt_detail = [{ c: '600601', lbc: 4, fbt: '100000', fund: 1e8 }, { c: '600602', lbc: 2, fbt: '100000', fund: 2e8 }];
+  const { streak_pool } = buildIntradayPool(snap(rows, { zt_lb, zt_detail }), {});
+  assert.deepEqual(streak_pool.map((p) => p.code), ['600601', '600602'], '梯队分排序（高度 0.6 权重主导）');
+  assert.ok(streak_pool[0].streak_score > streak_pool[1].streak_score, '4 连板梯队分 > 2 连板');
 });

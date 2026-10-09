@@ -332,7 +332,10 @@ async function fetchPools(date) {
           // 涨停池明细（2026-10-10 滚动情绪）：每股 {c, lbc, zbc, hybk}——情绪六指标
           //   （computeEmotionMetrics）的原料，与收盘口径 ztpool_history 同源同构；
           //   此前只落聚合计数，盘中情绪无米下锅。
-          out.zt_detail = pool.map((p) => ({ c: p.c, lbc: p.lbc || 1, zbc: p.zbc || 0, hybk: p.hybk || '' }));
+          // v4（2026-10-10 P0 双池物理拆分）：+fbt（首次封板时间 HHMMSS——一字板判据：
+          //   fbt<=092500 即开盘集合竞价封死，买入窗口不存在）+fund（封单资金，元——
+          //   连板池「封单质量」展示的唯一真实源，宁缺毋假）。
+          out.zt_detail = pool.map((p) => ({ c: p.c, lbc: p.lbc || 1, zbc: p.zbc || 0, hybk: p.hybk || '', fbt: p.fbt || null, fund: p.fund != null ? p.fund : null }));
         }
         if (api === 'getTopicDTPool' && pool) {
           out.dt_detail = pool.map((p) => ({ c: p.c, fba: p.fba || 0, amount: p.amount || 0, days: p.days || 0 }));

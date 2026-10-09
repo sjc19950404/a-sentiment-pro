@@ -55,19 +55,73 @@ export function verifyIntradayPools(report, intraday, opts = {}) {
     summary.note = '档案无 simulation_stock.candidate_pool（模拟选股关闭或缺席）';
     return { summary, patched: null };
   }
-  if (!intraday || !intraday.pools || intraday.tradeDate !== report.date) {
-    summary.note = `复核快照缺席/非当日（tradeDate ${intraday?.tradeDate ?? '无'} ≠ ${report.date}），本轮跳过——不拿旧快照冒充复核`;
-    return { summary, patched: null };
+  // ── 结构性违背 vs 时点性漂移（2026-10-10 P0 用户指令「严重违背筛选条件禁止上屏」）──
+  //   结构性违背（连板股混入趋势池 / 涨跌停股在「未涨停 3-7%」池 / 断板股漏过昨日涨停
+  //   黑名单 / 一字混入连板池）与快照时点**无关**——旧档、跨拍、快照缺席同样错误，
+  //   恒剔除，不受同拍守卫保护（同拍守卫只保护「掉出底座/量比转弱」这类时点漂移——
+  //   那是行情变化不是数据错误）。档案自证字段（selection_reason 连板声称 / 档案
+  //   intraday_chg 涨跌停）**不依赖快照**——10-09 旧档推送时快照已换日，靠这两条
+  //   才能拦住「6 连板 9.99%」混在趋势池标题下的实盘事故。
+  const S = STREAK_POOL_FILTERS; // 连板池独立判据（边界写死）——与构建端同一常量，预筛/核验共用
+  const structuralRemoved = { trend: 0, streak: 0 };
+  const claimedLbOf = (item) => {
+    const m = /^(\d+)\s*连板/.exec(String(item?.selection_reason || ''));
+    return m ? +m[1] : null;
+  };
+  const structuralPreScreen = (item, poolKind) => {
+    // 返回 reason（结构违背）或 null（档案自证未发现）
+    const claimed = claimedLbOf(item);
+    const chg = isValidNum(item?.intraday_chg) ? +item.intraday_chg : null;
+    if (poolKind === 'trend') {
+      if (claimed != null && claimed >= S.min_lb) return `连板股混入趋势池（档案自称 ${claimed} 连板）——结构违背恒剔除`;
+      if (chg != null && chg >= 9.9) return `涨停股混入趋势池（档案记录 ${chg}%）——结构违背恒剔除`;
+      if (chg != null && chg <= -9.9) return `跌停股混入趋势池（档案记录 ${chg}%）——结构违背恒剔除`;
+    } else {
+      if (claimed != null && claimed < S.min_lb) return `连板身份不足（档案自称 ${claimed} 连板 <${S.min_lb}）——结构违背恒剔除`;
+      if (chg != null && chg <= -9.9) return `跌停股混入连板池（档案记录 ${chg}%）——结构违背恒剔除`;
+    }
+    return null;
+  };
+  // 结构预筛（快照无关）恒执行——快照缺席/非当日时这是唯一防线（旧档补推场景）
+  const preScreenedTrend = [];
+  summary.trend.checked = sim.candidate_pool.length;
+  for (const item of sim.candidate_pool) {
+    const reason = structuralPreScreen(item, 'trend');
+    if (reason) {
+      summary.trend.removed.push({ code: item?.code != null ? String(item.code) : null, name: item?.name ?? null, reason, kind: 'structural' });
+      structuralRemoved.trend++;
+    } else preScreenedTrend.push(item);
   }
-  // 同拍守卫（周六本地冒烟实录）：剔除只对**构建拍快照**应用——跨拍（补推旧档案/
-  //   dispatch 延迟重跑）时底座已换血，「掉出底座」是时点差不是违规，剔除会改写
-  //   历史档案。正常 CI 链路恒同拍（snapshot→build→push 同 run 串行）。跨拍仍执行
-  //   核验——removed 作**观察台账**（渲染层 applied 守卫拦住，不会进推送），供审计
-  //   对照「若同拍会剔谁」，但 patched=null 绝不应用。
-  //   旧档案（无 snapshotAtBJ 字段）同样只审计——保护历史。
+  const preScreenedStreak = [];
+  const streakItems0 = Array.isArray(sim.streak_pool) ? sim.streak_pool : [];
+  summary.streak.checked = streakItems0.length;
+  for (const item of streakItems0) {
+    const reason = structuralPreScreen(item, 'streak');
+    if (reason) {
+      summary.streak.removed.push({ code: item?.code != null ? String(item.code) : null, name: item?.name ?? null, reason, kind: 'structural' });
+      structuralRemoved.streak++;
+    } else preScreenedStreak.push(item);
+  }
+  if (!intraday || !intraday.pools || intraday.tradeDate !== report.date) {
+    // 快照缺席/非当日：结构预筛的剔除**仍应用**（结构违背与快照无关）；
+    //   时点核验（量比/主力/掉底座/连板身份现值）跳过——note 如实披露。
+    summary.note = `复核快照缺席/非当日（tradeDate ${intraday?.tradeDate ?? '无'} ≠ ${report.date}）→ 时点核验跳过；结构预筛照常执行（结构违背与快照时点无关）`;
+    return {
+      summary,
+      patched: (structuralRemoved.trend || structuralRemoved.streak)
+        ? { candidate_pool: preScreenedTrend, streak_pool: preScreenedStreak, trend_pool_mode: summary.trend_pool_mode }
+        : null,
+    };
+  }
+  // 同拍守卫（P0 收窄后语义）：**时点判据**（掉底座/量比/主力/软出带/连板身份现值）
+  //   只对构建拍快照应用——跨拍（补推旧档案/dispatch 延迟重跑）时底座已换血，「掉出
+  //   底座」是时点差不是违规，时点剔除会改写历史档案。正常 CI 链路恒同拍
+  //   （snapshot→build→push 同 run 串行）。
+  //   **结构判据不受此守卫**（2026-10-10 P0 用户指令）：涨跌停/连板身份/昨日涨停
+  //   黑名单/一字与快照时点无关——跨拍、旧档（无 snapshotAtBJ）同样恒剔除并应用。
   const sameTick = sim.snapshotAtBJ != null && sim.snapshotAtBJ === intraday.capturedAtBJ;
   if (!sameTick) {
-    summary.note = `快照非报告构建拍（构建 ${sim.snapshotAtBJ ?? '未记录（旧档）'} / 复核 ${intraday.capturedAtBJ ?? '无'}）→ 跨拍仅审计不剔除，防止底座换血误伤档案`;
+    summary.note = `快照非报告构建拍（构建 ${sim.snapshotAtBJ ?? '未记录（旧档）'} / 复核 ${intraday.capturedAtBJ ?? '无'}）→ 时点判据不剔除（防底座换血误伤档案）；结构判据照常恒剔除`;
   }
   // 数据底座（与 buildIntradayPool 同一宇宙）：screener 优先、hot 补——复核取并集最宽
   //   （行字段同构：change_pct/liangbi/main_net），任一在场即可核验。
@@ -79,42 +133,79 @@ export function verifyIntradayPools(report, intraday, opts = {}) {
     if (r?.code) rows.set(String(r.code), r);
   }
   if (!rows.size) {
-    summary.note = '快照 hot/screener 均缺席，无核验底座';
-    return { summary, patched: null };
+    summary.note = '快照 hot/screener 均缺席，时点核验无底座跳过；结构预筛照常执行（结构违背与快照无关）';
+    return {
+      summary,
+      patched: (structuralRemoved.trend || structuralRemoved.streak)
+        ? { candidate_pool: preScreenedTrend, streak_pool: preScreenedStreak, trend_pool_mode: summary.trend_pool_mode }
+        : null,
+    };
   }
   const ztCodes = new Set((Array.isArray(intraday.pools.zt_codes) ? intraday.pools.zt_codes : []).map(String));
   const ztLb = intraday.pools.zt_lb && typeof intraday.pools.zt_lb === 'object' ? intraday.pools.zt_lb : null;
-  const F = INTRADAY_POOL_FILTERS;
-  const S = STREAK_POOL_FILTERS; // 连板池独立判据（2026-10-10 边界写死）——与构建端同一常量
-  // ── 趋势池（含降级后的明日观察池——标的规则同为四条件）逐只复核 ─────────────
+  const prevZtCodes = Array.isArray(intraday.pools.prev_zt_codes)
+    ? new Set(intraday.pools.prev_zt_codes.map(String)) : null;
+  const ztDetailMap = Array.isArray(intraday.pools.zt_detail)
+    ? new Map(intraday.pools.zt_detail.map((d) => [String(d?.c), d])) : null;
+  const F = INTRADAY_POOL_FILTERS; // （S 已上移至预筛段——预筛/核验共用同一出处）
+  // ── 趋势池（含降级后的明日观察池——标的规则同为四条件+黑名单）逐只复核 ────────
+  //   结构判据（恒剔）→ 时点判据（仅同拍剔——同拍守卫只保护时点漂移）。
   const keptTrend = [];
-  summary.trend.checked = sim.candidate_pool.length;
-  for (const item of sim.candidate_pool) {
+  for (const item of preScreenedTrend) {
     const code = item?.code != null ? String(item.code) : null;
-    const rem = (reason) => summary.trend.removed.push({ code, name: item?.name ?? null, reason });
-    if (!code) { rem('标的无代码，不可核验'); continue; }
+    // rem 统一入口：kind=structural 同步递增 structuralRemoved——跨拍 patched 应用
+    //   条件依赖该计数（预筛段剔除同理已计入），漏计 = 跨拍结构剔除静默丢失。
+    const rem = (reason, kind = 'tick') => {
+      summary.trend.removed.push({ code, name: item?.name ?? null, reason, kind });
+      if (kind === 'structural') structuralRemoved.trend++;
+    };
+    if (!code) { rem('标的无代码，不可核验', 'structural'); continue; }
     const r = rows.get(code);
-    if (!r) { rem('掉出数据底座（最新快照已无此股）'); continue; }
+    if (!r) {
+      if (sameTick) rem('掉出数据底座（最新快照已无此股）');
+      else keptTrend.push(item); // 跨拍掉底座 = 时点差不是违规（同拍守卫保护）
+      continue;
+    }
     const chg = isValidNum(r.change_pct) ? +r.change_pct : null;
     const lb = isValidNum(r.liangbi) ? +r.liangbi : null;
     const mn = isValidNum(r.main_net) ? +r.main_net : null;
     if (chg == null || lb == null || mn == null) { rem('核验字段缺失（涨幅/量比/主力净流入）'); continue; }
-    if (ztCodes.has(code) || chg >= 9.9) { rem(`已涨停（最新快照现 ${chg}%）`); continue; }
+    // 结构判据（恒剔——涨跌停/连板身份/昨日涨停黑名单与快照时点无关）
+    if (ztCodes.has(code) || chg >= 9.9) { rem(`已涨停（最新快照现 ${chg}%）——结构违背恒剔除`, 'structural'); continue; }
+    if (chg <= -9.9) { rem(`跌停（最新快照现 ${chg}%）——结构违背恒剔除`, 'structural'); continue; }
+    if (prevZtCodes && prevZtCodes.has(code)) { rem('昨日涨停断板股（黑名单）——结构违背恒剔除', 'structural'); continue; }
+    const lbcNow = ztLb && isValidNum(ztLb[code]) ? Math.trunc(+ztLb[code]) : null;
+    if (lbcNow != null && lbcNow >= S.min_lb) { rem(`最新快照涨停池连板身份（${lbcNow} 连板）——结构违背恒剔除`, 'structural'); continue; }
+    if (!sameTick) { keptTrend.push(item); continue; } // 时点判据跨拍不剔（防底座换血误伤档案）
+    // 时点判据（仅同拍）：盘中行情波动是正常漂移，剔除只对构建拍快照应用
     if (chg < F.chg_min || chg > F.chg_max) { rem(`涨幅出带（现 ${chg}%，带 ${F.chg_min}-${F.chg_max}%）`); continue; }
     if (lb <= F.liangbi_min) { rem(`量比不足（现 ${lb}）`); continue; }
     if (mn <= 0) { rem('主力净流入转负'); continue; }
     keptTrend.push(item);
   }
-  // ── 连板池逐只复核 ────────────────────────────────────────────────────────
+  // ── 连板池逐只复核（结构恒剔 + 时点仅同拍）──────────────────────────────────
   const keptStreak = [];
-  const streakItems = Array.isArray(sim.streak_pool) ? sim.streak_pool : [];
-  summary.streak.checked = streakItems.length;
-  for (const item of streakItems) {
+  for (const item of preScreenedStreak) {
     const code = item?.code != null ? String(item.code) : null;
-    const rem = (reason) => summary.streak.removed.push({ code, name: item?.name ?? null, reason });
-    if (!code) { rem('标的无代码，不可核验'); continue; }
+    const rem = (reason, kind = 'tick') => {
+      summary.streak.removed.push({ code, name: item?.name ?? null, reason, kind });
+      if (kind === 'structural') structuralRemoved.streak++;
+    };
+    if (!code) { rem('标的无代码，不可核验', 'structural'); continue; }
     const r = rows.get(code);
-    if (!r) { rem('掉出数据底座（最新快照已无此股）'); continue; }
+    if (!r) {
+      if (sameTick) rem('掉出数据底座（最新快照已无此股）');
+      else keptStreak.push(item);
+      continue;
+    }
+    // 结构判据（恒剔）
+    const ztd = ztDetailMap ? ztDetailMap.get(code) : null;
+    const fbt = ztd?.fbt != null ? String(ztd.fbt) : null;
+    if (fbt && fbt <= '092500') { rem(`今日一字（fbt ${fbt} 集合竞价封死，无买入窗口）——结构违背恒剔除`, 'structural'); continue; }
+    const chgNow = isValidNum(r.change_pct) ? +r.change_pct : null;
+    if (chgNow != null && chgNow <= -9.9) { rem(`跌停（最新快照现 ${chgNow}%）——结构违背恒剔除`, 'structural'); continue; }
+    if (!sameTick) { keptStreak.push(item); continue; }
+    // 时点判据（仅同拍）
     const lbc = ztLb && isValidNum(ztLb[code]) ? Math.trunc(+ztLb[code]) : null;
     if (lbc == null || lbc < S.min_lb) { rem('连板身份消失（最新快照涨停池无此股——疑似炸板）'); continue; }
     const lb = isValidNum(r.liangbi) ? +r.liangbi : null;
@@ -136,8 +227,10 @@ export function verifyIntradayPools(report, intraday, opts = {}) {
   }
   return {
     summary,
-    // 跨拍（sameTick=false）→ patched=null：removed 仅观察台账，绝不应用（防改写历史档案）
-    patched: sameTick ? {
+    // 应用条件（P0 双层）：同拍 → 时点+结构剔除全应用（幂等，零变动时 patched 也返回，
+    //   调用方按 removed 判定是否落台账）；跨拍 → 仅当结构剔除发生才应用 patched（结构
+    //   违背与快照时点无关，恒应用）；纯时点剔除跨拍绝不应用（防底座换血误伤历史档案）。
+    patched: (sameTick || structuralRemoved.trend || structuralRemoved.streak) ? {
       candidate_pool: keptTrend,
       streak_pool: keptStreak,
       trend_pool_mode: summary.trend_pool_mode,

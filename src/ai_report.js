@@ -819,6 +819,16 @@ export function buildIntradayPool(intraday, opts = {}) {
     ? `全市场筛选榜（东财 clist 主力净流入降序前 ${screenRows.length}）`
     : (boardRows.length ? 'hot 强势榜（全市场筛选榜缺席的降级底座；≈涨停集中营，3-7% 带几乎恒空）' : '无底座');
   const ztCodes = new Set(Array.isArray(intraday?.pools?.zt_codes) ? intraday.pools.zt_codes.map(String) : []);
+  // 昨日涨停黑名单（v4 · 2026-10-10 P0 双池物理拆分）：趋势池「昨日涨停」过滤唯一源。
+  //   快照落盘时从 ztpool_history 只读提取（16:00 入库流程零改动）；缺席（旧快照/
+  //   历史未建）→ null：不可核验即不剔，basis 报因不冒充已过滤（宁缺毋假）。
+  const prevZtCodes = !stale && Array.isArray(intraday?.pools?.prev_zt_codes)
+    ? new Set(intraday.pools.prev_zt_codes.map(String)) : null;
+  // 涨停池明细（v4）：fbt（首次封板 HHMMSS——一字判定）/fund（封单资金，元——
+  //   连板池「封单质量」唯一真实源）。v3 旧快照无 fbt/fund → 无法判一字/无封单，
+  //   streak_basis 报因，宁缺毋假。
+  const ztDetailArr = !stale && Array.isArray(intraday?.pools?.zt_detail) ? intraday.pools.zt_detail : null;
+  const ztDetailMap = ztDetailArr ? new Map(ztDetailArr.map((d) => [String(d?.c), d])) : null;
   // 连板身份（2026-10-10 双池拆分）：pools.zt_lb（东财 getTopicZTPool lbc，code→连板数）是
   //   唯一权威源——reason 标签猜连板 = 造数。旧快照（v2 无此字段）→ null，连板池报因不猜测。
   const ztLb = !stale && intraday?.pools?.zt_lb && typeof intraday.pools.zt_lb === 'object'
@@ -843,8 +853,8 @@ export function buildIntradayPool(intraday, opts = {}) {
   const tagCount = {};
   for (const r of universe) for (const t of tagsOf(r)) tagCount[t] = (tagCount[t] || 0) + 1;
   const maxTag = Math.max(1, ...Object.values(tagCount));
-  const rejected = { chg_band: 0, liangbi: 0, zt: 0, main_net: 0, unverifiable: 0 };
-  const streakRejected = { liangbi: 0, main_net: 0, unverifiable: 0 }; // 连板池轨剔除台账
+  const rejected = { chg_band: 0, liangbi: 0, zt: 0, prev_zt: 0, main_net: 0, unverifiable: 0 };
+  const streakRejected = { yizi: 0, liangbi: 0, main_net: 0, unverifiable: 0 }; // 连板池轨剔除台账
   const cands = [];
   const streakCands = [];
   for (const r of universe) {
@@ -855,23 +865,33 @@ export function buildIntradayPool(intraday, opts = {}) {
     const lb = isValidNum(r.liangbi) ? +r.liangbi : null;
     const mn = isValidNum(r.main_net) ? +r.main_net : null;
     const tags = tagsOf(r);
-    // ── 连板池轨（2026-10-10 用户指令；2026-10-10 P0 边界写死：判据走 SF 独立配置）──
-    //   连板身份可核验（zt_lb ≥ SF.min_lb）即先行分流：不套涨幅带、不剔已涨停（连板
-    //   本就意味着当日涨停——用趋势池的「涨幅 3-7% · 未涨停」筛连板股，会把连板股
-    //   全数误剔，即 10-09 事故）。量比/主力净流入照旧把关；chg 降级为展示字段。
+    // ── 连板池轨（白名单：昨日涨停 且 今日非一字；2026-10-10 P0 边界写死）──────────
+    //   连板身份可核验（zt_lb ≥ SF.min_lb）即先行分流：lbc≥2 本身蕴含「昨日涨停且今日
+    //   仍涨停」（白名单语义），不套涨幅带、不剔已涨停——用趋势池的「涨幅 3-7% · 未
+    //   涨停」筛连板股会全数误剔（10-09 事故）。今日非一字（fbt<=092500 集合竞价封死
+    //   = 无买入窗口无观察意义）：fbt 缺席（v3 旧快照）→ 不可判即不剔，报因不冒充。
+    //   量比/主力净流入照旧把关；chg 降级为展示字段。
     const lbc = ztLb && isValidNum(ztLb[String(r.code)]) ? Math.trunc(+ztLb[String(r.code)]) : null;
     if (lbc != null && lbc >= SF.min_lb) {
+      const ztd = ztDetailMap ? ztDetailMap.get(String(r.code)) : null;
+      const fbt = ztd?.fbt != null ? String(ztd.fbt) : null;
+      if (fbt && fbt <= '092500') { streakRejected.yizi++; continue; }
       if (lb == null || mn == null) { streakRejected.unverifiable++; continue; }
       if (lb <= SF.liangbi_min) { streakRejected.liangbi++; continue; }
       if (mn <= SF.main_net_min) { streakRejected.main_net++; continue; }
-      streakCands.push({ r, chg, lb, mn, lbc, tags });
+      streakCands.push({ r, chg, lb, mn, lbc, fund: ztd?.fund != null ? ztd.fund : null, tags });
       continue;
     }
-    // ── 趋势池轨（四条件，语义不变）─────────────────────────────────────────
+    // ── 趋势池轨（四条件 + 黑名单：昨日涨停/今日涨停/一字板）────────────────────
     if (chg == null || lb == null || mn == null) { rejected.unverifiable++; continue; }
-    // 涨停判定先于带外：~10% 的涨停股同时也在 3-7 带外，先归类「已涨停」台账更有信息量
-    // （zt_codes 是权威名单；chg≥9.9 是名单缺席时的兜底——正常涨停涨幅恒 >7）
+    // 今日涨停判定先于带外：~10% 的涨停股同时也在 3-7 带外，先归类「已涨停」台账更有
+    //   信息量（zt_codes 是权威名单；chg≥9.9 是名单缺席时的兜底——正常涨停涨幅恒 >7）。
+    //   一字板是今日涨停的子集（集合竞价封死），此闸一并覆盖「未涨停未一字」。
     if (ztCodes.has(String(r.code)) || chg >= 9.9) { rejected.zt++; continue; }
+    // 昨日涨停黑名单（2026-10-10 P0 用户指令）：断板股（昨日涨停今日回落/跌停）当日
+    //   若落进 3-7% 带即交叉污染趋势池（10-09 事故：雪龙 4 连板 -9.98% 跌停在池）。
+    //   prev_zt_codes 缺席 → 不可核验即不剔（宁缺毋假，basis 报因）。
+    if (prevZtCodes && prevZtCodes.has(String(r.code))) { rejected.prev_zt++; continue; }
     if (chg < F.chg_min || chg > F.chg_max) { rejected.chg_band++; continue; }
     if (lb <= F.liangbi_min) { rejected.liangbi++; continue; }
     if (mn <= 0) { rejected.main_net++; continue; }
@@ -923,27 +943,44 @@ export function buildIntradayPool(intraday, opts = {}) {
     };
   });
   const basis = (pool.length ? '' : '今日无符合条件标的（宁缺毋假，不凑数填充）；')
-    + `${universeName} 实时现算（每轮全量重算，不沿用上轮）：涨幅 ${F.chg_min}-${F.chg_max}% · 量比 >${F.liangbi_min} · 未涨停（pools.zt_codes）· 主力净流入为正；`
-    + `扫 ${universe.length} 只，剔除——带外 ${rejected.chg_band} / 量比不足 ${rejected.liangbi} / 已涨停 ${rejected.zt} / 净流出或无源 ${rejected.main_net} / 字段缺失 ${rejected.unverifiable}；`
+    + `${universeName} 实时现算（每轮全量重算，不沿用上轮）：涨幅 ${F.chg_min}-${F.chg_max}% · 量比 >${F.liangbi_min} · 未涨停未一字（pools.zt_codes）· 主力净流入为正`
+    + (prevZtCodes ? ` · 已滤昨日涨停 ${prevZtCodes.size} 只黑名单` : ' · ⚠ 昨日涨停黑名单缺席（旧快照无 prev_zt_codes）——断板股可能漏进趋势池')
+    + `；扫 ${universe.length} 只，剔除——带外 ${rejected.chg_band} / 量比不足 ${rejected.liangbi} / 已涨停 ${rejected.zt} / 昨日涨停 ${rejected.prev_zt} / 净流出或无源 ${rejected.main_net} / 字段缺失 ${rejected.unverifiable}；`
     + `得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）`
     + (tomorrowWatch ? `；距收盘 ${minsToClose} 分钟（<30）→ 趋势池自动降级为「明日观察池」（观察语义，不作当日买入依据——2026-10-10 用户指令）` : '');
-  // ── 连板池装配（2026-10-10 双池拆分）────────────────────────────────────────
-  //   排序 = 连板数降序 → 主力净流入降序（高度优先，同高资金破平）；不套综合得分——
-  //   涨幅位置分量对连板股无意义（这正是拆池的原因），score 恒 null。
-  const streakScored = [...streakCands]
-    .sort((a, b) => b.lbc - a.lbc || b.mn - a.mn).slice(0, SF.top);
-  const streak_pool = streakScored.map(({ r, chg, lb, mn, lbc, tags }) => {
+  // ── 连板池装配（2026-10-10 双池拆分；P0 梯队评分）─────────────────────────────
+  //   梯队评分（用户指令「连板池使用连板梯队/晋级率评分逻辑」——与趋势池的量价/资金流
+  //   评分物理独立）：连板高度 0.6（lbc/池内最高——梯队归一）+ 主力净流入 0.4（池内
+  //   最大值为 1 的相对值）；分量缺席重归一（同趋势池范式）。晋级率需全天收盘数据，
+  //   盘中不可得 → 不发明（宁缺毋假）；封单质量以 seal_amount（东财 fund 真实额）展示。
+  //   排序 = 梯队分降序 → 连板数降序 → 主力净流入降序；score（趋势池综合分）恒 null。
+  const maxLbc = streakCands.length ? Math.max(...streakCands.map((c) => c.lbc)) : 0;
+  const maxStreakMn = streakCands.length ? Math.max(...streakCands.map((c) => c.mn)) : 0;
+  const streakScored = [...streakCands].map((c) => {
+    const parts = [
+      [0.6, maxLbc > 0 ? c.lbc / maxLbc : null],
+      [0.4, maxStreakMn > 0 ? c.mn / maxStreakMn : null],
+    ].filter(([, v]) => v != null && Number.isFinite(v));
+    const wsum = parts.reduce((s, [w]) => s + w, 0);
+    const streak_score = parts.length && wsum > 0
+      ? Math.round((parts.reduce((s, [w, v]) => s + w * clamp01(v), 0) / wsum) * 100) / 100 : null;
+    return { ...c, streak_score };
+  }).sort((a, b) => (b.streak_score ?? -1) - (a.streak_score ?? -1) || b.lbc - a.lbc || b.mn - a.mn).slice(0, SF.top);
+  const streak_pool = streakScored.map(({ r, chg, lb, mn, lbc, fund, streak_score, tags }) => {
     const pe = isValidNum(r.pe_ttm) ? +r.pe_ttm : null;
     const pb = isValidNum(r.pb) ? +r.pb : null;
     const missing = [
       ...(tags.length ? [] : ['题材']),
       ...(pe == null && pb == null ? ['估值'] : []),
       ...(mn == null ? ['资金'] : []),
+      ...(fund == null ? ['封单'] : []),
     ];
     return {
       code: String(r.code),
       name: isValidText(r.name), // 空名 → null 渲染 —，不脑补
-      score: null, // 连板池不套综合得分（见上）；推送渲染「得分 —」如实
+      score: null, // 趋势池综合分（量价/资金流）不套连板池——拆分即互不复用（10-09 事故根因）
+      streak_score, // 连板池独立梯队分（连板高度 0.6 + 主力 0.4，缺席重归一）
+      seal_amount: fund, // 封单资金（元，东财涨停池 fund 原值）——「封单质量」唯一真实源；缺席 null 渲染 —
       themes: tags.length ? tags : null,
       selection_reason: `${lbc} 连板`, // 连板高度即入选理由（复盘归因用，真实字段）
       intraday_chg: chg, // 连板池的 chg 是展示字段：缺失 → null 渲染 —（不作核验）
@@ -959,13 +996,14 @@ export function buildIntradayPool(intraday, opts = {}) {
         '连板高度越高，晋级失败风险越大（断板负反馈）'],
     };
   });
-  const streakSeen = streakCands.length + streakRejected.liangbi + streakRejected.main_net + streakRejected.unverifiable;
+  const streakSeen = streakCands.length + streakRejected.yizi + streakRejected.liangbi + streakRejected.main_net + streakRejected.unverifiable;
   const streak_basis = !ztLb
     ? '连板池：快照缺连板数字段（pools.zt_lb，旧版快照 v2），本轮连板池缺席——不猜测、不降级（宁缺毋假）'
     : (streak_pool.length ? '' : '连板池：今日无符合条件标的（宁缺毋假，不凑数填充）；')
-      + `连板池实时现算（${universeName} ∩ zt_lb 连板≥${SF.min_lb}）：连板≥${SF.min_lb} · 量比 >${SF.liangbi_min} · 主力净流入为正——不套涨幅带、不剔已涨停（连板池语义，2026-10-10 用户指令）；`
-      + `zt_lb 连板≥${SF.min_lb} 共 ${ztLbTotal} 只，宇宙在榜 ${streakSeen} 只，剔除——量比不足 ${streakRejected.liangbi} / 净流出或无源 ${streakRejected.main_net} / 字段缺失 ${streakRejected.unverifiable}；`
-      + `排序=连板数降序→主力净流入降序（不套综合得分）`;
+      + `连板池实时现算（${universeName} ∩ zt_lb 连板≥${SF.min_lb}，白名单=昨日涨停且今日非一字）：连板≥${SF.min_lb}（昨日涨停蕴含）· 今日非一字（fbt>09:25）· 量比 >${SF.liangbi_min} · 主力净流入为正——不套涨幅带、不剔已涨停（连板池语义，2026-10-10 用户指令）；`
+      + `zt_lb 连板≥${SF.min_lb} 共 ${ztLbTotal} 只，宇宙在榜 ${streakSeen} 只，剔除——一字 ${streakRejected.yizi} / 量比不足 ${streakRejected.liangbi} / 净流出或无源 ${streakRejected.main_net} / 字段缺失 ${streakRejected.unverifiable}`
+      + (ztDetailMap ? '' : '；⚠ 快照缺 fbt/fund（v3 旧档）——一字不可判、封单缺席，宁缺毋假')
+      + `；梯队分=连板高度0.6+主力净流入0.4（缺席重归一，与趋势池量价评分物理独立）；封单质量=seal_amount（东财 fund）`;
   return {
     pool, basis, streak_pool, streak_basis,
     trend_pool_mode: tomorrowWatch ? 'tomorrow_watch' : 'trend',

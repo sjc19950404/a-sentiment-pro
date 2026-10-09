@@ -59,7 +59,9 @@ const now = ai >= 0 ? new Date(argv[ai + 1]) : new Date();
 //   一直在算，此前落盘丢弃；连板池判定唯一权威源（reason 标签猜连板 = 造数）。
 //   ② pools.zt_detail（每股 lbc/zbc/hybk，情绪六指标原料）+ 顶层 rolling 段（tick 每拍
 //   生成滚动双池 + 实时六状态情绪 + 收盘倒计时降级标记）——推送时点/入库流程零改动。
-export const SNAPSHOT_VERSION = 3;
+//   v4（2026-10-10 P0 双池物理拆分）：zt_detail 增 fbt/fund（一字判定/封单质量）；
+//   pools.prev_zt_codes（昨日涨停黑名单，只读 ztpool_history——16:00 入库零改动）。
+export const SNAPSHOT_VERSION = 4;
 
 const log = (...a) => console.log('[intraday]', ...a);
 
@@ -152,9 +154,26 @@ const snapshot = {
     // v3（2026-10-10 双池拆分）：code→连板数映射。连板池判定唯一依据——
     //   缺席（旧快照）= null，报告层连板池报因不猜测，绝不拿 reason 标签冒充。
     zt_lb: pools.zt_lb || null,
-    // v3（2026-10-10 滚动情绪）：涨停池每股明细 {c,lbc,zbc,hybk}——emotion_cycle
-    //   六指标（判据唯一出处）的盘中原料，与收盘口径 ztpool_history 同源同构。
+    // v3（2026-10-10 滚动情绪）：涨停池每股明细 {c,lbc,zbc,hybk,fbt,fund}——
+    //   emotion_cycle 六指标（判据唯一出处）的盘中原料，与收盘口径 ztpool_history
+    //   同源同构；v4 增 fbt（首次封板 HHMMSS，一字判定）/fund（封单资金，元）。
     zt_detail: pools.zt_detail || null,
+    // v4（2026-10-10 P0 双池物理拆分）：prev_zt_codes = 前一交易日收盘涨停名单
+    //   （趋势池「昨日涨停」黑名单唯一源——断板股当日混进 3-7% 带即污染趋势池，
+    //   10-09 事故实测）。**只读** ztpool_history（16:00 入库流程零改动）：
+    //   取 date < 当日的最近档的池代码集；历史缺席（首轮/文件未建）= null，
+    //   报告层报因不冒充已过滤。
+    prev_zt_codes: (() => {
+      try {
+        const p = join(ROOT, 'data', 'ztpool_history.json');
+        if (!existsSync(p)) return null;
+        const days = JSON.parse(readFileSync(p, 'utf8'));
+        if (!Array.isArray(days) || !days.length) return null;
+        const ymd = ph.bjDate.replace(/-/g, '');
+        const prevDay = [...days].reverse().find((d) => d && String(d.date) < ymd && Array.isArray(d.pool) && d.pool.length);
+        return prevDay ? prevDay.pool.map((x) => String(x.c)) : null;
+      } catch { return null; }
+    })(),
     // 盘中封板率：分母同样是"触板个股"（涨停 + 炸板），与收盘口径同一算法
     seal_pct: (pools.zt != null && pools.zb != null && (pools.zt + pools.zb) > 0)
       ? Math.round((pools.zt / (pools.zt + pools.zb)) * 1000) / 10 : null,

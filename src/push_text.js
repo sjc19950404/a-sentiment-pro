@@ -74,21 +74,40 @@ const poolBlock = (sim, o = {}) => {
   //   趋势池标题含全四条。标题冒充口径 = 推送造假。
   const criteria = o.criteria ? ` · ${o.criteria}` : '';
   const lines = [`${label} ${pool.length} 只（${sortLabel}，Top ${top.length}${criteria}）：`];
+  // 封单额格式化（连板池专用，P0）：东财 fund 原值（元）→ 亿/万可读；缺席 → 段落省略
+  //   （宁缺毋假，不造数）；负值原样（异常信号如实展示）。
+  const fmtSeal = (v) => v == null ? null
+    : v >= 1e8 ? `封单 ${(v / 1e8).toFixed(2)} 亿`
+      : v >= 1e4 ? `封单 ${Math.round(v / 1e4)} 万`
+        : `封单 ${Math.round(v)} 元`;
   top.forEach((c, i) => {
     const theme = Array.isArray(c?.themes) ? c.themes.filter(Boolean).join('/') : (c?.themes || null);
     const intr = c?.intraday_chg != null && Number.isFinite(+c.intraday_chg)
       ? ` · 盘中 ${pctRaw(c.intraday_chg)}` : '';
     const score = c?.score != null ? c.score : '—';
+    // 连板池独立展示（P0 双池物理拆分）：梯队分（连板高度0.6+主力0.4，与趋势池量价
+    //   评分物理独立）+ 封单质量（东财 fund 真实额）——趋势池条目两字段缺席自然省略。
+    const streakBits = [
+      c?.streak_score != null ? `梯队分 ${c.streak_score}` : null,
+      fmtSeal(Number.isFinite(+c?.seal_amount) ? +c.seal_amount : null),
+    ].filter(Boolean).join(' · ');
     // 数据完整度标记（2026-10-09 用户指令）：题材/估值/资金三要素清点，行尾直标——
     //   ✅ 齐全 / ⚠️ 缺X（缺啥标啥）。仅盘中候选池（任务二）携带该字段。
     const comp = c?.data_completeness;
     const mark = !comp ? '' : comp.level === 'full' ? ' · ✅' : ` · ⚠️ 缺${(comp.missing || []).join('/')}`;
     if (compact) {
-      lines.push(` ${i + 1}. ${txt(c?.code)} ${txt(c?.name)} · 得分 ${score} · `
-        + `${theme ? `题材：${theme} · ` : ''}${c?.selection_reason || '入选理由 —'} · ${valoOf(c)}${intr}${mark}`);
+      // 连板池行（streakMode）：梯队分 + 封单（与趋势池综合得分物理独立，绝不混渲染）；
+      //   趋势池行：综合得分（量价/资金流口径）。
+      const scoreBit = o.streakMode
+        ? (c?.streak_score != null ? `梯队分 ${c.streak_score}` : '梯队分 —')
+        : `得分 ${score}`;
+      const sealBit = o.streakMode && Number.isFinite(+c?.seal_amount) ? ` · ${fmtSeal(+c.seal_amount)}` : '';
+      lines.push(` ${i + 1}. ${txt(c?.code)} ${txt(c?.name)} · ${scoreBit} · `
+        + `${theme ? `题材：${theme} · ` : ''}${c?.selection_reason || '入选理由 —'}${sealBit} · ${valoOf(c)}${intr}${mark}`);
     } else {
-      lines.push(` ${i + 1}. ${txt(c?.code)} ${txt(c?.name)} · 得分 ${score} · `
+      lines.push(` ${i + 1}. ${txt(c?.code)} ${txt(c?.name)} · ${c?.streak_score != null ? `梯队分 ${c.streak_score}` : `得分 ${score}`} · `
         + `${theme ? `题材：${theme} · ` : ''}${c?.selection_reason ? `入选：${c.selection_reason}` : '入选理由 —'}`
+        + `${c?.seal_amount != null ? ` · ${fmtSeal(+c.seal_amount)}` : ''}`
         + ` · 估值 ${valoOf(c)}${intr}`);
     }
   });
@@ -123,11 +142,11 @@ const simBlock = (p, o = {}) => {
   const confTag = o.confidence ? ` · 置信度 ${o.confidence}` : '';
   return [`${phaseLine} · 建议仓位: ${sim.position_suggestion ?? '—'} · ${counts}${confTag}`,
     ...(streak ? poolBlock({ candidate_pool: streak }, {
-      poolLabel: '连板池', sortLabel: '按连板数排序', compact: !!o.compact, topN: o.topN,
-      // 连板池口径（标题=实际筛选，逐字一致）：标题只写筛选条件本身——
-      // 「不套涨幅带/未涨停」是口径说明（streak_basis 报告层有），进标题反而
-      // 会让「未涨停」字样冒充筛选条件，与「标题=标的」纪律自相矛盾。
-      criteria: '连板≥2 · 量比>2 · 主力净流入为正',
+      poolLabel: '连板池', sortLabel: '按梯队分排序', compact: !!o.compact, topN: o.topN, streakMode: true,
+      // 连板池口径（P0 双池物理拆分，标题=实际筛选逐字一致）：白名单 = 昨日涨停
+      //   （lbc≥2 蕴含）且今日非一字（fbt>09:25）。「涨幅3-7%/未涨停」绝不出现——
+      //   连板本就意味着当日涨停（10-09 实盘事故：趋势池文案套连板股，严重自相矛盾）。
+      criteria: '连板≥2 · 今日非一字 · 量比>2 · 主力净流入为正',
       emptyNote: '今日无符合条件连板标的（宁缺毋假）',
     }) : []),
     ...poolBlock(sim, degraded ? {
@@ -192,32 +211,33 @@ export function renderPushText(report) {
       break;
     case 'intraday':
       lines.push(`【AI 盘中 · 候选池】${report.date}${report.trigger !== 'schedule' ? ` · ${report.trigger}` : ''}`);
-      { // 双池推送（2026-10-10 用户指令）：连板池不套涨幅带/未涨停；趋势池保留四条件。
-        //   每块标题行 = 该池实际筛选口径（标题与标的必须一致）；topN=5 ×2 池——
-        //   两池各 10 只时 2000 字节闸会从尾部整行截断，可能砍掉一池的标的行，
-        //   造成「标题在、标的缺」的假象——那正是标题与标的不一致，故各收 Top 5
-        //   （完整版在页面，头部计数仍是全量 N 只）。
-        // 置信度（2026-10-10 用户指令）：从 push_verification 台账派生三态——
-        //   applied=同拍逐只核验通过→高；有台账但未应用（跨拍仅审计/校验跳过）→低；
-        //   无台账（旧档/未过校验链）→ 不渲染（不冒充已校验）。
+      { // 双池推送（P0 双池物理拆分）：连板池白名单（昨日涨停+今日非一字）独立评分
+        //   独立模板；趋势池黑名单（滤昨日涨停/今日涨停/一字板）保留四条件描述——
+        //   标题=标的一票一致，标题冒充口径 = 推送造假（10-09 实盘事故教训）。
+        //   topN=5 ×2 池（2000 字节闸整行回退会砍池尾行，各收 5 防假象）。
+        // 置信度（P0 收紧）：结构剔除恒发生（快照无关）——applied 且剔除发生 →
+        //   「⛔结构违背剔除 N 只」；applied 零剔除 → 高；有台账未应用（时点核验
+        //   跳过且无结构问题）→ 低；无台账（未经校验链）→ 不渲染（不冒充已校验）。
         const pvConf = report.push_verification;
+        const rmAll = pvConf ? [...(pvConf.trend?.removed || []), ...(pvConf.streak?.removed || [])] : [];
         const confidence = pvConf?.applied
-          ? '高（逐只核验通过）'
-          : pvConf ? '低（跨拍/校验缺席，未应用剔除）' : null;
-        lines.push(...simBlock(p, { poolLabel: '趋势池', sortLabel: '按综合得分排序', compact: true, topN: 5, criteria: '涨幅3-7% · 量比>2 · 未涨停 · 主力净流入为正', confidence }));
+          ? (rmAll.length ? `高（⛔结构/时点校验剔除 ${rmAll.length} 只后通过）` : '高（逐只核验通过）')
+          : pvConf ? '低（时点核验缺席，结构预筛已过）' : null;
+        lines.push(...simBlock(p, { poolLabel: '趋势池', sortLabel: '按综合得分排序', compact: true, topN: 5, criteria: '涨幅3-7% · 量比>2 · 未涨停未一字 · 主力净流入为正（已滤昨日涨停）', confidence }));
       }
-      { // 推送前校验台账（2026-10-10 用户指令）：push_verification 由 push_ai_report
-        //   推送前写入（剔除/降级实时发生）；有剔除或降级才渲染——零变动不刷屏。
-        //   页面即时轨/旧档无此字段 → 行自然缺席（向后兼容）。
+      { // 推送前校验台账（P0）：结构违背（⛔）与时点漂移（⚠）分标；有剔除或降级才渲染。
+        //   applied 不再是渲染闸——跨拍结构剔除同样 applied=true 但必须可见。
         const pv = report.push_verification;
-        if (pv && pv.applied) {
+        if (pv) {
           const rm = [...(pv.trend?.removed || []), ...(pv.streak?.removed || [])];
           const bits = [];
           if (rm.length) {
-            bits.push(`剔除 ${rm.length} 只（${rm.slice(0, 3).map((x) => `${x.code ?? '?'} ${x.reason}`).join(' · ')}${rm.length > 3 ? ' 等' : ''}）`);
+            const structN = rm.filter((x) => x?.kind === 'structural').length;
+            const head = structN ? `⛔ 结构违背剔除 ${structN} 只` + (rm.length > structN ? `（另时点剔除 ${rm.length - structN} 只）` : '') : `⚠ 时点剔除 ${rm.length} 只`;
+            bits.push(`${head}（${rm.slice(0, 3).map((x) => `${x.code ?? '?'} ${x.reason}`).join(' · ')}${rm.length > 3 ? ' 等' : ''}）`);
           }
           if (pv.mode_degraded) bits.push(`趋势池→明日观察池（距收盘 ${pv.minutes_to_close ?? '—'} 分钟）`);
-          if (bits.length) lines.push(`⚠ 推送前校验（快照 ${pv.snapshotAtBJ ?? '—'}）：${bits.join('；')}`);
+          if (bits.length) lines.push(`推送前校验（快照 ${pv.snapshotAtBJ ?? '—'}）：${bits.join('；')}`);
         }
       }
       lines.push(`运行回撤 ${pct(p.drawdown_vs_threshold?.dd_now)} · 距 DD 档位 ${p.drawdown_vs_threshold?.distance_pp != null ? `${p.drawdown_vs_threshold.distance_pp}pp` : '—'}（${p.drawdown_vs_threshold?.basis ?? '—'}）`);
