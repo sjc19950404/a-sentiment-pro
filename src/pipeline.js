@@ -329,12 +329,21 @@ function refreshMetaOnly(dataPath, now, attempt) {
   // 这里重新编码是幂等的：entries 已带 rc 时 encodeDay 原样返回。
   // H-4（2026-10-07）：原子替换——裸写 meta 刷新（全档重编码）中途被杀会留半截主档，
   // 读取端 catch 会静默回退旧快照，损坏被降级成"旧但合法"。
-  atomicWriteJSON(dataPath, JSON.stringify(encodeArchive(a, buildReasonCodes(a.all_days))));
+  // ★ 2026-10-10 P1 级修复：必须传 { deflate: true }——「重新编码幂等」只对码表成立，
+  //   提子不在此列。漏传时本函数写出的主档是 lhb 内联形态（顶层带 lhb），与
+  //   writeArchive / writeArchiveSafely 的提子形态分叉——audit_lhb_caliber
+  //   「主档写盘态 lhb 已提子」在管道自己写完之后反而变红（10-09 周五 18:30/21:00
+  //   生产班次连续红、EOD 提交被拦的根因；周六 dispatch CI 复现 242 天顶层带 lhb）。
+  //   本地实证：encodeArchive(deflate:true) 输出 0 顶层/242 _sub.lhb，其余环节全对。
+  const packed = encodeArchive(a, buildReasonCodes(a.all_days), { deflate: true });
+  atomicWriteJSON(dataPath, JSON.stringify(packed));
   // 切片必须跟着刷新：首屏读的是 archive-index.json 的 meta（相位/新鲜度），
   // 只更新主档会让页面顶部的相位标签与 STALE 标记停在旧值上——而这两者恰恰是
   // 「数据是否可信」的唯一提示，过期比没有更危险。
   if (path.basename(dataPath) === 'archive.json') {
-    try { writeShards(a); } catch (e) { console.error('[split] 切片刷新失败:', e.message); }
+    // 切片入参用 packed（与 writeArchive 的 writeShards(packed) 同构）——同源生成，
+    // 杜绝"主档提子态、切片明文态"的两套口径。
+    try { writeShards(packed); } catch (e) { console.error('[split] 切片刷新失败:', e.message); }
   }
   console.log('[freshness] meta 已刷新 |', f.state, '| stale =', a.meta.stale,
     a.meta.staleReason ? '| ' + a.meta.staleReason : '');
