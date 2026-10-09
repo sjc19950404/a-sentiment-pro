@@ -709,5 +709,152 @@
   "cost_ratio": "即时轨当日 trades 费用合计 / 成交额合计；归档轨无成交明细 → null",
   "win_rate": "口径 = 剧本命中次数 / 总剧本执行次数（决议 4，2026-10-06 拍板）；剧本绑定记录（airpt_sim_bindings_v1）缺席 → null，不降级为日收益口径"
  },
- "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。"
+ "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
+ "caliber_review": {
+  "reviewedAtBJ": "2026-10-10 00:24",
+  "tradeDate": "2026-10-09",
+  "ztpoolDate": "20261009",
+  "close_emotion": {
+   "date": "20261009",
+   "emotion": "复苏",
+   "score": 55
+  },
+  "emotion_at_push": null,
+  "pool_outcome": {
+   "trend": [
+    {
+     "code": "600825",
+     "name": "新华传媒",
+     "close_limit_up": true,
+     "close_lbc": 9
+    },
+    {
+     "code": "603949",
+     "name": "雪龙集团",
+     "close_limit_up": false,
+     "close_lbc": 0
+    },
+    {
+     "code": "000678",
+     "name": "襄阳轴承",
+     "close_limit_up": false,
+     "close_lbc": 0
+    },
+    {
+     "code": "002912",
+     "name": "中新赛克",
+     "close_limit_up": true,
+     "close_lbc": 1
+    },
+    {
+     "code": "600032",
+     "name": "浙江新能",
+     "close_limit_up": false,
+     "close_lbc": 0
+    },
+    {
+     "code": "600488",
+     "name": "津药药业",
+     "close_limit_up": false,
+     "close_lbc": 0
+    },
+    {
+     "code": "600241",
+     "name": "时代万恒",
+     "close_limit_up": true,
+     "close_lbc": 5
+    },
+    {
+     "code": "000011",
+     "name": "深物业A",
+     "close_limit_up": false,
+     "close_lbc": 0
+    },
+    {
+     "code": "002242",
+     "name": "九阳股份",
+     "close_limit_up": true,
+     "close_lbc": 5
+    },
+    {
+     "code": "301190",
+     "name": "善水科技",
+     "close_limit_up": false,
+     "close_lbc": 0
+    }
+   ],
+   "streak": []
+  },
+  "conflicts": [],
+  "note": null
+ },
+ "push_verification": {
+  "checkedAtBJ": "00:26",
+  "snapshotAtBJ": "2026-10-09 14:53",
+  "tradeDate": "2026-10-09",
+  "trend_pool_mode": "trend",
+  "minutes_to_close": 874,
+  "mode_degraded": false,
+  "trend": {
+   "checked": 10,
+   "removed": [
+    {
+     "code": "600825",
+     "name": "新华传媒",
+     "reason": "核验字段缺失（涨幅/量比/主力净流入）"
+    },
+    {
+     "code": "603949",
+     "name": "雪龙集团",
+     "reason": "掉出数据底座（最新快照已无此股）"
+    },
+    {
+     "code": "000678",
+     "name": "襄阳轴承",
+     "reason": "掉出数据底座（最新快照已无此股）"
+    },
+    {
+     "code": "002912",
+     "name": "中新赛克",
+     "reason": "核验字段缺失（涨幅/量比/主力净流入）"
+    },
+    {
+     "code": "600032",
+     "name": "浙江新能",
+     "reason": "掉出数据底座（最新快照已无此股）"
+    },
+    {
+     "code": "600488",
+     "name": "津药药业",
+     "reason": "掉出数据底座（最新快照已无此股）"
+    },
+    {
+     "code": "600241",
+     "name": "时代万恒",
+     "reason": "核验字段缺失（涨幅/量比/主力净流入）"
+    },
+    {
+     "code": "000011",
+     "name": "深物业A",
+     "reason": "掉出数据底座（最新快照已无此股）"
+    },
+    {
+     "code": "002242",
+     "name": "九阳股份",
+     "reason": "核验字段缺失（涨幅/量比/主力净流入）"
+    },
+    {
+     "code": "301190",
+     "name": "善水科技",
+     "reason": "掉出数据底座（最新快照已无此股）"
+    }
+   ]
+  },
+  "streak": {
+   "checked": 0,
+   "removed": []
+  },
+  "applied": false,
+  "note": "快照非报告构建拍（构建 未记录（旧档） / 复核 2026-10-09 14:53）→ 跨拍仅审计不剔除，防止底座换血误伤档案"
+ }
 }

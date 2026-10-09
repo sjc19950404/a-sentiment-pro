@@ -150,7 +150,22 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
         continue;
       }
       pushed += 1;
-      state = recordPushed(state, { fingerprint: verdict.fingerprint, type: report.report_type, date: report.date }, now);
+      state = recordPushed(state, {
+        fingerprint: verdict.fingerprint,
+        type: report.report_type,
+        date: report.date,
+        // 推送前校验审计（2026-10-10 用户指令「每次推送写入指纹」）：条目携带校验
+        //   摘要——每条推送可追溯「推时校验过没、剔了几只、是否降级」。
+        //   旧档/非盘中报告无 push_verification → 字段缺席（undefined 不入 JSON），不冒充。
+        verified: report.push_verification ? {
+          checked_at: report.push_verification.checkedAtBJ ?? null,
+          snapshot_at: report.push_verification.snapshotAtBJ ?? null,
+          removed: (report.push_verification.trend?.removed?.length || 0)
+            + (report.push_verification.streak?.removed?.length || 0),
+          degraded: report.push_verification.mode_degraded === true,
+          skipped: report.push_verification.applied !== true,
+        } : undefined,
+      }, now);
       results.push({ type: report.report_type, date: report.date, pushed: true, reason: verdict.reason });
     } catch (e) {
       results.push({ type: report.report_type, date: report.date, pushed: false, reason: `推送失败: ${e?.message || e}（未记指纹，下拍重试）` });

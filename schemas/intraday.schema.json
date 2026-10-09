@@ -33,7 +33,23 @@
         "max_lb": { "type": ["number", "null"] },
         "lb2": { "type": ["number", "null"] },
         "seal_pct": { "type": ["number", "null"] },
-        "zt_codes": { "type": "array" }
+        "zt_codes": { "type": "array" },
+        "zt_lb": { "type": ["object", "null"], "$comment": "v3（2026-10-10 双池拆分）：code→连板数映射（东财 getTopicZTPool lbc），盘中连板池判定唯一依据。可选：旧快照（v2）缺席 = null，连板池报因不猜测" },
+        "zt_detail": { "type": ["array", "null"], "$comment": "v3（2026-10-10 滚动情绪）：涨停池每股明细 {c,lbc,zbc,hybk}，emotion_cycle 六指标的盘中原料（与收盘口径 ztpool_history 同源同构）", "items": { "type": "object" } }
+      }
+    },
+    "rolling": {
+      "type": ["object", "null"],
+      "$comment": "v3（2026-10-10 用户指令）：tick 每拍生成的滚动候选池——复用报告层 buildIntradayPool 纯函数（页面/推送同构）+ 实时六状态情绪 + 收盘倒计时降级标记。推送时点与入库流程零改动；旧快照缺席 = null",
+      "properties": {
+        "generatedAtBJ": { "type": "string" },
+        "minutes_to_close": { "type": ["number", "null"], "$comment": "距 15:00 收盘剩余分钟；<30 时 trend_pool_mode=tomorrow_watch" },
+        "trend_pool_mode": { "type": "string", "enum": ["trend", "tomorrow_watch"] },
+        "streak_pool": { "type": "array" },
+        "trend_pool": { "type": "array" },
+        "basis": { "type": "string" },
+        "streak_basis": { "type": "string" },
+        "emotion": { "type": ["object", "null"], "$comment": "computeEmotion 输出 {date,emotion,score,metrics}；no_data → null（宁缺毋假）" }
       }
     },
     "prevPools": {

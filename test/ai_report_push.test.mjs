@@ -176,7 +176,7 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
   }));
   assert.match(intra, /【AI 盘中 · 候选池】2026-09-30 · event:circuit_breaker/, 'urgent 触发源进标题');
   assert.match(intra, /运行回撤 \+8\.80% · 距 DD 档位 0\.2pp/);
-  assert.match(intra, /盘中候选池 2 只（按综合得分排序，Top 2 · 涨幅3-7% · 量比>2 · 未涨停 · 主力净流入为正）：/, '任务二标签+筛选口径进标题（输出物理隔离）');
+  assert.match(intra, /趋势池 2 只（按综合得分排序，Top 2 · 涨幅3-7% · 量比>2 · 未涨停 · 主力净流入为正）：/, '趋势池标签+四条件进标题（2026-10-10 双池拆分；标题=该池实际筛选口径）');
   assert.match(intra, / 1\. 600825 新华传媒 · 得分 0\.87 · 题材：半导体投资\/国产替代 · 量比 3\.2 · PE 22x · 盘中 \+5\.2% · ✅/, '齐全股行尾 ✅（题材/估值/资金三要素清点通过）');
   assert.match(intra, / 2\. 000002 样本B · 得分 0\.5 · 量比 2\.5 · — · 盘中 \+4% · ⚠️ 缺估值/, '缺估值股行尾 ⚠️ 直标缺失项（部分数据不冒充完整画像）');
 
@@ -188,7 +188,7 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
       simulation_stock: { ...mkReport().payload.simulation_stock, candidate_pool: [] } },
     missing_notes: [],
   }));
-  assert.match(intraEmpty, /盘中候选池 0 只 · 今日无符合条件标的（宁缺毋假）/, '空池显式话术，不静默省略候选池段');
+  assert.match(intraEmpty, /趋势池 0 只 · 今日无符合条件标的（宁缺毋假）/, '空池显式话术，不静默省略候选池段');
 
   const week = renderPushText(mkReport({
     report_type: 'weekly',
@@ -367,4 +367,193 @@ test('buildCandidatePool intraday_chg：在强势榜取真值 / 不在榜 null �
   assert.equal(hot[1].intraday_chg, null, '不在强势榜 → null（缺席 ≠ 不涨，严格区分）');
   const badHot = buildCandidatePool(signals, { intradayHot: { '600825': 'NaN-ish' } });
   assert.equal(badHot[0].intraday_chg, null, '非数值守卫 → null');
+});
+
+// ── 8b. 双池推送（2026-10-10 用户指令）：标题与标的必须一致 ──────────────
+//   连板池标题 = 连板池口径（绝不出现涨幅带/未涨停）；趋势池标题 = 四条件。
+//   两池标的各归其块，头部计数与块内数量对得上——标题冒充口径 = 推送造假。
+test('renderPushText 双池：连板池/趋势池分块渲染，各块标题=该池实际筛选口径', () => {
+  const base = mkReport();
+  const sim = {
+    ...base.payload.simulation_stock,
+    streak_pool: [
+      { code: '600601', name: '三连板股', score: null, themes: ['电池'], selection_reason: '3 连板', intraday_chg: 10.02, fundamentals: { pe: 30, pb: 4 }, data_completeness: { level: 'full', missing: [] } },
+    ],
+    candidate_pool: [
+      { code: '600603', name: '首板趋势股', score: 0.8, themes: ['出行'], selection_reason: '量比 3.2', intraday_chg: 5.0, fundamentals: { pe: 22, pb: 1.4 }, data_completeness: { level: 'full', missing: [] } },
+    ],
+  };
+  const out = renderPushText(mkReport({
+    report_type: 'intraday',
+    payload: { ...base.payload, simulation_stock: sim },
+    missing_notes: [],
+  }));
+  // 头部计数：两池数量都进首行
+  assert.match(out, /情绪周期:.* · 建议仓位: .* · 连板池 1 · 趋势池 1 只/, '双池计数进情绪周期行');
+  // 连板池标题 = 自身口径（不含涨幅带/未涨停）——标题与标的一致的硬断言
+  assert.match(out, /连板池 1 只（按连板数排序，Top 1 · 连板≥2 · 量比>2 · 主力净流入为正）：/, '连板池标题=连板池口径（只写筛选条件本身）');
+  assert.match(out, / 1\. 600601 三连板股 · 得分 — · 题材：电池 · 3 连板/, '连板池标的行（score null → 得分 —）');
+  // 趋势池标题 = 四条件（原口径不变）
+  assert.match(out, /趋势池 1 只（按综合得分排序，Top 1 · 涨幅3-7% · 量比>2 · 未涨停 · 主力净流入为正）：/, '趋势池标题=四条件');
+  assert.match(out, / 1\. 600603 首板趋势股 · 得分 0\.8 · 题材：出行 · 量比 3\.2/, '趋势池标的行');
+  // 一致性反证：连板池标题行绝不含趋势池的涨幅带/未涨停字样
+  const streakTitle = (out.match(/连板池 1 只（[^：]*）：/) || [''])[0];
+  assert.ok(!/涨幅3-7%|未涨停/.test(streakTitle), '连板池标题绝不冒充趋势池口径（标题与标的必须一致）');
+  // 字节闸：双池各 Top 5 后正文含免责尾行不被截断
+  assert.ok(out.includes('不构成投资建议'), '免责尾行在场（双池不挤爆字节闸）');
+});
+
+test('renderPushText 双池：连板池缺席（盘后 pain 口径/旧档无字段）→ 行为与拆分前完全一致', () => {
+  const base = mkReport();
+  const out = renderPushText(mkReport({
+    report_type: 'post_market',
+    payload: { ...base.payload, simulation_stock: { ...base.payload.simulation_stock, streak_pool: null, streak_pool_basis: null } },
+    missing_notes: [],
+  }));
+  assert.ok(!out.includes('连板池'), 'streak_pool null → 不渲染连板池块（盘后行为不变）');
+  assert.match(out, /候选池 \d+ 只（按连板数排序/, '盘后候选池标签/排序口径不变');
+});
+
+// ── 8c. 实时情绪 + 收盘倒计时降级（2026-10-10 用户指令）────────────────
+test('renderPushText：live_emotion 在场 → 情绪行渲染盘中实时六状态，昨收五期标签不再冒充今日', () => {
+  const base = mkReport();
+  const out = renderPushText(mkReport({
+    report_type: 'intraday',
+    payload: { ...base.payload, simulation_stock: { ...base.payload.simulation_stock,
+      live_emotion: { date: '20261010', emotion: '主升', score: 72, metrics: null } } },
+    missing_notes: [],
+  }));
+  assert.match(out, /情绪周期\(盘中实时\): 主升 · 强度 72 · 建议仓位:/, '实时六状态 + 强度分进情绪行');
+  assert.ok(!/情绪周期: 发酵期\(recover\)/.test(out), '有实时值时昨收口径行退场（两行互斥，防误读）');
+  // 缺席 → 回落昨收口径（不冒充、不静默省略）
+  const fb = renderPushText(mkReport({ report_type: 'intraday', payload: { ...base.payload }, missing_notes: [] }));
+  assert.match(fb, /情绪周期: [^（(]+\(recover\)/, 'live_emotion 缺席 → 昨收五期标签照旧');
+});
+
+test('renderPushText：trend_pool_mode=tomorrow_watch → 趋势池标签换「明日观察池」，口径行明示降级', () => {
+  const base = mkReport();
+  const sim = { ...base.payload.simulation_stock,
+    trend_pool_mode: 'tomorrow_watch',
+    candidate_pool: [
+      { code: '600801', name: '尾盘趋势股', score: 0.7, themes: ['消费'], selection_reason: '量比 3.0', intraday_chg: 5.0, fundamentals: { pe: 20, pb: 1.2 }, data_completeness: { level: 'full', missing: [] } },
+    ] };
+  const out = renderPushText(mkReport({
+    report_type: 'intraday',
+    payload: { ...base.payload, simulation_stock: sim },
+    missing_notes: [],
+  }));
+  assert.match(out, /明日观察池 1 只（按综合得分排序，Top 1 · 原四条件筛选·距收盘不足30分钟自动降级（明日观察，不作当日买入依据））：/, '降级标签+口径（标题=语义）');
+  assert.match(out, / 1\. 600801 尾盘趋势股 · 得分 0\.7/, '标的行照常渲染（观察语义换标签，不换标的）');
+  assert.ok(!out.includes('趋势池 1 只'), '降级后不再出现「趋势池」标签（一词一义，不混用）');
+});
+
+// ── 8d. 推送前校验台账行 + 指纹审计字段（2026-10-10 用户指令）────────────
+test('renderPushText：push_verification（applied·有剔除/降级）→ 台账行；零变动/旧档 → 行缺席', () => {
+  const base = mkReport();
+  const sim = { ...base.payload.simulation_stock,
+    candidate_pool: [
+      { code: '600801', name: '尾盘趋势股', score: 0.7, themes: ['消费'], selection_reason: '量比 3.0', intraday_chg: 5.0, fundamentals: { pe: 20, pb: 1.2 }, data_completeness: { level: 'full', missing: [] } },
+    ] };
+  const out = renderPushText(mkReport({
+    report_type: 'intraday',
+    payload: { ...base.payload, simulation_stock: sim },
+    push_verification: {
+      applied: true, snapshotAtBJ: '2026-10-12 14:53', checkedAtBJ: '14:54',
+      minutes_to_close: 6, mode_degraded: true, trend_pool_mode: 'tomorrow_watch',
+      trend: { checked: 2, removed: [{ code: '600802', name: '已涨停股', reason: '已涨停（最新快照现 10%）' }] },
+      streak: { checked: 0, removed: [] },
+    },
+    missing_notes: [],
+  }));
+  assert.match(out, /⚠ 推送前校验（快照 2026-10-12 14:53）：剔除 1 只（600802 已涨停（最新快照现 10%））；趋势池→明日观察池（距收盘 6 分钟）/, '台账行：剔除明细 + 降级');
+  // 零变动（applied 但无剔除无降级）→ 不刷屏
+  const quiet = renderPushText(mkReport({
+    report_type: 'intraday',
+    payload: { ...base.payload, simulation_stock: sim },
+    push_verification: { applied: true, trend: { checked: 1, removed: [] }, streak: { checked: 0, removed: [] }, mode_degraded: false },
+    missing_notes: [],
+  }));
+  assert.ok(!quiet.includes('推送前校验'), '零变动不渲染台账行');
+  // 旧档（无 push_verification）/skipped（applied=false）→ 行缺席（不冒充校验过）
+  const old = renderPushText(mkReport({ report_type: 'intraday', payload: { ...base.payload, simulation_stock: sim }, missing_notes: [] }));
+  assert.ok(!old.includes('推送前校验'), '旧档无字段 → 台账行自然缺席');
+  const skipped = renderPushText(mkReport({
+    report_type: 'intraday',
+    payload: { ...base.payload, simulation_stock: sim },
+    push_verification: { applied: false, note: '复核快照缺席/非当日' },
+    missing_notes: [],
+  }));
+  assert.ok(!skipped.includes('推送前校验'), 'skipped 不渲染台账行（不冒充校验过）');
+});
+
+test('renderPushText 置信度标签（2026-10-10 用户指令）：与 push_verification 三态同源', () => {
+  const base = mkReport();
+  const sim = { ...base.payload.simulation_stock,
+    candidate_pool: [
+      { code: '600801', name: '趋势股', score: 0.7, themes: ['消费'], selection_reason: '量比 3.0', intraday_chg: 5.0, fundamentals: { pe: 20, pb: 1.2 }, data_completeness: { level: 'full', missing: [] } },
+    ] };
+  // applied=true（同拍逐只核验通过）→ 头部行带「置信度 高」
+  const high = renderPushText(mkReport({
+    report_type: 'intraday',
+    payload: { ...base.payload, simulation_stock: sim },
+    push_verification: { applied: true, snapshotAtBJ: '2026-10-12 09:35', trend: { checked: 1, removed: [] }, streak: { checked: 0, removed: [] }, mode_degraded: false },
+    missing_notes: [],
+  }));
+  assert.ok(high.includes('置信度 高（逐只核验通过）'), 'applied → 高（逐只核验通过）');
+  // applied=false（跨拍仅审计/校验缺席）→ 低——如实显式，不冒充已核验
+  const low = renderPushText(mkReport({
+    report_type: 'intraday',
+    payload: { ...base.payload, simulation_stock: sim },
+    push_verification: { applied: false, note: '快照非报告构建拍 → 跨拍仅审计不剔除', trend: { checked: 1, removed: [] }, streak: { checked: 0, removed: [] } },
+    missing_notes: [],
+  }));
+  assert.ok(low.includes('置信度 低（跨拍/校验缺席，未应用剔除）'), '未应用 → 低（不冒充）');
+  // 无 push_verification（旧档）→ 不渲染置信度段（不冒充已校验）
+  const old = renderPushText(mkReport({ report_type: 'intraday', payload: { ...base.payload, simulation_stock: sim }, missing_notes: [] }));
+  assert.ok(!old.includes('置信度'), '旧档无台账 → 置信度标签缺席');
+  // 盘后报告（simBlock 无 confidence 入参）→ 头部行零变化（行为不变）
+  const post = renderPushText(mkReport({ payload: { ...base.payload, simulation_stock: { ...base.payload.simulation_stock, streak_pool: null } } }));
+  assert.ok(!post.includes('置信度'), '盘后不带盘中置信度段');
+});
+
+test('pushReports：成功推送记指纹时携带 verified 审计摘要（每次推送写入指纹）', async () => {
+  const base = mkReport();
+  const r = mkReport({
+    report_type: 'intraday',
+    payload: { ...base.payload },
+    push_verification: {
+      applied: true, checkedAtBJ: '14:54', snapshotAtBJ: '2026-10-12 14:53',
+      trend_pool_mode: 'tomorrow_watch', minutes_to_close: 6, mode_degraded: true,
+      trend: { checked: 2, removed: [{ code: '600802', name: 'x', reason: '已涨停' }] },
+      streak: { checked: 1, removed: [{ code: '600803', name: 'y', reason: '量比不足' }] },
+    },
+  });
+  const dir = mkdtempSync(join(tmpdir(), 'airpt-verify-'));
+  const stateFile = join(dir, 'push_state.json');
+  try {
+    const ok = await pushReports([r], {
+      env: { OPS_WEBHOOK: 'https://example.test/hook' },
+      fetchImpl: async () => ({ ok: true }),
+      stateFile, now: new Date('2026-10-12T06:55:00Z'),
+    });
+    assert.equal(ok.pushed, 1);
+    const entry = loadPushState(stateFile).pushed[0];
+    assert.ok(entry.fingerprint, '指纹在场');
+    assert.deepEqual(entry.verified, {
+      checked_at: '14:54', snapshot_at: '2026-10-12 14:53',
+      removed: 2, degraded: true, skipped: false,
+    }, '指纹条目携带校验审计摘要');
+    // 旧档/非盘中报告无 push_verification → 条目无 verified 字段（不冒充）
+    const r2 = mkReport();
+    const dir2 = mkdtempSync(join(tmpdir(), 'airpt-verify2-'));
+    try {
+      await pushReports([r2], {
+        env: { OPS_WEBHOOK: 'https://example.test/hook' },
+        fetchImpl: async () => ({ ok: true }),
+        stateFile: join(dir2, 's.json'), now: new Date('2026-10-12T06:55:00Z'),
+      });
+      const e2 = loadPushState(join(dir2, 's.json')).pushed[0];
+      assert.equal(e2.verified, undefined, '无校验台账 → verified 缺席（undefined 不入 JSON）');
+    } finally { rmSync(dir2, { recursive: true, force: true }); }
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

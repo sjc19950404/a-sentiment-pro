@@ -281,6 +281,17 @@ jobs:
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         run: node scripts/push_ai_report.mjs --latest post_market --latest weekly
+      # ── 收盘口径复核（2026-10-10 用户指令：入库前再做一次收盘口径复核）──────────
+      #   当日盘中推送档案（intraday_D.json）入库前，用 ztpool_history 收盘档复核：
+      #   池标的收盘结局 / 推送时 vs 收盘情绪漂移 / 连板矛盾。台账写回档案顶层
+      #   caliber_review → 随下方既有 git add data/reports 清单入库（提交规则零改动）。
+      #   观测性质不拦数据面（continue-on-error）；18:30 若 ztpool 当日行未入库
+      #   （本地 16:00 任务未提交）→ 脚本如实跳过，21:00 班补上（台账幂等覆盖）。
+      #   ⚠ 与本地 16:00 入库任务（\ASentiment-dailyfetch-1600，docs/cron.md §6）
+      #   零交集——本步只读已入库的 ztpool_history，不碰其触发/文件范围/git 规则。
+      - name: 收盘口径复核（当日盘中推送档案，入库前）
+        continue-on-error: true
+        run: node scripts/review_intraday_caliber.mjs
       # Pages 部署产物上传已移除（2026-10-06 部署治理）：dist 部署通道收口至
       # deploy-pages.yml（双通道互相覆盖的实录与决策见该文件头注）。build_ui 保留——
       # dist/ 产物与 board_rank 写回仍是数据面的一部分；下面的数据提交（bot push）

@@ -289,6 +289,61 @@
                 }
               }
             },
+            "streak_pool": {
+              "type": ["array", "null"],
+              "description": "盘中连板池（2026-10-10 双池拆分，仅 intraday 实时报告在场；盘后 pain 连板口径恒 null）：连板≥2 · 量比>2 · 主力净流入为正——不套涨幅带/未剔已涨停。条目结构与 candidate_pool 同构（score 恒 null：连板池不套综合得分）",
+              "items": {
+                "type": "object",
+                "required": [
+                  "code", "name", "themes", "selection_reason", "intraday_chg", "fundamentals",
+                  "fund_flow_note", "scripts", "risks"
+                ],
+                "properties": {
+                  "code": { "type": "string" },
+                  "name": { "type": ["string", "null"] },
+                  "score": { "type": ["number", "null"], "description": "连板池恒 null（不套综合得分——涨幅位置分量对连板股无意义，排序=连板数降序→主力净流入降序）" },
+                  "themes": { "type": ["array", "null"] },
+                  "selection_reason": { "type": "string", "minLength": 1, "description": "入选理由 = 连板高度（如「3 连板」）" },
+                  "intraday_chg": { "type": ["number", "null"], "description": "连板池的盘中涨幅是展示字段：缺失 → null 渲染 —（不作核验——涨停股涨幅恒 >7，套涨幅带会把连板股全数误剔）" },
+                  "fundamentals": {
+                    "type": "object",
+                    "required": ["roe", "revenue_growth", "net_profit_growth", "pe", "pb", "peg", "market_cap", "moat_note"],
+                    "properties": {
+                      "roe": { "type": ["number", "null"] },
+                      "revenue_growth": { "type": ["number", "null"] },
+                      "net_profit_growth": { "type": ["number", "null"] },
+                      "pe": { "type": ["number", "null"] },
+                      "pb": { "type": ["number", "null"] },
+                      "peg": { "type": ["number", "null"] },
+                      "market_cap": { "type": ["number", "null"] },
+                      "moat_note": { "type": ["string", "null"] }
+                    }
+                  },
+                  "fund_flow_note": { "type": ["string", "null"] },
+                  "scripts": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["name", "trigger_condition", "position_ratio", "stop_loss", "take_profit", "invalid_condition", "script_source"],
+                      "properties": {
+                        "name": { "type": "string", "enum": ["A", "B", "C"] },
+                        "trigger_condition": { "type": "string" },
+                        "position_ratio": { "type": ["number", "null"] },
+                        "stop_loss": { "type": ["number", "null"] },
+                        "take_profit": { "type": ["number", "null"] },
+                        "invalid_condition": { "type": "string" },
+                        "script_source": { "type": "string", "const": "template" }
+                      }
+                    }
+                  },
+                  "risks": { "type": "array" }
+                }
+              }
+            },
+            "streak_pool_basis": { "type": ["string", "null"], "description": "连板池口径与剔除台账（2026-10-10）：null = 非实时报告；推送标题行逐字对齐此口径（标题与标的必须一致）" },
+            "trend_pool_mode": { "type": "string", "enum": ["trend", "tomorrow_watch"], "description": "收盘倒计时降级（2026-10-10 用户指令）：距收盘<30分钟 → 'tomorrow_watch'（趋势池自动降级为明日观察池——观察语义，不作当日买入依据；连板池不受影响）。仅盘中实时报告有意义；盘后报告恒 'trend'" },
+            "snapshotAtBJ": { "type": ["string", "null"], "description": "构建所用快照拍（2026-10-10 推送前校验）：push_ai_report 剔除只对同拍快照应用——跨拍（补推旧档案/dispatch 延迟重跑）底座已换血，「掉出底座」是时点差不是违规，剔了会改写历史档案。旧档缺席 = null（只审计不剔除）" },
+            "live_emotion": { "type": ["object", "null"], "description": "实时情绪（2026-10-10 用户指令「情绪标签不能只输出 recover/发酵期」）：rolling.emotion 透传 {date,emotion,score,metrics}（当日涨停池明细现算六状态：冰点/退潮/高潮/主升/复苏/震荡）。null = rolling 缺席 → 推送回落昨收口径五期标签，不冒充" },
             "simulation_positions": {
               "type": ["array", "null"],
               "description": "即时轨（localStorage 账本）才有；归档轨 null",
@@ -333,7 +388,37 @@
     "sources": { "type": "object" },
     "disclaimer": { "type": "string" },
     "merged_from": { "type": "array", "description": "双轨合并（决议 1）后才有" },
-    "backfilled_fields": { "type": "array" }
+    "backfilled_fields": { "type": "array" },
+    "push_verification": {
+      "type": "object",
+      "$comment": "推送前校验台账（2026-10-10 用户指令）：push_ai_report 推送前逐只重验双池规则（判据与 buildIntradayPool 同源），不满足的剔除、推送时刻进降级窗的自动降级明日观察池。由 push_ai_report.mjs 写入并随 git add data/reports 入库；可选：构建时无此字段（旧档/未推送过），缺席 = 未校验，不冒充",
+      "properties": {
+        "checkedAtBJ": { "type": ["string", "null"] },
+        "snapshotAtBJ": { "type": ["string", "null"] },
+        "tradeDate": { "type": ["string", "null"] },
+        "trend_pool_mode": { "type": "string", "enum": ["trend", "tomorrow_watch"] },
+        "minutes_to_close": { "type": ["number", "null"] },
+        "mode_degraded": { "type": "boolean" },
+        "applied": { "type": "boolean" },
+        "trend": { "type": "object", "$comment": "{checked, removed:[{code,name,reason}]}" },
+        "streak": { "type": "object" },
+        "note": { "type": ["string", "null"] }
+      }
+    },
+    "caliber_review": {
+      "type": "object",
+      "$comment": "收盘口径复核台账（2026-10-10 用户指令：入库前）：review_intraday_caliber.mjs（daily.yml build job，提交前）用 ztpool_history 收盘档复核当日盘中档案——池标的收盘结局/情绪漂移/连板矛盾。纯审计不改决策字段；ztpool 当日行缺席 → note 报因，下一班次幂等覆盖",
+      "properties": {
+        "reviewedAtBJ": { "type": ["string", "null"] },
+        "tradeDate": { "type": ["string", "null"] },
+        "ztpoolDate": { "type": ["string", "null"] },
+        "close_emotion": { "type": ["object", "null"] },
+        "emotion_at_push": { "type": ["object", "null"] },
+        "pool_outcome": { "type": ["object", "null"], "$comment": "{trend:[{code,name,close_limit_up,close_lbc}], streak:[...]}" },
+        "conflicts": { "type": "array" },
+        "note": { "type": ["string", "null"] }
+      }
+    }
   },
   "$defs": {
     "completeness": {

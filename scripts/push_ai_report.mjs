@@ -16,6 +16,9 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pushReports, PUSH_CONSTS } from '../src/ai_report_push.js';
+import { verifyIntradayPools, applyVerification } from '../src/pool_verify.js';
+import { bjTime } from '../src/freshness.js';
+import { atomicWriteJSON } from '../src/fsutil.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REPORTS_DIR = join(ROOT, 'data', 'reports');
@@ -34,12 +37,12 @@ if (!latestTypes.length && !files.length) {
 }
 
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
-const reports = [];
+const entries = []; // { path, report }——记来源路径，供校验台账写回
 
 for (const f of files) {
   const p = f.startsWith('data/') || f.startsWith('/') ? resolve(ROOT, f) : resolve(process.cwd(), f);
   if (!existsSync(p)) { console.error(`[ai-report-push] 文件不存在: ${f}`); process.exit(1); }
-  reports.push(readJson(p));
+  entries.push({ path: p, report: readJson(p) });
 }
 
 if (latestTypes.length) {
@@ -57,13 +60,39 @@ if (latestTypes.length) {
       console.log(`[ai-report-push] ${type} ${entry.date} 生成于 ${report.generated_at}（超出 ${PUSH_CONSTS.FRESH_WINDOW_MS / 60000} 分钟新鲜度窗口）→ 疑为上一期残留，跳过推送`);
       continue;
     }
-    reports.push(report);
+    entries.push({ path: p, report });
   }
 }
 
-if (!reports.length) {
+if (!entries.length) {
   console.log('[ai-report-push] 无待推报告（全部跳过），结束。');
   process.exit(0);
+}
+
+// ── 推送前校验（2026-10-10 用户指令）────────────────────────────────────────
+//   盘中报告逐只重验双池规则：不满足的剔除（台账进推送文案 + 档案 push_verification）、
+//   推送时刻进降级窗的自动降级明日观察池。校验是确定性的 → 剔除后内容 = 新指纹，
+//   防风暴语义不变（重跑同快照同剔除 → 同指纹照旧去重）；台账写回档案随既有
+//   `git add data/reports` 入库——提交规则零改动。复核快照缺席/非当日 → 如实跳过
+//   （不拿旧快照冒充复核），台账记 note。
+let intradaySnap = null;
+try { intradaySnap = JSON.parse(readFileSync(join(ROOT, 'data', 'intraday.json'), 'utf8')); } catch { intradaySnap = null; }
+const reports = [];
+for (const e of entries) {
+  if (e.report?.report_type === 'intraday') {
+    const v = verifyIntradayPools(e.report, intradaySnap, { nowBJ: bjTime(new Date()) });
+    applyVerification(e.report, v);
+    const rm = (v.summary.trend?.removed?.length || 0) + (v.summary.streak?.removed?.length || 0);
+    console.log(`[ai-report-push] 推送前校验 intraday ${e.report.date}（快照 ${v.summary.snapshotAtBJ ?? '—'}）：`
+      + (v.summary.applied
+        ? `核 ${v.summary.trend.checked + v.summary.streak.checked} 只 · 剔 ${rm} 只`
+          + (v.summary.mode_degraded ? ` · 趋势池→明日观察池（距收盘 ${v.summary.minutes_to_close} 分）` : '')
+        : `跳过——${v.summary.note}`));
+    // 台账写回档案（无论推送成败：审计事实先落盘，推送失败重试时重新校验幂等）
+    try { atomicWriteJSON(e.path, JSON.stringify(e.report, null, 1) + '\n'); }
+    catch (err) { console.log(`[ai-report-push] 校验台账写回失败（不拦推送）: ${err?.message || err}`); }
+  }
+  reports.push(e.report);
 }
 
 const { results, pushed, skipped } = await pushReports(reports, { stateFile: STATE_FILE });

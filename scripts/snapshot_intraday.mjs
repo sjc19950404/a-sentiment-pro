@@ -37,6 +37,8 @@ import config from '../src/config.js';
 import { resolveHolidays } from '../src/calendar.js';
 import { fetchHot, fetchPools, fetchBreadth, fetchHotQuotes, fetchMainNet, fetchScreenerTopMainNet } from '../src/sources.js';
 import { marketPhase, bjDate, bjTime } from '../src/freshness.js';
+import { buildIntradayPool, minutesToCloseBJ } from '../src/ai_report.js';
+import { computeEmotion } from '../src/emotion_cycle.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'intraday.json');
@@ -53,7 +55,11 @@ const now = ai >= 0 ? new Date(argv[ai + 1]) : new Date();
 // 快照版本：字段增删时递增，便于下游判断能读到什么（老快照缺新字段时不冒充完整）
 //   v2（2026-10-09 任务二拆分）：hot.rows 增 pe_ttm/pb/liangbi（腾讯行情同 payload）
 //   与 main_net（东财 push2 主力净流入，元）——盘中候选池筛选条件的唯一数据底座。
-export const SNAPSHOT_VERSION = 2;
+//   v3（2026-10-10 双池拆分+滚动生成）：① pools.zt_lb（code→连板数）入库——fetchPools
+//   一直在算，此前落盘丢弃；连板池判定唯一权威源（reason 标签猜连板 = 造数）。
+//   ② pools.zt_detail（每股 lbc/zbc/hybk，情绪六指标原料）+ 顶层 rolling 段（tick 每拍
+//   生成滚动双池 + 实时六状态情绪 + 收盘倒计时降级标记）——推送时点/入库流程零改动。
+export const SNAPSHOT_VERSION = 3;
 
 const log = (...a) => console.log('[intraday]', ...a);
 
@@ -143,6 +149,12 @@ const snapshot = {
     zt: pools.zt, zb: pools.zb, dt: pools.dt,
     max_lb: pools.max_lb, lb2: pools.lb2,
     zt_codes: pools.zt_codes || null,
+    // v3（2026-10-10 双池拆分）：code→连板数映射。连板池判定唯一依据——
+    //   缺席（旧快照）= null，报告层连板池报因不猜测，绝不拿 reason 标签冒充。
+    zt_lb: pools.zt_lb || null,
+    // v3（2026-10-10 滚动情绪）：涨停池每股明细 {c,lbc,zbc,hybk}——emotion_cycle
+    //   六指标（判据唯一出处）的盘中原料，与收盘口径 ztpool_history 同源同构。
+    zt_detail: pools.zt_detail || null,
     // 盘中封板率：分母同样是"触板个股"（涨停 + 炸板），与收盘口径同一算法
     seal_pct: (pools.zt != null && pools.zb != null && (pools.zt + pools.zb) > 0)
       ? Math.round((pools.zt / (pools.zt + pools.zb)) * 1000) / 10 : null,
@@ -174,6 +186,39 @@ if (!anyOk) {
 // 与上一次成功快照的差异（供页面显示"距上次快照涨跌停数变化"这类盘中动量的朴素证据）
 snapshot.prevCapturedAtBJ = prev && prev.pools ? (prev.capturedAtBJ || null) : null;
 snapshot.prevPools = prev && prev.pools ? { zt: prev.pools.zt, zb: prev.pools.zb, seal_pct: prev.pools.seal_pct } : null;
+
+// ── ④b 滚动候选池（2026-10-10 用户指令：tick 每拍生成，推送时点/入库流程不动）──
+//   每 :00/:30 tick 就地重算双池（复用报告层同一纯函数 buildIntradayPool——页面
+//   与推送天然同构）+ 实时六状态情绪（zt_detail 现算，prev 取收盘口径
+//   emotion_history 末行——同日行排除，16:00 入库后盘中不再误用当日作 prev）。
+//   距收盘不足 30 分钟 → trend_pool_mode='tomorrow_watch'（明日观察池）。
+//   提交走既有 git add data/intraday.json——零新增调度、零新增入库路径。
+{
+  let prevEmotionMetrics = null;
+  try {
+    const eh = JSON.parse(readFileSync(join(ROOT, 'data', 'emotion_history.json'), 'utf8'));
+    const today = ph.bjDate.replace(/-/g, '');
+    const rows = Array.isArray(eh?.history) ? eh.history : [];
+    const prevRow = [...rows].reverse().find((r) => r && r.date && r.date !== today);
+    prevEmotionMetrics = prevRow?.metrics ?? null;
+  } catch { prevEmotionMetrics = null; }
+  const built = buildIntradayPool(snapshot, { tradeDate: ph.bjDate, nowBJ: ph.bjTime });
+  const emotion = Array.isArray(pools?.zt_detail) && pools.zt_detail.length
+    ? computeEmotion(pools.zt_detail, prevEmotionMetrics, ph.bjDate.replace(/-/g, '')) : null;
+  snapshot.rolling = {
+    generatedAtBJ: `${ph.bjDate} ${ph.bjTime}`,
+    minutes_to_close: minutesToCloseBJ(ph.bjTime),
+    trend_pool_mode: built.trend_pool_mode,
+    streak_pool: built.streak_pool,
+    trend_pool: built.pool,
+    basis: built.basis,
+    streak_basis: built.streak_basis,
+    // no_data 不落 null 占位（宁缺毋假）；emotion_cycle 六状态：冰点/退潮/高潮/主升/复苏/震荡
+    emotion: emotion && emotion.emotion !== 'no_data' ? emotion : null,
+  };
+  log(`滚动池：连板 ${built.streak_pool.length} · 趋势 ${built.pool.length}（${built.trend_pool_mode === 'tomorrow_watch' ? '明日观察池·距收盘' + built.minutes_to_close + '分' : 'trend'}）`
+    + ` · 实时情绪 ${snapshot.rolling.emotion ? `${snapshot.rolling.emotion.emotion} ${snapshot.rolling.emotion.score ?? '—'}分` : 'no_data（明细缺席）'}`);
+}
 
 log(`抓取完成：强势股 ${snapshot.hot ? snapshot.hot.count : '—'} 只 · 涨停 ${pools?.zt ?? '—'} / 炸板 ${pools?.zb ?? '—'}`
   + ` / 跌停 ${pools?.dt ?? '—'} · 涨跌家数 ${breadth ? `${breadth.up}/${breadth.down}` : '—'}`);

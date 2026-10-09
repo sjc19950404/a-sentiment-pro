@@ -731,8 +731,39 @@ export function buildWatchlist(input, opts = {}) {
   };
 }
 
-/** 盘中候选池筛选阈值（任务二指令口径：涨幅 3-7%、量比 >2.0、主力净流入为正、未涨停）。 */
+/** 盘中候选池筛选阈值（任务二指令口径：涨幅 3-7%、量比 >2.0、主力净流入为正、未涨停）——**趋势池**专用。 */
 export const INTRADAY_POOL_FILTERS = { chg_min: 3, chg_max: 7, liangbi_min: 2.0, top: 10 };
+
+/** 连板池独立筛选规则（2026-10-10 P0 边界写死，用户指令「另行配置、只是不再复用趋势池涨幅过滤」）：
+ *  · 连板计数：zt_lb 连板数 ≥ min_lb（2）——首板涨停属趋势池语义（被「未涨停」正常剔除），
+ *    连板股不套涨幅带/未涨停（连板本就意味着当日已涨停）；
+ *  · 量比 > liangbi_min（2.0）· 主力净流入 > main_net_min（0，为正）· 上限 top（10）；
+ *  · 断板判定：最新快照 zt_lb 无此股或连板数 < min_lb → 剔除（连板身份消失/疑似炸板）；
+ *  · 封单/换手：盘中快照无此二字段，不设判据（宁缺毋假——不发明数据源，数据源升级再扩）。
+ *  ⚠ 与趋势池 INTRADAY_POOL_FILTERS 完全解耦——数值巧合相同（量比 2.0/Top 10）也各自独立演进，
+ *    改一处绝不隐式影响另一处（这正是 10-09 事故的教训：判据复用 = 错配温床）。 */
+export const STREAK_POOL_FILTERS = { min_lb: 2, liangbi_min: 2.0, main_net_min: 0, top: 10 };
+export const STREAK_POOL_MIN_LB = STREAK_POOL_FILTERS.min_lb; // 兼容别名（历史引用/测试沿用）
+
+/** A 股连续竞价收盘（北京 15:00）——收盘倒计时闸的唯一出处。 */
+export const MARKET_CLOSE_BJ = '15:00';
+
+/**
+ * 距收盘剩余分钟数（纯函数，盘中语义）。14:30 为「不足 30 分钟」降级线的边界外沿：
+ * 14:30:00 整 = 剩 30 分钟（不满"<30"）；14:31 = 29 分钟（触发降级）。
+ * @param {string|null} timeBJ 'HH:mm' 或 'HH:mm:ss'（bjTime / capturedAtBJ 时间段）；非法 → null
+ * @returns {number|null} 剩余分钟（向上取整到分钟粒度）；已过收盘 → 负数
+ */
+export function minutesToCloseBJ(timeBJ) {
+  if (typeof timeBJ !== 'string') return null;
+  const m = timeBJ.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!m) return null;
+  const hh = +m[1], mm = +m[2], ss = m[3] ? +m[3] : 0;
+  if (hh > 23 || mm > 59 || ss > 59) return null;
+  const nowMin = hh * 60 + mm + (ss > 0 ? 1 : 0); // 有秒即进位（14:30:01 → 已不足 30 分）
+  const [ch, cm] = MARKET_CLOSE_BJ.split(':').map(Number);
+  return (ch * 60 + cm) - nowMin;
+}
 
 /** is_valid 数值硬闸（2026-10-09 用户指令）：null / undefined / 空串 / 非有限数一律不放行。
  *  缺失就是缺失——核验字段缺失 = 剔除（unverifiable），展示字段缺失 = null 渲染 —，
@@ -757,11 +788,26 @@ const isValidText = (v) => (v == null || String(v).trim() === '') ? null : Strin
  *   不过 = null 渲染 —；题材无标签就空着、估值缺失就 —，严禁默认值/推算/脑补填充。
  *   筛后 0 只 → basis 首句显式报「今日无符合条件标的」，不凑数塞垃圾。
  * @param {object|null} intraday data/intraday.json（当日快照；null/陈旧 = 空池）
- * @param {{regimeCap?:number, tradeDate?:string}} opts regimeCap（剧本模板）；tradeDate 北京当日（陈旧校验）
+ * @param {{regimeCap?:number, tradeDate?:string, nowBJ?:string}} opts regimeCap（剧本模板）；
+ *   tradeDate 北京当日（陈旧校验）；nowBJ 'HH:mm[:ss]'（收盘倒计时闸——缺省取快照
+ *   capturedAtBJ 时段：池的降级判定跟着**数据时点**走，不跟构建机器的钟）
+ * @returns {{pool:Array, basis:string, streak_pool:Array, streak_basis:string,
+ *   trend_pool_mode:'trend'|'tomorrow_watch', minutes_to_close:number|null}}
+ *   pool = 趋势池（四条件不变；距收盘<30分钟降级为「明日观察池」语义）；streak_pool =
+ *   连板池（连板≥2 · 量比>2 · 主力净流入为正，不套涨幅带/未涨停——2026-10-10 用户指令）。
  */
 export function buildIntradayPool(intraday, opts = {}) {
   const F = INTRADAY_POOL_FILTERS;
+  const SF = STREAK_POOL_FILTERS; // 连板池独立判据（解耦于 F——见常量注释「边界写死」）
   const stale = intraday && opts.tradeDate && intraday.tradeDate !== opts.tradeDate;
+  // 收盘倒计时降级（2026-10-10 用户指令）：距收盘不足 30 分钟 → 趋势池自动降级为
+  //   「明日观察池」（观察语义，不作当日买入依据）。连板池不受影响——连板股当日
+  //   已封板，不存在「买入窗口将关闭」的问题。
+  const nowBJ = typeof opts.nowBJ === 'string' && opts.nowBJ
+    ? opts.nowBJ
+    : (typeof intraday?.capturedAtBJ === 'string' ? (intraday.capturedAtBJ.split(' ')[1] ?? null) : null);
+  const minsToClose = minutesToCloseBJ(nowBJ);
+  const tomorrowWatch = minsToClose != null && minsToClose > 0 && minsToClose < 30;
   // 扫描宇宙（任务二）：全市场筛选榜优先（screener——主力净流入降序前 100，带齐
   //   量比/PE/PB/行业），缺席才回落 hot 强势榜（≈涨停集中营，3-7% 启动带几乎恒空，
   //   仅作降级底座）。两个宇宙字段名同构，筛选/得分代码共用。
@@ -773,9 +819,17 @@ export function buildIntradayPool(intraday, opts = {}) {
     ? `全市场筛选榜（东财 clist 主力净流入降序前 ${screenRows.length}）`
     : (boardRows.length ? 'hot 强势榜（全市场筛选榜缺席的降级底座；≈涨停集中营，3-7% 带几乎恒空）' : '无底座');
   const ztCodes = new Set(Array.isArray(intraday?.pools?.zt_codes) ? intraday.pools.zt_codes.map(String) : []);
+  // 连板身份（2026-10-10 双池拆分）：pools.zt_lb（东财 getTopicZTPool lbc，code→连板数）是
+  //   唯一权威源——reason 标签猜连板 = 造数。旧快照（v2 无此字段）→ null，连板池报因不猜测。
+  const ztLb = !stale && intraday?.pools?.zt_lb && typeof intraday.pools.zt_lb === 'object'
+    ? intraday.pools.zt_lb : null;
+  const ztLbTotal = ztLb
+    ? Object.values(ztLb).filter((v) => Number.isFinite(+v) && Math.trunc(+v) >= SF.min_lb).length : 0;
   if (!universe.length) {
     return {
       pool: [],
+      trend_pool_mode: tomorrowWatch ? 'tomorrow_watch' : 'trend',
+      minutes_to_close: minsToClose,
       basis: stale
         ? `当日盘中快照缺席/陈旧（tradeDate ${intraday?.tradeDate ?? '无'} ≠ ${opts.tradeDate ?? '?'}），本轮不出候选池——不回落昨收口径（任务一/二数据源物理隔离）`
         : '盘中快照 hot.rows/screener 均缺席，本轮不出候选池（不回落昨收口径，数据源物理隔离）',
@@ -790,14 +844,30 @@ export function buildIntradayPool(intraday, opts = {}) {
   for (const r of universe) for (const t of tagsOf(r)) tagCount[t] = (tagCount[t] || 0) + 1;
   const maxTag = Math.max(1, ...Object.values(tagCount));
   const rejected = { chg_band: 0, liangbi: 0, zt: 0, main_net: 0, unverifiable: 0 };
+  const streakRejected = { liangbi: 0, main_net: 0, unverifiable: 0 }; // 连板池轨剔除台账
   const cands = [];
+  const streakCands = [];
   for (const r of universe) {
     if (!r?.code) continue;
-    // is_valid 硬闸：核验字段（涨幅/量比/主力净流入）任一不过闸 → 剔除计数（宁缺毋假）。
+    // is_valid 硬闸：核验字段任一不过闸 → 剔除计数（宁缺毋假）。
     //   ⚠ +null === 0 的变体防线：''/null/undefined 全被 isValidNum 拦下，0 只能是真实 0。
     const chg = isValidNum(r.change_pct) ? +r.change_pct : null;
     const lb = isValidNum(r.liangbi) ? +r.liangbi : null;
     const mn = isValidNum(r.main_net) ? +r.main_net : null;
+    const tags = tagsOf(r);
+    // ── 连板池轨（2026-10-10 用户指令；2026-10-10 P0 边界写死：判据走 SF 独立配置）──
+    //   连板身份可核验（zt_lb ≥ SF.min_lb）即先行分流：不套涨幅带、不剔已涨停（连板
+    //   本就意味着当日涨停——用趋势池的「涨幅 3-7% · 未涨停」筛连板股，会把连板股
+    //   全数误剔，即 10-09 事故）。量比/主力净流入照旧把关；chg 降级为展示字段。
+    const lbc = ztLb && isValidNum(ztLb[String(r.code)]) ? Math.trunc(+ztLb[String(r.code)]) : null;
+    if (lbc != null && lbc >= SF.min_lb) {
+      if (lb == null || mn == null) { streakRejected.unverifiable++; continue; }
+      if (lb <= SF.liangbi_min) { streakRejected.liangbi++; continue; }
+      if (mn <= SF.main_net_min) { streakRejected.main_net++; continue; }
+      streakCands.push({ r, chg, lb, mn, lbc, tags });
+      continue;
+    }
+    // ── 趋势池轨（四条件，语义不变）─────────────────────────────────────────
     if (chg == null || lb == null || mn == null) { rejected.unverifiable++; continue; }
     // 涨停判定先于带外：~10% 的涨停股同时也在 3-7 带外，先归类「已涨停」台账更有信息量
     // （zt_codes 是权威名单；chg≥9.9 是名单缺席时的兜底——正常涨停涨幅恒 >7）
@@ -805,7 +875,7 @@ export function buildIntradayPool(intraday, opts = {}) {
     if (chg < F.chg_min || chg > F.chg_max) { rejected.chg_band++; continue; }
     if (lb <= F.liangbi_min) { rejected.liangbi++; continue; }
     if (mn <= 0) { rejected.main_net++; continue; }
-    cands.push({ r, chg, lb, mn, tags: tagsOf(r) });
+    cands.push({ r, chg, lb, mn, tags });
   }
   const maxMn = cands.length ? Math.max(...cands.map((c) => c.mn)) : 0;
   const clamp01 = (v) => Math.max(0, Math.min(1, v));
@@ -855,8 +925,52 @@ export function buildIntradayPool(intraday, opts = {}) {
   const basis = (pool.length ? '' : '今日无符合条件标的（宁缺毋假，不凑数填充）；')
     + `${universeName} 实时现算（每轮全量重算，不沿用上轮）：涨幅 ${F.chg_min}-${F.chg_max}% · 量比 >${F.liangbi_min} · 未涨停（pools.zt_codes）· 主力净流入为正；`
     + `扫 ${universe.length} 只，剔除——带外 ${rejected.chg_band} / 量比不足 ${rejected.liangbi} / 已涨停 ${rejected.zt} / 净流出或无源 ${rejected.main_net} / 字段缺失 ${rejected.unverifiable}；`
-    + `得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）`;
-  return { pool, basis };
+    + `得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）`
+    + (tomorrowWatch ? `；距收盘 ${minsToClose} 分钟（<30）→ 趋势池自动降级为「明日观察池」（观察语义，不作当日买入依据——2026-10-10 用户指令）` : '');
+  // ── 连板池装配（2026-10-10 双池拆分）────────────────────────────────────────
+  //   排序 = 连板数降序 → 主力净流入降序（高度优先，同高资金破平）；不套综合得分——
+  //   涨幅位置分量对连板股无意义（这正是拆池的原因），score 恒 null。
+  const streakScored = [...streakCands]
+    .sort((a, b) => b.lbc - a.lbc || b.mn - a.mn).slice(0, SF.top);
+  const streak_pool = streakScored.map(({ r, chg, lb, mn, lbc, tags }) => {
+    const pe = isValidNum(r.pe_ttm) ? +r.pe_ttm : null;
+    const pb = isValidNum(r.pb) ? +r.pb : null;
+    const missing = [
+      ...(tags.length ? [] : ['题材']),
+      ...(pe == null && pb == null ? ['估值'] : []),
+      ...(mn == null ? ['资金'] : []),
+    ];
+    return {
+      code: String(r.code),
+      name: isValidText(r.name), // 空名 → null 渲染 —，不脑补
+      score: null, // 连板池不套综合得分（见上）；推送渲染「得分 —」如实
+      themes: tags.length ? tags : null,
+      selection_reason: `${lbc} 连板`, // 连板高度即入选理由（复盘归因用，真实字段）
+      intraday_chg: chg, // 连板池的 chg 是展示字段：缺失 → null 渲染 —（不作核验）
+      fundamentals: {
+        ...emptyFundamentals(),
+        pe,
+        pb,
+      },
+      data_completeness: { level: missing.length ? 'partial' : 'full', missing },
+      fund_flow_note: `主力净流入 +${Math.round(mn / 1e4)} 万（东财 push2 盘中实时）`,
+      scripts: buildScripts({ code: String(r.code) }, { regimeCap: opts.regimeCap ?? 0 }),
+      risks: ['连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）',
+        '连板高度越高，晋级失败风险越大（断板负反馈）'],
+    };
+  });
+  const streakSeen = streakCands.length + streakRejected.liangbi + streakRejected.main_net + streakRejected.unverifiable;
+  const streak_basis = !ztLb
+    ? '连板池：快照缺连板数字段（pools.zt_lb，旧版快照 v2），本轮连板池缺席——不猜测、不降级（宁缺毋假）'
+    : (streak_pool.length ? '' : '连板池：今日无符合条件标的（宁缺毋假，不凑数填充）；')
+      + `连板池实时现算（${universeName} ∩ zt_lb 连板≥${SF.min_lb}）：连板≥${SF.min_lb} · 量比 >${SF.liangbi_min} · 主力净流入为正——不套涨幅带、不剔已涨停（连板池语义，2026-10-10 用户指令）；`
+      + `zt_lb 连板≥${SF.min_lb} 共 ${ztLbTotal} 只，宇宙在榜 ${streakSeen} 只，剔除——量比不足 ${streakRejected.liangbi} / 净流出或无源 ${streakRejected.main_net} / 字段缺失 ${streakRejected.unverifiable}；`
+      + `排序=连板数降序→主力净流入降序（不套综合得分）`;
+  return {
+    pool, basis, streak_pool, streak_basis,
+    trend_pool_mode: tomorrowWatch ? 'tomorrow_watch' : 'trend',
+    minutes_to_close: minsToClose,
+  };
 }
 
 /**
@@ -932,13 +1046,23 @@ export function buildSimulationStock(input, opts = {}) {
     yesterday_chain_performance: num(pick(input, 'signals.pain.perf.avg')),
     warning_signals: warnings,
   };
-  // 候选池口径（2026-10-09 任务拆分）：盘中报告用实时池（任务二，每轮重算），
-  //   其余类型沿用 pain 连板口径（决议 8）。opts.poolMode==='realtime' 但当日快照
-  //   缺席/陈旧 → 空池如实报因，**不回落昨收口径**（数据源物理隔离）。
-  let pool, poolBasis;
+  // 候选池口径（2026-10-09 任务拆分；2026-10-10 双池拆分）：盘中报告用实时双池——
+  //   candidate_pool = 趋势池（四条件）、streak_pool = 连板池（连板≥2，不套涨幅带/
+  //   未涨停）；其余类型沿用 pain 连板口径（决议 8，streak_pool 恒 null）。
+  //   opts.poolMode==='realtime' 但当日快照缺席/陈旧 → 空池如实报因，
+  //   **不回落昨收口径**（数据源物理隔离）。
+  let pool, poolBasis, streakPool = null, streakBasis = null, trendPoolMode = 'trend';
+  // 实时情绪（2026-10-10 用户指令「情绪标签不能只输出 recover/发酵期」）：盘中报告的
+  //   sentiment_cycle 读的是昨收口径 regime（日内不更新 → 长期 recover→发酵期）；滚动
+  //   快照 rolling.emotion 是**当日涨停池明细现算**的六状态（冰点/退潮/高潮/主升/复苏/
+  //   震荡，emotion_cycle 判据唯一出处），推送优先渲染实时值、缺席回落昨收口径。
+  let liveEmotion = null;
   if (opts.poolMode === 'realtime') {
     const built = buildIntradayPool(opts.intradaySnapshot ?? null, { regimeCap: cap, tradeDate: opts.tradeDate });
     pool = built.pool; poolBasis = built.basis;
+    streakPool = built.streak_pool; streakBasis = built.streak_basis;
+    trendPoolMode = built.trend_pool_mode ?? 'trend';
+    liveEmotion = opts.intradaySnapshot?.rolling?.emotion ?? null;
   } else {
     pool = buildCandidatePool(input.signals, { nameMap: opts.nameMap, regimeCap: cap, intradayHot: opts.intradayHot });
     poolBasis = 'pain.advance.detail 连板活跃明细按连板数降序（情绪面规则现算，决议 8：人工输入模式的辅助建议，可一键采纳不自动生效）';
@@ -962,6 +1086,20 @@ export function buildSimulationStock(input, opts = {}) {
     position_suggestion: mapPositionSuggestion(cap, phase),
     pool_basis: poolBasis,
     candidate_pool: pool,
+    // 连板池（2026-10-10 双池拆分）：仅盘中实时报告在场；盘后 pain 口径恒 null。
+    //   streak_pool_basis 是「标题与标的一致」的口径唯一出处（推送标题逐字取自此处的筛选面）。
+    streak_pool: streakPool,
+    streak_pool_basis: streakBasis,
+    // 收盘倒计时降级（2026-10-10）：'trend' | 'tomorrow_watch'（距收盘<30分钟）；
+    //   盘后 pain 口径恒 'trend'（无当日买入窗口概念）。
+    trend_pool_mode: trendPoolMode,
+    // 构建所用快照拍（2026-10-10 推送前校验）：推送前校验只对**同拍**快照应用剔除——
+    // 跨拍（补推旧档案/dispatch 延迟重跑）底座已换血，「掉出底座」是时点差不是违规，
+    // 剔了会改写历史档案（周六本地冒烟实录：跨拍误剔 10/10）。跨拍仅审计不剔除。
+    snapshotAtBJ: opts.poolMode === 'realtime' ? (opts.intradaySnapshot?.capturedAtBJ ?? null) : null,
+    // 实时情绪（2026-10-10）：{date, emotion, score, metrics} 或 null（rolling 缺席 →
+    //   推送回落昨收口径五期标签，不冒充）。
+    live_emotion: liveEmotion,
     simulation_positions,
     review: null, // 复盘归因 S3 录入后才有数据；win_rate 口径 = 剧本命中/总执行（决议 4），缺席恒 null
   };

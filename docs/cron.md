@@ -55,6 +55,11 @@ node scripts/daily_fetch.mjs
 - **CI 完全不覆盖本入口**：`.github/workflows/*` 中搜不到 `daily_fetch / emotion_history / scan_old_dragon / main_theme_history` 任何一个（2026-10-09 已逐一核实）。CI 只负责 archive/信号/报告链路（daily.yml 的 18:30 盘后首抓、21:00 补抓等）。
 - **数据不可回补**：`ztpool_history.json` 依赖东财 `getTopicZTPool`，只返回最近交易日（见 §4）。本地任务停更一天 = 永久缺一天，老龙头判定所需的 ≥10 交易日冷却链直接断裂。
 - **入库规则**：仅 `ztpool_history.json` 入库；`emotion_history / old_dragon_history / main_theme_history` 三档可由 ztpool + archive 完全重建，`.gitignore` 已规定不入库。当日采集需人工（或后续自动化）`git add data/ztpool_history.json` 提交。
+- **入库前只读核验（2026-10-10 新增，先核后入库）**：任务跑完后、`git add` 之前，按以下判据核验变更范围，任一不满足则**停下排查、不提交**：
+  1. **幂等追加**：`git diff` 仅末尾新增行——HEAD 中已有行（含既有交易日全部字段）逐行不变；出现历史行改写/删除/重排即为回补或污染，拒绝入库。
+  2. **新增行日期**：恰为最近交易日且此前不存在（非交易日运行应无 diff，无 diff 则跳过提交，不造空 commit）。
+  3. **结构不变**：顶层 keys、数组字段名与 HEAD 一致（防写入器升级引入结构漂移）。
+  4. **范围隔离**：本任务不应产生 `ztpool_history.json` 以外的新脏文件（工作区既有的未提交改动与它无关，`git add` 仍只加本文件）。
 - **当前部署**：本机 Windows 计划任务 `\ASentiment-dailyfetch-1600`（每日 16:00，SYSTEM 主体，XML 备份存仓外 brain 目录）。`crontab.example` 的 15:30 是 Linux 部署示例，语义等价。
 - **姊妹任务 `\ASentiment-pipeline-1530`**（每日 15:30，`MODE=live` 写 archive.json）产物被 CI 完整覆盖（daily.yml:294 会提交），属真冗余，已于 2026-10-09 禁用——**它和本任务命运相反，勿混淆**。
 - **历史教训（2026-10-09）**：本任务曾差点被误判为"CI 冗余"而禁用，且当日 `ztpool_history.json`（+1454 行）差点被 `git checkout --` 丢弃，拦截依据即以上各条。**清理工作区前先核对这份清单。**

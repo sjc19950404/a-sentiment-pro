@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  buildWatchlist, buildIntradayPool, INTRADAY_POOL_FILTERS,
+  buildWatchlist, buildIntradayPool, INTRADAY_POOL_FILTERS, minutesToCloseBJ,
 } from '../src/ai_report.js';
 
 // ── 任务一：盘前观察清单 ────────────────────────────────────────────────
@@ -37,11 +37,11 @@ test('buildWatchlist：空梯队/缺档 → ladder 空数组（不炸不造数�
   assert.deepEqual(buildWatchlist({ signals: {} }, {}).ladder, []);
 });
 
-// ── 任务二：盘中候选池筛选 ───────────────────────────────────────────────
+// ── 任务二：盘中候选池筛选（2026-10-10 双池拆分：趋势池四条件 + 连板池独立口径）──
 const snap = (rows, pools = {}) => ({
   tradeDate: '2026-10-09',
   hot: { rows },
-  pools: { zt_codes: pools.zt_codes ?? [] },
+  pools: { zt_codes: pools.zt_codes ?? [], ...(pools.zt_lb ? { zt_lb: pools.zt_lb } : {}) },
 });
 const row = (o) => ({ code: '600001', name: '样本股', reason: '半导体+国产替代', change_pct: 5, liangbi: 3, main_net: 5e7, pe_ttm: 22, pb: 1.4, ...o });
 
@@ -145,4 +145,95 @@ test('buildIntradayPool：数据完整度标记——题材/估值/资金三要�
   assert.deepEqual(by['600501'].data_completeness, { level: 'full', missing: [] }, '题材/估值/资金全 → full');
   assert.deepEqual(by['600502'].data_completeness, { level: 'partial', missing: ['估值'] }, 'PE/PB 双缺 → partial 缺估值');
   assert.deepEqual(by['600503'].data_completeness, { level: 'partial', missing: ['题材', '估值'] }, 'reason 空 → 无题材；双缺如实清点（不冒充完整画像）');
+});
+
+// ── 双池拆分（2026-10-10 用户指令）──────────────────────────────────────
+//   连板池不套「涨幅 3-7% / 未涨停」；趋势池四条件不变；两池互不掺和。
+test('buildIntradayPool 双池：连板股（zt_lb≥2）进连板池、不进趋势池——涨幅 10% 不再被误剔', () => {
+  const rows = [
+    row({ code: '600601', change_pct: 10.02 }),  // 3 连板：涨停 + 涨幅带外——旧口径会被「已涨停」误剔
+    row({ code: '600602', change_pct: 9.97 }),   // 2 连板
+    row({ code: '600603' }),                      // 首板趋势股（5%）——趋势池语义
+  ];
+  const zt_lb = { 600601: 3, 600602: 2, 600603: 1 }; // 600603 首板（lbc=1）不属连板池
+  const { pool, streak_pool, basis, streak_basis } = buildIntradayPool(snap(rows, { zt_lb }), {});
+  assert.deepEqual(pool.map((p) => p.code), ['600603'], '趋势池只剩首板趋势股（连板股已分流）');
+  assert.deepEqual(streak_pool.map((p) => p.code), ['600601', '600602'], '连板池按连板数降序');
+  assert.equal(streak_pool[0].selection_reason, '3 连板', '入选理由 = 连板高度');
+  assert.equal(streak_pool[0].score, null, '连板池不套综合得分（涨幅位置分量对连板股无意义）');
+  assert.equal(streak_pool[0].intraday_chg, 10.02, 'chg 是展示字段，如实呈现');
+  // 标题口径一致（streak_basis 是推送标题的唯一出处）：绝不出现趋势池的涨幅带/未涨停
+  assert.ok(streak_basis.includes('连板≥2'), '连板池口径含连板门槛');
+  assert.ok(streak_basis.includes('不套涨幅带、不剔已涨停'), '口径明示不套趋势池两条');
+  assert.ok(!streak_basis.includes('涨幅 3-7'), '连板池口径绝不冒充涨幅带');
+  assert.ok(basis.includes('已涨停 0'), '连板股分流后，趋势池「已涨停」台账归零（首板涨停才计）');
+});
+
+test('buildIntradayPool 双池：连板股 chg 缺失仍入连板池（展示字段非核验），量比/主力净流入照旧把关', () => {
+  const rows = [
+    row({ code: '600611', change_pct: null }),            // 2 连板 + 涨幅无源 → 仍入连板池（chg 渲染 —）
+    row({ code: '600612', liangbi: 1.5 }),                 // 2 连板 + 量比不足 → 剔
+    row({ code: '600613', main_net: -1e6 }),               // 2 连板 + 净流出 → 剔
+    row({ code: '600614', liangbi: null }),                // 2 连板 + 量比无源 → unverifiable
+  ];
+  const zt_lb = { 600611: 2, 600612: 2, 600613: 2, 600614: 2 };
+  const { streak_pool, streak_basis } = buildIntradayPool(snap(rows, { zt_lb }), {});
+  assert.deepEqual(streak_pool.map((p) => p.code), ['600611'], '量比/主力为核验字段，缺失/不足如实剔');
+  assert.equal(streak_pool[0].intraday_chg, null, 'chg 缺失 → null 渲染 —（连板池不作核验）');
+  assert.ok(streak_basis.includes('量比不足 1'), '连板池剔除台账如实');
+  assert.ok(streak_basis.includes('净流出或无源 1'), '净流出剔 1');
+  assert.ok(streak_basis.includes('字段缺失 1'), '量比无源走 unverifiable（宁缺毋假）');
+  assert.ok(streak_basis.includes('zt_lb 连板≥2 共 4 只'), 'zt_lb 总数披露（含宇宙外/被剔的全量口径）');
+});
+
+test('buildIntradayPool 双池：旧快照无 zt_lb → 连板池 0 只报因不猜测，趋势池行为不变', () => {
+  const rows = [row({ code: '600621', change_pct: 10.05 })]; // 涨停但无连板数字段
+  const { pool, streak_pool, streak_basis } = buildIntradayPool(snap(rows), {}); // 无 zt_lb（v2 旧快照）
+  assert.deepEqual(pool, [], '趋势池：涨停股照旧被剔（四条件不变）');
+  assert.deepEqual(streak_pool, [], '连板池 0 只');
+  assert.ok(streak_basis.includes('缺连板数字段'), '报因：快照缺 zt_lb（不猜测、不降级）');
+});
+
+test('buildIntradayPool 双池：首板涨停（zt_lb lbc=1）属趋势池语义——被「未涨停」正常剔除，不进连板池', () => {
+  const rows = [row({ code: '600631', change_pct: 10.0 })];
+  const { pool, streak_pool, basis } = buildIntradayPool(snap(rows, { zt_codes: ['600631'], zt_lb: { 600631: 1 } }), {});
+  assert.deepEqual(pool, [], '首板涨停不进趋势池');
+  assert.deepEqual(streak_pool, [], 'lbc=1 < 2 不进连板池（连板池门槛 STREAK_POOL_MIN_LB）');
+  assert.ok(basis.includes('已涨停 1'), '首板涨停进趋势池「已涨停」台账');
+});
+
+// ── 收盘倒计时降级（2026-10-10 用户指令：距收盘不足 30 分钟 → 趋势池自动降级明日观察池）──
+test('minutesToCloseBJ：边界刻度——14:29=31 分 / 14:30=30 分（不触发）/ 14:31=29 分（触发）/ 非法 → null', () => {
+  assert.equal(minutesToCloseBJ('14:29'), 31);
+  assert.equal(minutesToCloseBJ('14:30'), 30, '整 30 分钟不满足「不足 30 分钟」');
+  assert.equal(minutesToCloseBJ('14:31'), 29);
+  assert.equal(minutesToCloseBJ('14:30:01'), 29, '有秒即进位：14:30:01 已不足 30 分');
+  assert.equal(minutesToCloseBJ('15:00'), 0, '收盘时刻 = 0（不在盘中，不触发）');
+  assert.equal(minutesToCloseBJ('09:35'), 325);
+  assert.equal(minutesToCloseBJ('bad'), null, '非法输入 → null（不造数）');
+  assert.equal(minutesToCloseBJ(null), null);
+});
+
+test('buildIntradayPool 降级：nowBJ/capturedAtBJ 距收盘<30分钟 → trend_pool_mode=tomorrow_watch + basis 报降级', () => {
+  const rows = [row({ code: '600701' })];
+  // ① opts.nowBJ 显式注入（纯函数可测）：14:35 → 25 分 < 30 → 降级
+  const dg = buildIntradayPool(snap(rows), { nowBJ: '14:35' });
+  assert.equal(dg.trend_pool_mode, 'tomorrow_watch', '14:35 距收盘 25 分 → 明日观察池');
+  assert.equal(dg.minutes_to_close, 25);
+  assert.ok(dg.basis.includes('距收盘 25 分钟（<30）→ 趋势池自动降级为「明日观察池」'), 'basis 明示降级原因');
+  assert.deepEqual(dg.pool.map((p) => p.code), ['600701'], '降级只换语义标签，标的仍是四条件筛出者');
+  // ② 快照 capturedAtBJ 数据时点兜底（不传 nowBJ）：14:53 → 7 分 → 降级
+  const snapAt = { ...snap(rows), capturedAtBJ: '2026-10-10 14:53' };
+  const dg2 = buildIntradayPool(snapAt, {});
+  assert.equal(dg2.trend_pool_mode, 'tomorrow_watch', '缺省跟快照数据时点走（14:53 拍 → 降级）');
+  // ③ 边界外：14:29 → 31 分 → 不降级；连板池结构不受降级影响
+  const ok = buildIntradayPool(snap(rows, { zt_lb: { 600702: 2 } }), { nowBJ: '14:29' });
+  assert.equal(ok.trend_pool_mode, 'trend', '14:29 距收盘 31 分 → 正常趋势池');
+  const okStreak = buildIntradayPool(snap([row({ code: '600702', change_pct: 10.05 })], { zt_lb: { 600702: 2 } }), { nowBJ: '14:50' });
+  assert.equal(okStreak.trend_pool_mode, 'tomorrow_watch', '趋势池降级');
+  assert.equal(okStreak.streak_pool.length, 1, '连板池不受降级影响（当日已封板，无买入窗口问题）');
+  // ④ 无时间信息（旧快照无 capturedAtBJ 且未注入 nowBJ）→ 不降级不造数
+  const noT = buildIntradayPool(snap(rows), {});
+  assert.equal(noT.trend_pool_mode, 'trend', '时间不可知 → 按趋势池渲染（不猜测降级）');
+  assert.equal(noT.minutes_to_close, null);
 });
