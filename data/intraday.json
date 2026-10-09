@@ -2,18 +2,26 @@
   "version": 1,
   "kind": "intraday",
   "tradeDate": "2026-10-09",
-  "capturedAt": "2026-10-09T05:46:41.863Z",
-  "capturedAtBJ": "2026-10-09 13:46",
+  "capturedAt": "2026-10-09T05:56:27.109Z",
+  "capturedAtBJ": "2026-10-09 13:56",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
-    "count": 44,
+    "count": 45,
     "srcDate": "2026-10-09",
     "rows": [
       {
-        "code": "002811",
-        "name": "郑中设计",
-        "reason": "半导体投资+室内设计+软装增长",
+        "code": "601595",
+        "name": "上海电影",
+        "reason": "AI影视+知识产权运营+院线经营",
+        "close": null,
+        "change_pct": null,
+        "huanshou": null
+      },
+      {
+        "code": "605577",
+        "name": "龙版传媒",
+        "reason": "AI漫剧+出版发行+黑龙江国资",
         "close": null,
         "change_pct": null,
         "huanshou": null
@@ -365,9 +373,9 @@
     ]
   },
   "pools": {
-    "zt": 44,
+    "zt": 46,
     "zb": 16,
-    "dt": 7,
+    "dt": 10,
     "max_lb": 9,
     "lb2": 11,
     "zt_codes": [
@@ -414,20 +422,22 @@
       "605177",
       "601566",
       "605287",
-      "605577"
+      "605577",
+      "601595",
+      "601929"
     ],
-    "seal_pct": 73.3
+    "seal_pct": 74.2
   },
   "breadth": {
-    "up": 1971,
-    "down": 3178,
-    "flat": 138
+    "up": 1967,
+    "down": 3172,
+    "flat": 148
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-09 13:14",
+  "prevCapturedAtBJ": "2026-10-09 13:46",
   "prevPools": {
-    "zt": 35,
-    "zb": 14,
-    "seal_pct": 71.4
+    "zt": 44,
+    "zb": 16,
+    "seal_pct": 73.3
   }
 }
