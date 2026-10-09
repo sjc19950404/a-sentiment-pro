@@ -55,7 +55,7 @@
         "source": { "type": "string" },
         "tradeDate": { "type": "string" },
         "stale": { "type": "boolean" },
-        "staleReason": { "type": ["object", "null"] },
+        "staleReason": { "type": ["string", "null"] },
         "phase": { "type": "string" },
         "phaseNote": { "type": "string" },
         "lastAttempt": {
