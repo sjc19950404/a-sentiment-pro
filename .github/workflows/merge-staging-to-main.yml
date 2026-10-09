@@ -43,7 +43,16 @@ concurrency:
   # 合并不可并发：两个合并同时跑会互相覆盖 main 的 push。
   # 加 `cancel-in-progress: false` 让后到的排队而不是取消先到的 —— 合并不像构建，
   # 半途被取消会留下"已合一半"的中间态，比排队等到更糟。
-  group: merge-staging-to-main
+  # ★ 2026-10-09 跨 workflow 抢锁修复：group 由独立名并入 daily-sentiment。本工作流的
+  #   `git push origin main` 与 daily-sentiment 的数据提交（intraday / pre_market /
+  #   外围快照 / 盘后归档多个 bot push）写的是同一根 main。此前两组各自串行、互相
+  #   并行，撞车时后推者必然 non-fast-forward 被拒。并入同组后所有写 main 的 run
+  #   排同一队列：周一 01:30 UTC 合并窗与盘中 tick 网格（:00/:30）也错峰串行。
+  #   代价：排队等待变长，可能放大 staging SHA 漂移检查的拒绝率 —— 但那是安全
+  #   方向的失败（拒绝合并、人工重跑即可），不会错合。
+  #   注意：deploy-pages.yml（group "pages" + cancel-in-progress: true）刻意**不**并组：
+  #   它只部署不写 main，且 cancel=true 若混入本组会把排队中的数据 run 就地砍掉。
+  group: daily-sentiment
   cancel-in-progress: false
 
 jobs:
