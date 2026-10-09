@@ -283,6 +283,23 @@ test('P0 buildIntradayPool：连板池白名单——今日一字（fbt<=092500�
   assert.equal(streak_pool[0].score, null, '趋势池综合分不套连板池');
 });
 
+test('P0 修复回归（2026-10-10）：fbt 数字形态（一字 092500 落成 92500）一字闸不失效', () => {
+  // 10-09 事故实录：东财 ztpool fbt 是数字——一字板 09:25:00 落成 92500（前导零丢失），
+  // String(92500)="92500" > "092500" → 三只一字板全部漏进连板池。
+  const rows = [
+    row({ code: '600601', change_pct: 10.02, main_net: 6e7 }), // 3 连板 盘中封板 → 留
+    row({ code: '600602', change_pct: 9.98, main_net: 3e7 }),  // 2 连板 一字（数字 fbt）→ 必须剔
+  ];
+  const zt_lb = { 600601: 3, 600602: 2 };
+  const zt_detail = [
+    { c: '600601', lbc: 3, fbt: 101530, fund: 5e7 },   // 数字 盘中封板 → 留
+    { c: '600602', lbc: 2, fbt: 92500, fund: 9e7 },    // 数字 一字 → 剔（修复前漏放！）
+  ];
+  const { streak_pool, streak_basis } = buildIntradayPool(snap(rows, { zt_lb, zt_detail }), {});
+  assert.deepEqual(streak_pool.map((p) => p.code), ['600601'], '数字形态 fbt 的一字板同样剔除（padStart 规范化）');
+  assert.ok(streak_basis.includes('一字 1'), '一字剔除台账（数字 fbt）');
+});
+
 test('P0 buildIntradayPool：梯队分独立于趋势池综合分——连板高度优先', () => {
   const rows = [
     row({ code: '600601', change_pct: 10.02, main_net: 4e7 }), // 4 连板

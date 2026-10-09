@@ -1859,7 +1859,9 @@
    "002702",
    "002490"
   ],
-  "seal_pct": null
+  "seal_pct": null,
+  "max_lb": 9,
+  "lb2": 12
  },
  "breadth": null,
  "screener": null,

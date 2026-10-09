@@ -875,7 +875,10 @@ export function buildIntradayPool(intraday, opts = {}) {
     const lbc = ztLb && isValidNum(ztLb[String(r.code)]) ? Math.trunc(+ztLb[String(r.code)]) : null;
     if (lbc != null && lbc >= SF.min_lb) {
       const ztd = ztDetailMap ? ztDetailMap.get(String(r.code)) : null;
-      const fbt = ztd?.fbt != null ? String(ztd.fbt) : null;
+      // fbt 规范化（2026-10-10 P0 修复）：历史档/旧快照 fbt 是数字（一字 092500 落成 92500，
+      //   String 后 "92500">"092500" 判据失效——10-09 三只一字板漏池根因）。padStart 统一
+      //   成 6 位 HHMMSS 字符串，数字档/字符串档同判。
+      const fbt = ztd?.fbt != null ? String(ztd.fbt).padStart(6, '0') : null;
       if (fbt && fbt <= '092500') { streakRejected.yizi++; continue; }
       if (lb == null || mn == null) { streakRejected.unverifiable++; continue; }
       if (lb <= SF.liangbi_min) { streakRejected.liangbi++; continue; }

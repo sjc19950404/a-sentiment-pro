@@ -4,8 +4,8 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-09",
- "generated_at": "2026-10-09T19:33:01.830Z",
- "generated_by": "ci",
+ "generated_at": "2026-10-09T19:50:53.862Z",
+ "generated_by": "replay-final（v4 修复 fbt 数字形态后重放，未推送企微——仅档案）",
  "status": "degraded",
  "track": "A",
  "data_health": {
@@ -162,70 +162,10 @@
    "candidate_pool": [],
    "streak_pool": [
     {
-     "code": "600825",
-     "name": "新华传媒",
-     "score": null,
-     "streak_score": 1,
-     "seal_amount": 1421176407,
-     "themes": [
-      "出版"
-     ],
-     "selection_reason": "9 连板",
-     "intraday_chg": 10.01,
-     "fundamentals": {
-      "roe": null,
-      "revenue_growth": null,
-      "net_profit_growth": null,
-      "pe": 306.79,
-      "pb": 5.21,
-      "peg": null,
-      "market_cap": null,
-      "moat_note": null
-     },
-     "data_completeness": {
-      "level": "full",
-      "missing": []
-     },
-     "fund_flow_note": "主力净流入 +142118 万（东财 push2 盘中实时）",
-     "scripts": [
-      {
-       "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（600825，即时轨实时价判定）",
-       "position_ratio": 0.5,
-       "stop_loss": -0.08,
-       "take_profit": 0.16,
-       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-       "script_source": "template"
-      },
-      {
-       "name": "B",
-       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.25,
-       "stop_loss": null,
-       "take_profit": null,
-       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-       "script_source": "template"
-      },
-      {
-       "name": "C",
-       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.1,
-       "stop_loss": -0.05,
-       "take_profit": null,
-       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-       "script_source": "template"
-      }
-     ],
-     "risks": [
-      "连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）",
-      "连板高度越高，晋级失败风险越大（断板负反馈）"
-     ]
-    },
-    {
      "code": "002242",
      "name": "九阳股份",
      "score": null,
-     "streak_score": 0.35,
+     "streak_score": 0.69,
      "seal_amount": 74005656,
      "themes": [
       "小家电"
@@ -251,7 +191,7 @@
       {
        "name": "A",
        "trigger_condition": "高开 >2% 或放量突破昨收上沿（002242，即时轨实时价判定）",
-       "position_ratio": 0.5,
+       "position_ratio": 0,
        "stop_loss": -0.08,
        "take_profit": 0.16,
        "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
@@ -260,7 +200,7 @@
       {
        "name": "B",
        "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.25,
+       "position_ratio": 0,
        "stop_loss": null,
        "take_profit": null,
        "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
@@ -269,7 +209,7 @@
       {
        "name": "C",
        "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.1,
+       "position_ratio": 0,
        "stop_loss": -0.05,
        "take_profit": null,
        "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
@@ -285,7 +225,7 @@
      "code": "001336",
      "name": "楚环科技",
      "score": null,
-     "streak_score": 0.23,
+     "streak_score": 0.64,
      "seal_amount": 336338541,
      "themes": [
       "环保设备"
@@ -311,7 +251,7 @@
       {
        "name": "A",
        "trigger_condition": "高开 >2% 或放量突破昨收上沿（001336，即时轨实时价判定）",
-       "position_ratio": 0.5,
+       "position_ratio": 0,
        "stop_loss": -0.08,
        "take_profit": 0.16,
        "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
@@ -320,7 +260,7 @@
       {
        "name": "B",
        "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.25,
+       "position_ratio": 0,
        "stop_loss": null,
        "take_profit": null,
        "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
@@ -329,7 +269,7 @@
       {
        "name": "C",
        "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.1,
+       "position_ratio": 0,
        "stop_loss": -0.05,
        "take_profit": null,
        "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
@@ -345,7 +285,7 @@
      "code": "600812",
      "name": "华北制药",
      "score": null,
-     "streak_score": 0.17,
+     "streak_score": 0.38,
      "seal_amount": 119195793,
      "themes": [
       "化学制药"
@@ -371,7 +311,7 @@
       {
        "name": "A",
        "trigger_condition": "高开 >2% 或放量突破昨收上沿（600812，即时轨实时价判定）",
-       "position_ratio": 0.5,
+       "position_ratio": 0,
        "stop_loss": -0.08,
        "take_profit": 0.16,
        "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
@@ -380,7 +320,7 @@
       {
        "name": "B",
        "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.25,
+       "position_ratio": 0,
        "stop_loss": null,
        "take_profit": null,
        "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
@@ -389,7 +329,7 @@
       {
        "name": "C",
        "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.1,
+       "position_ratio": 0,
        "stop_loss": -0.05,
        "take_profit": null,
        "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
@@ -405,7 +345,7 @@
      "code": "002805",
      "name": "丰元股份",
      "score": null,
-     "streak_score": 0.16,
+     "streak_score": 0.35,
      "seal_amount": 88444224,
      "themes": [
       "电池"
@@ -431,7 +371,7 @@
       {
        "name": "A",
        "trigger_condition": "高开 >2% 或放量突破昨收上沿（002805，即时轨实时价判定）",
-       "position_ratio": 0.5,
+       "position_ratio": 0,
        "stop_loss": -0.08,
        "take_profit": 0.16,
        "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
@@ -440,7 +380,7 @@
       {
        "name": "B",
        "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.25,
+       "position_ratio": 0,
        "stop_loss": null,
        "take_profit": null,
        "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
@@ -449,7 +389,7 @@
       {
        "name": "C",
        "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.1,
+       "position_ratio": 0,
        "stop_loss": -0.05,
        "take_profit": null,
        "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
@@ -465,7 +405,7 @@
      "code": "300530",
      "name": "领湃科技",
      "score": null,
-     "streak_score": 0.14,
+     "streak_score": 0.29,
      "seal_amount": 38023007,
      "themes": [
       "电池"
@@ -491,7 +431,7 @@
       {
        "name": "A",
        "trigger_condition": "高开 >2% 或放量突破昨收上沿（300530，即时轨实时价判定）",
-       "position_ratio": 0.5,
+       "position_ratio": 0,
        "stop_loss": -0.08,
        "take_profit": 0.16,
        "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
@@ -500,7 +440,7 @@
       {
        "name": "B",
        "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.25,
+       "position_ratio": 0,
        "stop_loss": null,
        "take_profit": null,
        "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
@@ -509,7 +449,7 @@
       {
        "name": "C",
        "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.1,
+       "position_ratio": 0,
        "stop_loss": -0.05,
        "take_profit": null,
        "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
@@ -525,7 +465,7 @@
      "code": "600408",
      "name": "安泰集团",
      "score": null,
-     "streak_score": 0.14,
+     "streak_score": 0.28,
      "seal_amount": 34150406,
      "themes": [
       "焦炭Ⅱ"
@@ -551,7 +491,7 @@
       {
        "name": "A",
        "trigger_condition": "高开 >2% 或放量突破昨收上沿（600408，即时轨实时价判定）",
-       "position_ratio": 0.5,
+       "position_ratio": 0,
        "stop_loss": -0.08,
        "take_profit": 0.16,
        "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
@@ -560,7 +500,7 @@
       {
        "name": "B",
        "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.25,
+       "position_ratio": 0,
        "stop_loss": null,
        "take_profit": null,
        "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
@@ -569,7 +509,7 @@
       {
        "name": "C",
        "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.1,
+       "position_ratio": 0,
        "stop_loss": -0.05,
        "take_profit": null,
        "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
@@ -585,7 +525,7 @@
      "code": "600400",
      "name": "红豆股份",
      "score": null,
-     "streak_score": 0.14,
+     "streak_score": 0.28,
      "seal_amount": 32983772,
      "themes": [
       "服装家纺"
@@ -611,7 +551,7 @@
       {
        "name": "A",
        "trigger_condition": "高开 >2% 或放量突破昨收上沿（600400，即时轨实时价判定）",
-       "position_ratio": 0.5,
+       "position_ratio": 0,
        "stop_loss": -0.08,
        "take_profit": 0.16,
        "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
@@ -620,7 +560,7 @@
       {
        "name": "B",
        "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.25,
+       "position_ratio": 0,
        "stop_loss": null,
        "take_profit": null,
        "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
@@ -629,7 +569,7 @@
       {
        "name": "C",
        "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.1,
+       "position_ratio": 0,
        "stop_loss": -0.05,
        "take_profit": null,
        "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
@@ -645,7 +585,7 @@
      "code": "001300",
      "name": "三柏硕",
      "score": null,
-     "streak_score": 0.14,
+     "streak_score": 0.26,
      "seal_amount": 17108318,
      "themes": [
       "文娱用品"
@@ -671,7 +611,7 @@
       {
        "name": "A",
        "trigger_condition": "高开 >2% 或放量突破昨收上沿（001300，即时轨实时价判定）",
-       "position_ratio": 0.5,
+       "position_ratio": 0,
        "stop_loss": -0.08,
        "take_profit": 0.16,
        "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
@@ -680,7 +620,7 @@
       {
        "name": "B",
        "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.25,
+       "position_ratio": 0,
        "stop_loss": null,
        "take_profit": null,
        "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
@@ -689,7 +629,7 @@
       {
        "name": "C",
        "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.1,
+       "position_ratio": 0,
        "stop_loss": -0.05,
        "take_profit": null,
        "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
@@ -702,7 +642,7 @@
      ]
     }
    ],
-   "streak_pool_basis": "连板池实时现算（hot 强势榜（全市场筛选榜缺席的降级底座；≈涨停集中营，3-7% 带几乎恒空） ∩ zt_lb 连板≥2，白名单=昨日涨停且今日非一字）：连板≥2（昨日涨停蕴含）· 今日非一字（fbt>09:25）· 量比 >2 · 主力净流入为正——不套涨幅带、不剔已涨停（连板池语义，2026-10-10 用户指令）；zt_lb 连板≥2 共 12 只，宇宙在榜 12 只，剔除——一字 0 / 量比不足 3 / 净流出或无源 0 / 字段缺失 0；梯队分=连板高度0.6+主力净流入0.4（缺席重归一，与趋势池量价评分物理独立）；封单质量=seal_amount（东财 fund）",
+   "streak_pool_basis": "连板池实时现算（hot 强势榜（全市场筛选榜缺席的降级底座；≈涨停集中营，3-7% 带几乎恒空） ∩ zt_lb 连板≥2，白名单=昨日涨停且今日非一字）：连板≥2（昨日涨停蕴含）· 今日非一字（fbt>09:25）· 量比 >2 · 主力净流入为正——不套涨幅带、不剔已涨停（连板池语义，2026-10-10 用户指令）；zt_lb 连板≥2 共 12 只，宇宙在榜 12 只，剔除——一字 3 / 量比不足 1 / 净流出或无源 0 / 字段缺失 0；梯队分=连板高度0.6+主力净流入0.4（缺席重归一，与趋势池量价评分物理独立）；封单质量=seal_amount（东财 fund）",
    "trend_pool_mode": "tomorrow_watch",
    "snapshotAtBJ": "2026-10-09 14:53",
    "live_emotion": null,
@@ -751,12 +691,15 @@
  },
  "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
  "data_fidelity_notes": {
-  "scope": "结构性验收（非 v4 真实验收）——本档推送成功不构成 v4 管线验收依据",
+  "scope": "10-09 回放终稿（v4 硬规则全量执行：一字剔除/量比/封单代理）——未推送，不作 v4 实时验收依据",
   "recorded_at": "2026-10-10",
+  "supersedes": "data/reports/intraday_2026-10-09_v4.json（已推企微档：连板池含一字板新华传媒 9 板，fbt 数字形态漏闸事故档）",
   "notes": [
-   "① main_net 用封单资金(fund)替代：原口径「主力净流入为正」本次实际执行的是「封单为正」——两者不是一回事；该过滤条件的真实效果只有 v4 实时源 push2 能验（2026-10-10 本地网络不可达 push2）",
-   "② 量比走腾讯行情，其余轨道沿用 10-08 最新档：本报告是「10-09 收盘涨停面 + 10-08 其他轨」的拼盘，不是原生 v4 全量快照",
-   "③ [2026-10-10 复盘发现·结构缺陷] 本档连板池含一字板新华传媒（9 板，fbt 09:25:00）——东财 ztpool fbt 是数字形态（092500→92500 前导零丢失），String 比较击穿一字闸；时代万恒/紫竹高科同为一字板，被量比闸碰巧拦下（事故台账「一字 0 / 量比不足 3」归因失真）。已修 src/{ai_report,pool_verify,sources}.js（padStart 规范化）+ 数字形态回归测试；修正后回放终稿见 intraday_2026-10-09_v4_final.json（连板池 8 只）。本档作为推送事故现场原样存档，不回改池内容"
+   "① 一字板剔除 3 只：新华传媒(9板 fbt 092500 封单14.21亿) / 时代万恒(5板 2.29亿) / 紫竹高科(4板 0.89亿)——根因：东财 ztpool fbt 为数字形态（092500→92500 前导零丢失），String 比较击穿一字闸；已修 src/{ai_report,pool_verify,sources}.js 三处（padStart 规范化）+ 双回归测试",
+   "② 九阳股份封单 7401 万 = 东财 ztpool 收盘档 fund（14:53 同拍快照同值）；盘中曾炸板回封 6 次（zbc=6），封单波动大，最高档不可考于本档案（用户口径：盘中曾至 2.28 亿，未经本档案核验）",
+   "③ 雄韬股份(002733, 2板, 封单1.98亿) 不进池：量比 1.95 ≤ 2（腾讯收盘口径）被量比闸剔除——归因正确，非宇宙遗漏",
+   "④ main_net 仍由封单资金 fund 代理（原口径「主力净流入为正」执行「封单为正」），push2 真值替换待周一 9:35 实时验收",
+   "⑤ 量比 = 腾讯收盘口径；其余轨道（题材/估值）沿用 10-08 档——拼盘回放性质未变"
   ]
  }
- }
+}

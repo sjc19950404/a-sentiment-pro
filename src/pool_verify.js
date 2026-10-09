@@ -200,7 +200,9 @@ export function verifyIntradayPools(report, intraday, opts = {}) {
     }
     // 结构判据（恒剔）
     const ztd = ztDetailMap ? ztDetailMap.get(code) : null;
-    const fbt = ztd?.fbt != null ? String(ztd.fbt) : null;
+    // fbt 规范化（2026-10-10 P0 修复）：历史档 fbt 数字形态（一字 092500→92500）会让
+    //   字符串判据失效——padStart 统一 6 位 HHMMSS，与 ai_report.js 同款防线。
+    const fbt = ztd?.fbt != null ? String(ztd.fbt).padStart(6, '0') : null;
     if (fbt && fbt <= '092500') { rem(`今日一字（fbt ${fbt} 集合竞价封死，无买入窗口）——结构违背恒剔除`, 'structural'); continue; }
     const chgNow = isValidNum(r.change_pct) ? +r.change_pct : null;
     if (chgNow != null && chgNow <= -9.9) { rem(`跌停（最新快照现 ${chgNow}%）——结构违背恒剔除`, 'structural'); continue; }

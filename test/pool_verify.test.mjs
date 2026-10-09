@@ -300,3 +300,21 @@ test('P0 连板池一字板：zt_detail fbt<=092500 → 结构恒剔除（今日
   assert.deepEqual(patched.streak_pool.map((x) => x.code), ['600006'], '一字无买入窗口结构剔除');
   assert.match(summary.streak.removed[0].reason, /今日一字（fbt 092500/);
 });
+
+test('P0 修复回归（2026-10-10）：fbt 数字形态（一字 92500）推送前校验同样剔除', () => {
+  // 与 ai_report_split 同款防线：历史档/东财原始 fbt 是数字（前导零丢失），
+  // 修复前 String(92500)="92500">"092500" → CI 同拍校验漏放（10-09 实录：核 9 剔 0，
+  // 新华传媒一字未剔）。修复后 padStart 规范化，两形态同判。
+  const r = mkReport(mkSim({ streak: [streakItem('600005'), streakItem('600006')] }));
+  const snap = mkSnap([row('600005'), row('600006')], {
+    zt: ['600005', '600006'],
+    ztlb: { 600005: 3, 600006: 2 },
+    ztDetail: [
+      { c: '600005', lbc: 3, fbt: 92500, fund: 5e7 },   // 数字 一字 → 剔（修复前漏放）
+      { c: '600006', lbc: 2, fbt: 101530, fund: 3e7 },  // 数字 盘中封板 → 留
+    ],
+  });
+  const { summary, patched } = verifyIntradayPools(r, snap);
+  assert.deepEqual(patched.streak_pool.map((x) => x.code), ['600006'], '数字 fbt 一字板结构剔除');
+  assert.match(summary.streak.removed[0].reason, /今日一字（fbt 092500/, 'reason 报规范化后的 HHMMSS');
+});

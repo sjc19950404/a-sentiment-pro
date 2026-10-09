@@ -335,7 +335,11 @@ async function fetchPools(date) {
           // v4（2026-10-10 P0 双池物理拆分）：+fbt（首次封板时间 HHMMSS——一字板判据：
           //   fbt<=092500 即开盘集合竞价封死，买入窗口不存在）+fund（封单资金，元——
           //   连板池「封单质量」展示的唯一真实源，宁缺毋假）。
-          out.zt_detail = pool.map((p) => ({ c: p.c, lbc: p.lbc || 1, zbc: p.zbc || 0, hybk: p.hybk || '', fbt: p.fbt || null, fund: p.fund != null ? p.fund : null }));
+          // ⚠ fbt 规范化（2026-10-10 P0 修复）：东财 ztpool 原始 fbt 是**数字**（一字板
+          //   09:25:00 落成 92500——前导零丢失），String(92500)="92500" 永不满足
+          //   <="092500" → 一字闸全程失效（10-09 事故：新华传媒/时代万恒/紫竹高科三只
+          //   一字板全部漏进连板池）。落盘即规范化为 6 位零填充字符串，与判据口径对齐。
+          out.zt_detail = pool.map((p) => ({ c: p.c, lbc: p.lbc || 1, zbc: p.zbc || 0, hybk: p.hybk || '', fbt: p.fbt != null ? String(p.fbt).padStart(6, '0') : null, fund: p.fund != null ? p.fund : null }));
         }
         if (api === 'getTopicDTPool' && pool) {
           out.dt_detail = pool.map((p) => ({ c: p.c, fba: p.fba || 0, amount: p.amount || 0, days: p.days || 0 }));
