@@ -62,6 +62,12 @@ node scripts/daily_fetch.mjs
     当天人工补跑**——人工在**同一交易日**执行 `node scripts/daily_fetch.mjs` 不受闸门
     拦截（闸门只在非交易日拦），那一刻接口返回的仍是当日池。拖到下一个自然日再跑，
     取到的就是次日的池，当日即永久丢失。
+  - **本机告警通道**：`scripts/daily_fetch.mjs` 任一环节失败（含"涨停池未入库"收尾断言）
+    都会经 `src/opsalerts.js` 推企微——与 CI 同一条通道，事件 `kind=cron-fail`、
+    `source=daily_fetch`。**本机必须设置 `OPS_WEBHOOK` 环境变量**（Windows 用户/系统
+    环境变量，值为企微机器人 webhook，与 GitHub secrets 同名同值）；未设置时
+    `pushOpsAlerts` 静默跳过、仅落日志，不会把任务拖成另一种失败。
+    ⚠ 只有配了它，"非零退出"才会真的找人——否则告警仍然只存在于日志里。
   - **补救措施（已经缺了时）**：不必等 10 个交易日让冷却链自然重建——涨停/炸板/跌停池
     可由**不复权日 K 重建**（`src/zt_rebuild.js` 唯一实现，`round(前收×幅度,2)` 精确
     判定；历史日线源为 BaoStock，`market_data.py` 的 `fetch_history_daily`，本机可达）。

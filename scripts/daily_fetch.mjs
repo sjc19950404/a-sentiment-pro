@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
 import { isTradingDay, resolveHolidays } from '../src/calendar.js';
+import { pushOpsAlerts } from '../src/opsalerts.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -45,7 +46,7 @@ if (!isTradingDay(today, resolveHolidays())) {
 const ZT_PATH = path.join(ROOT, 'data', 'ztpool_history.json');
 const normDate = (d) => String(d ?? '').replace(/-/g, '');
 
-function assertZtpoolIngested() {
+async function assertZtpoolIngested() {
   let hist = null;
   try {
     hist = existsSync(ZT_PATH) ? JSON.parse(readFileSync(ZT_PATH, 'utf8')) : null;
@@ -53,11 +54,36 @@ function assertZtpoolIngested() {
   const last = Array.isArray(hist) && hist.length ? normDate(hist[hist.length - 1]?.date) : '';
   if (last !== normDate(today)) {
     console.error(`[daily_fetch] ✗ 收尾断言失败：今日（${today}）涨停池未入库——ztpool_history 末条为 ${last || '（空/不可读）'}`);
-    console.error('[daily_fetch]   该日涨停池不可回补，错过即永久丢失（老龙头 ≥10 交易日冷却链断裂）');
-    console.error('[daily_fetch]   处置：交易日当天人工补跑本脚本；纪律见 docs/cron.md §6');
-    process.exit(1);
+    await fail(1,
+      `[daily_fetch] ✗ 收尾断言失败：今日（${today}）涨停池未入库——ztpool_history 末条为 ${last || '（空/不可读）'}`,
+      '[daily_fetch]   该日涨停池不可回补，错过即永久丢失（老龙头 ≥10 交易日冷却链断裂）',
+      '[daily_fetch]   处置：交易日当天人工补跑本脚本；纪律见 docs/cron.md §6',
+    );
   }
   console.log(`[daily_fetch] ✓ 收尾断言：${today} 涨停池已入库（ztpool_history 共 ${hist.length} 天）`);
+}
+
+// ── 失败出口：日志 + 企微告警 + 非零退出（2026-10-10 用户指令）───────────────
+//   本机 cron 此前唯一的信号是"退出码"，而退出码不会主动找人——静默丢一天正是这么发生的。
+//   这里复用 CI 同一条企微通道（src/opsalerts.js + OPS_WEBHOOK），本机配了该环境变量即生效；
+//   **未配置时 pushOpsAlerts 内部静默跳过**，不会把任务拖成另一种失败（本地零打扰）。
+async function fail(exitCode, ...lines) {
+  for (const l of lines) console.error(l);
+  try {
+    const r = await pushOpsAlerts([{
+      at: new Date().toISOString(),
+      severity: 'error',
+      kind: 'cron-fail',
+      source: 'daily_fetch',
+      detail: [`[daily_fetch] 失败（exit ${exitCode}）@ ${today}（北京交易日）`, ...lines].join('\n'),
+    }]);
+    console.log(r.pushed
+      ? '[daily_fetch] 企微告警已推送'
+      : `[daily_fetch] 企微未推送：${r.error ?? 'OPS_WEBHOOK 未配置（仅落日志）'}`);
+  } catch (e) {
+    console.error('[daily_fetch] 企微告警异常（不影响退出码）：', e?.message ?? e);
+  }
+  process.exit(exitCode);
 }
 
 const STEPS = [
@@ -70,14 +96,12 @@ for (const step of STEPS) {
   console.log(`\n[daily_fetch] ▶ ${step.desc}（${step.script}）`);
   const r = spawnSync(process.execPath, [path.join(ROOT, step.script), ...step.args], { stdio: 'inherit' });
   if (r.error) {
-    console.error(`[daily_fetch] ✗ ${step.script} 启动失败：${r.error.message}`);
-    process.exit(1);
+    await fail(1, `[daily_fetch] ✗ ${step.script} 启动失败：${r.error.message}`);
   }
   if (r.status !== 0) {
-    console.error(`[daily_fetch] ✗ ${step.script} 失败（exit ${r.status}），后续步骤中止`);
-    process.exit(r.status ?? 1);
+    await fail(r.status ?? 1, `[daily_fetch] ✗ ${step.script} 失败（exit ${r.status}），后续步骤中止`);
   }
   // 断言紧跟产出它的那一步：池没进库就别让后面的扫描跑在陈旧数据上（失败要快、要响）
-  if (step.post) step.post();
+  if (step.post) await step.post();
 }
 console.log('\ndaily fetch done');

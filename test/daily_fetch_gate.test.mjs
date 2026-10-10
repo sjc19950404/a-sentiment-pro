@@ -35,4 +35,6 @@ test('收尾断言常在：脚本内保留涨停池入库校验（防静默丢�
   assert.match(src, /function assertZtpoolIngested/, '缺少 assertZtpoolIngested——接口空返回会静默丢一天');
   assert.match(src, /收尾断言失败/, '缺少断言失败分支文案');
   assert.match(src, /ztpool_history\.json/, '断言应校验 ztpool_history.json 末条日期');
+  // 本机 cron 的告警通道：退出码不会主动找人，必须有企微推送（未配 OPS_WEBHOOK 时静默跳过）
+  assert.match(src, /pushOpsAlerts/, '缺少企微告警——本机 cron 失败需要主动找人，不能只靠退出码');
 });
