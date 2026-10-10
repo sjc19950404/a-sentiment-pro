@@ -1,0 +1,77 @@
+name: Monday Pre-merge Check
+
+# 周一合并前自检（2026-10-10）：给 09:30 merge-staging-to-main 自动窗做**前置判断**。
+#
+# 为什么排在 08:40 而不是 09:00（用户拍板）：给合并窗留 50 分钟缓冲——
+#   本 job 红了，人来得及去 staging 处置或手动干预；贴着 09:00 跑，红的时候
+#   只能眼睁睁看 09:30 窗把未验过的东西往 main 推。
+#
+# 与真正的合并门禁的关系：
+#   合并窗自身有五道门禁（单测 / 龙虎榜口径 / 前端断言 jsdom / 公式版本回归 /
+#   归档切片），红则本次不合并并留记录。本 job 是**提前 50 分钟的演练**，
+#   把同样的红提前暴露给人，不是第二套判定：调用的命令与门禁同源。
+#
+# ★ schedule 只在**默认分支**生效（default_branch = main）。staging 落盘期间
+#   请用 workflow_dispatch 手动触发；ff 进 main 后 08:40 自动跑。
+
+on:
+  schedule:
+    - cron: '40 0 * * 1'   # 00:40 UTC = 北京 08:40，周一
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 门禁① 单元测试（含口径锁 / 幂等锁 / 决策锁 / 契约单测）
+      - name: 单元测试
+        run: node --test
+
+      - name: 前后端接口契约守卫
+        run: node scripts/check_contract.mjs
+
+      # 只输出、**不设闸**（2026-10-10 实测定策）：
+      #   ① 时序：08:40 早于当日收盘生产（daily.yml 18:30 / 21:00），`--require-fresh`
+      #      会红在「离线模块今日未刷新」——时序误杀（实测周一 08:40 模拟 exit 1）。
+      #   ② 职责：本 job 判断的是"这份代码够不够格进 main"。数据滞后是**数据侧状态**
+      #      （用户 2026-10-10 明确：pain 陈旧 + freshness behind 属预期内、不动），
+      #      拿它拦合并等于让数据侧问题永久阻塞代码侧交付，与合并窗定位不符。
+      #   真滞后仍由 daily.yml 21:00 班次那个门禁 step 拦并告警，判定唯一。
+      - name: 数据新鲜度判定（输出可读结论，不设闸）
+        run: node scripts/freshness.mjs
+
+      # 门禁⑤ 归档切片一致性
+      - name: 归档切片一致性（--check 只读）
+        run: node scripts/split_archive.mjs --check
+
+      - name: 跨档口径审计
+        run: node scripts/audit_data_caliber.mjs
+
+      - name: 守卫结果通知（企微 + issue 兜底）
+        if: failure()
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # --file 刻意指向不存在路径：本 job 不做冒烟，若让它读仓库里那份历史的
+          # data/smoke-latest.json（allOk=true），guardVerdict 会判 ERROR 且理由写成
+          # 「冒烟档为成功态，与 step 失败矛盾」，issue 标题会误导归因。显式传空档
+          # → smoke=null + outcome=failure，仍是 ERROR 级（企微 error + issue 兜底），
+          # 语义正确："合并前自检步骤失败"。
+          node scripts/guard_notify.mjs \
+            --step-outcome failure \
+            --file .github/workflows/no-smoke-report-for-this-job.json \
+            --run-id "${{ github.run_id }}" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

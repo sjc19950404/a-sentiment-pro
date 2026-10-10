@@ -1,0 +1,78 @@
+name: Daily Data Health
+
+# 每日数据健康检查（2026-10-10）：**只读**——不拉数据、不写档、不提交、不 push。
+#
+# 为什么只读（用户 2026-10-10 拍板，勿改成"CI 也跑一遍 daily_fetch"）：
+#   · 数据拉取归本机 ASentiment-dailyfetch-1600（北京 16:00）纪律。CI 再跑一次
+#     scripts/daily_fetch.mjs 会与本机班次抢同一批东财接口，且拉到的 ztpool
+#     按纪律不入库（docs/cron.md §6：脏档只在本机对该文件单独处置）→ 纯白跑。
+#   · 本 job 因此只做"当班产物对不对"的体检：契约 / 新鲜度 / 归档切片 / 跨档口径。
+#
+# 排期：北京 16:30（周一至周五）= 本机 16:00 班次之后 30 分钟，看的是当班产物。
+#
+# ★ schedule 只在**默认分支**生效（仓库 default_branch = main）。本文件先在 staging
+#   落盘时定时任务不会响，需经周一 09:30 merge-staging-to-main 窗 ff 进 main 后
+#   schedule 才活；在此之前用 workflow_dispatch 手动触发（见 docs/cron.md）。
+
+on:
+  schedule:
+    - cron: '30 8 * * 1-5'   # 08:30 UTC = 北京 16:30，周一至周五
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write               # 告警通道的 issue 兜底（guard_notify.mjs）
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # 仓库零运行时依赖（无 package-lock.json，刻意不 npm ci）；门禁③ 那种
+      # 临时 jsdom 需求由各 workflow 自行安装，本 job 不需要。
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 前后端接口契约守卫（数据档 vs schemas/）
+        run: node scripts/check_contract.mjs
+
+      # 只输出、**不设闸**（2026-10-10 实测定策，改前先读这段）：
+      #   CI 的收盘生产班次是北京 18:30 / 21:00（daily.yml schedule），本 job 排 16:30
+      #   ——早于当日生产。此时 `freshness.mjs --require-fresh` 会红在「离线模块今日
+      #   未刷新」，是**时序误杀**不是真滞后。实测：周一 16:30 时点模拟必红（exit 1）；
+      #   而节假日（10-01）模拟反而是 exit 0——脚本自带「假期同停不误杀」，恰恰印证
+      #   红的触发条件是"交易日当天且当日生产尚未跑完"。
+      #   真滞后门禁的**唯一出处**是 daily.yml 21:00 班次那个 step（生产之后跑，判定
+      #   才成立）；本 job 不重复设闸——重复只会制造每天一次的固定假红，把真告警淹没。
+      - name: 数据新鲜度判定（输出可读结论，不设闸）
+        run: node scripts/freshness.mjs
+
+      - name: 归档切片一致性（--check 只读）
+        run: node scripts/split_archive.mjs --check
+
+      - name: 跨档口径审计
+        run: node scripts/audit_data_caliber.mjs
+
+      # 统一走仓库既有告警通道（OPS_WEBHOOK 企微 + GITHUB_TOKEN issue 兜底），
+      # 不新建 secret、不裸 curl：secret 未配时 guard_notify.mjs 内部跳过推送并
+      # 落日志，且恒 exit 0——通知通道自身故障绝不把 CI 拖红。
+      - name: 守卫结果通知（企微 + issue 兜底）
+        if: failure()
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # --file 刻意指向不存在路径：本 job 不做冒烟，若让它读仓库里那份历史的
+          # data/smoke-latest.json（allOk=true），guardVerdict 会判 ERROR 且理由写成
+          # 「冒烟档为成功态，与 step 失败矛盾」，issue 标题会误导归因。显式传空档
+          # → smoke=null + outcome=failure，仍是 ERROR 级（企微 error + issue 兜底），
+          # 语义正确："健康检查步骤失败"。
+          node scripts/guard_notify.mjs \
+            --step-outcome failure \
+            --file .github/workflows/no-smoke-report-for-this-job.json \
+            --run-id "${{ github.run_id }}" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

@@ -1,0 +1,53 @@
+name: Keep Repo Alive
+
+# 仓库保活（2026-10-10）：GitHub 会在仓库长期无活动时自动禁用 scheduled workflow，
+# 本仓库的定时链（daily / 合并窗 / 健康检查）全靠 schedule，禁了就是静默断供。
+# 做法：每月两次往 **staging** 打一个 keepalive 提交。
+#
+# ★ 为什么显式 ref: staging 而不是默认分支（用户拍板 + 纪律要求）：
+#   schedule 只在默认分支（main）触发，若在 main 上直接 git push，就违反了
+#   merge-staging-to-main 工作流头注的「明令禁止：自由推 main」——main 只允许
+#   经那道门禁 ff 进来。所以：定时在 main 上触发，但 checkout 并 push 的是 staging。
+#
+# ★ 代价已知：keepalive 提交会让 staging 顶端变动，理论上可能撞上合并窗的
+#   「验完 SHA 又漂移 → 拒绝合并」检查。频率压到每月 2 次（1 号 / 26 号 UTC 00:00，
+#   避开了周一 09:30 窗与盘中网格），撞上的概率极低；即便撞上也是安全方向的
+#   失败（拒绝合并、人工重跑即可，不会错合）。
+#
+# ★ 不留空提交：`git diff --quiet` 守着，文件没变就不提交——空提交会污染历史
+#   且触发无意义的 deploy-pages。
+
+on:
+  schedule:
+    - cron: '0 0 1,26 * *'   # 每月 1 号与 26 号 UTC 00:00
+  workflow_dispatch:
+
+permissions:
+  contents: write            # 需要往 staging 推提交
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: staging
+
+      - name: Touch keepalive
+        run: date > .github/keepalive.txt
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet; then
+            # 先 rebase 再推：本仓库 daily 的 bot push（数据提交/外围快照）与此处
+            # 写的是同一根 staging，晚到者会 non-fast-forward 被拒（2026-10-09 实录）。
+            git pull --rebase origin staging
+            git add .github/keepalive.txt
+            git commit -m "chore: keepalive $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push origin staging
+          else
+            echo "keepalive 文件无变化，跳过提交（不留空提交）"
+          fi
