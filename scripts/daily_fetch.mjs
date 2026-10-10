@@ -3,6 +3,8 @@
 //   ② scripts/scan_old_dragon.mjs                  老龙头候选逐日扫描
 //   ③ scripts/main_theme_history.mjs                主线题材历史（聚类/持续性/轮动）
 // 任一步失败即中止并退出非零（cron 可据此告警）；全部成功打印 "daily fetch done"。
+// 另有一条**收尾断言**（见下方 assertZtpoolIngested）：涨停池必须真的进了库才算成功——
+//   它是不可回补数据（东财只给最近交易日），静默丢失 = 永久断链，不能靠"脚本没报错"背书。
 //
 // 用法（手动验证同此命令）：
 //   node scripts/daily_fetch.mjs
@@ -13,6 +15,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { readFileSync, existsSync } from 'node:fs';
 import { isTradingDay, resolveHolidays } from '../src/calendar.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -32,8 +35,33 @@ if (!isTradingDay(today, resolveHolidays())) {
   process.exit(0);
 }
 
+// ── 收尾断言：今日涨停池到底入库了没有（2026-10-10 用户指令）─────────────────
+//   为什么必须有这一步：东财 getTopicZTPool 只返回最近交易日。接口空 / 被墙 / 服务端
+//   给了旧日期时，emotion_history.mjs 打印「接口今日无数据…跳过」后仍然 **exit 0**
+//   ——定时任务据此判定成功，当日涨停池就**静默丢失**了。而它不可回补：错过一天，
+//   老龙头判定所需的 ≥10 交易日冷却链直接断裂（docs/cron.md §6）。
+//   判据刻意做成**端到端**：不依赖接口返回语义，只问"ztpool_history.json 末条日期
+//   是不是今天"——空返回、网络挂、写入失败、服务端回退旧日期，四种成因一网打尽。
+const ZT_PATH = path.join(ROOT, 'data', 'ztpool_history.json');
+const normDate = (d) => String(d ?? '').replace(/-/g, '');
+
+function assertZtpoolIngested() {
+  let hist = null;
+  try {
+    hist = existsSync(ZT_PATH) ? JSON.parse(readFileSync(ZT_PATH, 'utf8')) : null;
+  } catch { hist = null; }
+  const last = Array.isArray(hist) && hist.length ? normDate(hist[hist.length - 1]?.date) : '';
+  if (last !== normDate(today)) {
+    console.error(`[daily_fetch] ✗ 收尾断言失败：今日（${today}）涨停池未入库——ztpool_history 末条为 ${last || '（空/不可读）'}`);
+    console.error('[daily_fetch]   该日涨停池不可回补，错过即永久丢失（老龙头 ≥10 交易日冷却链断裂）');
+    console.error('[daily_fetch]   处置：交易日当天人工补跑本脚本；纪律见 docs/cron.md §6');
+    process.exit(1);
+  }
+  console.log(`[daily_fetch] ✓ 收尾断言：${today} 涨停池已入库（ztpool_history 共 ${hist.length} 天）`);
+}
+
 const STEPS = [
-  { script: 'scripts/emotion_history.mjs', args: ['--fetch-latest'], desc: '拉取今日涨停池 + 计算情绪' },
+  { script: 'scripts/emotion_history.mjs', args: ['--fetch-latest'], desc: '拉取今日涨停池 + 计算情绪', post: assertZtpoolIngested },
   { script: 'scripts/scan_old_dragon.mjs', args: [], desc: '扫描老龙头候选' },
   { script: 'scripts/main_theme_history.mjs', args: [], desc: '主线题材历史' },
 ];
@@ -49,5 +77,7 @@ for (const step of STEPS) {
     console.error(`[daily_fetch] ✗ ${step.script} 失败（exit ${r.status}），后续步骤中止`);
     process.exit(r.status ?? 1);
   }
+  // 断言紧跟产出它的那一步：池没进库就别让后面的扫描跑在陈旧数据上（失败要快、要响）
+  if (step.post) step.post();
 }
 console.log('\ndaily fetch done');
