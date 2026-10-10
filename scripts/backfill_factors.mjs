@@ -168,6 +168,12 @@ for (const d of backfillDays) {
 console.log(`[bf] 原料写入: ${filled} 天 · 缺池 ${noPool} · 缺行业 ${noInd} · 缺成交额 ${noAmt}`);
 
 if (MODE === 'check') {
+  // 0 天是常态（档案里没有待升级的回填日时），不是异常：直接取 [0] 会 TypeError → exit 1，
+  // 将来一旦把本脚本接进 CI 门禁就会变成**恒定假红**。故显式短路并以 0 退出。
+  if (!backfillDays.length) {
+    console.log('[bf] --check：无待回填天（档案中没有需要升级的回填日），无需处理。');
+    process.exit(0);
+  }
   console.log('[bf] --check：未写盘。样例（最早回填日）:');
   const s0 = backfillDays[0].summary;
   console.log(JSON.stringify({ date: backfillDays[0].trade_date, zt: s0.zt_count, dt: s0.dt_count, zb: s0.zb_count, up: s0.up_count, ind: s0.ind_count, amt: s0.amount_yi }));
