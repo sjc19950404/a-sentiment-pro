@@ -1,0 +1,118 @@
+name: Post-merge Smoke
+
+# 进 main 之后自动冒烟（2026-10-10）：只验证一件事——**进到 main 的东西真的活着**。
+#
+# 为什么需要它（2026-10-10 实录，勿删）：
+#   当天新增的 3 个 workflow 落在 staging 上，**Actions 列表里根本不出现**，
+#   `POST /actions/workflows/{id}/dispatches` 直接 404。原因是 GitHub 只认
+#   **默认分支（main）上注册的 workflow**——schedule 不触发、dispatch 也不认。
+#   这类故障是**静默**的：文件在仓库里、YAML 校验通过、本地命令全绿，唯独它在
+#   生产上永不运行，且没有任何告警。所以必须在"落地 main"这个时点做机器断言。
+#
+# 为什么用 push 触发（branches: main + paths .github/workflows/**）：
+#   合并窗是 ff push 到 main。push 事件里 GitHub 用的是**被推上去的那棵树**中的
+#   workflow 定义——所以本文件随同一批合并进 main 的那次 push 就会触发自己，
+#   不必等下一次。"main 之后自动冒烟"就是字面意思。
+#
+# ★ 鸡生蛋已知（与本仓库 ad80497 那条注释同源）：本文件在 staging 期间同样不被
+#   注册，既不能定时、也不能 dispatch。它首次生效的时点 = 周一 09:30 合并窗那次
+#   push。在那之前它是"写了但没上线"，属预期，不要据此误判为故障。
+#
+# 硬门槛只做两条（文件在 + GitHub 已注册），**故意不重复跑数据检查**：
+#   daily-data-health 周一 16:30 自会跑并告警；这里再跑一遍会把 pain 陈旧之类的
+#   数据侧红项混进"落地验证"的结论里，让"workflow 有没有上线"这件事看不清。
+#   职责分离：本 job 只回答"有没有上线"，数据健康由它自己回答。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+  schedule:
+    - cron: '45 1 * * 1'   # 北京周一 09:45：合并窗之后的兜底（push 万一没触发）
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write            # dispatch 探测需要
+  issues: write             # 告警 issue 兜底
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # ① 文件确实在 main 的树里（文件内容层面的断言）
+      - name: ① 三个新 workflow 文件在 main 上
+        run: |
+          for f in daily-data-health monday-premerge-check keepalive; do
+            if [ ! -f ".github/workflows/$f.yml" ]; then
+              echo "::error::main 上缺少 .github/workflows/$f.yml —— 合并没把它带进来"
+              exit 1
+            fi
+          done
+          echo "✓ 三个 workflow 文件均已落在 main"
+
+      # ② GitHub 是否已注册（这才是"定时会不会响/能不能手动点"的充要条件）
+      #    2026-10-10 教训：文件在仓库里 ≠ 被 GitHub 认领。这条是决定性断言。
+      - name: ② GitHub 注册状态断言（默认分支规则的判据）
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          names=$(curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" \
+                  -H "Accept: application/vnd.github+json" \
+                  "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
+                  | python3 -c "import sys,json;print(chr(10).join(w['name'] for w in json.load(sys.stdin)['workflows']))")
+          echo "----- 已注册 workflow -----"; echo "$names"; echo "--------------------------"
+          miss=0
+          for n in "Daily Data Health" "Monday Pre-merge Check" "Keep Repo Alive"; do
+            if echo "$names" | grep -Fxq "$n"; then
+              echo "✓ 已注册：$n"
+            else
+              echo "::error::未注册：$n（文件在但 GitHub 不认 → 定时永不触发、UI 里点不到）"
+              miss=1
+            fi
+          done
+          exit $miss
+
+      # ③ 探测：能不能被手动触发（只读 workflow，跑起来也不写不推）
+      #    刻意 continue-on-error——GITHUB_TOKEN 触发的事件按 GitHub 规则可能不再
+      #    生成新 run（防递归），非 2xx 时**不代表 workflow 有问题**，只如实记录。
+      #    要让它必定生效需改用 PAT（仓库现无此 secret），那是另一件事。
+      - name: ③ 探测手动触发是否可用（结论仅记录，不设门槛）
+        id: probe
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+                  -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
+                  -H "Accept: application/vnd.github+json" \
+                  "https://api.github.com/repos/${{ github.repository }}/actions/workflows/daily-data-health.yml/dispatches" \
+                  -d '{"ref":"main"}')
+          echo "dispatch daily-data-health → HTTP $code"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" != "204" ]; then
+            echo "::warning::dispatch 未返回 204（常见于 GITHUB_TOKEN 防递归限制）；本步不设门槛，判据以②为准"
+          fi
+
+      - name: 探测结论摘要
+        run: |
+          echo "workflow_dispatch 探测返回码：${{ steps.probe.outputs.code }}"
+          echo "判据以步骤②（GitHub 注册状态）为准，本探测仅供参考。"
+
+      - name: 告警（落地失败时才发）
+        if: failure()
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # --file 指向不存在路径：本 job 不做冒烟，避免读到历史的 smoke-latest.json
+          # 导致 guardVerdict 判成"报告与 step 失败矛盾"的误导文案。
+          node scripts/guard_notify.mjs \
+            --step-outcome failure \
+            --file .github/workflows/no-smoke-report-for-this-job.json \
+            --run-id "${{ github.run_id }}" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
