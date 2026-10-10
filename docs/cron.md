@@ -54,6 +54,19 @@ node scripts/daily_fetch.mjs
 
 - **CI 完全不覆盖本入口**：`.github/workflows/*` 中搜不到 `daily_fetch / emotion_history / scan_old_dragon / main_theme_history` 任何一个（2026-10-09 已逐一核实）。CI 只负责 archive/信号/报告链路（daily.yml 的 18:30 盘后首抓、21:00 补抓等）。
 - **数据不可回补**：`ztpool_history.json` 依赖东财 `getTopicZTPool`，只返回最近交易日（见 §4）。本地任务停更一天 = 永久缺一天，老龙头判定所需的 ≥10 交易日冷却链直接断裂。
+  - **★ 2026-10-10 新增：交易日闸门上线后，补跑兜底已关闭，风险等级上调。**
+    旧版"非交易日跑一次仍能取到最近交易日（=上一个交易日）的池"曾是补救通道；闸门
+    上线后非交易日直接 `[skip]` 退出，本入口不再有任何机会补到那一天。**即：交易日
+    当天 16:00 班次失败 = 该交易日涨停池永久缺失，没有第二次机会。**
+  - **硬纪律（闸门时代的唯一安全网）**：交易日 16:00 班次若非零退出，**必须当天发现、
+    当天人工补跑**——人工在**同一交易日**执行 `node scripts/daily_fetch.mjs` 不受闸门
+    拦截（闸门只在非交易日拦），那一刻接口返回的仍是当日池。拖到下一个自然日再跑，
+    取到的就是次日的池，当日即永久丢失。
+  - **补救措施（已经缺了时）**：不必等 10 个交易日让冷却链自然重建——涨停/炸板/跌停池
+    可由**不复权日 K 重建**（`src/zt_rebuild.js` 唯一实现，`round(前收×幅度,2)` 精确
+    判定；历史日线源为 BaoStock，`market_data.py` 的 `fetch_history_daily`，本机可达）。
+    这与 `backfill_factors.mjs` / `backfill_gaps.mjs` 补历史缺口是同一套机制。
+    **落盘前必须先用邻近真实日做口径交叉验证**（宁缺毋假，验证不通过就不补）。
 - **入库规则**：仅 `ztpool_history.json` 入库；`emotion_history / old_dragon_history / main_theme_history` 三档可由 ztpool + archive 完全重建，`.gitignore` 已规定不入库。当日采集需人工（或后续自动化）`git add data/ztpool_history.json` 提交。
 - **入库前只读核验（2026-10-10 新增，先核后入库）**：任务跑完后、`git add` 之前，按以下判据核验变更范围，任一不满足则**停下排查、不提交**：
   1. **幂等追加**：`git diff` 仅末尾新增行——HEAD 中已有行（含既有交易日全部字段）逐行不变；出现历史行改写/删除/重排即为回补或污染，拒绝入库。
