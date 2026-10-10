@@ -1794,6 +1794,9 @@ let HEALTH = null;
 //   为 null 表示"未生成/未加载"（≠"没有资金分歧"），渲染层须显式区分。
 let SEATS = null;
 let PAIN = null;
+// P1-3：服务端 painNote（缺席原因三态口径唯一出处 archive_split.js）——pain 缺席时
+//   前端优先显示它，不自行猜测原因（"未注入"与"陈旧拒收"是两种不同的缺席）。
+let PAIN_NOTE = null;
 // 多维市场宽度（#3）：同样来自 signals-latest.json。为 null 表示"未生成/未加载"
 //   （≠"宽度均衡"）——渲染层须显式区分。
 let BREADTH = null;
@@ -1836,6 +1839,10 @@ async function loadHealth() {
     //   不为它们各开一次请求（首屏预算敏感，见 archive_split.js 分层说明）。
     SEATS = s && s.seats ? s.seats : null;
     PAIN = s && s.pain ? s.pain : null;
+    // P1-3（2026-10-10）：pain 缺席时优先透传服务端 painNote（三态口径唯一出处，
+    //   archive_split.js）——前端不再自猜缺席原因（"未注入"/"陈旧拒收"语义不同，
+    //   硬编码文案会把"拒收"误报成"需跑 fetch_pain"，口径歧义）。
+    PAIN_NOTE = s && typeof s.painNote === 'string' ? s.painNote : null;
     renderSeats(SEATS);
     renderPain(PAIN);
     // 市场宽度（#3）同源同次取。
@@ -1997,9 +2004,12 @@ function renderPain(p, errMsg) {
   if (!p || !p.perf) {
     box.hidden = false;
     box.className = 'pain-panel pn-unknown';
+    // P1-3：缺席原因优先取服务端三态 painNote（未注入/陈旧拒收口径不同）；
+    //   拉取失败（errMsg）才用本地兜底文案——两级来源不混淆。
+    const note = errMsg || PAIN_NOTE || 'signals-latest.json 缺少 pain 段（需收盘后跑 scripts/fetch_pain.mjs）';
     box.innerHTML = `<div class="pn-head"><b>亏钱效应</b>`
       + `<span class="pn-chip unknown">未评估</span>`
-      + `<span class="muted">${esc(errMsg || 'signals-latest.json 缺少 pain 段（需收盘后跑 scripts/fetch_pain.mjs）')}`
+      + `<span class="muted">${esc(note)}`
       + `——这是"没数据"，不等于"无亏钱效应"</span></div>`;
     return;
   }
