@@ -105,3 +105,19 @@ for (const step of STEPS) {
   if (step.post) await step.post();
 }
 console.log('\ndaily fetch done');
+
+// ── 主任务成功后：源对照（只读诊断，2026-10-10）─────────────────────────────
+//   目的：为"东财主源 → AkShare 备源"降级链积累决策数据（两源到底一不一致）。
+//   定位：**只读、不入库**；跑完看数据再决定留/删，脚本以 tmp_ 前缀明示临时身份。
+//   ⚠ 关键：**失败不影响本脚本退出码**——主任务已成功，不该因诊断脚本的网络抖动
+//     而误告警（那会把"入库成功"报成失败，反而淹没真告警）。
+const XCHECK = path.join(ROOT, 'scripts', 'tmp_ztpool_crosscheck.mjs');
+if (existsSync(XCHECK)) {
+  console.log('\n[daily_fetch] ▶ 源对照（只读诊断，成败不计入主流程）');
+  const x = spawnSync(process.execPath, [XCHECK], { stdio: 'inherit' });
+  if (x.status !== 0) {
+    console.warn(`[daily_fetch] ⚠ 源对照未成功（exit ${x.status ?? '?'}）——本次入库结论不受影响`);
+  }
+} else {
+  console.log('\n[daily_fetch] （源对照脚本已移除，跳过）');
+}
