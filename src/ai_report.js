@@ -18,6 +18,7 @@
 //   组生成函数；本模块自身零 IO，测试用内联夹具 + 真实档冒烟双轨覆盖。
 import { accountStats, DEFAULT_SLIP, HARD_STOP_LOSS, exportAccount } from './paper.js';
 import { guardModuleFreshness } from './module_freshness.js';
+import { stalePainReason } from './pain.js';
 
 export const SCHEMA_VERSION = '1.0';
 export const REPORT_TYPES = ['pre_market', 'intraday', 'post_market', 'weekly'];
@@ -709,12 +710,21 @@ export function emptyFundamentals() {
  * @param {{nameMap?:object}} opts paper_universe.symbols 注入（code→{name,appearances}）
  */
 export function buildWatchlist(input, opts = {}) {
-  const detail = Array.isArray(input?.signals?.pain?.advance?.detail) ? input.signals.pain.advance.detail : [];
+  // P0-2 陈旧闸（2026-10-10，与 buildSimulationStock 同一判据 stalePainReason）：
+  //   pain 口径日 ≠ signals 档案锚 → 昨收连板梯队缺席（空 ladder + basis 报因），
+  //   不拿旧梯队冒充（10-08 事故：观察清单连板数全取自 9-29 口径）。
+  const painStale = stalePainReason(
+    pick(input, 'signals.pain') ?? null,
+    pick(input, 'signals.meta.tradeDate') ?? null,
+  );
+  const detail = !painStale && Array.isArray(input?.signals?.pain?.advance?.detail) ? input.signals.pain.advance.detail : [];
   const rows = [...detail].sort((a, b) => (b.lb ?? 0) - (a.lb ?? 0)).slice(0, 10);
   const zt = num(pick(input, 'signals.latest.zt_count'));
   const zb = num(pick(input, 'signals.latest.zb_count'));
   return {
-    basis: 'pain.advance.detail 昨收口径连板梯队（封板质量以晋级结果+近期上榜频次代理，个股级封单额无档案）；不含操作建议',
+    basis: painStale
+      ? `昨收连板梯队缺席：pain ${painStale}——宁缺毋假，不用旧连板数冒充昨收梯队（2026-10-10 P0-2）`
+      : 'pain.advance.detail 昨收口径连板梯队（封板质量以晋级结果+近期上榜频次代理，个股级封单额无档案）；不含操作建议',
     ladder: rows.map((r) => {
       const meta = opts.nameMap?.[r.code] ?? null;
       return {
@@ -727,7 +737,7 @@ export function buildWatchlist(input, opts = {}) {
       };
     }),
     overnight_sectors: null, // 无隔夜资讯数据源（missing_notes 披露），接源后填充
-    max_lb: num(pick(input, 'signals.pain.advance.maxLb')),
+    max_lb: painStale ? null : num(pick(input, 'signals.pain.advance.maxLb')),
     broken_limit_ratio: Number.isFinite(zt) && Number.isFinite(zb) && zt + zb > 0 ? zb / (zt + zb) : null,
   };
 }
@@ -1089,15 +1099,27 @@ export function buildSimulationStock(input, opts = {}) {
   const breadthDetail = pick(input, 'signals.breadth.snapshot.verdict.detail');
   if (breadthDetail) warnings.push(`宽度收窄（${breadthDetail}）`);
   if (phase === regime_raw && phase_label == null) warnings.push(`情绪周期映射外状态 ${regime_raw} 原样透出（不硬塞五期，决议 7）`);
+  // P0-2 消费端保底（2026-10-10）：pain 口径日 ≠ signals 档案锚 → 候选池/最高板
+  //   拒收旧连板梯队（判据与 signals 注入层同一出处 stalePainReason）。注入层闸
+  //   在 CI 重组装时已拦截；此处兜底「signals-latest 本身是断供期间的旧档」——
+  //   10-08 事故实录：候选池连板数全取自 9-29 口径（真实 10-08 收盘 8 板）。
+  const painStaleReason = stalePainReason(
+    pick(input, 'signals.pain') ?? null,
+    pick(input, 'signals.meta.tradeDate') ?? null,
+  );
+  if (painStaleReason && pick(input, 'signals.pain')) warnings.push(`连板梯队口径陈旧已拒收（pain ${painStaleReason}）`);
   const sentiment_cycle = {
     phase,
     phase_label,
     regime_raw,
     phase_source: `regime=${regimeKey} · 分位 ${Number.isFinite(sub.pct_rank) ? sub.pct_rank : '未知'} · 方向 ${sub.dir ?? '未知'}${regimeKey === 'recover' ? `（recover 细分阈值 <${STARTUP_PCT_RANK_MAX} 为启动期）` : ''}`,
     limit_up_count: num(zt),
-    highest_chain: num(pick(input, 'signals.pain.advance.maxLb')),
+    // P0-2 消费端保底（2026-10-10）：signals-latest 若是陈旧档（pain.curDate ≠
+    //   meta.tradeDate，注入层闸未及重组装时），最高板/昨涨停表现宁缺毋假置 null
+    //   ——不拿旧连板高度冒充当日（10-08 事故：highest_chain=6，真实 8 板）。
+    highest_chain: painStaleReason ? null : num(pick(input, 'signals.pain.advance.maxLb')),
     broken_limit_ratio: brokenRatio,
-    yesterday_chain_performance: num(pick(input, 'signals.pain.perf.avg')),
+    yesterday_chain_performance: painStaleReason ? null : num(pick(input, 'signals.pain.perf.avg')),
     warning_signals: warnings,
   };
   // 候选池口径（2026-10-09 任务拆分；2026-10-10 双池拆分）：盘中报告用实时双池——
@@ -1118,8 +1140,14 @@ export function buildSimulationStock(input, opts = {}) {
     trendPoolMode = built.trend_pool_mode ?? 'trend';
     liveEmotion = opts.intradaySnapshot?.rolling?.emotion ?? null;
   } else {
-    pool = buildCandidatePool(input.signals, { nameMap: opts.nameMap, regimeCap: cap, intradayHot: opts.intradayHot });
-    poolBasis = 'pain.advance.detail 连板活跃明细按连板数降序（情绪面规则现算，决议 8：人工输入模式的辅助建议，可一键采纳不自动生效）';
+    // P0-2 保底（接上 painStaleReason）：pain 陈旧 → 候选池缺席如实报因，
+    //   绝不拿旧连板梯队冒充今日候选（10-08 事故现场：6 连板系 9-29 口径）。
+    pool = painStaleReason
+      ? []
+      : buildCandidatePool(input.signals, { nameMap: opts.nameMap, regimeCap: cap, intradayHot: opts.intradayHot });
+    poolBasis = painStaleReason
+      ? `连板梯队缺席：pain ${painStaleReason}——宁缺毋假，不用旧连板数冒充今日梯队（2026-10-10 P0-2）`
+      : 'pain.advance.detail 连板活跃明细按连板数降序（情绪面规则现算，决议 8：人工输入模式的辅助建议，可一键采纳不自动生效）';
   }
   let simulation_positions = null;
   if (input.live && input.paperAccount?.positions) {

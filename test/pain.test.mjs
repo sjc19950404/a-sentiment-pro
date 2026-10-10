@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import {
   PAIN_THRESHOLDS, ZT_THRESHOLD_PCT,
   median, mean,
-  prevZtPerformance, advanceFailure, bigLossStocks, painVerdict, painReport,
+  prevZtPerformance, advanceFailure, bigLossStocks, painVerdict, painReport, stalePainReason,
 } from '../src/pain.js';
 
 // ────────────────────────── 基础统计 ──────────────────────────
@@ -297,4 +297,21 @@ test('纯函数：不修改入参', () => {
   bigLossStocks(q);
   assert.equal(JSON.stringify(q), qCopy);
   assert.deepEqual(codes, ['A']);
+});
+
+// ── P0-2 陈旧闸（2026-10-10）：pain.curDate ≠ 档案锚 → 拒收 ──────────────
+// 10-08 事故实录：fetch_pain exit 2 被 continue-on-error 吞 → pain-latest 定格
+// 9-29→9-30 口径 → 候选池连板数全陈旧（真实 10-08 收盘 8 板，报告写 6）。
+test('stalePainReason：新鲜 null / 陈旧报因 / 缺档缺字段报因', () => {
+  // 新鲜（curDate == 档案锚）→ null（可用）
+  assert.equal(stalePainReason({ curDate: '2026-10-08' }, '2026-10-08'), null);
+  // 陈旧（curDate 落后档案锚）→ 报因含两侧日期（可复盘归因）
+  assert.match(stalePainReason({ curDate: '2026-09-30' }, '2026-10-08'), /陈旧（curDate=2026-09-30 ≠ 档案锚 2026-10-08/);
+  // 缺 curDate（旧版产物无口径日自证）→ 报因
+  assert.match(stalePainReason({ advance: {} }, '2026-10-08'), /缺 curDate 字段/);
+  // 档缺失/非对象 → 报因
+  assert.match(stalePainReason(null, '2026-10-08'), /档缺失/);
+  assert.match(stalePainReason(undefined, '2026-10-08'), /档缺失/);
+  // 档案锚缺席（调用方无锚可对）→ 只要 pain 自带 curDate 即放行（组装层已把关锚）
+  assert.equal(stalePainReason({ curDate: '2026-10-08' }, null), null);
 });

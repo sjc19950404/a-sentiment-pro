@@ -297,3 +297,31 @@ export function painReport(prevDay, curQuotes, opts = {}) {
     thresholds: { ...PAIN_THRESHOLDS, ...(opts.thresholds || {}) },
   };
 }
+
+/**
+ * P0-2 陈旧闸（2026-10-10 用户指令「数据准确性 > 流程完整性」）：
+ * pain-latest 的 curDate 必须等于**档案锚**（archive 末档 trade_date），
+ * 否则调用方一律拒收（注入 null），绝不拿旧连板梯队冒充当日候选池。
+ *
+ * 断供实录（10-08 事故根因）：fetch_pain exit 2 被 continue-on-error 吞 →
+ * pain-latest 定格 9-29→9-30 口径 → 10-08 报告候选池「新华传媒 6 连板」
+ * （真实 9-30 收盘 7 板、10-08 收盘 8 板）——旧值顶替当日值零告警整周。
+ *
+ * 与 dualTrackFn / breadthFn 的「②新鲜度守卫」同款纪律（src/engine/write.js）：
+ * 档日期落后于档案锚 → 旧值不进当日 signals；消费端（候选池/最高板）走
+ * 既有「缺席」路径（null ≠ 0，渲染显式区分「没有」与「不知道」）。
+ *
+ * @param {object|null} pain pain-latest.json 的解析结果（须含 curDate）
+ * @param {string|null} archiveDate 档案锚（archive 末档 trade_date / signals.meta.tradeDate）
+ * @returns {string|null} null = 新鲜可用；字符串 = 拒收原因（含诊断信息）
+ */
+export function stalePainReason(pain, archiveDate) {
+  if (pain == null || typeof pain !== 'object') return '档缺失（fetch_pain 未产出或被陈旧闸拦截）';
+  const cur = pain.curDate ?? null;
+  if (!cur) return '缺 curDate 字段（旧版产物，无口径日自证）';
+  if (archiveDate && cur !== archiveDate) {
+    return `陈旧（curDate=${cur} ≠ 档案锚 ${archiveDate}，连板梯队口径落后）`;
+  }
+  return null;
+}
+

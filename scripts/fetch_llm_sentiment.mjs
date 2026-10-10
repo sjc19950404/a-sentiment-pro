@@ -24,6 +24,7 @@ import { readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { atomicWriteJSON } from '../src/fsutil.js';
 import { decodeArchive } from '../src/lhb_codec.js';
+import { stalePainReason } from '../src/pain.js';
 import { bjStamp } from '../src/time.js';
 import { fetchWithRetry } from '../src/util.js';
 
@@ -58,7 +59,14 @@ let pain = null;
 try {
   if (existsSync('data/pain-latest.json')) {
     const pj = JSON.parse(readFileSync('data/pain-latest.json', 'utf8'));
-    pain = pj.verdict ? `${pj.verdict.label}（${pj.verdict.reason || ''}）` : null;
+    // P0-2 陈旧闸（2026-10-10）：pain 口径日 ≠ 档案锚 → 不进 LLM 简报
+    //   （旧亏钱效应结论会误导情绪判读，宁缺毋假——与 signals 注入同一判据）。
+    const reason = stalePainReason(pj, day.trade_date ?? null);
+    if (reason) {
+      console.error(`[CRITICAL] pain 陈旧拒收（LLM 简报）：${reason}`);
+    } else {
+      pain = pj.verdict ? `${pj.verdict.label}（${pj.verdict.reason || ''}）` : null;
+    }
   }
 } catch { pain = null; }
 

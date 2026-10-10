@@ -8,7 +8,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import {
   buildInput, generatePreMarket, generateIntraday, generatePostMarket, generateWeekly,
   mergeReports, buildDataCompleteness, TRIGGER_ENUM, DD_TIER_EDGES, SCHEMA_VERSION,
-  mapPhase, buildScripts, buildCandidatePool, buildSimulationStock, emptyFundamentals,
+  mapPhase, buildScripts, buildCandidatePool, buildSimulationStock, emptyFundamentals, buildWatchlist,
   makeBinding, mergeBindings, loadBindings, saveBindings, exportSimulation, BINDINGS_KEY,
   PHASE_LABELS, SIM_SCRIPT_CONSTS, STARTUP_PCT_RANK_MAX,
 } from '../src/ai_report.js';
@@ -49,7 +49,7 @@ const SIG = {
   ] },
   dailyReport: { sections: [{ id: 'regime', position: { range: '30%~50%' } }] },
   breadth: { snapshot: { verdict: { label: '宽度收窄', detail: '站上20日线仅 30.1%' } } },
-  pain: { verdict: { label: '多空拉锯', reason: '翻绿 49%' }, advance: { maxLb: 6, failRate: 0.4, detail: [
+  pain: { curDate: '2026-09-30', verdict: { label: '多空拉锯', reason: '翻绿 49%' }, advance: { maxLb: 6, failRate: 0.4, detail: [
     { code: '600825', lb: 6, chg: 9.99, kept: true },
     { code: '000678', lb: 3, chg: 9.98, kept: true },
   ] }, perf: { avg: 1.3 } },
@@ -381,6 +381,32 @@ test('buildSimulationStock：09-30 夹具 → 发酵期/neutral/候选池齐 + �
   mustPass(bare, 'intraday 无 sim 段');
 });
 
+// ── 12.5 P0-2 陈旧闸（2026-10-10）：pain 口径日 ≠ signals 档案锚 → 拒收 ──
+//   10-08 事故实录：fetch_pain exit 2 被 continue-on-error 吞 → pain-latest 定格
+//   9-29→9-30 口径 → 候选池「新华传媒 6 连板」（真实 10-08 收盘 8 板）。
+//   消费端三处同闸：候选池 / 最高板 / 昨日涨停表现（宁缺毋假，null ≠ 0）。
+test('P0-2 陈旧闸：pain.curDate 落后 signals.meta.tradeDate → 候选池空 + 报因 + highest_chain null', () => {
+  const input = mkInput({ signals: { ...SIG, meta: { tradeDate: '2026-10-08' } } }); // pain.curDate=09-30 ≠ 10-08
+  const sim = buildSimulationStock(input, {});
+  assert.deepEqual(sim.candidate_pool, [], '陈旧 pain → 候选池空（不拿 9-29 连板梯队冒充）');
+  assert.match(sim.pool_basis, /陈旧.*curDate=2026-09-30.*档案锚 2026-10-08/, 'basis 必须报因（可复盘归因）');
+  assert.equal(sim.sentiment_cycle.highest_chain, null, '最高板陈旧 → null（不冒充 6）');
+  assert.equal(sim.sentiment_cycle.yesterday_chain_performance, null, '昨涨停表现陈旧 → null');
+  assert.ok(sim.sentiment_cycle.warning_signals.some((w) => /连板梯队口径陈旧已拒收/.test(w)), 'warnings 留痕');
+  // 对齐后恢复：curDate == meta.tradeDate → 正常路径（反向对照，§12 已详测）
+  const fresh = buildSimulationStock(mkInput(), {});
+  assert.equal(fresh.candidate_pool.length, 2, '对齐 → 池照常');
+  assert.equal(fresh.sentiment_cycle.highest_chain, 6, '对齐 → 最高板照常');
+});
+
+test('P0-2 陈旧闸：buildWatchlist 同闸（昨收连板梯队缺席不冒充）', () => {
+  const staleInput = { signals: { ...SIG, meta: { tradeDate: '2026-10-08' } } };
+  const w = buildWatchlist(staleInput, {});
+  assert.deepEqual(w.ladder, [], '陈旧 → 观察清单空梯队');
+  assert.match(w.basis, /昨收连板梯队缺席：pain 陈旧/, 'basis 报因');
+  assert.equal(w.max_lb, null, 'max_lb 陈旧 → null');
+});
+
 // ── 12b. 绑定联查（写入由 S3 UI 触发，本模块只读注入；script_name 填持仓跟踪）──
 test('buildSimulationStock 绑定联查：bindings 注入填 script_name，缺席/不匹配 → null', () => {
   const acctWithPos = { ...ACCT, positions: { '600825': { code: '600825', name: '新华传媒', avgCost: 10, last: 10.5, qty: 500, days: 2 } } };
@@ -447,9 +473,16 @@ test('真实档冒烟：buildSimulationStock 过契约 + 真实断言（不写�
   const sc = sim.sentiment_cycle;
   assert.equal(sc.regime_raw, input.dualTrack.day.regime.key, 'regime_raw 搬运七态原值');
   assert.equal(sc.limit_up_count, read('signals-latest.json').latest.zt_count, '涨停数搬运');
-  assert.ok(sim.candidate_pool.length >= 1 && sim.candidate_pool.length <= SIM_SCRIPT_CONSTS.pool_max);
-  for (const p of sim.candidate_pool) {
-    assert.match(p.selection_reason, /连板/, '入选理由必含连板事实');
-    if (nameMap[p.code]?.name) assert.equal(p.name, nameMap[p.code].name, '名称来自 paper_universe 映射');
+  // P0-2（2026-10-10）：真实档 pain 可能新鲜也可能陈旧（断供期），两种形态都合法——
+  //   新鲜 → 池非空且理由含连板；陈旧 → 池空 + pool_basis 报因（宁缺毋假，不冒充）。
+  const painFresh = sim.candidate_pool.length > 0;
+  if (painFresh) {
+    assert.ok(sim.candidate_pool.length <= SIM_SCRIPT_CONSTS.pool_max);
+    for (const p of sim.candidate_pool) {
+      assert.match(p.selection_reason, /连板/, '入选理由必含连板事实');
+      if (nameMap[p.code]?.name) assert.equal(p.name, nameMap[p.code].name, '名称来自 paper_universe 映射');
+    }
+  } else {
+    assert.match(sim.pool_basis, /陈旧|拒收|缺席/, '陈旧拒收必须报因（不静默空池）');
   }
 });

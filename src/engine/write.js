@@ -18,6 +18,7 @@ import { aggregateByCode } from '../lhb.js';
 import { healthReport } from '../health.js';
 import { buildSeatSeries, seatSeriesSummary, seatVerdict } from '../seats_daily.js';
 import { buildBreadthSeries, breadthSeriesSummary } from '../breadth.js';
+import { stalePainReason } from '../pain.js';
 import { buildRegimeBlock, buildDivergenceBlock } from '../regime.js';
 import { buildDailyReport } from '../daily_report.js';
 import { llmSentimentBlock } from '../llm_sentiment.js';
@@ -109,11 +110,21 @@ export function writeShards(archive, dir = DATA_DIR) {
     // 亏钱效应（#2）：需要**全市场真实行情**，本函数是同步的、不能 await，
     //   故这里只读已落盘的 pains 缓存（由 scripts/fetch_pain.mjs 在收盘后写入）。
     //   读不到就是 null —— 绝不在此现造，否则会把失败伪装成"今天很平静"。
+    //   ②新鲜度守卫（2026-10-10 P0-2，与下方 breadthFn 同款纪律）：pain.curDate
+    //     落后于档案锚 → 旧值不进当日 signals（断供实录：10-08 候选池连板数
+    //     取自 9-29 口径，fetch_pain exit 2 被 continue-on-error 吞）——置 null
+    //     走"缺席"，绝不拿旧连板梯队冒充今日候选池。收尾 freshness 探针会红。
     painFn: () => {
       try {
         const p = path.join(dir, 'pain-latest.json');
         if (!existsSync(p)) return null;
-        return JSON.parse(readFileSync(p, 'utf8'));
+        const pain = JSON.parse(readFileSync(p, 'utf8'));
+        const reason = stalePainReason(pain, archiveDate);
+        if (reason) {
+          console.error(`[CRITICAL] pain 陈旧拒收：${reason} —— 宁缺毋假，signals.pain 置 null（离线模块门禁将红）`);
+          return null;
+        }
+        return pain;
       } catch { return null; }
     },
     // 双轨披露块（P2-β 渲染接线）：读已落盘的 data/paper/dual_track_latest.json

@@ -18,7 +18,7 @@ test('buildWatchlist：连板梯队按连板数降序 Top 10，名称/上榜次�
     { code: '603949', lb: 4, chg: -9.98, kept: false },
     { code: '000000', lb: 9, chg: 10.0, kept: true }, // 未映射名称
   ];
-  const w = buildWatchlist({ signals: { pain: { advance: { detail, maxLb: 9 } }, latest: { zt_count: 40, zb_count: 10 } } },
+  const w = buildWatchlist({ signals: { meta: { tradeDate: '2026-10-09' }, pain: { curDate: '2026-10-09', advance: { detail, maxLb: 9 } }, latest: { zt_count: 40, zb_count: 10 } } },
     { nameMap: { 600825: { name: '新华传媒', appearances: 8 }, 603949: { name: '雪龙集团' } } });
   assert.equal(w.ladder[0].code, '000000', '9 连板排最前（lb 降序）');
   assert.equal(w.ladder[0].name, null, 'nameMap 缺席 → null（不造数）');

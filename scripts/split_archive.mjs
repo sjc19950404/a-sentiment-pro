@@ -18,6 +18,7 @@ import { assessFreshness } from '../src/freshness.js';
 import { resolveHolidays } from '../src/calendar.js';
 import { buildSeatSeries, seatSeriesSummary, seatVerdict } from '../src/seats_daily.js';
 import { buildBreadthSeries, breadthSeriesSummary } from '../src/breadth.js';
+import { stalePainReason } from '../src/pain.js';
 import { aggregateByCode } from '../src/lhb.js';
 import { atomicWriteJSON } from '../src/fsutil.js';
 import { classifySeries, classifyRegime, detectDivergence, buildRegimeBlock, buildDivergenceBlock } from '../src/regime.js';
@@ -67,13 +68,25 @@ const signals = buildSignals(packed, {
     return { series, summary: seatSeriesSummary(series, { totalDays: ds.length }), verdict: seatVerdict(series) };
   },
   // 亏钱效应（#2）：读已落盘的 pain-latest.json（需行情，本脚本不联网抓）。
-  painFn: () => {
-    try {
-      const p = join(DATA, 'pain-latest.json');
-      if (!existsSync(p)) return null;
-      return JSON.parse(readFileSync(p, 'utf8'));
-    } catch { return null; }
-  },
+  //   ②新鲜度守卫（2026-10-10 P0-2）：pain.curDate 落后于档案锚 → 拒收置 null，
+  //   与 pipeline.writeShards 同一判据（stalePainReason 唯一出处）——两路径产出
+  //   必须逐字段一致，否则 --check 报形态分裂。断供实录见 src/pain.js 头注。
+  painFn: (() => {
+    const anchor = (arc.all_days || []).filter((d) => d && d.trade_date).slice(-1)[0]?.trade_date ?? null;
+    return () => {
+      try {
+        const p = join(DATA, 'pain-latest.json');
+        if (!existsSync(p)) return null;
+        const pain = JSON.parse(readFileSync(p, 'utf8'));
+        const reason = stalePainReason(pain, anchor);
+        if (reason) {
+          console.error(`[CRITICAL] pain 陈旧拒收：${reason} —— 宁缺毋假，signals.pain 置 null（离线模块门禁将红）`);
+          return null;
+        }
+        return pain;
+      } catch { return null; }
+    };
+  })(),
   // 双轨披露块（P2-β 渲染接线）：读 data/paper/dual_track_latest.json。
   //   与 pipeline.writeShards 用**同一工厂产物** dualTrackDisclosureFn(DATA)——
   //   两路径产出逐字段一致（同一注入纪律，否则 --check 报形态分裂）。
