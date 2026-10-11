@@ -8,7 +8,7 @@
 // 守卫）。PASS 静默；WARN/UNAVAILABLE → 企微 + issue 双通道。恒 exit 0。
 //
 // 用法：node scripts/ztpool_crosscheck.mjs [--run-id <id>] [--run-url <url>] [--python <bin>]
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ztPoolCrosscheck, breadthCrosscheck, ztCrosscheckEvent } from '../src/ztpool_crosscheck.js';
@@ -64,6 +64,33 @@ if (raw) {
   const bd = breadthCrosscheck({ snap: raw.breadth ?? null, legu: raw.breadthCross ?? null });
   console.log(`[zt-crosscheck] 涨跌家数：${bd.verdict} ${bd.reason ?? `涨占比 快照 ${bd.snapUpRatio}% vs legu ${bd.leguUpRatio}%`}`);
   if (!bd.ok) events.push(ztCrosscheckEvent(bd, 'breadth'));
+
+  // ── 留痕（2026-10-12）：阈值标定必须有样本，而自建池依赖**当日全市场快照**——
+  //   历史快照从来没存过盘，所以历史一天也补不回来。只能从今天起逐日积累，攒够
+  //   3~5 个交易日再看分布定阈值（见 docs/data_discipline.md「当前待标定项」）。
+  //   **PASS 也要留**——标定需要的是"正常时差多少"的分布，只留异常等于没有基准。
+  try {
+    const HIST = join(ROOT, 'data', 'crosscheck-history.json');
+    let h = { kind: 'crosscheck-history', version: 1, days: [] };
+    if (existsSync(HIST)) { try { h = JSON.parse(readFileSync(HIST, 'utf8')); } catch { /* 档损坏则重建 */ } }
+    if (!Array.isArray(h.days)) h.days = [];
+    const day = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+    h.days = h.days.filter((x) => x && x.date !== day);   // 同日覆盖（三时点跑多次只留末次）
+    h.days.push({
+      date: day,
+      zt: { verdict: zt.verdict, primary: zt.primaryCount ?? null, derived: zt.derivedCount ?? null,
+        countDiff: zt.countDiff ?? null, divergeRate: zt.divergeRate ?? null },
+      breadth: { verdict: bd.verdict, snapUpRatio: bd.snapUpRatio ?? null,
+        leguUpRatio: bd.leguUpRatio ?? null, ratioDiffPct: bd.ratioDiffPct ?? null },
+    });
+    h.days = h.days.slice(-60);
+    const tmp = `${HIST}.tmp`;
+    writeFileSync(tmp, JSON.stringify(h, null, 2));
+    renameSync(tmp, HIST);
+    console.log(`[zt-crosscheck] 已留痕 ${day}（累计 ${h.days.length} 天 → data/crosscheck-history.json，供阈值标定）`);
+  } catch (e) {
+    console.error('[zt-crosscheck] 留痕失败（不影响对账结论）：', e?.message ?? e);
+  }
 } else {
   console.log('[zt-crosscheck] 未取到盘中数据——跳过（主链路故障由守卫告警，对账不重复打扰）');
 }
