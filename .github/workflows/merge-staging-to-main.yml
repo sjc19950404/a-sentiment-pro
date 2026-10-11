@@ -130,6 +130,12 @@ jobs:
           # 用默认 GITHUB_TOKEN 推 main：token 随 job 结束即失效，不落任何长期凭据。
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # ★ 关键修复（2026-10-11 排雷）：actions/checkout 默认只拉「指定 ref」(staging)，
+      #   本地并无 main 分支。若直接 `git checkout main` 会报 pathspec 不匹配、合并永远
+      #   走不到 push（静默失败，main 不动）。这里显式把 origin/main 拉成局部 main。
+      - name: 预取 main 引用（checkout 只取 staging，须显式拉 main 才能切过去合并）
+        run: git fetch origin +refs/heads/main:refs/heads/main
+
       - name: 复核 staging SHA 未漂移
         id: verify
         run: |
