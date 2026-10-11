@@ -1171,6 +1171,26 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
 .dt-sum { font-size: 11.5px; }
 .dt-body { padding: 0 12px 10px; }
 .dt-chip { font-size: 11px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); }
+
+/* A/B/C 三策略回测面板（data/backtest-strategies.json；范式同 dualtrack-panel） */
+.btstrat-panel { margin: 8px 0; }
+.btstrat-panel[hidden] { display: none; }
+.bs-fold { border: 1px solid var(--line); border-radius: 8px; background: var(--card); overflow: hidden; }
+.bs-fold > summary { cursor: pointer; padding: 9px 12px; display: flex; gap: 10px;
+  align-items: center; flex-wrap: wrap; list-style: none; }
+.bs-fold > summary::-webkit-details-marker { display: none; }
+.bs-fold > summary::before { content: '▸'; color: var(--muted); font-size: 11px; }
+.bs-fold[open] > summary::before { content: '▾'; }
+.bs-head { padding: 9px 12px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.bs-chip { font-size: 11px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); }
+.bs-body { padding: 0 12px 10px; overflow-x: auto; }
+.bs-table { border-collapse: collapse; font-size: 11.5px; width: 100%; }
+.bs-table th, .bs-table td { border: 1px solid var(--line); padding: 4px 7px; text-align: right; white-space: nowrap; }
+.bs-table th:first-child, .bs-table td:first-child { text-align: left; }
+.bs-table thead th { background: var(--soft, rgba(128,128,128,.08)); font-weight: 600; }
+.bs-win { color: var(--up, #c0392b); }
+.bs-lose { color: var(--down, #27ae60); }
+.bs-note { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
 .dt-chip.ok { color: var(--up, #3aa675); border-color: var(--up, #3aa675); }
 .dt-chip.info { color: var(--muted); }
 .dt-chip.warn { color: #c9a04e; border-color: #c9a04e; }

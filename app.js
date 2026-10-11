@@ -1893,6 +1893,79 @@ async function loadHealth() {
   }
 }
 
+// ── A/B/C 三策略回测面板：读 data/backtest-strategies.json ──────────────────
+//   （由 scripts/backtest_strategies.mjs 生成，引擎 src/strategy_bt.js；
+//    point-in-time 纪律由 test/backtest_strategies.test.mjs 锁定）
+// 为什么单独一个加载器：数据源与上面的 V5.2 回测档（backtest.json）不同，
+//   失败互不影响——与 loadVersionRegression 独立成加载器是同一条原则。
+// ⚠ 本函数**只渲染**：收益/夏普/回撤/胜率全部来自 JSON，前端绝不重算——
+//   重算就等于在 UI 里再写一套口径，那正是本项目一直在消灭的东西。
+let BTSTRAT = null;
+
+async function loadBtStrategies() {
+  try {
+    const res = await fetch('./data/backtest-strategies.json?_=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    BTSTRAT = await res.json();
+    noteLoad('backtest-strategies', true);
+    renderBtStrategies(BTSTRAT);
+  } catch (e) {
+    BTSTRAT = null;
+    noteLoad('backtest-strategies', false, e);
+    renderBtStrategies(null, e.message);
+  }
+}
+
+function renderBtStrategies(d, errMsg) {
+  const box = $('btStrategyPanel');
+  if (!box) return;
+  const list = d && Array.isArray(d.strategies) ? d.strategies : null;
+  if (!list || !list.length) {
+    // 未生成/加载失败：显式说明，且**不显示成"策略无效"**——"没跑"与"策略不行"两回事。
+    box.hidden = false;
+    box.className = 'btstrat-panel bs-unknown';
+    box.innerHTML = `<div class="bs-head"><b>策略回测（A/B/C × 沪深300）</b>`
+      + `<span class="bs-chip">未生成</span>`
+      + `<span class="muted">${esc(errMsg || '缺 data/backtest-strategies.json（生成：node scripts/backtest_strategies.mjs）')}`
+      + `——这是"没跑"，不等于"策略无效"</span></div>`;
+    return;
+  }
+  const bench = d.benchmark || {};
+  const m = d.meta || {}, smp = m.sample || {};
+  // 超额 = 策略总收益 − 基准总收益。基准本身可能为负（本样本即 -6%），
+  //   故"亏得比基准少"也是跑赢——这条不写清楚，读者会以为正超额才叫赢。
+  const excessOf = (s) => (Number.isFinite(s && s.total) && Number.isFinite(bench.total)) ? s.total - bench.total : null;
+  const toneOf = (v) => (v == null ? '' : v > 0 ? 'bs-win' : v < 0 ? 'bs-lose' : '');
+  const benchRow = `<tr><td><b>${esc(bench.label || '沪深300 买入持有')}</b></td><td>—</td><td>—</td><td>—</td>`
+    + `<td class="${toneOf(bench.total)}">${pctS(bench.total)}</td><td>基准</td>`
+    + `<td>${pctS(bench.maxDd)}</td><td>${numS(bench.sharpe)}</td><td>—</td></tr>`;
+  const rowOf = (s) => {
+    const ex = excessOf(s);
+    return `<tr><td>${esc(s.label || s.id)}</td><td>${s.holdN ?? '—'}</td>`
+      + `<td>${s.triggered ?? 0}</td><td>${s.trades ?? 0}</td>`
+      + `<td class="${toneOf(s.total)}">${pctS(s.total)}</td>`
+      + `<td class="${toneOf(ex)}">${pctS(ex)}</td>`
+      + `<td>${pctS(s.maxDd)}</td><td>${numS(s.sharpe)}</td>`
+      + `<td>${s.winRate == null ? '—' : pctS(s.winRate, 0)}</td></tr>`;
+  };
+  box.hidden = false;
+  box.className = 'btstrat-panel';
+  box.innerHTML = `<details class="bs-fold" open><summary><b>策略回测（A/B/C × 沪深300）</b>`
+    + `<span class="bs-chip">样本 ${smp.realDays ?? '—'} 日</span>`
+    + `<span class="bs-chip">${esc((smp.range || []).join(' ~ ') || '区间未知')}</span></summary>`
+    + `<div class="bs-body"><table class="bs-table"><thead><tr>`
+    + `<th>策略</th><th>持有</th><th>触发</th><th>成交</th><th>总收益</th><th>超额</th>`
+    + `<th>回撤</th><th>夏普</th><th>胜率</th></tr></thead><tbody>`
+    + benchRow + list.map(rowOf).join('')
+    + `</tbody></table>`
+    + `<div class="bs-note">${esc(m.disclaimer || '历史回测 ≠ 未来收益，不构成投资建议。')}</div>`
+    + `<div class="bs-note">时点：${esc(m.pointInTime || '')}</div>`
+    + `<div class="bs-note">成本：${esc(m.costs || '')}</div>`
+    + `<div class="bs-note">${esc(smp.note || '')}</div>`
+    + `<div class="bs-note">数字唯一出处 scripts/backtest_strategies.mjs（引擎 src/strategy_bt.js），本面板只展示不重算。</div>`
+    + `</div></details>`;
+}
+
 function renderHealth(h, errMsg) {
   const box = $('healthPanel');
   if (!box) return;
@@ -3279,6 +3352,7 @@ function renderAll(arc) {
   renderBrief(days, arc);
   loadGlobal();  // 外围市场（独立数据文件，缺失不影响上述渲染）
   loadBacktest(); // 回测/帕累托/滚动/主线选股四区块（独立数据文件，缺失不影响上述渲染）
+  loadBtStrategies(); // A/B/C 三策略 × 沪深300 基准（独立数据文件；缺失时卡内显示生成命令）
   loadVersionRegression(); // 公式版本对比（独立数据文件；缺失时卡内显示生成命令，不影响其他区块）
   loadHealth(); // 数据健康 + 资金属性 + 亏钱效应（同一份 signals-latest.json，一次 fetch）
   loadIntraday(meta); // 盘中快照（独立数据文件；仅盘中相位且有文件时显示）
