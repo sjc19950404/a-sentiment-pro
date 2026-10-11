@@ -536,6 +536,69 @@ def fetch_breadth_cross() -> dict:
     }
 
 
+def _limit_pct(symbol, name) -> float | None:
+    """涨跌幅限制（%）：按板块判定。判定不了返回 None——**不猜**（猜错 = 假数据）。
+
+    来源：交易所涨跌幅规则（主板 10 / 创业·科创 20 / 北交 30 / 主板 ST 5）。
+    ⚠ 这是**公式推导**不是采集，因此不引入任何新的数据源依赖——这正是它相对
+    AkShare zt_pool 的价值：后者的上游就是主源本身（见 docs/ztpool_fallback_plan.md §2）。
+    """
+    code = re.sub(r'\D', '', str(symbol or ''))
+    if not code:
+        return None
+    n = str(name or '').upper()
+    is_st = 'ST' in n or '*' in n
+    if code.startswith(('8', '4', '920')):        # 北交所
+        return 30.0
+    if code.startswith(('688', '689')):           # 科创板
+        return 20.0
+    if code.startswith(('300', '301')):           # 创业板
+        return 20.0
+    if code.startswith(('60', '000', '001', '002', '003')):   # 沪深主板
+        return 5.0 if is_st else 10.0
+    return None
+
+
+def derive_zt_from_snapshot(snap: pd.DataFrame) -> dict:
+    """涨停/跌停池（**自建**）：自有全市场快照 + 涨跌幅限制公式推导。
+
+    为什么要有它（2026-10-11）：主源（东财 push2ex）与所谓"第一备源"（AkShare
+    zt_pool）请求的是**同一个 URL**，实为单点——push2ex 故障则两层同时失效
+    （2026-08-14~09-03 那 14 天"主源与备源均失败"即此，不是运气差）。
+    本函数的上游是**自有快照**（QuantDash universe / AkShare spot / QuantDash symbols），
+    与东财涨停池无关 ⇒ 真正独立的第二只眼睛。
+
+    ⚠ **定位是对账源，不是备源**：
+      · 能给出：涨停/跌停的**家数**与**名单**（最容易静默出错的正是聚合量）；
+      · 给不出：`fbt` 封板时间、`fund` 封单额、`zb` 炸板数、`lbc` 连板数——
+        快照里没有盘中最高价和逐笔封单，**造不出来，也不能造**。
+      ⇒ 用途：每天与主源比对家数/名单（见 src/ztpool_crosscheck.js），
+        **不进降级链**。纪律见 docs/data_discipline.md。
+    """
+    zt: list[str] = []
+    dt: list[str] = []
+    unknown = 0
+    for _, r in snap.iterrows():
+        pct = _limit_pct(r.get('symbol'), r.get('name'))
+        pc = r.get('prev_close')
+        px = r.get('price')
+        if pct is None or pd.isna(pc) or pd.isna(px) or not pc > 0:
+            unknown += 1
+            continue
+        # 涨停价按分四舍五入；容差 1 分钱（防浮点/源端取整差异造成漏判）
+        if abs(px - round(pc * (1 + pct / 100), 2)) <= 0.011:
+            zt.append(str(r['symbol']))
+        elif abs(px - round(pc * (1 - pct / 100), 2)) <= 0.011:
+            dt.append(str(r['symbol']))
+    return {
+        'zt_count': len(zt), 'dt_count': len(dt),
+        'zt_codes': zt, 'dt_codes': dt,
+        'universe': int(len(snap)), 'unknown_pct': unknown,
+        'source': 'snapshot-derived',
+        'caliber': '自有快照 + 涨跌幅限制公式自建；上游与东财无关——对账源，非备源（无 fbt/fund/zb/lbc）',
+    }
+
+
 def derive_quotes_map(snap: pd.DataFrame, codes: list[str]) -> dict:
     """候选池行情字段映射（契约对齐旧 fetchHotQuotes：量比/PE-TTM/PB，缺失 = null 不造数）。"""
     sub = snap[snap['symbol'].isin(set(codes))]
@@ -556,7 +619,7 @@ def derive_quotes_map(snap: pd.DataFrame, codes: list[str]) -> dict:
 def intraday_raw() -> dict:
     """组装盘中六源（契约与旧 sources.js 逐字段一致）——stdout JSON 供 JS 消费。"""
     errors: list[str] = []
-    hot = pools = breadth = screener = breadth_cross = None
+    hot = pools = breadth = screener = breadth_cross = zt_derived = None
     quotes: dict = {}
     main_net: dict = {}
     snap = None
@@ -581,8 +644,16 @@ def intraday_raw() -> dict:
         breadth_cross = fetch_breadth_cross()
     except Exception as e:
         errors.append(f'breadth-cross: {type(e).__name__} {e}')
+    # 自建涨停池（对账源）：上游是**自有快照**，与东财 push2ex 无关——
+    #   主源与"备源"是同一个 URL（akshare/stock_feature/stock_ztb_em.py:33），实为单点，
+    #   所以这只眼睛是唯一能与主源互相证伪的独立观测。独立 try：挂了不影响主链路。
+    try:
+        zt_derived = derive_zt_from_snapshot(snap) if snap is not None else None
+    except Exception as e:
+        errors.append(f'zt-derived: {type(e).__name__} {e}')
     out = {
         'hot': hot, 'pools': pools, 'breadth': breadth, 'breadthCross': breadth_cross,
+        'ztDerived': zt_derived,
         'quotes': quotes, 'mainNet': main_net, 'screener': screener,
         'meta': {
             'generatedAt': datetime.now(BJ).isoformat(timespec='seconds'),
@@ -595,6 +666,7 @@ def intraday_raw() -> dict:
                 'breadth=快照内符号统计（旧源为东财指数涨跌家数）',
                 'quantdash-symbols 路径覆盖本地代码表 3558 只沪深 A（不含北交所）',
                 'breadthCross=AkShare 乐咕全 A 口径（对账源；与 breadth 口径不同，仅比对不互换）',
+                'ztDerived=自有快照+涨跌幅公式自建涨停池（对账源；上游与东财无关，无 fbt/fund/zb/lbc，不进降级链）',
             ],
         },
     }

@@ -185,6 +185,22 @@ const snapshot = {
   //   只在 live 相位有值；失败/缺席 = null（报告层回落 hot 榜口径并报因）。
   screener: screener ? { count: screener.length, rows: screener } : null,
   breadth: breadth ? { up: breadth.up, down: breadth.down, flat: breadth.flat } : null,
+  // ── 对账源（2026-10-11）：两者都**不进主链路**，只落盘供 scripts/ztpool_crosscheck.mjs 消费。
+  //   放在这里（而非让对账脚本再抓一遍）是为了**零新增网络请求**——全市场快照已经抓过了。
+  //   ① breadthCross：AkShare 乐咕全 A 口径涨跌家数（与 breadth 沪深 A 口径不同：仅比对，不互换）；
+  //   ② ztDerived：自有快照 + 涨跌幅公式**自建**涨停池。主源(东财 push2ex)与"第一备源"
+  //      (AkShare zt_pool) 请求同一个 URL，实为单点，故这是唯一能与主源互相证伪的独立观测。
+  breadthCross: raw?.breadthCross ?? null,
+  ztDerived: raw?.ztDerived ?? null,
+  // ── 源健康度留痕（2026-10-11）：把数据层的**降级链/实际源名/错误**原样落盘，供
+  //   scripts/source_health.mjs 做滚动统计。这些信息以前只打在 stdout 里，跑完即丢——
+  //   于是"哪个源最近总在降级"从来没有可见性，只能等它彻底挂了才发现。
+  dataHealth: {
+    snapshotSource: raw?.meta?.snapshotSource ?? null,
+    snapshotRows: raw?.meta?.snapshotRows ?? 0,
+    errors: raw?.meta?.errors ?? [],
+    degradations: raw?.meta?.degradations ?? [],
+  },
   sourcesFailed: errs.length ? errs : [],
 };
 

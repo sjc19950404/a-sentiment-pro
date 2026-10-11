@@ -390,6 +390,26 @@ jobs:
         env:
           QUANTDASH_API_KEY: ${{ secrets.QUANTDASH_API_KEY }}
         run: node scripts/snapshot_intraday.mjs
+      # ── 情绪数据跨源对账（2026-10-11）：为什么需要单独一步——涨停池的"多源降级"是假的，
+      #   主源(东财 push2ex) 与"第一备源"(AkShare zt_pool) 请求**同一个 URL**，实为单点；
+      #   能与主源互相证伪的只有自有快照自建池（ztDerived），涨跌家数另做跨口径比对（全A vs 沪深A）。
+      #   只读盘中档（零新增请求）；限定三时点——tick 网格每半小时跑一次太密，对账一天三次足够。
+      #   纯观测：脚本恒 exit 0 + continue-on-error 双保险，绝不拦后续步骤（观察者不是门禁）。
+      - name: 情绪数据跨源对账（涨停池 + 涨跌家数）
+        if: github.event.schedule == '35 1 * * 1-5' || github.event.schedule == '30 2 * * 1-5' || github.event.schedule == '0 6 * * 1-5' || github.event_name == 'workflow_dispatch'
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+        continue-on-error: true
+        run: node scripts/ztpool_crosscheck.mjs --run-id "${{ github.run_id }}"
+      # ── 数据源健康度台账（2026-10-11）：把每天每个源的状态累积成滚动台账（成功率/连续失败/
+      #   最近成功）。补的是**事前可见性**——2026-08-14~09-03 那 14 天 EM 池整体失败，事前
+      #   无任何信号，只能等它彻底挂掉才由别的审计发现。连续失败 ≥3 次才告警（1~2 次多抖动）。
+      #   只读盘中档 + 写 data/source-health.json（随本 job 提交步骤入库）。恒 exit 0。
+      - name: 数据源健康度台账
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+        continue-on-error: true
+        run: node scripts/source_health.mjs
       # ── 任务二 · 盘中候选池（2026-10-09 拆分）：三时点各触发一次，全量重算。
       #   复用刚抓的当日快照（涨幅/量比/主力净流入/PE/PB），筛选口径见
       #   buildIntradayPool；快照缺席/陈旧 → 空池报因（不回落昨收口径——与任务一
@@ -406,7 +426,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/intraday.json data/reports
+          git add data/intraday.json data/source-health.json data/reports
           if git diff --cached --quiet; then
             echo "无变化（非盘中或快照相同），跳过提交"
           else
