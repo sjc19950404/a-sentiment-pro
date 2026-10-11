@@ -298,11 +298,22 @@ jobs:
       # 会经 deploy-pages.yml 的 paths(data/**) 自动触发页面刷新，闭环不变。
       # data/reports/ 一并提交（AI 报告档 + 推送指纹状态）：落 data/** 白名单内，
       # 页面首屏示例与最新报告随数据提交自动上线。
+      # 影子账本推进（2026-10-11 加）：**只记账、不下单**——逐日推进"假设按 A 策略
+      #   执行"的记录，用来**积累真实样本**。A 冰点反转是唯一跑赢基准的策略，但
+      #   242 个交易日只触发 27 次、成交 17 笔，这个量级支撑不了自动下单（那等于把
+      #   样本不足的策略放大执行）。跑几个月攒到 100+ 次触发，再谈接 QMT 实战。
+      #   · 幂等：游标推进过的日期会跳过，重复跑不重算（故可安全放进每日管道）；
+      #   · 研究性质（不产生真实订单、不写生产数据档）→ continue-on-error，
+      #     它自己挂了不该阻断生产管道；但失败会留红叉在 run 里，不会静默过去。
+      - name: 影子账本推进（只记账，不下单）
+        continue-on-error: true
+        run: node scripts/shadow_book.mjs
+
       - name: 提交最新数据
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/ops-alerts-latest.json data/industry_outlier_review.json data/board_rank.json data/paper data/reports ui/kline
+          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/ops-alerts-latest.json data/industry_outlier_review.json data/board_rank.json data/shadow-book.json data/paper data/reports ui/kline
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else

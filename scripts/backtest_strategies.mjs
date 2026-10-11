@@ -28,6 +28,10 @@ import config from '../src/config.js';
 import { ThemeDenoiser } from '../src/themes.js';
 import { quoteSymbol } from '../src/sources.js';
 import { metrics, buildTrades, tradeReturns, buildNav, COSTS, ROUND_COST } from '../src/strategy_bt.js';
+// 日K取数改走共享模块（2026-10-11）：影子账本要用同一条路，口径必须一致，
+//   各自实现一份迟早分叉（详见 src/kline.js 文件头）。
+import { getKline } from '../src/kline.js';
+import * as SHADOW_SIGNAL from '../src/shadow_signal.js';
 
 dns.setDefaultResultOrder('ipv4first');
 
@@ -38,31 +42,6 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const HOLDINGS = [3, 5, 10];
 const r4 = (v) => (v != null ? Math.round(v * 1e4) / 1e4 : null);
-
-// ── 行情：日K（缓存优先，miss 真抓腾讯 ifzq 前复权）─────────────────────────
-// minLen：指数 100（保证历史窗口足够）；个股 20——新股 K 线天然短，一刀切 100 会把
-// 题材成员里的次新股整批拒掉（实测 86 只里 4 只被误杀）。
-async function getKline(sym, minLen = 20) {
-  const cache = path.join(KDIR, sym + '.json');
-  if (existsSync(cache)) return JSON.parse(readFileSync(cache, 'utf8'));
-  for (let att = 0; att < 3; att++) {
-    try {
-      const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${sym},day,,,320,qfq`;
-      const j = await (await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://gu.qq.com/' } })).json();
-      const node = j && j.data && j.data[sym];
-      const rows = node && (node.qfqday || node.day);
-      if (!Array.isArray(rows) || rows.length < minLen) throw new Error(`K线结构异常/过短(${rows ? rows.length : 0} < ${minLen})`);
-      const k = rows.map((r) => ({ date: String(r[0]), open: +r[1], close: +r[2] }))
-        .filter((x) => Number.isFinite(x.open) && x.open > 0 && Number.isFinite(x.close) && x.close > 0);
-      mkdirSync(KDIR, { recursive: true });
-      atomicWriteJSON(cache, JSON.stringify(k));
-      return k;
-    } catch (e) {
-      if (att === 2) throw new Error(`${sym} 日K获取失败: ${e.message}`);
-      await sleep(800 * (att + 1));
-    }
-  }
-}
 
 // ── 主流程 ───────────────────────────────────────────────────────────────────
 const arc = JSON.parse(readFileSync(path.join(ROOT, 'data', 'archive.json'), 'utf8'));
@@ -118,10 +97,9 @@ const lb2Of = (i) => (realDays[i].summary && realDays[i].summary.lb2_count) || 0
 //   ③ 不能用全样本分位定阈值——那等于用未来数据选参数（前视偏差）。
 //   ⇒ 滚动分位：T 日阈值只由 T 日**之前**的窗口计算（先算阈值、再把 T 日值入库，
 //      顺序保证无前视），分布漂移自动跟随；warmup 内历史不足，不出信号、不硬凑。
-const EMO_WIN = 120;     // 滚动窗口（交易日）
-const EMO_LO_Q = 0.15;   // 冰点：低于历史 15 分位
-const EMO_HI_Q = 0.85;   // 过热避险：高于历史 85 分位
-const EMO_WARMUP = 60;   // 攒够 60 天历史才出信号
+// 阈值常量改走 src/shadow_signal.js（2026-10-11）：影子账本与回测必须同口径，
+//   两份定义迟早分叉（详见该文件头），故只留一份、两边 import。
+const { EMO_WIN, EMO_LO_Q, EMO_HI_Q, EMO_WARMUP } = SHADOW_SIGNAL;
 const emoLoAt = [];
 const emoHiAt = [];
 {
