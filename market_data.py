@@ -504,6 +504,38 @@ def derive_breadth(snap: pd.DataFrame) -> dict:
     return {'up': int((chg > 0).sum()), 'down': int((chg < 0).sum()), 'flat': int((chg == 0).sum())}
 
 
+def fetch_breadth_cross() -> dict:
+    """涨跌家数**对账源**：AkShare 乐咕市场活跃度（独立采集，不依赖全市场快照）。
+
+    ⚠ 只用于对账，**绝不顶替** breadth 进历史序列——两者口径不同：
+      · legu 统计**全 A**（实测 up+down+flat+停牌 ≈ 5224 只，含北交所）；
+      · derive_breadth 只数**沪深 A**（quantdash-symbols 覆盖 3558 只，不含北交所）。
+      拿 legu 顶替缺失的 breadth，会让历史序列出现**口径跳变**，比"缺席"更糟：
+      缺席时 P0-2 拒收并显示缺席（**可见**），混入异口径则是静默污染分位（**不可见**）。
+      ——这跟"10-09 缺天补不补"是同一个两难，答案也一样：宁缺毋假。
+
+    ⇒ 正确用法：两边每天各记一份，比对差异。差异异常 → 说明某一侧采集有问题。
+      2026-09-04~09-24 那 16 天 gapB（涨跌家数全缺）正是"快照挂了 breadth 跟着没"，
+      有对账源就能立刻看出"是快照侧错了"，而不是猜。
+    """
+    import akshare as ak
+    df = ak.stock_market_activity_legu()
+    if df is None or df.empty:
+        raise EmptyDataError('stock_market_activity_legu 返回空')
+    m = {str(r['item']).strip(): r['value'] for _, r in df.iterrows()}
+
+    def num(k):
+        v = m.get(k)
+        return int(v) if v is not None and pd.notna(v) else None
+
+    return {
+        'up': num('上涨'), 'down': num('下跌'), 'flat': num('平盘'),
+        'zt': num('涨停'), 'dt': num('跌停'), 'suspended': num('停牌'),
+        'source': 'akshare-legu',
+        'caliber': '全 A（含北交所）；与 breadth 的沪深 A 口径不同——仅对账，不可互换',
+    }
+
+
 def derive_quotes_map(snap: pd.DataFrame, codes: list[str]) -> dict:
     """候选池行情字段映射（契约对齐旧 fetchHotQuotes：量比/PE-TTM/PB，缺失 = null 不造数）。"""
     sub = snap[snap['symbol'].isin(set(codes))]
@@ -524,7 +556,7 @@ def derive_quotes_map(snap: pd.DataFrame, codes: list[str]) -> dict:
 def intraday_raw() -> dict:
     """组装盘中六源（契约与旧 sources.js 逐字段一致）——stdout JSON 供 JS 消费。"""
     errors: list[str] = []
-    hot = pools = breadth = screener = None
+    hot = pools = breadth = screener = breadth_cross = None
     quotes: dict = {}
     main_net: dict = {}
     snap = None
@@ -544,8 +576,13 @@ def intraday_raw() -> dict:
         main_net, screener = fetch_main_net_screener()
     except Exception as e:
         errors.append(f'main-net: {type(e).__name__} {e}')
+    # 对账源独立 try：它挂了只影响对账，绝不牵连主链路（breadth 走它自己的宁缺毋假）。
+    try:
+        breadth_cross = fetch_breadth_cross()
+    except Exception as e:
+        errors.append(f'breadth-cross: {type(e).__name__} {e}')
     out = {
-        'hot': hot, 'pools': pools, 'breadth': breadth,
+        'hot': hot, 'pools': pools, 'breadth': breadth, 'breadthCross': breadth_cross,
         'quotes': quotes, 'mainNet': main_net, 'screener': screener,
         'meta': {
             'generatedAt': datetime.now(BJ).isoformat(timespec='seconds'),
@@ -557,6 +594,7 @@ def intraday_raw() -> dict:
                 'hot=全市场快照派生涨幅榜（旧源为同花顺强势榜，reason 标签口径变化）',
                 'breadth=快照内符号统计（旧源为东财指数涨跌家数）',
                 'quantdash-symbols 路径覆盖本地代码表 3558 只沪深 A（不含北交所）',
+                'breadthCross=AkShare 乐咕全 A 口径（对账源；与 breadth 口径不同，仅比对不互换）',
             ],
         },
     }
