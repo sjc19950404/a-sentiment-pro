@@ -47,6 +47,12 @@ if (existsSync(smokePath)) {
 const verdict = guardVerdict({
   stepOutcome: arg('step-outcome'),
   smoke,
+  // --no-smoke：调用方显式声明「本 job 不产冒烟报告」（非冒烟类 job 复用本告警通道）。
+  //   不加这个开关时 smoke==null 一律判「冒烟档不可读（脚本未走到落盘即崩）」——那句
+  //   判词对真冒烟 job 是对的，但对非冒烟 job 就是把真实失败点（数据违例 / 自检失败）
+  //   掩盖成「工具崩了」，直接带偏排查方向（2026-10-11 Daily Data Health 事故即此：
+  //   口径审计诚实红，告警却说脚本崩）。默认 true（不传 = 旧行为，零回归）。
+  expectSmoke: !flag('no-smoke'),
   at: new Date().toISOString(),
 });
 console.log(`[guard] 终态 ${verdict.status}：${verdict.reason}`);

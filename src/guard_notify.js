@@ -25,7 +25,7 @@ import { smokeFailEvent } from './opsalerts.js';
  * @returns {{status:'PASS'|'BLOCK'|'ERROR', reason:string, event:{at,severity,kind,source,detail}}}
  *   event 为 opsalerts 通道事件（pushOpsAlerts 直接消费）；reason 为 issue 标题级短摘要
  */
-export function guardVerdict({ stepOutcome = null, smoke = null, at = new Date().toISOString() } = {}) {
+export function guardVerdict({ stepOutcome = null, smoke = null, expectSmoke = true, at = new Date().toISOString() } = {}) {
   const day = typeof smoke?.tradeDateAnchored === 'string' ? smoke.tradeDateAnchored : null;
   const srcs = Array.isArray(smoke?.sources) ? smoke.sources : [];
   const passCount = srcs.length ? `${srcs.filter((x) => x && x.ok).length}/${srcs.length}` : null;
@@ -52,12 +52,23 @@ export function guardVerdict({ stepOutcome = null, smoke = null, at = new Date()
     : smoke == null ? '冒烟档不可读（脚本未走到落盘即崩）'
     : smoke.allOk !== false ? `冒烟档为成功态（allOk=${smoke.allOk}），与 step 失败矛盾（超时/报告被覆盖）`
     : `step outcome 异常（${stepOutcome}）`;
+  // ⚠ 判词中性化（2026-10-11）：expectSmoke=false 时 smoke==null 是**预期态**，不是崩溃证据。
+  //   旧判词不分青红皂白一律写「冒烟档不可读（脚本未走到落盘即崩）」+ 前缀「守卫脚本自身
+  //   异常」——对非冒烟 job 而言，这等于凭空断言"工具崩了"，而真实的**数据违例 / 自检失败**
+  //   被这层断言盖住，排查方向直接跑偏（2026-10-11 Daily Data Health：跨档口径审计诚实红
+  //   「pain 停 9-30 ≠ 档案锚 10-08」，收到的告警却说脚本崩，白查半天）。
+  //   中性文案不编造原因：只说清「步骤失败了 + 本 job 无冒烟明细」，真实失败点交 run 日志。
+  const noSmokeDeclared = smoke == null && expectSmoke === false;
+  const head = noSmokeDeclared ? '步骤失败（本 job 不产冒烟报告）' : '守卫脚本自身异常';
+  const detailWhy = noSmokeDeclared
+    ? `step outcome=${stepOutcome}，无冒烟明细可附，失败点见 run 日志`
+    : why;
   return {
     status: 'ERROR',
-    reason: `守卫脚本自身异常：${why}`,
+    reason: `${head}：${detailWhy}`,
     event: {
       at, severity: 'error', kind: 'guard', source: 'smoke',
-      detail: `守卫脚本自身异常：${why} · 失败详情见 run 日志`,
+      detail: `${head}：${detailWhy} · 失败详情见 run 日志`,
     },
   };
 }

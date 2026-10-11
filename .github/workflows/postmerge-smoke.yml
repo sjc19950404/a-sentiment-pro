@@ -114,5 +114,6 @@ jobs:
           node scripts/guard_notify.mjs \
             --step-outcome failure \
             --file .github/workflows/no-smoke-report-for-this-job.json \
+            --no-smoke \
             --run-id "${{ github.run_id }}" \
             --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
