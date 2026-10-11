@@ -79,8 +79,34 @@ jobs:
 
       # 其余健康检查步骤（契约守卫/新鲜度/切片一致性）失败 → 仍走既有 guard_notify。
       #   排除 caliber：否则口径违例会同时收到两条（一条准确 + 一条"脚本崩了"）。
+      # 档案缺交易日检测（2026-10-11 加）：
+      #   2026-10-09 整档缺失是我翻数据时**偶然**发现的——起因是 10-10 那次 run
+      #   cancelled，而 CI 没有任何 backfill 调度，于是这天永久缺失且无人知晓。
+      #   历史遗留的 30 天字段缺口同属此类。本 step 把"静默缺失"变成**红出来**。
+      #   判据：交易日 = 覆盖区间内工作日 − 休市日（calendar 的 trading 是空的、
+      #   days 只记 closed，必须自己算）；**上界取昨天**——今天没采不算缺失，
+      #   否则天天误报，误报会让人习惯性忽略告警，等于没有告警。
+      - name: 档案缺交易日检测
+        id: gapdays
+        run: node scripts/audit_archive_gaps.mjs --json --out data/gap-days-latest.json
+
+      # 缺天专用文案：直书缺哪几天 + 档案末档/日历覆盖——这三样才决定"是不是真缺口"。
+      #   复用 guard_notify 只能得到「步骤失败，明细见 run 日志」，读者还得点进去翻。
+      - name: 缺交易日告警（企微 + issue 兜底）
+        if: steps.gapdays.outcome == 'failure'
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/notify_gap_days.mjs \
+            --file data/gap-days-latest.json \
+            --run-id "${{ github.run_id }}" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      # 其余健康检查步骤（契约守卫/新鲜度/切片一致性）失败 → 仍走既有 guard_notify。
+      #   排除 caliber 与 gapdays：两者各有专用告警，否则同一问题收两条互相打架的告警。
       - name: 守卫结果通知（企微 + issue 兜底）
-        if: failure() && steps.caliber.outcome != 'failure'
+        if: failure() && steps.caliber.outcome != 'failure' && steps.gapdays.outcome != 'failure'
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
