@@ -528,8 +528,8 @@
               "properties": {
                 "key": { "type": "string" },
                 "label": { "type": "string" },
-                "level": { "type": "string" },
-                "dir": { "type": "string" },
+                "level": { "type": ["string", "null"] },
+                "dir": { "type": ["string", "null"] },
                 "confidence": { "type": "string" }
               }
             },
