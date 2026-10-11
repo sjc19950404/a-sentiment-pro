@@ -54,14 +54,33 @@ jobs:
       - name: 归档切片一致性（--check 只读）
         run: node scripts/split_archive.mjs --check
 
+      # --out 由脚本自行落盘（UTF-8 恒定），不靠 shell 重定向（编码随宿主而变：
+      #   PS 默认 UTF-16 / 部分环境 UTF-8 BOM，都会让下游 JSON.parse 失败）。
+      #   退出码即审计结论——违例时 job 照旧红（宁红不假）。
       - name: 跨档口径审计
-        run: node scripts/audit_data_caliber.mjs
+        id: caliber
+        run: node scripts/audit_data_caliber.mjs --json --out data/caliber-latest.json
 
-      # 统一走仓库既有告警通道（OPS_WEBHOOK 企微 + GITHUB_TOKEN issue 兜底），
-      # 不新建 secret、不裸 curl：secret 未配时 guard_notify.mjs 内部跳过推送并
-      # 落日志，且恒 exit 0——通知通道自身故障绝不把 CI 拖红。
+      # 口径审计违例 · 专用文案（2026-10-11 修）：
+      #   之前复用 guard_notify（冒烟语义），判词是「守卫脚本自身异常：冒烟档不可读
+      #   （脚本未走到落盘即崩）」——可审计脚本压根没崩，它诚实红的是「pain 停 9-30
+      #   ≠ 档案锚 10-08」（断供未修）。文案把**数据违例**说成**工具崩了**，直接误导
+      #   排查方向。改走 notify_caliber_fail.mjs：文案直书哪档、哪天、为什么违例。
+      - name: 口径审计违例告警（企微 + issue 兜底）
+        if: steps.caliber.outcome == 'failure'
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/notify_caliber_fail.mjs \
+            --file data/caliber-latest.json \
+            --run-id "${{ github.run_id }}" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      # 其余健康检查步骤（契约守卫/新鲜度/切片一致性）失败 → 仍走既有 guard_notify。
+      #   排除 caliber：否则口径违例会同时收到两条（一条准确 + 一条"脚本崩了"）。
       - name: 守卫结果通知（企微 + issue 兜底）
-        if: failure()
+        if: failure() && steps.caliber.outcome != 'failure'
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -70,7 +89,7 @@ jobs:
           # data/smoke-latest.json（allOk=true），guardVerdict 会判 ERROR 且理由写成
           # 「冒烟档为成功态，与 step 失败矛盾」，issue 标题会误导归因。显式传空档
           # → smoke=null + outcome=failure，仍是 ERROR 级（企微 error + issue 兜底），
-          # 语义正确："健康检查步骤失败"。
+          # 语义正确："健康检查步骤失败"（非冒烟类失败）。
           node scripts/guard_notify.mjs \
             --step-outcome failure \
             --file .github/workflows/no-smoke-report-for-this-job.json \

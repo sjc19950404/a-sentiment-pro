@@ -18,7 +18,7 @@
 //   --json    机读输出（CI / 巡检机器人消费）
 //   --anchor  覆盖锚日（测试用；默认取 archive-index.latestDate）
 // 退出码：0 = 全部 equal/ahead；1 = 存在 behind/missing（诚实红）。
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { stalePainReason } from '../src/pain.js';
@@ -29,6 +29,10 @@ const DATA = path.resolve(HERE, '..', 'data');
 const args = process.argv.slice(2);
 const WANT_JSON = args.includes('--json');
 const ANCHOR_ARG = args.includes('--anchor') ? args[args.indexOf('--anchor') + 1] : null;
+// --out 自行落盘（UTF-8 无 BOM），不依赖 shell 重定向：
+//   重定向的编码随宿主而变——PowerShell 默认 UTF-16、部分环境写 UTF-8 with BOM，
+//   两者都会让下游 JSON.parse 失败（实测本地就炸了）；node 自己写恒定 utf8。
+const OUT_ARG = args.includes('--out') ? args[args.indexOf('--out') + 1] : null;
 
 const readJson = (p) => {
   if (!existsSync(p)) return { __missing: true };
@@ -97,7 +101,9 @@ const bad = rows.filter((r) => r.state === 'behind' || r.state === 'missing'
 const warn = rows.filter((r) => r.state === 'ahead' && AHEAD_OK.has(r.key));
 
 if (WANT_JSON) {
-  console.log(JSON.stringify({ anchor, generatedAt: new Date().toISOString(), ok: bad.length === 0, rows }, null, 2));
+  const payload = JSON.stringify({ anchor, generatedAt: new Date().toISOString(), ok: bad.length === 0, rows }, null, 2);
+  console.log(payload);
+  if (OUT_ARG) writeFileSync(OUT_ARG, payload, 'utf8'); // 自检落盘，编码恒定
   if (bad.length) process.exit(1); // 机读模式同样诚实红（CI 消费退出码）
 } else {
   console.log(`── 跨档口径审计（档案锚 ${anchor}）──`);
