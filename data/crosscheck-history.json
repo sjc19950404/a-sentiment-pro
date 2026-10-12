@@ -1,0 +1,22 @@
+{
+  "kind": "crosscheck-history",
+  "version": 1,
+  "days": [
+    {
+      "date": "2026-10-12",
+      "zt": {
+        "verdict": "UNAVAILABLE",
+        "primary": 29,
+        "derived": null,
+        "countDiff": null,
+        "divergeRate": null
+      },
+      "breadth": {
+        "verdict": "UNAVAILABLE",
+        "snapUpRatio": null,
+        "leguUpRatio": null,
+        "ratioDiffPct": null
+      }
+    }
+  ]
+}

@@ -2822,7 +2822,9 @@
     "down": 2708,
     "flat": 49
   },
-  "sourcesFailed": [],
+  "sourcesFailed": [
+    "market_data: 数据层进程失败（六源全部缺席，保留上次快照）"
+  ],
   "prevCapturedAtBJ": "2026-10-12 09:50",
   "prevPools": {
     "zt": 26,
@@ -2851,5 +2853,6 @@
         "hard_board_rate": 0.5172
       }
     }
-  }
+  },
+  "lastFailedAt": "2026-10-12T02:41:56.295Z"
 }

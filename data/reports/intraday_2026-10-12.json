@@ -4,16 +4,16 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-12",
- "generated_at": "2026-10-12T01:52:02.904Z",
+ "generated_at": "2026-10-12T02:45:57.389Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "fresh",
+   "dual_track": "stale",
    "signals": "fresh",
-   "global": "fresh",
-   "backtest": "fresh",
+   "global": "stale",
+   "backtest": "stale",
    "ops_alerts": "fresh",
    "intraday": "fresh",
    "paper_account": "missing"
@@ -33,12 +33,12 @@
    "confidence": "missing"
   },
   "pnl_daily": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "pnl_cumulative": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "max_drawdown_daily": {
    "source": "missing",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -94,22 +94,17 @@
   }
  },
  "payload": {
-  "date": "2026-10-08",
+  "date": "2026-10-09",
   "grid_triggers": null,
   "counter_trend_losses": null,
-  "pnl_daily": -0.004997,
-  "pnl_cumulative": -0.019927,
+  "pnl_daily": null,
+  "pnl_cumulative": null,
   "max_drawdown_daily": null,
-  "trend_switch_hits": 0,
+  "trend_switch_hits": 1,
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": {
-   "key": "recover",
-   "label": "回暖",
-   "cap": 0.5,
-   "position_range": "30%~50%"
-  },
+  "regime": null,
   "circuit_breaker": {
    "dd_tier": null,
    "hard_stop_triggered": null,
@@ -133,50 +128,49 @@
   "nav_realtime": null,
   "approx": false,
   "drawdown_vs_threshold": {
-   "dd_now": 0.141616,
+   "dd_now": null,
    "tier_edges": [
     0.09,
     0.15
    ],
-   "distance_pp": 0.84,
+   "distance_pp": null,
    "basis": "归档轨·运行回撤（非当日）"
   },
   "simulation_stock": {
    "sentiment_cycle": {
-    "phase": "fermentation",
-    "phase_label": "发酵期",
-    "regime_raw": "recover",
-    "phase_source": "regime=recover · 分位 32.2 · 方向 up（recover 细分阈值 <30 为启动期）",
-    "limit_up_count": 43,
-    "highest_chain": null,
-    "broken_limit_ratio": 0.4266666666666667,
-    "yesterday_chain_performance": null,
+    "phase": "climax",
+    "phase_label": "高潮期",
+    "regime_raw": "climax",
+    "phase_source": "regime=climax · 分位 72.9 · 方向 flat",
+    "limit_up_count": 69,
+    "highest_chain": 8,
+    "broken_limit_ratio": 0.1686746987951807,
+    "yesterday_chain_performance": 3.11,
     "warning_signals": [
-     "昨涨停今日翻绿 49%、高位板晋级失败 40%，追高盈亏各半",
-     "大面 4 只：澳弘电子 -10%、协和电子 -10%、雪龙集团 -9.98%、中新赛克 -8.65%",
-     "宽度收窄（站上20日线仅 31.5%）",
-     "连板梯队口径陈旧已拒收（pain 陈旧（curDate=2026-09-30 ≠ 档案锚 2026-10-08，连板梯队口径落后））"
+     "昨涨停今日翻绿仅 37%、高位板晋级失败 60%，赚钱效应占优",
+     "大面 2 只：彩蝶实业 -10.01%、陆家嘴 -8.72%",
+     "宽度收窄（站上20日线仅 34.7%）"
     ]
    },
-   "position_suggestion": "neutral",
-   "pool_basis": "今日无符合条件标的（宁缺毋假，不凑数填充）；hot 强势榜（全市场筛选榜缺席的降级底座；≈涨停集中营，3-7% 带几乎恒空） 实时现算（每轮全量重算，不沿用上轮）：涨幅 3-7% · 量比 >2 · 未涨停未一字（pools.zt_codes）· 主力净流入为正 · 已滤昨日涨停 69 只黑名单；扫 200 只，剔除——带外 0 / 量比不足 0 / 已涨停 0 / 跌停 0 / 昨日涨停 0 / 净流出或无源 0 / 字段缺失 190；得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）",
+   "position_suggestion": "wait",
+   "pool_basis": "今日无符合条件标的（宁缺毋假，不凑数填充）；hot 强势榜（全市场筛选榜缺席的降级底座；≈涨停集中营，3-7% 带几乎恒空） 实时现算（每轮全量重算，不沿用上轮）：涨幅 3-7% · 量比 >2 · 未涨停未一字（pools.zt_codes）· 主力净流入为正 · 已滤昨日涨停 69 只黑名单；扫 200 只，剔除——带外 0 / 量比不足 0 / 已涨停 0 / 跌停 0 / 昨日涨停 0 / 净流出或无源 0 / 字段缺失 189；得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）",
    "candidate_pool": [],
    "streak_pool": [],
-   "streak_pool_basis": "连板池：今日无符合条件标的（宁缺毋假，不凑数填充）；连板池实时现算（hot 强势榜（全市场筛选榜缺席的降级底座；≈涨停集中营，3-7% 带几乎恒空） ∩ zt_lb 连板≥2，白名单=昨日涨停且今日非一字）：连板≥2（昨日涨停蕴含）· 今日非一字（fbt>09:25）· 量比 >2 · 主力净流入为正——不套涨幅带、不剔已涨停（连板池语义，2026-10-10 用户指令）；zt_lb 连板≥2 共 12 只，宇宙在榜 10 只，剔除——一字 0 / 量比不足 0 / 净流出或无源 0 / 字段缺失 10；梯队分=连板高度0.6+主力净流入0.4（缺席重归一，与趋势池量价评分物理独立）；封单质量=seal_amount（东财 fund）",
+   "streak_pool_basis": "连板池：今日无符合条件标的（宁缺毋假，不凑数填充）；连板池实时现算（hot 强势榜（全市场筛选榜缺席的降级底座；≈涨停集中营，3-7% 带几乎恒空） ∩ zt_lb 连板≥2，白名单=昨日涨停且今日非一字）：连板≥2（昨日涨停蕴含）· 今日非一字（fbt>09:25）· 量比 >2 · 主力净流入为正——不套涨幅带、不剔已涨停（连板池语义，2026-10-10 用户指令）；zt_lb 连板≥2 共 13 只，宇宙在榜 11 只，剔除——一字 0 / 量比不足 0 / 净流出或无源 0 / 字段缺失 11；梯队分=连板高度0.6+主力净流入0.4（缺席重归一，与趋势池量价评分物理独立）；封单质量=seal_amount（东财 fund）",
    "trend_pool_mode": "trend",
-   "snapshotAtBJ": "2026-10-12 09:50",
+   "snapshotAtBJ": "2026-10-12 10:16",
    "live_emotion": {
     "date": "20261012",
-    "emotion": "震荡",
-    "score": 51,
+    "emotion": "冰点",
+    "score": 45,
     "metrics": {
-     "limit_up_count": 26,
-     "continuous_count": 12,
-     "broken_rate": 0.3462,
+     "limit_up_count": 29,
+     "continuous_count": 13,
+     "broken_rate": 0.4828,
      "max_board": 10,
-     "theme_concentration": 0.1923,
-     "theme_top": "电网设备",
-     "hard_board_rate": 0.6538
+     "theme_concentration": 0.1724,
+     "theme_top": "出版",
+     "hard_board_rate": 0.5172
     }
    },
    "simulation_positions": null,
@@ -229,11 +223,11 @@
  },
  "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
  "push_verification": {
-  "checkedAtBJ": "09:52",
-  "snapshotAtBJ": "2026-10-12 09:50",
+  "checkedAtBJ": "10:45",
+  "snapshotAtBJ": "2026-10-12 10:16",
   "tradeDate": "2026-10-12",
   "trend_pool_mode": "trend",
-  "minutes_to_close": 308,
+  "minutes_to_close": 255,
   "mode_degraded": false,
   "trend": {
    "checked": 0,
