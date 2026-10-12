@@ -12,7 +12,7 @@ import { validateArchive } from '../validate.js';
 import { resolveHolidays } from '../calendar.js';
 import { assessFreshness } from '../freshness.js';
 import { buildIndex, buildShards, shardName, buildRecent, buildSignals, RECENT_DAYS, RECENT_FILE, SIGNALS_FILE } from '../archive_split.js';
-import { buildReasonCodes, encodeArchive } from '../lhb_codec.js';
+import { buildReasonCodes, encodeArchive, stripLhbAggr } from '../lhb_codec.js';
 import { marketAlerts } from '../alerts.js';
 import { aggregateByCode } from '../lhb.js';
 import { healthReport } from '../health.js';
@@ -46,11 +46,13 @@ export function writeArchive(archive, filePath) {
   //   本次由 backfill_relative.mjs 走 writeArchive 回写存量档时暴露。
   const codes = buildReasonCodes(archive.all_days);
   const packed = encodeArchive(archive, codes, { deflate: true });
+  // 体积纪律：主档不持久化派生字段 lhb_aggr；分片滚动窗用**完整** packed 现算（见 recalc_lhb_daily.mjs）
+  const mainPacked = stripLhbAggr(packed);
   // 紧凑写盘：`rc` 是数字下标数组，加 2 空格缩进会被 JSON 展开成一行一个数字，
   // 缩进开销足以吃掉码表 92% 的收益（实测 4.99MB → 9.44MB，比压缩前还大）。
   // H-4（2026-10-07）：原子替换（同目录 tmp + rename）——裸写中途被杀会留半截主档，
-  // 且下游读到损坏档会静默回退旧快照。
-  atomicWriteJSON(p, JSON.stringify(packed));
+  // 且下游读到损坏档会静默会退旧快照。
+  atomicWriteJSON(p, JSON.stringify(mainPacked));
   // 切片与主档**同源生成**：每次写主档都重建切片，杜绝"两个文件各自演化"。
   // 判据是"写的是默认主档"（按解析后绝对路径比对）——pipeline 恒传默认路径，
   // 必须生成切片；测试/临时 --out 写别的位置时不污染 data/ 下的切片。

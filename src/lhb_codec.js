@@ -350,6 +350,31 @@ export const REASON_PLACEHOLDER = '\u2014'; // —
  * @returns {{codes:number, days:number, bytes:number}} 写出信息
  * @throws 往返不一致时抛错，**不写盘**
  */
+/**
+ * 体积纪律：主档写盘前剥除派生字段 lhb_aggr。
+ *
+ * lhb_aggr 是可由 day.lhb 现算的派生聚合（src/lhb.js aggregateByCode），持久化进主档
+ * 会让主档体积翻倍（实测 5.28MB → 10.9MB），且制造"有的天有 lhb_aggr、有的天没有"的
+ * 第三种不一致形态，触发 audit_lhb_caliber 的「主档不含 lhb_aggr」体积纪律守卫。
+ * 展示层需要的 lhb_aggr 由**分片滚动窗**在切片层现算（archive_split.buildRecent +
+ * aggregateByCode），主档无需留存。
+ *
+ * 仅作用于主档：调用方（writeArchive / refreshMetaOnly）仍把**完整** packed 传给
+ * writeShards，分片保留 lhb_aggr。返回新对象，不修改入参（幂等、无 lhb_aggr 时零分配）。
+ */
+export function stripLhbAggr(archive) {
+  const days = (archive && archive.all_days) || [];
+  if (!days.some((d) => d && d.lhb_aggr != null)) return archive;
+  return {
+    ...archive,
+    all_days: days.map((d) => {
+      if (d == null || d.lhb_aggr == null) return d;
+      const { lhb_aggr, ...rest } = d;
+      return rest;
+    }),
+  };
+}
+
 export function writeArchiveSafely(filePath, archive, fsMod) {
   const days = archive.all_days || [];
   // 编码前：收集每天的 (日期 → reason 文本集合)，作为"语义指纹"
@@ -364,7 +389,10 @@ export function writeArchiveSafely(filePath, archive, fsMod) {
   // audit_lhb_caliber 断言"主档写盘态 lhb 已提子"，且分片/前端按 _sub 语义处理。
   // 若此处不提子，就与 split_archive / pipeline 写出的形态不一致，属"两套口径"。
   const packed = encodeArchive(archive, codes, { deflate: true });
-  const back = decodeArchive(JSON.parse(JSON.stringify(packed)));
+  // 体积纪律：主档不持久化派生字段 lhb_aggr（分片滚动窗展示层现算，见 recalc_lhb_daily.mjs）。
+  // 仅作用于主档写盘——分片由调用方用完整 packed 生成，必须保留 lhb_aggr。
+  const mainPacked = stripLhbAggr(packed);
+  const back = decodeArchive(JSON.parse(JSON.stringify(mainPacked)));
   const backDays = back.all_days || [];
   const count = (list) => list.reduce((n, d) => n + (d.lhb || []).length, 0);
   const placeholder = backDays.some((d) => (d.lhb || []).some((r) => r.reason === REASON_PLACEHOLDER));
@@ -377,7 +405,7 @@ export function writeArchiveSafely(filePath, archive, fsMod) {
     e.code = 'ROUNDTRIP_MISMATCH';
     throw e;
   }
-  const text = JSON.stringify(packed); // 紧凑：缩进会白吃压缩收益（4.99MB → 9.22MB）
+  const text = JSON.stringify(mainPacked); // 紧凑：缩进会白吃压缩收益（4.99MB → 9.22MB）
   // H-4：原子替换（注入了 renameSync 时 tmp+rename；测试 mock 缺它则降级直写——
   // 老形态 `writeFileSync(filePath, text, 'utf8')` 只在降级分支保留，语义不变）。
   if (canAtomic(fsMod)) atomicSwap(fsMod, filePath, text);

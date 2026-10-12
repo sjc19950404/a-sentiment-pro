@@ -12,6 +12,7 @@ import {
   buildReasonCodes, encodeDay, decodeDay, encodeArchive, decodeArchive,
   deflateDay, inflateDay, pickDay, pendingFields, SUBSCRIBE_FIELDS, compressionStats,
   writeArchiveSafely, readArchiveForEdit, appendNote, dedupeNote, writeJsonStable,
+  stripLhbAggr,
 } from '../src/lhb_codec.js';
 
 /** 键序无关的深比较（数组顺序仍然敏感——顺序承载语义，如 rc 下标序列）。 */
@@ -250,13 +251,17 @@ test('落盘：writeArchiveSafely 写出的是紧凑压缩态（不是明文、�
   assert.equal(info.days, arc.all_days.length);
 });
 
-test('落盘：writeArchiveSafely 写出的档可被 decodeArchive 完整还原（往返闭环）', () => {
+test('落盘：writeArchiveSafely 写出的档可被 decodeArchive 完整还原（往返闭环，且主档不持久化派生字段 lhb_aggr）', () => {
   const written = [];
   const fsMod = { writeFileSync: (p, text) => written.push(text) };
   const arc = mkArc();
   writeArchiveSafely('ignored.json', arc, fsMod);
   const back = decodeArchive(JSON.parse(written[0]));
-  assert.equal(norm(back.all_days), norm(arc.all_days), '写盘→读回必须逐字段等价');
+  // 体积纪律：lhb_aggr 是可由 day.lhb 现算的派生字段，主档写盘必须剥除（审计「主档不含 lhb_aggr」），
+  // 故往返闭环的判据是「除 lhb_aggr 外逐字段等价」——它本就不该落盘、可由 lhb 还原。
+  const expected = stripLhbAggr(arc).all_days;
+  assert.equal(norm(back.all_days), norm(expected), '写盘→读回必须逐字段等价（lhb_aggr 派生字段不落盘）');
+  assert.ok(back.all_days.every((d) => d.lhb_aggr == null), '主档写盘后不得残留 lhb_aggr（体积纪律）');
 });
 
 test('落盘：往返不一致时拒绝写盘（不得静默落坏档）', () => {

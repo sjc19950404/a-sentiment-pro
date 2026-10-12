@@ -15,7 +15,7 @@ import { fetchLive, LhbNotPublishedError, applyLhb, fetchLhb, fetchSeats } from 
 import { todayBeijing, isTradingDay } from './util.js';
 import { resolveHolidays } from './calendar.js';
 import { applyFreshnessMeta, applyPhaseMeta, freshnessKey } from './freshness.js';
-import { buildReasonCodes, encodeArchive, decodeArchive } from './lhb_codec.js';
+import { buildReasonCodes, encodeArchive, decodeArchive, stripLhbAggr } from './lhb_codec.js';
 // 运维告警（降维预埋 · 2026-10-02）：拦截器（freshness/lastAttempt/imputed/missing/dataQuality）
 // 的坏事实 → 结构化事件 → 落盘 + 可选企微推送（OPS_WEBHOOK 环境变量，未配置则零打扰）。
 import { opsEventsFromArchive, writeOpsAlerts, pushOpsAlerts } from './opsalerts.js';
@@ -336,7 +336,9 @@ function refreshMetaOnly(dataPath, now, attempt) {
   //   生产班次连续红、EOD 提交被拦的根因；周六 dispatch CI 复现 242 天顶层带 lhb）。
   //   本地实证：encodeArchive(deflate:true) 输出 0 顶层/242 _sub.lhb，其余环节全对。
   const packed = encodeArchive(a, buildReasonCodes(a.all_days), { deflate: true });
-  atomicWriteJSON(dataPath, JSON.stringify(packed));
+  // 体积纪律：主档不持久化派生字段 lhb_aggr；分片用完整 packed（见 recalc_lhb_daily.mjs）
+  const mainPacked = stripLhbAggr(packed);
+  atomicWriteJSON(dataPath, JSON.stringify(mainPacked));
   // 切片必须跟着刷新：首屏读的是 archive-index.json 的 meta（相位/新鲜度），
   // 只更新主档会让页面顶部的相位标签与 STALE 标记停在旧值上——而这两者恰恰是
   // 「数据是否可信」的唯一提示，过期比没有更危险。
