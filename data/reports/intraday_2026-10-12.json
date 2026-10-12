@@ -240,11 +240,11 @@
  },
  "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
  "push_verification": {
-  "checkedAtBJ": "14:08",
-  "snapshotAtBJ": "2026-10-12 14:07",
+  "checkedAtBJ": "21:43",
+  "snapshotAtBJ": "2026-10-12 14:58",
   "tradeDate": "2026-10-12",
   "trend_pool_mode": "trend",
-  "minutes_to_close": 52,
+  "minutes_to_close": -403,
   "mode_degraded": false,
   "trend": {
    "checked": 0,
@@ -254,7 +254,30 @@
    "checked": 0,
    "removed": []
   },
-  "applied": true,
-  "note": null
+  "applied": false,
+  "note": "快照非报告构建拍（构建 2026-10-12 14:07 / 复核 2026-10-12 14:58）→ 时点判据不剔除（防底座换血误伤档案）；结构判据照常恒剔除"
+ },
+ "caliber_review": {
+  "reviewedAtBJ": "2026-10-12 21:43",
+  "tradeDate": "2026-10-12",
+  "ztpoolDate": null,
+  "close_emotion": null,
+  "emotion_at_push": {
+   "date": "20261012",
+   "emotion": "震荡",
+   "score": 49,
+   "metrics": {
+    "limit_up_count": 42,
+    "continuous_count": 17,
+    "broken_rate": 0.5476,
+    "max_board": 10,
+    "theme_concentration": 0.1429,
+    "theme_top": "出版",
+    "hard_board_rate": 0.4524
+   }
+  },
+  "pool_outcome": null,
+  "conflicts": [],
+  "note": "ztpool_history 无当日收盘档（16:00 本地任务未跑或未入库）→ 本轮跳过，下一班次补（幂等覆盖）"
  }
 }

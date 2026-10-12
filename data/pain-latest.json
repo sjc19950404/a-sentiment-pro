@@ -1,149 +1,200 @@
 {
- "date": "2026-10-08",
- "prevZtCount": 43,
+ "date": "2026-10-09",
+ "prevZtCount": 69,
  "perf": {
-  "n": 43,
-  "universe": 43,
+  "n": 69,
+  "universe": 69,
   "missing": 0,
   "reliable": true,
-  "avg": 3.11,
-  "median": 1.95,
-  "lossRatio": 0.37,
-  "worst": -10.01,
-  "best": 24.12,
-  "limitUpAgain": 13,
-  "limitDown": 1,
-  "bigLoss": 2,
+  "avg": 1.81,
+  "median": 1.45,
+  "lossRatio": 0.39,
+  "worst": -10,
+  "best": 10.1,
+  "limitUpAgain": 18,
+  "limitDown": 4,
+  "bigLoss": 5,
   "note": null
  },
  "advance": {
-  "n": 10,
+  "n": 12,
   "kept": 4,
-  "failed": 6,
-  "failRate": 0.6,
+  "failed": 8,
+  "failRate": 0.67,
   "byTier": {
    "2": {
-    "n": 3,
-    "kept": 0,
-    "failed": 3,
-    "failRate": 1
+    "n": 8,
+    "kept": 1,
+    "failed": 7,
+    "failRate": 0.88
    },
    "3": {
-    "n": 4,
-    "kept": 1,
-    "failed": 3,
-    "failRate": 0.75
+    "n": 0,
+    "kept": 0,
+    "failed": 0,
+    "failRate": null
    },
    "4+": {
-    "n": 3,
+    "n": 4,
     "kept": 3,
-    "failed": 0,
-    "failRate": 0
+    "failed": 1,
+    "failRate": 0.25
    }
   },
   "reliable": true,
-  "maxLb": 8,
+  "maxLb": 9,
   "detail": [
    {
     "code": "600825",
-    "lb": 8,
-    "chg": 10.01,
-    "kept": true
-   },
-   {
-    "code": "600241",
-    "lb": 4,
-    "chg": 10.01,
+    "lb": 9,
+    "chg": 9.98,
     "kept": true
    },
    {
     "code": "002242",
-    "lb": 4,
-    "chg": 10.04,
+    "lb": 5,
+    "chg": 9.98,
     "kept": true
    },
    {
-    "code": "002866",
-    "lb": 3,
-    "chg": -1.45,
-    "kept": false
-   },
-   {
-    "code": "605303",
-    "lb": 3,
-    "chg": 2.16,
-    "kept": false
-   },
-   {
-    "code": "603200",
-    "lb": 3,
-    "chg": 9.57,
-    "kept": false
+    "code": "600241",
+    "lb": 5,
+    "chg": 10.03,
+    "kept": true
    },
    {
     "code": "002058",
-    "lb": 3,
-    "chg": 9.99,
+    "lb": 4,
+    "chg": 3.52,
+    "kept": false
+   },
+   {
+    "code": "001336",
+    "lb": 2,
+    "chg": -9.99,
+    "kept": false
+   },
+   {
+    "code": "001300",
+    "lb": 2,
+    "chg": -9.89,
+    "kept": false
+   },
+   {
+    "code": "600408",
+    "lb": 2,
+    "chg": -6.61,
+    "kept": false
+   },
+   {
+    "code": "002805",
+    "lb": 2,
+    "chg": -2.98,
+    "kept": false
+   },
+   {
+    "code": "600400",
+    "lb": 2,
+    "chg": -1.26,
+    "kept": false
+   },
+   {
+    "code": "002733",
+    "lb": 2,
+    "chg": 2.12,
+    "kept": false
+   },
+   {
+    "code": "300530",
+    "lb": 2,
+    "chg": 2.28,
+    "kept": false
+   },
+   {
+    "code": "600812",
+    "lb": 2,
+    "chg": 9.95,
     "kept": true
-   },
-   {
-    "code": "600663",
-    "lb": 2,
-    "chg": -8.72,
-    "kept": false
-   },
-   {
-    "code": "603928",
-    "lb": 2,
-    "chg": -4.8,
-    "kept": false
-   },
-   {
-    "code": "603906",
-    "lb": 2,
-    "chg": 2.05,
-    "kept": false
    }
   ],
   "note": null
  },
  "bigLoss": {
-  "n": 2,
+  "n": 5,
   "list": [
    {
-    "code": "603073",
-    "name": "彩蝶实业",
-    "chg": -10.01
+    "code": "605177",
+    "name": "东亚药业",
+    "chg": -10
    },
    {
-    "code": "600663",
-    "name": "陆家嘴",
-    "chg": -8.72
+    "code": "001336",
+    "name": "楚环科技",
+    "chg": -9.99
+   },
+   {
+    "code": "601086",
+    "name": "国芳集团",
+    "chg": -9.97
+   },
+   {
+    "code": "001300",
+    "name": "三柏硕",
+    "chg": -9.89
+   },
+   {
+    "code": "600127",
+    "name": "金健米业",
+    "chg": -8.43
    }
   ]
  },
  "skyFloor": {
-  "n": 2,
+  "n": 6,
   "list": [
    {
-    "code": "002866",
-    "name": "传艺科技",
-    "chg": -1.45,
-    "amplitude": 16
+    "code": "001300",
+    "name": "三柏硕",
+    "chg": -9.89,
+    "amplitude": 20.1
    },
    {
-    "code": "603928",
-    "name": "兴业股份",
-    "chg": -4.8,
-    "amplitude": 15.3
+    "code": "600127",
+    "name": "金健米业",
+    "chg": -8.43,
+    "amplitude": 19
+   },
+   {
+    "code": "600371",
+    "name": "万向德农",
+    "chg": -6.28,
+    "amplitude": 18
+   },
+   {
+    "code": "300981",
+    "name": "中红医疗",
+    "chg": -4.58,
+    "amplitude": 16.3
+   },
+   {
+    "code": "600354",
+    "name": "敦煌种业",
+    "chg": -6.81,
+    "amplitude": 15.8
+   },
+   {
+    "code": "001336",
+    "name": "楚环科技",
+    "chg": -9.99,
+    "amplitude": 15.1
    }
   ]
  },
- "scanned": 43,
+ "scanned": 69,
  "verdict": {
   "level": "strong",
   "label": "接力顺畅",
-  "reason": "昨涨停今日翻绿仅 37%、高位板晋级失败 60%，赚钱效应占优"
+  "reason": "昨涨停今日翻绿仅 39%、高位板晋级失败 67%，赚钱效应占优"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -154,6 +205,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-10-11T23:50:46.227Z",
- "curDate": "2026-10-09"
+ "generatedAt": "2026-10-12T13:37:57.025Z",
+ "curDate": "2026-10-12"
 }

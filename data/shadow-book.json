@@ -4,7 +4,7 @@
   "strategy": "A_ice_reversal",
   "holdN": 5,
   "startedAt": "2026-10-11T14:25:21.733Z",
-  "cursor": "2026-10-09",
+  "cursor": "2026-10-12",
   "hist": [
     75.5,
     53.2,
@@ -248,7 +248,8 @@
     75.9,
     64.4,
     58.3,
-    76.7
+    76.7,
+    51.5
   ],
   "position": null,
   "pending": null,
@@ -262,8 +263,8 @@
     "avgRet": null,
     "totalRet": null,
     "open": false,
-    "cursor": "2026-10-09",
-    "updatedAt": "2026-10-11T23:53:26.530Z"
+    "cursor": "2026-10-12",
+    "updatedAt": "2026-10-12T13:43:57.223Z"
   },
   "disclaimer": "影子账本 = 假设执行记录，非真实成交，不构成投资建议；样本足够前不作为任何自动下单依据。"
 }
