@@ -42,7 +42,13 @@ const nz = (v) => (v === 0 ? 0 : v);
 export const GLOBAL_SYMBOLS = [
   // ① A 股外盘代理（权重最高）：长假期间唯一还在交易、且直接定价 A 股权重的品种
   { key: 'a50', code: 'hf_CHA50CFD', name: '富时中国A50期货', kind: 'hf', role: 'a_share_proxy',
-    note: '新加坡交易所，A 股休市期间照常交易；长假里唯一能实时反映外资对 A 股定价的品种' },
+    // ★ 夜盘收盘锚点（2026-10-13 拍板）：SGX 夜盘 17:00–次日 05:15（北京），
+    //   05:15 收盘集合竞价出结算价。报告口径取「富时A50期货夜盘」——仅在北京 05:15
+    //   后的抓取才采信为夜盘收盘；早于此时点 = 夜盘未收，显示「夜盘未收」、绝不取盘中瞬时价。
+    sessionAnchor: { closeBeijing: '05:15' },
+    note: '新加坡交易所。夜盘 17:00–次日 05:15（北京），05:15 收盘集合竞价、结算价出清。'
+      + '报告口径取「富时A50期货夜盘」——仅在北京 05:15 后的抓取才采信为夜盘收盘，'
+      + '早于此时点显示「夜盘未收」、绝不取盘中瞬时价' },
   // ② 美股宽基
   { key: 'dji', code: 'gb_$dji', name: '道琼斯', kind: 'us', role: 'us_index',
     note: '金融/消费权重高，与 A 股成长主线关联最弱——只作广度参考，不作方向锚' },
@@ -101,6 +107,7 @@ export const QUOTE_STATE = {
   PREOPEN: 'preopen',             // 会话未开盘（open/high/low 全 0）→ chgPct = null
   NO_TRADE: 'no-trade',           // 数据源给的是平盘占位（last==prevClose 且 量=0 且 振幅=0）
   MISSING: 'missing',             // 字段缺失/解析不出 latest
+  NIGHT_OPEN: 'night-open',       // 连续合约（如 A50）夜盘尚未收盘，取到的是盘中瞬时价，不当收盘用
 };
 
 /** 判断美股行情是否「本会话尚无成交」——判据写死在常量里，便于守卫扫描 */
@@ -110,8 +117,15 @@ export const NO_TRADE_MIN_AMPLITUDE = 0;   // 高-低 <= 0 视为无振幅
  * 由归一化后的字段推断行情状态。
  * ⚠ 一律**基于可核验的字段证据**判断，不靠"看起来像 0"这种猜测。
  */
-export function inferQuoteState(q, kind) {
+export function inferQuoteState(q, sym, genDate) {
+  const kind = typeof sym === 'string' ? sym : (sym && sym.kind);
   if (!q || q.last == null) return QUOTE_STATE.MISSING;
+  // 连续合约带夜盘锚点（如富时A50）：抓取时刻早于收盘锚点 → 夜盘未收，
+  // 此刻取到的 last 是盘中瞬时价，绝不能当收盘价渲染（2026-10-13 拍板）。
+  const anchor = (sym && typeof sym === 'object') ? sym.sessionAnchor : null;
+  if (anchor && kind === 'hf') {
+    if (!nightAnchorReady(genDate, anchor)) return QUOTE_STATE.NIGHT_OPEN;
+  }
   // 只有美股/港股这种"有明确开盘收盘"的会话型品种才可能 preopen；
   //   期货/汇率/商品是连续交易，open/high/low 为 0 只说明数据源没给，不等于没开盘。
   const sessionKinds = kind === 'us' || kind === 'hk';
@@ -195,6 +209,32 @@ export function usSessionReadiness(date) {
     return { ready: false, etMin, etText, reason: `美东 ${etText} 刚收盘（${US_SETTLE_BUFFER_MIN} 分钟结算缓冲内），收盘价可能尚未稳定` };
   }
   return { ready: true, etMin, etText, reason: `美东 ${etText} 已收盘（≥16:30 ET），可采信当日收盘` };
+}
+
+/** 给定时刻 → 北京（UTC+8）当日的"分钟数"（0..1439） */
+export function beijingMinutesOf(date) {
+  const d = date instanceof Date ? date : new Date(date);
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return null;
+  const mins = (d.getUTCHours() + 8) * 60 + d.getUTCMinutes();
+  return ((mins % 1440) + 1440) % 1440;
+}
+
+/**
+ * 连续合约带夜盘锚点：抓取时刻（北京）是否落在"夜盘已收盘、可采信"窗口。
+ * SGX 富时A50 夜盘 17:00–次日 05:15（北京），05:15 收盘集合竞价出结算价；
+ * 故**可采信窗口 = 北京 05:15 ≤ t < 17:00**（其余时段夜盘仍交易中 / 未收）。
+ * 窗口外 → 此刻取到的 last 只是盘中瞬时价，不应当收盘价用（2026-10-13 拍板）。
+ * @param {Date|string} date 快照 generatedAt
+ * @param {{closeBeijing?: string}} anchor 收盘锚点（北京，如 '05:15'）
+ */
+export function nightAnchorReady(date, anchor) {
+  if (!date || !anchor) return false;
+  const min = beijingMinutesOf(date);
+  if (min == null) return false;
+  const [h, m] = String(anchor.closeBeijing || '05:15').split(':').map((x) => +x);
+  const anchorMin = (h || 0) * 60 + (m || 0);
+  const SESSION_OPEN_MIN = 17 * 60; // 夜盘 17:00（北京）开盘，故 05:15–17:00 之间才是已收盘可采信窗口
+  return min >= anchorMin && min < SESSION_OPEN_MIN;
 }
 
 // ── 与 A 股的映射：写成数据，不写进 if ──────────────────────────────────────
@@ -308,7 +348,7 @@ export function parseSinaVars(text) {
  *     只有 state === OK 时才采信 reported。
  * 同时保留数据源原值 chgPctReported，两者不一致即说明口径漂移。
  */
-export function normalizeQuote(sym, fields) {
+export function normalizeQuote(sym, fields, genDate) {
   const dp = GLOBAL_DP[sym.key] != null ? GLOBAL_DP[sym.key] : 2;
   const base = { key: sym.key, code: sym.code, name: sym.name, kind: sym.kind, role: sym.role,
     note: sym.note || null, ok: false, state: QUOTE_STATE.MISSING, stateText: '未取到',
@@ -319,16 +359,19 @@ export function normalizeQuote(sym, fields) {
   if (!fields || !fields.length) return base;
   const q = NORMALIZERS[sym.kind](fields);
   if (!q || q.last == null) return { ...base, ...(q || {}), ok: false, state: QUOTE_STATE.MISSING };
-  const state = inferQuoteState(q, sym.kind);
+  const state = inferQuoteState(q, sym, genDate);
   if (state !== QUOTE_STATE.OK) {
-    // 命中"未开盘/无成交"：保留 last 与 prevClose 供**人工核对**（价格本身是真值），
+    // 命中"未开盘/无成交/夜盘未收"：保留 last 与 prevClose 供**人工核对**（价格本身是真值），
     //   但涨跌幅一律 null —— 让人一眼看见"这是没数据，不是没波动"。
+    const label = state === QUOTE_STATE.PREOPEN ? '盘前无数据'
+      : state === QUOTE_STATE.NIGHT_OPEN ? '夜盘未收'
+      : '无成交';
     return { ...base, ...q, name: sym.name || q.name, ok: false, state,
       chg: null, chgPct: null,
       chgPctReported: q.chgPctReported ?? null,
       lastText: fmtNum(q.last, dp),
-      chgPctText: state === QUOTE_STATE.PREOPEN ? '盘前无数据' : '无成交',
-      stateText: state === QUOTE_STATE.PREOPEN ? '盘前无数据' : '无成交' };
+      chgPctText: label,
+      stateText: label };
   }
   let chg = null;
   let chgPct = null;
@@ -365,7 +408,8 @@ export function fmtPct(v, d = 2) {
  */
 export function buildGlobalSnapshot(o = {}) {
   const vars = typeof o.raw === 'string' ? parseSinaVars(o.raw) : (o.raw || {});
-  const quotes = GLOBAL_SYMBOLS.map((s) => normalizeQuote(s, vars[s.code]));
+  const genDate = o.generatedAt ? new Date(o.generatedAt) : new Date();
+  const quotes = GLOBAL_SYMBOLS.map((s) => normalizeQuote(s, vars[s.code], genDate));
 
   // 人民币：USDCNH 上涨 = 人民币贬值。反号在**字段名**里说明，读的人不必心算。
   const cnh = quotes.find((q) => q.key === 'cnh');
@@ -391,7 +435,6 @@ export function buildGlobalSnapshot(o = {}) {
   //   这是 2026-10-01 事故的根因位——当时抓到北京 21:10 = 美东 09:10（盘前 20 分钟），
   //   数据源给的是占位平盘，被当成"当日 0%"用了。故把判断**留在快照里**，
   //   前端与守卫都能看见"这一份快照是在什么时候取的、当时美股收盘了没有"。
-  const genDate = o.generatedAt ? new Date(o.generatedAt) : new Date();
   const readiness = usSessionReadiness(genDate);
   const usQuotesStale = quotes.filter((q) => q.kind === 'us' && q.state !== QUOTE_STATE.OK).map((q) => q.key);
   const snap = {
@@ -417,6 +460,7 @@ export function buildGlobalSnapshot(o = {}) {
         + '且**仅在该品种本会话确实成交时**才给值；未开盘/无成交一律 null 并标「盘前无数据」，'
         + '绝不写 0（0 是真实行情值，会把"不知道"伪装成"没波动"）。'
         + '美股档只在美东 16:30（=北京次日 04:30）后才可采信，早于此取的数不作收盘价用。'
+        + '富时A50期货取「夜盘收盘」口径：仅北京 05:15 后的抓取采信为夜盘收盘，早于此时点标「夜盘未收」、绝不取盘中瞬时价。'
         + '本模块 A 股休市期间照常更新，唯一目的是给节后开盘提供可核验的外部底座。非投资建议。',
     },
     quotes,
@@ -453,6 +497,7 @@ export function evaluateGlobalWatch(snap) {
     // 只返回「原因短语」，不要带括号——外层模板已有一对括号，里外叠起来会变成
     //   「数据缺失（盘前无数据（该会话尚未开盘））」，读起来像嵌套错误。
     if (x.state === QUOTE_STATE.PREOPEN) return '该会话尚未开盘，源给的是盘前占位';
+    if (x.state === QUOTE_STATE.NIGHT_OPEN) return '夜盘未收（取数时点早于 05:15，源给的是盘中瞬时价）';
     if (x.state === QUOTE_STATE.NO_TRADE) return '该会话无成交，源给的是平盘占位';
     return '本次未取到该品种';
   };

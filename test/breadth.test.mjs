@@ -160,6 +160,25 @@ test('computeBreadth：无外部家数时由 K 线自算涨跌家数', () => {
   assert.equal(b.updown.down, 60);
 });
 
+test('computeBreadth：双口径涨跌家数（updownCn=沪深不含北交所 / updownAll=含北交所），按代码前缀拆分', () => {
+  const up = (code) => { const c = ramp(30); return { code, close: c[29], closes: c, pb: null }; };
+  const down = (code) => { const c = [...ramp(29), ramp(29)[28] - 1]; return { code, close: c[c.length - 1], closes: c, pb: null }; };
+  const stocks = [
+    ...Array.from({ length: 50 }, (_, i) => up(`60000${i}`)),       // 沪主板
+    ...Array.from({ length: 50 }, (_, i) => down(`30000${i}`)),      // 创业板
+    ...Array.from({ length: 20 }, (_, i) => up(`68800${i}`)),        // 科创板（沪深口径内）
+    ...Array.from({ length: 10 }, (_, i) => down(`83${String(i).padStart(3, '0')}0`)), // 北交所（剔除出沪深口径）
+  ];
+  const b = computeBreadth(stocks);
+  assert.ok(b.updownAll && b.updownCn, '双口径都存在');
+  assert.equal(b.updownAll.up, 70, '含北交所：70 涨（50 沪+20 科创）');
+  assert.equal(b.updownAll.down, 60, '含北交所：60 跌（50 创业+10 北交）');
+  assert.equal(b.updownCn.up, 70, '沪深不含北交所：70 涨（北交所不计入）');
+  assert.equal(b.updownCn.down, 50, '沪深不含北交所：50 跌（北交所 10 跌已剔除）');
+  assert.equal(b.updownAll.scope, '全市场（含北交所）');
+  assert.equal(b.updownCn.scope, '沪深两市（不含北交所，含ST/科创板）');
+});
+
 // ── ④ breadthVerdict —— 结论归并 ───────────────────────────────────────────
 test('breadthVerdict：不可信 → unknown（不得猜）', () => {
   assert.equal(breadthVerdict(null).level, 'unknown');

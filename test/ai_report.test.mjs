@@ -147,9 +147,12 @@ test('盘前报告：prev_nav 派生 / 隔夜敞口 / ATR 系结构性 null', ()
   assert.ok(Math.abs(r.payload.prev_nav - (1 + DT.summary.trackA.total) / (1 + DT.day.dayReturns.A)) < 1e-12, 'prev_nav=(1+cum)/(1+dayRet) 派生可逆');
   assert.deepEqual(r.payload.overnight_exposure, {
     a50_chgPct: 0.000915, posGap: 0.2,                 // global 百分数 0.0915 → 报告小数（÷100）
+    a50NightOpen: false,                               // fixture 的 A50 非夜盘未收
     us_close: { dji: null, spx: null, ixic: null },     // fixture 无美股资产 → null（不冒充）
     cn_overnight: { hxc: null, fxi: null },
     cnh_chgPct: null,
+    usReady: false,                                     // fixture 无 usReadiness.ready → 守卫默认 false
+    usReason: null,
   });
   assert.equal(r.payload.positions.poolPos, 0.5);
   for (const k of ['key_levels', 'events_today', 'atr', 'suggested_step']) assert.equal(r.payload[k], null, `${k} 恒 null`);

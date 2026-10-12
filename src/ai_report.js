@@ -21,6 +21,7 @@ import { guardModuleFreshness } from './module_freshness.js';
 import { stalePainReason } from './pain.js';
 import { todayBeijing } from './util.js';
 import { validateExternal } from './validate_snapshot.js';
+import { QUOTE_STATE } from './global.js';
 
 export const SCHEMA_VERSION = '1.0';
 export const REPORT_TYPES = ['pre_market', 'intraday', 'post_market', 'weekly'];
@@ -130,7 +131,14 @@ function structuralNulls() {
 
 function buildOverseas(global, ext) {
   if (!global || !Array.isArray(global.quotes)) return null;
+  const gqOf = (key) => (Array.isArray(global.quotes) ? global.quotes : []).find((x) => x && x.key === key);
   const mk = (key) => {
+    const gq = gqOf(key);
+    // 富时A50：夜盘未收（抓取时刻早于北京 05:15）时绝不以盘中瞬时价冒充收盘
+    // （2026-10-13 拍板）——global 行情态已是 night-open，直接透出 nightOpen 标记。
+    if (key === 'a50' && gq && gq.state === QUOTE_STATE.NIGHT_OPEN) {
+      return { key: 'a50', name: gq.name || '富时A50期货', chgPct: null, state: QUOTE_STATE.NIGHT_OPEN, nightOpen: true };
+    }
     const r = ext?.results?.[key];
     if (!r) return null;
     return {
@@ -376,6 +384,7 @@ export function generatePreMarket(input, opts = {}) {
   payload.positions = day?.trackA ? { targetPos: day.trackA.targetPos ?? null, poolPos: num(day.trackA.poolPos), executed: day.trackA.executed ?? null } : null;
   payload.overnight_exposure = {
     a50_chgPct: num((payload.overseas || []).find((q) => q.key === 'a50')?.chgPct),
+    a50NightOpen: !!(payload.overseas || []).find((q) => q.key === 'a50')?.nightOpen,
     posGap: num(pick(day, 'divergence.posGap')),
     // S3-5 盘前推送增强：隔夜外围全景（数据源 data/global.json，04:30 美股收盘档
     // cron 专抓、usReadiness ≥16:30 ET 才采信收盘态）。ok:false / chgPct 缺失 → null
@@ -383,6 +392,12 @@ export function generatePreMarket(input, opts = {}) {
     us_close: { dji: quoteOf(input, 'dji', ext), spx: quoteOf(input, 'spx', ext), ixic: quoteOf(input, 'ixic', ext) },
     cn_overnight: { hxc: quoteOf(input, 'hxc', ext), fxi: quoteOf(input, 'fxi', ext) },
     cnh_chgPct: quoteOf(input, 'cnh', ext),
+    // ★ 美股收盘态守卫（2026-10-13 拍板）：global.json 抓取时刻是否美东已收盘。
+    //   非收盘态时报告不得显示陈旧/空值冒充——渲染端改显「美股未收盘·不取盘中」。
+    usReady: !!(input && input.global && input.global.meta && input.global.meta.usReadiness
+      && input.global.meta.usReadiness.ready),
+    usReason: (input && input.global && input.global.meta && input.global.meta.usReadiness
+      && input.global.meta.usReadiness.reason) || null,
   };
   payload.key_levels = null;
   payload.events_today = null;

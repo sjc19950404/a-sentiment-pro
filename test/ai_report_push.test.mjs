@@ -143,7 +143,7 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
   assert.match(pre, / 2\. 603949 雪龙集团 · 4 连板 · 晋级失败 · 当日 -9\.98%/, 'appearances null → 无上榜段（—不硬塞）');
   assert.match(pre, /最高连板 6 · 炸板率 \+18\.75%/, 'sim 缺席回退 watchlist 数据源');
   assert.match(pre, /前日盈亏 — · 累计 —/, 'null → —，不冒充 0');
-  assert.match(pre, /富时A50 \+0\.09%/, 'A50 → 富时A50（全中文）');
+  assert.match(pre, /富时A50期货夜盘 \+0\.09%/, 'A50 → 富时A50期货夜盘（夜盘收盘口径）');
   assert.doesNotMatch(pre, /建议仓位|情绪周期/, '观察清单不含操作建议（任务一语义）');
   assert.doesNotMatch(pre, /候选池/, '标题/正文不出现候选池字样（输出物理隔离）');
   assert.ok(pre.includes('数据截至 2026-09-30 收盘\n'), '盘前恒标数据截至（前收口径，头部日期即数据日期）');
@@ -166,6 +166,29 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
   assert.match(preFull, /外围收盘: 道 \+0\.49% · 标普 \+0\.58% · 纳指 \+0\.45% · 金龙 \+0\.31% · 中国大盘ETF -0\.24% · 离岸人民币 —/, '聚合一行 + null → —（FXI → 中国大盘ETF）');
   assert.ok(preFull.length <= PUSH_CONSTS.MSG_CAP, '企微 text 上限内（2000 留余量）');
   assert.ok(!pre.includes('外围收盘'), '无新字段段（fixture 夹具）→ 整行省略，不留一排 — 噪音行');
+
+  // ★ 2026-10-13 拍板守卫：美股未收盘态绝不显示陈旧/空值冒充收盘；A50 夜盘未收绝不以瞬时价冒充
+  const preUsClosed = renderPushText(mkReport({
+    report_type: 'pre_market',
+    payload: { date: '2026-09-30', pnl_daily: null, pnl_cumulative: null, prev_nav: null, overseas: [],
+      overnight_exposure: { usReady: false, usReason: '美东 09:10，尚未开盘',
+        us_close: { dji: null, spx: null, ixic: null }, cn_overnight: { hxc: null, fxi: null }, cnh_chgPct: null },
+      simulation_stock: null },
+    missing_notes: [],
+  }));
+  assert.match(preUsClosed, /外围收盘: 美股未收盘·不取盘中（美东 09:10，尚未开盘）/, '美股未收盘态→不取盘中/陈旧值');
+
+  const preA50Night = renderPushText(mkReport({
+    report_type: 'pre_market',
+    payload: { date: '2026-09-30', pnl_daily: null, pnl_cumulative: null, prev_nav: null,
+      overseas: [{ key: 'a50', chgPct: null, nightOpen: true }],
+      overnight_exposure: { usReady: true, us_close: { dji: 0.0049, spx: 0.0058, ixic: 0.0045 },
+        cn_overnight: { hxc: 0.0031, fxi: -0.0024 }, cnh_chgPct: null },
+      simulation_stock: null },
+    missing_notes: [],
+  }));
+  assert.match(preA50Night, /隔夜: 富时A50期货夜盘 夜盘未收/, 'A50 夜盘未收→绝不以瞬时价冒充收盘');
+  assert.ok(!preA50Night.includes('富时A50期货夜盘 +'), 'A50 夜盘未收时不出现涨跌幅');
 
   const intra = renderPushText(mkReport({
     report_type: 'intraday', trigger: 'event:circuit_breaker', urgent: true,

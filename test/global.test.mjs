@@ -279,6 +279,28 @@ test('★ 回归①：连续交易品种（期货/汇率/商品）不适用 preo
   assert.equal(q, QUOTE_STATE.OK, 'hf/fx 类不得套用美股会话判定');
 });
 
+test('★ 2026-10-13 拍板：A50 夜盘锚点——早于北京 05:15 判 night-open，≥05:15 判 OK', () => {
+  // 富时A50 是连续合约，但带 sessionAnchor，必须按夜盘收盘锚点（北京 05:15）卡：
+  //   抓取时刻早于锚点 = 夜盘未收，取到的只是盘中瞬时价，绝不当收盘价用。
+  const sym = { key: 'a50', kind: 'hf', sessionAnchor: { closeBeijing: '05:15' } };
+  assert.equal(inferQuoteState({ last: 13900 }, sym, new Date('2026-10-13T04:30:00+08:00')), QUOTE_STATE.NIGHT_OPEN, '04:30 → 夜盘未收');
+  assert.equal(inferQuoteState({ last: 13900 }, sym, new Date('2026-10-13T05:20:00+08:00')), QUOTE_STATE.OK, '05:20 → 夜盘收盘可采信');
+  assert.equal(inferQuoteState({ last: 13900 }, sym, new Date('2026-10-13T21:00:00+08:00')), QUOTE_STATE.NIGHT_OPEN, '21:00（夜盘交易中）→ 夜盘未收');
+  // 无锚点的 hf 不受影响（仍按连续交易 OK）
+  assert.equal(inferQuoteState({ last: 13900 }, { kind: 'hf' }, new Date('2026-10-13T04:30:00+08:00')), QUOTE_STATE.OK, '无锚点 hf 仍按连续交易 OK');
+});
+
+test('★ 2026-10-13 拍板：A50 夜盘未收态透传为 normalizeQuote 的 night-open（chgPct=null）', () => {
+  const sn = buildGlobalSnapshot({
+    raw: 'var hq_str_hf_CHA50CFD="13900.00,0.20,0,0,0,0,2026-10-13 04:30:00,13861.00,0,0,0,0,0,2026-10-13,富时中国A50期货,0,1,2026";',
+    generatedAt: '2026-10-13T04:30:00+08:00',
+  });
+  const a50 = sn.quotes.find((q) => q.key === 'a50');
+  assert.equal(a50.state, QUOTE_STATE.NIGHT_OPEN, '早于锚点 → 夜盘未收');
+  assert.equal(a50.chgPct, null, '绝不以盘中瞬时价算涨跌幅');
+  assert.equal(a50.chgPctText, '夜盘未收');
+});
+
 // ── 第二层：抓取时机（美股收盘档）────────────────────────────────────────
 test('★ 回归②：事故时刻（美东 09:12）判为未就绪，并指出"09:30 才开盘"', () => {
   const r = usSessionReadiness(new Date('2026-10-01T13:12:15Z'));

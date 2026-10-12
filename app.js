@@ -1188,6 +1188,11 @@ function buildBrief(days, arc) {
   // 4. 广度与量能——规格阈值：红盘占比≥65普涨/55~65结构性/45~55震荡分化/<45普跌；行业红盘≥70扩散好/50~70结构性/<50抱团；环比±10%放量/平稳/缩量；量能因子≥40高/20~40中/<20低
   const up = s.up_count, dn = s.down_count, amt = s.amount_yi, pamt = ps.amount_yi;
   const redPct = (up != null && dn != null && up + dn > 0) ? up / (up + dn) * 100 : null;
+  // ★ 涨跌家数双口径（2026-10-13 拍板）：BREADTH.snapshot 里 updownAll=全市场含北交所（前复权日K 自算），
+  //   与交易所 summary 的沪深口径并列展示，文字与数据必须对应。
+  const bwSnap = (typeof BREADTH !== 'undefined' && BREADTH && BREADTH.snapshot) ? BREADTH.snapshot : null;
+  const bwAllLine = (bwSnap && bwSnap.updownAll && bwSnap.updownAll.up != null)
+    ? ` · 含北交所 ${bwSnap.updownAll.up} / ${bwSnap.updownAll.down}` : '';
   const indPct = (s.ind_count && s.ind_up != null) ? s.ind_up / s.ind_count * 100 : null;
   const amtChg = (amt != null && pamt != null && pamt > 0) ? (amt - pamt) / pamt * 100 : null;
 
@@ -1238,11 +1243,11 @@ function buildBrief(days, arc) {
   })();
 
   const sec4 = [
-    redPct != null ? li(`涨跌家数 ${up} / ${dn}（沪深口径），红盘占比 ${redPct.toFixed(0)}%——${redPct >= 65 ? '普涨' : redPct >= 55 ? '结构性行情' : redPct >= 45 ? '震荡分化' : '普跌'}`) : '',
+    redPct != null ? li(`涨跌家数 沪深两市 ${up} / ${dn}${bwAllLine}，红盘占比 ${redPct.toFixed(0)}%——${redPct >= 65 ? '普涨' : redPct >= 55 ? '结构性行情' : redPct >= 45 ? '震荡分化' : '普跌'}`) : '',
     indPct != null ? li(`行业红盘 ${s.ind_up ?? '—'}/${s.ind_count}（${indPct.toFixed(0)}%）——${indPct >= 70 ? '板块扩散良好' : indPct >= 50 ? '结构性扩散' : '抱团行情，扩散不足'}；最强 ${s.top_industry || '—'} / 最弱 ${s.bottom_industry || '—'}`) : '',
     amtChg != null ? li(`两市成交额 ${num(amt, 0)} 亿，环比 ${amtChg >= 0 ? '+' : ''}${amtChg.toFixed(1)}%${amt === pamt ? '' : `（${amt >= pamt ? '放量' : '缩量'} ${num(Math.abs(amt - pamt), 0)} 亿）`}——${amtChg >= 10 ? '放量' : amtChg <= -10 ? '缩量' : '量能平稳'}；量能因子 ${f.s_amt ?? '—'}（${f.s_amt >= 40 ? '高量能' : f.s_amt >= 20 ? '中等量能' : '低量能'}）`) : '',
     relTbl,
-  ].join('') + cal('涨跌家数为沪深两市口径（不含北交所）；红盘占比＝上涨家数 ÷（上涨+下跌）。阈值：红盘占比≥65 普涨／55~65 结构性／45~55 震荡分化／<45 普跌；行业红盘≥70 扩散良好／50~70 结构性扩散／<50 抱团；成交额环比 ±10% 为放量/缩量的分界（区间内视为平稳）。'
+  ].join('') + cal('涨跌家数双口径：主口径「沪深两市（不含北交所，含ST/科创板/创业板）」取自交易所涨跌家数（summary.up_count/down_count）；副口径「全市场（含北交所）」由 breadth-latest 前复权日K 自算，仅含能取到前复权序列的票、按代码前缀拆分（北交所/新三板 8/4/92 开头剔除出沪深口径）。两者同源但范围不同，勿混用。红盘占比＝上涨家数 ÷（上涨+下跌），仅按主口径计算。阈值：红盘占比≥65 普涨／55~65 结构性／45~55 震荡分化／<45 普跌；行业红盘≥70 扩散良好／50~70 结构性扩散／<50 抱团；成交额环比 ±10% 为放量/缩量的分界（区间内视为平稳）。'
     + '<br><b>板块相对强弱口径</b>：超额 ＝ 行业当日涨跌幅 − 基准当日涨跌幅，基准取<b>同日同源</b>（上证指数取当日收盘涨跌幅，行业中位数取同日全部行业涨跌幅的中位数）。排序键是<b>超额</b>而非绝对涨幅——普跌日里"跌得最少"的才是最强，按绝对涨幅排会让普跌日的进攻榜全是负数、含义混乱。两基准并存的原因：vs 上证回答"跑赢大盘了吗"（体感最贴近持仓），但上证含大量低波权重股，题材行情里它常躺平，会让几乎所有题材行业显示正超额；vs 行业中位数回答"在板块里排前还是排后"（中位数基准下攻防榜天然均衡，必有强弱）。报告主榜优先取上证，上证缺失时降级为中位数并显式标注。'
     + '<br>行业数不足 30 个（残缺列表）或无行业明细时返回「未计算」——不用可疑数据凑一个榜。历史回填天（共 208 天）无行业明细，其超额榜一律显示「未计算」，与 0 严格区分（0＝与基准完全同步，是确定结论；未计算＝不知道）。');
 
@@ -2336,8 +2341,10 @@ function renderBreadth(b, errMsg) {
     // 样本，剔除停牌/陈旧），与日报主文的沪深两市口径涨跌家数（1654/3516）样本不同、
     // 数值可不同（10-08 实录 1634/3466 同日并存）——与「昨涨停最高板 vs 最高连板」
     // 同病同名不同样，标签区隔 + 底注说明，读者不再当成自相矛盾。
-    ['样本内上涨', snap.updown ? snap.updown.up : '—', 'pos', null],
-    ['样本内下跌', snap.updown ? snap.updown.down : '—', 'neg', null],
+    ['沪深上涨', snap.updownCn ? snap.updownCn.up : '—', 'pos', '沪深两市·不含北交所'],
+    ['沪深下跌', snap.updownCn ? snap.updownCn.down : '—', 'neg', '沪深两市·不含北交所'],
+    ['全市场↑含北交', snap.updownAll ? snap.updownAll.up : '—', 'pos', '全市场·含北交所'],
+    ['全市场↓含北交', snap.updownAll ? snap.updownAll.down : '—', 'neg', '全市场·含北交所'],
     ['有效样本', snap.scanned ?? '—', '', snap.requested],
     ['分化度', pct(snap.divergence), '', null],
   ].map(([k, val, c, den]) => `<div class="bw-kpi ${c}"><span class="bw-k">${esc(k)}</span>`
@@ -2364,7 +2371,7 @@ function renderBreadth(b, errMsg) {
     + (rows ? `<table class="bw-table"><thead><tr><th>日期</th><th>站上20日线</th><th>新高</th><th>新低</th><th>破净</th><th>涨/跌</th></tr></thead><tbody>${rows}</tbody></table>` : '')
     + `<div class="bw-note muted">口径：由全市场真实前复权日K计算（前复权是本口径的正确性前提——不复权时除权日的假暴跌会同时打掉均线并伪造新低）。`
     + `占比分母是当次扫描的有效样本数，不是全市场总数。`
-    + `「样本内上涨/下跌」为宽度扫描样本口径（剔除停牌/陈旧后当日有效 K 线样本），与日报主文的沪深两市口径涨跌家数样本不同、数值可不同。`
+    + `「沪深上涨/下跌」= 沪深两市口径（不含北交所，含ST/科创板/创业板，与日报主文同口径）；「全市场↑↓含北交」= 全市场口径（含北交所）——两者同源前复权日K、仅按代码前缀拆分，数值可不同、勿混用。`
     + `<br>⚠ 「未计算」出现在两类情形：① 有效样本 &lt; ${esc((snap.thresholds && snap.thresholds.MIN_SAMPLE) ?? 100)} 只；② 破净率依赖 PB 源不可用。`
     + `两者都**不填 0**——破净率 0% 是"无一家破净"（极强信号），与"没抓到"含义相反。`
     + `<br>序列 ${sm.days ?? series.length} 天有数据${sm.coverage == null ? '' : `（覆盖 ${(sm.coverage * 100).toFixed(1)}%）`}，逐日累积、历史自然生长。`

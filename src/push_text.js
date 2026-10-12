@@ -68,6 +68,9 @@ const pct = (v, digits = 2) => (v == null || !Number.isFinite(v) ? '—' : `${v 
 const txt = (v) => (v == null ? '—' : String(v));
 const overseas = (p, key) => {
   const it = (p.overseas || []).find((q) => q && q.key === key);
+  if (!it) return '—';
+  // 富时A50 夜盘未收（抓取时点早于北京 05:15）→ 显式标注，绝不取盘中瞬时价冒充收盘
+  if (it.nightOpen) return '夜盘未收';
   const v = pct(it?.chgPct);
   // 陈旧但保留（validateExternal 混合策略）：强制追加历史缓存标注，杜绝误读为今日。
   return it?.cacheNote ? `${v}${it.cacheNote}` : v;
@@ -229,14 +232,22 @@ export function renderPushText(report) {
       }
       { lines.push(...watchlistBlock(p)); }
       lines.push(`前日盈亏 ${pct(p.pnl_daily)} · 累计 ${pct(p.pnl_cumulative)} · 前日净值 ${p.prev_nav != null ? p.prev_nav.toFixed(4) : '—'}`);
-      lines.push(`隔夜: 富时A50 ${overseas(p, 'a50')} · 费半 ${overseas(p, 'sox')} · 净敞口分歧 ${txt(p.overnight_exposure?.posGap)}`);
+      lines.push(`隔夜: 富时A50期货夜盘 ${overseas(p, 'a50')} · 费半 ${overseas(p, 'sox')} · 净敞口分歧 ${txt(p.overnight_exposure?.posGap)}`);
       { // S3-5 外围收盘全景（overnight_exposure 扩展段，聚合一行不逐条罗列）：
         // 任一在场才推（数据源挂/老档无此段 → 整行省略，不留一排 — 的噪音行）。
+        // ★ 美股收盘态守卫（2026-10-13 拍板）：非收盘态绝不以陈旧/空值冒充收盘，
+        //   改显「美股未收盘·不取盘中」，杜绝把盘前占位读成"外围没动"。
         const oe = p.overnight_exposure || {};
-        const us = oe.us_close || {}, cn = oe.cn_overnight || {};
-        if ([us.dji, us.spx, us.ixic, cn.hxc, cn.fxi, oe.cnh_chgPct].some((v) => v != null)) {
-          lines.push(`外围收盘: 道 ${pct(us.dji)} · 标普 ${pct(us.spx)} · 纳指 ${pct(us.ixic)}`
-            + ` · 金龙 ${pct(cn.hxc)} · 中国大盘ETF ${pct(cn.fxi)} · 离岸人民币 ${pct(oe.cnh_chgPct)}`);
+        // 仅当 usReady 显式为 false（快照判定美股未收盘）才改显「美股未收盘·不取盘中」；
+        // 字段缺失（老档/旧 fixture）按原行为聚合展示，避免误报。
+        if (oe.usReady !== false) {
+          const us = oe.us_close || {}, cn = oe.cn_overnight || {};
+          if ([us.dji, us.spx, us.ixic, cn.hxc, cn.fxi, oe.cnh_chgPct].some((v) => v != null)) {
+            lines.push(`外围收盘: 道 ${pct(us.dji)} · 标普 ${pct(us.spx)} · 纳指 ${pct(us.ixic)}`
+              + ` · 金龙 ${pct(cn.hxc)} · 中国大盘ETF ${pct(cn.fxi)} · 离岸人民币 ${pct(oe.cnh_chgPct)}`);
+          }
+        } else {
+          lines.push(`外围收盘: 美股未收盘·不取盘中${oe.usReason ? `（${oe.usReason}）` : ''}`);
         }
       }
       lines.push(`最高连板 ${txt(p.simulation_stock?.sentiment_cycle?.highest_chain ?? p.watchlist?.max_lb)} · 炸板率 ${pct(p.simulation_stock?.sentiment_cycle?.broken_limit_ratio ?? p.watchlist?.broken_limit_ratio)}`);
@@ -273,7 +284,7 @@ export function renderPushText(report) {
         }
       }
       lines.push(`运行回撤 ${pct(p.drawdown_vs_threshold?.dd_now)} · 距回撤档位 ${p.drawdown_vs_threshold?.distance_pp != null ? `${p.drawdown_vs_threshold.distance_pp} 个百分点` : '—'}（${p.drawdown_vs_threshold?.basis ?? '—'}）`);
-      lines.push(`昨收口径: 当日 ${pct(p.pnl_daily)} · 累计 ${pct(p.pnl_cumulative)} · 富时A50 ${overseas(p, 'a50')}`);
+      lines.push(`昨收口径: 当日 ${pct(p.pnl_daily)} · 累计 ${pct(p.pnl_cumulative)} · 富时A50期货夜盘 ${overseas(p, 'a50')}`);
       break;
     case 'post_market':
       lines.push(`【AI 报告 · 盘后】${report.date}`);

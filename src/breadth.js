@@ -134,6 +134,31 @@ export function stockBreadth(o = {}) {
  *        给了就**不再**用 K 线自算——两套口径同时存在会让"家数"出现两个值。
  * @returns {object} 见下方字段注释
  */
+/**
+ * 由一批票的前复权日K 现算涨跌家数（"当日涨"= close > 前一日 close）。
+ * 返回 { up, down, flat, n }；n 为该批里有效样本数（K 线≥2 根）。
+ */
+function updownFromKline(list, th) {
+  let up = 0, down = 0, flat = 0, n = 0;
+  for (const s of list) {
+    const c = num(s && s.close);
+    const cs = s && Array.isArray(s.closes) ? s.closes.map(num).filter((v) => v != null) : [];
+    if (c == null || cs.length < 2) continue;
+    const prev = cs[cs.length - 2];
+    const chg = c - prev;
+    n++;
+    if (chg > 0) up++; else if (chg < 0) down++; else flat++;
+  }
+  return { up, down, flat, n };
+}
+
+/** 北交所 / 新三板代码（剔除出"沪深两市"口径）：8xxxxx / 4xxxxx / 92xxxx。
+ *  科创板(688/689)、创业板(300/301)、沪深主板均保留——即"沪深两市，含ST/科创"。 */
+function isBJCode(code) {
+  const c = String(code || '');
+  return /^8/.test(c) || /^4/.test(c) || /^92/.test(c);
+}
+
 export function computeBreadth(stocks, opts = {}) {
   const th = { ...BREADTH_THRESHOLDS, ...(opts.th || {}) };
   const list = Array.isArray(stocks) ? stocks : [];
@@ -162,22 +187,27 @@ export function computeBreadth(stocks, opts = {}) {
   // 可信性：样本量必须够。不足 → 比例置 null（不是 0），并标 reliable=false。
   const reliable = scanned >= th.MIN_SAMPLE;
 
-  // 涨跌家数：优先用外部给的，否则从 K 线自算（"当日涨"= close > prevClose）。
-  let updown = opts.updown || null;
+  // 涨跌家数：双口径（2026-10-13 拍板）
+  //   主口径 沪深两市（不含北交所，含ST/科创板/创业板）——国内行情软件最通用口径；
+  //   副口径 全市场（含北交所）——与 fetch_breadth 东财全市场清单同源。
+  //   两套都由同一批前复权日K 按代码前缀拆分，保证口径自洽（同一样本、同一前复权）。
+  const cnList = list.filter((s) => !(s && s.code && isBJCode(s.code)));
+  const allUpdown = updownFromKline(list, th);
+  const cnUpdown = updownFromKline(cnList, th);
+
+  let updown = opts.updown || null;     // 外部给的是沪深口径（交易所 summary.up_count，不含北交所）
   let updownSrc = opts.updown ? 'external' : null;
-  if (!updown) {
-    let up = 0, down = 0, flat = 0, n = 0;
-    for (const s of list) {
-      const c = num(s && s.close);
-      const cs = s && Array.isArray(s.closes) ? s.closes.map(num).filter((v) => v != null) : [];
-      if (c == null || cs.length < 2) continue;
-      const prev = cs[cs.length - 2];
-      const chg = c - prev;
-      n++;
-      if (chg > 0) up++; else if (chg < 0) down++; else flat++;
-    }
-    if (n >= th.MIN_SAMPLE) { updown = { up, down, flat }; updownSrc = 'kline'; }
-  }
+  if (!updown && allUpdown.n >= th.MIN_SAMPLE) { updown = allUpdown; updownSrc = 'kline'; }
+
+  const mkUp = (u, src, scope) => (u && u.n >= th.MIN_SAMPLE ? { up: u.up, down: u.down, flat: u.flat, n: u.n, src, scope } : null);
+  // 副口径：全市场（含北交所）恒由 K 线自算
+  const updownAll = mkUp(allUpdown, 'kline', '全市场（含北交所）');
+  // 主口径：沪深两市（不含北交所，含ST/科创）——外部优先（交易所 summary），否则 K 线剔除北交所
+  const updownCn = opts.updown
+    ? { up: opts.updown.up, down: opts.updown.down, flat: opts.updown.flat != null ? opts.updown.flat : null,
+        n: (opts.updown.up || 0) + (opts.updown.down || 0) + (opts.updown.flat || 0),
+        src: 'external', scope: '沪深两市（不含北交所，含ST/科创板）' }
+    : mkUp(cnUpdown, 'kline', '沪深两市（不含北交所，含ST/科创板）');
 
   const maRatio = reliable ? ratio(maNum, maDen) : null;
   let maVerdict = null;
@@ -200,11 +230,17 @@ export function computeBreadth(stocks, opts = {}) {
     brokenPb: { n: pbNum, den: pbDen, ratio: reliable && pbDen >= 1 ? ratio(pbNum, pbDen) : null, missing: pbMiss.length },
     // 涨跌家数（external 优先；kline 自算为兜底）
     updown: updown ? { ...updown, src: updownSrc } : null,
+    // 双口径（2026-10-13 拍板）：updownAll=全市场含北交所；updownCn=沪深两市不含北交所。
+    // 两套 scope 字段显式标注统计范围，渲染层/报告文案须与数据对应、不得错配。
+    updownAll,
+    updownCn,
     // 分化的直观量化：新高与新低同时高企 → 结构市。
     divergence: (reliable && hiDen >= 1)
       ? Math.round(((hiNum + loNum) / hiDen) * 10000) / 10000 : null,
     note: reliable
-      ? null
+      ? '涨跌家数双口径：①沪深两市（不含北交所，含ST/科创板/创业板）②全市场（含北交所）；'
+        + '两者均取自同批前复权日K、仅按代码前缀拆分（北交所/新三板 8/4/92 开头剔除出沪深口径）。'
+        + '样本 < MIN_SAMPLE 时该口径置"未计算"而非 0。'
       : `有效样本 ${scanned} < ${th.MIN_SAMPLE}，比例不予计算（显示"未计算"而非 0）`,
   };
 }

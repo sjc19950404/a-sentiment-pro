@@ -14,6 +14,9 @@ on:
     #   为什么取 20:30（16:30 ET）而不是 20:00（16:00 ET）：收盘瞬间数据源仍在回填，
     #   留 30 分钟让结算价稳定，避免抓到"半成品收盘价"。
     - cron: '30 20 * * 1-5'
+    # A50 夜盘收盘档（2026-10-13 拍板）：北京 05:20（UTC 21:20）= SGX 夜盘 05:15 收盘后。
+    #   仅此档抓取把 A50 当"夜盘收盘"用；其余时刻 src/global.js 标 night-open、报告显「夜盘未收」。
+    - cron: '20 21 * * 1-5'
     # 盘中轻量快照：北京 09:30~15:00 每 30 分钟（UTC 01:30~07:00 的 :00/:30）。
     # 与上面几个 cron 的**根本区别**：这条只跑 scripts/snapshot_intraday.mjs，
     # 不跑管道、不碰 archive.json、不重算分位与因子（理由见该脚本文件头）。
@@ -167,7 +170,8 @@ jobs:
       github.event.schedule != '0 1 * * 1-5' &&
       github.event.schedule != '35 1 * * 1-5' &&
       github.event.schedule != '30 2 * * 1-5' &&
-      github.event.schedule != '0 6 * * 1-5'
+      github.event.schedule != '0 6 * * 1-5' &&
+      github.event.schedule != '20 21 * * 1-5'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -579,6 +583,35 @@ jobs:
             # theirs=本 run 刚生成的数据档——us-close 与 build 同轮各抓一份 global.json
             # 必冲突，生成型档以较新的本 run 产物为准（23:15 run 实录：裸 rebase 在
             # data/global.json 上 CONFLICT 卡死）。
+            git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
+            git push
+          fi
+
+  a50-close:
+    # ★ A50 夜盘收盘档（2026-10-13 拍板）：北京 05:20（UTC 21:20）抓取富时A50期货夜盘收盘价。
+    #   SGX 夜盘 17:00–次日 05:15（北京），05:15 收盘集合竞价出结算价。只在 05:15 后这一次
+    #   抓取才把 A50 当"夜盘收盘"用；其余时刻（含 18:30/21:00 盘后、04:30 美股收盘档）A50 夜盘
+    #   都还没收，src/global.js 会标 night-open、报告显「夜盘未收」、绝不取盘中瞬时价冒充收盘。
+    #   单独成 job 的原因同 us-close：只跑 scripts/fetch_global.mjs 一步即可，不必拖起整条管道。
+    if: github.event.schedule == '20 21 * * 1-5' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 抓取外围行情（A50 夜盘收盘档）
+        run: node scripts/fetch_global.mjs
+      - name: 提交外围快照
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/global.json
+          if git diff --cached --quiet; then
+            echo "无变化，跳过提交"
+          else
+            git commit -m "chore: 外围(A50夜盘收盘档) $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
             git push
           fi
