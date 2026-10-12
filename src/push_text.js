@@ -53,6 +53,17 @@ export function sanitizeWebhookUrl(raw) {
   return /^https:\/\//.test(s) ? s : null;
 }
 
+// 北京时区（UTC+8）格式化采集时间（generated_at ISO → YYYY-MM-DD HH:MM；缺失 → —）。
+// 2026-10-12 用户指令：每条推送标注数据采集的日期和时间，从今起长期生效。
+// 该字段已排除在去重指纹（fingerprintOf/stableOf）之外，加注不影响防风暴判定。
+const formatBJ = (iso) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  const bj = new Date(d.getTime() + 8 * 3600 * 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${bj.getUTCFullYear()}-${pad(bj.getUTCMonth() + 1)}-${pad(bj.getUTCDate())} ${pad(bj.getUTCHours())}:${pad(bj.getUTCMinutes())}`;
+};
 const pct = (v, digits = 2) => (v == null || !Number.isFinite(v) ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(digits)}%`);
 const txt = (v) => (v == null ? '—' : String(v));
 const overseas = (p, key) => {
@@ -290,6 +301,10 @@ export function renderPushText(report) {
   //   ai_report.js envelope 的 ma20_degraded）。企微 text 消息不支持
   //   markdown <font color>，用 🔴 emoji 替代；文案短促不挤占 MSG_CAP。
   if (p.ma20_degraded) lines.push('🔴 20日均线降级版：量能因子按中性 50 计（当日成交额缺或量能历史不足）');
+  // 采集时间（2026-10-12 用户指令：每条推送标注数据采集的日期和时间，从今起长期生效）：
+  // 取自报告 generated_at，转北京时区展示；与「数据截至 X 收盘」（数据日）语义区分——
+  // 前者是本条报告生成/采集时刻，后者是数据口径日。该字段已排除在去重指纹外，不影响防风暴。
+  lines.push(`数据采集时间（北京）：${formatBJ(report.generated_at)}`);
   // 工程健康告警（缺失披露数/数据状态）已移出决策正文（2026-10-09 用户指令：
   // 运行监控归工程通道，不进面向决策的推送文案）；免责声明尾行保留。
   lines.push('完整版见页面 · 不构成投资建议');

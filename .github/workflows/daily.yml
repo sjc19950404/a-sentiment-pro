@@ -276,11 +276,31 @@ jobs:
       # 推送只在 21:00 补抓与手动触发：18:30 首抓常缺龙虎榜/深证日K，推半成品
       # 不如等 2.5 小时推全量（"收盘 5 分钟"语义由页面即时轨 15:05 版补位，
       # 双轨时点约束见设计文档 §3.3）。指纹去重保证 21:00 与 18:30 内容未变时不重推。
-      - name: 推送盘后/周报 AI 报告（企微 + 指纹防风暴）
+      # ── 盘后汇总推送（2026-10-12 用户指令）：按 盘前→盘中→盘后 顺序把当日三份补推企微 ──
+      #   为什么用显式文件而非 --latest：盘前(09:00)/盘中(14:00) 生成距盘后 21:00 已超
+      #   15 分钟新鲜度窗口，--latest 会被窗口挡掉；显式文件推送不走窗口检查，正好补推。
+      #   盘前报告若当日未生成（如 premarket job 未入库）→ 先补 build 一份（闸门只看
+      #   交易日不看相位，收盘后亦可生成）；intraday/post_market 当日已生成或本步上游刚生成。
+      #   顺序即用户指定：盘前 → 盘中 → 盘后（周报仅周五生成，--latest weekly 自然跳过非周五）。
+      #   continue-on-error：任一文件缺失/推送失败绝不拖红数据管线（失败不记指纹，下拍自愈）。
+      - name: 补生成当日盘前报告（若缺失，供盘后汇总推）
+        continue-on-error: true
+        run: node scripts/build_ai_report.mjs --type pre_market
+      - name: 推送盘前/盘中/盘后 AI 报告（企微 · 按 盘前→盘中→盘后 顺序 · 指纹防风暴）
         if: github.event.schedule == '0 13 * * 1-5' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
-        run: node scripts/push_ai_report.mjs --latest post_market --latest weekly
+        run: |
+          TODAY=$(date +%F)
+          # 盘前报告文件名取数据日（前一交易日，非生成日），由 index.json 解析，避免硬编码日期错位
+          PM=$(node -e "try{const i=require('./data/reports/index.json');console.log(i.reports&&i.reports.pre_market&&i.reports.pre_market.file||'')}catch(e){console.log('')}")
+          ARGS=""
+          if [ -n "$PM" ] && [ -f "data/reports/$PM" ]; then ARGS="data/reports/$PM"; fi
+          if [ -f "data/reports/intraday_${TODAY}.json" ]; then ARGS="$ARGS data/reports/intraday_${TODAY}.json"; fi
+          if [ -f "data/reports/post_market_${TODAY}.json" ]; then ARGS="$ARGS data/reports/post_market_${TODAY}.json"; fi
+          if [ -n "$ARGS" ]; then echo "[汇总推] 顺序 盘前→盘中→盘后，文件：$ARGS"; node scripts/push_ai_report.mjs $ARGS; fi
+          node scripts/push_ai_report.mjs --latest weekly
       # ── 收盘口径复核（2026-10-10 用户指令：入库前再做一次收盘口径复核）──────────
       #   当日盘中推送档案（intraday_D.json）入库前，用 ztpool_history 收盘档复核：
       #   池标的收盘结局 / 推送时 vs 收盘情绪漂移 / 连板矛盾。台账写回档案顶层
