@@ -88,9 +88,11 @@ const signals = buildSignals(packed, {
     };
   })(),
   // 双轨披露块（P2-β 渲染接线）：读 data/paper/dual_track_latest.json。
-  //   与 pipeline.writeShards 用**同一工厂产物** dualTrackDisclosureFn(DATA)——
+  //   与 pipeline.writeShards 用**同一工厂产物** dualTrackDisclosureFn(DATA, archiveDate)——
   //   两路径产出逐字段一致（同一注入纪律，否则 --check 报形态分裂）。
-  dualTrackFn: dualTrackDisclosureFn(DATA),
+  //   ②补 archiveDate 闸门：账本日落后档案锚 → 与 writeShards 同判据置 null
+  //   （旧值不进当日 signals），消除两条写盘路径对滞后账本的形态分裂。
+  dualTrackFn: dualTrackDisclosureFn(DATA, (packed.all_days || []).slice(-1)[0]?.trade_date ?? null),
   // 市场宽度（#3）：与 pipeline.writeShards **同源同形态**——同一批 buildBreadthSeries/
   //   breadthSeriesSummary，读同一份 breadth-latest/daily.json。
   //   两条路径若有一处漏注入，--check 的一致性校验就会发现（signals 段不同）。

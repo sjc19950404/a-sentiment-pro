@@ -104,8 +104,19 @@ export function crossCheckDualTrack(latest, signalsLatest) {
   const ledgerOk = lt && typeof lt === 'object' && lt.day && typeof lt.day === 'object';
   const dt = sig && typeof sig === 'object' ? sig.dualTrack : undefined;
   if (ledgerOk) {
+    // 账本在场时，"披露块缺失是否算违例"取决于账本能否代表当日：
+    // 旁路工具 paper_dual_track.mjs 每日跑一次，账本末日常滞后档案锚一日
+    // （如补数据触发重放门禁拒写 → 账本停在旧日）。此时 dualTrack 置 null 是
+    // **设计内的「未生成」态**（写盘路径②新鲜度守卫：旧值不进当日 signals），
+    // 并非注入缺失——告警会令"旁路状态"掐断"生产门禁"，故不报。
+    // 仅当账本日 == 档案锚（账本新鲜）却仍缺块，才是真·注入缺失。
+    const anchor = (sig && sig.meta && sig.meta.tradeDate) || null;
+    const ledgerDate = lt.day.date;
+    const stale = !!(anchor && ledgerDate) && ledgerDate < anchor;
     if (!dt) {
-      fails.push('[contract] 一致性：dual_track_latest.json 在场但 signals-latest 缺 dualTrack 披露块'
+      if (stale) return fails; // 账本滞后：null 为预期「未生成」态，不告警
+      fails.push('[contract] 一致性：dual_track_latest.json 在场（账本日 ' + ledgerDate
+        + ' = 档案锚 ' + anchor + '）但 signals-latest 缺 dualTrack 披露块'
         + '（写盘路径未注入 dualTrackFn？重跑 pipeline 或 scripts/split_archive.mjs；注入实现 src/dual_track.js）');
       return fails;
     }
