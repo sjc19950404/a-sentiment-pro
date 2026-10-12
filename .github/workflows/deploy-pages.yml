@@ -114,3 +114,16 @@ jobs:
       - name: 部署到 GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      # 部署失败告警（仅失败触发）：复用 OPS_WEBHOOK（与 guard_notify 同源企微 text bot）。
+      # if: failure() 保证「成功路径不打扰、失败才报」；continue-on-error 双保险——
+      # 通知通道自身故障绝不把 CI 拖红。部署失败时 main 未变，latest.trade_date 即上次成功部署态。
+      - name: 部署失败企微告警（仅失败触发）
+        if: failure()
+        continue-on-error: true
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+          DEPLOY_SHA: ${{ github.sha }}
+          DEPLOY_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          DEPLOY_JOB: ${{ github.job }}
+          DEPLOY_WORKFLOW: ${{ github.workflow }}
+        run: node scripts/notify_deploy.mjs
