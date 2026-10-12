@@ -542,6 +542,8 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   /* 窄屏：买卖两列改为上下堆叠（并排会把席位名挤成省略号，反而看不清） */
   .seat-grid { grid-template-columns: 1fr; gap: 14px; }
   .seat-tb td.seat-nm { white-space: normal; overflow-wrap: anywhere; }
+  /* 顶部导航提示语在手机上占宽度，先隐藏让 Tab 能横向滚动 */
+  .zn-note { display: none; }
 }
 
 /* ── 触屏（无 hover）与窄屏：把可点元素放大到能稳当点中的尺寸 ── */
@@ -1490,9 +1492,13 @@ main[aria-hidden="true"] { display: none; }
 .dv-note code { background: rgba(255,255,255,.06); padding: 0 3px; border-radius: 4px; }
 
 @media (max-width: 640px) {
-  .rg-tag-label { font-size: 20px; }
+  .rg-tag-label { font-size: 18px; }
   .rg-main { gap: 8px; }
   .rg-facts { font-size: 11px; gap: 8px; }
+  .rg-fold > summary { flex-wrap: wrap; gap: 6px 10px; }
+  .rg-sum { flex: 1 1 100%; min-width: 0; }
+  .rg-body { overflow-x: auto; }
+  .rg-table { min-width: 340px; }
   .rp-headline { font-size: 14px; }
   .dv-main { flex-direction: column; gap: 4px; }
   .dv-sum { white-space: normal; }
