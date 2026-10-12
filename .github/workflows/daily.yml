@@ -238,6 +238,11 @@ jobs:
       - name: 抓取多维市场宽度（分片扫描全市场日K）
         run: node scripts/fetch_breadth.mjs --shards 8
         continue-on-error: true
+      # ★ 2026-10-12 修复：管道落盘后 archive.json 仍带回写字段 lhb_aggr（sources.js 抓数赋值所致），
+      #   龙虎榜口径守卫会因此判红。recalc 在所有写档步骤之后、守卫之前清掉 lhb_aggr 并全档重算因子，
+      #   确保守卫读到的是清洗后的主档。recalc 不改天数/回填标记，不影响回测对账（backtest.json 同源）。
+      - name: Recalc LHB daily
+        run: node scripts/recalc_lhb_daily.mjs
       # 口径守卫：两套龙虎榜净额（当日榜 / 含区间累计榜的全量）不得混用。
       # 放在提交之前——口径一旦漂移，宁可本次运行失败，也不要把错数据推上线。
       - name: 龙虎榜口径守卫（双口径不混用 + 存档可重现）
