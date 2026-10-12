@@ -182,6 +182,16 @@ jobs:
       #   （本项由 scripts/audit_lhb_caliber.mjs 的 B13 块按「run: 行先后」机器校验。）
       - name: 同步交易日历（指数日K反推，含调休补班）
         run: node scripts/fetch_calendar.mjs
+      # ── 2026-10-13 时序修复：宽度/亏钱效应抓取提前到切片生成之前 ──
+      #   原顺序 pipeline.js(切片含 signals-latest.json) 跑在 fetch_breadth/fetch_pain 之前，
+      #   切片只能吃上一轮的宽度/亏钱效应 → 前端宽度背离/亏钱效应长期"未评估"。
+      #   现两者提前到管道之前，切片即吃到当日最新宽度与亏钱效应。
+      - name: 抓取亏钱效应行情（昨涨停今日表现，收盘后口径）
+        run: node scripts/fetch_pain.mjs
+        continue-on-error: true
+      - name: 抓取多维市场宽度（分片扫描全市场日K）
+        run: node scripts/fetch_breadth.mjs --shards 8
+        continue-on-error: true
       - name: 运行管道（live 模式，非交易日自动跳过）
         env:
           MODE: live
@@ -224,21 +234,6 @@ jobs:
       # 脚本内部对板段非法/非股票品种做校验，不合法直接退出，避免把错池子推上线。
       - name: 构建模拟交易标的池（板段/ST/最近真实收盘价）
         run: node scripts/fetch_universe.mjs
-      # 亏钱效应行情快照（#2）：昨涨停今日表现**必须**用全市场真实行情算，
-      # 不能用 hot 列表反查（hot 只含上涨股，会静默丢弃下跌的一半，得出恒 +10% 的假繁荣）。
-      # 故单独一步在收盘后抓昨日涨停名单的今日行情，产出 data/pain-latest.json。
-      # 非交易日/行情日期不匹配时脚本自行拒绝写盘（退出码 2），不阻断整条 job。
-      - name: 抓取亏钱效应行情（昨涨停今日表现，收盘后口径）
-        run: node scripts/fetch_pain.mjs
-        continue-on-error: true
-
-      # 多维市场宽度（#3）：站上20日线占比 / 创新高&新低家数 / 破净率 / 涨跌家数。
-      # **必须分片抓**（全市场约 5400 只，一把梭会被限流且无法断点续跑）：
-      #   分片缓存落 data/.breadth_kline/，失败重跑只补缺的片。
-      # 产出 data/breadth-latest.json（轻量计数）+ data/breadth-daily.json（逐日序列）。
-      - name: 抓取多维市场宽度（分片扫描全市场日K）
-        run: node scripts/fetch_breadth.mjs --shards 8
-        continue-on-error: true
       # ★ 2026-10-12 修复：管道落盘后 archive.json 仍带回写字段 lhb_aggr（sources.js 抓数赋值所致），
       #   龙虎榜口径守卫会因此判红。recalc 在所有写档步骤之后、守卫之前清掉 lhb_aggr 并全档重算因子，
       #   确保守卫读到的是清洗后的主档。recalc 不改天数/回填标记，不影响回测对账（backtest.json 同源）。
@@ -264,6 +259,22 @@ jobs:
       #   契约本体与变更流程见 schemas/*.schema.json 头注与 README「接口契约」章节。
       - name: 前后端接口契约守卫（数据档 vs schemas/ 契约）
         run: node scripts/check_contract.mjs
+      # ── 2026-10-13 接入跨源互证（fetch_crosscheck，此前从未接入 CI → 面板冻结在 9-30）──
+      #   读档案主源(同花顺行业)+抓第二源(腾讯/申万二级)比对，产出 data/crosscheck-latest.json。
+      #   需 pipeline 之后的新鲜档案；continue-on-error 不阻断主链路（第二源限流时静默跳过）。
+      - name: 跨源一致性互证（行业双源比对，解决跨源互证面板陈旧）
+        continue-on-error: true
+        run: node scripts/fetch_crosscheck.mjs
+      # ── 2026-10-13 接入 LLM 舆情试点（V5.3 P2，此前未接入 CI → 舆情参考无内容）──
+      #   需 LLM_API_URL/LLM_API_KEY/LLM_MODEL 三件套（仓库 Secrets 配置）；
+      #   缺配置时脚本退出非0、不落空档（前端显示"未生成"，不冒充中性）。continue-on-error 不阻断主链路。
+      - name: 生成 LLM 舆情参考（需配置 LLM_API_URL/LLM_API_KEY/LLM_MODEL）
+        continue-on-error: true
+        env:
+          LLM_API_URL: ${{ secrets.LLM_API_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+        run: node scripts/fetch_llm_sentiment.mjs
       # ── 合并版（merge/pro-into-ui · 2026-10-02）：K线增量 + UI 构建 + Pages 部署 ──
       # K线增量必须在 UI 构建**之前**：个股 closes/yzt_chg（昨涨停今均涨幅）由 K 线分片派生，
       # 分片没当日 bar → 这些卡片按缺失降级（如实「—」，不编数）。非交易日脚本自报无增量。
@@ -339,7 +350,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/ops-alerts-latest.json data/industry_outlier_review.json data/board_rank.json data/shadow-book.json data/paper data/reports ui/kline
+          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/crosscheck-latest.json data/ops-alerts-latest.json data/industry_outlier_review.json data/board_rank.json data/shadow-book.json data/paper data/reports ui/kline
+          git add data/llm-sentiment-latest.json 2>/dev/null || true  # 仅当 LLM 试点已配置密钥并产出时入库（无产出不报错、不阻断提交）
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else
