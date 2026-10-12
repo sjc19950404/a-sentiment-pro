@@ -47,21 +47,14 @@
   --pre-line: #46536b;      /* 盘前描边 */
   --ok-bg: #1b3a2a;         /* 健康底纹（.tag.live） */
   --dt-warn: #c9a04e;       /* 双轨-警示（.dt-chip.warn） */
-  /* 私有化终端质感（feat/tech-visual v2 · 2026-10-12）
-     目标：压掉"公开行情网页"的商业亮色味，做出内网自研系统的低饱和冷峻底。
-     做法：底/卡/线整体下压一档明度 + 降彩度；底纹用斜向细纹替代通用方格。 */
-  --bg-p: #0a0d12;                          /* 私有化基底（比 --bg 更暗更冷） */
-  --card-p: #12161d;                        /* 私有化卡底（降亮降彩） */
-  --card2-p: #171c24;                       /* 私有化次级卡底 */
-  --line-p: #1d232c;                        /* 私有化描边（更接近底色，弱化框感） */
-  --hatch: rgba(255, 255, 255, .012);       /* 斜向细纹（极淡，专属暗纹） */
-  --mark: rgba(88, 166, 255, .07);          /* 弱水印（系统标识） */
-  --lamp-off: rgba(139, 148, 158, .35);     /* 指示灯-灭（无档位时） */
-  /* 内敛高光（v2 保留的极轻发光，均为 --acc 派生，透明度即克制旋钮） */
-  --glow-soft: rgba(88, 166, 255, .12);     /* 柔和内描边 / 顶部冷光 / 分数微光 */
+  /* 科技感装饰（feat/tech-visual）：纯 CSS 视觉层，无图片依赖。
+     全部以 --acc 为基色派生，保持色系统一；透明度即"克制"的旋钮。 */
+  --grid-line: rgba(88, 166, 255, .045);   /* 背景网格线（极淡） */
+  --grid-size: 32px;                        /* 网格密度（对齐间距 scale） */
+  --glow-acc: rgba(88, 166, 255, .35);      /* 强调辉光（悬停/焦点） */
+  --glow-soft: rgba(88, 166, 255, .12);     /* 柔和内描边 */
   --scan-line: rgba(88, 166, 255, .5);      /* 顶栏扫描线 */
-  --num-glow: rgba(230, 237, 243, .18);     /* 数字微光（仅数据列） */
-  --glow-acc: rgba(88, 166, 255, .35);      /* 卡片悬停能量辉光 */
+  --num-glow: rgba(230, 237, 243, .18);     /* 数字微光 */
   /* 版心 */
   --gut: 20px;              /* 手机安全边距 */
   --maxw: 1560px;           /* 超宽屏版心上限 */
@@ -1499,107 +1492,69 @@ main[aria-hidden="true"] { display: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   私有化终端装饰层（feat/tech-visual v2 · 2026-10-12）
+   科技感装饰层（feat/tech-visual · 2026-10-12）
    ───────────────────────────────────────────────────────────────────────────
-   诉求：私有化自研系统质感 —— 硬核、内敛、低饱和，区别于公开行情网页。
-   纪律（与 v1 同，且更严）：
-   ① 纯 CSS，零图片依赖、**零新增 DOM** —— 指示灯/暗纹/水印全用 ::before/::after
-      （不加装饰节点 = 5554 分片加载零额外渲染负担，CI 无布局偏移风险）
+   纪律：
+   ① 纯 CSS，零图片依赖 —— 不破坏单文件自包含，不进 SW 缓存清单，无额外请求
    ② 全块独立，不改上方任何既有规则 —— 回退 = 删掉本块，零副作用
-   ③ 只用已登记 token —— 视觉层不引入新的"值的出处"
-   ④ 克制：装饰透明度 ≤ .12（水印 .07、斜纹 .012），只碰背景/描边/微光
-   ⑤ 打印稿不受影响 —— 本块在 @media print 之前，print 区 !important 完全接管
+   ③ 只用已登记 token 与 --acc 派生透明度 —— 视觉层不引入新的"值的出处"
+   ④ 克制：所有装饰透明度 ≤ .5，且只在背景/描边/微光上做文章，不碰排版与信息密度
+   ⑤ 打印稿不受影响 —— 本块在 @media print 之前，且 print 区用 !important 完全接管
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ① 私有化暗基底：复用已收敛 token 名，值整体下压一档明度 + 降彩度。
-     不写死在规则里，而是重定义别名指向 --*-p，方便日后单独回退本层。 */
-:root {
-  --bg: var(--bg-p); --card: var(--card-p); --card2: var(--card2-p); --line: var(--line-p);
-}
-
-/* ② 底纹：斜向细纹（比通用方格更"内网系统"）叠加极暗底；fixed 不随滚动 */
+/* ① 背景微网格：双层线性渐变模拟 32px 方格，极淡（.045）不抢内容 */
 body {
   background-color: var(--bg);
-  background-image: repeating-linear-gradient(
-    -45deg, var(--hatch) 0 1px, transparent 1px 7px
-  );
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
   background-attachment: fixed;
 }
-/* 弱水印：右上角一枚极淡的系统标识（纯 CSS 圆环+点阵，非图片），
-   opacity .07 —— 看得见存在、看不见内容，专属感而非干扰 */
-body::after {
-  content: ''; position: fixed; right: -70px; top: -70px; width: 320px; height: 320px;
-  pointer-events: none; z-index: 0; opacity: .07;
-  background:
-    radial-gradient(circle at 50% 50%, transparent 0 78px, var(--acc) 78px 79px, transparent 79px),
-    radial-gradient(circle at 50% 50%, transparent 0 116px, var(--acc) 116px 117px, transparent 117px);
-}
-/* 顶部冷光：比 v1 更收，只做"通电感"不做炫光 */
+/* 顶部径向冷光：从顶栏向下衰减，给暗色背景一层"通电"感 */
 body::before {
-  content: ''; position: fixed; inset: 0 0 auto 0; height: 240px; pointer-events: none; z-index: 0;
-  background: radial-gradient(130% 100% at 50% 0%, var(--glow-soft) 0%, transparent 68%);
+  content: ''; position: fixed; inset: 0 0 auto 0; height: 320px; pointer-events: none; z-index: 0;
+  background: radial-gradient(120% 100% at 50% 0%, var(--glow-soft) 0%, transparent 62%);
 }
-/* 内容层抬到装饰之上（只调层叠，不改布局） */
+/* 内容层抬到光晕之上（不改变布局，只调层叠） */
 .topbar, .zonenav, #alerts, main, footer { position: relative; z-index: 1; }
 
-/* ③ 顶栏：内嵌暗线替代纯 border，扫描线更细更淡（内敛） */
+/* ② 顶栏扫描线：底边一条渐亮渐灭的强调线，替代原纯色 border-bottom 的观感 */
 .topbar { border-bottom-color: transparent; box-shadow: inset 0 -1px 0 0 var(--line); }
 .topbar::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; pointer-events: none;
-  background: linear-gradient(90deg, transparent 0%, var(--scan-line) 30%, var(--acc) 50%, var(--scan-line) 70%, transparent 100%);
-  opacity: .4;
+  background: linear-gradient(90deg, transparent 0%, var(--scan-line) 22%, var(--acc) 50%, var(--scan-line) 78%, transparent 100%);
+  opacity: .55;
 }
 
-/* ④ 卡片：极弱内描边 + 悬停微光（私有系统不需要"卡片浮起来"，只需"被指到"） */
+/* ③ 卡片：柔和内描边 + 悬停辉光（transition 只在描边/阴影上，不触发重排） */
 .card {
   border-color: var(--line);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, .018);
+  box-shadow: inset 0 1px 0 0 var(--glow-soft);
   transition: border-color .18s ease, box-shadow .18s ease;
 }
 .card:hover {
-  border-color: rgba(88, 166, 255, .22);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, .025), 0 4px 18px -12px var(--glow-acc);
+  border-color: var(--glow-acc);
+  box-shadow: inset 0 1px 0 0 var(--glow-soft), 0 0 0 1px var(--glow-soft), 0 6px 22px -10px var(--glow-acc);
 }
 
-/* ⑤ 数据发光：只给数字，极轻；标题不再发光（去通用产品味） */
+/* ④ 数据发光：表格数字与关键数值加极轻 text-shadow，读起来"亮"而不糊 */
 .num, td.num, th.num { text-shadow: 0 0 6px var(--num-glow); }
-.score { text-shadow: 0 0 20px var(--glow-soft); }
+.score, .rg-tag-label { text-shadow: 0 0 18px var(--glow-soft); }
 
-/* ⑥ ★ 专属状态指示灯（私有系统标识）：
-     情绪拐点面板左上角一枚呼吸灯，颜色由档位选择器的 currentColor 驱动，
-     无需 JS、无需新增 DOM —— 冰点/回暖/高潮/退潮各亮各的色。
-     这是外面通用行情模板没有的东西：把"今天这盘什么状态"凝成一颗角灯。 */
-.rg-fold { position: relative; }
-.rg-fold::before {
-  content: ''; position: absolute; left: 9px; top: 9px; width: 6px; height: 6px;
-  border-radius: 50%; background: var(--lamp-off);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, .02), 0 0 8px 0 currentColor;
-  transition: background .25s ease, box-shadow .25s ease;
+/* ⑤ 分区标题：原竖条保留，补一截向右淡出的发光横线（终端分隔感） */
+.zone-head h3::after {
+  content: ''; display: inline-block; vertical-align: middle; margin-left: 10px;
+  width: 54px; height: 1px;
+  background: linear-gradient(90deg, var(--glow-acc), transparent);
 }
-.regime-panel.rg-cold  .rg-fold::before { background: var(--ice); }
-.regime-panel.rg-warm  .rg-fold::before { background: var(--recover); }
-.regime-panel.rg-hot   .rg-fold::before { background: var(--up); }
-.regime-panel.rg-cool  .rg-fold::before { background: var(--ebb); }
-.regime-panel.rg-flat  .rg-fold::before { background: var(--lamp-off); }
-.regime-panel.rg-unknown .rg-fold::before { background: var(--warn); }
-/* 指示灯旁留出位（不新增 DOM，仅靠 padding 微调，避免压字） */
-.regime-panel .rg-fold { padding-left: 24px; }
 
-/* ⑦ 角标：卡片左上角一枚 1px 直角标记（仪器面板的"取景框"暗示），极弱 */
-.card::before {
-  content: ''; position: absolute; left: 0; top: 0; width: 8px; height: 8px;
-  border-left: 1px solid rgba(88, 166, 255, .18);
-  border-top: 1px solid rgba(88, 166, 255, .18);
-  border-top-left-radius: 12px; pointer-events: none;
-}
-.card { position: relative; }
+/* ⑥ 可交互元素焦点统一为"能量环"（键盘可达性不降级，仅换观感） */
+:focus-visible { box-shadow: 0 0 0 4px var(--glow-soft); }
 
-/* ⑧ 焦点环：收窄为"能量环"，与私有系统内敛气质一致 */
-:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; border-radius: 4px; box-shadow: 0 0 0 4px rgba(88, 166, 255, .10); }
-
-/* ⑨ 尊重系统"减少动态" */
+/* ⑦ 尊重系统"减少动态"偏好：装饰不做动画，天然无一例外；此处仅兜底过渡 */
 @media (prefers-reduced-motion: reduce) {
-  .card, .rg-fold::before { transition: none; }
+  .card { transition: none; }
 }
 
 @media print {
