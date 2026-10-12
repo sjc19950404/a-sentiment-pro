@@ -2,6 +2,19 @@
  "schema_version": "1.0",
  "pushed": [
   {
+   "fingerprint": "672886398132383a",
+   "type": "intraday",
+   "date": "2026-10-12",
+   "verified": {
+    "checked_at": "09:52",
+    "snapshot_at": "2026-10-12 09:50",
+    "removed": 0,
+    "degraded": false,
+    "skipped": false
+   },
+   "pushed_at": "2026-10-12T01:52:02.972Z"
+  },
+  {
    "fingerprint": "f4a13963ba61bab3",
    "type": "pre_market",
    "date": "2026-10-08",
