@@ -49,6 +49,19 @@ for (const day of days) {
   if (dups.length) throw new Error(`${day.trade_date} 合并后仍存在重复记录：${dups.slice(0, 3).join(' | ')}`);
 
   const c = caliberFromDay(day);
+  const s = (day.summary = day.summary || {});
+  const e = (day.emotion = day.emotion || {});
+  const beforeDaily = s.lhb_daily_net ?? null;
+  const beforeAll = s.lhb_all_net ?? s.net_total_yi ?? null;
+  const beforeFactor = e.factors?.s_net ?? null;
+
+  // 体积纪律清理（无条件执行：无 LHB 记录的天也要清掉存量派生/歧义字段，
+  // 否则 day.lhb_aggr / net_total_yi / net_pct_rank 永久残留，主档体积超 4.6MB 红线致 CI 体积检查失败）
+  delete day.lhb_aggr;
+  delete s.net_total_yi;
+  delete e.net_total_yi;
+  delete e.net_pct_rank;
+
   if (!c.total_records) continue;
   const mergedAway = Math.max(0, rawBefore - rawAfter);
 
@@ -66,13 +79,7 @@ for (const day of days) {
   //   "有的天有 lhb_aggr、有的天没有"的第三种不一致形态。
   //
   //   故此处**只算不存**：c.all_aggr 仅在 caliberFromDay 内部消费（它自己会重算），
-  //   本脚本不依赖持久化的 lhb_aggr，故直接剔除。
-  delete day.lhb_aggr;   // 显式清除存量（老档可能已被上一版脚本写脏）
-
-  const s = (day.summary = day.summary || {});
-  const beforeDaily = s.lhb_daily_net ?? null;
-  const beforeAll = s.lhb_all_net ?? s.net_total_yi ?? null;
-  delete s.net_total_yi;                    // 歧义字段名：不带口径后缀，一律清除
+  //   本脚本不依赖持久化的 lhb_aggr，故直接剔除（对应 delete 已上提到清理段无条件执行）。
   s.lhb_count = c.total_records;
   s.lhb_raw_count = rawBefore;              // 东财原始披露条数
   s.lhb_merged_away = mergedAway;           // 被合并掉的同票同值重复条数
@@ -85,10 +92,6 @@ for (const day of days) {
   s.lhb_daily_amt = c.daily_amt_yi;
   s.lhb_range_count = c.range_records;
 
-  const e = (day.emotion = day.emotion || {});
-  const beforeFactor = e.factors?.s_net ?? null;
-  delete e.net_total_yi;
-  delete e.net_pct_rank;
   e.lhb_daily_net = c.daily_net_yi;
 
   rows.push({
