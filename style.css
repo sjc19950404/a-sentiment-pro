@@ -1504,6 +1504,32 @@ main[aria-hidden="true"] { display: none; }
   .dv-sum { white-space: normal; }
 }
 
+/* 小屏横屏（手机 landscape）：纵向高度珍贵，压缩头部、隐藏说明，把空间留给表格 */
+@media (max-height: 500px) and (orientation: landscape) {
+  .zonenav { padding: 4px var(--pad); gap: 4px; }
+  .zn { padding: 3px 8px; font-size: 11px; border-radius: 10px; }
+  #alerts { display: none; }
+  .zone { padding-top: 6px; scroll-margin-top: 40px; }
+  .rg-fold { border-radius: 4px; }
+  .rg-fold > summary { padding: 4px 8px; gap: 6px; }
+  .rg-sum { font-size: 11px; }
+  .rg-main { margin: 2px 0 6px; gap: 8px; }
+  .rg-tag { padding: 4px 8px; gap: 6px; }
+  .rg-tag-label { font-size: 16px; letter-spacing: 1px; }
+  .rg-tag-conf { display: none; }
+  .rg-facts { gap: 6px 10px; }
+  .rg-facts b { font-size: 12px; }
+  .rg-body { padding: 0 8px 8px; }
+  .rg-sub { margin: 4px 0 2px; }
+  .rg-table { font-size: 11px; }
+  .rg-table th, .rg-table td { padding: 2px 4px; }
+  .rg-mini { font-size: 10px; padding: 2px 4px; border-radius: 6px; }
+  .rg-dist { gap: 4px; }
+  .rg-dist-item { padding: 2px 5px; font-size: 10px; }
+  .rg-note { display: none; }
+  .rg-caution { margin: 4px 0; padding: 4px 8px; font-size: 11px; }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    私有化终端装饰层（feat/tech-visual v2 · 2026-10-12）
    ───────────────────────────────────────────────────────────────────────────
