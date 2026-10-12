@@ -30,6 +30,23 @@
   --recover: #e8a33c;       /* 回暖（情绪拐点-回暖） */
   --ebb: #7fb3a8;           /* 退潮凉（情绪拐点-退潮） */
   --northbound: #39c5cf;    /* 北向资金 */
+  /* 告警横幅色板（B+B2 收尾 · 2026-10-12 第5批）：深底 + 浅字成对，
+     4 类语义各一对——常规警示/信息/中性待命/盘中进行中/健康。
+     -bg 为深色底纹，-fg 为叠在其上的浅色文字（对比度已满足） */
+  --alert-bg: #3a2a1b;      /* 警示底纹（.alert / .tag.stale） */
+  --alert-fg: #f0c674;      /* 警示文字（.alert） */
+  --alert-fg2: #e8c26a;     /* 警示文字次级（.rg-caution/.rp-caveats/.rp-pt.warn） */
+  --info-bg: #16293a;       /* 信息底纹（.alert.info）～与 --bg 同族 */
+  --info-fg: #9dc7f0;       /* 信息文字（.alert.info） */
+  --live-bg: #14283a;       /* 盘中进行中底纹（.alert.phase-live） */
+  --live-fg: #a9d3f5;       /* 盘中文字（phase-live/.idu-*） */
+  --live-fg2: #e6f0fa;      /* 盘中强调文字（.idu-head b） */
+  --live-badge: #1d3a52;    /* 盘中徽章底（.idu-warn） */
+  --pre-bg: #1c2430;        /* 盘前待命底纹（.alert.phase-pre） */
+  --pre-fg: #a8b6cd;        /* 盘前文字 */
+  --pre-line: #46536b;      /* 盘前描边 */
+  --ok-bg: #1b3a2a;         /* 健康底纹（.tag.live） */
+  --dt-warn: #c9a04e;       /* 双轨-警示（.dt-chip.warn） */
   /* 版心 */
   --gut: 20px;              /* 手机安全边距 */
   --maxw: 1560px;           /* 超宽屏版心上限 */
@@ -63,8 +80,8 @@ body { margin: 0; background: var(--bg); color: var(--txt); font-family: -apple-
 #refreshState.err { color: var(--up); }
 .muted { color: var(--muted); }
 .tag { padding: 1px 7px; border-radius: 10px; background: var(--line); font-size: 11px; }
-.tag.live { background: #1b3a2a; color: var(--down); }
-.tag.stale { background: #3a2a1b; color: var(--warn); }
+.tag.live { background: var(--ok-bg); color: var(--down); }
+.tag.stale { background: var(--alert-bg); color: var(--warn); }
 /* 分层加载范围提示：让"当前页只有最近 N 日明细"永远可见。
    不显示它的话，报告里的"样本 N 个交易日"会随加载深度静默变化（30 vs 241）。 */
 .scope { font-size: 11px; color: var(--muted); }
@@ -88,12 +105,12 @@ body { margin: 0; background: var(--bg); color: var(--txt); font-family: -apple-
 .zn-note { margin-left: auto; font-size: 11px; color: var(--muted); }
 
 #alerts { padding: 8px var(--pad) 0; }
-.alert { background: #3a2a1b; border: 1px solid var(--warn); color: #f0c674; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; font-size: 13px; }
-.alert.info { background: #16293a; border-color: var(--acc); color: #9dc7f0; }
+.alert { background: var(--alert-bg); border: 1px solid var(--warn); color: var(--alert-fg); padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; font-size: 13px; }
+.alert.info { background: var(--info-bg); border-color: var(--acc); color: var(--info-fg); }
 /* 盘中相位：用「进行中」的视觉语言（左侧脉冲条 + 主色），与真滞后（红黄 warn）明确区分——
    盘中不是故障，是正常状态，用告警色会让用户误以为数据出错。 */
-.alert.phase-live { background: #14283a; border-color: var(--acc); border-left: 3px solid var(--acc); color: #a9d3f5; }
-.alert.phase-pre { background: #1c2430; border-color: #46536b; color: #a8b6cd; }
+.alert.phase-live { background: var(--live-bg); border-color: var(--acc); border-left: 3px solid var(--acc); color: var(--live-fg); }
+.alert.phase-pre { background: var(--pre-bg); border-color: var(--pre-line); color: var(--pre-fg); }
 
 /* 分区 */
 .zone { padding: 14px var(--pad) 2px; scroll-margin-top: 56px; }
@@ -117,10 +134,10 @@ body { margin: 0; background: var(--bg); color: var(--txt); font-family: -apple-
    提醒读者这里的一切都是未定盘的盘中数，不要拿去和上方分位比较。 */
 .card.intraday { border-left: 3px solid var(--acc); }
 .card.ai-report { border-left: 3px solid var(--up); }
-.idu-head { font-size: 12px; color: #a9d3f5; margin-bottom: 10px; line-height: 1.7; }
-.idu-head b { color: #e6f0fa; }
+.idu-head { font-size: 12px; color: var(--live-fg); margin-bottom: 10px; line-height: 1.7; }
+.idu-head b { color: var(--live-fg2); }
 .idu-warn { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 4px;
-  background: #1d3a52; border: 1px solid var(--acc); color: #a9d3f5; font-size: 11px; }
+  background: var(--live-badge); border: 1px solid var(--acc); color: var(--live-fg); font-size: 11px; }
 .idu-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .idu-tbl th { text-align: left; font-weight: 500; color: var(--muted); padding: 5px 0; width: 18%; }
 .idu-tbl td { padding: 5px 12px 5px 0; width: 32%; font-variant-numeric: tabular-nums; }
@@ -1224,7 +1241,7 @@ tr.empty-row td { color: var(--muted); padding: 10px 8px; }
 .bs-note { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
 .dt-chip.ok { color: var(--up); border-color: var(--up); }
 .dt-chip.info { color: var(--muted); }
-.dt-chip.warn { color: #c9a04e; border-color: #c9a04e; }
+.dt-chip.warn { color: var(--dt-warn); border-color: var(--dt-warn); }
 .dt-chip.unknown { color: var(--muted); }
 .dt-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 4px; }
 .dt-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 3px 8px 3px 0; }
@@ -1346,7 +1363,7 @@ main[aria-hidden="true"] { display: none; }
 .rg-facts { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); }
 .rg-facts b { color: var(--txt); font-size: 14px; }
 .rg-caution { margin: 6px 0; padding: 6px 10px; border-radius: 5px; font-size: 12.5px; line-height: 1.6;
-  background: rgba(210,153,34,.1); border-left: 3px solid var(--warn); color: #e8c26a; }
+  background: rgba(210,153,34,.1); border-left: 3px solid var(--warn); color: var(--alert-fg2); }
 .rg-sub { font-size: 11.5px; color: var(--muted); margin: 10px 0 4px; }
 .rg-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .rg-table th { text-align: left; font-weight: 500; color: var(--muted); font-size: 11px; padding: 3px 6px; border-bottom: 1px solid var(--line); }
@@ -1395,7 +1412,7 @@ main[aria-hidden="true"] { display: none; }
   padding: 8px 12px; background: rgba(88,166,255,.07); border-radius: 6px; border-left: 3px solid var(--acc); }
 .rp-caveats { margin: 0 0 10px; padding: 8px 12px; border-radius: 6px; font-size: 12.5px;
   background: rgba(210,153,34,.09); border-left: 3px solid var(--warn); }
-.rp-caveats b { color: #e8c26a; }
+.rp-caveats b { color: var(--alert-fg2); }
 .rp-caveats ul { margin: 4px 0 0; padding-left: 18px; line-height: 1.7; }
 .rp-secs { display: grid; gap: 8px; }
 .rp-sec { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; background: rgba(255,255,255,.015); }
@@ -1409,7 +1426,7 @@ main[aria-hidden="true"] { display: none; }
 .rp-pts { margin: 0; padding-left: 18px; line-height: 1.75; font-size: 12.5px; }
 .rp-pt { color: var(--txt); }
 .rp-pt.main { color: var(--txt); font-weight: 500; }
-.rp-pt.warn { color: #e8c26a; }
+.rp-pt.warn { color: var(--alert-fg2); }
 .rp-pt.unknown { color: var(--muted); }
 .rp-actions { display: flex; gap: 8px; margin-top: 10px; }
 .rp-btn { background: var(--card2); color: var(--acc); border: 1px solid var(--line); border-radius: 5px;
@@ -1441,7 +1458,7 @@ main[aria-hidden="true"] { display: none; }
 .dv-main { display: flex; gap: 10px; align-items: baseline; margin: 2px 0 10px;
   padding: 8px 12px; border-radius: 6px; background: rgba(255,255,255,.02); }
 .dv-tag { font-size: 13px; font-weight: 600; white-space: nowrap; }
-.dv-tag.ok { color: var(--down); } .dv-tag.warn { color: #e8c26a; }
+.dv-tag.ok { color: var(--down); } .dv-tag.warn { color: var(--alert-fg2); }
 .dv-tag.info { color: var(--info); } .dv-tag.unknown { color: var(--muted); }
 .dv-reason { font-size: 12.5px; line-height: 1.6; }
 .dv-sub { font-size: 11.5px; color: var(--muted); margin: 8px 0 4px; }

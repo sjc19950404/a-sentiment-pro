@@ -34,6 +34,23 @@
   --recover: #e8a33c;       /* 回暖（情绪拐点-回暖） */
   --ebb: #7fb3a8;           /* 退潮凉（情绪拐点-退潮） */
   --northbound: #39c5cf;    /* 北向资金 */
+  /* 告警横幅色板（B+B2 收尾 · 2026-10-12 第5批）：深底 + 浅字成对，
+     4 类语义各一对——常规警示/信息/中性待命/盘中进行中/健康。
+     -bg 为深色底纹，-fg 为叠在其上的浅色文字（对比度已满足） */
+  --alert-bg: #3a2a1b;      /* 警示底纹（.alert / .tag.stale） */
+  --alert-fg: #f0c674;      /* 警示文字（.alert） */
+  --alert-fg2: #e8c26a;     /* 警示文字次级（.rg-caution/.rp-caveats/.rp-pt.warn） */
+  --info-bg: #16293a;       /* 信息底纹（.alert.info）～与 --bg 同族 */
+  --info-fg: #9dc7f0;       /* 信息文字（.alert.info） */
+  --live-bg: #14283a;       /* 盘中进行中底纹（.alert.phase-live） */
+  --live-fg: #a9d3f5;       /* 盘中文字（phase-live/.idu-*） */
+  --live-fg2: #e6f0fa;      /* 盘中强调文字（.idu-head b） */
+  --live-badge: #1d3a52;    /* 盘中徽章底（.idu-warn） */
+  --pre-bg: #1c2430;        /* 盘前待命底纹（.alert.phase-pre） */
+  --pre-fg: #a8b6cd;        /* 盘前文字 */
+  --pre-line: #46536b;      /* 盘前描边 */
+  --ok-bg: #1b3a2a;         /* 健康底纹（.tag.live） */
+  --dt-warn: #c9a04e;       /* 双轨-警示（.dt-chip.warn） */
   /* 版心 */
   --gut: 20px;              /* 手机安全边距 */
   --maxw: 1560px;           /* 超宽屏版心上限 */
