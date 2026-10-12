@@ -113,6 +113,17 @@
        不是买卖信号（DISCLAIMER 口径）。 -->
   <div id="dualTrackPanel" class="dualtrack-panel" hidden></div>
 
+  <!-- 策略回测面板（A 冰点反转 / B 题材动量 / C 梯队风险偏好 × 沪深300 基准）：
+       数据源：data/backtest-strategies.json（scripts/backtest_strategies.mjs 生成，
+       引擎 src/strategy_bt.js；point-in-time 纪律由 test/backtest_strategies.test.mjs 锁定）。
+       ⚠ 为什么独立一个面板、不并进上面的 V5.2 回测面板：
+         两者数据源不同（backtest.json vs backtest-strategies.json）、失败互不影响——
+         与 loadVersionRegression 独立成加载器是同一条原则：回测档缺失不该让策略
+         对比也空白，反之亦然。
+       ⚠ null = "未生成"（≠ 策略无效）；数字只展示不重算（唯一出处 = JSON 档）；
+         历史回测 ≠ 未来收益，meta.disclaimer 原样展示，不构成投资建议。 -->
+  <div id="btStrategyPanel" class="btstrat-panel" hidden></div>
+
   <!-- 致命错误替代区：首屏必需档（archive-index）拿不到时填入。
        刻意放在 <main> **之外** —— fatal 时会给 main 加 aria-hidden（视觉上收起），
        本区必须仍在无障碍树里，且仍可被读屏读到。

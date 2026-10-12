@@ -54,14 +54,59 @@ jobs:
       - name: 归档切片一致性（--check 只读）
         run: node scripts/split_archive.mjs --check
 
+      # --out 由脚本自行落盘（UTF-8 恒定），不靠 shell 重定向（编码随宿主而变：
+      #   PS 默认 UTF-16 / 部分环境 UTF-8 BOM，都会让下游 JSON.parse 失败）。
+      #   退出码即审计结论——违例时 job 照旧红（宁红不假）。
       - name: 跨档口径审计
-        run: node scripts/audit_data_caliber.mjs
+        id: caliber
+        run: node scripts/audit_data_caliber.mjs --json --out data/caliber-latest.json
 
-      # 统一走仓库既有告警通道（OPS_WEBHOOK 企微 + GITHUB_TOKEN issue 兜底），
-      # 不新建 secret、不裸 curl：secret 未配时 guard_notify.mjs 内部跳过推送并
-      # 落日志，且恒 exit 0——通知通道自身故障绝不把 CI 拖红。
+      # 口径审计违例 · 专用文案（2026-10-11 修）：
+      #   之前复用 guard_notify（冒烟语义），判词是「守卫脚本自身异常：冒烟档不可读
+      #   （脚本未走到落盘即崩）」——可审计脚本压根没崩，它诚实红的是「pain 停 9-30
+      #   ≠ 档案锚 10-08」（断供未修）。文案把**数据违例**说成**工具崩了**，直接误导
+      #   排查方向。改走 notify_caliber_fail.mjs：文案直书哪档、哪天、为什么违例。
+      - name: 口径审计违例告警（企微 + issue 兜底）
+        if: steps.caliber.outcome == 'failure'
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/notify_caliber_fail.mjs \
+            --file data/caliber-latest.json \
+            --run-id "${{ github.run_id }}" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      # 其余健康检查步骤（契约守卫/新鲜度/切片一致性）失败 → 仍走既有 guard_notify。
+      #   排除 caliber：否则口径违例会同时收到两条（一条准确 + 一条"脚本崩了"）。
+      # 档案缺交易日检测（2026-10-11 加）：
+      #   2026-10-09 整档缺失是我翻数据时**偶然**发现的——起因是 10-10 那次 run
+      #   cancelled，而 CI 没有任何 backfill 调度，于是这天永久缺失且无人知晓。
+      #   历史遗留的 30 天字段缺口同属此类。本 step 把"静默缺失"变成**红出来**。
+      #   判据：交易日 = 覆盖区间内工作日 − 休市日（calendar 的 trading 是空的、
+      #   days 只记 closed，必须自己算）；**上界取昨天**——今天没采不算缺失，
+      #   否则天天误报，误报会让人习惯性忽略告警，等于没有告警。
+      - name: 档案缺交易日检测
+        id: gapdays
+        run: node scripts/audit_archive_gaps.mjs --json --out data/gap-days-latest.json
+
+      # 缺天专用文案：直书缺哪几天 + 档案末档/日历覆盖——这三样才决定"是不是真缺口"。
+      #   复用 guard_notify 只能得到「步骤失败，明细见 run 日志」，读者还得点进去翻。
+      - name: 缺交易日告警（企微 + issue 兜底）
+        if: steps.gapdays.outcome == 'failure'
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/notify_gap_days.mjs \
+            --file data/gap-days-latest.json \
+            --run-id "${{ github.run_id }}" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      # 其余健康检查步骤（契约守卫/新鲜度/切片一致性）失败 → 仍走既有 guard_notify。
+      #   排除 caliber 与 gapdays：两者各有专用告警，否则同一问题收两条互相打架的告警。
       - name: 守卫结果通知（企微 + issue 兜底）
-        if: failure()
+        if: failure() && steps.caliber.outcome != 'failure' && steps.gapdays.outcome != 'failure'
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -70,9 +115,10 @@ jobs:
           # data/smoke-latest.json（allOk=true），guardVerdict 会判 ERROR 且理由写成
           # 「冒烟档为成功态，与 step 失败矛盾」，issue 标题会误导归因。显式传空档
           # → smoke=null + outcome=failure，仍是 ERROR 级（企微 error + issue 兜底），
-          # 语义正确："健康检查步骤失败"。
+          # 语义正确："健康检查步骤失败"（非冒烟类失败）。
           node scripts/guard_notify.mjs \
             --step-outcome failure \
             --file .github/workflows/no-smoke-report-for-this-job.json \
+            --no-smoke \
             --run-id "${{ github.run_id }}" \
             --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

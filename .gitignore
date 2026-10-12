@@ -65,3 +65,9 @@ data/main_theme_history.json
 __pycache__/
 *.pyc
 data/intraday_scan.json
+
+# 健康检查的告警明细中间档（由审计脚本 --out 生成，仅供同 run 内的告警脚本读明细）
+# 为什么不入库：每次跑内容都变、且只在本次 run 内有意义；要入库的是**结论**（报告/issue）。
+# 入库只会让 git status 长期挂着未跟踪文件、淹没真改动。
+data/caliber-latest.json
+data/gap-days-latest.json

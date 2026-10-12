@@ -3,14 +3,22 @@
 // 与单测共享同一实现（测试锁「信号只读 T 日收盘数据」的时点纪律）。
 //
 // 策略定义（2026-10-02 拍板）：
-//   A 冰点反转：T 日情绪 < 10 → T+1 开盘买沪深300 持有 N 日（N=3/5/10）；
-//               持有期内情绪 > 90 → 次日开盘清仓（过热避险）。
+//   A 冰点反转：T 日情绪 < 近 120 日滚动 P15 → T+1 开盘买沪深300 持有 N 日（N=3/5/10）；
+//               持有期内情绪 > 滚动 P85 → 次日开盘清仓（过热避险）。
+//               ⚠ 原为固定阈值 <10 / >90——样本期情绪区间 17.9~92.4，<10 出现
+//                 **0 次**、>90 仅 3 天，A 策略一年 0 触发，等于死策略。
+//                 2026-10-11 改为滚动分位（理由与实现见信号段注释）。
 //   B 题材动量：T 日 top1 题材（去噪口径覆盖个股数最多）→ T+1 开盘等权买入成员股，持有 N 日。
 //   C 梯队风险偏好：T 日 max_lb ≥ 4 且 2 板以上家数 ≥ 8 → T+1 开盘买沪深300 持有 N 日；
 //               持有期内 max_lb ≤ 2（梯队断层）→ 次日开盘清仓。
 //
-// 免责纪律：历史回测 ≠ 未来；可用样本仅 33 个真实交易日（208 个回填天只有 s_net 单因子，
-// 被排除——混入会让每个指标都错且错得平滑）。触发次数为 0 的策略如实输出 0，不硬凑。
+// 免责纪律：历史回测 ≠ 未来。样本 = 242 个交易日（2025-10-09 ~ 2026-10-08）：
+//   208 个历史回填天经 scripts/backfill_factors.mjs 补齐七因子后**已全部进入样本**
+//   （meta.sample.excludedBackfillDays = 0，池字段为 K 线重建口径）。
+//   ⚠ 本文件早期留有「可用样本仅 33 个真实交易日（回填天只有 s_net 单因子，排除）」
+//   的说法——那是**回填落地前**的旧结论，已作废（2026-10-11 更正：该文案曾误导
+//   后续判断，以为样本不足而低估本模块可用性）。触发次数为 0 的策略如实输出 0，
+//   不硬凑——见下方 A 策略阈值校准说明。
 import dns from 'node:dns';
 import { atomicWriteJSON } from '../src/fsutil.js';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -20,6 +28,10 @@ import config from '../src/config.js';
 import { ThemeDenoiser } from '../src/themes.js';
 import { quoteSymbol } from '../src/sources.js';
 import { metrics, buildTrades, tradeReturns, buildNav, COSTS, ROUND_COST } from '../src/strategy_bt.js';
+// 日K取数改走共享模块（2026-10-11）：影子账本要用同一条路，口径必须一致，
+//   各自实现一份迟早分叉（详见 src/kline.js 文件头）。
+import { getKline } from '../src/kline.js';
+import * as SHADOW_SIGNAL from '../src/shadow_signal.js';
 
 dns.setDefaultResultOrder('ipv4first');
 
@@ -30,31 +42,6 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const HOLDINGS = [3, 5, 10];
 const r4 = (v) => (v != null ? Math.round(v * 1e4) / 1e4 : null);
-
-// ── 行情：日K（缓存优先，miss 真抓腾讯 ifzq 前复权）─────────────────────────
-// minLen：指数 100（保证历史窗口足够）；个股 20——新股 K 线天然短，一刀切 100 会把
-// 题材成员里的次新股整批拒掉（实测 86 只里 4 只被误杀）。
-async function getKline(sym, minLen = 20) {
-  const cache = path.join(KDIR, sym + '.json');
-  if (existsSync(cache)) return JSON.parse(readFileSync(cache, 'utf8'));
-  for (let att = 0; att < 3; att++) {
-    try {
-      const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${sym},day,,,320,qfq`;
-      const j = await (await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://gu.qq.com/' } })).json();
-      const node = j && j.data && j.data[sym];
-      const rows = node && (node.qfqday || node.day);
-      if (!Array.isArray(rows) || rows.length < minLen) throw new Error(`K线结构异常/过短(${rows ? rows.length : 0} < ${minLen})`);
-      const k = rows.map((r) => ({ date: String(r[0]), open: +r[1], close: +r[2] }))
-        .filter((x) => Number.isFinite(x.open) && x.open > 0 && Number.isFinite(x.close) && x.close > 0);
-      mkdirSync(KDIR, { recursive: true });
-      atomicWriteJSON(cache, JSON.stringify(k));
-      return k;
-    } catch (e) {
-      if (att === 2) throw new Error(`${sym} 日K获取失败: ${e.message}`);
-      await sleep(800 * (att + 1));
-    }
-  }
-}
 
 // ── 主流程 ───────────────────────────────────────────────────────────────────
 const arc = JSON.parse(readFileSync(path.join(ROOT, 'data', 'archive.json'), 'utf8'));
@@ -101,8 +88,34 @@ const klineOf = (sym) => (sym == null ? HS300 : klineCache.get(sym));
 const emotionOf = (i) => realDays[i].emotion.value;
 const maxLbOf = (i) => (realDays[i].summary && realDays[i].summary.max_lb) || 0;
 const lb2Of = (i) => (realDays[i].summary && realDays[i].summary.lb2_count) || 0;
-const entryA = (i) => emotionOf(i) < 10;                    // 冰点
-const exitA = (i) => emotionOf(i) > 90;                     // 过热避险
+// ── A 策略阈值：滚动历史分位（2026-10-11 校准，替代固定 <10 / >90）─────────
+//   为什么必须改：
+//   ① 固定阈值与真实分布脱节——样本期 emotion 区间 17.9~92.4，<10 的天数为 **0**，
+//      >90 仅 3 天：A 策略全年 0 触发，回测结果恒为 0，是死策略；
+//   ② 分布会漂移——前 60% 样本 P85=66.4，全样本 P85=81.7（后期情绪系统性偏高），
+//      所以任何**绝对**阈值都会随行情迁移而失效（用训练期定阈值则后半段"天天过热"）；
+//   ③ 不能用全样本分位定阈值——那等于用未来数据选参数（前视偏差）。
+//   ⇒ 滚动分位：T 日阈值只由 T 日**之前**的窗口计算（先算阈值、再把 T 日值入库，
+//      顺序保证无前视），分布漂移自动跟随；warmup 内历史不足，不出信号、不硬凑。
+// 阈值常量改走 src/shadow_signal.js（2026-10-11）：影子账本与回测必须同口径，
+//   两份定义迟早分叉（详见该文件头），故只留一份、两边 import。
+const { EMO_WIN, EMO_LO_Q, EMO_HI_Q, EMO_WARMUP } = SHADOW_SIGNAL;
+const emoLoAt = [];
+const emoHiAt = [];
+{
+  const hist = [];
+  for (let i = 0; i < realDays.length; i++) {
+    if (hist.length >= EMO_WARMUP) {
+      const w = hist.slice(-EMO_WIN).sort((a, b) => a - b);
+      emoLoAt[i] = w[Math.floor((w.length - 1) * EMO_LO_Q)];
+      emoHiAt[i] = w[Math.floor((w.length - 1) * EMO_HI_Q)];
+    } else { emoLoAt[i] = null; emoHiAt[i] = null; }
+    const v = emotionOf(i); // 阈值已先算，此处才把 T 日值纳入 → 严格无前视
+    if (typeof v === 'number' && Number.isFinite(v)) hist.push(v);
+  }
+}
+const entryA = (i) => emoLoAt[i] != null && emotionOf(i) < emoLoAt[i];  // 冰点
+const exitA = (i) => emoHiAt[i] != null && emotionOf(i) > emoHiAt[i];   // 过热避险
 const entryC = (i) => maxLbOf(i) >= 4 && lb2Of(i) >= 8;     // 梯队扩张
 const exitC = (i) => maxLbOf(i) <= 2;                       // 梯队断层
 const entryB = (i) => { const t = topThemeOf(i); return !!(t && t.codes.length >= 2); };
@@ -122,8 +135,9 @@ for (const holdN of HOLDINGS) {
     const tr = tradeReturns(trades, klineOf).filter((x) => x.ret != null);
     const nav = buildNav(trades, klineOf, k0, k1);
     strategies.push({
-      id: 'A_ice_reversal', label: `冰点反转（<10 买 / >90 避险，持有 ${holdN} 日）`,
-      holdN, entry: 'T日 emotion<10 → T+1 开盘买沪深300', exit: `持有 ${holdN} 日收盘卖；期间 emotion>90 → 次日开盘卖`,
+      id: 'A_ice_reversal', label: `冰点反转（滚动 P${Math.round(EMO_LO_Q * 100)} 买 / P${Math.round(EMO_HI_Q * 100)} 避险，持有 ${holdN} 日）`,
+      holdN, entry: `T日 emotion < 近${EMO_WIN}日滚动 P${Math.round(EMO_LO_Q * 100)} → T+1 开盘买沪深300`,
+      exit: `持有 ${holdN} 日收盘卖；期间 emotion > 滚动 P${Math.round(EMO_HI_Q * 100)} → 次日开盘卖`,
       triggered: entryCount(entryA), trades: trades.length,
       ...metrics(nav, tr.map((x) => x.ret)),
       nav: nav.map(r4), // 逐日净值曲线（与顶层 navDates 同锚；r4 精度足够画图）

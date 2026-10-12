@@ -43,6 +43,19 @@ test('guardVerdict：failure + 报告不可读 → ERROR（脚本崩掉也有旁
   assert.equal(v.event.severity, 'error');
 });
 
+// 2026-10-11 加：非冒烟 job 复用本告警通道时（CLI --no-smoke → expectSmoke=false），
+//   smoke=null 是**预期态**，判词必须中性——不能凭空断言"脚本崩了"。旧文案不分青红皂白
+//   写「冒烟档不可读（脚本未走到落盘即崩）」，把 Daily Data Health 的口径审计诚实红
+//   （pain 停 9-30 ≠ 档案锚 10-08）报成"脚本崩"，真实失败点被盖住，白查半天。
+test('guardVerdict：failure + 显式声明不产冒烟档 → ERROR 且判词中性（不谎报脚本崩）', () => {
+  const v = guardVerdict({ stepOutcome: 'failure', smoke: null, expectSmoke: false });
+  assert.equal(v.status, 'ERROR', '仍是 ERROR 级——中性化不等于降级');
+  assert.equal(v.event.severity, 'error', '仍走 error 告警通道');
+  assert.doesNotMatch(v.reason, /冒烟档不可读|崩|脚本自身异常/, '不编造"工具崩溃"这个原因');
+  assert.match(v.reason, /步骤失败/);
+  assert.match(v.event.detail, /run 日志/, '真实失败点指向 run 日志，不猜');
+});
+
 test('guardVerdict：failure + 报告竟为成功态 → ERROR（矛盾组合=超时 kill/报告被覆盖）', () => {
   const v = guardVerdict({ stepOutcome: 'failure', smoke: SMOKE_OK });
   assert.equal(v.status, 'ERROR');

@@ -60,6 +60,29 @@ if (!need.length) {
   process.exit(1);
 }
 
+// ④ 非交易日运行防线（2026-10-08 假期旧对事故，2026-10-11 加）：
+//   10-07（国庆假期中）运行 → archive 末档 9-30 被当「今日」、9-29 被当「昨日」，
+//   于是写出「9-29 涨停 → 9-30 表现」这个**旧对**，顶替了 10-08 真正该有的
+//   「9-30 涨停 → 10-08 表现」（节后首日恰恰最有信号价值）。防线③拦不住：假期里
+//   curDay 与行情自证的最新成交日**都是 9-30**，两者相等即放行——它看不见"后面
+//   还有个 10-08 要来"。唯一能识别"现在是假期"的信号是运行日本身。
+//   ⇒ 运行日（北京）不在交易日序列 → 拒绝落盘，宁缺毋假。
+//   · CI 不受影响：build job 只由北京 18:30 / 21:00 两条 cron（均限 * * 1-5）
+//     触发，运行日必是交易日当日；次日 04:30 美股档 cron 已被 build 的 if 排除；
+//   · --date 显式补算豁免：事后补历史档，运行日非交易日属正常；
+//   · 放在 fetchQuotes 之前——假期运行当场拒绝，不白抓行情、不写脏档。
+if (!wantDate) {
+  const bjToday = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+  if (!new Set(days.map((d) => d.trade_date)).has(bjToday)) {
+    console.error(`[CRITICAL] fetch_pain 拒绝写盘：运行日 ${bjToday}（北京）不在交易日序列内——`
+      + `假期/周末运行会以 archive 末档 ${curDay.trade_date} 当「今日」、${prevDay.trade_date}`
+      + ` 当「昨日」，写出旧对冒充当日（2026-10-07 即此形态：9-29→9-30 顶替 9-30→10-08）。`
+      + '请在交易日收盘后运行，或用 --date <交易日> 显式补算；断供期报告按 P0-2 显示'
+      + '「缺席」而非旧口径。');
+    process.exit(1);
+  }
+}
+
 const { quotes, failed } = await fetchQuotes(need);
 console.log(`[pain] 行情取到 ${Object.keys(quotes).length}/${need.length}${failed.length ? `，失败 ${failed.length}` : ''}`);
 

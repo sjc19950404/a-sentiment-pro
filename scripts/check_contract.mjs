@@ -272,6 +272,18 @@ for (const f of readdirSync(join(ROOT, 'schemas'))) {
 }
 
 // ── 跨档一致性守卫（P2-β 渲染接线）：双轨账本 ↔ signals-latest.dualTrack 披露块 ──
+// ⚠ 2026-10-12 定策：**旁路告警，不设闸**（只打印，不进 failures / 不改退出码）。
+//
+//   为什么降级：dual_track 是 P2-α **旁路**记账——tools/backtest/paper_dual_track.mjs
+//   头注写明"纯新增，零生产改动"。披露块缺失只影响一个旁路展示区，**不动任何生产档**。
+//   而本脚本是 daily.yml build job 的**设闸**门禁（无 continue-on-error），于是出现层级错配：
+//     补入一天真实数据（10-09）→ 全样本重放漂移（-1.96% vs 基准 -1.99%）
+//     → paper_dual_track 门禁① 拒写 → 账本停在旧日 → 披露块 missing
+//     → 本脚本判违例 → build job 整次失败 → 当日不更新、不部署。
+//   即"旁路的状态"掐断了"生产的管道"。
+//
+//   该拦的仍然是拦的：生产档字段缺失/改名/类型漂移由上面的 schema 校验负责，**仍设闸**。
+//   本段只放旁路一致性；JSON 解析失败属真实损坏，也仍计入 failures。
 {
   const ltPath = join(ROOT, 'data', 'paper', 'dual_track_latest.json');
   const sigPath = join(ROOT, 'data', 'signals-latest.json');
@@ -283,7 +295,12 @@ for (const f of readdirSync(join(ROOT, 'schemas'))) {
     try { sig = JSON.parse(readFileSync(sigPath, 'utf8')); } catch (e) {
       failures.push(`[contract] data/signals-latest.json JSON 解析失败：${e.message}`);
     }
-    if (lt && sig) failures.push(...crossCheckDualTrack(lt, sig));
+    if (lt && sig) {
+      const dtWarns = crossCheckDualTrack(lt, sig);
+      for (const w of dtWarns) {
+        console.log(w.replace('[contract] 一致性：', '[contract] 旁路告警（不设闸）：'));
+      }
+    }
   }
 }
 

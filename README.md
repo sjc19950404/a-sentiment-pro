@@ -117,12 +117,15 @@ test/fixtures/sina_global_20260930.txt  外围解析夹具（2026-09-30 美股�
 
 ## 策略收益回测（③ · 三个具体策略 · 2026-10-02）
 
-`node scripts/backtest_strategies.mjs` → `data/backtest-strategies.json`（核心模型在 `src/strategy_bt.js`，
-与单测共享——`test/backtest_strategies.test.mjs` 用「作弊探针」锁死 point-in-time 时点纪律）。
+本地：`node scripts/backtest_strategies.mjs`；CI：**Actions → backtest-strategies → Run workflow**
+（手动触发，刻意**不进每日调度**——回测要抓 ~90 只标的日K，runner 上无缓存，每天跑既慢又无谓）。
+→ 产出 `data/backtest-strategies.json`（核心模型在 `src/strategy_bt.js`，与单测共享——
+`test/backtest_strategies.test.mjs` 用「作弊探针」锁死 point-in-time 时点纪律）；结果同时进
+前端「策略回测（A/B/C × 沪深300）」面板，并在 Actions 页 Job summary 直接出结果表。
 
 | 策略 | 入场 | 出场 |
 |---|---|---|
-| A 冰点反转 | T日 情绪 < 10 → T+1 开盘买沪深300 | 持有 N 日（3/5/10）收盘卖；期间情绪 > 90 → 次日开盘清仓 |
+| A 冰点反转 | T日 情绪 < 近 120 日滚动 P15 → T+1 开盘买沪深300 | 持有 N 日（3/5/10）收盘卖；期间情绪 > 滚动 P85 → 次日开盘清仓（原固定阈值 <10 />90：样本内 <10 出现 **0 次**，等于死策略，2026-10-11 改为滚动分位） |
 | B 题材动量 | T日 top1 题材（去噪口径）→ T+1 开盘等权买成员股 | 持有 N 日收盘卖 |
 | C 梯队风险偏好 | T日 max_lb≥4 且 2板+家数≥8 → T+1 开盘买沪深300 | 持有 N 日收盘卖；期间 max_lb≤2（断层）→ 次日开盘清仓 |
 

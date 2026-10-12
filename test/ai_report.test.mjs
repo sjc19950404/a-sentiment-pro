@@ -258,14 +258,26 @@ test('真实档冒烟：四源真实 JSON → 盘后报告契约通过 + 搬运�
   });
   const r = generatePostMarket(input, { generatedAt: GEN_AT });
   mustPass(r, 'real-data post_market');
-  // 搬运断言：报告值 === 源档值（唯一事实源纪律，不写死具体数字）
-  assert.equal(r.payload.pnl_daily, input.dualTrack.day.dayReturns.A);
-  assert.equal(r.payload.pnl_cumulative, input.dualTrack.summary.trackA.total);
-  assert.equal(r.payload.close_drawdown, input.dualTrack.summary.trackA.maxDd);
+  // 搬运断言：报告值 === 源档值（唯一事实源纪律，不写死具体数字）。
+  // dualTrack 是 P2-α 旁路账本：账本口径日落后于 signals 时，注入层按「宁缺毋假」
+  // 把 dualTrack 置 null（src/ai_report.js guardModuleFreshness），盈亏三字段随之
+  // 为 null。两种形态都合法——测试只认其中一种就会随账本推进与否反复红
+  // （2026-10-12 实况：账本 10-08 / signals 10-09 → 降级态）。
+  if (input.dualTrack?.day) {
+    assert.equal(r.payload.pnl_daily, input.dualTrack.day.dayReturns.A);
+    assert.equal(r.payload.pnl_cumulative, input.dualTrack.summary.trackA.total);
+    assert.equal(r.payload.close_drawdown, input.dualTrack.summary.trackA.maxDd);
+  } else {
+    assert.equal(r.payload.pnl_daily, null, '账本落后 → 当日盈亏置 null（不拿旧账本冒充）');
+    assert.equal(r.payload.pnl_cumulative, null, '账本落后 → 累计盈亏置 null');
+    assert.equal(r.payload.close_drawdown, null, '账本落后 → 回撤置 null');
+  }
   assert.equal(typeof r.date, 'string');
   const weekly = generateWeekly(input, { generatedAt: GEN_AT, weekStart: input.tradeDate });
   mustPass(weekly, 'real-data weekly(单日)');
-  assert.equal(weekly.payload.nav_series.length, 1);
+  // 同上：净值序列搬自账本 days，账本落后置 null 时无源可搬 → 空序列
+  // （与 pnl 三字段同一降级纪律，不造数）。
+  assert.equal(weekly.payload.nav_series.length, input.dualTrack?.day ? 1 : 0);
 });
 
 // ═══════════ S1.5：模拟选股层（决议 7/8）═══════════════════════════════
@@ -471,7 +483,11 @@ test('真实档冒烟：buildSimulationStock 过契约 + 真实断言（不写�
   const r = generatePostMarket(input, { generatedAt: GEN_AT, simulationStock: sim });
   mustPass(r, 'real sim post_market');
   const sc = sim.sentiment_cycle;
-  assert.equal(sc.regime_raw, input.dualTrack.day.regime.key, 'regime_raw 搬运七态原值');
+  // regime_raw 搬运七态原值：优先取账本口径（与报告同拍）；账本落后被置 null 时
+  // 回落 signals 自身口径（src/ai_report.js guardModuleFreshness → dualTrack=null）。
+  // 不写死单一来源——否则会随账本推进与否反复红（2026-10-12）。
+  const expectRegime = input.dualTrack?.day?.regime?.key ?? input.signals?.regime?.latest?.key;
+  assert.equal(sc.regime_raw, expectRegime, 'regime_raw 搬运七态原值');
   assert.equal(sc.limit_up_count, read('signals-latest.json').latest.zt_count, '涨停数搬运');
   // P0-2（2026-10-10）：真实档 pain 可能新鲜也可能陈旧（断供期），两种形态都合法——
   //   新鲜 → 池非空且理由含连板；陈旧 → 池空 + pool_basis 报因（宁缺毋假，不冒充）。

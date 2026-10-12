@@ -58,9 +58,24 @@ const guard = async (id, label, fn) => {
 };
 const ck = (name, ok, detail) => ({ name, ok: !!ok, detail: detail != null ? String(detail) : null });
 
-// ── 交易日探测：getharden 返回的是「最近一个有数据的交易日」（周末跑 = 周五）──
+// ── 致命异常兜底（2026-10-11 周日 08:41 告警实录修复）────────────────────
+//   原形态：六源串行里任何一个**未被 guard() 接住**的异常（顶层 await 之外崩、
+//   非 Error 抛值、网络层直接 process.exit）都会让脚本死在落盘之前 →
+//   smoke-latest.json 不存在 → guardVerdict 只能判 ERROR「冒烟档不可读
+//   （脚本未走到落盘即崩）」——红得诚实，但**说不清失败在哪**，正是
+//   guard_notify 头注里最忌的「失败但说不清失败在哪」。
+//   兜底：把六源串行整体包进 try，catch 里把失败点写进报告再落盘 →
+//   allOk=false + fatalError 明写原因，ERROR 降级为可定位的 BLOCK。
+let fatalError = null;
+// 交易日探测结果必须声明在 try 块**外**：崩溃兜底后落盘段仍要读它，
+// 否则 catch 之后访问会 ReferenceError——反而让兜底自己把脚本打死。
 let tradeDate = null;
 let probeOk = false;
+let lhbSoftSkip = false;
+let amountAnchor = null;
+try {
+
+// ── 交易日探测：getharden 返回的是「最近一个有数据的交易日」（周末跑 = 周五）──
 await guard('s1', '同花顺强势股 getharden', async () => {
   const rows = await fetchHot();
   tradeDate = rows[0] && rows[0].date;
@@ -85,7 +100,6 @@ if (!tradeDate) {
 console.log(`—— 冒烟交易日锚点: ${tradeDate} ——\n`);
 
 // ── 源2: 东财龙虎榜 ──
-let lhbSoftSkip = false;
 await guard('s2', '东财龙虎榜 RPT_DAILYBILLBOARD', async () => {
   let rows;
   try {
@@ -142,7 +156,6 @@ await guard('s5', '东财涨跌停/炸板池 push2ex', async () => {
 });
 
 // ── 源6: 同花顺大盘日K → 成交额表 ──
-let amountAnchor = null; // 主源锚点值（s6 顺产，对账 step 白嫖，s6 崩则保持 null）
 await guard('s6', '同花顺大盘日K（两市成交额）', async () => {
   const anchor = (tradeDate || '').replace(/-/g, '');
   // 截断防护（2026-10-08 病因B）：同花顺年线间歇截断 → fetchAmountMap 内部腾讯实时
@@ -166,6 +179,10 @@ await guard('s6', '同花顺大盘日K（两市成交额）', async () => {
     ck('成交额数值合理（1000~80000 亿）', vals.every((v) => v > 1000 && v < 80000), `区间 ${Math.min(...vals).toFixed(0)} ~ ${Math.max(...vals).toFixed(0)} 亿`),
   ];
 });
+} catch (e) {
+  fatalError = String(e?.message || e);
+  console.error('[smoke] 致命异常——六源串行中断（未走到落盘）：' + fatalError);
+}
 
 // ── 汇总落盘 ──
 const hard = results.filter((r) => !r.ok);
@@ -173,7 +190,8 @@ const soft = results.filter((r) => r.ok && lhbSoftSkip && r.id === 's2');
 const report = {
   generatedAt: new Date().toISOString(),
   tradeDateAnchored: tradeDate,
-  allOk: hard.length === 0,
+  allOk: hard.length === 0 && !fatalError,
+  fatalError,
   hardFail: hard.map((r) => r.id),
   lhbNotPublished: lhbSoftSkip,
   // 主源锚点值（跨源对账 2026-10-08）：s6 顺产的锚点交易日两市成交额（亿）——
