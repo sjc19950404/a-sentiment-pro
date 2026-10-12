@@ -5,17 +5,17 @@
     {
       "date": "2026-10-12",
       "zt": {
-        "verdict": "UNAVAILABLE",
-        "primary": 29,
-        "derived": null,
-        "countDiff": null,
-        "divergeRate": null
+        "verdict": "WARN",
+        "primary": 42,
+        "derived": 37,
+        "countDiff": 5,
+        "divergeRate": 0.2045
       },
       "breadth": {
-        "verdict": "UNAVAILABLE",
-        "snapUpRatio": null,
-        "leguUpRatio": null,
-        "ratioDiffPct": null
+        "verdict": "PASS",
+        "snapUpRatio": 18.33,
+        "leguUpRatio": 21.93,
+        "ratioDiffPct": 3.6
       }
     }
   ]
