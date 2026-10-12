@@ -127,18 +127,4 @@ jobs:
           DEPLOY_JOB: ${{ github.job }}
           DEPLOY_WORKFLOW: ${{ github.workflow }}
         run: node scripts/notify_deploy.mjs
-      # 一次性探测（2026-10-13）：确认 environment: github-pages 环境下 OPS_WEBHOOK 是否可见。
-      # 仅部署成功时跑（if: success()），不干扰上面的失败告警链路（if: failure()）。
-      # 只打印 OK/MISSING，绝不输出 secret 值本身（GitHub 自动遮蔽只是兜底，主动不回显是纪律）。
-      # 缺失则发 ::warning:: 在 Actions 日志高亮——真失败却收不到告警时，一眼能定位到这里。
-      # 验证 OK 后删除本 step（一次性）。
-      - name: 验证 OPS_WEBHOOK 在 environment 下是否可见（一次性探测）
-        if: success()
-        env:
-          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
-        run: |
-          if [ -n "$OPS_WEBHOOK" ]; then
-            echo "OPS_WEBHOOK=OK (可见)"
-          else
-            echo "::warning::OPS_WEBHOOK=MISSING — environment: github-pages 可能未包含该 secret"
-          fi
+
