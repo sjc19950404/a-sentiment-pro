@@ -249,22 +249,34 @@
     64.4,
     58.3,
     76.7,
-    51.5
+    48.6
   ],
   "position": null,
-  "pending": null,
+  "pending": {
+    "signalDay": "2026-10-12",
+    "lo": 49.8,
+    "emotion": 48.6
+  },
   "pendingExit": null,
   "trades": [],
-  "log": [],
+  "log": [
+    {
+      "date": "2026-10-12",
+      "action": "signal",
+      "emotion": 48.6,
+      "lo": 49.8,
+      "note": "冰点（< P15）——明日开盘买入"
+    }
+  ],
   "summary": {
     "trades": 0,
-    "signals": 0,
+    "signals": 1,
     "winRate": null,
     "avgRet": null,
     "totalRet": null,
     "open": false,
     "cursor": "2026-10-12",
-    "updatedAt": "2026-10-12T13:43:57.223Z"
+    "updatedAt": "2026-10-12T15:11:53.009Z"
   },
   "disclaimer": "影子账本 = 假设执行记录，非真实成交，不构成投资建议；样本足够前不作为任何自动下单依据。"
 }
