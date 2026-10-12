@@ -103,7 +103,9 @@ url = "https://push2ex.eastmoney.com/getTopicZTPool"
 
 - 10-09（周五）盘后主跑**没成功**（报告目录只有 `intraday_2026-10-09`，
   没有 `post_market_2026-10-09`），档停在 10-08。
-- 10-10（周六）跑批判定"非交易日"→ **直接跳过**，10-09 无人补。
+- 10-10（周六）**压根没跑**——不是"判定非交易日跳过"，而是 `daily.yml`
+  的 cron 全是 `* * 1-5`（周一至周五），**周末根本不触发**。
+  这一层比"跳过"更彻底：连判断的机会都没有。
 - 10-12（周一）开盘前检查才发现。此时距源切到 10-12 只剩几小时——
   若不是那次检查，**10-09 就是永久缺口**。
 
@@ -112,9 +114,18 @@ url = "https://push2ex.eastmoney.com/getTopicZTPool"
 
 ### 状态
 
-**待修**（2026-10-12 只记录，未改代码）。
-改动点：`.github/workflows/daily.yml` 盘后主跑 job 的跳过判据、
-`src/pipeline.js` 的日期闸门。
+**已修**（2026-10-12）。漏洞是**两层**，必须一起修——只修一层等于没修：
+
+1. **调度层**：盘后主跑 cron 由 `30 10 * * 1-5` 改为 `30 10 * * *`（每天触发）。
+   周末/节假日不触发，就永远没有补跑机会；是否真跑交给下面的管道层判。
+   ⚠ schedule 仅在默认分支（main）生效——本条随周一合并窗进 main 后才活。
+2. **管道层**：`src/pipeline.js` 非交易日分支不再直接 return，改为先查
+   上一交易日（`prevTradingDay`）是否在档（`latestArchivedTradeDate`）：
+   未入档 → **照常跑**（源此时返回的正是那天）；已入档 → 跳过
+   （低成本，只刷 meta 新鲜度与标的池，同原逻辑）。
+
+测试：`test/pipeline_backfill.test.mjs` 锁住"上一交易日"判定
+（跳过周末 / 跳过休市日 / 回溯 14 天上限找不到则返回 null）。
 
 ---
 
@@ -148,8 +159,22 @@ url = "https://push2ex.eastmoney.com/getTopicZTPool"
 
 ### 状态
 
-**待修**（2026-10-12 只记录，未改代码）。
-改动点：`scripts/backfill_gaps.mjs`（缺口台账判据）、`scripts/freshness.mjs`。
+**已修**（2026-10-12）。改动点 `scripts/audit_archive_gaps.mjs`：
+`findMissingTradeDays` 新增 `hollowDates` 参数——在档但空壳 → 与缺档同等
+计入 `missing`，并**单独**在 `hollowDays` 里列出。单独列出是因为两者修法不同
+（缺档要补跑，空壳要查采集链路），混在缺失日期里说会让读者跑错方向。
+CLI 侧按 `up_count === 0 && zt_count === 0` 计算空壳日期传入。
+
+判据用 `=== 0` 而非 `!`：`null/undefined` 是**字段缺失**（归 `backfill_gaps.mjs`
+管），只有明确的 0 才是"取到了、取到的是空"。
+
+⚠ **更正**：本条初稿把改动点写成 `backfill_gaps.mjs` / `freshness.mjs`，**写错了**——
+缺天检测的实现在 `scripts/audit_archive_gaps.mjs`；`backfill_gaps.mjs` 管的是
+**字段**缺口补齐（zt/up 为空时按 K 线重建），不是**日期**缺口。
+当时凭印象写没读代码，记下以免下次照着错误指引去找。
+
+测试：`test/archive_gaps.test.mjs` 增 3 条（空壳视同缺失 / 空壳+真缺并存 /
+未传参时向后兼容）。实跑当前档案：窗口内 30 个交易日无缺失、无空壳。
 
 ---
 

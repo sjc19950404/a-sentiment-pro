@@ -71,3 +71,36 @@ test('lookback=0（--all）：不设窗口，全部报出', () => {
   });
   assert.equal(r.recentMissing.length, r.missing.length);
 });
+
+// ── 纪律四（2026-10-12）：在档 ≠ 有数据 ──
+test('空壳档视同缺失：在档但 up/zt 全 0 → 必须报出来（否则静默通过）', () => {
+  // 所有交易日都在档，但 09-04 的核心字段全 0 → 对下游等于没有这一天
+  const r = findMissingTradeDays({
+    calendar: { coveredFrom: RANGE.from, coveredTo: RANGE.to, closed: [] },
+    archiveDates: traded(), today: '2026-09-11', lookback: 30,
+    hollowDates: ['2026-09-04'],
+  });
+  assert.deepEqual(r.recentMissing, ['2026-09-04'], '空壳必须当缺失报出来');
+  assert.deepEqual(r.hollowDays, ['2026-09-04'], '且单独标出是空壳（缺档与空壳修法不同）');
+});
+
+test('空壳 + 真缺并存：都报，不重复不遗漏', () => {
+  const have = traded().filter((d) => d !== '2026-09-07'); // 09-07 真缺，09-04 空壳
+  const r = findMissingTradeDays({
+    calendar: { coveredFrom: RANGE.from, coveredTo: RANGE.to, closed: [] },
+    archiveDates: have, today: '2026-09-11', lookback: 30,
+    hollowDates: ['2026-09-04'],
+  });
+  assert.deepEqual(r.recentMissing, ['2026-09-04', '2026-09-07'], '两类都进缺失，按交易日历顺序');
+  assert.deepEqual(r.hollowDays, ['2026-09-04'], '空壳仍单独标出');
+});
+
+test('未传 hollowDates 时行为不变（向后兼容，老调用方不受影响）', () => {
+  const have = traded().filter((d) => d !== '2026-09-04');
+  const r = findMissingTradeDays({
+    calendar: { coveredFrom: RANGE.from, coveredTo: RANGE.to, closed: [] },
+    archiveDates: have, today: '2026-09-11', lookback: 30,
+  });
+  assert.deepEqual(r.recentMissing, ['2026-09-04']);
+  assert.deepEqual(r.hollowDays, [], '默认无空壳');
+});

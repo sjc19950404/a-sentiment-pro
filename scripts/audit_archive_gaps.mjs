@@ -68,20 +68,27 @@ export function tradingDaysInRange({ from, to, closed }) {
  * @param {string} today 北京今天（注入，便于测"今天不算缺失"）
  * @param {number} lookback 只报最近 N 个交易日窗口内的缺失；0 = 全部
  */
-export function findMissingTradeDays({ calendar, archiveDates, today = bjToday(), lookback = 30 }) {
+export function findMissingTradeDays({ calendar, archiveDates, today = bjToday(), lookback = 30, hollowDates = [] }) {
   const from = calendar && calendar.coveredFrom;
   const to = calendar && calendar.coveredTo;
   // ① 上界取「昨天」：今天尚未采集不算缺失
   const yd = new Date(`${today}T00:00:00Z`);
   yd.setUTCDate(yd.getUTCDate() - 1);
   const yesterday = yd.toISOString().slice(0, 10);
-  if (!from || !to) return { window: [], missing: [], recentMissing: [], traded: 0 };
+  const EMPTY = { window: [], missing: [], recentMissing: [], hollowDays: [], traded: 0 };
+  if (!from || !to) return { ...EMPTY };
   const upper = to < yesterday ? to : yesterday;
-  if (upper < from) return { window: [], missing: [], recentMissing: [], traded: 0 };
+  if (upper < from) return { ...EMPTY };
 
   const traded = tradingDaysInRange({ from, to: upper, closed: calendar.closed });
   const have = new Set(archiveDates || []);
-  const missing = traded.filter((d) => !have.has(d));
+  // ③ 空壳档视同缺失（纪律四，2026-10-12）：up_count/zt_count 全为 0 的那天
+  //    在档，但对下游等于没有——它让曲线看起来连续，实际是空壳。只验日期不验
+  //    内容的话，这类档会静默通过所有缺档检查（比真缺一天更隐蔽）。
+  //    判据用 === 0 而非 !：null/undefined 是「字段缺失」（归 backfill_gaps 管），
+  //    只有明确的 0 才是「取到了、但取到的是空」。
+  const hollow = new Set(hollowDates || []);
+  const missing = traded.filter((d) => !have.has(d) || hollow.has(d));
   // ② 只看最近 lookback 个交易日的窗口
   const window = lookback > 0 ? traded.slice(-lookback) : traded;
   const wset = new Set(window);
@@ -90,6 +97,8 @@ export function findMissingTradeDays({ calendar, archiveDates, today = bjToday()
     window,
     missing,
     recentMissing: missing.filter((d) => wset.has(d)),
+    // 单独列出空壳——告警文案必须能区分「缺档」与「有档但空」，否则读者会跑错方向
+    hollowDays: window.filter((d) => hollow.has(d)),
     coveredTo: to,
     archiveLast: (archiveDates || []).slice().sort().slice(-1)[0] || null,
   };
@@ -107,19 +116,16 @@ if (isMain) {
   }
   const cal = JSON.parse(readFileSync(CAL, 'utf8').replace(/^﻿/, ''));
   const arch = decodeArchive(JSON.parse(readFileSync(MAIN, 'utf8').replace(/^﻿/, '')));
-  const dates = (arch.all_days || []).map((d) => d && d.trade_date).filter(Boolean);
-  // 空壳档检测（纪律四，2026-10-12；2026-10-15 移植自 staging c27d618c）：在档但
-  // summary.up_count/zt_count 全为 0 —— 与缺档对下游无区别，却骗过「文件在/能解析/字段非 null」
-  // 的既有检查。main 重构后字段由旧版 meta.* 挪至 summary.*。判据用 === 0 而非 !：
-  // null 归 backfill_gaps 管，不在此误杀。
-  const hollowDates = [];
-  for (const day of (arch.all_days || [])) {
-    const up = day.summary?.up_count;
-    const zt = day.summary?.zt_count;
-    if (up === 0 && zt === 0) hollowDates.push(day.trade_date);
-  }
-  const r = findMissingTradeDays({ calendar: cal, archiveDates: dates, lookback: LOOKBACK });
-  r.hollowDates = hollowDates;
+  const days = arch.all_days || [];
+  const dates = days.map((d) => d && d.trade_date).filter(Boolean);
+  // 空壳档（纪律四）：在档但核心情绪字段全为 0 → 与缺档同等对待。
+  //   判据 === 0：null/undefined 是字段缺失（归 backfill_gaps.mjs 管），
+  //   只有明确的 0 才是「取到了、取到的是空」。
+  const hollowDates = days
+    .filter((d) => d?.summary && d.summary.up_count === 0 && d.summary.zt_count === 0)
+    .map((d) => d.trade_date)
+    .filter(Boolean);
+  const r = findMissingTradeDays({ calendar: cal, archiveDates: dates, lookback: LOOKBACK, hollowDates });
 
   if (WANT_JSON) {
     const payload = JSON.stringify({ ok: r.recentMissing.length === 0, ...r, generatedAt: new Date().toISOString() }, null, 2);
@@ -128,6 +134,11 @@ if (isMain) {
   } else if (r.recentMissing.length) {
     console.error(`[gap-days] ✗ 档案缺 ${r.recentMissing.length} 个交易日（窗口内共 ${r.window.length} 个交易日）`);
     console.error(`  缺失日期：${r.recentMissing.join(' ')}`);
+    // 空壳要单独点名：它和「缺档」修法不同（缺档要补跑，空壳要查采集链路），
+    // 混在缺失日期里说，读者会跑错方向。
+    if (r.hollowDays.length) {
+      console.error(`  ⚠ 其中 ${r.hollowDays.length} 天是**空壳档**——在档但 up/zt 全为 0（${r.hollowDays.join(' ')}）：曲线看着连续，实际是空的`);
+    }
     console.error(`  档案末档 ${r.archiveLast ?? '无'} · 日历覆盖至 ${r.coveredTo}`);
     console.error(`  窗口外另有 ${r.missing.length - r.recentMissing.length} 天缺失（历史遗留，--all 查看全部）`);
   } else {
