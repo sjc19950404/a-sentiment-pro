@@ -1,7 +1,7 @@
 {
   "kind": "source-health",
   "version": 1,
-  "updatedAt": "2026-10-12T02:45:57.313Z",
+  "updatedAt": "2026-10-12T02:49:28.936Z",
   "sources": {
     "quantdash-universe": {
       "ok": 0,
@@ -22,8 +22,8 @@
     "quantdash-symbols": {
       "ok": 0,
       "fail": 1,
-      "streak": 1,
-      "lastOk": null,
+      "streak": 0,
+      "lastOk": "2026-10-12",
       "lastFail": "2026-10-12",
       "lastDay": "2026-10-12"
     },
@@ -38,16 +38,16 @@
     "snapshot-derived": {
       "ok": 0,
       "fail": 1,
-      "streak": 1,
-      "lastOk": null,
+      "streak": 0,
+      "lastOk": "2026-10-12",
       "lastFail": "2026-10-12",
       "lastDay": "2026-10-12"
     },
     "akshare-legu": {
       "ok": 0,
       "fail": 1,
-      "streak": 1,
-      "lastOk": null,
+      "streak": 0,
+      "lastOk": "2026-10-12",
       "lastFail": "2026-10-12",
       "lastDay": "2026-10-12"
     },
