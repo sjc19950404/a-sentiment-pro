@@ -10,6 +10,7 @@ import { caliberFromDay } from '../lhb.js';
 import { recalcRanks } from '../sources.js';
 import { computeRelative } from '../relative.js';
 import { validateDay, sanitizeForFactors } from '../dirty.js';
+import fs from 'fs';
 import { BACKFILL_FLAG } from '../backfill.js';
 // 行业离群「销案」台账（data/industry_outlier_review.json）**不进本引擎**：
 //   ⚠ 判脏/因子入参必须只依赖客观数据（见下方「判脏不得注入销案台账」注）。台账是
@@ -18,6 +19,17 @@ import { BACKFILL_FLAG } from '../backfill.js';
 //   本模块的任何一处都不得再 import confirmedSet/validateLedger —— 一旦让台账参与
 //   档案判定，"存档可重现" 就依赖一份可变的人工台账，且销案会从可审计退化为静默消失。
 //   （自 origin/main 合入：原文在 src/pipeline.js，判脏体搬至本模块后注释随行。）
+
+// 人工审核改判台账（data/manual_review.json）：本引擎**只读**它、并把它透传给
+// validateDay 作为 manualReview 覆盖 —— 这是用户明确要的"管线真按结论剔除"落点。
+// 与销案台账（industry_outlier_review.json）两路互不越界：销案不进引擎；人工改判进。
+const MR_PATH = new URL('../data/manual_review.json', import.meta.url);
+function loadManualReview() {
+  try {
+    const j = JSON.parse(fs.readFileSync(MR_PATH, 'utf8'));
+    return (j && Array.isArray(j.entries)) ? j : null;
+  } catch { return null; }
+}
 
 // ── 供 recalcAll 使用的小工具（模块级，不在 forEach 里重复创建）────────────
 const r1s = (v) => (v == null || !Number.isFinite(+v) ? null : Math.round(v * 10) / 10);
@@ -92,6 +104,8 @@ function isBackfillShaped(s) {
 //     未被识别的跨日依赖，此时必须停止缩小范围）。
 export function recalcAll(days, opts = {}) {
   const scope = opts.scope || null;
+  // 人工审核改判台账：每轮重算统一读取一次，透传给 validateDay 决定因子剔除。
+  const manualReview = loadManualReview();
   // 需要**完整重算因子段**的日期集合；scope 为空 = 全档（旧行为）。
   const scopedDates = (scope && !scope.full && Array.isArray(scope.dates))
     ? new Set(scope.dates)
@@ -156,7 +170,7 @@ export function recalcAll(days, opts = {}) {
     //   的 dirty.recent[].reviewVerdict 展示）；跨源核验台账 data/industry_outlier_review.json
     //   仍是 scripts/verify_industry_outliers.mjs 的输入与去重依据。两条链路互不越界。
     //   （自 origin/main 合入：判脏体自 src/pipeline.js 搬至本模块，注释随行。）
-    const vres = validateDay(d);
+    const vres = validateDay(d, { manualReview });
     const { cleaned, dropped } = sanitizeForFactors(d, vres);
 
     const netBuy = cleaned.netBuy ?? null;

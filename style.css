@@ -1119,12 +1119,10 @@ tr.empty-row td { color: var(--muted); padding: 8px 8px; }
      has-warn = 仅"需复核"，未剔除任何数据（橙，中等关注）
      has-dirty= 有字段被剔出因子入参（红，最需关注）
    三色必须可区分 —— "需复核"与"已剔除"若同色，会让人误判数据是否被丢。 */
-.dirty-panel { margin: 8px 0; }
+.dirty-panel { margin: 8px 0; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--card); padding: 8px 12px; }
 .dirty-panel[hidden] { display: none; }
-.dq-fold { border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
-.dq-fold > summary { padding: 8px 12px; cursor: pointer; display: flex; flex-wrap: wrap;
-  align-items: baseline; gap: 8px; }
-.dq-fold > summary::-webkit-details-marker { display: none; }
+.dq-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
 .dq-sum { flex: 1 1 100%; font-size: 11px; }
 .dq-body { padding: 6px 12px 10px; border-top: 1px solid var(--line); }
 .dq-chip { display: inline-block; font-size: 11px; line-height: 1.6; padding: 0 6px; border-radius: 4px;
@@ -1133,12 +1131,21 @@ tr.empty-row td { color: var(--muted); padding: 8px 8px; }
 .dq-chip.has-warn { color: var(--alert); }
 .dq-chip.has-dirty { color: var(--up); }
 .dq-chip.unknown { color: var(--muted); }
-.dirty-panel.dq-clean .dq-fold { border-left: 3px solid var(--down); }
-.dirty-panel.dq-has-warn .dq-fold { border-left: 3px solid var(--alert); }
-.dirty-panel.dq-has-dirty .dq-fold { border-left: 3px solid var(--up); }
-.dirty-panel.dq-unknown .dq-fold { border-left: 3px solid var(--muted); border-style: dashed; }
+.dirty-panel.dq-clean { border-left: 3px solid var(--down); }
+.dirty-panel.dq-has-warn { border-left: 3px solid var(--alert); }
+.dirty-panel.dq-has-dirty { border-left: 3px solid var(--up); }
+.dirty-panel.dq-unknown { border-left: 3px solid var(--muted); border-style: dashed; }
 .dq-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 6px; margin: 4px 0 6px; }
 .dq-kpi { border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; background: rgba(255,255,255,.02); }
+.dq-kpi.click { cursor: pointer; user-select: none; }
+.dq-kpi.click:hover { background: rgba(88,166,255,.12); }
+.dq-kpi.click:focus-visible { outline: 1px solid var(--acc); }
+.dq-kpi.click[aria-expanded="true"] { border-color: var(--acc); background: rgba(88,166,255,.16); }
+.dq-detail { margin: 4px 0 2px; padding-left: 8px; border-left: 2px solid var(--line); }
+.dq-detail[data-for="clean"] { border-left-color: var(--down); }
+.dq-detail[data-for="dirty"] { border-left-color: var(--up); }
+.dq-detail[data-for="warn"] { border-left-color: var(--alert); }
+.dq-empty { font-size: 12px; line-height: 1.6; }
 .dq-kpi .dq-k { display: block; font-size: 11px; color: var(--muted); }
 .dq-kpi .dq-v { display: block; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .dq-kpi .dq-den { font-size: 10px; }
@@ -1172,6 +1179,24 @@ tr.empty-row td { color: var(--muted); padding: 8px 8px; }
 .dq-note { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line);
   font-size: 11px; line-height: 1.6; }
 .dq-note code { background: rgba(255,255,255,.06); padding: 0 3px; border-radius: 4px; }
+.dq-review-row { margin-top: 4px; }
+.dq-review-btn { font-size: 11px; padding: 2px 8px; border-radius: 4px; cursor: pointer; border: 1px solid var(--acc); background: transparent; color: var(--acc); font-family: inherit; }
+.dq-review-btn:hover { background: rgba(88,166,255,.14); }
+.dq-verdict.reviewed { color: var(--up); border-color: var(--up); }
+.dq-modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
+.dq-modal { width: min(520px, 92vw); background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+.dq-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.dq-modal-x { background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: 14px; }
+.dq-modal-body { padding: 12px 14px; font-size: 12px; }
+.dq-modal-issue { margin-bottom: 10px; line-height: 1.6; }
+.dq-modal-row { display: flex; align-items: flex-start; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+.dq-modal-label { width: 64px; flex: none; color: var(--muted); padding-top: 4px; }
+.dq-radio { display: inline-flex; align-items: center; gap: 4px; margin-right: 12px; }
+.dq-select, .dq-input, .dq-textarea { background: var(--bg); color: var(--txt); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font-family: inherit; font-size: 12px; }
+.dq-textarea { width: 100%; min-height: 56px; resize: vertical; }
+.dq-modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--line); }
+.dq-btn { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--txt); cursor: pointer; font-family: inherit; font-size: 12px; }
+.dq-btn.primary { background: var(--acc); color: #fff; border-color: var(--acc); }
 
 /* 跨源互证（#135）：与脏数据面板同构，但状态色语义不同（ok/diverge/conflict/unknown） */
 .xcheck-panel { margin: 8px 0; }

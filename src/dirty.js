@@ -29,6 +29,7 @@
 //   扫描时命中即不再重复报，转为 suppressedReviews（诚实披露：不是没发现，是已销案）。
 //   ⚠ 销案只影响是否重复报警，不动任何数值、不改 dirty/干净判定。
 import { reviewKey } from './outlier_review.js';
+import { buildManualMap, overrideKey } from './manual_review.js';
 
 // ── 阈值唯一出处 ──────────────────────────────────────────────────────────
 
@@ -416,6 +417,30 @@ export function validateDay(day, opts = {}) {
     issues.push(issue(field, (e && e.rule) || 'CROSS_SOURCE', SEVERITY.ERROR,
       (e && e.reason) || `跨源互证不一致：${field}`, (e && e.value) ?? null, (e && e.expected) ?? null));
   });
+
+  // ── 人工审核改判覆盖（#3 dirty 新交互；data/manual_review.json）──────────────
+  //   与销案台账（industry_outlier_review.json）不同：本覆盖**确实改变剔除判定**——
+  //   用户明确要"管线真按结论剔除"。仅在因子清洗阶段（recalc.js 的 validateDay）生效；
+  //   archive_split 的 validateDay 不注此覆盖 → 档案存储原始判定（可重现 / 留痕）。
+  //   · newStatus='dirty' 且自动判 warn → 升级为 error（真正从因子入参剔除）
+  //   · newStatus='warn'  且自动判 error → 降级为 warn（保留、不剔除）
+  //   无覆盖 → 照自动判定。覆盖只改 severity，不删原始 issue（留档可追溯）。
+  if (opts && opts.manualReview && Array.isArray(opts.manualReview.entries) && opts.manualReview.entries.length) {
+    const mrMap = buildManualMap(opts.manualReview);
+    if (mrMap.size) {
+      for (let i = 0; i < issues.length; i++) {
+        const k = overrideKey(day.trade_date, issues[i]);
+        if (!k) continue;
+        const ov = mrMap.get(k);
+        if (!ov) continue;
+        if (ov.newStatus === 'dirty' && issues[i].severity === SEVERITY.WARN) {
+          issues[i] = { ...issues[i], severity: SEVERITY.ERROR, reason: issues[i].reason + '（人工审核改判：已剔除）' };
+        } else if (ov.newStatus === 'warn' && issues[i].severity === SEVERITY.ERROR) {
+          issues[i] = { ...issues[i], severity: SEVERITY.WARN, reason: issues[i].reason + '（人工审核改判：维持需复核，不剔除）' };
+        }
+      }
+    }
+  }
 
   // ── 汇总 ──────────────────────────────────────────────────────────────
   const errFields = [...new Set(issues.filter((i) => i.severity === SEVERITY.ERROR).map((i) => i.field))];

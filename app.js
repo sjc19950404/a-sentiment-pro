@@ -2,6 +2,27 @@
 // （纯 vanilla，无构建步骤）。完整档 data/archive.json 仅由脚本/审计/回测读取，前端不拉。
 // 分层规则与切片生成见 src/archive_split.js（唯一出处）；惰性字段见 src/lhb_codec.js。
 const $ = (id) => document.getElementById(id);
+// 人工审核模式：仅本机（localhost / 127.0.0.1）或显式 ?review=1 可改；云端 Pages 只读。
+const REVIEW_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || /[?&]review=1\b/.test(location.search);
+// 人工改判覆盖查询（与 src/manual_review.js 同主键逻辑；app.js 经典脚本内联，避免 import）。
+function mrIndustryFromReason(reason) {
+  if (!reason || typeof reason !== 'string') return null;
+  const m = reason.match(/行业[「『](.+?)[」』]/);
+  return m ? m[1].trim() : null;
+}
+function mrKey(date, issue) {
+  const ind = mrIndustryFromReason(issue && issue.reason);
+  if (ind) return String(date) + '|' + ind;
+  const f = issue && issue.field;
+  return f ? String(date) + '|' + f : null;
+}
+function mrOverrideFor(date, issue, ledger) {
+  if (!ledger || !Array.isArray(ledger.entries) || !issue) return null;
+  const k = mrKey(date, issue);
+  if (!k) return null;
+  const e = ledger.entries.find((x) => ((x.industry ? x.date + '|' + x.industry : x.date + '|' + x.field)) === k);
+  return e || null;
+}
 
 // ── 通用工具 ──
 // 所有拼接进 innerHTML 的动态文本一律转义：题材名里含 “ ” 等全角引号、诱因里含 + & 等字符，
@@ -11,14 +32,133 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
 const yiOf = (wan, d = 2) => (wan == null || !Number.isFinite(+wan)) ? '—' : (Math.round(wan / 1e4 * 10 ** d) / 10 ** d).toFixed(d);
 const sgnOf = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—' : `${v > 0 ? '+' : ''}${(+v).toFixed(d)}`;
 
-// 数据质量面板：点 recent 条目的 head 展开/收起其 JSON 明细（外层折叠由原生 <details> 负责）。
-// 委托到 document，renderDirty 每次重渲染也不会重复绑定。
+// 数据质量面板（#3 dirty）：两条全局 click 委托，renderDirty 重渲染不重复绑定。
+// ① 点 KPI 瓦片（干净天数 / 已剔除 / 需复核）展开对应明细，手风琴（再点收起，同时只开一个）。
+// ② 点明细里某条 recent 的 head 展开/收起其完整 JSON。
 document.addEventListener('click', (e) => {
+  const kpi = e.target.closest('.dq-kpi.click');
+  if (kpi) {
+    const key = kpi.getAttribute('data-for');
+    const all = Array.from(document.querySelectorAll('.dq-detail'));
+    const target = all.find((el) => el.getAttribute('data-for') === key);
+    if (target) {
+      const willOpen = target.hidden;
+      all.forEach((el) => { el.hidden = true; });
+      document.querySelectorAll('.dq-kpi.click').forEach((k) => k.setAttribute('aria-expanded', 'false'));
+      if (willOpen) { target.hidden = false; kpi.setAttribute('aria-expanded', 'true'); }
+    }
+    return;
+  }
   const head = e.target.closest('.dirty-item-head');
-  if (!head) return;
-  const body = head.parentElement.querySelector('.dirty-item-body');
-  if (body) body.hidden = !body.hidden;
+  if (head) {
+    const body = head.parentElement.querySelector('.dirty-item-body');
+    if (body) body.hidden = !body.hidden;
+  }
 });
+
+// 人工审核模态：点「人工审核」开模态；模态内 保存/取消/点遮罩关闭；原因选「其他」显文本框。
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.dq-review-btn');
+  if (btn) { openReviewModal(btn); return; }
+  const modal = document.getElementById('reviewModal');
+  if (!modal) return;
+  if (e.target === modal) { closeReviewModal(); return; } // 点遮罩关闭
+  const act = e.target.closest('[data-act]');
+  if (!act) return;
+  const a = act.getAttribute('data-act');
+  if (a === 'close') closeReviewModal();
+  else if (a === 'save') saveReview();
+});
+
+const MR_REASONS = ['跨源核验为真实行情', '确认异常应剔除', '口径调整', '历史数据修正', '其他'];
+
+function openReviewModal(btn) {
+  if (!REVIEW_LOCAL) return;
+  const date = btn.getAttribute('data-date') || '';
+  const field = btn.getAttribute('data-field') || '';
+  const industry = btn.getAttribute('data-industry') || '';
+  const rule = btn.getAttribute('data-rule') || '';
+  const orig = btn.getAttribute('data-orig') || 'warn';
+  const item = (DIRTY && Array.isArray(DIRTY.recent)) ? DIRTY.recent.find((r) => r.date === date) : null;
+  const issue = (item && item.issues && item.issues[0]) || { field: field || null, rule: rule || null };
+  const existing = mrOverrideFor(date, issue, MANUAL_REVIEW);
+  const cur = existing ? existing.newStatus : orig;
+  const reviewer = (localStorage.getItem('asent_reviewer') || 'local');
+  const reasonOpts = MR_REASONS.map((r) => `<option value="${r}"${existing && existing.reason === r ? ' selected' : ''}>${esc(r)}</option>`).join('');
+  const mask = document.createElement('div');
+  mask.id = 'reviewModal';
+  mask.className = 'dq-modal-mask';
+  mask.dataset.date = date; mask.dataset.field = field; mask.dataset.industry = industry;
+  mask.dataset.rule = rule; mask.dataset.orig = orig;
+  mask.innerHTML = `<div class="dq-modal" role="dialog" aria-modal="true">
+    <div class="dq-modal-head"><b>人工审核 · ${esc(date)}</b><button class="dq-modal-x" type="button" data-act="close" aria-label="关闭">✕</button></div>
+    <div class="dq-modal-body">
+      <div class="dq-modal-issue">当前状态：<b>${orig === 'dirty' ? '已剔除' : '需复核'}</b>${industry ? ` · 行业「${esc(industry)}」` : (field ? ` · 字段 ${esc(field)}` : '')}${issue.reason ? `<div class="muted">${esc(issue.reason)}</div>` : ''}</div>
+      <div class="dq-modal-row"><span class="dq-modal-label">改判为</span>
+        <label class="dq-radio"><input type="radio" name="mr-status" value="warn"${cur !== 'dirty' ? ' checked' : ''}> 需复核（warn）</label>
+        <label class="dq-radio"><input type="radio" name="mr-status" value="dirty"${cur === 'dirty' ? ' checked' : ''}> 已剔除（dirty，管线真正剔除该字段）</label>
+      </div>
+      <div class="dq-modal-row"><span class="dq-modal-label">调整原因</span>
+        <select id="mr-reason" class="dq-select">${reasonOpts}</select>
+      </div>
+      <div class="dq-modal-row" id="mr-custom-row"${!(existing && existing.reason === '其他') ? ' hidden' : ''}><span class="dq-modal-label">原因说明</span>
+        <textarea id="mr-custom" class="dq-textarea" placeholder="请填写具体调整原因（便于留档查看）">${existing && existing.reason === '其他' ? esc(existing.customReason || '') : ''}</textarea>
+      </div>
+      <div class="dq-modal-row"><span class="dq-modal-label">审核人</span>
+        <input id="mr-reviewer" class="dq-input" value="${esc(reviewer)}"></div>
+    </div>
+    <div class="dq-modal-foot">
+      <button class="dq-btn primary" type="button" data-act="save">保存</button>
+      <button class="dq-btn" type="button" data-act="close">取消</button>
+    </div>
+  </div>`;
+  document.body.appendChild(mask);
+  const sel = mask.querySelector('#mr-reason');
+  const customRow = mask.querySelector('#mr-custom-row');
+  sel.addEventListener('change', () => { customRow.hidden = sel.value !== '其他'; });
+  mask.querySelector('#mr-reviewer').addEventListener('change', (e) => { localStorage.setItem('asent_reviewer', e.target.value || 'local'); });
+}
+
+function closeReviewModal() {
+  const m = document.getElementById('reviewModal');
+  if (m) m.remove();
+}
+
+function saveReview() {
+  const mask = document.getElementById('reviewModal');
+  if (!mask) return;
+  const status = mask.querySelector('input[name="mr-status"]:checked');
+  const newStatus = status ? status.value : mask.dataset.orig;
+  const reason = mask.querySelector('#mr-reason').value;
+  const customReason = reason === '其他' ? (mask.querySelector('#mr-custom').value || '').trim() : '';
+  const reviewer = (mask.querySelector('#mr-reviewer').value || '').trim() || 'local';
+  if (reason === '其他' && !customReason) { window.alert('请填写具体调整原因（便于留档查看）'); return; }
+  const entry = {
+    date: mask.dataset.date,
+    field: mask.dataset.field || null,
+    industry: mask.dataset.industry || null,
+    rule: mask.dataset.rule || null,
+    originalStatus: mask.dataset.orig,
+    newStatus,
+    reason,
+    customReason: reason === '其他' ? customReason : null,
+    reviewer,
+    ts: new Date().toISOString(),
+  };
+  const saveBtn = mask.querySelector('[data-act="save"]');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '保存中…'; }
+  fetch('./api/review', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ entry }) })
+    .then((r) => r.json().then((j) => ({ ok: r.ok && j && j.ok, j })))
+    .then(({ ok, j }) => {
+      if (!ok) throw new Error((j && j.error) || '保存被服务端拒绝');
+      return fetch('./data/manual_review.json?_=' + Date.now(), { cache: 'no-store' }).then((r2) => (r2.ok ? r2.json() : null));
+    })
+    .then((j) => { MANUAL_REVIEW = (j && Array.isArray(j.entries)) ? j : MANUAL_REVIEW; renderDirty(DIRTY); closeReviewModal(); })
+    .catch((err) => {
+      window.alert('保存失败：' + err.message);
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '保存'; }
+    });
+}
 const pctOf2 = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—' : `${v > 0 ? '+' : ''}${(+v).toFixed(d)}%`;
 const trendCls = (v) => (v == null || !Number.isFinite(+v)) ? 'muted' : (v > 0 ? 'hl' : v < 0 ? 'hl-dn' : 'muted');
 const nf = (v) => (v == null || v === '') ? '—' : (Number.isFinite(+v) ? String(v) : String(v));
@@ -1812,6 +1952,7 @@ let BREADTH = null;
 // 异常值/脏数据标脏（#3 本轮）：同样来自 signals-latest.json。
 //   为 null 表示"未生成/未加载"（≠"数据干净"）——渲染层须显式区分。
 let DIRTY = null;
+let MANUAL_REVIEW = null; // 人工审核改判台账（data/manual_review.json），本机可改、云端只读展示
 // 跨源一致性互证（#2 本轮）：同样来自 signals-latest.json。
 //   ⚠ 为 null 表示"未互证"（≠"两源一致"）——这两者语义相反，渲染层必须显式区分。
 //     本项目铁律：没检查 ≠ 没问题。故 null 走独立样式 + 「未互证」文案，绝不借用"一致"的绿。
@@ -1860,6 +2001,12 @@ async function loadHealth() {
     // 异常值/脏数据（#3 本轮）同源同次取。
     DIRTY = s && s.dirty ? s.dirty : null;
     renderDirty(DIRTY);
+    // 人工审核改判台账（#3 dirty 新交互）：本机可改、云端只读。best-effort 拉取，
+    // 不影响主流程；拉到后重渲 dirty 面板以显示「已人工审核」标记与原因。
+    fetch('./data/manual_review.json?_=' + Date.now(), { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { MANUAL_REVIEW = (j && Array.isArray(j.entries)) ? j : null; renderDirty(DIRTY); })
+      .catch(() => {});
     // 跨源一致性互证（#2）同源同次取。
     XCHECK = s && s.crosscheck ? s.crosscheck : null;
     renderXcheck(XCHECK);
@@ -2251,56 +2398,72 @@ function renderDirty(d, errMsg) {
   box.className = `dirty-panel dq-${tone}`;
 
   const latest = d.latest || null;
-  const byField = Array.isArray(d.byField) ? d.byField : [];
   const recent = Array.isArray(d.recent) ? d.recent : [];
+  const dirtyItems = recent.filter((r) => r.status === 'dirty');
+  const warnItems = recent.filter((r) => r.status === 'warn');
 
-  const kpis = [
-    ['干净天数', cleanN, 'pos', totalDays],
-    ['已剔除（error）', dirtyN, dirtyN > 0 ? 'neg' : '', totalDays],
-    ['需复核（warn）', warnN, warnN > 0 ? 'warnc' : '', totalDays],
-    ['涉及字段', byField.length, '', null],
-  ].map(([k, val, c, den]) => `<div class="dq-kpi ${c}"><span class="dq-k">${esc(k)}</span>`
+  // KPI 瓦片可点击：点「干净天数 / 已剔除 / 需复核」展开对应明细（涉及字段已移除）。
+  // 展开/收起与手风琴由 app.js 顶部全局 click 委托处理。
+  const kpi = (key, label, val, c) => `<div class="dq-kpi click ${c}" data-for="${esc(key)}" role="button" tabindex="0" aria-expanded="false">`
+    + `<span class="dq-k">${esc(label)}</span>`
     + `<span class="dq-v">${esc(val)}</span>`
-    + (den ? `<span class="dq-den muted">/${esc(den)}</span>` : '') + `</div>`).join('');
+    + `<span class="muted dq-den">/${esc(totalDays)}</span>`
+    + `</div>`;
 
-  const fieldRows = byField.map((f) => `<tr><td class="dq-field">${esc(f.field)}</td><td class="dq-num">${esc(f.days)}</td></tr>`).join('');
-
-  // 最近留痕：每条做成可点击 head + 隐藏 JSON 明细（点 head 展开/收起，由全局委托处理）。
-  // reviewVerdict === 'verified' → 已跨源核验为真实行情，显「已核验」徽标（与「需复核」状态区分）。
-  const recentItems = recent.map((r) => {
+  // 单条 recent：可点击 head + 隐藏 JSON 明细（点 head 展开/收起，由全局委托处理）。
+  // reviewVerdict === 'verified' → 已跨源核验为真实行情，显「已核验」徽标。
+  const itemHtml = (r) => {
     const isDirty = r.status === 'dirty';
-    const statusLabel = isDirty ? '已剔除' : '需复核';
     const verified = r.reviewVerdict === 'verified';
-    const verdict = verified ? '已核验' : '待复核';
-    const firstReason = (r.issues && r.issues[0] && r.issues[0].reason) || '';
-    return `<div class="dirty-item">`
+    const issue0 = (r.issues && r.issues[0]) || null;
+    const firstReason = issue0 ? (issue0.reason || '') : '';
+    const ov = mrOverrideFor(r.date, issue0, MANUAL_REVIEW);
+    const ovBadge = ov
+      ? `<span class="dq-verdict reviewed" title="${esc((ov.reason === '其他' ? (ov.customReason || '') : ov.reason) + (ov.reviewer ? ' · ' + ov.reviewer : ''))}">已人工审核→${ov.newStatus === 'dirty' ? '已剔除' : '需复核'}</span>`
+      : '';
+    const ind = issue0 ? mrIndustryFromReason(issue0.reason) : null;
+    const reviewBtn = REVIEW_LOCAL
+      ? `<button class="dq-review-btn" type="button" data-date="${esc(r.date || '')}" data-field="${esc(issue0 ? (issue0.field || '') : '')}" data-industry="${esc(ind || '')}" data-rule="${esc(issue0 ? (issue0.rule || '') : '')}" data-orig="${isDirty ? 'dirty' : 'warn'}">人工审核</button>`
+      : '';
+    return `<div class="dirty-item" data-date="${esc(r.date || '')}">`
       + `<div class="dirty-item-head">`
       + `<span class="dq-date">${esc(r.date || '')}</span>`
-      + `<span class="dq-sev ${isDirty ? 'sev-error' : 'sev-warn'}">${statusLabel}</span>`
-      + `<span class="dq-verdict ${verified ? 'verified' : 'pending'}">${verdict}</span>`
+      + `<span class="dq-sev ${isDirty ? 'sev-error' : 'sev-warn'}">${isDirty ? '已剔除' : '需复核'}</span>`
+      + `<span class="dq-verdict ${verified ? 'verified' : 'pending'}">${verified ? '已核验' : '待复核'}</span>`
       + (firstReason ? `<span class="muted dq-hint">${esc(firstReason)}</span>` : '')
+      + ovBadge
       + `</div>`
       + `<pre class="dirty-item-body" hidden>${esc(JSON.stringify(r, null, 2))}</pre>`
+      + (reviewBtn ? `<div class="dq-review-row">${reviewBtn}</div>` : '')
       + `</div>`;
-  }).join('');
+  };
+  const detailItems = (items) => items.length
+    ? items.map(itemHtml).join('')
+    : `<div class="muted dq-empty">无对应留痕（recent 仅保留最近 20 条）</div>`;
 
-  // 外层折叠用原生 <details>（默认折叠＝无 open 属性）；点 <summary> 即展开。
-  box.innerHTML = `<details class="dq-fold">`
-    + `<summary><b>数据质量（异常值/脏数据）</b>`
+  const latestHtml = latest
+    ? `<div class="dq-latest"><b>最新一日</b> <span class="dq-sev ${latest.status === 'dirty' ? 'sev-error' : 'sev-warn'}">${latest.status === 'dirty' ? '已剔除' : '需复核'}</span>`
+      + `<div class="dq-reason">${esc((latest.issues || []).map((i) => i.reason).join('；') || '—')}</div></div>`
+    : '';
+
+  // 面板默认展开 KPI 行；点 KPI 才展开对应明细（recent 明细默认折叠，符合「默认折叠」）。
+  box.innerHTML = `<div class="dq-head"><b>数据质量（异常值/脏数据）</b>`
     + `<span class="dq-chip ${esc(tone)}">${dirtyN > 0 ? '有脏数据' : (warnN > 0 ? '有需复核项' : '干净')}</span>`
-    + `<span class="muted dq-sum">校验 ${esc(totalDays)} 天 · 干净 ${esc(cleanN)} / 已剔除 ${esc(dirtyN)} / 需复核 ${esc(warnN)}（点摘要展开）</span>`
-    + `</summary>`
-    + `<div class="dq-body">`
-    + `<div class="dq-kpis">${kpis}</div>`
-    + (latest ? `<div class="dq-latest"><b>最新一日</b> <span class="dq-sev ${latest.status === 'dirty' ? 'sev-error' : 'sev-warn'}">${latest.status === 'dirty' ? '已剔除' : '需复核'}</span>`
-      + `<div class="dq-reason">${esc((latest.issues || []).map((i) => i.reason).join('；') || '—')}</div></div>` : '')
-    + (fieldRows ? `<table class="dq-table"><thead><tr><th>字段</th><th>天数</th></tr></thead><tbody>${fieldRows}</tbody></table>` : '')
-    + (recentItems ? `<div class="dq-sub muted">最近留痕（最多 20 条，点条目展开明细）</div>${recentItems}` : '')
+    + `<span class="muted dq-sum">校验 ${esc(totalDays)} 天 · 点 KPI 看明细</span></div>`
+    + `<div class="dq-kpis">`
+    + kpi('clean', '干净天数', cleanN, '')
+    + kpi('dirty', '已剔除（error）', dirtyN, dirtyN > 0 ? 'neg' : '')
+    + kpi('warn', '需复核（warn）', warnN, warnN > 0 ? 'warnc' : '')
+    + `</div>`
+    + latestHtml
+    + `<div class="dq-detail" data-for="clean" hidden><div class="muted dq-empty">共 ${esc(cleanN)} / ${esc(totalDays)} 天校验通过，无异常值/脏数据，无需处理。</div></div>`
+    + `<div class="dq-detail" data-for="dirty" hidden>${detailItems(dirtyItems)}</div>`
+    + `<div class="dq-detail" data-for="warn" hidden>${detailItems(warnItems)}</div>`
     + `<div class="dq-note muted">口径：单源内部校验（范围 / 单位「万-亿」/ 重复 / 逻辑一致性），由 <code>src/dirty.js</code> 唯一实现。`
     + `<br>⚠ 两类语义必须分清：<b>已剔除</b>＝该字段被排除在因子入参之外（**原值仍保留在档里**，可追溯、可人工复核）；<b>需复核</b>＝仅标记，**未剔除任何数据**。`
     + `<br>缺失一律显示「未计算」而非 0。本层**不改写任何分值** —— 剔除动作在管线内完成，此处只通报与定位。`
     + `<br>数据来自公开行情，不构成投资建议。`
-    + `</div></div></details>`;
+    + `</div>`;
 }
 
 // ── 宽度背离告警（#3 决策：宽度不纳入情绪分）─────────────────────────────

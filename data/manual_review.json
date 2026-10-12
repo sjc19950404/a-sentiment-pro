@@ -1,0 +1,6 @@
+{
+  "kind": "manual-review",
+  "version": 1,
+  "note": "人工审核改判台账：本机在 dirty 面板点「人工审核」改判某条（warn↔dirty）后写入；git commit/push 同步到云端，Pages 仅展示（无写权限）。原因自由（默认清单或「其他」手填）。管线 src/dirty.js 消费本台账的 manualOverrides，把 newStatus=dirty 的字段真正从因子入参剔除。",
+  "entries": []
+}
