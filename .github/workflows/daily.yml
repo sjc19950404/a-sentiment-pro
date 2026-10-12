@@ -69,7 +69,8 @@ permissions:
   # 代价远大于一次 API 调用。
   issues: write
   # pages/id-token 权限已移除（2026-10-06 部署治理）：Pages 部署收口至 deploy-pages.yml
-  # 单通道——本工作流回归纯数据生产，部署由数据提交（bot push）经 paths(data/**) 触发。
+  # 单通道——本工作流回归纯数据生产，部署由 deploy-pages.yml 监听本工作流完成（workflow_run）触发
+  # （bot 的 GITHUB_TOKEN push 不会触发 on:push，故不能靠 paths(data/**) 自动部署，详见 deploy-pages.yml ③）。
 
 jobs:
   # ── ② 真实 API 冒烟：六源逐个真打（getharden/东财LHB/同花顺行业/腾讯指数/东财池/同花顺日K）──
