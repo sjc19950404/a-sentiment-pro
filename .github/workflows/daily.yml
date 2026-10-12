@@ -422,11 +422,14 @@ jobs:
         run: |
           node scripts/build_ai_report.mjs --type intraday
           node scripts/push_ai_report.mjs --latest intraday
+      - name: 复盘"选不出票"归因（为次日开盘准备，2026-10-12 用户指令）
+        continue-on-error: true
+        run: node scripts/review_nopick.mjs
       - name: 提交盘中快照
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/intraday.json data/source-health.json data/crosscheck-history.json data/reports
+          git add data/intraday.json data/source-health.json data/crosscheck-history.json data/reports data/review
           if git diff --cached --quiet; then
             echo "无变化（非盘中或快照相同），跳过提交"
           else
