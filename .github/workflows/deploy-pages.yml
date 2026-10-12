@@ -54,6 +54,13 @@ on:
       - 'src/error_boundary.js'
       - 'src/validate_snapshot.js'
       - 'data/**'
+  # 自动部署（根因修复 2026-10-13）：daily-sentiment 跑完即触发。
+  # bot 用默认 GITHUB_TOKEN 的 push 不会触发本工作流的 on:push（GitHub 防循环规则），
+  # 致历史数据提交从不自动部署、前端停在旧档（10-12 数据已落 main 却从未上线即此因）。
+  # 改由 workflow_run 监听 daily-sentiment 完成——此时数据已 commit 到 main，检出即含最新数据，前端随之刷新。
+  workflow_run:
+    workflows: ['daily-sentiment']
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -74,6 +81,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - name: 组装 web 面产物（根 web 面 → site/；清单与 paths 白名单同源）
         run: |
           set -eu
