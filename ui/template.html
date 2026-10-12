@@ -207,6 +207,9 @@ textarea:focus{border-color:#33415c}
 #rt-refresh:hover{border-color:#33415c}
 @media(max-width:640px){#rt-bar{font-size:11.5px;gap:8px;padding:7px 10px}#rt-data{gap:8px}#rt-status{margin-left:0}}
 @media(max-width:640px){.lab-slider{min-width:100%}.wl-grid{grid-template-columns:1fr}}
+/* 骨架加载态（B+B2 第3批，本地单文件副本） */
+@keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skeleton{background:linear-gradient(90deg,var(--card2) 25%,var(--line) 37%,var(--card2) 63%);background-size:400% 100%;animation:skel 1.4s ease infinite;border-radius:6px;color:transparent}
 </style>
 </head>
 <body>
