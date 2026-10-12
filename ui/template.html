@@ -8,6 +8,7 @@
 :root{--bg:#0b0e14;--panel:#121722;--panel2:#161c2a;--line:#212a3a;--txt:#d7dee9;--dim:#8a94a6;--faint:#5a6478;
 --up:#ff5a5a;--down:#2fbf8f;--gold:#e8b04b;--accent:#5b8cff}
 *{margin:0;padding:0;box-sizing:border-box}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 body{background:var(--bg);color:var(--txt);font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;font-size:13px;line-height:1.5;padding:20px 16px 40px}
 .wrap{max-width:1280px;margin:0 auto}
 .num{font-variant-numeric:tabular-nums;font-family:Consolas,monospace}
@@ -170,7 +171,7 @@ svg{max-width:100%}
 .fc-st.hit{background:rgba(255,90,90,.12);color:#ff8a8a;border:1px solid rgba(255,90,90,.4)}
 .fc-st.miss{background:rgba(47,191,143,.12);color:#5fd8b4;border:1px solid rgba(47,191,143,.4)}
 textarea{width:100%;background:#0e1320;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:12.5px;font-family:inherit;line-height:1.6;resize:vertical}
-textarea:focus{outline:none;border-color:#33415c}
+textarea:focus{border-color:#33415c}
 .btn{padding:6px 14px;border-radius:8px;border:1px solid var(--line);background:#1b2436;color:var(--txt);cursor:pointer;font-size:12.5px;transition:.15s}
 .btn:hover{border-color:#33415c;background:#212c42}
 .btn.gold{border-color:rgba(232,176,75,.5);color:#e8b04b}
