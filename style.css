@@ -1,11 +1,28 @@
+/* UI token：单一事实源见 ui/tokens.css（B+B2）。本文件为内联副本，
+   一致性由 test/ui_tokens_consistency.test.mjs 守护——勿在此手改取值。 */
 :root {
-  --bg: #0d1117; --card: #161b22; --card2: #1b232c; --line: #21262d; --txt: #e6edf3; --muted: #8b949e;
-  --up: #f0616d; --down: #3fb950; --acc: #58a6ff; --warn: #d29922; --fresh: #3fb950; --fade: #f0616d; --cont: #58a6ff;
-  --focus: #58a6ff;
-  --panel: var(--card2); /* P0：补 .scope-note 背景（原引用未定义 --panel，静默失效） */
-  /* 版心：内容区在超宽屏居中（顶栏/导航/分区共用同一 padding-inline，保证左右对齐）
-     --gut 是手机上的安全边距，--pad 由两者算出——不需要额外包一层 wrapper */
-  --gut: 20px; --maxw: 1560px;
+  /* 底色 */
+  --bg: #0d1117;            /* 页面背景 */
+  --card: #161b22;          /* 卡片/分区底（本地旧 --panel） */
+  --card2: #1b232c;         /* 次级卡片底（本地旧 --panel2） */
+  --line: #21262d;          /* 描边/分隔线 */
+  --panel: var(--card2);    /* 兼容别名：scope-note 等沿用（=次级卡底） */
+  /* 文字 */
+  --txt: #e6edf3;           /* 正文 */
+  --muted: #8b949e;         /* 弱化文字（本地旧 --dim） */
+  --faint: #5a6478;         /* 更弱注释/占位（本地旧 --faint，云端无对应） */
+  /* 语义色（双端统一为云端取值） */
+  --up: #f0616d;            /* 涨/风险红 */
+  --down: #3fb950;          /* 跌/健康绿 */
+  --warn: #d29922;          /* 警示/强调金（本地旧 --gold） */
+  --acc: #58a6ff;           /* 强调蓝（本地旧 --accent） */
+  --focus: #58a6ff;         /* 键盘焦点环 */
+  --fresh: #3fb950;         /* 新鲜度绿（=down） */
+  --fade: #f0616d;          /* 退潮红（=up） */
+  --cont: #58a6ff;          /* 延续蓝（=acc） */
+  /* 版心 */
+  --gut: 20px;              /* 手机安全边距 */
+  --maxw: 1560px;           /* 超宽屏版心上限 */
   --pad: max(var(--gut), calc((100vw - var(--maxw)) / 2));
 }
 * { box-sizing: border-box; }

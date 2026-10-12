@@ -211,6 +211,14 @@ const pageData = {
 
 // ── 9. 模板拼装（函数式 replace：防 JSON/模块代码里的 $&/$$/$' 模式被特殊解释）──
 let tpl = readFileSync(path.join(ROOT, 'ui', 'template.html'), 'utf8').replace(/\r\n/g, '\n');
+// B2（2026-10-12）：用单一事实源 ui/tokens.css 覆盖 template.html 的 :root，
+// 使本地 dist 与云端 style.css 共用同一份 token（根治双端色彩漂移）。
+// 本地 template.html 源已同步该 token，此处注入为幂等兜底（防止源与 tokens.css 偏离）。
+const TOKENS_CSS = path.join(ROOT, 'ui', 'tokens.css');
+if (existsSync(TOKENS_CSS)) {
+  const tokenCss = readFileSync(TOKENS_CSS, 'utf8').trim();
+  tpl = tpl.replace(/:root\s*\{[^}]*\}/, tokenCss);
+}
 const MODULES = [
   'lab-core.js', 'lab-kline.js', 'lab-s1.js', 'lab-s2.js', 'lab-s5.js', 'lab-s7.js',
   'lab-s6.js', 'lab-s4.js', 'lab-s8.js', 'lab-s3.js', 'lab-s9.js', 'lab-s11.js',

@@ -1,0 +1,31 @@
+/* UI 设计 token 单一事实源（UI 重设计 B+B2 · 2026-10-12）
+ * 双端（云端 style.css / 本地 ui/template.html）共用同一份取值与命名，
+ * 从根源消除色彩/字号/间距漂移。改动只在此处；
+ * CI 一致性断言见 test/ui_tokens_consistency.test.mjs。
+ * 命名以云端既有为准（--muted/--acc/--warn/--card），
+ * 本地旧名（--dim/--accent/--gold/--panel2）在消费侧重命名引用。 */
+:root {
+  /* 底色 */
+  --bg: #0d1117;            /* 页面背景 */
+  --card: #161b22;          /* 卡片/分区底（本地旧 --panel） */
+  --card2: #1b232c;         /* 次级卡片底（本地旧 --panel2） */
+  --line: #21262d;          /* 描边/分隔线 */
+  --panel: var(--card2);    /* 兼容别名：scope-note 等沿用（=次级卡底） */
+  /* 文字 */
+  --txt: #e6edf3;           /* 正文 */
+  --muted: #8b949e;         /* 弱化文字（本地旧 --dim） */
+  --faint: #5a6478;         /* 更弱注释/占位（本地旧 --faint，云端无对应） */
+  /* 语义色（双端统一为云端取值） */
+  --up: #f0616d;            /* 涨/风险红 */
+  --down: #3fb950;          /* 跌/健康绿 */
+  --warn: #d29922;          /* 警示/强调金（本地旧 --gold） */
+  --acc: #58a6ff;           /* 强调蓝（本地旧 --accent） */
+  --focus: #58a6ff;         /* 键盘焦点环 */
+  --fresh: #3fb950;         /* 新鲜度绿（=down） */
+  --fade: #f0616d;          /* 退潮红（=up） */
+  --cont: #58a6ff;          /* 延续蓝（=acc） */
+  /* 版心 */
+  --gut: 20px;              /* 手机安全边距 */
+  --maxw: 1560px;           /* 超宽屏版心上限 */
+  --pad: max(var(--gut), calc((100vw - var(--maxw)) / 2));
+}
