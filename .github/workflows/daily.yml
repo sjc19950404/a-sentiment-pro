@@ -425,6 +425,15 @@ jobs:
       - name: 复盘"选不出票"归因（为次日开盘准备，2026-10-12 用户指令）
         continue-on-error: true
         run: node scripts/review_nopick.mjs
+      # 复盘归因落地后推企微（2026-10-12 用户指令）：独立通道 WECHAT_WEBHOOK_URL。
+      # continue-on-error：机器人未配/推送失败绝不拖红数据管线——复盘台账已落盘，
+      #   推送只是触达，失败由 next tick 自愈（脚本未记去重态，重跑即重推）。
+      - name: 推送复盘到企业微信（WECHAT_WEBHOOK_URL）
+        if: success()
+        continue-on-error: true
+        env:
+          WECHAT_WEBHOOK_URL: ${{ secrets.WECHAT_WEBHOOK_URL }}
+        run: node scripts/push_review_wechat.mjs
       - name: 提交盘中快照
         run: |
           git config user.name "github-actions[bot]"
