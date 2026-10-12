@@ -55,7 +55,12 @@ export function sanitizeWebhookUrl(raw) {
 
 const pct = (v, digits = 2) => (v == null || !Number.isFinite(v) ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(digits)}%`);
 const txt = (v) => (v == null ? '—' : String(v));
-const overseas = (p, key) => pct((p.overseas || []).find((q) => q && q.key === key)?.chgPct);
+const overseas = (p, key) => {
+  const it = (p.overseas || []).find((q) => q && q.key === key);
+  const v = pct(it?.chgPct);
+  // 陈旧但保留（validateExternal 混合策略）：强制追加历史缓存标注，杜绝误读为今日。
+  return it?.cacheNote ? `${v}${it.cacheNote}` : v;
+};
 // 估值展示：PE 优先、PB 回退、双缺 → —（fundamentals 键常驻 null 占位，
 // 数据源接入后自动展示——决议 8「键常驻，不改 schema」口径）。
 const valoOf = (c) => {
@@ -274,6 +279,11 @@ export function renderPushText(report) {
       break;
     default:
       lines.push(`【AI 报告 · ${txt(report?.report_type)}】${txt(report?.date)}`);
+  }
+  // 外围陈旧告警（2026-10-12 用户指令）：validateExternal 混合策略产出的 meta 告警，
+  // 全报告类型统一脚注——陈旧≥阈值已置空 / 当日失败保留值则提示历史缓存，二者皆在此点破。
+  if (Array.isArray(p.externalStale) && p.externalStale.length) {
+    lines.push(`⚠ 外围陈旧：${p.externalStale.join('；')}`);
   }
   // MA20 降级红警（2026-10-08 推送前校验 ①）：量能因子走中性 50 → 推送里显式
   //   标红，一眼识别「降级版」（当日成交额缺或量能历史不足；判据唯一出处

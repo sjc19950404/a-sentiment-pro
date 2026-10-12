@@ -19,6 +19,8 @@
 import { accountStats, DEFAULT_SLIP, HARD_STOP_LOSS, exportAccount } from './paper.js';
 import { guardModuleFreshness } from './module_freshness.js';
 import { stalePainReason } from './pain.js';
+import { todayBeijing } from './util.js';
+import { validateExternal } from './validate_snapshot.js';
 
 export const SCHEMA_VERSION = '1.0';
 export const REPORT_TYPES = ['pre_market', 'intraday', 'post_market', 'weekly'];
@@ -126,26 +128,34 @@ function structuralNulls() {
   };
 }
 
-function buildOverseas(global) {
+function buildOverseas(global, ext) {
   if (!global || !Array.isArray(global.quotes)) return null;
   const mk = (key) => {
-    const q = global.quotes.find((x) => x && x.key === key);
-    if (!q) return null;
+    const r = ext?.results?.[key];
+    if (!r) return null;
     return {
-      key: q.key, name: q.name,
+      key: r.key, name: r.name,
       // 单位换算（S3-5 逮住的 S1 既有 bug）：data/global.json 的 chgPct 是**百分数值**
       // （src/global.js::normalizeQuote 现算 chg/prevClose×100，如 0.4942 = +0.4942%），
       // 报告层约定小数（push_text pct() 再 ×100）——搬运边界必须 ÷100，否则虚报 100 倍。
-      chgPct: q.ok && Number.isFinite(q.chgPct) ? q.chgPct / 100 : null,
-      state: q.state || (q.ok ? 'ok' : 'unknown'),
+      // action==='null'（陈旧≥阈值/单 quote 失败）→ 强制 null，渲染 —，杜绝旧值误读。
+      chgPct: r.action === 'null' ? null : r.chgPct,
+      state: r.state,
+      // 陈旧但保留（当日抓取失败、<阈值）：cacheNote 强制标注，push_text 渲染时追加。
+      stale: r.stale,
+      cacheNote: r.note || null,
     };
   };
   const out = [mk('a50'), mk('sox')].filter(Boolean); // A50=夜盘代理；费半=与 A 股科技链同源度最高
   return out.length ? out : null;
 }
 
-/** global.quotes 里取一资产涨跌幅（buildOverseas 同款判定 + ÷100 单位换算，缺 → null） */
-function quoteOf(input, key) {
+/** global.quotes 里取一资产涨跌幅（buildOverseas 同款判定 + ÷100 单位换算，缺 → null）。
+ *  ext 由 buildBase 注入：陈旧≥阈值 → 直接 null；当日失败保留值由调用方自行决定。
+ *  ext 缺席时回落旧判定，保证健壮性。 */
+function quoteOf(input, key, ext) {
+  const r = ext?.results?.[key];
+  if (r) return r.action === 'null' ? null : (r.chgPct != null ? r.chgPct : null);
   const q = (Array.isArray(input?.global?.quotes) ? input.global.quotes : []).find((x) => x && x.key === key);
   return q && q.ok && Number.isFinite(q.chgPct) ? q.chgPct / 100 : null;
 }
@@ -290,6 +300,10 @@ function envelope({ type, trigger, date, generatedAt, generatedBy, payload, inpu
 function buildBase(input, opts = {}) {
   const day = pick(input, 'dualTrack.day');
   const summary = pick(input, 'dualTrack.summary');
+  // 外围采集兜底（2026-10-12 用户指令）：global.quotes 陈旧 / 抓取失败时按混合策略处置。
+  //   ext.results[key] = { action:'keep'|'keep_tag'|'null', chgPct, state, stale, note }；
+  //   ext.alerts = 快照 meta 告警（陈旧≥STALE_DAYS 天→置空；当日抓取失败且<STALE_DAYS→保留+标记）。
+  const ext = validateExternal(input.global, { today: todayBeijing() });
   const payload = {
     date: input.tradeDate,
     ...structuralNulls(),
@@ -302,7 +316,8 @@ function buildBase(input, opts = {}) {
     slippage_source: 'assumed_constant',
     regime: buildRegime(input),
     circuit_breaker: null,
-    overseas: buildOverseas(input.global),
+    overseas: buildOverseas(input.global, ext),
+    externalStale: ext.alerts, // 恒为数组（可能空），不入 status 降级判定
   };
   const overrides = {};
   if (input.live) {
@@ -345,14 +360,14 @@ function buildBase(input, opts = {}) {
     overrides.nav_realtime = 'live';
   }
   payload.circuit_breaker = buildCircuitBreaker(input, { stats: opts.stats });
-  return { payload, overrides };
+  return { payload, overrides, ext };
 }
 
 // ── 四类生成器 ─────────────────────────────────────────────────────────
 
 /** 盘前报告（交易日 09:15）：前日净值、持仓结构、隔夜敞口、剧本位（结构性 null）。 */
 export function generatePreMarket(input, opts = {}) {
-  const { payload, overrides } = buildBase(input);
+  const { payload, overrides, ext } = buildBase(input);
   const day = pick(input, 'dualTrack.day');
   const summary = pick(input, 'dualTrack.summary');
   const ret = num(pick(day, 'dayReturns.A'));
@@ -365,9 +380,9 @@ export function generatePreMarket(input, opts = {}) {
     // S3-5 盘前推送增强：隔夜外围全景（数据源 data/global.json，04:30 美股收盘档
     // cron 专抓、usReadiness ≥16:30 ET 才采信收盘态）。ok:false / chgPct 缺失 → null
     // （与 buildOverseas 同款判定，不冒充）。渲染端聚合一行展示（push_text.js）。
-    us_close: { dji: quoteOf(input, 'dji'), spx: quoteOf(input, 'spx'), ixic: quoteOf(input, 'ixic') },
-    cn_overnight: { hxc: quoteOf(input, 'hxc'), fxi: quoteOf(input, 'fxi') },
-    cnh_chgPct: quoteOf(input, 'cnh'),
+    us_close: { dji: quoteOf(input, 'dji', ext), spx: quoteOf(input, 'spx', ext), ixic: quoteOf(input, 'ixic', ext) },
+    cn_overnight: { hxc: quoteOf(input, 'hxc', ext), fxi: quoteOf(input, 'fxi', ext) },
+    cnh_chgPct: quoteOf(input, 'cnh', ext),
   };
   payload.key_levels = null;
   payload.events_today = null;
@@ -392,7 +407,7 @@ export function generatePreMarket(input, opts = {}) {
 
 /** 盘中报告（每 30 分钟 / 四类 urgent 事件即时）。 */
 export function generateIntraday(input, opts = {}) {
-  const { payload, overrides } = buildBase(input);
+  const { payload, overrides, ext } = buildBase(input);
   if (!input.live) payload.nav_realtime = null; // 归档轨无指数点位合成源（intraday.json 无指数），S1 诚实置 null
   // S3-1 注入（取数+赋值一行）：当日 equity 序列峰谷回撤。数据链 = 浏览器采样器
   // window.__intradayLive.drawdownDaily（src/intraday_live.js::dailyDrawdown）→ 装配方
@@ -448,7 +463,7 @@ export function generateIntraday(input, opts = {}) {
 
 /** 盘后报告（15:05 即时轨 / 18:35 归档轨）。 */
 export function generatePostMarket(input, opts = {}) {
-  const { payload, overrides } = buildBase(input);
+  const { payload, overrides, ext } = buildBase(input);
   const summary = pick(input, 'dualTrack.summary');
   payload.close_drawdown = num(pick(summary, 'trackA.maxDd'));
   payload.max_drawdown_intraday = null; // 同 max_drawdown_daily：日内 equity 采样未接入
@@ -481,7 +496,7 @@ export function generateWeekly(input, opts = {}) {
   const tradeDate = input.tradeDate;
   const days = (Array.isArray(input.dualTrackDays) ? input.dualTrackDays : [])
     .filter((d) => d && d.date >= (opts.weekStart || '0000') && d.date <= (tradeDate || '9999'));
-  const { payload, overrides } = buildBase(input);
+  const { payload, overrides, ext } = buildBase(input);
   let cum = 1;
   let missingDays = 0;
   const navSeries = days.map((d) => {
