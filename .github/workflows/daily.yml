@@ -423,13 +423,19 @@ jobs:
           node scripts/build_ai_report.mjs --type intraday
           node scripts/push_ai_report.mjs --latest intraday
       - name: 复盘"选不出票"归因（为次日开盘准备，2026-10-12 用户指令）
+        # 频率闸门（2026-10-12 全系统审计 Fix 1）：仅在盘中 14:00 那档（北京 '0 6'）
+        #   + 手动触发时跑。复盘为次日开盘准备、幂等覆盖，每日一次足矣；盘中每 30
+        #   分钟 tick 下重跑纯属把同一份"昨日复盘"刷进群（已配 WECHAT 推送步骤同闸门）。
+        if: github.event.schedule == '0 6 * * 1-5' || github.event_name == 'workflow_dispatch'
         continue-on-error: true
         run: node scripts/review_nopick.mjs
       # 复盘归因落地后推企微（2026-10-12 用户指令）：独立通道 WECHAT_WEBHOOK_URL。
       # continue-on-error：机器人未配/推送失败绝不拖红数据管线——复盘台账已落盘，
       #   推送只是触达，失败由 next tick 自愈（脚本未记去重态，重跑即重推）。
       - name: 推送复盘到企业微信（WECHAT_WEBHOOK_URL）
-        if: success()
+        # 与上游归因同闸门（2026-10-12 全系统审计 Fix 1）：仅 14:00 那档 + 手动触发，
+        #   且须排在归因步骤之后；杜绝盘中每 30 分钟 tick 把同一份昨日复盘刷进群。
+        if: github.event.schedule == '0 6 * * 1-5' || github.event_name == 'workflow_dispatch'
         continue-on-error: true
         env:
           WECHAT_WEBHOOK_URL: ${{ secrets.WECHAT_WEBHOOK_URL }}

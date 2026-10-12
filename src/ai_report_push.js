@@ -22,32 +22,16 @@
 //   gateWeekly    —— tradeDate 为本周最后交易日才生成（周五，或节前最后一天）。
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { atomicWriteJSON } from './fsutil.js';
-import { createHash } from 'node:crypto';
 import { dirname } from 'node:path';
 import { marketPhase } from './freshness.js';
 import { resolveHolidays } from './calendar.js';
-import { PUSH_CONSTS, renderPushText, sanitizeWebhookUrl } from './push_text.js';
+import { PUSH_CONSTS, renderPushText, sanitizeWebhookUrl, fingerprintOf } from './push_text.js';
 
-export { PUSH_CONSTS, renderPushText }; // 纯渲染层 re-export（Worker/浏览器经 push_text.js 直取，既有 import 路径零改动）
+export { PUSH_CONSTS, renderPushText, fingerprintOf }; // 纯渲染层 re-export（Worker/浏览器经 push_text.js 直取，既有 import 路径零改动；fingerprintOf 统一实现见 push_text.js）
 
 // ── 指纹（内容去重键）──────────────────────────────────────────────────
-/**
- * 报告 → 内容指纹（sha256 前 16 位十六进制）。
- * 稳定域 = report_type / date / trigger / status / payload / missing_notes；
- * 剔除 generated_at / generated_by / data_health / data_completeness /
- * concepts / sources / disclaimer（易变或派生，重跑即变但内容未变）。
- */
-export function fingerprintOf(report) {
-  const stable = {
-    report_type: report?.report_type,
-    date: report?.date,
-    trigger: report?.trigger,
-    status: report?.status,
-    payload: report?.payload,
-    missing_notes: report?.missing_notes,
-  };
-  return createHash('sha256').update(JSON.stringify(stable)).digest('hex').slice(0, 16);
-}
+// 统一实现见 src/push_text.js::fingerprintOf（djb2，三端同构，2026-10-12 全系统审计 Fix 4）。
+// 此处不再各写一份算法——与 Worker 代理保持同一哈希，避免同内容因算法分叉而双推。
 
 /**
  * 防风暴判定（纯函数）。

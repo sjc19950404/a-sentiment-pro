@@ -316,3 +316,31 @@ export function renderPushText(report) {
   }
   return text;
 }
+
+// ── 去重指纹（纯函数，Worker/CI/浏览器三端同构，2026-10-12 全系统审计 Fix 4）────────
+// 稳定域与 ai_report_push.js::fingerprintOf 完全一致（report_type/date/trigger/status/
+//   payload/missing_notes）；算法统一为 djb2+长度后缀——Worker 免费层无 node:crypto，
+//   故以零依赖 djb2 为唯一实现，CI 侧弃用 sha256 以与 Worker 保持一致，消除"同一内容
+//   因算法/存储各异而双推"的隐患（KV/文件存储隔离仍存，彻底消除需共享状态，超出本次范围）。
+function stableOf(report) {
+  return JSON.stringify({
+    report_type: report?.report_type,
+    date: report?.date,
+    trigger: report?.trigger,
+    status: report?.status,
+    payload: report?.payload,
+    missing_notes: report?.missing_notes,
+  });
+}
+
+/** 内容指纹（djb2 双轮 + 长度后缀，16 hex）。非安全哈希，仅去重键用。 */
+export function fingerprintOf(report) {
+  const s = stableOf(report);
+  let h1 = 5381; let h2 = 52711;
+  for (let i = 0; i < s.length; i += 1) {
+    const c = s.charCodeAt(i);
+    h1 = (h1 * 33 + c) >>> 0;
+    h2 = (h2 * 31 + c) >>> 0;
+  }
+  return `${h1.toString(16).padStart(8, '0')}${h2.toString(16).padStart(8, '0')}`.slice(0, 16) + `_${s.length.toString(16)}`;
+}

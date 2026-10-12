@@ -3081,6 +3081,27 @@ function renderGlobal(g) {
   GLOB = g;
   const meta = g.meta || {};
   const w = g.watch || {};
+  // 外围兜底（2026-10-12 全系统审计 Fix 2）：复用与推送端同源的 validateExternal，
+  // 把"采集失败滞留的旧值"在页面上也置空/标【历史缓存…】，消除与推送端分叉。
+  // 缺 window.ValidateExternal（模块未就绪）→ 安全降级直读，不冒充。
+  const extByKey = (() => {
+    try {
+      const ve = window.ValidateExternal && window.ValidateExternal.validateExternal;
+      if (!ve || !g || !g.meta) return null;
+      const out = {};
+      const { results } = ve(g);
+      for (const k of Object.keys(results)) out[k] = results[k];
+      return out;
+    } catch { return null; }
+  })();
+  // 取某 quote 的涨跌幅展示文本（叠加陈旧兜底）：action==='null'→'—'；
+  // action==='keep_tag'（今日采集失败、旧值保留）→ 追加缓存标注，杜绝误读为今日。
+  const extChgText = (q, raw) => {
+    const ex = extByKey && extByKey[q.key];
+    if (!ex) return raw;
+    if (ex.action === 'null') return '—';
+    return ex.note ? `${raw}${ex.note}` : raw;
+  };
   const sub = $('globSub');
   if (sub) {
     sub.textContent = `隔夜美股 ${meta.usSessionDate || '--'} 收盘`
@@ -3137,7 +3158,7 @@ function renderGlobal(g) {
       return `<tr data-act="glob" data-key="${esc(q.key)}" tabindex="0">
         <td>${esc(q.name)}${marks}</td>
         <td class="num ${cls}">${esc(q.lastText)}</td>
-        <td class="num ${cls}">${esc(q.chgPctText)}</td>
+        <td class="num ${extByKey && extByKey[q.key] && extByKey[q.key].action === 'null' ? 'muted' : cls}">${esc(extChgText(q, q.chgPctText))}</td>
         <td class="muted gwhen">${esc(globWhen(q))}</td>
       </tr>`;
     }).join('');
@@ -3147,11 +3168,11 @@ function renderGlobal(g) {
   const cl = $('globCards');
   if (cl) {
     cl.innerHTML = rows.map((q) => {
-      const cls = trendCls(q.chgPct);
+      const cls = extByKey && extByKey[q.key] && extByKey[q.key].action === 'null' ? 'muted' : trendCls(q.chgPct);
       const marks = q.role === 'a_share_proxy' ? '<span class="gtag a">A股锚</span>' : '';
       return `<div class="gcard" data-act="glob" data-key="${esc(q.key)}" tabindex="0">
         <div class="gc-top"><span>${esc(q.name)}${marks}</span>
-          <span class="${cls}">${esc(q.chgPctText)}</span></div>
+          <span class="${cls}">${esc(extChgText(q, q.chgPctText))}</span></div>
         <div class="gc-bot muted"><span>${esc(q.lastText)}</span><span>${esc(globWhen(q))}</span></div>
       </div>`;
     }).join('');
@@ -3166,7 +3187,7 @@ function renderGlobal(g) {
       const dir = a.sign > 0 ? '同向' : a.sign < 0 ? '反向' : '结构';
       return `<div class="gmap-row" data-act="gmap" data-from="${esc(a.from)}" tabindex="0">
         <div class="gm-l"><span>${esc(q ? q.name : a.from)}</span>
-          <span class="${cls}">${esc(q ? q.chgPctText : '—')}</span></div>
+          <span class="${cls}">${esc(q ? extChgText(q, q.chgPctText) : '—')}</span></div>
         <div class="gm-mid"><span class="gtag ${a.sign > 0 ? 'u' : a.sign < 0 ? 'd' : ''}">${dir}</span></div>
         <div class="gm-r">${esc((a.aSectors || []).join(' · '))}</div>
       </div>`;

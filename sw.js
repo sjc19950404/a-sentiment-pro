@@ -43,6 +43,7 @@ const SHELL_ASSETS = [
   './src/dataset.js',
   './src/dual_track.js',
   './src/error_boundary.js',
+  './src/validate_snapshot.js',
 ];
 
 const DATA_PREFETCH = [

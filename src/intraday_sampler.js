@@ -17,6 +17,7 @@ import {
   intradayEquity, buildLiveAccount, liveAccountStats, dailyDrawdown, riskTierDistance,
   seriesKey, appendSample, deserializeSeries,
 } from './intraday_live.js';
+import { bjDate } from './time.js';
 
 const TICK_MS = 60 * 1000; // 采样节拍（用户拍板：盘中每 1 分钟）
 const LS_KEY = 'asent-ilv-store';
@@ -66,7 +67,7 @@ let samples = [];        // 当日权益序列 [{date, ts, equity}]
 let lastKey = null;      // 当日序列键（跨日检测）
 let timer = null;
 
-function todayStr() { return new Date().toISOString().slice(0, 10); }
+function todayStr() { return bjDate(); }
 
 function loadSeries(key) {
   try {

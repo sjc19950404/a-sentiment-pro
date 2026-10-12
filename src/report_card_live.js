@@ -26,6 +26,7 @@
 //   ⑥ CI 每 30 分钟快照 → 独立 30 分钟 TTL；
 //   日期口径 todayStr() 与采样器序列键同源（UTC 日期，见 intraday_sampler.js）。
 import { buildInput, generateIntraday } from './ai_report.js';
+import { bjDate } from './time.js';
 
 /** ⑤ 源之外的 intraday.json 独立缓存时长（对齐 CI 快照周期 30 分钟） */
 export const INTRADAY_TTL_MS = 30 * 60 * 1000;
@@ -65,7 +66,7 @@ const defaultGetJson = async (url) => {
 export async function buildLiveReport(live, io = {}) {
   const getJson = io.getJson || defaultGetJson;
   const now = io.now || (() => Date.now());
-  const today = io.today || (() => new Date().toISOString().slice(0, 10));
+  const today = io.today || bjDate;
   if (!live || !live.account || typeof live.account !== 'object') return null; // 桥缺席 → 待采样
 
   const dayKey = today();

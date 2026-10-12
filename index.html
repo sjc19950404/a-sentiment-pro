@@ -448,6 +448,15 @@
     window.ErrorBoundary = ErrorBoundary;
     window.dispatchEvent(new Event('error-boundary-ready'));
   </script>
+  <!-- 外围采集兜底（src/validate_snapshot.js）：ESM 纯函数（仅依赖 time.js 叶子模块，
+       浏览器安全），挂 window 供 app.js 在渲染外围行情表时复用与推送端同源的
+       "陈旧置空 / 历史缓存标注"规则（2026-10-12 全系统审计 Fix 2：消除公开页与推送端分叉）。
+       挂载失败静默——缺它页面退回直读 global.json，不冒充。 -->
+  <script type="module">
+    import * as ValidateExternal from './src/validate_snapshot.js';
+    window.ValidateExternal = ValidateExternal;
+    window.dispatchEvent(new Event('validate-external-ready'));
+  </script>
   <!-- 离线看盘：注册 Service Worker。刻意放在最后——注册本身要下载 sw.js 并触发
        预缓存（外壳 9 个文件 + 3 个轻量数据档），不该和首屏渲染抢带宽。
        ⚠ 只在 https / localhost 下尝试：file:// 打开时 navigator.serviceWorker

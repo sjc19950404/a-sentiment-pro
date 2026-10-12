@@ -23,8 +23,8 @@
 // 防护说明（个人系统威胁模型，如实记录）：secret 只在 Worker 侧；
 //   ALLOWED_ORIGIN 未配置时放行（本地 dev / 初次部署期），上线后应在
 //   wrangler.toml [vars] 设页面部署域——这不是强认证，是低摩擦滥用闸。
-export { PUSH_CONSTS, renderPushText, sanitizeWebhookUrl } from '../src/push_text.js';
-import { renderPushText, sanitizeWebhookUrl } from '../src/push_text.js'; // re-export 不入本模块作用域，本地渲染/清洗需显式 import
+export { PUSH_CONSTS, renderPushText, sanitizeWebhookUrl, fingerprintOf } from '../src/push_text.js';
+import { renderPushText, sanitizeWebhookUrl, fingerprintOf } from '../src/push_text.js'; // re-export 不入本模块作用域，本地渲染/清洗需显式 import
 
 export const PROXY_CONSTS = {
   BODY_CAP: 64 * 1024,            // 请求体上限（信封 JSON 远小于此，防投毒）
@@ -127,30 +127,9 @@ export async function replayFailedPushes(env, opts = {}) {
   return { replayed, skippedDup, remaining: remained.length + Math.max(0, (listed?.keys ?? []).length - keys.length) };
 }
 
-/** 稳定域抽取（与 ai_report_push.js::fingerprintOf 同域：易变字段剔除）。 */
-function stableOf(report) {
-  return JSON.stringify({
-    report_type: report?.report_type,
-    date: report?.date,
-    trigger: report?.trigger,
-    status: report?.status,
-    payload: report?.payload,
-    missing_notes: report?.missing_notes,
-  });
-}
-
-/** 轻量内容指纹（djb2 双轮 + 长度，16 hex）：**去重用**，非安全哈希——
- *  Worker 免费层无 node:crypto，WebCrypto 摘要则是异步且此处非安全场景。 */
-export function proxyFingerprint(report) {
-  const s = stableOf(report);
-  let h1 = 5381; let h2 = 52711;
-  for (let i = 0; i < s.length; i += 1) {
-    const c = s.charCodeAt(i);
-    h1 = (h1 * 33 + c) >>> 0; // eslint-disable-line no-bitwise
-    h2 = (h2 * 31 + c) >>> 0; // eslint-disable-line no-bitwise
-  }
-  return `${h1.toString(16).padStart(8, '0')}${h2.toString(16).padStart(8, '0')}`.slice(0, 16) + `_${s.length.toString(16)}`;
-}
+// 指纹统一到 src/push_text.js::fingerprintOf（djb2，三端同构，2026-10-12 全系统审计 Fix 4）。
+// 本地不再实现一份，避免与 CI 侧算法分叉导致同一内容双推。proxyFingerprint 保留为别名以维持兼容。
+export const proxyFingerprint = fingerprintOf;
 
 const json = (obj, status = 200, extra = {}) => new Response(JSON.stringify(obj), {
   status,

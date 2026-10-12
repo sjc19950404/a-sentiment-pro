@@ -14,7 +14,7 @@
 //   · 单 quote ok=false → 无值可渲染，直接 null（与既有 ok=false→null 一致）。
 //
 // 纯函数：不读文件、不发请求；today 由调用方注入（默认 todayBeijing），便于测试。
-import { todayBeijing } from './util.js';
+import { bjDate } from './time.js';
 
 // 陈旧天数阈值：≥ 此值即判定为"长期滞留"，宁可置空也不展示可能误导的旧值。
 export const STALE_DAYS = 2;
@@ -40,7 +40,7 @@ function dayDiff(a, b) {
  * @returns {{results: Record<string, {key:string,name:string,chgPct:number|null,state:string,stale:boolean,action:'keep'|'keep_tag'|'null',note:string|null}>, alerts: string[], today:string, fetchFailed:boolean}}
  */
 export function validateExternal(global, opts = {}) {
-  const today = opts.today || todayBeijing();
+  const today = opts.today || bjDate();
   const lastAttempt = global && global.meta && global.meta.lastAttempt;
   const fetchFailed = !!(lastAttempt && lastAttempt.outcome === 'failed');
   const quotes = (global && Array.isArray(global.quotes)) ? global.quotes : [];
