@@ -140,3 +140,47 @@
 
 **改动边界**：仅 style.css / ui/tokens.css / ui/template.html 三个样式层文件 +
 docs；行情/选股/情绪计算/caliber/复盘模块代码零触碰。
+
+---
+
+## 10. 私有化终端质感（2026-10-12 · feat/tech-visual）
+
+B+B2 规范收敛完成后，用户反馈"没有那种科技感、缺黑客私有定制的味道"。
+在**只改视觉层**的边界内追加装饰层，选定「克制的科技感 + 私有化专属质感」。
+
+**提交序列**（已推送 origin/main）：
+
+| commit | 内容 |
+|---|---|
+| 2bd9ed8 | v1 科技感装饰层（网格底纹 + 标题发光 + 角标）—— 因偏"通用产品味"被 v2 取代 |
+| 74e49eb | v2 私有化终端质感（选型微调落地，零新增 DOM） |
+| 413c444 | 清理 v1 遗留 token + 补正被引用的高光 token（三处 :root 重新对齐） |
+
+**v2 设计要点**（全部纯 CSS，无图片、无新增 DOM，不碰 JS/分片/布局）：
+
+1. **低饱和暗基底**：重定义别名 `--bg/--card/--card2/--line` 指向 `--*-p` 私有化色
+   （`#0a0d12 / #12161d / #171c24 / #1d232c`），整体下压一档明度 + 降彩度，
+   压掉"公开行情网页"的商业亮色味。别名写法便于单独回退整层。
+2. **极淡专属暗纹**：`--hatch: rgba(255,255,255,.012)` 斜向 1px 细纹（`repeating-linear-gradient(-45deg)`），
+   `background-attachment: fixed` 不随滚动。比通用方格更"内网自研系统"。
+3. **情绪档位指示灯**：`regime-panel` 的 `.rg-fold::before` 左上角 6px 圆点，
+   颜色随档位类切换（rg-cold→--ice / rg-warm→--recover / rg-hot→--up / rg-cool→--ebb /
+   rg-flat→--lamp-off / rg-unknown→--warn）。把"今天这盘什么状态"凝成一颗角灯，
+   是外面通用模板没有的专属标识。
+4. **弱水印**：`body::after` 右上角双圈圆环，`opacity:.07`，纯 CSS 径向渐变绘制，看得见存在、看不见内容。
+5. **内敛高光**：仅保留极轻的顶栏扫描线（`--scan-line`）、数字微光（`--num-glow`，仅数据列）、
+   卡片悬停能量辉光（`--glow-acc`）；**标题发光已移除**（去通用产品味）。
+
+**边界守则复核**：
+- [x] 未升级到"视觉层 + 装饰件"方案（避免新增 DOM 影响 5554 分片加载性能与 CI 布局偏移）
+- [x] 装饰层整体置于 `@media print` 块之前，打印时由白底 `!important` 接管，不污染打印稿
+- [x] `prefers-reduced-motion: reduce` 下动画降级（卡片/指示灯 transition 关闭）
+- [x] 零新增 DOM、零图片依赖、零 JS 改动
+- [x] token 单一事实源三处同源，`ui_tokens_consistency` 3/3 绿
+
+**修复要点（413c444）**：v2 删掉 v1 网格方案后，`--grid-line/--grid-size` 变成无人引用的死 token
+（已删）；而仍在被装饰层引用的 `--glow-soft/--scan-line/--num-glow/--glow-acc` 此前只裸定义在
+style.css / template.html 副本里、未登记进单一事实源，导致三处漂移。本次统一登记进 `ui/tokens.css`
+并对齐三处 `:root`。
+
+**验收**：远端 main = `413c444`，云端 `https://sjc19950404.github.io/a-sentiment-pro/` 部署验证通过。
