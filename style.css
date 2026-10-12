@@ -1530,6 +1530,47 @@ main[aria-hidden="true"] { display: none; }
   .rg-caution { margin: 4px 0; padding: 4px 8px; font-size: 11px; }
 }
 
+/* 横屏/竖屏 手动切换按钮（纯 CSS checkbox hack + :has()，不依赖自动 orientation 响应）。
+   竖屏手机/平板点此强制进入横屏紧凑视图；真横屏时自动紧凑，按钮文字随之变为「竖屏视图」。 */
+.ls-toggle { display: none; }
+.ls-switch {
+  position: fixed; left: 12px; bottom: 14px; z-index: 60;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 14px; font-size: 12px; line-height: 1; color: var(--txt);
+  background: rgba(23, 28, 36, .94); border: 1px solid var(--acc);
+  border-radius: 999px; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .45); backdrop-filter: blur(6px); }
+.ls-switch:active { transform: scale(.95); }
+.ls-switch::before { content: '↻'; font-size: 15px; color: var(--acc); }
+.ls-switch::after { content: '横屏视图'; }
+.ls-toggle:checked ~ .ls-switch::after { content: '竖屏视图'; }
+.ls-toggle:checked ~ .ls-switch::before { content: '↺'; }
+
+/* 手动紧凑布局：勾选后无视设备方向，强制应用横屏紧凑规则（与上方 @media landscape 同一套） */
+body:has(#lsToggle:checked) .zonenav { padding: 4px var(--pad); gap: 4px; }
+body:has(#lsToggle:checked) .zn { padding: 3px 8px; font-size: 11px; border-radius: 10px; }
+body:has(#lsToggle:checked) #alerts { display: none; }
+body:has(#lsToggle:checked) .zone { padding-top: 6px; scroll-margin-top: 40px; }
+body:has(#lsToggle:checked) .rg-fold { border-radius: 4px; }
+body:has(#lsToggle:checked) .rg-fold > summary { padding: 4px 8px; gap: 6px; }
+body:has(#lsToggle:checked) .rg-sum { font-size: 11px; }
+body:has(#lsToggle:checked) .rg-main { margin: 2px 0 6px; gap: 8px; }
+body:has(#lsToggle:checked) .rg-tag { padding: 4px 8px; gap: 6px; }
+body:has(#lsToggle:checked) .rg-tag-label { font-size: 16px; letter-spacing: 1px; }
+body:has(#lsToggle:checked) .rg-tag-conf { display: none; }
+body:has(#lsToggle:checked) .rg-facts { gap: 6px 10px; }
+body:has(#lsToggle:checked) .rg-facts b { font-size: 12px; }
+body:has(#lsToggle:checked) .rg-body { padding: 0 8px 8px; }
+body:has(#lsToggle:checked) .rg-sub { margin: 4px 0 2px; }
+body:has(#lsToggle:checked) .rg-table { font-size: 11px; }
+body:has(#lsToggle:checked) .rg-table th,
+body:has(#lsToggle:checked) .rg-table td { padding: 2px 4px; }
+body:has(#lsToggle:checked) .rg-mini { font-size: 10px; padding: 2px 4px; border-radius: 6px; }
+body:has(#lsToggle:checked) .rg-dist { gap: 4px; }
+body:has(#lsToggle:checked) .rg-dist-item { padding: 2px 5px; font-size: 10px; }
+body:has(#lsToggle:checked) .rg-note { display: none; }
+body:has(#lsToggle:checked) .rg-caution { margin: 4px 0; padding: 4px 8px; font-size: 11px; }
+
 /* ═══════════════════════════════════════════════════════════════════════════
    私有化终端装饰层（feat/tech-visual v2 · 2026-10-12）
    ───────────────────────────────────────────────────────────────────────────
@@ -1638,7 +1679,7 @@ body::before {
   :root { --bg: #fff; --card: #fff; --card2: #fff; --line: #ccc; --txt: #000; --muted: #555;
     --acc: #000; --up: #c0392b; --down: #1e7e34; --warn: #9a6b00; --focus: #000; }
   html, body { background: #fff !important; color: #000 !important; }
-  .topbar, .zonenav, #alerts, .foot, .totop, .drawer, .drawer-mask,
+  .topbar, .zonenav, #alerts, .foot, .totop, .drawer, .drawer-mask, .ls-switch,
   #zone-overview, #zone-detail, #zone-backtest, #zone-global { display: none !important; }
   .zone { padding: 0 !important; }
   /* 区头前的强调色块在黑白打印里只是一个黑点，去掉；屏幕交互提示同理 */

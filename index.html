@@ -13,6 +13,10 @@
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
+  <!-- 横屏/竖屏 手动切换（纯 CSS checkbox hack + :has()，不依赖自动 orientation 响应）
+       竖屏手机点一下进横屏紧凑视图；平板竖屏同理；真横屏时自动紧凑，按钮仍可强制退出。 -->
+  <input type="checkbox" id="lsToggle" class="ls-toggle" hidden>
+  <label for="lsToggle" class="ls-switch" role="button" tabindex="0" aria-label="切换横屏 / 竖屏视图"></label>
   <header class="topbar">
     <div class="brand">A股情绪系统 <span class="ver">PRO</span></div>
     <div class="meta">
