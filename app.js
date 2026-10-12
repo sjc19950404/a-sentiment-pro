@@ -10,6 +10,15 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const yiOf = (wan, d = 2) => (wan == null || !Number.isFinite(+wan)) ? '—' : (Math.round(wan / 1e4 * 10 ** d) / 10 ** d).toFixed(d);
 const sgnOf = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—' : `${v > 0 ? '+' : ''}${(+v).toFixed(d)}`;
+
+// 数据质量面板：点 recent 条目的 head 展开/收起其 JSON 明细（外层折叠由原生 <details> 负责）。
+// 委托到 document，renderDirty 每次重渲染也不会重复绑定。
+document.addEventListener('click', (e) => {
+  const head = e.target.closest('.dirty-item-head');
+  if (!head) return;
+  const body = head.parentElement.querySelector('.dirty-item-body');
+  if (body) body.hidden = !body.hidden;
+});
 const pctOf2 = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—' : `${v > 0 ? '+' : ''}${(+v).toFixed(d)}%`;
 const trendCls = (v) => (v == null || !Number.isFinite(+v)) ? 'muted' : (v > 0 ? 'hl' : v < 0 ? 'hl-dn' : 'muted');
 const nf = (v) => (v == null || v === '') ? '—' : (Number.isFinite(+v) ? String(v) : String(v));
@@ -2235,6 +2244,8 @@ function renderDirty(d, errMsg) {
   }
   const dirtyN = d.dirtyDays ?? 0;
   const warnN = d.warnDays ?? 0;
+  const totalDays = d.totalDays ?? 0;
+  const cleanN = totalDays - (d.taggedDays ?? 0);
   const tone = dirtyN > 0 ? 'has-dirty' : (warnN > 0 ? 'has-warn' : 'clean');
   box.hidden = false;
   box.className = `dirty-panel dq-${tone}`;
@@ -2243,12 +2254,10 @@ function renderDirty(d, errMsg) {
   const byField = Array.isArray(d.byField) ? d.byField : [];
   const recent = Array.isArray(d.recent) ? d.recent : [];
 
-  // KPI：干净天数 / 需复核天数 / 已剔除因子字段数
-  const cleanN = (d.totalDays ?? 0) - (d.taggedDays ?? 0);
   const kpis = [
-    ['干净天数', cleanN, 'pos', d.totalDays],
-    ['已剔除（error）', dirtyN, dirtyN > 0 ? 'neg' : '', d.totalDays],
-    ['需复核（warn）', warnN, warnN > 0 ? 'warnc' : '', d.totalDays],
+    ['干净天数', cleanN, 'pos', totalDays],
+    ['已剔除（error）', dirtyN, dirtyN > 0 ? 'neg' : '', totalDays],
+    ['需复核（warn）', warnN, warnN > 0 ? 'warnc' : '', totalDays],
     ['涉及字段', byField.length, '', null],
   ].map(([k, val, c, den]) => `<div class="dq-kpi ${c}"><span class="dq-k">${esc(k)}</span>`
     + `<span class="dq-v">${esc(val)}</span>`
@@ -2256,23 +2265,37 @@ function renderDirty(d, errMsg) {
 
   const fieldRows = byField.map((f) => `<tr><td class="dq-field">${esc(f.field)}</td><td class="dq-num">${esc(f.days)}</td></tr>`).join('');
 
-  const recentRows = recent.map((r) => `<tr>`
-    + `<td class="dq-date">${esc(r.date || '')}</td>`
-    + `<td><span class="dq-sev ${r.status === 'dirty' ? 'sev-error' : 'sev-warn'}">${r.status === 'dirty' ? '已剔除' : '需复核'}</span></td>`
-    + `<td class="dq-reason">${esc((r.issues && r.issues[0] && r.issues[0].reason) || '—')}</td>`
-    + `</tr>`).join('');
+  // 最近留痕：每条做成可点击 head + 隐藏 JSON 明细（点 head 展开/收起，由全局委托处理）。
+  // reviewVerdict === 'verified' → 已跨源核验为真实行情，显「已核验」徽标（与「需复核」状态区分）。
+  const recentItems = recent.map((r) => {
+    const isDirty = r.status === 'dirty';
+    const statusLabel = isDirty ? '已剔除' : '需复核';
+    const verified = r.reviewVerdict === 'verified';
+    const verdict = verified ? '已核验' : '待复核';
+    const firstReason = (r.issues && r.issues[0] && r.issues[0].reason) || '';
+    return `<div class="dirty-item">`
+      + `<div class="dirty-item-head">`
+      + `<span class="dq-date">${esc(r.date || '')}</span>`
+      + `<span class="dq-sev ${isDirty ? 'sev-error' : 'sev-warn'}">${statusLabel}</span>`
+      + `<span class="dq-verdict ${verified ? 'verified' : 'pending'}">${verdict}</span>`
+      + (firstReason ? `<span class="muted dq-hint">${esc(firstReason)}</span>` : '')
+      + `</div>`
+      + `<pre class="dirty-item-body" hidden>${esc(JSON.stringify(r, null, 2))}</pre>`
+      + `</div>`;
+  }).join('');
 
-  box.innerHTML = `<details class="dq-fold" open>`
+  // 外层折叠用原生 <details>（默认折叠＝无 open 属性）；点 <summary> 即展开。
+  box.innerHTML = `<details class="dq-fold">`
     + `<summary><b>数据质量（异常值/脏数据）</b>`
     + `<span class="dq-chip ${esc(tone)}">${dirtyN > 0 ? '有脏数据' : (warnN > 0 ? '有需复核项' : '干净')}</span>`
-    + `<span class="muted dq-sum">校验 ${esc(d.totalDays ?? 0)} 天 · 剔除 ${dirtyN} 天 · 复核 ${warnN} 天</span>`
+    + `<span class="muted dq-sum">校验 ${esc(totalDays)} 天 · 干净 ${esc(cleanN)} / 已剔除 ${esc(dirtyN)} / 需复核 ${esc(warnN)}（点摘要展开）</span>`
     + `</summary>`
     + `<div class="dq-body">`
     + `<div class="dq-kpis">${kpis}</div>`
     + (latest ? `<div class="dq-latest"><b>最新一日</b> <span class="dq-sev ${latest.status === 'dirty' ? 'sev-error' : 'sev-warn'}">${latest.status === 'dirty' ? '已剔除' : '需复核'}</span>`
       + `<div class="dq-reason">${esc((latest.issues || []).map((i) => i.reason).join('；') || '—')}</div></div>` : '')
     + (fieldRows ? `<table class="dq-table"><thead><tr><th>字段</th><th>天数</th></tr></thead><tbody>${fieldRows}</tbody></table>` : '')
-    + (recentRows ? `<div class="dq-sub muted">最近留痕（最多 20 条）</div><table class="dq-table dq-recent"><thead><tr><th>日期</th><th>状态</th><th>原因</th></tr></thead><tbody>${recentRows}</tbody></table>` : '')
+    + (recentItems ? `<div class="dq-sub muted">最近留痕（最多 20 条，点条目展开明细）</div>${recentItems}` : '')
     + `<div class="dq-note muted">口径：单源内部校验（范围 / 单位「万-亿」/ 重复 / 逻辑一致性），由 <code>src/dirty.js</code> 唯一实现。`
     + `<br>⚠ 两类语义必须分清：<b>已剔除</b>＝该字段被排除在因子入参之外（**原值仍保留在档里**，可追溯、可人工复核）；<b>需复核</b>＝仅标记，**未剔除任何数据**。`
     + `<br>缺失一律显示「未计算」而非 0。本层**不改写任何分值** —— 剔除动作在管线内完成，此处只通报与定位。`
