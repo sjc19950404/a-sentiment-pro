@@ -29,10 +29,6 @@ const nf = (v) => (v == null ? '—' : Number(v).toFixed(2));
 
 const a = decodeArchive(JSON.parse(readFileSync(P, 'utf8')));
 const days = a.all_days || [];
-// [DEBUG] CI 现场取证：确认 recalc 从磁盘读到了哪几天、其中哪几天带 lhb_aggr。
-const dirtyDays = days.filter((d) => Array.isArray(d.lhb_aggr) && d.lhb_aggr.length > 0);
-console.log(`[recalc][DEBUG] 载入主档：共 ${days.length} 天；带 lhb_aggr 的脏天 = ${dirtyDays.length} 天`
-  + (dirtyDays.length ? ` -> ${dirtyDays.map((d) => `${d.trade_date}(${d.lhb_aggr.length})`).join(', ')}` : ''));
 // 幂等判据：重算前后数据完全一致就不写盘（否则每次运行都追加一条 meta.note，产生噪音提交）
 const signature = () => JSON.stringify({ d: a.all_days, m: a.signals?.momentum, n: a.meta?.note || '' });
 const beforeSig = signature();
@@ -61,10 +57,6 @@ for (const day of days) {
 
   // 体积纪律清理（无条件执行：无 LHB 记录的天也要清掉存量派生/歧义字段，
   // 否则 day.lhb_aggr / net_total_yi / net_pct_rank 永久残留，主档体积超 4.6MB 红线致 CI 体积检查失败）
-  // [DEBUG] CI 现场取证：打印正在清洗的具体日期
-  if (Array.isArray(day.lhb_aggr) && day.lhb_aggr.length > 0) {
-    console.log(`[recalc][DEBUG] 正在清洗带 lhb_aggr 的日期：${day.trade_date}，数量：${day.lhb_aggr.length}`);
-  }
   delete day.lhb_aggr;
   delete s.net_total_yi;
   delete e.net_total_yi;
