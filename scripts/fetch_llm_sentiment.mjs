@@ -108,6 +108,15 @@ const chat = await fetchWithRetry(`${API_URL.replace(/\/$/, '')}/chat/completion
     'Content-Type': 'application/json',
     Authorization: `Bearer ${API_KEY}`,
   },
+  body: JSON.stringify({
+    model: MODEL,
+    messages: [
+      { role: 'system', content: SYSTEM },
+      { role: 'user', content: user },
+    ],
+    temperature: 0.3,
+    max_tokens: 800,
+  }),
   timeout: 60000,
   read: async (r) => {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
