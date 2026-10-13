@@ -186,6 +186,23 @@ jobs:
       #   （本项由 scripts/audit_lhb_caliber.mjs 的 B13 块按「run: 行先后」机器校验。）
       - name: 同步交易日历（指数日K反推，含调休补班）
         run: node scripts/fetch_calendar.mjs
+      # ── 2026-10-14 pain 断供根因修复：pain 之前预跑一遍管道，把"当日"并入 archive ──
+      #   根因：archive 的"今天"只由 pipeline 的 mergeNewDays 产生，而 fetch_pain 排在
+      #   pipeline 之前 → pain 跑时 archive 尚无今天 → fetch_pain 的"运行日不在交易日
+      #   序列"闸门（fetch_pain.mjs:74-76，拿 archive all_days 当序列）误拒 → CI 上 pain
+      #   结构性每天断供（闸门 2026-10-11 加上后一直如此，signals.pain 长期 null）。
+      #   修法：在 pain 之前插一道 early pipeline（MODE=live），靠 mergeNewDays 把当日并入
+      #   archive；随后 fetch_pain 闸门自然放行、算出当日真值。末尾原有 pipeline 再把新鲜
+      #   pain/breadth/crosscheck/llm 嵌入 signals-latest.json。
+      #   本地实证：archive 含当日后，fetch_pain 无 --date 即放行并出当日值（多空拉锯）。
+      #   代价：多跑一遍管道（当日抓取有缓存，约 +1~2 分钟）；mergeNewDays 同日 replace 幂等。
+      #   B13⑧ 审计安全：其只校验"第一个 pipeline.run 在 calendar.run 之后"，early 管道
+      #   正排在 calendar 之后，iCal < iPipe 仍成立。
+      - name: 预跑管道（当日入档，供 pain/breadth 取当天；末尾正式管道再嵌入新鲜 signals）
+        env:
+          MODE: live
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+        run: node src/pipeline.js
       # ── 2026-10-13 时序修复：宽度/亏钱效应抓取提前到切片生成之前 ──
       #   原顺序 pipeline.js(切片含 signals-latest.json) 跑在 fetch_breadth/fetch_pain 之前，
       #   切片只能吃上一轮的宽度/亏钱效应 → 前端宽度背离/亏钱效应长期"未评估"。
