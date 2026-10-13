@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-12",
- "generated_at": "2026-10-13T01:58:09.006Z",
+ "generated_at": "2026-10-13T02:46:29.657Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -220,11 +220,11 @@
  },
  "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
  "push_verification": {
-  "checkedAtBJ": "09:58",
+  "checkedAtBJ": "10:46",
   "snapshotAtBJ": "2026-10-12 14:58",
   "tradeDate": "2026-10-12",
   "trend_pool_mode": "trend",
-  "minutes_to_close": 302,
+  "minutes_to_close": 254,
   "mode_degraded": false,
   "trend": {
    "checked": 0,
