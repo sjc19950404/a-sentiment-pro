@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-12",
- "generated_at": "2026-10-12T15:11:51.355Z",
+ "generated_at": "2026-10-13T01:13:18.737Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -144,7 +144,7 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": -0.000756,
+    "chgPct": -0.001455,
     "state": "ok",
     "stale": false,
     "cacheNote": null
@@ -152,7 +152,7 @@
    {
     "key": "sox",
     "name": "费城半导体指数",
-    "chgPct": -0.025293999999999997,
+    "chgPct": -0.026696,
     "state": "ok",
     "stale": false,
     "cacheNote": null
@@ -170,18 +170,21 @@
    "executed": true
   },
   "overnight_exposure": {
-   "a50_chgPct": -0.000756,
+   "a50_chgPct": -0.001455,
+   "a50NightOpen": false,
    "posGap": 0.05,
    "us_close": {
-    "dji": 0.004765,
-    "spx": -0.000236,
-    "ixic": -0.002813
+    "dji": 0.003787,
+    "spx": -0.00055,
+    "ixic": -0.004395
    },
    "cn_overnight": {
-    "hxc": -0.006985,
-    "fxi": -0.004819
+    "hxc": -0.0038150000000000002,
+    "fxi": -0.0029210000000000004
    },
-   "cnh_chgPct": 0.000284
+   "cnh_chgPct": 0,
+   "usReady": true,
+   "usReason": "美东 17:35 ET 已收盘（≥16:30 ET），可采信当日收盘"
   },
   "key_levels": null,
   "events_today": null,
