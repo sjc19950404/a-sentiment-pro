@@ -388,11 +388,11 @@ export function writeArchiveSafely(filePath, archive, fsMod) {
   // 提子对体积零收益（只是 lhb → _sub.lhb 改名），但它是**审计的输入形态**：
   // audit_lhb_caliber 断言"主档写盘态 lhb 已提子"，且分片/前端按 _sub 语义处理。
   // 若此处不提子，就与 split_archive / pipeline 写出的形态不一致，属"两套口径"。
-  const packed = encodeArchive(archive, codes, { deflate: true });
+  const fullPacked = encodeArchive(archive, codes, { deflate: true });
   // 体积纪律：主档不持久化派生字段 lhb_aggr（分片滚动窗展示层现算，见 recalc_lhb_daily.mjs）。
   // 仅作用于主档写盘——分片由调用方用完整 packed 生成，必须保留 lhb_aggr。
-  const mainPacked = stripLhbAggr(packed);
-  const back = decodeArchive(JSON.parse(JSON.stringify(mainPacked)));
+  const packed = stripLhbAggr(fullPacked);
+  const back = decodeArchive(JSON.parse(JSON.stringify(packed)));
   const backDays = back.all_days || [];
   const count = (list) => list.reduce((n, d) => n + (d.lhb || []).length, 0);
   const placeholder = backDays.some((d) => (d.lhb || []).some((r) => r.reason === REASON_PLACEHOLDER));
@@ -405,7 +405,7 @@ export function writeArchiveSafely(filePath, archive, fsMod) {
     e.code = 'ROUNDTRIP_MISMATCH';
     throw e;
   }
-  const text = JSON.stringify(mainPacked); // 紧凑：缩进会白吃压缩收益（4.99MB → 9.22MB）
+  const text = JSON.stringify(packed); // 紧凑：缩进会白吃压缩收益（4.99MB → 9.22MB）
   // H-4：原子替换（注入了 renameSync 时 tmp+rename；测试 mock 缺它则降级直写——
   // 老形态 `writeFileSync(filePath, text, 'utf8')` 只在降级分支保留，语义不变）。
   if (canAtomic(fsMod)) atomicSwap(fsMod, filePath, text);
