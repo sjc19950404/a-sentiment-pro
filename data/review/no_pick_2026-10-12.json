@@ -1,0 +1,21 @@
+{
+  "tradeDate": "2026-10-12",
+  "generatedAt": "2026-10-13T06:11:34.538Z",
+  "selectedCount": 0,
+  "isEmpty": true,
+  "candidateRaw": 0,
+  "removedCount": 0,
+  "metrics": {
+    "zhabanRate": null,
+    "ztpoolCloseCount": 0,
+    "sectorTurnover5": 3,
+    "topicConc": 6.3
+  },
+  "macroReasons": [],
+  "microRemovalReasons": {},
+  "conclusion": "选不出票（候选 0 只校验后全清），微观原因：无；市场层无极端信号，属规则严格+行情平淡",
+  "suggestionForTomorrow": [
+    "规则严格+平淡→维持现有双池四条件，等待量比/主力共振的个股息",
+    "今日 0 入选已记入台账，明日开盘前复盘本结论"
+  ]
+}
