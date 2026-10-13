@@ -367,8 +367,18 @@ jobs:
             # theirs=本 run 刚生成的数据档——us-close 与 build 同轮各抓一份 global.json
             # 必冲突，生成型档以较新的本 run 产物为准（23:15 run 实录：裸 rebase 在
             # data/global.json 上 CONFLICT 卡死）。
-            git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
-            git push
+            # push 重试（2026-10-13 run#194 实录：手动 dispatch 全 job 并跑，三 job 同秒推，
+            # a50-close 先落 c80e9be0，其余两个带着 pull 时取到的旧 ref 预期（fbc84e7e）
+            # 被「cannot lock ref」拒推——pull --rebase 只防"pull 前远端已动"，防不住
+            # "pull 后 push 前"窗口。被拒后清理 rebase 状态→重拉重放→再推，最多 3 次。
+            retry=0
+            until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
+              retry=$((retry+1))
+              if [ "$retry" -ge 3 ]; then echo "push 连续 3 次被拒（并发竞态未解），放弃"; exit 1; fi
+              echo "push 被拒（同轮 job 并发竞态），重试 $retry/3 ..."
+              git rebase --abort 2>/dev/null || true
+              sleep 5
+            done
           fi
       # 放在提交之后：数据已安全落库，再判定滞后。真滞后 → 本次运行标红（GitHub 会发失败通知），
       # 避免「回退/跳过被容错吞掉、job 仍是绿」这种静默故障再次发生。
@@ -498,8 +508,18 @@ jobs:
             # theirs=本 run 刚生成的数据档——us-close 与 build 同轮各抓一份 global.json
             # 必冲突，生成型档以较新的本 run 产物为准（23:15 run 实录：裸 rebase 在
             # data/global.json 上 CONFLICT 卡死）。
-            git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
-            git push
+            # push 重试（2026-10-13 run#194 实录：手动 dispatch 全 job 并跑，三 job 同秒推，
+            # a50-close 先落 c80e9be0，其余两个带着 pull 时取到的旧 ref 预期（fbc84e7e）
+            # 被「cannot lock ref」拒推——pull --rebase 只防"pull 前远端已动"，防不住
+            # "pull 后 push 前"窗口。被拒后清理 rebase 状态→重拉重放→再推，最多 3 次。
+            retry=0
+            until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
+              retry=$((retry+1))
+              if [ "$retry" -ge 3 ]; then echo "push 连续 3 次被拒（并发竞态未解），放弃"; exit 1; fi
+              echo "push 被拒（同轮 job 并发竞态），重试 $retry/3 ..."
+              git rebase --abort 2>/dev/null || true
+              sleep 5
+            done
           fi
 
   premarket:
@@ -540,8 +560,18 @@ jobs:
             # theirs=本 run 刚生成的数据档——us-close 与 build 同轮各抓一份 global.json
             # 必冲突，生成型档以较新的本 run 产物为准（23:15 run 实录：裸 rebase 在
             # data/global.json 上 CONFLICT 卡死）。
-            git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
-            git push
+            # push 重试（2026-10-13 run#194 实录：手动 dispatch 全 job 并跑，三 job 同秒推，
+            # a50-close 先落 c80e9be0，其余两个带着 pull 时取到的旧 ref 预期（fbc84e7e）
+            # 被「cannot lock ref」拒推——pull --rebase 只防"pull 前远端已动"，防不住
+            # "pull 后 push 前"窗口。被拒后清理 rebase 状态→重拉重放→再推，最多 3 次。
+            retry=0
+            until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
+              retry=$((retry+1))
+              if [ "$retry" -ge 3 ]; then echo "push 连续 3 次被拒（并发竞态未解），放弃"; exit 1; fi
+              echo "push 被拒（同轮 job 并发竞态），重试 $retry/3 ..."
+              git rebase --abort 2>/dev/null || true
+              sleep 5
+            done
           fi
 
   us-close:
@@ -583,8 +613,18 @@ jobs:
             # theirs=本 run 刚生成的数据档——us-close 与 build 同轮各抓一份 global.json
             # 必冲突，生成型档以较新的本 run 产物为准（23:15 run 实录：裸 rebase 在
             # data/global.json 上 CONFLICT 卡死）。
-            git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
-            git push
+            # push 重试（2026-10-13 run#194 实录：手动 dispatch 全 job 并跑，三 job 同秒推，
+            # a50-close 先落 c80e9be0，其余两个带着 pull 时取到的旧 ref 预期（fbc84e7e）
+            # 被「cannot lock ref」拒推——pull --rebase 只防"pull 前远端已动"，防不住
+            # "pull 后 push 前"窗口。被拒后清理 rebase 状态→重拉重放→再推，最多 3 次。
+            retry=0
+            until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
+              retry=$((retry+1))
+              if [ "$retry" -ge 3 ]; then echo "push 连续 3 次被拒（并发竞态未解），放弃"; exit 1; fi
+              echo "push 被拒（同轮 job 并发竞态），重试 $retry/3 ..."
+              git rebase --abort 2>/dev/null || true
+              sleep 5
+            done
           fi
 
   a50-close:
@@ -612,6 +652,16 @@ jobs:
             echo "无变化，跳过提交"
           else
             git commit -m "chore: 外围(A50夜盘收盘档) $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
-            git push
+            # push 重试（2026-10-13 run#194 实录：手动 dispatch 全 job 并跑，三 job 同秒推，
+            # a50-close 先落 c80e9be0，其余两个带着 pull 时取到的旧 ref 预期（fbc84e7e）
+            # 被「cannot lock ref」拒推——pull --rebase 只防"pull 前远端已动"，防不住
+            # "pull 后 push 前"窗口。被拒后清理 rebase 状态→重拉重放→再推，最多 3 次。
+            retry=0
+            until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
+              retry=$((retry+1))
+              if [ "$retry" -ge 3 ]; then echo "push 连续 3 次被拒（并发竞态未解），放弃"; exit 1; fi
+              echo "push 被拒（同轮 job 并发竞态），重试 $retry/3 ..."
+              git rebase --abort 2>/dev/null || true
+              sleep 5
+            done
           fi
