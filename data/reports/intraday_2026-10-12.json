@@ -4,16 +4,16 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-12",
- "generated_at": "2026-10-12T06:08:38.344Z",
+ "generated_at": "2026-10-13T01:58:09.006Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
-   "backtest": "stale",
+   "backtest": "fresh",
    "ops_alerts": "fresh",
    "intraday": "fresh",
    "paper_account": "missing"
@@ -33,12 +33,12 @@
    "confidence": "missing"
   },
   "pnl_daily": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "pnl_cumulative": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "max_drawdown_daily": {
    "source": "missing",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -98,17 +98,22 @@
   }
  },
  "payload": {
-  "date": "2026-10-09",
+  "date": "2026-10-12",
   "grid_triggers": null,
   "counter_trend_losses": null,
-  "pnl_daily": null,
-  "pnl_cumulative": null,
+  "pnl_daily": -0.00729,
+  "pnl_cumulative": -0.026737,
   "max_drawdown_daily": null,
   "trend_switch_hits": 1,
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "ice",
+   "label": "冰点",
+   "cap": 0.2,
+   "position_range": "0%~20%"
+  },
   "circuit_breaker": {
    "dd_tier": null,
    "hard_stop_triggered": null,
@@ -119,7 +124,7 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": 0.005496,
+    "chgPct": -0.001455,
     "state": "ok",
     "stale": false,
     "cacheNote": null
@@ -127,69 +132,44 @@
    {
     "key": "sox",
     "name": "费城半导体指数",
-    "chgPct": null,
-    "state": "stale",
+    "chgPct": -0.026696,
+    "state": "ok",
     "stale": false,
     "cacheNote": null
    }
   ],
-  "externalStale": [
-   "外围「道琼斯」已陈旧 2 天（采集失败未刷新），已置空",
-   "外围「标普500」已陈旧 2 天（采集失败未刷新），已置空",
-   "外围「纳斯达克」已陈旧 2 天（采集失败未刷新），已置空",
-   "外围「纳斯达克100」已陈旧 2 天（采集失败未刷新），已置空",
-   "外围「费城半导体指数」已陈旧 2 天（采集失败未刷新），已置空",
-   "外围「纳斯达克中国金龙指数」已陈旧 2 天（采集失败未刷新），已置空",
-   "外围「富时中国ETF（FXI）」已陈旧 2 天（采集失败未刷新），已置空"
-  ],
+  "externalStale": [],
   "nav_realtime": null,
   "approx": false,
   "drawdown_vs_threshold": {
-   "dd_now": null,
+   "dd_now": 0.147581,
    "tier_edges": [
     0.09,
     0.15
    ],
-   "distance_pp": null,
+   "distance_pp": 0.24,
    "basis": "归档轨·运行回撤（非当日）"
   },
   "simulation_stock": {
    "sentiment_cycle": {
-    "phase": "climax",
-    "phase_label": "高潮期",
-    "regime_raw": "climax",
-    "phase_source": "regime=climax · 分位 72.9 · 方向 flat",
-    "limit_up_count": 69,
-    "highest_chain": 8,
-    "broken_limit_ratio": 0.1686746987951807,
-    "yesterday_chain_performance": 3.11,
-    "warning_signals": [
-     "昨涨停今日翻绿仅 37%、高位板晋级失败 60%，赚钱效应占优",
-     "大面 2 只：彩蝶实业 -10.01%、陆家嘴 -8.72%",
-     "宽度收窄（站上20日线仅 34.7%）"
-    ]
+    "phase": "freezing",
+    "phase_label": "冰点期",
+    "regime_raw": "ice",
+    "phase_source": "regime=ice · 分位 15.3 · 方向 down",
+    "limit_up_count": 46,
+    "highest_chain": null,
+    "broken_limit_ratio": 0.352112676056338,
+    "yesterday_chain_performance": null,
+    "warning_signals": []
    },
    "position_suggestion": "wait",
-   "pool_basis": "今日无符合条件标的（宁缺毋假，不凑数填充）；hot 强势榜（全市场筛选榜缺席的降级底座；≈涨停集中营，3-7% 带几乎恒空） 实时现算（每轮全量重算，不沿用上轮）：涨幅 3-7% · 量比 >2 · 未涨停未一字（pools.zt_codes）· 主力净流入为正 · 已滤昨日涨停 69 只黑名单；扫 200 只，剔除——带外 0 / 量比不足 0 / 已涨停 0 / 跌停 0 / 昨日涨停 0 / 净流出或无源 0 / 字段缺失 185；得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）",
+   "pool_basis": "盘中快照 hot.rows/screener 均缺席，本轮不出候选池（不回落昨收口径，数据源物理隔离）",
    "candidate_pool": [],
    "streak_pool": [],
-   "streak_pool_basis": "连板池：今日无符合条件标的（宁缺毋假，不凑数填充）；连板池实时现算（hot 强势榜（全市场筛选榜缺席的降级底座；≈涨停集中营，3-7% 带几乎恒空） ∩ zt_lb 连板≥2，白名单=昨日涨停且今日非一字）：连板≥2（昨日涨停蕴含）· 今日非一字（fbt>09:25）· 量比 >2 · 主力净流入为正——不套涨幅带、不剔已涨停（连板池语义，2026-10-10 用户指令）；zt_lb 连板≥2 共 17 只，宇宙在榜 15 只，剔除——一字 1 / 量比不足 0 / 净流出或无源 0 / 字段缺失 14；梯队分=连板高度0.6+主力净流入0.4（缺席重归一，与趋势池量价评分物理独立）；封单质量=seal_amount（东财 fund）",
+   "streak_pool_basis": "连板池无底座：hot.rows/screener 均缺席，本轮空池（宁缺毋假）",
    "trend_pool_mode": "trend",
-   "snapshotAtBJ": "2026-10-12 14:07",
-   "live_emotion": {
-    "date": "20261012",
-    "emotion": "震荡",
-    "score": 49,
-    "metrics": {
-     "limit_up_count": 42,
-     "continuous_count": 17,
-     "broken_rate": 0.5476,
-     "max_board": 10,
-     "theme_concentration": 0.1429,
-     "theme_top": "出版",
-     "hard_board_rate": 0.4524
-    }
-   },
+   "snapshotAtBJ": null,
+   "live_emotion": null,
    "simulation_positions": null,
    "review": null
   },
@@ -240,11 +220,11 @@
  },
  "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
  "push_verification": {
-  "checkedAtBJ": "23:11",
+  "checkedAtBJ": "09:58",
   "snapshotAtBJ": "2026-10-12 14:58",
   "tradeDate": "2026-10-12",
   "trend_pool_mode": "trend",
-  "minutes_to_close": -491,
+  "minutes_to_close": 302,
   "mode_degraded": false,
   "trend": {
    "checked": 0,
@@ -255,29 +235,6 @@
    "removed": []
   },
   "applied": false,
-  "note": "快照非报告构建拍（构建 2026-10-12 14:07 / 复核 2026-10-12 14:58）→ 时点判据不剔除（防底座换血误伤档案）；结构判据照常恒剔除"
- },
- "caliber_review": {
-  "reviewedAtBJ": "2026-10-12 23:11",
-  "tradeDate": "2026-10-12",
-  "ztpoolDate": null,
-  "close_emotion": null,
-  "emotion_at_push": {
-   "date": "20261012",
-   "emotion": "震荡",
-   "score": 49,
-   "metrics": {
-    "limit_up_count": 42,
-    "continuous_count": 17,
-    "broken_rate": 0.5476,
-    "max_board": 10,
-    "theme_concentration": 0.1429,
-    "theme_top": "出版",
-    "hard_board_rate": 0.4524
-   }
-  },
-  "pool_outcome": null,
-  "conflicts": [],
-  "note": "ztpool_history 无当日收盘档（16:00 本地任务未跑或未入库）→ 本轮跳过，下一班次补（幂等覆盖）"
+  "note": "快照非报告构建拍（构建 未记录（旧档） / 复核 2026-10-12 14:58）→ 时点判据不剔除（防底座换血误伤档案）；结构判据照常恒剔除"
  }
 }
