@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-13",
- "generated_at": "2026-10-13T13:16:33.102Z",
+ "generated_at": "2026-10-13T14:17:26.322Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -151,14 +151,21 @@
    {
     "key": "sox",
     "name": "费城半导体指数",
-    "chgPct": -0.026696,
-    "state": "ok",
+    "chgPct": null,
+    "state": "stale",
     "stale": false,
     "cacheNote": null
    }
   ],
   "externalStale": [
-   "外围「富时中国A50期货」已陈旧（采集失败未刷新），已置空"
+   "外围「富时中国A50期货」已陈旧（采集失败未刷新），已置空",
+   "外围「道琼斯」已陈旧 0 天（采集失败未刷新），已置空",
+   "外围「标普500」已陈旧 0 天（采集失败未刷新），已置空",
+   "外围「纳斯达克」已陈旧 0 天（采集失败未刷新），已置空",
+   "外围「纳斯达克100」已陈旧 0 天（采集失败未刷新），已置空",
+   "外围「费城半导体指数」已陈旧 0 天（采集失败未刷新），已置空",
+   "外围「纳斯达克中国金龙指数」已陈旧 0 天（采集失败未刷新），已置空",
+   "外围「富时中国ETF（FXI）」已陈旧 0 天（采集失败未刷新），已置空"
   ],
   "prev_nav": 0.9804101902871937,
   "positions": {
@@ -175,17 +182,17 @@
    "a50NightOpen": true,
    "posGap": 0.05,
    "us_close": {
-    "dji": 0.003787,
-    "spx": -0.00055,
-    "ixic": -0.004395
+    "dji": null,
+    "spx": null,
+    "ixic": null
    },
    "cn_overnight": {
-    "hxc": -0.0038150000000000002,
-    "fxi": -0.0029210000000000004
+    "hxc": null,
+    "fxi": null
    },
-   "cnh_chgPct": -0.000433,
+   "cnh_chgPct": -0.000373,
    "usReady": false,
-   "usReason": "美东 09:04 ET 盘前（09:30 才开盘），此刻美股无收盘价"
+   "usReason": "美东 09:16 ET 盘前（09:30 才开盘），此刻美股无收盘价"
   },
   "key_levels": null,
   "events_today": null,
