@@ -20,6 +20,7 @@ import { accountStats, DEFAULT_SLIP, HARD_STOP_LOSS, exportAccount } from './pap
 import { guardModuleFreshness } from './module_freshness.js';
 import { stalePainReason } from './pain.js';
 import { todayBeijing } from './util.js';
+import { bjDate } from './time.js';
 import { validateExternal } from './validate_snapshot.js';
 import { QUOTE_STATE } from './global.js';
 
@@ -409,7 +410,10 @@ export function generatePreMarket(input, opts = {}) {
   return envelope({
     type: 'pre_market',
     trigger: opts.trigger || 'schedule',
-    date: input.tradeDate,
+    // ★ 2026-10-13 拍板：盘前信封日期 = 生成当日日历日（bjDate），与正文数据口径解耦——
+    //   头部显示"今日"（预览的是当日 session），payload.date 仍 = signals.meta.tradeDate
+    //   （上一交易日收盘），正文"数据截至 X 收盘"据此点破，规避历史 10-08 同类日期错位事故。
+    date: bjDate(),
     generatedAt: opts.generatedAt || new Date().toISOString(),
     generatedBy: opts.generatedBy,
     payload,

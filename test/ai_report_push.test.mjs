@@ -146,7 +146,7 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
   assert.match(pre, /富时A50期货夜盘 \+0\.09%/, 'A50 → 富时A50期货夜盘（夜盘收盘口径）');
   assert.doesNotMatch(pre, /建议仓位|情绪周期/, '观察清单不含操作建议（任务一语义）');
   assert.doesNotMatch(pre, /候选池/, '标题/正文不出现候选池字样（输出物理隔离）');
-  assert.ok(pre.includes('数据截至 2026-09-30 收盘\n'), '盘前恒标数据截至（前收口径，头部日期即数据日期）');
+  assert.ok(pre.includes('数据截至 2026-09-30 收盘\n'), '盘前恒标数据截至（前一交易日收盘口径=payload.date，与头部生成日解耦）');
   assert.ok(!pre.includes('假期无更新'), '常规隔夜（gap≤3 自然日）不加假期附注');
   const preHoliday = renderPushText(mkReport({
     report_type: 'pre_market', date: '2026-09-30', generated_at: '2026-10-08T01:05:00.000Z',
