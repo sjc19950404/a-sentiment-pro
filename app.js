@@ -1344,7 +1344,7 @@ function buildBrief(days, arc) {
   const ev = [];
   if (v != null && pct != null) {
     if (v >= 70 && pct >= 70) ev.push('情绪与分位双高');
-    else if (v <= 35 && pct <= 30) ev.push('情绪分位双冰');
+    else if (reg && reg.key === 'ice') ev.push('情绪冰点'); // P0①续：冰点判据从绝对分(v<=35)切到 regime 分位主判据，与仓位结论全链路一致
     else if (delta != null) ev.push(delta >= 0 ? '情绪修复' : '情绪走弱');
   }
   const netsC = nets;
@@ -1356,7 +1356,7 @@ function buildBrief(days, arc) {
   let verdict = '中性震荡，控制仓位做结构。';
   if (ev.includes('情绪与分位双高') && ev.includes('龙虎榜资金进场')) verdict = '情绪与分位双高 + 资金进场共振，但分位已处高位，追高性价比下降，持仓者让利润奔跑、空仓者等分歧低吸。';
   else if (ev.includes('情绪与分位双高')) verdict = '情绪与分位双高，兑现压力大于进攻价值，勿在新高追涨。';
-  else if (ev.includes('情绪分位双冰')) verdict = ev.includes('龙虎榜资金进场') ? '冰点 + 资金试探进场，修复脉冲概率上升，轻仓试错、止损要快。' : '冰点区无资金承接，空仓等右侧，接飞刀是找死。';
+  else if (ev.includes('情绪冰点')) verdict = ev.includes('龙虎榜资金进场') ? '冰点 + 资金试探进场，修复脉冲概率上升，轻仓试错、止损要快。' : '冰点区无资金承接，空仓等右侧，接飞刀是找死。';
   else if (ev.includes('情绪修复') && ev.includes('龙虎榜资金进场') && ev.includes('赚钱效应')) verdict = painRisk
     ? `修复三要素齐（情绪回升＋资金进场＋涨停结构），但接力亏钱效应制约（${pnLabel || '多空拉锯'}：高位连板晋级失败 ${Math.round((pnFail || 0) * 100)}%、昨涨停翻绿 ${Math.round((pnLoss || 0) * 100)}%）——低位试错为主，勿追高位板。`
     : `修复三要素齐（情绪回升＋资金进场＋赚钱效应），可逐步转进攻，${mainlineTxt}。`;
