@@ -225,14 +225,31 @@ const expectTier = lastEmo == null ? null
     : lastEmo >= th.lo ? '满仓持有'
       : lastEmo > th.panic ? '半仓' : '清仓';
 const brief = txt('briefBody');
+// ── P0① 修复（2026-10-14 失真清单指控1）：简报仓位改「分位优先·风控帽」──────────
+// 旧断言要求简报仓位 == 绝对情绪分档（75.5→满仓持有），而那正是 bug：情绪分分布高度压缩
+//   （regime.js 实测 89% 天数落 40-65），绝对刻度与冷热脱节，regime.levelOf 早已定稿
+//   「分位为唯一主判据、绝对分仅交叉验证」。修正后期望值从引擎 regime（signals-latest.json）
+//   + position_policy 风控帽推导，不再用绝对分档。
+const sigLatest = JSON.parse(readFileSync(join(ROOT, 'data/signals-latest.json'), 'utf8'));
+const regL = (sigLatest.regime && sigLatest.regime.latest) ? sigLatest.regime.latest : null;
+// regime key → 风控帽区间（数值 = src/position_policy.js::POSITION_BANDS，唯一出处在彼）
+const BAND_TXT = { ice: '0%~20%', ebb: '0%~20%', recover: '30%~50%', neutral: '30%~50%', climax: '60%~100%', shift: '0%~30%' };
+const expBand = regL ? (BAND_TXT[regL.key] || null) : null;
 const tierSeg = (() => {
-  const i = brief.indexOf('仓位档位（V5.2 引擎口径）');
+  const i = brief.indexOf('仓位结论（分位优先');
   const j = brief.indexOf('因子分解');
   return (i >= 0 && j > i) ? brief.slice(i, j) : '';
 })();
 check('研判报告·数据日期与抓取状态落款', brief.includes('数据日期') && brief.includes('抓取状态'), '');
-check(`研判报告·仓位档位与引擎一致（情绪分 ${lastEmo} → ${expectTier}）`,
-  expectTier != null && tierSeg.includes(expectTier), tierSeg.slice(0, 80) || '缺「仓位档位」段');
+check(`研判报告·仓位分位优先（regime ${regL ? regL.key : '?'} → 风控帽 ${expBand}）`,
+  expBand != null && tierSeg.includes(expBand) && (regL ? tierSeg.includes(regL.label) : true),
+  tierSeg.slice(0, 120) || '缺「仓位结论（分位优先）」段');
+// 失真清单指控1 核心断言：绝对分档与分位分歧时，简报必须显式告警，不得把绝对分档当主结论
+const _absLvl = (regL && regL.value != null) ? (regL.value >= 65 ? 'high' : regL.value < 40 ? 'low' : 'mid') : null;
+const _pctLvl = (regL && regL.pct_rank != null) ? (regL.pct_rank >= 70 ? 'high' : regL.pct_rank < 30 ? 'low' : 'mid') : null;
+const rulerDiverge = (_absLvl != null && _pctLvl != null && _absLvl !== _pctLvl);
+check('研判报告·两把尺子分歧时显式告警（分布压缩，以分位为准）',
+  !rulerDiverge || tierSeg.includes('水位判据分歧'), (rulerDiverge && !tierSeg.includes('水位判据分歧')) ? '分歧未显式告警' : '');
 check('研判报告·档位阈值与引擎阈值同源',
   tierSeg.includes(`≥${th.overheat}`) && tierSeg.includes(`≥${th.lo}`) && tierSeg.includes(`≤${th.panic}`), '');
 

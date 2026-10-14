@@ -23,6 +23,27 @@ function mrOverrideFor(date, issue, ledger) {
   const e = ledger.entries.find((x) => ((x.industry ? x.date + '|' + x.industry : x.date + '|' + x.field)) === k);
   return e || null;
 }
+// 人工改判后的「有效状态」：复刻 src/dirty.js validateDay 的覆盖逻辑——
+//   warn + 改判 dirty → 升 error（真剔除）；error + 改判 warn → 降 warn（保留）。
+//   据此重算该日 status（任一 issue 为 error → 'dirty'；否则有 warn → 'warn'；否则原值）。
+//   供前端**实时重分类**：改判为已剔除的条目落「已剔除」列表、改判为需复核的落「需复核」。
+function mrEffStatus(r) {
+  if (!r) return 'ok';
+  const issues = Array.isArray(r.issues) ? r.issues : [];
+  if (!issues.length) return r.status || 'ok';
+  let hasErr = false, hasWarn = false;
+  for (const isu of issues) {
+    const ov = mrOverrideFor(r.date, isu, MANUAL_REVIEW);
+    let sev = isu.severity;
+    if (ov && ov.newStatus === 'dirty') sev = 'error';
+    else if (ov && ov.newStatus === 'warn') sev = 'warn';
+    if (sev === 'error') hasErr = true;
+    else if (sev === 'warn') hasWarn = true;
+  }
+  if (hasErr) return 'dirty';
+  if (hasWarn) return 'warn';
+  return r.status || 'ok';
+}
 
 // ── 通用工具 ──
 // 所有拼接进 innerHTML 的动态文本一律转义：题材名里含 “ ” 等全角引号、诱因里含 + & 等字符，
@@ -1006,6 +1027,31 @@ function buildBrief(days, arc) {
   // 1. 情绪定位
   const v = e.value, pct = e.pct_rank;
   const delta = (v != null && pe.value != null) ? (v - pe.value) : null;
+  // ── P0/P1 修复（2026-10-14，run 失真清单）────────────────────────────────
+  // 结论层接入三样引擎已算结果：分位主判据(仓位) + pain(接力亏钱效应) + 20日线(宽度)。
+  // 一律读 signals-latest.json 的 regime/pain/breadth 段（或对应全局），不在此重算分类；
+  // regime.js／position_policy.js 是阈值唯一出处，下方 BANDS 仅为前端的镜像展示。
+  const REG = (typeof REGIME !== 'undefined' && REGIME) || arc.regime || null;
+  const reg = REG && REG.latest ? REG.latest : null;
+  const PN = (typeof PAIN !== 'undefined' && PAIN) || arc.pain || null;
+  const pnLoss = PN && PN.perf ? PN.perf.lossRatio : null;       // 昨涨停今日翻绿比
+  const pnFail = PN && PN.advance ? PN.advance.failRate : null;   // 高位连板晋级失败率
+  const pnLabel = PN && PN.verdict ? PN.verdict.label : null;
+  const painRisk = (pnFail != null && pnFail >= 0.5) || (pnLoss != null && pnLoss >= 0.5); // 追高盈亏各半/高位接力危险
+  // 分位水位（regime.levelOf 主判据同式：pct<30 low / >=70 high / else mid）
+  const pctLvl = (pct == null) ? null : (pct < 30 ? 'low' : pct >= 70 ? 'high' : 'mid');
+  const absLvl = (v == null) ? null : (v < 40 ? 'low' : v >= 65 ? 'high' : 'mid');
+  const rulerDiverge = (pctLvl != null && absLvl != null && pctLvl !== absLvl);
+  // regime key → 仓位风控帽（数值镜像 src/position_policy.js::POSITION_BANDS，唯一出处在彼）
+  const BANDS = { ice: [0, 20], ebb: [0, 20], recover: [30, 50], neutral: [30, 50], climax: [60, 100], shift: [0, 30] };
+  const regKey = reg ? reg.key : null;
+  const band = BANDS[regKey] || (pctLvl === 'high' ? [60, 100] : pctLvl === 'low' ? [0, 20] : [30, 50]);
+  const bandTxt = `${band[0]}%~${band[1]}%`;
+  const regLabel = reg ? reg.label : (pctLvl === 'high' ? '历史高位' : pctLvl === 'low' ? '历史低位' : '中位震荡');
+  const lvlCn = (l) => (l === 'high' ? '高' : l === 'low' ? '低' : '中');
+  const divergeNote = rulerDiverge
+    ? `<span class="bf-warn">⚠ 水位判据分歧：历史分位（${pct}%）判「${lvlCn(pctLvl)}」而绝对情绪分（${num(v)}）判「${lvlCn(absLvl)}」；因情绪分分布高度压缩（实测 89% 天数落在 40-65），仓位以分位／风控帽为准</span>`
+    : '';
   const zone = v == null ? '' :
     v < 40 ? '冰点区' : v < 55 ? '偏冷区' : v < 70 ? '中性区' : v < 85 ? '偏热区' : '狂热区';
   let zoneNote = '';
@@ -1174,9 +1220,10 @@ function buildBrief(days, arc) {
   })();
   let pnl = '';
   if (zt != null && dt != null) {
-    if (zt >= 50 && dt <= 10) pnl = `涨停 ${zt} / 跌停 ${dt}，赚钱效应强`;
-    else if (zt >= 30 && dt <= 20) pnl = `涨停 ${zt} / 跌停 ${dt}，赚钱效应中等`;
-    else pnl = `涨停 ${zt} / 跌停 ${dt}，赚钱效应偏弱`;
+    const base = zt >= 50 && dt <= 10 ? '赚钱效应强' : zt >= 30 && dt <= 20 ? '赚钱效应中等' : '赚钱效应偏弱';
+    pnl = `涨停 ${zt} / 跌停 ${dt}，${base}`;
+    // P1④：叠加 pain 接力亏钱效应，避免只按涨停/跌停家数高估短线赚钱效应（失真清单指控4）。
+    if (painRisk) pnl += `；但接力亏钱效应制约（${pnLabel || '多空拉锯'}：昨涨停翻绿 ${Math.round((pnLoss || 0) * 100)}%、高位连板晋级失败 ${Math.round((pnFail || 0) * 100)}%），追高盈亏各半`;
   }
   const sec3 = [
     pnl ? li(pnl + `（昨日 ${ps.zt_count ?? '—'}/${ps.dt_count ?? '—'}）`) : '',
@@ -1244,6 +1291,9 @@ function buildBrief(days, arc) {
 
   const sec4 = [
     redPct != null ? li(`涨跌家数 沪深两市 ${up} / ${dn}${bwAllLine}，红盘占比 ${redPct.toFixed(0)}%——${redPct >= 65 ? '普涨' : redPct >= 55 ? '结构性行情' : redPct >= 45 ? '震荡分化' : '普跌'}`) : '',
+    // P1⑤ 宽度双口径：个股「站上20日线占比」必须与行业红盘并列（失真清单指控5——行业红盘
+    //   但大量个股没站上均线＝板块内部分化，单看行业红盘会高估扩散）。
+    (bwSnap && bwSnap.aboveMa && bwSnap.aboveMa.ratio != null) ? li(`个股趋势宽度：站上20日线 <b>${(bwSnap.aboveMa.ratio * 100).toFixed(1)}%</b>（${bwSnap.aboveMa.n}/${bwSnap.aboveMa.den}，全市场前复权日K自算）——${bwSnap.aboveMa.ratio >= 0.6 ? '趋势参与度高' : bwSnap.aboveMa.ratio >= 0.4 ? '趋势参与度中等' : '趋势参与度低，多数个股未走强'}${(indPct != null && indPct >= 50 && bwSnap.aboveMa.ratio < 0.4) ? '<span class="bf-warn">（行业红盘但个股站上均线不足四成＝板块指数行情、内部分化，慎言"扩散良好"）</span>' : ''}`) : '',
     indPct != null ? li(`行业红盘 ${s.ind_up ?? '—'}/${s.ind_count}（${indPct.toFixed(0)}%）——${indPct >= 70 ? '板块扩散良好' : indPct >= 50 ? '结构性扩散' : '抱团行情，扩散不足'}；最强 ${s.top_industry || '—'} / 最弱 ${s.bottom_industry || '—'}`) : '',
     amtChg != null ? li(`两市成交额 ${num(amt, 0)} 亿，环比 ${amtChg >= 0 ? '+' : ''}${amtChg.toFixed(1)}%${amt === pamt ? '' : `（${amt >= pamt ? '放量' : '缩量'} ${num(Math.abs(amt - pamt), 0)} 亿）`}——${amtChg >= 10 ? '放量' : amtChg <= -10 ? '缩量' : '量能平稳'}；量能因子 ${f.s_amt ?? '—'}（${f.s_amt >= 40 ? '高量能' : f.s_amt >= 20 ? '中等量能' : '低量能'}）`) : '',
     relTbl,
@@ -1278,6 +1328,11 @@ function buildBrief(days, arc) {
     const alive = yf.filter((t) => (th[t] || 0) > 0);
     return { n: yf.length, alive: alive.length, pct: Math.round(alive.length / yf.length * 100) };
   })();
+  // P0② 主线判定对齐：简报不再无条件写"主线清晰"。判据与 §5 题材涣散指标同式——
+  // 最强题材涨停够(≥6) + 题材聚焦/均衡(非"新晋>延续"轮动发散) + 昨日新晋存活≥30%(非一日游)。
+  // （引擎 selectMainLine 的动态阈值在「主线自动选股」卡单独判定；此处用同款涣散指标定简报口径。）
+  const mainlineClear = (mainZt != null && mainZt >= 6) && !(freshN > contN) && (surv == null || surv.pct >= 30);
+  const mainlineTxt = mainlineClear ? '主线清晰，可围绕主线做' : '题材轮动发散、无明确主线，追首板与高位接力胜率低';
   const sec5 = [
     li(`新晋 ${freshN} / 延续 ${contN} / 退潮 ${fadeN}。<span class="muted">（引擎自定义标签：题材在近5日窗口内覆盖个股数≥2 视为「存在」，与前一5日窗口比对定新晋/延续/退潮；交易所无官方题材标准，平台间题材划分不同会改变此三数）</span>${focus}`),
     topTheme ? li(`今日最强题材: ${topTheme[0]}（${mainZt} 只涨停）——题材涨停强度${mainZt >= 6 ? '强势' : mainZt >= 3 ? '中等' : '弱化'}<span class="muted">（归属为引擎自动归类，需人工核对当日涨停股，无官方唯一标准。此处只述当日题材涨停强度的相对水平；是否列为「主线」由「主线自动选股」卡的动态阈值单独判定——两判据口径不同：最强题材可以不达主线阈值（如 10-08 新能源 8 只 < 阈值 10.7 只），不构成矛盾）</span>`) : '',
@@ -1297,11 +1352,14 @@ function buildBrief(days, arc) {
   if (zt != null && dt != null) ev.push(dt > zt ? '亏钱效应' : '赚钱效应');
   if (fadeN > freshN * 1.5) ev.push('题材退潮主导');
   else if (contN > freshN * 1.5 && freshN > 0) ev.push('主线聚焦');
+  if (painRisk) ev.push('接力亏钱效应'); // P1③：综合研判强制纳入 pain，不只取资金/涨停正向指标
   let verdict = '中性震荡，控制仓位做结构。';
   if (ev.includes('情绪与分位双高') && ev.includes('龙虎榜资金进场')) verdict = '情绪与分位双高 + 资金进场共振，但分位已处高位，追高性价比下降，持仓者让利润奔跑、空仓者等分歧低吸。';
   else if (ev.includes('情绪与分位双高')) verdict = '情绪与分位双高，兑现压力大于进攻价值，勿在新高追涨。';
   else if (ev.includes('情绪分位双冰')) verdict = ev.includes('龙虎榜资金进场') ? '冰点 + 资金试探进场，修复脉冲概率上升，轻仓试错、止损要快。' : '冰点区无资金承接，空仓等右侧，接飞刀是找死。';
-  else if (ev.includes('情绪修复') && ev.includes('龙虎榜资金进场') && ev.includes('赚钱效应')) verdict = '修复三要素齐（情绪回升+资金进场+赚钱效应），可逐步转进攻，主线优先。';
+  else if (ev.includes('情绪修复') && ev.includes('龙虎榜资金进场') && ev.includes('赚钱效应')) verdict = painRisk
+    ? `修复三要素齐（情绪回升＋资金进场＋涨停结构），但接力亏钱效应制约（${pnLabel || '多空拉锯'}：高位连板晋级失败 ${Math.round((pnFail || 0) * 100)}%、昨涨停翻绿 ${Math.round((pnLoss || 0) * 100)}%）——低位试错为主，勿追高位板。`
+    : `修复三要素齐（情绪回升＋资金进场＋赚钱效应），可逐步转进攻，${mainlineTxt}。`;
   else if (ev.includes('情绪走弱') && ev.includes('龙虎榜资金离场')) verdict = '情绪资金双弱，退潮期防守为主，新题材一律当反弹看。';
 
   // 明日观测（规格六：九条触发规则，触发才输出，非固定列表）
@@ -1339,26 +1397,30 @@ function buildBrief(days, arc) {
   // V5.0 五模块分降级为"因子分解"，只解释分位构成，不再作为结论依据（两套分套同一阈值会给出相反结论）。
   const thr = getThresholds();
   const mainScoreV = (e.value != null && Number.isFinite(+e.value)) ? +e.value : total;
-  const tier = posTier(mainScoreV, thr);
+  const tier = posTier(mainScoreV, thr);   // V5.2 绝对分信号档——降级为交叉验证（失真清单指控1）
   const v52p = (BT && BT.params && BT.params.v52) || {};
   const pctOf = (x, d) => (x == null || !Number.isFinite(+x)) ? '—' : (Math.abs(+x) * 100).toFixed(d) + '%';
   const bpOf = (x, dflt) => Math.round((x == null ? dflt : +x) * 1e4 * 10) / 10; // 小数 → ‱（万分之一），抹掉浮点尾差
-  const tierLine = tier ? li(`<b>仓位档位（V5.2 引擎口径）</b>：七因子情绪分 <b>${num(mainScoreV)}</b>（与页面情绪分、回测引擎同源）→ <b>${tier.label}</b>，建议仓位 <b>${tier.pos}</b>。${tier.note}。<br><span class="muted">档位阈值：≥${num(thr.overheat, 0)} 过热只减仓不新建 / ≥${num(thr.lo, 0)} 满仓 / ${num(thr.panic, 0)}~${num(thr.lo, 0)} 半仓 / ≤${num(thr.panic, 0)} 清仓（收盘打分、T+1 生效）</span>`) : '';
+  // P0① 仓位分位优先：绝对情绪分分布高度压缩（regime.js 实测 89% 天数落 40-65），绝对刻度
+  //   与冷热脱节 → 仓位结论以历史分位/风控帽(BANDS←position_policy.js)为主，V5.2 绝对分档
+  //   仅作交叉验证披露；两把尺子分歧时显式告警(divergeNote)。
+  const tierLine = li(`<b>仓位结论（分位优先 · 风控帽）</b>：市场状态 <b>${regLabel}</b>（历史分位 ${pct == null ? '—' : pct + '%'}）→ 推荐仓位区间 <b>${bandTxt}</b>。${divergeNote}`
+    + (tier ? `<br><span class="muted">交叉验证（V5.2 绝对分信号档）：七因子情绪分 ${num(mainScoreV)} → ${tier.label}／${tier.pos}；分布压缩下该绝对分档仅作辅助，不单独作为仓位依据。阈值：≥${num(thr.overheat, 0)} 过热只减仓不新建 / ≥${num(thr.lo, 0)} 满仓 / ${num(thr.panic, 0)}~${num(thr.lo, 0)} 半仓 / ≤${num(thr.panic, 0)} 清仓（收盘打分、T+1 生效）</span>` : ''));
   const decompLine = total != null ? li(`因子分解（V5.0 五模块，仅供结构解释，不参与档位判定）: 情绪定位 ${scE} · 盈亏效应 ${scP} · 广度量能 ${scB} · 题材结构 ${scT} · 主线结构 ${scM} → 复合 ${total}。<span class="bf-warn">${riskHint}</span>`) : '';
   const riskLine = li(`V5.2 实盘约束：单笔止损 <b>-${pctOf(v52p.stopLoss ?? -0.08, 0)}</b>（优先于信号）｜回撤 ≥<b>${pctOf(v52p.ddTrigger ?? -0.15, 0)}</b> 动态降仓至 40%（0.6 倍阈值处降至 70%）｜单日仓位变动 ≤<b>${num(v52p.maxPosChg ?? 0.2, 2)}</b>｜换仓成本 佣金 ${bpOf(v52p.comm, 0.0003)}‱（双边）+ 印花税 ${bpOf(v52p.stamp, 0.0005)}‱（卖出）+ 滑点 ${bpOf(v52p.slip, 0.0002)}‱，按仓位变动幅度计提`);
   // 模板④：风险提示带 ⚠（已有），并按三档配色标记给关键结论标注风险/积极/中性。
   // 档位语义直接来自引擎输出（tier），不额外自造判据：
   //   过热/清仓档 → 🔴 风险；满仓档 → 🟢 积极；半仓档 → ⚫ 中性。
-  const tierKind = !tier ? 'neutral'
-    : (mainScoreV >= thr.overheat || mainScoreV <= thr.panic) ? 'risk'
-    : (mainScoreV >= thr.lo) ? 'pos' : 'neutral';
+  const tierKind = !band ? 'neutral'
+    : (band[1] <= 30) ? 'risk'
+    : (band[0] >= 60) ? 'pos' : 'neutral';
   const sec6 = li(`<b>${verdict}</b>`) + tierLine + decompLine + riskLine +
     (watch.length
       // 模板④：明日跟踪项用复选框清单（屏幕可勾选，刷新后重置——刻意不做持久化，
       // 跟踪项是"当日看盘清单"，隔日勾选残留会比没勾更误导）
       ? `<div class="bf-h2">明日跟踪项（引擎动态生成）</div>` + watch.map((w) => todo(w)).join('')
       : '')
-    + li(ico(tierKind, tier ? `仓位档位 ${tier.label}（七因子情绪分 ${num(mainScoreV)}）` : '仓位档位待定'))
+    + li(ico(tierKind, `仓位 ${bandTxt}（市场状态 ${regLabel} · 历史分位 ${pct == null ? '—' : pct + '%'}）`))
     + cal(`仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额 20%／涨跌家数 10%／板块涨比 20%／涨停强度 10%／涨跌停对比 15%／封板质量 10%／量能 15%，与页面情绪分、回测引擎同源），阈值 过热 ${num(thr.overheat, 0)}／满仓 ${num(thr.lo, 0)}／半仓 ${num(thr.panic, 0)}~${num(thr.lo, 0)}／清仓 ${num(thr.panic, 0)}，收盘打分、T+1 生效，并叠加止损 -8%、回撤 ≥15% 动态降仓、单日仓位变动 ≤20%、佣金万 3 + 印花税万 5 + 滑点万 2 的实盘约束。因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定（该五模块口径<b>不含资金面</b>，切勿据此误判资金面在整体打分中的地位）；<b>资金面（龙虎榜净额）是 V5.2 主分数 s_net 的组成部分，权重 20%</b>，与 §② 的资金面观测同为一股数据、同一口径，二者不冲突。明日跟踪项由九条触发规则动态生成（触发才输出，非固定列表）。`);
 
   // 口径正文（**文字一字未改**，只是从"包在 .bf-foot 里的独立段落"改为"折叠附录的正文"）：
@@ -1371,12 +1433,12 @@ function buildBrief(days, arc) {
   // ── 模板①：极简摘要（报告开头一句话核心）──
   // 组成（全部来自上面已经算好的结论变量，不新增任何指标/阈值）：
   //   ① 综合研判 verdict 首句（结论）
-  //   ② 仓位档位 tier.label / tier.pos（可执行动作）
+  //   ② 仓位区间 bandTxt（分位优先·风控帽，可执行动作）
   //   ③ 情绪分 + 分区（定位）
   //   ④ 最强/最弱环节（风险方向，来自 weak 与 riskHint 的同一份判据）
   const abParts = [];
   abParts.push(String(verdict || '').split('，')[0].replace(/[。；]$/, ''));
-  if (tier) abParts.push(`建议仓位 ${tier.pos}`);
+  abParts.push(`建议仓位 ${bandTxt}（${regLabel}）`);
   if (v != null) abParts.push(`情绪 ${num(v)} 落于${zone}`);
   if (weak.length) abParts.push(`${ico('risk', '短板')}在${weak.join('、')}`);
   else if (total != null) abParts.push(`${ico('pos', '五模块均衡')}`);
@@ -2396,18 +2458,27 @@ function renderDirty(d, errMsg) {
       + `——这是"没检查"，不等于"数据干净"</span></div>`;
     return;
   }
-  const dirtyN = d.dirtyDays ?? 0;
-  const warnN = d.warnDays ?? 0;
   const totalDays = d.totalDays ?? 0;
   const cleanN = totalDays - (d.taggedDays ?? 0);
-  const tone = dirtyN > 0 ? 'has-dirty' : (warnN > 0 ? 'has-warn' : 'clean');
   box.hidden = false;
-  box.className = `dirty-panel dq-${tone}`;
 
   const latest = d.latest || null;
   const recent = Array.isArray(d.recent) ? d.recent : [];
-  const dirtyItems = recent.filter((r) => r.status === 'dirty');
-  const warnItems = recent.filter((r) => r.status === 'warn');
+  // 人工改判**实时重分类**：按 manual_review 覆盖重算每日有效状态，改判为已剔除的条目
+  //   落「已剔除」列表、改判为需复核的落「需复核」（不再只加徽标、留在原分类）。
+  const dirtyItems = recent.filter((r) => mrEffStatus(r) === 'dirty');
+  const warnItems = recent.filter((r) => mrEffStatus(r) === 'warn');
+  // KPI 计数：在后端 aggregate 上，按 recent 留痕的改判净变化校正（recent 覆盖全部留痕时精确）。
+  let dirtyN = d.dirtyDays ?? 0;
+  let warnN = d.warnDays ?? 0;
+  for (const r of recent) {
+    const eff = mrEffStatus(r);
+    if (eff === r.status) continue;
+    if (r.status === 'dirty') dirtyN--; else if (r.status === 'warn') warnN--;
+    if (eff === 'dirty') dirtyN++; else if (eff === 'warn') warnN++;
+  }
+  const tone = dirtyN > 0 ? 'has-dirty' : (warnN > 0 ? 'has-warn' : 'clean');
+  box.className = `dirty-panel dq-${tone}`;
 
   // KPI 瓦片可点击：点「干净天数 / 已剔除 / 需复核」展开对应明细（涉及字段已移除）。
   // 展开/收起与手风琴由 app.js 顶部全局 click 委托处理。
@@ -2420,7 +2491,7 @@ function renderDirty(d, errMsg) {
   // 单条 recent：可点击 head + 隐藏 JSON 明细（点 head 展开/收起，由全局委托处理）。
   // reviewVerdict === 'verified' → 已跨源核验为真实行情，显「已核验」徽标。
   const itemHtml = (r) => {
-    const isDirty = r.status === 'dirty';
+    const isDirty = mrEffStatus(r) === 'dirty';
     const verified = r.reviewVerdict === 'verified';
     const issue0 = (r.issues && r.issues[0]) || null;
     const firstReason = issue0 ? (issue0.reason || '') : '';
@@ -2448,9 +2519,10 @@ function renderDirty(d, errMsg) {
     ? items.map(itemHtml).join('')
     : `<div class="muted dq-empty">无对应留痕（recent 仅保留最近 20 条）</div>`;
 
+  const latestDirty = latest ? mrEffStatus(latest) === 'dirty' : false;
   const latestHtml = latest
-    ? `<div class="dq-latest"><b>最新一日</b> <span class="dq-sev ${latest.status === 'dirty' ? 'sev-error' : 'sev-warn'}">${latest.status === 'dirty' ? '已剔除' : '需复核'}</span>`
-      + `<div class="dq-reason">${esc((latest.issues || []).map((i) => i.reason).join('；') || '—')}</div></div>`
+    ? `<div class="dq-latest"><b>最新一日</b> <span class="dq-sev ${latestDirty ? 'sev-error' : 'sev-warn'}">${latestDirty ? '已剔除' : '需复核'}</span>`
+    + `<div class="dq-reason">${esc((latest.issues || []).map((i) => i.reason).join('；') || '—')}</div></div>`
     : '';
 
   // 面板默认展开 KPI 行；点 KPI 才展开对应明细（recent 明细默认折叠，符合「默认折叠」）。
