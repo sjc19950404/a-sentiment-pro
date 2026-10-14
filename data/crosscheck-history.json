@@ -22,16 +22,16 @@
       "date": "2026-10-14",
       "zt": {
         "verdict": "WARN",
-        "primary": 33,
-        "derived": 27,
+        "primary": 34,
+        "derived": 28,
         "countDiff": 6,
-        "divergeRate": 0.1818
+        "divergeRate": 0.1765
       },
       "breadth": {
         "verdict": "PASS",
-        "snapUpRatio": 26.11,
-        "leguUpRatio": 27.6,
-        "ratioDiffPct": 1.49
+        "snapUpRatio": 15.94,
+        "leguUpRatio": 18.22,
+        "ratioDiffPct": 2.28
       }
     }
   ]
