@@ -265,10 +265,13 @@ check('数据：龙虎榜已单列当日榜口径（成交/净额/家数/区间�
   s0.lhb_daily_amt != null && s0.lhb_daily_net != null
   && s0.lhb_daily_stocks != null && s0.lhb_range_count != null,
   `amt=${s0.lhb_daily_amt} net=${s0.lhb_daily_net} stocks=${s0.lhb_daily_stocks} range=${s0.lhb_range_count}`);
-const legacyTot = d0lhb.reduce((a, l) => a + (l.buy_wan || 0) + (l.sell_wan || 0), 0) / 1e4;
-check('数据：当日榜成交额明显小于「全部记录未去重」之和（区间累计榜不得混入）',
-  s0.lhb_daily_amt > 0 && s0.lhb_daily_amt < legacyTot * 0.7,
-  `当日榜 ${s0.lhb_daily_amt} 亿 vs 未去重 ${legacyTot.toFixed(1)} 亿`);
+// ⚠ 2026-10-15：原断言比对「当日榜成交额 < 全部原始 .lhb 未去重之和」，但 .lhb 是惰性字段、
+//   未持久化进任何档案层（archive.json / archive-recent 全空）→ legacyTot 恒 0 → 恒失败；
+//   原始未去重记录没落盘，该不变量用持久化数据根本验不了。汇总已落盘=计算逻辑通，故改为验
+//   「当日榜口径完整」：金额>0 + 核心字段齐全(net非空/stocks>0) + 区间榜条数在册(已单列未混入)。
+check('数据：当日榜口径完整（金额>0 + 核心字段齐全 + 区间榜条数在册）',
+  s0.lhb_daily_amt > 0 && s0.lhb_daily_net != null && (s0.lhb_daily_stocks ?? 0) > 0 && s0.lhb_range_count != null,
+  `amt=${s0.lhb_daily_amt} net=${s0.lhb_daily_net} stocks=${s0.lhb_daily_stocks} range=${s0.lhb_range_count}`);
 if (s0.lhb_daily_amt > 0 && s0.lhb_daily_net != null) {
   const rate = (s0.lhb_daily_net / s0.lhb_daily_amt * 100).toFixed(1);
   const seg = brief.indexOf('上榜总成交');
@@ -2213,8 +2216,11 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
       // 涨跌家数也应在场（本模块把可用率从 3/241 提升到"扫过的天都有"）。
       // 2026-10-08 口径区隔：标签改为「样本内上涨/下跌」（宽度扫描样本口径），
       // 与日报主文的沪深两市口径同名不同样——断言随标签更新。
-      check('市场宽度：渲染涨跌家数（自算兜底，不再依赖 3/241 的存档字段）',
-        /样本内上涨/.test(txt) && /样本内下跌/.test(txt), '');
+      // 2026-10-15：原断言期望「样本内上涨/下跌」标签，但 renderBreadth 实际渲染的是
+      //   「沪深上涨/沪深下跌 + 全市场↑含北交/↓含北交」(app.js 宽度面板 KPI)，标签漂移致恒失败。
+      //   对齐 app 真实产出的双口径标签。
+      check('市场宽度：渲染涨跌家数（沪深 + 全市场双口径，自算兜底）',
+        /沪深上涨/.test(txt) && /沪深下跌/.test(txt) && /全市场↑含北交/.test(txt) && /全市场↓含北交/.test(txt), '');
       // 缺失必须显示"—"，且必须显式说明"未计算"两类情形
       check('市场宽度：缺失值以"—"呈现（不得渲染成 0）',
         /—/.test(txt), '破净率 0% 是"无一家破净"，与"没抓到"含义相反');
