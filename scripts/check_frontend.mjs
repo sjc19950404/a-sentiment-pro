@@ -2260,8 +2260,11 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
     check('数据质量：面板已渲染（hidden 已解除或为未知态）', dp.hidden === false, `hidden=${dp.hidden}`);
     if (!isUnknown) {
       check('数据质量：三态类名唯一且合法', /dq-(clean|has-warn|has-dirty)/.test(dp.className || ''), `类名 ${dp.className}`);
-      check('数据质量：四个 KPI 齐全（干净/已剔除/需复核/涉及字段）',
-        /干净天数/.test(txt) && /已剔除/.test(txt) && /需复核/.test(txt) && /涉及字段/.test(txt), '');
+      // 2026-10-15：原断言含「涉及字段」第四个 KPI，但 renderDirty 已移除该瓦片
+      //   （app.js：「干净天数/已剔除/需复核」三个可点击 KPI，涉及字段已移除）——标签漂移致恒失败。
+      //   对齐 app 现有三 KPI。
+      check('数据质量：KPI 齐全（干净天数/已剔除/需复核）',
+        /干净天数/.test(txt) && /已剔除/.test(txt) && /需复核/.test(txt), '');
       check('数据质量：区分「已剔除」与「需复核」两种语义标签',
         /已剔除/.test(txt) && /需复核/.test(txt), '两者混用会让人误判数据是否被丢弃');
       check('数据质量：披露「原值保留在档里」与「本层不改写分值」',
