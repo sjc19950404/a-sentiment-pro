@@ -17,6 +17,22 @@
         "leguUpRatio": 21.93,
         "ratioDiffPct": 3.6
       }
+    },
+    {
+      "date": "2026-10-14",
+      "zt": {
+        "verdict": "WARN",
+        "primary": 32,
+        "derived": 26,
+        "countDiff": 6,
+        "divergeRate": 0.1875
+      },
+      "breadth": {
+        "verdict": "PASS",
+        "snapUpRatio": 28.4,
+        "leguUpRatio": 29.88,
+        "ratioDiffPct": 1.49
+      }
     }
   ]
 }
