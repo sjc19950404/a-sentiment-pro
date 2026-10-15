@@ -1,63 +1,63 @@
 {
   "kind": "source-health",
   "version": 1,
-  "updatedAt": "2026-10-14T07:36:13.859Z",
+  "updatedAt": "2026-10-15T02:02:28.218Z",
   "sources": {
     "quantdash-universe": {
       "ok": 0,
-      "fail": 2,
-      "streak": 2,
+      "fail": 3,
+      "streak": 3,
       "lastOk": null,
-      "lastFail": "2026-10-14",
-      "lastDay": "2026-10-14"
+      "lastFail": "2026-10-15",
+      "lastDay": "2026-10-15"
     },
     "akshare-spot_em": {
       "ok": 0,
-      "fail": 2,
-      "streak": 2,
+      "fail": 3,
+      "streak": 3,
       "lastOk": null,
-      "lastFail": "2026-10-14",
-      "lastDay": "2026-10-14"
+      "lastFail": "2026-10-15",
+      "lastDay": "2026-10-15"
     },
     "quantdash-symbols": {
-      "ok": 1,
+      "ok": 2,
       "fail": 1,
       "streak": 0,
-      "lastOk": "2026-10-14",
+      "lastOk": "2026-10-15",
       "lastFail": "2026-10-12",
-      "lastDay": "2026-10-14"
+      "lastDay": "2026-10-15"
     },
     "ztpool": {
-      "ok": 2,
+      "ok": 3,
       "fail": 0,
       "streak": 0,
-      "lastOk": "2026-10-14",
+      "lastOk": "2026-10-15",
       "lastFail": null,
-      "lastDay": "2026-10-14"
+      "lastDay": "2026-10-15"
     },
     "snapshot-derived": {
-      "ok": 1,
+      "ok": 2,
       "fail": 1,
       "streak": 0,
-      "lastOk": "2026-10-14",
+      "lastOk": "2026-10-15",
       "lastFail": "2026-10-12",
-      "lastDay": "2026-10-14"
+      "lastDay": "2026-10-15"
     },
     "akshare-legu": {
-      "ok": 1,
+      "ok": 2,
       "fail": 1,
       "streak": 0,
-      "lastOk": "2026-10-14",
+      "lastOk": "2026-10-15",
       "lastFail": "2026-10-12",
-      "lastDay": "2026-10-14"
+      "lastDay": "2026-10-15"
     },
     "main-net": {
       "ok": 0,
-      "fail": 2,
-      "streak": 2,
+      "fail": 3,
+      "streak": 3,
       "lastOk": null,
-      "lastFail": "2026-10-14",
-      "lastDay": "2026-10-14"
+      "lastFail": "2026-10-15",
+      "lastDay": "2026-10-15"
     }
   }
 }
