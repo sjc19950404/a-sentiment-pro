@@ -108,7 +108,18 @@ if (isMain) {
   const cal = JSON.parse(readFileSync(CAL, 'utf8').replace(/^﻿/, ''));
   const arch = decodeArchive(JSON.parse(readFileSync(MAIN, 'utf8').replace(/^﻿/, '')));
   const dates = (arch.all_days || []).map((d) => d && d.trade_date).filter(Boolean);
+  // 空壳档检测（纪律四，2026-10-12；2026-10-15 移植自 staging c27d618c）：在档但
+  // summary.up_count/zt_count 全为 0 —— 与缺档对下游无区别，却骗过「文件在/能解析/字段非 null」
+  // 的既有检查。main 重构后字段由旧版 meta.* 挪至 summary.*。判据用 === 0 而非 !：
+  // null 归 backfill_gaps 管，不在此误杀。
+  const hollowDates = [];
+  for (const day of (arch.all_days || [])) {
+    const up = day.summary?.up_count;
+    const zt = day.summary?.zt_count;
+    if (up === 0 && zt === 0) hollowDates.push(day.trade_date);
+  }
   const r = findMissingTradeDays({ calendar: cal, archiveDates: dates, lookback: LOOKBACK });
+  r.hollowDates = hollowDates;
 
   if (WANT_JSON) {
     const payload = JSON.stringify({ ok: r.recentMissing.length === 0, ...r, generatedAt: new Date().toISOString() }, null, 2);
