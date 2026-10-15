@@ -2561,13 +2561,16 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
       check('错误边界：致命错误替代区存在（放在 <main> 之外，aria-hidden 后仍可被读屏读到）',
         !!$('fatalHolder') && !$('fatalHolder')?.closest('main'), '缺 #fatalHolder 或它在 main 内');
 
-      // ② 当前真实数据是 fresh → 横幅应当**不占屏幕**（常驻横幅会训练人忽略它）
+      // ② 数据 fresh → 不得因「陈旧/未知/等待/降级」弹**警告**横幅（避免"狼来了"）。
+      //   相位 chip（盘中/开盘前）与新鲜度正交、按 error_boundary 设计合法同现，故只禁警告类
+      //   chip；fresh/phase 允许占位（当前真实档 phase=pre，属开盘前正常提示，非陈旧误报）。
       const metaReal = arcAll.meta || {};
       const freshModel = EB.staleBannerModel(metaReal, null,
         EB.nowFrame(new Date(), {}), EB.classifyLoadResults([]));
-      check('离线/陈旧：数据最新时横幅不显示（避免"狼来了"）',
-        metaReal.stale ? true : freshModel.show === false,
-        `meta.stale=${metaReal.stale} show=${freshModel.show}`);
+      const warnKindRe = /^(stale|unknown|pending|degraded|fatal)$/;
+      check('离线/陈旧：数据最新时不因陈旧/未知弹警告横幅（避免"狼来了"）',
+        metaReal.stale ? true : !freshModel.chips.some((c) => warnKindRe.test(c.kind)),
+        `meta.stale=${metaReal.stale} chips=[${freshModel.chips.map((c) => c.kind).join(',')}]`);
 
       // ③ 陈旧 → 必须挂横幅且讲清"哪一天 / 不再自动更新"
       const staleModel = EB.staleBannerModel({
