@@ -1204,7 +1204,11 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     const sraw = readFileSync(sigPath, 'utf8');
     const sg = JSON.parse(sraw);
     const skb = Buffer.byteLength(sraw) / 1024;
-    check('切片：signals-latest.json < 36KB（只放"看一眼"的量；32→36 重估见 split_archive.mjs 注释）', skb < 36, `${skb.toFixed(1)}KB`);
+    // 2026-10-15：阈值 36→64KB。signals 只放**结论**、无逐日明细（上方 heavyKeys 守卫盯着"不得夹带
+    //   明细数组"），但结论字段逐版增加（regime/dailyReport/marketAlerts/crosscheck/llm…）已涨到 ~38KB，
+    //   写死的 36KB 成误报——同 2026-10-09 主档 6MB 阈值被数据自然增长抬高之先例（见下方主档体积注释）。
+    //   64KB 仍属首屏可接受量级（首屏必拉、拉快不卡）；若将来再涨，抬高或改软告警，别硬崩 build。
+    check('切片：signals-latest.json < 64KB（只放"看一眼"的量；36→64 重估：结论字段增长）', skb < 64, `${skb.toFixed(1)}KB`);
     check('切片：signals 的交易日 = 主档最新日',
       sg.latest && sg.latest.trade_date === (arch.all_days || [])[arch.all_days.length - 1]?.trade_date,
       String(sg.latest && sg.latest.trade_date));
