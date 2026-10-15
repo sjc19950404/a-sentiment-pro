@@ -25,14 +25,17 @@ const OUT = join(ROOT, 'data', 'source-health.json');
 const STREAK_ALARM = 3;   // 连续失败几次才告警（1~2 次多半是网络抖动，第 3 次才像真故障）
 
 /** 源清单：id 与 market_data.py 的降级链/log_degrade 文案对齐。 */
+// 2026-10-15 重构：盘中快照数据层迁回 Node.js 直连东财（src/intraday_node.mjs）。
+// 原三源（QuantDash universe / AkShare spot_em / AkShare fund_flow）连续失败已废弃——
+// 见 src/intraday_node.mjs 文件头说明。下面探针改为检查 Node 直连产出。
 const SOURCES = [
-  { id: 'quantdash-universe', label: '快照·QuantDash主路', probe: (d) => d.dataHealth?.snapshotSource === 'quantdash-universe' },
-  { id: 'akshare-spot_em', label: '快照·AkShare兜底', probe: (d) => d.dataHealth?.snapshotSource === 'akshare-spot_em' },
-  { id: 'quantdash-symbols', label: '快照·QuantDash免费路', probe: (d) => d.dataHealth?.snapshotSource === 'quantdash-symbols' },
-  { id: 'ztpool', label: '涨停池·东财push2ex', probe: (d) => d.pools != null },
-  { id: 'snapshot-derived', label: '自建池·自有快照(对账)', probe: (d) => d.ztDerived != null },
-  { id: 'akshare-legu', label: '涨跌家数·乐咕(对账)', probe: (d) => d.breadthCross != null },
-  { id: 'main-net', label: '主力净流入榜', probe: (d) => d.screener != null },
+  // 全市场快照：替代 QuantDash universe 主路 + AkShare spot_em 兜底（二者合并为同一 Node 源）
+  { id: 'node-universe', label: '全市场快照·Node东财直连(替代QuantDash主路)', probe: (d) => d.dataHealth?.snapshotSource === 'node-eastmoney' && Array.isArray(d.hot?.rows) && d.hot.rows.length > 0 },
+  { id: 'node-spot', label: '实时行情·Node东财直连(替代AkShare兜底)', probe: (d) => d.dataHealth?.snapshotSource === 'node-eastmoney' && Array.isArray(d.hot?.rows) && d.hot.rows.length > 0 },
+  // 主力净流入榜：替代 AkShare fund_flow_rank（东财 clist 按 f62 降序，复用 sources.fetchScreenerTopMainNet）
+  { id: 'node-main-net', label: '主力净流入榜·Node东财直连(替代AkShare fund_flow)', probe: (d) => d.screener != null },
+  // 涨跌停池：原 ztpool 探针沿用，Node 直连 push2ex（复用 sources.fetchPools）
+  { id: 'node-pools', label: '涨跌停池·Node东财直连(push2ex)', probe: (d) => d.pools != null },
 ];
 
 const log = (...a) => { if (!AS_JSON) console.log(...a); };

@@ -38,7 +38,7 @@ import { fileURLToPath } from 'node:url';
 import dns from 'node:dns';
 import config from '../src/config.js';
 import { resolveHolidays } from '../src/calendar.js';
-import { fetchIntradayRaw } from '../src/sources_qd.mjs';
+import { fetchIntradayRaw } from '../src/intraday_node.mjs';
 import { marketPhase, bjDate, bjTime } from '../src/freshness.js';
 import { buildIntradayPool, minutesToCloseBJ } from '../src/ai_report.js';
 import { computeEmotion } from '../src/emotion_cycle.js';

@@ -264,7 +264,9 @@ def fetch_full_market_snapshot(force: bool = False) -> pd.DataFrame:
     if not _UNIVERSE_DISABLED:
         try:
             _QD_LIMITER.acquire()
-            df = _qd().quotes.get(universes='CN_Stock', to_dataframe=True)
+            # [DEPRECATED 2026-10-15] 盘中快照数据层已迁回 Node.js 直连东财（src/intraday_node.mjs）：
+            # 原 QuantDash universe 为付费功能，免费 key 触发 PermissionError，遂废弃此路。
+            raise EmptyDataError('DEPRECATED: quantdash-universe 已迁 Node 直连东财（src/intraday_node.mjs）')
             snap = normalize_snapshot(df, 'quantdash-universe')
             _SNAPSHOT_CACHE.update(df=snap, at=time.monotonic(), source='quantdash-universe')
             return snap
@@ -275,7 +277,9 @@ def fetch_full_market_snapshot(force: bool = False) -> pd.DataFrame:
                 _UNIVERSE_DISABLED = True        # 付费墙：本进程后续轮次不再浪费配额试探
     try:
         import akshare as ak
-        df = ak.stock_zh_a_spot_em()
+        # [DEPRECATED 2026-10-15] 东财对 AkShare 封装的全市场查询主动重置连接（RemoteDisconnected），
+        # 已迁 Node 直连东财 clist（复用 sources.fetchScreenerTopMainNet 同款 UA+Referer）。
+        raise EmptyDataError('DEPRECATED: akshare-spot_em 已迁 Node 直连东财')
         snap = normalize_snapshot(df, 'akshare-spot_em')
         _SNAPSHOT_CACHE.update(df=snap, at=time.monotonic(), source='akshare-spot_em')
         return snap
@@ -436,7 +440,9 @@ def fetch_main_net_screener(top_n: int = 100) -> tuple[dict, list | None]:
     """
     try:
         import akshare as ak
-        ff = ak.stock_individual_fund_flow_rank(indicator='今日')
+        # [DEPRECATED 2026-10-15] 同上，AkShare fund_flow_rank 底层东财被重置，已迁 Node 直连
+        # 东财 clist 按 f62 降序（sources.fetchScreenerTopMainNet）。
+        raise EmptyDataError('DEPRECATED: fund_flow_rank 已迁 Node 直连东财')
         if ff is None or ff.empty:
             raise EmptyDataError('fund_flow_rank 返回空')
         code_col = next(c for c in ('代码', '股票代码') if c in ff.columns)
