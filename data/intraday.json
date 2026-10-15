@@ -2954,7 +2954,9 @@
       }
     ]
   },
-  "sourcesFailed": [],
+  "sourcesFailed": [
+    "market_data: 数据层进程失败（六源全部缺席，保留上次快照）"
+  ],
   "prevCapturedAtBJ": "2026-10-15 10:59",
   "prevPools": {
     "zt": 32,
@@ -2983,5 +2985,6 @@
         "hard_board_rate": 0.3939
       }
     }
-  }
+  },
+  "lastFailedAt": "2026-10-15T05:00:29.331Z"
 }
