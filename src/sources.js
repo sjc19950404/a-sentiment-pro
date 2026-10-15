@@ -122,7 +122,7 @@ export async function fetchHotQuotes(codes) {
 //   候选池的扫描底座必须用全市场榜（本函数），hot 榜仅作题材标签补充。
 //   主机回退链与 fetchMainNet 同款（push2 主域部分网络下 TLS 被断）。
 export async function fetchScreenerTopMainNet() {
-  const hosts = ['push2.eastmoney.com', '1.push2.eastmoney.com', '2.push2.eastmoney.com'];
+  const hosts = ['push2.eastmoney.com', '1.push2.eastmoney.com', '2.push2.eastmoney.com', '7.push2.eastmoney.com', '82.push2.eastmoney.com', '84.push2.eastmoney.com', 'push2delay.eastmoney.com', 'hqdigi2.eastmoney.com'];
   const url = (host) => `https://${host}/api/qt/clist/get?pn=1&pz=100&po=1&np=1&fltt=2&invt=2&fid=f62`
     + '&fs=m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23' // 沪深 A（主板/创业板/科创板）
     + '&fields=f2,f3,f8,f10,f12,f14,f23,f62,f100,f115';
@@ -162,7 +162,7 @@ export async function fetchMainNet(codes) {
     if (s[0] === '6') secids.push('1.' + s);            // 沪
     else if (s[0] === '0' || s[0] === '3') secids.push('0.' + s); // 深（含创业板）
   }
-  const hosts = ['push2.eastmoney.com', '1.push2.eastmoney.com', '2.push2.eastmoney.com'];
+  const hosts = ['push2.eastmoney.com', '1.push2.eastmoney.com', '2.push2.eastmoney.com', '7.push2.eastmoney.com', '82.push2.eastmoney.com', '84.push2.eastmoney.com', 'push2delay.eastmoney.com', 'hqdigi2.eastmoney.com'];
   for (let i = 0; i < secids.length; i += 100) {
     let got = false;
     for (const host of hosts) {
@@ -357,20 +357,24 @@ async function fetchPools(date) {
 
 // 源8: 东财全市场涨跌家数（沪深合计；f104=涨 f105=跌 f106=平）
 async function fetchBreadth() {
-  for (let att = 0; att < 3; att++) {
-    try {
-      const j = await fetchJSON('https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&secids=1.000001,0.399001&fields=f104,f105,f106&ut=fa5fd1943c7b386f172d6893dbfba10b',
-        { headers: { Referer: 'https://quote.eastmoney.com/' } });
-      const diff = j && j.data && Array.isArray(j.data.diff) ? j.data.diff : null;
-      if (!diff || !diff.length) throw new Error('breadth empty');
-      let up = 0, down = 0, flat = 0, ok = false;
-      for (const d of diff) {
-        if (d.f104 != null && d.f105 != null) { up += d.f104; down += d.f105; flat += d.f106 || 0; ok = true; }
-      }
-      if (ok) return { up, down, flat };
-      throw new Error('breadth fields missing');
-    } catch (e) { if (att === 2) console.error('[breadth] 连续失败:', e.message); }
-    await sleep(600);
+  // push2 主域在本机网络下 TLS 常被断，push2ex 镜像可用；逐主机回退，全败才失败。
+  const hosts = ['push2.eastmoney.com', '1.push2.eastmoney.com', '2.push2.eastmoney.com', '7.push2.eastmoney.com', '82.push2.eastmoney.com', '84.push2.eastmoney.com', 'push2delay.eastmoney.com', 'hqdigi2.eastmoney.com'];
+  for (const host of hosts) {
+    for (let att = 0; att < 2; att++) {
+      try {
+        const j = await fetchJSON(`https://${host}/api/qt/ulist.np/get?fltt=2&secids=1.000001,0.399001&fields=f104,f105,f106&ut=fa5fd1943c7b386f172d6893dbfba10b`,
+          { headers: { Referer: 'https://quote.eastmoney.com/' } });
+        const diff = j && j.data && Array.isArray(j.data.diff) ? j.data.diff : null;
+        if (!diff || !diff.length) throw new Error('breadth empty');
+        let up = 0, down = 0, flat = 0, ok = false;
+        for (const d of diff) {
+          if (d.f104 != null && d.f105 != null) { up += d.f104; down += d.f105; flat += d.f106 || 0; ok = true; }
+        }
+        if (ok) return { up, down, flat };
+        throw new Error('breadth fields missing');
+      } catch (e) { if (host === hosts[hosts.length - 1] && att === 1) console.error('[breadth] 全主机失败:', e.message); }
+      await sleep(400);
+    }
   }
   return null;
 }

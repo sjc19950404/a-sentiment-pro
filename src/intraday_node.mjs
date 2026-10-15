@@ -20,7 +20,13 @@ import { fetchScreenerTopMainNet, fetchPools, fetchBreadth } from './sources.js'
 import { bjDate } from './freshness.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
-const EM = 'https://push2.eastmoney.com/api/qt/clist/get';
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// 东财 qt 接口前置机：push2 主域及其镜像（1./2./7./82./84.）在本机网络偶发 TLS 断连/抽风
+// （实测多数时刻 200 OK，少数时刻 fetch failed → 属瞬时波动，非主机被墙，见 .probe2 全 200）。
+// 故用镜像群 + 每主机 2 次重试吸收抖动；push2ex 仅提供 getTopic 池子接口，不提供
+// /api/qt/clist|ulist，故不列入。
+const EM_HOSTS = ['push2.eastmoney.com', '1.push2.eastmoney.com', '2.push2.eastmoney.com', '7.push2.eastmoney.com', '82.push2.eastmoney.com', '84.push2.eastmoney.com', 'push2delay.eastmoney.com', 'hqdigi2.eastmoney.com'];
+const EM_PATH = '/api/qt/clist/get';
 const FIELDS = 'f2,f3,f8,f10,f12,f14,f23,f62,f100,f115';
 const FS = 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23'; // 沪深 A（主板/创业板/科创板）
 
@@ -34,13 +40,21 @@ const num = (v) => {
 // 全市场快照（替代 QuantDash universe / AkShare spot_em）：东财 clist 按涨幅降序取前 N。
 // 一次请求拿全市场涨幅榜——hot/quotes 同源复用，零新增请求。
 async function fetchUniverse(top = 200) {
-  const url = `${EM}?pn=1&pz=${top}&po=1&np=1&fltt=2&invt=2&fid=f3&fs=${FS}&fields=${FIELDS}`;
-  const r = await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://quote.eastmoney.com/' } });
-  if (!r.ok) throw new Error('HTTP ' + r.status);
-  const j = await r.json();
-  const diff = j && j.data && Array.isArray(j.data.diff) ? j.data.diff : null;
-  if (!diff) throw new Error('clist 返回异常（无 diff）：' + JSON.stringify(j).slice(0, 120));
-  return diff;
+  const errs = [];
+  for (const host of EM_HOSTS) {
+    for (let att = 0; att < 2; att++) {
+      try {
+        const url = `https://${host}${EM_PATH}?pn=1&pz=${top}&po=1&np=1&fltt=2&invt=2&fid=f3&fs=${FS}&fields=${FIELDS}`;
+        const r = await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://quote.eastmoney.com/' } });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const j = await r.json();
+        const diff = j && j.data && Array.isArray(j.data.diff) ? j.data.diff : null;
+        if (!diff) throw new Error('clist 返回异常（无 diff）：' + JSON.stringify(j).slice(0, 120));
+        return diff;
+      } catch (e) { errs.push(host + '#' + att + ': ' + e.message); if (att === 0) await sleep(300); }
+    }
+  }
+  throw new Error('universe 全主机失败: ' + errs.join(' | '));
 }
 
 /**
