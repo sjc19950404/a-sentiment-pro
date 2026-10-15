@@ -689,6 +689,9 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
   // 强势股行情补全缺口：数据源未覆盖该代码段 → 该票 close/涨跌幅/换手留空（前端显「—」而非 0）
   const hot_quote_missing = hot.filter((h) => h.close == null).length;
   if (hot_quote_missing) missing.push(`hot_quotes(${hot_quote_missing})`);
+  // 龙虎榜未公布（盘中/尚未披露）→ 该日 lhb/lhb_aggr 为空；显式留痕，
+  // 下一轮 runLive 的 refresh-lhb 会补抓，报告/前端据此显示「龙虎榜缺席」而非假装全量。
+  if (lhb.length === 0) missing.push('lhb');
   const zt = pools ? pools.zt : null, dt = pools ? pools.dt : null, zb = pools ? pools.zb : null;
   if (zt == null || dt == null || zb == null) missing.push('pools');
   // 封板率（市场通用口径）= 收盘涨停 ÷ 盘中触及过涨停（涨停 + 炸板）。
@@ -873,7 +876,20 @@ export function recalcRanks(days) {
 export async function fetchLive() {
   const hotRaw = await fetchHot();
   const date = hotRaw[0].date;
-  const lhbRaw = await fetchLhb(date);
+  // 龙虎榜未公布（盘中 / 尚未披露）时不再让整条抓取抛错归零：先抓其余字段，
+  // 龙虎榜/席位留空，待 runLive 的 refresh-lhb 循环在下一轮补抓（与历史日同款处理）。
+  // 否则每日任务只要跑在龙虎榜公布前（含很多 18:30）就整体失败、档案 0 进展（2026-10-15 盘中即此形态）。
+  let lhbRaw;
+  try {
+    lhbRaw = await fetchLhb(date);
+  } catch (e) {
+    if (e instanceof LhbNotPublishedError) {
+      console.warn(`[fetchLive] ${date} 龙虎榜未公布，先抓其余字段、龙虎榜/席位留空，下一轮 runLive 补抓：${e.message}`);
+      lhbRaw = [];
+    } else {
+      throw e;
+    }
+  }
   const hotEnriched = await enrichHotQuotes(hotRaw);
   const [industry, indexes, pools, amountMap, breadth] = await Promise.all([
     fetchBoards(date),
@@ -886,8 +902,11 @@ export async function fetchLive() {
     fetchBreadth(),
   ]);
   const amountYi = amountMap ? (amountMap[date.replace(/-/g, '')] || null) : null;
-  const day = buildDay(date, lhbRaw, hotEnriched, industry, indexes, pools, amountYi, amountMap, breadth,
-    await fetchSeats(date, buildLhbPart(lhbRaw).lhb_aggr.map((l) => ({ code: l.code, name: l.name, net_buy_wan: l.net_buy_wan }))));
+  // 无龙虎榜则无席位可抓（buildDay 对 seats=null 安全跳过）
+  const seats = lhbRaw.length
+    ? await fetchSeats(date, buildLhbPart(lhbRaw).lhb_aggr.map((l) => ({ code: l.code, name: l.name, net_buy_wan: l.net_buy_wan })))
+    : null;
+  const day = buildDay(date, lhbRaw, hotEnriched, industry, indexes, pools, amountYi, amountMap, breadth, seats);
   return { newDays: [day], tradeDate: date };
 }
 
