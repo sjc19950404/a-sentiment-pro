@@ -225,6 +225,34 @@ export async function runLive() {
   return archive;
 }
 
+/**
+ * 上一交易日（不含 from 自身）；最多回溯 14 天（覆盖长假）。
+ * 逐日判而不用现成列表——calendar.json 的 trading 是空的、days 只记 closed
+ * （同 audit_archive_gaps.mjs 的非显然处）。
+ */
+export function prevTradingDay(from, cal) {
+  const d = new Date(`${from}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  for (let i = 0; i < 14; i++) {
+    d.setUTCDate(d.getUTCDate() - 1);
+    const s = d.toISOString().slice(0, 10);
+    if (isTradingDay(s, cal)) return s;
+  }
+  return null;
+}
+
+/**
+ * 档案最新交易日。读轻量索引 archive-index.json——不读主档
+ * （这层只读一个日期，主档解码没必要）。
+ */
+export function latestArchivedTradeDate(dataPath) {
+  try {
+    const f = path.join(path.dirname(dataPath), 'archive-index.json');
+    const j = JSON.parse(readFileSync(f, 'utf8').replace(/^\uFEFF/, ''));
+    return j?.latestDate ?? null;
+  } catch { return null; }
+}
+
 // 主入口
 export async function main() {
   const mode = process.env.MODE || 'offline';
@@ -234,14 +262,27 @@ export async function main() {
   // 非交易日：live 模式不抓数据，但仍刷新 meta 的新鲜度判定（自愈可能粘着的旧标记）
   const today = todayBeijing();
   if (mode === 'live' && !isTradingDay(today, resolveHolidays())) {
-    console.log('[skip]', today, '非交易日，保留上次数据');
-    refreshMetaOnly(dataPath, now, { outcome: 'non-trading-day', reason: `${today} 非交易日` });
-    // 标的池是**日期敏感**的派生物：active（近 30 交易日）与 quoteFresh（== 最新交易日）
-    // 都会随时间推移而变化。非交易日不重建，长假 7 天后池子仍宣称「当日有价 66 只」——
-    // 用户按它下单会拿到 9 天前的陈旧价，而界面上的日期徽章是对的、只有池子标签在说谎。
-    // 重建本身零成本（纯读主档 + 纯函数推导，不发网络请求），故这里无条件刷新。
-    refreshUniverseOnly(today);
-    return null;
+    // ★ 纪律三（2026-10-12）：跳过的判据是「上一交易日是否在档」，不是「今天是不是交易日」。
+    //   主源只返回最近交易日——某天盘后跑失败，次日开盘后源就切走，旧数据**再也取不回**
+    //   （不是晚一天补，是永久缺失）。10-09 即此：周五盘后没成、周末又不触发，
+    //   10-12 开盘前才发现，险些永久缺失。而非交易日时源返回的正是那个未入档的
+    //   交易日——此时不补，就永远没有第二次机会。
+    const cal = resolveHolidays();
+    const prev = prevTradingDay(today, cal);
+    const archived = latestArchivedTradeDate(dataPath);
+    if (prev && archived !== prev) {
+      console.log(`[backfill] ${today} 非交易日，但上一交易日 ${prev} 未入档（档案末档 ${archived ?? '无'}）— 照常补跑（源此时返回的正是 ${prev}）`);
+      // 不 return：落到下面的正常流程去抓（同日重复落档是幂等的，21:00 补抓同理）
+    } else {
+      console.log('[skip]', today, '非交易日 · 上一交易日', prev ?? '未知', '已在档 — 保留上次数据');
+      refreshMetaOnly(dataPath, now, { outcome: 'non-trading-day', reason: `${today} 非交易日` });
+      // 标的池是**日期敏感**的派生物：active（近 30 交易日）与 quoteFresh（== 最新交易日）
+      // 都会随时间推移而变化。非交易日不重建，长假 7 天后池子仍宣称「当日有价 66 只」——
+      // 用户按它下单会拿到 9 天前的陈旧价，而界面上的日期徽章是对的、只有池子标签在说谎。
+      // 重建本身零成本（纯读主档 + 纯函数推导，不发网络请求），故这里无条件刷新。
+      refreshUniverseOnly(today);
+      return null;
+    }
   }
 
   let archive;
