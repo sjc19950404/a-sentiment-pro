@@ -273,7 +273,7 @@ jobs:
         run: node scripts/verify_industry_outliers.mjs
         continue-on-error: true
       - name: 单元测试（含 Python↔JS 一致性夹具比对 + 合并版 UI schema 守卫）
-        run: node --test
+        run: node --test --test-reporter=spec
       # 前后端接口契约门禁（V5.3 同步机制）：全部数据档落盘后校验 vs schemas/ 契约。
       #   放在提交与 UI 构建之前——字段漏产/改名/类型漂移宁可整次运行失败，
       #   也不让「前端静默渲染空白」的档推上线（missingNote→missingReason 事故的常驻拦截器）。
