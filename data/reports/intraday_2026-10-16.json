@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-16",
- "generated_at": "2026-10-16T02:54:43.436Z",
+ "generated_at": "2026-10-16T06:17:14.518Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -163,136 +163,22 @@
     "warning_signals": []
    },
    "position_suggestion": "wait",
-   "pool_basis": "全市场筛选榜（东财 clist 主力净流入降序前 100） 实时现算（每轮全量重算，不沿用上轮）：涨幅 3-7% · 量比 >2 · 未涨停未一字（pools.zt_codes）· 主力净流入为正 · 已滤昨日涨停 67 只黑名单；扫 100 只，剔除——带外 46 / 量比不足 13 / 已涨停 19 / 跌停 0 / 昨日涨停 3 / 净流出或无源 0 / 字段缺失 0；得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）",
+   "pool_basis": "全市场筛选榜（东财 clist 主力净流入降序前 100） 实时现算（每轮全量重算，不沿用上轮）：涨幅 3-7% · 量比 >2 · 未涨停未一字（pools.zt_codes）· 主力净流入为正 · 已滤昨日涨停 67 只黑名单；扫 100 只，剔除——带外 53 / 量比不足 17 / 已涨停 25 / 跌停 0 / 昨日涨停 2 / 净流出或无源 0 / 字段缺失 0；得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）",
    "candidate_pool": [
-    {
-     "code": "688825",
-     "name": "长鑫科技",
-     "score": 0.77,
-     "themes": [
-      "半导体"
-     ],
-     "selection_reason": "量比 2.22",
-     "intraday_chg": 4.61,
-     "fundamentals": {
-      "roe": null,
-      "revenue_growth": null,
-      "net_profit_growth": null,
-      "pe": 37.84,
-      "pb": 16.09,
-      "peg": null,
-      "market_cap": null,
-      "moat_note": null
-     },
-     "data_completeness": {
-      "level": "full",
-      "missing": []
-     },
-     "fund_flow_note": "主力净流入 +83204 万（东财 push2 盘中实时）",
-     "scripts": [
-      {
-       "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（688825，即时轨实时价判定）",
-       "position_ratio": 0.2,
-       "stop_loss": -0.08,
-       "take_profit": 0.16,
-       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-       "script_source": "template"
-      },
-      {
-       "name": "B",
-       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.1,
-       "stop_loss": null,
-       "take_profit": null,
-       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-       "script_source": "template"
-      },
-      {
-       "name": "C",
-       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.04,
-       "stop_loss": -0.05,
-       "take_profit": null,
-       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-       "script_source": "template"
-      }
-     ],
-     "risks": [
-      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
-     ]
-    },
-    {
-     "code": "688802",
-     "name": "沐曦股份-U",
-     "score": 0.63,
-     "themes": [
-      "半导体"
-     ],
-     "selection_reason": "量比 2.43",
-     "intraday_chg": 4.72,
-     "fundamentals": {
-      "roe": null,
-      "revenue_growth": null,
-      "net_profit_growth": null,
-      "pe": 18978.43,
-      "pb": 12.17,
-      "peg": null,
-      "market_cap": null,
-      "moat_note": null
-     },
-     "data_completeness": {
-      "level": "full",
-      "missing": []
-     },
-     "fund_flow_note": "主力净流入 +9664 万（东财 push2 盘中实时）",
-     "scripts": [
-      {
-       "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（688802，即时轨实时价判定）",
-       "position_ratio": 0.2,
-       "stop_loss": -0.08,
-       "take_profit": 0.16,
-       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-       "script_source": "template"
-      },
-      {
-       "name": "B",
-       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.1,
-       "stop_loss": null,
-       "take_profit": null,
-       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-       "script_source": "template"
-      },
-      {
-       "name": "C",
-       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.04,
-       "stop_loss": -0.05,
-       "take_profit": null,
-       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-       "script_source": "template"
-      }
-     ],
-     "risks": [
-      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
-     ]
-    },
     {
      "code": "600585",
      "name": "海螺水泥",
-     "score": 0.56,
+     "score": 0.68,
      "themes": [
       "水泥"
      ],
-     "selection_reason": "量比 6.4",
-     "intraday_chg": 5.6,
+     "selection_reason": "量比 4.2",
+     "intraday_chg": 5.54,
      "fundamentals": {
       "roe": null,
       "revenue_growth": null,
       "net_profit_growth": null,
-      "pe": 15.67,
+      "pe": 15.66,
       "pb": 0.51,
       "peg": null,
       "market_cap": null,
@@ -302,7 +188,7 @@
       "level": "full",
       "missing": []
      },
-     "fund_flow_note": "主力净流入 +12974 万（东财 push2 盘中实时）",
+     "fund_flow_note": "主力净流入 +15619 万（东财 push2 盘中实时）",
      "scripts": [
       {
        "name": "A",
@@ -337,20 +223,20 @@
      ]
     },
     {
-     "code": "000993",
-     "name": "闽东电力",
+     "code": "600316",
+     "name": "洪都航空",
      "score": 0.55,
      "themes": [
-      "电力"
+      "航空装备Ⅱ"
      ],
-     "selection_reason": "量比 2.95",
-     "intraday_chg": 4.98,
+     "selection_reason": "量比 2.12",
+     "intraday_chg": 5.95,
      "fundamentals": {
       "roe": null,
       "revenue_growth": null,
       "net_profit_growth": null,
-      "pe": 490.8,
-      "pb": 3.33,
+      "pe": 562.57,
+      "pb": 4.96,
       "peg": null,
       "market_cap": null,
       "moat_note": null
@@ -359,182 +245,11 @@
       "level": "full",
       "missing": []
      },
-     "fund_flow_note": "主力净流入 +28551 万（东财 push2 盘中实时）",
+     "fund_flow_note": "主力净流入 +17059 万（东财 push2 盘中实时）",
      "scripts": [
       {
        "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（000993，即时轨实时价判定）",
-       "position_ratio": 0.2,
-       "stop_loss": -0.08,
-       "take_profit": 0.16,
-       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-       "script_source": "template"
-      },
-      {
-       "name": "B",
-       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.1,
-       "stop_loss": null,
-       "take_profit": null,
-       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-       "script_source": "template"
-      },
-      {
-       "name": "C",
-       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.04,
-       "stop_loss": -0.05,
-       "take_profit": null,
-       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-       "script_source": "template"
-      }
-     ],
-     "risks": [
-      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
-     ]
-    },
-    {
-     "code": "603019",
-     "name": "中科曙光",
-     "score": 0.49,
-     "themes": [
-      "计算机设备"
-     ],
-     "selection_reason": "量比 2.68",
-     "intraday_chg": 4.78,
-     "fundamentals": {
-      "roe": null,
-      "revenue_growth": null,
-      "net_profit_growth": null,
-      "pe": 35,
-      "pb": 4.28,
-      "peg": null,
-      "market_cap": null,
-      "moat_note": null
-     },
-     "data_completeness": {
-      "level": "full",
-      "missing": []
-     },
-     "fund_flow_note": "主力净流入 +17183 万（东财 push2 盘中实时）",
-     "scripts": [
-      {
-       "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（603019，即时轨实时价判定）",
-       "position_ratio": 0.2,
-       "stop_loss": -0.08,
-       "take_profit": 0.16,
-       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-       "script_source": "template"
-      },
-      {
-       "name": "B",
-       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.1,
-       "stop_loss": null,
-       "take_profit": null,
-       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-       "script_source": "template"
-      },
-      {
-       "name": "C",
-       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.04,
-       "stop_loss": -0.05,
-       "take_profit": null,
-       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-       "script_source": "template"
-      }
-     ],
-     "risks": [
-      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
-     ]
-    },
-    {
-     "code": "600613",
-     "name": "神奇制药",
-     "score": 0.48,
-     "themes": [
-      "化学制药"
-     ],
-     "selection_reason": "量比 4.07",
-     "intraday_chg": 4.03,
-     "fundamentals": {
-      "roe": null,
-      "revenue_growth": null,
-      "net_profit_growth": null,
-      "pe": 155.92,
-      "pb": 1.86,
-      "peg": null,
-      "market_cap": null,
-      "moat_note": null
-     },
-     "data_completeness": {
-      "level": "full",
-      "missing": []
-     },
-     "fund_flow_note": "主力净流入 +16619 万（东财 push2 盘中实时）",
-     "scripts": [
-      {
-       "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（600613，即时轨实时价判定）",
-       "position_ratio": 0.2,
-       "stop_loss": -0.08,
-       "take_profit": 0.16,
-       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-       "script_source": "template"
-      },
-      {
-       "name": "B",
-       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.1,
-       "stop_loss": null,
-       "take_profit": null,
-       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-       "script_source": "template"
-      },
-      {
-       "name": "C",
-       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.04,
-       "stop_loss": -0.05,
-       "take_profit": null,
-       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-       "script_source": "template"
-      }
-     ],
-     "risks": [
-      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
-     ]
-    },
-    {
-     "code": "688766",
-     "name": "普冉股份",
-     "score": 0.45,
-     "themes": [
-      "半导体"
-     ],
-     "selection_reason": "量比 2.2",
-     "intraday_chg": 3.43,
-     "fundamentals": {
-      "roe": null,
-      "revenue_growth": null,
-      "net_profit_growth": null,
-      "pe": 42.22,
-      "pb": 12.55,
-      "peg": null,
-      "market_cap": null,
-      "moat_note": null
-     },
-     "data_completeness": {
-      "level": "full",
-      "missing": []
-     },
-     "fund_flow_note": "主力净流入 +21003 万（东财 push2 盘中实时）",
-     "scripts": [
-      {
-       "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（688766，即时轨实时价判定）",
+       "trigger_condition": "高开 >2% 或放量突破昨收上沿（600316，即时轨实时价判定）",
        "position_ratio": 0.2,
        "stop_loss": -0.08,
        "take_profit": 0.16,
@@ -567,18 +282,18 @@
     {
      "code": "000519",
      "name": "中兵红箭",
-     "score": 0.45,
+     "score": 0.43,
      "themes": [
       "地面兵装Ⅱ"
      ],
-     "selection_reason": "量比 3.49",
-     "intraday_chg": 4.39,
+     "selection_reason": "量比 2.3",
+     "intraday_chg": 3.96,
      "fundamentals": {
       "roe": null,
       "revenue_growth": null,
       "net_profit_growth": null,
-      "pe": 168.82,
-      "pb": 1.95,
+      "pe": 168.12,
+      "pb": 1.94,
       "peg": null,
       "market_cap": null,
       "moat_note": null
@@ -587,7 +302,7 @@
       "level": "full",
       "missing": []
      },
-     "fund_flow_note": "主力净流入 +7150 万（东财 push2 盘中实时）",
+     "fund_flow_note": "主力净流入 +10892 万（东财 push2 盘中实时）",
      "scripts": [
       {
        "name": "A",
@@ -620,138 +335,24 @@
      "risks": [
       "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
      ]
-    },
-    {
-     "code": "600048",
-     "name": "保利发展",
-     "score": 0.43,
-     "themes": [
-      "房地产开发"
-     ],
-     "selection_reason": "量比 2.61",
-     "intraday_chg": 5.5,
-     "fundamentals": {
-      "roe": null,
-      "revenue_growth": null,
-      "net_profit_growth": null,
-      "pe": -209.68,
-      "pb": 0.34,
-      "peg": null,
-      "market_cap": null,
-      "moat_note": null
-     },
-     "data_completeness": {
-      "level": "full",
-      "missing": []
-     },
-     "fund_flow_note": "主力净流入 +11194 万（东财 push2 盘中实时）",
-     "scripts": [
-      {
-       "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（600048，即时轨实时价判定）",
-       "position_ratio": 0.2,
-       "stop_loss": -0.08,
-       "take_profit": 0.16,
-       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-       "script_source": "template"
-      },
-      {
-       "name": "B",
-       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.1,
-       "stop_loss": null,
-       "take_profit": null,
-       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-       "script_source": "template"
-      },
-      {
-       "name": "C",
-       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.04,
-       "stop_loss": -0.05,
-       "take_profit": null,
-       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-       "script_source": "template"
-      }
-     ],
-     "risks": [
-      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
-     ]
-    },
-    {
-     "code": "688235",
-     "name": "百济神州",
-     "score": 0.41,
-     "themes": [
-      "化学制药"
-     ],
-     "selection_reason": "量比 4.44",
-     "intraday_chg": 6.48,
-     "fundamentals": {
-      "roe": null,
-      "revenue_growth": null,
-      "net_profit_growth": null,
-      "pe": 94.35,
-      "pb": 11.4,
-      "peg": null,
-      "market_cap": null,
-      "moat_note": null
-     },
-     "data_completeness": {
-      "level": "full",
-      "missing": []
-     },
-     "fund_flow_note": "主力净流入 +7143 万（东财 push2 盘中实时）",
-     "scripts": [
-      {
-       "name": "A",
-       "trigger_condition": "高开 >2% 或放量突破昨收上沿（688235，即时轨实时价判定）",
-       "position_ratio": 0.2,
-       "stop_loss": -0.08,
-       "take_profit": 0.16,
-       "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-       "script_source": "template"
-      },
-      {
-       "name": "B",
-       "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-       "position_ratio": 0.1,
-       "stop_loss": null,
-       "take_profit": null,
-       "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-       "script_source": "template"
-      },
-      {
-       "name": "C",
-       "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-       "position_ratio": 0.04,
-       "stop_loss": -0.05,
-       "take_profit": null,
-       "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-       "script_source": "template"
-      }
-     ],
-     "risks": [
-      "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
-     ]
     }
    ],
    "streak_pool": [],
-   "streak_pool_basis": "连板池：今日无符合条件标的（宁缺毋假，不凑数填充）；连板池实时现算（全市场筛选榜（东财 clist 主力净流入降序前 100） ∩ zt_lb 连板≥2，白名单=昨日涨停且今日非一字）：连板≥2（昨日涨停蕴含）· 今日非一字（fbt>09:25）· 量比 >2 · 主力净流入为正——不套涨幅带、不剔已涨停（连板池语义，2026-10-10 用户指令）；zt_lb 连板≥2 共 5 只，宇宙在榜 0 只，剔除——一字 0 / 量比不足 0 / 净流出或无源 0 / 字段缺失 0；梯队分=连板高度0.6+主力净流入0.4（缺席重归一，与趋势池量价评分物理独立）；封单质量=seal_amount（东财 fund）",
+   "streak_pool_basis": "连板池：今日无符合条件标的（宁缺毋假，不凑数填充）；连板池实时现算（全市场筛选榜（东财 clist 主力净流入降序前 100） ∩ zt_lb 连板≥2，白名单=昨日涨停且今日非一字）：连板≥2（昨日涨停蕴含）· 今日非一字（fbt>09:25）· 量比 >2 · 主力净流入为正——不套涨幅带、不剔已涨停（连板池语义，2026-10-10 用户指令）；zt_lb 连板≥2 共 6 只，宇宙在榜 0 只，剔除——一字 0 / 量比不足 0 / 净流出或无源 0 / 字段缺失 0；梯队分=连板高度0.6+主力净流入0.4（缺席重归一，与趋势池量价评分物理独立）；封单质量=seal_amount（东财 fund）",
    "trend_pool_mode": "trend",
-   "snapshotAtBJ": "2026-10-16 10:54",
+   "snapshotAtBJ": "2026-10-16 14:17",
    "live_emotion": {
     "date": "20261016",
     "emotion": "震荡",
-    "score": 43,
+    "score": 50,
     "metrics": {
-     "limit_up_count": 52,
-     "continuous_count": 5,
-     "broken_rate": 0.4038,
+     "limit_up_count": 70,
+     "continuous_count": 6,
+     "broken_rate": 0.4286,
      "max_board": 11,
-     "theme_concentration": 0.0769,
-     "theme_top": "房地产开",
-     "hard_board_rate": 0.5962
+     "theme_concentration": 0.2286,
+     "theme_top": "汽车零部",
+     "hard_board_rate": 0.5714
     }
    },
    "simulation_positions": null,
@@ -804,14 +405,14 @@
  },
  "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
  "push_verification": {
-  "checkedAtBJ": "10:54",
-  "snapshotAtBJ": "2026-10-16 10:54",
+  "checkedAtBJ": "14:17",
+  "snapshotAtBJ": "2026-10-16 14:17",
   "tradeDate": "2026-10-16",
   "trend_pool_mode": "trend",
-  "minutes_to_close": 246,
+  "minutes_to_close": 43,
   "mode_degraded": false,
   "trend": {
-   "checked": 10,
+   "checked": 3,
    "removed": []
   },
   "streak": {
