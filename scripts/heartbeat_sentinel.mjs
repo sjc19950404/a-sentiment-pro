@@ -57,6 +57,29 @@ if (!smoke) {
   }
 }
 
+// ③ 双轨账本（dualTrack）：asOf 是否覆盖最近交易日——build job 被平台取消源(#200/#201)干掉时，
+//   backtest.json 不重算 → paper_dual_track.mjs 不跑 → 双轨随收盘档一起悄停。用 asOf 作代理：
+//   若 asOf 落后最近已收盘交易日，说明双轨未刷新。优先读 signals-latest.dualTrack.asOf，
+//   缺失则回退 data/paper/dual_track_latest.json 的 day.date。
+const dtAsOf = (sig && sig.dualTrack && sig.dualTrack.asOf) || null;
+if (!dtAsOf) {
+  const dtFile = readJsonSafe(join(ROOT, 'data', 'paper', 'dual_track_latest.json'));
+  const dtFallback = ((dtFile && dtFile.day && dtFile.day.date) || (dtFile && dtFile.asOf)) || null;
+  if (!dtFallback) {
+    alerts.push('③ 双轨账本缺失：signals-latest.json.dualTrack.asOf 与 data/paper/dual_track_latest.json 均无可读日期');
+  } else {
+    const latestClosed3 = assessFreshness({}, new Date(), holidays).latestClosed;
+    if (dtFallback < latestClosed3) {
+      alerts.push(`③ 双轨账本停更：asOf=${dtFallback}，落后最近已收盘 ${latestClosed3}（build job 可能未跑）`);
+    }
+  }
+} else {
+  const latestClosed3 = assessFreshness({}, new Date(), holidays).latestClosed;
+  if (dtAsOf < latestClosed3) {
+    alerts.push(`③ 双轨账本停更：asOf=${dtAsOf}，落后最近已收盘 ${latestClosed3}（build job 可能未跑）`);
+  }
+}
+
 if (alerts.length) {
   const content = [
     '# ⚠ 系统停更告警（心跳哨兵 08:00）',
