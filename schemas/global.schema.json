@@ -39,7 +39,7 @@
           "kind": { "type": ["string", "null"] },
           "role": { "type": ["string", "null"] },
           "ok": { "type": "boolean" },
-          "state": { "type": "string", "enum": ["ok", "preopen", "no-trade", "stale", "unknown"] },
+          "state": { "type": "string", "enum": ["ok", "preopen", "no-trade", "stale", "unknown", "night-open"] },
           "stateText": { "type": ["string", "null"] },
           "last": { "type": ["number", "null"] },
           "prevClose": { "type": ["number", "null"] },
