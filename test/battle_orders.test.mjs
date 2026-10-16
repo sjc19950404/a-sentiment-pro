@@ -1,7 +1,7 @@
 // 作战指令计算库单测（node --test）
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calcLevels, fmt2, renderPreMarket, renderPostMarket } from '../src/battle_orders.js';
+import { calcLevels, fmt2, calcIntraday, renderPreMarket, renderPostMarket, renderIntraday } from '../src/battle_orders.js';
 
 // 构造模拟日K：数值以字符串模拟腾讯源原始格式（测 Number 转换）
 function mkBars(n, { close, high, low, vol }) {
@@ -69,4 +69,39 @@ test('renderPostMarket: 盘后文案正确', () => {
   const md = renderPostMarket([{ code: '000001', name: '测试股', levels: good }], '2026-10-16');
   assert.ok(md.includes('明日入手'));
   assert.ok(md.includes('非投资建议'));
+});
+
+test('calcIntraday: 现价/均价/止损计算', () => {
+  const r = calcIntraday({ close: 12.5, avgPrice: 12.0, liangbi: 2.3 });
+  assert.ok(r);
+  assert.equal(r.close, 12.5);
+  assert.equal(r.avg, 12);
+  assert.equal(r.entry, 12); // 入手 ≈ 均价附近
+  assert.ok(Math.abs(r.stopLoss - 11.88) < 0.01); // 均价 12 × 0.99
+});
+
+test('calcIntraday: 缺均价/非法返回 null', () => {
+  assert.equal(calcIntraday({ close: 10, avgPrice: 0 }), null);
+  assert.equal(calcIntraday({}), null);
+  assert.equal(calcIntraday({ close: 10, avgPrice: -1 }), null);
+});
+
+test('renderIntraday: 含现价/均价/信号/入手止损成对 + 免责', () => {
+  const r = calcIntraday({ close: 12.5, avgPrice: 12.0, liangbi: 2.3 });
+  const md = renderIntraday(
+    [{ code: '300045', name: '华力', levels: r, signal: '股价站稳分时均价线，量比2.3' }],
+    '2026-10-16',
+  );
+  assert.ok(md.startsWith('## 📌 作战指令·盘中 2026-10-16'));
+  assert.ok(md.includes('现价 12.50'));
+  assert.ok(md.includes('分时均价 12.00'));
+  assert.ok(md.includes('信号：股价站稳分时均价线，量比2.3'));
+  assert.ok(md.includes('入手 ≈ 12.00'));
+  assert.ok(md.includes('止损 11.88'));
+  assert.ok(md.includes('非投资建议'));
+});
+
+test('renderIntraday: 无信号个股被跳过', () => {
+  const md = renderIntraday([{ code: 'x', name: 'bad', levels: null }], '2026-10-16');
+  assert.equal(md, null);
 });

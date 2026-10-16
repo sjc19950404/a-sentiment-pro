@@ -140,3 +140,39 @@ export function renderPostMarket(stocks, tradeDate) {
   if (!blocks.length) return null;
   return `## 📌 作战指令·盘后 ${tradeDate || ''}\n` + blocks.join('\n\n') + DISCLAIMER;
 }
+
+// ── 核心：算盘中价位（基于实时快照字段）──
+// 入参：close 当前价、avgPrice 分时均价线、liangbi 量比
+export function calcIntraday({ close, avgPrice, liangbi } = {}) {
+  const c = Number(close);
+  const a = Number(avgPrice);
+  if (!Number.isFinite(c) || !Number.isFinite(a) || a <= 0) return null;
+  const entry = a; // 建议入手价 ≈ 分时均价线附近
+  const stopLoss = a * 0.99; // 止损 = 均价下方 1%
+  return {
+    close: r2(c),
+    avg: r2(a),
+    liangbi: Number.isFinite(Number(liangbi)) ? Number(liangbi) : null,
+    entry: r2(entry),
+    stopLoss: r2(stopLoss),
+  };
+}
+
+// ── 盘中单只条目（入手+止损必成对）──
+function intradayBlock(s) {
+  const L = s.levels;
+  if (!L) return null;
+  const lines = [];
+  lines.push(`**${s.name}(${s.code})** 现价 ${fmt2(L.close)}`);
+  lines.push(`> 分时均价 ${fmt2(L.avg)}`);
+  lines.push(`> 信号：${s.signal || '—'}`);
+  lines.push(`> 入手 ≈ ${fmt2(L.entry)}（均价附近）｜止损 ${fmt2(L.stopLoss)}（均价下1%）`);
+  return lines.join('\n');
+}
+
+// ── 渲染：盘中（触发式，信号驱动）──
+export function renderIntraday(stocks, tradeDate) {
+  const blocks = stocks.map(intradayBlock).filter(Boolean);
+  if (!blocks.length) return null;
+  return `## 📌 作战指令·盘中 ${tradeDate || ''}\n` + blocks.join('\n\n') + DISCLAIMER;
+}

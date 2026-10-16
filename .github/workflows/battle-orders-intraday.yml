@@ -1,0 +1,27 @@
+name: battle-orders-intraday
+
+# 盘中作战指令（触发式）：每交易日北京 09:30–10:00 每 5 分钟巡检一次。
+# GitHub UTC+8：1:30Z 起每 5 分（9:30–9:55 BJ）+ 2:00Z（10:00 BJ）。
+# 脚本内部筛选"现价站稳分时均价线 + 量比>=2"的个股推送；无符合信号则静默不推送。
+on:
+  schedule:
+    - cron: '30/5 1 * * 1-5'
+    - cron: '0 2 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  intraday:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 盘中作战指令推送（触发式）
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+        run: node scripts/push_battle_orders.mjs --scene intraday

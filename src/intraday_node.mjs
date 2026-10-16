@@ -27,7 +27,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // /api/qt/clist|ulist，故不列入。
 const EM_HOSTS = ['push2.eastmoney.com', '1.push2.eastmoney.com', '2.push2.eastmoney.com', '7.push2.eastmoney.com', '82.push2.eastmoney.com', '84.push2.eastmoney.com', 'push2delay.eastmoney.com', 'hqdigi2.eastmoney.com'];
 const EM_PATH = '/api/qt/clist/get';
-const FIELDS = 'f2,f3,f8,f10,f12,f14,f23,f62,f100,f115';
+const FIELDS = 'f2,f3,f8,f9,f10,f12,f14,f23,f62,f100,f115';
 const FS = 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23'; // 沪深 A（主板/创业板/科创板）
 
 // 缺失保持 null，绝不落成 0（0 是合法行情值）
@@ -80,6 +80,7 @@ export async function fetchIntradayRaw() {
       close: num(r.f2),
       zhangfu: num(r.f3),
       huanshou: num(r.f8),
+      avg_price: num(r.f9), // 分时均价线（东财 f9）
       date,
     }))
     .filter((x) => x.code)
@@ -95,6 +96,7 @@ export async function fetchIntradayRaw() {
       close: num(r.f2),
       change_pct: num(r.f3),
       huanshou: num(r.f8),
+      avg_price: num(r.f9), // 分时均价线（东财 f9）
       pe_ttm: num(r.f115),
       pb: num(r.f23),
       liangbi: num(r.f10),

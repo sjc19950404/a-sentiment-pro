@@ -1,0 +1,24 @@
+name: battle-orders-post
+
+# 盘后作战指令：每交易日北京 15:30 推送（GitHub UTC+8：7:30Z = 15:30 BJ）
+on:
+  schedule:
+    - cron: '30 7 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 盘后作战指令推送
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+        run: node scripts/push_battle_orders.mjs --scene post

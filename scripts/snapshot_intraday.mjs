@@ -146,6 +146,7 @@ const snapshot = {
         pe_ttm: q.pe_ttm ?? null,
         pb: q.pb ?? null,
         liangbi: q.liangbi ?? null,
+        avg_price: q.avg_price ?? null, // 分时均价线（东财 f9，盘中均价，2026-10-16 作战指令盘中场景补）
         main_net: mainNet[x.code] ?? null, // 主力净流入（元，东财 push2 f62）
       };
     }),
