@@ -49,6 +49,19 @@ for (const day of days) {
   if (dups.length) throw new Error(`${day.trade_date} 合并后仍存在重复记录：${dups.slice(0, 3).join(' | ')}`);
 
   const c = caliberFromDay(day);
+
+  // —— 清理前置：无论当天有无龙虎榜记录，先把存量残留的派生/歧义字段清掉 ——
+  //   原因：下方 `if (!c.total_records) continue` 会在某天 total_records 为 0 时整段跳过，
+  //   导致那天的 lhb_aggr（派生字段，约 250B/只 × 70 只）清空不掉——主档体积压不下去、
+  //   审计 B19②「主档不含 lhb_aggr」也过不了。清理不依赖 c，故提到 continue 之前，覆盖所有天
+  //   （含零记录日）。这是当初把主档从 10.9MB 打回的同一处纪律，只是把"删"挪到"跳"前面。
+  delete day.lhb_aggr;   // 显式清除存量（老档可能已被上一版脚本写脏）
+  const s = (day.summary = day.summary || {});
+  delete s.net_total_yi;                    // 歧义字段名：不带口径后缀，一律清除（前置，覆盖无记录日）
+  const e = (day.emotion = day.emotion || {});
+  delete e.net_total_yi;
+  delete e.net_pct_rank;
+
   if (!c.total_records) continue;
   const mergedAway = Math.max(0, rawBefore - rawAfter);
 
@@ -66,13 +79,9 @@ for (const day of days) {
   //   "有的天有 lhb_aggr、有的天没有"的第三种不一致形态。
   //
   //   故此处**只算不存**：c.all_aggr 仅在 caliberFromDay 内部消费（它自己会重算），
-  //   本脚本不依赖持久化的 lhb_aggr，故直接剔除。
-  delete day.lhb_aggr;   // 显式清除存量（老档可能已被上一版脚本写脏）
-
-  const s = (day.summary = day.summary || {});
+  //   本脚本不依赖持久化的 lhb_aggr，故直接剔除（已在上方 delete 完成）。
   const beforeDaily = s.lhb_daily_net ?? null;
-  const beforeAll = s.lhb_all_net ?? s.net_total_yi ?? null;
-  delete s.net_total_yi;                    // 歧义字段名：不带口径后缀，一律清除
+  const beforeAll = s.lhb_all_net ?? null;
   s.lhb_count = c.total_records;
   s.lhb_raw_count = rawBefore;              // 东财原始披露条数
   s.lhb_merged_away = mergedAway;           // 被合并掉的同票同值重复条数
@@ -85,10 +94,7 @@ for (const day of days) {
   s.lhb_daily_amt = c.daily_amt_yi;
   s.lhb_range_count = c.range_records;
 
-  const e = (day.emotion = day.emotion || {});
   const beforeFactor = e.factors?.s_net ?? null;
-  delete e.net_total_yi;
-  delete e.net_pct_rank;
   e.lhb_daily_net = c.daily_net_yi;
 
   rows.push({
@@ -105,6 +111,11 @@ for (const day of days) {
 const { out, momObj } = enrich(days);
 a.all_days = out;
 if (a.signals) a.signals.momentum = momObj;
+
+// 体积纪律：themeList 是 enrich 的派生字段（build_ui.mjs 读档后会重新 enrich，前端/切片都不从
+// 主档读它），持久化会让主档每天 +约 1.15KB、整档 +约 278KB，直接踩挂「切片：主档体积 < 6MB」。
+// 故写盘前剔掉，与 lhb_aggr 同思路——只算不存。
+for (const d of a.all_days) delete d.themeList;
 
 // 4) 全档因子重算（口径：netBuy = 当日榜净额）+ 分位重算
 recalcAll(a.all_days);
