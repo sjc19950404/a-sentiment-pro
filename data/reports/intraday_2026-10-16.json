@@ -405,11 +405,11 @@
  },
  "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
  "push_verification": {
-  "checkedAtBJ": "14:17",
-  "snapshotAtBJ": "2026-10-16 14:17",
+  "checkedAtBJ": "00:03",
+  "snapshotAtBJ": "2026-10-16 14:36",
   "tradeDate": "2026-10-16",
   "trend_pool_mode": "trend",
-  "minutes_to_close": 43,
+  "minutes_to_close": 897,
   "mode_degraded": false,
   "trend": {
    "checked": 3,
@@ -419,7 +419,7 @@
    "checked": 0,
    "removed": []
   },
-  "applied": true,
-  "note": null
+  "applied": false,
+  "note": "快照非报告构建拍（构建 2026-10-16 14:17 / 复核 2026-10-16 14:36）→ 时点判据不剔除（防底座换血误伤档案）；结构判据照常恒剔除"
  }
 }

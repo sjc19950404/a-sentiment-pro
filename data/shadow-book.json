@@ -4,7 +4,7 @@
   "strategy": "A_ice_reversal",
   "holdN": 5,
   "startedAt": "2026-10-11T14:25:21.733Z",
-  "cursor": "2026-10-12",
+  "cursor": "2026-10-16",
   "hist": [
     75.5,
     53.2,
@@ -249,14 +249,16 @@
     64.4,
     58.3,
     76.7,
-    48.6
+    48.6,
+    69.8
   ],
-  "position": null,
-  "pending": {
+  "position": {
     "signalDay": "2026-10-12",
-    "lo": 49.8,
-    "emotion": 48.6
+    "entryDate": "2026-10-16",
+    "entryPrice": 4189.26,
+    "daysHeld": 1
   },
+  "pending": null,
   "pendingExit": null,
   "trades": [],
   "log": [
@@ -266,6 +268,13 @@
       "emotion": 48.6,
       "lo": 49.8,
       "note": "冰点（< P15）——明日开盘买入"
+    },
+    {
+      "date": "2026-10-16",
+      "action": "buy",
+      "emotion": 69.8,
+      "at": 4189.26,
+      "note": "信号日 2026-10-12 T+1 开盘买入"
     }
   ],
   "summary": {
@@ -274,9 +283,9 @@
     "winRate": null,
     "avgRet": null,
     "totalRet": null,
-    "open": false,
-    "cursor": "2026-10-12",
-    "updatedAt": "2026-10-12T15:11:53.009Z"
+    "open": true,
+    "cursor": "2026-10-16",
+    "updatedAt": "2026-10-16T16:03:39.560Z"
   },
   "disclaimer": "影子账本 = 假设执行记录，非真实成交，不构成投资建议；样本足够前不作为任何自动下单依据。"
 }

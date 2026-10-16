@@ -1,0 +1,56 @@
+{
+ "kind": "llm-sentiment-latest",
+ "version": 1,
+ "asOfDate": "2026-10-16",
+ "generatedAt": "2026-10-17T00:01:14.278+08:00",
+ "model": "Qwen/Qwen2.5-7B-Instruct",
+ "sentiment": 0.4,
+ "confidence": 0.7,
+ "reason": "市场情绪偏向积极，涨停数量较多，且有多只业绩增长股表现强势",
+ "events": [
+  {
+   "type": "业绩预告",
+   "target": "业绩线",
+   "tone": "positive",
+   "note": "业绩线延续，多只业绩增长股表现强势"
+  },
+  {
+   "type": "行业催化",
+   "target": "低空经济",
+   "tone": "positive",
+   "note": "低空经济题材梯队中有多只个股涨停"
+  },
+  {
+   "type": "行业催化",
+   "target": "机器人",
+   "tone": "positive",
+   "note": "机器人题材梯队中有多只个股涨停"
+  },
+  {
+   "type": "行业催化",
+   "target": "汽车零部件",
+   "tone": "positive",
+   "note": "汽车零部件题材梯队中有多只个股涨停"
+  },
+  {
+   "type": "行业催化",
+   "target": "无人机",
+   "tone": "positive",
+   "note": "无人机题材梯队中有多只个股涨停"
+  },
+  {
+   "type": "行业催化",
+   "target": "军工",
+   "tone": "positive",
+   "note": "军工题材梯队中有多只个股涨停"
+  }
+ ],
+ "inputDigest": {
+  "themes": 54,
+  "hotListed": 15,
+  "ztCount": 61,
+  "emotionValue": 69.8,
+  "painVerdict": "多空拉锯（昨涨停今日翻绿 54%、高位板晋级失败 89%，追高盈亏各半）"
+ },
+ "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
+}
