@@ -49,6 +49,22 @@
         "leguUpRatio": 7.23,
         "ratioDiffPct": 0.92
       }
+    },
+    {
+      "date": "2026-10-16",
+      "zt": {
+        "verdict": "UNAVAILABLE",
+        "primary": 32,
+        "derived": null,
+        "countDiff": null,
+        "divergeRate": null
+      },
+      "breadth": {
+        "verdict": "UNAVAILABLE",
+        "snapUpRatio": null,
+        "leguUpRatio": null,
+        "ratioDiffPct": null
+      }
     }
   ]
 }
