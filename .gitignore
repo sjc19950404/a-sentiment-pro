@@ -57,6 +57,9 @@ data/bt_kline_fetch.err.log
 
 # 涨停池三模块的历史产物档（emotion/old_dragon/main_theme）——可由 ztpool_history.json + archive.json 完全重建，
 # 且每次 daily_fetch 重跑都只改 generatedAt（churn 无内容），不入库避免 stash 折腾。原始积累 ztpool_history.json 照常入库。
+
+# 作战指令盘中防重 state（运行时生成，跨 cron 持久，勿入库）
+data/battle_orders_intraday_state.json
 data/emotion_history.json
 data/old_dragon_history.json
 data/main_theme_history.json

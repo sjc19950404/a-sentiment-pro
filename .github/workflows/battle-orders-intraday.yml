@@ -18,6 +18,13 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+      - name: 恢复盘中防重 state 缓存（跨 cron run 持久"今日已推"）
+        uses: actions/cache@v4
+        with:
+          path: data/battle_orders_intraday_state.json
+          key: intraday-state-${{ github.run_id }}
+          restore-keys: |
+            intraday-state-
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
