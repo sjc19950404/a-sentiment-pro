@@ -1,3 +1,7 @@
+import { assessFreshness } from './freshness.js';
+
+const HOLIDAYS = []; // 依赖 isTradingDay 默认中国交易日历
+
 // 前端错误边界 + 数据新鲜度横幅：让"页面出问题"变成一句可读的话，而不是白屏。
 //
 // ── 为什么单独一个模块（而不是散在 app.js 里几个 try/catch）────────────────────
@@ -134,13 +138,20 @@ export function staleBannerModel(meta = {}, health = null, frame = {}, loadState
   const lines = [];
 
   // 2) 陈旧（freshness.behind）
-  const behind = f && Number.isFinite(+f.behindSessions) ? +f.behindSessions : 0;
-  const isStale = !!m.stale || (f && f.state === 'behind');
+  // 2026-10-16 盘后重构：freshness 是档生成时算的、不自愈。若真实"现在"已越过
+  // publishDeadline 仍是 fresh/pending，说明数据此后一直没更新 → 用真实现在重算停更天数。
+  let recompute = null;
+  if (f && f.publishDeadline && frame && frame.iso && Date.parse(f.publishDeadline) < Date.parse(frame.iso)) {
+    recompute = assessFreshness({ tradeDate: m.tradeDate || f.tradeDate }, new Date(frame.iso), HOLIDAYS);
+  }
+  const behind = recompute ? recompute.behindSessions
+    : (f && Number.isFinite(+f.behindSessions) ? +f.behindSessions : 0);
+  const isStale = !!m.stale || (f && f.state === 'behind') || (recompute && recompute.state === 'behind');
   const unknownFresh = !m.tradeDate || !f;
 
   if (isStale) {
     chips.push({ kind: 'stale', text: '数据陈旧' });
-    lines.push(m.staleReason || `存档落后 ${behind} 个交易日（最近已收盘交易日 ${f.latestClosed || '未知'}）。`);
+    lines.push(m.staleReason || `⚠ 已停更 ${behind} 个交易日（最近已收盘交易日 ${recompute?.latestClosed || f.latestClosed || '未知'}）。数据陈旧未更新，请勿据此操作。`);
     if (f && f.publishDeadline) {
       lines.push(`预期更新时刻 ${String(f.publishDeadline).replace('T', ' ').slice(0, 16)}（UTC）。`);
     }

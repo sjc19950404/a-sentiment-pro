@@ -278,8 +278,12 @@ function renderAlerts(meta) {
     msgs.push({ cls: 'alert', icon: '⚠', text: t });
   } else if (f.publishDeadline && Date.now() > Date.parse(f.publishDeadline)) {
     // ② 服务端判定「生成时未滞后」，但客户端此刻已过预期更新时刻 → 说明此后一直没更新成功
+    // 2026-10-16 盘后重构：用真实日历算"停更天数"（数据底座 tradeDate 与今天之差），
+    // 显著化"已停更 N 天"，而不是只说"预期 X 前更新"——避免横幅卡在过去、读者误判。
+    const dataDay = meta.tradeDate || f.tradeDate || td;
+    const gapDays = Math.max(0, Math.floor((Date.now() - Date.parse(dataDay)) / 86400000));
     msgs.push({ cls: 'alert', icon: '⚠', text:
-      `数据尚未更新至最新交易日：当前展示 ${td} 收盘数据，预期 ${tz(f.publishDeadline)} 前更新（18:30 首抓 / 21:00 补抓）。` });
+      `⚠ 系统已停更约 ${gapDays} 天（最近收盘档 ${dataDay}）：当前展示 ${td} 收盘数据，预期 ${tz(f.publishDeadline)} 前更新（18:30 首抓 / 21:00 补抓）。` });
   }
 
   // ③ 抓取动作本身的结果——与「数据是否滞后」解耦，避免把正常等待说成抓取失败

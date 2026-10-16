@@ -17,13 +17,14 @@ import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pushReports, PUSH_CONSTS } from '../src/ai_report_push.js';
 import { verifyIntradayPools, applyVerification } from '../src/pool_verify.js';
-import { bjTime } from '../src/freshness.js';
+import { bjTime, assessFreshness } from '../src/freshness.js';
 import { atomicWriteJSON } from '../src/fsutil.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REPORTS_DIR = join(ROOT, 'data', 'reports');
 const INDEX_FILE = join(REPORTS_DIR, 'index.json');
 const STATE_FILE = join(REPORTS_DIR, 'push_state.json');
+const holidays = []; // 依赖 isTradingDay 默认中国交易日历
 
 const argv = process.argv.slice(2);
 const latestTypes = [];
@@ -58,6 +59,15 @@ if (latestTypes.length) {
     const age = now - Date.parse(report.generated_at);
     if (!Number.isFinite(age) || age > PUSH_CONSTS.FRESH_WINDOW_MS) {
       console.log(`[ai-report-push] ${type} ${entry.date} 生成于 ${report.generated_at}（超出 ${PUSH_CONSTS.FRESH_WINDOW_MS / 60000} 分钟新鲜度窗口）→ 疑为上一期残留，跳过推送`);
+      continue;
+    }
+    // 新鲜度死锁（2026-10-16 盘后重构）：数据底座落后即拦截，防"旧图新推"
+    // 报告信封 date 是生成日，真正的数据底座交易日是 payload.date（盘前=上一交易日、盘后=当日均合法）。
+    const dataDay = (report.payload && report.payload.date) || report.date;
+    const fres = assessFreshness({ tradeDate: dataDay }, new Date(), holidays);
+    if (fres.state === 'behind') {
+      console.error(`[ai-report-push] ⛔ ${type} 数据日 ${dataDay} 已落后 ${fres.behindSessions} 个交易日（最近已收盘 ${fres.latestClosed}）→ 陈旧推送拦截，禁止推送`);
+      await sendStaleBlockAlert(type, dataDay, fres);
       continue;
     }
     entries.push({ path: p, report });
@@ -98,3 +108,29 @@ for (const e of entries) {
 const { results, pushed, skipped } = await pushReports(reports, { stateFile: STATE_FILE });
 for (const r of results) console.log(`[ai-report-push] ${r.type} ${r.date}: ${r.pushed ? '已推送' : '未推送'}（${r.reason}）`);
 console.log(`[ai-report-push] 完成：推 ${pushed} / 跳 ${skipped} · 状态落 ${'data/reports/push_state.json'} · 通道 ${PUSH_CONSTS.WEBHOOK_ENV}${process.env[PUSH_CONSTS.WEBHOOK_ENV] ? '' : '（未配置 → 仅落盘）'}`);
+
+// ── 陈旧推送拦截 · 最高级告警（2026-10-16 盘后重构）──────────────────────────────
+// 数据底座（signals-latest）停更时，report.payload.date 会落后。被"新鲜度死锁"拦截后，
+// 向运维企微发最高级告警，明确"哪份报告、落后几天、已禁止推送"，避免静默漏拦。
+async function sendStaleBlockAlert(type, dataDay, fres) {
+  const wh = process.env[PUSH_CONSTS.WEBHOOK_ENV];
+  if (!wh) { console.error('[ai-report-push] 最高级告警：OPS_WEBHOOK 未配置（仅日志）'); return; }
+  const content = [
+    '# ⛔ 陈旧推送被拦截（最高级告警）',
+    '',
+    '> 推送脚本「新鲜度死锁」触发：阻止了一笔基于陈旧数据的推送。',
+    '',
+    `- 报告类型：${type}`,
+    `- 数据底座交易日：${dataDay}`,
+    `- 已落后：${fres.behindSessions} 个交易日（最近已收盘 ${fres.latestClosed}）`,
+    `- 检测时刻：${new Date().toISOString()}`,
+    '',
+    '原因：收盘链路（build job）停更，signals-latest 未刷新。请排查当晚 18:30/21:00 build 是否跑通。',
+  ].join('\n');
+  try {
+    const r = await fetch(wh, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ msgtype: 'markdown', markdown: { content } }) });
+    console.error(`[ai-report-push] 最高级告警已发：HTTP ${r.status} ${await r.text()}`);
+  } catch (e) {
+    console.error('[ai-report-push] 最高级告警发送失败（不拖红 CI）:', e?.message ?? e);
+  }
+}
