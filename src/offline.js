@@ -18,7 +18,7 @@
 //     断网时回退到最近一次成功缓存的那一份，并在页面上显式标注「离线」。
 //     绝不因离线就用空数据——宁可显示旧数据 + 明确标注。
 
-export const CACHE_VERSION = 'v2';
+export const CACHE_VERSION = 'v3';
 export const SHELL_CACHE = `aspro-shell-${CACHE_VERSION}`;
 export const DATA_CACHE = `aspro-data-${CACHE_VERSION}`;
 
@@ -39,6 +39,9 @@ export const SHELL_ASSETS = Object.freeze([
   './src/report_audit.js',
   './src/seats.js',
   './src/paper.js',
+  // 2026-10-17 复活模拟交易台面：台面 UI 与复盘引擎须随外壳预缓存（否则离线静默失效）
+  './paper_ui.js',
+  './src/paper_review.js',
   './src/quote.js',
   './src/intraday_live.js',
   './src/intraday_sampler.js',

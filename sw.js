@@ -18,7 +18,7 @@
 // src/offline.js 一致）。部署链（deploy-pages.yml）会在产物上注入 commit hash（如
 // 'v2-95a5fbc'）保证每次部署字节必变：install 必重跑、外壳全量重 add，activate 按
 // /^aspro-(?:shell|data)-/ 前缀清掉旧版本名（任意版本串兼容）。
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const SHELL_CACHE = `aspro-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `aspro-data-${CACHE_VERSION}`;
 
@@ -31,6 +31,9 @@ const SHELL_ASSETS = [
   './src/report_audit.js',
   './src/seats.js',
   './src/paper.js',
+  // 2026-10-17 复活模拟交易台面：台面 UI 与复盘引擎须随外壳预缓存
+  './paper_ui.js',
+  './src/paper_review.js',
   './src/quote.js',
   './src/intraday_live.js',
   './src/intraday_sampler.js',

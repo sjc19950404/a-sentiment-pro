@@ -577,9 +577,9 @@ const keyEl = (key) => window.document.dispatchEvent(new window.KeyboardEvent('k
 const drawerOpen = () => !!$('drawer') && $('drawer').classList.contains('open');
 const escClose = () => keyEl('Escape');
 
-check('布局：5 个分区 + 5 个锚点导航已就位（模拟交易台面已下线）',
-  ['zone-overview', 'zone-detail', 'zone-backtest', 'zone-brief', 'zone-global'].every((id) => !!$(id))
-  && window.document.querySelectorAll('#zoneNav .zn[data-zone]').length === 5, '');
+check('布局：6 个分区 + 6 个锚点导航已就位（模拟交易台面已复活）',
+  ['zone-overview', 'zone-detail', 'zone-backtest', 'zone-brief', 'zone-global', 'zone-paper'].every((id) => !!$(id))
+  && window.document.querySelectorAll('#zoneNav .zn[data-zone]').length === 6, '');
 check('布局：详情抽屉与遮罩骨架存在（初始关闭）',
   !!$('drawer') && !!$('drawerMask') && !!$('dwTitle') && !!$('dwBody') && !drawerOpen(), '');
 check('布局：个股表已升级为整行卡片且含工具条（视图切换/搜索/计数）',
@@ -908,8 +908,8 @@ escClose();
 // PC 端快捷键（输入框内不抢键）；dispatchEvent 返回 false 表示事件被接管
 const keyOn = (key, target) => (target || window.document).dispatchEvent(
   new window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
-check('PC：数字键 1-5 跳分区（事件被接管；第 6 分区已随台面下线，键 6 不再接管）',
-  keyOn('2') === false && keyOn('5') === false && keyOn('6') === true, '');
+check('PC：数字键 1-6 跳分区（事件被接管）',
+  keyOn('2') === false && keyOn('5') === false && keyOn('6') === false, '');
 $('hotSearch').value = '';
 check('PC：/ 聚焦个股搜索框', keyOn('/') === false && window.document.activeElement === $('hotSearch'), '');
 check('PC：在搜索框内打字不被快捷键抢键', keyOn('2', $('hotSearch')) === true, '');
@@ -1361,7 +1361,7 @@ escClose();
       screenTitles.length === EXPECTED_SECTIONS && rep.sections.every((s, i) => s.title === screenTitles[i]),
       `屏幕 ${screenTitles.length} 段 / 导出 ${rep.sections.length} 段`);
     check('报告导出：屏幕段序号为公文「一、」（圆形序号已退役）',
-      screenNos.join('') === ['一、', '二、', '三、', '四、', '五、', '六、'].slice(0, EXPECTED_SECTIONS).join(''),
+      screenNos.join('') === ['一、', '二、', '三、', '四、', '五、', '六、', '七、'].slice(0, EXPECTED_SECTIONS).join(''),
       screenNos.join(' ') || '未找到 .bf-sec-no');
     check('报告导出：导出标题不含序号（序号由版式层统一重加，防双序号）',
       rep.sections.every((s) => !/^[一二三四五六七八九十]+、/.test(s.title) && !/[①②③④⑤⑥⑦]/.test(s.title)),
