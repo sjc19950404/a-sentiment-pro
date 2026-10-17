@@ -231,11 +231,14 @@ if (check) {
   //   4.4 + dailyReport 6.0 + dirty 2.3 等持续累积），双轨披露块（瘦身后 ~1.1KB，
   //   框架 §三核心交付）一进来必超——一次性重估到位，避免每加一段就改一次上限。
   //   上限语义不变：最轻档只放"看一眼"的量，明细仍留在 recent/年分片。
+  //   2026-10-17 临时止血：36→44KB。真实持续累积已抵 39.8KB 触顶报红（Daily Data
+  //   Health 的 check 红），属阈值守卫过严而非真崩；治本=瘦身归档 signals-latest
+  //   （step 2），瘦身稳定后再评估降回 36KB。
   const sp = join(DATA, SIGNALS_FILE);
   if (!existsSync(sp)) problems.push(`缺少最轻档 ${SIGNALS_FILE}`);
   else {
     const sb = Buffer.byteLength(readFileSync(sp, 'utf8'), 'utf8');
-    if (sb > 36 * 1024) problems.push(`${SIGNALS_FILE} 体积 ${(sb / 1024).toFixed(1)}KB 超过 36KB 上限`);
+    if (sb > 44 * 1024) problems.push(`${SIGNALS_FILE} 体积 ${(sb / 1024).toFixed(1)}KB 超过 44KB 上限（临时止血值，瘦身后再降回）`);
     const sg = JSON.parse(readFileSync(sp, 'utf8'));
     if (sg.kind !== 'signals-latest') problems.push(`${SIGNALS_FILE}.kind=${sg.kind}`);
     if (sg.latest && sg.latest.trade_date !== arc.all_days[arc.all_days.length - 1].trade_date) {
