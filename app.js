@@ -2718,10 +2718,12 @@ function renderDailyReport(rep, errMsg) {
     return;
   }
   const secs = Array.isArray(rep.sections) ? rep.sections : [];
-  const missingN = secs.filter((s) => s.missing).length;
+  // ⚠ 2026-10-17 用户指令：LLM 舆情试点暂停，前端隐藏（id==='llm' 不渲染、不计入数据缺口）
+  const visSecs = secs.filter((s) => s.id !== 'llm');
+  const missingN = visSecs.filter((s) => s.missing).length;
   const tagTone = REGIME_TONE[rep.tag && rep.tag.key] || 'unknown';
 
-  const secHtml = secs.map((s) => {
+  const secHtml = visSecs.map((s) => {
     const pts = (s.points || []).map((p) => {
       const cls = p.kind === 'caution' ? 'rp-pt warn'
         : (p.kind === 'main' ? 'rp-pt main'

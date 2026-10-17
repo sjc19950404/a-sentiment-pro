@@ -286,10 +286,12 @@ jobs:
       - name: 跨源一致性互证（行业双源比对，解决跨源互证面板陈旧）
         continue-on-error: true
         run: node scripts/fetch_crosscheck.mjs
-      # ── 2026-10-13 接入 LLM 舆情试点（V5.3 P2，此前未接入 CI → 舆情参考无内容）──
-      #   需 LLM_API_URL/LLM_API_KEY/LLM_MODEL 三件套（仓库 Secrets 配置）；
-      #   缺配置时脚本退出非0、不落空档（前端显示"未生成"，不冒充中性）。continue-on-error 不阻断主链路。
-      - name: 生成 LLM 舆情参考（需配置 LLM_API_URL/LLM_API_KEY/LLM_MODEL）
+      # ── LLM 舆情试点：2026-10-17 用户指令暂停（太贵且无效）──────────────────
+      #   代码保留归档（scripts/fetch_llm_sentiment.mjs / src/llm_sentiment.js），以后再说。
+      #   if: false 关停定时任务；重启用时去掉 if:false 并翻转 daily_report.js 的
+      #   ENABLE_LLM_SECTION 开关即可。
+      - name: 生成 LLM 舆情参考（已暂停 2026-10-17：试点停更，代码保留归档）
+        if: false
         continue-on-error: true
         env:
           LLM_API_URL: ${{ secrets.LLM_API_URL }}
@@ -372,7 +374,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/crosscheck-latest.json data/ops-alerts-latest.json data/industry_outlier_review.json data/board_rank.json data/shadow-book.json data/paper data/reports ui/kline
-          git add data/llm-sentiment-latest.json 2>/dev/null || true  # 仅当 LLM 试点已配置密钥并产出时入库（无产出不报错、不阻断提交）
+          # git add data/llm-sentiment-latest.json 2>/dev/null || true  # 2026-10-17 暂停：LLM 试点停更，不再入库（代码保留归档）
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else

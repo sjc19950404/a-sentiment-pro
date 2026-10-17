@@ -92,6 +92,8 @@ export function buildDailyReport(signals = {}) {
   // ── 节 8：舆情参考（LLM 试点，V5.3 P2）─────────────────────────────────
   //   刻意放最后且 title 自带"参考"：±5 修正不进交易信号（原分不动），读者
   //   须先看完七个量价/结构节再看这条软信息——试点定位，权重天然最低。
+  //   ⚠ 2026-10-17 用户指令：试点暂停（太贵且无效）。本节点仍生成（数据/代码保留归档），
+  //     但前端 renderDailyReport 已按 id==='llm' 跳过渲染；定时任务已在 daily.yml 关停。
   sections.push(buildLlmSection(S.llm));
 
   // 汇总 caveats（从各节与 regime 收集，集中给用户看）
