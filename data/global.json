@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-10-17T06:05:46.332Z",
+    "generatedAt": "2026-10-17T06:09:53.024Z",
     "source": "sina",
     "sourceUrl": "https://hq.sinajs.cn/list=",
     "usSessionDate": "2026-10-16",
@@ -10,8 +10,8 @@
     "failed": [],
     "usReadiness": {
       "ready": false,
-      "etText": "02:05 ET",
-      "reason": "美东 02:05 ET 盘前（09:30 才开盘），此刻美股无收盘价",
+      "etText": "02:09 ET",
+      "reason": "美东 02:09 ET 盘前（09:30 才开盘），此刻美股无收盘价",
       "readyAfterEt": "16:30 ET（收盘 + 30 分钟结算缓冲）= 北京次日 04:30"
     },
     "usNoSession": [],
@@ -21,7 +21,7 @@
     "usSessionDates": [],
     "usSessionsBeforeOpen": 0,
     "lastAttempt": {
-      "at": "2026-10-17T06:05:46.332Z",
+      "at": "2026-10-17T06:09:53.024Z",
       "outcome": "ok",
       "reason": null
     }

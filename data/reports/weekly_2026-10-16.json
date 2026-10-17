@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-16",
- "generated_at": "2026-10-16T16:03:37.316Z",
+ "generated_at": "2026-10-17T06:13:15.494Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -148,22 +148,21 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": null,
-    "state": "night-open",
-    "nightOpen": true
+    "chgPct": -0.0045850000000000005,
+    "state": "ok",
+    "stale": false,
+    "cacheNote": null
    },
    {
     "key": "sox",
     "name": "费城半导体指数",
-    "chgPct": -0.020129,
+    "chgPct": -0.038332000000000005,
     "state": "ok",
     "stale": false,
     "cacheNote": null
    }
   ],
-  "externalStale": [
-   "外围「富时中国A50期货」已陈旧（采集失败未刷新），已置空"
-  ],
+  "externalStale": [],
   "nav_series": [
    {
     "date": "2026-10-12",
