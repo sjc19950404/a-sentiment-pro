@@ -101,6 +101,7 @@ let LIVE_FAIL = [];       // 最近一次抓取失败的代码
 let LIVE_BUSY = false;    // 抓取中（防重复请求）
 let LAST_DATE = null;     // 存档最新交易日
 let ARC_DAYS = [];        // 存档全部交易日（研判推荐用：取最后一天算推荐，取序列算情绪分）
+let ZT_POOL_MAP = null;    // 涨停池按日期索引（情绪闸门用：date(归一化) -> pool[]）
 let ORDER = { side: 'buy', code: '', qty: 0 };
 // 单独下单区的「自定义比例买入」输入值（百分数，如 15 表示 15%）。
 // 要保留在内存里：renderQuick 会因行情刷新/方向切换重渲染，值若丢用户得重填。
@@ -472,6 +473,15 @@ async function boot() {
     const last = days[days.length - 1] || {};
     LAST_DATE = last.trade_date || null;
     QMAP = quotesFromDay(last);
+    // 情绪闸门所需的涨停池（板块聚类/强度分级），与 ARC_DAYS 同源的当日收盘档（缺失不阻断，闸门自动跳过）
+    try {
+      const ztRes = await fetch('./data/ztpool_history.json?_=' + Date.now(), { cache: 'no-store' });
+      if (ztRes.ok) {
+        const ztArr = await ztRes.json();
+        const norm = (s) => String(s == null ? '' : s).replace(/\D/g, '');
+        ZT_POOL_MAP = new Map((Array.isArray(ztArr) ? ztArr : []).map((d) => [norm(d.date), d.pool || []]));
+      }
+    } catch { /* 缺失则闸门自动跳过，不影响其余功能 */ }
 
     // 账户：优先本地账本；没有则按「用户设定的初始资金」新建（起始日 = 存档最新交易日）
     ACCT = load() || emptyAccount(loadInitCash(), LAST_DATE);
@@ -1605,8 +1615,12 @@ function currentPicks() {
   if (!PICKS || PICKS.asOf !== (day.trade_date || null)) {
     // stopLossPct 由这里显式传入：picks.js 不 import alerts.js（避免 picks ⇄ alerts 互引），
     // 但止损线口径仍取自 alerts.js 的 POS_CFG，保持「阈值唯一出处」。
+    // 情绪闸门：把与当日匹配的涨停池经 ctx.ztpool 传入，缺日期匹配则空数组（自动跳过）
+    const ztpool = (ZT_POOL_MAP && day.trade_date)
+      ? (ZT_POOL_MAP.get(String(day.trade_date).replace(/\D/g, '')) || [])
+      : [];
     PICKS = recommendPicks(day, {
-      emotionScore: score, topN: PICK_TOP_N, stopLossPct: POS_CFG.stopLoss,
+      emotionScore: score, topN: PICK_TOP_N, stopLossPct: POS_CFG.stopLoss, ztpool,
     });
   }
   return PICKS;
@@ -1653,7 +1667,10 @@ function renderPicks() {
     // 置顶组与普通组之间插一条分隔说明——不插的话用户不知道「为什么上面那几只排前面」
     const topCnt = r.picks.filter((p) => p.streakTop).length;
     let rendered = 0;
-    box.innerHTML = r.picks.map((p, i) => {
+    box.innerHTML = (r.climaxWarnings && r.climaxWarnings.length
+      ? `<div class="bf-warn pk-climax-banner">⚠ 情绪高潮预警：${esc(r.climaxWarnings.map((w) => w.sector).join('、'))}`
+        + ` 板块次日谨防分歧——已禁推该板块前排高标，仅留低位首板补涨。</div>`
+      : '') + r.picks.map((p, i) => {
       // 置顶组结束、普通组开始时插入分隔条（只插一次）
       let sep = '';
       if (topCnt > 0 && rendered === topCnt && i === topCnt) {
@@ -1684,6 +1701,8 @@ function renderPicks() {
               ? `<span class="pk-streak ${sbCls}" title="连板概率：历史同特征组（${esc(lp.group || '')}）里 T+1 再次涨停的占比。基准 ${r.streakBaseline == null ? 21.8 : r.streakBaseline}%。">${esc(p.streakText || '大概率连板')}</span>`
               : ''}
             <span class="pk-prob ${bandCls}" title="上涨概率分：历史同特征组的实际上涨占比（不是主观置信度）">上涨概率 ${prob.score == null ? '—' : prob.score.toFixed(1)}</span>
+            ${(p.gateTags && p.gateTags.length) ? p.gateTags.map((t) => `<span class="pk-tag ${t === '后排补涨' ? 'hl' : 'bf-warn'}" title="${t === '后排补涨' ? '高潮板块低位首板补涨（连板1、封死）' : '板块内结构最优核心龙头（封死/首封最早/封单最大）'}">${esc(t)}</span>`).join('') : ''}
+            ${(p.openRecheck && p.openRecheck.need) ? `<span class="pk-tag hl" title="${esc(p.openRecheck.tips)}">开盘须复核</span>` : ''}
             ${p.netOutflow ? `<span class="pk-outflow" title="${esc(NET_OUTFLOW_TAG)}：该票当日龙虎榜净买入 ≤ 0，已扣综合分 ${LHB_NET_OUTFLOW_PENALTY.SCORE} 分 / 上涨概率 ${LHB_NET_OUTFLOW_PENALTY.PROB} 个百分点，且须人工复核后才能下单。">${esc(NET_OUTFLOW_TAG)}</span>` : ''}
           </div>
           <div class="pk-reasons">
@@ -1704,6 +1723,21 @@ function renderPicks() {
         </div>
       </div>`;
     }).join('');
+  }
+
+  // 情绪闸门拦截明细（高潮禁推前排高标 + 板块内去弱留强挤出），让用户看得见被拦的票
+  const blocked = r.climaxBlocked || [];
+  const trimmed = r.sectorTrimmed || [];
+  if (box && (blocked.length || trimmed.length)) {
+    box.innerHTML += `<details class="pk-rej"><summary>情绪闸门拦截 ${blocked.length + trimmed.length} 只（点开看原因）</summary>`
+      + `<div class="pk-rej-body">`
+      + blocked.map((x) => `<div class="pk-rej-row"><span class="pk-rej-name">${esc(x.name)}</span>`
+        + `<span class="pk-code muted">${esc(x.code)}</span>`
+        + `<span class="pk-rej-why bf-warn">${esc(x.reason)}</span></div>`).join('')
+      + trimmed.map((x) => `<div class="pk-rej-row"><span class="pk-rej-name">${esc(x.name)}</span>`
+        + `<span class="pk-code muted">${esc(x.code)}</span>`
+        + `<span class="pk-rej-why muted">${(x.gateTags && x.gateTags.join('/')) || '板块内去弱留强'}：未入选核心 1-2 只</span></div>`).join('')
+      + `</div></details>`;
   }
 
   // 被剔除的票必须让用户看得见——「静默丢弃」会让人以为池子里本来就没有这些票
