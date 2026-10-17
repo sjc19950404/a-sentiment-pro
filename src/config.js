@@ -26,8 +26,8 @@
 // 缺必需键、params 双套结构残缺都在这里拦截，而不是等到算出错误分数后由下游守卫兜出来。
 // 同构加载（Node / 浏览器共用）：
 //   · Node 侧读盘 config.json（唯一事实源）；
-//   · 浏览器侧用 index.html 内联桥注入的 window.ASENT_CONFIG（原始 config.json，结构逐位同值，
-//     见 index.html 的 `import('./config.json')` 注入脚本）。
+//   · 浏览器侧由本模块自行 fetch('../config.json')（与 index.html 桥同源，且摆脱其异步时序依赖）；
+//     window.ASENT_CONFIG 若已就绪则复用，否则自行拉取原始 config.json（见下方 isNode 分支）。
 // ⚠ 绝不能写死 `import ... from 'node:fs'`：浏览器会拦截 node: 内置模块，导致 config.js 及所有
 //   依赖它的模块（alerts.js 等）整条加载失败——表现就是「模拟交易面板所有按钮点了没反应」。
 //   故 node: 只在 isNode 分支内动态 import（浏览器永不触达这一分支）。
@@ -41,8 +41,24 @@ if (isNode) {
   const __dirname = dirname(fileURLToPath(import.meta.url));
   cfg = JSON.parse(readFileSync(join(__dirname, '..', 'config.json'), 'utf8'));
 } else {
-  // 浏览器：index.html 已把 config.json 挂到 window.ASENT_CONFIG（原始结构，与 Node 侧读盘同值）
-  cfg = (typeof window !== 'undefined' && window.ASENT_CONFIG) || {};
+  // 浏览器：index.html 用动态 import('./config.json') 异步把原始 config.json 挂到 window.ASENT_CONFIG。
+  // 但动态 import 是异步的，本模块同步求值期它多半尚未就绪——若在这里直接同步读 window.ASENT_CONFIG
+  // 就会拿到 undefined → cfg={} → 第 49 行 formulaVersion 校验直接 throw（正是本机 8123 报的错）。
+  // 故此处自行 fetch config.json 并 await（与 index.html 桥同源、URL 相对本文件 ../config.json），
+  // 彻底摆脱对桥时序的依赖；window.ASENT_CONFIG 若已就绪则复用、避免重复请求。
+  try {
+    const fromWindow = (typeof window !== 'undefined' && window.ASENT_CONFIG) || null;
+    if (fromWindow) {
+      cfg = fromWindow;
+    } else {
+      const res = await fetch(new URL('../config.json', import.meta.url));
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      cfg = await res.json();
+    }
+  } catch (e) {
+    console.error('[config] 浏览器侧加载 config.json 失败，回退空配置：', e && e.message);
+    cfg = {};
+  }
 }
 
 // ── 结构校验（错误宁可启动炸，不许带病算分）─────────────────────────────────
