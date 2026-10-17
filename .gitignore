@@ -77,11 +77,13 @@ data/gap-days-latest.json
 
 # 本地产物与临时脚本（2026-10-17：筑牢防火墙，防止本地环境垃圾污染公共仓库）
 # 这些文件只在本地开发/运维时存在，绝不入库：
-_serve.cjs          # 人工审核临时本地写服务（验证完即删）
-run_local.py        # 本地刷新数据运行脚本
-.venv/              # Python 虚拟环境
-ops_config.json     # 运维本地配置
-ops_log.md          # 运维本地日志
-ops_log.mjs         # 运维本地脚本
-set_llm_secrets.ps1 # 设 LLM Secret 的本地脚本
-.codebuddy/         # 本 Agent 项目数据目录（勿入库）
+_serve.cjs
+run_local.py
+.venv/
+ops_config.json
+ops_log.md
+ops_log.mjs
+scripts/ops_log.mjs
+set_llm_secrets.ps1
+scripts/set_llm_secrets.ps1
+.codebuddy/
