@@ -598,6 +598,7 @@
     import('./config.json', { with: { type: 'json' } })
       .then((m) => { window.ASENT_CONFIG = m.default; })
       .catch(() => { /* 旧浏览器/异常路径：静默降级，走兜底默认值 */ });
+  </script>
   <!-- 模拟交易复盘引擎（src/paper_review.js）：ESM 纯函数，挂到 window；app.js 据此在报告第⑦段拼复盘。paper_ui.js 每次账户变更后发布 window.__paperSnapshot 并经 'paper-snapshot' 事件触发报告重渲染。 -->
   <script type="module">
     import * as PaperReview from './src/paper_review.js';
@@ -606,8 +607,6 @@
   </script>
   <!-- 模拟交易台面（纸上交易台）：有状态交互前端，规则委托 src/paper.js，持久化 localStorage。2026-10-03 曾整体摘除、引擎保留；2026-10-17 复活。 -->
   <script type="module" src="./paper_ui.js"></script>
-
-  </script>
   <!-- S3-1 即时轨采样器（src/intraday_sampler.js）：拉估值锚 + 腾讯指数实时涨幅，
        60 秒采样当日权益序列（localStorage 当日键），发布 window.__intradayLive
       （accountStats 形态的 live 账本，S3-4 报告卡片 input.live 的数据源）。
