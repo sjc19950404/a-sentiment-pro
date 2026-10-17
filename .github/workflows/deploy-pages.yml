@@ -60,6 +60,15 @@ on:
       - 'src/alerts.js'
       - 'src/lhb_codec.js'
       - 'src/picks.js'
+      - 'src/sources.js'
+      - 'src/config.js'
+      - 'src/sentiment.js'
+      - 'src/util.js'
+      - 'src/calendar.js'
+      - 'src/time.js'
+      - 'src/relative.js'
+      - 'src/predict.js'
+      - 'src/main_theme.js'
       - 'data/**'
   # 自动部署（根因修复 2026-10-13）：daily-sentiment 跑完即触发。
   # bot 用默认 GITHUB_TOKEN 的 push 不会触发本工作流的 on:push（GitHub 防循环规则），
@@ -102,6 +111,9 @@ jobs:
           cp src/dataset.js src/dual_track.js src/error_boundary.js src/validate_snapshot.js site/src/
           # 模拟交易台面（2026-10-17 复活）：台面 UI 的 import 依赖 + 复盘引擎，须随外壳部署
           cp src/paper_review.js src/alert_log.js src/alerts.js src/lhb_codec.js src/picks.js site/src/
+          # paper_ui 完整 import 闭包（含二级依赖）：下列模块被 paper.js / picks.js 间接引用，
+          # 漏部署会致云端 import 404、模拟交易板块整块挂掉（2026-10-17 排障补回）
+          cp src/sources.js src/config.js src/sentiment.js src/util.js src/calendar.js src/time.js src/relative.js src/predict.js src/main_theme.js site/src/
           # 数据面（运行时 fetch('./data/*.json') 的全部消费档，含 paper/ 双轨账本）
           cp -r data/. site/data/
           # SW 版本指纹注入（2026-10-07）：SW 更新由「sw.js 字节变化」触发（规范 byte-diff，
