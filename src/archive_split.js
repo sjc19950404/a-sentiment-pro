@@ -351,6 +351,13 @@ function pickKeys(obj, keys) {
 
 export const SIGNALS_FILE = 'signals-latest.json';
 
+// 轻量档里席位/宽度逐日历史序列的截断窗口（体积纪律 · 治本瘦身，2026-10-17）。
+// 完整历史仍留在 archive 分片（all_days）里，前端详情抽屉按需回拉；此处只保
+// "看一眼"的最近窗口，杜绝 seats 序列（每行 ~0.26KB）随档案累积涨到上百行、
+// 再次顶破 signals-latest 体积预算。regime 序列已在 buildRegimeBlock 内按
+// REGIME_SERIES_DAYS=90 截断，此处不再重复。
+export const SIGNALS_SERIES_CAP = 20;
+
 /**
  * @param {object} archive 序列化态档案
  * @param {object} opts
@@ -517,6 +524,15 @@ export function buildSignals(archive, opts = {}) {
       });
     } catch { dailyReport = null; }
   }
+  // ══ 体积纪律（治本 · 2026-10-17）══════════════════════════════════════════
+  // 轻量档只放"看一眼"的量：把席位/宽度的逐日历史序列截断到近 SIGNALS_SERIES_CAP
+  // 天，完整历史仍在 archive 分片（all_days）里，前端详情抽屉按需回拉即可。
+  // 否则 seats 序列（每行 ~0.26KB）随档案累积会涨到上百行，再次顶破 44KB 预算。
+  // ⚠ divergence / dailyReport 在上方已用**完整**序列计算，本截断只影响最终写盘，
+  //    不改动任何判据（最近 20 天足够两者使用）。regime 已在 buildRegimeBlock 内
+  //    截断到 90 天，此处不重复。
+  if (seats && Array.isArray(seats.series)) seats = { ...seats, series: seats.series.slice(-SIGNALS_SERIES_CAP) };
+  if (breadth && Array.isArray(breadth.series)) breadth = { ...breadth, series: breadth.series.slice(-SIGNALS_SERIES_CAP) };
   return {
     kind: 'signals-latest',
     version: 1,
