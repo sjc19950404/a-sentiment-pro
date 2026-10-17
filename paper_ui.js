@@ -63,17 +63,6 @@ import('./config.json', { with: { type: 'json' } })
   .catch(() => { /* 旧浏览器/异常路径：静默降级，走兜底默认值 */ });
 
 const $ = (id) => document.getElementById(id);
-// 全局错误兜底：任何未捕获异常 / 未处理 Promise 拒绝都显形到提示条，
-// 避免「点击毫无反应却无任何报错」的空壳假象（云端曾因 SW 旧缓存跑旧版而如此）。
-window.addEventListener('error', (e) => {
-  const el = $('paperMsg');
-  if (el) { el.textContent = '页面脚本错误：' + ((e && (e.message || (e.error && e.error.message))) || '未知'); el.className = 'hl-dn'; }
-});
-window.addEventListener('unhandledrejection', (e) => {
-  const el = $('paperMsg');
-  const r = e && e.reason;
-  if (el) { el.textContent = '未处理的异步错误：' + ((r && (r.message || r)) || '未知'); el.className = 'hl-dn'; }
-});
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const num = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—'
@@ -511,11 +500,6 @@ async function boot() {
     setTimeout(() => {
       if (typeof window !== 'undefined') window.__paperFirstPaint = Date.now();
       document.documentElement?.setAttribute('data-paper-first-paint', String(Date.now()));
-      // 标记模块已成功启动（供 index.html 的哨兵脚本判断是否「整模块未加载」）
-      if (typeof window !== 'undefined') window.__paperReady = true;
-      // 若哨兵曾误报（网络慢导致 boot 晚于哨兵超时），这里清掉提示，避免残留误导
-      const m = document.getElementById('paperMsg');
-      if (m && /模拟交易模块未能加载/.test(m.textContent || '')) m.textContent = '';
     }, 0);
 
     // 实时行情放在首屏渲染之后：先把界面画出来，再异步补价，避免网络慢时白屏。
