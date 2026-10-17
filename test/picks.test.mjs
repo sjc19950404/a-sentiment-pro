@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {
   PICK_TOP_N, SCORE_WEIGHTS, TIER_THRESHOLDS, POSITION_TIERS,
   marketTier, buildCandidates, scoreFund, scoreStreak, scoreCandidate,
-  reasonsOf, risksOf, suggestWeight, recommendPicks,
+  reasonsOf, risksOf, suggestWeight, recommendPicks, applyEmotionGates,
 } from '../src/picks.js';
 
 // 构造一份最小可用的「存档日」。字段名与 archive.json 严格一致，
@@ -25,6 +25,59 @@ const day = (over = {}) => ({
 const lhbRow = (code, name, netWan, over = {}) => ({
   code, name, net_buy_wan: netWan, buy_wan: Math.max(netWan, 0) * 2, sell_wan: Math.max(netWan, 0),
   close: 10, change_pct: 5, turnover_pct: 8, reason: '日涨幅偏离值达7%', is_range: false, ...over,
+});
+
+// ────────────────────── 情绪闸门（高潮预警 / 去弱留强 / 接力验证） ──────────────────────
+
+// 构造涨停池：半导体(高潮, 8家) + 新能源(弱主线, 4家)。股票字段与 ztpool_history 一致。
+const ztPool = (extra = []) => ([
+  { c: '600001', n: '前排A', hybk: '半导体', lbc: 3, fbt: 93000, fund: 1e8, zbc: 0, hs: 5 }, // 高潮前排高标
+  { c: '600002', n: '补涨B', hybk: '半导体', lbc: 1, fbt: 92500, fund: 5e7, zbc: 0, hs: 5 }, // 高潮首板补涨
+  { c: '600003', n: '核心C', hybk: '新能源', lbc: 2, fbt: 93000, fund: 2e8, zbc: 0, hs: 5 }, // 弱主线, 连板2
+  { c: '600004', n: '核心D', hybk: '新能源', lbc: 1, fbt: 92500, fund: 1e8, zbc: 0, hs: 5 }, // 弱主线, 首板早封
+  { c: '600005', n: '核心E', hybk: '新能源', lbc: 1, fbt: 93100, fund: 1e8, zbc: 0, hs: 5 }, // 弱主线, 首板晚封
+  // 补足半导体涨停家数到 ≥6（使 classifyThemeStrength 判为强主线）
+  ...['11', '12', '13', '14', '15'].map((s) => ({ c: '6000' + s, n: 'x', hybk: '半导体', lbc: 1, fbt: 93000, fund: 1e7, zbc: 0, hs: 5 })),
+  ...extra,
+]);
+
+test('情绪闸门：高潮禁推前排高标、仅留首板补涨；非高潮去弱留强', () => {
+  const picks = [
+    { code: '600001', name: '前排A' }, { code: '600002', name: '补涨B' },
+    { code: '600003', name: '核心C' }, { code: '600004', name: '核心D' }, { code: '600005', name: '核心E' },
+    { code: '600999', name: '无关F' }, // 非主线板块，原样保留
+  ];
+  const g = applyEmotionGates(picks, { ztpool: ztPool() });
+  const codes = g.picks.map((p) => p.code);
+
+  // ① 高潮前排高标(连板≥2)被禁推，且进入 climaxBlocked
+  assert.ok(!codes.includes('600001'), '高潮前排高标应被禁推');
+  assert.ok(g.climaxBlocked.some((b) => b.code === '600001'), '被禁推票应出现在 climaxBlocked');
+  // ② 高潮板块仅留低位首板补涨（连板1、封死）
+  assert.ok(codes.includes('600002'), '首板补涨应保留');
+  assert.deepEqual(g.picks.find((p) => p.code === '600002').gateTags, ['后排补涨']);
+  // ③ 非高潮主线板块去弱留强：结构最优2只（D 首封最早 > C > E）入选，E 被挤出
+  assert.ok(codes.includes('600004') && codes.includes('600003'), '弱主线结构最优2只应入选');
+  assert.ok(!codes.includes('600005'), '弱主线第3只应被去弱留强挤出');
+  assert.ok(g.sectorTrimmed.some((p) => p.code === '600005'), '被挤出票应出现在 sectorTrimmed');
+  // ④ 非主线板块原样保留，且不挂 gateTags
+  assert.ok(codes.includes('600999'), '非主线板块票应原样保留');
+  assert.ok(!('gateTags' in (g.picks.find((p) => p.code === '600999') || {})));
+  // ⑤ 接力验证标记：主线板块推荐标的均挂 openRecheck
+  for (const c of ['600002', '600003', '600004']) {
+    const p = g.picks.find((x) => x.code === c);
+    assert.equal(p.openRecheck.need, true, `${c} 应挂接力验证标记`);
+  }
+  // ⑥ 高潮预警存在且指向半导体
+  assert.ok(g.climaxWarnings.some((w) => w.sector === '半导体'));
+});
+
+test('情绪闸门：无 ctx.ztpool 时原样返回（零回归）', () => {
+  const picks = [{ code: '600001', name: '前排A' }, { code: '600003', name: '核心C' }];
+  const g = applyEmotionGates(picks);
+  assert.deepEqual(g.picks, picks, '无 ztpool 应原样返回');
+  assert.equal(g.climaxWarnings.length, 0);
+  assert.equal(g.climaxBlocked.length, 0);
 });
 
 // ────────────────────── 一、市场档位（阈值必须与 V5.2 引擎一致） ──────────────────────

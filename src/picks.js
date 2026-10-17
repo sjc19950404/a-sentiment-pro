@@ -39,11 +39,23 @@ import {
   predictPicks, probBandText, streakBandText, streakTagText,
   PREDICT_VERSION, BASELINE_UP, STREAK_BASELINE,
 } from './predict.js';
+// 情绪闸门（高潮预警 / 去弱留强 / 接力验证）：复用 main_theme.js 的板块聚类与强度分级，
+// 在涨停池上判定「高潮板块」并做板块内精选。纯函数、零 node 依赖，浏览器/Node 共用。
+import { clusterThemes, classifyThemeStrength } from './main_theme.js';
 
 // ────────────────────────── 常量（阈值集中在此，UI 不重写） ──────────────────────────
 
 /** 推荐条数上限（Top N） */
 export const PICK_TOP_N = 5;
+
+/** 高潮板块强度集合（复用 main_theme 强度分级：板块涨停家数 ≥6 为强主线 / ≥11 为绝对主线） */
+export const CLIMAX_STRENGTHS = new Set(['强主线', '绝对主线']);
+/** 板块内核心龙头上限（去弱留强：每主线板块只推结构最优 1-2 只） */
+export const GATE_CORE_TOP = 2;
+/** 高潮板块后排补涨上限（禁推前排高标后，仅留低位首板补涨 1-2 只） */
+export const GATE_BACKROW_TOP = 2;
+/** 接力验证标记文案（纯预警，不自动撤销；由用户开盘后人工判定） */
+export const OPEN_RECHECK_TIPS = '次日开盘5分钟：龙头高开抢筹/放量承接=接力有效可持有；若低开低走且主力净流出=接力失效，撤销跟进。';
 
 /**
  * 评分权重。**必须和为 1**，否则分数不可比（有单测锁住）。
@@ -375,6 +387,142 @@ export function suggestWeight(tier, n, opts = {}) {
   return Math.round(Math.min(cap, avg) * 1e4) / 1e4;
 }
 
+// ────────────────────────── 五·五、情绪闸门 ──────────────────────────
+
+/**
+ * 情绪闸门：高潮预警 / 去弱留强 / 接力验证（纯函数，仅在 ctx.ztpool 提供时生效）。
+ *
+ * 输入：
+ *   picks  —— recommendPicks 经预测引擎筛选后的候选推荐（已含 code/name 等）
+ *   ctx.ztpool —— 当日涨停池原始档（ztpool_history 当日 pool：含 c/hybk/lbc/fbt/fund/hs/zbc）
+ *
+ * 逻辑（复用 main_theme.js 的 clusterThemes + classifyThemeStrength，按板块涨停家数定级）：
+ *   ① 高潮板块 = 板块涨停家数 ≥6（强/绝对主线）。次日该板块禁推前排高标（连板≥2），
+ *      弹「情绪高潮，谨防分歧」；仅留同板块首板补涨（lbc=1 且封死 zbc=0）1-2 只。
+ *   ② 非高潮主线板块：去弱留强，仅留结构最优 1-2 只核心龙头（封死→首封最早→封单最大）。
+ *   ③ 接力验证：主线板块推荐标的一律挂 openRecheck 标记（纯预警，不自动撤销）。
+ *
+ * 无 ctx.ztpool 时原样返回（浏览器/测试未提供数据时零回归）。
+ *
+ * @returns {{picks:Array, climaxWarnings:Array, climaxBlocked:Array, sectorTrimmed:Array}}
+ */
+export function applyEmotionGates(picks, ctx = {}) {
+  const ztpool = ctx && Array.isArray(ctx.ztpool) ? ctx.ztpool : null;
+  if (!ztpool || !ztpool.length || !Array.isArray(picks)) {
+    return { picks: picks || [], climaxWarnings: [], climaxBlocked: [], sectorTrimmed: [] };
+  }
+
+  const byCode = new Map();
+  for (const s of ztpool) {
+    if (s && s.c != null) byCode.set(String(s.c), s);
+  }
+
+  // ① 高潮板块集合（复用现有强度分级：板块涨停家数定级）
+  const clusters = clusterThemes(ztpool);
+  const mainLine = new Map();   // sector -> {ztCount, strength}
+  const climax = [];            // [{name, ztCount, strength}]
+  for (const c of clusters) {
+    const st = classifyThemeStrength(c.zt_count);
+    mainLine.set(c.name, { ztCount: c.zt_count, strength: st });
+    if (CLIMAX_STRENGTHS.has(st)) climax.push({ name: c.name, ztCount: c.zt_count, strength: st });
+  }
+  const climaxSet = new Set(climax.map((c) => c.name));
+
+  // 结构排序键：封死(zbc=0 优先) → 首封最早(fbt 升) → 封单最大(fund 降)
+  const structKey = (s) => {
+    const zbc = s && finite(s.zbc) ? +s.zbc : 99;
+    const fbt = s && finite(s.fbt) ? +s.fbt : 999999;
+    const fund = s && finite(s.fund) ? +s.fund : -1;
+    return [zbc, fbt, -fund];
+  };
+
+  // 仅对「主线板块」内的 picks 做分组精选（非主线板块原样保留）
+  const groups = new Map();  // sector -> [{p, ps}]
+  for (const p of picks) {
+    const ps = byCode.get(String(p.code));
+    if (!ps || !ps.hybk) continue;
+    if (!mainLine.has(ps.hybk)) continue;
+    if (!groups.has(ps.hybk)) groups.set(ps.hybk, []);
+    groups.get(ps.hybk).push({ p, ps });
+  }
+
+  const kept = [];
+  const climaxBlocked = [];
+  const sectorTrimmed = [];
+  const climaxWarnings = climax.map((c) => ({
+    sector: c.name,
+    strength: c.strength,
+    ztCount: c.ztCount,
+    message: `情绪高潮（${c.strength}，板块 ${c.ztCount} 家涨停）：次日谨防分歧——已禁推该板块前排高标，仅留低位首板补涨。`,
+  }));
+
+  for (const [sec, arr] of groups) {
+    const isClimax = climaxSet.has(sec);
+    arr.sort((a, b) => {
+      const ka = structKey(a.ps), kb = structKey(b.ps);
+      for (let i = 0; i < ka.length; i++) if (ka[i] !== kb[i]) return ka[i] - kb[i];
+      return 0;
+    });
+
+    if (isClimax) {
+      // 禁推前排高标（连板≥2）；连板信息缺失亦谨慎禁推
+      for (const x of arr) {
+        const lbc = finite(x.ps.lbc) ? +x.ps.lbc : 0;
+        if (lbc >= 2) {
+          climaxBlocked.push({
+            code: x.p.code, name: x.p.name, sector: sec,
+            reason: `情绪高潮板块前排高标（连板 ${lbc}），次日分歧风险高，已禁推`,
+          });
+        }
+      }
+      // 仅留首板补涨（lbc===1 且封死 zbc===0）；封板炸开的同板块首板视为弱，不推
+      const backrow = arr.filter((x) => finite(x.ps.lbc) && +x.ps.lbc === 1
+        && finite(x.ps.zbc) && +x.ps.zbc === 0);
+      const weak = arr.filter((x) => finite(x.ps.lbc) && +x.ps.lbc === 1
+        && !(finite(x.ps.zbc) && +x.ps.zbc === 0));
+      const chosen = backrow.slice(0, GATE_BACKROW_TOP);
+      for (const x of chosen) {
+        x.p.gateTags = ['后排补涨'];
+        x.p.openRecheck = { need: true, tips: OPEN_RECHECK_TIPS, climax: true };
+        kept.push(x.p);
+      }
+      for (const x of backrow.slice(GATE_BACKROW_TOP)) {
+        x.p.gateTags = ['后排补涨'];
+        x.p.openRecheck = { need: true, tips: OPEN_RECHECK_TIPS, climax: true };
+        sectorTrimmed.push(x.p);
+      }
+      for (const x of weak) {
+        x.p.openRecheck = { need: true, tips: OPEN_RECHECK_TIPS, climax: true };
+        sectorTrimmed.push(x.p);
+      }
+    } else {
+      // 非高潮主线板块：去弱留强，仅留结构最优 1-2 只核心龙头
+      const chosen = arr.slice(0, GATE_CORE_TOP);
+      for (const x of chosen) {
+        x.p.gateTags = ['核心龙头'];
+        x.p.openRecheck = { need: true, tips: OPEN_RECHECK_TIPS, climax: false };
+        kept.push(x.p);
+      }
+      for (const x of arr.slice(GATE_CORE_TOP)) {
+        x.p.gateTags = ['核心龙头'];
+        x.p.openRecheck = { need: true, tips: OPEN_RECHECK_TIPS, climax: false };
+        sectorTrimmed.push(x.p);
+      }
+    }
+  }
+
+  // 非主线板块的 picks 原样保留（不挂 gateTags / openRecheck）
+  const inGroups = new Set();
+  for (const arr of groups.values()) for (const x of arr) inGroups.add(String(x.p.code));
+  for (const p of picks) if (!inGroups.has(String(p.code))) kept.push(p);
+
+  // 维持原 picks 顺序，便于渲染与可复现
+  const order = new Map(picks.map((p, i) => [String(p.code), i]));
+  kept.sort((a, b) => (order.get(String(a.code)) ?? 0) - (order.get(String(b.code)) ?? 0));
+
+  return { picks: kept, climaxWarnings, climaxBlocked, sectorTrimmed };
+}
+
 // ────────────────────────── 六、主入口 ──────────────────────────
 
 /**
@@ -419,7 +567,10 @@ export function recommendPicks(day, ctx = {}) {
     streakTopMin: ctx.streakTopMin,
   });
 
-  const picks = pred.picks;
+  // 情绪闸门：高潮预警 / 去弱留强 / 接力验证（无 ctx.ztpool 时原样返回，零回归）
+  const gate = applyEmotionGates(pred.picks, ctx);
+  let picks = gate.picks;
+
   const weight = suggestWeight(tier, picks.length);
   for (const p of picks) {
     p.suggestWeight = weight;
@@ -434,7 +585,14 @@ export function recommendPicks(day, ctx = {}) {
 
   // 空态与拒绝态必须说清原因，不能只给一个空列表
   let note;
-  if (!candidates.length) {
+  if (!picks.length && pred.picks.length > 0) {
+    // 预测引擎有产出，但被情绪闸门全部拦截（高潮前排禁推 / 板块内去弱留强后无达标标的）
+    note = {
+      level: 'blocked',
+      text: `预测引擎筛出 ${pred.picks.length} 只，但经情绪闸门全部拦截`
+        + `（高潮板块前排高标禁推、或板块内去弱留强后无达标标的），当前不推荐。`,
+    };
+  } else if (!candidates.length) {
     note = { level: 'empty', text: '当日没有同时满足「龙虎榜净买为正」或「涨停」的标的，本日不产生推荐。' };
   } else if (!picks.length) {
     // 有候选但全被预测引擎筛掉——必须如实说明，不能让人以为今天没票
@@ -476,5 +634,7 @@ export function recommendPicks(day, ctx = {}) {
     note, pool: candidates.length, asOf: d.trade_date || null,
     pred: pred.stats, version: PREDICT_VERSION, baseline: BASELINE_UP,
     streakBaseline: STREAK_BASELINE,
+    // 情绪闸门产物：高潮预警横幅 / 高潮禁推的前排高标 / 板块内去弱留强被挤出的票
+    climaxWarnings: gate.climaxWarnings, climaxBlocked: gate.climaxBlocked, sectorTrimmed: gate.sectorTrimmed,
   };
 }
