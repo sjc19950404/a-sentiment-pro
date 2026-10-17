@@ -679,5 +679,19 @@
       });
     })();
   </script>
+  <script>
+    // 兜底哨兵：若 5s 后模拟交易模块仍未就绪（典型根因 = Service Worker 旧缓存里
+    // paper_ui.js 依赖的某 .js 当时 404、整模块未加载，表现「面板在、所有按钮点了无反应」），
+    // 直接在提示条给出可操作指引，把「无声空壳」变成明确提示。boot 成功会清掉本提示。
+    setTimeout(function () {
+      if (window.__paperReady) return;
+      var el = document.getElementById('paperMsg');
+      if (el) {
+        el.className = 'hl-dn';
+        el.textContent = '⚠ 模拟交易模块未能加载（多为旧缓存 / Service Worker 未更新导致）。'
+          + '请 Ctrl+Shift+R 硬刷新一次；若仍无效，按 F12 → Application → Service Workers → Unregister 后重开页面。';
+      }
+    }, 5000);
+  </script>
 </body>
 </html>

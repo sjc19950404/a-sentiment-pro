@@ -511,6 +511,11 @@ async function boot() {
     setTimeout(() => {
       if (typeof window !== 'undefined') window.__paperFirstPaint = Date.now();
       document.documentElement?.setAttribute('data-paper-first-paint', String(Date.now()));
+      // 标记模块已成功启动（供 index.html 的哨兵脚本判断是否「整模块未加载」）
+      if (typeof window !== 'undefined') window.__paperReady = true;
+      // 若哨兵曾误报（网络慢导致 boot 晚于哨兵超时），这里清掉提示，避免残留误导
+      const m = document.getElementById('paperMsg');
+      if (m && /模拟交易模块未能加载/.test(m.textContent || '')) m.textContent = '';
     }, 0);
 
     // 实时行情放在首屏渲染之后：先把界面画出来，再异步补价，避免网络慢时白屏。
