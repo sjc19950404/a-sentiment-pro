@@ -18,13 +18,20 @@
 //     由 scripts/fetch_calendar.mjs 如实写入，不使用"未经验证"的静默兜底）。
 //   · 所有对外 API 都接受「日历对象」而不是散装的日期数组，避免调用方各自理解字段。
 
-import { readFileSync, existsSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-// 单向依赖：config.js 零 import，故此处静态引用不会形成环。
+// 单向依赖：config.js 已同构化（浏览器读 window.ASENT_CONFIG），此处静态引用安全，不会形成环。
 import config from './config.js';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// ⚠ 同 config.js：node: 内置模块不能写死 import（浏览器拦截 → 整图加载失败）。
+//   改为仅 isNode 分支内动态 import；浏览器侧 loadCalendar 走「种子 + 兜底」，不读盘（见 loadCalendar）。
+const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
+let ROOT = '';
+let readFileSync = null, existsSync = null, path = null;
+if (isNode) {
+  ({ readFileSync, existsSync } = await import('node:fs'));
+  path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+}
 export const CALENDAR_FILE = 'data/calendar.json';
 
 // 日历条目的三种状态
@@ -87,13 +94,20 @@ let _cacheKey = null;
  * @param {string[]} [opts.fallbackHolidays] 文件缺失时的兜底休市日（一般是 config.manualHolidays）
  */
 export function loadCalendar(opts = {}) {
-  const file = opts.file || path.join(ROOT, CALENDAR_FILE);
-  const key = file + '|' + (opts.fallbackHolidays || []).join(',');
-  if (!opts.reload && _cache && _cacheKey === key) return _cache;
-
   const fallback = Array.isArray(opts.fallbackHolidays) ? opts.fallbackHolidays : [];
   const seedClosed = [];
   for (const arr of Object.values(SEED_CLOSED)) seedClosed.push(...arr);
+
+  // 浏览器无 node:fs（config 同构化注释）：日历为可选增强（见模块头注），直接走种子 + 兜底；
+  // 页面若已注入 window.ASENT_CALENDAR 则优先采用。不读盘、无同步 IO 依赖。
+  if (!isNode) {
+    const raw = (typeof window !== 'undefined' && window.ASENT_CALENDAR) || null;
+    return fromRaw(raw, fallback, seedClosed);
+  }
+
+  const file = opts.file || path.join(ROOT, CALENDAR_FILE);
+  const key = file + '|' + fallback.join(',');
+  if (!opts.reload && _cache && _cacheKey === key) return _cache;
 
   let cal = null;
   if (existsSync(file)) {

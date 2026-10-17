@@ -24,12 +24,26 @@
 //
 // 校验原则：配置错误必须**快速失败**（启动即 throw），绝不带病运行——权重和≠1、阈值乱序、
 // 缺必需键、params 双套结构残缺都在这里拦截，而不是等到算出错误分数后由下游守卫兜出来。
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+// 同构加载（Node / 浏览器共用）：
+//   · Node 侧读盘 config.json（唯一事实源）；
+//   · 浏览器侧用 index.html 内联桥注入的 window.ASENT_CONFIG（原始 config.json，结构逐位同值，
+//     见 index.html 的 `import('./config.json')` 注入脚本）。
+// ⚠ 绝不能写死 `import ... from 'node:fs'`：浏览器会拦截 node: 内置模块，导致 config.js 及所有
+//   依赖它的模块（alerts.js 等）整条加载失败——表现就是「模拟交易面板所有按钮点了没反应」。
+//   故 node: 只在 isNode 分支内动态 import（浏览器永不触达这一分支）。
+const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const cfg = JSON.parse(readFileSync(join(__dirname, '..', 'config.json'), 'utf8'));
+let cfg;
+if (isNode) {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  cfg = JSON.parse(readFileSync(join(__dirname, '..', 'config.json'), 'utf8'));
+} else {
+  // 浏览器：index.html 已把 config.json 挂到 window.ASENT_CONFIG（原始结构，与 Node 侧读盘同值）
+  cfg = (typeof window !== 'undefined' && window.ASENT_CONFIG) || {};
+}
 
 // ── 结构校验（错误宁可启动炸，不许带病算分）─────────────────────────────────
 if (!(cfg.formulaVersion && typeof cfg.formulaVersion === 'string')) {
