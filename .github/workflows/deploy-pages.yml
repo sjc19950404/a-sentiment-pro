@@ -40,6 +40,7 @@ on:
       - 'sw.js'
       - 'paper_ui.js'
       - 'manifest.webmanifest'
+      - 'config.json'
       - 'src/report.js'
       - 'src/report_audit.js'
       - 'src/seats.js'
@@ -105,7 +106,9 @@ jobs:
           set -eu
           mkdir -p site/src site/data
           # 页面外壳（index.html 引用 + SW SHELL_ASSETS 离线外壳）
-          cp index.html app.js style.css sw.js paper_ui.js manifest.webmanifest site/
+          # config.json 是前端桥（index.html 动态 import('./config.json') 挂 window.ASENT_CONFIG，
+          # config.js 浏览器分支 fetch('../config.json') 同源读取）——必须落到站点根，否则云端 404。
+          cp index.html app.js style.css sw.js paper_ui.js manifest.webmanifest config.json site/
           # 整目录递归拷贝 src/：浏览器 ESM 图会按需 import 任意子模块（含 engine/），
           # 逐个白名单极易漏部署——此前就因缺 global.js/pain.js/module_freshness.js/freshness.js
           # 导致 404，而 GitHub Pages 的 404 是 HTML，被当 JS 模块解析就报
