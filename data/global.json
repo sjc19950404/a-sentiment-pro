@@ -1,17 +1,17 @@
 {
   "meta": {
-    "generatedAt": "2026-10-17T06:09:53.024Z",
+    "generatedAt": "2026-10-17T10:59:38.361Z",
     "source": "sina",
     "sourceUrl": "https://hq.sinajs.cn/list=",
     "usSessionDate": "2026-10-16",
     "aShareTradeDate": "2026-10-16",
     "quoteCount": 16,
-    "okCount": 16,
+    "okCount": 15,
     "failed": [],
     "usReadiness": {
       "ready": false,
-      "etText": "02:09 ET",
-      "reason": "美东 02:09 ET 盘前（09:30 才开盘），此刻美股无收盘价",
+      "etText": "06:59 ET",
+      "reason": "美东 06:59 ET 盘前（09:30 才开盘），此刻美股无收盘价",
       "readyAfterEt": "16:30 ET（收盘 + 30 分钟结算缓冲）= 北京次日 04:30"
     },
     "usNoSession": [],
@@ -21,7 +21,7 @@
     "usSessionDates": [],
     "usSessionsBeforeOpen": 0,
     "lastAttempt": {
-      "at": "2026-10-17T06:09:53.024Z",
+      "at": "2026-10-17T10:59:38.361Z",
       "outcome": "ok",
       "reason": null
     }
@@ -34,13 +34,13 @@
       "kind": "hf",
       "role": "a_share_proxy",
       "note": "新加坡交易所。夜盘 17:00–次日 05:15（北京），05:15 收盘集合竞价、结算价出清。报告口径取「富时A50期货夜盘」——仅在北京 05:15 后的抓取才采信为夜盘收盘，早于此时点显示「夜盘未收」、绝不取盘中瞬时价",
-      "ok": true,
-      "state": "ok",
-      "stateText": "",
+      "ok": false,
+      "state": "night-open",
+      "stateText": "夜盘未收",
       "last": 13278.83,
       "prevClose": 13340,
-      "chg": -61.17,
-      "chgPct": -0.4585,
+      "chg": null,
+      "chgPct": null,
       "chgPctReported": null,
       "chgReported": null,
       "hi52": null,
@@ -52,7 +52,7 @@
       "low": 13267,
       "dp": 1,
       "lastText": "13278.8",
-      "chgPctText": "-0.46%"
+      "chgPctText": "夜盘未收"
     },
     {
       "key": "dji",
@@ -583,16 +583,18 @@
   },
   "watch": {
     "verdict": {
-      "key": "negative",
-      "label": "外围偏空",
-      "hint": "外围构成压制，开盘先执行预案里的「继续观望」，等 A 股自身承接信号再谈进攻"
+      "key": "insufficient",
+      "label": "判据不足",
+      "hint": "主锚（A50 期货 / 费半 / 中国金龙）中有品种未取到数据，外围方向**无法判定**——这不是\"外围中性\"，而是\"没看到\"。节后开盘请认准 A 股自身资金与主线，勿以本栏为方向依据。"
     },
-    "bias": -4.5,
+    "bias": -4,
     "signals": [
       {
-        "level": "info",
+        "level": "unknown",
         "key": "a50",
-        "text": "A50 期货 -0.46% → 假期定价基本持平，无明确方向"
+        "text": "A50 期货（主锚） 数据缺失（夜盘未收（取数时点早于 05:15，源给的是盘中瞬时价））→ 未参与判定",
+        "missing": true,
+        "main": true
       },
       {
         "level": "warn",
@@ -617,8 +619,12 @@
     ],
     "biasGate": 2,
     "holiday": true,
-    "missing": [],
-    "mainMissing": [],
-    "missingNote": ""
+    "missing": [
+      "a50"
+    ],
+    "mainMissing": [
+      "a50"
+    ],
+    "missingNote": "1 个品种数据缺失（a50），已按\"未参与判定\"处理，不计入方向分。缺失 ≠ 中性：把没数据读成\"没波动\"会伪造出一个确定结论。"
   }
 }
