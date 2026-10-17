@@ -63,6 +63,17 @@ import('./config.json', { with: { type: 'json' } })
   .catch(() => { /* 旧浏览器/异常路径：静默降级，走兜底默认值 */ });
 
 const $ = (id) => document.getElementById(id);
+// 全局错误兜底：任何未捕获异常 / 未处理 Promise 拒绝都显形到提示条，
+// 避免「点击毫无反应却无任何报错」的空壳假象（云端曾因 SW 旧缓存跑旧版而如此）。
+window.addEventListener('error', (e) => {
+  const el = $('paperMsg');
+  if (el) { el.textContent = '页面脚本错误：' + ((e && (e.message || (e.error && e.error.message))) || '未知'); el.className = 'hl-dn'; }
+});
+window.addEventListener('unhandledrejection', (e) => {
+  const el = $('paperMsg');
+  const r = e && e.reason;
+  if (el) { el.textContent = '未处理的异步错误：' + ((r && (r.message || r)) || '未知'); el.className = 'hl-dn'; }
+});
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const num = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—'
