@@ -3439,6 +3439,7 @@ async function loadFull(arc, years) {
  *   会从 241 静默变成 30，读者无从发现。
  */
 let RECENT_CACHE = null;
+let RECENT_WINDOW = null; // 首屏 30 天滚动窗（trend+latest），供"- 切回精简档"原样重建部分档，避免重复请求
 
 function mergeArc(index, recent) {
   // 滚动窗：29 个曲线点（字段少）+ 最新日（完整明细）
@@ -3801,7 +3802,8 @@ function renderScope(arc) {
     ? `<span class="scope-note" title="档案已按年切片，首屏只加载最近 ${days.length} 个交易日的明细；完整档共 ${arc._totalDays} 个交易日">`
       + `⚡ 分层加载：已载入最近 <b>${days.length}</b> / ${arc._totalDays} 个交易日`
       + `<button class="mini" type="button" data-act="loadfull">载入完整档</button></span>`
-    : `<span class="scope-note ok">✓ 完整档：${days.length} 个交易日</span>`);
+    : `<span class="scope-note ok">✓ 完整档：${days.length} 个交易日`
+      + `<button class="mini" type="button" data-act="loadpartial">切回精简档</button></span>`);
   scope.hidden = false;
 }
 
@@ -4031,6 +4033,7 @@ async function pullArchive() {
   // 滚动窗拿到之前就用索引先渲染：相位/新鲜度/情绪分/动量都在索引里，
   // 首屏第一帧不必等明细（明细慢一点只影响表格与报告，不影响"今天什么状态"）。
   const recent = await loadRecent();
+  RECENT_WINDOW = recent; // 缓存首屏 30 天窗口，供 - 键切回精简档时原样重建部分档
   const arc = mergeArc(idx, recent);
   if (!arc.all_days || !arc.all_days.length) throw new Error('档案为空（index.latest 缺失）');
   const fp = fingerprint(arc);
@@ -4668,6 +4671,18 @@ async function loadFullArchive(btn) {
   }
 }
 
+/**
+ * 用户再按一次"-"（或点"切回精简档"）：从完整档退回首屏的 30 天精简档。
+ * 做法：清空 RECENT_CACHE（它就是完整档缓存，mergeArc 据此走 full 分支——不清掉，
+ * mergeArc 永远返回完整档），再用首屏缓存的 30 天滚动窗 RECENT_WINDOW 重拼部分档，
+ * 与 boot 时 mergeArc(idx, recent) 产物逐位一致，零额外请求。
+ */
+function unloadFull() {
+  if (!RECENT_WINDOW) return; // 首屏窗口未就绪（极罕见，如 degraded 降级），不切换
+  RECENT_CACHE = null;        // 关键：清掉完整档缓存，mergeArc 才会回到 _partial 分支
+  renderAll(mergeArc(INDEX_CACHE || lastArc, RECENT_WINDOW));
+}
+
 // ── 事件委托：一处处理全部点击/键盘，避免逐元素绑定 ──
 function fireAct(el) {
   const act = el.dataset.act;
@@ -4678,6 +4693,7 @@ function fireAct(el) {
   else if (act === 'seg') { const v = segDetail(el.dataset.kind, +el.dataset.i); if (v) openDrawer(v); }
   else if (act === 'day') { const v = dayDetail(+el.dataset.i); if (v) openDrawer(v); }
   else if (act === 'loadfull') { loadFullArchive(el); }
+  else if (act === 'loadpartial') { unloadFull(); }
   else if (act === 'retry-boot') { clearFatal(); checkUpdate(true); return; }
   else if (act === 'btmore') { const v = btDetail(); if (v) openDrawer(v); }
   else if (act === 'glob') { const v = globalDetail(el.dataset.key); if (v) openDrawer(v); }
@@ -4782,6 +4798,13 @@ document.addEventListener('keydown', (e) => {
     // 数字键与分区一一对应（顺序即导航顺序），不写死上界——加分区时快捷键自动跟上
     const n = e.key >= '1' && e.key <= '9' ? Number(e.key) - 1 : -1;
     if (n >= 0 && zones[n]) { e.preventDefault(); zones[n].click(); return; }
+    // 数字键 0：平滑回到页面最顶部（与分区跳转 1-9 同一族；输入框内打字不抢键，见 typing 守卫）
+    if (e.key === '0') { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    // 快捷键 -：切换"完整档 / 精简档"（顶部哪个切换按钮存在就触发哪个，二态互切）
+    if (e.key === '-') {
+      const lfBtn = document.querySelector('#loadScope [data-act="loadfull"], #loadScope [data-act="loadpartial"]');
+      if (lfBtn) { e.preventDefault(); lfBtn.click(); return; }
+    }
     if (e.key === '/') {
       const inp = $('hotSearch');
       if (inp) {

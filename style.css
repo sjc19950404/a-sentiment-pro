@@ -114,6 +114,13 @@ body { margin: 0; background: var(--bg); color: var(--txt); font-family: -apple-
 /* 分区导航：sticky，长页面定位 */
 .zonenav { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
   padding: 8px var(--pad); background: rgba(13, 17, 23, .92); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+/* 顶部整体吸顶：header 标题栏 + 分区导航作为整体钉在页面顶端（横幅/内容随滚动）。
+   用包裹容器吸顶，避免直接对 header 算高度（小屏换行高度可变、脆弱）；导航自身 sticky 改为 static。 */
+/* 顶部整体吸顶：header 标题栏 + 分区导航作为整体钉在页面顶端（横幅/内容随滚动）。
+   用包裹容器吸顶，避免直接对 header 算高度（小屏换行高度可变、脆弱）；导航自身 sticky 改为 static。
+   包裹容器补不透明底色（--bg），否则透明的标题栏吸顶后会透出后方滚动内容。 */
+.top-sticky { position: sticky; top: 0; z-index: 30; background: var(--bg); }
+.top-sticky .zonenav { position: static; }
 .zn { color: var(--muted); text-decoration: none; font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 12px; white-space: nowrap; }
 .zn:hover { color: var(--acc); border-color: var(--acc); }
 .zn.on { color: var(--acc); border-color: var(--acc); background: rgba(88, 166, 255, .12); }
