@@ -44,6 +44,7 @@ if (!anchor || !Number.isFinite(anchor.amountYi)) {
 
 const result = await crossCheckVolume(anchor.amountYi, { mainDate: anchor.date });
 console.log(`[cross-check] ${JSON.stringify(result)}`);
+if (!result.ok) console.warn(`[cross-check] 备源诊断（HTTP状态/原始body见reason）: ${result.reason}`);
 
 if (result.ok) {
   console.log(`[cross-check] 两市成交额对账通过: 主=${result.main}亿 备=${result.backup}亿 差=${result.diffPct}%（阈值 5%）`);

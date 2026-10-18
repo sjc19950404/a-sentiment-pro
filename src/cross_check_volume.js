@@ -28,13 +28,31 @@ export const emKlineUrl = (secid) =>
 export async function fetchEastmoneyTwoMarketAmount({ fetchImpl = null, timeoutMs = 15000 } = {}) {
   const fetchFn = fetchImpl || (typeof fetch === 'function' ? fetch : null);
   if (!fetchFn) return { ok: false, amountYi: null, date: null, error: '当前环境无 fetch' };
-  const grab = async (secid) => {
+  // 限流/瞬时抖动兜底：最多重试 2 次（共 3 次），随机延时避免与东财风控节拍同步
+  const MAX_RETRY = 2;
+  const jitter = () => new Promise((r) => setTimeout(r, 300 + Math.random() * 600));
+  const grab = async (secid, attempt = 0) => {
     const res = await fetchFn(emKlineUrl(secid), { signal: AbortSignal.timeout(timeoutMs) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}（${secid}）`);
-    const j = await res.json().catch(() => null);
+    // 抓原始 body（诊断用，限流/改版一眼分辨）；mock 无 text 时回退 json，保持单测兼容
+    let bodyText = null;
+    if (typeof res.text === 'function') { try { bodyText = await res.text(); } catch { bodyText = null; } }
+    let j = null;
+    if (bodyText != null) { try { j = JSON.parse(bodyText); } catch { j = null; } }
+    if (!j && typeof res.json === 'function') { try { j = await res.json(); } catch { j = null; } }
+    if (!res.ok) {
+      const snippet = bodyText ? bodyText.slice(0, 200) : '';
+      const transient = res.status === 429 || res.status >= 500; // 限流/5xx 瞬态重试；4xx 硬错不重试
+      if (transient && attempt < MAX_RETRY) { await jitter(); return grab(secid, attempt + 1); }
+      throw new Error(`HTTP ${res.status}（${secid}）${snippet ? ' ' + snippet : ''}`);
+    }
     const lines = Array.isArray(j?.data?.klines) ? j.data.klines : [];
     const line = lines[lines.length - 1]; // lmt=1 只有一根；取末根防接口多给
-    if (!line) throw new Error(`klines 空（${secid}，限流/改版征兆）`);
+    if (!line) {
+      // 200 但 klines 空：东财限流/非交易日窗口典型表征——带 HTTP 状态 + body 前 200 字符便于下次直判
+      const snippet = bodyText ? bodyText.slice(0, 200) : '(无 body)';
+      if (attempt < MAX_RETRY) { await jitter(); return grab(secid, attempt + 1); }
+      throw new Error(`klines 空（${secid}，限流/改版征兆）HTTP ${res.status} body: ${snippet}`);
+    }
     const [d, amt] = String(line).split(',');
     const amountYi = Number(amt) / 1e8; // f57 元 → 亿
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d || '') || !Number.isFinite(amountYi) || amountYi <= 0) {
