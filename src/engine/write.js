@@ -44,6 +44,10 @@ export function writeArchive(archive, filePath) {
   //   同一份存档有了两种形态，审计断言（"主档写盘态 lhb 已提子"）在
   //   pipeline 自己写完之后反而变红。两条写盘路径必须产出同一种形态。
   //   本次由 backfill_relative.mjs 走 writeArchive 回写存量档时暴露。
+  // 体积纪律：themeList 是 enrich 的派生字段（build_ui 读档后会重新 enrich，前端/切片都不从
+  //   主档读它），落盘前剔除——否则主档每天 +约 1.15KB、整档 +约 278KB，踩挂「切片：主档体积 < 6MB」。
+  //   与 recalc_lhb_daily.mjs / lhb_aggr 同纪律：派生字段只算不存。
+  for (const d of archive.all_days) delete d.themeList;
   const codes = buildReasonCodes(archive.all_days);
   const packed = encodeArchive(archive, codes, { deflate: true });
   // 体积纪律：主档不持久化派生字段 lhb_aggr；分片滚动窗用**完整** packed 现算（见 recalc_lhb_daily.mjs）

@@ -109,6 +109,11 @@ const { out, momObj } = enrich(days);
 a.all_days = out;
 if (a.signals) a.signals.momentum = momObj;
 
+// 体积纪律：themeList 是 enrich 的派生字段（build_ui.mjs 读档后会重新 enrich，前端/切片都不从
+// 主档读它），持久化会让主档每天 +约 1.15KB、整档 +约 278KB，直接踩挂「切片：主档体积 < 6MB」。
+// 故写盘前剔掉，与 lhb_aggr 同思路——只算不存。
+for (const d of a.all_days) delete d.themeList;
+
 // 4) 全档因子重算（口径：netBuy = 当日榜净额）+ 分位重算
 recalcAll(a.all_days);
 
