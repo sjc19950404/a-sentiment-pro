@@ -552,5 +552,28 @@
   },
   "applied": true,
   "note": null
+ },
+ "caliber_review": {
+  "reviewedAtBJ": "2026-10-19 19:14",
+  "tradeDate": "2026-10-19",
+  "ztpoolDate": null,
+  "close_emotion": null,
+  "emotion_at_push": {
+   "date": "20261019",
+   "emotion": "震荡",
+   "score": 38,
+   "metrics": {
+    "limit_up_count": 42,
+    "continuous_count": 11,
+    "broken_rate": 0.4762,
+    "max_board": 3,
+    "theme_concentration": 0.2143,
+    "theme_top": "汽车零部",
+    "hard_board_rate": 0.5238
+   }
+  },
+  "pool_outcome": null,
+  "conflicts": [],
+  "note": "ztpool_history 无当日收盘档（16:00 本地任务未跑或未入库）→ 本轮跳过，下一班次补（幂等覆盖）"
  }
 }

@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-19",
- "generated_at": "2026-10-19T01:27:05.489Z",
+ "generated_at": "2026-10-19T11:14:03.990Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -118,21 +118,21 @@
   }
  },
  "payload": {
-  "date": "2026-10-16",
+  "date": "2026-10-19",
   "grid_triggers": null,
   "counter_trend_losses": null,
-  "pnl_daily": -0.00014,
-  "pnl_cumulative": -0.026874,
+  "pnl_daily": -0.00027,
+  "pnl_cumulative": -0.027136,
   "max_drawdown_daily": null,
   "trend_switch_hits": 1,
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
   "regime": {
-   "key": "recover",
-   "label": "回暖",
-   "cap": 0.5,
-   "position_range": "30%~50%"
+   "key": "ebb",
+   "label": "退潮",
+   "cap": 0.2,
+   "position_range": "0%~20%"
   },
   "circuit_breaker": {
    "dd_tier": null,
@@ -164,17 +164,16 @@
    "外围「纳斯达克」已陈旧 2 天（采集失败未刷新），已置空",
    "外围「纳斯达克100」已陈旧 2 天（采集失败未刷新），已置空",
    "外围「费城半导体指数」已陈旧 2 天（采集失败未刷新），已置空",
-   "外围「纳斯达克中国金龙指数」已陈旧 2 天（采集失败未刷新），已置空",
-   "外围「富时中国ETF（FXI）」已陈旧 2 天（采集失败未刷新），已置空"
+   "外围「纳斯达克中国金龙指数」已陈旧 2 天（采集失败未刷新），已置空"
   ],
-  "prev_nav": 0.9732622567159404,
+  "prev_nav": 0.9731267442209396,
   "positions": {
    "targetPos": {
-    "上证指数": 0.5,
-    "深证成指": 0.2,
-    "创业板指": 0.2
+    "上证指数": 0.7,
+    "深证成指": 0.4,
+    "创业板指": 0.4
    },
-   "poolPos": 0.3,
+   "poolPos": 0.5,
    "executed": true
   },
   "overnight_exposure": {
@@ -188,11 +187,11 @@
    },
    "cn_overnight": {
     "hxc": null,
-    "fxi": null
+    "fxi": -0.012258999999999999
    },
-   "cnh_chgPct": 0,
+   "cnh_chgPct": -0.000853,
    "usReady": false,
-   "usReason": "美东 06:59 ET 盘前（09:30 才开盘），此刻美股无收盘价"
+   "usReason": "美东 07:10 ET 盘前（09:30 才开盘），此刻美股无收盘价"
   },
   "key_levels": null,
   "events_today": null,
@@ -204,87 +203,63 @@
     {
      "code": "600825",
      "name": "新华传媒",
-     "lb": 10,
-     "kept": true,
-     "chg": 10.01,
-     "appearances": 12
-    },
-    {
-     "code": "600241",
-     "name": "时代万恒",
-     "lb": 6,
-     "kept": false,
-     "chg": 1.14,
-     "appearances": 7
-    },
-    {
-     "code": "002242",
-     "name": "九阳股份",
-     "lb": 6,
+     "lb": 11,
      "kept": false,
      "chg": 2.77,
-     "appearances": 8
+     "appearances": 13
     },
     {
-     "code": "600812",
-     "name": "华北制药",
+     "code": "000530",
+     "name": "冰山冷热",
+     "lb": 4,
+     "kept": false,
+     "chg": 2.36,
+     "appearances": 3
+    },
+    {
+     "code": "601811",
+     "name": "新华文轩",
      "lb": 3,
      "kept": false,
-     "chg": -4.72,
-     "appearances": 4
+     "chg": -9.99,
+     "appearances": 10
     },
     {
-     "code": "002696",
-     "name": "百洋股份",
+     "code": "603999",
+     "name": "读者传媒",
      "lb": 2,
      "kept": false,
-     "chg": -9.97,
-     "appearances": 5
-    },
-    {
-     "code": "603096",
-     "name": "新经典",
-     "lb": 2,
-     "kept": false,
-     "chg": -9.68,
-     "appearances": 2
-    },
-    {
-     "code": "000892",
-     "name": "欢瑞世纪",
-     "lb": 2,
-     "kept": false,
-     "chg": -8.26,
-     "appearances": 23
-    },
-    {
-     "code": "603533",
-     "name": "掌阅科技",
-     "lb": 2,
-     "kept": false,
-     "chg": -4.76,
-     "appearances": 8
-    },
-    {
-     "code": "605136",
-     "name": "丽人丽妆",
-     "lb": 2,
-     "kept": false,
-     "chg": -4.68,
+     "chg": -10.02,
      "appearances": 6
     },
     {
-     "code": "605577",
-     "name": "龙版传媒",
+     "code": "600668",
+     "name": "尖峰集团",
      "lb": 2,
      "kept": false,
-     "chg": -3.79,
-     "appearances": 15
+     "chg": -8.3,
+     "appearances": 2
+    },
+    {
+     "code": "002889",
+     "name": "东方嘉盛",
+     "lb": 2,
+     "kept": true,
+     "chg": 9.99,
+     "appearances": 2
+    },
+    {
+     "code": "003029",
+     "name": "吉大正元",
+     "lb": 2,
+     "kept": true,
+     "chg": 10,
+     "appearances": 2
     }
    ],
    "overnight_sectors": null,
-   "max_lb": 10,
-   "broken_limit_ratio": 0.44545454545454544
+   "max_lb": 11,
+   "broken_limit_ratio": 0.31343283582089554
   },
   "simulation_stock": null,
   "ma20_degraded": false,
