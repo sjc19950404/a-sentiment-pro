@@ -1,7 +1,7 @@
 {
   "kind": "source-health",
   "version": 1,
-  "updatedAt": "2026-10-19T04:06:22.939Z",
+  "updatedAt": "2026-10-19T05:06:12.342Z",
   "sources": {
     "quantdash-universe": {
       "ok": 0,
@@ -64,7 +64,7 @@
       "fail": 0,
       "streak": 0,
       "lastOk": "2026-10-19",
-      "lastFail": null,
+      "lastFail": "2026-10-19",
       "lastDay": "2026-10-19"
     },
     "node-spot": {
@@ -72,7 +72,7 @@
       "fail": 0,
       "streak": 0,
       "lastOk": "2026-10-19",
-      "lastFail": null,
+      "lastFail": "2026-10-19",
       "lastDay": "2026-10-19"
     },
     "node-main-net": {
