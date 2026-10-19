@@ -536,11 +536,11 @@
  },
  "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
  "push_verification": {
-  "checkedAtBJ": "14:21",
+  "checkedAtBJ": "21:57",
   "snapshotAtBJ": "2026-10-19 14:20",
   "tradeDate": "2026-10-19",
   "trend_pool_mode": "trend",
-  "minutes_to_close": 39,
+  "minutes_to_close": -417,
   "mode_degraded": false,
   "trend": {
    "checked": 4,
@@ -554,7 +554,7 @@
   "note": null
  },
  "caliber_review": {
-  "reviewedAtBJ": "2026-10-19 19:14",
+  "reviewedAtBJ": "2026-10-19 21:57",
   "tradeDate": "2026-10-19",
   "ztpoolDate": null,
   "close_emotion": null,
