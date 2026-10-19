@@ -121,6 +121,35 @@ jobs:
             echo "冒烟摘要："
             node -e "const r=require('./data/smoke-latest.json'); console.log(r.allOk?'全部通过':'硬失败: '+r.hardFail.join(','), '@', r.tradeDateAnchored)"
           fi
+      # ★ 2026-10-19 修复（方案A）：冒烟档写入后由本 smoke job 自行提交落库。
+      #   根因：此前 smoke 只写不提交，build 虽在 git add 清单列了 smoke-latest.json
+      #   却从不重新生成它 → 仓库副本冻结在 2026-10-08，心跳哨兵误报"冒烟档陈旧"。
+      #   现改为 smoke 写完即提交（沿用 build 的 pull --rebase -X theirs + 重试竞态加固），
+      #   每日盘前(08:30)及每次 smoke 跑批后 generatedAt 即前进，哨兵判新鲜。
+      #   continue-on-error: true——提交是"证据落库"的次要动作，绝不能因 push 竞态偶败
+      #   而把 smoke 门禁（源挂→拦 build 的关键保护）也拖红、进而卡住整条数据管线；
+      #   若本步失败，下一轮 smoke 会重提交自愈，仅短暂丢失一次新鲜度，不影响实时监控。
+      #   内容未变（git diff --cached 空）则跳过提交，避免空提交无谓触发 Pages 部署。
+      - name: 提交冒烟档（data/smoke-latest.json 落库，刷新新鲜度）
+        if: always()
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/smoke-latest.json
+          if git diff --cached --quiet; then
+            echo "冒烟档内容未变，跳过提交"
+          else
+            git commit -m "chore: 冒烟档 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            retry=0
+            until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
+              retry=$((retry+1))
+              if [ "$retry" -ge 3 ]; then echo "push 连续 3 次被拒（并发竞态未解），放弃"; exit 1; fi
+              echo "push 被拒（同轮 job 并发竞态），重试 $retry/3 ..."
+              git rebase --abort 2>/dev/null || true
+              sleep 5
+            done
+          fi
       # ⑤ 两市成交额跨源对账（2026-10-08 对账任务）：smoke 之后 build 之前的独立
       #   观测——东财 push2his 备源（上证+深证两 secid 相加）核验主源（s6 顺产落盘
       #   的 amountAnchor）当日值，差值超 5% 或备源不可用 → 企微+issue 双通道告警。
@@ -373,7 +402,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/smoke-latest.json data/crosscheck-latest.json data/ops-alerts-latest.json data/industry_outlier_review.json data/board_rank.json data/shadow-book.json data/paper data/reports ui/kline
+          git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/crosscheck-latest.json data/ops-alerts-latest.json data/industry_outlier_review.json data/board_rank.json data/shadow-book.json data/paper data/reports ui/kline
           # git add data/llm-sentiment-latest.json 2>/dev/null || true  # 2026-10-17 暂停：LLM 试点停更，不再入库（代码保留归档）
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
