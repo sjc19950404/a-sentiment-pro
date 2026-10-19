@@ -104,3 +104,34 @@ test('未传 hollowDates 时行为不变（向后兼容，老调用方不受影�
   assert.deepEqual(r.recentMissing, ['2026-09-04']);
   assert.deepEqual(r.hollowDays, [], '默认无空壳');
 });
+
+// ── 已销案（2026-10-19）：已知且不可补的洞从 recentMissing 剔除，但单列 acknowledged 留痕 ──
+test('ackDates：已销案日期不计入 recentMissing（仍单列 acknowledged 留痕）', () => {
+  const r = findMissingTradeDays({
+    calendar: { coveredFrom: RANGE.from, coveredTo: RANGE.to, closed: [] },
+    archiveDates: traded().filter((d) => d !== '2026-09-04'), today: '2026-09-11', lookback: 30,
+    ackDates: ['2026-09-04'],
+  });
+  assert.deepEqual(r.recentMissing, [], '销案后不报缺失');
+  assert.deepEqual(r.acknowledged, ['2026-09-04'], '但单列 acknowledged 留痕');
+});
+
+test('ackDates 不影响新缺口：未销案的洞仍报', () => {
+  const r = findMissingTradeDays({
+    calendar: { coveredFrom: RANGE.from, coveredTo: RANGE.to, closed: [] },
+    archiveDates: traded().filter((d) => d !== '2026-09-04' && d !== '2026-09-08'), today: '2026-09-11', lookback: 30,
+    ackDates: ['2026-09-04'],
+  });
+  assert.deepEqual(r.recentMissing, ['2026-09-08'], '未销案的洞照常报');
+  assert.deepEqual(r.acknowledged, ['2026-09-04']);
+});
+
+test('未传 ackDates 时行为不变（向后兼容，默认无 acknowledged）', () => {
+  const have = traded().filter((d) => d !== '2026-09-04');
+  const r = findMissingTradeDays({
+    calendar: { coveredFrom: RANGE.from, coveredTo: RANGE.to, closed: [] },
+    archiveDates: have, today: '2026-09-11', lookback: 30,
+  });
+  assert.deepEqual(r.recentMissing, ['2026-09-04']);
+  assert.deepEqual(r.acknowledged, [], '默认无 acknowledged');
+});
