@@ -305,8 +305,16 @@ export function renderPushText(report) {
   }
   // 外围陈旧告警（2026-10-12 用户指令）：validateExternal 混合策略产出的 meta 告警，
   // 全报告类型统一脚注——陈旧≥阈值已置空 / 当日失败保留值则提示历史缓存，二者皆在此点破。
+  // 2026-10-19 修（fix 1）：原按 join 全量罗列 → 行字节数无上限；8 项外围全 stale 时
+  //   单行 ~800B，顶爆企微 2048 字节上限，触发尾部整行回退截断，连带吞掉「数据采集时间」
+  //   与免责尾行（违反 10-12「每条必标采集时间」）。折叠为「前 2 项 + 等 N 项」有界形态，
+  //   保留陈旧告警本身、保住尾部必标行；完整清单于页面可见。
   if (Array.isArray(p.externalStale) && p.externalStale.length) {
-    lines.push(`⚠ 外围陈旧：${p.externalStale.join('；')}`);
+    const MAX_STALE_SHOW = 2;
+    const shown = p.externalStale.slice(0, MAX_STALE_SHOW).join('；');
+    const more = p.externalStale.length > MAX_STALE_SHOW
+      ? ` 等 ${p.externalStale.length} 项（完整清单见页面）` : '';
+    lines.push(`⚠ 外围陈旧：${shown}${more}`);
   }
   // MA20 降级红警（2026-10-08 推送前校验 ①）：量能因子走中性 50 → 推送里显式
   //   标红，一眼识别「降级版」（当日成交额缺或量能历史不足；判据唯一出处
