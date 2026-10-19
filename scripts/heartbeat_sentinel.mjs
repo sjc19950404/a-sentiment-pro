@@ -9,10 +9,19 @@ import { readFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assessFreshness } from '../src/freshness.js';
+import { resolveHolidays } from '../src/calendar.js'; // 交易日历唯一出处（含调休补班三态 + 2026 种子兜底）
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const WEBHOOK = process.env.OPS_WEBHOOK;
-const holidays = [];
+// 节假日感知：此前硬编码 [] 是盲区——会把法定假日当交易日，导致节后首日误报 ①②③。
+// 改走 calendar.js 唯一出处（种子 + data/calendar.json + config.manualHolidays 兜底）。
+// loadCalendar 在文件缺失时自动回退 manualHolidays，故常态安全；极端崩坏时退回 [] 保哨兵不红死。
+const holidays = (() => {
+  try { return resolveHolidays(); } catch (e) {
+    console.error('[sentinel] 日历解析失败，回退 []（节假日盲区）:', e?.message ?? e);
+    return [];
+  }
+})();
 
 function readJsonSafe(p) {
   try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; }
@@ -47,13 +56,16 @@ const smoke = readJsonSafe(join(ROOT, 'data', 'smoke-latest.json'));
 if (!smoke) {
   alerts.push('② 冒烟档缺失：data/smoke-latest.json 不存在（冒烟 job 未跑或路径错）');
 } else {
-  const tsDay = bjDayOf(smoke.updatedAt || smoke.generatedAt || smoke.meta?.generatedAt);
+  // 2026-10-19 修复：改用 tradeDateAnchored（getharden 探测的"最近一个有数据的交易日"，
+  // 周末/节假日自动回退到上一交易日）——它恒等于"最近已收盘交易日"，与上面节假日感知的
+  // latestClosed 天然对齐；用运行日(generatedAt)反而会在节假日把假日当天误判为已收盘。
+  const tsDay = bjDayOf(smoke.tradeDateAnchored || smoke.updatedAt || smoke.generatedAt || smoke.meta?.generatedAt);
   const latestClosed = assessFreshness({}, new Date(), holidays).latestClosed;
   const todayBJ = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
   if (!tsDay) {
     alerts.push('② 冒烟档缺时间戳，无法判定新鲜度');
   } else if (tsDay !== latestClosed && tsDay !== todayBJ) {
-    alerts.push(`② 冒烟档陈旧：updatedAt=${tsDay}，最近已收盘=${latestClosed} → 冒烟未按预期更新`);
+    alerts.push(`② 冒烟档陈旧：tradeDateAnchored=${tsDay}，最近已收盘=${latestClosed} → 冒烟未按预期更新`);
   }
 }
 
