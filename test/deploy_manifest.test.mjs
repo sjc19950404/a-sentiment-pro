@@ -40,11 +40,22 @@ for (const line of yml.matchAll(/^\s+cp\s+.*$/gm)) {
   for (const t of toks) {
     if (t === 'site/' || t === 'site/src/' || t === 'site/data/') continue;
     if (t === 'data/.') { cpFiles.add('data/**'); continue; } // cp -r data/. site/data/ ⇔ paths 的 'data/**'
+    if (t === 'src/.') { cpFiles.add('src/**'); continue; }   // cp -r src/. site/src/ ⇔ paths 的 'src/**'
     cpFiles.add(t);
   }
 }
-assert.ok(cpFiles.size > 10, `cp 清单解析异常（只解析到 ${cpFiles.size} 个文件）`);
+// 整目录部署（src/** / data/**）下，子路径视为已部署：精确命中或命中前缀 glob。
+// 否则页面/外壳里 './src/foo.js' 这类按需 import 会被误判为「未部署」。
+const isDeployed = (p) =>
+  cpFiles.has(p) || [...cpFiles].some((f) => f.endsWith('/**') && p.startsWith(f.slice(0, -2)));
+
+// cp 清单结构自检：覆盖 7 个根外壳文件 + src/** + data/**（整目录部署形态）。
+// 原硬断言 `>10` 是按「逐文件 cp」老形态写的，部署改成整目录拷贝后失效，改为显式契约。
+const expectedCp = ['index.html', 'app.js', 'style.css', 'sw.js', 'paper_ui.js', 'manifest.webmanifest', 'config.json', 'src/**', 'data/**'];
+assert.ok(expectedCp.every((f) => cpFiles.has(f)),
+  `cp 清单应含 ${expectedCp.join(', ')}，实得 ${[...cpFiles].sort().join(', ')}`);
 assert.ok(paths.has('data/**'), 'paths 必须含 data/**');
+assert.ok(paths.has('src/**'), 'paths 必须含 src/**（整目录部署后，src 变更须触发部署）');
 
 const pageModules = [...pageRefs].filter((p) => p.startsWith('./src/'));
 
@@ -52,19 +63,19 @@ test('★ 部署面解析自检（防止守卫本身静默失效）', () => {
   // 解析器对已知事实的最小验证：页面引用面、外壳面、部署面都非空且形态正确
   assert.ok(pageModules.length >= 5, `index.html 的 src 模块引用应 ≥5 个，实得 ${pageModules.length}`);
   assert.ok([...shellAssets].every((p) => p.startsWith('./')), 'SHELL_ASSETS 应为 ./ 相对路径');
-  assert.ok(cpFiles.has('app.js') && cpFiles.has('index.html') && cpFiles.has('src/lhb.js'),
+  assert.ok(isDeployed('app.js') && isDeployed('index.html') && isDeployed('src/lhb.js'),
     'cp 清单应含根外壳文件与 src/lhb.js（app.js 动态 import 的对象）');
 });
 
 test('★ 页面引用的每个文件必须被部署（漏一个 = 线上 404 / 模块树崩溃）', () => {
-  const missing = [...pageRefs].filter((p) => p !== './' && !cpFiles.has(p.replace(/^\.\//, '')));
+  const missing = [...pageRefs].filter((p) => p !== './' && !isDeployed(p.replace(/^\.\//, '')));
   assert.deepEqual(missing, [], 'index.html 引用但 cp 清单没部署的文件（模拟台面下线的 paper_ui.js 及其依赖不在此列——页面已不加载）');
 });
 
 test('★ SW 离线外壳的每个资产必须被部署（H-1 教训：SW 缓存 404 → catch(null) 静默漏）', () => {
   const missing = [...shellAssets]
     .filter((p) => p !== './' && p !== './index.html')
-    .filter((p) => !cpFiles.has(p.replace(/^\.\//, '')));
+    .filter((p) => !isDeployed(p.replace(/^\.\//, '')));
   assert.deepEqual(missing, [], 'SHELL_ASSETS 含但未部署的文件——离线外壳将静默缺资产');
 });
 
@@ -82,6 +93,6 @@ test('★ 守卫提示：未来新增模块的同步流程（文档性断言，�
   // paper_ui.js 在 cp 清单里但页面已不加载（台面下线，index.html 注释自述）——
   // 这是刻意保留的历史包袱：断言它**不**在页面引用面，若哪天它回来了（或被删了），
   // 本守卫提醒维护者重审其 5 个未部署依赖（alert_log/alerts/lhb_codec/picks/paper_review）。
-  assert.ok(!pageRefs.has('./paper_ui.js') || cpFiles.has('src/alert_log.js'),
+  assert.ok(!pageRefs.has('./paper_ui.js') || isDeployed('src/alert_log.js'),
     'paper_ui.js 若重新被页面加载，其 import 依赖必须同步部署（src/alert_log.js 等 5 个）');
 });
