@@ -1,7 +1,7 @@
 {
   "kind": "source-health",
   "version": 1,
-  "updatedAt": "2026-10-19T08:12:03.605Z",
+  "updatedAt": "2026-10-20T01:31:26.785Z",
   "sources": {
     "quantdash-universe": {
       "ok": 0,
@@ -60,36 +60,36 @@
       "lastDay": "2026-10-15"
     },
     "node-universe": {
-      "ok": 2,
+      "ok": 3,
       "fail": 0,
       "streak": 0,
-      "lastOk": "2026-10-19",
+      "lastOk": "2026-10-20",
       "lastFail": "2026-10-19",
-      "lastDay": "2026-10-19"
+      "lastDay": "2026-10-20"
     },
     "node-spot": {
-      "ok": 2,
+      "ok": 3,
       "fail": 0,
       "streak": 0,
-      "lastOk": "2026-10-19",
+      "lastOk": "2026-10-20",
       "lastFail": "2026-10-19",
-      "lastDay": "2026-10-19"
+      "lastDay": "2026-10-20"
     },
     "node-main-net": {
-      "ok": 2,
+      "ok": 3,
       "fail": 0,
       "streak": 0,
-      "lastOk": "2026-10-19",
+      "lastOk": "2026-10-20",
       "lastFail": "2026-10-19",
-      "lastDay": "2026-10-19"
+      "lastDay": "2026-10-20"
     },
     "node-pools": {
-      "ok": 2,
+      "ok": 3,
       "fail": 0,
       "streak": 0,
-      "lastOk": "2026-10-19",
+      "lastOk": "2026-10-20",
       "lastFail": null,
-      "lastDay": "2026-10-19"
+      "lastDay": "2026-10-20"
     }
   }
 }
