@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-21",
- "generated_at": "2026-10-20T20:54:59.586Z",
+ "generated_at": "2026-10-20T21:04:56.770Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -15,7 +15,7 @@
    "global": "fresh",
    "backtest": "fresh",
    "ops_alerts": "fresh",
-   "intraday": "stale",
+   "intraday": "fresh",
    "paper_account": "missing"
   }
  },
@@ -118,21 +118,21 @@
   }
  },
  "payload": {
-  "date": "2026-10-19",
+  "date": "2026-10-20",
   "grid_triggers": null,
   "counter_trend_losses": null,
-  "pnl_daily": -0.00027,
-  "pnl_cumulative": -0.027136,
+  "pnl_daily": -0.000267,
+  "pnl_cumulative": -0.027396,
   "max_drawdown_daily": null,
   "trend_switch_hits": 1,
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
   "regime": {
-   "key": "ebb",
-   "label": "退潮",
-   "cap": 0.2,
-   "position_range": "0%~20%"
+   "key": "recover",
+   "label": "回暖",
+   "cap": 0.5,
+   "position_range": "30%~50%"
   },
   "circuit_breaker": {
    "dd_tier": null,
@@ -144,115 +144,59 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": -0.003999,
-    "state": "ok",
-    "stale": false,
-    "cacheNote": null
+    "chgPct": null,
+    "state": "night-open",
+    "nightOpen": true
    },
    {
     "key": "sox",
     "name": "费城半导体指数",
-    "chgPct": 0.016076999999999998,
+    "chgPct": -0.002875,
     "state": "ok",
     "stale": false,
     "cacheNote": null
    }
   ],
-  "externalStale": [],
-  "prev_nav": 0.9731267442209396,
+  "externalStale": [
+   "外围「富时中国A50期货」已陈旧（采集失败未刷新），已置空"
+  ],
+  "prev_nav": 0.9728637546224842,
   "positions": {
    "targetPos": {
-    "上证指数": 0.7,
-    "深证成指": 0.4,
-    "创业板指": 0.4
+    "上证指数": 0.5,
+    "深证成指": 0.2,
+    "创业板指": 0.2
    },
-   "poolPos": 0.5,
+   "poolPos": 0.3,
    "executed": true
   },
   "overnight_exposure": {
-   "a50_chgPct": -0.003999,
-   "a50NightOpen": false,
+   "a50_chgPct": null,
+   "a50NightOpen": true,
    "posGap": 0.05,
    "us_close": {
-    "dji": -0.0007000000000000001,
-    "spx": 0.004085,
-    "ixic": 0.011127
+    "dji": 0.010196,
+    "spx": 0.0028399999999999996,
+    "ixic": -0.00023
    },
    "cn_overnight": {
-    "hxc": -0.002672,
-    "fxi": -0.009161
+    "hxc": 0.006832,
+    "fxi": -0.000596
    },
-   "cnh_chgPct": -0.000599,
-   "usReady": false,
-   "usReason": "美东 03:30 ET 盘前（09:30 才开盘），此刻美股无收盘价"
+   "cnh_chgPct": 0.000015,
+   "usReady": true,
+   "usReason": "美东 17:01 ET 已收盘（≥16:30 ET），可采信当日收盘"
   },
   "key_levels": null,
   "events_today": null,
   "atr": null,
   "suggested_step": null,
   "watchlist": {
-   "basis": "pain.advance.detail 昨收口径连板梯队（封板质量以晋级结果+近期上榜频次代理，个股级封单额无档案）；不含操作建议",
-   "ladder": [
-    {
-     "code": "600825",
-     "name": "新华传媒",
-     "lb": 11,
-     "kept": false,
-     "chg": 2.77,
-     "appearances": 13
-    },
-    {
-     "code": "000530",
-     "name": "冰山冷热",
-     "lb": 4,
-     "kept": false,
-     "chg": 2.36,
-     "appearances": 3
-    },
-    {
-     "code": "601811",
-     "name": "新华文轩",
-     "lb": 3,
-     "kept": false,
-     "chg": -9.99,
-     "appearances": 10
-    },
-    {
-     "code": "603999",
-     "name": "读者传媒",
-     "lb": 2,
-     "kept": false,
-     "chg": -10.02,
-     "appearances": 6
-    },
-    {
-     "code": "600668",
-     "name": "尖峰集团",
-     "lb": 2,
-     "kept": false,
-     "chg": -8.3,
-     "appearances": 2
-    },
-    {
-     "code": "002889",
-     "name": "东方嘉盛",
-     "lb": 2,
-     "kept": true,
-     "chg": 9.99,
-     "appearances": 2
-    },
-    {
-     "code": "003029",
-     "name": "吉大正元",
-     "lb": 2,
-     "kept": true,
-     "chg": 10,
-     "appearances": 2
-    }
-   ],
+   "basis": "昨收连板梯队缺席：pain 档缺失（fetch_pain 未产出或被陈旧闸拦截）——宁缺毋假，不用旧连板数冒充昨收梯队（2026-10-10 P0-2）",
+   "ladder": [],
    "overnight_sectors": null,
-   "max_lb": 11,
-   "broken_limit_ratio": 0.31343283582089554
+   "max_lb": null,
+   "broken_limit_ratio": 0.3493975903614458
   },
   "simulation_stock": null,
   "ma20_degraded": false,
