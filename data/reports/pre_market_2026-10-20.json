@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-20",
- "generated_at": "2026-10-20T01:25:52.585Z",
+ "generated_at": "2026-10-20T07:30:19.642Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -15,7 +15,7 @@
    "global": "fresh",
    "backtest": "fresh",
    "ops_alerts": "fresh",
-   "intraday": "fresh",
+   "intraday": "stale",
    "paper_account": "missing"
   }
  },
