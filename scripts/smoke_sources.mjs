@@ -19,7 +19,7 @@
 //   · 断言「结构」不 断言「数值」——数值随行情变，结构（字段名/类型/非空下限）才是源契约；
 //   · LhbNotPublishedError（当日未公布）在盘后早跑是正常现象，按「暂未公布」报告不算挂。
 //
-// 用法：node scripts/smoke_sources.mjs   （任一源硬失败 → exit 1，CI 拦主跑）
+// 用法：node scripts/smoke_sources.mjs   （硬失败源 → exit 1 → CI 拦主跑；s4 为软失败源，仅告警不拦）
 import dns from 'node:dns';
 import { readFileSync, writeFileSync, renameSync, unlinkSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
@@ -36,6 +36,10 @@ const OUT = path.join(ROOT, 'data', 'smoke-latest.json');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const results = [];
+// 软失败源：失败仅告警、不拦 build（CI needs 关系不因它 exit 1）。
+// 当前仅 s4（腾讯三大指数）——观测性次源，限流/锚点滞后误判不应 halt 全链路；
+// 真·schema 崩（fetchIndexes 解析不出任何指数条目）仍返回 null → 此处报软失败但仍放行。
+const SOFT_SOURCES = new Set(['s4']);
 const record = (id, label, ms, ok, checks, error) => {
   results.push({ id, label, ok, latencyMs: Math.round(ms), checks, error: error ? String(error.message || error) : null });
   const mark = ok ? '✓' : '✗';
@@ -132,7 +136,7 @@ await guard('s3', '同花顺行业 881xxx 日K', async () => {
   ];
 });
 
-// ── 源4: 腾讯三大指数 ──
+// ── 源4: 腾讯三大指数（软失败源：失败仅告警、不拦 build，见 SOFT_SOURCES）──
 await guard('s4', '腾讯三大指数 qt.gtimg.cn', async () => {
   const idx = await fetchIndexes(tradeDate);
   const keys = Object.keys(idx);
@@ -185,20 +189,24 @@ await guard('s6', '同花顺大盘日K（两市成交额）', async () => {
 }
 
 // ── 汇总落盘 ──
-const hard = results.filter((r) => !r.ok);
-const soft = results.filter((r) => r.ok && lhbSoftSkip && r.id === 's2');
+// 硬失败 = 非软源失败（这些源挂了会污染生产档，必须拦 build）；
+// 软失败 = 软源（s4 腾讯指数）失败——观测性次源，仅告警不拦 build。
+const hard = results.filter((r) => !r.ok && !SOFT_SOURCES.has(r.id));
+const softFail = results.filter((r) => !r.ok && SOFT_SOURCES.has(r.id));
+const lhbSoft = results.filter((r) => r.ok && lhbSoftSkip && r.id === 's2');
 const report = {
   generatedAt: new Date().toISOString(),
   tradeDateAnchored: tradeDate,
   allOk: hard.length === 0 && !fatalError,
   fatalError,
   hardFail: hard.map((r) => r.id),
+  softFail: softFail.map((r) => r.id),
   lhbNotPublished: lhbSoftSkip,
   // 主源锚点值（跨源对账 2026-10-08）：s6 顺产的锚点交易日两市成交额（亿）——
   //   对账 step 用它 vs 东财备源互核，差值超阈值建 issue（纯观测不拦 build）。
   //   null = s6 未产出（对账 step 自动跳过，守卫先说话不重复告警）。
   amountAnchor,
-  note: '冒烟与生产同源实现（src/sources.js）。任一硬失败 → CI needs 关系拦下主跑，不污染生产档。软失败（当日未公布）不算源故障。',
+  note: '冒烟与生产同源实现（src/sources.js）。硬失败源(s1/s2/s3/s5/s6)→ CI needs 拦主跑，不污染生产档；s4(腾讯指数)为观测性次源，失败仅告警不拦 build（限流/锚点滞后误判不应 halt 全链路）。软失败（LHB 当日未公布）不算源故障。',
   sources: results,
 };
 mkdirSync(path.dirname(OUT), { recursive: true });
@@ -208,7 +216,8 @@ const { writeJsonStable } = await import('../src/lhb_codec.js');
 const w = writeJsonStable(OUT, report, { readFileSync, writeFileSync, renameSync, unlinkSync, log: '[smoke]' });
 if (w.skipped) console.log('[smoke] 报告内容未变（剥时间戳后），跳过写盘');
 
-console.log(`\n[smoke] ${results.length - hard.length}/${results.length} 源通过${lhbSoftSkip ? '（LHB 当日未公布按软态计）' : ''}`);
+console.log(`\n[smoke] ${results.length - hard.length - softFail.length}/${results.length} 源通过${lhbSoftSkip ? '（LHB 当日未公布按软态计）' : ''}`);
+if (softFail.length) console.log('[smoke] 软失败(不拦 build): ' + softFail.map((r) => r.id + ' ' + r.label).join(' | '));
 if (hard.length) {
   console.log('[smoke] 硬失败: ' + hard.map((r) => r.id + ' ' + r.label).join(' | '));
   process.exit(1);

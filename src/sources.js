@@ -284,21 +284,37 @@ export async function fetchSecondIndustry() {
   throw new Error('第二行业源（腾讯/申万二级）连续失败: ' + (lastErr ? lastErr.message : 'unknown'));
 }
 
-// 源5: 腾讯三大指数
-export async function fetchIndexes(date) {  for (let att = 0; att < 3; att++) {
+// 源5: 腾讯三大指数 qt.gtimg.cn
+// ⚠ 日期语义（2026-10-20 修复）：腾讯实时报价恒带"当日"日期（f[30]），从不返回历史日。
+//   生产 fetchLive 传入 today，腾讯实时=今日 → 精确匹配，行为与旧逻辑一致。
+//   但冒烟锚点来自 getharden 的"最近一个有数据的交易日"，盘前会滞后于实盘
+//   （如锚 10-19、腾讯实时 10-20）→ 旧逻辑 ymd!==date 全丢弃 → 返回 null →
+//   s4 误判源故障 → 硬闸 build。改为：精确匹配请求日优先；匹配不到则取"最新可得日"
+//   （实时行情即当日，视为源存活，非故障）；仅当完全解析不出任何指数条目
+//   （schema 崩 / 限流空体）才返回 null。
+export async function fetchIndexes(date) {
+  for (let att = 0; att < 3; att++) {
     try {
       const txt = await fetchGBK('https://qt.gtimg.cn/q=sh000001,sz399001,sz399006');
-      const idx = {}; let ok = false;
+      const byDate = {}; let any = false;
       for (const m of txt.matchAll(/v_(sh|sz)\d+="([^"]*)"/g)) {
         const f = m[2].split('~');
         const name = f[1];
+        const chg = parseFloat(f[32]);
+        if (!name || isNaN(chg)) continue;
         const ymdNum = (f[30] || '').replace(/\D/g, '');
         const ymd = ymdNum.length >= 8 ? ymdNum.slice(0, 4) + '-' + ymdNum.slice(4, 6) + '-' + ymdNum.slice(6, 8) : '';
-        if (!ymd || ymd !== date) continue;
-        const chg = parseFloat(f[32]);
-        if (!isNaN(chg)) { idx[name] = r2(chg); ok = true; }
+        any = true;
+        (byDate[ymd] = byDate[ymd] || {})[name] = r2(chg);
       }
-      if (ok) return idx;
+      if (!any) continue; // 真·解析不出（schema 崩 / 限流空体）→ 重试
+      // 精确匹配请求日优先；否则取最新可得日（实时行情=当日，锚点滞后也能拿到真值）
+      const liveDate = Object.keys(byDate).sort().pop();
+      const got = byDate[date] || byDate[liveDate];
+      if (got && Object.keys(got).length >= 3) {
+        if (!byDate[date]) console.warn(`[fetchIndexes] 腾讯实时指数日期=${liveDate} ≠ 请求 ${date}，取最新日（源存活，非故障）`);
+        return got;
+      }
     } catch (e) { /* 重试 */ }
     await sleep(600);
   }
