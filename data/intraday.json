@@ -2,8 +2,8 @@
   "version": 4,
   "kind": "intraday",
   "tradeDate": "2026-10-20",
-  "capturedAt": "2026-10-20T02:24:10.592Z",
-  "capturedAtBJ": "2026-10-20 10:24",
+  "capturedAt": "2026-10-20T02:55:43.879Z",
+  "capturedAtBJ": "2026-10-20 10:55",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
@@ -16,12 +16,25 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 40.62,
         "change_pct": 20,
-        "huanshou": 7.24,
+        "huanshou": 7.34,
         "pe_ttm": 45.06,
         "pb": 3.06,
-        "liangbi": 9.15,
+        "liangbi": 5.83,
         "avg_price": 45.49,
-        "main_net": 62409537
+        "main_net": null
+      },
+      {
+        "code": "688608",
+        "name": "恒玄科技",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 106.32,
+        "change_pct": 20,
+        "huanshou": 3.19,
+        "pe_ttm": 54.72,
+        "pb": 3.58,
+        "liangbi": 4.52,
+        "avg_price": 73.6,
+        "main_net": 79590497
       },
       {
         "code": "301313",
@@ -29,12 +42,12 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 46.8,
         "change_pct": 20,
-        "huanshou": 30.36,
+        "huanshou": 30.62,
         "pe_ttm": -28.96,
         "pb": 8.03,
-        "liangbi": 4.84,
+        "liangbi": 3.12,
         "avg_price": -31,
-        "main_net": 186177162
+        "main_net": 191733962
       },
       {
         "code": "300466",
@@ -42,12 +55,12 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 8.64,
         "change_pct": 20,
-        "huanshou": 5.57,
+        "huanshou": 6.09,
         "pe_ttm": -302.14,
         "pb": 6.61,
-        "liangbi": 21.99,
+        "liangbi": 15.38,
         "avg_price": 186.25,
-        "main_net": 66539853
+        "main_net": 79572429
       },
       {
         "code": "300115",
@@ -55,284 +68,479 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 24.67,
         "change_pct": 19.99,
-        "huanshou": 5.74,
+        "huanshou": 6.03,
         "pe_ttm": 108.55,
         "pb": 4.04,
-        "liangbi": 17.14,
+        "liangbi": 11.52,
         "avg_price": 945.24,
-        "main_net": 505807100
-      },
-      {
-        "code": "300461",
-        "name": "田中精机",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 34.96,
-        "change_pct": 18.43,
-        "huanshou": 5.83,
-        "pe_ttm": 315.34,
-        "pb": 9.81,
-        "liangbi": 4.85,
-        "avg_price": -163.35,
-        "main_net": null
-      },
-      {
-        "code": "688507",
-        "name": "索辰科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 167.28,
-        "change_pct": 16.73,
-        "huanshou": 18.43,
-        "pe_ttm": -10245.77,
-        "pb": 5.52,
-        "liangbi": 8.37,
-        "avg_price": -94.76,
-        "main_net": 149300722
-      },
-      {
-        "code": "688322",
-        "name": "奥比中光-W",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 91,
-        "change_pct": 16.28,
-        "huanshou": 4.81,
-        "pe_ttm": 343.52,
-        "pb": 9.36,
-        "liangbi": 9.28,
-        "avg_price": 451.09,
-        "main_net": 156130563
-      },
-      {
-        "code": "301030",
-        "name": "*ST仕净",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 4.55,
-        "change_pct": 16.07,
-        "huanshou": 13.19,
-        "pe_ttm": -0.48,
-        "pb": -0.79,
-        "liangbi": 3.55,
-        "avg_price": -0.66,
-        "main_net": null
-      },
-      {
-        "code": "688608",
-        "name": "恒玄科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 101.6,
-        "change_pct": 14.67,
-        "huanshou": 2.01,
-        "pe_ttm": 52.29,
-        "pb": 3.42,
-        "liangbi": 4.44,
-        "avg_price": 70.33,
-        "main_net": null
-      },
-      {
-        "code": "300007",
-        "name": "汉威科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 31.04,
-        "change_pct": 14.33,
-        "huanshou": 6.22,
-        "pe_ttm": 60.57,
-        "pb": 3.39,
-        "liangbi": 12.01,
-        "avg_price": 74.68,
-        "main_net": 67679817
-      },
-      {
-        "code": "688071",
-        "name": "华依科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 39,
-        "change_pct": 13.7,
-        "huanshou": 8.53,
-        "pe_ttm": -67.71,
-        "pb": 3.24,
-        "liangbi": 14.48,
-        "avg_price": 224.88,
-        "main_net": null
+        "main_net": 550562157
       },
       {
         "code": "300244",
         "name": "迪安诊断",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 20.64,
-        "change_pct": 13.66,
-        "huanshou": 8.12,
-        "pe_ttm": 27.48,
-        "pb": 1.92,
-        "liangbi": 5.39,
-        "avg_price": 20.07,
-        "main_net": 52935461
+        "close": 21.79,
+        "change_pct": 19.99,
+        "huanshou": 11.48,
+        "pe_ttm": 29.01,
+        "pb": 2.03,
+        "liangbi": 4.87,
+        "avg_price": 21.18,
+        "main_net": 126623529
       },
       {
-        "code": "688787",
-        "name": "海天瑞声",
+        "code": "300461",
+        "name": "田中精机",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 99.79,
-        "change_pct": 13.35,
-        "huanshou": 8.06,
-        "pe_ttm": 299.69,
-        "pb": 8.24,
-        "liangbi": 7.82,
-        "avg_price": 307.99,
-        "main_net": 65712269
-      },
-      {
-        "code": "301525",
-        "name": "儒竞科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 43.01,
-        "change_pct": 11.54,
-        "huanshou": 8.35,
-        "pe_ttm": 119.68,
-        "pb": 1.75,
-        "liangbi": 14.75,
-        "avg_price": 110.95,
+        "close": 35.42,
+        "change_pct": 19.99,
+        "huanshou": 7.45,
+        "pe_ttm": 319.49,
+        "pb": 9.94,
+        "liangbi": 3.96,
+        "avg_price": -165.49,
         "main_net": null
       },
       {
-        "code": "301529",
-        "name": "福赛科技",
+        "code": "688626",
+        "name": "翔宇医疗",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 148,
-        "change_pct": 11.45,
-        "huanshou": 5.01,
-        "pe_ttm": 123.65,
-        "pb": 12.06,
-        "liangbi": 6.74,
-        "avg_price": 121.25,
+        "close": 43.18,
+        "change_pct": 19.12,
+        "huanshou": 3.01,
+        "pe_ttm": 83.83,
+        "pb": 3.29,
+        "liangbi": 7.75,
+        "avg_price": 87.11,
         "main_net": null
       },
       {
-        "code": "301550",
-        "name": "斯菱智驱",
+        "code": "688071",
+        "name": "华依科技",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 112,
-        "change_pct": 11.25,
-        "huanshou": 5.64,
-        "pe_ttm": 249.32,
-        "pb": 20.49,
-        "liangbi": 6.11,
-        "avg_price": 243.21,
-        "main_net": 82756577
-      },
-      {
-        "code": "300720",
-        "name": "海川智能",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 58.14,
-        "change_pct": 11.25,
-        "huanshou": 3.56,
-        "pe_ttm": 621.53,
-        "pb": 19.47,
-        "liangbi": 3.46,
-        "avg_price": 520.39,
+        "close": 40.2,
+        "change_pct": 17.2,
+        "huanshou": 12.07,
+        "pe_ttm": -69.79,
+        "pb": 3.34,
+        "liangbi": 13.11,
+        "avg_price": 231.8,
         "main_net": null
       },
       {
         "code": "688686",
         "name": "奥普特",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 118.69,
-        "change_pct": 11.15,
-        "huanshou": 1.48,
-        "pe_ttm": 68.86,
-        "pb": 4.58,
-        "liangbi": 6.82,
-        "avg_price": 42.55,
+        "close": 124.65,
+        "change_pct": 16.74,
+        "huanshou": 2.01,
+        "pe_ttm": 72.32,
+        "pb": 4.81,
+        "liangbi": 5.91,
+        "avg_price": 44.68,
         "main_net": null
+      },
+      {
+        "code": "688507",
+        "name": "索辰科技",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 166.96,
+        "change_pct": 16.51,
+        "huanshou": 20.7,
+        "pe_ttm": -10226.17,
+        "pb": 5.51,
+        "liangbi": 6.01,
+        "avg_price": -94.57,
+        "main_net": 168227370
+      },
+      {
+        "code": "688322",
+        "name": "奥比中光-W",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 91.01,
+        "change_pct": 16.29,
+        "huanshou": 5.91,
+        "pe_ttm": 343.56,
+        "pb": 9.36,
+        "liangbi": 7.29,
+        "avg_price": 451.14,
+        "main_net": 137516159
+      },
+      {
+        "code": "688787",
+        "name": "海天瑞声",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 102,
+        "change_pct": 15.86,
+        "huanshou": 10.12,
+        "pe_ttm": 306.33,
+        "pb": 8.42,
+        "liangbi": 6.28,
+        "avg_price": 314.81,
+        "main_net": 82286576
+      },
+      {
+        "code": "301030",
+        "name": "*ST仕净",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 4.54,
+        "change_pct": 15.82,
+        "huanshou": 14.56,
+        "pe_ttm": -0.48,
+        "pb": -0.79,
+        "liangbi": 2.51,
+        "avg_price": -0.66,
+        "main_net": null
+      },
+      {
+        "code": "688768",
+        "name": "容知日新",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 58,
+        "change_pct": 15.29,
+        "huanshou": 1.64,
+        "pe_ttm": 167.7,
+        "pb": 4.92,
+        "liangbi": 3.77,
+        "avg_price": -64.46,
+        "main_net": null
+      },
+      {
+        "code": "300007",
+        "name": "汉威科技",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 31.26,
+        "change_pct": 15.14,
+        "huanshou": 7.74,
+        "pe_ttm": 61,
+        "pb": 3.42,
+        "liangbi": 9.56,
+        "avg_price": 75.21,
+        "main_net": 81457852
+      },
+      {
+        "code": "688018",
+        "name": "乐鑫科技",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 138.2,
+        "change_pct": 14.76,
+        "huanshou": 4.15,
+        "pe_ttm": 56.75,
+        "pb": 6.88,
+        "liangbi": 2.74,
+        "avg_price": 48.46,
+        "main_net": 118545751
       },
       {
         "code": "300638",
         "name": "广和通",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 19.46,
-        "change_pct": 11.07,
-        "huanshou": 3.4,
-        "pe_ttm": 91.57,
-        "pb": 2.88,
-        "liangbi": 6.8,
-        "avg_price": 141.42,
-        "main_net": 50231934
+        "close": 20.09,
+        "change_pct": 14.67,
+        "huanshou": 4.65,
+        "pe_ttm": 94.53,
+        "pb": 2.97,
+        "liangbi": 5.95,
+        "avg_price": 146,
+        "main_net": 77559384
       },
       {
         "code": "301413",
         "name": "安培龙",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 52.01,
-        "change_pct": 10.94,
-        "huanshou": 5,
-        "pe_ttm": 137.12,
-        "pb": 4.03,
-        "liangbi": 5.66,
-        "avg_price": 1020.39,
+        "close": 53.6,
+        "change_pct": 14.33,
+        "huanshou": 6.74,
+        "pe_ttm": 141.31,
+        "pb": 4.15,
+        "liangbi": 4.88,
+        "avg_price": 1051.58,
         "main_net": null
       },
       {
-        "code": "688175",
-        "name": "高凌信息",
+        "code": "300853",
+        "name": "申昊科技",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 31.14,
-        "change_pct": 10.82,
-        "huanshou": 3.49,
-        "pe_ttm": -786.58,
-        "pb": 3.06,
-        "liangbi": 2.89,
-        "avg_price": 1196.12,
+        "close": 29.9,
+        "change_pct": 14.08,
+        "huanshou": 4.4,
+        "pe_ttm": -24.09,
+        "pb": 9.06,
+        "liangbi": 2.18,
+        "avg_price": -36.65,
         "main_net": null
       },
       {
-        "code": "688400",
-        "name": "凌云光",
+        "code": "688360",
+        "name": "德马科技",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 42.29,
-        "change_pct": 10.71,
-        "huanshou": 2.19,
-        "pe_ttm": 27.88,
-        "pb": 2.56,
-        "liangbi": 6.69,
-        "avg_price": 15.32,
-        "main_net": 61036588
+        "close": 17.69,
+        "change_pct": 13.04,
+        "huanshou": 3.63,
+        "pe_ttm": 50.57,
+        "pb": 3.11,
+        "liangbi": 6.78,
+        "avg_price": 29.47,
+        "main_net": null
       },
       {
-        "code": "688004",
-        "name": "博汇科技",
+        "code": "300709",
+        "name": "精研科技",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 34.28,
-        "change_pct": 10.62,
-        "huanshou": 7,
-        "pe_ttm": -104.11,
-        "pb": 4.89,
-        "liangbi": 1.83,
-        "avg_price": -66.19,
+        "close": 37,
+        "change_pct": 12.98,
+        "huanshou": 8.11,
+        "pe_ttm": -446.62,
+        "pb": 3.09,
+        "liangbi": 4.56,
+        "avg_price": 247.3,
         "main_net": null
+      },
+      {
+        "code": "688591",
+        "name": "泰凌微",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 29.4,
+        "change_pct": 12.95,
+        "huanshou": 2.81,
+        "pe_ttm": 56.84,
+        "pb": 2.82,
+        "liangbi": 2.88,
+        "avg_price": 35.96,
+        "main_net": null
+      },
+      {
+        "code": "301550",
+        "name": "斯菱智驱",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 113.56,
+        "change_pct": 12.8,
+        "huanshou": 6.47,
+        "pe_ttm": 252.8,
+        "pb": 20.77,
+        "liangbi": 4.48,
+        "avg_price": 246.6,
+        "main_net": 91131873
       },
       {
         "code": "688207",
         "name": "格灵深瞳",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 18.74,
-        "change_pct": 10.56,
-        "huanshou": 3.49,
-        "pe_ttm": -24.08,
-        "pb": 1.97,
-        "liangbi": 5.3,
-        "avg_price": -25.54,
+        "close": 19.08,
+        "change_pct": 12.57,
+        "huanshou": 4.65,
+        "pe_ttm": -24.52,
+        "pb": 2,
+        "liangbi": 4.52,
+        "avg_price": -26,
+        "main_net": null
+      },
+      {
+        "code": "300720",
+        "name": "海川智能",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 58.74,
+        "change_pct": 12.4,
+        "huanshou": 5.04,
+        "pe_ttm": 627.95,
+        "pb": 19.67,
+        "liangbi": 3.13,
+        "avg_price": 525.76,
+        "main_net": null
+      },
+      {
+        "code": "300616",
+        "name": "尚品宅配",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 12.06,
+        "change_pct": 12.08,
+        "huanshou": 11.72,
+        "pe_ttm": -6.76,
+        "pb": 1,
+        "liangbi": 7.72,
+        "avg_price": -5.82,
+        "main_net": null
+      },
+      {
+        "code": "688049",
+        "name": "炬芯科技",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 39.93,
+        "change_pct": 11.79,
+        "huanshou": 4.8,
+        "pe_ttm": 31.66,
+        "pb": 3.33,
+        "liangbi": 2.86,
+        "avg_price": 32.3,
+        "main_net": null
+      },
+      {
+        "code": "688004",
+        "name": "博汇科技",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 34.53,
+        "change_pct": 11.42,
+        "huanshou": 8.04,
+        "pe_ttm": -104.87,
+        "pb": 4.93,
+        "liangbi": 1.34,
+        "avg_price": -66.67,
         "main_net": null
       },
       {
         "code": "300056",
         "name": "中创环保",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 7.6,
-        "change_pct": 10.3,
-        "huanshou": 4.3,
-        "pe_ttm": -24.91,
-        "pb": 64.72,
-        "liangbi": 12.07,
-        "avg_price": -36.88,
+        "close": 7.67,
+        "change_pct": 11.32,
+        "huanshou": 5.5,
+        "pe_ttm": -25.14,
+        "pb": 65.31,
+        "liangbi": 9.88,
+        "avg_price": -37.22,
+        "main_net": null
+      },
+      {
+        "code": "688286",
+        "name": "敏芯股份",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 44.82,
+        "change_pct": 11.3,
+        "huanshou": 5.22,
+        "pe_ttm": -357.56,
+        "pb": 3.39,
+        "liangbi": 3.44,
+        "avg_price": -85.13,
+        "main_net": null
+      },
+      {
+        "code": "688400",
+        "name": "凌云光",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 42.5,
+        "change_pct": 11.26,
+        "huanshou": 2.87,
+        "pe_ttm": 28.02,
+        "pb": 2.58,
+        "liangbi": 5.62,
+        "avg_price": 15.4,
+        "main_net": null
+      },
+      {
+        "code": "688160",
+        "name": "步科股份",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 91.9,
+        "change_pct": 11.18,
+        "huanshou": 2.81,
+        "pe_ttm": 101.49,
+        "pb": 6.13,
+        "liangbi": 4.89,
+        "avg_price": 115.51,
+        "main_net": null
+      },
+      {
+        "code": "301525",
+        "name": "儒竞科技",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 42.72,
+        "change_pct": 10.79,
+        "huanshou": 8.76,
+        "pe_ttm": 118.88,
+        "pb": 1.74,
+        "liangbi": 9.89,
+        "avg_price": 110.2,
+        "main_net": null
+      },
+      {
+        "code": "301529",
+        "name": "福赛科技",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 146.74,
+        "change_pct": 10.51,
+        "huanshou": 5.96,
+        "pe_ttm": 122.6,
+        "pb": 11.95,
+        "liangbi": 5.13,
+        "avg_price": 120.22,
+        "main_net": null
+      },
+      {
+        "code": "301310",
+        "name": "鑫宏业",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 62.29,
+        "change_pct": 10.48,
+        "huanshou": 5.09,
+        "pe_ttm": 89.47,
+        "pb": 5.12,
+        "liangbi": 1.47,
+        "avg_price": 105.35,
+        "main_net": null
+      },
+      {
+        "code": "688530",
+        "name": "欧莱新材",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 49.73,
+        "change_pct": 10.46,
+        "huanshou": 7.65,
+        "pe_ttm": 218.87,
+        "pb": 9.09,
+        "liangbi": 2.51,
+        "avg_price": 57.31,
+        "main_net": null
+      },
+      {
+        "code": "688775",
+        "name": "影石创新",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 103.39,
+        "change_pct": 10.46,
+        "huanshou": 3.47,
+        "pe_ttm": 94.32,
+        "pb": 8.02,
+        "liangbi": 4.59,
+        "avg_price": 681.73,
+        "main_net": 124083252
+      },
+      {
+        "code": "300508",
+        "name": "维宏股份",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 34.7,
+        "change_pct": 10.4,
+        "huanshou": 4.6,
+        "pe_ttm": 58.94,
+        "pb": 4.35,
+        "liangbi": 3.88,
+        "avg_price": 315.97,
+        "main_net": null
+      },
+      {
+        "code": "301536",
+        "name": "星宸科技",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 109.23,
+        "change_pct": 10.22,
+        "huanshou": 5.92,
+        "pe_ttm": 43.9,
+        "pb": 11.83,
+        "liangbi": 1.63,
+        "avg_price": 26.74,
+        "main_net": null
+      },
+      {
+        "code": "301225",
+        "name": "恒勃股份",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 56.33,
+        "change_pct": 10.21,
+        "huanshou": 6.4,
+        "pe_ttm": 68.92,
+        "pb": 4.98,
+        "liangbi": 3.06,
+        "avg_price": 84.85,
         "main_net": null
       },
       {
@@ -341,10 +549,10 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 6.01,
         "change_pct": 10.07,
-        "huanshou": 1.37,
+        "huanshou": 1.39,
         "pe_ttm": 12.01,
         "pb": 1.15,
-        "liangbi": 3.08,
+        "liangbi": 2.01,
         "avg_price": 8.24,
         "main_net": null
       },
@@ -354,12 +562,25 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 1.53,
         "change_pct": 10.07,
-        "huanshou": 1.3,
+        "huanshou": 1.32,
         "pe_ttm": -1.65,
         "pb": 0.93,
-        "liangbi": 2.41,
+        "liangbi": 1.55,
         "avg_price": 3.73,
         "main_net": null
+      },
+      {
+        "code": "000700",
+        "name": "模塑科技",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 11.5,
+        "change_pct": 10.05,
+        "huanshou": 6.11,
+        "pe_ttm": 20.92,
+        "pb": 2.64,
+        "liangbi": 4.47,
+        "avg_price": 16.76,
+        "main_net": 180096164
       },
       {
         "code": "600267",
@@ -367,12 +588,12 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 13.27,
         "change_pct": 10.03,
-        "huanshou": 4.78,
+        "huanshou": 4.81,
         "pe_ttm": 17.84,
         "pb": 1.74,
-        "liangbi": 12.87,
+        "liangbi": 8.27,
         "avg_price": 12.3,
-        "main_net": 97520733
+        "main_net": 100329997
       },
       {
         "code": "002835",
@@ -380,10 +601,10 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 14.16,
         "change_pct": 10.02,
-        "huanshou": 1.72,
+        "huanshou": 1.78,
         "pe_ttm": 27.93,
         "pb": 2.51,
-        "liangbi": 2.94,
+        "liangbi": 1.94,
         "avg_price": 28.18,
         "main_net": null
       },
@@ -393,12 +614,12 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 12.41,
         "change_pct": 10.02,
-        "huanshou": 1.35,
+        "huanshou": 1.4,
         "pe_ttm": -17257.96,
         "pb": 2.27,
-        "liangbi": 2.55,
+        "liangbi": 1.65,
         "avg_price": -323.96,
-        "main_net": 45025862
+        "main_net": null
       },
       {
         "code": "001239",
@@ -406,10 +627,10 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 13.4,
         "change_pct": 10.02,
-        "huanshou": 3.72,
+        "huanshou": 3.88,
         "pe_ttm": -455.11,
         "pb": 2.37,
-        "liangbi": 8,
+        "liangbi": 5.3,
         "avg_price": 462.22,
         "main_net": null
       },
@@ -419,25 +640,12 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 15.05,
         "change_pct": 10.01,
-        "huanshou": 7.28,
+        "huanshou": 8.12,
         "pe_ttm": 137.7,
         "pb": 3.6,
-        "liangbi": 9.06,
+        "liangbi": 6.47,
         "avg_price": 104.48,
         "main_net": null
-      },
-      {
-        "code": "600629",
-        "name": "华建集团",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 19.01,
-        "change_pct": 10.01,
-        "huanshou": 2.71,
-        "pe_ttm": -407.92,
-        "pb": 4.16,
-        "liangbi": 3.77,
-        "avg_price": 923.54,
-        "main_net": 77821988
       },
       {
         "code": "605488",
@@ -445,12 +653,38 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 30.99,
         "change_pct": 10.01,
-        "huanshou": 1.26,
+        "huanshou": 1.29,
         "pe_ttm": 118.7,
         "pb": 4.13,
-        "liangbi": 3.03,
+        "liangbi": 2,
         "avg_price": 89.44,
-        "main_net": 49115739
+        "main_net": null
+      },
+      {
+        "code": "605177",
+        "name": "东亚药业",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 24.4,
+        "change_pct": 10.01,
+        "huanshou": 3.99,
+        "pe_ttm": -16.41,
+        "pb": 1.76,
+        "liangbi": 1.96,
+        "avg_price": -11.82,
+        "main_net": null
+      },
+      {
+        "code": "603179",
+        "name": "新泉股份",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 38.14,
+        "change_pct": 10.01,
+        "huanshou": 3.52,
+        "pe_ttm": 34.74,
+        "pb": 3.44,
+        "liangbi": 4.61,
+        "avg_price": 33.85,
+        "main_net": 73370717
       },
       {
         "code": "002164",
@@ -458,12 +692,12 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 16.16,
         "change_pct": 10.01,
-        "huanshou": 10.84,
+        "huanshou": 11.04,
         "pe_ttm": 39.34,
         "pb": 5.58,
-        "liangbi": 5.88,
+        "liangbi": 3.83,
         "avg_price": 80.74,
-        "main_net": 71919384
+        "main_net": 75799320
       },
       {
         "code": "603119",
@@ -471,12 +705,12 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 50.46,
         "change_pct": 10.01,
-        "huanshou": 3,
+        "huanshou": 3.03,
         "pe_ttm": 78.2,
         "pb": 11.37,
-        "liangbi": 7.59,
+        "liangbi": 4.9,
         "avg_price": 79.46,
-        "main_net": 121937903
+        "main_net": 127958285
       },
       {
         "code": "603936",
@@ -484,12 +718,12 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 18.03,
         "change_pct": 10.01,
-        "huanshou": 4.38,
+        "huanshou": 4.53,
         "pe_ttm": -140.91,
         "pb": 2.73,
-        "liangbi": 2.07,
+        "liangbi": 1.37,
         "avg_price": -113.43,
-        "main_net": 155057224
+        "main_net": 165649849
       },
       {
         "code": "603341",
@@ -497,12 +731,12 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 38.26,
         "change_pct": 10.01,
-        "huanshou": 6.62,
+        "huanshou": 6.81,
         "pe_ttm": 42.03,
         "pb": 2.73,
-        "liangbi": 13.21,
+        "liangbi": 8.69,
         "avg_price": 40.63,
-        "main_net": 196921507
+        "main_net": 207079154
       },
       {
         "code": "002242",
@@ -510,12 +744,25 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 20.56,
         "change_pct": 10.01,
-        "huanshou": 15.05,
+        "huanshou": 15.15,
         "pe_ttm": 235.24,
         "pb": 4.85,
-        "liangbi": 4.3,
+        "liangbi": 2.77,
         "avg_price": 109.29,
-        "main_net": 278250320
+        "main_net": 285460704
+      },
+      {
+        "code": "603068",
+        "name": "博通集成",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 41.67,
+        "change_pct": 10.01,
+        "huanshou": 7.56,
+        "pe_ttm": 118.21,
+        "pb": 3.54,
+        "liangbi": 2.61,
+        "avg_price": 62.62,
+        "main_net": 73350064
       },
       {
         "code": "003029",
@@ -523,12 +770,25 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 26.61,
         "change_pct": 10,
-        "huanshou": 23.26,
+        "huanshou": 23.48,
         "pe_ttm": -48.44,
         "pb": 5.14,
-        "liangbi": 11,
+        "liangbi": 7.1,
         "avg_price": -73.39,
         "main_net": null
+      },
+      {
+        "code": "603893",
+        "name": "瑞芯微",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 189.04,
+        "change_pct": 10,
+        "huanshou": 3.08,
+        "pe_ttm": 58.52,
+        "pb": 16.2,
+        "liangbi": 2.75,
+        "avg_price": 46.59,
+        "main_net": 389243232
       },
       {
         "code": "603236",
@@ -536,12 +796,25 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 76.11,
         "change_pct": 10,
-        "huanshou": 6.17,
+        "huanshou": 6.35,
         "pe_ttm": 23.51,
         "pb": 3.89,
-        "liangbi": 8.38,
+        "liangbi": 5.52,
         "avg_price": 19.14,
-        "main_net": 271269920
+        "main_net": 293945520
+      },
+      {
+        "code": "605389",
+        "name": "长龄液压",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 57.97,
+        "change_pct": 10,
+        "huanshou": 0.59,
+        "pe_ttm": 81.85,
+        "pb": 5.26,
+        "liangbi": 2.69,
+        "avg_price": 75.34,
+        "main_net": null
       },
       {
         "code": "605258",
@@ -549,12 +822,25 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 47.19,
         "change_pct": 10,
-        "huanshou": 7.46,
+        "huanshou": 7.55,
         "pe_ttm": 62.92,
         "pb": 3.47,
-        "liangbi": 2.81,
+        "liangbi": 1.82,
         "avg_price": 73.49,
-        "main_net": 53250566
+        "main_net": null
+      },
+      {
+        "code": "603882",
+        "name": "金域医学",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 32.12,
+        "change_pct": 10,
+        "huanshou": 4.02,
+        "pe_ttm": 146.23,
+        "pb": 2.36,
+        "liangbi": 4.11,
+        "avg_price": 39.12,
+        "main_net": null
       },
       {
         "code": "603407",
@@ -562,10 +848,10 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 48.29,
         "change_pct": 10,
-        "huanshou": 9.94,
+        "huanshou": 10.19,
         "pe_ttm": 71.82,
         "pb": 9.19,
-        "liangbi": 5.62,
+        "liangbi": 3.69,
         "avg_price": 71.56,
         "main_net": null
       },
@@ -575,12 +861,25 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 11.99,
         "change_pct": 10,
-        "huanshou": 2.15,
+        "huanshou": 2.22,
         "pe_ttm": -34.19,
         "pb": 2.16,
-        "liangbi": 1.25,
+        "liangbi": 0.83,
         "avg_price": -32.02,
-        "main_net": 43764555
+        "main_net": null
+      },
+      {
+        "code": "603127",
+        "name": "昭衍新药",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 50.49,
+        "change_pct": 10,
+        "huanshou": 4.44,
+        "pe_ttm": 38.43,
+        "pb": 4.22,
+        "liangbi": 1.98,
+        "avg_price": 25.31,
+        "main_net": 143142238
       },
       {
         "code": "600860",
@@ -588,10 +887,10 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 9.57,
         "change_pct": 10,
-        "huanshou": 11.15,
+        "huanshou": 11.21,
         "pe_ttm": -51.96,
         "pb": 6.58,
-        "liangbi": 27.59,
+        "liangbi": 17.74,
         "avg_price": -41.69,
         "main_net": null
       },
@@ -601,11 +900,24 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 10.12,
         "change_pct": 10,
-        "huanshou": 4.28,
+        "huanshou": 4.56,
         "pe_ttm": 20.65,
         "pb": 8.57,
-        "liangbi": 5.23,
+        "liangbi": 3.54,
         "avg_price": 21.8,
+        "main_net": null
+      },
+      {
+        "code": "300378",
+        "name": "鼎捷数智",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 38.28,
+        "change_pct": 10,
+        "huanshou": 3.86,
+        "pe_ttm": 33.87,
+        "pb": 4.2,
+        "liangbi": 2.56,
+        "avg_price": 27.58,
         "main_net": null
       },
       {
@@ -614,12 +926,25 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 8.8,
         "change_pct": 10,
-        "huanshou": 3.98,
+        "huanshou": 4.02,
         "pe_ttm": -19.39,
         "pb": 38.28,
-        "liangbi": 8.03,
+        "liangbi": 5.18,
         "avg_price": 113.85,
-        "main_net": 40407478
+        "main_net": null
+      },
+      {
+        "code": "001400",
+        "name": "江顺科技",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 80.31,
+        "change_pct": 10,
+        "huanshou": 7.66,
+        "pe_ttm": 77.5,
+        "pb": 5.48,
+        "liangbi": 3.69,
+        "avg_price": 60.84,
+        "main_net": null
       },
       {
         "code": "002881",
@@ -627,12 +952,38 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 38.51,
         "change_pct": 10,
-        "huanshou": 8.21,
+        "huanshou": 8.46,
         "pe_ttm": 70.81,
         "pb": 4.18,
-        "liangbi": 9.54,
+        "liangbi": 6.29,
         "avg_price": 54.97,
-        "main_net": 62043271
+        "main_net": 74570574
+      },
+      {
+        "code": "603738",
+        "name": "泰晶科技",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 28.94,
+        "change_pct": 10,
+        "huanshou": 7.6,
+        "pe_ttm": 138.1,
+        "pb": 6.06,
+        "liangbi": 5.21,
+        "avg_price": 110.17,
+        "main_net": 135021275
+      },
+      {
+        "code": "001283",
+        "name": "豪鹏科技",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 51.06,
+        "change_pct": 10,
+        "huanshou": 5.05,
+        "pe_ttm": 28.88,
+        "pb": 1.82,
+        "liangbi": 3.21,
+        "avg_price": 26.93,
+        "main_net": null
       },
       {
         "code": "603626",
@@ -640,12 +991,12 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 24.43,
         "change_pct": 10,
-        "huanshou": 6.13,
+        "huanshou": 6.19,
         "pe_ttm": 522.82,
         "pb": 6.28,
-        "liangbi": 4.49,
+        "liangbi": 2.9,
         "avg_price": 24.94,
-        "main_net": 130220606
+        "main_net": 134564260
       },
       {
         "code": "001323",
@@ -653,10 +1004,10 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 22.23,
         "change_pct": 10,
-        "huanshou": 1.5,
+        "huanshou": 1.58,
         "pe_ttm": 26.62,
         "pb": 2.28,
-        "liangbi": 12.42,
+        "liangbi": 8.31,
         "avg_price": 26.06,
         "main_net": null
       },
@@ -666,12 +1017,25 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 10.13,
         "change_pct": 9.99,
-        "huanshou": 3.2,
+        "huanshou": 3.42,
         "pe_ttm": -252.31,
         "pb": 2.9,
-        "liangbi": 1.37,
+        "liangbi": 0.94,
         "avg_price": -172,
-        "main_net": 201004144
+        "main_net": 214542757
+      },
+      {
+        "code": "603255",
+        "name": "鼎际得",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 30.73,
+        "change_pct": 9.99,
+        "huanshou": 3.79,
+        "pe_ttm": 81.12,
+        "pb": 2.55,
+        "liangbi": 4.75,
+        "avg_price": 47.26,
+        "main_net": null
       },
       {
         "code": "002347",
@@ -679,12 +1043,12 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 6.61,
         "change_pct": 9.98,
-        "huanshou": 7.7,
+        "huanshou": 7.78,
         "pe_ttm": -35,
         "pb": 3.06,
-        "liangbi": 6.85,
+        "liangbi": 4.43,
         "avg_price": -84.43,
-        "main_net": 46227530
+        "main_net": null
       },
       {
         "code": "603386",
@@ -692,10 +1056,10 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 21.71,
         "change_pct": 9.98,
-        "huanshou": 6.65,
+        "huanshou": 6.8,
         "pe_ttm": 143.26,
         "pb": 5.04,
-        "liangbi": 3,
+        "liangbi": 1.92,
         "avg_price": 68.08,
         "main_net": null
       },
@@ -705,10 +1069,10 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 9.26,
         "change_pct": 9.98,
-        "huanshou": 10.47,
+        "huanshou": 10.52,
         "pe_ttm": 148.26,
         "pb": 2.63,
-        "liangbi": 6.59,
+        "liangbi": 4.24,
         "avg_price": 125.74,
         "main_net": null
       },
@@ -718,11 +1082,24 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 8.49,
         "change_pct": 9.97,
-        "huanshou": 1.05,
+        "huanshou": 1.1,
         "pe_ttm": -154.31,
         "pb": 1.82,
-        "liangbi": 6.57,
+        "liangbi": 4.37,
         "avg_price": 379.9,
+        "main_net": null
+      },
+      {
+        "code": "300753",
+        "name": "爱朋医疗",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 20.97,
+        "change_pct": 9.96,
+        "huanshou": 8.46,
+        "pe_ttm": -181.96,
+        "pb": 4.02,
+        "liangbi": 4.2,
+        "avg_price": -133.7,
         "main_net": null
       },
       {
@@ -731,10 +1108,10 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 11.15,
         "change_pct": 9.96,
-        "huanshou": 6.98,
+        "huanshou": 7.51,
         "pe_ttm": -12.13,
         "pb": 2.9,
-        "liangbi": 9.17,
+        "liangbi": 6.3,
         "avg_price": -20.33,
         "main_net": null
       },
@@ -744,12 +1121,12 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 7.62,
         "change_pct": 9.96,
-        "huanshou": 6.54,
+        "huanshou": 7.85,
         "pe_ttm": 67.7,
         "pb": 1.67,
-        "liangbi": 7.37,
+        "liangbi": 5.65,
         "avg_price": 58.09,
-        "main_net": 67075533
+        "main_net": 98758883
       },
       {
         "code": "600229",
@@ -757,10 +1134,10 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 6.64,
         "change_pct": 9.93,
-        "huanshou": 2.85,
+        "huanshou": 2.97,
         "pe_ttm": -9.54,
         "pb": 1.62,
-        "liangbi": 3.29,
+        "liangbi": 2.19,
         "avg_price": -97.47,
         "main_net": null
       },
@@ -770,552 +1147,175 @@
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
         "close": 4.32,
         "change_pct": 9.92,
-        "huanshou": 0.73,
+        "huanshou": 0.75,
         "pe_ttm": -59.81,
         "pb": 3.04,
-        "liangbi": 0.25,
+        "liangbi": 0.16,
         "avg_price": -31.18,
         "main_net": null
       },
       {
-        "code": "688181",
-        "name": "八亿时空",
+        "code": "688175",
+        "name": "高凌信息",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 37,
-        "change_pct": 9.92,
-        "huanshou": 3.78,
-        "pe_ttm": 52.42,
-        "pb": 2.36,
-        "liangbi": 4.45,
-        "avg_price": 56.32,
+        "close": 30.88,
+        "change_pct": 9.89,
+        "huanshou": 3.96,
+        "pe_ttm": -780.02,
+        "pb": 3.04,
+        "liangbi": 2.1,
+        "avg_price": 1186.14,
         "main_net": null
       },
       {
-        "code": "688003",
-        "name": "天准科技",
+        "code": "300354",
+        "name": "东华测试",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 67.73,
-        "change_pct": 9.77,
-        "huanshou": 1.83,
-        "pe_ttm": 69.87,
-        "pb": 6.63,
-        "liangbi": 4.9,
-        "avg_price": 66.98,
-        "main_net": null
-      },
-      {
-        "code": "300802",
-        "name": "矩子科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 22.5,
-        "change_pct": 9.6,
-        "huanshou": 3.97,
-        "pe_ttm": 62.63,
-        "pb": 4.26,
-        "liangbi": 3.44,
-        "avg_price": 51.36,
-        "main_net": null
-      },
-      {
-        "code": "603255",
-        "name": "鼎际得",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 30.6,
-        "change_pct": 9.52,
-        "huanshou": 3.33,
-        "pe_ttm": 80.78,
-        "pb": 2.54,
-        "liangbi": 6.45,
-        "avg_price": 47.06,
-        "main_net": null
-      },
-      {
-        "code": "688286",
-        "name": "敏芯股份",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 44.08,
-        "change_pct": 9.46,
-        "huanshou": 4.16,
-        "pe_ttm": -351.66,
-        "pb": 3.33,
-        "liangbi": 4.29,
-        "avg_price": -83.73,
-        "main_net": null
-      },
-      {
-        "code": "300338",
-        "name": "*ST开元",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 2.46,
-        "change_pct": 9.33,
-        "huanshou": 4.71,
-        "pe_ttm": -7.68,
-        "pb": -6.69,
-        "liangbi": 3.73,
-        "avg_price": -13.91,
-        "main_net": null
-      },
-      {
-        "code": "301310",
-        "name": "鑫宏业",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 61.64,
-        "change_pct": 9.33,
-        "huanshou": 4.08,
-        "pe_ttm": 88.54,
-        "pb": 5.07,
-        "liangbi": 1.84,
-        "avg_price": 104.25,
-        "main_net": null
-      },
-      {
-        "code": "300709",
-        "name": "精研科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 35.74,
-        "change_pct": 9.13,
-        "huanshou": 6.15,
-        "pe_ttm": -431.41,
-        "pb": 2.99,
-        "liangbi": 5.4,
-        "avg_price": 238.88,
-        "main_net": null
-      },
-      {
-        "code": "688018",
-        "name": "乐鑫科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 131.19,
-        "change_pct": 8.94,
-        "huanshou": 2.7,
-        "pe_ttm": 53.87,
-        "pb": 6.53,
-        "liangbi": 2.79,
-        "avg_price": 46,
-        "main_net": 83877249
-      },
-      {
-        "code": "301248",
-        "name": "杰创智能",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 52.61,
-        "change_pct": 8.92,
-        "huanshou": 3.87,
-        "pe_ttm": -972.44,
-        "pb": 5.31,
-        "liangbi": 3.89,
-        "avg_price": -1239.87,
-        "main_net": null
-      },
-      {
-        "code": "000700",
-        "name": "模塑科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 11.38,
-        "change_pct": 8.9,
-        "huanshou": 3.82,
-        "pe_ttm": 20.7,
-        "pb": 2.61,
-        "liangbi": 4.38,
-        "avg_price": 16.58,
-        "main_net": 50899272
-      },
-      {
-        "code": "603179",
-        "name": "新泉股份",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 37.73,
-        "change_pct": 8.83,
-        "huanshou": 2.41,
-        "pe_ttm": 34.37,
-        "pb": 3.4,
-        "liangbi": 4.93,
-        "avg_price": 33.49,
-        "main_net": null
-      },
-      {
-        "code": "300508",
-        "name": "维宏股份",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 34.18,
-        "change_pct": 8.75,
-        "huanshou": 3.73,
-        "pe_ttm": 58.06,
-        "pb": 4.28,
-        "liangbi": 4.93,
-        "avg_price": 311.24,
-        "main_net": null
-      },
-      {
-        "code": "301446",
-        "name": "福事特",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 35.1,
-        "change_pct": 8.67,
-        "huanshou": 3.58,
-        "pe_ttm": 51.74,
-        "pb": 3.02,
-        "liangbi": 6.48,
-        "avg_price": 41.87,
-        "main_net": null
-      },
-      {
-        "code": "603068",
-        "name": "博通集成",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 41.14,
-        "change_pct": 8.61,
-        "huanshou": 5.66,
-        "pe_ttm": 116.7,
-        "pb": 3.49,
-        "liangbi": 3.06,
-        "avg_price": 61.83,
-        "main_net": null
-      },
-      {
-        "code": "688591",
-        "name": "泰凌微",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 28.27,
-        "change_pct": 8.61,
-        "huanshou": 1.95,
-        "pe_ttm": 54.66,
-        "pb": 2.71,
-        "liangbi": 3.12,
-        "avg_price": 34.58,
-        "main_net": null
-      },
-      {
-        "code": "301196",
-        "name": "唯科科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 88.88,
-        "change_pct": 8.59,
-        "huanshou": 5.45,
-        "pe_ttm": 58.96,
-        "pb": 4.39,
-        "liangbi": 3.82,
-        "avg_price": 52.4,
-        "main_net": null
-      },
-      {
-        "code": "300853",
-        "name": "申昊科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 28.45,
-        "change_pct": 8.55,
-        "huanshou": 3.26,
-        "pe_ttm": -22.92,
-        "pb": 8.62,
-        "liangbi": 2.53,
-        "avg_price": -34.88,
-        "main_net": null
-      },
-      {
-        "code": "002472",
-        "name": "双环传动",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 39.12,
-        "change_pct": 8.49,
-        "huanshou": 2.99,
-        "pe_ttm": 26.16,
-        "pb": 3.23,
-        "liangbi": 5.69,
-        "avg_price": 28.34,
-        "main_net": 100197826
-      },
-      {
-        "code": "002076",
-        "name": "星光股份",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 2.2,
-        "change_pct": 8.37,
-        "huanshou": 12.84,
-        "pe_ttm": -142.54,
-        "pb": 8.25,
-        "liangbi": 9.16,
-        "avg_price": -76.56,
-        "main_net": 52083226
-      },
-      {
-        "code": "300908",
-        "name": "仲景食品",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 18.48,
-        "change_pct": 8.32,
-        "huanshou": 3.62,
-        "pe_ttm": 18.65,
-        "pb": 2.14,
-        "liangbi": 18.82,
-        "avg_price": 17.08,
-        "main_net": null
-      },
-      {
-        "code": "001400",
-        "name": "江顺科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 79,
-        "change_pct": 8.2,
-        "huanshou": 3.99,
-        "pe_ttm": 76.24,
-        "pb": 5.39,
-        "liangbi": 3.01,
-        "avg_price": 59.85,
-        "main_net": null
-      },
-      {
-        "code": "300907",
-        "name": "康平科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 48.76,
-        "change_pct": 8.16,
-        "huanshou": 1.38,
-        "pe_ttm": 124.72,
-        "pb": 5.84,
-        "liangbi": 2.76,
-        "avg_price": 68.83,
-        "main_net": null
-      },
-      {
-        "code": "688234",
-        "name": "天岳先进",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 95.68,
-        "change_pct": 8.15,
-        "huanshou": 1.58,
-        "pe_ttm": -166.9,
-        "pb": 6.52,
-        "liangbi": 3.8,
-        "avg_price": -395.52,
-        "main_net": 81458151
-      },
-      {
-        "code": "688530",
-        "name": "欧莱新材",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 48.67,
-        "change_pct": 8.11,
-        "huanshou": 5.94,
-        "pe_ttm": 214.2,
-        "pb": 8.89,
-        "liangbi": 3.05,
-        "avg_price": 56.09,
+        "close": 27.95,
+        "change_pct": 9.87,
+        "huanshou": 3.16,
+        "pe_ttm": 38.87,
+        "pb": 4.44,
+        "liangbi": 3.61,
+        "avg_price": 49.67,
         "main_net": null
       },
       {
         "code": "688170",
         "name": "德龙激光",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 51.23,
-        "change_pct": 8.06,
-        "huanshou": 2.6,
-        "pe_ttm": 1677.65,
-        "pb": 4.34,
-        "liangbi": 2.81,
-        "avg_price": -69.35,
+        "close": 52.03,
+        "change_pct": 9.74,
+        "huanshou": 3.23,
+        "pe_ttm": 1703.85,
+        "pb": 4.41,
+        "liangbi": 2.23,
+        "avg_price": -70.43,
         "main_net": null
       },
       {
-        "code": "300984",
-        "name": "金沃股份",
+        "code": "688678",
+        "name": "福立旺",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 37.43,
-        "change_pct": 8.02,
-        "huanshou": 4.69,
-        "pe_ttm": 141.76,
-        "pb": 4.05,
-        "liangbi": 3.73,
-        "avg_price": 128.25,
+        "close": 25.29,
+        "change_pct": 9.67,
+        "huanshou": 4.16,
+        "pe_ttm": 81.85,
+        "pb": 3.46,
+        "liangbi": 2.23,
+        "avg_price": 84.52,
+        "main_net": 67590987
+      },
+      {
+        "code": "300458",
+        "name": "全志科技",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 28.22,
+        "change_pct": 9.63,
+        "huanshou": 3.65,
+        "pe_ttm": 47.43,
+        "pb": 8.05,
+        "liangbi": 2.2,
+        "avg_price": 28.6,
+        "main_net": 137541439
+      },
+      {
+        "code": "301390",
+        "name": "经纬股份",
+        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
+        "close": 41.21,
+        "change_pct": 9.6,
+        "huanshou": 5.23,
+        "pe_ttm": -82.31,
+        "pb": 2.68,
+        "liangbi": 3.27,
+        "avg_price": -53.47,
         "main_net": null
       },
       {
-        "code": "002667",
-        "name": "*ST威领",
+        "code": "301319",
+        "name": "唯特偶",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 25,
-        "change_pct": 7.94,
-        "huanshou": 6.19,
-        "pe_ttm": -14.97,
-        "pb": -123.61,
-        "liangbi": 2.39,
-        "avg_price": -166.28,
+        "close": 71.95,
+        "change_pct": 9.51,
+        "huanshou": 4.26,
+        "pe_ttm": 148.01,
+        "pb": 10.9,
+        "liangbi": 2.99,
+        "avg_price": 126.03,
         "main_net": null
       },
       {
-        "code": "603657",
-        "name": "春光科技",
+        "code": "301060",
+        "name": "兰卫医学",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 32.12,
-        "change_pct": 7.93,
-        "huanshou": 2.46,
-        "pe_ttm": -44.62,
-        "pb": 5.12,
-        "liangbi": 2.85,
-        "avg_price": -27.32,
+        "close": 10.9,
+        "change_pct": 9.44,
+        "huanshou": 3.94,
+        "pe_ttm": 113.01,
+        "pb": 2.81,
+        "liangbi": 2.61,
+        "avg_price": 34.32,
         "main_net": null
       },
       {
-        "code": "603110",
-        "name": "东方材料",
+        "code": "688181",
+        "name": "八亿时空",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 24.5,
-        "change_pct": 7.93,
-        "huanshou": 6.23,
-        "pe_ttm": 1254.26,
-        "pb": 7.02,
-        "liangbi": 3.73,
-        "avg_price": 225.12,
+        "close": 36.82,
+        "change_pct": 9.39,
+        "huanshou": 4.56,
+        "pe_ttm": 52.17,
+        "pb": 2.35,
+        "liangbi": 3.44,
+        "avg_price": 56.05,
         "main_net": null
       },
       {
-        "code": "600148",
-        "name": "长春一东",
+        "code": "002076",
+        "name": "星光股份",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 19.33,
-        "change_pct": 7.93,
-        "huanshou": 17.61,
-        "pe_ttm": 135.91,
-        "pb": 5.66,
-        "liangbi": 38.72,
-        "avg_price": 115.77,
+        "close": 2.22,
+        "change_pct": 9.36,
+        "huanshou": 15.11,
+        "pe_ttm": -143.84,
+        "pb": 8.33,
+        "liangbi": 6.89,
+        "avg_price": -77.26,
         "main_net": null
       },
       {
-        "code": "688143",
-        "name": "长盈通",
+        "code": "688031",
+        "name": "星环科技-U",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 159.95,
-        "change_pct": 7.9,
-        "huanshou": 5.77,
-        "pe_ttm": 2094.8,
-        "pb": 15.09,
-        "liangbi": 2.73,
-        "avg_price": 685.97,
+        "close": 83.3,
+        "change_pct": 9.35,
+        "huanshou": 2.57,
+        "pe_ttm": -52.35,
+        "pb": 15.02,
+        "liangbi": 2.32,
+        "avg_price": -49.88,
         "main_net": null
       },
       {
-        "code": "605177",
-        "name": "东亚药业",
+        "code": "688234",
+        "name": "天岳先进",
         "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 23.93,
-        "change_pct": 7.89,
-        "huanshou": 2.82,
-        "pe_ttm": -16.1,
-        "pb": 1.73,
-        "liangbi": 2.17,
-        "avg_price": -11.59,
-        "main_net": null
-      },
-      {
-        "code": "688626",
-        "name": "翔宇医疗",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 39.09,
-        "change_pct": 7.83,
-        "huanshou": 1.39,
-        "pe_ttm": 75.89,
-        "pb": 2.98,
-        "liangbi": 5.62,
-        "avg_price": 78.86,
-        "main_net": null
-      },
-      {
-        "code": "603738",
-        "name": "泰晶科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 28.37,
-        "change_pct": 7.83,
-        "huanshou": 6.25,
-        "pe_ttm": 135.38,
-        "pb": 5.94,
-        "liangbi": 6.69,
-        "avg_price": 108,
-        "main_net": 77198646
-      },
-      {
-        "code": "688160",
-        "name": "步科股份",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 89.08,
-        "change_pct": 7.77,
-        "huanshou": 1.93,
-        "pe_ttm": 98.38,
-        "pb": 5.94,
-        "liangbi": 5.23,
-        "avg_price": 111.96,
-        "main_net": null
-      },
-      {
-        "code": "688049",
-        "name": "炬芯科技",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 38.49,
-        "change_pct": 7.75,
-        "huanshou": 3.17,
-        "pe_ttm": 30.52,
-        "pb": 3.21,
-        "liangbi": 2.96,
-        "avg_price": 31.13,
-        "main_net": null
-      },
-      {
-        "code": "688017",
-        "name": "绿的谐波",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 269.87,
-        "change_pct": 7.73,
-        "huanshou": 3.31,
-        "pe_ttm": 350.74,
-        "pb": 13.72,
-        "liangbi": 5.82,
-        "avg_price": 352.84,
-        "main_net": 198376124
-      },
-      {
-        "code": "600167",
-        "name": "联美控股",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 5.59,
-        "change_pct": 7.71,
-        "huanshou": 1.25,
-        "pe_ttm": 25.55,
-        "pb": 1.09,
-        "liangbi": 11.05,
-        "avg_price": 18.96,
-        "main_net": null
-      },
-      {
-        "code": "688022",
-        "name": "ST瀚川",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 10.3,
-        "change_pct": 7.63,
-        "huanshou": 1.58,
-        "pe_ttm": 119.42,
-        "pb": 2.64,
-        "liangbi": 2.28,
-        "avg_price": 164.88,
-        "main_net": null
-      },
-      {
-        "code": "301002",
-        "name": "崧盛股份",
-        "reason": "全市场快照涨幅榜（Node 直连东财派生）",
-        "close": 30.93,
-        "change_pct": 7.58,
-        "huanshou": 16.11,
-        "pe_ttm": 120.58,
-        "pb": 3.73,
-        "liangbi": 3.06,
-        "avg_price": 55.18,
-        "main_net": null
+        "close": 96.73,
+        "change_pct": 9.34,
+        "huanshou": 1.91,
+        "pe_ttm": -168.73,
+        "pb": 6.59,
+        "liangbi": 2.94,
+        "avg_price": -399.86,
+        "main_net": 86667304
       }
     ]
   },
   "pools": {
-    "zt": 39,
-    "zb": 11,
-    "dt": 3,
+    "zt": 53,
+    "zb": 13,
+    "dt": 1,
     "max_lb": 4,
     "lb2": 13,
     "zt_codes": [
@@ -1346,6 +1346,8 @@
       "603626",
       "603936",
       "301313",
+      "603255",
+      "603738",
       "001239",
       "603119",
       "603236",
@@ -1356,31 +1358,54 @@
       "300115",
       "002881",
       "603407",
-      "600629",
-      "002403"
+      "002403",
+      "300461",
+      "000700",
+      "001400",
+      "605389",
+      "603068",
+      "001283",
+      "300244",
+      "603179",
+      "688608",
+      "603127",
+      "603893",
+      "605177",
+      "603882"
     ],
     "zt_lb": {
       "300115": 1,
+      "300244": 1,
+      "300461": 1,
       "300466": 1,
       "301313": 2,
       "600178": 3,
       "600229": 1,
       "600267": 2,
       "600293": 1,
-      "600629": 1,
       "600661": 1,
       "600860": 3,
+      "603068": 1,
       "603119": 2,
+      "603127": 1,
+      "603179": 1,
       "603236": 1,
+      "603255": 1,
       "603273": 1,
       "603278": 3,
       "603341": 1,
       "603386": 1,
       "603407": 1,
       "603626": 2,
+      "603738": 1,
+      "603882": 1,
+      "603893": 1,
       "603936": 1,
+      "605177": 1,
       "605258": 2,
+      "605389": 1,
       "605488": 2,
+      "688608": 1,
       "688689": 1,
       "920096": 1,
       "920641": 1,
@@ -1398,7 +1423,10 @@
       "001239": 1,
       "002376": 1,
       "002881": 1,
-      "002403": 1
+      "002403": 1,
+      "000700": 1,
+      "001400": 1,
+      "001283": 1
     },
     "zt_detail": [
       {
@@ -1407,7 +1435,7 @@
         "zbc": 0,
         "hybk": "计算机设",
         "fbt": "092500",
-        "fund": 443275727
+        "fund": 417616391
       },
       {
         "c": "003029",
@@ -1415,7 +1443,7 @@
         "zbc": 4,
         "hybk": "软件开发",
         "fbt": "092500",
-        "fund": 197220015
+        "fund": 165327930
       },
       {
         "c": "600661",
@@ -1423,7 +1451,7 @@
         "zbc": 0,
         "hybk": "教育",
         "fbt": "092500",
-        "fund": 101580512
+        "fund": 91982693
       },
       {
         "c": "600178",
@@ -1431,7 +1459,7 @@
         "zbc": 0,
         "hybk": "汽车零部",
         "fbt": "092501",
-        "fund": 460582357
+        "fund": 447776478
       },
       {
         "c": "600293",
@@ -1439,7 +1467,7 @@
         "zbc": 0,
         "hybk": "玻璃玻纤",
         "fbt": "092502",
-        "fund": 680748999
+        "fund": 656514663
       },
       {
         "c": "603278",
@@ -1447,7 +1475,7 @@
         "zbc": 0,
         "hybk": "通用设备",
         "fbt": "092502",
-        "fund": 261418113
+        "fund": 284669121
       },
       {
         "c": "001323",
@@ -1455,7 +1483,7 @@
         "zbc": 0,
         "hybk": "家居用品",
         "fbt": "093003",
-        "fund": 75189862
+        "fund": 70509780
       },
       {
         "c": "002479",
@@ -1463,7 +1491,7 @@
         "zbc": 0,
         "hybk": "电力",
         "fbt": "093009",
-        "fund": 164446822
+        "fund": 150800516
       },
       {
         "c": "605488",
@@ -1471,7 +1499,7 @@
         "zbc": 0,
         "hybk": "塑料",
         "fbt": "093011",
-        "fund": 134087532
+        "fund": 143292181
       },
       {
         "c": "002724",
@@ -1479,7 +1507,7 @@
         "zbc": 3,
         "hybk": "照明设备",
         "fbt": "093018",
-        "fund": 146371153
+        "fund": 138237169
       },
       {
         "c": "600267",
@@ -1487,7 +1515,7 @@
         "zbc": 2,
         "hybk": "化学制药",
         "fbt": "093031",
-        "fund": 139981249
+        "fund": 140886263
       },
       {
         "c": "600860",
@@ -1495,7 +1523,7 @@
         "zbc": 2,
         "hybk": "通用设备",
         "fbt": "093041",
-        "fund": 102554809
+        "fund": 102917454
       },
       {
         "c": "002181",
@@ -1503,7 +1531,7 @@
         "zbc": 0,
         "hybk": "出版",
         "fbt": "093048",
-        "fund": 408317902
+        "fund": 344268090
       },
       {
         "c": "002242",
@@ -1511,7 +1539,7 @@
         "zbc": 5,
         "hybk": "小家电",
         "fbt": "093239",
-        "fund": 247073426
+        "fund": 251346246
       },
       {
         "c": "002164",
@@ -1519,7 +1547,7 @@
         "zbc": 3,
         "hybk": "通用设备",
         "fbt": "093445",
-        "fund": 211767685
+        "fund": 186692294
       },
       {
         "c": "002088",
@@ -1527,7 +1555,7 @@
         "zbc": 0,
         "hybk": "装修建材",
         "fbt": "093451",
-        "fund": 134472770
+        "fund": 119741771
       },
       {
         "c": "600229",
@@ -1535,7 +1563,7 @@
         "zbc": 1,
         "hybk": "出版",
         "fbt": "093549",
-        "fund": 107694418
+        "fund": 94428196
       },
       {
         "c": "603386",
@@ -1543,7 +1571,7 @@
         "zbc": 0,
         "hybk": "元件",
         "fbt": "093614",
-        "fund": 243489742
+        "fund": 206653517
       },
       {
         "c": "002347",
@@ -1551,7 +1579,7 @@
         "zbc": 1,
         "hybk": "通用设备",
         "fbt": "093745",
-        "fund": 125430038
+        "fund": 115302857
       },
       {
         "c": "688689",
@@ -1559,7 +1587,7 @@
         "zbc": 1,
         "hybk": "半导体",
         "fbt": "093832",
-        "fund": 361029341
+        "fund": 244795130
       },
       {
         "c": "920641",
@@ -1567,7 +1595,7 @@
         "zbc": 0,
         "hybk": "照明设备",
         "fbt": "093929",
-        "fund": 120923019
+        "fund": 111548384
       },
       {
         "c": "002313",
@@ -1575,7 +1603,7 @@
         "zbc": 2,
         "hybk": "通信设备",
         "fbt": "094009",
-        "fund": 98433280
+        "fund": 97017360
       },
       {
         "c": "605258",
@@ -1583,7 +1611,7 @@
         "zbc": 0,
         "hybk": "元件",
         "fbt": "094135",
-        "fund": 107215680
+        "fund": 98292051
       },
       {
         "c": "920096",
@@ -1591,7 +1619,7 @@
         "zbc": 0,
         "hybk": "自动化设",
         "fbt": "094314",
-        "fund": 90399339
+        "fund": 92665046
       },
       {
         "c": "603626",
@@ -1599,7 +1627,7 @@
         "zbc": 1,
         "hybk": "消费电子",
         "fbt": "094409",
-        "fund": 248799932
+        "fund": 255738052
       },
       {
         "c": "603936",
@@ -1607,7 +1635,7 @@
         "zbc": 0,
         "hybk": "元件",
         "fbt": "094711",
-        "fund": 405613698
+        "fund": 312584307
       },
       {
         "c": "301313",
@@ -1615,7 +1643,23 @@
         "zbc": 0,
         "hybk": "数字媒体",
         "fbt": "095109",
-        "fund": 297354798
+        "fund": 300190878
+      },
+      {
+        "c": "603255",
+        "lbc": 1,
+        "zbc": 2,
+        "hybk": "化学制品",
+        "fbt": "095613",
+        "fund": 25361469
+      },
+      {
+        "c": "603738",
+        "lbc": 1,
+        "zbc": 2,
+        "hybk": "元件",
+        "fbt": "095919",
+        "fund": 175364824
       },
       {
         "c": "001239",
@@ -1623,7 +1667,7 @@
         "zbc": 0,
         "hybk": "工程机械",
         "fbt": "100124",
-        "fund": 85497346
+        "fund": 71480946
       },
       {
         "c": "603119",
@@ -1631,7 +1675,7 @@
         "zbc": 1,
         "hybk": "汽车零部",
         "fbt": "100302",
-        "fund": 118530035
+        "fund": 127254064
       },
       {
         "c": "603236",
@@ -1639,7 +1683,7 @@
         "zbc": 3,
         "hybk": "通信设备",
         "fbt": "100444",
-        "fund": 454024310
+        "fund": 439690514
       },
       {
         "c": "300466",
@@ -1647,7 +1691,7 @@
         "zbc": 0,
         "hybk": "通用设备",
         "fbt": "100609",
-        "fund": 402824793
+        "fund": 269581305
       },
       {
         "c": "603341",
@@ -1655,7 +1699,7 @@
         "zbc": 0,
         "hybk": "消费电子",
         "fbt": "100956",
-        "fund": 124123092
+        "fund": 129548742
       },
       {
         "c": "002376",
@@ -1663,7 +1707,7 @@
         "zbc": 0,
         "hybk": "计算机设",
         "fbt": "101142",
-        "fund": 317335982
+        "fund": 204350112
       },
       {
         "c": "603273",
@@ -1671,7 +1715,7 @@
         "zbc": 1,
         "hybk": "工程机械",
         "fbt": "101547",
-        "fund": 83355930
+        "fund": 20821675
       },
       {
         "c": "300115",
@@ -1679,7 +1723,7 @@
         "zbc": 1,
         "hybk": "消费电子",
         "fbt": "101809",
-        "fund": 1589314521
+        "fund": 1058583557
       },
       {
         "c": "002881",
@@ -1687,7 +1731,7 @@
         "zbc": 1,
         "hybk": "通信设备",
         "fbt": "101839",
-        "fund": 343312799
+        "fund": 272928072
       },
       {
         "c": "603407",
@@ -1695,15 +1739,7 @@
         "zbc": 0,
         "hybk": "化学原料",
         "fbt": "102026",
-        "fund": 105366848
-      },
-      {
-        "c": "600629",
-        "lbc": 1,
-        "zbc": 0,
-        "hybk": "工程咨询",
-        "fbt": "102133",
-        "fund": 152567226
+        "fund": 89786128
       },
       {
         "c": "002403",
@@ -1711,7 +1747,111 @@
         "zbc": 0,
         "hybk": "小家电",
         "fbt": "102333",
-        "fund": 363319405
+        "fund": 170970755
+      },
+      {
+        "c": "300461",
+        "lbc": 1,
+        "zbc": 1,
+        "hybk": "自动化设",
+        "fbt": "102424",
+        "fund": 78731576
+      },
+      {
+        "c": "000700",
+        "lbc": 1,
+        "zbc": 1,
+        "hybk": "汽车零部",
+        "fbt": "102433",
+        "fund": 267117400
+      },
+      {
+        "c": "001400",
+        "lbc": 1,
+        "zbc": 2,
+        "hybk": "专用设备",
+        "fbt": "102800",
+        "fund": 49928727
+      },
+      {
+        "c": "605389",
+        "lbc": 1,
+        "zbc": 0,
+        "hybk": "工程机械",
+        "fbt": "103131",
+        "fund": 45614274
+      },
+      {
+        "c": "603068",
+        "lbc": 1,
+        "zbc": 0,
+        "hybk": "半导体",
+        "fbt": "103340",
+        "fund": 131764707
+      },
+      {
+        "c": "001283",
+        "lbc": 1,
+        "zbc": 1,
+        "hybk": "电池",
+        "fbt": "103442",
+        "fund": 60911005
+      },
+      {
+        "c": "300244",
+        "lbc": 1,
+        "zbc": 0,
+        "hybk": "医疗服务",
+        "fbt": "103930",
+        "fund": 303841633
+      },
+      {
+        "c": "603179",
+        "lbc": 1,
+        "zbc": 1,
+        "hybk": "汽车零部",
+        "fbt": "104234",
+        "fund": 204368308
+      },
+      {
+        "c": "688608",
+        "lbc": 1,
+        "zbc": 0,
+        "hybk": "半导体",
+        "fbt": "104747",
+        "fund": 363279917
+      },
+      {
+        "c": "603127",
+        "lbc": 1,
+        "zbc": 0,
+        "hybk": "医疗服务",
+        "fbt": "104926",
+        "fund": 664551399
+      },
+      {
+        "c": "603893",
+        "lbc": 1,
+        "zbc": 0,
+        "hybk": "半导体",
+        "fbt": "104955",
+        "fund": 688994088
+      },
+      {
+        "c": "605177",
+        "lbc": 1,
+        "zbc": 0,
+        "hybk": "化学制药",
+        "fbt": "105008",
+        "fund": 77069840
+      },
+      {
+        "c": "603882",
+        "lbc": 1,
+        "zbc": 1,
+        "hybk": "医疗服务",
+        "fbt": "105431",
+        "fund": 211828188
       }
     ],
     "prev_zt_codes": [
@@ -1777,7 +1917,7 @@
       "603239",
       "301586"
     ],
-    "seal_pct": 78
+    "seal_pct": 80.3
   },
   "screener": {
     "count": 100,
@@ -1787,107 +1927,215 @@
         "name": "长盈精密",
         "close": 24.67,
         "change_pct": 19.99,
-        "huanshou": 5.74,
-        "liangbi": 17.14,
+        "huanshou": 6.03,
+        "liangbi": 11.52,
         "pe_ttm": 108.55,
         "pb": 4.04,
-        "main_net": 505807100,
+        "main_net": 550562157,
         "industry": "消费电子"
+      },
+      {
+        "code": "603986",
+        "name": "兆易创新",
+        "close": 286.36,
+        "change_pct": 1.39,
+        "huanshou": 2.38,
+        "liangbi": 1.41,
+        "pe_ttm": 25.42,
+        "pb": 5.38,
+        "main_net": 390005888,
+        "industry": "半导体"
+      },
+      {
+        "code": "603893",
+        "name": "瑞芯微",
+        "close": 189.04,
+        "change_pct": 10,
+        "huanshou": 3.08,
+        "liangbi": 2.75,
+        "pe_ttm": 58.52,
+        "pb": 16.2,
+        "main_net": 389243232,
+        "industry": "半导体"
       },
       {
         "code": "000823",
         "name": "超声电子",
-        "close": 26.41,
-        "change_pct": 6.88,
-        "huanshou": 19.43,
-        "liangbi": 4.27,
-        "pe_ttm": 71.06,
-        "pb": 2.82,
-        "main_net": 296670704,
+        "close": 26.21,
+        "change_pct": 6.07,
+        "huanshou": 22.64,
+        "liangbi": 3.18,
+        "pe_ttm": 70.53,
+        "pb": 2.8,
+        "main_net": 380760592,
         "industry": "元件"
-      },
-      {
-        "code": "002242",
-        "name": "九阳股份",
-        "close": 20.56,
-        "change_pct": 10.01,
-        "huanshou": 15.05,
-        "liangbi": 4.3,
-        "pe_ttm": 235.24,
-        "pb": 4.85,
-        "main_net": 278250320,
-        "industry": "小家电"
       },
       {
         "code": "603236",
         "name": "移远通信",
         "close": 76.11,
         "change_pct": 10,
-        "huanshou": 6.17,
-        "liangbi": 8.38,
+        "huanshou": 6.35,
+        "liangbi": 5.52,
         "pe_ttm": 23.51,
         "pb": 3.89,
-        "main_net": 271269920,
+        "main_net": 293945520,
         "industry": "通信设备"
-      },
-      {
-        "code": "300476",
-        "name": "胜宏科技",
-        "close": 186.77,
-        "change_pct": 5.61,
-        "huanshou": 1.97,
-        "liangbi": 3.17,
-        "pe_ttm": 36.52,
-        "pb": 4.84,
-        "main_net": 241117136,
-        "industry": "元件"
       },
       {
         "code": "002475",
         "name": "立讯精密",
-        "close": 47.88,
-        "change_pct": 3.64,
-        "huanshou": 0.51,
-        "liangbi": 2.1,
+        "close": 47.89,
+        "change_pct": 3.66,
+        "huanshou": 0.72,
+        "liangbi": 1.9,
         "pe_ttm": 20.83,
         "pb": 4.02,
-        "main_net": 205913148,
+        "main_net": 293147200,
         "industry": "消费电子"
+      },
+      {
+        "code": "688017",
+        "name": "绿的谐波",
+        "close": 268,
+        "change_pct": 6.99,
+        "huanshou": 4.17,
+        "liangbi": 4.68,
+        "pe_ttm": 348.31,
+        "pb": 13.62,
+        "main_net": 287633165,
+        "industry": "自动化设备"
+      },
+      {
+        "code": "002242",
+        "name": "九阳股份",
+        "close": 20.56,
+        "change_pct": 10.01,
+        "huanshou": 15.15,
+        "liangbi": 2.77,
+        "pe_ttm": 235.24,
+        "pb": 4.85,
+        "main_net": 285460704,
+        "industry": "小家电"
+      },
+      {
+        "code": "002384",
+        "name": "东山精密",
+        "close": 124.27,
+        "change_pct": 1.74,
+        "huanshou": 2.05,
+        "liangbi": 1.36,
+        "pe_ttm": 63.49,
+        "pb": 9.34,
+        "main_net": 285436448,
+        "industry": "元件"
+      },
+      {
+        "code": "300476",
+        "name": "胜宏科技",
+        "close": 187.93,
+        "change_pct": 6.27,
+        "huanshou": 2.28,
+        "liangbi": 2.34,
+        "pe_ttm": 36.75,
+        "pb": 4.87,
+        "main_net": 284454608,
+        "industry": "元件"
+      },
+      {
+        "code": "300308",
+        "name": "中际旭创",
+        "close": 665.61,
+        "change_pct": 0.74,
+        "huanshou": 0.87,
+        "liangbi": 1.04,
+        "pe_ttm": 38.33,
+        "pb": 20.39,
+        "main_net": 281066576,
+        "industry": "通信设备"
+      },
+      {
+        "code": "600176",
+        "name": "中国巨石",
+        "close": 34.99,
+        "change_pct": 3.77,
+        "huanshou": 2.31,
+        "liangbi": 1.88,
+        "pe_ttm": 23.1,
+        "pb": 4.25,
+        "main_net": 247030096,
+        "industry": "玻璃玻纤"
+      },
+      {
+        "code": "300433",
+        "name": "蓝思科技",
+        "close": 27.17,
+        "change_pct": 5.88,
+        "huanshou": 1.23,
+        "liangbi": 2.47,
+        "pe_ttm": 41.55,
+        "pb": 2.75,
+        "main_net": 221164937,
+        "industry": "消费电子"
+      },
+      {
+        "code": "688836",
+        "name": "宇树科技-W",
+        "close": 541,
+        "change_pct": 9.09,
+        "huanshou": 20.54,
+        "liangbi": 5.64,
+        "pe_ttm": 374.53,
+        "pb": 24.87,
+        "main_net": 216051648,
+        "industry": "自动化设备"
       },
       {
         "code": "002181",
         "name": "粤 传 媒",
         "close": 10.13,
         "change_pct": 9.99,
-        "huanshou": 3.2,
-        "liangbi": 1.37,
+        "huanshou": 3.42,
+        "liangbi": 0.94,
         "pe_ttm": -252.31,
         "pb": 2.9,
-        "main_net": 201004144,
+        "main_net": 214542757,
         "industry": "出版"
       },
       {
-        "code": "688017",
-        "name": "绿的谐波",
-        "close": 269.4,
-        "change_pct": 7.54,
-        "huanshou": 3.32,
-        "liangbi": 5.83,
-        "pe_ttm": 350.13,
-        "pb": 13.69,
-        "main_net": 198376124,
-        "industry": "自动化设备"
+        "code": "003006",
+        "name": "百亚股份",
+        "close": 23.92,
+        "change_pct": -1.97,
+        "huanshou": 7.71,
+        "liangbi": 2.07,
+        "pe_ttm": 51.67,
+        "pb": 7.14,
+        "main_net": 214535341,
+        "industry": "个护用品"
+      },
+      {
+        "code": "601869",
+        "name": "长飞光纤",
+        "close": 345.67,
+        "change_pct": 1.67,
+        "huanshou": 1.39,
+        "liangbi": 1.82,
+        "pe_ttm": 83.13,
+        "pb": 17.75,
+        "main_net": 213446984,
+        "industry": "通信设备"
       },
       {
         "code": "603341",
         "name": "龙旗科技",
         "close": 38.26,
         "change_pct": 10.01,
-        "huanshou": 6.62,
-        "liangbi": 13.22,
+        "huanshou": 6.81,
+        "liangbi": 8.69,
         "pe_ttm": 42.03,
         "pb": 2.73,
-        "main_net": 196921507,
+        "main_net": 207079154,
         "industry": "消费电子"
       },
       {
@@ -1895,467 +2143,371 @@
         "name": "凡拓数创",
         "close": 46.8,
         "change_pct": 20,
-        "huanshou": 30.36,
-        "liangbi": 4.84,
+        "huanshou": 30.62,
+        "liangbi": 3.12,
         "pe_ttm": -28.96,
         "pb": 8.03,
-        "main_net": 186177162,
+        "main_net": 191733962,
         "industry": "数字媒体"
       },
       {
-        "code": "603986",
-        "name": "兆易创新",
-        "close": 285.3,
-        "change_pct": 1.01,
-        "huanshou": 1.82,
-        "liangbi": 1.69,
-        "pe_ttm": 25.33,
-        "pb": 5.36,
-        "main_net": 186096704,
-        "industry": "半导体"
+        "code": "000700",
+        "name": "模塑科技",
+        "close": 11.5,
+        "change_pct": 10.05,
+        "huanshou": 6.11,
+        "liangbi": 4.47,
+        "pe_ttm": 20.92,
+        "pb": 2.64,
+        "main_net": 180096164,
+        "industry": "汽车零部件"
       },
       {
-        "code": "603893",
-        "name": "瑞芯微",
-        "close": 182.9,
-        "change_pct": 6.43,
-        "huanshou": 1.88,
-        "liangbi": 2.63,
-        "pe_ttm": 56.61,
-        "pb": 15.68,
-        "main_net": 167522572,
-        "industry": "半导体"
+        "code": "601138",
+        "name": "工业富联",
+        "close": 49.12,
+        "change_pct": 2.96,
+        "huanshou": 0.22,
+        "liangbi": 1.25,
+        "pe_ttm": 20.78,
+        "pb": 5.55,
+        "main_net": 180031500,
+        "industry": "消费电子"
       },
       {
-        "code": "003006",
-        "name": "百亚股份",
-        "close": 24.38,
-        "change_pct": -0.08,
-        "huanshou": 6.13,
-        "liangbi": 2.57,
-        "pe_ttm": 52.66,
-        "pb": 7.28,
-        "main_net": 163541243,
-        "industry": "个护用品"
-      },
-      {
-        "code": "688322",
-        "name": "奥比中光-W",
-        "close": 91.22,
-        "change_pct": 16.56,
-        "huanshou": 4.82,
-        "liangbi": 9.28,
-        "pe_ttm": 344.35,
-        "pb": 9.38,
-        "main_net": 156130563,
-        "industry": "光学光电子"
+        "code": "688507",
+        "name": "索辰科技",
+        "close": 166.96,
+        "change_pct": 16.51,
+        "huanshou": 20.7,
+        "liangbi": 6.01,
+        "pe_ttm": -10226.17,
+        "pb": 5.51,
+        "main_net": 168227370,
+        "industry": "软件开发"
       },
       {
         "code": "603936",
         "name": "博敏电子",
         "close": 18.03,
         "change_pct": 10.01,
-        "huanshou": 4.39,
-        "liangbi": 2.07,
+        "huanshou": 4.53,
+        "liangbi": 1.37,
         "pe_ttm": -140.91,
         "pb": 2.73,
-        "main_net": 155057224,
+        "main_net": 165649849,
         "industry": "元件"
       },
       {
-        "code": "688507",
-        "name": "索辰科技",
-        "close": 167.2,
-        "change_pct": 16.68,
-        "huanshou": 18.44,
-        "liangbi": 8.37,
-        "pe_ttm": -10240.87,
-        "pb": 5.52,
-        "main_net": 149300722,
-        "industry": "软件开发"
+        "code": "002600",
+        "name": "领益智造",
+        "close": 11.33,
+        "change_pct": 8.21,
+        "huanshou": 1.61,
+        "liangbi": 4.57,
+        "pe_ttm": 43.62,
+        "pb": 2.95,
+        "main_net": 163801368,
+        "industry": "消费电子"
       },
       {
-        "code": "601869",
-        "name": "长飞光纤",
-        "close": 347.56,
-        "change_pct": 2.22,
-        "huanshou": 1.07,
-        "liangbi": 2.19,
-        "pe_ttm": 83.59,
-        "pb": 17.85,
-        "main_net": 148889554,
-        "industry": "通信设备"
+        "code": "301666",
+        "name": "大普微-UW",
+        "close": 323.22,
+        "change_pct": -1.61,
+        "huanshou": 13.9,
+        "liangbi": 3.16,
+        "pe_ttm": 116.81,
+        "pb": 38.67,
+        "main_net": 159750126,
+        "industry": "计算机设备"
       },
       {
-        "code": "002421",
-        "name": "达实智能",
-        "close": 3.41,
-        "change_pct": 6.9,
-        "huanshou": 14.83,
-        "liangbi": 7.09,
-        "pe_ttm": -12.41,
-        "pb": 2.66,
-        "main_net": 136319435,
-        "industry": "IT服务Ⅱ"
+        "code": "603127",
+        "name": "昭衍新药",
+        "close": 50.49,
+        "change_pct": 10,
+        "huanshou": 4.44,
+        "liangbi": 1.98,
+        "pe_ttm": 38.43,
+        "pb": 4.22,
+        "main_net": 143142238,
+        "industry": "医疗服务"
+      },
+      {
+        "code": "300458",
+        "name": "全志科技",
+        "close": 28.22,
+        "change_pct": 9.63,
+        "huanshou": 3.65,
+        "liangbi": 2.2,
+        "pe_ttm": 47.43,
+        "pb": 8.05,
+        "main_net": 137541439,
+        "industry": "半导体"
+      },
+      {
+        "code": "688322",
+        "name": "奥比中光-W",
+        "close": 90.72,
+        "change_pct": 15.92,
+        "huanshou": 5.91,
+        "liangbi": 7.29,
+        "pe_ttm": 342.47,
+        "pb": 9.33,
+        "main_net": 137516159,
+        "industry": "光学光电子"
+      },
+      {
+        "code": "002008",
+        "name": "大族激光",
+        "close": 65.57,
+        "change_pct": 3.75,
+        "huanshou": 2.38,
+        "liangbi": 1.55,
+        "pe_ttm": 33.93,
+        "pb": 3.15,
+        "main_net": 135826463,
+        "industry": "自动化设备"
+      },
+      {
+        "code": "603738",
+        "name": "泰晶科技",
+        "close": 28.94,
+        "change_pct": 10,
+        "huanshou": 7.61,
+        "liangbi": 5.21,
+        "pe_ttm": 138.1,
+        "pb": 6.06,
+        "main_net": 135021275,
+        "industry": "元件"
       },
       {
         "code": "603626",
         "name": "科森科技",
         "close": 24.43,
         "change_pct": 10,
-        "huanshou": 6.13,
-        "liangbi": 4.49,
+        "huanshou": 6.19,
+        "liangbi": 2.9,
         "pe_ttm": 522.82,
         "pb": 6.28,
-        "main_net": 130220606,
+        "main_net": 134564260,
         "industry": "消费电子"
       },
       {
-        "code": "301666",
-        "name": "大普微-UW",
-        "close": 322.77,
-        "change_pct": -1.75,
-        "huanshou": 11.79,
-        "liangbi": 4.19,
-        "pe_ttm": 116.64,
-        "pb": 38.61,
-        "main_net": 127206344,
-        "industry": "计算机设备"
+        "code": "002281",
+        "name": "光迅科技",
+        "close": 135.22,
+        "change_pct": 2.04,
+        "huanshou": 1.53,
+        "liangbi": 1.22,
+        "pe_ttm": 96.82,
+        "pb": 7.74,
+        "main_net": 129214645,
+        "industry": "通信设备"
       },
       {
-        "code": "600241",
-        "name": "时代万恒",
-        "close": 13.33,
-        "change_pct": 4.63,
-        "huanshou": 22.07,
-        "liangbi": 3.03,
-        "pe_ttm": -26.42,
-        "pb": 3.84,
-        "main_net": 126621428,
-        "industry": "电池"
+        "code": "603259",
+        "name": "药明康德",
+        "close": 148.6,
+        "change_pct": 1.43,
+        "huanshou": 0.58,
+        "liangbi": 0.9,
+        "pe_ttm": 20.81,
+        "pb": 5.49,
+        "main_net": 128688486,
+        "industry": "医疗服务"
       },
       {
         "code": "603119",
         "name": "浙江荣泰",
         "close": 50.46,
         "change_pct": 10.01,
-        "huanshou": 3,
-        "liangbi": 7.59,
+        "huanshou": 3.03,
+        "liangbi": 4.9,
         "pe_ttm": 78.2,
         "pb": 11.37,
-        "main_net": 121937903,
+        "main_net": 127958285,
         "industry": "汽车零部件"
+      },
+      {
+        "code": "600241",
+        "name": "时代万恒",
+        "close": 13.22,
+        "change_pct": 3.77,
+        "huanshou": 23.17,
+        "liangbi": 2.04,
+        "pe_ttm": -26.2,
+        "pb": 3.81,
+        "main_net": 127335242,
+        "industry": "电池"
+      },
+      {
+        "code": "002421",
+        "name": "达实智能",
+        "close": 3.37,
+        "change_pct": 5.64,
+        "huanshou": 15.99,
+        "liangbi": 4.89,
+        "pe_ttm": -12.27,
+        "pb": 2.63,
+        "main_net": 127172964,
+        "industry": "IT服务Ⅱ"
+      },
+      {
+        "code": "300244",
+        "name": "迪安诊断",
+        "close": 21.79,
+        "change_pct": 19.99,
+        "huanshou": 11.48,
+        "liangbi": 4.87,
+        "pe_ttm": 29.01,
+        "pb": 2.03,
+        "main_net": 126623529,
+        "industry": "医疗服务"
+      },
+      {
+        "code": "300209",
+        "name": "行云科技",
+        "close": 34.7,
+        "change_pct": 4.83,
+        "huanshou": 4.01,
+        "liangbi": 1.76,
+        "pe_ttm": -441.14,
+        "pb": 34.29,
+        "main_net": 125800962,
+        "industry": "软件开发"
+      },
+      {
+        "code": "002436",
+        "name": "兴森科技",
+        "close": 35.87,
+        "change_pct": 3.91,
+        "huanshou": 3.59,
+        "liangbi": 1.3,
+        "pe_ttm": 281.45,
+        "pb": 10.81,
+        "main_net": 125182433,
+        "industry": "元件"
+      },
+      {
+        "code": "688775",
+        "name": "影石创新",
+        "close": 103.47,
+        "change_pct": 10.54,
+        "huanshou": 3.47,
+        "liangbi": 4.59,
+        "pe_ttm": 94.4,
+        "pb": 8.03,
+        "main_net": 124083252,
+        "industry": "消费电子"
       },
       {
         "code": "603186",
         "name": "华正新材",
-        "close": 192.99,
+        "close": 193,
         "change_pct": 3.35,
-        "huanshou": 4.21,
-        "liangbi": 1.66,
+        "huanshou": 5.11,
+        "liangbi": 1.28,
         "pe_ttm": 74.35,
         "pb": 12.28,
-        "main_net": 121606435,
+        "main_net": 123846493,
         "industry": "元件"
       },
       {
         "code": "601100",
         "name": "恒立液压",
-        "close": 86.34,
-        "change_pct": 3.96,
-        "huanshou": 0.6,
-        "liangbi": 4.1,
-        "pe_ttm": 42.23,
-        "pb": 6.61,
-        "main_net": 121593922,
+        "close": 86.81,
+        "change_pct": 4.53,
+        "huanshou": 0.76,
+        "liangbi": 3.32,
+        "pe_ttm": 42.46,
+        "pb": 6.65,
+        "main_net": 121883093,
         "industry": "工程机械"
       },
       {
-        "code": "688836",
-        "name": "宇树科技-W",
-        "close": 527.98,
+        "code": "000725",
+        "name": "京东方Ａ",
+        "close": 5.07,
+        "change_pct": 0.2,
+        "huanshou": 0.88,
+        "liangbi": 1.13,
+        "pe_ttm": 23.9,
+        "pb": 1.41,
+        "main_net": 120809328,
+        "industry": "光学光电子"
+      },
+      {
+        "code": "688018",
+        "name": "乐鑫科技",
+        "close": 138.49,
+        "change_pct": 15.01,
+        "huanshou": 4.16,
+        "liangbi": 2.75,
+        "pe_ttm": 56.87,
+        "pb": 6.9,
+        "main_net": 118545751,
+        "industry": "半导体"
+      },
+      {
+        "code": "600206",
+        "name": "有研新材",
+        "close": 40.36,
         "change_pct": 6.46,
-        "huanshou": 15.13,
-        "liangbi": 6.5,
-        "pe_ttm": 365.52,
-        "pb": 24.27,
-        "main_net": 118005376,
-        "industry": "自动化设备"
+        "huanshou": 6.04,
+        "liangbi": 2.15,
+        "pe_ttm": 120.85,
+        "pb": 7.63,
+        "main_net": 107900950,
+        "industry": "半导体"
       },
       {
-        "code": "002472",
-        "name": "双环传动",
-        "close": 39.11,
-        "change_pct": 8.46,
-        "huanshou": 2.99,
-        "liangbi": 5.69,
-        "pe_ttm": 26.15,
-        "pb": 3.23,
-        "main_net": 100197826,
-        "industry": "汽车零部件"
+        "code": "688521",
+        "name": "芯原股份",
+        "close": 133.16,
+        "change_pct": 7.29,
+        "huanshou": 2.03,
+        "liangbi": 1.81,
+        "pe_ttm": -85.39,
+        "pb": 23.94,
+        "main_net": 102994459,
+        "industry": "半导体"
       },
       {
-        "code": "002384",
-        "name": "东山精密",
-        "close": 123.96,
-        "change_pct": 1.48,
-        "huanshou": 1.48,
-        "liangbi": 1.54,
-        "pe_ttm": 63.33,
-        "pb": 9.32,
-        "main_net": 99872672,
-        "industry": "元件"
-      },
-      {
-        "code": "600031",
-        "name": "三一重工",
-        "close": 18.09,
-        "change_pct": 1.52,
-        "huanshou": 0.26,
-        "liangbi": 1.36,
-        "pe_ttm": 18.72,
-        "pb": 1.81,
-        "main_net": 99871987,
-        "industry": "工程机械"
+        "code": "300857",
+        "name": "协创数据",
+        "close": 211.82,
+        "change_pct": -2.28,
+        "huanshou": 2.85,
+        "liangbi": 3.54,
+        "pe_ttm": 40.32,
+        "pb": 17.1,
+        "main_net": 100421184,
+        "industry": "消费电子"
       },
       {
         "code": "600267",
         "name": "海正药业",
         "close": 13.27,
         "change_pct": 10.03,
-        "huanshou": 4.78,
-        "liangbi": 12.87,
+        "huanshou": 4.81,
+        "liangbi": 8.27,
         "pe_ttm": 17.84,
         "pb": 1.74,
-        "main_net": 97520733,
+        "main_net": 100329997,
         "industry": "化学制药"
       },
       {
-        "code": "002714",
-        "name": "牧原股份",
-        "close": 41.43,
-        "change_pct": 0.49,
-        "huanshou": 0.81,
-        "liangbi": 3.13,
-        "pe_ttm": -213.39,
-        "pb": 3.02,
-        "main_net": 94753084,
-        "industry": "养殖业"
-      },
-      {
-        "code": "300031",
-        "name": "宝通科技",
-        "close": 25.9,
-        "change_pct": 5.11,
-        "huanshou": 8.94,
-        "liangbi": 3.11,
-        "pe_ttm": 41.85,
-        "pb": 2.64,
-        "main_net": 90802060,
-        "industry": "游戏Ⅱ"
-      },
-      {
-        "code": "002008",
-        "name": "大族激光",
-        "close": 65.03,
-        "change_pct": 2.9,
-        "huanshou": 1.56,
-        "liangbi": 1.59,
-        "pe_ttm": 33.65,
-        "pb": 3.12,
-        "main_net": 86527879,
-        "industry": "自动化设备"
-      },
-      {
-        "code": "300489",
-        "name": "光智科技",
-        "close": 244.27,
-        "change_pct": 5.5,
-        "huanshou": 4.22,
-        "liangbi": 1.95,
-        "pe_ttm": -511.84,
-        "pb": 43.69,
-        "main_net": 86411416,
-        "industry": "光学光电子"
-      },
-      {
-        "code": "688018",
-        "name": "乐鑫科技",
-        "close": 131.39,
-        "change_pct": 9.11,
-        "huanshou": 2.7,
-        "liangbi": 2.79,
-        "pe_ttm": 53.95,
-        "pb": 6.54,
-        "main_net": 83877249,
-        "industry": "半导体"
-      },
-      {
-        "code": "301550",
-        "name": "斯菱智驱",
-        "close": 112.52,
-        "change_pct": 11.77,
-        "huanshou": 5.65,
-        "liangbi": 6.11,
-        "pe_ttm": 250.48,
-        "pb": 20.58,
-        "main_net": 82756577,
-        "industry": "汽车零部件"
-      },
-      {
-        "code": "688234",
-        "name": "天岳先进",
-        "close": 95.66,
-        "change_pct": 8.13,
-        "huanshou": 1.58,
-        "liangbi": 3.8,
-        "pe_ttm": -166.87,
-        "pb": 6.52,
-        "main_net": 81458151,
-        "industry": "半导体"
-      },
-      {
-        "code": "601091",
-        "name": "沈鼓集团",
-        "close": 19.43,
-        "change_pct": 4.18,
-        "huanshou": 13.36,
-        "liangbi": 2.67,
-        "pe_ttm": 82.44,
-        "pb": 8.76,
-        "main_net": 81342007,
-        "industry": "专用设备"
-      },
-      {
-        "code": "600206",
-        "name": "有研新材",
-        "close": 39.57,
-        "change_pct": 4.38,
-        "huanshou": 4.32,
-        "liangbi": 2.4,
-        "pe_ttm": 118.48,
-        "pb": 7.49,
-        "main_net": 78250198,
-        "industry": "半导体"
-      },
-      {
-        "code": "000559",
-        "name": "万向钱潮",
-        "close": 10.48,
-        "change_pct": 5.75,
-        "huanshou": 1.56,
-        "liangbi": 6.37,
-        "pe_ttm": 33.1,
-        "pb": 4.19,
-        "main_net": 78020290,
-        "industry": "汽车零部件"
-      },
-      {
-        "code": "600629",
-        "name": "华建集团",
-        "close": 19.01,
-        "change_pct": 10.01,
-        "huanshou": 2.71,
-        "liangbi": 3.77,
-        "pe_ttm": -407.92,
-        "pb": 4.16,
-        "main_net": 77821988,
-        "industry": "工程咨询服务Ⅱ"
-      },
-      {
-        "code": "603738",
-        "name": "泰晶科技",
-        "close": 28.38,
-        "change_pct": 7.87,
-        "huanshou": 6.25,
-        "liangbi": 6.69,
-        "pe_ttm": 135.43,
-        "pb": 5.95,
-        "main_net": 77198646,
-        "industry": "元件"
-      },
-      {
-        "code": "300209",
-        "name": "行云科技",
-        "close": 34.19,
-        "change_pct": 3.29,
-        "huanshou": 3.03,
-        "liangbi": 2.08,
-        "pe_ttm": -434.66,
-        "pb": 33.79,
-        "main_net": 76566558,
-        "industry": "软件开发"
-      },
-      {
-        "code": "002164",
-        "name": "宁波东力",
-        "close": 16.16,
-        "change_pct": 10.01,
-        "huanshou": 10.84,
-        "liangbi": 5.88,
-        "pe_ttm": 39.34,
-        "pb": 5.58,
-        "main_net": 71919384,
-        "industry": "通用设备"
-      },
-      {
-        "code": "002436",
-        "name": "兴森科技",
-        "close": 35.49,
-        "change_pct": 2.81,
-        "huanshou": 2.83,
-        "liangbi": 1.61,
-        "pe_ttm": 278.47,
-        "pb": 10.7,
-        "main_net": 70947956,
-        "industry": "元件"
-      },
-      {
-        "code": "688123",
-        "name": "聚辰股份",
-        "close": 130.7,
-        "change_pct": 3.5,
-        "huanshou": 2.28,
-        "liangbi": 1.59,
-        "pe_ttm": 30.39,
-        "pb": 6.65,
-        "main_net": 69345023,
-        "industry": "半导体"
-      },
-      {
-        "code": "002600",
-        "name": "领益智造",
-        "close": 10.97,
-        "change_pct": 4.78,
-        "huanshou": 0.99,
-        "liangbi": 4.38,
-        "pe_ttm": 42.23,
-        "pb": 2.86,
-        "main_net": 68020963,
-        "industry": "消费电子"
-      },
-      {
-        "code": "300007",
-        "name": "汉威科技",
-        "close": 31.01,
-        "change_pct": 14.22,
-        "huanshou": 6.22,
-        "liangbi": 12.01,
-        "pe_ttm": 60.52,
-        "pb": 3.39,
-        "main_net": 67679817,
-        "industry": "通用设备"
-      },
-      {
-        "code": "300458",
-        "name": "全志科技",
-        "close": 27.37,
-        "change_pct": 6.33,
-        "huanshou": 2.14,
-        "liangbi": 2.01,
-        "pe_ttm": 46,
-        "pb": 7.81,
-        "main_net": 67642401,
+        "code": "600584",
+        "name": "长电科技",
+        "close": 57.9,
+        "change_pct": 2.77,
+        "huanshou": 1.52,
+        "liangbi": 1.42,
+        "pe_ttm": 53.43,
+        "pb": 3.59,
+        "main_net": 99822541,
         "industry": "半导体"
       },
       {
@@ -2363,631 +2515,619 @@
         "name": "新北洋",
         "close": 7.62,
         "change_pct": 9.96,
-        "huanshou": 6.54,
-        "liangbi": 7.37,
+        "huanshou": 7.85,
+        "liangbi": 5.66,
         "pe_ttm": 67.7,
         "pb": 1.67,
-        "main_net": 67075533,
+        "main_net": 98758883,
         "industry": "计算机设备"
       },
       {
-        "code": "001389",
-        "name": "广合科技",
-        "close": 127.6,
-        "change_pct": 6.33,
-        "huanshou": 3.32,
-        "liangbi": 2.46,
-        "pe_ttm": 40.76,
-        "pb": 7.61,
-        "main_net": 67023546,
+        "code": "002472",
+        "name": "双环传动",
+        "close": 39.03,
+        "change_pct": 8.24,
+        "huanshou": 3.58,
+        "liangbi": 4.36,
+        "pe_ttm": 26.1,
+        "pb": 3.22,
+        "main_net": 97895725,
+        "industry": "汽车零部件"
+      },
+      {
+        "code": "600031",
+        "name": "三一重工",
+        "close": 18.03,
+        "change_pct": 1.18,
+        "huanshou": 0.34,
+        "liangbi": 1.15,
+        "pe_ttm": 18.66,
+        "pb": 1.8,
+        "main_net": 96848343,
+        "industry": "工程机械"
+      },
+      {
+        "code": "002714",
+        "name": "牧原股份",
+        "close": 41.03,
+        "change_pct": -0.49,
+        "huanshou": 0.95,
+        "liangbi": 2.34,
+        "pe_ttm": -211.33,
+        "pb": 2.99,
+        "main_net": 94721814,
+        "industry": "养殖业"
+      },
+      {
+        "code": "300489",
+        "name": "光智科技",
+        "close": 247.01,
+        "change_pct": 6.69,
+        "huanshou": 5.08,
+        "liangbi": 1.5,
+        "pe_ttm": -517.58,
+        "pb": 44.18,
+        "main_net": 92863323,
+        "industry": "光学光电子"
+      },
+      {
+        "code": "301550",
+        "name": "斯菱智驱",
+        "close": 113.45,
+        "change_pct": 12.69,
+        "huanshou": 6.47,
+        "liangbi": 4.48,
+        "pe_ttm": 252.55,
+        "pb": 20.75,
+        "main_net": 91131873,
+        "industry": "汽车零部件"
+      },
+      {
+        "code": "000559",
+        "name": "万向钱潮",
+        "close": 10.58,
+        "change_pct": 6.76,
+        "huanshou": 1.9,
+        "liangbi": 4.94,
+        "pe_ttm": 33.42,
+        "pb": 4.23,
+        "main_net": 91018965,
+        "industry": "汽车零部件"
+      },
+      {
+        "code": "002185",
+        "name": "华天科技",
+        "close": 14.41,
+        "change_pct": 3.74,
+        "huanshou": 2.76,
+        "liangbi": 2.11,
+        "pe_ttm": 36.95,
+        "pb": 2.52,
+        "main_net": 90560273,
+        "industry": "半导体"
+      },
+      {
+        "code": "002241",
+        "name": "歌尔股份",
+        "close": 20.78,
+        "change_pct": 3.33,
+        "huanshou": 1.03,
+        "liangbi": 1.82,
+        "pe_ttm": 18.59,
+        "pb": 1.95,
+        "main_net": 90556637,
+        "industry": "消费电子"
+      },
+      {
+        "code": "605358",
+        "name": "立昂微",
+        "close": 36.64,
+        "change_pct": 5.59,
+        "huanshou": 2.86,
+        "liangbi": 2.44,
+        "pe_ttm": 412.72,
+        "pb": 2.64,
+        "main_net": 90109223,
+        "industry": "半导体"
+      },
+      {
+        "code": "300031",
+        "name": "宝通科技",
+        "close": 26.42,
+        "change_pct": 7.22,
+        "huanshou": 10.99,
+        "liangbi": 2.44,
+        "pe_ttm": 42.69,
+        "pb": 2.69,
+        "main_net": 89984706,
+        "industry": "游戏Ⅱ"
+      },
+      {
+        "code": "600276",
+        "name": "恒瑞医药",
+        "close": 46.89,
+        "change_pct": 1.76,
+        "huanshou": 0.46,
+        "liangbi": 1.64,
+        "pe_ttm": 40.28,
+        "pb": 4.83,
+        "main_net": 87250045,
+        "industry": "化学制药"
+      },
+      {
+        "code": "688234",
+        "name": "天岳先进",
+        "close": 96.74,
+        "change_pct": 9.35,
+        "huanshou": 1.91,
+        "liangbi": 2.94,
+        "pe_ttm": -168.75,
+        "pb": 6.59,
+        "main_net": 86667304,
+        "industry": "半导体"
+      },
+      {
+        "code": "688795",
+        "name": "摩尔线程-U",
+        "close": 351,
+        "change_pct": 7.42,
+        "huanshou": 5.67,
+        "liangbi": 2.71,
+        "pe_ttm": -222.52,
+        "pb": 13.55,
+        "main_net": 86245319,
+        "industry": "半导体"
+      },
+      {
+        "code": "603466",
+        "name": "风语筑",
+        "close": 13.97,
+        "change_pct": 5.28,
+        "huanshou": 12.48,
+        "liangbi": 1.95,
+        "pe_ttm": -3037.51,
+        "pb": 3.97,
+        "main_net": 85883170,
+        "industry": "数字媒体"
+      },
+      {
+        "code": "300620",
+        "name": "光库科技",
+        "close": 241.88,
+        "change_pct": 3.9,
+        "huanshou": 1.78,
+        "liangbi": 1.59,
+        "pe_ttm": 220.61,
+        "pb": 26.7,
+        "main_net": 84264215,
+        "industry": "通信设备"
+      },
+      {
+        "code": "002491",
+        "name": "通鼎互联",
+        "close": 18.1,
+        "change_pct": 2.55,
+        "huanshou": 6.6,
+        "liangbi": 2.25,
+        "pe_ttm": 103.19,
+        "pb": 8.33,
+        "main_net": 84151938,
+        "industry": "通信设备"
+      },
+      {
+        "code": "601689",
+        "name": "拓普集团",
+        "close": 42.37,
+        "change_pct": 4.64,
+        "huanshou": 1.07,
+        "liangbi": 2.43,
+        "pe_ttm": 29.37,
+        "pb": 3.04,
+        "main_net": 82507411,
+        "industry": "汽车零部件"
+      },
+      {
+        "code": "688787",
+        "name": "海天瑞声",
+        "close": 102,
+        "change_pct": 15.86,
+        "huanshou": 10.12,
+        "liangbi": 6.28,
+        "pe_ttm": 306.33,
+        "pb": 8.42,
+        "main_net": 82286576,
+        "industry": "IT服务Ⅱ"
+      },
+      {
+        "code": "300007",
+        "name": "汉威科技",
+        "close": 31.26,
+        "change_pct": 15.14,
+        "huanshou": 7.75,
+        "liangbi": 9.56,
+        "pe_ttm": 61,
+        "pb": 3.42,
+        "main_net": 81457852,
+        "industry": "通用设备"
+      },
+      {
+        "code": "301511",
+        "name": "德福科技",
+        "close": 77.47,
+        "change_pct": 3.57,
+        "huanshou": 2.46,
+        "liangbi": 1.26,
+        "pe_ttm": 144.78,
+        "pb": 11.73,
+        "main_net": 81432777,
+        "industry": "电池"
+      },
+      {
+        "code": "688525",
+        "name": "佰维存储",
+        "close": 160.52,
+        "change_pct": 1.61,
+        "huanshou": 2.27,
+        "liangbi": 1.75,
+        "pe_ttm": 9.26,
+        "pb": 6.06,
+        "main_net": 81150160,
+        "industry": "半导体"
+      },
+      {
+        "code": "300757",
+        "name": "罗博特科",
+        "close": 446.06,
+        "change_pct": 1.29,
+        "huanshou": 1.64,
+        "liangbi": 1.19,
+        "pe_ttm": -3015.09,
+        "pb": 48.1,
+        "main_net": 81119012,
+        "industry": "自动化设备"
+      },
+      {
+        "code": "002938",
+        "name": "鹏鼎控股",
+        "close": 75.05,
+        "change_pct": 3.23,
+        "huanshou": 0.46,
+        "liangbi": 1.2,
+        "pe_ttm": 45.91,
+        "pb": 5.06,
+        "main_net": 80966366,
         "industry": "元件"
+      },
+      {
+        "code": "600629",
+        "name": "华建集团",
+        "close": 18.89,
+        "change_pct": 9.32,
+        "huanshou": 3.5,
+        "liangbi": 3.12,
+        "pe_ttm": -405.35,
+        "pb": 4.13,
+        "main_net": 80928482,
+        "industry": "工程咨询服务Ⅱ"
+      },
+      {
+        "code": "601091",
+        "name": "沈鼓集团",
+        "close": 19.36,
+        "change_pct": 3.81,
+        "huanshou": 14.52,
+        "liangbi": 1.86,
+        "pe_ttm": 82.15,
+        "pb": 8.73,
+        "main_net": 80818222,
+        "industry": "专用设备"
+      },
+      {
+        "code": "000657",
+        "name": "中钨高新",
+        "close": 44.42,
+        "change_pct": 3.81,
+        "huanshou": 1.64,
+        "liangbi": 1.48,
+        "pe_ttm": 36,
+        "pb": 8.97,
+        "main_net": 79761082,
+        "industry": "小金属"
+      },
+      {
+        "code": "688608",
+        "name": "恒玄科技",
+        "close": 106.32,
+        "change_pct": 20,
+        "huanshou": 3.2,
+        "liangbi": 4.52,
+        "pe_ttm": 54.72,
+        "pb": 3.58,
+        "main_net": 79590497,
+        "industry": "半导体"
       },
       {
         "code": "300466",
         "name": "赛摩智能",
         "close": 8.64,
         "change_pct": 20,
-        "huanshou": 5.57,
-        "liangbi": 22.01,
+        "huanshou": 6.09,
+        "liangbi": 15.38,
         "pe_ttm": -302.14,
         "pb": 6.61,
-        "main_net": 66539853,
+        "main_net": 79572429,
         "industry": "通用设备"
       },
       {
-        "code": "688787",
-        "name": "海天瑞声",
-        "close": 99.9,
-        "change_pct": 13.47,
-        "huanshou": 8.06,
-        "liangbi": 7.82,
-        "pe_ttm": 300.02,
-        "pb": 8.25,
-        "main_net": 65712269,
-        "industry": "IT服务Ⅱ"
-      },
-      {
-        "code": "600281",
-        "name": "华阳新材",
-        "close": 5.24,
-        "change_pct": 4.38,
-        "huanshou": 9.71,
-        "liangbi": 4.99,
-        "pe_ttm": -31.36,
-        "pb": 46.02,
-        "main_net": 64233905,
-        "industry": "小金属"
-      },
-      {
-        "code": "688775",
-        "name": "影石创新",
-        "close": 99.68,
-        "change_pct": 6.5,
-        "huanshou": 2.19,
-        "liangbi": 4.53,
-        "pe_ttm": 90.94,
-        "pb": 7.73,
-        "main_net": 63342788,
-        "industry": "消费电子"
-      },
-      {
-        "code": "688689",
-        "name": "银河微电",
-        "close": 40.62,
-        "change_pct": 20,
-        "huanshou": 7.24,
-        "liangbi": 9.15,
-        "pe_ttm": 45.06,
-        "pb": 3.06,
-        "main_net": 62409537,
+        "code": "688123",
+        "name": "聚辰股份",
+        "close": 132.08,
+        "change_pct": 4.59,
+        "huanshou": 3,
+        "liangbi": 1.33,
+        "pe_ttm": 30.71,
+        "pb": 6.72,
+        "main_net": 78791252,
         "industry": "半导体"
+      },
+      {
+        "code": "001389",
+        "name": "广合科技",
+        "close": 128.63,
+        "change_pct": 7.19,
+        "huanshou": 4,
+        "liangbi": 1.89,
+        "pe_ttm": 41.09,
+        "pb": 7.67,
+        "main_net": 77894560,
+        "industry": "元件"
+      },
+      {
+        "code": "300638",
+        "name": "广和通",
+        "close": 20.08,
+        "change_pct": 14.61,
+        "huanshou": 4.65,
+        "liangbi": 5.95,
+        "pe_ttm": 94.49,
+        "pb": 2.97,
+        "main_net": 77559384,
+        "industry": "通信设备"
+      },
+      {
+        "code": "002851",
+        "name": "麦格米特",
+        "close": 97.26,
+        "change_pct": 3.68,
+        "huanshou": 1.96,
+        "liangbi": 1.27,
+        "pe_ttm": 253.75,
+        "pb": 6.23,
+        "main_net": 76531260,
+        "industry": "其他电源设备Ⅱ"
+      },
+      {
+        "code": "300475",
+        "name": "香农芯创",
+        "close": 115.77,
+        "change_pct": 1.55,
+        "huanshou": 2.79,
+        "liangbi": 1.55,
+        "pe_ttm": 13.49,
+        "pb": 7.61,
+        "main_net": 76345723,
+        "industry": "其他电子Ⅱ"
+      },
+      {
+        "code": "688777",
+        "name": "中控技术",
+        "close": 72.93,
+        "change_pct": 2.96,
+        "huanshou": 1.09,
+        "liangbi": 1.48,
+        "pe_ttm": 237.96,
+        "pb": 5.86,
+        "main_net": 75956288,
+        "industry": "自动化设备"
+      },
+      {
+        "code": "002164",
+        "name": "宁波东力",
+        "close": 16.16,
+        "change_pct": 10.01,
+        "huanshou": 11.04,
+        "liangbi": 3.83,
+        "pe_ttm": 39.34,
+        "pb": 5.58,
+        "main_net": 75799320,
+        "industry": "通用设备"
       },
       {
         "code": "002881",
         "name": "美格智能",
         "close": 38.51,
         "change_pct": 10,
-        "huanshou": 8.21,
-        "liangbi": 9.54,
+        "huanshou": 8.46,
+        "liangbi": 6.29,
         "pe_ttm": 70.81,
         "pb": 4.18,
-        "main_net": 62043271,
+        "main_net": 74570574,
         "industry": "通信设备"
-      },
-      {
-        "code": "002354",
-        "name": "天娱数科",
-        "close": 7.68,
-        "change_pct": 3.5,
-        "huanshou": 8.09,
-        "liangbi": 2.17,
-        "pe_ttm": -400.24,
-        "pb": 7.36,
-        "main_net": 61375587,
-        "industry": "广告营销"
-      },
-      {
-        "code": "688400",
-        "name": "凌云光",
-        "close": 42.33,
-        "change_pct": 10.81,
-        "huanshou": 2.19,
-        "liangbi": 6.7,
-        "pe_ttm": 27.9,
-        "pb": 2.57,
-        "main_net": 61036588,
-        "industry": "专用设备"
-      },
-      {
-        "code": "603337",
-        "name": "杰克科技",
-        "close": 36.44,
-        "change_pct": 5.75,
-        "huanshou": 2.07,
-        "liangbi": 10.36,
-        "pe_ttm": 19.95,
-        "pb": 3.3,
-        "main_net": 60849837,
-        "industry": "专用设备"
-      },
-      {
-        "code": "603466",
-        "name": "风语筑",
-        "close": 13.85,
-        "change_pct": 4.37,
-        "huanshou": 10.88,
-        "liangbi": 2.65,
-        "pe_ttm": -3011.41,
-        "pb": 3.93,
-        "main_net": 60468193,
-        "industry": "数字媒体"
-      },
-      {
-        "code": "300475",
-        "name": "香农芯创",
-        "close": 115.37,
-        "change_pct": 1.2,
-        "huanshou": 2.22,
-        "liangbi": 1.93,
-        "pe_ttm": 13.45,
-        "pb": 7.59,
-        "main_net": 58435590,
-        "industry": "其他电子Ⅱ"
-      },
-      {
-        "code": "603259",
-        "name": "药明康德",
-        "close": 146.38,
-        "change_pct": -0.08,
-        "huanshou": 0.38,
-        "liangbi": 0.93,
-        "pe_ttm": 20.5,
-        "pb": 5.41,
-        "main_net": 58402340,
-        "industry": "医疗服务"
       },
       {
         "code": "002428",
         "name": "云南锗业",
-        "close": 78.9,
-        "change_pct": 2.85,
-        "huanshou": 2.26,
-        "liangbi": 1.65,
-        "pe_ttm": 713.07,
-        "pb": 33.57,
-        "main_net": 58175782,
+        "close": 79.02,
+        "change_pct": 3.01,
+        "huanshou": 2.77,
+        "liangbi": 1.29,
+        "pe_ttm": 714.16,
+        "pb": 33.63,
+        "main_net": 74393138,
         "industry": "小金属"
       },
       {
-        "code": "002913",
-        "name": "奥士康",
-        "close": 84.42,
-        "change_pct": 1.71,
-        "huanshou": 1.42,
-        "liangbi": 1.25,
-        "pe_ttm": 137.59,
-        "pb": 6.09,
-        "main_net": 58164637,
-        "industry": "元件"
-      },
-      {
-        "code": "002850",
-        "name": "科达利",
-        "close": 154.8,
-        "change_pct": 5.21,
-        "huanshou": 1.64,
-        "liangbi": 4.02,
-        "pe_ttm": 22.87,
-        "pb": 2.93,
-        "main_net": 56045848,
-        "industry": "电池"
-      },
-      {
-        "code": "002640",
-        "name": "跨境通",
-        "close": 3.95,
-        "change_pct": 3.95,
-        "huanshou": 9.41,
-        "liangbi": 2.46,
-        "pe_ttm": -27.13,
-        "pb": 9.12,
-        "main_net": 53959553,
-        "industry": "互联网电商"
-      },
-      {
-        "code": "300433",
-        "name": "蓝思科技",
-        "close": 26.43,
-        "change_pct": 3,
-        "huanshou": 0.67,
-        "liangbi": 2.09,
-        "pe_ttm": 40.42,
-        "pb": 2.67,
-        "main_net": 53405779,
-        "industry": "消费电子"
-      },
-      {
-        "code": "605258",
-        "name": "协和电子",
-        "close": 47.19,
-        "change_pct": 10,
-        "huanshou": 7.46,
-        "liangbi": 2.81,
-        "pe_ttm": 62.92,
-        "pb": 3.47,
-        "main_net": 53250566,
-        "industry": "元件"
-      },
-      {
-        "code": "300244",
-        "name": "迪安诊断",
-        "close": 20.66,
-        "change_pct": 13.77,
-        "huanshou": 8.13,
-        "liangbi": 5.39,
-        "pe_ttm": 27.5,
-        "pb": 1.92,
-        "main_net": 52935461,
-        "industry": "医疗服务"
+        "code": "002354",
+        "name": "天娱数科",
+        "close": 7.72,
+        "change_pct": 4.04,
+        "huanshou": 10.49,
+        "liangbi": 1.8,
+        "pe_ttm": -402.33,
+        "pb": 7.4,
+        "main_net": 74088183,
+        "industry": "广告营销"
       },
       {
         "code": "002273",
         "name": "水晶光电",
-        "close": 20.98,
-        "change_pct": 3.76,
-        "huanshou": 1.4,
+        "close": 21.3,
+        "change_pct": 5.34,
+        "huanshou": 2.19,
         "liangbi": 2.29,
-        "pe_ttm": 24.39,
-        "pb": 2.9,
-        "main_net": 52226602,
+        "pe_ttm": 24.76,
+        "pb": 2.94,
+        "main_net": 73404962,
         "industry": "光学光电子"
       },
       {
-        "code": "002076",
-        "name": "星光股份",
-        "close": 2.19,
-        "change_pct": 7.88,
-        "huanshou": 12.84,
-        "liangbi": 9.16,
-        "pe_ttm": -141.89,
-        "pb": 8.22,
-        "main_net": 52083226,
-        "industry": "照明设备Ⅱ"
+        "code": "603179",
+        "name": "新泉股份",
+        "close": 38.14,
+        "change_pct": 10.01,
+        "huanshou": 3.52,
+        "liangbi": 4.61,
+        "pe_ttm": 34.74,
+        "pb": 3.44,
+        "main_net": 73370717,
+        "industry": "汽车零部件"
       },
       {
-        "code": "688521",
-        "name": "芯原股份",
-        "close": 130.25,
-        "change_pct": 4.95,
-        "huanshou": 1.31,
-        "liangbi": 1.83,
-        "pe_ttm": -83.53,
-        "pb": 23.42,
-        "main_net": 51616345,
+        "code": "603068",
+        "name": "博通集成",
+        "close": 41.67,
+        "change_pct": 10.01,
+        "huanshou": 7.56,
+        "liangbi": 2.61,
+        "pe_ttm": 118.21,
+        "pb": 3.54,
+        "main_net": 73350064,
         "industry": "半导体"
+      },
+      {
+        "code": "000338",
+        "name": "潍柴动力",
+        "close": 21.75,
+        "change_pct": 1.59,
+        "huanshou": 0.72,
+        "liangbi": 1.06,
+        "pe_ttm": 14.47,
+        "pb": 2.05,
+        "main_net": 71812885,
+        "industry": "汽车零部件"
       },
       {
         "code": "603920",
         "name": "世运电路",
-        "close": 42.84,
-        "change_pct": 5.26,
-        "huanshou": 2.07,
-        "liangbi": 1.98,
-        "pe_ttm": 80.41,
-        "pb": 4.88,
-        "main_net": 51177489,
-        "industry": "元件"
-      },
-      {
-        "code": "000700",
-        "name": "模塑科技",
-        "close": 11.38,
-        "change_pct": 8.9,
-        "huanshou": 3.84,
-        "liangbi": 4.39,
-        "pe_ttm": 20.7,
-        "pb": 2.61,
-        "main_net": 50899272,
-        "industry": "汽车零部件"
-      },
-      {
-        "code": "300308",
-        "name": "中际旭创",
-        "close": 663.23,
-        "change_pct": 0.38,
-        "huanshou": 0.57,
-        "liangbi": 1.06,
-        "pe_ttm": 38.2,
-        "pb": 20.32,
-        "main_net": 50875040,
-        "industry": "通信设备"
-      },
-      {
-        "code": "301591",
-        "name": "肯特股份",
-        "close": 47.45,
-        "change_pct": -0.04,
-        "huanshou": 30.68,
-        "liangbi": 4.73,
-        "pe_ttm": 91.97,
-        "pb": 5.63,
-        "main_net": 50831586,
-        "industry": "塑料"
-      },
-      {
-        "code": "603019",
-        "name": "中科曙光",
-        "close": 74.94,
-        "change_pct": 1.33,
-        "huanshou": 0.95,
-        "liangbi": 1.85,
-        "pe_ttm": 37.36,
-        "pb": 4.57,
-        "main_net": 50664752,
-        "industry": "计算机设备"
-      },
-      {
-        "code": "300638",
-        "name": "广和通",
-        "close": 19.47,
-        "change_pct": 11.13,
-        "huanshou": 3.4,
-        "liangbi": 6.8,
-        "pe_ttm": 91.62,
-        "pb": 2.88,
-        "main_net": 50231934,
-        "industry": "通信设备"
-      },
-      {
-        "code": "300503",
-        "name": "昊志机电",
-        "close": 56.18,
-        "change_pct": 7.09,
-        "huanshou": 4.65,
-        "liangbi": 6.47,
-        "pe_ttm": 60.56,
-        "pb": 10.9,
-        "main_net": 49782235,
-        "industry": "通用设备"
-      },
-      {
-        "code": "300990",
-        "name": "同飞股份",
-        "close": 103.94,
-        "change_pct": -1.08,
-        "huanshou": 5.32,
-        "liangbi": 2.31,
-        "pe_ttm": 69.53,
-        "pb": 8.13,
-        "main_net": 49431375,
-        "industry": "通用设备"
-      },
-      {
-        "code": "605488",
-        "name": "福莱新材",
-        "close": 30.99,
-        "change_pct": 10.01,
-        "huanshou": 1.26,
-        "liangbi": 3.03,
-        "pe_ttm": 118.7,
-        "pb": 4.13,
-        "main_net": 49115739,
-        "industry": "塑料"
-      },
-      {
-        "code": "002938",
-        "name": "鹏鼎控股",
-        "close": 74.45,
-        "change_pct": 2.41,
-        "huanshou": 0.34,
-        "liangbi": 1.4,
-        "pe_ttm": 45.54,
-        "pb": 5.02,
-        "main_net": 48877245,
-        "industry": "元件"
-      },
-      {
-        "code": "300857",
-        "name": "协创数据",
-        "close": 210.33,
-        "change_pct": -2.97,
-        "huanshou": 2.44,
-        "liangbi": 4.73,
-        "pe_ttm": 40.04,
-        "pb": 16.98,
-        "main_net": 46448960,
-        "industry": "消费电子"
-      },
-      {
-        "code": "002347",
-        "name": "泰尔股份",
-        "close": 6.61,
-        "change_pct": 9.98,
-        "huanshou": 7.7,
-        "liangbi": 6.85,
-        "pe_ttm": -35,
-        "pb": 3.06,
-        "main_net": 46227530,
-        "industry": "通用设备"
-      },
-      {
-        "code": "002491",
-        "name": "通鼎互联",
-        "close": 18.15,
-        "change_pct": 2.83,
-        "huanshou": 5.42,
-        "liangbi": 2.88,
-        "pe_ttm": 103.47,
-        "pb": 8.35,
-        "main_net": 45408993,
-        "industry": "通信设备"
-      },
-      {
-        "code": "301536",
-        "name": "星宸科技",
-        "close": 105.14,
-        "change_pct": 6.09,
-        "huanshou": 3.85,
+        "close": 43.19,
+        "change_pct": 6.12,
+        "huanshou": 2.69,
         "liangbi": 1.65,
-        "pe_ttm": 42.25,
-        "pb": 11.39,
-        "main_net": 45158039,
-        "industry": "半导体"
-      },
-      {
-        "code": "600178",
-        "name": "东安动力",
-        "close": 12.41,
-        "change_pct": 10.02,
-        "huanshou": 1.35,
-        "liangbi": 2.5,
-        "pe_ttm": -17257.96,
-        "pb": 2.27,
-        "main_net": 45025862,
-        "industry": "汽车零部件"
-      },
-      {
-        "code": "300223",
-        "name": "君正股份",
-        "close": 103.91,
-        "change_pct": 1.42,
-        "huanshou": 1.87,
-        "liangbi": 1.65,
-        "pe_ttm": 39.04,
-        "pb": 3.93,
-        "main_net": 44820775,
-        "industry": "半导体"
-      },
-      {
-        "code": "688025",
-        "name": "杰普特",
-        "close": 340.29,
-        "change_pct": 1.48,
-        "huanshou": 1.2,
-        "liangbi": 1.59,
-        "pe_ttm": 85.34,
-        "pb": 12.67,
-        "main_net": 44643272,
-        "industry": "自动化设备"
-      },
-      {
-        "code": "603278",
-        "name": "大业股份",
-        "close": 11.99,
-        "change_pct": 10,
-        "huanshou": 2.15,
-        "liangbi": 1.25,
-        "pe_ttm": -34.19,
-        "pb": 2.16,
-        "main_net": 43764555,
-        "industry": "通用设备"
-      },
-      {
-        "code": "000807",
-        "name": "云铝股份",
-        "close": 25.32,
-        "change_pct": -1.17,
-        "huanshou": 0.62,
-        "liangbi": 2.15,
-        "pe_ttm": 8,
-        "pb": 2.3,
-        "main_net": 43521342,
-        "industry": "工业金属"
-      },
-      {
-        "code": "688655",
-        "name": "迅捷兴",
-        "close": 62.39,
-        "change_pct": 4.93,
-        "huanshou": 7.48,
-        "liangbi": 2.78,
-        "pe_ttm": -1555.74,
-        "pb": 12.36,
-        "main_net": 43255186,
+        "pe_ttm": 81.07,
+        "pb": 4.92,
+        "main_net": 71572807,
         "industry": "元件"
-      },
-      {
-        "code": "688220",
-        "name": "翱捷科技-U",
-        "close": 83.2,
-        "change_pct": 4.09,
-        "huanshou": 0.53,
-        "liangbi": 1.74,
-        "pe_ttm": -573.95,
-        "pb": 5.96,
-        "main_net": 42140170,
-        "industry": "半导体"
-      },
-      {
-        "code": "300620",
-        "name": "光库科技",
-        "close": 237.72,
-        "change_pct": 2.12,
-        "huanshou": 1.2,
-        "liangbi": 1.67,
-        "pe_ttm": 216.82,
-        "pb": 26.24,
-        "main_net": 41930284,
-        "industry": "通信设备"
       },
       {
         "code": "688585",
         "name": "上纬新材",
-        "close": 120.5,
-        "change_pct": 3.74,
-        "huanshou": 0.72,
-        "liangbi": 4.85,
-        "pe_ttm": -312.87,
-        "pb": 41.29,
-        "main_net": 41272170,
+        "close": 121.5,
+        "change_pct": 4.6,
+        "huanshou": 1.02,
+        "liangbi": 4.39,
+        "pe_ttm": -315.47,
+        "pb": 41.63,
+        "main_net": 71075761,
         "industry": "塑料"
       },
       {
-        "code": "688141",
-        "name": "杰华特",
-        "close": 78.21,
-        "change_pct": 4.84,
-        "huanshou": 1.06,
-        "liangbi": 1.74,
-        "pe_ttm": -37.77,
-        "pb": 31.6,
-        "main_net": 40564584,
+        "code": "002156",
+        "name": "通富微电",
+        "close": 48.75,
+        "change_pct": 2.31,
+        "huanshou": 1.57,
+        "liangbi": 1.41,
+        "pe_ttm": 30.78,
+        "pb": 3.69,
+        "main_net": 70636074,
         "industry": "半导体"
       },
       {
-        "code": "002313",
-        "name": "日海智能",
-        "close": 8.8,
-        "change_pct": 10,
-        "huanshou": 3.98,
-        "liangbi": 8.03,
-        "pe_ttm": -19.39,
-        "pb": 38.28,
-        "main_net": 40407478,
-        "industry": "通信设备"
+        "code": "301269",
+        "name": "华大九天",
+        "close": 102.69,
+        "change_pct": 5.43,
+        "huanshou": 0.89,
+        "liangbi": 1.83,
+        "pe_ttm": 4377.56,
+        "pb": 10.61,
+        "main_net": 67728447,
+        "industry": "软件开发"
       },
       {
-        "code": "601658",
-        "name": "邮储银行",
-        "close": 5.65,
-        "change_pct": -0.53,
-        "huanshou": 0.08,
-        "liangbi": 1.43,
-        "pe_ttm": 7.57,
-        "pb": 0.65,
-        "main_net": 39728853,
-        "industry": "银行Ⅱ"
+        "code": "688678",
+        "name": "福立旺",
+        "close": 25.24,
+        "change_pct": 9.45,
+        "huanshou": 4.16,
+        "liangbi": 2.24,
+        "pe_ttm": 81.69,
+        "pb": 3.45,
+        "main_net": 67590987,
+        "industry": "消费电子"
       },
       {
-        "code": "688777",
-        "name": "中控技术",
-        "close": 71.72,
-        "change_pct": 1.26,
-        "huanshou": 0.73,
-        "liangbi": 1.54,
-        "pe_ttm": 234.01,
-        "pb": 5.76,
-        "main_net": 39036386,
-        "industry": "自动化设备"
-      },
-      {
-        "code": "688797",
-        "name": "臻宝科技",
-        "close": 205.75,
-        "change_pct": 3.34,
-        "huanshou": 4.55,
-        "liangbi": 2.92,
-        "pe_ttm": 128.91,
-        "pb": 10.92,
-        "main_net": 39000455,
+        "code": "300223",
+        "name": "君正股份",
+        "close": 104.73,
+        "change_pct": 2.22,
+        "huanshou": 2.57,
+        "liangbi": 1.44,
+        "pe_ttm": 39.35,
+        "pb": 3.97,
+        "main_net": 66314980,
         "industry": "半导体"
+      },
+      {
+        "code": "688008",
+        "name": "澜起科技",
+        "close": 170.31,
+        "change_pct": 3.06,
+        "huanshou": 1.22,
+        "liangbi": 1.11,
+        "pe_ttm": 67.62,
+        "pb": 9.77,
+        "main_net": 66273968,
+        "industry": "半导体"
+      },
+      {
+        "code": "600699",
+        "name": "均胜电子",
+        "close": 21.5,
+        "change_pct": 4.37,
+        "huanshou": 4.32,
+        "liangbi": 2.97,
+        "pe_ttm": 24.39,
+        "pb": 2.01,
+        "main_net": 66204794,
+        "industry": "汽车零部件"
       }
     ]
   },
   "breadth": {
-    "up": 3336,
-    "down": 1747,
-    "flat": 211
+    "up": 3697,
+    "down": 1418,
+    "flat": 179
   },
   "breadthCross": null,
   "ztDerived": null,
@@ -2998,23 +3138,23 @@
     "degradations": []
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-20 10:03",
+  "prevCapturedAtBJ": "2026-10-20 10:24",
   "prevPools": {
-    "zt": 31,
-    "zb": 9,
-    "seal_pct": 77.5
+    "zt": 39,
+    "zb": 11,
+    "seal_pct": 78
   },
   "rolling": {
-    "generatedAtBJ": "2026-10-20 10:24",
-    "minutes_to_close": 276,
+    "generatedAtBJ": "2026-10-20 10:55",
+    "minutes_to_close": 245,
     "trend_pool_mode": "trend",
     "streak_pool": [
       {
         "code": "301313",
         "name": "凡拓数创",
         "score": null,
-        "streak_score": 0.8,
-        "seal_amount": 297354798,
+        "streak_score": 1,
+        "seal_amount": 300190878,
         "themes": [
           "数字媒体"
         ],
@@ -3034,7 +3174,7 @@
           "level": "full",
           "missing": []
         },
-        "fund_flow_note": "主力净流入 +18618 万（东财 push2 盘中实时）",
+        "fund_flow_note": "主力净流入 +19173 万（东财 push2 盘中实时）",
         "scripts": [
           {
             "name": "A",
@@ -3070,71 +3210,11 @@
         ]
       },
       {
-        "code": "600178",
-        "name": "东安动力",
-        "score": null,
-        "streak_score": 0.7,
-        "seal_amount": 460582357,
-        "themes": [
-          "汽车零部件"
-        ],
-        "selection_reason": "3 连板",
-        "intraday_chg": 10.02,
-        "fundamentals": {
-          "roe": null,
-          "revenue_growth": null,
-          "net_profit_growth": null,
-          "pe": -17257.96,
-          "pb": 2.27,
-          "peg": null,
-          "market_cap": null,
-          "moat_note": null
-        },
-        "data_completeness": {
-          "level": "full",
-          "missing": []
-        },
-        "fund_flow_note": "主力净流入 +4503 万（东财 push2 盘中实时）",
-        "scripts": [
-          {
-            "name": "A",
-            "trigger_condition": "高开 >2% 或放量突破昨收上沿（600178，即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": -0.08,
-            "take_profit": 0.16,
-            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-            "script_source": "template"
-          },
-          {
-            "name": "B",
-            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": null,
-            "take_profit": null,
-            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-            "script_source": "template"
-          },
-          {
-            "name": "C",
-            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-            "position_ratio": 0,
-            "stop_loss": -0.05,
-            "take_profit": null,
-            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-            "script_source": "template"
-          }
-        ],
-        "risks": [
-          "连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）",
-          "连板高度越高，晋级失败风险越大（断板负反馈）"
-        ]
-      },
-      {
         "code": "603626",
         "name": "科森科技",
         "score": null,
-        "streak_score": 0.68,
-        "seal_amount": 248799932,
+        "streak_score": 0.88,
+        "seal_amount": 255738052,
         "themes": [
           "消费电子"
         ],
@@ -3154,7 +3234,7 @@
           "level": "full",
           "missing": []
         },
-        "fund_flow_note": "主力净流入 +13022 万（东财 push2 盘中实时）",
+        "fund_flow_note": "主力净流入 +13456 万（东财 push2 盘中实时）",
         "scripts": [
           {
             "name": "A",
@@ -3193,8 +3273,8 @@
         "code": "603119",
         "name": "浙江荣泰",
         "score": null,
-        "streak_score": 0.66,
-        "seal_amount": 118530035,
+        "streak_score": 0.87,
+        "seal_amount": 127254064,
         "themes": [
           "汽车零部件"
         ],
@@ -3214,7 +3294,7 @@
           "level": "full",
           "missing": []
         },
-        "fund_flow_note": "主力净流入 +12194 万（东财 push2 盘中实时）",
+        "fund_flow_note": "主力净流入 +12796 万（东财 push2 盘中实时）",
         "scripts": [
           {
             "name": "A",
@@ -3253,8 +3333,8 @@
         "code": "600267",
         "name": "海正药业",
         "score": null,
-        "streak_score": 0.61,
-        "seal_amount": 139981249,
+        "streak_score": 0.81,
+        "seal_amount": 140886263,
         "themes": [
           "化学制药"
         ],
@@ -3274,7 +3354,7 @@
           "level": "full",
           "missing": []
         },
-        "fund_flow_note": "主力净流入 +9752 万（东财 push2 盘中实时）",
+        "fund_flow_note": "主力净流入 +10033 万（东财 push2 盘中实时）",
         "scripts": [
           {
             "name": "A",
@@ -3313,8 +3393,8 @@
         "code": "002164",
         "name": "宁波东力",
         "score": null,
-        "streak_score": 0.55,
-        "seal_amount": 211767685,
+        "streak_score": 0.76,
+        "seal_amount": 186692294,
         "themes": [
           "通用设备"
         ],
@@ -3334,7 +3414,7 @@
           "level": "full",
           "missing": []
         },
-        "fund_flow_note": "主力净流入 +7192 万（东财 push2 盘中实时）",
+        "fund_flow_note": "主力净流入 +7580 万（东财 push2 盘中实时）",
         "scripts": [
           {
             "name": "A",
@@ -3368,144 +3448,24 @@
           "连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）",
           "连板高度越高，晋级失败风险越大（断板负反馈）"
         ]
-      },
-      {
-        "code": "605258",
-        "name": "协和电子",
-        "score": null,
-        "streak_score": 0.51,
-        "seal_amount": 107215680,
-        "themes": [
-          "元件"
-        ],
-        "selection_reason": "2 连板",
-        "intraday_chg": 10,
-        "fundamentals": {
-          "roe": null,
-          "revenue_growth": null,
-          "net_profit_growth": null,
-          "pe": 62.92,
-          "pb": 3.47,
-          "peg": null,
-          "market_cap": null,
-          "moat_note": null
-        },
-        "data_completeness": {
-          "level": "full",
-          "missing": []
-        },
-        "fund_flow_note": "主力净流入 +5325 万（东财 push2 盘中实时）",
-        "scripts": [
-          {
-            "name": "A",
-            "trigger_condition": "高开 >2% 或放量突破昨收上沿（605258，即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": -0.08,
-            "take_profit": 0.16,
-            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-            "script_source": "template"
-          },
-          {
-            "name": "B",
-            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": null,
-            "take_profit": null,
-            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-            "script_source": "template"
-          },
-          {
-            "name": "C",
-            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-            "position_ratio": 0,
-            "stop_loss": -0.05,
-            "take_profit": null,
-            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-            "script_source": "template"
-          }
-        ],
-        "risks": [
-          "连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）",
-          "连板高度越高，晋级失败风险越大（断板负反馈）"
-        ]
-      },
-      {
-        "code": "605488",
-        "name": "福莱新材",
-        "score": null,
-        "streak_score": 0.51,
-        "seal_amount": 134087532,
-        "themes": [
-          "塑料"
-        ],
-        "selection_reason": "2 连板",
-        "intraday_chg": 10.01,
-        "fundamentals": {
-          "roe": null,
-          "revenue_growth": null,
-          "net_profit_growth": null,
-          "pe": 118.7,
-          "pb": 4.13,
-          "peg": null,
-          "market_cap": null,
-          "moat_note": null
-        },
-        "data_completeness": {
-          "level": "full",
-          "missing": []
-        },
-        "fund_flow_note": "主力净流入 +4912 万（东财 push2 盘中实时）",
-        "scripts": [
-          {
-            "name": "A",
-            "trigger_condition": "高开 >2% 或放量突破昨收上沿（605488，即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": -0.08,
-            "take_profit": 0.16,
-            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-            "script_source": "template"
-          },
-          {
-            "name": "B",
-            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": null,
-            "take_profit": null,
-            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-            "script_source": "template"
-          },
-          {
-            "name": "C",
-            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-            "position_ratio": 0,
-            "stop_loss": -0.05,
-            "take_profit": null,
-            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-            "script_source": "template"
-          }
-        ],
-        "risks": [
-          "连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）",
-          "连板高度越高，晋级失败风险越大（断板负反馈）"
-        ]
       }
     ],
     "trend_pool": [
       {
-        "code": "300476",
-        "name": "胜宏科技",
-        "score": 0.75,
+        "code": "000823",
+        "name": "超声电子",
+        "score": 0.64,
         "themes": [
           "元件"
         ],
-        "selection_reason": "量比 3.17",
-        "intraday_chg": 5.61,
+        "selection_reason": "量比 3.18",
+        "intraday_chg": 6.07,
         "fundamentals": {
           "roe": null,
           "revenue_growth": null,
           "net_profit_growth": null,
-          "pe": 36.52,
-          "pb": 4.84,
+          "pe": 70.53,
+          "pb": 2.8,
           "peg": null,
           "market_cap": null,
           "moat_note": null
@@ -3514,7 +3474,349 @@
           "level": "full",
           "missing": []
         },
-        "fund_flow_note": "主力净流入 +24112 万（东财 push2 盘中实时）",
+        "fund_flow_note": "主力净流入 +38076 万（东财 push2 盘中实时）",
+        "scripts": [
+          {
+            "name": "A",
+            "trigger_condition": "高开 >2% 或放量突破昨收上沿（000823，即时轨实时价判定）",
+            "position_ratio": 0,
+            "stop_loss": -0.08,
+            "take_profit": 0.16,
+            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+            "script_source": "template"
+          },
+          {
+            "name": "B",
+            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+            "position_ratio": 0,
+            "stop_loss": null,
+            "take_profit": null,
+            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+            "script_source": "template"
+          },
+          {
+            "name": "C",
+            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+            "position_ratio": 0,
+            "stop_loss": -0.05,
+            "take_profit": null,
+            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+            "script_source": "template"
+          }
+        ],
+        "risks": [
+          "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
+        ]
+      },
+      {
+        "code": "605358",
+        "name": "立昂微",
+        "score": 0.61,
+        "themes": [
+          "半导体"
+        ],
+        "selection_reason": "量比 2.44",
+        "intraday_chg": 5.59,
+        "fundamentals": {
+          "roe": null,
+          "revenue_growth": null,
+          "net_profit_growth": null,
+          "pe": 412.72,
+          "pb": 2.64,
+          "peg": null,
+          "market_cap": null,
+          "moat_note": null
+        },
+        "data_completeness": {
+          "level": "full",
+          "missing": []
+        },
+        "fund_flow_note": "主力净流入 +9011 万（东财 push2 盘中实时）",
+        "scripts": [
+          {
+            "name": "A",
+            "trigger_condition": "高开 >2% 或放量突破昨收上沿（605358，即时轨实时价判定）",
+            "position_ratio": 0,
+            "stop_loss": -0.08,
+            "take_profit": 0.16,
+            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+            "script_source": "template"
+          },
+          {
+            "name": "B",
+            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+            "position_ratio": 0,
+            "stop_loss": null,
+            "take_profit": null,
+            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+            "script_source": "template"
+          },
+          {
+            "name": "C",
+            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+            "position_ratio": 0,
+            "stop_loss": -0.05,
+            "take_profit": null,
+            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+            "script_source": "template"
+          }
+        ],
+        "risks": [
+          "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
+        ]
+      },
+      {
+        "code": "002421",
+        "name": "达实智能",
+        "score": 0.59,
+        "themes": [
+          "IT服务Ⅱ"
+        ],
+        "selection_reason": "量比 4.89",
+        "intraday_chg": 5.64,
+        "fundamentals": {
+          "roe": null,
+          "revenue_growth": null,
+          "net_profit_growth": null,
+          "pe": -12.27,
+          "pb": 2.63,
+          "peg": null,
+          "market_cap": null,
+          "moat_note": null
+        },
+        "data_completeness": {
+          "level": "full",
+          "missing": []
+        },
+        "fund_flow_note": "主力净流入 +12717 万（东财 push2 盘中实时）",
+        "scripts": [
+          {
+            "name": "A",
+            "trigger_condition": "高开 >2% 或放量突破昨收上沿（002421，即时轨实时价判定）",
+            "position_ratio": 0,
+            "stop_loss": -0.08,
+            "take_profit": 0.16,
+            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+            "script_source": "template"
+          },
+          {
+            "name": "B",
+            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+            "position_ratio": 0,
+            "stop_loss": null,
+            "take_profit": null,
+            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+            "script_source": "template"
+          },
+          {
+            "name": "C",
+            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+            "position_ratio": 0,
+            "stop_loss": -0.05,
+            "take_profit": null,
+            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+            "script_source": "template"
+          }
+        ],
+        "risks": [
+          "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
+        ]
+      },
+      {
+        "code": "300433",
+        "name": "蓝思科技",
+        "score": 0.55,
+        "themes": [
+          "消费电子"
+        ],
+        "selection_reason": "量比 2.47",
+        "intraday_chg": 5.88,
+        "fundamentals": {
+          "roe": null,
+          "revenue_growth": null,
+          "net_profit_growth": null,
+          "pe": 41.55,
+          "pb": 2.75,
+          "peg": null,
+          "market_cap": null,
+          "moat_note": null
+        },
+        "data_completeness": {
+          "level": "full",
+          "missing": []
+        },
+        "fund_flow_note": "主力净流入 +22116 万（东财 push2 盘中实时）",
+        "scripts": [
+          {
+            "name": "A",
+            "trigger_condition": "高开 >2% 或放量突破昨收上沿（300433，即时轨实时价判定）",
+            "position_ratio": 0,
+            "stop_loss": -0.08,
+            "take_profit": 0.16,
+            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+            "script_source": "template"
+          },
+          {
+            "name": "B",
+            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+            "position_ratio": 0,
+            "stop_loss": null,
+            "take_profit": null,
+            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+            "script_source": "template"
+          },
+          {
+            "name": "C",
+            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+            "position_ratio": 0,
+            "stop_loss": -0.05,
+            "take_profit": null,
+            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+            "script_source": "template"
+          }
+        ],
+        "risks": [
+          "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
+        ]
+      },
+      {
+        "code": "688585",
+        "name": "上纬新材",
+        "score": 0.55,
+        "themes": [
+          "塑料"
+        ],
+        "selection_reason": "量比 4.39",
+        "intraday_chg": 4.6,
+        "fundamentals": {
+          "roe": null,
+          "revenue_growth": null,
+          "net_profit_growth": null,
+          "pe": -315.47,
+          "pb": 41.63,
+          "peg": null,
+          "market_cap": null,
+          "moat_note": null
+        },
+        "data_completeness": {
+          "level": "full",
+          "missing": []
+        },
+        "fund_flow_note": "主力净流入 +7108 万（东财 push2 盘中实时）",
+        "scripts": [
+          {
+            "name": "A",
+            "trigger_condition": "高开 >2% 或放量突破昨收上沿（688585，即时轨实时价判定）",
+            "position_ratio": 0,
+            "stop_loss": -0.08,
+            "take_profit": 0.16,
+            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+            "script_source": "template"
+          },
+          {
+            "name": "B",
+            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+            "position_ratio": 0,
+            "stop_loss": null,
+            "take_profit": null,
+            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+            "script_source": "template"
+          },
+          {
+            "name": "C",
+            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+            "position_ratio": 0,
+            "stop_loss": -0.05,
+            "take_profit": null,
+            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+            "script_source": "template"
+          }
+        ],
+        "risks": [
+          "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
+        ]
+      },
+      {
+        "code": "601689",
+        "name": "拓普集团",
+        "score": 0.54,
+        "themes": [
+          "汽车零部件"
+        ],
+        "selection_reason": "量比 2.43",
+        "intraday_chg": 4.64,
+        "fundamentals": {
+          "roe": null,
+          "revenue_growth": null,
+          "net_profit_growth": null,
+          "pe": 29.37,
+          "pb": 3.04,
+          "peg": null,
+          "market_cap": null,
+          "moat_note": null
+        },
+        "data_completeness": {
+          "level": "full",
+          "missing": []
+        },
+        "fund_flow_note": "主力净流入 +8251 万（东财 push2 盘中实时）",
+        "scripts": [
+          {
+            "name": "A",
+            "trigger_condition": "高开 >2% 或放量突破昨收上沿（601689，即时轨实时价判定）",
+            "position_ratio": 0,
+            "stop_loss": -0.08,
+            "take_profit": 0.16,
+            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
+            "script_source": "template"
+          },
+          {
+            "name": "B",
+            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
+            "position_ratio": 0,
+            "stop_loss": null,
+            "take_profit": null,
+            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
+            "script_source": "template"
+          },
+          {
+            "name": "C",
+            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
+            "position_ratio": 0,
+            "stop_loss": -0.05,
+            "take_profit": null,
+            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
+            "script_source": "template"
+          }
+        ],
+        "risks": [
+          "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
+        ]
+      },
+      {
+        "code": "300476",
+        "name": "胜宏科技",
+        "score": 0.51,
+        "themes": [
+          "元件"
+        ],
+        "selection_reason": "量比 2.34",
+        "intraday_chg": 6.27,
+        "fundamentals": {
+          "roe": null,
+          "revenue_growth": null,
+          "net_profit_growth": null,
+          "pe": 36.75,
+          "pb": 4.87,
+          "peg": null,
+          "market_cap": null,
+          "moat_note": null
+        },
+        "data_completeness": {
+          "level": "full",
+          "missing": []
+        },
+        "fund_flow_note": "主力净流入 +28445 万（东财 push2 盘中实时）",
         "scripts": [
           {
             "name": "A",
@@ -3549,20 +3851,20 @@
         ]
       },
       {
-        "code": "002600",
-        "name": "领益智造",
-        "score": 0.69,
+        "code": "601100",
+        "name": "恒立液压",
+        "score": 0.51,
         "themes": [
-          "消费电子"
+          "工程机械"
         ],
-        "selection_reason": "量比 4.38",
-        "intraday_chg": 4.78,
+        "selection_reason": "量比 3.32",
+        "intraday_chg": 4.53,
         "fundamentals": {
           "roe": null,
           "revenue_growth": null,
           "net_profit_growth": null,
-          "pe": 42.23,
-          "pb": 2.86,
+          "pe": 42.46,
+          "pb": 6.65,
           "peg": null,
           "market_cap": null,
           "moat_note": null
@@ -3571,11 +3873,11 @@
           "level": "full",
           "missing": []
         },
-        "fund_flow_note": "主力净流入 +6802 万（东财 push2 盘中实时）",
+        "fund_flow_note": "主力净流入 +12188 万（东财 push2 盘中实时）",
         "scripts": [
           {
             "name": "A",
-            "trigger_condition": "高开 >2% 或放量突破昨收上沿（002600，即时轨实时价判定）",
+            "trigger_condition": "高开 >2% 或放量突破昨收上沿（601100，即时轨实时价判定）",
             "position_ratio": 0,
             "stop_loss": -0.08,
             "take_profit": 0.16,
@@ -3606,20 +3908,20 @@
         ]
       },
       {
-        "code": "688655",
-        "name": "迅捷兴",
-        "score": 0.67,
+        "code": "688017",
+        "name": "绿的谐波",
+        "score": 0.49,
         "themes": [
-          "元件"
+          "自动化设备"
         ],
-        "selection_reason": "量比 2.78",
-        "intraday_chg": 4.93,
+        "selection_reason": "量比 4.68",
+        "intraday_chg": 6.99,
         "fundamentals": {
           "roe": null,
           "revenue_growth": null,
           "net_profit_growth": null,
-          "pe": -1555.74,
-          "pb": 12.36,
+          "pe": 348.31,
+          "pb": 13.62,
           "peg": null,
           "market_cap": null,
           "moat_note": null
@@ -3628,68 +3930,11 @@
           "level": "full",
           "missing": []
         },
-        "fund_flow_note": "主力净流入 +4326 万（东财 push2 盘中实时）",
+        "fund_flow_note": "主力净流入 +28763 万（东财 push2 盘中实时）",
         "scripts": [
           {
             "name": "A",
-            "trigger_condition": "高开 >2% 或放量突破昨收上沿（688655，即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": -0.08,
-            "take_profit": 0.16,
-            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-            "script_source": "template"
-          },
-          {
-            "name": "B",
-            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": null,
-            "take_profit": null,
-            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-            "script_source": "template"
-          },
-          {
-            "name": "C",
-            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-            "position_ratio": 0,
-            "stop_loss": -0.05,
-            "take_profit": null,
-            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-            "script_source": "template"
-          }
-        ],
-        "risks": [
-          "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
-        ]
-      },
-      {
-        "code": "000823",
-        "name": "超声电子",
-        "score": 0.66,
-        "themes": [
-          "元件"
-        ],
-        "selection_reason": "量比 4.27",
-        "intraday_chg": 6.88,
-        "fundamentals": {
-          "roe": null,
-          "revenue_growth": null,
-          "net_profit_growth": null,
-          "pe": 71.06,
-          "pb": 2.82,
-          "peg": null,
-          "market_cap": null,
-          "moat_note": null
-        },
-        "data_completeness": {
-          "level": "full",
-          "missing": []
-        },
-        "fund_flow_note": "主力净流入 +29667 万（东财 push2 盘中实时）",
-        "scripts": [
-          {
-            "name": "A",
-            "trigger_condition": "高开 >2% 或放量突破昨收上沿（000823，即时轨实时价判定）",
+            "trigger_condition": "高开 >2% 或放量突破昨收上沿（688017，即时轨实时价判定）",
             "position_ratio": 0,
             "stop_loss": -0.08,
             "take_profit": 0.16,
@@ -3721,77 +3966,20 @@
         ]
       },
       {
-        "code": "000559",
-        "name": "万向钱潮",
-        "score": 0.63,
-        "themes": [
-          "汽车零部件"
-        ],
-        "selection_reason": "量比 6.37",
-        "intraday_chg": 5.75,
-        "fundamentals": {
-          "roe": null,
-          "revenue_growth": null,
-          "net_profit_growth": null,
-          "pe": 33.1,
-          "pb": 4.19,
-          "peg": null,
-          "market_cap": null,
-          "moat_note": null
-        },
-        "data_completeness": {
-          "level": "full",
-          "missing": []
-        },
-        "fund_flow_note": "主力净流入 +7802 万（东财 push2 盘中实时）",
-        "scripts": [
-          {
-            "name": "A",
-            "trigger_condition": "高开 >2% 或放量突破昨收上沿（000559，即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": -0.08,
-            "take_profit": 0.16,
-            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-            "script_source": "template"
-          },
-          {
-            "name": "B",
-            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": null,
-            "take_profit": null,
-            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-            "script_source": "template"
-          },
-          {
-            "name": "C",
-            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-            "position_ratio": 0,
-            "stop_loss": -0.05,
-            "take_profit": null,
-            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-            "script_source": "template"
-          }
-        ],
-        "risks": [
-          "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
-        ]
-      },
-      {
-        "code": "600206",
-        "name": "有研新材",
-        "score": 0.6,
+        "code": "002185",
+        "name": "华天科技",
+        "score": 0.49,
         "themes": [
           "半导体"
         ],
-        "selection_reason": "量比 2.4",
-        "intraday_chg": 4.38,
+        "selection_reason": "量比 2.11",
+        "intraday_chg": 3.74,
         "fundamentals": {
           "roe": null,
           "revenue_growth": null,
           "net_profit_growth": null,
-          "pe": 118.48,
-          "pb": 7.49,
+          "pe": 36.95,
+          "pb": 2.52,
           "peg": null,
           "market_cap": null,
           "moat_note": null
@@ -3800,239 +3988,11 @@
           "level": "full",
           "missing": []
         },
-        "fund_flow_note": "主力净流入 +7825 万（东财 push2 盘中实时）",
+        "fund_flow_note": "主力净流入 +9056 万（东财 push2 盘中实时）",
         "scripts": [
           {
             "name": "A",
-            "trigger_condition": "高开 >2% 或放量突破昨收上沿（600206，即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": -0.08,
-            "take_profit": 0.16,
-            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-            "script_source": "template"
-          },
-          {
-            "name": "B",
-            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": null,
-            "take_profit": null,
-            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-            "script_source": "template"
-          },
-          {
-            "name": "C",
-            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-            "position_ratio": 0,
-            "stop_loss": -0.05,
-            "take_profit": null,
-            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-            "script_source": "template"
-          }
-        ],
-        "risks": [
-          "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
-        ]
-      },
-      {
-        "code": "600281",
-        "name": "华阳新材",
-        "score": 0.58,
-        "themes": [
-          "小金属"
-        ],
-        "selection_reason": "量比 4.99",
-        "intraday_chg": 4.38,
-        "fundamentals": {
-          "roe": null,
-          "revenue_growth": null,
-          "net_profit_growth": null,
-          "pe": -31.36,
-          "pb": 46.02,
-          "peg": null,
-          "market_cap": null,
-          "moat_note": null
-        },
-        "data_completeness": {
-          "level": "full",
-          "missing": []
-        },
-        "fund_flow_note": "主力净流入 +6423 万（东财 push2 盘中实时）",
-        "scripts": [
-          {
-            "name": "A",
-            "trigger_condition": "高开 >2% 或放量突破昨收上沿（600281，即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": -0.08,
-            "take_profit": 0.16,
-            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-            "script_source": "template"
-          },
-          {
-            "name": "B",
-            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": null,
-            "take_profit": null,
-            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-            "script_source": "template"
-          },
-          {
-            "name": "C",
-            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-            "position_ratio": 0,
-            "stop_loss": -0.05,
-            "take_profit": null,
-            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-            "script_source": "template"
-          }
-        ],
-        "risks": [
-          "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
-        ]
-      },
-      {
-        "code": "002850",
-        "name": "科达利",
-        "score": 0.58,
-        "themes": [
-          "电池"
-        ],
-        "selection_reason": "量比 4.02",
-        "intraday_chg": 5.21,
-        "fundamentals": {
-          "roe": null,
-          "revenue_growth": null,
-          "net_profit_growth": null,
-          "pe": 22.87,
-          "pb": 2.93,
-          "peg": null,
-          "market_cap": null,
-          "moat_note": null
-        },
-        "data_completeness": {
-          "level": "full",
-          "missing": []
-        },
-        "fund_flow_note": "主力净流入 +5605 万（东财 push2 盘中实时）",
-        "scripts": [
-          {
-            "name": "A",
-            "trigger_condition": "高开 >2% 或放量突破昨收上沿（002850，即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": -0.08,
-            "take_profit": 0.16,
-            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-            "script_source": "template"
-          },
-          {
-            "name": "B",
-            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": null,
-            "take_profit": null,
-            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-            "script_source": "template"
-          },
-          {
-            "name": "C",
-            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-            "position_ratio": 0,
-            "stop_loss": -0.05,
-            "take_profit": null,
-            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-            "script_source": "template"
-          }
-        ],
-        "risks": [
-          "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
-        ]
-      },
-      {
-        "code": "603337",
-        "name": "杰克科技",
-        "score": 0.57,
-        "themes": [
-          "专用设备"
-        ],
-        "selection_reason": "量比 10.36",
-        "intraday_chg": 5.75,
-        "fundamentals": {
-          "roe": null,
-          "revenue_growth": null,
-          "net_profit_growth": null,
-          "pe": 19.95,
-          "pb": 3.3,
-          "peg": null,
-          "market_cap": null,
-          "moat_note": null
-        },
-        "data_completeness": {
-          "level": "full",
-          "missing": []
-        },
-        "fund_flow_note": "主力净流入 +6085 万（东财 push2 盘中实时）",
-        "scripts": [
-          {
-            "name": "A",
-            "trigger_condition": "高开 >2% 或放量突破昨收上沿（603337，即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": -0.08,
-            "take_profit": 0.16,
-            "invalid_condition": "低开 >3% 或午前跌破昨收 -2%",
-            "script_source": "template"
-          },
-          {
-            "name": "B",
-            "trigger_condition": "平开震荡：回踩 5 日线缩量企稳（即时轨实时价判定）",
-            "position_ratio": 0,
-            "stop_loss": null,
-            "take_profit": null,
-            "invalid_condition": "放量跌破 5 日线（止损为条件位，非固定百分比，故 stop_loss=null 不造数）",
-            "script_source": "template"
-          },
-          {
-            "name": "C",
-            "trigger_condition": "低开/竞价弱：观望或轻仓反核（情绪冰点逆势位）",
-            "position_ratio": 0,
-            "stop_loss": -0.05,
-            "take_profit": null,
-            "invalid_condition": "断板次日翻绿或 seats 转机构撤离",
-            "script_source": "template"
-          }
-        ],
-        "risks": [
-          "盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化"
-        ]
-      },
-      {
-        "code": "603893",
-        "name": "瑞芯微",
-        "score": 0.56,
-        "themes": [
-          "半导体"
-        ],
-        "selection_reason": "量比 2.63",
-        "intraday_chg": 6.43,
-        "fundamentals": {
-          "roe": null,
-          "revenue_growth": null,
-          "net_profit_growth": null,
-          "pe": 56.61,
-          "pb": 15.68,
-          "peg": null,
-          "market_cap": null,
-          "moat_note": null
-        },
-        "data_completeness": {
-          "level": "full",
-          "missing": []
-        },
-        "fund_flow_note": "主力净流入 +16752 万（东财 push2 盘中实时）",
-        "scripts": [
-          {
-            "name": "A",
-            "trigger_condition": "高开 >2% 或放量突破昨收上沿（603893，即时轨实时价判定）",
+            "trigger_condition": "高开 >2% 或放量突破昨收上沿（002185，即时轨实时价判定）",
             "position_ratio": 0,
             "stop_loss": -0.08,
             "take_profit": 0.16,
@@ -4063,20 +4023,20 @@
         ]
       }
     ],
-    "basis": "全市场筛选榜（东财 clist 主力净流入降序前 100） 实时现算（每轮全量重算，不沿用上轮）：涨幅 3-7% · 量比 >2 · 未涨停未一字（pools.zt_codes）· 主力净流入为正 · 已滤昨日涨停 61 只黑名单；扫 100 只，剔除——带外 33 / 量比不足 8 / 已涨停 21 / 跌停 0 / 昨日涨停 1 / 净流出或无源 0 / 字段缺失 0；得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）",
-    "streak_basis": "连板池实时现算（全市场筛选榜（东财 clist 主力净流入降序前 100） ∩ zt_lb 连板≥2，白名单=昨日涨停且今日非一字）：连板≥2（昨日涨停蕴含）· 今日非一字（fbt>09:25）· 量比 >2 · 主力净流入为正——不套涨幅带、不剔已涨停（连板池语义，2026-10-10 用户指令）；zt_lb 连板≥2 共 13 只，宇宙在榜 9 只，剔除——一字 0 / 量比不足 1 / 净流出或无源 0 / 字段缺失 0；梯队分=连板高度0.6+主力净流入0.4（缺席重归一，与趋势池量价评分物理独立）；封单质量=seal_amount（东财 fund）",
+    "basis": "全市场筛选榜（东财 clist 主力净流入降序前 100） 实时现算（每轮全量重算，不沿用上轮）：涨幅 3-7% · 量比 >2 · 未涨停未一字（pools.zt_codes）· 主力净流入为正 · 已滤昨日涨停 61 只黑名单；扫 100 只，剔除——带外 34 / 量比不足 21 / 已涨停 25 / 跌停 0 / 昨日涨停 1 / 净流出或无源 0 / 字段缺失 0；得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）",
+    "streak_basis": "连板池实时现算（全市场筛选榜（东财 clist 主力净流入降序前 100） ∩ zt_lb 连板≥2，白名单=昨日涨停且今日非一字）：连板≥2（昨日涨停蕴含）· 今日非一字（fbt>09:25）· 量比 >2 · 主力净流入为正——不套涨幅带、不剔已涨停（连板池语义，2026-10-10 用户指令）；zt_lb 连板≥2 共 13 只，宇宙在榜 5 只，剔除——一字 0 / 量比不足 0 / 净流出或无源 0 / 字段缺失 0；梯队分=连板高度0.6+主力净流入0.4（缺席重归一，与趋势池量价评分物理独立）；封单质量=seal_amount（东财 fund）",
     "emotion": {
       "date": "20261020",
       "emotion": "震荡",
-      "score": 42,
+      "score": 41,
       "metrics": {
-        "limit_up_count": 39,
+        "limit_up_count": 53,
         "continuous_count": 13,
-        "broken_rate": 0.4103,
+        "broken_rate": 0.4528,
         "max_board": 4,
-        "theme_concentration": 0.1282,
+        "theme_concentration": 0.0943,
         "theme_top": "通用设备",
-        "hard_board_rate": 0.5897
+        "hard_board_rate": 0.5472
       }
     }
   }
