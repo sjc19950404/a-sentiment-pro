@@ -20,7 +20,30 @@
       "properties": {
         "count": { "type": "number" },
         "srcDate": { "type": ["string", "null"] },
-        "rows": { "type": "array" }
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "name": { "type": ["string", "null"] },
+              "reason": { "type": ["string", "null"] },
+              "close": { "type": ["number", "null"] },
+              "zhangfu": { "type": ["number", "null"] },
+              "huanshou": { "type": ["number", "null"] },
+              "pe_ttm": { "type": ["number", "null"] },
+              "pb": { "type": ["number", "null"] },
+              "liangbi": { "type": ["number", "null"] },
+              "main_net": { "type": ["number", "null"] },
+              "avg_price": {
+                "type": ["number", "null"],
+                "deprecated": true,
+                "$comment": "⚠ 弃用（2026-10-20）：旧值来源东财 f9，实为市盈率(PE)，非分时均价。源头 src/intraday_node.mjs 已置 null，待 VWAP 公式确认后重建。消费方（作战指令）不得再据『现价>avg_price』判信号。"
+              },
+              "date": { "type": ["string", "null"] }
+            }
+          }
+        }
       }
     },
     "pools": {

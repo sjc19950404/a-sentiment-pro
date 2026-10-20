@@ -80,7 +80,7 @@ export async function fetchIntradayRaw() {
       close: num(r.f2),
       zhangfu: num(r.f3),
       huanshou: num(r.f8),
-      avg_price: num(r.f9), // 分时均价线（东财 f9）
+      avg_price: null, // 已暂停：旧映射 f9 实为市盈率(PE)，非分时均价；待 VWAP 公式确认后重建（见 schemas/intraday.schema.json 标记 deprecated）
       date,
     }))
     .filter((x) => x.code)
@@ -96,7 +96,7 @@ export async function fetchIntradayRaw() {
       close: num(r.f2),
       change_pct: num(r.f3),
       huanshou: num(r.f8),
-      avg_price: num(r.f9), // 分时均价线（东财 f9）
+      avg_price: null, // 已暂停：旧映射 f9 实为市盈率(PE)，非分时均价；待 VWAP 公式确认后重建（见 schemas/intraday.schema.json 标记 deprecated）
       pe_ttm: num(r.f115),
       pb: num(r.f23),
       liangbi: num(r.f10),
