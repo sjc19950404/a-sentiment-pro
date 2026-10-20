@@ -31,4 +31,6 @@ jobs:
       - name: 盘中作战指令推送（触发式）
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
-        run: node scripts/push_battle_orders.mjs --scene intraday
+        run: |
+          echo "⚠ 作战指令推送已临时停用（2026-10-20 用户指令：疑似分钟行情均价/量比字段映射错误，先停推送避免错误信号）。恢复：撤销本改动即可。"
+          exit 0
