@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-10-20T20:54:59.177Z",
+    "generatedAt": "2026-10-20T20:54:59.311Z",
     "source": "sina",
     "sourceUrl": "https://hq.sinajs.cn/list=",
     "usSessionDate": "2026-10-20",
@@ -21,7 +21,7 @@
     "usSessionDates": [],
     "usSessionsBeforeOpen": 0,
     "lastAttempt": {
-      "at": "2026-10-20T20:54:59.177Z",
+      "at": "2026-10-20T20:54:59.311Z",
       "outcome": "ok",
       "reason": null
     }
@@ -45,7 +45,7 @@
       "chgReported": null,
       "hi52": null,
       "lo52": null,
-      "quoteTime": "04:54:53",
+      "quoteTime": "04:55:00",
       "sessionDate": "2026-10-21",
       "open": 13276,
       "high": 13335,
@@ -415,22 +415,22 @@
       "ok": true,
       "state": "ok",
       "stateText": "",
-      "last": 97.971,
+      "last": 97.98,
       "prevClose": 98.54,
-      "chg": -0.569,
-      "chgPct": -0.5774,
+      "chg": -0.56,
+      "chgPct": -0.5683,
       "chgPctReported": null,
       "chgReported": null,
       "hi52": null,
       "lo52": null,
-      "quoteTime": "04:54:54",
+      "quoteTime": "04:55:00",
       "sessionDate": "2026-10-21",
       "open": 98.24,
       "high": 101.37,
       "low": 95.25,
       "dp": 2,
-      "lastText": "97.97",
-      "chgPctText": "-0.58%"
+      "lastText": "97.98",
+      "chgPctText": "-0.57%"
     },
     {
       "key": "brent",
