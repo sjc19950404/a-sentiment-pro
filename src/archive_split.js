@@ -270,8 +270,12 @@ export function buildRecent(archive, n = RECENT_DAYS, opts = {}) {
     meta: archive?.meta || {},
     signals: archive?.signals || {},
     index: yearSummary(slice),
-    // 近 N-1 日：只保画曲线所需字段（见 trendPoint）
-    days: head.map(trendPoint),
+    // 近 N-1 日：只保画曲线所需字段（见 trendPoint）。
+    // detail 仅「最后 2 个历史日」保留：calcLockNew 读 days.slice(-3,-1) 的 seats.detail，
+    // 而本数组与 latest 拼起来正是前端的 ARC.all_days。其余历史日只留 cover——
+    // 不裁的话每个带 seats 的历史日都背 ~50KB detail，8 个重日就把滚动窗顶破 512KB
+    // （2026-10-20 build「龙虎榜口径守卫」实测 521.6KB 超线）。
+    days: head.map((d, i) => trendPoint(d, { keepDetail: i >= head.length - 2 })),
     // 最新日：完整明细，但惰性字段仍在 _sub（前端按需 pickDay）
     latest,
   };
@@ -286,11 +290,16 @@ export function buildRecent(archive, n = RECENT_DAYS, opts = {}) {
  *   表现为"报告少了结论"（本次实测：窗口内只剩最新 1 天有 seats，锁仓统计整段不见了）。
  *   代价很小：只有当天确实有 seats 时才多一个对象，且各只有几个数字字段。
  */
-export function trendPoint(d) {
+export function trendPoint(d, { keepDetail = true } = {}) {
   if (!d) return null;
   const e = d.emotion || {};
   const s = d.summary || {};
-  const seatKeys = SEAT_SUMMARY_KEYS.filter((k) => s.seats && s.seats[k] != null);
+  const seatKeys = SEAT_SUMMARY_KEYS.filter((k) => {
+    // detail 是滚动窗体积的头号来源（单日 ~50KB）。只有最后 2 个历史日需要它
+    // （calcLockNew 读前 2 天明细做名称比对），其余日子裁掉只留 cover。
+    if (k === 'detail' && !keepDetail) return false;
+    return s.seats && s.seats[k] != null;
+  });
   return {
     trade_date: d.trade_date,
     value: e.value ?? e.score ?? null,
