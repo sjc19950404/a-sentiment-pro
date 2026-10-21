@@ -1,11 +1,10 @@
 name: heartbeat-sentinel
 
-# 心跳哨兵（2026-10-16 盘后重构）：每日北京 08:00 巡检关键数据档是否覆盖最近交易日，
-# 未覆盖 → 企微「系统停更告警」。独立 workflow，不牵扯 daily-sentiment 的 build/smoke if，
-# 故不影响盘中快照链路（盘中 cron 完全独立）。
+# 蹇冭烦鍝ㄥ叺锛?026-10-16 鐩樺悗閲嶆瀯锛夛細姣忔棩鍖椾含 08:00 宸℃鍏抽敭鏁版嵁妗ｆ槸鍚﹁鐩栨渶杩戜氦鏄撴棩锛?
+# 鏈鐩?鈫?浼佸井銆岀郴缁熷仠鏇村憡璀︺€嶃€傜嫭绔?workflow锛屼笉鐗垫壇 daily-sentiment 鐨?build/smoke if锛?
+# 鏁呬笉褰卞搷鐩樹腑蹇収閾捐矾锛堢洏涓?cron 瀹屽叏鐙珛锛夈€?
 on:
-  schedule:
-    - cron: '0 0 * * 1-5'   # 北京 08:00
+  # 自动调度已迁树莓派(pi_run.sh)，保留手动兜底
   workflow_dispatch:
 
 permissions:
@@ -20,7 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: 心跳哨兵（数据停更巡检）
+      - name: 蹇冭烦鍝ㄥ叺锛堟暟鎹仠鏇村贰妫€锛?
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         run: node scripts/heartbeat_sentinel.mjs

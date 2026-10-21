@@ -1,12 +1,10 @@
 name: battle-orders-intraday
 
-# 盘中作战指令（触发式）：每交易日北京 09:30–10:00 每 5 分钟巡检一次。
-# GitHub UTC+8：1:30Z 起每 5 分（9:30–9:55 BJ）+ 2:00Z（10:00 BJ）。
-# 脚本内部筛选"现价站稳分时均价线 + 量比>=2"的个股推送；无符合信号则静默不推送。
+# 鐩樹腑浣滄垬鎸囦护锛堣Е鍙戝紡锛夛細姣忎氦鏄撴棩鍖椾含 09:30鈥?0:00 姣?5 鍒嗛挓宸℃涓€娆°€?
+# GitHub UTC+8锛?:30Z 璧锋瘡 5 鍒嗭紙9:30鈥?:55 BJ锛? 2:00Z锛?0:00 BJ锛夈€?
+# 鑴氭湰鍐呴儴绛涢€?鐜颁环绔欑ǔ鍒嗘椂鍧囦环绾?+ 閲忔瘮>=2"鐨勪釜鑲℃帹閫侊紱鏃犵鍚堜俊鍙峰垯闈欓粯涓嶆帹閫併€?
 on:
-  schedule:
-    - cron: '30/5 1 * * 1-5'
-    - cron: '0 2 * * 1-5'
+  # 自动调度已迁树莓派(pi_run.sh)，保留手动兜底
   workflow_dispatch:
 
 permissions:
@@ -18,7 +16,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: 恢复盘中防重 state 缓存（跨 cron run 持久"今日已推"）
+      - name: 鎭㈠鐩樹腑闃查噸 state 缂撳瓨锛堣法 cron run 鎸佷箙"浠婃棩宸叉帹"锛?
         uses: actions/cache@v4
         with:
           path: data/battle_orders_intraday_state.json
@@ -28,9 +26,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: 盘中作战指令推送（触发式）
+      - name: 鐩樹腑浣滄垬鎸囦护鎺ㄩ€侊紙瑙﹀彂寮忥級
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         run: |
-          echo "⚠ 作战指令推送已临时停用（2026-10-20 用户指令：疑似分钟行情均价/量比字段映射错误，先停推送避免错误信号）。恢复：撤销本改动即可。"
+          echo "鈿?浣滄垬鎸囦护鎺ㄩ€佸凡涓存椂鍋滅敤锛?026-10-20 鐢ㄦ埛鎸囦护锛氱枒浼煎垎閽熻鎯呭潎浠?閲忔瘮瀛楁鏄犲皠閿欒锛屽厛鍋滄帹閫侀伩鍏嶉敊璇俊鍙凤級銆傛仮澶嶏細鎾ら攢鏈敼鍔ㄥ嵆鍙€?
           exit 0

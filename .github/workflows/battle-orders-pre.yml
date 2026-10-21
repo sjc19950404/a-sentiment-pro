@@ -1,9 +1,8 @@
 name: battle-orders-pre
 
-# 盘前作战指令：每交易日北京 08:30 推送（GitHub UTC+8：0:30Z = 8:30 BJ）
+# 鐩樺墠浣滄垬鎸囦护锛氭瘡浜ゆ槗鏃ュ寳浜?08:30 鎺ㄩ€侊紙GitHub UTC+8锛?:30Z = 8:30 BJ锛?
 on:
-  schedule:
-    - cron: '30 0 * * 1-5'
+  # 自动调度已迁树莓派(pi_run.sh)，保留手动兜底
   workflow_dispatch:
 
 permissions:
@@ -18,9 +17,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: 盘前作战指令推送
+      - name: 鐩樺墠浣滄垬鎸囦护鎺ㄩ€?
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         run: |
-          echo "⚠ 作战指令推送已临时停用（2026-10-20 用户指令：疑似分钟行情均价/量比字段映射错误，先停推送避免错误信号）。恢复：撤销本改动即可。"
+          echo "鈿?浣滄垬鎸囦护鎺ㄩ€佸凡涓存椂鍋滅敤锛?026-10-20 鐢ㄦ埛鎸囦护锛氱枒浼煎垎閽熻鎯呭潎浠?閲忔瘮瀛楁鏄犲皠閿欒锛屽厛鍋滄帹閫侀伩鍏嶉敊璇俊鍙凤級銆傛仮澶嶏細鎾ら攢鏈敼鍔ㄥ嵆鍙€?
           exit 0

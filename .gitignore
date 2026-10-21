@@ -87,3 +87,13 @@ scripts/ops_log.mjs
 set_llm_secrets.ps1
 scripts/set_llm_secrets.ps1
 .codebuddy/
+
+# ── 安全：绝不入库的本地密钥/垃圾（2026-10-22 事故教训：.env 曾被误推，泄露企微 webhook key）──
+# 注意：.env.example 是模板，必须保留（下面 ! 反忽略）。
+.env
+.env.*
+!.env.example
+shell_hunter*.py
+~shell_hunter.py
+*.bak
+*~

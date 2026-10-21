@@ -1,136 +1,91 @@
 name: daily-sentiment
 
 on:
-  schedule:
-    - cron: '30 10 * * *'     # 北京 18:30（UTC 10:30），每天（含周末，触发非交易日回补）；盘后首抓（部分源可能未出当日数据）
-    - cron: '0 13 * * 1-5'    # 北京 21:00（UTC 13:00），晚间补抓：深证日K/龙虎榜等延迟数据齐后重抓当日并覆盖，合并时同日替换 + 全档重算
-    # ★ 美股收盘档（2026-10-01 事故修复）：北京次日 04:30 = 美东 16:30（收盘 + 30 分钟结算缓冲）。
-    #   为什么必须单独一条：上面 21:00 那次跑在北京 21:00 = 美东 09:00，**美股还没开盘**
-    #   （09:30 开），数据源给的是盘前占位（last==prevClose、open/high/low=0）。
-    #   旧代码把它当"当日收平 0%"渲染，用户读成"外围没动"——而真相是"这一场还没开"。
-    #   修法是两层：① 行情层未成交一律 null（硬防线，与时刻无关，见 src/global.js）；
-    #   ② 时刻层把美股收盘态那一份快照**单独抓好**，这就是本 cron。
-    #   UTC 20:30 = 北京 04:30（次日）。周一至五 UTC 20:30 对应美股周一至五收盘。
-    #   为什么取 20:30（16:30 ET）而不是 20:00（16:00 ET）：收盘瞬间数据源仍在回填，
-    #   留 30 分钟让结算价稳定，避免抓到"半成品收盘价"。
-    - cron: '30 20 * * 1-5'
-    # A50 夜盘收盘档（2026-10-13 拍板）：北京 05:20（UTC 21:20）= SGX 夜盘 05:15 收盘后。
-    #   仅此档抓取把 A50 当"夜盘收盘"用；其余时刻 src/global.js 标 night-open、报告显「夜盘未收」。
-    - cron: '20 21 * * 1-5'
-    # 盘中轻量快照：北京 09:30~15:00 每 30 分钟（UTC 01:30~07:00 的 :00/:30）。
-    # 与上面几个 cron 的**根本区别**：这条只跑 scripts/snapshot_intraday.mjs，
-    # 不跑管道、不碰 archive.json、不重算分位与因子（理由见该脚本文件头）。
-    # 覆盖 01:00~07:30 UTC（= 北京 09:00~15:30），脚本内部再按相位闸门过滤出真正的盘中时段。
-    - cron: '0,30 1-7 * * 1-5'
-    # ② 盘前数据源冒烟（北京 08:30 = UTC 00:30）：六源真打一遍。
-    #   开市前摸门的意义：源悄悄改字段/加风控，盘前就能红出来，带 needs 依赖拦下
-    #   盘后主跑——坏数据不进生产档。这条 cron **只触发 smoke job**（build 的 if 已排除）。
-    - cron: '30 0 * * 1-5'
-    # ③ 任务一 · 盘前观察清单（2026-10-09 拆分）：北京 09:00（UTC 01:00）——用户指定。
-    #   数据源物理隔离：只读昨收口径档（pain 连板梯队 + global 外围），不碰 intraday
-    #   实时源；输出「今日观察清单」（不含操作建议），与任务二的候选池语义彻底分野。
-    #   非交易日由脚本内闸门自动跳过（exit 0 不红）。⚠ 与 09:00 tick 首拍同刻——
-    #   不同 cron 字符串 = 独立 run，job 级 if 路由互不掺和（concurrency 组内串行）。
-    #   ⚠ GitHub 定时可能延迟数分钟（平台已知行为）：昨收口径数据不随竞价变化，
-    #     延迟不损内容正确性；推送有指纹去重兜底不重复。
-    - cron: '0 1 * * 1-5'
-    # ④ 任务二 · 盘中候选池（2026-10-09 拆分）：北京 09:35 / 10:30 / 14:00 三时点
-    #   各触发一次（分-时耦合无法写成一条，三条独立 cron）。
-    #   每次触发：先抓新快照（腾讯行情补量比/PE/PB + 东财主力净流入）→ 全量重算
-    #   候选池（涨幅 3-7% · 量比>2 · 未涨停 · 主力净流入为正，按综合得分 Top 10）
-    #   ——不沿用上一轮结果；数据源与任务一物理隔离（只认 intraday 当日快照，
-    #   缺席则空池报因，绝不回落昨收口径）。
-    #   tick 网格（:00/:30）此后回归**纯快照职责**：只抓数据不出报告（报告层
-    #   与数据层解耦，三时点报告读的就是最近一拍快照——9:35 报告用本 cron 自抓的新拍）。
-    #   旧 S3-6 决策时点 cron（'15 2' / '45 5,6'）随之退役（推送判断被三时点取代）。
-    #   ⚠ smoke/build 是排除式 if——cron 字符串变更必须同步（见各自 if），否则误跑。
-    - cron: '35 1 * * 1-5'
-    - cron: '30 2 * * 1-5'
-    - cron: '0 6 * * 1-5'
-  workflow_dispatch:        # 手动触发
+  # 自动调度已迁树莓派(pi_run.sh)，保留手动兜底
+  workflow_dispatch:        # 鎵嬪姩瑙﹀彂
 
-# ── 模拟选股层总开关（S2 · 2026-10-07 用户拍板）────────────────────────────
-# 默认 'true'；GitHub 仓库 Settings → Secrets and variables → Actions → Variables
-# 里设 SIMULATION_MODE=false 即全局关闭（盘前/盘中/盘后/周报四挂点一起），
-# 不用动本文件——回测期间临时关闭、复测完改回，零 workflow 改动。
-# 单次强制开：手动 dispatch 命令里加 --sim（CLI flag 优先于 env）。
+# 鈹€鈹€ 妯℃嫙閫夎偂灞傛€诲紑鍏筹紙S2 路 2026-10-07 鐢ㄦ埛鎷嶆澘锛夆攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+# 榛樿 'true'锛汫itHub 浠撳簱 Settings 鈫?Secrets and variables 鈫?Actions 鈫?Variables
+# 閲岃 SIMULATION_MODE=false 鍗冲叏灞€鍏抽棴锛堢洏鍓?鐩樹腑/鐩樺悗/鍛ㄦ姤鍥涙寕鐐逛竴璧凤級锛?
+# 涓嶇敤鍔ㄦ湰鏂囦欢鈥斺€斿洖娴嬫湡闂翠复鏃跺叧闂€佸娴嬪畬鏀瑰洖锛岄浂 workflow 鏀瑰姩銆?
+# 鍗曟寮哄埗寮€锛氭墜鍔?dispatch 鍛戒护閲屽姞 --sim锛圕LI flag 浼樺厛浜?env锛夈€?
 env:
   SIMULATION_MODE: ${{ vars.SIMULATION_MODE || 'true' }}
 
-# 调度重叠治理（2026-10-06 部署治理配套）：18:30 首抓若未跑完（六源慢/重试），21:00 补抓
-# 会在旁并行——两条管线同时写 data/ 再各自 git 提交是竞态。数据写入不可中断，故**排队不取消**
-# （cancel-in-progress: false）：后到者等先到者收尾再跑。盘中快照（30 分钟一拍）同受此治理。
+# 璋冨害閲嶅彔娌荤悊锛?026-10-06 閮ㄧ讲娌荤悊閰嶅锛夛細18:30 棣栨姄鑻ユ湭璺戝畬锛堝叚婧愭參/閲嶈瘯锛夛紝21:00 琛ユ姄
+# 浼氬湪鏃佸苟琛屸€斺€斾袱鏉＄绾垮悓鏃跺啓 data/ 鍐嶅悇鑷?git 鎻愪氦鏄珵鎬併€傛暟鎹啓鍏ヤ笉鍙腑鏂紝鏁?*鎺掗槦涓嶅彇娑?*
+# 锛坈ancel-in-progress: false锛夛細鍚庡埌鑰呯瓑鍏堝埌鑰呮敹灏惧啀璺戙€傜洏涓揩鐓э紙30 鍒嗛挓涓€鎷嶏級鍚屽彈姝ゆ不鐞嗐€?
 concurrency:
   group: daily-sentiment
   cancel-in-progress: false
 
 permissions:
   contents: write
-  # issues: write（2026-10-08 守卫双通道 ③）：守卫 BLOCK/ERROR 时 guard_notify 建
-  # 兜底 issue（GITHUB_TOKEN 由 CI 自动注入，零新增 secret）。issue 是企微通道挂掉
-  # （secrets 失效/网络墙）时的最后触达面——本工作流三班 smoke，异常静默一天的
-  # 代价远大于一次 API 调用。
+  # issues: write锛?026-10-08 瀹堝崼鍙岄€氶亾 鈶級锛氬畧鍗?BLOCK/ERROR 鏃?guard_notify 寤?
+  # 鍏滃簳 issue锛圙ITHUB_TOKEN 鐢?CI 鑷姩娉ㄥ叆锛岄浂鏂板 secret锛夈€俰ssue 鏄紒寰€氶亾鎸傛帀
+  # 锛坰ecrets 澶辨晥/缃戠粶澧欙級鏃剁殑鏈€鍚庤Е杈鹃潰鈥斺€旀湰宸ヤ綔娴佷笁鐝?smoke锛屽紓甯搁潤榛樹竴澶╃殑
+  # 浠ｄ环杩滃ぇ浜庝竴娆?API 璋冪敤銆?
   issues: write
-  # pages/id-token 权限已移除（2026-10-06 部署治理）：Pages 部署收口至 deploy-pages.yml
-  # 单通道——本工作流回归纯数据生产，部署由 deploy-pages.yml 监听本工作流完成（workflow_run）触发
-  # （bot 的 GITHUB_TOKEN push 不会触发 on:push，故不能靠 paths(data/**) 自动部署，详见 deploy-pages.yml ③）。
+  # pages/id-token 鏉冮檺宸茬Щ闄わ紙2026-10-06 閮ㄧ讲娌荤悊锛夛細Pages 閮ㄧ讲鏀跺彛鑷?deploy-pages.yml
+  # 鍗曢€氶亾鈥斺€旀湰宸ヤ綔娴佸洖褰掔函鏁版嵁鐢熶骇锛岄儴缃茬敱 deploy-pages.yml 鐩戝惉鏈伐浣滄祦瀹屾垚锛坵orkflow_run锛夎Е鍙?
+  # 锛坆ot 鐨?GITHUB_TOKEN push 涓嶄細瑙﹀彂 on:push锛屾晠涓嶈兘闈?paths(data/**) 鑷姩閮ㄧ讲锛岃瑙?deploy-pages.yml 鈶級銆?
 
 jobs:
-  # ── ② 真实 API 冒烟：六源逐个真打（getharden/东财LHB/同花顺行业/腾讯指数/东财池/同花顺日K）──
-  #   为什么排在 build 之前且 build needs 它：管道容灾会「保留上次快照并标失败」，
-  #   源结构悄悄变化时页面只表现为数据慢慢变旧——等发现已晚。冒烟每天主动摸一遍
-  #   每个源的门：硬失败 → 本 job 红 → build 被拦（不污染生产档）+ CI 邮件当天报警。
-  #   软失败（龙虎榜当日未公布）不算源故障（盘后早跑正常态）。
+  # 鈹€鈹€ 鈶?鐪熷疄 API 鍐掔儫锛氬叚婧愰€愪釜鐪熸墦锛坓etharden/涓滆储LHB/鍚岃姳椤鸿涓?鑵捐鎸囨暟/涓滆储姹?鍚岃姳椤烘棩K锛夆攢鈹€
+  #   涓轰粈涔堟帓鍦?build 涔嬪墠涓?build needs 瀹冿細绠￠亾瀹圭伨浼氥€屼繚鐣欎笂娆″揩鐓у苟鏍囧け璐ャ€嶏紝
+  #   婧愮粨鏋勬倓鎮勫彉鍖栨椂椤甸潰鍙〃鐜颁负鏁版嵁鎱㈡參鍙樻棫鈥斺€旂瓑鍙戠幇宸叉櫄銆傚啋鐑熸瘡澶╀富鍔ㄦ懜涓€閬?
+  #   姣忎釜婧愮殑闂細纭け璐?鈫?鏈?job 绾?鈫?build 琚嫤锛堜笉姹℃煋鐢熶骇妗ｏ級+ CI 閭欢褰撳ぉ鎶ヨ銆?
+  #   杞け璐ワ紙榫欒檸姒滃綋鏃ユ湭鍏竷锛変笉绠楁簮鏁呴殰锛堢洏鍚庢棭璺戞甯告€侊級銆?
   smoke:
-    # 任务一/任务二触发时点（'0 1' 盘前 / '35 1'/'30 2'/'0 6' 盘中三时点）已加排除
-    # ——冒烟是盘前 08:30 摸门语义，任务时点重跑纯浪费且占 daily-sentiment 并发槽。
+    # 浠诲姟涓€/浠诲姟浜岃Е鍙戞椂鐐癸紙'0 1' 鐩樺墠 / '35 1'/'30 2'/'0 6' 鐩樹腑涓夋椂鐐癸級宸插姞鎺掗櫎
+    # 鈥斺€斿啋鐑熸槸鐩樺墠 08:30 鎽搁棬璇箟锛屼换鍔℃椂鐐归噸璺戠函娴垂涓斿崰 daily-sentiment 骞跺彂妲姐€?
     if: github.event.schedule != '0,30 1-7 * * 1-5' && github.event.schedule != '0 1 * * 1-5' && github.event.schedule != '35 1 * * 1-5' && github.event.schedule != '30 2 * * 1-5' && github.event.schedule != '0 6 * * 1-5'
     runs-on: ubuntu-latest
-    # 5 → 8：重试兜底后最坏路径 = 首跑（≤2 分钟）+ 60s 退避 + 重跑，留足余量不误触超时。
+    # 5 鈫?8锛氶噸璇曞厹搴曞悗鏈€鍧忚矾寰?= 棣栬窇锛堚墹2 鍒嗛挓锛? 60s 閫€閬?+ 閲嶈窇锛岀暀瓒充綑閲忎笉璇Е瓒呮椂銆?
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      # ── 瞬时抖动重试（2026-10-07）────────────────────────────────────────────
-      #   实录：北京 10-07 04:41 那班冒烟因 UND_ERR_SOCKET 型网络抖动 53s 失败 →
-      #   半夜报警邮件；同 commit 一小时后复跑 6/6 全绿（自愈）。dns ipv4first 只能
-      #   降频不能绝根，故 step 层兜底：失败 → 退避 60s 重跑一次。
-      #     · 重试通过 = 抖动自愈 → job 绿，夜间误报清零；
-      #     · 重试仍败 = 真实源故障 → exit 1 照旧拦 build（真挂的源连挂两次照样红，
-      #       不会因重试被放过）。
-      #   覆盖所有班次而非仅凌晨：18:30/21:00 的冒烟失败同样会误拦主跑，重试让瞬时
-      #   抖动不再打断数据管线（代价仅 +2 分钟，远低于整班 build 被拦的损失）。
-      #   重跑会覆盖 data/smoke-latest.json 为最终态（首败证据在日志里可见）。
-      - name: 六源真实 API 冒烟（不 mock，断言 200+非空+字段契约；瞬时抖动重试一次）
+      # 鈹€鈹€ 鐬椂鎶栧姩閲嶈瘯锛?026-10-07锛夆攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+      #   瀹炲綍锛氬寳浜?10-07 04:41 閭ｇ彮鍐掔儫鍥?UND_ERR_SOCKET 鍨嬬綉缁滄姈鍔?53s 澶辫触 鈫?
+      #   鍗婂鎶ヨ閭欢锛涘悓 commit 涓€灏忔椂鍚庡璺?6/6 鍏ㄧ豢锛堣嚜鎰堬級銆俤ns ipv4first 鍙兘
+      #   闄嶉涓嶈兘缁濇牴锛屾晠 step 灞傚厹搴曪細澶辫触 鈫?閫€閬?60s 閲嶈窇涓€娆°€?
+      #     路 閲嶈瘯閫氳繃 = 鎶栧姩鑷剤 鈫?job 缁匡紝澶滈棿璇姤娓呴浂锛?
+      #     路 閲嶈瘯浠嶈触 = 鐪熷疄婧愭晠闅?鈫?exit 1 鐓ф棫鎷?build锛堢湡鎸傜殑婧愯繛鎸備袱娆＄収鏍风孩锛?
+      #       涓嶄細鍥犻噸璇曡鏀捐繃锛夈€?
+      #   瑕嗙洊鎵€鏈夌彮娆¤€岄潪浠呭噷鏅細18:30/21:00 鐨勫啋鐑熷け璐ュ悓鏍蜂細璇嫤涓昏窇锛岄噸璇曡鐬椂
+      #   鎶栧姩涓嶅啀鎵撴柇鏁版嵁绠＄嚎锛堜唬浠蜂粎 +2 鍒嗛挓锛岃繙浣庝簬鏁寸彮 build 琚嫤鐨勬崯澶憋級銆?
+      #   閲嶈窇浼氳鐩?data/smoke-latest.json 涓烘渶缁堟€侊紙棣栬触璇佹嵁鍦ㄦ棩蹇楅噷鍙锛夈€?
+      - name: 鍏簮鐪熷疄 API 鍐掔儫锛堜笉 mock锛屾柇瑷€ 200+闈炵┖+瀛楁濂戠害锛涚灛鏃舵姈鍔ㄩ噸璇曚竴娆★級
         id: smoke
         run: |
           if node scripts/smoke_sources.mjs; then exit 0; fi
-          echo "⚠ 第一次冒烟失败——疑似瞬时网络抖动，退避 60 秒后重试一次"
+          echo "鈿?绗竴娆″啋鐑熷け璐モ€斺€旂枒浼肩灛鏃剁綉缁滄姈鍔紝閫€閬?60 绉掑悗閲嶈瘯涓€娆?
           sleep 60
           if ! node scripts/smoke_sources.mjs; then
-            echo "✗ 重试后仍失败——判定为真实源故障，硬失败照旧拦下主跑"
+            echo "鉁?閲嶈瘯鍚庝粛澶辫触鈥斺€斿垽瀹氫负鐪熷疄婧愭晠闅滐紝纭け璐ョ収鏃ф嫤涓嬩富璺?
             exit 1
           fi
-          echo "✓ 重试通过——第一次失败为瞬时抖动自愈，非源故障"
-      - name: 冒烟报告落盘留档（data/smoke-latest.json，随仓库可见）
+          echo "鉁?閲嶈瘯閫氳繃鈥斺€旂涓€娆″け璐ヤ负鐬椂鎶栧姩鑷剤锛岄潪婧愭晠闅?
+      - name: 鍐掔儫鎶ュ憡钀界洏鐣欐。锛坉ata/smoke-latest.json锛岄殢浠撳簱鍙锛?
         if: always()
         run: |
           if [ -f data/smoke-latest.json ]; then
-            echo "冒烟摘要："
-            node -e "const r=require('./data/smoke-latest.json'); console.log(r.allOk?'全部通过':'硬失败: '+r.hardFail.join(','), '@', r.tradeDateAnchored)"
+            echo "鍐掔儫鎽樿锛?
+            node -e "const r=require('./data/smoke-latest.json'); console.log(r.allOk?'鍏ㄩ儴閫氳繃':'纭け璐? '+r.hardFail.join(','), '@', r.tradeDateAnchored)"
           fi
-      # ★ 2026-10-19 修复（方案A）：冒烟档写入后由本 smoke job 自行提交落库。
-      #   根因：此前 smoke 只写不提交，build 虽在 git add 清单列了 smoke-latest.json
-      #   却从不重新生成它 → 仓库副本冻结在 2026-10-08，心跳哨兵误报"冒烟档陈旧"。
-      #   现改为 smoke 写完即提交（沿用 build 的 pull --rebase -X theirs + 重试竞态加固），
-      #   每日盘前(08:30)及每次 smoke 跑批后 generatedAt 即前进，哨兵判新鲜。
-      #   continue-on-error: true——提交是"证据落库"的次要动作，绝不能因 push 竞态偶败
-      #   而把 smoke 门禁（源挂→拦 build 的关键保护）也拖红、进而卡住整条数据管线；
-      #   若本步失败，下一轮 smoke 会重提交自愈，仅短暂丢失一次新鲜度，不影响实时监控。
-      #   内容未变（git diff --cached 空）则跳过提交，避免空提交无谓触发 Pages 部署。
-      - name: 提交冒烟档（data/smoke-latest.json 落库，刷新新鲜度）
+      # 鈽?2026-10-19 淇锛堟柟妗圓锛夛細鍐掔儫妗ｅ啓鍏ュ悗鐢辨湰 smoke job 鑷鎻愪氦钀藉簱銆?
+      #   鏍瑰洜锛氭鍓?smoke 鍙啓涓嶆彁浜わ紝build 铏藉湪 git add 娓呭崟鍒椾簡 smoke-latest.json
+      #   鍗翠粠涓嶉噸鏂扮敓鎴愬畠 鈫?浠撳簱鍓湰鍐荤粨鍦?2026-10-08锛屽績璺冲摠鍏佃鎶?鍐掔儫妗ｉ檲鏃?銆?
+      #   鐜版敼涓?smoke 鍐欏畬鍗虫彁浜わ紙娌跨敤 build 鐨?pull --rebase -X theirs + 閲嶈瘯绔炴€佸姞鍥猴級锛?
+      #   姣忔棩鐩樺墠(08:30)鍙婃瘡娆?smoke 璺戞壒鍚?generatedAt 鍗冲墠杩涳紝鍝ㄥ叺鍒ゆ柊椴溿€?
+      #   continue-on-error: true鈥斺€旀彁浜ゆ槸"璇佹嵁钀藉簱"鐨勬瑕佸姩浣滐紝缁濅笉鑳藉洜 push 绔炴€佸伓璐?
+      #   鑰屾妸 smoke 闂ㄧ锛堟簮鎸傗啋鎷?build 鐨勫叧閿繚鎶わ級涔熸嫋绾€佽繘鑰屽崱浣忔暣鏉℃暟鎹绾匡紱
+      #   鑻ユ湰姝ュけ璐ワ紝涓嬩竴杞?smoke 浼氶噸鎻愪氦鑷剤锛屼粎鐭殏涓㈠け涓€娆℃柊椴滃害锛屼笉褰卞搷瀹炴椂鐩戞帶銆?
+      #   鍐呭鏈彉锛坓it diff --cached 绌猴級鍒欒烦杩囨彁浜わ紝閬垮厤绌烘彁浜ゆ棤璋撹Е鍙?Pages 閮ㄧ讲銆?
+      - name: 鎻愪氦鍐掔儫妗ｏ紙data/smoke-latest.json 钀藉簱锛屽埛鏂版柊椴滃害锛?
         if: always()
         continue-on-error: true
         run: |
@@ -138,24 +93,24 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/smoke-latest.json
           if git diff --cached --quiet; then
-            echo "冒烟档内容未变，跳过提交"
+            echo "鍐掔儫妗ｅ唴瀹规湭鍙橈紝璺宠繃鎻愪氦"
           else
-            git commit -m "chore: 冒烟档 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git commit -m "chore: 鍐掔儫妗?$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             retry=0
             until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
               retry=$((retry+1))
-              if [ "$retry" -ge 3 ]; then echo "push 连续 3 次被拒（并发竞态未解），放弃"; exit 1; fi
-              echo "push 被拒（同轮 job 并发竞态），重试 $retry/3 ..."
+              if [ "$retry" -ge 3 ]; then echo "push 杩炵画 3 娆¤鎷掞紙骞跺彂绔炴€佹湭瑙ｏ級锛屾斁寮?; exit 1; fi
+              echo "push 琚嫆锛堝悓杞?job 骞跺彂绔炴€侊級锛岄噸璇?$retry/3 ..."
               git rebase --abort 2>/dev/null || true
               sleep 5
             done
           fi
-      # ⑤ 两市成交额跨源对账（2026-10-08 对账任务）：smoke 之后 build 之前的独立
-      #   观测——东财 push2his 备源（上证+深证两 secid 相加）核验主源（s6 顺产落盘
-      #   的 amountAnchor）当日值，差值超 5% 或备源不可用 → 企微+issue 双通道告警。
-      #   纯观测不拦 build：恒 exit 0（+ continue-on-error 双保险），CI 红只属于守卫；
-      #   主源值缺失（s6 硬失败）自动跳过——守卫先说话，对账不重复告警。
-      - name: 跨源对账（两市成交额，差值超阈值建 issue，不拦 build）
+      # 鈶?涓ゅ競鎴愪氦棰濊法婧愬璐︼紙2026-10-08 瀵硅处浠诲姟锛夛細smoke 涔嬪悗 build 涔嬪墠鐨勭嫭绔?
+      #   瑙傛祴鈥斺€斾笢璐?push2his 澶囨簮锛堜笂璇?娣辫瘉涓?secid 鐩稿姞锛夋牳楠屼富婧愶紙s6 椤轰骇钀界洏
+      #   鐨?amountAnchor锛夊綋鏃ュ€硷紝宸€艰秴 5% 鎴栧婧愪笉鍙敤 鈫?浼佸井+issue 鍙岄€氶亾鍛婅銆?
+      #   绾娴嬩笉鎷?build锛氭亽 exit 0锛? continue-on-error 鍙屼繚闄╋級锛孋I 绾㈠彧灞炰簬瀹堝崼锛?
+      #   涓绘簮鍊肩己澶憋紙s6 纭け璐ワ級鑷姩璺宠繃鈥斺€斿畧鍗厛璇磋瘽锛屽璐︿笉閲嶅鍛婅銆?
+      - name: 璺ㄦ簮瀵硅处锛堜袱甯傛垚浜ら锛屽樊鍊艰秴闃堝€煎缓 issue锛屼笉鎷?build锛?
         if: always()
         continue-on-error: true
         env:
@@ -165,18 +120,18 @@ jobs:
           node scripts/cross_check.mjs \
             --run-id "${{ github.run_id }}" \
             --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-      # ②+③ 守卫结果双通道通知（2026-10-08 合并交付）：PASS/BLOCK/ERROR 三态全覆盖，
-      #   企微 + GitHub issue 双通道。替代 alert_smoke_fail.mjs 单通道时代（其企微正文
-      #   由 smokeFailEvent 继续 carry，语义零漂移；避免 BLOCK 时双企微打扰）。
-      #   · if: always()——冒烟 step 无论成败（含超时 kill）通知必发：通知器独立于
-      #     守卫进程，读 outcome + 落盘报告交叉判定，脚本崩掉也有 issue 兜底（这是
-      #     通知函数放守卫脚本内部做不到的）；
-      #   · continue-on-error: true——通知自身失败（webhook 未配/issue API 拒绝）绝不
-      #     把 CI 再拖红，红只留给「守卫本身没过」；
-      #   · PASS 只发企微心跳（首跑盯防刚需，嫌吵 GUARD_PASS_NOTIFY=false 关）；issue
-      #     只兜 BLOCK/ERROR——smoke 每天三班，PASS 流水 issue 会淹没真异常台账；
-      #   · issue 用 GITHUB_TOKEN（自动注入）+ 顶层 issues: write 权限，零新增 secret。
-      - name: 守卫结果双通道通知（PASS 心跳 / BLOCK+ERROR 企微+issue 兜底）
+      # 鈶?鈶?瀹堝崼缁撴灉鍙岄€氶亾閫氱煡锛?026-10-08 鍚堝苟浜や粯锛夛細PASS/BLOCK/ERROR 涓夋€佸叏瑕嗙洊锛?
+      #   浼佸井 + GitHub issue 鍙岄€氶亾銆傛浛浠?alert_smoke_fail.mjs 鍗曢€氶亾鏃朵唬锛堝叾浼佸井姝ｆ枃
+      #   鐢?smokeFailEvent 缁х画 carry锛岃涔夐浂婕傜Щ锛涢伩鍏?BLOCK 鏃跺弻浼佸井鎵撴壈锛夈€?
+      #   路 if: always()鈥斺€斿啋鐑?step 鏃犺鎴愯触锛堝惈瓒呮椂 kill锛夐€氱煡蹇呭彂锛氶€氱煡鍣ㄧ嫭绔嬩簬
+      #     瀹堝崼杩涚▼锛岃 outcome + 钀界洏鎶ュ憡浜ゅ弶鍒ゅ畾锛岃剼鏈穿鎺変篃鏈?issue 鍏滃簳锛堣繖鏄?
+      #     閫氱煡鍑芥暟鏀惧畧鍗剼鏈唴閮ㄥ仛涓嶅埌鐨勶級锛?
+      #   路 continue-on-error: true鈥斺€旈€氱煡鑷韩澶辫触锛坵ebhook 鏈厤/issue API 鎷掔粷锛夌粷涓?
+      #     鎶?CI 鍐嶆嫋绾紝绾㈠彧鐣欑粰銆屽畧鍗湰韬病杩囥€嶏紱
+      #   路 PASS 鍙彂浼佸井蹇冭烦锛堥璺戠洴闃插垰闇€锛屽珜鍚?GUARD_PASS_NOTIFY=false 鍏筹級锛沬ssue
+      #     鍙厹 BLOCK/ERROR鈥斺€攕moke 姣忓ぉ涓夌彮锛孭ASS 娴佹按 issue 浼氭饭娌＄湡寮傚父鍙拌处锛?
+      #   路 issue 鐢?GITHUB_TOKEN锛堣嚜鍔ㄦ敞鍏ワ級+ 椤跺眰 issues: write 鏉冮檺锛岄浂鏂板 secret銆?
+      - name: 瀹堝崼缁撴灉鍙岄€氶亾閫氱煡锛圥ASS 蹇冭烦 / BLOCK+ERROR 浼佸井+issue 鍏滃簳锛?
         if: always()
         continue-on-error: true
         env:
@@ -189,7 +144,7 @@ jobs:
             --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   build:
-    # 盘后完整管道（18:30 / 21:00 / 手动触发）—— 必须先过冒烟门禁（源挂了不写生产档）
+    # 鐩樺悗瀹屾暣绠￠亾锛?8:30 / 21:00 / 鎵嬪姩瑙﹀彂锛夆€斺€?蹇呴』鍏堣繃鍐掔儫闂ㄧ锛堟簮鎸備簡涓嶅啓鐢熶骇妗ｏ級
     needs: smoke
     if: >
       needs.smoke.result == 'success' &&
@@ -208,118 +163,118 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      # 交易日历：从**上证指数日K**反推真实开市日（休市 = 工作日内无日K）。
-      # ⚠ 必须排在管道**之前**：管道用日历判"今天是不是交易日"，
-      #   日历若还是上次的（比如跨年、或长假前更新过而节后没续），
-      #   会在开市日误判为休市 → 整天不抓数据，且页面上只表现为"没更新"，极难归因。
-      #   （本项由 scripts/audit_lhb_caliber.mjs 的 B13 块按「run: 行先后」机器校验。）
-      - name: 同步交易日历（指数日K反推，含调休补班）
+      # 浜ゆ槗鏃ュ巻锛氫粠**涓婅瘉鎸囨暟鏃**鍙嶆帹鐪熷疄寮€甯傛棩锛堜紤甯?= 宸ヤ綔鏃ュ唴鏃犳棩K锛夈€?
+      # 鈿?蹇呴』鎺掑湪绠￠亾**涔嬪墠**锛氱閬撶敤鏃ュ巻鍒?浠婂ぉ鏄笉鏄氦鏄撴棩"锛?
+      #   鏃ュ巻鑻ヨ繕鏄笂娆＄殑锛堟瘮濡傝法骞淬€佹垨闀垮亣鍓嶆洿鏂拌繃鑰岃妭鍚庢病缁級锛?
+      #   浼氬湪寮€甯傛棩璇垽涓轰紤甯?鈫?鏁村ぉ涓嶆姄鏁版嵁锛屼笖椤甸潰涓婂彧琛ㄧ幇涓?娌℃洿鏂?锛屾瀬闅惧綊鍥犮€?
+      #   锛堟湰椤圭敱 scripts/audit_lhb_caliber.mjs 鐨?B13 鍧楁寜銆宺un: 琛屽厛鍚庛€嶆満鍣ㄦ牎楠屻€傦級
+      - name: 鍚屾浜ゆ槗鏃ュ巻锛堟寚鏁版棩K鍙嶆帹锛屽惈璋冧紤琛ョ彮锛?
         run: node scripts/fetch_calendar.mjs
-      # ── 2026-10-14 pain 断供根因修复：pain 之前预跑一遍管道，把"当日"并入 archive ──
-      #   根因：archive 的"今天"只由 pipeline 的 mergeNewDays 产生，而 fetch_pain 排在
-      #   pipeline 之前 → pain 跑时 archive 尚无今天 → fetch_pain 的"运行日不在交易日
-      #   序列"闸门（fetch_pain.mjs:74-76，拿 archive all_days 当序列）误拒 → CI 上 pain
-      #   结构性每天断供（闸门 2026-10-11 加上后一直如此，signals.pain 长期 null）。
-      #   修法：在 pain 之前插一道 early pipeline（MODE=live），靠 mergeNewDays 把当日并入
-      #   archive；随后 fetch_pain 闸门自然放行、算出当日真值。末尾原有 pipeline 再把新鲜
-      #   pain/breadth/crosscheck/llm 嵌入 signals-latest.json。
-      #   本地实证：archive 含当日后，fetch_pain 无 --date 即放行并出当日值（多空拉锯）。
-      #   代价：多跑一遍管道（当日抓取有缓存，约 +1~2 分钟）；mergeNewDays 同日 replace 幂等。
-      #   B13⑧ 审计安全：其只校验"第一个 pipeline.run 在 calendar.run 之后"，early 管道
-      #   正排在 calendar 之后，iCal < iPipe 仍成立。
-      - name: 预跑管道（当日入档，供 pain/breadth 取当天；末尾正式管道再嵌入新鲜 signals）
+      # 鈹€鈹€ 2026-10-14 pain 鏂緵鏍瑰洜淇锛歱ain 涔嬪墠棰勮窇涓€閬嶇閬擄紝鎶?褰撴棩"骞跺叆 archive 鈹€鈹€
+      #   鏍瑰洜锛歛rchive 鐨?浠婂ぉ"鍙敱 pipeline 鐨?mergeNewDays 浜х敓锛岃€?fetch_pain 鎺掑湪
+      #   pipeline 涔嬪墠 鈫?pain 璺戞椂 archive 灏氭棤浠婂ぉ 鈫?fetch_pain 鐨?杩愯鏃ヤ笉鍦ㄤ氦鏄撴棩
+      #   搴忓垪"闂搁棬锛坒etch_pain.mjs:74-76锛屾嬁 archive all_days 褰撳簭鍒楋級璇嫆 鈫?CI 涓?pain
+      #   缁撴瀯鎬ф瘡澶╂柇渚涳紙闂搁棬 2026-10-11 鍔犱笂鍚庝竴鐩村姝わ紝signals.pain 闀挎湡 null锛夈€?
+      #   淇硶锛氬湪 pain 涔嬪墠鎻掍竴閬?early pipeline锛圡ODE=live锛夛紝闈?mergeNewDays 鎶婂綋鏃ュ苟鍏?
+      #   archive锛涢殢鍚?fetch_pain 闂搁棬鑷劧鏀捐銆佺畻鍑哄綋鏃ョ湡鍊笺€傛湯灏惧師鏈?pipeline 鍐嶆妸鏂伴矞
+      #   pain/breadth/crosscheck/llm 宓屽叆 signals-latest.json銆?
+      #   鏈湴瀹炶瘉锛歛rchive 鍚綋鏃ュ悗锛宖etch_pain 鏃?--date 鍗虫斁琛屽苟鍑哄綋鏃ュ€硷紙澶氱┖鎷夐敮锛夈€?
+      #   浠ｄ环锛氬璺戜竴閬嶇閬擄紙褰撴棩鎶撳彇鏈夌紦瀛橈紝绾?+1~2 鍒嗛挓锛夛紱mergeNewDays 鍚屾棩 replace 骞傜瓑銆?
+      #   B13鈶?瀹¤瀹夊叏锛氬叾鍙牎楠?绗竴涓?pipeline.run 鍦?calendar.run 涔嬪悗"锛宔arly 绠￠亾
+      #   姝ｆ帓鍦?calendar 涔嬪悗锛宨Cal < iPipe 浠嶆垚绔嬨€?
+      - name: 棰勮窇绠￠亾锛堝綋鏃ュ叆妗ｏ紝渚?pain/breadth 鍙栧綋澶╋紱鏈熬姝ｅ紡绠￠亾鍐嶅祵鍏ユ柊椴?signals锛?
         env:
           MODE: live
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         run: node src/pipeline.js
-      # ── 2026-10-13 时序修复：宽度/亏钱效应抓取提前到切片生成之前 ──
-      #   原顺序 pipeline.js(切片含 signals-latest.json) 跑在 fetch_breadth/fetch_pain 之前，
-      #   切片只能吃上一轮的宽度/亏钱效应 → 前端宽度背离/亏钱效应长期"未评估"。
-      #   现两者提前到管道之前，切片即吃到当日最新宽度与亏钱效应。
-      - name: 抓取亏钱效应行情（昨涨停今日表现，收盘后口径）
+      # 鈹€鈹€ 2026-10-13 鏃跺簭淇锛氬搴?浜忛挶鏁堝簲鎶撳彇鎻愬墠鍒板垏鐗囩敓鎴愪箣鍓?鈹€鈹€
+      #   鍘熼『搴?pipeline.js(鍒囩墖鍚?signals-latest.json) 璺戝湪 fetch_breadth/fetch_pain 涔嬪墠锛?
+      #   鍒囩墖鍙兘鍚冧笂涓€杞殑瀹藉害/浜忛挶鏁堝簲 鈫?鍓嶇瀹藉害鑳岀/浜忛挶鏁堝簲闀挎湡"鏈瘎浼?銆?
+      #   鐜颁袱鑰呮彁鍓嶅埌绠￠亾涔嬪墠锛屽垏鐗囧嵆鍚冨埌褰撴棩鏈€鏂板搴︿笌浜忛挶鏁堝簲銆?
+      - name: 鎶撳彇浜忛挶鏁堝簲琛屾儏锛堟槰娑ㄥ仠浠婃棩琛ㄧ幇锛屾敹鐩樺悗鍙ｅ緞锛?
         run: node scripts/fetch_pain.mjs
         continue-on-error: true
-      - name: 抓取多维市场宽度（分片扫描全市场日K）
+      - name: 鎶撳彇澶氱淮甯傚満瀹藉害锛堝垎鐗囨壂鎻忓叏甯傚満鏃锛?
         run: node scripts/fetch_breadth.mjs --shards 8
         continue-on-error: true
-      - name: 运行管道（live 模式，非交易日自动跳过）
+      - name: 杩愯绠￠亾锛坙ive 妯″紡锛岄潪浜ゆ槗鏃ヨ嚜鍔ㄨ烦杩囷級
         env:
           MODE: live
-          # 运维告警推送通道（降维预埋）：拦截器事件 → 企微机器人。
-          # secret 未配置时为空串 → 脚本内部跳过推送（仅落盘），不会报错。
+          # 杩愮淮鍛婅鎺ㄩ€侀€氶亾锛堥檷缁撮鍩嬶級锛氭嫤鎴櫒浜嬩欢 鈫?浼佸井鏈哄櫒浜恒€?
+          # secret 鏈厤缃椂涓虹┖涓?鈫?鑴氭湰鍐呴儴璺宠繃鎺ㄩ€侊紙浠呰惤鐩橈級锛屼笉浼氭姤閿欍€?
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         run: node src/pipeline.js
-      - name: 数据新鲜度判定（按交易日历，输出可读结论）
+      - name: 鏁版嵁鏂伴矞搴﹀垽瀹氾紙鎸変氦鏄撴棩鍘嗭紝杈撳嚭鍙缁撹锛?
         run: node scripts/freshness.mjs
-      # 外围行情独立成步：A 股休市（长假）时上面那步会整段跳过，而假期恰恰是外围数据
-      # 最该攒的时候——节后预案靠的就是这几天美股交易日。所以它不受 A 股开市与否影响。
-      # 抓不到时脚本内部容灾（保留上次快照并标记失败），不会拖挂整条 job。
-      - name: 抓取外围市场行情（隔夜美股/中国资产/汇率/商品）
+      # 澶栧洿琛屾儏鐙珛鎴愭锛欰 鑲′紤甯傦紙闀垮亣锛夋椂涓婇潰閭ｆ浼氭暣娈佃烦杩囷紝鑰屽亣鏈熸伆鎭版槸澶栧洿鏁版嵁
+      # 鏈€璇ユ敀鐨勬椂鍊欌€斺€旇妭鍚庨妗堥潬鐨勫氨鏄繖鍑犲ぉ缇庤偂浜ゆ槗鏃ャ€傛墍浠ュ畠涓嶅彈 A 鑲″紑甯備笌鍚﹀奖鍝嶃€?
+      # 鎶撲笉鍒版椂鑴氭湰鍐呴儴瀹圭伨锛堜繚鐣欎笂娆″揩鐓у苟鏍囪澶辫触锛夛紝涓嶄細鎷栨寕鏁存潯 job銆?
+      - name: 鎶撳彇澶栧洿甯傚満琛屾儏锛堥殧澶滅編鑲?涓浗璧勪骇/姹囩巼/鍟嗗搧锛?
         run: node scripts/fetch_global.mjs
-      - name: 生成 V5.2 回测档（成本/平滑/风控/网格帕累托/滚动/主线选股）
+      - name: 鐢熸垚 V5.2 鍥炴祴妗ｏ紙鎴愭湰/骞虫粦/椋庢帶/缃戞牸甯曠疮鎵?婊氬姩/涓荤嚎閫夎偂锛?
         run: node scripts/backtest.mjs
-      # ⑥ 双轨账本重放（2026-10-08 第三批接入 CI）：三轨道每日纪面账（A 执行/B 参考/C 影子）。
-      #   之前只在本地手动跑——CI 断供时旧值顶替当日值（第二批 09-30 名/10-08 内容事故的
-      #   供应侧根源）。紧贴 backtest.mjs：账本三重门禁要读 data/backtest.json::v52。
-      #   continue-on-error：重放挂（如数据延伸导致锚点漂移）只影响披露不影响核心数据面，
-      #   不阻断 CI；真滞后由末尾 freshness --require-fresh 三模块门禁标红（通知语义，
-      #   数据在前一步已提交不丢），消费端守卫（②）同步把旧值拦在叙事之外。
-      - name: 双轨账本重放（A执行/B参考/C影子，滞后不阻断）
+      # 鈶?鍙岃建璐︽湰閲嶆斁锛?026-10-08 绗笁鎵规帴鍏?CI锛夛細涓夎建閬撴瘡鏃ョ邯闈㈣处锛圓 鎵ц/B 鍙傝€?C 褰卞瓙锛夈€?
+      #   涔嬪墠鍙湪鏈湴鎵嬪姩璺戔€斺€擟I 鏂緵鏃舵棫鍊奸《鏇垮綋鏃ュ€硷紙绗簩鎵?09-30 鍚?10-08 鍐呭浜嬫晠鐨?
+      #   渚涘簲渚ф牴婧愶級銆傜揣璐?backtest.mjs锛氳处鏈笁閲嶉棬绂佽璇?data/backtest.json::v52銆?
+      #   continue-on-error锛氶噸鏀炬寕锛堝鏁版嵁寤朵几瀵艰嚧閿氱偣婕傜Щ锛夊彧褰卞搷鎶湶涓嶅奖鍝嶆牳蹇冩暟鎹潰锛?
+      #   涓嶉樆鏂?CI锛涚湡婊炲悗鐢辨湯灏?freshness --require-fresh 涓夋ā鍧楅棬绂佹爣绾紙閫氱煡璇箟锛?
+      #   鏁版嵁鍦ㄥ墠涓€姝ュ凡鎻愪氦涓嶄涪锛夛紝娑堣垂绔畧鍗紙鈶★級鍚屾鎶婃棫鍊兼嫤鍦ㄥ彊浜嬩箣澶栥€?
+      - name: 鍙岃建璐︽湰閲嶆斁锛圓鎵ц/B鍙傝€?C褰卞瓙锛屾粸鍚庝笉闃绘柇锛?
         run: node tools/backtest/paper_dual_track.mjs
         continue-on-error: true
-      # ③ 策略收益回测：冰点反转/题材动量/梯队风险偏好 × 沪深300基准（严格 point-in-time）。
-      #   个股日K走 data/.bt_kline/ 缓存（不入库，CI 每次真抓——86 只 top1 题材成员约 2 分钟）。
-      #   产物 data/backtest-strategies.json 入库；样本不足时脚本自行跳过不阻断。
-      - name: 生成策略收益回测（三策略 × 基准，point-in-time）
+      # 鈶?绛栫暐鏀剁泭鍥炴祴锛氬啺鐐瑰弽杞?棰樻潗鍔ㄩ噺/姊槦椋庨櫓鍋忓ソ 脳 娌繁300鍩哄噯锛堜弗鏍?point-in-time锛夈€?
+      #   涓偂鏃璧?data/.bt_kline/ 缂撳瓨锛堜笉鍏ュ簱锛孋I 姣忔鐪熸姄鈥斺€?6 鍙?top1 棰樻潗鎴愬憳绾?2 鍒嗛挓锛夈€?
+      #   浜х墿 data/backtest-strategies.json 鍏ュ簱锛涙牱鏈笉瓒虫椂鑴氭湰鑷璺宠繃涓嶉樆鏂€?
+      - name: 鐢熸垚绛栫暐鏀剁泭鍥炴祴锛堜笁绛栫暐 脳 鍩哄噯锛宲oint-in-time锛?
         run: node scripts/backtest_strategies.mjs
         continue-on-error: true
-      # 公式版本回归验证集：v4.5 / v5.0 / v5.2 在同一段历史上并行重算，
-      # 对次日上证涨跌幅算相关性 + 方向准确率。改公式后跑一次即可看出影响面，
-      # 不必再用肉眼看"某天数字好像不对"。
-      # 样本不足时脚本自行跳过（不阻断），产物自带"样本量小、不排优劣"的披露。
-      - name: 公式版本回归验证（v4.5/v5.0/v5.2 并行重算对比）
+      # 鍏紡鐗堟湰鍥炲綊楠岃瘉闆嗭細v4.5 / v5.0 / v5.2 鍦ㄥ悓涓€娈靛巻鍙蹭笂骞惰閲嶇畻锛?
+      # 瀵规鏃ヤ笂璇佹定璺屽箙绠楃浉鍏虫€?+ 鏂瑰悜鍑嗙‘鐜囥€傛敼鍏紡鍚庤窇涓€娆″嵆鍙湅鍑哄奖鍝嶉潰锛?
+      # 涓嶅繀鍐嶇敤鑲夌溂鐪?鏌愬ぉ鏁板瓧濂藉儚涓嶅"銆?
+      # 鏍锋湰涓嶈冻鏃惰剼鏈嚜琛岃烦杩囷紙涓嶉樆鏂級锛屼骇鐗╄嚜甯?鏍锋湰閲忓皬銆佷笉鎺掍紭鍔?鐨勬姭闇层€?
+      - name: 鍏紡鐗堟湰鍥炲綊楠岃瘉锛坴4.5/v5.0/v5.2 骞惰閲嶇畻瀵规瘮锛?
         run: node scripts/version_regression.mjs
-      # 模拟交易的标的池：从存档里归纳出「有哪些票、属于哪个板段、最近一次真实收盘价」。
-      # 必须在 archive.json 更新之后跑——池子就是存档的派生物，早跑会拿到昨天的价。
-      # 脚本内部对板段非法/非股票品种做校验，不合法直接退出，避免把错池子推上线。
-      - name: 构建模拟交易标的池（板段/ST/最近真实收盘价）
+      # 妯℃嫙浜ゆ槗鐨勬爣鐨勬睜锛氫粠瀛樻。閲屽綊绾冲嚭銆屾湁鍝簺绁ㄣ€佸睘浜庡摢涓澘娈点€佹渶杩戜竴娆＄湡瀹炴敹鐩樹环銆嶃€?
+      # 蹇呴』鍦?archive.json 鏇存柊涔嬪悗璺戔€斺€旀睜瀛愬氨鏄瓨妗ｇ殑娲剧敓鐗╋紝鏃╄窇浼氭嬁鍒版槰澶╃殑浠枫€?
+      # 鑴氭湰鍐呴儴瀵规澘娈甸潪娉?闈炶偂绁ㄥ搧绉嶅仛鏍￠獙锛屼笉鍚堟硶鐩存帴閫€鍑猴紝閬垮厤鎶婇敊姹犲瓙鎺ㄤ笂绾裤€?
+      - name: 鏋勫缓妯℃嫙浜ゆ槗鏍囩殑姹狅紙鏉挎/ST/鏈€杩戠湡瀹炴敹鐩樹环锛?
         run: node scripts/fetch_universe.mjs
-      # ★ 2026-10-12 修复：管道落盘后 archive.json 仍带回写字段 lhb_aggr（sources.js 抓数赋值所致），
-      #   龙虎榜口径守卫会因此判红。recalc 在所有写档步骤之后、守卫之前清掉 lhb_aggr 并全档重算因子，
-      #   确保守卫读到的是清洗后的主档。recalc 不改天数/回填标记，不影响回测对账（backtest.json 同源）。
+      # 鈽?2026-10-12 淇锛氱閬撹惤鐩樺悗 archive.json 浠嶅甫鍥炲啓瀛楁 lhb_aggr锛坰ources.js 鎶撴暟璧嬪€兼墍鑷达級锛?
+      #   榫欒檸姒滃彛寰勫畧鍗細鍥犳鍒ょ孩銆俽ecalc 鍦ㄦ墍鏈夊啓妗ｆ楠や箣鍚庛€佸畧鍗箣鍓嶆竻鎺?lhb_aggr 骞跺叏妗ｉ噸绠楀洜瀛愶紝
+      #   纭繚瀹堝崼璇诲埌鐨勬槸娓呮礂鍚庣殑涓绘。銆俽ecalc 涓嶆敼澶╂暟/鍥炲～鏍囪锛屼笉褰卞搷鍥炴祴瀵硅处锛坆acktest.json 鍚屾簮锛夈€?
       - name: Recalc LHB daily
         run: node scripts/recalc_lhb_daily.mjs
-      # 口径守卫：两套龙虎榜净额（当日榜 / 含区间累计榜的全量）不得混用。
-      # 放在提交之前——口径一旦漂移，宁可本次运行失败，也不要把错数据推上线。
-      - name: 龙虎榜口径守卫（双口径不混用 + 存档可重现）
+      # 鍙ｅ緞瀹堝崼锛氫袱濂楅緳铏庢鍑€棰濓紙褰撴棩姒?/ 鍚尯闂寸疮璁℃鐨勫叏閲忥級涓嶅緱娣风敤銆?
+      # 鏀惧湪鎻愪氦涔嬪墠鈥斺€斿彛寰勪竴鏃︽紓绉伙紝瀹佸彲鏈杩愯澶辫触锛屼篃涓嶈鎶婇敊鏁版嵁鎺ㄤ笂绾裤€?
+      - name: 榫欒檸姒滃彛寰勫畧鍗紙鍙屽彛寰勪笉娣风敤 + 瀛樻。鍙噸鐜帮級
         run: node scripts/audit_lhb_caliber.mjs
-      # 行业离群告警跨源自动核验：扫全档 OUTLIER_INDUSTRY（warn），逐条去同花顺行业指数
-      # 拉该日历史日K 独立复算 → 一致即自动销案（写入 data/industry_outlier_review.json，
-      # 此后不再重复报）；不一致标 data-error（**不销案**）并 exit 1。
-      # 只影响是否重复告警，不动任何数值。失败不阻断数据管线（continue-on-error），
-      # 但日志 ✗ 与台账 diff 都会留痕——异常排查见 data-error 条目。
-      - name: 行业离群告警跨源自动核验（真实销案 / 异常报警）
+      # 琛屼笟绂荤兢鍛婅璺ㄦ簮鑷姩鏍搁獙锛氭壂鍏ㄦ。 OUTLIER_INDUSTRY锛坵arn锛夛紝閫愭潯鍘诲悓鑺遍『琛屼笟鎸囨暟
+      # 鎷夎鏃ュ巻鍙叉棩K 鐙珛澶嶇畻 鈫?涓€鑷村嵆鑷姩閿€妗堬紙鍐欏叆 data/industry_outlier_review.json锛?
+      # 姝ゅ悗涓嶅啀閲嶅鎶ワ級锛涗笉涓€鑷存爣 data-error锛?*涓嶉攢妗?*锛夊苟 exit 1銆?
+      # 鍙奖鍝嶆槸鍚﹂噸澶嶅憡璀︼紝涓嶅姩浠讳綍鏁板€笺€傚け璐ヤ笉闃绘柇鏁版嵁绠＄嚎锛坈ontinue-on-error锛夛紝
+      # 浣嗘棩蹇?鉁?涓庡彴璐?diff 閮戒細鐣欑棔鈥斺€斿紓甯告帓鏌ヨ data-error 鏉＄洰銆?
+      - name: 琛屼笟绂荤兢鍛婅璺ㄦ簮鑷姩鏍搁獙锛堢湡瀹為攢妗?/ 寮傚父鎶ヨ锛?
         run: node scripts/verify_industry_outliers.mjs
         continue-on-error: true
-      - name: 单元测试（含 Python↔JS 一致性夹具比对 + 合并版 UI schema 守卫）
+      - name: 鍗曞厓娴嬭瘯锛堝惈 Python鈫擩S 涓€鑷存€уす鍏锋瘮瀵?+ 鍚堝苟鐗?UI schema 瀹堝崼锛?
         run: node --test --test-reporter=spec
-      # 前后端接口契约门禁（V5.3 同步机制）：全部数据档落盘后校验 vs schemas/ 契约。
-      #   放在提交与 UI 构建之前——字段漏产/改名/类型漂移宁可整次运行失败，
-      #   也不让「前端静默渲染空白」的档推上线（missingNote→missingReason 事故的常驻拦截器）。
-      #   契约本体与变更流程见 schemas/*.schema.json 头注与 README「接口契约」章节。
-      - name: 前后端接口契约守卫（数据档 vs schemas/ 契约）
+      # 鍓嶅悗绔帴鍙ｅ绾﹂棬绂侊紙V5.3 鍚屾鏈哄埗锛夛細鍏ㄩ儴鏁版嵁妗ｈ惤鐩樺悗鏍￠獙 vs schemas/ 濂戠害銆?
+      #   鏀惧湪鎻愪氦涓?UI 鏋勫缓涔嬪墠鈥斺€斿瓧娈垫紡浜?鏀瑰悕/绫诲瀷婕傜Щ瀹佸彲鏁存杩愯澶辫触锛?
+      #   涔熶笉璁┿€屽墠绔潤榛樻覆鏌撶┖鐧姐€嶇殑妗ｆ帹涓婄嚎锛坢issingNote鈫抦issingReason 浜嬫晠鐨勫父椹绘嫤鎴櫒锛夈€?
+      #   濂戠害鏈綋涓庡彉鏇存祦绋嬭 schemas/*.schema.json 澶存敞涓?README銆屾帴鍙ｅ绾︺€嶇珷鑺傘€?
+      - name: 鍓嶅悗绔帴鍙ｅ绾﹀畧鍗紙鏁版嵁妗?vs schemas/ 濂戠害锛?
         run: node scripts/check_contract.mjs
-      # ── 2026-10-13 接入跨源互证（fetch_crosscheck，此前从未接入 CI → 面板冻结在 9-30）──
-      #   读档案主源(同花顺行业)+抓第二源(腾讯/申万二级)比对，产出 data/crosscheck-latest.json。
-      #   需 pipeline 之后的新鲜档案；continue-on-error 不阻断主链路（第二源限流时静默跳过）。
-      - name: 跨源一致性互证（行业双源比对，解决跨源互证面板陈旧）
+      # 鈹€鈹€ 2026-10-13 鎺ュ叆璺ㄦ簮浜掕瘉锛坒etch_crosscheck锛屾鍓嶄粠鏈帴鍏?CI 鈫?闈㈡澘鍐荤粨鍦?9-30锛夆攢鈹€
+      #   璇绘。妗堜富婧?鍚岃姳椤鸿涓?+鎶撶浜屾簮(鑵捐/鐢充竾浜岀骇)姣斿锛屼骇鍑?data/crosscheck-latest.json銆?
+      #   闇€ pipeline 涔嬪悗鐨勬柊椴滄。妗堬紱continue-on-error 涓嶉樆鏂富閾捐矾锛堢浜屾簮闄愭祦鏃堕潤榛樿烦杩囷級銆?
+      - name: 璺ㄦ簮涓€鑷存€т簰璇侊紙琛屼笟鍙屾簮姣斿锛岃В鍐宠法婧愪簰璇侀潰鏉块檲鏃э級
         continue-on-error: true
         run: node scripts/fetch_crosscheck.mjs
-      # ── LLM 舆情试点：2026-10-17 用户指令暂停（太贵且无效）──────────────────
-      #   代码保留归档（scripts/fetch_llm_sentiment.mjs / src/llm_sentiment.js），以后再说。
-      #   if: false 关停定时任务；重启用时去掉 if:false 并翻转 daily_report.js 的
-      #   ENABLE_LLM_SECTION 开关即可。
-      - name: 生成 LLM 舆情参考（已暂停 2026-10-17：试点停更，代码保留归档）
+      # 鈹€鈹€ LLM 鑸嗘儏璇曠偣锛?026-10-17 鐢ㄦ埛鎸囦护鏆傚仠锛堝お璐典笖鏃犳晥锛夆攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+      #   浠ｇ爜淇濈暀褰掓。锛坰cripts/fetch_llm_sentiment.mjs / src/llm_sentiment.js锛夛紝浠ュ悗鍐嶈銆?
+      #   if: false 鍏冲仠瀹氭椂浠诲姟锛涢噸鍚敤鏃跺幓鎺?if:false 骞剁炕杞?daily_report.js 鐨?
+      #   ENABLE_LLM_SECTION 寮€鍏冲嵆鍙€?
+      - name: 鐢熸垚 LLM 鑸嗘儏鍙傝€冿紙宸叉殏鍋?2026-10-17锛氳瘯鐐瑰仠鏇达紝浠ｇ爜淇濈暀褰掓。锛?
         if: false
         continue-on-error: true
         env:
@@ -327,131 +282,131 @@ jobs:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
         run: node scripts/fetch_llm_sentiment.mjs
-      # ── 合并版（merge/pro-into-ui · 2026-10-02）：K线增量 + UI 构建 + Pages 部署 ──
-      # K线增量必须在 UI 构建**之前**：个股 closes/yzt_chg（昨涨停今均涨幅）由 K 线分片派生，
-      # 分片没当日 bar → 这些卡片按缺失降级（如实「—」，不编数）。非交易日脚本自报无增量。
-      - name: K线分片增量（全市场当日 bar，非交易日无增量）
+      # 鈹€鈹€ 鍚堝苟鐗堬紙merge/pro-into-ui 路 2026-10-02锛夛細K绾垮閲?+ UI 鏋勫缓 + Pages 閮ㄧ讲 鈹€鈹€
+      # K绾垮閲忓繀椤诲湪 UI 鏋勫缓**涔嬪墠**锛氫釜鑲?closes/yzt_chg锛堟槰娑ㄥ仠浠婂潎娑ㄥ箙锛夌敱 K 绾垮垎鐗囨淳鐢燂紝
+      # 鍒嗙墖娌″綋鏃?bar 鈫?杩欎簺鍗＄墖鎸夌己澶遍檷绾э紙濡傚疄銆屸€斻€嶏紝涓嶇紪鏁帮級銆傞潪浜ゆ槗鏃ヨ剼鏈嚜鎶ユ棤澧為噺銆?
+      - name: K绾垮垎鐗囧閲忥紙鍏ㄥ競鍦哄綋鏃?bar锛岄潪浜ゆ槗鏃ユ棤澧為噺锛?
         run: node ui/fetch_kline_all.mjs
-      - name: 合并构建 UI（PRO 管线数据层 + 原系统 UI 展示层 → dist/）
+      - name: 鍚堝苟鏋勫缓 UI锛圥RO 绠＄嚎鏁版嵁灞?+ 鍘熺郴缁?UI 灞曠ず灞?鈫?dist/锛?
         run: node scripts/build_ui.mjs
-      # ── AI 报告（S2 · 归档轨挂 build 末尾，设计文档 §3.3）───────────────────
-      # 盘后 + 周报：18:30 首抓与 21:00 补抓都生成（补抓数据更全时覆盖同日文件）。
-      # 周报自带闸门：tradeDate 非本周最后交易日（周五或节前最后一天）自动跳过。
-      # 模拟选股段由顶层 env SIMULATION_MODE 控制（默认开，仓库 Variables 可关）。
-      - name: 生成盘后 AI 报告（含模拟选股段）
+      # 鈹€鈹€ AI 鎶ュ憡锛圫2 路 褰掓。杞ㄦ寕 build 鏈熬锛岃璁℃枃妗?搂3.3锛夆攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+      # 鐩樺悗 + 鍛ㄦ姤锛?8:30 棣栨姄涓?21:00 琛ユ姄閮界敓鎴愶紙琛ユ姄鏁版嵁鏇村叏鏃惰鐩栧悓鏃ユ枃浠讹級銆?
+      # 鍛ㄦ姤鑷甫闂搁棬锛歵radeDate 闈炴湰鍛ㄦ渶鍚庝氦鏄撴棩锛堝懆浜旀垨鑺傚墠鏈€鍚庝竴澶╋級鑷姩璺宠繃銆?
+      # 妯℃嫙閫夎偂娈电敱椤跺眰 env SIMULATION_MODE 鎺у埗锛堥粯璁ゅ紑锛屼粨搴?Variables 鍙叧锛夈€?
+      - name: 鐢熸垚鐩樺悗 AI 鎶ュ憡锛堝惈妯℃嫙閫夎偂娈碉級
         run: node scripts/build_ai_report.mjs --type post_market
-      - name: 生成周报 AI 报告（非本周最后交易日自动跳过）
+      - name: 鐢熸垚鍛ㄦ姤 AI 鎶ュ憡锛堥潪鏈懆鏈€鍚庝氦鏄撴棩鑷姩璺宠繃锛?
         run: node scripts/build_ai_report.mjs --type weekly
-      # 推送只在 21:00 补抓与手动触发：18:30 首抓常缺龙虎榜/深证日K，推半成品
-      # 不如等 2.5 小时推全量（"收盘 5 分钟"语义由页面即时轨 15:05 版补位，
-      # 双轨时点约束见设计文档 §3.3）。指纹去重保证 21:00 与 18:30 内容未变时不重推。
-      # ── 盘后汇总推送（2026-10-12 用户指令）：按 盘前→盘中→盘后 顺序把当日三份补推企微 ──
-      #   为什么用显式文件而非 --latest：盘前(09:00)/盘中(14:00) 生成距盘后 21:00 已超
-      #   15 分钟新鲜度窗口，--latest 会被窗口挡掉；显式文件推送不走窗口检查，正好补推。
-      #   盘前报告若当日未生成（如 premarket job 未入库）→ 先补 build 一份（闸门只看
-      #   交易日不看相位，收盘后亦可生成）；intraday/post_market 当日已生成或本步上游刚生成。
-      #   顺序即用户指定：盘前 → 盘中 → 盘后（周报仅周五生成，--latest weekly 自然跳过非周五）。
-      #   continue-on-error：任一文件缺失/推送失败绝不拖红数据管线（失败不记指纹，下拍自愈）。
-      - name: 补生成当日盘前报告（若缺失，供盘后汇总推）
+      # 鎺ㄩ€佸彧鍦?21:00 琛ユ姄涓庢墜鍔ㄨЕ鍙戯細18:30 棣栨姄甯哥己榫欒檸姒?娣辫瘉鏃锛屾帹鍗婃垚鍝?
+      # 涓嶅绛?2.5 灏忔椂鎺ㄥ叏閲忥紙"鏀剁洏 5 鍒嗛挓"璇箟鐢遍〉闈㈠嵆鏃惰建 15:05 鐗堣ˉ浣嶏紝
+      # 鍙岃建鏃剁偣绾︽潫瑙佽璁℃枃妗?搂3.3锛夈€傛寚绾瑰幓閲嶄繚璇?21:00 涓?18:30 鍐呭鏈彉鏃朵笉閲嶆帹銆?
+      # 鈹€鈹€ 鐩樺悗姹囨€绘帹閫侊紙2026-10-12 鐢ㄦ埛鎸囦护锛夛細鎸?鐩樺墠鈫掔洏涓啋鐩樺悗 椤哄簭鎶婂綋鏃ヤ笁浠借ˉ鎺ㄤ紒寰?鈹€鈹€
+      #   涓轰粈涔堢敤鏄惧紡鏂囦欢鑰岄潪 --latest锛氱洏鍓?09:00)/鐩樹腑(14:00) 鐢熸垚璺濈洏鍚?21:00 宸茶秴
+      #   15 鍒嗛挓鏂伴矞搴︾獥鍙ｏ紝--latest 浼氳绐楀彛鎸℃帀锛涙樉寮忔枃浠舵帹閫佷笉璧扮獥鍙ｆ鏌ワ紝姝ｅソ琛ユ帹銆?
+      #   鐩樺墠鎶ュ憡鑻ュ綋鏃ユ湭鐢熸垚锛堝 premarket job 鏈叆搴擄級鈫?鍏堣ˉ build 涓€浠斤紙闂搁棬鍙湅
+      #   浜ゆ槗鏃ヤ笉鐪嬬浉浣嶏紝鏀剁洏鍚庝害鍙敓鎴愶級锛沬ntraday/post_market 褰撴棩宸茬敓鎴愭垨鏈涓婃父鍒氱敓鎴愩€?
+      #   椤哄簭鍗崇敤鎴锋寚瀹氾細鐩樺墠 鈫?鐩樹腑 鈫?鐩樺悗锛堝懆鎶ヤ粎鍛ㄤ簲鐢熸垚锛?-latest weekly 鑷劧璺宠繃闈炲懆浜旓級銆?
+      #   continue-on-error锛氫换涓€鏂囦欢缂哄け/鎺ㄩ€佸け璐ョ粷涓嶆嫋绾㈡暟鎹绾匡紙澶辫触涓嶈鎸囩汗锛屼笅鎷嶈嚜鎰堬級銆?
+      - name: 琛ョ敓鎴愬綋鏃ョ洏鍓嶆姤鍛婏紙鑻ョ己澶憋紝渚涚洏鍚庢眹鎬绘帹锛?
         continue-on-error: true
         run: node scripts/build_ai_report.mjs --type pre_market
-      - name: 推送盘前/盘中/盘后 AI 报告（企微 · 按 盘前→盘中→盘后 顺序 · 指纹防风暴）
+      - name: 鎺ㄩ€佺洏鍓?鐩樹腑/鐩樺悗 AI 鎶ュ憡锛堜紒寰?路 鎸?鐩樺墠鈫掔洏涓啋鐩樺悗 椤哄簭 路 鎸囩汗闃查鏆达級
         if: github.event.schedule == '0 13 * * 1-5' || github.event_name == 'workflow_dispatch'
         continue-on-error: true
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         run: |
           TODAY=$(date +%F)
-          # 盘前报告文件名取数据日（前一交易日，非生成日），由 index.json 解析，避免硬编码日期错位
+          # 鐩樺墠鎶ュ憡鏂囦欢鍚嶅彇鏁版嵁鏃ワ紙鍓嶄竴浜ゆ槗鏃ワ紝闈炵敓鎴愭棩锛夛紝鐢?index.json 瑙ｆ瀽锛岄伩鍏嶇‖缂栫爜鏃ユ湡閿欎綅
           PM=$(node -e "try{const i=require('./data/reports/index.json');console.log(i.reports&&i.reports.pre_market&&i.reports.pre_market.file||'')}catch(e){console.log('')}")
           ARGS=""
           if [ -n "$PM" ] && [ -f "data/reports/$PM" ]; then ARGS="data/reports/$PM"; fi
           if [ -f "data/reports/intraday_${TODAY}.json" ]; then ARGS="$ARGS data/reports/intraday_${TODAY}.json"; fi
           if [ -f "data/reports/post_market_${TODAY}.json" ]; then ARGS="$ARGS data/reports/post_market_${TODAY}.json"; fi
-          if [ -n "$ARGS" ]; then echo "[汇总推] 顺序 盘前→盘中→盘后，文件：$ARGS"; node scripts/push_ai_report.mjs $ARGS; fi
+          if [ -n "$ARGS" ]; then echo "[姹囨€绘帹] 椤哄簭 鐩樺墠鈫掔洏涓啋鐩樺悗锛屾枃浠讹細$ARGS"; node scripts/push_ai_report.mjs $ARGS; fi
           node scripts/push_ai_report.mjs --latest weekly
-      # ── 收盘口径复核（2026-10-10 用户指令：入库前再做一次收盘口径复核）──────────
-      #   当日盘中推送档案（intraday_D.json）入库前，用 ztpool_history 收盘档复核：
-      #   池标的收盘结局 / 推送时 vs 收盘情绪漂移 / 连板矛盾。台账写回档案顶层
-      #   caliber_review → 随下方既有 git add data/reports 清单入库（提交规则零改动）。
-      #   观测性质不拦数据面（continue-on-error）；18:30 若 ztpool 当日行未入库
-      #   （本地 16:00 任务未提交）→ 脚本如实跳过，21:00 班补上（台账幂等覆盖）。
-      #   ⚠ 与本地 16:00 入库任务（\ASentiment-dailyfetch-1600，docs/cron.md §6）
-      #   零交集——本步只读已入库的 ztpool_history，不碰其触发/文件范围/git 规则。
-      - name: 收盘口径复核（当日盘中推送档案，入库前）
+      # 鈹€鈹€ 鏀剁洏鍙ｅ緞澶嶆牳锛?026-10-10 鐢ㄦ埛鎸囦护锛氬叆搴撳墠鍐嶅仛涓€娆℃敹鐩樺彛寰勫鏍革級鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+      #   褰撴棩鐩樹腑鎺ㄩ€佹。妗堬紙intraday_D.json锛夊叆搴撳墠锛岀敤 ztpool_history 鏀剁洏妗ｅ鏍革細
+      #   姹犳爣鐨勬敹鐩樼粨灞€ / 鎺ㄩ€佹椂 vs 鏀剁洏鎯呯华婕傜Щ / 杩炴澘鐭涚浘銆傚彴璐﹀啓鍥炴。妗堥《灞?
+      #   caliber_review 鈫?闅忎笅鏂规棦鏈?git add data/reports 娓呭崟鍏ュ簱锛堟彁浜よ鍒欓浂鏀瑰姩锛夈€?
+      #   瑙傛祴鎬ц川涓嶆嫤鏁版嵁闈紙continue-on-error锛夛紱18:30 鑻?ztpool 褰撴棩琛屾湭鍏ュ簱
+      #   锛堟湰鍦?16:00 浠诲姟鏈彁浜わ級鈫?鑴氭湰濡傚疄璺宠繃锛?1:00 鐝ˉ涓婏紙鍙拌处骞傜瓑瑕嗙洊锛夈€?
+      #   鈿?涓庢湰鍦?16:00 鍏ュ簱浠诲姟锛圽ASentiment-dailyfetch-1600锛宒ocs/cron.md 搂6锛?
+      #   闆朵氦闆嗏€斺€旀湰姝ュ彧璇诲凡鍏ュ簱鐨?ztpool_history锛屼笉纰板叾瑙﹀彂/鏂囦欢鑼冨洿/git 瑙勫垯銆?
+      - name: 鏀剁洏鍙ｅ緞澶嶆牳锛堝綋鏃ョ洏涓帹閫佹。妗堬紝鍏ュ簱鍓嶏級
         continue-on-error: true
         run: node scripts/review_intraday_caliber.mjs
-      # Pages 部署产物上传已移除（2026-10-06 部署治理）：dist 部署通道收口至
-      # deploy-pages.yml（双通道互相覆盖的实录与决策见该文件头注）。build_ui 保留——
-      # dist/ 产物与 board_rank 写回仍是数据面的一部分；下面的数据提交（bot push）
-      # 会经 deploy-pages.yml 的 paths(data/**) 自动触发页面刷新，闭环不变。
-      # data/reports/ 一并提交（AI 报告档 + 推送指纹状态）：落 data/** 白名单内，
-      # 页面首屏示例与最新报告随数据提交自动上线。
-      # 影子账本推进（2026-10-11 加）：**只记账、不下单**——逐日推进"假设按 A 策略
-      #   执行"的记录，用来**积累真实样本**。A 冰点反转是唯一跑赢基准的策略，但
-      #   242 个交易日只触发 27 次、成交 17 笔，这个量级支撑不了自动下单（那等于把
-      #   样本不足的策略放大执行）。跑几个月攒到 100+ 次触发，再谈接 QMT 实战。
-      #   · 幂等：游标推进过的日期会跳过，重复跑不重算（故可安全放进每日管道）；
-      #   · 研究性质（不产生真实订单、不写生产数据档）→ continue-on-error，
-      #     它自己挂了不该阻断生产管道；但失败会留红叉在 run 里，不会静默过去。
-      - name: 影子账本推进（只记账，不下单）
+      # Pages 閮ㄧ讲浜х墿涓婁紶宸茬Щ闄わ紙2026-10-06 閮ㄧ讲娌荤悊锛夛細dist 閮ㄧ讲閫氶亾鏀跺彛鑷?
+      # deploy-pages.yml锛堝弻閫氶亾浜掔浉瑕嗙洊鐨勫疄褰曚笌鍐崇瓥瑙佽鏂囦欢澶存敞锛夈€俠uild_ui 淇濈暀鈥斺€?
+      # dist/ 浜х墿涓?board_rank 鍐欏洖浠嶆槸鏁版嵁闈㈢殑涓€閮ㄥ垎锛涗笅闈㈢殑鏁版嵁鎻愪氦锛坆ot push锛?
+      # 浼氱粡 deploy-pages.yml 鐨?paths(data/**) 鑷姩瑙﹀彂椤甸潰鍒锋柊锛岄棴鐜笉鍙樸€?
+      # data/reports/ 涓€骞舵彁浜わ紙AI 鎶ュ憡妗?+ 鎺ㄩ€佹寚绾圭姸鎬侊級锛氳惤 data/** 鐧藉悕鍗曞唴锛?
+      # 椤甸潰棣栧睆绀轰緥涓庢渶鏂版姤鍛婇殢鏁版嵁鎻愪氦鑷姩涓婄嚎銆?
+      # 褰卞瓙璐︽湰鎺ㄨ繘锛?026-10-11 鍔狅級锛?*鍙璐︺€佷笉涓嬪崟**鈥斺€旈€愭棩鎺ㄨ繘"鍋囪鎸?A 绛栫暐
+      #   鎵ц"鐨勮褰曪紝鐢ㄦ潵**绉疮鐪熷疄鏍锋湰**銆侫 鍐扮偣鍙嶈浆鏄敮涓€璺戣耽鍩哄噯鐨勭瓥鐣ワ紝浣?
+      #   242 涓氦鏄撴棩鍙Е鍙?27 娆°€佹垚浜?17 绗旓紝杩欎釜閲忕骇鏀拺涓嶄簡鑷姩涓嬪崟锛堥偅绛変簬鎶?
+      #   鏍锋湰涓嶈冻鐨勭瓥鐣ユ斁澶ф墽琛岋級銆傝窇鍑犱釜鏈堟敀鍒?100+ 娆¤Е鍙戯紝鍐嶈皥鎺?QMT 瀹炴垬銆?
+      #   路 骞傜瓑锛氭父鏍囨帹杩涜繃鐨勬棩鏈熶細璺宠繃锛岄噸澶嶈窇涓嶉噸绠楋紙鏁呭彲瀹夊叏鏀捐繘姣忔棩绠￠亾锛夛紱
+      #   路 鐮旂┒鎬ц川锛堜笉浜х敓鐪熷疄璁㈠崟銆佷笉鍐欑敓浜ф暟鎹。锛夆啋 continue-on-error锛?
+      #     瀹冭嚜宸辨寕浜嗕笉璇ラ樆鏂敓浜х閬擄紱浣嗗け璐ヤ細鐣欑孩鍙夊湪 run 閲岋紝涓嶄細闈欓粯杩囧幓銆?
+      - name: 褰卞瓙璐︽湰鎺ㄨ繘锛堝彧璁拌处锛屼笉涓嬪崟锛?
         continue-on-error: true
         run: node scripts/shadow_book.mjs
 
-      - name: 提交最新数据
+      - name: 鎻愪氦鏈€鏂版暟鎹?
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/crosscheck-latest.json data/ops-alerts-latest.json data/industry_outlier_review.json data/board_rank.json data/shadow-book.json data/paper data/reports ui/kline
-          # git add data/llm-sentiment-latest.json 2>/dev/null || true  # 2026-10-17 暂停：LLM 试点停更，不再入库（代码保留归档）
+          # git add data/llm-sentiment-latest.json 2>/dev/null || true  # 2026-10-17 鏆傚仠锛歀LM 璇曠偣鍋滄洿锛屼笉鍐嶅叆搴擄紙浠ｇ爜淇濈暀褰掓。锛?
           if git diff --cached --quiet; then
-            echo "无变化，跳过提交"
+            echo "鏃犲彉鍖栵紝璺宠繃鎻愪氦"
           else
-            git commit -m "chore: 更新情绪数据 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            # bot push 竞态加固（2026-10-09 实录：手动 dispatch 全 job 并跑，us-close
-            # 先推外围快照，build 数据提交后到被 non-fast-forward 拒——生产排期各 job
-            # 时间带错开不相遇，手动验收必撞）。rebase 同分支远端新提交再推（main 副本
-            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。-X theirs：rebase 中
-            # theirs=本 run 刚生成的数据档——us-close 与 build 同轮各抓一份 global.json
-            # 必冲突，生成型档以较新的本 run 产物为准（23:15 run 实录：裸 rebase 在
-            # data/global.json 上 CONFLICT 卡死）。
-            # push 重试（2026-10-13 run#194 实录：手动 dispatch 全 job 并跑，三 job 同秒推，
-            # a50-close 先落 c80e9be0，其余两个带着 pull 时取到的旧 ref 预期（fbc84e7e）
-            # 被「cannot lock ref」拒推——pull --rebase 只防"pull 前远端已动"，防不住
-            # "pull 后 push 前"窗口。被拒后清理 rebase 状态→重拉重放→再推，最多 3 次。
+            git commit -m "chore: 鏇存柊鎯呯华鏁版嵁 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            # bot push 绔炴€佸姞鍥猴紙2026-10-09 瀹炲綍锛氭墜鍔?dispatch 鍏?job 骞惰窇锛寀s-close
+            # 鍏堟帹澶栧洿蹇収锛宐uild 鏁版嵁鎻愪氦鍚庡埌琚?non-fast-forward 鎷掆€斺€旂敓浜ф帓鏈熷悇 job
+            # 鏃堕棿甯﹂敊寮€涓嶇浉閬囷紝鎵嬪姩楠屾敹蹇呮挒锛夈€俽ebase 鍚屽垎鏀繙绔柊鎻愪氦鍐嶆帹锛坢ain 鍓湰
+            # 杩愯鏃?$GITHUB_REF_NAME=main锛屼笉浼氳鎷?staging锛夈€?X theirs锛歳ebase 涓?
+            # theirs=鏈?run 鍒氱敓鎴愮殑鏁版嵁妗ｂ€斺€攗s-close 涓?build 鍚岃疆鍚勬姄涓€浠?global.json
+            # 蹇呭啿绐侊紝鐢熸垚鍨嬫。浠ヨ緝鏂扮殑鏈?run 浜х墿涓哄噯锛?3:15 run 瀹炲綍锛氳８ rebase 鍦?
+            # data/global.json 涓?CONFLICT 鍗℃锛夈€?
+            # push 閲嶈瘯锛?026-10-13 run#194 瀹炲綍锛氭墜鍔?dispatch 鍏?job 骞惰窇锛屼笁 job 鍚岀鎺紝
+            # a50-close 鍏堣惤 c80e9be0锛屽叾浣欎袱涓甫鐫€ pull 鏃跺彇鍒扮殑鏃?ref 棰勬湡锛坒bc84e7e锛?
+            # 琚€宑annot lock ref銆嶆嫆鎺ㄢ€斺€攑ull --rebase 鍙槻"pull 鍓嶈繙绔凡鍔?锛岄槻涓嶄綇
+            # "pull 鍚?push 鍓?绐楀彛銆傝鎷掑悗娓呯悊 rebase 鐘舵€佲啋閲嶆媺閲嶆斁鈫掑啀鎺紝鏈€澶?3 娆°€?
             retry=0
             until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
               retry=$((retry+1))
-              if [ "$retry" -ge 3 ]; then echo "push 连续 3 次被拒（并发竞态未解），放弃"; exit 1; fi
-              echo "push 被拒（同轮 job 并发竞态），重试 $retry/3 ..."
+              if [ "$retry" -ge 3 ]; then echo "push 杩炵画 3 娆¤鎷掞紙骞跺彂绔炴€佹湭瑙ｏ級锛屾斁寮?; exit 1; fi
+              echo "push 琚嫆锛堝悓杞?job 骞跺彂绔炴€侊級锛岄噸璇?$retry/3 ..."
               git rebase --abort 2>/dev/null || true
               sleep 5
             done
           fi
-      # 放在提交之后：数据已安全落库，再判定滞后。真滞后 → 本次运行标红（GitHub 会发失败通知），
-      # 避免「回退/跳过被容错吞掉、job 仍是绿」这种静默故障再次发生。
-      # 18:30 首抓常因龙虎榜未公布而跳过，此时判定为 pending（非滞后）不会误伤；21:00 补抓仍不成才会标红。
-      - name: 数据新鲜度门禁（真滞后则本次运行失败）
+      # 鏀惧湪鎻愪氦涔嬪悗锛氭暟鎹凡瀹夊叏钀藉簱锛屽啀鍒ゅ畾婊炲悗銆傜湡婊炲悗 鈫?鏈杩愯鏍囩孩锛圙itHub 浼氬彂澶辫触閫氱煡锛夛紝
+      # 閬垮厤銆屽洖閫€/璺宠繃琚閿欏悶鎺夈€乯ob 浠嶆槸缁裤€嶈繖绉嶉潤榛樻晠闅滃啀娆″彂鐢熴€?
+      # 18:30 棣栨姄甯稿洜榫欒檸姒滄湭鍏竷鑰岃烦杩囷紝姝ゆ椂鍒ゅ畾涓?pending锛堥潪婊炲悗锛変笉浼氳浼わ紱21:00 琛ユ姄浠嶄笉鎴愭墠浼氭爣绾€?
+      - name: 鏁版嵁鏂伴矞搴﹂棬绂侊紙鐪熸粸鍚庡垯鏈杩愯澶辫触锛?
         run: node scripts/freshness.mjs --require-fresh
 
-  # deploy-pages job 已移除（2026-10-06 部署治理）：
-  #   旧双通道 = 本 job（dist 合并版 UI 单文件）+ Settings 原生分支构建（main/root 仓库根），
-  #   两者**互相覆盖**：2026-10-05 13:12 run 实录——本 job success 部署 dist → 同轮数据提交
-  #   触发的原生分支构建完成于其后 → 云端被盖回分支内容；最终态取决于谁后完成（非确定）。
-  #   现行单通道 = deploy-pages.yml（部署仓库根 web 面 = 当前云端页面形态，paths 白名单
-  #   过滤文档类变更 + concurrency group "pages" 防覆盖，实录与设计见其文件头注）。
-  #   本工作流回归纯数据生产：数据提交（bot push）→ deploy-pages.yml 自动触发部署。
-  #   若未来启用合并版 UI（dist 单文件形态），在 deploy-pages.yml 换产物源即可——一处切换。
+  # deploy-pages job 宸茬Щ闄わ紙2026-10-06 閮ㄧ讲娌荤悊锛夛細
+  #   鏃у弻閫氶亾 = 鏈?job锛坉ist 鍚堝苟鐗?UI 鍗曟枃浠讹級+ Settings 鍘熺敓鍒嗘敮鏋勫缓锛坢ain/root 浠撳簱鏍癸級锛?
+  #   涓よ€?*浜掔浉瑕嗙洊**锛?026-10-05 13:12 run 瀹炲綍鈥斺€旀湰 job success 閮ㄧ讲 dist 鈫?鍚岃疆鏁版嵁鎻愪氦
+  #   瑙﹀彂鐨勫師鐢熷垎鏀瀯寤哄畬鎴愪簬鍏跺悗 鈫?浜戠琚洊鍥炲垎鏀唴瀹癸紱鏈€缁堟€佸彇鍐充簬璋佸悗瀹屾垚锛堥潪纭畾锛夈€?
+  #   鐜拌鍗曢€氶亾 = deploy-pages.yml锛堥儴缃蹭粨搴撴牴 web 闈?= 褰撳墠浜戠椤甸潰褰㈡€侊紝paths 鐧藉悕鍗?
+  #   杩囨护鏂囨。绫诲彉鏇?+ concurrency group "pages" 闃茶鐩栵紝瀹炲綍涓庤璁¤鍏舵枃浠跺ご娉級銆?
+  #   鏈伐浣滄祦鍥炲綊绾暟鎹敓浜э細鏁版嵁鎻愪氦锛坆ot push锛夆啋 deploy-pages.yml 鑷姩瑙﹀彂閮ㄧ讲銆?
+  #   鑻ユ湭鏉ュ惎鐢ㄥ悎骞剁増 UI锛坉ist 鍗曟枃浠跺舰鎬侊級锛屽湪 deploy-pages.yml 鎹骇鐗╂簮鍗冲彲鈥斺€斾竴澶勫垏鎹€?
 
   intraday:
-    # 盘中轻量快照：只抓 hot/pools/breadth 三个实时源（+腾讯行情量比/PE/PB、东财
-    # 主力净流入），写 data/intraday.json。绝不触碰 archive.json —— 盘中涨跌家数
-    # 未定盘，写进情绪因子会让分数反复跳变、分位失去意义。
-    # 任务二拆分（2026-10-09）：tick 网格（:00/:30）回归**纯快照职责**——只抓
-    # 数据不出报告；盘中 AI 报告只在三时点（北京 9:35/10:30/14:00 = '35 1'/
-    # '30 2'/'0 6' UTC）各触发一次，先抓新快照再全量重算候选池（不沿用上轮）。
-    # 10:30/14:00 与 tick 网格同刻会双 run（job 路由分流：tick-run 只快照，
-    # 报告-run 快照+报告），concurrency 组内串行、先后无冲突。
+    # 鐩樹腑杞婚噺蹇収锛氬彧鎶?hot/pools/breadth 涓変釜瀹炴椂婧愶紙+鑵捐琛屾儏閲忔瘮/PE/PB銆佷笢璐?
+    # 涓诲姏鍑€娴佸叆锛夛紝鍐?data/intraday.json銆傜粷涓嶈Е纰?archive.json 鈥斺€?鐩樹腑娑ㄨ穼瀹舵暟
+    # 鏈畾鐩橈紝鍐欒繘鎯呯华鍥犲瓙浼氳鍒嗘暟鍙嶅璺冲彉銆佸垎浣嶅け鍘绘剰涔夈€?
+    # 浠诲姟浜屾媶鍒嗭紙2026-10-09锛夛細tick 缃戞牸锛?00/:30锛夊洖褰?*绾揩鐓ц亴璐?*鈥斺€斿彧鎶?
+    # 鏁版嵁涓嶅嚭鎶ュ憡锛涚洏涓?AI 鎶ュ憡鍙湪涓夋椂鐐癸紙鍖椾含 9:35/10:30/14:00 = '35 1'/
+    # '30 2'/'0 6' UTC锛夊悇瑙﹀彂涓€娆★紝鍏堟姄鏂板揩鐓у啀鍏ㄩ噺閲嶇畻鍊欓€夋睜锛堜笉娌跨敤涓婅疆锛夈€?
+    # 10:30/14:00 涓?tick 缃戞牸鍚屽埢浼氬弻 run锛坖ob 璺敱鍒嗘祦锛歵ick-run 鍙揩鐓э紝
+    # 鎶ュ憡-run 蹇収+鎶ュ憡锛夛紝concurrency 缁勫唴涓茶銆佸厛鍚庢棤鍐茬獊銆?
     if: github.event.schedule == '0,30 1-7 * * 1-5' || github.event.schedule == '35 1 * * 1-5' || github.event.schedule == '30 2 * * 1-5' || github.event.schedule == '0 6 * * 1-5' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 8
@@ -460,124 +415,124 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      # 数据层迁移（2026-10-10）：盘中六源改走 python market_data.py intraday-raw
-      # （QuantDash 主 + AkShare 兜底 + BaoStock 历史），旧直连源全部退役。
-      #   key 缺席时 QuantDash 主路自动降级 AkShare（fail-safe，不红 job）。
+      # 鏁版嵁灞傝縼绉伙紙2026-10-10锛夛細鐩樹腑鍏簮鏀硅蛋 python market_data.py intraday-raw
+      # 锛圦uantDash 涓?+ AkShare 鍏滃簳 + BaoStock 鍘嗗彶锛夛紝鏃х洿杩炴簮鍏ㄩ儴閫€褰广€?
+      #   key 缂哄腑鏃?QuantDash 涓昏矾鑷姩闄嶇骇 AkShare锛坒ail-safe锛屼笉绾?job锛夈€?
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: 安装新数据层依赖
-        # ★ 2026-10-10 教训一：run 值必须整体加引号——未引号标量里的 ":all:"（尾冒号+空格）
-        #   会被 YAML 解析器当 "mapping value" 语法，整个 workflow 触发器注册静默失败
-        #   （workflow_dispatch 一直 422 的统一根因，PyYAML line351 col44 复现）。
-        # ★ 教训二：不能用 --only-binary=:all:——akshare 依赖 jsonpath>=0.82 与
-        #   baostock 均为 sdist-only（PyPI 无 wheel），CI 实测拒收。均为纯 Python
-        #   包无编译风险，常规安装即可（与本地安装方式一致）。
+      - name: 瀹夎鏂版暟鎹眰渚濊禆
+        # 鈽?2026-10-10 鏁欒涓€锛歳un 鍊煎繀椤绘暣浣撳姞寮曞彿鈥斺€旀湭寮曞彿鏍囬噺閲岀殑 ":all:"锛堝熬鍐掑彿+绌烘牸锛?
+        #   浼氳 YAML 瑙ｆ瀽鍣ㄥ綋 "mapping value" 璇硶锛屾暣涓?workflow 瑙﹀彂鍣ㄦ敞鍐岄潤榛樺け璐?
+        #   锛坵orkflow_dispatch 涓€鐩?422 鐨勭粺涓€鏍瑰洜锛孭yYAML line351 col44 澶嶇幇锛夈€?
+        # 鈽?鏁欒浜岋細涓嶈兘鐢?--only-binary=:all:鈥斺€攁kshare 渚濊禆 jsonpath>=0.82 涓?
+        #   baostock 鍧囦负 sdist-only锛圥yPI 鏃?wheel锛夛紝CI 瀹炴祴鎷掓敹銆傚潎涓虹函 Python
+        #   鍖呮棤缂栬瘧椋庨櫓锛屽父瑙勫畨瑁呭嵆鍙紙涓庢湰鍦板畨瑁呮柟寮忎竴鑷达級銆?
         run: "pip install -r requirements-data.txt"
-      # ── 数据层四项冒烟（2026-10-10 验收配套）：仅手动 workflow_dispatch 触发。
-      #   周末/盘后随时手动跑一遍 CI 真网络全链验证：AkShare push2 族在 CI 预期
-      #   可达（快照源应落 akshare-spot_em）；QuantDash universe 免费版 403 会记
-      #   一条降级（预期内）。失败冒烟红 job——手动验证的语义就是可见。
-      #   定时 cron 触发的生产班次不跑本步（零成本、零风险）。
-      - name: 数据层四项冒烟（仅手动触发）
+      # 鈹€鈹€ 鏁版嵁灞傚洓椤瑰啋鐑燂紙2026-10-10 楠屾敹閰嶅锛夛細浠呮墜鍔?workflow_dispatch 瑙﹀彂銆?
+      #   鍛ㄦ湯/鐩樺悗闅忔椂鎵嬪姩璺戜竴閬?CI 鐪熺綉缁滃叏閾鹃獙璇侊細AkShare push2 鏃忓湪 CI 棰勬湡
+      #   鍙揪锛堝揩鐓ф簮搴旇惤 akshare-spot_em锛夛紱QuantDash universe 鍏嶈垂鐗?403 浼氳
+      #   涓€鏉￠檷绾э紙棰勬湡鍐咃級銆傚け璐ュ啋鐑熺孩 job鈥斺€旀墜鍔ㄩ獙璇佺殑璇箟灏辨槸鍙銆?
+      #   瀹氭椂 cron 瑙﹀彂鐨勭敓浜х彮娆′笉璺戞湰姝ワ紙闆舵垚鏈€侀浂椋庨櫓锛夈€?
+      - name: 鏁版嵁灞傚洓椤瑰啋鐑燂紙浠呮墜鍔ㄨЕ鍙戯級
         if: github.event_name == 'workflow_dispatch'
         env:
           QUANTDASH_API_KEY: ${{ secrets.QUANTDASH_API_KEY }}
         run: python candidate_pool.py smoke
-      # 脚本自带三重保险：① 相位非 live 直接跳过；② 强势股返回交易日 ≠ 北京当日则跳过
-      # （该接口在非交易日会静默返回上一交易日数据）；③ 三源全失败则不覆盖上次成功快照。
-      - name: 抓盘中快照（非盘中自动跳过）
+      # 鑴氭湰鑷甫涓夐噸淇濋櫓锛氣憼 鐩镐綅闈?live 鐩存帴璺宠繃锛涒憽 寮哄娍鑲¤繑鍥炰氦鏄撴棩 鈮?鍖椾含褰撴棩鍒欒烦杩?
+      # 锛堣鎺ュ彛鍦ㄩ潪浜ゆ槗鏃ヤ細闈欓粯杩斿洖涓婁竴浜ゆ槗鏃ユ暟鎹級锛涒憿 涓夋簮鍏ㄥけ璐ュ垯涓嶈鐩栦笂娆℃垚鍔熷揩鐓с€?
+      - name: 鎶撶洏涓揩鐓э紙闈炵洏涓嚜鍔ㄨ烦杩囷級
         env:
           QUANTDASH_API_KEY: ${{ secrets.QUANTDASH_API_KEY }}
         run: node scripts/snapshot_intraday.mjs
-      # ── 情绪数据跨源对账（2026-10-11）：为什么需要单独一步——涨停池的"多源降级"是假的，
-      #   主源(东财 push2ex) 与"第一备源"(AkShare zt_pool) 请求**同一个 URL**，实为单点；
-      #   能与主源互相证伪的只有自有快照自建池（ztDerived），涨跌家数另做跨口径比对（全A vs 沪深A）。
-      #   只读盘中档（零新增请求）；限定三时点——tick 网格每半小时跑一次太密，对账一天三次足够。
-      #   纯观测：脚本恒 exit 0 + continue-on-error 双保险，绝不拦后续步骤（观察者不是门禁）。
-      - name: 情绪数据跨源对账（涨停池 + 涨跌家数）
+      # 鈹€鈹€ 鎯呯华鏁版嵁璺ㄦ簮瀵硅处锛?026-10-11锛夛細涓轰粈涔堥渶瑕佸崟鐙竴姝モ€斺€旀定鍋滄睜鐨?澶氭簮闄嶇骇"鏄亣鐨勶紝
+      #   涓绘簮(涓滆储 push2ex) 涓?绗竴澶囨簮"(AkShare zt_pool) 璇锋眰**鍚屼竴涓?URL**锛屽疄涓哄崟鐐癸紱
+      #   鑳戒笌涓绘簮浜掔浉璇佷吉鐨勫彧鏈夎嚜鏈夊揩鐓ц嚜寤烘睜锛坺tDerived锛夛紝娑ㄨ穼瀹舵暟鍙﹀仛璺ㄥ彛寰勬瘮瀵癸紙鍏ˋ vs 娌繁A锛夈€?
+      #   鍙鐩樹腑妗ｏ紙闆舵柊澧炶姹傦級锛涢檺瀹氫笁鏃剁偣鈥斺€攖ick 缃戞牸姣忓崐灏忔椂璺戜竴娆″お瀵嗭紝瀵硅处涓€澶╀笁娆¤冻澶熴€?
+      #   绾娴嬶細鑴氭湰鎭?exit 0 + continue-on-error 鍙屼繚闄╋紝缁濅笉鎷﹀悗缁楠わ紙瑙傚療鑰呬笉鏄棬绂侊級銆?
+      - name: 鎯呯华鏁版嵁璺ㄦ簮瀵硅处锛堟定鍋滄睜 + 娑ㄨ穼瀹舵暟锛?
         if: github.event.schedule == '35 1 * * 1-5' || github.event.schedule == '30 2 * * 1-5' || github.event.schedule == '0 6 * * 1-5' || github.event_name == 'workflow_dispatch'
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         continue-on-error: true
         run: node scripts/ztpool_crosscheck.mjs --run-id "${{ github.run_id }}"
-      # ── 数据源健康度台账（2026-10-11）：把每天每个源的状态累积成滚动台账（成功率/连续失败/
-      #   最近成功）。补的是**事前可见性**——2026-08-14~09-03 那 14 天 EM 池整体失败，事前
-      #   无任何信号，只能等它彻底挂掉才由别的审计发现。连续失败 ≥3 次才告警（1~2 次多抖动）。
-      #   只读盘中档 + 写 data/source-health.json（随本 job 提交步骤入库）。恒 exit 0。
-      - name: 数据源健康度台账
+      # 鈹€鈹€ 鏁版嵁婧愬仴搴峰害鍙拌处锛?026-10-11锛夛細鎶婃瘡澶╂瘡涓簮鐨勭姸鎬佺疮绉垚婊氬姩鍙拌处锛堟垚鍔熺巼/杩炵画澶辫触/
+      #   鏈€杩戞垚鍔燂級銆傝ˉ鐨勬槸**浜嬪墠鍙鎬?*鈥斺€?026-08-14~09-03 閭?14 澶?EM 姹犳暣浣撳け璐ワ紝浜嬪墠
+      #   鏃犱换浣曚俊鍙凤紝鍙兘绛夊畠褰诲簳鎸傛帀鎵嶇敱鍒殑瀹¤鍙戠幇銆傝繛缁け璐?鈮? 娆℃墠鍛婅锛?~2 娆″鎶栧姩锛夈€?
+      #   鍙鐩樹腑妗?+ 鍐?data/source-health.json锛堥殢鏈?job 鎻愪氦姝ラ鍏ュ簱锛夈€傛亽 exit 0銆?
+      - name: 鏁版嵁婧愬仴搴峰害鍙拌处
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         continue-on-error: true
         run: node scripts/source_health.mjs
-      # ── 任务二 · 盘中候选池（2026-10-09 拆分）：三时点各触发一次，全量重算。
-      #   复用刚抓的当日快照（涨幅/量比/主力净流入/PE/PB），筛选口径见
-      #   buildIntradayPool；快照缺席/陈旧 → 空池报因（不回落昨收口径——与任务一
-      #   数据源物理隔离）。相位非 live 由 gateIntraday 自动跳过（exit 0）。
-      #   指纹去重保留（防风暴纪律）：内容未变不重推。
-      - name: 生成并推送盘中 AI 报告（任务二三时点，每轮重算）
+      # 鈹€鈹€ 浠诲姟浜?路 鐩樹腑鍊欓€夋睜锛?026-10-09 鎷嗗垎锛夛細涓夋椂鐐瑰悇瑙﹀彂涓€娆★紝鍏ㄩ噺閲嶇畻銆?
+      #   澶嶇敤鍒氭姄鐨勫綋鏃ュ揩鐓э紙娑ㄥ箙/閲忔瘮/涓诲姏鍑€娴佸叆/PE/PB锛夛紝绛涢€夊彛寰勮
+      #   buildIntradayPool锛涘揩鐓х己甯?闄堟棫 鈫?绌烘睜鎶ュ洜锛堜笉鍥炶惤鏄ㄦ敹鍙ｅ緞鈥斺€斾笌浠诲姟涓€
+      #   鏁版嵁婧愮墿鐞嗛殧绂伙級銆傜浉浣嶉潪 live 鐢?gateIntraday 鑷姩璺宠繃锛坋xit 0锛夈€?
+      #   鎸囩汗鍘婚噸淇濈暀锛堥槻椋庢毚绾緥锛夛細鍐呭鏈彉涓嶉噸鎺ㄣ€?
+      - name: 鐢熸垚骞舵帹閫佺洏涓?AI 鎶ュ憡锛堜换鍔′簩涓夋椂鐐癸紝姣忚疆閲嶇畻锛?
         if: github.event.schedule == '35 1 * * 1-5' || github.event.schedule == '30 2 * * 1-5' || github.event.schedule == '0 6 * * 1-5' || github.event_name == 'workflow_dispatch'
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         run: |
           node scripts/build_ai_report.mjs --type intraday
           node scripts/push_ai_report.mjs --latest intraday
-      - name: 复盘"选不出票"归因（为次日开盘准备，2026-10-12 用户指令）
-        # 频率闸门（2026-10-12 全系统审计 Fix 1）：仅在盘中 14:00 那档（北京 '0 6'）
-        #   + 手动触发时跑。复盘为次日开盘准备、幂等覆盖，每日一次足矣；盘中每 30
-        #   分钟 tick 下重跑纯属把同一份"昨日复盘"刷进群（已配 WECHAT 推送步骤同闸门）。
+      - name: 澶嶇洏"閫変笉鍑虹エ"褰掑洜锛堜负娆℃棩寮€鐩樺噯澶囷紝2026-10-12 鐢ㄦ埛鎸囦护锛?
+        # 棰戠巼闂搁棬锛?026-10-12 鍏ㄧ郴缁熷璁?Fix 1锛夛細浠呭湪鐩樹腑 14:00 閭ｆ。锛堝寳浜?'0 6'锛?
+        #   + 鎵嬪姩瑙﹀彂鏃惰窇銆傚鐩樹负娆℃棩寮€鐩樺噯澶囥€佸箓绛夎鐩栵紝姣忔棩涓€娆¤冻鐭ｏ紱鐩樹腑姣?30
+        #   鍒嗛挓 tick 涓嬮噸璺戠函灞炴妸鍚屼竴浠?鏄ㄦ棩澶嶇洏"鍒疯繘缇わ紙宸查厤 WECHAT 鎺ㄩ€佹楠ゅ悓闂搁棬锛夈€?
         if: github.event.schedule == '0 6 * * 1-5' || github.event_name == 'workflow_dispatch'
         continue-on-error: true
         run: node scripts/review_nopick.mjs
-      # 复盘归因落地后推企微（2026-10-12 用户指令）：独立通道 WECHAT_WEBHOOK_URL。
-      # continue-on-error：机器人未配/推送失败绝不拖红数据管线——复盘台账已落盘，
-      #   推送只是触达，失败由 next tick 自愈（脚本未记去重态，重跑即重推）。
-      - name: 推送复盘到企业微信（WECHAT_WEBHOOK_URL）
-        # 与上游归因同闸门（2026-10-12 全系统审计 Fix 1）：仅 14:00 那档 + 手动触发，
-        #   且须排在归因步骤之后；杜绝盘中每 30 分钟 tick 把同一份昨日复盘刷进群。
+      # 澶嶇洏褰掑洜钀藉湴鍚庢帹浼佸井锛?026-10-12 鐢ㄦ埛鎸囦护锛夛細鐙珛閫氶亾 WECHAT_WEBHOOK_URL銆?
+      # continue-on-error锛氭満鍣ㄤ汉鏈厤/鎺ㄩ€佸け璐ョ粷涓嶆嫋绾㈡暟鎹绾库€斺€斿鐩樺彴璐﹀凡钀界洏锛?
+      #   鎺ㄩ€佸彧鏄Е杈撅紝澶辫触鐢?next tick 鑷剤锛堣剼鏈湭璁板幓閲嶆€侊紝閲嶈窇鍗抽噸鎺級銆?
+      - name: 鎺ㄩ€佸鐩樺埌浼佷笟寰俊锛圵ECHAT_WEBHOOK_URL锛?
+        # 涓庝笂娓稿綊鍥犲悓闂搁棬锛?026-10-12 鍏ㄧ郴缁熷璁?Fix 1锛夛細浠?14:00 閭ｆ。 + 鎵嬪姩瑙﹀彂锛?
+        #   涓旈』鎺掑湪褰掑洜姝ラ涔嬪悗锛涙潨缁濈洏涓瘡 30 鍒嗛挓 tick 鎶婂悓涓€浠芥槰鏃ュ鐩樺埛杩涚兢銆?
         if: github.event.schedule == '0 6 * * 1-5' || github.event_name == 'workflow_dispatch'
         continue-on-error: true
         env:
           WECHAT_WEBHOOK_URL: ${{ secrets.WECHAT_WEBHOOK_URL }}
         run: node scripts/push_review_wechat.mjs
-      - name: 提交盘中快照
+      - name: 鎻愪氦鐩樹腑蹇収
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/intraday.json data/source-health.json data/crosscheck-history.json data/reports data/review
           if git diff --cached --quiet; then
-            echo "无变化（非盘中或快照相同），跳过提交"
+            echo "鏃犲彉鍖栵紙闈炵洏涓垨蹇収鐩稿悓锛夛紝璺宠繃鎻愪氦"
           else
-            git commit -m "chore: 盘中快照+AI报告 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            # bot push 竞态加固（2026-10-09 实录：手动 dispatch 全 job 并跑，us-close
-            # 先推外围快照，build 数据提交后到被 non-fast-forward 拒——生产排期各 job
-            # 时间带错开不相遇，手动验收必撞）。rebase 同分支远端新提交再推（main 副本
-            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。-X theirs：rebase 中
-            # theirs=本 run 刚生成的数据档——us-close 与 build 同轮各抓一份 global.json
-            # 必冲突，生成型档以较新的本 run 产物为准（23:15 run 实录：裸 rebase 在
-            # data/global.json 上 CONFLICT 卡死）。
-            # push 重试（2026-10-13 run#194 实录：手动 dispatch 全 job 并跑，三 job 同秒推，
-            # a50-close 先落 c80e9be0，其余两个带着 pull 时取到的旧 ref 预期（fbc84e7e）
-            # 被「cannot lock ref」拒推——pull --rebase 只防"pull 前远端已动"，防不住
-            # "pull 后 push 前"窗口。被拒后清理 rebase 状态→重拉重放→再推，最多 3 次。
+            git commit -m "chore: 鐩樹腑蹇収+AI鎶ュ憡 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            # bot push 绔炴€佸姞鍥猴紙2026-10-09 瀹炲綍锛氭墜鍔?dispatch 鍏?job 骞惰窇锛寀s-close
+            # 鍏堟帹澶栧洿蹇収锛宐uild 鏁版嵁鎻愪氦鍚庡埌琚?non-fast-forward 鎷掆€斺€旂敓浜ф帓鏈熷悇 job
+            # 鏃堕棿甯﹂敊寮€涓嶇浉閬囷紝鎵嬪姩楠屾敹蹇呮挒锛夈€俽ebase 鍚屽垎鏀繙绔柊鎻愪氦鍐嶆帹锛坢ain 鍓湰
+            # 杩愯鏃?$GITHUB_REF_NAME=main锛屼笉浼氳鎷?staging锛夈€?X theirs锛歳ebase 涓?
+            # theirs=鏈?run 鍒氱敓鎴愮殑鏁版嵁妗ｂ€斺€攗s-close 涓?build 鍚岃疆鍚勬姄涓€浠?global.json
+            # 蹇呭啿绐侊紝鐢熸垚鍨嬫。浠ヨ緝鏂扮殑鏈?run 浜х墿涓哄噯锛?3:15 run 瀹炲綍锛氳８ rebase 鍦?
+            # data/global.json 涓?CONFLICT 鍗℃锛夈€?
+            # push 閲嶈瘯锛?026-10-13 run#194 瀹炲綍锛氭墜鍔?dispatch 鍏?job 骞惰窇锛屼笁 job 鍚岀鎺紝
+            # a50-close 鍏堣惤 c80e9be0锛屽叾浣欎袱涓甫鐫€ pull 鏃跺彇鍒扮殑鏃?ref 棰勬湡锛坒bc84e7e锛?
+            # 琚€宑annot lock ref銆嶆嫆鎺ㄢ€斺€攑ull --rebase 鍙槻"pull 鍓嶈繙绔凡鍔?锛岄槻涓嶄綇
+            # "pull 鍚?push 鍓?绐楀彛銆傝鎷掑悗娓呯悊 rebase 鐘舵€佲啋閲嶆媺閲嶆斁鈫掑啀鎺紝鏈€澶?3 娆°€?
             retry=0
             until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
               retry=$((retry+1))
-              if [ "$retry" -ge 3 ]; then echo "push 连续 3 次被拒（并发竞态未解），放弃"; exit 1; fi
-              echo "push 被拒（同轮 job 并发竞态），重试 $retry/3 ..."
+              if [ "$retry" -ge 3 ]; then echo "push 杩炵画 3 娆¤鎷掞紙骞跺彂绔炴€佹湭瑙ｏ級锛屾斁寮?; exit 1; fi
+              echo "push 琚嫆锛堝悓杞?job 骞跺彂绔炴€侊級锛岄噸璇?$retry/3 ..."
               git rebase --abort 2>/dev/null || true
               sleep 5
             done
           fi
 
   premarket:
-    # ── 任务一 · 盘前观察清单（2026-10-09 拆分）：北京 09:00 生成并推送 ──────
-    #   cron '0 1 * * 1-5'（UTC 01:00）。为什么单独一个 job 而不是塞进 intraday：
-    #   ① 数据源物理隔离——盘前只读**昨收口径**全档（dual_track/signals/global
-    #   /pain 连板梯队），不依赖 intraday.json 实时源；② 相位 09:00 是 pre（非
-    #   live），塞 intraday 会被它的相位闸门拦掉；③ 输出「今日观察清单」语义
-    #   （不含操作建议），与任务二候选池彻底分野。
-    #   闸门：非交易日脚本自跳（exit 0）；推送与生成同 step（原子性：生成失败不推）。
+    # 鈹€鈹€ 浠诲姟涓€ 路 鐩樺墠瑙傚療娓呭崟锛?026-10-09 鎷嗗垎锛夛細鍖椾含 09:00 鐢熸垚骞舵帹閫?鈹€鈹€鈹€鈹€鈹€鈹€
+    #   cron '0 1 * * 1-5'锛圲TC 01:00锛夈€備负浠€涔堝崟鐙竴涓?job 鑰屼笉鏄杩?intraday锛?
+    #   鈶?鏁版嵁婧愮墿鐞嗛殧绂烩€斺€旂洏鍓嶅彧璇?*鏄ㄦ敹鍙ｅ緞**鍏ㄦ。锛坉ual_track/signals/global
+    #   /pain 杩炴澘姊槦锛夛紝涓嶄緷璧?intraday.json 瀹炴椂婧愶紱鈶?鐩镐綅 09:00 鏄?pre锛堥潪
+    #   live锛夛紝濉?intraday 浼氳瀹冪殑鐩镐綅闂搁棬鎷︽帀锛涒憿 杈撳嚭銆屼粖鏃ヨ瀵熸竻鍗曘€嶈涔?
+    #   锛堜笉鍚搷浣滃缓璁級锛屼笌浠诲姟浜屽€欓€夋睜褰诲簳鍒嗛噹銆?
+    #   闂搁棬锛氶潪浜ゆ槗鏃ヨ剼鏈嚜璺筹紙exit 0锛夛紱鎺ㄩ€佷笌鐢熸垚鍚?step锛堝師瀛愭€э細鐢熸垚澶辫触涓嶆帹锛夈€?
     if: github.event.schedule == '0 1 * * 1-5' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -586,50 +541,50 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: 生成并推送盘前 AI 报告（非交易日自动跳过）
+      - name: 鐢熸垚骞舵帹閫佺洏鍓?AI 鎶ュ憡锛堥潪浜ゆ槗鏃ヨ嚜鍔ㄨ烦杩囷級
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
         run: |
           node scripts/build_ai_report.mjs --type pre_market
           node scripts/push_ai_report.mjs --latest pre_market
-      - name: 提交盘前报告
+      - name: 鎻愪氦鐩樺墠鎶ュ憡
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/reports
           if git diff --cached --quiet; then
-            echo "无变化（非交易日），跳过提交"
+            echo "鏃犲彉鍖栵紙闈炰氦鏄撴棩锛夛紝璺宠繃鎻愪氦"
           else
-            git commit -m "chore: 盘前AI报告 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            # bot push 竞态加固（2026-10-09 实录：手动 dispatch 全 job 并跑，us-close
-            # 先推外围快照，build 数据提交后到被 non-fast-forward 拒——生产排期各 job
-            # 时间带错开不相遇，手动验收必撞）。rebase 同分支远端新提交再推（main 副本
-            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。-X theirs：rebase 中
-            # theirs=本 run 刚生成的数据档——us-close 与 build 同轮各抓一份 global.json
-            # 必冲突，生成型档以较新的本 run 产物为准（23:15 run 实录：裸 rebase 在
-            # data/global.json 上 CONFLICT 卡死）。
-            # push 重试（2026-10-13 run#194 实录：手动 dispatch 全 job 并跑，三 job 同秒推，
-            # a50-close 先落 c80e9be0，其余两个带着 pull 时取到的旧 ref 预期（fbc84e7e）
-            # 被「cannot lock ref」拒推——pull --rebase 只防"pull 前远端已动"，防不住
-            # "pull 后 push 前"窗口。被拒后清理 rebase 状态→重拉重放→再推，最多 3 次。
+            git commit -m "chore: 鐩樺墠AI鎶ュ憡 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            # bot push 绔炴€佸姞鍥猴紙2026-10-09 瀹炲綍锛氭墜鍔?dispatch 鍏?job 骞惰窇锛寀s-close
+            # 鍏堟帹澶栧洿蹇収锛宐uild 鏁版嵁鎻愪氦鍚庡埌琚?non-fast-forward 鎷掆€斺€旂敓浜ф帓鏈熷悇 job
+            # 鏃堕棿甯﹂敊寮€涓嶇浉閬囷紝鎵嬪姩楠屾敹蹇呮挒锛夈€俽ebase 鍚屽垎鏀繙绔柊鎻愪氦鍐嶆帹锛坢ain 鍓湰
+            # 杩愯鏃?$GITHUB_REF_NAME=main锛屼笉浼氳鎷?staging锛夈€?X theirs锛歳ebase 涓?
+            # theirs=鏈?run 鍒氱敓鎴愮殑鏁版嵁妗ｂ€斺€攗s-close 涓?build 鍚岃疆鍚勬姄涓€浠?global.json
+            # 蹇呭啿绐侊紝鐢熸垚鍨嬫。浠ヨ緝鏂扮殑鏈?run 浜х墿涓哄噯锛?3:15 run 瀹炲綍锛氳８ rebase 鍦?
+            # data/global.json 涓?CONFLICT 鍗℃锛夈€?
+            # push 閲嶈瘯锛?026-10-13 run#194 瀹炲綍锛氭墜鍔?dispatch 鍏?job 骞惰窇锛屼笁 job 鍚岀鎺紝
+            # a50-close 鍏堣惤 c80e9be0锛屽叾浣欎袱涓甫鐫€ pull 鏃跺彇鍒扮殑鏃?ref 棰勬湡锛坒bc84e7e锛?
+            # 琚€宑annot lock ref銆嶆嫆鎺ㄢ€斺€攑ull --rebase 鍙槻"pull 鍓嶈繙绔凡鍔?锛岄槻涓嶄綇
+            # "pull 鍚?push 鍓?绐楀彛銆傝鎷掑悗娓呯悊 rebase 鐘舵€佲啋閲嶆媺閲嶆斁鈫掑啀鎺紝鏈€澶?3 娆°€?
             retry=0
             until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
               retry=$((retry+1))
-              if [ "$retry" -ge 3 ]; then echo "push 连续 3 次被拒（并发竞态未解），放弃"; exit 1; fi
-              echo "push 被拒（同轮 job 并发竞态），重试 $retry/3 ..."
+              if [ "$retry" -ge 3 ]; then echo "push 杩炵画 3 娆¤鎷掞紙骞跺彂绔炴€佹湭瑙ｏ級锛屾斁寮?; exit 1; fi
+              echo "push 琚嫆锛堝悓杞?job 骞跺彂绔炴€侊級锛岄噸璇?$retry/3 ..."
               git rebase --abort 2>/dev/null || true
               sleep 5
             done
           fi
 
   us-close:
-    # ★ 美股收盘档（2026-10-01 事故修复）：只抓外围，不跑管道。
-    #   为什么单独成一个 job 而不是并进 build：
-    #     · 触发时刻是北京次日 04:30，与 build 的 18:30/21:00 完全不同；
-    #     · 它**只需** scripts/fetch_global.mjs 一步（不碰 archive、不重算因子），
-    #       单独跑 15 秒即可完成，并进 build 会把整条 15 分钟的管道一起拖起来。
-    #   抓取内容：美股的"最近已收盘会话"= 前一交易日收盘价。这正是用户要的完整收盘态。
-    #   时刻换算：UTC 20:30 = 北京 04:30（次日）= 美东 16:30（EDT，收盘+30 分钟）。
+    # 鈽?缇庤偂鏀剁洏妗ｏ紙2026-10-01 浜嬫晠淇锛夛細鍙姄澶栧洿锛屼笉璺戠閬撱€?
+    #   涓轰粈涔堝崟鐙垚涓€涓?job 鑰屼笉鏄苟杩?build锛?
+    #     路 瑙﹀彂鏃跺埢鏄寳浜鏃?04:30锛屼笌 build 鐨?18:30/21:00 瀹屽叏涓嶅悓锛?
+    #     路 瀹?*鍙渶** scripts/fetch_global.mjs 涓€姝ワ紙涓嶇 archive銆佷笉閲嶇畻鍥犲瓙锛夛紝
+    #       鍗曠嫭璺?15 绉掑嵆鍙畬鎴愶紝骞惰繘 build 浼氭妸鏁存潯 15 鍒嗛挓鐨勭閬撲竴璧锋嫋璧锋潵銆?
+    #   鎶撳彇鍐呭锛氱編鑲＄殑"鏈€杩戝凡鏀剁洏浼氳瘽"= 鍓嶄竴浜ゆ槗鏃ユ敹鐩樹环銆傝繖姝ｆ槸鐢ㄦ埛瑕佺殑瀹屾暣鏀剁洏鎬併€?
+    #   鏃跺埢鎹㈢畻锛歎TC 20:30 = 鍖椾含 04:30锛堟鏃ワ級= 缇庝笢 16:30锛圗DT锛屾敹鐩?30 鍒嗛挓锛夈€?
     if: github.event.schedule == '30 20 * * 1-5' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -638,49 +593,49 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      # 脚本自带时机自检：若此刻美股档仍未就绪（早于 16:30 ET），
-      # 会打印警告并把美股那一档按"无数据"处理（chgPct=null，绝不写 0）。
-      - name: 抓取外围行情（美股收盘档）
+      # 鑴氭湰鑷甫鏃舵満鑷锛氳嫢姝ゅ埢缇庤偂妗ｄ粛鏈氨缁紙鏃╀簬 16:30 ET锛夛紝
+      # 浼氭墦鍗拌鍛婂苟鎶婄編鑲￠偅涓€妗ｆ寜"鏃犳暟鎹?澶勭悊锛坈hgPct=null锛岀粷涓嶅啓 0锛夈€?
+      - name: 鎶撳彇澶栧洿琛屾儏锛堢編鑲℃敹鐩樻。锛?
         run: node scripts/fetch_global.mjs
-      # ③ 东财 push2his 连通性探测——已于 2026-10-10 数据层迁移中退役：
-      #   push2his 属禁用旧接口，探测对象不复存在（新栈可用性由 market_data
-      #   降级日志 + candidate_pool.py smoke 承担）。
-      - name: 提交外围快照
+      # 鈶?涓滆储 push2his 杩為€氭€ф帰娴嬧€斺€斿凡浜?2026-10-10 鏁版嵁灞傝縼绉讳腑閫€褰癸細
+      #   push2his 灞炵鐢ㄦ棫鎺ュ彛锛屾帰娴嬪璞′笉澶嶅瓨鍦紙鏂版爤鍙敤鎬х敱 market_data
+      #   闄嶇骇鏃ュ織 + candidate_pool.py smoke 鎵挎媴锛夈€?
+      - name: 鎻愪氦澶栧洿蹇収
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/global.json
           if git diff --cached --quiet; then
-            echo "无变化，跳过提交"
+            echo "鏃犲彉鍖栵紝璺宠繃鎻愪氦"
           else
-            git commit -m "chore: 外围(美股收盘档) $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            # bot push 竞态加固（2026-10-09 实录：手动 dispatch 全 job 并跑，us-close
-            # 先推外围快照，build 数据提交后到被 non-fast-forward 拒——生产排期各 job
-            # 时间带错开不相遇，手动验收必撞）。rebase 同分支远端新提交再推（main 副本
-            # 运行时 $GITHUB_REF_NAME=main，不会误拉 staging）。-X theirs：rebase 中
-            # theirs=本 run 刚生成的数据档——us-close 与 build 同轮各抓一份 global.json
-            # 必冲突，生成型档以较新的本 run 产物为准（23:15 run 实录：裸 rebase 在
-            # data/global.json 上 CONFLICT 卡死）。
-            # push 重试（2026-10-13 run#194 实录：手动 dispatch 全 job 并跑，三 job 同秒推，
-            # a50-close 先落 c80e9be0，其余两个带着 pull 时取到的旧 ref 预期（fbc84e7e）
-            # 被「cannot lock ref」拒推——pull --rebase 只防"pull 前远端已动"，防不住
-            # "pull 后 push 前"窗口。被拒后清理 rebase 状态→重拉重放→再推，最多 3 次。
+            git commit -m "chore: 澶栧洿(缇庤偂鏀剁洏妗? $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            # bot push 绔炴€佸姞鍥猴紙2026-10-09 瀹炲綍锛氭墜鍔?dispatch 鍏?job 骞惰窇锛寀s-close
+            # 鍏堟帹澶栧洿蹇収锛宐uild 鏁版嵁鎻愪氦鍚庡埌琚?non-fast-forward 鎷掆€斺€旂敓浜ф帓鏈熷悇 job
+            # 鏃堕棿甯﹂敊寮€涓嶇浉閬囷紝鎵嬪姩楠屾敹蹇呮挒锛夈€俽ebase 鍚屽垎鏀繙绔柊鎻愪氦鍐嶆帹锛坢ain 鍓湰
+            # 杩愯鏃?$GITHUB_REF_NAME=main锛屼笉浼氳鎷?staging锛夈€?X theirs锛歳ebase 涓?
+            # theirs=鏈?run 鍒氱敓鎴愮殑鏁版嵁妗ｂ€斺€攗s-close 涓?build 鍚岃疆鍚勬姄涓€浠?global.json
+            # 蹇呭啿绐侊紝鐢熸垚鍨嬫。浠ヨ緝鏂扮殑鏈?run 浜х墿涓哄噯锛?3:15 run 瀹炲綍锛氳８ rebase 鍦?
+            # data/global.json 涓?CONFLICT 鍗℃锛夈€?
+            # push 閲嶈瘯锛?026-10-13 run#194 瀹炲綍锛氭墜鍔?dispatch 鍏?job 骞惰窇锛屼笁 job 鍚岀鎺紝
+            # a50-close 鍏堣惤 c80e9be0锛屽叾浣欎袱涓甫鐫€ pull 鏃跺彇鍒扮殑鏃?ref 棰勬湡锛坒bc84e7e锛?
+            # 琚€宑annot lock ref銆嶆嫆鎺ㄢ€斺€攑ull --rebase 鍙槻"pull 鍓嶈繙绔凡鍔?锛岄槻涓嶄綇
+            # "pull 鍚?push 鍓?绐楀彛銆傝鎷掑悗娓呯悊 rebase 鐘舵€佲啋閲嶆媺閲嶆斁鈫掑啀鎺紝鏈€澶?3 娆°€?
             retry=0
             until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
               retry=$((retry+1))
-              if [ "$retry" -ge 3 ]; then echo "push 连续 3 次被拒（并发竞态未解），放弃"; exit 1; fi
-              echo "push 被拒（同轮 job 并发竞态），重试 $retry/3 ..."
+              if [ "$retry" -ge 3 ]; then echo "push 杩炵画 3 娆¤鎷掞紙骞跺彂绔炴€佹湭瑙ｏ級锛屾斁寮?; exit 1; fi
+              echo "push 琚嫆锛堝悓杞?job 骞跺彂绔炴€侊級锛岄噸璇?$retry/3 ..."
               git rebase --abort 2>/dev/null || true
               sleep 5
             done
           fi
 
   a50-close:
-    # ★ A50 夜盘收盘档（2026-10-13 拍板）：北京 05:20（UTC 21:20）抓取富时A50期货夜盘收盘价。
-    #   SGX 夜盘 17:00–次日 05:15（北京），05:15 收盘集合竞价出结算价。只在 05:15 后这一次
-    #   抓取才把 A50 当"夜盘收盘"用；其余时刻（含 18:30/21:00 盘后、04:30 美股收盘档）A50 夜盘
-    #   都还没收，src/global.js 会标 night-open、报告显「夜盘未收」、绝不取盘中瞬时价冒充收盘。
-    #   单独成 job 的原因同 us-close：只跑 scripts/fetch_global.mjs 一步即可，不必拖起整条管道。
+    # 鈽?A50 澶滅洏鏀剁洏妗ｏ紙2026-10-13 鎷嶆澘锛夛細鍖椾含 05:20锛圲TC 21:20锛夋姄鍙栧瘜鏃禔50鏈熻揣澶滅洏鏀剁洏浠枫€?
+    #   SGX 澶滅洏 17:00鈥撴鏃?05:15锛堝寳浜級锛?5:15 鏀剁洏闆嗗悎绔炰环鍑虹粨绠椾环銆傚彧鍦?05:15 鍚庤繖涓€娆?
+    #   鎶撳彇鎵嶆妸 A50 褰?澶滅洏鏀剁洏"鐢紱鍏朵綑鏃跺埢锛堝惈 18:30/21:00 鐩樺悗銆?4:30 缇庤偂鏀剁洏妗ｏ級A50 澶滅洏
+    #   閮借繕娌℃敹锛宻rc/global.js 浼氭爣 night-open銆佹姤鍛婃樉銆屽鐩樻湭鏀躲€嶃€佺粷涓嶅彇鐩樹腑鐬椂浠峰啋鍏呮敹鐩樸€?
+    #   鍗曠嫭鎴?job 鐨勫師鍥犲悓 us-close锛氬彧璺?scripts/fetch_global.mjs 涓€姝ュ嵆鍙紝涓嶅繀鎷栬捣鏁存潯绠￠亾銆?
     if: github.event.schedule == '20 21 * * 1-5' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -689,26 +644,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: 抓取外围行情（A50 夜盘收盘档）
+      - name: 鎶撳彇澶栧洿琛屾儏锛圓50 澶滅洏鏀剁洏妗ｏ級
         run: node scripts/fetch_global.mjs
-      - name: 提交外围快照
+      - name: 鎻愪氦澶栧洿蹇収
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/global.json
           if git diff --cached --quiet; then
-            echo "无变化，跳过提交"
+            echo "鏃犲彉鍖栵紝璺宠繃鎻愪氦"
           else
-            git commit -m "chore: 外围(A50夜盘收盘档) $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            # push 重试（2026-10-13 run#194 实录：手动 dispatch 全 job 并跑，三 job 同秒推，
-            # a50-close 先落 c80e9be0，其余两个带着 pull 时取到的旧 ref 预期（fbc84e7e）
-            # 被「cannot lock ref」拒推——pull --rebase 只防"pull 前远端已动"，防不住
-            # "pull 后 push 前"窗口。被拒后清理 rebase 状态→重拉重放→再推，最多 3 次。
+            git commit -m "chore: 澶栧洿(A50澶滅洏鏀剁洏妗? $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            # push 閲嶈瘯锛?026-10-13 run#194 瀹炲綍锛氭墜鍔?dispatch 鍏?job 骞惰窇锛屼笁 job 鍚岀鎺紝
+            # a50-close 鍏堣惤 c80e9be0锛屽叾浣欎袱涓甫鐫€ pull 鏃跺彇鍒扮殑鏃?ref 棰勬湡锛坒bc84e7e锛?
+            # 琚€宑annot lock ref銆嶆嫆鎺ㄢ€斺€攑ull --rebase 鍙槻"pull 鍓嶈繙绔凡鍔?锛岄槻涓嶄綇
+            # "pull 鍚?push 鍓?绐楀彛銆傝鎷掑悗娓呯悊 rebase 鐘舵€佲啋閲嶆媺閲嶆斁鈫掑啀鎺紝鏈€澶?3 娆°€?
             retry=0
             until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
               retry=$((retry+1))
-              if [ "$retry" -ge 3 ]; then echo "push 连续 3 次被拒（并发竞态未解），放弃"; exit 1; fi
-              echo "push 被拒（同轮 job 并发竞态），重试 $retry/3 ..."
+              if [ "$retry" -ge 3 ]; then echo "push 杩炵画 3 娆¤鎷掞紙骞跺彂绔炴€佹湭瑙ｏ級锛屾斁寮?; exit 1; fi
+              echo "push 琚嫆锛堝悓杞?job 骞跺彂绔炴€侊級锛岄噸璇?$retry/3 ..."
               git rebase --abort 2>/dev/null || true
               sleep 5
             done

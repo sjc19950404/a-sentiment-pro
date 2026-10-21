@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# pi_build.sh — 盘后完整数据管道（镜像 daily.yml 的 build job；非交易日脚本内部自动跳过）
+# 调用：bash scripts/pi_build.sh
+# 失败语义：GATE 步骤（日历 / 管道 / 龙虎榜口径守卫 / 契约守卫）失败 → 退出非 0 → 调用方中止推送。
+#          其余步骤容错（失败不阻断，与 CI 的 continue-on-error 一致）。
+set -uo pipefail
+
+REPO_DIR="${REPO_DIR:-/opt/a-sentiment-pro}"
+cd "$REPO_DIR" || exit 1
+export MODE=live
+# OPS_WEBHOOK 由 pi_run.sh 从 .env 导出；缺失则脚本内部静默跳过运维告警。
+
+step() { echo "── $(date '+%T') $* ──"; }
+gate() { # $1=步骤名  $2=命令；失败即退出
+  step "$1"; if ! eval "$2"; then echo "❌ $1 失败，中止管道"; exit 1; fi
+}
+
+# 1 交易日历（必须最先，管道靠它判开市日）
+gate "fetch_calendar"        "node scripts/fetch_calendar.mjs"
+# 2 预跑管道（当日入档，供 pain/breadth 取当天）
+gate "pipeline(early)"       "node src/pipeline.js"
+# 3 亏钱效应（容错）
+step "fetch_pain";           node scripts/fetch_pain.mjs || true
+# 4 多维宽度（容错）
+step "fetch_breadth";        node scripts/fetch_breadth.mjs --shards 8 || true
+# 5 主管道（live 嵌入 signals-latest）
+gate "pipeline(main)"        "node src/pipeline.js"
+# 6 新鲜度
+step "freshness";            node scripts/freshness.mjs || true
+# 7 外围行情（隔夜美股/汇率/商品）
+step "fetch_global";         node scripts/fetch_global.mjs || true
+# 8 回测档
+step "backtest";             node scripts/backtest.mjs || true
+# 9 双轨账本重放
+step "dual_track";           node tools/backtest/paper_dual_track.mjs || true
+# 10 策略收益回测
+step "backtest_strategies";  node scripts/backtest_strategies.mjs || true
+# 11 版本回归验证
+step "version_regression";   node scripts/version_regression.mjs || true
+# 12 模拟交易标的池
+step "fetch_universe";       node scripts/fetch_universe.mjs || true
+# 13 recalc LHB daily
+step "recalc_lhb";           node scripts/recalc_lhb_daily.mjs || true
+# 14 龙虎榜口径守卫（GATE）
+gate "audit_lhb_caliber"     "node scripts/audit_lhb_caliber.mjs"
+# 15 行业离群跨源核验（容错）
+step "verify_industry_outliers"; node scripts/verify_industry_outliers.mjs || true
+# 16 单元测试（容错，不阻断 Pi 推送）
+step "unit_tests";           node --test --test-reporter=spec 2>/dev/null || true
+# 17 前后端契约守卫（GATE）
+gate "check_contract"        "node scripts/check_contract.mjs"
+# 18 跨源一致性互证（容错）
+step "fetch_crosscheck";     node scripts/fetch_crosscheck.mjs || true
+# 19 K线分片增量
+step "kline_all";            node ui/fetch_kline_all.mjs || true
+# 20 渲染 UI → dist/（供隧道服务；dist/ 已 gitignore，不参与推送）
+step "build_ui";             node scripts/build_ui.mjs || { echo "⚠ build_ui 失败，但数据已落盘"; }
+# 21/22 盘后 + 周报
+step "report post_market";   node scripts/build_ai_report.mjs --type post_market || true
+step "report weekly";        node scripts/build_ai_report.mjs --type weekly || true
+# 23 盘前报告（供盘后汇总推送补齐）
+step "report pre_market";    node scripts/build_ai_report.mjs --type pre_market || true
+
+echo "✅ pi_build 完成"
