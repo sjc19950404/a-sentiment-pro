@@ -23,6 +23,8 @@ gate "pipeline(early)"       "node src/pipeline.js"
 step "fetch_pain";           node scripts/fetch_pain.mjs || true
 # 4 多维宽度（容错）
 step "fetch_breadth";        node scripts/fetch_breadth.mjs --shards 8 || true
+# 4.5 双轨账本重放（须在主管道写 signals-latest 之前！否则 dualTrack 段读到旧文件 → null）
+step "dual_track";           node tools/backtest/paper_dual_track.mjs || true
 # 5 主管道（live 嵌入 signals-latest）
 gate "pipeline(main)"        "node src/pipeline.js"
 # 6 新鲜度
@@ -31,8 +33,6 @@ step "freshness";            node scripts/freshness.mjs || true
 step "fetch_global";         node scripts/fetch_global.mjs || true
 # 8 回测档
 step "backtest";             node scripts/backtest.mjs || true
-# 9 双轨账本重放
-step "dual_track";           node tools/backtest/paper_dual_track.mjs || true
 # 10 策略收益回测
 step "backtest_strategies";  node scripts/backtest_strategies.mjs || true
 # 11 版本回归验证
