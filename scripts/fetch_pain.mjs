@@ -22,6 +22,7 @@ import { atomicWriteJSON } from '../src/fsutil.js';
 import { painReport } from '../src/pain.js';
 import { fetchQuotes } from '../src/quote.js';
 import { decodeArchive } from '../src/lhb_codec.js';
+import { resolveHolidays, isTradingDay } from '../src/calendar.js';
 
 const FILE = 'data/archive.json';
 const OUT = 'data/pain-latest.json';
@@ -73,9 +74,12 @@ if (!need.length) {
 //   · 放在 fetchQuotes 之前——假期运行当场拒绝，不白抓行情、不写脏档。
 if (!wantDate) {
   const bjToday = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
-  if (!new Set(days.map((d) => d.trade_date)).has(bjToday)) {
-    console.error(`[CRITICAL] fetch_pain 拒绝写盘：运行日 ${bjToday}（北京）不在交易日序列内——`
-      + `假期/周末运行会以 archive 末档 ${curDay.trade_date} 当「今日」、${prevDay.trade_date}`
+  // ⚠ 用真实交易日历判定运行日（含调休补班），不再依赖档案自身交易日列表——
+  // 否则盘前 eod 在档案尚未归档"今天"时，会把真交易日误判为非交易日而拒写盘，
+  // 连带 pain 定格在旧日 → 新鲜度守卫判陈旧 → 面板恒 null（2026-10-22 即此形态）。
+  if (!isTradingDay(bjToday, resolveHolidays())) {
+    console.error(`[CRITICAL] fetch_pain 拒绝写盘：运行日 ${bjToday}（北京）非交易日（周末/假期）——`
+      + `会以 archive 末档 ${curDay.trade_date} 当「今日」、${prevDay.trade_date}`
       + ` 当「昨日」，写出旧对冒充当日（2026-10-07 即此形态：9-29→9-30 顶替 9-30→10-08）。`
       + '请在交易日收盘后运行，或用 --date <交易日> 显式补算；断供期报告按 P0-2 显示'
       + '「缺席」而非旧口径。');
