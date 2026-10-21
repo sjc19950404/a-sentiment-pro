@@ -1,0 +1,102 @@
+{
+  "kind": "crosscheck-history",
+  "version": 1,
+  "days": [
+    {
+      "date": "2026-10-12",
+      "zt": {
+        "verdict": "WARN",
+        "primary": 42,
+        "derived": 37,
+        "countDiff": 5,
+        "divergeRate": 0.2045
+      },
+      "breadth": {
+        "verdict": "PASS",
+        "snapUpRatio": 18.33,
+        "leguUpRatio": 21.93,
+        "ratioDiffPct": 3.6
+      }
+    },
+    {
+      "date": "2026-10-14",
+      "zt": {
+        "verdict": "WARN",
+        "primary": 34,
+        "derived": 28,
+        "countDiff": 6,
+        "divergeRate": 0.1765
+      },
+      "breadth": {
+        "verdict": "PASS",
+        "snapUpRatio": 15.94,
+        "leguUpRatio": 18.22,
+        "ratioDiffPct": 2.28
+      }
+    },
+    {
+      "date": "2026-10-15",
+      "zt": {
+        "verdict": "WARN",
+        "primary": 34,
+        "derived": 29,
+        "countDiff": 5,
+        "divergeRate": 0.1471
+      },
+      "breadth": {
+        "verdict": "PASS",
+        "snapUpRatio": 8.15,
+        "leguUpRatio": 7.23,
+        "ratioDiffPct": 0.92
+      }
+    },
+    {
+      "date": "2026-10-16",
+      "zt": {
+        "verdict": "UNAVAILABLE",
+        "primary": 67,
+        "derived": null,
+        "countDiff": null,
+        "divergeRate": null
+      },
+      "breadth": {
+        "verdict": "UNAVAILABLE",
+        "snapUpRatio": null,
+        "leguUpRatio": null,
+        "ratioDiffPct": null
+      }
+    },
+    {
+      "date": "2026-10-19",
+      "zt": {
+        "verdict": "UNAVAILABLE",
+        "primary": 42,
+        "derived": null,
+        "countDiff": null,
+        "divergeRate": null
+      },
+      "breadth": {
+        "verdict": "UNAVAILABLE",
+        "snapUpRatio": null,
+        "leguUpRatio": null,
+        "ratioDiffPct": null
+      }
+    },
+    {
+      "date": "2026-10-20",
+      "zt": {
+        "verdict": "UNAVAILABLE",
+        "primary": 51,
+        "derived": null,
+        "countDiff": null,
+        "divergeRate": null
+      },
+      "breadth": {
+        "verdict": "UNAVAILABLE",
+        "snapUpRatio": null,
+        "leguUpRatio": null,
+        "ratioDiffPct": null
+      }
+    }
+  ]
+}

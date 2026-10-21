@@ -1,0 +1,95 @@
+{
+  "kind": "source-health",
+  "version": 1,
+  "updatedAt": "2026-10-20T07:37:22.558Z",
+  "sources": {
+    "quantdash-universe": {
+      "ok": 0,
+      "fail": 3,
+      "streak": 3,
+      "lastOk": null,
+      "lastFail": "2026-10-15",
+      "lastDay": "2026-10-15"
+    },
+    "akshare-spot_em": {
+      "ok": 0,
+      "fail": 3,
+      "streak": 3,
+      "lastOk": null,
+      "lastFail": "2026-10-15",
+      "lastDay": "2026-10-15"
+    },
+    "quantdash-symbols": {
+      "ok": 2,
+      "fail": 1,
+      "streak": 0,
+      "lastOk": "2026-10-15",
+      "lastFail": "2026-10-12",
+      "lastDay": "2026-10-15"
+    },
+    "ztpool": {
+      "ok": 3,
+      "fail": 0,
+      "streak": 0,
+      "lastOk": "2026-10-15",
+      "lastFail": null,
+      "lastDay": "2026-10-15"
+    },
+    "snapshot-derived": {
+      "ok": 2,
+      "fail": 1,
+      "streak": 0,
+      "lastOk": "2026-10-15",
+      "lastFail": "2026-10-12",
+      "lastDay": "2026-10-15"
+    },
+    "akshare-legu": {
+      "ok": 2,
+      "fail": 1,
+      "streak": 0,
+      "lastOk": "2026-10-15",
+      "lastFail": "2026-10-12",
+      "lastDay": "2026-10-15"
+    },
+    "main-net": {
+      "ok": 0,
+      "fail": 3,
+      "streak": 3,
+      "lastOk": null,
+      "lastFail": "2026-10-15",
+      "lastDay": "2026-10-15"
+    },
+    "node-universe": {
+      "ok": 3,
+      "fail": 0,
+      "streak": 0,
+      "lastOk": "2026-10-20",
+      "lastFail": "2026-10-20",
+      "lastDay": "2026-10-20"
+    },
+    "node-spot": {
+      "ok": 3,
+      "fail": 0,
+      "streak": 0,
+      "lastOk": "2026-10-20",
+      "lastFail": "2026-10-20",
+      "lastDay": "2026-10-20"
+    },
+    "node-main-net": {
+      "ok": 3,
+      "fail": 0,
+      "streak": 0,
+      "lastOk": "2026-10-20",
+      "lastFail": "2026-10-20",
+      "lastDay": "2026-10-20"
+    },
+    "node-pools": {
+      "ok": 3,
+      "fail": 0,
+      "streak": 0,
+      "lastOk": "2026-10-20",
+      "lastFail": null,
+      "lastDay": "2026-10-20"
+    }
+  }
+}

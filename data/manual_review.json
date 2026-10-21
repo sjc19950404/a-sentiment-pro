@@ -1,0 +1,79 @@
+{
+  "kind": "manual-review",
+  "version": 1,
+  "note": "人工审核改判台账：本机在 dirty 面板点「人工审核」改判某条（warn↔dirty）后写入；git commit/push 同步到云端，Pages 仅展示（无写权限）。原因自由（默认清单或「其他」手填）。管线 src/dirty.js 消费本台账的 manualOverrides，把 newStatus=dirty 的字段真正从因子入参剔除。",
+  "entries": [
+    {
+      "date": "2026-01-21",
+      "field": "industry[].change_pct",
+      "industry": "贵金属",
+      "rule": "OUTLIER_INDUSTRY",
+      "originalStatus": "warn",
+      "newStatus": "dirty",
+      "reason": "跨源核验为真实行情",
+      "customReason": null,
+      "reviewer": "尚金城",
+      "ts": "2026-10-16T19:18:55.263Z"
+    },
+    {
+      "date": "2026-01-23",
+      "field": "industry[].change_pct",
+      "industry": "光伏设备",
+      "rule": "OUTLIER_INDUSTRY",
+      "originalStatus": "warn",
+      "newStatus": "dirty",
+      "reason": "跨源核验为真实行情",
+      "customReason": null,
+      "reviewer": "尚金城",
+      "ts": "2026-10-16T19:19:02.227Z"
+    },
+    {
+      "date": "2026-01-26",
+      "field": "industry[].change_pct",
+      "industry": "贵金属",
+      "rule": "OUTLIER_INDUSTRY",
+      "originalStatus": "warn",
+      "newStatus": "dirty",
+      "reason": "跨源核验为真实行情",
+      "customReason": null,
+      "reviewer": "尚金城",
+      "ts": "2026-10-16T19:19:08.351Z"
+    },
+    {
+      "date": "2026-02-10",
+      "field": "industry[].change_pct",
+      "industry": "影视院线",
+      "rule": "OUTLIER_INDUSTRY",
+      "originalStatus": "warn",
+      "newStatus": "dirty",
+      "reason": "跨源核验为真实行情",
+      "customReason": null,
+      "reviewer": "尚金城",
+      "ts": "2026-10-16T19:19:14.173Z"
+    },
+    {
+      "date": "2026-03-03",
+      "field": "industry[].change_pct",
+      "industry": "油气开采及服务",
+      "rule": "COUNTER_INDEX",
+      "originalStatus": "warn",
+      "newStatus": "dirty",
+      "reason": "跨源核验为真实行情",
+      "customReason": null,
+      "reviewer": "尚金城",
+      "ts": "2026-10-16T19:19:26.162Z"
+    },
+    {
+      "date": "2026-08-18",
+      "field": "industry[].change_pct",
+      "industry": "种植业与林业",
+      "rule": "OUTLIER_INDUSTRY",
+      "originalStatus": "warn",
+      "newStatus": "dirty",
+      "reason": "跨源核验为真实行情",
+      "customReason": null,
+      "reviewer": "尚金城",
+      "ts": "2026-10-16T19:19:19.225Z"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "tradeDate": "2026-10-16",
+  "generatedAt": "2026-10-19T06:21:08.236Z",
+  "selectedCount": 3,
+  "isEmpty": false,
+  "candidateRaw": 3,
+  "removedCount": 0,
+  "metrics": {
+    "zhabanRate": 0.918,
+    "ztpoolCloseCount": 61,
+    "sectorTurnover5": 5,
+    "topicConc": 19.7
+  },
+  "macroReasons": [
+    {
+      "key": "zhaban",
+      "label": "炸板率过高（92%，封板意愿弱、追板风险大）",
+      "value": 0.918
+    },
+    {
+      "key": "rotation",
+      "label": "板块轮动过快（top5 行业日换手 5/5，无持续主线）",
+      "value": 1
+    }
+  ],
+  "microRemovalReasons": {},
+  "conclusion": "有票入选（存活 3 只），无需归因",
+  "suggestionForTomorrow": [
+    "炸板率高→明日不追板，只做回封确认（开盘后观察是否真封死再定）",
+    "板块轮动快→等主线沉淀（连续 2 日同主线再出手），不做一日游题材"
+  ]
+}

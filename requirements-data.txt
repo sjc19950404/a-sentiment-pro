@@ -1,0 +1,9 @@
+# 新数据层依赖（2026-10-10 数据层迁移第一阶段）
+# 快照主路: quantdash（免费版 120 次/分钟，universe 模式为付费功能——免费 key 走 symbols 批量）
+# 快照兜底/涨跌停池/主力净流入榜: akshare
+# 历史日线（回测/日线校验统一口径）: baostock
+quantdash==0.1.0
+akshare==1.19.1
+baostock==0.9.4
+# pandas 由 akshare 传递依赖（实测 3.0.6）；显式锁定便于环境复现
+pandas==3.0.6
