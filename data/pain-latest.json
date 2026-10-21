@@ -1,125 +1,158 @@
 {
- "date": "2026-10-19",
- "prevZtCount": 46,
+ "date": "2026-10-20",
+ "prevZtCount": 54,
  "perf": {
-  "n": 46,
-  "universe": 46,
+  "n": 54,
+  "universe": 54,
   "missing": 0,
   "reliable": true,
-  "avg": 2.77,
-  "median": 1.56,
-  "lossRatio": 0.5,
-  "worst": -14.13,
-  "best": 20,
-  "limitUpAgain": 15,
-  "limitDown": 1,
-  "bigLoss": 1,
+  "avg": 3.34,
+  "median": 3.95,
+  "lossRatio": 0.28,
+  "worst": -9.21,
+  "best": 11.54,
+  "limitUpAgain": 17,
+  "limitDown": 0,
+  "bigLoss": 4,
   "note": null
  },
  "advance": {
-  "n": 11,
-  "kept": 6,
-  "failed": 5,
-  "failRate": 0.45,
+  "n": 14,
+  "kept": 5,
+  "failed": 9,
+  "failRate": 0.64,
   "byTier": {
    "2": {
-    "n": 9,
-    "kept": 5,
-    "failed": 4,
-    "failRate": 0.44
+    "n": 8,
+    "kept": 2,
+    "failed": 6,
+    "failRate": 0.75
    },
    "3": {
-    "n": 2,
-    "kept": 1,
-    "failed": 1,
-    "failRate": 0.5
+    "n": 5,
+    "kept": 3,
+    "failed": 2,
+    "failRate": 0.4
    },
    "4+": {
-    "n": 0,
+    "n": 1,
     "kept": 0,
-    "failed": 0,
-    "failRate": null
+    "failed": 1,
+    "failRate": 1
    }
   },
   "reliable": true,
-  "maxLb": 3,
+  "maxLb": 4,
   "detail": [
    {
-    "code": "002889",
-    "lb": 3,
-    "chg": -6.67,
-    "kept": false
-   },
-   {
     "code": "003029",
-    "lb": 3,
-    "chg": 10,
-    "kept": true
-   },
-   {
-    "code": "603348",
-    "lb": 2,
-    "chg": -6,
+    "lb": 4,
+    "chg": -3.57,
     "kept": false
-   },
-   {
-    "code": "000576",
-    "lb": 2,
-    "chg": -4.97,
-    "kept": false
-   },
-   {
-    "code": "603197",
-    "lb": 2,
-    "chg": -3.96,
-    "kept": false
-   },
-   {
-    "code": "002085",
-    "lb": 2,
-    "chg": -1.19,
-    "kept": false
-   },
-   {
-    "code": "002724",
-    "lb": 2,
-    "chg": 9.98,
-    "kept": true
    },
    {
     "code": "600148",
+    "lb": 3,
+    "chg": -8.98,
+    "kept": false
+   },
+   {
+    "code": "600860",
+    "lb": 3,
+    "chg": -7.52,
+    "kept": false
+   },
+   {
+    "code": "600178",
+    "lb": 3,
+    "chg": 9.99,
+    "kept": true
+   },
+   {
+    "code": "603278",
+    "lb": 3,
+    "chg": 10.01,
+    "kept": true
+   },
+   {
+    "code": "002724",
+    "lb": 3,
+    "chg": 10.04,
+    "kept": true
+   },
+   {
+    "code": "001323",
+    "lb": 2,
+    "chg": -5.98,
+    "kept": false
+   },
+   {
+    "code": "002164",
+    "lb": 2,
+    "chg": -3.59,
+    "kept": false
+   },
+   {
+    "code": "603626",
+    "lb": 2,
+    "chg": -1.76,
+    "kept": false
+   },
+   {
+    "code": "603119",
+    "lb": 2,
+    "chg": 2.02,
+    "kept": false
+   },
+   {
+    "code": "600267",
+    "lb": 2,
+    "chg": 5.12,
+    "kept": false
+   },
+   {
+    "code": "605488",
+    "lb": 2,
+    "chg": 6.2,
+    "kept": false
+   },
+   {
+    "code": "002929",
     "lb": 2,
     "chg": 9.99,
     "kept": true
    },
    {
-    "code": "600860",
+    "code": "301313",
     "lb": 2,
-    "chg": 10,
-    "kept": true
-   },
-   {
-    "code": "603278",
-    "lb": 2,
-    "chg": 10,
-    "kept": true
-   },
-   {
-    "code": "600178",
-    "lb": 2,
-    "chg": 10.02,
+    "chg": 11.54,
     "kept": true
    }
   ],
   "note": null
  },
  "bigLoss": {
-  "n": 1,
+  "n": 4,
   "list": [
    {
-    "code": "300798",
-    "name": "锦鸡股份",
-    "chg": -14.13
+    "code": "603386",
+    "name": "骏亚科技",
+    "chg": -9.21
+   },
+   {
+    "code": "600148",
+    "name": "长春一东",
+    "chg": -8.98
+   },
+   {
+    "code": "920641",
+    "name": "格利尔",
+    "chg": -8.03
+   },
+   {
+    "code": "600860",
+    "name": "京城股份",
+    "chg": -7.52
    }
   ]
  },
@@ -127,18 +160,18 @@
   "n": 1,
   "list": [
    {
-    "code": "002889",
-    "name": "东方嘉盛",
-    "chg": -6.67,
-    "amplitude": 17.5
+    "code": "001323",
+    "name": "慕思股份",
+    "chg": -5.98,
+    "amplitude": 16.4
    }
   ]
  },
- "scanned": 46,
+ "scanned": 54,
  "verdict": {
-  "level": "normal",
-  "label": "多空拉锯",
-  "reason": "昨涨停今日翻绿 50%、高位板晋级失败 45%，追高盈亏各半"
+  "level": "strong",
+  "label": "接力顺畅",
+  "reason": "昨涨停今日翻绿仅 28%、高位板晋级失败 64%，赚钱效应占优"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -149,6 +182,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-10-20T10:31:26.247Z",
- "curDate": "2026-10-20"
+ "generatedAt": "2026-10-21T20:05:23.705Z",
+ "curDate": "2026-10-21"
 }
