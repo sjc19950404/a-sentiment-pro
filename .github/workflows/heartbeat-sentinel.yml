@@ -1,0 +1,26 @@
+name: heartbeat-sentinel
+
+# 心跳哨兵（2026-10-16 盘后重构）：每日北京 08:00 巡检关键数据档是否覆盖最近交易日，
+# 未覆盖 → 企微「系统停更告警」。独立 workflow，不牵扯 daily-sentiment 的 build/smoke if，
+# 故不影响盘中快照链路（盘中 cron 完全独立）。
+on:
+  schedule:
+    - cron: '0 0 * * 1-5'   # 北京 08:00
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sentinel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 心跳哨兵（数据停更巡检）
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+        run: node scripts/heartbeat_sentinel.mjs

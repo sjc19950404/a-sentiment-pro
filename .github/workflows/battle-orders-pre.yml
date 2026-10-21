@@ -1,0 +1,26 @@
+name: battle-orders-pre
+
+# 盘前作战指令：每交易日北京 08:30 推送（GitHub UTC+8：0:30Z = 8:30 BJ）
+on:
+  schedule:
+    - cron: '30 0 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pre:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 盘前作战指令推送
+        env:
+          OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
+        run: |
+          echo "⚠ 作战指令推送已临时停用（2026-10-20 用户指令：疑似分钟行情均价/量比字段映射错误，先停推送避免错误信号）。恢复：撤销本改动即可。"
+          exit 0

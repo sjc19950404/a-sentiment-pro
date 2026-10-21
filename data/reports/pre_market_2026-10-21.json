@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-21",
- "generated_at": "2026-10-21T04:05:02.228Z",
+ "generated_at": "2026-10-20T21:04:56.770Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -15,7 +15,7 @@
    "global": "fresh",
    "backtest": "fresh",
    "ops_alerts": "fresh",
-   "intraday": "stale",
+   "intraday": "fresh",
    "paper_account": "missing"
   }
  },
@@ -105,8 +105,8 @@
    "confidence": "missing"
   },
   "watchlist": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "derived",
+   "confidence": "measured"
   },
   "simulation_stock": {
    "source": "missing",
@@ -144,10 +144,9 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": 0.002832,
-    "state": "ok",
-    "stale": false,
-    "cacheNote": null
+    "chgPct": null,
+    "state": "night-open",
+    "nightOpen": true
    },
    {
     "key": "sox",
@@ -158,7 +157,9 @@
     "cacheNote": null
    }
   ],
-  "externalStale": [],
+  "externalStale": [
+   "外围「富时中国A50期货」已陈旧（采集失败未刷新），已置空"
+  ],
   "prev_nav": 0.9728637546224842,
   "positions": {
    "targetPos": {
@@ -170,8 +171,8 @@
    "executed": true
   },
   "overnight_exposure": {
-   "a50_chgPct": 0.002832,
-   "a50NightOpen": false,
+   "a50_chgPct": null,
+   "a50NightOpen": true,
    "posGap": 0.05,
    "us_close": {
     "dji": 0.010196,
@@ -182,15 +183,21 @@
     "hxc": 0.006832,
     "fxi": -0.000596
    },
-   "cnh_chgPct": -0.000015,
+   "cnh_chgPct": 0.000015,
    "usReady": true,
-   "usReason": "美东 17:50 ET 已收盘（≥16:30 ET），可采信当日收盘"
+   "usReason": "美东 17:01 ET 已收盘（≥16:30 ET），可采信当日收盘"
   },
   "key_levels": null,
   "events_today": null,
   "atr": null,
   "suggested_step": null,
-  "watchlist": null,
+  "watchlist": {
+   "basis": "昨收连板梯队缺席：pain 档缺失（fetch_pain 未产出或被陈旧闸拦截）——宁缺毋假，不用旧连板数冒充昨收梯队（2026-10-10 P0-2）",
+   "ladder": [],
+   "overnight_sectors": null,
+   "max_lb": null,
+   "broken_limit_ratio": 0.3493975903614458
+  },
   "simulation_stock": null,
   "ma20_degraded": false,
   "status": "degraded"
@@ -215,6 +222,11 @@
    "field": "max_drawdown_daily / fee_total / net_pnl / cost_ratio / slippage 实测",
    "reason": "个人账本成交与日内 equity 仅存在于浏览器 localStorage（即时轨一等公民，决议 1）",
    "ref": "paper_ui.js __paperSnapshot"
+  },
+  {
+   "field": "watchlist.overnight_sectors + watchlist.ladder[].封板质量（个股级封单额）",
+   "reason": "系统无隔夜资讯数据源（消息面→板块映射无法核验，恒 null 不造数）；封单额个股级无档案（pools 落档仅计数），以晋级结果+上榜频次代理",
+   "ref": "docs/ai_report_module_design.md#9.3"
   }
  ],
  "concepts": {

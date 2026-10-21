@@ -1,0 +1,70 @@
+name: backtest-strategies
+
+# A/B/C 三策略回测（scripts/backtest_strategies.mjs，引擎 src/strategy_bt.js）。
+#
+# ⚠ 刻意**不进每日调度**，两条理由：
+#   ① 回测要抓 ~90 只标的的前复权日K（腾讯 ifzq，脚本内置 sleep 限速），每天跑
+#      既慢又无谓——runner 上 .bt_kline 恒为空，每次都是全量真抓；
+#   ② 策略研究是阶段性工作：结果不随交易日刷新，需要看时手动跑一次即可。
+#   ⇒ 只留手动触发：Actions → 本 workflow → Run workflow（可勾选强制重抓日K）。
+#
+# 结果去向：data/backtest-strategies.json → 提交回仓库 → 前端 #btStrategyPanel 读取。
+on:
+  workflow_dispatch:
+    inputs:
+      refresh_kline:
+        description: '强制重抓日K（标的池变动、K 线过期或缓存损坏时用）'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backtest-strategies
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 日K缓存：data/.bt_kline 是 gitignore 的可重建目录，runner 上**必然为空**，
+      #   首次要真抓 ~90 只前复权日K（内置限速），慢且易受网络抖动影响。
+      #   key 带 run_number：每次保存新快照、restore-keys 命中最近一次——
+      #   cache 条目不可覆盖，这是标准的"save 新 / restore 旧"写法。
+      - name: 恢复日K缓存
+        if: ${{ !inputs.refresh_kline }}
+        uses: actions/cache@v4
+        with:
+          path: data/.bt_kline
+          key: bt-kline-${{ runner.os }}-${{ github.run_number }}
+          restore-keys: |
+            bt-kline-${{ runner.os }}-
+
+      - name: 跑 A/B/C 策略回测
+        run: node scripts/backtest_strategies.mjs
+
+      # 摘要直接写进 Actions 页（Job summary），跑完不用开前端也能看结果表。
+      - name: 结果摘要
+        run: node scripts/bt_summary.mjs >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 提交结果
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/backtest-strategies.json
+          if git diff --cached --quiet; then
+            echo "回测结果与上次一致，跳过提交"
+          else
+            git commit -m "chore: 策略回测结果 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            # bot push 竞态加固（2026-10-09 实录：同分支并发提交会被 non-fast-forward 拒）
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
