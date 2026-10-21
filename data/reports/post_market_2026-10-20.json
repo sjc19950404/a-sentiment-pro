@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-20",
- "generated_at": "2026-10-20T21:04:56.637Z",
+ "generated_at": "2026-10-21T08:00:02.145Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -15,7 +15,7 @@
    "global": "fresh",
    "backtest": "fresh",
    "ops_alerts": "fresh",
-   "intraday": "fresh",
+   "intraday": "stale",
    "paper_account": "missing"
   }
  },
@@ -113,8 +113,8 @@
    "confidence": "missing"
   },
   "simulation_stock": {
-   "source": "derived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "ma20_degraded": {
    "source": "derived",
@@ -148,9 +148,10 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": null,
-    "state": "night-open",
-    "nightOpen": true
+    "chgPct": 0.002832,
+    "state": "ok",
+    "stale": false,
+    "cacheNote": null
    },
    {
     "key": "sox",
@@ -161,9 +162,7 @@
     "cacheNote": null
    }
   ],
-  "externalStale": [
-   "外围「富时中国A50期货」已陈旧（采集失败未刷新），已置空"
-  ],
+  "externalStale": [],
   "close_drawdown": 0.148157,
   "max_drawdown_intraday": null,
   "grid_trigger_detail": null,
@@ -192,31 +191,7 @@
   "fee_total": null,
   "slippage_total": null,
   "net_pnl": null,
-  "simulation_stock": {
-   "sentiment_cycle": {
-    "phase": "fermentation",
-    "phase_label": "发酵期",
-    "regime_raw": "recover",
-    "phase_source": "regime=recover · 分位 64.4 · 方向 up（recover 细分阈值 <30 为启动期）",
-    "limit_up_count": 54,
-    "highest_chain": null,
-    "broken_limit_ratio": 0.3493975903614458,
-    "yesterday_chain_performance": null,
-    "warning_signals": [
-     "宽度收窄（站上20日线仅 16.5%）"
-    ]
-   },
-   "position_suggestion": "neutral",
-   "pool_basis": "连板梯队缺席：pain 档缺失（fetch_pain 未产出或被陈旧闸拦截）——宁缺毋假，不用旧连板数冒充今日梯队（2026-10-10 P0-2）",
-   "candidate_pool": [],
-   "streak_pool": null,
-   "streak_pool_basis": null,
-   "trend_pool_mode": "trend",
-   "snapshotAtBJ": null,
-   "live_emotion": null,
-   "simulation_positions": null,
-   "review": null
-  },
+  "simulation_stock": null,
   "ma20_degraded": false,
   "status": "degraded"
  },
@@ -240,11 +215,6 @@
    "field": "max_drawdown_daily / fee_total / net_pnl / cost_ratio / slippage 实测",
    "reason": "个人账本成交与日内 equity 仅存在于浏览器 localStorage（即时轨一等公民，决议 1）",
    "ref": "paper_ui.js __paperSnapshot"
-  },
-  {
-   "field": "simulation_stock.candidate_pool[].themes/fundamentals(八字段)/个股级主力资金",
-   "reason": "系统无基本面选股模块与个股级题材/主力资金数据源；基本面键 null 占位（决议 8），接数据源后直接填充不改 schema",
-   "ref": "docs/ai_report_module_design.md#9.3"
   }
  ],
  "concepts": {
