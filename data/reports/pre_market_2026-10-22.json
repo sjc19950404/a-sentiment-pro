@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-22",
- "generated_at": "2026-10-21T18:35:54.719Z",
+ "generated_at": "2026-10-21T19:39:13.490Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -151,7 +151,7 @@
    {
     "key": "sox",
     "name": "费城半导体指数",
-    "chgPct": 0.022757,
+    "chgPct": 0.021685,
     "state": "ok",
     "stale": false,
     "cacheNote": null
@@ -175,17 +175,17 @@
    "a50NightOpen": true,
    "posGap": 0.05,
    "us_close": {
-    "dji": 0.0060019999999999995,
-    "spx": 0.007352,
-    "ixic": 0.012785
+    "dji": 0.00512,
+    "spx": 0.005682,
+    "ixic": 0.010707
    },
    "cn_overnight": {
-    "hxc": -0.022702,
-    "fxi": -0.015368999999999999
+    "hxc": -0.025287999999999998,
+    "fxi": -0.016562
    },
-   "cnh_chgPct": -0.00012,
+   "cnh_chgPct": -0.000075,
    "usReady": false,
-   "usReason": "美东 14:32 ET 盘中（16:00 才收盘），此刻只是盘中价"
+   "usReason": "美东 15:36 ET 盘中（16:00 才收盘），此刻只是盘中价"
   },
   "key_levels": null,
   "events_today": null,
