@@ -1,27 +1,27 @@
 {
   "meta": {
-    "generatedAt": "2026-10-20T21:02:23.913Z",
+    "generatedAt": "2026-10-21T18:33:30.084Z",
     "engine": "scripts/backtest_strategies.mjs + src/strategy_bt.js（逐笔交易模型：T日信号 → T+1开盘成交 → N日收盘出场；时点纪律由 test/backtest_strategies.test.mjs 锁定）",
     "pointInTime": "信号只读 T 日收盘字段（emotion/max_lb/topics）；成交一律 T+1 开盘价；重叠信号不加仓",
     "costs": "与 V5.2 同口径：佣金 0.0003（双边）+ 印花税 0.0005（卖出）+ 滑点 0.0002，单次往返约 0.150%",
     "sample": {
-      "realDays": 247,
+      "realDays": 248,
       "range": [
         "2025-10-09",
-        "2026-10-20"
+        "2026-10-21"
       ],
       "excludedBackfillDays": 0,
       "note": "样本含六因子回填天（K 线重建池口径）。样本期情绪区间 17.9~92.4。"
     },
-    "disclaimer": "历史回测 ≠ 未来收益。样本 247 个交易日（含六因子回填天，池字段为 K 线重建口径——较 EM 采集口径 s_zbl 平均偏低 ~4.5 分），结果仅用于管线自检与口径演示，不构成投资建议，不当选股依据。"
+    "disclaimer": "历史回测 ≠ 未来收益。样本 248 个交易日（含六因子回填天，池字段为 K 线重建口径——较 EM 采集口径 s_zbl 平均偏低 ~4.5 分），结果仅用于管线自检与口径演示，不构成投资建议，不当选股依据。"
   },
   "benchmark": {
     "id": "HS300_buyhold",
     "label": "沪深300 买入持有（同区间）",
-    "total": -0.1053,
-    "annual": -0.1065,
-    "maxDd": 0.1794,
-    "sharpe": -0.63,
+    "total": -0.1139,
+    "annual": -0.1148,
+    "maxDd": 0.1873,
+    "sharpe": -0.68,
     "winRate": 0,
     "plRatio": null,
     "nav": [
@@ -274,7 +274,8 @@
       0.8977,
       0.8987,
       0.8995,
-      0.8947
+      0.8947,
+      0.8861
     ]
   },
   "navDates": [
@@ -527,7 +528,8 @@
     "2026-10-15",
     "2026-10-16",
     "2026-10-19",
-    "2026-10-20"
+    "2026-10-20",
+    "2026-10-21"
   ],
   "strategies": [
     {
@@ -539,7 +541,7 @@
       "triggered": 28,
       "trades": 22,
       "total": -0.0052,
-      "annual": -0.0053,
+      "annual": -0.0052,
       "maxDd": 0.0779,
       "sharpe": -0.01,
       "winRate": 0.3636,
@@ -794,6 +796,7 @@
         0.9948,
         0.9948,
         0.9948,
+        0.9948,
         0.9948
       ],
       "tradeList": [
@@ -937,15 +940,15 @@
       "holdN": 3,
       "entry": "T日 top1 题材（去噪口径）→ T+1 开盘等权买成员股",
       "exit": "持有 3 日收盘卖",
-      "triggered": 15,
-      "trades": 7,
-      "droppedMembersTotal": 0,
-      "total": 0.1995,
-      "annual": 0.2022,
+      "triggered": 16,
+      "trades": 8,
+      "droppedMembersTotal": 1,
+      "total": 0.1672,
+      "annual": 0.1686,
       "maxDd": 0.1612,
-      "sharpe": 0.99,
-      "winRate": 0.7143,
-      "plRatio": 1.0042,
+      "sharpe": 0.86,
+      "winRate": 0.625,
+      "plRatio": 1.2529,
       "nav": [
         1,
         1,
@@ -1195,8 +1198,9 @@
         1.1995,
         1.1995,
         1.1995,
-        1.1995,
-        1.1995
+        1.1958,
+        1.1759,
+        1.1672
       ],
       "tradeList": [
         {
@@ -1254,6 +1258,14 @@
           "exit": "2026-10-14",
           "members": 4,
           "ret": 0.042
+        },
+        {
+          "signalDay": "2026-10-16",
+          "theme": "低空经济",
+          "entry": "2026-10-19",
+          "exit": "2026-10-21",
+          "members": 12,
+          "ret": -0.029
         }
       ]
     },
@@ -1263,10 +1275,10 @@
       "holdN": 3,
       "entry": "T日 max_lb≥4 且 lb2_count≥8 → T+1 开盘买沪深300",
       "exit": "持有 3 日收盘卖；期间 max_lb≤2 → 次日开盘卖",
-      "triggered": 208,
+      "triggered": 209,
       "trades": 75,
       "total": -0.127,
-      "annual": -0.1284,
+      "annual": -0.1279,
       "maxDd": 0.173,
       "sharpe": -0.8,
       "winRate": 0.3733,
@@ -1518,6 +1530,7 @@
         0.8879,
         0.896,
         0.8838,
+        0.873,
         0.873,
         0.873,
         0.873,
@@ -1985,7 +1998,7 @@
       "triggered": 28,
       "trades": 19,
       "total": 0.0121,
-      "annual": 0.0123,
+      "annual": 0.0122,
       "maxDd": 0.0719,
       "sharpe": 0.17,
       "winRate": 0.4211,
@@ -2240,6 +2253,7 @@
         1.0101,
         1.0112,
         1.0121,
+        1.0121,
         1.0121
       ],
       "tradeList": [
@@ -2365,13 +2379,13 @@
       "holdN": 5,
       "entry": "T日 top1 题材（去噪口径）→ T+1 开盘等权买成员股",
       "exit": "持有 5 日收盘卖",
-      "triggered": 15,
+      "triggered": 16,
       "trades": 5,
       "droppedMembersTotal": 8,
       "total": 0.1936,
-      "annual": 0.1962,
+      "annual": 0.1953,
       "maxDd": 0.2039,
-      "sharpe": 0.86,
+      "sharpe": 0.85,
       "winRate": 0.25,
       "plRatio": 7.2118,
       "nav": [
@@ -2624,6 +2638,7 @@
         1.1936,
         1.1936,
         1.1936,
+        1.1936,
         1.1936
       ],
       "tradeList": [
@@ -2675,10 +2690,10 @@
       "holdN": 5,
       "entry": "T日 max_lb≥4 且 lb2_count≥8 → T+1 开盘买沪深300",
       "exit": "持有 5 日收盘卖；期间 max_lb≤2 → 次日开盘卖",
-      "triggered": 208,
+      "triggered": 209,
       "trades": 46,
       "total": -0.1315,
-      "annual": -0.133,
+      "annual": -0.1325,
       "maxDd": 0.1661,
       "sharpe": -0.77,
       "winRate": 0.4348,
@@ -2928,6 +2943,7 @@
         0.8755,
         0.8769,
         0.871,
+        0.8685,
         0.8685,
         0.8685,
         0.8685,
@@ -3223,9 +3239,9 @@
       "triggered": 28,
       "trades": 15,
       "total": -0.0558,
-      "annual": -0.0565,
+      "annual": -0.0563,
       "maxDd": 0.1527,
-      "sharpe": -0.44,
+      "sharpe": -0.43,
       "winRate": 0.4,
       "plRatio": 0.8442,
       "nav": [
@@ -3478,6 +3494,7 @@
         0.9422,
         0.9433,
         0.9442,
+        0.9442,
         0.9442
       ],
       "tradeList": [
@@ -3579,11 +3596,11 @@
       "holdN": 10,
       "entry": "T日 top1 题材（去噪口径）→ T+1 开盘等权买成员股",
       "exit": "持有 10 日收盘卖",
-      "triggered": 15,
+      "triggered": 16,
       "trades": 3,
       "droppedMembersTotal": 8,
       "total": -0.0842,
-      "annual": -0.0852,
+      "annual": -0.0848,
       "maxDd": 0.1732,
       "sharpe": -0.46,
       "winRate": 0,
@@ -3838,6 +3855,7 @@
         0.9158,
         0.9158,
         0.9158,
+        0.9158,
         0.9158
       ],
       "tradeList": [
@@ -3873,10 +3891,10 @@
       "holdN": 10,
       "entry": "T日 max_lb≥4 且 lb2_count≥8 → T+1 开盘买沪深300",
       "exit": "持有 10 日收盘卖；期间 max_lb≤2 → 次日开盘卖",
-      "triggered": 208,
+      "triggered": 209,
       "trades": 24,
       "total": -0.1557,
-      "annual": -0.1574,
+      "annual": -0.1568,
       "maxDd": 0.1873,
       "sharpe": -0.93,
       "winRate": 0.3333,
@@ -4128,6 +4146,7 @@
         0.8691,
         0.8666,
         0.8548,
+        0.8443,
         0.8443,
         0.8443,
         0.8443,
