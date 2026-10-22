@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-22",
- "generated_at": "2026-10-22T11:11:12.003Z",
+ "generated_at": "2026-10-22T11:24:06.631Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -33,12 +33,12 @@
    "confidence": "missing"
   },
   "pnl_daily": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "pnl_cumulative": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "max_drawdown_daily": {
    "source": "missing",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -77,8 +77,8 @@
    "confidence": "measured"
   },
   "close_drawdown": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "max_drawdown_intraday": {
    "source": "missing",
@@ -93,8 +93,8 @@
    "confidence": "missing"
   },
   "backtest_deviation": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "derived",
+   "confidence": "measured"
   },
   "market_context": {
    "source": "archived",
@@ -125,14 +125,19 @@
   "date": "2026-10-22",
   "grid_triggers": null,
   "counter_trend_losses": null,
-  "pnl_daily": null,
-  "pnl_cumulative": null,
+  "pnl_daily": -0.007553,
+  "pnl_cumulative": -0.03933,
   "max_drawdown_daily": null,
   "trend_switch_hits": 1,
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "ice",
+   "label": "冰点",
+   "cap": 0.2,
+   "position_range": "0%~20%"
+  },
   "circuit_breaker": {
    "dd_tier": null,
    "hard_stop_triggered": null,
@@ -159,11 +164,16 @@
   "externalStale": [
    "外围「富时中国A50期货」已陈旧（采集失败未刷新），已置空"
   ],
-  "close_drawdown": null,
+  "close_drawdown": 0.15861,
   "max_drawdown_intraday": null,
   "grid_trigger_detail": null,
   "counter_trend_loss_ratio": null,
-  "backtest_deviation": null,
+  "backtest_deviation": {
+   "live_cum": -0.03933,
+   "backtest_v52": -0.0393,
+   "delta": -0.00003,
+   "note": "执行轨 vs 回测 v52 锚点（零偏差为设计约束）"
+  },
   "market_context": {
    "emotion": 33.4,
    "pct_rank": 5.1,
