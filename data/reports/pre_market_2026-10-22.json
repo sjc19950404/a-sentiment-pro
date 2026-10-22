@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-22",
- "generated_at": "2026-10-21T20:08:49.359Z",
+ "generated_at": "2026-10-22T11:11:12.142Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "fresh",
+   "dual_track": "stale",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -33,12 +33,12 @@
    "confidence": "missing"
   },
   "pnl_daily": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "pnl_cumulative": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "max_drawdown_daily": {
    "source": "missing",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -77,12 +77,12 @@
    "confidence": "measured"
   },
   "prev_nav": {
-   "source": "derived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "positions": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "overnight_exposure": {
    "source": "archived",
@@ -118,22 +118,17 @@
   }
  },
  "payload": {
-  "date": "2026-10-21",
+  "date": "2026-10-22",
   "grid_triggers": null,
   "counter_trend_losses": null,
-  "pnl_daily": -0.004753,
-  "pnl_cumulative": -0.032019,
+  "pnl_daily": null,
+  "pnl_cumulative": null,
   "max_drawdown_daily": null,
   "trend_switch_hits": 1,
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": {
-   "key": "neutral",
-   "label": "中性",
-   "cap": 0.5,
-   "position_range": "30%~50%"
-  },
+  "regime": null,
   "circuit_breaker": {
    "dd_tier": null,
    "hard_stop_triggered": null,
@@ -160,20 +155,12 @@
   "externalStale": [
    "外围「富时中国A50期货」已陈旧（采集失败未刷新），已置空"
   ],
-  "prev_nav": 0.9726037857938783,
-  "positions": {
-   "targetPos": {
-    "上证指数": 0.7,
-    "深证成指": 0.4,
-    "创业板指": 0.4
-   },
-   "poolPos": 0.5,
-   "executed": true
-  },
+  "prev_nav": null,
+  "positions": null,
   "overnight_exposure": {
    "a50_chgPct": null,
    "a50NightOpen": true,
-   "posGap": 0.05,
+   "posGap": null,
    "us_close": {
     "dji": 0.006862,
     "spx": 0.005783,
@@ -181,11 +168,11 @@
    },
    "cn_overnight": {
     "hxc": -0.02351,
-    "fxi": -0.016413
+    "fxi": -0.01701
    },
    "cnh_chgPct": -0.000105,
    "usReady": false,
-   "usReason": "美东 16:05 ET 刚收盘（30 分钟结算缓冲内），收盘价可能尚未稳定"
+   "usReason": "美东 07:08 ET 盘前（09:30 才开盘），此刻美股无收盘价"
   },
   "key_levels": null,
   "events_today": null,
