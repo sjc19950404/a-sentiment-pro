@@ -19,12 +19,18 @@ REPO_DIR="${REPO_DIR:-/opt/a-sentiment-pro}"
 LOG_DIR="${LOG_DIR:-/var/log/aquant}"
 mkdir -p "$LOG_DIR"
 LOG_FILE="${LOG_DIR}/run.log"
-log() { echo "$(date '+%F %T %Z') [pi_run:$1] $*" | tee -a "$LOG_FILE"; }
+log() { local m="$(date '+%F %T %Z') [pi_run:$1] $*"; [ -t 1 ] && echo "$m"; printf '%s\n' "$m" >> "$LOG_FILE"; }
 alert() { [ -z "${OPS_WEBHOOK:-}" ] && return 0; curl -s -X POST -H 'Content-Type: application/json' -d "{\"msgtype\":\"text\",\"text\":{\"content\":\"[Pi][$(hostname)] $1\"}}" "$OPS_WEBHOOK" >/dev/null 2>&1 || true; }
 
 MODE="${1:-eod}"
 cd "$REPO_DIR" || { alert "pi_run: 仓库不存在 $REPO_DIR"; exit 1; }
 [ -f .env ] && { set -a; . ./.env; set +a; }   # 仅取 OPS_WEBHOOK（企微 key，非 repo 凭据）
+
+# 单实例锁（与 pi_push.sh 同纪律）：并发调度撞车时（实例：14:00 盘中快照与候选池
+# 同时触发）后来者优雅跳过——否则两个实例抢 git index.lock，把 reset 打挂、
+# 还误发「reset 失败」企微告警（2026-10-23 实测 candidates 当日因此整轮丢失）
+exec 9>/tmp/pi_run.lock
+flock -n 9 || { log "已有 pi_run 实例在跑，跳过本次（$MODE）"; exit 0; }
 
 # 校时闸（坏时间=脏数据）
 [ -x /usr/local/bin/ensure_time.sh ] && { bash /usr/local/bin/ensure_time.sh || { log "校时失败，中止"; alert "pi_run: 校时失败"; exit 1; }; }
