@@ -25,6 +25,11 @@ step "fetch_pain";           node scripts/fetch_pain.mjs || true
 step "fetch_breadth";        node scripts/fetch_breadth.mjs --shards 8 || true
 # 4.5 双轨账本重放（须在主管道写 signals-latest 之前！否则 dualTrack 段读到旧文件 → null）
 step "dual_track";           node tools/backtest/paper_dual_track.mjs || true
+# 4.6 LLM 舆情因子（容错；须在主管道写 signals-latest 之前——write.js 的 llmFn 在 buildSignals
+#   时读 data/llm-sentiment-latest.json 注入 signals.llm）。fetch 脚本：缺配置 → 退出非 0 不落档
+#   （简报八节显示「未生成」）；已配置但失败/超时/非法 JSON → 兜底落「获取失败，默认中性」档。
+#   两种情形均不阻塞主管道（此处 step 容错）。
+step "fetch_llm_sentiment";  node scripts/fetch_llm_sentiment.mjs || echo "⚠ LLM 舆情未落档（缺配置或调用失败），简报八节显示未生成/获取失败"
 # 5 主管道（live 嵌入 signals-latest）
 gate "pipeline(main)"        "node src/pipeline.js"
 # 6 新鲜度
@@ -65,6 +70,10 @@ step "daily_fetch (ztpool入库)"; node scripts/daily_fetch.mjs || echo "⚠ ztp
 #   切片，保证落盘/推送的 signals 永远是当日 dualTrack（与 CI daily.yml 同源、幂等、纯本地）。
 #   失败不阻断——既有切片仍在，仅当次缺双轨披露，下轮自愈。
 step "split_archive (切片重建)"; node scripts/split_archive.mjs || echo "⚠ 切片重建失败（不阻断，已有切片在）"
+# 20.8 纸面交易"最后一公里"（V5.3 P2）：每日结算（盯市 + T+1 解冻 + -8% 硬止损）+ 连板断板清仓
+#   + 自动建仓（主线选股 topN@10%，仅当情绪档位允许新建且 regime 非盖帽）。落盘 data/paper/account.json
+#   与 review-latest.json，供 build_ai_report 复盘段读取。缺档/失败均容错，不阻塞 EOD。
+step "paper_daily";          node scripts/paper_daily.mjs || echo "⚠ 纸面交易自动步失败（不阻断，下轮自愈）"
 # 21 渲染 UI → dist/（供隧道服务；dist/ 已 gitignore，不参与推送）
 step "build_ui";             node scripts/build_ui.mjs || { echo "⚠ build_ui 失败，但数据已落盘"; }
 # 21/22 盘后 + 周报

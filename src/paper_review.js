@@ -216,7 +216,7 @@ export function reviewTrades(trades, opts = {}) {
       // 每股成本含费：与 applyBuy 的「成本含费用」口径一致
       const pxPerShare = qty > 0 ? (gross + fee) / qty : 0;
       const q = open.get(code) || [];
-      q.push({ qty, pxPerShare });
+      q.push({ qty, pxPerShare, date: t.fillDate || t.submitDate || null });
       open.set(code, q);
       continue;
     }
@@ -227,8 +227,10 @@ export function reviewTrades(trades, opts = {}) {
     let remain = qty;
     const q = open.get(code) || [];
     let costOut = 0;
+    let buyDate = null;
     while (remain > 0 && q.length) {
       const lot = q[0];
+      if (buyDate == null) buyDate = lot.date || null;
       const take = Math.min(remain, lot.qty);
       costOut += take * lot.pxPerShare;
       lot.qty -= take;
@@ -244,13 +246,16 @@ export function reviewTrades(trades, opts = {}) {
     const netIn = gross - fee;             // 卖出净收入
     const pnl = netIn - costOut;
     const basis = costOut > 0 ? costOut : 0;
+    const sellDate = t.fillDate || t.submitDate || null;
     closed.push({
       code, name: t.name || code,
-      qty, date: t.fillDate || t.submitDate || null,
+      qty, date: sellDate,
       sellPx: +t.price, costPx: qty > 0 ? costOut / qty : null,
       pnl: r2(pnl),
       pct: basis > 0 ? pnl / basis : null,
       fee: r2(fee),
+      // 持仓天数（成交口径）= 卖出成交日 − 买入成交日；用于 1/3/5 日胜率分桶
+      holdDays: (buyDate && sellDate) ? Math.max(0, Math.round((new Date(sellDate) - new Date(buyDate)) / 86400000)) : null,
       reason: t.reason || null,
     });
   }
@@ -279,6 +284,18 @@ export function reviewTrades(trades, opts = {}) {
   const byPnl = closed.slice().sort((a, b) => b.pnl - a.pnl);
   const best = byPnl[0] || null;
   const worst = byPnl[byPnl.length - 1] || null;
+
+  // 1/3/5 日持仓胜率分桶（用户要的「持有 N 日内的平仓胜率」）：按持仓天数落桶，
+  //   仅统计已配对的平仓回合（holdDays 非 null）。样本不足返回 null（不编胜率）。
+  const bucket = (maxHold) => {
+    const sub = closed.filter((c) => c.holdDays != null && c.holdDays <= maxHold);
+    const judged = sub.filter((c) => c.pnl > 0).length + sub.filter((c) => c.pnl < 0).length;
+    return {
+      n: sub.length,
+      winRate: judged > 0 ? sub.filter((c) => c.pnl > 0).length / judged : null,
+    };
+  };
+  const byHold = { d1: bucket(1), d3: bucket(3), d5: bucket(5) };
   // 「显著」笔数：单笔绝对盈亏达到本金 0.2% 以上才计入盈亏比统计（避免零碎笔拉偏均值）
   const edges = minEdge > 0 ? closed.filter((c) => Math.abs(c.pnl) >= minEdge) : closed;
 
@@ -297,6 +314,8 @@ export function reviewTrades(trades, opts = {}) {
     best, worst,
     maxLossStreak,
     edges,
+    // 1/3/5 日持仓胜率（用户 P2 要求）：持有 ≤N 日的平仓胜率，样本不足为 null
+    byHold,
     orphanSell: orphanSell || 0,
     partialSell: partialSell || 0,
   };

@@ -64,6 +64,10 @@ data/emotion_history.json
 data/old_dragon_history.json
 data/main_theme_history.json
 
+# 纸面交易运行态（账户余额/复盘为运行时状态，勿入库；Pi 上需持久化，git reset 不丢）
+data/paper/account.json
+data/paper/review-latest.json
+
 # Python 数据层（2026-10-10 迁移）
 __pycache__/
 *.pyc

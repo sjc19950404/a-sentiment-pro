@@ -394,6 +394,14 @@ function buildLlmSection(llm) {
       missingReason: '未生成（需收盘后跑 scripts/fetch_llm_sentiment.mjs；未跑 ≠ 舆情中性）',
     };
   }
+  // 失败兜底档（已配置但调用失败/超时/非法 JSON）：与「未生成（缺配置）」「真实中性」三者区分——
+  //   显式标 warn 并说明是"获取失败"，绝不冒充真实舆情方向（也不假装"没跑过"）。
+  if (llm.degraded) {
+    const pts = [];
+    pts.push({ text: `⚠ ${llm.reason || 'AI舆情获取失败，默认中性'}（调用失败/超时/非法 JSON 兜底，不冒充真实舆情方向）`, kind: 'warn' });
+    pts.push({ text: `证据日期 ${llm.asOfDate}｜模型 ${llm.model || '未留痕'}`, kind: 'info' });
+    return { id: 'llm', title: '八、舆情参考（LLM 试点）', level: 'warn', missing: false, points: pts };
+  }
   const pts = [];
   // 主读数：原始分 → 参考分（生效时）；不生效时只给原分与原因
   if (llm.effective) {

@@ -98,3 +98,23 @@ test('输出形态：note 声明试点语义，events 裁剪上限 8 条', () =>
   assert.equal(r.model, 'test-model');
   assert.equal(r.sentimentRaw, 0.6);
 });
+
+// ── 失败兜底档（2026-10-24 加）：fetch 已配置但调用失败/超时/非法 JSON 落盘 degraded ──
+test('degraded 兜底档：与「未生成」「真实中性」三者区分，绝不冒充舆情方向', () => {
+  const deg = {
+    kind: 'llm-sentiment-latest', asOfDate: '2026-09-30', model: 'glm-4-flash',
+    degraded: true, sentiment: 0, reason: 'AI舆情获取失败，默认中性', summary: 'AI舆情获取失败，默认中性',
+    events: [],
+  };
+  const r = llmSentimentBlock(deg, { score: 88.5, tradeDate: '2026-09-30' });
+  assert.equal(r.degraded, true, '标记 degraded（渲染层据此给 warn 文案）');
+  assert.equal(r.effective, false);
+  assert.equal(r.sentimentRaw, 0);
+  assert.equal(r.modified, null);
+  assert.equal(r.reason, 'AI舆情获取失败，默认中性');
+  // 与真实中性（sentiment=0 但非 degraded）区分：真实中性 llmDir=null → effectNote 含「中性」
+  const neutral = llmSentimentBlock(mk({ sentiment: 0 }), { score: 70, tradeDate: '2026-09-30' });
+  assert.notEqual(neutral.degraded, true, '真实中性不带 degraded 标记');
+  // stale 防伪仍生效：degraded 但 asOfDate 不符 → null（昨天的失败档不冒充今天）
+  assert.equal(llmSentimentBlock(deg, { score: 88.5, tradeDate: '2026-09-29' }), null);
+});
