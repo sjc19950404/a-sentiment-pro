@@ -107,25 +107,26 @@ if (!FORCE) {
 const weekStart = WEEK_START || (TYPE === 'weekly' ? isoWeekStart(input.tradeDate) : null);
 
 const opts = { generatedAt: new Date().toISOString(), generatedBy: 'ci' };
-if (WITH_SIM) {
+// 任务一（盘前观察清单）**不受 WITH_SIM 门控**（2026-10-24 修复）：它只读
+//   signals/pain + paper_universe 两个既有本地档，零网络零配额；而 WITH_SIM 关时
+//   （Pi 默认）watchlist 整段缺席 → 企微盘前消息「最高连板 —」、无观察清单，
+//   9:00 推送实质 degraded。模拟选股段（intraday/post_market 的 simulation_stock）
+//   仍受 WITH_SIM 门控——那个才吃行情配额。
+if (TYPE === 'pre_market') {
   // paper_universe.symbols 注入名称映射（code→{name, appearances}）；缺档则名称 null（不造数）
+  opts.watchlist = buildWatchlist(input, { nameMap: read('data/paper_universe.json')?.symbols ?? null });
+} else if (WITH_SIM) {
+  // 任务二：盘中候选池走实时口径（每轮全量重算，不沿用上轮）。
+  //   只认**北京当日**快照（tradeDate 对得上才用）——陈旧/缺席则空池如实报因，
+  //   绝不回落昨收口径（pain 连板池是任务一的语义，物理隔离）。
   const simOpts = { nameMap: read('data/paper_universe.json')?.symbols ?? null };
-  if (TYPE === 'pre_market') {
-    // 任务一（2026-10-09 拆分）：盘前只出观察清单（昨收口径、不含操作建议），
-    //   不携带模拟选股段/仓位建议——与任务二（盘中实时候选池）数据源物理隔离。
-    opts.watchlist = buildWatchlist(input, simOpts);
-  } else if (TYPE === 'intraday') {
-    // 任务二：盘中候选池走实时口径（每轮全量重算，不沿用上轮）。
-    //   只认**北京当日**快照（tradeDate 对得上才用）——陈旧/缺席则空池如实报因，
-    //   绝不回落昨收口径（pain 连板池是任务一的语义，物理隔离）。
+  if (TYPE === 'intraday') {
     const intra = read('data/intraday.json');
     simOpts.poolMode = 'realtime';
     simOpts.intradaySnapshot = intra && intra.tradeDate === bjDate(new Date()) ? intra : null;
     simOpts.tradeDate = bjDate(new Date());
-    opts.simulationStock = buildSimulationStock(input, simOpts);
-  } else {
-    opts.simulationStock = buildSimulationStock(input, simOpts);
   }
+  opts.simulationStock = buildSimulationStock(input, simOpts);
 }
 const generators = {
   pre_market: () => generatePreMarket(input, opts),
@@ -147,11 +148,11 @@ if (errs.length) {
   for (const e of errs) console.error(`  ${e.path}: ${e.expect}（got ${e.got}）${e.hint || ''}`);
   process.exit(1);
 }
-if (WITH_SIM) {
-  if (TYPE === 'pre_market') report.missing_notes.push(WATCHLIST_MISSING_NOTE);
-  else if (TYPE === 'intraday') report.missing_notes.push(INTRADAY_SIM_MISSING_NOTE);
-  else report.missing_notes.push(SIM_MISSING_NOTE);
-}
+// 缺失披露：盘前观察清单的已知缺口（隔夜资讯/个股级封单额）随清单本身如实披露——
+//   2026-10-24 起清单不受 WITH_SIM 门控，披露也不再跟着门控走。
+if (TYPE === 'pre_market') report.missing_notes.push(WATCHLIST_MISSING_NOTE);
+else if (WITH_SIM && TYPE === 'intraday') report.missing_notes.push(INTRADAY_SIM_MISSING_NOTE);
+else if (WITH_SIM) report.missing_notes.push(SIM_MISSING_NOTE);
 
 const file = `${TYPE}_${report.date}.json`;
 mkdirSync(OUT_DIR, { recursive: true });
