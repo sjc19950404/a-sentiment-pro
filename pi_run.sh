@@ -32,6 +32,10 @@ cd "$REPO_DIR" || { alert "pi_run: 仓库不存在 $REPO_DIR"; exit 1; }
 # 干净起点：拉最新代码并硬重置（丢弃本地旧 data/，已推送故无损失；.env/dist/node_modules 因 gitignore 保留）
 git fetch origin main 2>/dev/null || log "git fetch 失败，用本地数据继续"
 git reset --hard origin/main 2>/dev/null || { log "reset 失败"; alert "pi_run: reset 失败"; exit 1; }
+# 执行位自愈：reset --hard 按 git 模式落盘，历史上出现过仓库内脚本执行位丢失
+# （100644）→ cron 直接调用 pi_run.sh 全部 Permission denied → 调度全线停摆的事故。
+# 这里在每次重置后显式补执行位，不依赖仓库里模式是否正确。
+chmod +x "$REPO_DIR/pi_run.sh" "$REPO_DIR/scripts/pi_build.sh" "$REPO_DIR/scripts/pi_push.sh" 2>/dev/null || true
 
 TODAY=$(date +%F)
 
