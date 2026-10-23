@@ -150,6 +150,30 @@ function makeBrief(day, prevDay, allDays) {
 const briefs = {};
 days.forEach((d, i) => { briefs[d.trade_date] = makeBrief(d, days[i - 1], days); });
 
+// ── 6.1 把「八、舆情参考（LLM 试点）」并入最新一期简报 ──
+// 前端 S3 只读 pageData.briefs（makeBrief 只产出 一~五，且不读 signals），
+// 而 LLM 舆情只在 signals-latest.json.dailyReport.sections[八] 里。
+// 这里把该节文字化后贴到对应交易日的简报末尾，使舆情参考在网页端可见。
+try {
+  const sigPath = path.join(ROOT, 'data', 'signals-latest.json');
+  if (existsSync(sigPath)) {
+    const sig = JSON.parse(readFileSync(sigPath, 'utf8'));
+    const dr = sig.dailyReport || {};
+    const secs = dr.sections || [];
+    const llm = secs.find((s) => s && s.id === 'llm') || secs.find((s) => (s.title || '').includes('舆情'));
+    const dDate = dr.date || sig.date;
+    if (dDate && briefs[dDate] != null && llm) {
+      let body;
+      if (llm.missing || !llm.points || !llm.points.length) {
+        body = (llm.missingReason || '未生成（需收盘后跑 scripts/fetch_llm_sentiment.mjs；未跑 ≠ 舆情中性）');
+      } else {
+        body = llm.points.map((p) => p.text).join('；');
+      }
+      briefs[dDate] += `\n八、舆情参考（LLM 试点）：${body}`;
+    }
+  }
+} catch (e) { /* 舆情段缺失不影响主构建 */ }
+
 // ── 7. signals.industry（行业 5 日动量，移植自老 build.js——口径不变）──
 function addIndustryMomentum() {
   if (days.length < 5) return 0;
