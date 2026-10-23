@@ -97,3 +97,9 @@ shell_hunter*.py
 ~shell_hunter.py
 *.bak
 *~
+
+# 全市场日K分片（2026-10-24 移出版本控制）：163MB/5554 片的本地缓存，可由
+# ui/fetch_kline_all.mjs 随时重建（--init 全量 / 默认增量），丢失零损失；
+# 且盘中/盘后每次 git reset --hard 都会把「已跟踪的增量」回滚掉——这正是
+# 分片停在 10-20 的根因。不入库后本地缓存才能持续累积。生成方式见 ui/README.md。
+ui/kline/
