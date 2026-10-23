@@ -73,7 +73,7 @@ step "split_archive (切片重建)"; node scripts/split_archive.mjs || echo "⚠
 # 20.8 纸面交易"最后一公里"（V5.3 P2）：每日结算（盯市 + T+1 解冻 + -8% 硬止损）+ 连板断板清仓
 #   + 自动建仓（主线选股 topN@10%，仅当情绪档位允许新建且 regime 非盖帽）。落盘 data/paper/account.json
 #   与 review-latest.json，供 build_ai_report 复盘段读取。缺档/失败均容错，不阻塞 EOD。
-step "paper_daily";          node scripts/paper_daily.mjs || echo "⚠ 纸面交易自动步失败（不阻断，下轮自愈）"
+step "paper_daily";          node scripts/paper_daily.mjs "$@" || echo "⚠ 纸面交易自动步失败（不阻断，下轮自愈）"
 # 21 渲染 UI → dist/（供隧道服务；dist/ 已 gitignore，不参与推送）
 step "build_ui";             node scripts/build_ui.mjs || { echo "⚠ build_ui 失败，但数据已落盘"; }
 # 21/22 盘后 + 周报

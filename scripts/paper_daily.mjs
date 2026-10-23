@@ -15,6 +15,11 @@
  *
  * 环境变量（可选覆盖）：PAPER_AUTO_TOPN（默认 3）、PAPER_AUTO_PCT（默认 0.10）、
  *   PAPER_AUTO_RESPECT_REGIME（默认 1：受 regime 盖帽约束；置 0 仅看情绪档位）。
+ *
+ * 命令行参数：
+ *   --force-trade  忽略情绪档位 / regime 双闸，强行按 topN @ pct 建仓。
+ *     仅用于「过热顶部强行追高」的反向压力测试（Stress Test），非真实交易信号；
+ *     被强制的建仓会在持仓上打 stress 标，复盘段可区分。正常 EOD 请勿带此参数。
  */
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -33,6 +38,7 @@ const TOP_N = Math.max(1, Math.floor(Number(process.env.PAPER_AUTO_TOPN) || 3));
 const PER_POS_PCT = Number(process.env.PAPER_AUTO_PCT) || 0.10;
 const RESPECT_REGIME = (process.env.PAPER_AUTO_RESPECT_REGIME ?? '1') !== '0';
 const RESTRICTIVE_REGIME = new Set(['shift', 'ebb', 'ice']);
+const FORCE_TRADE = process.argv.includes('--force-trade');
 const r2 = (x) => (Number.isFinite(+x) ? Math.round(+x * 100) / 100 : null);
 const ts = () => new Date().toTimeString().slice(0, 8);
 const step = (m) => console.log(`── ${ts()} ${m} ──`);
@@ -51,7 +57,11 @@ console.log(`[paper-daily] 交易日 ${date}｜情绪分 ${emotionScore ?? '缺�
 // ── 2. 载入 / 初始化账户 ──
 let acct;
 if (existsSync(fileURLToPath(ACCOUNT_FILE))) {
-  try { acct = importAccount(readFileSync(fileURLToPath(ACCOUNT_FILE), 'utf8')); }
+  try {
+    const imp = importAccount(readFileSync(fileURLToPath(ACCOUNT_FILE), 'utf8'));
+    if (!imp.ok) throw new Error(imp.error || '账户校验失败');
+    acct = imp.account;
+  }
   catch (e) { console.error(`[paper-daily] 账户读档失败，重建空账户：${e.message}`); acct = emptyAccount(1000000, date); }
 } else {
   acct = emptyAccount(1000000, date);
@@ -61,7 +71,7 @@ if (existsSync(fileURLToPath(ACCOUNT_FILE))) {
 // ── 3. 每日结算：盯市 + T+1 解冻 + 扫描 -8% 硬止损 ──
 step(`结算 ${date}`);
 const quotes = quotesFromDay(day);
-acct = settleDay(acct, date, quotes);
+acct = settleDay(acct, date, quotes).account;
 {
   const s = accountStats(acct);
   console.log(`  净值 ${r2(s.total)} 元（现金 ${r2(s.cash)}，市值 ${r2(s.marketValue)}），持仓 ${Object.keys(acct.positions || {}).length} 只`);
@@ -90,30 +100,38 @@ if (broken.length) {
   console.log('  无断板持仓');
 }
 
-// ── 5. 自动建仓：情绪档位允许新建 且 未触发 regime 盖帽 ──
-step(`自动建仓（主线选股 top${TOP_N} @ ${Math.round(PER_POS_PCT * 100)}%）`);
+// ── 5. 自动建仓：情绪档位允许新建 且 未触发 regime 盖帽（--force-trade 可绕过双闸）──
+step(`自动建仓（主线选股 top${TOP_N} @ ${Math.round(PER_POS_PCT * 100)}%）${FORCE_TRADE ? '  [强制测试模式]' : ''}`);
 let regimeKey = null;
 try { regimeKey = JSON.parse(readFileSync('data/signals-latest.json', 'utf8'))?.dailyReport?.tag?.key || null; }
 catch { console.warn('  [paper-daily] 读 signals 失败，仅按情绪档位判断'); }
 const tier = marketTier(emotionScore);
 const regimeBlocked = RESPECT_REGIME && regimeKey && RESTRICTIVE_REGIME.has(regimeKey);
-if (!tier || !tier.allowNew) {
-  console.log(`  情绪档位不允新建（${tier ? tier.label : '情绪分缺失'}）→ 跳过自动建仓`);
-} else if (regimeBlocked) {
-  console.log(`  regime=${regimeKey} 风控盖帽（假繁荣/退潮）→ 跳过自动建仓（与系统纪律一致）`);
+if (!tier) {
+  console.log('  情绪分缺失 → 跳过自动建仓');
+} else if ((!tier.allowNew || regimeBlocked) && !FORCE_TRADE) {
+  if (!tier.allowNew) console.log(`  情绪档位不允新建（${tier.label}）→ 跳过自动建仓`);
+  else console.log(`  regime=${regimeKey} 风控盖帽（假繁荣/退潮）→ 跳过自动建仓（与系统纪律一致）`);
 } else {
+  const bypassed = FORCE_TRADE && (!tier.allowNew || regimeBlocked);
+  if (bypassed) {
+    console.log(`  ⚠ 强制测试模式（--force-trade）：忽略熔断（情绪档=${tier.label}/regime=${regimeKey || '无'}），强行建仓——仅反向压力测试，非真实信号`);
+  }
   const picks = (recommendPicks(day, { topN: TOP_N, emotionScore }).picks || [])
     .filter((p) => p && p.code && quotes[String(p.code)]); // 仅选有当日行情者（否则 batchSubmit 会 NO_QUOTE 拦截）
   const items = picks.slice(0, TOP_N).map((p) => ({
     code: String(p.code), pct: PER_POS_PCT,
-    reason: `自动建仓（主线选股候选 ${p.name || p.code}）`,
+    reason: (bypassed ? '【压力测试·熔断绕过】' : '') + `自动建仓（主线选股候选 ${p.name || p.code}）`,
   }));
   if (!items.length) {
     console.log('  无合格选股（候选均缺行情或被判不推荐）');
   } else {
     const res = batchSubmit(acct, items, day, { date });
     acct = res.next;
-    console.log(`  提交 ${res.submitted.length} 笔 / 拦截 ${res.blocked.length} 笔：${res.submitted.map((x) => x.code).join(',') || '无'}`);
+    if (bypassed) {
+      for (const s of res.submitted) { const pos = acct.positions && acct.positions[String(s.code)]; if (pos) pos.stress = true; }
+    }
+    console.log(`  提交 ${res.submitted.length} 笔 / 拦截 ${res.blocked.length} 笔：${res.submitted.map((x) => x.code).join(',') || '无'}${bypassed ? '（含压力测试仓）' : ''}`);
     res.blocked.forEach((b) => console.log(`    拦截 ${b.code}：${b.reason}`));
   }
 }

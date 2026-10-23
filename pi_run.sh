@@ -59,7 +59,7 @@ case "$MODE" in
     bash scripts/pi_push.sh
     ;;
   eod|supplement)
-    if ! bash scripts/pi_build.sh; then
+    if ! bash scripts/pi_build.sh "${@:2}"; then
       log "pi_build 失败（守卫拦截），不推送"; alert "pi_run: 盘后管道守卫失败，未推送"; exit 1
     fi
     bash scripts/pi_push.sh || { log "data 推送失败"; alert "pi_run: data 推送失败"; }
