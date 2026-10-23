@@ -2971,12 +2971,19 @@ function renderDailyReport(rep, errMsg) {
 
   box.hidden = false;
   box.className = `report-panel rp-${tagTone}`;
+  // 展示层合并（2026-10-24）：基础仓位 × 风控帽 冲突时，顶部红字横幅"最终执行仓位"，一眼知今天不能买
+  const rec = rep.positionReconcile;
+  const recBanner = (rec && rec.conflict)
+    ? `<div class="rp-reconcile">⚠ 最终执行仓位：<b>${esc(rec.finalRange)}</b>${rec.force ? '（强制降仓）' : ''}`
+      + ` — 情绪分 ${esc(String(rec.score))} 基础建议 ${esc(rec.baseRange)}，但触发 regime=${esc(rec.cap.key)} 风控帽，系统强制降仓。只减仓不新建。</div>`
+    : '';
   box.innerHTML = `<details class="rp-fold" open>`
     + `<summary><b>每日日报</b>`
     + `<span class="rp-chip ${esc(tagTone)}">${esc((rep.tag && rep.tag.label) || '—')}</span>`
     + `<span class="muted rp-sum">${esc(rep.date || '')}${missingN ? ` · ${missingN} 个区块缺数据` : ''}</span>`
     + `</summary>`
     + `<div class="rp-body">`
+    + (recBanner ? `<div class="rp-reconcile-wrap">${recBanner}</div>` : '')
     + `<div class="rp-headline">${esc(rep.headline || '')}</div>`
     + caveats
     + `<div class="rp-secs">${secHtml}</div>`

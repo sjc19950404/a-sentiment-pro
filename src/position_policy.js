@@ -109,3 +109,61 @@ export function positionLine(key) {
 
 export const DISCLAIMER = '仓位区间由市场状态（regime 档位）映射得出，是风控参考上限而非买卖信号；'
   + '情绪打分与阈值信号仍是交易主路径，本层只做仓位帽子。不构成投资建议。';
+
+// ── 展示层合并（2026-10-24 加；消除"研判简报喊进攻 / 日报叫降仓"的认知冲突）──
+//   根因：两份报告此前从**不同 regime 源**取值——研判简报读 dual_track.day.regime，
+//   日报用 regime.js 实时 classifyRegime——同一天可能判出 climax(60~100) 与 shift(0~30)，
+//   读者看到的就是"精神分裂"。合并后统一以**日报权威 regime**（signals.dailyReport.tag.key）
+//   为风控帽，并把"情绪基础仓位（由情绪分翻译）"显式摆出来，最终执行以帽为准。
+//
+//   注意：本段只做"展示合成"，不引入任何新风控规则。基础仓位阈值与 POSITION_BANDS
+//   档位对齐（情绪极高位↔进攻档），纯翻译，便于"情绪喊冲 vs 风控盖帽"一眼对照。
+
+/** 情绪绝对水位 → 与 POSITION_BANDS 同尺度的"基础仓位"（仅作 regime 帽的对照基准）。 */
+export function scoreToBand(score) {
+  if (score == null) return null;
+  const s = Number(score);
+  if (!Number.isFinite(s)) return null;
+  if (s >= 80) return { key: 'base_attack', minPos: 0.6, maxPos: 1.0, label: '进攻（情绪极高位）' };
+  if (s >= 65) return { key: 'base_bull', minPos: 0.3, maxPos: 0.6, label: '偏多' };
+  if (s >= 50) return { key: 'base_neutral', minPos: 0.3, maxPos: 0.5, label: '中性' };
+  return { key: 'base_defend', minPos: 0.0, maxPos: 0.3, label: '防守' };
+}
+
+/**
+ * 合成"基础仓位 × 风控帽"——展示层合并核心纯函数。
+ * @returns {null|object} null = 任一口径缺失（显式化，不猜）；否则含 base/cap/force/conflict/finalRange。
+ *   conflict = 情绪基础仓位上限 > 风控帽上限（情绪喊冲、风控叫停）；finalRange 恒等于 capRange。
+ */
+export function reconcilePosition({ score, regimeKey }) {
+  const base = scoreToBand(score);
+  const cap = bandFor(regimeKey);
+  if (!base || !cap) return null;
+  return {
+    score: score == null ? null : Math.round(Number(score) * 10) / 10,
+    base, baseRange: formatBand(base),
+    cap, capRange: formatBand(cap),
+    force: cap.force === true,
+    // 冲突 = 情绪喊冲（进攻/偏多，建议 ≥30%）却遇风控盖帽（帽 ≤30% 或强制降仓）。
+    //   专指"精神分裂"场景；低分(防守)遇 risk-off 帽不算冲突（两者都叫防守）。
+    conflict: (base.key === 'base_attack' || base.key === 'base_bull') && (cap.maxPos <= 0.3),
+    finalRange: formatBand(cap),
+  };
+}
+
+/**
+ * 合成叙述（纯文本，headline / 研报要点 / 企微文案复用同一句，避免口径漂移）。
+ * @param {object} rec reconcilePosition 返回值（null → 返回 null）
+ * @param {{ regLabel?:string, divergence?:boolean }} ctx regime 中文标签、是否宽度背离
+ */
+export function positionNarrative(rec, { regLabel = null, divergence = false } = {}) {
+  if (!rec) return null;
+  const state = regLabel || rec.cap.label;
+  const warn = rec.force || divergence;
+  if (rec.conflict) {
+    return `市场状态：${state}${warn ? '（假繁荣预警）' : ''}｜最终执行仓位：${rec.finalRange}。`
+      + `当前情绪分 ${rec.score}（历史极高位），基础模型建议 ${rec.baseRange}，但触发 regime=${rec.cap.key} 风控帽，系统强制降仓。`
+      + `交易纪律：只减仓不新建。`;
+  }
+  return `市场状态：${state}｜最终执行仓位：${rec.finalRange}（情绪分 ${rec.score} 与风控帽同向，无需降仓）。`;
+}

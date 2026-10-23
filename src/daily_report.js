@@ -19,7 +19,7 @@
 //   • **不构成投资建议**：措辞只描述状态与风险，不给买卖动作。
 
 import { classifyRegime, detectDivergence, num } from './regime.js';
-import { positionLine, DISCLAIMER as POSITION_DISCLAIMER } from './position_policy.js';
+import { positionLine, positionNarrative, reconcilePosition, DISCLAIMER as POSITION_DISCLAIMER } from './position_policy.js';
 
 // 显示层舍入（唯一出处；不改动源数据）
 export const DISPLAY = { pct1: 1, score1: 1 };
@@ -65,11 +65,15 @@ export function buildDailyReport(signals = {}) {
       breadthVerdict: S.breadth && S.breadth.verdict,
     });
 
+  // ── 展示层合并（2026-10-24）：情绪基础仓位 × regime 风控帽 合成单一结论 ──
+  //   统一以本报告的权威 regime（regFull.key）为风控帽；最终执行以帽为准。
+  const posRec = reconcilePosition({ score: latest.value, regimeKey: regFull.key });
+
   const sections = [];
   const caveats = [];
 
   // ── 节 1：市场状态 ──────────────────────────────────────────────────────
-  sections.push(buildRegimeSection(regFull, div));
+  sections.push(buildRegimeSection(regFull, div, posRec));
 
   // ── 节 2：情绪与分位 ────────────────────────────────────────────────────
   sections.push(buildSentimentSection(latest, regFull));
@@ -113,7 +117,9 @@ export function buildDailyReport(signals = {}) {
   return {
     date,
     // 一句话结论（供首屏大字）
-    headline: buildHeadline(regFull, div, date, missingCount),
+    headline: buildHeadline(regFull, div, date, missingCount, posRec),
+    // 展示层合并：基础仓位 × 风控帽 合成结果，前端 renderDailyReport 据此渲染红字横幅
+    positionReconcile: posRec,
     tag: { key: regFull.key, label: regFull.label, level: regFull.level, dir: regFull.dir, confidence: regFull.confidence },
     divergence: div,
     sections,
@@ -139,7 +145,7 @@ export function buildDailyReport(signals = {}) {
 
 // ── 节构造器 ──────────────────────────────────────────────────────────────
 
-function buildRegimeSection(reg, div) {
+function buildRegimeSection(reg, div, posRec) {
   const pts = [];
   if (reg.key === 'unknown') {
     return {
@@ -154,6 +160,18 @@ function buildRegimeSection(reg, div) {
   pts.push({ text: reg.detail, kind: 'main' });
   (reg.evidence || []).forEach((e) => pts.push({ text: `${e.metric}：${e.reading}`, kind: 'evidence' }));
   if (reg.caution) pts.push({ text: `⚠ ${reg.caution}`, kind: 'caution' });
+  // 展示层合并（2026-10-24）：把"情绪基础仓位 × regime 风控帽"显式摆出来，消除两套镜头冲突。
+  if (posRec) {
+    if (posRec.conflict) {
+      pts.push({ text: positionNarrative(posRec, { regLabel: reg.label, divergence: div.diverged }), kind: 'caution' });
+    } else {
+      pts.push({ text: positionNarrative(posRec, { regLabel: reg.label }), kind: 'main' });
+    }
+    pts.push({
+      text: `基础仓位（情绪分 ${posRec.score}）：${posRec.baseRange}｜风控帽（regime=${posRec.cap.key}）：${posRec.capRange}｜最终执行：${posRec.finalRange}${posRec.force ? '（强制）' : ''}`,
+      kind: 'evidence',
+    });
+  }
   return {
     id: 'regime', title: '一、市场状态判定',
     level: reg.caution ? 'warn' : 'info',
@@ -398,7 +416,7 @@ function buildLlmSection(llm) {
 }
 
 // ── 首屏一句话结论 ────────────────────────────────────────────────────────
-function buildHeadline(reg, div, date, missingCount) {
+function buildHeadline(reg, div, date, missingCount, posRec) {
   const d = date ? `${date} ` : '';
   if (reg.key === 'unknown') return `${d}数据不足，无法给出市场状态判断。`;
   // V5.3 简报格式：【市场状态判定】状态｜推荐仓位区间，情绪得分在第二节展开
@@ -408,5 +426,11 @@ function buildHeadline(reg, div, date, missingCount) {
   if (reg.confidence === 'low') s += '（判据不全，仅供参考）';
   if (div.diverged) s += `；${div.label}`;
   if (missingCount > 0) s += `（${missingCount} 个区块缺数据）`;
+  // 展示层合并（2026-10-24）：基础仓位与风控帽冲突时，首屏即说清"最终执行仓位"，
+  // 否则读者仍会在第二节看到情绪极高位叙事、却在此处看到 0~30%，回到"精神分裂"。
+  if (posRec && posRec.conflict) {
+    s = `${d}市场状态：${reg.label}${posRec.force ? '（假繁荣预警）' : ''}｜最终执行仓位：${posRec.finalRange}。`
+      + `情绪分 ${posRec.score}（历史极高位）基础建议 ${posRec.baseRange}，但触发 regime=${posRec.cap.key} 风控帽，强制降仓；交易纪律：只减仓不新建。`;
+  }
   return s;
 }

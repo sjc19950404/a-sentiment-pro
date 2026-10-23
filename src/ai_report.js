@@ -23,6 +23,7 @@ import { todayBeijing } from './util.js';
 import { bjDate } from './time.js';
 import { validateExternal } from './validate_snapshot.js';
 import { QUOTE_STATE } from './global.js';
+import { reconcilePosition } from './position_policy.js';
 
 export const SCHEMA_VERSION = '1.0';
 export const REPORT_TYPES = ['pre_market', 'intraday', 'post_market', 'weekly'];
@@ -174,11 +175,17 @@ function buildRegime(input) {
   if (!day) return null;
   const range = (pick(input, 'signals.dailyReport.sections') || [])
     .find((x) => x && x.id === 'regime' && x.position && x.position.range);
+  // 展示层合并（2026-10-24）：cap 以日报权威 regime（signals.dailyReport.tag.key）为准，
+  //   消除"研判简报读 dual_track.day.regime / 日报用 classifyRegime"两套源打架；
+  //   基础仓位由情绪分翻译，最终执行以帽为准。纸面 A/B/C 剧本仍用 day.regime（执行轨纪律）。
+  const capKey = pick(input, 'signals.dailyReport.tag.key') || day.regime?.key || null;
+  const posRec = reconcilePosition({ score: day.score, regimeKey: capKey });
   return {
     key: day.regime?.key ?? null,
     label: day.regime?.label ?? null,
     cap: Number.isFinite(day.regime?.cap) ? day.regime.cap : null,
     position_range: range ? range.position.range : null,
+    positionReconcile: posRec,
   };
 }
 
