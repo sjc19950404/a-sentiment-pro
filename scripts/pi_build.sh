@@ -70,6 +70,11 @@ step "daily_fetch (ztpool入库)"; node scripts/daily_fetch.mjs || echo "⚠ ztp
 #   切片，保证落盘/推送的 signals 永远是当日 dualTrack（与 CI daily.yml 同源、幂等、纯本地）。
 #   失败不阻断——既有切片仍在，仅当次缺双轨披露，下轮自愈。
 step "split_archive (切片重建)"; node scripts/split_archive.mjs || echo "⚠ 切片重建失败（不阻断，已有切片在）"
+# 20.75 晚间公告排雷（V5.3 P2）：自动建仓前先扫描连板梯队/标的池公告，让 GLM 判定重大利空，
+#   产出 data/llm_risk_blacklist.json；paper_daily 建仓前据此拒买（正向封禁，空表=fail-open）。
+#   fail-open：缺 LLM 配置 → 退出非 0 不落档（本次不封禁）；已配置但无公告源/调用失败 → 空表。
+#   两种情形均不阻断 EOD（不封禁 = 不误伤正常交易，与 fetch_llm_sentiment 同容错纪律）。
+step "llm_risk_scan";        node scripts/llm_risk_scan.mjs || echo "⚠ 排雷扫描未落档（缺配置/无公告源/调用失败），本次不封禁（fail-open）"
 # 20.8 纸面交易"最后一公里"（V5.3 P2）：每日结算（盯市 + T+1 解冻 + -8% 硬止损）+ 连板断板清仓
 #   + 自动建仓（主线选股 topN@10%，仅当情绪档位允许新建且 regime 非盖帽）。落盘 data/paper/account.json
 #   与 review-latest.json，供 build_ai_report 复盘段读取。缺档/失败均容错，不阻塞 EOD。

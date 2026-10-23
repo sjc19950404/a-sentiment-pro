@@ -31,6 +31,7 @@ import {
 } from '../src/paper.js';
 import { recommendPicks, marketTier } from '../src/picks.js';
 import { reviewAccount } from '../src/paper_review.js';
+import { riskBlacklistReason } from '../src/risk_blacklist.js';
 
 const ACCOUNT_FILE = new URL('../data/paper/account.json', import.meta.url);
 const REVIEW_FILE = new URL('../data/paper/review-latest.json', import.meta.url);
@@ -123,10 +124,23 @@ if (!tier) {
     code: String(p.code), pct: PER_POS_PCT,
     reason: (bypassed ? '【压力测试·熔断绕过】' : '') + `自动建仓（主线选股候选 ${p.name || p.code}）`,
   }));
-  if (!items.length) {
-    console.log('  无合格选股（候选均缺行情或被判不推荐）');
+  // 排雷守卫（V5.3 P2）：自动建仓前剔除晚间公告排雷黑名单命中者（正向封禁，fail-open）。
+  //   黑名单缺失/为空 = 不剔除（绝不误伤正常候选）；立案/ST/减持属真实基本面风险，
+  //   即便 --force-trade 压力测试也不绕过（与 regime 熔断是两回事）。
+  const blacklisted = [];
+  const safeItems = [];
+  for (const it of items) {
+    const r = riskBlacklistReason(it.code);
+    if (r) blacklisted.push({ code: it.code, reason: r });
+    else safeItems.push(it);
+  }
+  if (blacklisted.length) {
+    console.log(`  ⛔ 排雷黑名单拦截 ${blacklisted.length} 只（不建仓）：${blacklisted.map((b) => `${b.code}(${b.reason})`).join('、')}`);
+  }
+  if (!safeItems.length) {
+    console.log('  无合格选股（候选均缺行情/不推荐或命中排雷黑名单）');
   } else {
-    const res = batchSubmit(acct, items, day, { date });
+    const res = batchSubmit(acct, safeItems, day, { date });
     acct = res.next;
     if (bypassed) {
       for (const s of res.submitted) { const pos = acct.positions && acct.positions[String(s.code)]; if (pos) pos.stress = true; }
