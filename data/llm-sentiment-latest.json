@@ -1,56 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-10-16",
- "generatedAt": "2026-10-17T00:01:14.278+08:00",
- "model": "Qwen/Qwen2.5-7B-Instruct",
- "sentiment": 0.4,
- "confidence": 0.7,
- "reason": "市场情绪偏向积极，涨停数量较多，且有多只业绩增长股表现强势",
+ "asOfDate": "2026-10-23",
+ "generatedAt": "2026-10-24T04:57:50.200+08:00",
+ "model": "glm-4-flash",
+ "sentiment": 0.9,
+ "confidence": 0.8,
+ "reason": "市场整体情绪积极，涨停家数远超跌停家数，强势股表现活跃，题材动量多，且新晋题材表现强劲。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "业绩线",
+   "target": "恩捷股份",
    "tone": "positive",
-   "note": "业绩线延续，多只业绩增长股表现强势"
+   "note": "业绩扭亏，固态电池材料概念助力股价上涨。"
   },
   {
    "type": "行业催化",
-   "target": "低空经济",
+   "target": "物理AI",
    "tone": "positive",
-   "note": "低空经济题材梯队中有多只个股涨停"
+   "note": "新晋题材物理AI表现强劲，推动市场情绪。"
   },
   {
    "type": "行业催化",
-   "target": "机器人",
+   "target": "汽车电子",
    "tone": "positive",
-   "note": "机器人题材梯队中有多只个股涨停"
+   "note": "汽车电子题材持续活跃，带动相关个股上涨。"
   },
   {
    "type": "行业催化",
-   "target": "汽车零部件",
+   "target": "机器人零部件",
    "tone": "positive",
-   "note": "汽车零部件题材梯队中有多只个股涨停"
+   "note": "机器人零部件题材新晋，市场关注度提升。"
   },
   {
    "type": "行业催化",
-   "target": "无人机",
+   "target": "AI算力",
    "tone": "positive",
-   "note": "无人机题材梯队中有多只个股涨停"
+   "note": "AI算力题材延续，支撑市场情绪。"
+  },
+  {
+   "type": "行业催化",
+   "target": "新能源客车",
+   "tone": "positive",
+   "note": "新能源客车题材推动曙光股份等个股上涨。"
   },
   {
    "type": "行业催化",
    "target": "军工",
    "tone": "positive",
-   "note": "军工题材梯队中有多只个股涨停"
+   "note": "军工题材助力平安电工等个股表现。"
+  },
+  {
+   "type": "行业催化",
+   "target": "AI安全",
+   "tone": "positive",
+   "note": "AI安全题材推动启明星辰等个股上涨。"
   }
  ],
  "inputDigest": {
-  "themes": 54,
+  "themes": 70,
   "hotListed": 15,
-  "ztCount": 61,
-  "emotionValue": 69.8,
-  "painVerdict": "多空拉锯（昨涨停今日翻绿 54%、高位板晋级失败 89%，追高盈亏各半）"
+  "ztCount": 82,
+  "emotionValue": 88.5,
+  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 33%、高位板晋级失败 67%，赚钱效应占优）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }
