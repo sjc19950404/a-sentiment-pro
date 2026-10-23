@@ -53,6 +53,11 @@ gate "check_contract"        "node scripts/check_contract.mjs"
 step "fetch_crosscheck";     node scripts/fetch_crosscheck.mjs || true
 # 19 K线分片增量
 step "kline_all";            node ui/fetch_kline_all.mjs || true
+# 19.5 涨停池历史入库（2026-10-23 修复：Pi 迁移漏步——ztpool_history 自 10-16 断更，
+#   老龙头 ≥10 交易日冷却链断裂、Daily Data Health 门禁常红、窗口连板计算无历史可用）。
+#   daily_fetch 自带交易日闸门（非交易日自动跳过）、幂等入库与端到端断言，失败自行
+#   企微告警；此处刻意容错——archive 已落盘，涨停池当天可人工补跑，不该阻断主管道。
+step "daily_fetch (ztpool入库)"; node scripts/daily_fetch.mjs || echo "⚠ ztpool 入库失败（已告警），可当日人工补跑：node scripts/daily_fetch.mjs"
 # 20 渲染 UI → dist/（供隧道服务；dist/ 已 gitignore，不参与推送）
 step "build_ui";             node scripts/build_ui.mjs || { echo "⚠ build_ui 失败，但数据已落盘"; }
 # 21/22 盘后 + 周报
