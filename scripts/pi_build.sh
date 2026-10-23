@@ -58,7 +58,14 @@ step "kline_all";            node ui/fetch_kline_all.mjs || true
 #   daily_fetch 自带交易日闸门（非交易日自动跳过）、幂等入库与端到端断言，失败自行
 #   企微告警；此处刻意容错——archive 已落盘，涨停池当天可人工补跑，不该阻断主管道。
 step "daily_fetch (ztpool入库)"; node scripts/daily_fetch.mjs || echo "⚠ ztpool 入库失败（已告警），可当日人工补跑：node scripts/daily_fetch.mjs"
-# 20 渲染 UI → dist/（供隧道服务；dist/ 已 gitignore，不参与推送）
+# 20.7 切片重建（确定性安全网，2026-10-24 加）：pipeline(early) 写 signals-latest 时账本
+#   必为昨日（stale 守卫如实置 null 并告警），依赖 pipeline(main) 前的 dual_track 补新鲜账本；
+#   但那晚 push 瞬断会让"已写盘的新鲜账本"被 git reset --hard 回滚到 origin/main 旧值，下次
+#   盘前时段 signals 就缺 dualTrack（10-23 即此）。这里固定用最终账本重建 signals-latest 与
+#   切片，保证落盘/推送的 signals 永远是当日 dualTrack（与 CI daily.yml 同源、幂等、纯本地）。
+#   失败不阻断——既有切片仍在，仅当次缺双轨披露，下轮自愈。
+step "split_archive (切片重建)"; node scripts/split_archive.mjs || echo "⚠ 切片重建失败（不阻断，已有切片在）"
+# 21 渲染 UI → dist/（供隧道服务；dist/ 已 gitignore，不参与推送）
 step "build_ui";             node scripts/build_ui.mjs || { echo "⚠ build_ui 失败，但数据已落盘"; }
 # 21/22 盘后 + 周报
 step "report post_market";   node scripts/build_ai_report.mjs --type post_market || true
