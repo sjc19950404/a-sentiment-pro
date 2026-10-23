@@ -1185,20 +1185,31 @@ function buildBrief(days, arc) {
     divs.length ? li(`<span class="bf-warn">背离校验：${divs.join('；')}</span>`) : '',
   ].join('') + cal('<b>席位分项（机构/北向/游资买卖总额）与锁仓统计覆盖的是「当日有席位明细的全部上榜个股」</b>，其只数多于「当日榜」家数（区间累计榜个股当日无独立榜、但其席位明细仍在披露名单内），故席位分项之和与「当日榜净买」不必相等，<b>二者不可相互校验</b>。上榜总成交、净买率、日度因子 s_net、近5日净额序列、新股扰动占比、主线题材资金占比全部只取「当日榜」口径（剔除「连续 N 个交易日累计」类区间榜——其买卖额与净额都是区间累计值，混入会把总成交放大数倍、净买率稀释至失真，并让日度因子把三天累计当成一天），分子分母一律同源；全量口径（含区间累计榜）仅在「完整参数」中单列作诊断，禁止与当日值混用。新股/独立标的＝上市首 5 日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部 3 席位集中度＝全市场前 3 席位买入 ÷ 全部买方买入（分子分母均已剔除「自然人/中小投资者/机构/其他自然人」这类投资者结构汇总行——它们非席位，混入会虚增买方总额并稀释集中度）；锁仓统计＝当日买方席位与近 2 日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比＝主线题材个股当日榜净买 ÷ 当日榜全榜净买。席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足 100% 时拆分为部分样本。');
 
-  // 3. 盈亏效应（涨跌停结构）——规格阈值：涨停≥50&跌停≤10强/30~49&11~20中等/<30或>20偏弱；封板率≥90优秀/80~90中等/<80弱；高标≥6板空间打开/3~5中等/≤2压制；2板以上≥15饱满/8~14一般/<8断层
-  const zt = s.zt_count, dt = s.dt_count, mlb = s.max_lb, lb2n = s.lb2_count;
+  // 3. 盈亏效应（涨跌停结构）——规格阈值：涨停≥50&跌停≤10强/30~49&11~20中等/<30或>20偏弱；封板率≥90优秀/80~90中等/<80弱；高标≥6板空间打开/3~5中等/≤2压制；连板梯队≥15饱满/8~14一般/<8断层
+  const zt = s.zt_count, dt = s.dt_count, mlb = s.max_lb;
+  // 连板梯队口径（2026-10-23 用户校准）：默认取**窗口口径** lbw2_count（近5交易日涨停
+  // 天数≥2 的只数，即公开复盘的「N天M板」梯队，含 5天3板/4天2板 等非连续连板）；
+  // 旧存档无窗口字段时回退连续口径 lb2_count。两口径并列展示，不混用。
+  const lbw2n = s.lbw2_count != null ? s.lbw2_count : s.lb2_count;
+  const lb2n = lbw2n;
   // 封板率/炸板率：新字段优先，旧存档回退到 zbl_pct（旧存档的 zbl_pct 存的是…见下）
   const sealPct = s.seal_pct != null ? s.seal_pct : s.zbl_pct;
   const zbPct = s.zb_pct != null ? s.zb_pct : (sealPct != null ? Math.round((100 - sealPct) * 10) / 10 : null);
   const deden = s.seal_den != null ? s.seal_den : ((s.zt_count != null && s.zb_count != null) ? s.zt_count + s.zb_count : null);
-  // 连板天梯：把 zt_lb（代码→连板数）按板数归组，让「最高板数 / 二板以上只数」可逐只核对。
+  // 连板天梯：按板数归组，让「最高板数 / 连板梯队只数」可逐只核对。
   // 数字一律现算，不写死任何具体板数或只数（口径守卫会拦硬编码）。
   //
   // 模板②要求「连板天梯用表格」——故这里产出真 <table class="bf-table">，
   // 而不是把结构摊平成一串竖线分隔的长文本（长文本既难扫读，导出后也无法逐列对齐）。
   // 表头/行内容全部由上面的 buckets 现算而来，未引入任何新指标。
+  //
+  // 口径（2026-10-23 用户校准）：默认按**窗口连板** zt_lbw（近5个交易日涨停天数，
+  // 即公开复盘「N天M板」的 M）归组——东财 lbc 只数连续板，「5天3板/4天2板」会被
+  // 记首板而少计三分之一；旧存档无 zt_lbw 时回退连续口径 zt_lb。逐只另标连续板数
+  // （·连N，与窗口板数不同才标），两口径并列、不混用。
   const ladderTbl = (() => {
-    const m = s.zt_lb;
+    const m = s.zt_lbw && typeof s.zt_lbw === 'object' ? s.zt_lbw : s.zt_lb;
+    const cont = s.zt_lb && typeof s.zt_lb === 'object' ? s.zt_lb : null;
     if (!m || typeof m !== 'object') return '';
     const buckets = {};
     for (const [code, n] of Object.entries(m)) {
@@ -1212,15 +1223,20 @@ function buildBrief(days, arc) {
       const arr = buckets[k];
       const shown = arr.slice(0, 8).map((c) => {
         const hit = (d.lhb || []).find((x) => x.code === c) || (d.hot || []).find((x) => x.code === c);
-        return hit && hit.name ? `${hit.name}(${c})` : c;
+        const nm = hit && hit.name ? `${hit.name}(${c})` : c;
+        const cv = cont ? Number(cont[c]) : null;
+        // 地天板徽章（2026-10-23 用户校准）：盘中触及跌停、收盘封回涨停——高标分歧
+        // 极大的形态，只看板数会把「健康换手」与「极端分歧」混为一谈。
+        const dtd = s.zt_dtd && s.zt_dtd[c] ? '<span class="bf-warn">·地天</span>' : '';
+        return (Number.isFinite(cv) && cv !== k ? `${nm}<span class="muted">·连${cv}</span>` : nm) + dtd;
       });
       return `<tr><td>${k} 板</td><td>${arr.length} 只</td><td>${shown.join('、')}${arr.length > 8 ? ` 等 ${arr.length} 只` : ''}</td></tr>`;
     }).join('');
     const tot = keys.reduce((a, k) => a + buckets[k].length, 0);
-    return `<table class="bf-table" data-caption="连板天梯（当日涨停股连板数映射 zt_lb，逐只可核）">`
-      + `<thead><tr><th>板数</th><th>只数</th><th>个股</th></tr></thead>`
+    return `<table class="bf-table" data-caption="连板天梯（近5交易日涨停天数口径 zt_lbw，逐只可核；·连N 为连续连板数，·地天 为盘中触及跌停后封回涨停）">`
+      + `<thead><tr><th>近5日板数</th><th>只数</th><th>个股（·连N＝连续连板数，·地天＝地天板）</th></tr></thead>`
       + `<tbody>${rows}</tbody>`
-      + `<tfoot><tr><td>合计</td><td>${tot} 只</td><td>2 板及以上梯队</td></tr></tfoot></table>`;
+      + `<tfoot><tr><td>合计</td><td>${tot} 只</td><td>连板梯队（N天M板口径）</td></tr></tfoot></table>`;
   })();
   let pnl = '';
   if (zt != null && dt != null) {
@@ -1232,9 +1248,9 @@ function buildBrief(days, arc) {
   const sec3 = [
     pnl ? li(pnl + `（昨日 ${ps.zt_count ?? '—'}/${ps.dt_count ?? '—'}）`) : '',
     sealPct != null ? li(`<b>封板率 ${sealPct}%</b>（收盘涨停 ${s.zt_count ?? '—'} ÷ 触板 ${deden ?? '—'}只，其中炸板 ${s.zb_count ?? '—'}只；炸板率 ${zbPct}%）。口径=盘中触及涨停的个股为分母，与各行情软件通用算法一致。${sealPct >= 90 ? '封板质量优秀' : sealPct >= 80 ? '封板质量中等' : '封板质量弱，接力意愿差'}`) : '',
-    mlb != null ? li(`连板高标 ${mlb} 板${mlb >= 6 ? '，空间打开' : mlb >= 3 ? '，空间中等' : '，空间压制，情绪偏弱'}；2板以上 ${lb2n ?? '—'} 只${lb2n != null ? (lb2n >= 15 ? '，梯队饱满' : lb2n >= 8 ? '，梯队一般' : '，梯队断层') : ''}<span class="muted">（取自当日 ${s.zt_count ?? '—'} 只涨停股的连板数映射 zt_lb，逐只可核；连板天梯见下方）</span>`) : '',
+    mlb != null ? li(`连板高标 ${mlb} 板${mlb >= 6 ? '，空间打开' : mlb >= 3 ? '，空间中等' : '，空间压制，情绪偏弱'}；连板梯队 ${lb2n ?? '—'} 只${lb2n != null ? (lb2n >= 15 ? '，梯队饱满' : lb2n >= 8 ? '，梯队一般' : '，梯队断层') : ''}${s.dtd_count ? `；<span class="bf-warn">地天板 ${s.dtd_count} 只</span>（盘中触及跌停后封回涨停，高标分歧极大，非健康换手）` : ''}<span class="muted">（口径＝近5个交易日涨停天数≥2 的只数，即公开复盘「N天M板」梯队，含 5天3板/4天2板 等非连续连板${s.lb2_count != null && s.lb2_count !== lb2n ? `；其中连续 2 板以上 ${s.lb2_count} 只` : ''}，逐只可核；连板天梯见下方）</span>`) : '',
     ladderTbl,
-  ].join('') + cal('封板率＝收盘涨停 ÷ 盘中触板个股（＝涨停+炸板），与各行情软件通用算法一致；炸板率＝100−封板率，二者同一分母互补。连板高度/梯队取自当日涨停股的连板数映射（zt_lb），可与公开连板天梯逐只核对。阈值：涨停≥50 且跌停≤10 为强／30~49 且 11~20 为中等／其余偏弱；封板率≥90 优秀／80~90 中等／<80 弱；高标≥6 板空间打开／3~5 中等／≤2 压制；2 板以上≥15 饱满／8~14 一般／<8 断层。');
+  ].join('') + cal('封板率＝收盘涨停 ÷ 盘中触板个股（＝涨停+炸板），与各行情软件通用算法一致；炸板率＝100−封板率，二者同一分母互补。连板梯队＝近5个交易日涨停天数≥2 的只数（「N天M板」口径，含非连续连板，与公开复盘同口径）；天梯逐只另标连续连板数（·连N）——东财 lbc 只数连续板，两口径并列不混用。阈值：涨停≥50 且跌停≤10 为强／30~49 且 11~20 为中等／其余偏弱；封板率≥90 优秀／80~90 中等／<80 弱；高标≥6 板空间打开／3~5 中等／≤2 压制；连板梯队≥15 饱满／8~14 一般／<8 断层。');
 
   // 4. 广度与量能——规格阈值：红盘占比≥65普涨/55~65结构性/45~55震荡分化/<45普跌；行业红盘≥70扩散好/50~70结构性/<50抱团；环比±10%放量/平稳/缩量；量能因子≥40高/20~40中/<20低
   const up = s.up_count, dn = s.down_count, amt = s.amount_yi, pamt = ps.amount_yi;
@@ -3895,7 +3911,7 @@ async function loadIntraday(meta) {
   const rows = [
     ['涨停', p ? i(p.zt) + delta(p.zt, prev && prev.zt) : '—', '触板未封（炸板）', p ? i(p.zb) + delta(p.zb, prev && prev.zb) : '—'],
     ['跌停', p ? i(p.dt) : '—', '封板率', p && p.seal_pct != null ? `<b>${n(p.seal_pct)}%</b>` + delta(p.seal_pct, prev && prev.seal_pct) : '—'],
-    ['最高连板', p ? i(p.max_lb) + ' 板' : '—', '2板以上', p ? i(p.lb2) + ' 只' : '—'],
+    ['最高连板', p ? i(p.max_lb) + ' 板' : '—', '连板梯队·N天M板', p ? (p.lbw2 != null ? i(p.lbw2) + ' 只' : i(p.lb2) + ' 只（连续口径）') : '—'],
     ['上涨家数', b ? i(b.up) : '—', '下跌家数', b ? i(b.down) : '—'],
   ];
 
@@ -4552,7 +4568,7 @@ function dayDetail(i) {
       + dwSection('涨跌与量能', dwKv([
         ['涨停 / 跌停', `${nf(s.zt_count)} / ${nf(s.dt_count)}`],
         ['封板率', s.seal_pct != null ? `${s.seal_pct}%（涨停 ${nf(s.zt_count)} ÷ 触板 ${nf(s.seal_den)} 只，炸板 ${nf(s.zb_count)} 只＝${s.zb_pct ?? '—'}%）` : (s.zbl_pct != null ? `${s.zbl_pct}%（旧档：字段名为炸板率口径）` : '—')],
-        ['连板高标', s.max_lb != null ? `${s.max_lb} 板（2 板以上 ${nf(s.lb2_count)} 只）` : '—'],
+        ['连板高标', s.max_lb != null ? `${s.max_lb} 板（连板梯队 ${nf(s.lbw2_count != null ? s.lbw2_count : s.lb2_count)} 只·N天M板口径${s.lb2_count != null && s.lbw2_count != null && s.lbw2_count !== s.lb2_count ? `，连续2板以上 ${nf(s.lb2_count)} 只` : ''}）` : '—'],
         ['涨跌家数', up != null ? `${up} / ${dn}（红盘 ${redPct != null ? redPct.toFixed(0) + '%' : '—'}）` : '—'],
         ['两市成交额', s.amount_yi != null ? `${s.amount_yi} 亿` : '—'],
         // 两套口径都列出并标明用途：只显示一个数就是「读者无从判断口径」，混用往往就是这么发生的

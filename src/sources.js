@@ -16,8 +16,13 @@ import { computeSentiment } from './sentiment.js';
 import { normalizeRecord, summarizeCalibers, mergeDuplicateRecords } from './lhb.js';
 import { isAggregateSeatRow } from './seats.js';
 import { computeRelative } from './relative.js';
+import { computeWindowBoards, loadZtpoolHistory, loadTradingSpine, loadKlineMembership } from './ztpool_window.js';
+import { isDiTianBan } from './zt_rebuild.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const r2 = (v) => Math.round(v * 100) / 100;
@@ -322,6 +327,32 @@ export async function fetchIndexes(date) {
 }
 
 // 源6: 东财涨跌停/炸板池
+// 地天板检测的行情批取（2026-10-23 新增）：腾讯 qt.gtimg 60 只/批，只取判定三价
+// （close/low/prevClose）+ 名称（ST 幅度判定用）。单批失败容错跳过；全批失败返回 null
+// （调用方据此让字段缺席，绝不拿「没抓到」当「没有地天板」）。
+async function detectDiTianBan(pool) {
+  const codes = pool.map((p) => p.c);
+  const nameOf = new Map(pool.map((p) => [String(p.c), p.n || '']));
+  const out = {};
+  let any = false;
+  for (let i = 0; i < codes.length; i += 60) {
+    const batch = codes.slice(i, i + 60).map(quoteSymbol).filter(Boolean);
+    if (!batch.length) continue;
+    try {
+      const txt = await fetchGBK('https://qt.gtimg.cn/q=' + batch.join(','));
+      for (const m of txt.matchAll(/v_(?:sh|sz|bj)(\d{6})="([^"]*)"/g)) {
+        const f = m[2].split('~');
+        const close = parseFloat(f[3]), low = parseFloat(f[34]), prev = parseFloat(f[4]);
+        if (!Number.isFinite(close) || close <= 0 || !Number.isFinite(low) || !Number.isFinite(prev)) continue;
+        any = true;
+        if (isDiTianBan({ close, low, prevClose: prev }, m[1], f[1] || nameOf.get(m[1]) || '')) out[m[1]] = true;
+      }
+    } catch (e) { /* 单批失败容错 */ }
+    await sleep(300);
+  }
+  return any ? out : null;
+}
+
 async function fetchPools(date) {
   const ymd = date.replace(/-/g, '');
   const base = 'ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=500';
@@ -330,7 +361,8 @@ async function fetchPools(date) {
     ['getTopicZBPool', 'zb', 'fbt%3Aasc'],
     ['getTopicDTPool', 'dt', 'fund%3Aasc'],
   ];
-  const out = { zt: null, zb: null, dt: null, max_lb: null, lb2: null, zt_codes: null, zt_lb: null, dt_detail: null, zb_detail: null };
+  const out = { zt: null, zb: null, dt: null, max_lb: null, lb2: null, zt_codes: null, zt_lb: null, dt_detail: null, zb_detail: null,
+    zt_lbw: null, lbw2: null, max_lbw: null, zt_dtd: null, dtd_count: null };
   let any = false;
   for (const [api, key, sort] of apis) {
     for (let att = 0; att < 3; att++) {
@@ -355,7 +387,28 @@ async function fetchPools(date) {
           //   09:25:00 落成 92500——前导零丢失），String(92500)="92500" 永不满足
           //   <="092500" → 一字闸全程失效（10-09 事故：新华传媒/时代万恒/紫竹高科三只
           //   一字板全部漏进连板池）。落盘即规范化为 6 位零填充字符串，与判据口径对齐。
-          out.zt_detail = pool.map((p) => ({ c: p.c, lbc: p.lbc || 1, zbc: p.zbc || 0, hybk: p.hybk || '', fbt: p.fbt != null ? String(p.fbt).padStart(6, '0') : null, fund: p.fund != null ? p.fund : null }));
+          // 窗口连板（N天M板，2026-10-23 用户校准）：lbc 只数连续板，「5天3板」这类
+          // 非连续连板会被记首板（实测福莱新材/凡拓数创/龙旗科技/中广天择 lbc=1）。
+          // 按最近 5 个交易日（档案脊）的涨停天数重算；断更日由 K 线补档兜底。
+          // 连续口径 lbc 原样保留，两口径并列；交易语义（连板池 lbc≥2）不变。
+          const _win = computeWindowBoards(loadZtpoolHistory(ROOT), pool, ymd, {
+            spine: loadTradingSpine(ROOT), kline: loadKlineMembership(ROOT),
+          });
+          out.zt_lbw = _win.ztLbw;
+          out.lbw2 = _win.lbw2;
+          out.max_lbw = _win.maxLbw;
+          out.zt_detail = pool.map((p) => ({ c: p.c, lbc: p.lbc || 1, lbw: _win.ztLbw[p.c] ?? 1, zbc: p.zbc || 0, hybk: p.hybk || '', fbt: p.fbt != null ? String(p.fbt).padStart(6, '0') : null, fund: p.fund != null ? p.fund : null }));
+          // 地天板检测（2026-10-23 用户校准）：池中「盘中触及跌停、收盘封回涨停」的个股
+          // （海洋王 10-23 即此）——高标分歧极大的信号，连板天梯必须可见。批量行情只取
+          // low/prevClose/close 三价，判定走 zt_rebuild.isDiTianBan（规则唯一出处）；
+          // 行情缺失 → 该股不判（宁缺毋假），整批失败 → 字段缺席 = null，不猜。
+          {
+            const dtd = await detectDiTianBan(pool);
+            if (dtd) {
+              out.zt_dtd = Object.keys(dtd).length ? dtd : null;
+              out.dtd_count = Object.keys(dtd).length;
+            }
+          }
         }
         if (api === 'getTopicDTPool' && pool) {
           out.dt_detail = pool.map((p) => ({ c: p.c, fba: p.fba || 0, amount: p.amount || 0, days: p.days || 0 }));
@@ -788,6 +841,13 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
     seal_den: (zt != null && zb != null) ? zt + zb : null, // 分母（触板个股），供报告如实披露口径
     zbl_pct,                  // [兼容] 旧字段名；语义=炸板率
     max_lb: pools ? pools.max_lb : null, lb2_count: pools ? pools.lb2 : null,
+    // 窗口连板口径（N天M板，2026-10-23 新增）：与 lb2_count（连续口径）并列。
+    // 旧档（无窗口数据）两字段为 null，前端回退连续口径。
+    lbw2_count: pools ? (pools.lbw2 ?? null) : null, max_lbw: pools ? (pools.max_lbw ?? null) : null,
+    zt_lbw: pools ? (pools.zt_lbw || null) : null,
+    // 地天板（2026-10-23 新增）：zt_dtd 为稀疏映射（code→true，只含命中个股），
+    // dtd_count 为只数。行情缺失整批时两者为 null（前端不渲染，不猜）。
+    zt_dtd: pools ? (pools.zt_dtd || null) : null, dtd_count: pools ? (pools.dtd_count ?? null) : null,
     zt_codes: pools ? (pools.zt_codes || null) : null,
     zt_lb: pools ? (pools.zt_lb || null) : null,
     amount_yi,

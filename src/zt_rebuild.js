@@ -61,6 +61,27 @@ export function consecutiveZt(bars, i, code, name) {
 }
 
 /**
+ * 地天板判定（2026-10-23 用户校准新增）：盘中最低价触及跌停价、且收盘封住涨停价
+ * ——「早盘一度跌停、午后拉回封板」的极端分歧形态（海洋王 2026-10-23 即此）。
+ * 与天地板（src/pain.js bigLossStocks 的振幅口径）互为反向；只用 close/low/prevClose，
+ * 不依赖分时数据。跌停价/涨停价规则与 classifyBar 同出处（limitPctOf + round2）。
+ *
+ * @param {{close:number, low:number, prevClose:number}} q 日终（或实时）行情三价
+ * @param {string} code sh600000/sz300750/bj920002
+ * @param {string} name 股票名称（ST 判定用）
+ * @returns {boolean} 任一价格缺失返回 false（不猜——「没数据」≠「不是地天板」）
+ */
+export function isDiTianBan(q, code, name) {
+  const close = num(q && q.close), low = num(q && q.low), prev = num(q && q.prevClose);
+  if (close == null || low == null || prev == null || prev <= 0) return false;
+  const pct = limitPctOf(code, name);
+  const up = round2(prev * (1 + pct)), dn = round2(prev * (1 - pct));
+  // 收盘封涨停（精确相等，同 classifyBar）+ 盘中触及跌停（low ≤ 跌停价；价格不可能低于跌停价，
+  // 故相等即触及；留 1e-6 浮点余量）
+  return Math.abs(close - up) < 1e-6 && low <= dn + 1e-6;
+}
+
+/**
  * 全市场重建：扫描 data/bt_kline 分片，产出目标日期的池与涨跌家数。
  * @param {string}   dir   data/bt_kline 目录
  * @param {Set<string>} dates 目标交易日（YYYY-MM-DD）

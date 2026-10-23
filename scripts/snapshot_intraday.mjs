@@ -158,6 +158,17 @@ const snapshot = {
     // v3（2026-10-10 双池拆分）：code→连板数映射。连板池判定唯一依据——
     //   缺席（旧快照）= null，报告层连板池报因不猜测，绝不拿 reason 标签冒充。
     zt_lb: pools.zt_lb || null,
+    // 窗口连板口径（N天M板，2026-10-23 用户校准新增）：lbc 只数连续板，「5天3板」这类
+    //   非连续连板会被记首板。按最近 5 个交易日（档案脊）的涨停天数重算，与公开连板
+    //   天梯同口径；连续口径 zt_lb 原样保留，两口径并列。旧快照缺席 = null，
+    //   前端回退连续口径，不猜测。
+    zt_lbw: pools.zt_lbw || null,
+    lbw2: pools.lbw2 ?? null,
+    max_lbw: pools.max_lbw ?? null,
+    // 地天板（2026-10-23 用户校准新增）：盘中触及跌停、收盘封回涨停的稀疏映射 + 只数。
+    //   高标分歧极大的信号，连板天梯需可见；行情缺失整批时 null，不猜。
+    zt_dtd: pools.zt_dtd || null,
+    dtd_count: pools.dtd_count ?? null,
     // v3（2026-10-10 滚动情绪）：涨停池每股明细 {c,lbc,zbc,hybk,fbt,fund}——
     //   emotion_cycle 六指标（判据唯一出处）的盘中原料，与收盘口径 ztpool_history
     //   同源同构；v4 增 fbt（首次封板 HHMMSS，一字判定）/fund（封单资金，元）。

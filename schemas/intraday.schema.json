@@ -58,7 +58,12 @@
         "seal_pct": { "type": ["number", "null"] },
         "zt_codes": { "type": "array" },
         "zt_lb": { "type": ["object", "null"], "$comment": "v3（2026-10-10 双池拆分）：code→连板数映射（东财 getTopicZTPool lbc），盘中连板池判定唯一依据。可选：旧快照（v2）缺席 = null，连板池报因不猜测" },
-        "zt_detail": { "type": ["array", "null"], "$comment": "v3（2026-10-10 滚动情绪）：涨停池每股明细 {c,lbc,zbc,hybk}，emotion_cycle 六指标的盘中原料（与收盘口径 ztpool_history 同源同构）", "items": { "type": "object" } }
+        "zt_lbw": { "type": ["object", "null"], "$comment": "v4（2026-10-23 用户校准）：code→窗口连板数映射（近5交易日涨停天数，N天M板口径）。lbc 只数连续板会漏 5天3板/4天2板；两口径并列，交易语义仍用 zt_lb。旧快照缺席 = null，前端回退 zt_lb" },
+        "lbw2": { "type": ["number", "null"], "$comment": "v4（2026-10-23）：窗口口径连板梯队只数（近5交易日涨停天数≥2）" },
+        "max_lbw": { "type": ["number", "null"], "$comment": "v4（2026-10-23）：窗口口径最高板数（近5交易日涨停天数最大值）" },
+        "zt_dtd": { "type": ["object", "null"], "$comment": "v4（2026-10-23 用户校准）：地天板稀疏映射（code→true，盘中触及跌停且收盘封回涨停）。行情缺失整批时 null，不猜" },
+        "dtd_count": { "type": ["number", "null"], "$comment": "v4（2026-10-23）：地天板只数" },
+        "zt_detail": { "type": ["array", "null"], "$comment": "v3（2026-10-10 滚动情绪）：涨停池每股明细 {c,lbc,lbw,zbc,hybk,fbt,fund}，emotion_cycle 六指标的盘中原料（与收盘口径 ztpool_history 同源同构）", "items": { "type": "object" } }
       }
     },
     "rolling": {
