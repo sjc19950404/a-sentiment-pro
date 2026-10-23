@@ -16,7 +16,7 @@ import { computeSentiment } from './sentiment.js';
 import { normalizeRecord, summarizeCalibers, mergeDuplicateRecords } from './lhb.js';
 import { isAggregateSeatRow } from './seats.js';
 import { computeRelative } from './relative.js';
-import { computeWindowBoards, loadZtpoolHistory, loadTradingSpine, loadKlineMembership } from './ztpool_window.js';
+import { computeWindowBoards, loadZtpoolHistory, loadRecent } from './ztpool_window.js';
 import { isDiTianBan } from './zt_rebuild.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
@@ -389,10 +389,11 @@ async function fetchPools(date) {
           //   一字板全部漏进连板池）。落盘即规范化为 6 位零填充字符串，与判据口径对齐。
           // 窗口连板（N天M板，2026-10-23 用户校准）：lbc 只数连续板，「5天3板」这类
           // 非连续连板会被记首板（实测福莱新材/凡拓数创/龙旗科技/中广天择 lbc=1）。
-          // 按最近 5 个交易日（档案脊）的涨停天数重算；断更日由 K 线补档兜底。
+          // 按最近 5 个交易日（档案脊 + archive-recent 各日 zt_codes，精确无断更）
+          // 的涨停天数重算；ztpool_history 仅作档案缺席日的兜底。
           // 连续口径 lbc 原样保留，两口径并列；交易语义（连板池 lbc≥2）不变。
           const _win = computeWindowBoards(loadZtpoolHistory(ROOT), pool, ymd, {
-            spine: loadTradingSpine(ROOT), kline: loadKlineMembership(ROOT),
+            recent: loadRecent(ROOT),
           });
           out.zt_lbw = _win.ztLbw;
           out.lbw2 = _win.lbw2;

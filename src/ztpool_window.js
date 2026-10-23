@@ -12,11 +12,11 @@
 //
 // membership 数据源（按优先级）：
 //   ① 当日实时池（fetchPools 传入）；
-//   ② data/ztpool_history.json 真实涨停池（每日 daily_fetch 入库）；
-//   ③ data/ztpool_kline_membership.json——断更日（2026-10-19~10-22，东财不可回补）的
-//      腾讯K线现算补档（scripts/backfill_ztpool_kline.mjs 一次性生成，qfq 前复权口径）。
-// 窗口脊 = data/archive-recent.json 的交易日序列（档案口径，完整无断更）。
-// 断更日未覆盖到的个股按「未涨停」计（保守方向：只可能少计，不会虚增）。
+//   ② data/archive-recent.json 各交易日的 summary.zt_codes（档案口径，250/250 天
+//      精确无断更——主数据源）；
+//   ③ data/ztpool_history.json 真实涨停池（archive-recent 旧档缺 zt_codes 时的兜底）。
+// 窗口脊 = archive-recent 的交易日序列。
+// 窗口内某日无任何来源 → 按「未涨停」计（保守方向：只可能少计，不会虚增）。
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -32,65 +32,64 @@ export function loadZtpoolHistory(root) {
   } catch { return []; }
 }
 
-/** 读 archive-recent.json 的交易日序列（YYYYMMDD 升序，档案口径不断更） */
-export function loadTradingSpine(root) {
+/**
+ * 读 archive-recent.json → 窗口脊 + 每日涨停名单（档案口径）。
+ * @returns {{spine: string[], codesByDate: Object<string,string[]>}} spine 为 YYYYMMDD 升序
+ */
+export function loadRecent(root) {
+  const out = { spine: [], codesByDate: {} };
   try {
     const p = join(root, 'data', 'archive-recent.json');
-    if (!existsSync(p)) return [];
+    if (!existsSync(p)) return out;
     const r = JSON.parse(readFileSync(p, 'utf8'));
-    const dates = [];
-    for (const d of r.days || []) if (d && d.trade_date) dates.push(String(d.trade_date).replace(/-/g, ''));
-    if (r.latest && r.latest.trade_date) dates.push(String(r.latest.trade_date).replace(/-/g, ''));
-    return [...new Set(dates)].sort();
-  } catch { return []; }
-}
-
-/** 读断更日 K 线补档（{ 'YYYYMMDD': {code: lbc} }）；缺失返回 {} */
-export function loadKlineMembership(root) {
-  try {
-    const p = join(root, 'data', 'ztpool_kline_membership.json');
-    if (!existsSync(p)) return {};
-    const j = JSON.parse(readFileSync(p, 'utf8'));
-    return (j && j.dates && typeof j.dates === 'object') ? j.dates : {};
-  } catch { return {}; }
+    const add = (tradeDate, codes) => {
+      if (!tradeDate || !Array.isArray(codes) || !codes.length) return;
+      const ymd = String(tradeDate).replace(/-/g, '');
+      if (!out.spine.includes(ymd)) out.spine.push(ymd);
+      out.codesByDate[ymd] = codes.map(String);
+    };
+    for (const d of r.days || []) add(d.trade_date, d.zt_codes);
+    if (r.latest) add(r.latest.trade_date, (r.latest.summary || {}).zt_codes);
+    out.spine.sort();
+  } catch { /* 损坏 → 空（调用方走降级） */ }
+  return out;
 }
 
 /**
  * 计算当日涨停池每只股票的窗口连板数（N天M板 的 M）。
  *
- * @param {Array}  history   ztpool_history（可含当日档——会被 todayPool 覆盖，以实时为准）
+ * @param {Array}  history   ztpool_history（兜底源，可含当日档——会被 todayPool 覆盖）
  * @param {Array}  todayPool 当日涨停池（[{c}] 或 [code]）
  * @param {string} todayYmd  当日 'YYYYMMDD'
- * @param {Object} [opts]    { windowDays=5, spine=[日期脊], kline={断更日补档} }
+ * @param {Object} [opts]    { windowDays=5, recent={spine,codesByDate}（loadRecent 产物） }
  * @returns {{ztLbw: Object<string,number>, lbw2: number, maxLbw: number|null, windowDates: string[], degraded: boolean}}
- *          degraded=true = 窗口脊不可用（archive-recent 缺失），退化为「当日单日」口径
+ *          degraded=true = 窗口脊不可用（archive-recent 缺失/无名单），退化为「当日单日」口径
  */
 export function computeWindowBoards(history, todayPool, todayYmd, opts = {}) {
   const o = opts || {};
   const windowDays = o.windowDays || WINDOW_DAYS;
   const codesOf = (x) => (x && typeof x === 'object' ? String(x.c) : String(x));
 
-  // ① 池 membership：历史真实池 + 断更日 K 线补档（真实池优先，不覆盖）
+  // ① 每日涨停名单：档案口径（主） + ztpool_history（兜底，档案缺席的日期才用）
   const byDate = new Map();
   for (const d of history || []) {
     if (!d || !d.date || !Array.isArray(d.pool) || !d.pool.length) continue;
     byDate.set(String(d.date), new Set(d.pool.map(codesOf)));
   }
-  const kline = o.kline || {};
-  for (const [d, codes] of Object.entries(kline)) {
-    if (!codes || typeof codes !== 'object' || byDate.has(d)) continue;
-    byDate.set(String(d), new Set(Object.keys(codes).map(codesOf)));
+  const recent = o.recent && o.recent.codesByDate ? o.recent.codesByDate : {};
+  for (const [d, codes] of Object.entries(recent)) {
+    if (Array.isArray(codes) && codes.length) byDate.set(String(d), new Set(codes.map(codesOf))); // 档案口径覆盖兜底
   }
   const todaySet = new Set((todayPool || []).map(codesOf));
   if (todayYmd) byDate.set(String(todayYmd), todaySet); // 当日池以实时为准
 
-  // ② 窗口脊：交易日序列（档案口径）+ 当日，取最后 N 天；脊不可用则退化为当日单日
-  const spine = Array.isArray(o.spine) && o.spine.length ? o.spine : null;
+  // ② 窗口脊：archive-recent 交易日序列 + 当日，取最后 N 天；脊不可用则退化为当日单日
+  const spine = o.recent && Array.isArray(o.recent.spine) && o.recent.spine.length ? o.recent.spine : null;
   let windowDates;
   let degraded = false;
   if (spine) {
     const set = new Set(spine.filter((d) => !todayYmd || d <= String(todayYmd)));
-    if (todayYmd) set.add(String(todayYmd)); // 当日必在窗内（盘中时档案脊通常还没有当日档）
+    if (todayYmd) set.add(String(todayYmd)); // 当日必在窗内（eod 前档案脊通常还没有当日档）
     windowDates = [...set].sort().slice(-windowDays);
   } else {
     degraded = true;

@@ -315,6 +315,13 @@ export function trendPoint(d, { keepDetail = true } = {}) {
     up_count: s.up_count ?? null,
     down_count: s.down_count ?? null,
     max_lb: s.max_lb ?? null,
+    // 当日涨停名单（2026-10-23 窗口连板口径新增）：src/ztpool_window.js 的 membership
+    // 数据源——档案口径精确无断更（250/250 天均有），比 ztpool_history（曾断更
+    // 10-19~10-22）与 K 线补档（受行情源限流制约）都可靠。取 zt_codes，
+    // 旧档缺它时回退 zt_lb 的键（同为当日涨停名单）。
+    zt_codes: (Array.isArray(s.zt_codes) && s.zt_codes.length)
+      ? s.zt_codes
+      : (s.zt_lb && typeof s.zt_lb === 'object' ? Object.keys(s.zt_lb) : null),
     amount_yi: s.amount_yi ?? null,
     lhb_daily_net: s.lhb_daily_net ?? null,
     // 板块相对强弱：走势点也带上——否则「回看更早交易日」时超额榜会整块消失
