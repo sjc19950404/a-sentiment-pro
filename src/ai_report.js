@@ -180,11 +180,13 @@ function buildRegime(input) {
   //   基础仓位由情绪分翻译，最终执行以帽为准。纸面 A/B/C 剧本仍用 day.regime（执行轨纪律）。
   const capKey = pick(input, 'signals.dailyReport.tag.key') || day.regime?.key || null;
   const posRec = reconcilePosition({ score: day.score, regimeKey: capKey });
+  // 展示层合并落地：长文版 regime 的 key/label/range 一律以「合并后的 cap（日报权威 regime）」为准，
+  // 不再透出 dualTrack.day.regime 的裸 climax（高潮/60%~100%）——否则长文简报会与前端日报打架。
   return {
-    key: day.regime?.key ?? null,
-    label: day.regime?.label ?? null,
-    cap: Number.isFinite(day.regime?.cap) ? day.regime.cap : null,
-    position_range: range ? range.position.range : null,
+    key: capKey ?? day.regime?.key ?? null,
+    label: (posRec && posRec.cap && posRec.cap.label) || day.regime?.label || null,
+    cap: (posRec && posRec.cap && Number.isFinite(posRec.cap.maxPos)) ? posRec.cap.maxPos : (Number.isFinite(day.regime?.cap) ? day.regime.cap : null),
+    position_range: posRec ? posRec.finalRange : (range ? range.position.range : null),
     positionReconcile: posRec,
   };
 }
