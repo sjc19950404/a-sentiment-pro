@@ -225,26 +225,52 @@ export function buildReversalAlert(report, now) {
   return { text, synthetic: { report_type: 'post_market_reversal', date: report.date, trigger: 'event:reversal', status: 'ok', generated_at: report.generated_at || (now && now.toISOString()) || new Date().toISOString(), payload: { text }, missing_notes: null } };
 }
 
+// 盘中异动单条预警（≤30 字硬约束）：急跌幅度 + 新闻一句话（若无则提示留意消息面）
+function makeIntradayAlertLine(name, code, chg, news) {
+  const tag = `⚠${name}急跌${chg.toFixed(1)}%`;
+  if (news && news.summary) {
+    const s = String(news.summary).slice(0, 30);
+    const full = `${tag}，${s}`;
+    return full.length > 30 ? `${tag}，${s.slice(0, 30 - tag.length - 2)}…` : full;
+  }
+  return `${tag}，留意消息面。`;
+}
+
 /** 副报文：盘中轻量 AI 监控（持仓 + 连板池急跌/异动 → ≤30 字预警；非极端不打扰）。 */
-export function buildIntradayAlert(report) {
+export function buildIntradayAlert(report, now) {
   const alerts = [];
-  // 连板池异动：今日 ztpool 中急跌（zdp <= -5%，天地板/炸板回落）
-  const hist = readJsonSafe('ztpool_history.json');
-  const last = Array.isArray(hist) && hist.length ? hist[hist.length - 1] : null;
-  (last && Array.isArray(last.pool) ? last.pool : []).forEach((s) => {
-    const zdp = typeof s.zdp === 'number' ? s.zdp : null;
-    if (zdp != null && zdp <= -5) alerts.push(`⚠ ${s.n || s.c}（${s.c}）连板池异动：盘中跌 ${zdp.toFixed(1)}%，情绪退潮。`);
-  });
-  // 持仓股急跌：account.json 持仓若带盘中涨跌幅则监控（无报价侧车时为 no-op）
-  const acc = readJsonSafe('paper/account.json');
-  const pos = (acc && acc.positions && typeof acc.positions === 'object') ? acc.positions : {};
-  Object.keys(pos).forEach((code) => {
-    const p = pos[code] || {};
-    const chg = (p.intraday_chg != null) ? Number(p.intraday_chg) : (p.chgPct != null ? Number(p.chgPct) : null);
-    if (chg != null && chg <= -5) alerts.push(`⚠ ${p.name || code}（${code}）持仓急跌 ${chg.toFixed(1)}%，留意消息面。`);
-  });
+  // 新闻侧车（盘中 cron 推送前一步预生成；仅含触发标的）
+  const newsMap = (() => {
+    const n = readJsonSafe('intraday-news-latest.json');
+    return (n && n.news && typeof n.news === 'object') ? n.news : {};
+  })();
+  // 主源：盘中报价侧车（持仓 + 连板池，实时 chgPct），带新鲜度闸（30 分钟内）防误报
+  const q = readJsonSafe('intraday-quotes-latest.json');
+  const nowMs = (now && now.getTime && now.getTime()) || Date.now();
+  const FRESH_MS = 30 * 60000;
+  let usedQuotes = false;
+  if (q && !q.degraded && Array.isArray(q.quotes)) {
+    const age = nowMs - Date.parse(q.generatedAt);
+    if (!Number.isFinite(age) || age <= FRESH_MS) {
+      usedQuotes = true;
+      for (const s of q.quotes) {
+        if (typeof s.chgPct === 'number' && s.chgPct <= -5) alerts.push(makeIntradayAlertLine(s.name || s.code, s.code, s.chgPct, newsMap[s.code]));
+      }
+    } else {
+      console.error(`[intraday-alert] 报价侧车过期（${(age / 60000).toFixed(0)}分钟），跳过（防误报）`);
+    }
+  }
+  // 兜底（无侧车 / 过期 / 降级）：连板池 EOD 快照 zdp <= -5%
+  if (!usedQuotes) {
+    const hist = readJsonSafe('ztpool_history.json');
+    const last = Array.isArray(hist) && hist.length ? hist[hist.length - 1] : null;
+    (last && Array.isArray(last.pool) ? last.pool : []).forEach((s) => {
+      const zdp = typeof s.zdp === 'number' ? s.zdp : null;
+      if (zdp != null && zdp <= -5) alerts.push(makeIntradayAlertLine(s.n || s.c, s.c, zdp, newsMap[s.c]));
+    });
+  }
   if (!alerts.length) return null;
-  const capped = alerts.slice(0, 3).map((a) => (a.length > 30 ? `${a.slice(0, 29)}…` : a)); // 每条 ≤30 字硬约束
+  const capped = alerts.slice(0, 3); // 每条已 ≤30 字；封顶 3 条
   const text = ['🔔 【盘中异动预警】（持仓/连板池）', ...capped].join('\n');
   return { text, synthetic: { report_type: 'intraday_alert', date: report.date, trigger: 'event:intraday', status: 'ok', generated_at: report.generated_at || new Date().toISOString(), payload: { text }, missing_notes: null } };
 }
@@ -290,7 +316,7 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
         const m = buildAiBrief(report); if (m) messages.push(m);
         const rev = buildReversalAlert(report, now); if (rev) messages.push(rev);
       }
-      if (report.report_type === 'intraday') { const a = buildIntradayAlert(report); if (a) messages.push(a); }
+      if (report.report_type === 'intraday') { const a = buildIntradayAlert(report, now); if (a) messages.push(a); }
     } catch (e) {
       console.error(`[企微副报文] 构造异常（跳过副报文，不影响主报文）: ${e?.message || e}`);
     }

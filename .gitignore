@@ -108,8 +108,15 @@ shell_hunter*.py
 # 分片停在 10-20 的根因。不入库后本地缓存才能持续累积。生成方式见 ui/README.md。
 ui/kline/
 
+# npm 副产物（依赖版本锁由 package.json 表达；lock 不入库，与既有决策一致）
+package-lock.json
+
 # 公告爬虫 / 排雷机 当日运行产物（按交易日变化、可由 EOD 重跑重建，勿入库以免 git status 长期挂脏）
 data/announcements-latest.json
 data/llm_risk_blacklist.json
 data/macro-sector-sentiment-latest.json
 data/llm-dragon-logic-latest.json
+
+# 盘中监控侧车（持仓/连板池报价快照 + 急跌新闻快讯，盘中 cron 实时生成、可由脚本重跑，勿入库）
+data/intraday-quotes-latest.json
+data/intraday-news-latest.json
