@@ -222,7 +222,7 @@ test('terminal：选股视图渲染（连板天梯 40 只 + 高度分布 + 纯�
   assert.ok(root.querySelector('.t-ai-strip'), 'AI 来源条（紫）在场');
   const stats = root.querySelector('.t-stats');
   assert.ok(stats, '梯队概览指标块');
-  for (const k of ['扫描只数', '最高连板', '纯情绪炒作', '纯情绪占比']) {
+  for (const k of ['统计只数', '最高连板', '纯情绪炒作', '纯情绪占比']) {
     assert.ok(stats.textContent.includes(k), `含指标：${k}`);
   }
   // 连板天梯
@@ -279,14 +279,14 @@ test('terminal：K线多周期下拉（日/周/月/季/半年/年，根数递减
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
-test('terminal：时间窗切换 20/60/250（全局生效，序列图按窗取数且如实标注天数）', async () => {
+test('terminal：时间窗切换 20/30/60/90（全局生效，序列图按窗取数且如实标注天数）', async () => {
   const { w, errors } = makeDom();
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
   await new Promise((r) => setTimeout(r, 260));
 
   const root = w.document.getElementById('tRoot');
   const btns = [...root.querySelectorAll('.t-range button')];
-  assert.deepEqual(btns.map((b) => +b.dataset.r), [20, 60, 250], '三档时间窗');
+  assert.deepEqual(btns.map((b) => +b.dataset.r), [20, 30, 60, 90], '四档时间窗');
 
   const mainKey = () => {
     const p = [...root.querySelectorAll('.t-panel')].find((x) => /情绪分走势/.test(x.textContent));
@@ -295,7 +295,7 @@ test('terminal：时间窗切换 20/60/250（全局生效，序列图按窗取�
   // 默认 60
   assert.match(mainKey(), /近 60 交易日/, '默认窗 60 日');
 
-  for (const r of [20, 250]) {
+  for (const r of [20, 90]) {
     btns.find((b) => +b.dataset.r === r).dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
     await new Promise((r2) => setTimeout(r2, 420));
     assert.ok(btns.find((b) => +b.dataset.r === r).classList.contains('is-on'), `窗 ${r} 按钮为选中态`);
@@ -319,6 +319,97 @@ test('terminal：视图结构 —— 7 视图无占位，研报由顶部切换�
   // 顶部切换开关仍在（⚡终端 / 📄研报）
   const sw = [...root.querySelectorAll('.t-viewswitch button')].map((b) => b.dataset.v);
   assert.deepEqual(sw, ['terminal', 'report'], '顶部 ⚡终端/📄研报 切换开关保留');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：总览「妖股纯情绪 N 只」可点 → 跳选股视图并停在纯情绪子集', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 300));
+
+  const root = w.document.getElementById('tRoot');
+  const jump = root.querySelector('.t-ai-strip .t-ai-item.is-jump');
+  assert.ok(jump, '总览 AI 条内「妖股纯情绪」是可点按钮（原来只是静态文案）');
+  assert.equal(jump.dataset.jump, 'picks', '跳转目标 = 选股视图');
+  assert.equal(jump.dataset.filter, 'pure', '携带「仅纯情绪」筛选');
+
+  const sig = readJsonSafe('data/signals-latest.json') || {};
+  const pureN = ((sig.dragonLogic || {}).pureSentiment || []).length;
+  const allN = ((sig.dragonLogic || {}).dragons || []).length;
+  assert.ok(pureN > 0 && allN > pureN, `侧车数据：全梯队 ${allN} 只 / 纯情绪 ${pureN} 只`);
+
+  jump.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 320));
+
+  // ① 视图确实切到选股（导航按钮为选中态）
+  const navOn = [...root.querySelectorAll('.t-nav button')].filter((b) => b.classList.contains('is-on'));
+  assert.equal(navOn.length, 1, '同时只有一个视图按钮为选中态');
+  assert.equal(navOn[0].dataset.v, 'picks', '已跳到选股视图');
+
+  // ② 表格行数 = 纯情绪只数（子集过滤生效，仍是侧车原值，未重判）
+  const rows = root.querySelectorAll('tr[data-code]');
+  assert.equal(rows.length, pureN, `天梯只剩纯情绪 ${pureN} 只（全梯队 ${allN} 只）`);
+  // ③ 筛选开关停在「仅纯情绪」，且「全部」可切回
+  const fPure = root.querySelector('.t-ai-filter button[data-f="pure"]');
+  const fAll = root.querySelector('.t-ai-filter button[data-f="all"]');
+  assert.ok(fPure && fPure.classList.contains('is-on'), '筛选开关停在「仅纯情绪」');
+  assert.ok(fAll && !fAll.classList.contains('is-on'), '「全部」未选中');
+  assert.match(fAll.textContent, new RegExp(String(allN)), '「全部」按钮如实标注全梯队只数');
+
+  fAll.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 300));
+  assert.equal(root.querySelectorAll('tr[data-code]').length, allN, '切回「全部」后天梯恢复全梯队');
+  assert.ok(root.querySelector('.t-ai-filter button[data-f="all"]').classList.contains('is-on'), '「全部」变为选中态');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：点个股看详情 —— 抽屉含 AI 判词(紫)/排雷/持仓 三块 + K线', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 300));
+
+  const root = w.document.getElementById('tRoot');
+  // 走选股视图点第一只（连板最高的那票），验证「点个股 → 详情」链路
+  [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'picks')
+    .dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 320));
+
+  const row = root.querySelector('tr[data-code]');
+  assert.ok(row, '天梯有行可点');
+  const code = row.dataset.code;
+  row.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 360));
+
+  const ddet = w.document.querySelector('.t-drawer .t-ddet');
+  assert.ok(ddet, '抽屉内含个股详情块（K 线之上）');
+  // 三块齐全：AI 判词 / 排雷 / 持仓
+  const secs = [...ddet.querySelectorAll('.t-dsec')];
+  assert.equal(secs.length, 3, '详情三块：妖股逻辑 + 排雷 + 持仓');
+  assert.ok(secs[0].classList.contains('is-ai'), '妖股逻辑块标紫（AI 侧车）');
+  assert.match(secs[0].textContent, /妖股逻辑推演/, '第一块是妖股逻辑推演');
+  for (const k of ['连板', '行业', '逻辑', '置信']) {
+    assert.ok(secs[0].textContent.includes(k), `判词含字段：${k}`);
+  }
+  assert.match(secs[0].textContent, /asOf/, '判词带 asOfDate 防伪戳');
+
+  // 异步两块（黑名单 / 账户）已回填，不再是「读取中…」
+  assert.ok(!/读取中/.test(ddet.textContent), '排雷/持仓两块已异步回填');
+  const sig = readJsonSafe('data/signals-latest.json') || {};
+  const dg = ((sig.dragonLogic || {}).dragons || []).find((x) => String(x.code) === code) || {};
+  assert.ok(secs[0].textContent.includes(String(dg.hybk || '—')), '行业取自侧车原值');
+
+  const bl = readJsonSafe('data/llm_risk_blacklist.json') || {};
+  const hit = (bl.blacklist || []).find((x) => String(x.code) === code);
+  if (hit) {
+    assert.ok(secs[1].querySelector('.t-dhit'), `命中黑名单 → 显示风险等级（${hit.riskLevel}）`);
+    assert.ok(secs[1].textContent.includes(String(hit.reasons[0])), '显示风险理由标签');
+  } else {
+    assert.match(secs[1].textContent, /未命中黑名单|排雷档缺失/, '未命中/缺档如实显示（fail-open）');
+  }
+  assert.match(secs[2].textContent, /未持有|账户档缺失|持股/, '持仓块如实显示（当前账户为空仓）');
+
+  // K 线仍在抽屉内（详情块之上是新加的，不能挤掉原功能）
+  assert.ok(w.document.querySelector('.t-drawer .t-dkhost svg'), '抽屉下半仍是 K 线 SVG');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 

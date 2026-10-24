@@ -416,6 +416,85 @@
 .t-drawer-h .t-close:hover { color: var(--t-ink); background: rgba(255, 255, 255, .06); }
 .t-drawer-b { padding: 14px 16px 24px; overflow-y: auto; flex: 1; }
 
+/* ── 抽屉内个股详情（AI 判词 / 排雷 / 持仓）——只读档位原值，fail-open ──── */
+.t-ddet { display: flex; flex-direction: column; gap: 9px; margin-bottom: 16px; }
+.t-ddet .t-dsec {
+  padding: 10px 12px; border-radius: var(--t-radius);
+  background: var(--t-panel-2);
+  box-shadow: inset 0 0 0 1px var(--t-line);
+}
+.t-ddet .t-dsec.is-ai {                       /* 紫 = AI 侧车说的 */
+  background: rgba(167, 139, 250, .07);
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, .22);
+}
+.t-ddet .t-dsec-h {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  font-size: 12px; font-weight: 600; color: var(--t-ink);
+}
+.t-ddet .t-dsec-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: .05em;
+  color: var(--t-ai); text-transform: uppercase;
+}
+.t-ddet .t-dsec-b { font-size: 12px; color: var(--t-ink-2); }
+.t-ddet .t-dkv { display: grid; grid-template-columns: repeat(auto-fit, minmax(94px, 1fr)); gap: 6px 12px; }
+.t-ddet .t-dk { margin-right: 5px; font-size: 11px; color: var(--t-ink-3); }
+.t-ddet .t-dv { color: var(--t-ink); font-variant-numeric: tabular-nums; }
+.t-ddet .t-dv b { font-weight: 600; }
+.t-ddet .t-dv.up { color: var(--t-up); }
+.t-ddet .t-dv.dn { color: var(--t-dn); }
+.t-ddet .t-dnote {
+  margin-top: 8px; padding: 7px 9px; border-radius: 5px;
+  background: rgba(255, 255, 255, .03);
+  font-size: 11.5px; line-height: 1.55; color: var(--t-ink-2);
+}
+.t-ddet .t-dsrc { margin-top: 6px; font-size: 10.5px; color: var(--t-ink-3); }
+.t-ddet .t-dnone { padding: 2px 0; font-size: 11.5px; color: var(--t-ink-3); }
+.t-ddet .t-dnone.is-ok { color: var(--t-dn); }
+.t-ddet .t-mut { color: var(--t-ink-3); }
+.t-ddet .t-dhit { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.t-ddet .t-dlv {
+  padding: 1px 7px; border-radius: 3px; font-size: 11px; font-weight: 700;
+  border: 1px solid var(--t-line-hi); color: var(--t-ink-2);
+}
+.t-ddet .t-dhit.is-high .t-dlv { background: rgba(255, 43, 43, .16); border-color: rgba(255, 43, 43, .45); color: var(--t-alert); }
+.t-ddet .t-dhit.is-medium .t-dlv { background: rgba(245, 166, 35, .14); border-color: rgba(245, 166, 35, .4); color: #f5a623; }
+.t-ddet .t-dhit.is-low .t-dlv { background: rgba(34, 200, 138, .12); border-color: rgba(34, 200, 138, .35); color: var(--t-dn); }
+.t-ddet .t-dtags { display: inline-flex; gap: 5px; flex-wrap: wrap; }
+.t-ddet .t-dtag {
+  padding: 1px 6px; border-radius: 3px; font-size: 10.5px;
+  background: rgba(255, 255, 255, .05); color: var(--t-ink-2);
+}
+/* 抽屉里的 K 线宿主：与上方详情块留出分隔 */
+.t-dkhost { padding-top: 4px; border-top: 1px solid var(--t-line); }
+
+/* ── AI 条内的可点项与筛选开关 ───────────────────────────────────────────── */
+/* 「🕵 妖股纯情绪 N 只」→ 跳选股视图并自动停在纯情绪子集 */
+.t-ai-strip .t-ai-item.is-jump {
+  font: inherit; color: inherit; background: transparent; border: 0; padding: 0;
+  cursor: pointer; border-radius: 4px;
+}
+.t-ai-strip .t-ai-item.is-jump:hover { color: var(--t-ink); }
+.t-ai-strip .t-ai-item.is-jump:focus-visible { outline: 1px solid var(--t-ai); outline-offset: 3px; }
+.t-jump-txt {
+  margin-left: 3px; padding: 0 4px; border-radius: 3px;
+  font-size: 10px; color: var(--t-ai);
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, .35);
+}
+.t-ai-strip .t-ai-item.is-jump:hover .t-jump-txt { background: rgba(167, 139, 250, .18); color: var(--t-ink); }
+/* 「全部 N / 仅纯情绪 M」子集过滤（会话级，只是换展示子集，不重算） */
+.t-ai-strip .t-ai-filter {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--t-ink-3);
+}
+.t-ai-strip .t-ai-filter button {
+  font: inherit; font-size: 11px; cursor: pointer; padding: 2px 7px; border-radius: 4px;
+  color: var(--t-ink-2); background: transparent; border: 1px solid var(--t-line-hi);
+}
+.t-ai-strip .t-ai-filter button:hover { color: var(--t-ink); border-color: var(--t-ai); }
+.t-ai-strip .t-ai-filter button.is-on {
+  font-weight: 600; color: #0b0f16; background: var(--t-ai); border-color: var(--t-ai);
+}
+
 /* ── 底部流水条（终端标志性细节）────────────────────────────────────────── */
 .t-ticker {
   position: sticky; bottom: 0; z-index: 5;
@@ -424,7 +503,11 @@
   background: var(--t-panel); border-top: 1px solid var(--t-line);
   overflow: hidden; white-space: nowrap;
 }
-.t-ticker .t-tk-lbl { color: var(--t-acc); font-weight: 600; flex: none; }
+/* 流水条提示符：用 CSS 实心竖条而非字符（原 '›' 在 Windows 字体下像逗号） */
+.t-ticker .t-tk-lbl {
+  width: 3px; height: 11px; border-radius: 1px;
+  background: var(--t-acc); flex: none;
+}
 .t-ticker .t-tk-body { overflow: hidden; text-overflow: ellipsis; }
 .t-ticker .t-tk-body b { color: var(--t-ink); font-weight: 600; }
 
@@ -1157,6 +1240,15 @@
               [date, open, close, high, low, volume]；**仅日K**，无多周期字段。
               周/月/季/半年/年K 由日K 在展示层聚合（标准 OHLCV 口径），
               分时/30分/60分 **无分钟数据源，不做**。
+          data/llm_risk_blacklist.json —— GLM 夜间排雷黑名单（个股详情抽屉 红色区）
+          data/paper/account.json      —— 模拟盘持仓（个股详情抽屉 持仓区）
+
+   下钻链路（2026-10-25 三期）：
+          总览 AI 条「🕵 妖股纯情绪 N 只」可点 → 跳选股视图并停在纯情绪子集
+            （is_pure_sentiment=true，只是**子集过滤**，不是重新判定）；
+          点任一个股（连板天梯 / 持仓行）→ 抽屉上半「个股详情」：
+            妖股逻辑推演（紫，侧车 C）/ 夜间排雷（红，侧车 A）/ 模拟盘持仓，
+            下半为多周期 K 线。三块全部 fail-open：档缺失 → 如实显示「无记录」。
 
    设计纪律：chrome 柔、数据锐；辉光只三处；动画只 opacity/transform；
              AI 信息一律紫色（视觉上区分「AI 说的」与「引擎算的」）。
@@ -1180,7 +1272,7 @@
   // 时间窗（全局，作用于所有按日序列图：情绪分折线、涨停/连板柱、最高板柱等）。
   //   由顶栏按钮切换 → 走 LINK 总线 → 当前视图重绘。只影响**取多少天来画**，
   //   不重算任何指标、不改判阈值。
-  const RANGES = [20, 60, 250];
+  const RANGES = [20, 30, 60, 90];
 
   const LINK = {
     sel: { code: null, name: null, sector: null, range: 60 },
@@ -1188,6 +1280,14 @@
     set(patch) { Object.assign(this.sel, patch); this.subs.forEach((f) => SAFE(() => f(this.sel), 'link-sub')); },
     on(fn) { this.subs.push(fn); },
   };
+
+  // ── 1b. 跨视图跳转 / 筛选态（会话级，仅影响展示，不回写引擎）──────────────
+  //   goView：视图内的元素（如总览 AI 条的「妖股纯情绪 N 只」）要切到别的视图时用它。
+  //     真正的 render 由 mount() 注入，视图函数因此不必持有一堆节点引用（解耦）。
+  //   pickFilter：选股视图的筛选态。null=全梯队；'pure'=仅 is_pure_sentiment 子集。
+  //     ⚠ 只是**同一批引擎/侧车原值的子集切换**（过滤），不做任何打分或重排序。
+  let goView = () => {};
+  let pickFilter = null;
 
   // ── 2. 常量与数据加载 ──────────────────────────────────────────────────
   const jget = async (url) => { try { const r = await fetch(url, { cache: 'force-cache' }); return r.ok ? await r.json() : null; } catch { return null; } };
@@ -1485,12 +1585,26 @@
     // ── AI 信息条（紫色）──
     const aiBits = [];
     const dl = S.dragonLogic;
-    if (dl && Array.isArray(dl.pureSentiment) && dl.pureSentiment.length) aiBits.push(`<span class="t-ai-item">🕵 妖股纯情绪 <b>${dl.pureSentiment.length}</b> 只</span>`);
+    // 「妖股纯情绪」可点：跳到选股视图并自动切到纯情绪子集（is_pure_sentiment=true），
+    //   省得用户在 40 只梯队里肉眼找那 N 只。跳转只切视图 + 过滤，不重算任何结论。
+    if (dl && Array.isArray(dl.pureSentiment) && dl.pureSentiment.length) {
+      aiBits.push(`<button type="button" class="t-ai-item is-jump" data-jump="picks" data-filter="pure"`
+        + ` title="查看这 ${dl.pureSentiment.length} 只纯情绪炒作个股">🕵 妖股纯情绪 <b>${dl.pureSentiment.length}</b> 只<span class="t-jump-txt">查看</span></button>`);
+    }
     if (S.llm && S.llm.sentimentRaw != null) aiBits.push(`<span class="t-ai-item">📰 舆情读数 <b>${fmt(S.llm.sentimentRaw, 2)}</b>${S.llm.confidence != null ? `（置信 ${fmt(S.llm.confidence * 100, 0)}%）` : ''}</span>`);
     const ss = S.sectorSentiment;
     if (ss && !ss.degraded) { const sc = ss.score != null ? ss.score : (ss.macro && ss.macro.score); if (sc != null) aiBits.push(`<span class="t-ai-item">🧭 板块情绪 <b>${fmt(sc, 2)}</b></span>`); }
     if ((S.health && S.health.level) === 'ok') aiBits.push('<span class="t-ai-item">💚 数据健康 <b>ok</b></span>');
-    if (aiBits.length) g.appendChild(el('div', 't-c12', `<div class="t-ai-strip"><span class="t-ai-tag">AI Side-car</span>${aiBits.join('')}</div>`));
+    if (aiBits.length) {
+      const strip = el('div', 't-c12', `<div class="t-ai-strip"><span class="t-ai-tag">AI Side-car</span>${aiBits.join('')}</div>`);
+      strip.addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-jump]');
+        if (!b) return;
+        pickFilter = b.dataset.filter === 'pure' ? 'pure' : null;
+        SAFE(() => goView(b.dataset.jump), 'jump');
+      });
+      g.appendChild(strip);
+    }
 
     // ── 核心指标 ──
     const stats = el('div', 't-stats');
@@ -1676,13 +1790,30 @@
     const g = el('div', 't-grid');
 
     // AI 来源条（紫）——先声明数据来源，再谈内容
-    g.appendChild(el('div', 't-c12', `<div class="t-ai-strip">
+    //   右侧「全部 / 仅纯情绪」是**子集过滤开关**（会话级，写在 pickFilter）：
+    //   从总览「🕵 妖股纯情绪 N 只」点进来时会自动停在「仅纯情绪」。
+    const onlyPure = pickFilter === 'pure';
+    const pureCount = arr.filter((x) => x.is_pure_sentiment === true).length;
+    const stripEl = el('div', 't-c12', `<div class="t-ai-strip">
       <span class="t-ai-tag">AI Side-car</span>
       <span class="t-ai-item">GLM 妖股逻辑推演（方向 C）</span>
       <span class="t-ai-item">asOf ${esc(dg.asOfDate || '—')}</span>
       <span class="t-ai-item">仅参考，不修改引擎情绪分 / regime 判定</span>
       ${dg.degraded ? '<span class="t-ai-item">⚠ 侧车降级，结论可能不完整</span>' : ''}
-    </div>`));
+      <span class="t-ai-filter" role="group" aria-label="梯队筛选">筛选
+        <button type="button" data-f="all"${onlyPure ? '' : ' class="is-on"'}>全部 ${arr.length}</button>
+        <button type="button" data-f="pure"${onlyPure ? ' class="is-on"' : ''}>仅纯情绪 ${pureCount}</button>
+      </span>
+    </div>`);
+    stripEl.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-f]');
+      if (!b) return;
+      const f = b.dataset.f === 'pure' ? 'pure' : null;
+      if (f === pickFilter) return;
+      pickFilter = f;
+      SAFE(() => goView('picks'), 'pick-filter');   // 重绘本视图（不重算，只换展示子集）
+    });
+    g.appendChild(stripEl);
 
     if (!arr.length) {
       g.appendChild(panel('连板梯队', '当日无数据', '<div class="t-empty">当日无连板梯队数据（非交易日或侧车未产出）</div>', 't-c12'));
@@ -1690,13 +1821,22 @@
     }
 
     // 排序：连板数降序 → 代码升序（纯展示排序，非打分）
-    const sorted = arr.slice().sort((a, b) => (+b.lb || 0) - (+a.lb || 0) || String(a.code).localeCompare(String(b.code)));
+    const all = arr.slice().sort((a, b) => (+b.lb || 0) - (+a.lb || 0) || String(a.code).localeCompare(String(b.code)));
+    // 子集过滤：onlyPure 时只留 is_pure_sentiment=true（**侧车原值**，不是我们重判的）
+    const sorted = onlyPure ? all.filter((x) => x.is_pure_sentiment === true) : all;
+    if (!sorted.length) {
+      g.appendChild(panel('连板梯队', '当前筛选无命中',
+        `<div class="t-empty">当前筛选（仅纯情绪）无命中——全梯队 ${all.length} 只里没有 is_pure_sentiment=true 的记录。<br>
+        点上方「全部 ${all.length}」切回全梯队。</div>`, 't-c12'));
+      return g;
+    }
     const maxLb = sorted.reduce((m, x) => Math.max(m, +x.lb || 0), 0);
     const pure = sorted.filter((x) => x.is_pure_sentiment === true).length;
+    const subKey = onlyPure ? ` · 仅纯情绪子集（全梯队 ${all.length} 只）` : '';
 
-    g.appendChild(panel('梯队概览', `共 ${sorted.length} 只 · 最高 ${maxLb} 板`,
+    g.appendChild(panel('梯队概览', `共 ${sorted.length} 只 · 最高 ${maxLb} 板${subKey}`,
       `<div class="t-stats">
-        ${stat('扫描只数', fmtInt(sorted.length), 'dragons')}
+        ${stat('统计只数', fmtInt(sorted.length), onlyPure ? '纯情绪子集' : 'dragons')}
         ${stat('最高连板', fmtInt(maxLb), 'max(lb)')}
         ${stat('纯情绪炒作', fmtInt(pure), 'is_pure_sentiment')}
         ${stat('纯情绪占比', pct((pure / sorted.length) * 100), `${pure}/${sorted.length}`)}
@@ -1706,10 +1846,10 @@
     const byLb = {};
     for (const x of sorted) { const k = +x.lb || 0; byLb[k] = (byLb[k] || 0) + 1; }
     const dist = Object.keys(byLb).map(Number).sort((a, b) => a - b).map((k) => ({ date: `${k}板`, a: byLb[k] }));
-    g.appendChild(panel('连板高度分布', '按连板数聚合计数 · 引擎原值',
+    g.appendChild(panel('连板高度分布', `按连板数聚合计数 · 引擎原值${subKey}`,
       barChart(dist, { w: 900, h: 180, legend: ['只数', ''] }), 't-c12'));
 
-    // 连板天梯表 —— 点任一票 → LINK 总线 → 打开 K 线抽屉（与其它视图同一套联动）
+    // 连板天梯表 —— 点任一票 → LINK 总线 → 打开个股详情抽屉（K 线 + AI 判词 + 排雷）
     const rows = sorted.map((x) => {
       const rs = String(x.reason || '—');
       return `<tr data-code="${esc(x.code)}" data-name="${esc(x.name || '')}">
@@ -1723,7 +1863,7 @@
       </tr>`;
     }).join('');
 
-    const tblPanel = panel('连板天梯', '按连板数降序 · 点任一票看 K 线',
+    const tblPanel = panel('连板天梯', '按连板数降序 · 点任一票看个股详情',
       `<div class="t-tbl-wrap"><table class="t-tbl"><thead><tr>
         <th>代码</th><th>名称</th><th>连板</th><th>行业</th><th>逻辑</th><th>置信</th><th>理由</th>
       </tr></thead><tbody>${rows}</tbody></table></div>`, 't-c12');
@@ -1809,6 +1949,99 @@
   // ── 8. K线抽屉（全站唯一真磨砂玻璃件）─────────────────────────────────
   let drawerRefs = null;
   const drawerKState = { period: 'day', k: null };   // 抽屉的周期选择（跨开关保持）
+
+  // 代码归一：'600000' / 'sh600000' / '600000.SH' 都收敛到 6 位纯数字，
+  //   用于三份档之间的关联匹配（侧车 / 黑名单 / 账户持仓）——只做**匹配**，不改任何值。
+  const normCode = (c) => String(c == null ? '' : c).replace(/\D/g, '').slice(-6);
+
+  // ── 8b. 个股详情块（抽屉内，K 线之上）───────────────────────────────────
+  //   纪律：全部取自**已落盘的引擎/侧车产物**，零新增计算、零反推：
+  //     · 妖股逻辑（紫）← signals.dragonLogic.dragons（GLM 侧车方向 C）
+  //     · 夜间排雷（红）← data/llm_risk_blacklist.json（GLM 侧车方向 A）
+  //     · 模拟盘持仓     ← data/paper/account.json
+  //   fail-open：任一档缺失/解析失败 → 该块如实显示「无记录」，绝不报错、绝不占位。
+  function renderDetail(host, rawCode) {
+    const code = normCode(rawCode);
+    const S = window.__SIGNALS__ || {};
+    const dl = S.dragonLogic || {};
+    const dg = (Array.isArray(dl.dragons) ? dl.dragons : []).find((x) => normCode(x.code) === code);
+
+    // ① 妖股逻辑（同步可得：signals 已在内存）
+    const dragonBody = dg
+      ? `<div class="t-dkv">
+          <div><span class="t-dk">连板</span><span class="t-dv"><b>${fmtInt(dg.lb)}</b> 板</span></div>
+          <div><span class="t-dk">行业</span><span class="t-dv">${esc(dg.hybk || '—')}</span></div>
+          <div><span class="t-dk">逻辑</span><span class="t-dv">${dg.is_pure_sentiment ? '<span class="t-tag-ai">纯情绪</span> ' : ''}${esc(dg.logic_type || '—')}</span></div>
+          <div><span class="t-dk">置信</span><span class="t-dv">${pct(dg.confidence != null ? +dg.confidence * 100 : null, 0)}</span></div>
+        </div>
+        <div class="t-dnote">${esc(String(dg.reason || '—'))}</div>`
+      : `<div class="t-dnone">不在当日连板梯队名单内（侧车当日扫描 ${fmtInt(dl.scanned || 0)} 只）→ 无 GLM 涨停逻辑判词</div>`;
+    const srcLine = `<div class="t-dsrc">来源 GLM ${esc(dl.model || '—')} · asOf ${esc(dl.asOfDate || '—')} · 仅参考，不改引擎情绪分 / regime</div>`;
+
+    host.innerHTML = `<section class="t-dsec is-ai">
+        <div class="t-dsec-h">🕵 妖股逻辑推演<span class="t-dsec-tag">AI Side-car</span></div>
+        <div class="t-dsec-b">${dragonBody}${srcLine}</div>
+      </section>
+      <section class="t-dsec is-risk" data-sec="risk">
+        <div class="t-dsec-h">☠ GLM 夜间排雷</div>
+        <div class="t-dsec-b"><span class="t-mut">读取中…</span></div>
+      </section>
+      <section class="t-dsec is-pos" data-sec="pos">
+        <div class="t-dsec-h">💼 模拟盘持仓</div>
+        <div class="t-dsec-b"><span class="t-mut">读取中…</span></div>
+      </section>`;
+
+    // ②③ 异步两档（黑名单 / 账户），失败各自降级；抽屉已切票则丢弃结果（防串台）
+    Promise.all([jget('data/llm_risk_blacklist.json'), jget('data/paper/account.json')])
+      .then(([bl, acct]) => {
+        if (!host.isConnected) return;
+        const secR = $('[data-sec="risk"] .t-dsec-b', host);
+        const secP = $('[data-sec="pos"] .t-dsec-b', host);
+
+        // ② 排雷黑名单
+        const hit = (bl && Array.isArray(bl.blacklist) ? bl.blacklist : []).find((x) => normCode(x.code) === code);
+        if (secR) {
+          if (hit) {
+            const lv = String(hit.riskLevel || '').toLowerCase();
+            const rss = Array.isArray(hit.reasons) ? hit.reasons : [];
+            secR.innerHTML = `<div class="t-dhit is-${esc(lv || 'medium')}">
+                <span class="t-dlv">${lv === 'high' ? '高风险' : lv === 'low' ? '低风险' : '中风险'}</span>
+                ${rss.length ? `<span class="t-dtags">${rss.map((r) => `<span class="t-dtag">${esc(r)}</span>`).join('')}</span>` : ''}
+              </div>
+              <div class="t-dnote">${esc(String(hit.evidence || '—'))}</div>
+              <div class="t-dsrc">asOf ${esc(bl.asOfDate || '—')} · 扫描 ${fmtInt(bl.scanned || 0)} 只 · 已接入自动建仓前拦截（paper_daily 第 5 步）</div>`;
+          } else if (!bl) {
+            secR.innerHTML = '<div class="t-dnone">排雷档缺失（未生成或读取失败）→ 不打标、不拦截（fail-open）</div>';
+          } else {
+            secR.innerHTML = `<div class="t-dnone is-ok">未命中黑名单（已扫描 ${fmtInt(bl.scanned || 0)} 只 · asOf ${esc(bl.asOfDate || '—')}）</div>`;
+          }
+        }
+
+        // ③ 模拟盘持仓
+        const pos = (acct && acct.positions) || {};
+        const p = Object.values(pos).find((x) => x && normCode(x.code) === code);
+        if (secP) {
+          if (!acct) secP.innerHTML = '<div class="t-dnone">账户档缺失（读取失败）→ 不显示持仓</div>';
+          else if (!p || !(p.qty > 0)) secP.innerHTML = '<div class="t-dnone">当前未持有该标的</div>';
+          else {
+            const pnl = p.last != null && p.avgCost ? ((p.last - p.avgCost) / p.avgCost) * 100 : null;
+            secP.innerHTML = `<div class="t-dkv">
+                <div><span class="t-dk">持股</span><span class="t-dv"><b>${fmtInt(p.qty)}</b> 股</span></div>
+                <div><span class="t-dk">成本</span><span class="t-dv">${fmt(p.avgCost, 3)}</span></div>
+                <div><span class="t-dk">现价</span><span class="t-dv">${fmt(p.last, 2)}</span></div>
+                <div><span class="t-dk">浮盈亏</span><span class="t-dv ${pnl == null ? '' : pnl >= 0 ? 'up' : 'dn'}">${pnl == null ? '—' : sgn(pnl, 2)}</span></div>
+            </div>`;
+          }
+        }
+      })
+      .catch(() => {
+        const secR = $('[data-sec="risk"] .t-dsec-b', host);
+        const secP = $('[data-sec="pos"] .t-dsec-b', host);
+        if (secR) secR.innerHTML = '<div class="t-dnone">读取失败 → 不打标、不拦截（fail-open）</div>';
+        if (secP) secP.innerHTML = '<div class="t-dnone">读取失败 → 不显示持仓</div>';
+      });
+  }
+
   function openDrawer(code, name) {
     if (!code) return;
     let refs = drawerRefs;
@@ -1826,11 +2059,12 @@
     }
     refs.name.textContent = name || code;
     refs.code.textContent = code;
-    refs.body.innerHTML = '<div class="t-loading">加载日K…</div>';
+    // 上半：个股详情（AI 判词 / 排雷 / 持仓）；下半：K 线（与 K线视图共用渲染器）
+    refs.body.innerHTML = '<div class="t-ddet"></div><div class="t-dkhost"></div>';
     refs.mask.classList.add('is-open');
     refs.dw.classList.add('is-open');
-    // 与 K线视图共用渲染器（周期下拉 + 蜡烛 + 成交量）；周期选择跨开关保持
-    renderKline(refs.body, code, drawerKState);
+    SAFE(() => renderDetail($('.t-ddet', refs.body), code), 'drawer-detail');
+    renderKline($('.t-dkhost', refs.body), code, drawerKState);
   }
 
   // ── 9. 挂载与视图切换 ─────────────────────────────────────────────────
@@ -1897,8 +2131,14 @@
       body.innerHTML = '';
       body.appendChild(node);
       const reg = (S.regime && S.regime.latest) || {};
-      tick.innerHTML = `<span class="t-tk-lbl">›</span><span class="t-tk-body">情绪分 <b>${fmt(L.value)}</b>（分位 ${pct(L.pct_rank, 0)}）· regime <b>${esc(reg.label || '—')}</b> · 涨停 <b>${fmtInt(L.zt_count)}</b> / 跌停 <b>${fmtInt(L.dt_count)}</b> · 点持仓行可下钻日K</span>`;
+      // ⚠ t-tk-lbl 原用字符 '›'（U+203A），在 Windows 字体下渲染得极像逗号/顿号，
+      //   用户反馈「情绪分左边多了个逗号」。改为**空的 CSS 实心竖条**（见 terminal.css），
+      //   不再是字符，绝不会被误认成任何标点。
+      tick.innerHTML = `<span class="t-tk-lbl" aria-hidden="true"></span><span class="t-tk-body">情绪分 <b>${fmt(L.value)}</b>（分位 ${pct(L.pct_rank, 0)}）· regime <b>${esc(reg.label || '—')}</b> · 涨停 <b>${fmtInt(L.zt_count)}</b> / 跌停 <b>${fmtInt(L.dt_count)}</b> · 点持仓行可下钻日K</span>`;
     };
+
+    // 视图函数里的跨视图跳转（总览「妖股纯情绪」→ 选股；选股筛选切换）走这里
+    goView = render;
 
     VIEWS.forEach((v) => {
       const b = el('button', v.soon ? 't-nav-soon' : '', esc(v.n) + (v.soon ? ' ·' : ''));

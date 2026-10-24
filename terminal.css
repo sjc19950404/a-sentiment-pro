@@ -399,6 +399,85 @@
 .t-drawer-h .t-close:hover { color: var(--t-ink); background: rgba(255, 255, 255, .06); }
 .t-drawer-b { padding: 14px 16px 24px; overflow-y: auto; flex: 1; }
 
+/* ── 抽屉内个股详情（AI 判词 / 排雷 / 持仓）——只读档位原值，fail-open ──── */
+.t-ddet { display: flex; flex-direction: column; gap: 9px; margin-bottom: 16px; }
+.t-ddet .t-dsec {
+  padding: 10px 12px; border-radius: var(--t-radius);
+  background: var(--t-panel-2);
+  box-shadow: inset 0 0 0 1px var(--t-line);
+}
+.t-ddet .t-dsec.is-ai {                       /* 紫 = AI 侧车说的 */
+  background: rgba(167, 139, 250, .07);
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, .22);
+}
+.t-ddet .t-dsec-h {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  font-size: 12px; font-weight: 600; color: var(--t-ink);
+}
+.t-ddet .t-dsec-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: .05em;
+  color: var(--t-ai); text-transform: uppercase;
+}
+.t-ddet .t-dsec-b { font-size: 12px; color: var(--t-ink-2); }
+.t-ddet .t-dkv { display: grid; grid-template-columns: repeat(auto-fit, minmax(94px, 1fr)); gap: 6px 12px; }
+.t-ddet .t-dk { margin-right: 5px; font-size: 11px; color: var(--t-ink-3); }
+.t-ddet .t-dv { color: var(--t-ink); font-variant-numeric: tabular-nums; }
+.t-ddet .t-dv b { font-weight: 600; }
+.t-ddet .t-dv.up { color: var(--t-up); }
+.t-ddet .t-dv.dn { color: var(--t-dn); }
+.t-ddet .t-dnote {
+  margin-top: 8px; padding: 7px 9px; border-radius: 5px;
+  background: rgba(255, 255, 255, .03);
+  font-size: 11.5px; line-height: 1.55; color: var(--t-ink-2);
+}
+.t-ddet .t-dsrc { margin-top: 6px; font-size: 10.5px; color: var(--t-ink-3); }
+.t-ddet .t-dnone { padding: 2px 0; font-size: 11.5px; color: var(--t-ink-3); }
+.t-ddet .t-dnone.is-ok { color: var(--t-dn); }
+.t-ddet .t-mut { color: var(--t-ink-3); }
+.t-ddet .t-dhit { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.t-ddet .t-dlv {
+  padding: 1px 7px; border-radius: 3px; font-size: 11px; font-weight: 700;
+  border: 1px solid var(--t-line-hi); color: var(--t-ink-2);
+}
+.t-ddet .t-dhit.is-high .t-dlv { background: rgba(255, 43, 43, .16); border-color: rgba(255, 43, 43, .45); color: var(--t-alert); }
+.t-ddet .t-dhit.is-medium .t-dlv { background: rgba(245, 166, 35, .14); border-color: rgba(245, 166, 35, .4); color: #f5a623; }
+.t-ddet .t-dhit.is-low .t-dlv { background: rgba(34, 200, 138, .12); border-color: rgba(34, 200, 138, .35); color: var(--t-dn); }
+.t-ddet .t-dtags { display: inline-flex; gap: 5px; flex-wrap: wrap; }
+.t-ddet .t-dtag {
+  padding: 1px 6px; border-radius: 3px; font-size: 10.5px;
+  background: rgba(255, 255, 255, .05); color: var(--t-ink-2);
+}
+/* 抽屉里的 K 线宿主：与上方详情块留出分隔 */
+.t-dkhost { padding-top: 4px; border-top: 1px solid var(--t-line); }
+
+/* ── AI 条内的可点项与筛选开关 ───────────────────────────────────────────── */
+/* 「🕵 妖股纯情绪 N 只」→ 跳选股视图并自动停在纯情绪子集 */
+.t-ai-strip .t-ai-item.is-jump {
+  font: inherit; color: inherit; background: transparent; border: 0; padding: 0;
+  cursor: pointer; border-radius: 4px;
+}
+.t-ai-strip .t-ai-item.is-jump:hover { color: var(--t-ink); }
+.t-ai-strip .t-ai-item.is-jump:focus-visible { outline: 1px solid var(--t-ai); outline-offset: 3px; }
+.t-jump-txt {
+  margin-left: 3px; padding: 0 4px; border-radius: 3px;
+  font-size: 10px; color: var(--t-ai);
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, .35);
+}
+.t-ai-strip .t-ai-item.is-jump:hover .t-jump-txt { background: rgba(167, 139, 250, .18); color: var(--t-ink); }
+/* 「全部 N / 仅纯情绪 M」子集过滤（会话级，只是换展示子集，不重算） */
+.t-ai-strip .t-ai-filter {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--t-ink-3);
+}
+.t-ai-strip .t-ai-filter button {
+  font: inherit; font-size: 11px; cursor: pointer; padding: 2px 7px; border-radius: 4px;
+  color: var(--t-ink-2); background: transparent; border: 1px solid var(--t-line-hi);
+}
+.t-ai-strip .t-ai-filter button:hover { color: var(--t-ink); border-color: var(--t-ai); }
+.t-ai-strip .t-ai-filter button.is-on {
+  font-weight: 600; color: #0b0f16; background: var(--t-ai); border-color: var(--t-ai);
+}
+
 /* ── 底部流水条（终端标志性细节）────────────────────────────────────────── */
 .t-ticker {
   position: sticky; bottom: 0; z-index: 5;
@@ -407,7 +486,11 @@
   background: var(--t-panel); border-top: 1px solid var(--t-line);
   overflow: hidden; white-space: nowrap;
 }
-.t-ticker .t-tk-lbl { color: var(--t-acc); font-weight: 600; flex: none; }
+/* 流水条提示符：用 CSS 实心竖条而非字符（原 '›' 在 Windows 字体下像逗号） */
+.t-ticker .t-tk-lbl {
+  width: 3px; height: 11px; border-radius: 1px;
+  background: var(--t-acc); flex: none;
+}
 .t-ticker .t-tk-body { overflow: hidden; text-overflow: ellipsis; }
 .t-ticker .t-tk-body b { color: var(--t-ink); font-weight: 600; }
 
