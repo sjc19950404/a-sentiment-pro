@@ -1538,6 +1538,28 @@ function buildBrief(days, arc) {
   // 段序号：一、（黑体）——号码由版式层给，标题文本不再自带序号
   const sec7 = buildPaperReviewSection();
 
+  // ── 八、舆情参考（LLM 试点 = V5.3 P2 软信息）──
+  // 与节九/十同理定位为「参考」软信息：±5 修正不进交易信号（原分不动），
+  // 读者须先看完七个量价/结构节再看这条软信息——试点定位，权重天然最低。
+  // 数据侧 arc.llm（src/llm_sentiment.js 转换块）；与每日日报第八节同源。
+  const LLM = arc.llm || (arc.signals && arc.signals.llm) || null;
+  let sec8;
+  if (!LLM) {
+    sec8 = li('舆情参考（LLM 试点）未生成（需收盘后跑 scripts/fetch_llm_sentiment.mjs；未跑 ≠ 舆情中性）')
+      + cal('舆情参考 = 智谱读盘后舆情 → 给 ±5 参考修正；原分不动、不独立生成买卖信号；仅与原因子同向时生效，观望区/反向不生效；缺失时本段只报缺，不冒充中性。');
+  } else if (LLM.degraded) {
+    sec8 = li(`⚠ ${LLM.effectNote || LLM.reason || 'AI 舆情获取失败，默认中性'}（调用失败/超时兜底，不冒充真实舆情）`)
+      + cal('口径同前；证据日期 ' + (LLM.asOfDate || '—') + '，模型 ' + (LLM.model || '未留痕'));
+  } else {
+    const raw = (typeof LLM.sentimentRaw === 'number') ? LLM.sentimentRaw : 0;
+    const dirText = raw > 0.05 ? '正面' : (raw < -0.05 ? '负面' : '中性');
+    sec8 = li(`舆情方向：${dirText}（LLM 读数 ${raw}，置信度 ${LLM.confidence != null ? LLM.confidence : '—'}）`)
+      + li(`参考修正：${(LLM.adj != null ? (LLM.adj > 0 ? '+' : '') + LLM.adj : 0)} 分（±5 软修正，原分不动，不进交易信号）`)
+      + li((LLM.effectNote || (LLM.reason || '')).slice(0, 200))
+      + li(`证据日期 ${LLM.asOfDate || '—'}｜模型 ${LLM.model || '未留痕'}｜原分 ${LLM.original != null ? LLM.original : '—'}${LLM.modified != null ? ' → 参考分 ' + LLM.modified : ''}`)
+      + cal('舆情参考 = 智谱读盘后舆情 → 给 ±5 参考修正；原分不动、不独立生成买卖信号；仅与原因子同向增强时生效，观望区/反向一律不生效（保守保持原分）；证据日期不符或为空即视为缺数据。');
+  }
+
   // ── 九、板块情绪雷达（AI 题材翻译官 = 场景二板块情绪因子）──
   // 注意：write.js / split_archive 注入的 sectorSentiment / dragonLogic 在 signals 顶层
   //   （与 signals 子对象并列），不在 arc.signals 内；这里优先读顶层，并对「传内层」的调用兜底。
@@ -1613,6 +1635,7 @@ function buildBrief(days, arc) {
     ['题材结构（核心因子·20%）', sec5, 'bfsec5'],
     ['综合研判（含 V5.2 仓位档位）', sec6, 'bfsec6'],
     ['模拟交易复盘（为什么赚/为什么亏）', sec7, 'bfsec7'],
+    ['舆情参考（LLM 试点）', sec8, 'bfsec8'],
     ['板块情绪雷达（AI 题材翻译官）', sec9, 'bfsec9'],
     ['妖股逻辑推演（AI 妖股透视镜）', sec10, 'bfsec10'],
   ];

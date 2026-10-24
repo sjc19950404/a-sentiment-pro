@@ -26,7 +26,7 @@ export const AUDIT_VERSION = 'report-audit-v2';
  * 就永远发现不了缺段。**必须**是人工声明的期望值，才能当判据。
  * 历史：原为 7（含「⑦ 模拟交易复盘」）；模拟交易台面下线后改为 6；2026-10-17 复活 paper_ui.js 后恢复为 7。
  */
-export const EXPECTED_SECTIONS = 9;
+export const EXPECTED_SECTIONS = 10;
 
 /** 报头名称（与 src/report.js 的 REPORT_TITLE 同值，防漂移） */
 export const MASTHEAD = 'A股市场情绪研判简报';
