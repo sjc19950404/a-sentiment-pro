@@ -103,6 +103,9 @@ export function buildDailyReport(signals = {}) {
   //   宏观/行业新闻 → GLM 映射 A 股板块/方向/强度 → 聚合板块情绪；与节八同理定位为
   //   "参考"软信息，score 不进交易信号（原分不动），仅作板块热度提示。
   sections.push(buildSectorSentimentSection(S.sectorSentiment));
+  // ── 节 10：妖股逻辑推演（方向 C，2026-10-24 启用）────────────────────
+  //   连板股→GLM 推断涨停逻辑/纯情绪炒作；纯参考软信息，不进交易信号。
+  sections.push(buildDragonSection(S.dragonLogic));
 
   // 汇总 caveats（从各节与 regime 收集，集中给用户看）
   if (regFull.caution) caveats.push(regFull.caution);
@@ -141,6 +144,7 @@ export function buildDailyReport(signals = {}) {
       health: 'src/health.js',
       llm: 'src/llm_sentiment.js + scripts/fetch_llm_sentiment.mjs（data/llm-sentiment-latest.json）',
       sectorSentiment: 'src/macro_sector_sentiment.js + scripts/fetch_macro_sector_sentiment.mjs（data/macro-sector-sentiment-latest.json）',
+      dragonLogic: 'src/dragon_logic.js + scripts/fetch_dragon_logic.mjs（data/llm-dragon-logic-latest.json）',
     },
     // 免责与口径声明（报告尾部固定输出）
     disclaimer: '本日报只描述市场状态与风险特征，不构成投资建议；所有读数来自当日已归档数据，缺失项一律标注"未采集/未计算"而非补 0。'
@@ -455,6 +459,37 @@ function buildSectorSentimentSection(ss) {
   pts.push({ text: '口径：score∈[-1,1]、score100∈[0,100]，仅作参考，不独立生成买卖信号', kind: 'info' });
   const level = (m.sentiment != null && m.sentiment < -0.2) ? 'warn' : 'info';
   return { id: 'sectorSentiment', title: '九、板块情绪因子（场景二）', level, missing: false, points: pts };
+}
+
+// ── 节 10：妖股逻辑推演（方向 C）──────────────────────────────────────────
+//   读取 signals.dragonLogic（src/dragon_logic.js 转换后的块）。
+function buildDragonSection(dl) {
+  if (!dl) {
+    return { id: 'dragonLogic', title: '十、妖股逻辑推演（方向C）', level: 'unknown', missing: true,
+      missingReason: '未生成（需盘后跑 scripts/fetch_dragon_logic.mjs；未跑 ≠ 无妖股）' };
+  }
+  if (dl.degraded) {
+    const pts = [];
+    pts.push({ text: `⚠ ${dl.effectNote || '妖股逻辑推演获取失败，默认空'}（调用失败/超时兜底，不冒充结论）`, kind: 'warn' });
+    pts.push({ text: `证据日期 ${dl.asOfDate}｜模型 ${dl.model || '未留痕'}`, kind: 'info' });
+    return { id: 'dragonLogic', title: '十、妖股逻辑推演（方向C）', level: 'warn', missing: false, points: pts };
+  }
+  const pts = [];
+  const pure = dl.pureSentiment || [];
+  const byType = dl.byType || {};
+  const typeStr = Object.keys(byType).map((k) => `${k}:${byType[k]}`).join('、') || '无';
+  pts.push({ text: `连板股推演 ${dl.dragons ? dl.dragons.length : 0} 只｜类型分布：${typeStr}`, kind: 'info' });
+  if (pure.length) {
+    pts.push({ text: `纯情绪炒作预警（谨慎追高）：${pure.slice(0, 8).map((x) => `${x.name}(${x.lb}板)${x.reason ? '·' + x.reason : ''}`).join('、')}`, kind: 'warn' });
+  } else {
+    pts.push({ text: '本轮无被判定为「纯情绪炒作」的连板股', kind: 'evidence' });
+  }
+  if (dl.dragons && dl.dragons.length) {
+    pts.push({ text: '样例：' + dl.dragons.slice(0, 6).map((d) => `${d.name}(${d.lb}板·${d.hybk})→${d.logic_type}`).join('、'), kind: 'info' });
+  }
+  pts.push({ text: `证据日期 ${dl.asOfDate}｜模型 ${dl.model || '未留痕'}${dl.scanned != null ? '｜扫描 ' + dl.scanned + ' 只' : ''}`, kind: 'info' });
+  pts.push({ text: '口径：纯参考，不修改 regime/emotion 分数；由下游（paper.js 等）决定采不采纳。', kind: 'info' });
+  return { id: 'dragonLogic', title: '十、妖股逻辑推演（方向C）', level: pure.length ? 'warn' : 'info', missing: false, points: pts };
 }
 
 // ── 首屏一句话结论 ────────────────────────────────────────────────────────

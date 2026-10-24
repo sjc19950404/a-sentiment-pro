@@ -23,6 +23,7 @@ import { buildRegimeBlock, buildDivergenceBlock } from '../regime.js';
 import { buildDailyReport } from '../daily_report.js';
 import { llmSentimentBlock } from '../llm_sentiment.js';
 import { macroSectorSentimentBlock } from '../macro_sector_sentiment.js';
+import { dragonLogicBlock } from '../dragon_logic.js';
 import { dualTrackDisclosureFn } from '../dual_track.js';
 import { guardModule } from '../module_freshness.js';
 
@@ -218,6 +219,19 @@ export function writeShards(archive, dir = DATA_DIR) {
         const all = archive.all_days || [];
         const last = all[all.length - 1] || null;
         return macroSectorSentimentBlock(raw, { tradeDate: last?.trade_date ?? null });
+      } catch { return null; }
+    },
+    // 妖股逻辑推演（方向 C）：只读已落盘的 llm-dragon-logic-latest.json
+    //   （由 scripts/fetch_dragon_logic.mjs 取连板梯队 + 复用场景二板块情绪 grounding → GLM 推演）。
+    //   同上「只读不现调」纪律：同步写盘路径不能 await LLM；读不到即 null（前端显示「未生成」）。
+    dragonLogicFn: () => {
+      try {
+        const p = path.join(dir, 'llm-dragon-logic-latest.json');
+        if (!existsSync(p)) return null;
+        const raw = JSON.parse(readFileSync(p, 'utf8'));
+        const all = archive.all_days || [];
+        const last = all[all.length - 1] || null;
+        return dragonLogicBlock(raw, { tradeDate: last?.trade_date ?? null });
       } catch { return null; }
     },
     // 拐点标签（#4）：**纯函数、只读档案**（不读盘、不联网）→ 每次写档都刷新，

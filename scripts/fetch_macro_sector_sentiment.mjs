@@ -116,8 +116,9 @@ const SYSTEM = `你是 A 股宏观/行业新闻分析师。我会给你一批财
 只输出一个 JSON 数组（不要任何其他文字），元素：
 {"headline":"原标题","date":"YYYY-MM-DD","sectors":["板块"],"direction":"positive|negative|neutral","intensity":0.0,"reason":""}`;
 
-async function callGLM(items, { API_URL, API_KEY, MODEL }) {
-  const user = `板块列表：${SECTORS.join('、')}\n\n新闻（编号. [日期] 标题）：\n`
+async function callGLM(items, { API_URL, API_KEY, MODEL }, newsDate) {
+  // 军规#3：写死当前时间，防止 GLM 用训练记忆替今日判断（防穿越）
+  const user = `当前时间：${newsDate}（以下为当日滚动新闻，请据此而非训练记忆判断）。\n\n板块列表：${SECTORS.join('、')}\n\n新闻（编号. [日期] 标题）：\n`
     + items.map((it, i) => `${i + 1}. [${it.date}] ${it.headline}`).join('\n');
   const chat = await fetchWithRetry(`${API_URL.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
@@ -265,7 +266,7 @@ async function main() {
     for (let i = 0; i < rawItems.length; i += BATCH) {
       const batch = rawItems.slice(i, i + BATCH);
       try {
-        const arr = await callGLM(batch, { API_URL, API_KEY, MODEL });
+        const arr = await callGLM(batch, { API_URL, API_KEY, MODEL }, newsDate);
         (Array.isArray(arr) ? arr : []).forEach((x) => {
           if (x && typeof x.headline === 'string') {
             events.push({

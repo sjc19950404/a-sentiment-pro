@@ -156,9 +156,11 @@ function glmConfig() {
   return { API_URL, API_KEY: process.env.LLM_API_KEY || '', MODEL: process.env.LLM_MODEL || '' };
 }
 
-async function callGLM(stocksBatch, annMap) {
+async function callGLM(stocksBatch, annMap, tradeDate) {
   const { API_URL, API_KEY, MODEL } = glmConfig();
-  const user = stocksBatch
+  // 军规#3：写死当前交易日，防止 GLM 用训练记忆替今日判断（防穿越）
+  const user = `当前 A 股最新交易日是 ${tradeDate}（以下为当晚公开公告，请据此而非训练记忆判断）。\n\n`
+    + stocksBatch
     .map((s) => `股票：${s.code} ${s.name}\n公告：${annMap[s.code] || '（无公开公告数据，无法评估，判 none）'}`)
     .join('\n\n---\n\n');
   const chat = await fetchWithRetry(`${API_URL.replace(/\/$/, '')}/chat/completions`, {
@@ -187,7 +189,7 @@ async function callGLM(stocksBatch, annMap) {
   return JSON.parse(m[0]);
 }
 
-async function scanBatch(stocksBatch, annMap) {
+async function scanBatch(stocksBatch, annMap, tradeDate) {
   if (MOCK) {
     return stocksBatch.map((s) => {
       const text = annMap[s.code] || '';
@@ -195,7 +197,7 @@ async function scanBatch(stocksBatch, annMap) {
       return { code: s.code, name: s.name, riskLevel: j.level, reasons: j.reasons, evidence: text };
     });
   }
-  const arr = await callGLM(stocksBatch, annMap);
+  const arr = await callGLM(stocksBatch, annMap, tradeDate);
   // 真实模式补 evidence（公告原文片段，供审计）；并以强利空关键词兜底纠偏
   return (Array.isArray(arr) ? arr : []).map((x) => {
     const code = x.code;
@@ -240,7 +242,7 @@ async function main() {
   for (let i = 0; i < toScan.length; i += BATCH) {
     const batch = toScan.slice(i, i + BATCH);
     try {
-      const r = await scanBatch(batch, annMap);
+      const r = await scanBatch(batch, annMap, tradeDate);
       (Array.isArray(r) ? r : []).forEach((x) => { if (x && x.code) results.push(x); });
     } catch (e) {
       console.error(`[risk-scan] ⚠ 批次失败：${e && e.message ? e.message : e}（继续，不阻塞）`);

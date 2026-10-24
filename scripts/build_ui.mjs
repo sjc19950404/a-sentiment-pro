@@ -196,6 +196,27 @@ try {
   }
 } catch (e) { /* 板块情绪段缺失不影响主构建 */ }
 
+// ── 6.3 把「十、妖股逻辑推演（方向C）」并入最新一期简报（网页端可见）──
+try {
+  const sigPath = path.join(ROOT, 'data', 'signals-latest.json');
+  if (existsSync(sigPath)) {
+    const sig = JSON.parse(readFileSync(sigPath, 'utf8'));
+    const dr = sig.dailyReport || {};
+    const secs = dr.sections || [];
+    const dl = secs.find((s) => s && s.id === 'dragonLogic');
+    const dDate = dr.date || sig.date;
+    if (dDate && briefs[dDate] != null && dl) {
+      let body;
+      if (dl.missing || !dl.points || !dl.points.length) {
+        body = (dl.missingReason || '未生成（需盘后跑 scripts/fetch_dragon_logic.mjs；未跑 ≠ 无妖股）');
+      } else {
+        body = dl.points.map((p) => p.text).join('；');
+      }
+      briefs[dDate] += `\n十、妖股逻辑推演（方向C）：${body}`;
+    }
+  }
+} catch (e) { /* 妖股逻辑段缺失不影响主构建 */ }
+
 // ── 7. signals.industry（行业 5 日动量，移植自老 build.js——口径不变）──
 function addIndustryMomentum() {
   if (days.length < 5) return 0;

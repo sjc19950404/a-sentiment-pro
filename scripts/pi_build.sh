@@ -35,6 +35,10 @@ step "fetch_llm_sentiment";  node scripts/fetch_llm_sentiment.mjs || echo "⚠ L
 #   signals.sectorSentiment）。fail-open：缺配置 → 退出非 0 不落档（简报显示「未生成」）；
 #   已配置但新闻抓取/调用失败 → 兜底落「获取失败，默认中性」档。不阻断主管道。
 step "fetch_macro_sector_sentiment"; node scripts/fetch_macro_sector_sentiment.mjs || echo "⚠ 板块情绪未落档（缺配置/网络/调用失败），简报显示未生成（fail-open）"
+# 4.8 妖股逻辑推演（方向 C）：取连板梯队 + 复用场景二板块情绪 grounding → GLM 推演
+#   → data/llm-dragon-logic-latest.json。须在主管道写 signals-latest 之前（write.js 的
+#   dragonLogicFn 在 buildSignals 时读该档注入 signals.dragonLogic）。fail-open 同 4.6/4.7。
+step "fetch_dragon_logic"; node scripts/fetch_dragon_logic.mjs || echo "⚠ 妖股逻辑未落档（缺配置/网络/调用失败），简报显示未生成（fail-open）"
 # 5 主管道（live 嵌入 signals-latest）
 gate "pipeline(main)"        "node src/pipeline.js"
 # 6 新鲜度
