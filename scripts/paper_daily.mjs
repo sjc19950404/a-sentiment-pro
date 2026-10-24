@@ -32,6 +32,7 @@ import {
 import { recommendPicks, marketTier } from '../src/picks.js';
 import { reviewAccount } from '../src/paper_review.js';
 import { glmBuyGuard } from '../src/glm_guard.js';
+import { pushReports, buildSignalSyncReports } from '../src/ai_report_push.js';
 
 const ACCOUNT_FILE = new URL('../data/paper/account.json', import.meta.url);
 const REVIEW_FILE = new URL('../data/paper/review-latest.json', import.meta.url);
@@ -44,6 +45,17 @@ const r2 = (x) => (Number.isFinite(+x) ? Math.round(+x * 100) / 100 : null);
 const ts = () => new Date().toTimeString().slice(0, 8);
 const step = (m) => console.log(`── ${ts()} ${m} ──`);
 
+// 实盘跟单推送（Signal Sync）：把系统算出的买卖信号，单独成条、极简推企微（复用 OPS_WEBHOOK 通道）。
+//   默认开（PAPER_SIGNAL_SYNC=0 关闭）；不改动交易核心，仅在编排层收集信号后独立推送。
+const SIGNAL_SYNC = process.env.PAPER_SIGNAL_SYNC !== '0';
+const signalBuys = [];   // 本日系统计算的买入信号（步骤5收集）
+const signalSells = [];  // 本日系统触发的卖出信号（步骤3/4收集）
+const fetchWithTimeout = (ms) => (url, opts = {}) => {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(t));
+};
+
 // Step 1/4 执行层现实开关（默认 ideal / 关闭，不改变线上账户既有行为）：
 //   PAPER_EXEC=strict          → 启用悲观滑点(±1%) + 涨停打板概率成交（打板 30% 撤单率 + 容量门）
 //   PAPER_SECTOR_LIMIT=0.3     → 启用板块暴露限制（单板块占净值 ≤30%，超出强拒买入）
@@ -53,6 +65,8 @@ let EXEC_CFG = {};
 try { EXEC_CFG = EXEC_ENV.trim().startsWith('{') ? JSON.parse(EXEC_ENV) : (EXEC_ENV ? { mode: EXEC_ENV } : {}); } catch { EXEC_CFG = {}; }
 if (process.env.PAPER_SECTOR_LIMIT) EXEC_CFG.sectorLimitRatio = Number(process.env.PAPER_SECTOR_LIMIT) || 0;
 const exec = normalizeExec(EXEC_CFG);
+// 实盘跟单「建议买入价」的含滑点缓冲：strict 模式用其悲观滑点，否则用固定万五（万5）作保守挂单参考
+const BUY_SLIP = exec.mode === 'strict' ? exec.slipNonLimit : 0.0005;
 // 出场纪律 v1 开关（默认关闭；PAPER_EXIT=strict_v1 启用「隔日强制了结(连板)+移动止盈+硬止损-5%+亏损不过三」）
 const EXIT_MODE = process.env.PAPER_EXIT || '';
 if (exec.mode === 'strict' || exec.sectorLimitRatio > 0) {
@@ -87,7 +101,24 @@ if (existsSync(fileURLToPath(ACCOUNT_FILE))) {
 // ── 3. 每日结算：盯市 + T+1 解冻 + 扫描 -8% 硬止损 ──
 step(`结算 ${date}`);
 const quotes = quotesFromDay(day);
-acct = settleDay(acct, date, quotes, { exec, ...(EXIT_MODE ? { exitMode: EXIT_MODE } : {}) }).account;
+const sd = settleDay(acct, date, quotes, { exec, ...(EXIT_MODE ? { exitMode: EXIT_MODE } : {}) });
+acct = sd.account;
+{ // 实盘跟单：收集本日系统触发的卖出信号（v1 出场纪律 + 跌停逃生 + 断板清仓）
+  const escapeCodes = new Set();
+  for (const f of (sd.fills || [])) {
+    if (f.side === 'sell' && f.reason && /逃生/.test(f.reason)) {
+      signalSells.push({ code: String(f.code), name: f.name || f.code, reason: '跌停逃生(排队成交)', urgent: true });
+      escapeCodes.add(String(f.code));
+    }
+  }
+  // 出场委托（v1 隔日了结/移动止盈/硬止损/亏损不过三 stage='exit'；legacy -8% 止损 stage='stop'）落在账户持久 logs
+  for (const l of (sd.account?.logs || [])) {
+    if (l.date === date && (l.stage === 'exit' || l.stage === 'stop') && l.side === 'sell'
+      && l.result === 'submitted' && !escapeCodes.has(String(l.code))) {
+      signalSells.push({ code: String(l.code), name: l.name || l.code, reason: l.reason || '系统触发卖出', urgent: false });
+    }
+  }
+}
 {
   const s = accountStats(acct);
   console.log(`  净值 ${r2(s.total)} 元（现金 ${r2(s.cash)}，市值 ${r2(s.marketValue)}），持仓 ${Object.keys(acct.positions || {}).length} 只`);
@@ -111,6 +142,7 @@ for (const [code, p] of Object.entries(acct.positions || {})) {
 if (broken.length) {
   const res = batchSell(acct, broken.map((b) => ({ code: b.code, pct: 1, reason: `连板断板自动清仓（昨涨停今收跌 ${b.changePct}%）` })), day, { date });
   acct = res.next;
+  for (const o of (res.submitted || [])) signalSells.push({ code: String(o.code), name: o.name || o.code, reason: '连板断板自动清仓', urgent: false });
   console.log(`  断板清仓 ${res.submitted.length} 笔：${broken.map((b) => b.code).join(',') || '无'}`);
 } else {
   console.log('  无断板持仓');
@@ -165,6 +197,14 @@ if (!tier) {
     }
     console.log(`  提交 ${res.submitted.length} 笔 / 拦截 ${res.blocked.length} 笔：${res.submitted.map((x) => x.code).join(',') || '无'}${bypassed ? '（含压力测试仓）' : ''}`);
     res.blocked.forEach((b) => console.log(`    拦截 ${b.code}：${b.reason}`));
+    // 实盘跟单：收集本日买入信号（压力测试仓 stress 非真实信号，不推送）
+    if (!bypassed) {
+      const buyPct = new Map(safeItems.map((it) => [String(it.code), it.pct]));
+      for (const o of res.submitted) {
+        if (o.side !== 'buy') continue;
+        signalBuys.push({ code: String(o.code), name: o.name || o.code, price: r2((o.submitPrice || 0) * (1 + BUY_SLIP)), pct: buyPct.get(String(o.code)) || PER_POS_PCT });
+      }
+    }
   }
 }
 
@@ -192,6 +232,30 @@ console.log(`  净值 ${out.nav} 元｜持仓 ${out.positionCount} 只｜平仓 
   + `｜总胜率 ${out.tradeReview.winRate == null ? '—' : (out.tradeReview.winRate * 100).toFixed(1) + '%'}`
   + `｜1/3/5日胜率 ${fmtByHold(out.tradeReview.byHold)}`);
 console.log(`  review 已写 ${fileURLToPath(REVIEW_FILE)}`);
+
+// ── 7. 实盘跟单推送（Signal Sync）：把系统算出的买卖信号单独成条推企微 ──
+//   独立于常规日报；极简每条 <100 字；复用 OPS_WEBHOOK 通道 + 内容指纹去重（同日重跑不刷屏）。
+//   fail-open：未配置 webhook / 推送失败均只记日志，绝不阻断 EOD 主流程。
+if (SIGNAL_SYNC && !FORCE_TRADE && (signalBuys.length || signalSells.length)) {
+  step('实盘跟单推送');
+  // 卖出按 code 去重（断板清仓与 v1 出场可能同票；逃生的 urgent 优先保留）
+  const sellByCode = new Map();
+  for (const s of signalSells) {
+    const prev = sellByCode.get(s.code);
+    if (!prev || (s.urgent && !prev.urgent)) sellByCode.set(s.code, s);
+  }
+  const sells = [...sellByCode.values()];
+  const reports = buildSignalSyncReports({ date, buys: signalBuys, sells, stopLabel: EXIT_MODE === 'strict_v1' ? '-5%' : '-8%' });
+  console.log(`  指令 ${reports.length} 条（买入 ${signalBuys.length} / 卖出 ${sells.length}）`);
+  try {
+    const stateFile = fileURLToPath(new URL('../data/paper/signal-sync-push-state.json', import.meta.url));
+    const r = await Promise.race([
+      pushReports(reports, { stateFile, fetchImpl: fetchWithTimeout(8000) }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('推送超时')), 9000)),
+    ]);
+    console.log(`  推送成功 ${r.pushed} 条 / 跳过 ${r.skipped} 条（去重命中或未配置则跳过）`);
+  } catch (e) { console.error(`  [signal-sync] 推送异常（不阻断主流程）: ${e?.message || e}`); }
+}
 
 function fmtByHold(bh) {
   if (!bh) return '—';

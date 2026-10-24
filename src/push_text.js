@@ -300,6 +300,9 @@ export function renderPushText(report) {
       lines.push(`趋势切换 ${txt(p.trend_switch_hits)} 次 · 胜率 ${p.win_rate != null ? pct(p.win_rate) : '—（剧本口径，绑定缺席则无值）'}`);
       if (p.trend_switch_effect?.shadow_note) lines.push(p.trend_switch_effect.shadow_note);
       break;
+    case 'signal_sync':
+      // 实盘跟单指令：极简、独立成条，不附「采集时间 / 完整版见页面」等尾注（已在主流程保证），直接透出 payload.text
+      return report?.payload?.text || '【实盘跟单指令】（内容为空）';
     default:
       lines.push(`【AI 报告 · ${txt(report?.report_type)}】${txt(report?.date)}`);
   }

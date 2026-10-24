@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import {
   PUSH_CONSTS, fingerprintOf, shouldPush, pruneState, recordPushed,
   loadPushState, savePushState, renderPushText, pushReports,
-  gatePreMarket, gateIntraday, gateWeekly,
+  gatePreMarket, gateIntraday, gateWeekly, buildSignalSyncReports,
 } from '../src/ai_report_push.js';
 import { isoWeekStart, buildCandidatePool } from '../src/ai_report.js';
 
@@ -610,5 +610,56 @@ test('pushReports：成功推送记指纹时携带 verified 审计摘要（每�
       const e2 = loadPushState(join(dir2, 's.json')).pushed[0];
       assert.equal(e2.verified, undefined, '无校验台账 → verified 缺席（undefined 不入 JSON）');
     } finally { rmSync(dir2, { recursive: true, force: true }); }
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// ── 9. 实盘跟单指令（Signal Sync · 2026-10-24 用户需求）──────────────────
+test('buildSignalSyncReports：买入/卖出/跌停逃生各自极简成条（<100 字、四行齐全）', () => {
+  const reports = buildSignalSyncReports({
+    date: '2026-10-24',
+    buys: [{ code: '003021', name: '兆威机电', price: 91.75, pct: 0.1 }],
+    sells: [
+      { code: '003021', name: '兆威机电', reason: '隔日强制了结(连板)', urgent: false },
+      { code: '002241', name: '歌尔股份', reason: '跌停逃生(排队成交)', urgent: true },
+    ],
+    stopLabel: '-5%',
+  });
+  assert.equal(reports.length, 3, '买入 + 两笔卖出 = 3 条独立指令');
+  assert.ok(reports.every((r) => r.report_type === 'signal_sync' && r.date === '2026-10-24'), '每条都是 signal_sync、同日期');
+  const buyTxt = reports[0].payload.text;
+  assert.ok(buyTxt.length < 100, `买入指令 <100 字（实际 ${buyTxt.length}）`);
+  assert.ok(buyTxt.includes('🚀【实盘跟单·买入】') && buyTxt.includes('标的：003021 兆威机电')
+    && buyTxt.includes('买价：≈91.75（含滑点）') && buyTxt.includes('仓位：总资金10%') && buyTxt.includes('止损：-5%无条件'), '买入四要素齐全');
+  const sellTxt = reports[1].payload.text;
+  assert.ok(sellTxt.length < 100 && sellTxt.includes('🚨【实盘跟单·卖出】') && sellTxt.includes('原因：隔日强制了结(连板)')
+    && sellTxt.includes('动作：明日开盘手动卖出（T+1 解冻）'), '普通卖出 = 明日手动卖');
+  const escTxt = reports[2].payload.text;
+  assert.ok(escTxt.includes('原因：跌停逃生(排队成交)') && escTxt.includes('动作：立刻市价卖出（今日已触发）'), '跌停逃生 = 立刻卖');
+});
+
+test('renderPushText signal_sync：直接透出 payload.text，不加采集时间/免责尾注', () => {
+  const out = renderPushText({ report_type: 'signal_sync', date: '2026-10-24', payload: { text: '🚀【实盘跟单·买入】2026-10-24\n标的：003021 兆威机电' } });
+  assert.equal(out, '🚀【实盘跟单·买入】2026-10-24\n标的：003021 兆威机电', '逐字透出');
+  assert.ok(!out.includes('数据采集时间') && !out.includes('不构成投资建议'), '不带日报尾注（独立极简）');
+  assert.equal(renderPushText({ report_type: 'signal_sync', date: 'x', payload: {} }), '【实盘跟单指令】（内容为空）', '空内容兜底');
+});
+
+test('pushReports signal_sync：成功推送 + 同日重跑去重防刷屏（跨日新内容照推）', async () => {
+  const mk = (date, code) => buildSignalSyncReports({ date, buys: [{ code, name: 'X', price: 10, pct: 0.1 }], stopLabel: '-5%' });
+  const dir = mkdtempSync(join(tmpdir(), 'airpt-signalsync-'));
+  const stateFile = join(dir, 's.json');
+  try {
+    const ok = { ok: true, status: 200, json: async () => ({ errcode: 0, errmsg: 'ok' }) };
+    const day1 = mk('2026-10-24', '003021');
+    const r1 = await pushReports(day1, { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ok, stateFile, now: new Date('2026-10-24T06:00:00Z') });
+    assert.equal(r1.pushed, 1, '首推成功');
+    // 同日同内容重跑 → 指纹去重，不再推送
+    const r2 = await pushReports(day1, { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ok, stateFile, now: new Date('2026-10-24T07:00:00Z') });
+    assert.equal(r2.pushed, 0, '同日同内容重跑被去重');
+    assert.match(r2.results[0].reason, /duplicate_fingerprint/, '去重 reason 可见');
+    // 次日不同内容 → 新指纹照推
+    const day2 = mk('2026-10-26', '003021');
+    const r3 = await pushReports(day2, { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ok, stateFile, now: new Date('2026-10-26T06:00:00Z') });
+    assert.equal(r3.pushed, 1, '跨日新信号照推');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

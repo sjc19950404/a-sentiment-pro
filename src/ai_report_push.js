@@ -275,6 +275,51 @@ export function buildIntradayAlert(report, now) {
   return { text, synthetic: { report_type: 'intraday_alert', date: report.date, trigger: 'event:intraday', status: 'ok', generated_at: report.generated_at || new Date().toISOString(), payload: { text }, missing_notes: null } };
 }
 
+// ── 实盘跟单指令（Signal Sync · 2026-10-24 用户需求）──────────────────────
+// 把纸面引擎算出的买卖信号，单独成条、极简（每条 <100 字）推企微——与常规日报
+//   完全独立，一眼看懂即可手动执行。不改动交易核心逻辑（paper.js），仅在编排层收集信号。
+//   · buys：今天/明天要建仓的标的（含建议买价含滑点、仓位、止损底线）
+//   · sells：系统触发的卖出（隔日强制了结/移动止盈/硬止损/亏损不过三/断板清仓/跌停逃生）
+//     urgent=true 表示当日已触发（如跌停逃生），应立刻市价卖出；否则 T+1 次日开盘手动卖。
+//   每条信号是一个独立 report（report_type='signal_sync'），由 pushReports 统一去重/推送。
+export function buildSignalSyncReports({ date, buys = [], sells = [], stopLabel = '-5%' }) {
+  const out = [];
+  for (const b of buys) {
+    if (!b || !b.code) continue;
+    out.push({
+      report_type: 'signal_sync',
+      date,
+      trigger: 'schedule',
+      status: 'ok',
+      generated_at: new Date().toISOString(),
+      payload: { text: [
+        `🚀【实盘跟单·买入】${date}`,
+        `标的：${b.code} ${b.name || b.code}`,
+        `买价：≈${b.price}（含滑点）`,
+        `仓位：总资金${Math.round((b.pct ?? 0.1) * 100)}%`,
+        `止损：${stopLabel}无条件`,
+      ].join('\n') },
+    });
+  }
+  for (const s of sells) {
+    if (!s || !s.code) continue;
+    out.push({
+      report_type: 'signal_sync',
+      date,
+      trigger: 'schedule',
+      status: 'ok',
+      generated_at: new Date().toISOString(),
+      payload: { text: [
+        `🚨【实盘跟单·卖出】${date}`,
+        `标的：${s.code} ${s.name || s.code}`,
+        `原因：${s.reason || '系统触发卖出'}`,
+        `动作：${s.urgent ? '立刻市价卖出（今日已触发）' : '明日开盘手动卖出（T+1 解冻）'}`,
+      ].join('\n') },
+    });
+  }
+  return out;
+}
+
 // ── 推送出口（唯一副作用点：fetch + 状态文件；均可注入以便单测）──────────
 /**
  * 推送一组报告（按序；同批内也做指纹去重——重跑同内容只推一次）。
