@@ -22,10 +22,12 @@
 //   gateWeekly    —— tradeDate 为本周最后交易日才生成（周五，或节前最后一天）。
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { atomicWriteJSON } from './fsutil.js';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { marketPhase } from './freshness.js';
 import { resolveHolidays } from './calendar.js';
 import { PUSH_CONSTS, renderPushText, sanitizeWebhookUrl, fingerprintOf } from './push_text.js';
+import { loadRiskBlacklist } from './risk_blacklist.js';
 
 export { PUSH_CONSTS, renderPushText, fingerprintOf }; // 纯渲染层 re-export（Worker/浏览器经 push_text.js 直取，既有 import 路径零改动；fingerprintOf 统一实现见 push_text.js）
 
@@ -84,6 +86,142 @@ export function savePushState(file, state) {
 // ── 文本渲染（PUSH_CONSTS / renderPushText）已抽取至 src/push_text.js（纯函数层，
 //    零 Node 依赖，Node/Worker/浏览器三端通用）——本模块 re-export 保持兼容。
 
+// ── 企微「AI 游资内参」副报文（2026-10-24 用户方案）──────────────────────
+// 设计：在现有推送层叠加**极简 AI 解读层**——所有 AI 文本在 EOD/夜间已由各 fetch
+//   脚本预生成（signals 侧车档：舆情/板块情绪/妖股逻辑/排雷黑名单），推送时**只读取→
+//   过滤→截断**，绝不在推送时刻调 GLM（延迟/成本/离线安全/确定性）。
+//   · 排雷兵（pre_market）：黑名单 ∩（连板池 ∪ 自选池），命中 high/medium 才推，无雷静默。
+//   · AI 盘后情报（post_market）：舆情+板块（题材，|舆情分|≥0.5 才推）+ 妖股（topN），各≤150字。
+//   · 极端反转（reversal）：地天/天地板检测（EOD 近似），≤3 句突发警告（urgent）。
+//   工程纪律：fail-open（任一数据缺失/为空→该副报文不推）；复用指纹/内容去重防刷屏。
+const SRC_DIR = dirname(fileURLToPath(import.meta.url));
+const DATA_DIR = join(SRC_DIR, '..', 'data');
+const readJsonSafe = (rel) => {
+  const p = join(DATA_DIR, rel);
+  if (!existsSync(p)) return null;
+  try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; }
+};
+// 连板池（今日）codes：ztpool_history.json 末条
+function todayZtpoolCodes() {
+  const hist = readJsonSafe('ztpool_history.json');
+  const last = Array.isArray(hist) && hist.length ? hist[hist.length - 1] : null;
+  if (!last || !Array.isArray(last.pool)) return new Set();
+  return new Set((last.pool).map((s) => String(s.c)));
+}
+// 自选池 codes：paper_universe.json 的 symbols 键
+function pickCodes() {
+  const u = readJsonSafe('paper_universe.json');
+  const syms = u && u.symbols ? u.symbols : null;
+  if (!syms) return new Set();
+  return new Set(Object.keys(syms).map(String));
+}
+// 读 signals 的 AI 侧车（舆情/板块/妖股）——与 SPA/日报同源；degraded 一律当缺。
+//   注意：llm/sectorSentiment/dragonLogic 位于 signals-latest.json 顶层（非 sig.signals 子对象）。
+function readSignalsAi() {
+  const sig = readJsonSafe('signals-latest.json');
+  if (!sig || typeof sig !== 'object') return null;
+  return {
+    llm: sig.llm && sig.llm.degraded !== true ? sig.llm : null,
+    sector: sig.sectorSentiment && sig.sectorSentiment.degraded !== true ? sig.sectorSentiment : null,
+    dragon: sig.dragonLogic && sig.dragonLogic.degraded !== true ? sig.dragonLogic : null,
+  };
+}
+// 极端反转检测（EOD 近似：今日 vs 昨日 ztpool）——地天板/天地板
+function detectReversals() {
+  const hist = readJsonSafe('ztpool_history.json');
+  if (!Array.isArray(hist) || hist.length < 2) return [];
+  const today = hist[hist.length - 1];
+  const yest = hist[hist.length - 2];
+  if (!today || !Array.isArray(today.pool)) return [];
+  const yMap = new Map((yest.pool || []).map((s) => [String(s.c), s]));
+  const out = [];
+  for (const s of today.pool) {
+    const zdp = typeof s.zdp === 'number' ? s.zdp : null;
+    const yzdp = yMap.get(String(s.c));
+    const yz = yzdp && typeof yzdp.zdp === 'number' ? yzdp.zdp : null;
+    const ylbc = yzdp && yzdp.lbc ? yzdp.lbc : 0;
+    if (zdp != null && zdp >= 9.5 && yz != null && yz <= -9.5) out.push({ code: s.c, name: s.n, type: '地天板（昨跌停→今涨停）' });
+    else if (zdp != null && zdp <= -9.5 && (yz != null && yz >= 9.5 || ylbc >= 1)) out.push({ code: s.c, name: s.n, type: '天地板（昨涨停/连板→今跌停）' });
+  }
+  return out.slice(0, 6);
+}
+// 长度硬截断（保尾行：数据采集时间 + 免责）
+function capChars(text, n, keepTail = 2) {
+  if (text.length <= n) return text;
+  const lines = text.split('\n');
+  if (lines.length > keepTail + 1) {
+    const tail = lines.slice(-keepTail).join('\n');
+    const head = lines.slice(0, lines.length - keepTail).join('\n');
+    return `${head.length > n - 24 ? head.slice(0, n - 24) : head}\n…（截断）\n${tail}`;
+  }
+  return `${text.slice(0, n - 6)}\n…（截断）`;
+}
+// 内容级去重（与前一日完全一致则跳过防刷屏）：忽略 date 的指纹 + 近 2 天窗口
+function contentSeenRecently(state, cfp, now, withinMs = 2 * 86400000) {
+  return (state?.pushed || []).some((p) => p && p.cfp === cfp && Number.isFinite(Date.parse(p.pushed_at)) && now.getTime() - Date.parse(p.pushed_at) < withinMs);
+}
+
+/** 副报文：盘前排雷兵（黑名单 ∩ 连板池∪自选池；high/medium 才推）。 */
+export function buildMineAlert(report) {
+  const { data } = loadRiskBlacklist(join(DATA_DIR, 'llm_risk_blacklist.json'));
+  if (!data || !Array.isArray(data.blacklist) || !data.blacklist.length) return null;
+  const scope = new Set([...todayZtpoolCodes(), ...pickCodes()]);
+  if (!scope.size) return null;
+  const hits = data.blacklist
+    .filter((b) => scope.has(String(b.code)) && (b.riskLevel === 'high' || b.riskLevel === 'medium'))
+    .slice(0, 12);
+  if (!hits.length) return null;
+  const text = [
+    '☠ ⚠ 【AI 盘前排雷警报】',
+    `今日您的自选池/连板池中，有 ${hits.length} 只股票出现重大利空，已由系统强制拉黑：`,
+    ...hits.map((h) => `☠ ${h.name}（${h.code}）：${(h.reasons || []).join('、')}`),
+    '(系统已拦截自动建仓，请手动规避)',
+  ].join('\n');
+  const cfp = fingerprintOf({ payload: { t: text } });
+  return { text, cfp, dedupeContent: true, synthetic: { report_type: 'pre_market_mine', date: report.date, trigger: report.trigger, status: report.status, generated_at: report.generated_at, payload: { text }, missing_notes: null } };
+}
+/** 副报文：AI 盘后情报（舆情+板块 题材 ≥0.5 才推；妖股 topN；各≤150字）。 */
+export function buildAiBrief(report) {
+  const ai = readSignalsAi();
+  if (!ai) return null;
+  const blocks = [];
+  const llm = ai.llm;
+  if (llm && typeof llm.sentimentRaw === 'number' && Math.abs(llm.sentimentRaw) >= 0.5) {
+    const dir = llm.sentimentRaw > 0 ? '乐观' : '悲观';
+    const macro = ai.sector && ai.sector.macro ? ai.sector.macro.label : null;
+    const blackTalk = ai.sector && ai.sector.blackTalk ? ` ${ai.sector.blackTalk}` : '';
+    let t = `🎯 题材解读：智谱舆情 ${llm.sentimentRaw}（${dir}）${macro ? `，核心逻辑：${macro}。` : ''}${blackTalk}`;
+    if (t.length > 150) t = `${t.slice(0, 149)}…`;
+    blocks.push(t);
+  }
+  const pure = (ai.dragon && Array.isArray(ai.dragon.pureSentiment) ? ai.dragon.pureSentiment : []);
+  if (pure.length) {
+    const items = [];
+    let used = '🐉 妖股透视：'.length;
+    for (const x of pure) {
+      const one = `${x.name}(${x.lb || '?'}板)→${(x.reason || '纯情绪博弈').slice(0, 18)}；`;
+      if (used + one.length > 150) break;
+      items.push(one); used += one.length;
+    }
+    if (items.length) blocks.push('🐉 妖股透视：' + items.join(''));
+  }
+  if (!blocks.length) return null;
+  const text = ['🤖 【AI 盘后情报】', ...blocks].join('\n');
+  const cfp = fingerprintOf({ payload: { t: text } });
+  return { text, cfp, dedupeContent: true, synthetic: { report_type: 'post_market_ai', date: report.date, trigger: report.trigger, status: report.status, generated_at: report.generated_at, payload: { text }, missing_notes: null } };
+}
+/** 副报文：极端反转 urgent（≤3 句突发警告）。 */
+export function buildReversalAlert(report, now) {
+  const revs = detectReversals();
+  if (!revs.length) return null;
+  const text = [
+    '⚡ 【突发异动警告·极端反转】',
+    ...revs.slice(0, 3).map((r) => `${r.name}（${r.code}）${r.type}`),
+    '情绪极端反转，谨慎追高/抄底，仅供参考。',
+  ].join('\n');
+  return { text, synthetic: { report_type: 'reversal_urgent', date: report.date, trigger: 'event:reversal', status: 'ok', generated_at: report.generated_at || (now && now.toISOString()) || new Date().toISOString(), payload: { text }, missing_notes: null } };
+}
+
 // ── 推送出口（唯一副作用点：fetch + 状态文件；均可注入以便单测）──────────
 /**
  * 推送一组报告（按序；同批内也做指纹去重——重跑同内容只推一次）。
@@ -114,53 +252,72 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
   }
   const fetchFn = fetchImpl || (typeof fetch === 'function' ? fetch : null);
   for (const report of list) {
-    const verdict = shouldPush(report, state, now);
-    if (!verdict.push) { results.push({ type: report.report_type, date: report.date, pushed: false, reason: verdict.reason }); continue; }
-    if (!fetchFn) { results.push({ type: report.report_type, date: report.date, pushed: false, reason: '当前环境无 fetch' }); continue; }
+    // ── 主报文 A（数据日报，复用既有 renderPushText；盘后强限制 800 字）──
+    let aText = renderPushText(report);
+    if (report.report_type === 'post_market' && aText.length > 800) aText = capChars(aText, 800);
+    const messages = [{ text: aText, synthetic: report, urgent: report.urgent === true, cfp: null, dedupeContent: false }];
+    // ── 副报文（fail-open：构造异常不影响主报文）──
     try {
-      const res = await fetchFn(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ msgtype: 'text', text: { content: renderPushText(report) } }),
-      });
-      // 解析企微响应体（fetch 注入的 mock 可能没有 .json()/.text()，标准 Response 两者俱在）
-      let wechat = {};
-      try {
-        if (typeof res?.json === 'function') wechat = await res.json();
-        else if (typeof res?.text === 'function') { try { wechat = JSON.parse(await res.text()); } catch { /* swallow: 落到空对象 */ } }
-      } catch { wechat = {}; }
-      console.log(`[企微推送结果] ${report.report_type} ${report.date} → HTTP ${res.status}, errcode: ${wechat.errcode}, errmsg: ${wechat.errmsg}`);
-      // 失败判据：HTTP 非 2xx OR 企微 errcode ≠ 0（93xxx 静默丢包场景：企微常以 HTTP 200 + errcode 9xxxx 表示群解散/机器人被拉起）
-      const httpFail = !res.ok;
-      const apiFail = wechat.errcode !== undefined && wechat.errcode !== 0;
-      if (httpFail || apiFail) {
-        // 失败不记指纹 → 下个 tick 内容未变仍会重试（自愈）
-        const reason = httpFail
-          ? `webhook HTTP ${res.status}（未记指纹，下拍重试）`
-          : `企微 errcode=${wechat.errcode} errmsg=${wechat.errmsg}（未记指纹，下拍重试）`;
-        results.push({ type: report.report_type, date: report.date, pushed: false, reason });
+      if (report.report_type === 'pre_market') { const m = buildMineAlert(report); if (m) messages.push(m); }
+      if (report.report_type === 'post_market') {
+        const m = buildAiBrief(report); if (m) messages.push(m);
+        const rev = buildReversalAlert(report, now); if (rev) messages.push(rev);
+      }
+    } catch (e) {
+      console.error(`[企微副报文] 构造异常（跳过副报文，不影响主报文）: ${e?.message || e}`);
+    }
+    for (const m of messages) {
+      if (m.dedupeContent && m.cfp && contentSeenRecently(state, m.cfp, now)) {
+        results.push({ type: m.synthetic.report_type, date: report.date, pushed: false, reason: 'ai_content_repeat（与前值一致，跳过防刷屏）' });
         continue;
       }
-      pushed += 1;
-      state = recordPushed(state, {
-        fingerprint: verdict.fingerprint,
-        type: report.report_type,
-        date: report.date,
-        // 推送前校验审计（2026-10-10 用户指令「每次推送写入指纹」）：条目携带校验
-        //   摘要——每条推送可追溯「推时校验过没、剔了几只、是否降级」。
-        //   旧档/非盘中报告无 push_verification → 字段缺席（undefined 不入 JSON），不冒充。
-        verified: report.push_verification ? {
-          checked_at: report.push_verification.checkedAtBJ ?? null,
-          snapshot_at: report.push_verification.snapshotAtBJ ?? null,
-          removed: (report.push_verification.trend?.removed?.length || 0)
-            + (report.push_verification.streak?.removed?.length || 0),
-          degraded: report.push_verification.mode_degraded === true,
-          skipped: report.push_verification.applied !== true,
-        } : undefined,
-      }, now);
-      results.push({ type: report.report_type, date: report.date, pushed: true, reason: verdict.reason });
-    } catch (e) {
-      results.push({ type: report.report_type, date: report.date, pushed: false, reason: `推送失败: ${e?.message || e}（未记指纹，下拍重试）` });
+      const verdict = shouldPush(m.synthetic, state, now);
+      if (!verdict.push) { results.push({ type: m.synthetic.report_type, date: report.date, pushed: false, reason: verdict.reason }); continue; }
+      if (!fetchFn) { results.push({ type: m.synthetic.report_type, date: report.date, pushed: false, reason: '当前环境无 fetch' }); continue; }
+      try {
+        const res = await fetchFn(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ msgtype: 'text', text: { content: m.text } }),
+        });
+        // 解析企微响应体（fetch 注入的 mock 可能没有 .json()/.text()，标准 Response 两者俱在）
+        let wechat = {};
+        try {
+          if (typeof res?.json === 'function') wechat = await res.json();
+          else if (typeof res?.text === 'function') { try { wechat = JSON.parse(await res.text()); } catch { /* swallow */ } }
+        } catch { wechat = {}; }
+        console.log(`[企微推送结果] ${m.synthetic.report_type} ${report.date} → HTTP ${res.status}, errcode: ${wechat.errcode}, errmsg: ${wechat.errmsg}`);
+        // 失败判据：HTTP 非 2xx OR 企微 errcode ≠ 0（93xxx 静默丢包场景：企微常以 HTTP 200 + errcode 9xxxx 表示群解散/机器人被拉起）
+        const httpFail = !res.ok;
+        const apiFail = wechat.errcode !== undefined && wechat.errcode !== 0;
+        if (httpFail || apiFail) {
+          // 失败不记指纹 → 下个 tick 内容未变仍会重试（自愈）
+          const reason = httpFail
+            ? `webhook HTTP ${res.status}（未记指纹，下拍重试）`
+            : `企微 errcode=${wechat.errcode} errmsg=${wechat.errmsg}（未记指纹，下拍重试）`;
+          results.push({ type: m.synthetic.report_type, date: report.date, pushed: false, reason });
+          continue;
+        }
+        pushed += 1;
+        state = recordPushed(state, {
+          fingerprint: verdict.fingerprint,
+          type: m.synthetic.report_type,
+          date: report.date,
+          cfp: m.cfp || undefined,
+          // 推送前校验审计摘要仅挂主报文（m.cfp 缺席者即主报文；副报文不冒充校验结论）
+          verified: m.cfp ? undefined : (report.push_verification ? {
+            checked_at: report.push_verification.checkedAtBJ ?? null,
+            snapshot_at: report.push_verification.snapshotAtBJ ?? null,
+            removed: (report.push_verification.trend?.removed?.length || 0)
+              + (report.push_verification.streak?.removed?.length || 0),
+            degraded: report.push_verification.mode_degraded === true,
+            skipped: report.push_verification.applied !== true,
+          } : undefined),
+        }, now);
+        results.push({ type: m.synthetic.report_type, date: report.date, pushed: true, reason: verdict.reason });
+      } catch (e) {
+        results.push({ type: m.synthetic.report_type, date: report.date, pushed: false, reason: `推送失败: ${e?.message || e}（未记指纹，下拍重试）` });
+      }
     }
   }
   if (stateFile) savePushState(stateFile, state);
