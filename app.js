@@ -3086,8 +3086,9 @@ function renderDailyReport(rep, errMsg) {
     return;
   }
   const secs = Array.isArray(rep.sections) ? rep.sections : [];
-  // ⚠ 2026-10-17 用户指令：LLM 舆情试点暂停，前端隐藏（id==='llm' 不渲染、不计入数据缺口）
-  const visSecs = secs.filter((s) => s.id !== 'llm');
+  // 2026-10-24 用户指令：取消隐藏第八节（舆情参考 LLM 试点）——恢复渲染；
+  //   数据未生成时由 buildLlmSection 显式标「未生成」，不冒充中性（与其他节同款缺数据口径）。
+  const visSecs = secs;
   const missingN = visSecs.filter((s) => s.missing).length;
   const tagTone = REGIME_TONE[rep.tag && rep.tag.key] || 'unknown';
 
