@@ -61,16 +61,32 @@ function collectLadder(tradeDate) {
     const pu = JSON.parse(readFileSync(resolvePath('data/paper_universe.json'), 'utf8'));
     names = (pu.symbols || {});
   } catch { /* 无 universe → 仅 code */ }
-  // hybk 来自 ztpool_history 最新交易日条目
+  // hybk / 涨跌幅 / 成交额 / 炸板次数 来自 ztpool_history 最新交易日条目
+  //   （注：当前 ztpool 快照无 换手率/封单量/龙虎榜席位，以 连板+涨跌幅+成交额+炸板 作代理推断）
+  const ztMeta = {};
   try {
     const z = JSON.parse(readFileSync(resolvePath('data/ztpool_history.json'), 'utf8'));
     const entries = Object.values(z);
     const last = entries.reduce((a, b) => (b.date > a.date ? b : a), entries[0] || { pool: [] });
-    (last.pool || []).forEach((p) => { if (p.c) hybk[p.c] = p.hybk || ''; });
-  } catch { /* 无 ztpool → hybk 空 */ }
+    (last.pool || []).forEach((p) => {
+      if (p.c) {
+        hybk[p.c] = p.hybk || '';
+        ztMeta[p.c] = {
+          chg: p.zdp != null ? +p.zdp : null,
+          amountY: p.amount != null ? p.amount / 1e8 : null,
+          zbc: p.zbc != null ? +p.zbc : null,
+        };
+      }
+    });
+  } catch { /* 无 ztpool → 空 */ }
 
   const nameOf = (c) => (names[c] && names[c].name) || c;
-  let arr = Object.keys(ztLb).map((c) => ({ code: c, name: nameOf(c), lb: Number(ztLb[c]) || 0, hybk: hybk[c] || '' }));
+  let arr = Object.keys(ztLb).map((c) => ({
+    code: c, name: nameOf(c), lb: Number(ztLb[c]) || 0, hybk: hybk[c] || '',
+    chg: ztMeta[c] ? ztMeta[c].chg : null,
+    amountY: ztMeta[c] ? ztMeta[c].amountY : null,
+    zbc: ztMeta[c] ? ztMeta[c].zbc : null,
+  }));
   // 连板梯队：优先连板≥2，不足 LIMIT 再用首板补足
   const ge2 = arr.filter((x) => x.lb >= 2).sort((a, b) => b.lb - a.lb);
   const eq1 = arr.filter((x) => x.lb < 2).sort((a, b) => b.lb - a.lb);
@@ -91,27 +107,24 @@ function readSectorMood() {
 }
 
 // ── 3. GLM 逻辑推演 ────────────────────────────────────────────────────────
-const SYSTEM = `你是 A 股"妖股逻辑推演"分析师。我会给你一批**连板股**（连续涨停的票），每只附：股票代码/名称、连板天数、所属行业板块，以及全市场"板块情绪因子"（由另一模型从当日宏观/行业新闻聚合得出，score∈[-1,1]，正值=利好催化、负值=利空）。
+const SYSTEM = `你是 A 股"游资毒舌"筹码分析师。我会给你一批**连板股**（连续涨停的票），每只附：代码/名称、连板天数、行业板块，以及（若有）当日涨跌幅(%)、成交额(亿元)、炸板次数；另附全市场"板块情绪因子"（由另一模型从当日宏观/行业新闻聚合，score∈[-1,1]，正=利好、负=利空）。
 
-请逐只推断它**为什么涨停**，并判定驱动性质：
-- logic_type：
-  - "题材驱动"：由明确题材/概念催化（AI、机器人、低空经济、重组、政策受益等），且板块情绪为正或中性；
-  - "政策催化"：由宏观/行业政策直接驱动；
-  - "基本面驱动"：由业绩/订单/重组等实质利好驱动；
-  - "情绪驱动"：无明显题材或基本面，靠连板赚钱效应/游资接力/情绪博弈；
-  - "纯情绪炒作"：高连板、无实质题材/基本面支撑、板块无利好甚至有利空，纯粹资金博弈，风险较高；
-  - "未知"：信息不足无法判断。
-- is_pure_sentiment：是否偏纯情绪炒作（true/false）。当 logic_type 为"纯情绪炒作"，或"情绪驱动"且连板≥4，多为 true。
-- confidence：0~1 推断把握。
-- reason：≤40 字一句话逻辑。
+请逐只给出一句 **≤30 字** 的"筹码定性"判词（游资复盘口吻、犀利、口语化、敢说真话），定性其筹码松紧与次日预期，例如：
+- "拉萨天团接盘，高位爆量分歧，明日大概率核按钮"
+- "机构与游资共振，缩量硬板，预期一字加速"
+- "一字独食无换手，通道党游戏，散户别凑热闹"
+同时判定驱动性质 logic_type 与是否纯情绪炒作 is_pure_sentiment、把握 confidence。
 
-判定纪律：
-1. 依据"板块情绪因子"：若某股所属板块当前 score 明显为正且有利好事件，更可能是题材/政策驱动；若板块为负或"无数据"却高连板，警惕纯情绪炒作。
-2. 连板天数越高、板块无催化，纯情绪炒作概率越大。
-3. 不编造未提及的题材；板块情绪为"无数据"时不臆测，按连板与行业常识推断。
-4. 你只做"逻辑推演与分类"，绝不修改任何分数或状态。
+筹码定性依据（按优先级；某维度数据缺失则跳过该维度，**绝不编造具体席位名**）：
+1. 连板高度越高 + 板块无利好 → 越偏纯情绪炒作、越危险。
+2. 成交额(亿)极大且炸板次数多 → 爆量分歧、筹码松动；极小且缩量封死 → 硬板加速。
+3. 炸板次数多 → 封单不坚决、抛压重。
+4. 板块情绪明显为正/负 → 叠加题材/利空判定。
+（换手率/封单量/龙虎榜席位若数据缺失，按 连板高度+量能+炸板 推断，用"游资/拉萨/机构"等泛称，不虚构席位。）
 
-只输出一个 JSON 数组，元素：{"code":"","name":"","logic_type":"题材驱动|政策催化|基本面驱动|情绪驱动|纯情绪炒作|未知","is_pure_sentiment":false,"confidence":0.0,"reason":""}。不要任何其他文字。`;
+纪律：不编造未提及的题材；你只做定性，绝不修改任何分数或状态。
+
+只输出一个 JSON 数组，元素：{"code":"","name":"","logic_type":"题材驱动|政策催化|基本面驱动|情绪驱动|纯情绪炒作|未知","is_pure_sentiment":false,"confidence":0.0,"reason":""}。reason 必须是 ≤30 字的游资毒舌筹码定性。不要任何其他文字。`;
 
 function glmConfig() {
   const API_URL = process.env.LLM_API_URL
@@ -125,8 +138,9 @@ async function callGLM(stocksBatch, mood, tradeDate) {
     : '全市场板块情绪因子：无数据（未运行场景二）；请仅按连板与行业常识推断。';
   const user = `当前时间：${tradeDate}（A 股最新交易日；以下为当日连板股数据，请据此而非训练记忆判断）。\n\n`
     + moodText + '\n\n'
-    + '连板股（编号. [连板数板] 代码 名称（行业：hybk））：\n'
-    + stocksBatch.map((s, i) => `${i + 1}. [${s.lb}板] ${s.code} ${s.name}（行业：${s.hybk || '未知'}）`).join('\n');
+    + '连板股（编号. [连板数板] 代码 名称（行业：hybk）[涨跌幅%][成交额亿][炸板次数]）：\n'
+    + stocksBatch.map((s, i) => `${i + 1}. [${s.lb}板] ${s.code} ${s.name}（行业：${s.hybk || '未知'}）`
+      + `${s.chg != null ? ` 涨跌幅 ${s.chg}%` : ''}${s.amountY != null ? ` 成交额 ${s.amountY.toFixed(2)}亿` : ''}${s.zbc != null ? ` 炸板 ${s.zbc}次` : ''}`).join('\n');
   const { API_URL, API_KEY, MODEL } = glmConfig();
   const chat = await fetchWithRetry(`${API_URL.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
@@ -205,7 +219,7 @@ async function main() {
             logic_type: ['题材驱动', '政策催化', '基本面驱动', '情绪驱动', '纯情绪炒作', '未知'].includes(x.logic_type) ? x.logic_type : '未知',
             is_pure_sentiment: x.is_pure_sentiment === true,
             confidence: Number(x.confidence) || 0.3,
-            reason: typeof x.reason === 'string' ? x.reason.slice(0, 60) : '',
+            reason: typeof x.reason === 'string' ? x.reason.slice(0, 30) : '',
           });
         });
       } catch (e) {

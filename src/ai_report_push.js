@@ -140,8 +140,8 @@ function detectReversals() {
     const yzdp = yMap.get(String(s.c));
     const yz = yzdp && typeof yzdp.zdp === 'number' ? yzdp.zdp : null;
     const ylbc = yzdp && yzdp.lbc ? yzdp.lbc : 0;
-    if (zdp != null && zdp >= 9.5 && yz != null && yz <= -9.5) out.push({ code: s.c, name: s.n, type: '地天板（昨跌停→今涨停）' });
-    else if (zdp != null && zdp <= -9.5 && (yz != null && yz >= 9.5 || ylbc >= 1)) out.push({ code: s.c, name: s.n, type: '天地板（昨涨停/连板→今跌停）' });
+    if (zdp != null && zdp >= 9.5 && yz != null && yz <= -9.5) out.push({ code: s.c, name: s.n, type: '地天板' });
+    else if (zdp != null && zdp <= -9.5 && (yz != null && yz >= 9.5 || ylbc >= 1)) out.push({ code: s.c, name: s.n, type: '天地板' });
   }
   return out.slice(0, 6);
 }
@@ -167,15 +167,19 @@ export function buildMineAlert(report) {
   if (!data || !Array.isArray(data.blacklist) || !data.blacklist.length) return null;
   const scope = new Set([...todayZtpoolCodes(), ...pickCodes()]);
   if (!scope.size) return null;
+  // 降噪：按严重度降序（high > medium），单日命中 > 5 只只推前 5 并在末尾标注总数
+  const sev = (b) => (b.riskLevel === 'high' ? 2 : b.riskLevel === 'medium' ? 1 : 0);
   const hits = data.blacklist
     .filter((b) => scope.has(String(b.code)) && (b.riskLevel === 'high' || b.riskLevel === 'medium'))
-    .slice(0, 12);
-  if (!hits.length) return null;
+    .sort((a, b) => sev(b) - sev(a));
+  const total = hits.length;
+  if (!total) return null;
+  const shown = hits.slice(0, 5);
   const text = [
     '☠ ⚠ 【AI 盘前排雷警报】',
-    `今日您的自选池/连板池中，有 ${hits.length} 只股票出现重大利空，已由系统强制拉黑：`,
-    ...hits.map((h) => `☠ ${h.name}（${h.code}）：${(h.reasons || []).join('、')}`),
-    '(系统已拦截自动建仓，请手动规避)',
+    `今日您的自选池/连板池中，有 ${total} 只股票出现重大利空，已由系统强制拉黑：`,
+    ...shown.map((h) => `☠ ${h.name}（${h.code}）：${(h.reasons || []).join('、')}`),
+    total > 5 ? `等共 ${total} 只触发风险，请前往前端查看完整黑名单` : '(系统已拦截自动建仓，请手动规避)',
   ].join('\n');
   const cfp = fingerprintOf({ payload: { t: text } });
   return { text, cfp, dedupeContent: true, synthetic: { report_type: 'pre_market_mine', date: report.date, trigger: report.trigger, status: report.status, generated_at: report.generated_at, payload: { text }, missing_notes: null } };
@@ -199,7 +203,7 @@ export function buildAiBrief(report) {
     const items = [];
     let used = '🐉 妖股透视：'.length;
     for (const x of pure) {
-      const one = `${x.name}(${x.lb || '?'}板)→${(x.reason || '纯情绪博弈').slice(0, 18)}；`;
+      const one = `${x.name}(${x.lb || '?'}板)→${(x.reason || '纯情绪博弈').slice(0, 30)}；`;
       if (used + one.length > 150) break;
       items.push(one); used += one.length;
     }
@@ -210,16 +214,39 @@ export function buildAiBrief(report) {
   const cfp = fingerprintOf({ payload: { t: text } });
   return { text, cfp, dedupeContent: true, synthetic: { report_type: 'post_market_ai', date: report.date, trigger: report.trigger, status: report.status, generated_at: report.generated_at, payload: { text }, missing_notes: null } };
 }
-/** 副报文：极端反转 urgent（≤3 句突发警告）。 */
+/** 副报文：盘后地天/天地板异动复盘（随 21:00 post_market 一起推；EOD 日频近似）。 */
 export function buildReversalAlert(report, now) {
   const revs = detectReversals();
   if (!revs.length) return null;
   const text = [
-    '⚡ 【突发异动警告·极端反转】',
-    ...revs.slice(0, 3).map((r) => `${r.name}（${r.code}）${r.type}`),
-    '情绪极端反转，谨慎追高/抄底，仅供参考。',
+    '📉 【盘后极端异动复盘】',
+    ...revs.slice(0, 3).map((r) => `今日极端异动：${r.name}（${r.code}）上演${r.type}，明日注意情绪反噬风险。`),
   ].join('\n');
-  return { text, synthetic: { report_type: 'reversal_urgent', date: report.date, trigger: 'event:reversal', status: 'ok', generated_at: report.generated_at || (now && now.toISOString()) || new Date().toISOString(), payload: { text }, missing_notes: null } };
+  return { text, synthetic: { report_type: 'post_market_reversal', date: report.date, trigger: 'event:reversal', status: 'ok', generated_at: report.generated_at || (now && now.toISOString()) || new Date().toISOString(), payload: { text }, missing_notes: null } };
+}
+
+/** 副报文：盘中轻量 AI 监控（持仓 + 连板池急跌/异动 → ≤30 字预警；非极端不打扰）。 */
+export function buildIntradayAlert(report) {
+  const alerts = [];
+  // 连板池异动：今日 ztpool 中急跌（zdp <= -5%，天地板/炸板回落）
+  const hist = readJsonSafe('ztpool_history.json');
+  const last = Array.isArray(hist) && hist.length ? hist[hist.length - 1] : null;
+  (last && Array.isArray(last.pool) ? last.pool : []).forEach((s) => {
+    const zdp = typeof s.zdp === 'number' ? s.zdp : null;
+    if (zdp != null && zdp <= -5) alerts.push(`⚠ ${s.n || s.c}（${s.c}）连板池异动：盘中跌 ${zdp.toFixed(1)}%，情绪退潮。`);
+  });
+  // 持仓股急跌：account.json 持仓若带盘中涨跌幅则监控（无报价侧车时为 no-op）
+  const acc = readJsonSafe('paper/account.json');
+  const pos = (acc && acc.positions && typeof acc.positions === 'object') ? acc.positions : {};
+  Object.keys(pos).forEach((code) => {
+    const p = pos[code] || {};
+    const chg = (p.intraday_chg != null) ? Number(p.intraday_chg) : (p.chgPct != null ? Number(p.chgPct) : null);
+    if (chg != null && chg <= -5) alerts.push(`⚠ ${p.name || code}（${code}）持仓急跌 ${chg.toFixed(1)}%，留意消息面。`);
+  });
+  if (!alerts.length) return null;
+  const capped = alerts.slice(0, 3).map((a) => (a.length > 30 ? `${a.slice(0, 29)}…` : a)); // 每条 ≤30 字硬约束
+  const text = ['🔔 【盘中异动预警】（持仓/连板池）', ...capped].join('\n');
+  return { text, synthetic: { report_type: 'intraday_alert', date: report.date, trigger: 'event:intraday', status: 'ok', generated_at: report.generated_at || new Date().toISOString(), payload: { text }, missing_notes: null } };
 }
 
 // ── 推送出口（唯一副作用点：fetch + 状态文件；均可注入以便单测）──────────
@@ -263,6 +290,7 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
         const m = buildAiBrief(report); if (m) messages.push(m);
         const rev = buildReversalAlert(report, now); if (rev) messages.push(rev);
       }
+      if (report.report_type === 'intraday') { const a = buildIntradayAlert(report); if (a) messages.push(a); }
     } catch (e) {
       console.error(`[企微副报文] 构造异常（跳过副报文，不影响主报文）: ${e?.message || e}`);
     }
