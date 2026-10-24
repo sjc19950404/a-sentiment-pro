@@ -64,7 +64,7 @@ function runAutopsy(exitMode) {
   const pendingEntry = new Map();    // code -> {type,streak}，提交时写入，成交时消费
   const lastExitReason = new Map();  // code -> 当日出场原因（v1 的 strictV1Exits 带 reason），平仓时归因
   let slippageCost = 0;             // strict 下非涨停买入多付的滑点成本合计
-  let buyFills = 0, sellFills = 0, manualSells = 0; // 调试计数
+  let buyFills = 0, sellFills = 0, manualSells = 0, escapeFills = 0; // 调试计数（escapeFills：跌停逃生脱身笔数）
   let peak = 1000000, maxDd = 0;
   const nav = [];
 
@@ -97,15 +97,16 @@ function runAutopsy(exitMode) {
         }
       } else {
         sellFills++;
+        const isEscape = !!(f.reason && /逃生/.test(f.reason));
+        if (isEscape) escapeFills++;
         const i = opens.findIndex((o) => o.code === f.code);
         if (i >= 0) {
           const o = opens.splice(i, 1)[0];
           const holdDays = (dateIndex.get(date) || 0) - (dateIndex.get(o.entryDate) || 0);
-          const cause = blocked.has(f.code) ? 'limit_down_block'
-            : lastExitReason.get(f.code)
-            || (exitMode === 'nextday' ? 'forced_nextday'
-              : exitMode === 'stop5' ? 'stop5'
-              : 'stop_loss');
+          let cause = blocked.has(f.code) ? 'limit_down_block' : null;
+          if (!cause && isEscape) cause = 'limit_down_escape';   // 跌停逃生：在首个跌停日脱身，避免了后续跌停瀑布
+          if (!cause) cause = lastExitReason.get(f.code);
+          if (!cause) cause = exitMode === 'nextday' ? 'forced_nextday' : exitMode === 'stop5' ? 'stop5' : 'stop_loss';
           trades.push({
             code: f.code, name: o.name, type: o.type, streak: o.streak,
             entryDate: o.entryDate, entryPrice: o.entryPrice, entryIsLimitUp: o.entryIsLimitUp,
@@ -162,7 +163,7 @@ function runAutopsy(exitMode) {
     maxDd = Math.max(maxDd, (peak - s.total) / peak);
   }
 
-  return { trades, slippageCost, nav, finalEquity: nav[nav.length - 1].equity, maxDd, buyFills, sellFills, manualSells, openRemaining: opens.length };
+  return { trades, slippageCost, nav, finalEquity: nav[nav.length - 1].equity, maxDd, buyFills, sellFills, manualSells, escapeFills, openRemaining: opens.length };
 }
 
 // ───────── 报告 ─────────
@@ -213,8 +214,11 @@ function deathCauses(label, t) {
   console.log(`\n  【${label}】死法归因`);
   const ld = t.filter((x) => x.cause === 'limit_down_block');
   const ldLoss = ld.reduce((a, x) => a + x.realized, 0);
+  const esc = t.filter((x) => x.cause === 'limit_down_escape');
+  const escLoss = esc.reduce((a, x) => a + x.realized, 0);
   const totalLoss = t.filter((x) => !x.win).reduce((a, x) => a + x.realized, 0);
-  console.log(`    · 跌停卖不掉（大面死法）：样本 ${ld.length} 笔｜亏损 ${money(ldLoss)}｜占全部亏损 ${(totalLoss ? ldLoss / totalLoss : 0 * 100).toFixed(0)}%`);
+  console.log(`    · 跌停卖不掉（硬扛到开板才卖，旧死法）：样本 ${ld.length} 笔｜亏损 ${money(ldLoss)}｜占全部亏损 ${(totalLoss ? ldLoss / totalLoss : 0 * 100).toFixed(0)}%`);
+  console.log(`    · 跌停逃生（9:25 挂跌停价排队，首个跌停日脱身）：样本 ${esc.length} 笔｜亏损 ${money(escLoss)}（已避免「跌停瀑布」式连日下挫）`);
   const zt = t.filter((x) => x.type === 'zt');
   const ztLoss = zt.reduce((a, x) => a + x.realized, 0);
   const ztWin = zt.filter((x) => x.win).length;
@@ -252,6 +256,7 @@ const sV1 = summarize('新出场规则（PAPER_EXIT=strict_v1）：隔日了结(
 breakdownByType('新出场规则', v1.trades);
 breakdownByHold('新出场规则', v1.trades);
 deathCauses('新出场规则', v1.trades);
+console.log(`  【跌停逃生战果】v1 共 ${v1.escapeFills} 笔在跌停日成功排队脱身（原会被「跌停卖不掉」硬扛数日瀑布下挫）；占 v1 全部平仓 ${(v1.escapeFills / Math.max(1, v1.trades.length) * 100).toFixed(0)}%。`);
 
 console.log('\n════════════════════ 尸检结论（参谋视角） ════════════════');
 console.log(`  【核验】基准买入成交 ${base.buyFills} 笔 / 卖出成交 ${base.sellFills} 笔 / 配对平仓 ${base.trades.length} 笔 / 期末仍未平 ${base.openRemaining} 仓。`);

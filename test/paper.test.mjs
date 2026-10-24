@@ -934,3 +934,60 @@ test('Step4 板块暴露限制：未超上限时放行（且默认关闭不影�
   assert.equal(res2.submitted.length, 1, '默认关闭板块限制时照常放行');
 });
 
+// ────────────────────── 出场纪律 v1：跌停逃生（最后一道保险） ──────────────────────
+// 背景：连板票次日常一字跌停「卖不掉」，硬扛数日瀑布下挫是 v1 之前的头号死法。
+// 逃生 = 带 escape 标记的紧急卖单，在触及跌停时改以跌停价挂单排队（等同 9:25 前抢排队），
+// 尽量在首个跌停日脱身；非一字跌停（盘中摸跌停后开板）则走正常按价成交，不卡单。
+// 注：逃生是 v1 专属开关内的行为，legacy / 其它模式不受影响（下一条对照锁定）。
+
+test('v1 跌停逃生：连板隔日了结仓在跌停日改以跌停价排队成交（而非硬扛数日）', () => {
+  const code = '600000', name = '浦发银行';   // 主板 ±10%
+  const mkPos = (days) => ({
+    code, name, qty: 1000, avail: 1000, avgCost: 10, cost: 10000, grossBuy: 10000, fee: 0,
+    openDate: '2026-09-25', days, lastBuyDate: '2026-09-25', last: 10, lastDate: '2026-09-29',
+    pxStale: false, sector: null, isZtLb: true,
+  });
+  let a = { ...fresh(1000000), positions: { [code]: mkPos(2) } };
+  // Day1：触发 v1 隔日强制了结，生成带 escape 的待卖单（T+1 次日才撮合）
+  const r1 = settleDay(a, '2026-09-30', { [code]: Q(code, name, 10, 0) }, { exitMode: 'strict_v1' });
+  const pend = r1.account.pending.find((o) => o.code === code && o.side === 'sell');
+  assert.ok(pend, 'v1 应生成连板隔日了结的待卖单');
+  assert.equal(pend.escape, true, 'v1 紧急卖单必须带 escape 逃生标记（竞价排雷 / 盘中止损共用）');
+  assert.equal(r1.fills.length, 0, 'T+1：当日提交的卖单当日不成交');
+  // Day2：该票一字跌停（prevClose=10 → 跌停价 9）。逃生应以跌停价排队成交，截断瀑布
+  const r2 = settleDay(r1.account, '2026-10-09', { [code]: { code, name, price: 9, changePct: -10, prevClose: 10 } }, { exitMode: 'strict_v1' });
+  assert.equal(r2.account.positions[code], undefined, '跌停日逃生后应已清仓');
+  const fill = r2.fills.find((f) => f.code === code && f.side === 'sell');
+  assert.ok(fill, '应产生卖成记录');
+  assert.match(fill.reason || '', /逃生/, '应以「跌停逃生」方式成交');
+  assert.equal(fill.price, 9, '逃生成交价 = 跌停价（不叠加悲观滑点）');
+  assert.ok(r2.account.realized < 0, '跌停逃生仍有亏损，但已锁定在首个跌停日，不再瀑布');
+});
+
+test('v1 跌停逃生对照：无 escape 的普通卖单在跌停日仍失效（逃生是 v1 专属，不改 legacy）', () => {
+  const code = '600519', name = '贵州茅台';
+  const pos = { code, name, qty: 1000, avail: 1000, avgCost: 100, cost: 100000, grossBuy: 100000, fee: 0, openDate: '2026-09-25', days: 2, lastBuyDate: '2026-09-25', last: 100, lastDate: '2026-09-29', pxStale: false, sector: null };
+  let a = { ...fresh(1000000), positions: { [code]: pos } };
+  a = submitOrder(a, { code, side: 'sell', qty: 1000 }, Q(code, name, 100), { date: '2026-09-30' }).next;
+  // 跌停日结算：不带 escape → 维持旧死法（委托失效、持仓硬扛）
+  const r = settleDay(a, '2026-10-09', { [code]: { code, name, price: 90, changePct: -10, prevClose: 100 } }, {});
+  assert.equal(r.fills.length, 0, '无 escape 的卖单在跌停日不得成交');
+  assert.ok(r.expired.find((e) => e.code === code && e.side === 'sell'), '应判定为「跌停卖不掉」失效（旧死法）');
+  assert.equal(r.account.positions[code].qty, 1000, '旧死法下持仓硬扛未平');
+});
+
+test('v1 跌停逃生边界：非一字跌停（盘中止损/竞价未跌停）走正常按价成交，不误触发逃生', () => {
+  const code = '600000', name = '浦发银行';
+  const mkPos = (days) => ({ code, name, qty: 1000, avail: 1000, avgCost: 10, cost: 10000, grossBuy: 10000, fee: 0, openDate: '2026-09-25', days, lastBuyDate: '2026-09-25', last: 10, lastDate: '2026-09-29', pxStale: false, sector: null, isZtLb: true });
+  let a = { ...fresh(1000000), positions: { [code]: mkPos(2) } };
+  const r1 = settleDay(a, '2026-09-30', { [code]: Q(code, name, 10, 0) }, { exitMode: 'strict_v1' });
+  // Day2：仅 -5% 回调（非跌停）→ 正常按价成交，不应以跌停价 / 不应触发逃生
+  const r2 = settleDay(r1.account, '2026-10-09', { [code]: { code, name, price: 9.5, changePct: -5, prevClose: 10 } }, { exitMode: 'strict_v1' });
+  assert.equal(r2.account.positions[code], undefined, '非跌停日也应正常清仓');
+  const fill = r2.fills.find((f) => f.code === code && f.side === 'sell');
+  assert.ok(fill, '应正常成交');
+  assert.ok(!(fill.reason || '').includes('逃生'), '非跌停日不应打逃生标记（reason 应为原出场原因而非逃生）');
+  assert.ok(Math.abs(fill.price - 9.5) < 0.01, `成交价应为当日真实价（含默认万二滑点 ≈9.498，非跌停价 9），实际 ${fill.price}`);
+});
+
+

@@ -473,6 +473,7 @@ export const EXIT_V1 = {
   trailPullback: 0.03,
   hardStop: -0.05,
   lossMaxDays: 3,
+  escape: true,   // 跌停逃生：v1 的紧急卖单带 escape 标记，触及跌停时改以跌停价挂单排队（9:25 前抢排队），尽量在首个跌停日脱身，避免后续跌停瀑布
 };
 
 /**
@@ -658,6 +659,7 @@ export function submitOrder(acct, order, quote, ctx = {}) {
     id, submitDate: date, code: order.code, name: quote?.name || '',
     side: order.side, qty: order.qty, reason: order.reason || '手动下单',
     tag: order.tag || null,   // 选股侧传来的分类标签（如 'zt' 连板/打板），仅透传，不参与任何校验
+    escape: order.escape || null,   // 跌停逃生标记：v1 紧急卖单置 true，触及跌停时改以跌停价排队成交
     submitPrice: quote?.price != null ? +quote.price : null,
   };
   if (!v.ok) {
@@ -1142,16 +1144,19 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
         continue;
       }
     }
-    if (p.side === 'sell' && hit === 'down') {
+    // 跌停卖不掉：默认委托失效（无买盘）。带 escape 逃生标记的卖单（v1「跌停逃生」）改以跌停价挂单排队，
+    // 尽量在首个跌停日脱身，避免后续跌停瀑布式下挫（等同 9:25 前已挂跌停价卖单抢排队；盘中非一字跌停则正常卖出）。
+    if (p.side === 'sell' && hit === 'down' && !p.escape) {
       log.push({ ...pick(p), status: 'expired', reason: '跌停价无法卖出', detail: `${date} ${q.changePct}% 触及跌停，无买盘，委托失效` });
       cur = { ...cur, orders: cur.orders.map((o) => (o.id === p.id ? { ...o, status: 'expired', settleDate: date, reject: '跌停价无法卖出', detail: `${date} 触及跌停，无买盘` } : o)) };
       markDone(p.id);
       continue;
     }
+    const escaped = p.side === 'sell' && hit === 'down' && !!p.escape;
 
     // 悲观滑点（Step 1）：strict 模式下，非涨停买卖按 ±slipNonLimit 成交；涨停打板仍用万二
     const slip = (exec.mode === 'strict' && hit == null) ? exec.slipNonLimit : (p.slip ?? DEFAULT_SLIP);
-    const px = fillPrice(+q.price, p.side, slip);
+    const px = escaped ? +q.price : fillPrice(+q.price, p.side, slip);
     const gross = round2(px * p.qty);
     const fee = fees(gross, p.side).total;
     const need = p.side === 'buy' ? round2(gross + fee) : 0;
@@ -1203,7 +1208,7 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
         orders: cur.orders.map((o) => (o.id === p.id ? fillRec(o, { date, px, gross, fee }) : o)),
         trades: [...cur.trades, tradeRec(p, { date, px, gross, fee, name })],
       };
-      log.push({ ...pick(p), status: 'filled', price: px, gross, fee, realized: applied.realized });
+      log.push({ ...pick(p), status: 'filled', price: px, gross, fee, realized: applied.realized, reason: escaped ? '跌停逃生(排队成交)' : (p.reason || null) });
       markDone(p.id);
     }
   }
@@ -1353,7 +1358,7 @@ export function strictV1Exits(acct, date, cfg = EXIT_V1) {
       continue;
     }
     const q = { code: it.code, name: it.name, price: it.last };
-    const sub = submitOrder(cur, { code: it.code, side: 'sell', qty: it.willSell, reason: it.reason }, q, { date });
+    const sub = submitOrder(cur, { code: it.code, side: 'sell', qty: it.willSell, reason: it.reason, escape: cfg.escape }, q, { date });
     cur = sub.next;
     if (sub.order.status !== 'pending') {
       cur = { ...cur, logs: appendLog(cur, { date, code: it.code, name: it.name, side: 'sell', qty: it.willSell, stage: 'exit', result: 'rejected',
