@@ -11,6 +11,7 @@ import {
   validateOrder, submitOrder, cancelOrder, settleDay, paperMetrics,
   exportAccount, importAccount, quotesFromDay, REJECT,
   POS_TIERS, CUT_TIERS, qtyByAssetPct, qtyByHoldPct, DEFAULT_SLIP,
+  normalizeExec, limitBuyOutcome, riskGuard, RISK_REJECT, batchSubmit,
 } from '../src/paper.js';
 import config from '../src/config.js';
 
@@ -825,3 +826,111 @@ test('★ 口径同源：paper_ui.js HOLIDAYS 与 config.manualHolidays 逐日�
   for (const d of cfgDates) assert.ok(set.has(d), `config 有 ${d} 而 paper_ui.HOLIDAYS 没有——两份口径漂移`);
   for (const d of set) assert.ok(cfgDates.includes(d), `paper_ui.HOLIDAYS 有 ${d} 而 config.manualHolidays 没有——两份口径漂移`);
 });
+
+// ────────────────────── Step 1：执行层现实假设（上帝视角 → 现实） ──────────────────────
+// 把纸面交易从「次日收盘价无摩擦成交」打回现实：
+//   · 非涨停买卖 ±1% 悲观滑点（追价 / 冲击成本）
+//   · 涨停打板按「容量门 + 撤单率」概率成交（不再 100% 失效）
+//   · 默认 mode='ideal' 不改动既有行为（对照基线）；mode='strict' 启用悲观假设
+
+const pending = (over) => ({
+  id: 1, submitDate: '2026-10-22', code: '600519', name: '贵州茅台', side: 'buy', qty: 1000,
+  need: 100000, status: 'pending', sector: null, ...over,
+});
+
+test('Step1 normalizeExec：默认 ideal，strict 才启用悲观假设', () => {
+  assert.equal(normalizeExec().mode, 'ideal');
+  const s = normalizeExec({ mode: 'strict' });
+  assert.equal(s.mode, 'strict');
+  assert.equal(s.slipNonLimit, 0.01);
+  assert.equal(s.limitCancelRate, 0.30);
+  // 非法值被夹到合法区间
+  assert.equal(normalizeExec({ mode: 'bogus' }).mode, 'ideal');
+  assert.equal(normalizeExec({ limitCancelRate: 5 }).limitCancelRate, 1);
+});
+
+test('Step1 limitBuyOutcome：容量门（买量>10%封单必未成交）+ 撤单率确定性', () => {
+  const e = normalizeExec({ mode: 'strict', seed: 20261024 });
+  assert.equal(limitBuyOutcome({ id: 'x', qty: 1000 }, { limitVol: 5000 }, e, '2026-10-23').fill, false, '容量门触发');
+  // 未超容量门：仍需过撤单率（30%），断言它「不」因容量门被拒即可
+  assert.equal(limitBuyOutcome({ id: 'x', qty: 100 }, { limitVol: 5000 }, e, '2026-10-23').reason.includes('容量门'), false, '未超容量门不应命中容量门拒绝');
+  // 同 (id,date,seed) 必同结果（确定性，便于复现 / 单测）
+  const a1 = limitBuyOutcome({ id: 'k', qty: 100 }, { limitVol: 999999 }, e, '2026-10-23').fill;
+  const a2 = limitBuyOutcome({ id: 'k', qty: 100 }, { limitVol: 999999 }, e, '2026-10-23').fill;
+  assert.equal(a1, a2);
+  // 无封单量时仅按撤单率（仍可判定布尔）
+  assert.equal(typeof limitBuyOutcome({ id: 'k', qty: 100 }, {}, e, '2026-10-23').fill, 'boolean');
+});
+
+test('Step1 strict：非涨停买入按 +1% 悲观滑点成交', () => {
+  let a = { ...fresh(1000000), pending: [pending({ code: '600519', qty: 1000, need: 101000, sector: null })] };
+  const r = settleDay(a, '2026-10-23', { '600519': Q('600519', '贵州茅台', 100, 2) }, { exec: { mode: 'strict' } });
+  assert.equal(r.fills.length, 1, '非涨停必须成交');
+  assert.ok(Math.abs(r.fills[0].price - 101) < 1e-6, `买价应≈101（+1% 滑点），实际 ${r.fills[0].price}`);
+});
+
+test('Step1 strict：非涨停卖出按 -1% 悲观滑点成交', () => {
+  const pos = { code: '600519', name: '贵州茅台', qty: 1000, avail: 1000, avgCost: 100, cost: 100000, grossBuy: 100000, fee: 0, openDate: '2026-10-22', days: 1, lastBuyDate: '2026-10-22', last: 100, lastDate: '2026-10-22', pxStale: false, sector: null };
+  let a = { ...fresh(1000000), positions: { '600519': pos }, pending: [pending({ code: '600519', side: 'sell', qty: 1000, need: 0, sector: null })] };
+  const r = settleDay(a, '2026-10-23', { '600519': Q('600519', '贵州茅台', 100, 2) }, { exec: { mode: 'strict' } });
+  assert.equal(r.fills.length, 1, '非涨停必须成交');
+  assert.ok(Math.abs(r.fills[0].price - 99) < 1e-6, `卖价应≈99（-1% 滑点），实际 ${r.fills[0].price}`);
+});
+
+test('Step1 ideal：涨停买仍一律失效（对照基线不变，不破坏旧回测）', () => {
+  let a = { ...fresh(1000000), pending: [pending({ code: '600519', qty: 1000, need: 110000, sector: null })] };
+  const r = settleDay(a, '2026-10-23', { '600519': { code: '600519', name: '贵州茅台', price: 110, changePct: 10.0, prevClose: 100, src: 'live' } }, { exec: { mode: 'ideal' } });
+  assert.equal(r.fills.length, 0);
+  assert.equal(r.expired.length, 1);
+  assert.match(r.expired[0].reason, /涨停/);
+});
+
+test('Step1 strict：涨停打板概率成交（容量门 + 撤单率 30%，分布≈70%）', () => {
+  const qLimit = { '600519': { code: '600519', name: '贵州茅台', price: 110, changePct: 10.0, prevClose: 100, limitVol: 5000, src: 'live' } };
+  // 容量门：1000 > 10%*5000=500 → 必未成交
+  let a = { ...fresh(1000000), pending: [pending({ id: 1, code: '600519', qty: 1000, need: 110000, sector: null })] };
+  const rGate = settleDay(a, '2026-10-23', qLimit, { exec: { mode: 'strict' } });
+  assert.equal(rGate.fills.length, 0);
+  assert.match(rGate.expired[0].detail, /容量门/);
+  // 小单：同 (id,date,seed) 可复现
+  const mk = (id) => ({ ...fresh(1000000), pending: [pending({ id, code: '600519', qty: 100, need: 11000, sector: null })] });
+  const r1 = settleDay(mk(2), '2026-10-23', qLimit, { exec: { mode: 'strict' } });
+  const r2 = settleDay(mk(2), '2026-10-23', qLimit, { exec: { mode: 'strict' } });
+  assert.equal(r1.fills.length, r2.fills.length, '同一委托同一交易日结果必须可复现');
+  // 分布：1000 个不同 id 的小单，命中率≈70%（撤单率 30%）
+  let fills = 0;
+  for (let i = 1; i <= 1000; i++) fills += settleDay(mk(i), '2026-10-23', qLimit, { exec: { mode: 'strict', seed: 20261024 } }).fills.length;
+  const rate = fills / 1000;
+  assert.ok(rate > 0.60 && rate < 0.80, `打板命中率应≈70%，实际 ${(rate * 100).toFixed(1)}%`);
+});
+
+// ────────────────────── Step 4：板块暴露限制（防单板块满仓一锅端） ──────────────────────
+// 每天自动统计持仓板块集中度，单板块占净值超过上限（默认关，启用时如 30%）强拒买入。
+// 默认 sectorLimitRatio=0 关闭，不改变既有行为。
+
+test('Step4 板块暴露限制：同板块已超上限时强拒买入（含已持仓暴露）', () => {
+  // 已持有 40 万「机器人」板块（占净值 40%）的账户
+  const pos = { code: '600111', name: '机器人A', qty: 4000, avail: 4000, avgCost: 100, cost: 400000, grossBuy: 400000, fee: 0, openDate: '2026-10-22', days: 1, lastBuyDate: '2026-10-22', last: 100, lastDate: '2026-10-22', pxStale: false, sector: '机器人' };
+  let a = { ...fresh(1000000), positions: { '600111': pos } };
+  // 再买 10% 仓位的「机器人」票 → 暴露 50% > 30% → 风控拦截
+  const res = batchSubmit(a, [{ code: '600519', pct: 0.10, hybk: '机器人', sector: '机器人' }],
+    { trade_date: '2026-10-23', hot: [{ code: '600519', name: '机器人B', close: 100, change_pct: 1 }], summary: {} },
+    { date: '2026-10-23', exec: { sectorLimitRatio: 0.30 }, applyLhbFilter: false });
+  const blocked = res.blocked.find((x) => x.code === '600519' && x.stage === 'risk');
+  assert.ok(blocked, '板块超暴露应被风控拦截');
+  assert.match(blocked.reason, /板块/);
+});
+
+test('Step4 板块暴露限制：未超上限时放行（且默认关闭不影响旧行为）', () => {
+  let a = fresh(1000000); // 无任何持仓，买 10% 机器人 → 暴露 10% < 30%，放行
+  const res = batchSubmit(a, [{ code: '600519', pct: 0.10, hybk: '机器人', sector: '机器人' }],
+    { trade_date: '2026-10-23', hot: [{ code: '600519', name: '机器人B', close: 100, change_pct: 1 }], summary: {} },
+    { date: '2026-10-23', exec: { sectorLimitRatio: 0.30 }, applyLhbFilter: false });
+  assert.equal(res.submitted.length, 1, '未超暴露上限应放行');
+  // 默认（sectorLimitRatio=0）不拦截
+  const res2 = batchSubmit(fresh(1000000), [{ code: '600519', pct: 0.10, hybk: '机器人', sector: '机器人' }],
+    { trade_date: '2026-10-23', hot: [{ code: '600519', name: '机器人B', close: 100, change_pct: 1 }], summary: {} },
+    { date: '2026-10-23', exec: {}, applyLhbFilter: false });
+  assert.equal(res2.submitted.length, 1, '默认关闭板块限制时照常放行');
+});
+

@@ -41,6 +41,73 @@ export const TRANSFER_FEE_RATE = 0.00001;  // 过户费（万0.1，双边；2022
 export const STAMP_TAX_RATE = 0.0005;      // 印花税（万五，仅卖出）
 export const DEFAULT_SLIP = 0.0002;        // 滑点（万二，买入抬价/卖出压价，模拟冲击成本）
 
+// ────────────────────────── 一之二、执行层现实假设（Step 1：上帝视角 → 现实） ──────────────────────────
+// 纸面交易默认是「上帝视角」：T+1 用次日真实收盘价成交、万二滑点、涨停买一律失效——这会让胜率虚高。
+// 下面这组参数把执行打回现实（可选开启，默认 'ideal' 保持旧行为以兼容单测 / 旧回测对照）：
+//   mode:
+//     'ideal'  —— 旧行为：涨停买一律失效、滑点万二（作为对照基线）。
+//     'strict' —— 悲观执行：① 非涨停买卖 ±1% 滑点（追价 / 冲击成本）；
+//                          ② 涨停打板按「容量门 + 撤单率」概率成交（不再是 100% 失效）。
+//   slipNonLimit      非涨停买卖滑点（买 +1% / 卖 -1%）。
+//   limitCancelRate   涨停打板撤单率：该比例概率当日未成交（撤单 / 排不到）。
+//   limitCapacityRatio 容量门：买入量 > 当时封单量该比例 → 直接判定未成交（吃不下）。
+//   sectorLimitRatio  板块暴露上限（占净值比）：>0 启用 Step 4 板块暴露限制，0 = 关闭。
+//   seed  确定性随机种子：同一委托(hash(id|date|seed))的成交概率恒定，便于复现 / 单测。
+// 注：死规则「绝不用当日收盘价成交」由 T+1 门禁（settleDay 顶部）保证，本配置不触碰。
+export const EXEC_DEFAULTS = {
+  mode: 'ideal',
+  slipNonLimit: 0.01,
+  limitCancelRate: 0.30,
+  limitCapacityRatio: 0.10,
+  sectorLimitRatio: 0,
+  seed: 20261024,
+};
+
+export function normalizeExec(exec) {
+  if (!exec || typeof exec !== 'object') return { ...EXEC_DEFAULTS };
+  const m = { ...EXEC_DEFAULTS, ...exec };
+  m.mode = m.mode === 'strict' ? 'strict' : 'ideal';
+  m.slipNonLimit = Number.isFinite(+m.slipNonLimit) ? +m.slipNonLimit : EXEC_DEFAULTS.slipNonLimit;
+  m.limitCancelRate = Number.isFinite(+m.limitCancelRate) ? Math.min(1, Math.max(0, +m.limitCancelRate)) : EXEC_DEFAULTS.limitCancelRate;
+  m.limitCapacityRatio = Number.isFinite(+m.limitCapacityRatio) ? Math.min(1, Math.max(0, +m.limitCapacityRatio)) : EXEC_DEFAULTS.limitCapacityRatio;
+  m.sectorLimitRatio = Number.isFinite(+m.sectorLimitRatio) ? Math.min(1, Math.max(0, +m.sectorLimitRatio)) : 0;
+  m.seed = Number.isFinite(+m.seed) ? +m.seed : EXEC_DEFAULTS.seed;
+  return m;
+}
+
+// 确定性 PRNG（mulberry32）+ 字符串哈希：保证「同一委托在同一交易日」的成交概率可复现。
+function hashStr(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+export function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function fillRng(orderId, date, seed) {
+  return mulberry32((hashStr(`${orderId}|${date}|${seed}`) >>> 0) || 1);
+}
+// 涨停打板是否成交（strict 模式专用）：先过容量门，再过撤单率。
+//   q.limitVol：当时封单股数（可选；实时行情有则启用容量门，存档无则仅按撤单率）。
+//   返回 { fill, reason }
+export function limitBuyOutcome(p, q, exec, date) {
+  const rng = fillRng(p.id, date, exec.seed);
+  if (q && Number.isFinite(+q.limitVol) && +q.limitVol > 0) {
+    if (p.qty > exec.limitCapacityRatio * +q.limitVol) {
+      return { fill: false, reason: `打板容量门：买入 ${p.qty} 股 > 封单 ${(+q.limitVol) | 0} 股的 ${((exec.limitCapacityRatio * 100) | 0)}%，未成交（吃不下）` };
+    }
+  }
+  if (rng() < exec.limitCancelRate) {
+    return { fill: false, reason: `打板撤单率命中（${((exec.limitCancelRate * 100) | 0)}%），当日未成交` };
+  }
+  return { fill: true, reason: '打板成交' };
+}
+
 // 涨跌停幅度（按板块 / 风险警示状态）
 export const LIMIT_PCT = {
   main: 0.10,   // 沪深主板 ±10%
@@ -401,6 +468,7 @@ export function ddTier(drawdown) {
 export const RISK_REJECT = {
   DAILY_CHANGE: '单日账户仓位变动超过 20% 总资产上限',
   DD_CAP: '账户回撤触发动态降仓，本次委托将突破当前仓位上限',
+  SECTOR_LIMIT: '板块暴露超过上限，强行拒绝买入（系统性风险）',
 };
 
 /**
@@ -422,6 +490,7 @@ export const RISK_REJECT = {
 export function riskGuard(acct, order, quote, ctx = {}) {
   const stats = accountStats(acct);
   const total = stats.total;
+  const exec = normalizeExec(ctx.exec);
   if (!(total > 0)) return { ok: false, reason: 'BAD_ACCOUNT', detail: '账户总资产 ≤ 0，无法做风控校验' };
 
   // 卖出不受「仓位变动/降仓上限」约束——降仓只会让仓位更低，是允许的（止损/减仓必须放行，
@@ -462,6 +531,25 @@ export function riskGuard(acct, order, quote, ctx = {}) {
         + `当前档位上限 ${(tier.cap * 100).toFixed(0)}%（${tier.label}，当前回撤 ${(stats.drawdown * 100).toFixed(2)}%）`,
       cap: tier.cap, drawdown: stats.drawdown, afterPosPct, tier,
     };
+  }
+
+  // 板块暴露限制（Step 4：防单板块满仓一锅端）。exec.sectorLimitRatio>0 且为买入时启用。
+  if (exec.sectorLimitRatio > 0 && order?.side === 'buy' && order?.sector) {
+    const sector = String(order.sector);
+    let sectorVal = 0;
+    for (const pos of Object.values(acct.positions || {})) {
+      if (String(pos.sector || '') === sector) {
+        sectorVal += (pos.last != null ? pos.last * pos.qty : (pos.avgCost || 0) * pos.qty);
+      }
+    }
+    const afterVal = sectorVal + (amount || 0);
+    if (total > 0 && afterVal / total > exec.sectorLimitRatio + 1e-9) {
+      return {
+        ok: false, reason: RISK_REJECT.SECTOR_LIMIT,
+        detail: `板块「${sector}」暴露将达 ${(afterVal / total * 100).toFixed(1)}% > 上限 ${(exec.sectorLimitRatio * 100).toFixed(0)}%，强行拒绝买入（系统性风险）`,
+        cap: tier.cap, drawdown: stats.drawdown, afterPosPct, tier,
+      };
+    }
   }
 
   return {
@@ -566,6 +654,7 @@ export function submitOrder(acct, order, quote, ctx = {}) {
     ...base, status: 'pending',
     estPrice: v.price, estFee: v.fee, estGross: v.gross, need: v.need,
     slip: order.slip ?? DEFAULT_SLIP,
+    sector: order.sector || null,
   };
   return {
     next: {
@@ -694,6 +783,7 @@ export function batchSubmit(acct, items, day, opts = {}) {
   const quotes = quotesFromDay(day);
   const applyLhb = opts.applyLhbFilter !== false;
   const checkRisk = opts.checkRisk !== false;
+  const exec = normalizeExec(opts.exec);
 
   let cur = acct;
   const results = [];
@@ -751,7 +841,7 @@ export function batchSubmit(acct, items, day, opts = {}) {
     let qty = Number.isInteger(raw?.qty) ? raw.qty : null;
     if (qty == null && Number.isFinite(+raw?.pct)) {
       const stats = accountStats(cur);
-      const px = fillPrice(+quote.price, 'buy', raw?.slip ?? DEFAULT_SLIP);
+      const px = fillPrice(+quote.price, 'buy', (exec.mode === 'strict') ? exec.slipNonLimit : (raw?.slip ?? DEFAULT_SLIP));
       const r = qtyByAssetPct(stats.total, +raw.pct, px, { cash: cur.cash });
       qty = r.qty;
       row.capped = r.capped;
@@ -765,7 +855,7 @@ export function batchSubmit(acct, items, day, opts = {}) {
 
     // ② 账户全局风控 —— 用「当日累计」口径
     if (checkRisk) {
-      const g = riskGuard(cur, { side: 'buy', qty, slip: raw?.slip }, quote, { todayBuyAmount: todayBuy });
+      const g = riskGuard(cur, { side: 'buy', qty, slip: raw?.slip, sector: raw?.sector || raw?.hybk || null }, quote, { todayBuyAmount: todayBuy, exec });
       if (!g.ok) {
         row.status = 'blocked'; row.stage = 'risk'; row.reason = g.reason; row.detail = g.detail; row.risk = g;
         cur = { ...cur, logs: appendLog(cur, { date, code, name: row.name, side: 'buy', qty, stage: 'risk', result: 'rejected', reason: g.reason, text: g.detail }) };
@@ -776,7 +866,7 @@ export function batchSubmit(acct, items, day, opts = {}) {
     }
 
     // ③④ 提交委托（validateOrder 在 submitOrder 内部执行）
-    const sub = submitOrder(cur, { code, side: 'buy', qty, reason: raw?.reason || '批量买入委托', slip: raw?.slip }, { ...quote, name: row.name }, { date });
+    const sub = submitOrder(cur, { code, side: 'buy', qty, reason: raw?.reason || '批量买入委托', slip: raw?.slip, sector: raw?.sector || raw?.hybk || null }, { ...quote, name: row.name }, { date });
     cur = sub.next;
     row.order = sub.order;
     row.status = sub.order.status === 'pending' ? 'submitted' : 'blocked';
@@ -985,6 +1075,7 @@ export function orderDetails(list, acct) {
 export function settleDay(acct, date, quotes = {}, opts = {}) {
   const log = [];
   let cur = acct;
+  const exec = normalizeExec(opts.exec);
   // 已处理的委托 id：撮合是「一次性」的——今天成交/失效的单必须从 pending 里摘掉，
   // 否则它会在后续每个交易日重复成交（同一张委托撮合出无数笔成交，账本彻底失真）。
   const settledIds = new Set();
@@ -1013,10 +1104,22 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
 
     // 跌停卖不掉 / 涨停买不进——按「该日」的实际情况判定，而非下单日
     if (p.side === 'buy' && hit === 'up') {
-      log.push({ ...pick(p), status: 'expired', reason: '涨停价无法买入', detail: `${date} ${q.changePct}% 一字/触板涨停，无卖盘，委托失效` });
-      cur = releaseFreeze(cur, p, { status: 'expired', settleDate: date, reject: '涨停价无法买入', detail: `${date} 触及涨停，无卖盘` });
-      markDone(p.id);
-      continue;
+      if (exec.mode === 'strict') {
+        // Step 1：涨停打板不再 100% 失效，改为「容量门 + 撤单率」概率成交
+        const oc = limitBuyOutcome(p, q, exec, date);
+        if (!oc.fill) {
+          log.push({ ...pick(p), status: 'expired', reason: '打板未成交', detail: `${date} ${q.changePct}% 涨停打板：${oc.reason}` });
+          cur = releaseFreeze(cur, p, { status: 'expired', settleDate: date, reject: '打板未成交', detail: oc.reason });
+          markDone(p.id);
+          continue;
+        }
+        // 成交：落到下方 fill（涨停价 + 默认万二滑点，打板不额外加悲观滑点）
+      } else {
+        log.push({ ...pick(p), status: 'expired', reason: '涨停价无法买入', detail: `${date} ${q.changePct}% 一字/触板涨停，无卖盘，委托失效` });
+        cur = releaseFreeze(cur, p, { status: 'expired', settleDate: date, reject: '涨停价无法买入', detail: `${date} 触及涨停，无卖盘` });
+        markDone(p.id);
+        continue;
+      }
     }
     if (p.side === 'sell' && hit === 'down') {
       log.push({ ...pick(p), status: 'expired', reason: '跌停价无法卖出', detail: `${date} ${q.changePct}% 触及跌停，无买盘，委托失效` });
@@ -1025,7 +1128,9 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
       continue;
     }
 
-    const px = fillPrice(+q.price, p.side, p.slip ?? DEFAULT_SLIP);
+    // 悲观滑点（Step 1）：strict 模式下，非涨停买卖按 ±slipNonLimit 成交；涨停打板仍用万二
+    const slip = (exec.mode === 'strict' && hit == null) ? exec.slipNonLimit : (p.slip ?? DEFAULT_SLIP);
+    const px = fillPrice(+q.price, p.side, slip);
     const gross = round2(px * p.qty);
     const fee = fees(gross, p.side).total;
     const need = p.side === 'buy' ? round2(gross + fee) : 0;
@@ -1042,7 +1147,7 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
       }
       const pos = cur.positions[p.code] || { code: p.code, name, qty: 0, avail: 0, avgCost: 0, cost: 0, grossBuy: 0, fee: 0, openDate: date, days: 0, lastBuyDate: null };
       const applied = applyBuy(pos, { qty: p.qty, price: px, fee });
-      const newPos = { ...pos, ...applied, name, avail: pos.avail || 0, openDate: pos.openDate || date, lastBuyDate: date, last: +q.price, lastDate: date, pxStale: false };
+      const newPos = { ...pos, ...applied, name, avail: pos.avail || 0, openDate: pos.openDate || date, lastBuyDate: date, last: +q.price, lastDate: date, pxStale: false, sector: (p.sector || pos.sector || null) };
       cur = {
         ...cur,
         cash: toYuan(cashBack - toCents(need)),

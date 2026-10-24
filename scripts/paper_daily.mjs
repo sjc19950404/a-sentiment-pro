@@ -27,7 +27,7 @@ import { atomicWriteJSON } from '../src/fsutil.js';
 import { decodeArchive } from '../src/lhb_codec.js';
 import {
   emptyAccount, importAccount, exportAccount, settleDay, batchSubmit, batchSell,
-  accountStats, quotesFromDay, isLimitHit,
+  accountStats, quotesFromDay, isLimitHit, normalizeExec,
 } from '../src/paper.js';
 import { recommendPicks, marketTier } from '../src/picks.js';
 import { reviewAccount } from '../src/paper_review.js';
@@ -43,6 +43,19 @@ const FORCE_TRADE = process.argv.includes('--force-trade');
 const r2 = (x) => (Number.isFinite(+x) ? Math.round(+x * 100) / 100 : null);
 const ts = () => new Date().toTimeString().slice(0, 8);
 const step = (m) => console.log(`── ${ts()} ${m} ──`);
+
+// Step 1/4 执行层现实开关（默认 ideal / 关闭，不改变线上账户既有行为）：
+//   PAPER_EXEC=strict          → 启用悲观滑点(±1%) + 涨停打板概率成交（打板 30% 撤单率 + 容量门）
+//   PAPER_SECTOR_LIMIT=0.3     → 启用板块暴露限制（单板块占净值 ≤30%，超出强拒买入）
+//   也可一次性用 JSON：PAPER_EXEC='{"mode":"strict","sectorLimitRatio":0.3}'
+const EXEC_ENV = process.env.PAPER_EXEC || '';
+let EXEC_CFG = {};
+try { EXEC_CFG = EXEC_ENV.trim().startsWith('{') ? JSON.parse(EXEC_ENV) : (EXEC_ENV ? { mode: EXEC_ENV } : {}); } catch { EXEC_CFG = {}; }
+if (process.env.PAPER_SECTOR_LIMIT) EXEC_CFG.sectorLimitRatio = Number(process.env.PAPER_SECTOR_LIMIT) || 0;
+const exec = normalizeExec(EXEC_CFG);
+if (exec.mode === 'strict' || exec.sectorLimitRatio > 0) {
+  console.log(`[paper-daily] 执行层现实假设：mode=${exec.mode} 滑点±${(exec.slipNonLimit * 100).toFixed(0)}% 打板撤单${(exec.limitCancelRate * 100).toFixed(0)}% 板块暴露上限${(exec.sectorLimitRatio * 100).toFixed(0)}%`);
+}
 
 // ── 1. 读档案最新交易日 ──
 let arch;
@@ -72,7 +85,7 @@ if (existsSync(fileURLToPath(ACCOUNT_FILE))) {
 // ── 3. 每日结算：盯市 + T+1 解冻 + 扫描 -8% 硬止损 ──
 step(`结算 ${date}`);
 const quotes = quotesFromDay(day);
-acct = settleDay(acct, date, quotes).account;
+acct = settleDay(acct, date, quotes, { exec }).account;
 {
   const s = accountStats(acct);
   console.log(`  净值 ${r2(s.total)} 元（现金 ${r2(s.cash)}，市值 ${r2(s.marketValue)}），持仓 ${Object.keys(acct.positions || {}).length} 只`);
@@ -122,6 +135,7 @@ if (!tier) {
     .filter((p) => p && p.code && quotes[String(p.code)]); // 仅选有当日行情者（否则 batchSubmit 会 NO_QUOTE 拦截）
   const items = picks.slice(0, TOP_N).map((p) => ({
     code: String(p.code), pct: PER_POS_PCT, hybk: p.hybk || null,
+    sector: p.hybk || p.theme || null,
     reason: (bypassed ? '【压力测试·熔断绕过】' : '') + `自动建仓（主线选股候选 ${p.name || p.code}）`,
   }));
   // 场景三 GLM 附加过滤守卫（买前三合一闸门）：方向 A 排雷黑名单 + 方向 C 妖股逻辑 + 方向 B 板块情绪。
@@ -141,7 +155,7 @@ if (!tier) {
   if (!safeItems.length) {
     console.log('  无合格选股（候选均缺行情/不推荐或命中排雷黑名单）');
   } else {
-    const res = batchSubmit(acct, safeItems, day, { date });
+    const res = batchSubmit(acct, safeItems, day, { date, exec });
     acct = res.next;
     if (bypassed) {
       for (const s of res.submitted) { const pos = acct.positions && acct.positions[String(s.code)]; if (pos) pos.stress = true; }
