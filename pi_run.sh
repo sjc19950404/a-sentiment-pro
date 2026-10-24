@@ -62,7 +62,8 @@ case "$MODE" in
     if ! bash scripts/pi_build.sh "${@:2}"; then
       log "pi_build 失败（守卫拦截），不推送"; alert "pi_run: 盘后管道守卫失败，未推送"; exit 1
     fi
-    bash scripts/pi_push.sh || { log "data 推送失败"; alert "pi_run: data 推送失败"; }
+    # data 同步 GitHub 失败不影响本地交易与复盘推送：pi_push.sh 已发企微友好通知并保留本地提交
+    bash scripts/pi_push.sh || log "data 同步 GitHub 失败（已发企微通知，详见 push.log），继续复盘推送"
     # EOD 推送「优先级 + 时间错峰」引擎：月报 > 周报(+周盈利战报) > 盘后基础复盘 > AI盘后情报；
     #   多条错峰发送（默认 3s）。盘中紧急异动 / 盘前排雷与观察清单由各自独立 cron 模式推送，不受此 gate。
     node scripts/push_eod.mjs 2>/dev/null || true
