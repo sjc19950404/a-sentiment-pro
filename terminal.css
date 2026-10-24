@@ -28,7 +28,7 @@
   --t-acc: #22d3ee;            /* 电光青：主色/导航/核心数据/选中态 */
   --t-acc-dim: rgba(34, 211, 238, .16);
   --t-ai: #a78bfa;             /* 紫罗兰：AI 侧车专属（排雷/妖股/板块情绪） */
-  --t-up: #b0413e;             /* 涨：低饱和砖红（从属于警报红） */
+  --t-up: #ff5a4d;             /* 涨 / 净流入：荧光红（A股习惯：涨红跌绿） */
   --t-dn: #22c88a;             /* 跌：霓虹绿 */
   /* ── 警报三级 ── */
   --t-alert: #ff2b2b;          /* 日常警报：纯红 */
@@ -207,8 +207,14 @@
   letter-spacing: -.01em;
 }
 .t-stat .t-v.is-acc { color: var(--t-acc); text-shadow: 0 0 14px rgba(34, 211, 238, .28); }  /* 辉光允许处③：当前值 */
-.t-stat .t-v.is-up { color: var(--t-up); }
-.t-stat .t-v.is-dn { color: var(--t-dn); }
+.t-stat .t-v.is-up { color: var(--t-up); text-shadow: 0 0 9px rgba(255, 90, 77, .5); }  /* 资金正向/上涨：荧光红辉光 */
+.t-stat .t-v.is-dn { color: var(--t-dn); text-shadow: 0 0 9px rgba(34, 200, 138, .42); }
+.t-stat .t-v.is-crit-glow { color: #ff2b2b; text-shadow: 0 0 14px rgba(255, 43, 43, .6); }   /* 情绪分 ≥80：极度狂热（危险）红晕 */
+.t-stat .t-v.is-warn-glow { color: #f5a623; text-shadow: 0 0 12px rgba(245, 166, 35, .5); }   /* 情绪分 ≥65：偏热橙晕 */
+.t-stat .t-v.is-mut-glow { color: var(--t-acc); text-shadow: 0 0 12px rgba(34, 211, 238, .4); } /* 情绪分 <65：常态青晕 */
+
+/* 顶栏 regime 徽章（带高光边框的「皇冠」标签） */
+.t-regime-badge { display: inline-flex; align-items: center; padding: 2px 11px; border-radius: 11px; border: 1px solid; font-size: 11.5px; font-weight: 700; letter-spacing: .3px; box-shadow: 0 0 10px rgba(255, 90, 77, .22); }
 .t-stat .t-v.is-alert { color: var(--t-alert); }
 .t-stat .t-s { font-size: 11px; color: var(--t-ink-2); margin-top: 2px; }
 .t-stat .t-s b { color: var(--t-ink); font-weight: 600; }
@@ -320,6 +326,16 @@
 .t-dv-val.up { color: var(--t-up); }
 .t-dv-val.dn { color: var(--t-dn); }
 
+/* 板块相对强弱：攻防双榜单并排（左=落后·绿 / 右=跑赢·红），各自独立单元自带板块名 */
+.t-dv-row--dual { grid-template-columns: 1fr 1fr; gap: 0; }
+.t-dv-row--dual .t-dv-side { display: flex; align-items: center; gap: 6px; padding: 3px 10px; }
+.t-dv-row--dual .t-dv-side.is-dn { justify-content: flex-start; border-right: 1px solid var(--t-line); background: rgba(34, 200, 138, .05); }
+.t-dv-row--dual .t-dv-side.is-up { justify-content: flex-end; background: rgba(255, 90, 77, .05); }
+.t-dv-row--dual .t-dv-name { flex: 0 0 auto; max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.t-dv-row--dual .t-dv-side.is-up .t-dv-name { text-align: right; }
+.t-dv-row--dual .t-dv-track { flex: 1 1 auto; min-width: 0; }
+.t-dv-row--dual .t-dv-val { flex: 0 0 auto; }
+
 /* ── 仪表盘（七因子）────────────────────────────────────────────────────── */
 .t-gauges { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); }
 .t-gauge { text-align: center; cursor: pointer; border-radius: 6px; padding: 4px 2px; transition: background .15s; }
@@ -331,6 +347,8 @@
 .t-gauge .t-g-track { fill: none; stroke: var(--t-line-hi); stroke-width: 5; stroke-linecap: round; }
 .t-gauge .t-g-arc { fill: none; stroke: var(--t-acc); stroke-width: 5; stroke-linecap: round; }
 .t-gauge .t-g-arc2 { fill: none; stroke: var(--t-ai); stroke-width: 2.4; stroke-linecap: round; opacity: .8; }
+.t-gauge-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.t-gauge-side { display: flex; flex-direction: column; gap: 10px; }
 .t-gauge .t-g-lbl-below { font-size: 10.5px; color: var(--t-ink-2); margin-top: 1px; }
 
 /* ── 密排表（数据锐：1px 实线内框 + 等宽右对齐）─────────────────────────── */
@@ -342,16 +360,21 @@
 }
 .t-tbl th:first-child, .t-tbl td:first-child { text-align: left; }
 .t-tbl td {
-  text-align: right; padding: 5px 8px;
+  text-align: right; padding: 4px 8px;          /* 紧凑：行高更紧，像机构操盘软件 */
   border-bottom: 1px solid var(--t-line); white-space: nowrap; color: var(--t-ink);
 }
 .t-tbl tbody tr { cursor: pointer; transition: background .12s; }
-.t-tbl tbody tr:hover { background: rgba(255, 255, 255, .035); }
+.t-tbl tbody tr:hover { background: #1E2329; }    /* 行 hover：深灰，整行高亮 */
 /* 选中行：细边光（辉光允许处①） */
 .t-tbl tbody tr.is-on { background: var(--t-acc-dim); box-shadow: inset 2px 0 0 var(--t-acc); }
 .t-tbl td.up { color: var(--t-up); }
 .t-tbl td.dn { color: var(--t-dn); }
 .t-tbl td.mut { color: var(--t-ink-3); }
+/* 风险等级配色（展示性分档）：≥80% 血红 · ≥60% 暗黄 */
+.t-tbl td.is-crit { color: #ff2b2b; font-weight: 700; }
+.t-tbl td.is-warn { color: #f5a623; }
+/* 表格内的「纯情绪」标签：弱化紫（去掉实底，改描边），不抢视觉 */
+.t-tbl .t-tag-ai { background: transparent; border: 1px solid var(--t-ai); color: var(--t-ai); padding: 0 4px; border-radius: 3px; font-size: 10.5px; }
 .t-tbl .t-rank { color: var(--t-ink-3); width: 22px; }
 .t-tbl .t-code { color: var(--t-ink-2); font-size: 11px; }
 .t-tbl .t-lbtag {
@@ -605,6 +628,22 @@
   .t-dv-row { grid-template-columns: 62px 1fr 1fr 46px; font-size: 11px; }
   .t-topbar { padding: 8px 11px; font-size: 11.5px; }
   .t-nav { padding: 0 10px; }
+}
+
+/* ── 4:3 方屏（1024×768 类）专门适配：栅格更紧凑、字号微调、顶栏换行、减留白 ── */
+@media (min-width: 681px) and (max-aspect-ratio: 4/3) {
+  .t-scope { font-size: 12.5px; }
+  .t-topbar { flex-wrap: wrap; row-gap: 6px; padding: 9px 14px; }
+  .t-main { padding: 12px 14px 18px; }
+  .t-grid { gap: 12px; }
+  .t-panel { padding: 10px 12px; }
+  .t-c6, .t-c7, .t-c8, .t-c9 { grid-column: span 12; }
+  .t-gauges { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+  .t-dv-row--dual .t-dv-name { max-width: 70px; }
+}
+/* 中等宽度（≤1180px，含多数笔记本/方屏）：半宽面板改满宽，减少拥挤 */
+@media (max-width: 1180px) {
+  .t-c6, .t-c7, .t-c8 { grid-column: span 12; }
 }
 
 /* ── 无障碍：尊重系统减少动画 ───────────────────────────────────────────── */

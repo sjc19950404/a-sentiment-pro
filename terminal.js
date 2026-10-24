@@ -115,6 +115,16 @@
     climax: '#ff2b2b', ebb: '#f5a623', shift: '#a78bfa', unknown: 'transparent',
   };
   const REGIME_CLS = { ice: 'is-ice', ebb: 'is-ebb', shift: 'is-shift', unknown: 'is-ice' };
+  // regime → 顶栏徽章配色（半透明底 + 高光边框；inline style 由 render 注入）
+  const REGIME_BADGE = {
+    climax:  { c: '#ff5a4d', bg: 'rgba(255, 90, 77, .20)', bd: 'rgba(255, 90, 77, .65)' },
+    ebb:     { c: '#f5a623', bg: 'rgba(245, 166, 35, .16)', bd: 'rgba(245, 166, 35, .55)' },
+    recover: { c: '#22c88a', bg: 'rgba(34, 200, 138, .16)', bd: 'rgba(34, 200, 138, .5)' },
+    neutral: { c: '#9fb2c0', bg: 'rgba(159, 178, 192, .14)', bd: 'rgba(159, 178, 192, .4)' },
+    ice:     { c: '#7fb0d6', bg: 'rgba(127, 176, 214, .14)', bd: 'rgba(127, 176, 214, .45)' },
+    shift:   { c: '#a78bfa', bg: 'rgba(167, 139, 250, .16)', bd: 'rgba(167, 139, 250, .5)' },
+    unknown: { c: '#9fb2c0', bg: 'rgba(159, 178, 192, .12)', bd: 'rgba(159, 178, 192, .35)' },
+  };
 
   // ── 3. SVG 图表助手（自绘，零依赖）─────────────────────────────────────
 
@@ -125,23 +135,27 @@
     const n = rows.length;
     if (n < 2) return '<div class="t-empty">序列不足，无法绘图</div>';
     const X = (i) => P.l + (i / (n - 1)) * iw;
-    const Y = (v) => P.t + ih - (Math.max(0, Math.min(100, v)) / 100) * ih;
-    let s = `<svg class="t-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="情绪分走势">`;
+    const usePct = opt.vMin == null;                      // 情绪分/分位 → 0–100（含参考线/regime 带）；其它序列传 vMin/vMax 走真实域
+    const vMin = usePct ? 0 : opt.vMin, vMax = usePct ? 100 : opt.vMax;
+    const Y = (v) => P.t + ih - ((v - vMin) / ((vMax - vMin) || 1)) * ih;
+    let s = `<svg class="t-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(opt.n || '情绪分走势')}">`;
     s += `<defs><linearGradient id="tGradAcc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22d3ee" stop-opacity=".26"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/></linearGradient></defs>`;
-    // 四档参考线（与 config 同源的展示线）
-    [[24, '清仓'], [65, '满仓'], [80, '过热']].forEach(([v, lb]) => {
-      s += `<line class="t-gridln" x1="${P.l}" y1="${Y(v)}" x2="${W - P.r}" y2="${Y(v)}"/>`;
-      s += `<text class="t-tick" x="${P.l - 4}" y="${Y(v) + 3}" text-anchor="end">${v}</text>`;
-      if (lb) s += `<text class="t-tick" x="${W - P.r}" y="${Y(v) - 3}" text-anchor="end">${lb}</text>`;
-    });
-    // regime 色带（每格一天的底部细带）
-    if (rows.some((r) => r.reg)) {
-      const bw = iw / n;
-      rows.forEach((r, i) => {
-        const c = REGIME_BAND[r.reg];
-        if (c && c !== 'transparent') s += `<rect class="t-band" x="${(P.l + i * bw).toFixed(2)}" y="${H - P.b + 1}" width="${Math.max(1, bw).toFixed(2)}" height="4" fill="${c}"/>`;
+    // 四档参考线 + regime 色带：仅情绪分（usePct）模式有意义，真实域序列（净值等）跳过
+    if (usePct) {
+      [[24, '清仓'], [65, '满仓'], [80, '过热']].forEach(([v, lb]) => {
+        s += `<line class="t-gridln" x1="${P.l}" y1="${Y(v)}" x2="${W - P.r}" y2="${Y(v)}"/>`;
+        s += `<text class="t-tick" x="${P.l - 4}" y="${Y(v) + 3}" text-anchor="end">${v}</text>`;
+        if (lb) s += `<text class="t-tick" x="${W - P.r}" y="${Y(v) - 3}" text-anchor="end">${lb}</text>`;
       });
-      s += `<text class="t-tick" x="${P.l}" y="${H - P.b + 15}">色带=当日 regime</text>`;
+      // regime 色带（每格一天的底部细带）
+      if (rows.some((r) => r.reg)) {
+        const bw = iw / n;
+        rows.forEach((r, i) => {
+          const c = REGIME_BAND[r.reg];
+          if (c && c !== 'transparent') s += `<rect class="t-band" x="${(P.l + i * bw).toFixed(2)}" y="${H - P.b + 1}" width="${Math.max(1, bw).toFixed(2)}" height="4" fill="${c}"/>`;
+        });
+        s += `<text class="t-tick" x="${P.l}" y="${H - P.b + 15}">色带=当日 regime</text>`;
+      }
     }
     s += `<line class="t-axis" x1="${P.l}" y1="${P.t}" x2="${P.l}" y2="${H - P.b}"/>`;
     s += `<line class="t-axis" x1="${P.l}" y1="${H - P.b}" x2="${W - P.r}" y2="${H - P.b}"/>`;
@@ -149,8 +163,8 @@
     let d = '', a = `M ${X(0)} ${H - P.b} `;
     rows.forEach((r, i) => { d += `${i ? 'L' : 'M'} ${X(i).toFixed(1)} ${Y(r.v).toFixed(1)} `; a += `L ${X(i).toFixed(1)} ${Y(r.v).toFixed(1)} `; });
     a += `L ${X(n - 1)} ${H - P.b} Z`;
-    s += `<path class="t-area" d="${a}"/>`;
-    s += `<path class="t-line" d="${d}"/>`;
+    if (!opt.noArea) s += `<path class="t-area" d="${a}"/>`;
+    s += `<path class="t-line" d="${d}"${opt.lineColor ? ` stroke="${opt.lineColor}"` : ''}/>`;
     // 分位虚线
     if (rows.some((r) => r.pct != null)) {
       let d2 = '';
@@ -176,7 +190,7 @@
     const max = Math.max(1, ...rows.map((r) => Math.max(r.a || 0, r.b || 0)));
     const Y = (v) => P.t + ih - (v / max) * ih;
     const slot = iw / rows.length, bw = Math.max(1.6, slot * 0.34);
-    let s = `<svg class="t-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="涨跌停分布">`;
+    let s = `<svg class="t-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(opt.k || '涨跌停分布')}">`;
     [0, 0.5, 1].forEach((f) => {
       const v = max * f, y = Y(v);
       s += `<line class="t-gridln" x1="${P.l}" y1="${y}" x2="${W - P.r}" y2="${y}"/>`;
@@ -188,7 +202,7 @@
       if (r.a != null) s += `<rect class="t-bar is-up" x="${(cx - bw - 1).toFixed(1)}" y="${Y(r.a).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, H - P.b - Y(r.a)).toFixed(1)}" rx="1"/>`;
       if (r.b != null) s += `<rect class="t-bar is-dn" x="${(cx + 1).toFixed(1)}" y="${Y(r.b).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, H - P.b - Y(r.b)).toFixed(1)}" rx="1"/>`;
     });
-    [0, rows.length - 1].forEach((i) => {
+    (opt.xLabels === 'all' ? rows.map((_, i) => i) : [0, rows.length - 1]).forEach((i) => {
       s += `<text class="t-tick" x="${P.l + i * slot + slot / 2}" y="${H - P.b + 12}" text-anchor="middle">${rows[i].date}</text>`;
     });
     // 图例可配（默认 涨停/跌停）：同一图表复用给「涨停/连板」等其它对儿时不至于说谎
@@ -205,7 +219,7 @@
     const pol = (ang, r) => { const a = (ang * Math.PI) / 180; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
     const arc = (r, f) => { const a = A0 + (A1 - A0) * Math.max(0, Math.min(1, f)); const [x0, y0] = pol(A0, r), [x1, y1] = pol(a, r); const large = (A1 - A0) * f > 180 ? 1 : 0; return `M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`; };
     const f1 = v == null ? 0 : v / 100;
-    const col = v >= 80 ? '#ff2b2b' : v >= 40 ? '#22d3ee' : '#4d5b68';
+    const col = opt.color || (v >= 80 ? '#ff2b2b' : v >= 40 ? '#22d3ee' : '#4d5b68');
     let s = `<svg viewBox="0 0 ${S} ${S}" width="${S}" height="${S}" role="img" aria-label="${esc(opt.n || '')} ${fmt(v)}">`;
     s += `<path class="t-g-track" d="${arc(R, 1)}"/>`;
     s += `<path class="t-g-arc" d="${arc(R, f1)}" stroke="${col}"/>`;
@@ -243,13 +257,22 @@
       s += `<rect class="${cls}" x="${(x - bw / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, bot - top).toFixed(1)}"/>`;
       s += `<rect class="${up ? 't-vol-up' : 't-vol-dn'}" x="${(x - bw / 2).toFixed(1)}" y="${YV(v).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, H - P.b - YV(v)).toFixed(1)}"/>`;
     });
+    // MA5 / MA10 / MA20（对收盘价 b[2] 的移动平均；纯展示叠加，不重算引擎指标）
+    [{ n: 5, c: '#e6f0f5' }, { n: 10, c: '#f5a623' }, { n: 20, c: '#a78bfa' }].forEach((m) => {
+      const pts = [];
+      for (let i = m.n - 1; i < n; i++) {
+        let sum = 0; for (let j = i - m.n + 1; j <= i; j++) sum += bars[j][2];
+        pts.push(`${(P.l + i * cw + cw / 2).toFixed(1)},${Y(sum / m.n).toFixed(1)}`);
+      }
+      if (pts.length > 1) s += `<polyline points="${pts.join(' ')}" fill="none" stroke="${m.c}" stroke-width="1.2" opacity=".85"/>`;
+    });
     s += `<line class="t-axis" x1="${P.l}" y1="${H - P.b}" x2="${W - P.r}" y2="${H - P.b}"/>`;
     s += `<line class="t-axis" x1="${P.l}" y1="${H - PV + 6}" x2="${W - P.r}" y2="${H - PV + 6}" opacity=".45"/>`;
     [0, n - 1].forEach((i) => { s += `<text class="t-tick" x="${P.l + i * cw + cw / 2}" y="${H - P.b + 12}" text-anchor="${i ? 'end' : 'start'}">${bars[i][0]}</text>`; });
     const lastC = bars[n - 1][2], prevC = bars[n - 2][2];
     const chg = prevC ? ((lastC - prevC) / prevC) * 100 : null;
-    s += `<text class="t-tick-r" x="${W - P.r + 5}" y="${P.t + 9}" fill="${chg >= 0 ? '#b0413e' : '#22c88a'}">${lastC.toFixed(2)}</text>`;
-    s += `<text class="t-tick" x="${W - P.r + 5}" y="${P.t + 21}" fill="${chg >= 0 ? '#b0413e' : '#22c88a'}">${sgn(chg, 2)}</text>`;
+    s += `<text class="t-tick-r" x="${W - P.r + 5}" y="${P.t + 9}" fill="${chg >= 0 ? '#ff5a4d' : '#22c88a'}">${lastC.toFixed(2)}</text>`;
+    s += `<text class="t-tick" x="${W - P.r + 5}" y="${P.t + 21}" fill="${chg >= 0 ? '#ff5a4d' : '#22c88a'}">${sgn(chg, 2)}</text>`;
     return s + '</svg>';
   }
 
@@ -394,12 +417,12 @@
     // ── 核心指标 ──
     const stats = el('div', 't-stats');
     stats.innerHTML =
-      stat('情绪分', fmt(L.value), `历史分位 <b>${pct(L.pct_rank, 0)}</b>`, 'is-acc') +
+      stat('情绪分', fmt(L.value), `历史分位 <b>${pct(L.pct_rank, 0)}</b>`, L.value >= 80 ? 'is-crit-glow' : L.value >= 65 ? 'is-warn-glow' : 'is-mut-glow') +
       stat('市场状态', `<span class="t-regime ${REGIME_CLS[reg.key] || ''}">${esc(reg.label || '—')}</span>`, `方向 ${({ up: '↑', down: '↓', flat: '→' })[reg.dir] || '—'}｜置信 ${esc(reg.confidence || '—')}`) +
       stat('执行仓位', esc(pr.finalRange || '—'), `${pr.force ? '<b style="color:var(--t-alert)">风控帽强制降仓</b>' : `基础 ${esc(pr.baseRange || '—')}`}`, pr.force ? 'is-alert' : '') +
       stat('涨停 / 跌停', `<span class="is-up">${fmtInt(L.zt_count)}</span> <span style="color:var(--t-ink-3)">/</span> <span class="is-dn">${fmtInt(L.dt_count)}</span>`, `炸板 ${fmtInt(L.zb_count)}｜封板率 ${pct(L.seal_pct, 0)}`) +
       stat('涨 / 跌家数', `<span class="is-up">${fmtInt(L.up_count)}</span> <span style="color:var(--t-ink-3)">/</span> <span class="is-dn">${fmtInt(L.down_count)}</span>`, '沪深两市口径') +
-      stat('龙虎净买', wan(L.lhb_daily_net), `上榜 ${fmtInt(L.lhb_daily_stocks || L.lhb_stocks)} 只`);
+      stat('龙虎净买', wan(L.lhb_daily_net), `上榜 ${fmtInt(L.lhb_daily_stocks || L.lhb_stocks)} 只`, (L.lhb_daily_net || 0) >= 0 ? 'up' : 'dn');
     g.appendChild(panel('核心指标', L.trade_date, stats.outerHTML, 't-c12'));
 
     // ── 主图：情绪分折线（seriesCompact，零额外请求）──
@@ -440,7 +463,7 @@
     g.appendChild(panel('主线题材', '当日',
       mt ? `<div class="t-stats" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
         ${stat('主线', esc(mt.name || '—'), `占龙虎净买 <b>${pct(mt.pct, 0)}</b>`, 'is-acc')}
-        ${stat('主线净买', wan(mt.main_yi != null ? mt.main_yi * 10000 : null), `全榜 ${wan(mt.tot_yi != null ? mt.tot_yi * 10000 : null)}`)}
+        ${stat('主线净买', wan(mt.main_yi != null ? mt.main_yi * 10000 : null), `全榜 ${wan(mt.tot_yi != null ? mt.tot_yi * 10000 : null)}`, (mt.main_yi != null ? mt.main_yi : 0) >= 0 ? 'up' : 'dn')}
       </div>` : '<div class="t-empty">当日无主线</div>', 't-c8'));
 
     // ── 涨跌停柱状（后台拉 emotion_history，不阻塞首屏）──
@@ -597,13 +620,21 @@
     const atk = vs.attack || [], def = vs.defense || [];
     const maxAbs = Math.max(1, ...atk.map((x) => Math.abs(x.excess || 0)), ...def.map((x) => Math.abs(x.excess || 0)));
     const rows = [];
+    // ⚠ attack（跑赢基准·红）与 defense（落后基准·绿）是**两个独立榜单**，按名次对齐展示；
+    //   每行左右各成一个**完整单元**（各自带板块名 + 数值），绝不共用一行的 name → 杜绝张冠李戴。
     for (let i = 0; i < Math.max(atk.length, def.length); i++) {
       const a = atk[i], d = def[i];
-      rows.push(`<div class="t-dv-row">
-        <span class="t-dv-name" title="${esc((d && d.name) || '')}">${esc((d && d.name) || '')}</span>
-        <span class="t-dv-track is-l">${d ? `<span class="t-dv-fill dn" style="width:${(Math.abs(d.excess) / maxAbs * 100).toFixed(1)}%"></span>` : ''}</span>
-        <span class="t-dv-track">${a ? `<span class="t-dv-fill up" style="width:${(Math.abs(a.excess) / maxAbs * 100).toFixed(1)}%"></span>` : ''}</span>
-        <span class="t-dv-val"><span class="${a ? 'up' : ''}">${a ? sgn(a.change_pct, 2) : ''}</span> <span class="${d ? 'dn' : ''}" style="opacity:.75">${d ? sgn(d.change_pct, 2) : ''}</span></span>
+      rows.push(`<div class="t-dv-row t-dv-row--dual">
+        <div class="t-dv-side is-dn">
+          <span class="t-dv-name" title="${esc((d && d.name) || '')}">${esc((d && d.name) || '—')}</span>
+          <span class="t-dv-track is-l">${d ? `<span class="t-dv-fill dn" style="width:${(Math.abs(d.excess) / maxAbs * 100).toFixed(1)}%"></span>` : ''}</span>
+          <span class="t-dv-val"><span class="${d ? 'dn' : ''}">${d ? sgn(d.change_pct, 2) : ''}</span></span>
+        </div>
+        <div class="t-dv-side is-up">
+          <span class="t-dv-val"><span class="${a ? 'up' : ''}">${a ? sgn(a.change_pct, 2) : ''}</span></span>
+          <span class="t-dv-track">${a ? `<span class="t-dv-fill up" style="width:${(Math.abs(a.excess) / maxAbs * 100).toFixed(1)}%"></span>` : ''}</span>
+          <span class="t-dv-name" title="${esc((a && a.name) || '')}">${esc((a && a.name) || '—')}</span>
+        </div>
       </div>`);
     }
     // ⚠ 分段控件必须放 **body**（panel() 的 key 参数会走 esc()，塞 HTML 进去会被转义成文本，
@@ -765,14 +796,17 @@
     // 主线资金集中度：pct 优先取引擎已算好的值，缺失才由两个原始额现算（同一口径，非重算阈值）
     const tot = mt.tot_yi, main = mt.main_yi;
     const p = mt.pct != null ? mt.pct : ((tot != null && main != null && tot !== 0) ? (main / tot) * 100 : null);
-    const w = Math.max(0, Math.min(100, p || 0));
+    // 展示升级：细长红条 → 环形仪表盘（gauge 助手，纯展示），旁边保留主/总净额对照；
+    //   ⚠ 龙虎榜 TOP5 / 游资机构北向三方 **系统尚未产出对应档** → 不伪造，扎实展示已有值。
     g.appendChild(panel('主线资金集中度', `主线「${esc(mt.name || '—')}」· 口径 ${esc(mt.caliber || 'daily')}`,
-      `<div class="t-dv-row">
-        <span class="t-dv-name">${esc(mt.name || '—')}</span>
-        <span class="t-dv-track"><span class="t-dv-fill up" style="width:${w.toFixed(1)}%"></span></span>
-        <span class="t-dv-val">${pct(p)}</span>
+      `<div class="t-gauge-row">
+        <div class="t-gauge">${gauge(p, { n: '集中度', color: p != null && p >= 50 ? '#ff5a4d' : '#22d3ee' })}</div>
+        <div class="t-gauge-side">
+          ${stat('主线净额', `${fmt(main, 2)} 亿`, 'main_yi', +main > 0 ? 'up' : 'dn')}
+          ${stat('龙虎总额', `${fmt(tot, 2)} 亿`, 'tot_yi')}
+        </div>
       </div>
-      <div class="t-sub">主线净额 ${fmt(main, 2)} 亿 / 龙虎总额 ${fmt(tot, 2)} 亿${mt.pct != null ? '' : ' · 占比由原始额现算'}</div>`, 't-c12'));
+      <div class="t-sub">集中度 = 主线净额 / 龙虎总额${mt.pct != null ? '' : '（占比由原始额现算）'} · 龙虎 TOP5 / 三方数据未产出 → 不伪造</div>`, 't-c12'));
 
     return g;
   }
@@ -842,21 +876,28 @@
     // 连板高度分布（阶梯柱；按连板数聚合计数，引擎原值）
     const byLb = {};
     for (const x of sorted) { const k = +x.lb || 0; byLb[k] = (byLb[k] || 0) + 1; }
-    const dist = Object.keys(byLb).map(Number).sort((a, b) => a - b).map((k) => ({ date: `${k}板`, a: byLb[k] }));
+    // ⚠ X 轴必须**固定枚举** 1–6 板（极端行情延展到更高板），缺失补 0；
+    //   绝不能按「当前有的数据」直接映射——否则缺 4 板时 5 板会被挤到 4 板位置（张冠李戴）。
+    const maxLbAxis = Math.max(6, ...Object.keys(byLb).map(Number));
+    const dist = [];
+    for (let k = 1; k <= maxLbAxis; k++) dist.push({ date: `${k}板`, a: byLb[k] || 0 });
     g.appendChild(panel('连板高度分布', `按连板数聚合计数 · 引擎原值${subKey}`,
-      barChart(dist, { w: 900, h: 180, legend: ['只数', ''] }), 't-c12'));
+      barChart(dist, { w: 900, h: 180, legend: ['只数', ''], k: '连板高度分布', xLabels: 'all' }), 't-c12'));
 
     // 连板天梯表 —— 点任一票 → LINK 总线 → 打开个股详情抽屉（K 线 + AI 判词 + 排雷）
     const rows = sorted.map((x) => {
       const rs = String(x.reason || '—');
+      const conf = x.confidence != null ? x.confidence * 100 : null;
+      // 风险等级配色（展示性分档，不重算）：≥80% 血红 · ≥60% 暗黄 · 其余默认
+      const confCls = conf == null ? '' : conf >= 80 ? 'is-crit' : conf >= 60 ? 'is-warn' : '';
       return `<tr data-code="${esc(x.code)}" data-name="${esc(x.name || '')}">
         <td>${esc(x.code)}</td>
         <td>${esc(x.name || '—')}</td>
         <td class="up">${fmtInt(x.lb)}</td>
         <td>${esc(x.hybk || '—')}</td>
         <td>${x.is_pure_sentiment ? '<span class="t-tag-ai">纯情绪</span> ' : ''}${esc(x.logic_type || '—')}</td>
-        <td>${pct(x.confidence != null ? x.confidence * 100 : null, 0)}</td>
-        <td title="${esc(rs)}">${esc(rs.length > 22 ? `${rs.slice(0, 22)}…` : rs)}</td>
+        <td class="${confCls}">${pct(conf, 0)}</td>
+        <td class="${confCls}" title="${esc(rs)}">${esc(rs.length > 22 ? `${rs.slice(0, 22)}…` : rs)}</td>
       </tr>`;
     }).join('');
 
@@ -943,10 +984,21 @@
       </div>`, 't-c12'));
 
     // ── ② 净值曲线 + 持仓 ──
-    const navPanel = panel('模拟盘净值', `account.nav 序列 · ${nav.length} 个交易日`,
-      nav.length > 1
-        ? lineChart(nav.map((r) => ({ date: String(r.date).slice(5), v: r.equity })), { w: 640, h: 210 })
-        : '<div class="t-empty">净值序列不足（账户起步，仅 1 个结算日）</div>', 't-c8');
+    const initCash = a.initCash != null ? a.initCash : 1000000;
+    let navBody;
+    if (nav.length > 1) {
+      // 用 equity 真实域（lineChart 默认 0–100 是情绪分专用，净值百万级必须传 vMin/vMax）
+      const eqs = nav.map((r) => r.equity);
+      const vMin = Math.min(...eqs), vMax = Math.max(...eqs);
+      const pad = (vMax - vMin) * 0.12 || 1;
+      navBody = lineChart(nav.map((r) => ({ date: String(r.date).slice(5), v: r.equity })), { w: 640, h: 210, vMin: vMin - pad, vMax: vMax + pad, n: '净值曲线' });
+    } else {
+      // 空态：画一条 100 万平坦红线 + 标注，看着像交易终端而非「报错」
+      navBody = lineChart([{ date: '—', v: initCash }, { date: '初始化', v: initCash }, { date: '等待结算', v: initCash }],
+        { w: 640, h: 210, vMin: initCash - 1, vMax: initCash + 1, lineColor: '#ff5a4d', noArea: true, n: '净值曲线' })
+        + `<div class="t-dnote is-ok">初始化等待首个交易日结算 · 基准 ${wan(initCash)}（红线）</div>`;
+    }
+    const navPanel = panel('模拟盘净值', `account.nav 序列 · ${nav.length} 个交易日`, navBody, 't-c8');
     const pos = Object.values(a.positions || {}).filter((p) => p && p.qty > 0);
     const posPanel = panel('持仓', '点行看个股详情', !pos.length ? '<div class="t-empty">当前空仓</div>'
       : `<div class="t-tbl-wrap"><table class="t-tbl"><thead><tr><th>标的</th><th>持仓</th><th>成本</th><th>浮亏</th><th>占比</th></tr></thead><tbody>${
@@ -1211,6 +1263,7 @@
       <span class="t-range" role="group" aria-label="时间窗">窗
         ${RANGES.map((r) => `<button type="button" data-r="${r}"${r === LINK.sel.range ? ' class="is-on"' : ''}>${r}</button>`).join('')}
       </span>
+      <span class="t-regime-badge" id="tRegime">regime —</span>
       <span class="t-viewswitch">
         <button data-v="terminal" class="is-on">⚡ 终端</button>
         <button data-v="report">📄 研报</button>
@@ -1241,6 +1294,13 @@
       //   用户反馈「情绪分左边多了个逗号」。改为**空的 CSS 实心竖条**（见 terminal.css），
       //   不再是字符，绝不会被误认成任何标点。
       tick.innerHTML = `<span class="t-tk-lbl" aria-hidden="true"></span><span class="t-tk-body">情绪分 <b>${fmt(L.value)}</b>（分位 ${pct(L.pct_rank, 0)}）· regime <b>${esc(reg.label || '—')}</b> · 涨停 <b>${fmtInt(L.zt_count)}</b> / 跌停 <b>${fmtInt(L.dt_count)}</b> · 点持仓行可下钻日K</span>`;
+      // 顶栏 regime 徽章（带高光边框 + 半透明底，按 regime 着色；render 每次刷新）
+      const rb = top.querySelector('#tRegime');
+      if (rb) {
+        const b = REGIME_BADGE[reg.key] || REGIME_BADGE.unknown;
+        rb.textContent = `regime ${reg.label || '—'}`;
+        rb.style.color = b.c; rb.style.background = b.bg; rb.style.borderColor = b.bd;
+      }
     };
 
     // 视图函数里的跨视图跳转（总览「妖股纯情绪」→ 选股；选股筛选切换）走这里

@@ -201,9 +201,10 @@ test('terminal：资金视图渲染（龙虎快照 + 主线资金集中度）', 
   for (const k of ['龙虎净额', '上榜个股', '当日成交榜', '两市成交额']) {
     assert.ok(stats.textContent.includes(k), `含指标：${k}`);
   }
-  const bar = root.querySelector('.t-dv-fill');
-  assert.ok(bar, '主线资金集中度进度条');
-  assert.match(bar.getAttribute('style') || '', /width:/, '宽度已按占比设置（0~100% 夹紧）');
+  const gaugeEl = root.querySelector('.t-gauge svg');
+  assert.ok(gaugeEl, '主线资金集中度 → 环形仪表盘（替代旧细长条）');
+  assert.match(gaugeEl.innerHTML, /t-g-arc/, '仪表含圆弧');
+  assert.ok(root.textContent.includes('集中度'), '面板含「集中度」标题/数值');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
@@ -507,7 +508,11 @@ test('terminal：模拟盘视图 —— 空账户（无持仓/无挂单/无日�
   assert.match(txt, /当前空仓/, '无持仓 → 如实空态');
   assert.match(txt, /无待成交委托/, '无挂单 → 如实空态');
   assert.match(txt, /当日无决策日志/, '无日志 → 如实空态');
-  assert.match(txt, /净值序列不足/, '净值仅 1 个结算日 → 如实提示（不画单点折线）');
+  const navSvg = root.querySelector('svg[aria-label="净值曲线"]');
+  // 空态（≤1 个结算日）：画 100 万平坦红线 + 标注，看着像交易终端而非「报错」
+  assert.ok(navSvg, '净值图（空态）已渲染');
+  assert.match(txt, /初始化等待首个交易日结算/, '空态：画 100 万平坦红线 + 标注');
+  assert.ok(root.querySelector('path[stroke="#ff5a4d"]'), '空态基线为荧光红');
   assert.equal(root.querySelectorAll('table.t-tbl').length, 0, '三处皆空 → 无表格（也不该因取 null 表而崩）');
   assert.deepEqual(errors, [], `空账户不应有 JS 错误：${errors.join(' | ')}`);
 });
@@ -702,6 +707,7 @@ test('terminal：K线视图 ←/→ 切周期（与下拉同语义：只重绘�
   w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
   await new Promise((r) => setTimeout(r, 80));
   assert.ok(/周/.test(unit()), '按 ← 回「周」');
+  assert.ok(root.querySelector('svg.t-chart polyline'), 'K线含 MA5/10/20 均线 polyline（纯展示叠加）');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
@@ -721,5 +727,65 @@ test('terminal：总览「辅助面板」可折叠 + 公告流/外围汇率（�
   if (d0 && d0.name) assert.ok(aux.textContent.includes(String(d0.name)), `公告流含引擎原值公告名：${d0.name}`);
   assert.ok(aux.textContent.includes('美元离岸'), '外围面板含离岸美元');
   assert.ok(/A50|富时中国A50/.test(aux.textContent), '外围含 A50 锚');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：板块相对强弱 —— 攻防双单元各带板块名（修张冠李戴）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 300));
+  const root = w.document.getElementById('tRoot');
+  [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'sector').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 300));
+
+  const dual = root.querySelectorAll('.t-dv-row--dual');
+  if (dual.length) {
+    const dnNames = [...root.querySelectorAll('.t-dv-side.is-dn .t-dv-name')].map((e) => e.textContent.trim()).filter(Boolean);
+    const upNames = [...root.querySelectorAll('.t-dv-side.is-up .t-dv-name')].map((e) => e.textContent.trim()).filter(Boolean);
+    assert.ok(dnNames.length, '左(落后·绿)单元各自带板块名');
+    assert.ok(upNames.length, '右(跑赢·红)单元各自带板块名');
+    // 关键：左右单元名独立绑定，杜绝「一行共用 name 却套两个板块数值」的张冠李戴
+    assert.equal(root.querySelectorAll('.t-dv-row--dual .t-dv-side').length, dual.length * 2, '每行 = 两个独立单元（各含 name+数值）');
+  } else {
+    assert.match(root.textContent, /无板块数据|板块相对强弱/, '板块数据缺失 → 如实空态（fail-open）');
+  }
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：选股连板高度 X 轴固定枚举 1..max（修缺板挤位）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 300));
+  const root = w.document.getElementById('tRoot');
+  [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'picks').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 300));
+
+  const svg = [...root.querySelectorAll('svg.t-chart')].find((s) => (s.getAttribute('aria-label') || '').includes('连板高度'));
+  assert.ok(svg, '连板高度分布图存在');
+  const boards = [...svg.querySelectorAll('.t-tick')].map((t) => { const m = t.textContent.match(/(\d+)板/); return m ? +m[1] : null; }).filter((x) => x != null);
+  assert.ok(boards.length >= 1, 'X 轴含板号标签');
+  const maxB = Math.max(...boards);
+  // 固定枚举 1..max 连续（缺板补 0，绝不把 5 板挤到 4 板位置）
+  assert.deepEqual(boards, Array.from({ length: maxB }, (_, i) => i + 1), `X 轴固定枚举 1..${maxB} 连续不缺（缺板补 0 不挤位）`);
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：总览 —— 资金正向红色 + 顶栏 regime 徽章', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 300));
+  const root = w.document.getElementById('tRoot');
+
+  // Bug3：龙虎净买为正 → 标红(up)；绝不青色/白
+  const lhb = [...root.querySelectorAll('.t-stat')].find((s) => /龙虎净买/.test(s.textContent));
+  assert.ok(lhb, '总览含龙虎净买指标');
+  assert.ok(lhb.querySelector('.t-v.up'), '龙虎净买为正 → 标红(up)，非青色/白');
+
+  // 顶栏 regime 徽章（带高光边框 + 半透明底）
+  const badge = root.querySelector('#tRegime');
+  assert.ok(badge, '顶栏 regime 徽章存在');
+  assert.ok(/regime/.test(badge.textContent), '徽章含 regime 标识');
+  const rl = (((readJsonSafe('data/signals-latest.json') || {}).regime || {}).latest || {}).label || '';
+  if (rl) assert.ok(badge.textContent.includes(rl), `徽章显示 regime 原文：${rl}`);
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
