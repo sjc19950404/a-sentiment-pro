@@ -466,3 +466,27 @@ export function gateWeekly(tradeDate, closedDays = []) {
   }
   return { ok: true, reason: `${tradeDate} 为本周（周一起 ${weekMonday}）最后交易日 → 生成周报` };
 }
+
+/**
+ * 月报闸门：tradeDate 必须是**本月最后一个交易日**（用 calendar.closed 判定，不写死月末日）。
+ * 与 gateWeekly 同思路：从 tradeDate 次日起走到本月最后一天，其间若还有交易日 → 不是月末。
+ * @param {string} tradeDate YYYY-MM-DD
+ * @param {string[]} closedDays 休市日数组（data/calendar.json::closed）
+ */
+export function gateMonthly(tradeDate, closedDays = []) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(tradeDate || '')) return { ok: false, reason: `tradeDate 非法: ${tradeDate}` };
+  const closed = new Set(closedDays);
+  const cur = new Date(`${tradeDate}T00:00:00Z`);
+  const month = cur.getUTCMonth();
+  const probe = new Date(cur.getTime());
+  for (;;) {
+    probe.setUTCDate(probe.getUTCDate() + 1);
+    if (probe.getUTCMonth() !== month) break; // 已进入下月 → 本月已走完
+    const iso = probe.toISOString().slice(0, 10);
+    const dow = probe.getUTCDay();
+    if (dow >= 1 && dow <= 5 && !closed.has(iso)) {
+      return { ok: false, reason: `本月后续仍有交易日 ${iso} → 月报等 ${iso} 收盘后生成` };
+    }
+  }
+  return { ok: true, reason: `${tradeDate} 为本月最后交易日 → 生成月度大复盘` };
+}

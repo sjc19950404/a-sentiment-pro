@@ -71,6 +71,8 @@ case "$MODE" in
     [ -f "data/reports/post_market_${TODAY}.json" ] && ARGS="$ARGS data/reports/post_market_${TODAY}.json"
     [ -n "$ARGS" ] && node scripts/push_ai_report.mjs $ARGS 2>/dev/null
     node scripts/push_ai_report.mjs --latest weekly 2>/dev/null || true
+    # 战绩报表（周度盈利战报 / 月度大复盘）：月末优先于周末，只读账户、复用指纹去重、fail-open
+    node scripts/push_battle_report.mjs 2>/dev/null || true
     ;;
   us_close|a50)
     node scripts/fetch_global.mjs || log "外围抓取失败"

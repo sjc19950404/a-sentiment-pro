@@ -303,6 +303,10 @@ export function renderPushText(report) {
     case 'signal_sync':
       // 实盘跟单指令：极简、独立成条，不附「采集时间 / 完整版见页面」等尾注（已在主流程保证），直接透出 payload.text
       return report?.payload?.text || '【实盘跟单指令】（内容为空）';
+    case 'weekly_performance':
+    case 'monthly_review':
+      // 战绩报表（周度盈利战报 / 月度大复盘）：完整文本已在构建器拼好（含尾部免责），直接透出
+      return report?.payload?.text || '【战绩汇报】（内容为空）';
     default:
       lines.push(`【AI 报告 · ${txt(report?.report_type)}】${txt(report?.date)}`);
   }
