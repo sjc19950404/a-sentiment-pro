@@ -11,7 +11,8 @@
 // 用法：
 //   node scripts/fetch_announcements.mjs [--universe ladder|paper] [--limit 40]
 //                                      [--out data/announcements-latest.json]
-//                                      [--source em] [--mock]
+//                                      [--source auto|em|sina] [--mock]
+//   默认 --source auto：优先东方财富（官方、字段全），被墙/空则自动回退新浪（本环境可达）。
 //
 // 失败语义（fail-open，与排雷机一致）：
 //   抓取失败 / host 不可达 / 返回空 → 该批无公告（降级为空表），绝不抛异常阻断 EOD；
@@ -35,7 +36,7 @@ const hasFlag = (k) => args.includes(k);
 const UNIVERSE = argOf('--universe', 'ladder'); // ladder | paper
 const LIMIT = Math.max(1, (parseInt(argOf('--limit', '40'), 10) || 40));
 const MOCK = hasFlag('--mock');
-const SOURCE = argOf('--source', 'em'); // 当前仅 em（东方财富官方公告），预留扩展
+const SOURCE = argOf('--source', 'auto'); // auto(默认: 东财→新浪回退) | em | sina（--mock 单独控制）
 const ROOT = new URL('../', import.meta.url); // 项目根（scripts/ 上一级）
 // 相对路径按项目根解析；绝对路径（以 / 或盘符开头）直接当 file:// 用
 const resolvePath = (p) => (p && (p.startsWith('/') || /^[A-Za-z]:[\\/]/.test(p)))
@@ -159,6 +160,60 @@ async function fetchEMForCodes(codes) {
   return grouped;
 }
 
+// ── 2b. 新浪财经公告（HTML 服务端渲染，GBK 编码；本环境可达，作东财被墙时的兜底）────
+//   按股票抓 vCB_AllBulletin 页，解析 <div class="datelist"> 内「日期&nbsp;<a>标题</a>」。
+const SINA_HOST = 'https://vip.stock.finance.sina.com.cn';
+function parseSina(html) {
+  const out = [];
+  const re = /(\d{4}-\d{2}-\d{2})&nbsp;<a[^>]*href='([^']*)'>([^<]*)<\/a>/g;
+  let m;
+  while ((m = re.exec(html))) {
+    const title = (m[3] || '').trim();
+    if (title) out.push({ title, date: m[1], url: m[2].startsWith('http') ? m[2] : SINA_HOST + m[2] });
+  }
+  return out;
+}
+
+async function fetchSinaForCodes(codes) {
+  const grouped = {};
+  let blocked = false;
+  const CONC = 6;
+  for (let i = 0; i < codes.length; i += CONC) {
+    const batch = codes.slice(i, i + CONC);
+    await Promise.all(batch.map(async (code) => {
+      try {
+        const txt = await fetchWithRetry(`${SINA_HOST}/corp/go.php/vCB_AllBulletin/stockid/${code}.phtml`, {
+          headers: { 'User-Agent': UA, Referer: SINA_HOST + '/' },
+          timeout: 20000,
+          read: async (r) => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            const buf = Buffer.from(await r.arrayBuffer());
+            const html = new TextDecoder('gbk').decode(buf); // 新浪公告页为 GBK 编码
+            if (!html.includes('datelist')) throw new Error('异常/空页');
+            return html;
+          },
+        }, 3, 800);
+        const items = parseSina(txt);
+        if (items.length) grouped[code] = items;
+      } catch (e) {
+        blocked = true;
+        console.warn(`[fetch-ann] ⚠ 新浪 ${code} 失败：${e && e.message ? e.message : e}（降级：该只无公告）`);
+      }
+    }));
+  }
+  if (blocked) console.warn('[fetch-ann] 部分新浪批次失败（fail-open，不阻断 EOD）');
+  return grouped;
+}
+
+// 双源容错：优先东财（官方、字段全），被墙/空则回退新浪（本环境可达）
+async function fetchAnnouncementsAuto(codes) {
+  let g = await fetchEMForCodes(codes);
+  if (Object.keys(g).length > 0) return { grouped: g, source: 'eastmoney-np-anotice' };
+  console.warn('[fetch-ann] 东方财富无数据（可能被墙），回退新浪公告…');
+  g = await fetchSinaForCodes(codes);
+  return { grouped: g, source: 'sina-bulletin' };
+}
+
 // 仅保留扫描日及近 1 日的公告（当晚披露 + 盘前补披都算），更早的旧公告不计入排雷
 function filterByDate(grouped, tradeDate) {
   const td = new Date(tradeDate + 'T00:00:00+08:00');
@@ -197,14 +252,19 @@ async function main() {
   const stocks = collectCodes();
   if (!stocks.length) { console.error('[fetch-ann] 无候选股，退出'); process.exit(1); }
 
-  let grouped;
+  let grouped, sourceLabel;
   if (MOCK) {
     grouped = buildMockAnnouncements(stocks, tradeDate);
+    sourceLabel = 'mock';
   } else if (SOURCE === 'em') {
     grouped = await fetchEMForCodes(stocks.map((s) => s.code));
-  } else {
-    console.error(`[fetch-ann] 未知 --source ${SOURCE}`);
-    process.exit(2);
+    sourceLabel = 'eastmoney-np-anotice';
+  } else if (SOURCE === 'sina') {
+    grouped = await fetchSinaForCodes(stocks.map((s) => s.code));
+    sourceLabel = 'sina-bulletin';
+  } else { // auto（默认）
+    const r = await fetchAnnouncementsAuto(stocks.map((s) => s.code));
+    grouped = r.grouped; sourceLabel = r.source;
   }
 
   const kept = filterByDate(grouped, tradeDate);
@@ -218,7 +278,7 @@ async function main() {
 
   const payload = {
     date: tradeDate,
-    source: MOCK ? 'mock' : 'eastmoney-np-anotice',
+    source: sourceLabel,
     fetchedAt: bjStamp(),
     codes: stocks.length,
     count: Object.keys(announcements).length,
@@ -234,4 +294,4 @@ if (process.argv[1] && process.argv[1].endsWith('fetch_announcements.mjs')) {
   main().catch((e) => { console.error('[fetch-ann] 致命错误：', e); process.exit(1); });
 }
 
-export { parseEM, emAnnUrl, exPrefix, buildMockAnnouncements, filterByDate };
+export { parseEM, emAnnUrl, exPrefix, buildMockAnnouncements, filterByDate, parseSina, fetchSinaForCodes, fetchAnnouncementsAuto };
