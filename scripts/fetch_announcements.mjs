@@ -90,17 +90,43 @@ const emAnnUrl = (codes) =>
   + `&stock_list=${codes.map((c) => exPrefix(c) + c).join(',')}`;
 
 // 解析东方财富返回 → { code: [{title,date,url}] }
+// 东方财富真实接口字段名/结构有若干变体，这里尽量兼容，避免真实环境因字段微调而漏解析。
+function pickCode(it) {
+  const raw = it.security_code || it.secucode || it.stock_code || it.code || it.symbol || '';
+  const m = String(raw).match(/\d{6}/); // 提取 6 位代码，兼容 603278 / 603278.SH / SH603278
+  return m ? m[0] : '';
+}
+function pickTitle(it) {
+  return String(it.notice_title || it.ann_title || it.title || it.noticeTitle || it.announcementTitle || '').trim();
+}
+function pickDate(it) {
+  const raw = it.notice_date || it.eitime || it.datetime || it.date || it.noticeDate || it.time || '';
+  if (raw === '' || raw == null) return '';
+  if (/^\d{10,13}$/.test(String(raw))) { // 秒/毫秒时间戳
+    const ms = String(raw).length === 10 ? Number(raw) * 1000 : Number(raw);
+    const d = new Date(ms);
+    if (!isNaN(d)) return d.toISOString().slice(0, 10);
+  }
+  const m = String(raw).replace(/\//g, '-').match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : '';
+}
+function pickUrl(it) { return it.pdf_url || it.annotation_url || it.url || it.ann_url || ''; }
+
 function parseEM(text) {
   let j;
   try { j = JSON.parse(text); } catch { return {}; }
-  const list = (j && j.data && j.data.list) || [];
+  const list =
+    (j && j.data && (j.data.list || j.data.annList || (Array.isArray(j.data) ? j.data : null))) ||
+    (j && (j.list || (Array.isArray(j) ? j : null))) ||
+    [];
   const byCode = {};
   for (const it of list) {
-    const code = String(it.security_code || '').trim();
-    const title = it.notice_title || it.title || '';
-    const date = String(it.notice_date || '').slice(0, 10);
+    if (!it || typeof it !== 'object') continue;
+    const code = pickCode(it);
+    const title = pickTitle(it);
+    const date = pickDate(it);
     if (!code || !title) continue;
-    (byCode[code] = byCode[code] || []).push({ title, date, url: it.pdf_url || it.annotation_url || '' });
+    (byCode[code] = byCode[code] || []).push({ title, date, url: pickUrl(it) });
   }
   return byCode;
 }
@@ -140,8 +166,9 @@ function filterByDate(grouped, tradeDate) {
   const kept = {};
   for (const [c, arr] of Object.entries(grouped)) {
     const f = arr.filter((a) => {
-      const d = new Date((a.date || '') + 'T00:00:00+08:00');
-      return !isNaN(d) && d >= min;
+      if (!a.date) return true; // 无日期视为近期，保留（不漏判风险）
+      const d = new Date(a.date + 'T00:00:00+08:00');
+      return isNaN(d) || d >= min; // 解析失败也保留（而非静默丢弃真实利空）
     });
     if (f.length) kept[c] = f;
   }
