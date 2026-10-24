@@ -613,3 +613,57 @@ test('terminal：总览「市场宽度」面板（engine 原值：站上均线/�
   assert.match(root.textContent, /宽度判语/, '含宽度判语（engine verdict）');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
+
+test('terminal：总览「主线题材脉络」面板（main_theme_history 轮动）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 500));   // 主线历史档异步回填，等足
+
+  const root = w.document.getElementById('tRoot');
+  assert.ok(/主线题材脉络/.test(root.textContent), '总览含主线题材脉络面板');
+  assert.ok(!/主线历史档读取失败/.test(root.textContent), '主线历史档不得落到失败态');
+
+  const mh = readJsonSafe('data/main_theme_history.json') || {};
+  const days = mh.days || [];
+  const last = days[days.length - 1] || {};
+  const names = (last.main_themes || []).map((t) => t.name).filter(Boolean);
+  if (names.length) assert.ok(root.textContent.includes(String(names[0])), `末日主线名取引擎原值：${names[0]}`);
+  if (last.rotation) assert.ok(/↻ 轮动/.test(root.textContent), '轮动标记渲染');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：键盘快捷键 1–7 切视图（输入框聚焦时拦截 / Esc 关抽屉）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 120));
+  const root = w.document.getElementById('tRoot');
+  // 默认 makeDom 不进终端（root.hidden=true）；快捷键仅在终端可见时响应 → 先点入口进入
+  const entryBtn = [...w.document.body.querySelectorAll('button')].find((b) => /终端/.test(b.textContent));
+  assert.ok(entryBtn, '存在「⚡ 终端」入口按钮');
+  entryBtn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 60));
+  assert.ok(!root.hidden, '点击入口后终端可见');
+  const isOn = (k) => {
+    const b = [...root.querySelectorAll('.t-nav button')].find((x) => x.dataset.v === k);
+    return !!(b && b.classList.contains('is-on'));
+  };
+  assert.ok(isOn('overview'), '初始总览高亮');
+  const key = (k, target) => (target || w.document).dispatchEvent(new w.KeyboardEvent('keydown', { key: k, bubbles: true }));
+
+  key('4'); await new Promise((r) => setTimeout(r, 60));
+  assert.ok(isOn('sector'), '按 4 切到板块视图');
+  key('7'); await new Promise((r) => setTimeout(r, 60));
+  assert.ok(isOn('kline'), '按 7 切到 K线视图');
+
+  // 切到 K线后可找到代码输入框；聚焦后按数字不应切视图
+  const inp = root.querySelector('input');
+  assert.ok(inp, 'K线视图含代码输入框');
+  inp.focus();
+  key('5', inp); await new Promise((r) => setTimeout(r, 60));
+  assert.ok(isOn('kline'), '输入框聚焦时按 5 不切视图（保持 K线）');
+
+  // 非数字键不切
+  key('x'); await new Promise((r) => setTimeout(r, 30));
+  assert.ok(isOn('kline'), '非数字键不触发切换');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});

@@ -478,6 +478,32 @@
       if (host) host.outerHTML = '<div class="t-empty">宽度档读取失败（fail-open）</div>';
     });
 
+    // ── 主线题材脉络（近几日轮动：main_theme_history.days）──
+    //   ⚠ 每天主线是数组（多主线并存），且每天主线名不同 → 不做单一时间序列折线，
+    //     改成「按天时间轴」逐日列出主线 chip（强度着色 / 续日标「续」）+ 轮动标记。全取引擎原值。
+    const thPanel = panel('主线题材脉络', '近 N 日主线轮动 · main_theme_history', '<div class="t-loading">加载…</div>', 't-c12');
+    g.appendChild(thPanel);
+    jget('data/main_theme_history.json').then((mh) => {
+      if (!thPanel.isConnected) return;
+      const host = thPanel.lastElementChild;
+      if (!host) return;
+      if (!mh || !Array.isArray(mh.days) || !mh.days.length) { host.outerHTML = '<div class="t-empty">主线历史档缺失 / 空（fail-open）</div>'; return; }
+      host.outerHTML = `<div class="t-thlist">
+        ${mh.days.map((d) => `<div class="t-throw">
+            <span class="t-thdate">${esc(String(d.date || '').slice(4) || '—')}</span>
+            <span class="t-thbody">
+              ${(Array.isArray(d.main_themes) && d.main_themes.length)
+            ? d.main_themes.map((t) => `<span class="t-thchip ${t.strength === '强主线' ? 'is-strong' : 'is-weak'}">${esc(t.name || '—')} <b>${fmtInt(t.zt_count)}</b>${t.is_continuous ? ' <span class="t-thcon">续</span>' : ''}</span>`).join('')
+            : '<span class="t-thempty">空窗</span>'}
+              ${d.rotation ? '<span class="t-throt">↻ 轮动</span>' : ''}
+            </span>
+          </div>`).join('')}
+      </div>`;
+    }).catch(() => {
+      const host = thPanel.lastElementChild;
+      if (host) host.outerHTML = '<div class="t-empty">主线历史档读取失败（fail-open）</div>';
+    });
+
     return g;
   }
 
@@ -1162,6 +1188,7 @@
       b.addEventListener('click', () => render(v.k));
       nav.appendChild(b);
     });
+    nav.appendChild(el('span', 't-nav-hint', '快捷键 1–7 切视图 · Esc 关抽屉'));
 
     const switchTo = (v) => {
       const term = v === 'terminal';
@@ -1186,6 +1213,28 @@
       [...$('.t-range', top).children].forEach((x) => x.classList.toggle('is-on', +x.dataset.r === r));
       LINK.set({ range: r });
       SAFE(() => render(cur), 'render-range');
+    });
+
+    // ── 键盘快捷键（桌面端）──
+    //   1–7：切到对应视图（与左侧导航顺序一致）；Esc：关抽屉（抽屉自身已绑 Esc，这里交还不重复）。
+    //   ⚠ 焦点在输入框/文本域/可编辑区，或带 meta/ctrl/alt 修饰时**绝不拦截**——否则与 K线代码输入、
+    //     浏览器快捷键冲突。切视图前若抽屉浮层开着，先关抽屉（移除 is-open + LINK.set code:null），
+    //      避免浮层压在切换后的视图之上。
+    document.addEventListener('keydown', (e) => {
+      if (root.hidden) return;                              // 仅终端可见时响应（研报视图下不误触发）
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === 'Escape') return;                       // 抽屉已独立处理 Esc
+      const n = parseInt(e.key, 10);
+      if (!(n >= 1 && n <= VIEWS.length)) return;
+      const v = VIEWS[n - 1];
+      if (drawerRefs && drawerRefs.dw.classList.contains('is-open')) {
+        drawerRefs.mask.classList.remove('is-open');
+        drawerRefs.dw.classList.remove('is-open');
+        LINK.set({ code: null });
+      }
+      SAFE(() => render(v.k), 'render-key');
     });
 
     root.appendChild(top); root.appendChild(nav); root.appendChild(body); root.appendChild(tick);
