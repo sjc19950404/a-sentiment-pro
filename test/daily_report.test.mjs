@@ -3,6 +3,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildDailyReport, DISPLAY } from '../src/daily_report.js';
 
+// 十节契约（单一处声明，三处断言共用，避免「只改一处、另两处悄悄过期」）：
+//   ①市场状态 ②情绪与分位 ③涨跌与连板结构 ④亏钱效应/接力 ⑤资金与席位属性
+//   ⑥题材与相对强弱 ⑦数据质量与告警 ⑧舆情参考 ⑨板块情绪因子 ⑩妖股逻辑推演
+// ⚠ 增节/删节必须三处同改：本常量 + src/report_audit.js 的 EXPECTED_SECTIONS
+//   + test/report_audit.test.mjs 的常量断言（那边会红，这是设计意图）。
+const SEC_IDS = ['regime', 'sentiment', 'breadth', 'pain', 'seats', 'theme',
+  'quality', 'llm', 'sectorSentiment', 'dragonLogic'];
+
 // 一份"素材齐全"的 fixtures（贴近 signals-latest.json 真实形态）
 function fullSignals() {
   return {
@@ -41,16 +49,16 @@ test('buildDailyReport: 结构完整（date/headline/tag/divergence/sections/cav
   assert.ok(R.headline.includes('2026-09-30'));
   assert.ok(R.tag.key);
   assert.ok(Array.isArray(R.sections));
-  assert.equal(R.sections.length, 8, '应有八节（V5.3 增节 8 舆情参考）');
+  assert.equal(R.sections.length, SEC_IDS.length, `应有 ${SEC_IDS.length} 节（V5.3 增节 8 舆情参考 + 场景二/三 增节 9 板块情绪、节 10 妖股逻辑）`);
   assert.ok(Array.isArray(R.caveats));
   assert.ok(R.sources && R.sources.regime);
   assert.ok(typeof R.disclaimer === 'string' && R.disclaimer.length > 0);
 });
 
-test('buildDailyReport: 八个分节标题齐全且顺序固定', () => {
+test(`buildDailyReport: ${10} 个分节标题齐全且顺序固定`, () => {
   const R = buildDailyReport(fullSignals());
   const ids = R.sections.map((s) => s.id);
-  assert.deepEqual(ids, ['regime', 'sentiment', 'breadth', 'pain', 'seats', 'theme', 'quality', 'llm']);
+  assert.deepEqual(ids, SEC_IDS);
 });
 
 test('buildDailyReport: 高潮日 + 宽度窄 → ★ 切换期（V5.3 矛盾覆盖），headline 含"切换期"与"假繁荣"', () => {
@@ -136,7 +144,8 @@ test('buildDailyReport: ★ 全空输入 → 不炸，标签 unknown，headline 
   assert.equal(R.date, null);
   assert.equal(R.tag.key, 'unknown');
   assert.match(R.headline, /数据不足/);
-  assert.ok(R.sections.length === 8);
+  // 全空也要给满十节（缺数据 → 该节 missing + 明说原因，而不是整节消失）
+  assert.equal(R.sections.length, SEC_IDS.length);
 });
 
 test('buildDailyReport: null 输入不炸', () => {

@@ -20,7 +20,14 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // ── 构造一份「合规」的结构化报告（模拟 parseReport 的输出） ──────────────────
 // 章节标题保持 buildBrief 的真实形态（带历史圆形序号前缀）——
 // 导出层要负责把它翻成公文的「一、」，这正是要验的翻译链路，不能提前替它做掉。
-const secTitles = ['① 情绪定位', '② 资金面', '③ 盈亏效应', '④ 广度与量能', '⑤ 题材结构', '⑥ 综合研判', '⑦ 模拟交易复盘'];
+// ⚠ 2026-10-24 补到 10 节（新增舆情参考 / 板块情绪雷达 / 妖股逻辑推演），
+//   必须与 src/report_audit.js 的 EXPECTED_SECTIONS 同步改，否则本节数规则恒不通过。
+const secTitles = [
+  '① 情绪定位', '② 资金面', '③ 盈亏效应', '④ 广度与量能', '⑤ 题材结构', '⑥ 综合研判',
+  '⑦ 模拟交易复盘', '⑧ 舆情参考', '⑨ 板块情绪雷达', '⑩ 妖股逻辑推演',
+];
+assert.equal(secTitles.length, EXPECTED_SECTIONS,
+  `fixture 章节数必须与 EXPECTED_SECTIONS(${EXPECTED_SECTIONS}) 一致，否则「合规报告」样本本身就不合规`);
 function goodRep() {
   return {
     meta: '数据日期 2026-09-30 · 样本 33 个交易日',
@@ -91,10 +98,10 @@ test('正向：isAuditPass 与 auditReport().pass 一致', () => {
 });
 
 test('契约：期望章节数是人工声明的常量（若从 DOM 数，缺段永远自洽、永远发现不了）', () => {
-  assert.equal(EXPECTED_SECTIONS, 7);
+  assert.equal(EXPECTED_SECTIONS, 10);
   // 源码里必须是字面量常量，不能是「数出来」的
   const src = readFileSync(path.join(ROOT, 'src', 'report_audit.js'), 'utf8');
-  assert.match(src, /export const EXPECTED_SECTIONS = 7;/);
+  assert.match(src, /export const EXPECTED_SECTIONS = 10;/);
 });
 
 // ────────────────────────── 负向：每种破坏都必须被拦下 ──────────────────────────
