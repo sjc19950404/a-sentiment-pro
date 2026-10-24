@@ -45,6 +45,30 @@
   // ── 2. 常量与数据加载 ──────────────────────────────────────────────────
   const jget = async (url) => { try { const r = await fetch(url, { cache: 'force-cache' }); return r.ok ? await r.json() : null; } catch { return null; } };
 
+  // ── 涨跌停历史：emotion_history.json（83KB，250 天）按需后台拉 + 结果缓存 ──
+  //   ⚠ 档案键是 **.history**（不是 .days）。首期误用 archive-recent.json 的 .days
+  //     （该档根本没有 days 键，只有 signals{momentum…}）→ 总览「涨跌停分布」恒落到
+  //     「无涨跌停历史」空态。此函数即为修正，并供总览/涨跌停两视图共用。
+  //   字段一律取引擎已落盘的原始值，**不反推、不重算**（如炸板数不由炸板率推导）。
+  let _histP = null;
+  function loadHist(n = 30) {
+    if (!_histP) _histP = jget('data/emotion_history.json').catch(() => null);
+    return _histP.then((raw) => {
+      const arr = (raw && raw.history) || [];
+      return arr.slice(-n).map((x) => {
+        const m = x.metrics || {};
+        return {
+          date: String(x.date || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3').slice(5),
+          zt: m.limit_up_count,        // 涨停家数
+          lb: m.continuous_count,      // 连板家数
+          maxb: m.max_board,           // 最高板
+          broken: m.broken_rate,       // 炸板率
+          hard: m.hard_board_rate,     // 硬板率（封板质量）
+        };
+      }).filter((r) => r.date);
+    });
+  }
+
   const FACTOR_META = [
     { k: 's_net', n: '龙虎净额', w: '20%' },
     { k: 's_brd', n: '板块涨比', w: '20%' },
@@ -136,8 +160,10 @@
     [0, rows.length - 1].forEach((i) => {
       s += `<text class="t-tick" x="${P.l + i * slot + slot / 2}" y="${H - P.b + 12}" text-anchor="middle">${rows[i].date}</text>`;
     });
-    s += `<rect class="t-bar is-up" x="${W - P.r - 92}" y="${3}" width="7" height="7" rx="1.5"/><text class="t-tick" x="${W - P.r - 82}" y="${10}">涨停</text>`;
-    s += `<rect class="t-bar is-dn" x="${W - P.r - 48}" y="${3}" width="7" height="7" rx="1.5"/><text class="t-tick" x="${W - P.r - 38}" y="${10}">跌停</text>`;
+    // 图例可配（默认 涨停/跌停）：同一图表复用给「涨停/连板」等其它对儿时不至于说谎
+    const [lgA, lgB] = opt.legend || ['涨停', '跌停'];
+    if (lgA) s += `<rect class="t-bar is-up" x="${W - P.r - 92}" y="${3}" width="7" height="7" rx="1.5"/><text class="t-tick" x="${W - P.r - 82}" y="${10}">${esc(lgA)}</text>`;
+    if (lgB) s += `<rect class="t-bar is-dn" x="${W - P.r - 48}" y="${3}" width="7" height="7" rx="1.5"/><text class="t-tick" x="${W - P.r - 38}" y="${10}">${esc(lgB)}</text>`;
     return s + '</svg>';
   }
 
@@ -287,14 +313,15 @@
         ${stat('主线净买', wan(mt.main_yi != null ? mt.main_yi * 10000 : null), `全榜 ${wan(mt.tot_yi != null ? mt.tot_yi * 10000 : null)}`)}
       </div>` : '<div class="t-empty">当日无主线</div>', 't-c8'));
 
-    // ── 涨跌停柱状（后台拉 archive-recent，不阻塞首屏）──
-    const barPanel = panel('涨跌停分布', '近 30 交易日', '<div class="t-loading">加载…</div>', 't-c12');
+    // ── 涨跌停柱状（后台拉 emotion_history，不阻塞首屏）──
+    //    2026-10-25 修正：原取 archive-recent.json 的 .days（该档无此键）→ 恒为空态；
+    //    且原图例写死「涨停/跌停」而跌停历史并不落盘，改用「涨停/连板」如实标注。
+    const barPanel = panel('涨跌停分布', '近 30 交易日 · 涨停 vs 连板', '<div class="t-loading">加载…</div>', 't-c12');
     g.appendChild(barPanel);
-    jget('data/archive-recent.json').then((a) => {
-      const days = (a && a.days) || [];
-      const rows2 = days.filter((d) => d && d.trade_date).map((d) => ({ date: String(d.trade_date).slice(5), a: d.zt_count, b: d.dt_count }));
+    loadHist(30).then((hist) => {
+      const data = hist.filter((r) => r.zt != null).map((r) => ({ date: r.date, a: r.zt, b: r.lb }));
       const host = barPanel.lastElementChild;
-      if (host) host.outerHTML = rows2.length ? barChart(rows2, { w: 900, h: 170 }) : '<div class="t-empty">无涨跌停历史</div>';
+      if (host) host.outerHTML = data.length ? barChart(data, { w: 900, h: 170, legend: ['涨停', '连板'] }) : '<div class="t-empty">无涨跌停历史</div>';
     });
 
     return g;
@@ -319,6 +346,91 @@
     }
     g.appendChild(panel('板块相对强弱', `基准 ${esc(vs.baseLabel || '—')} ${sgn(vs.basePct, 2)} · 左=防御 · 右=进攻（超额）`,
       rows.length ? `<div>${rows.join('')}</div>` : '<div class="t-empty">无板块数据</div>', 't-c12'));
+    return g;
+  }
+
+  // ── 6b. 视图：涨跌停 ────────────────────────────────────────────────────
+  function viewZt(S) {
+    const L = S.latest || {};
+    const g = el('div', 't-grid');
+
+    // 今日快照：全部取 latest 里引擎已算好的值，**不反推、不重算**
+    g.appendChild(panel('今日涨跌结构', `交易日 ${esc(L.trade_date || '—')}`,
+      `<div class="t-stats">
+        ${stat('涨停家数', fmtInt(L.zt_count), 'zt_count', 'up')}
+        ${stat('跌停家数', fmtInt(L.dt_count), 'dt_count', 'dn')}
+        ${stat('炸板家数', fmtInt(L.zb_count), 'zb_count', 'dn')}
+        ${stat('封板率', pct(L.seal_pct), 'seal_pct')}
+        ${stat('上涨家数', fmtInt(L.up_count), 'up_count', 'up')}
+        ${stat('下跌家数', fmtInt(L.down_count), 'down_count', 'dn')}
+      </div>`, 't-c12'));
+
+    // 涨停 vs 连板（30 日）
+    const hPanel = panel('涨停家数 vs 连板家数', '近 30 交易日 · 引擎原值', '<div class="t-loading">加载…</div>', 't-c12');
+    g.appendChild(hPanel);
+    loadHist(30).then((hist) => {
+      const data = hist.filter((r) => r.zt != null).map((r) => ({ date: r.date, a: r.zt, b: r.lb }));
+      const host = hPanel.lastElementChild;
+      if (host) host.outerHTML = data.length ? barChart(data, { w: 900, h: 200, legend: ['涨停', '连板'] }) : '<div class="t-empty">无涨跌停历史</div>';
+    });
+
+    // 最高连板高度（30 日）
+    const bPanel = panel('最高连板高度', '近 30 交易日 · max_board', '<div class="t-loading">加载…</div>', 't-c12');
+    g.appendChild(bPanel);
+    loadHist(30).then((hist) => {
+      const data = hist.filter((r) => r.maxb != null).map((r) => ({ date: r.date, a: r.maxb }));
+      const host = bPanel.lastElementChild;
+      if (host) host.outerHTML = data.length ? barChart(data, { w: 900, h: 170, legend: ['最高板', ''] }) : '<div class="t-empty">无历史</div>';
+    });
+
+    // 近 5 日封板质量明细表
+    const tPanel = panel('近 5 日封板质量', '硬板率 / 炸板率 · 引擎原值，不反推', '<div class="t-loading">加载…</div>', 't-c12');
+    g.appendChild(tPanel);
+    loadHist(5).then((hist) => {
+      const rows = hist.slice().reverse().map((r) => `<tr>
+        <td>${esc(r.date)}</td>
+        <td class="up">${fmtInt(r.zt)}</td>
+        <td>${fmtInt(r.lb)}</td>
+        <td>${fmtInt(r.maxb)}</td>
+        <td>${pct(r.hard != null ? r.hard * 100 : null)}</td>
+        <td class="dn">${pct(r.broken != null ? r.broken * 100 : null)}</td>
+      </tr>`).join('');
+      const host = tPanel.lastElementChild;
+      if (host) {
+        host.outerHTML = rows
+          ? `<table class="t-tbl"><thead><tr><th>日期</th><th>涨停</th><th>连板</th><th>最高板</th><th>硬板率</th><th>炸板率</th></tr></thead><tbody>${rows}</tbody></table>`
+          : '<div class="t-empty">无历史</div>';
+      }
+    });
+    return g;
+  }
+
+  // ── 6c. 视图：资金 ──────────────────────────────────────────────────────
+  function viewFund(S) {
+    const L = S.latest || {};
+    const mt = L.main_theme || S.main_theme || {};
+    const g = el('div', 't-grid');
+
+    g.appendChild(panel('龙虎资金快照', `交易日 ${esc(L.trade_date || '—')}`,
+      `<div class="t-stats">
+        ${stat('龙虎净额', `${fmt(L.lhb_daily_net, 2)} 亿`, 'lhb_daily_net', +L.lhb_daily_net > 0 ? 'up' : 'dn')}
+        ${stat('上榜个股', fmtInt(L.lhb_stocks), 'lhb_stocks')}
+        ${stat('当日成交榜', fmtInt(L.lhb_daily_stocks), 'lhb_daily_stocks')}
+        ${stat('两市成交额', `${fmtInt(L.amount_yi)} 亿`, 'amount_yi')}
+      </div>`, 't-c12'));
+
+    // 主线资金集中度：pct 优先取引擎已算好的值，缺失才由两个原始额现算（同一口径，非重算阈值）
+    const tot = mt.tot_yi, main = mt.main_yi;
+    const p = mt.pct != null ? mt.pct : ((tot != null && main != null && tot !== 0) ? (main / tot) * 100 : null);
+    const w = Math.max(0, Math.min(100, p || 0));
+    g.appendChild(panel('主线资金集中度', `主线「${esc(mt.name || '—')}」· 口径 ${esc(mt.caliber || 'daily')}`,
+      `<div class="t-dv-row">
+        <span class="t-dv-name">${esc(mt.name || '—')}</span>
+        <span class="t-dv-track"><span class="t-dv-fill up" style="width:${w.toFixed(1)}%"></span></span>
+        <span class="t-dv-val">${pct(p)}</span>
+      </div>
+      <div class="t-sub">主线净额 ${fmt(main, 2)} 亿 / 龙虎总额 ${fmt(tot, 2)} 亿${mt.pct != null ? '' : ' · 占比由原始额现算'}</div>`, 't-c12'));
+
     return g;
   }
 
@@ -391,9 +503,11 @@
   // ── 9. 挂载与视图切换 ─────────────────────────────────────────────────
   const VIEWS = [
     { k: 'overview', n: '总览' },
+    { k: 'zt', n: '涨跌停' },
+    { k: 'fund', n: '资金' },
     { k: 'sector', n: '板块' },
     { k: 'paper', n: '模拟盘' },
-    { k: 'soon', n: '涨跌停 · 资金 · 选股 · K线 · 研报', soon: true },
+    { k: 'soon', n: '选股 · K线 · 研报', soon: true },
   ];
 
   function mount() {
@@ -430,6 +544,8 @@
       let node = null;
       try {
         if (k === 'overview') node = viewOverview(S);
+        else if (k === 'zt') node = viewZt(S);
+        else if (k === 'fund') node = viewFund(S);
         else if (k === 'sector') node = viewSector(S);
         else if (k === 'paper') node = await viewPaper();   // 异步视图必须 await，否则拿到 Promise 而非 Node
       } catch (e) { console.error('[terminal] render', k, e); node = null; }

@@ -155,3 +155,68 @@ test('terminal：不破坏研报视图 —— #briefBody 不被终端触碰', as
   assert.ok([...w.document.querySelectorAll('button')].some((b) => /终端/.test(b.textContent)), '有终端入口按钮');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
+
+test('terminal：涨跌停视图渲染（今日快照 + 涨停/连板 30 日柱 + 最高板 + 封板质量表）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+
+  const root = w.document.getElementById('tRoot');
+  const btn = [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'zt');
+  assert.ok(btn, '有涨跌停视图按钮');
+  btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 320));
+
+  // 今日快照六项（值取自引擎 latest，缺失显示 — 也算渲染成功）
+  const stats = root.querySelector('.t-stats');
+  assert.ok(stats, '今日涨跌结构指标块');
+  for (const k of ['涨停家数', '跌停家数', '炸板家数', '封板率', '上涨家数', '下跌家数']) {
+    assert.ok(stats.textContent.includes(k), `含指标：${k}`);
+  }
+  // 两张柱状图都在（涨停/连板、最高板）
+  const charts = [...root.querySelectorAll('svg.t-chart')];
+  assert.ok(charts.length >= 2, `应有涨停/连板与最高板两张图，实际 ${charts.length}`);
+  assert.ok(!/无涨跌停历史/.test(root.textContent), '不得落到「无涨跌停历史」空态');
+  // 封板质量明细表
+  const tbl = root.querySelector('table.t-tbl');
+  assert.ok(tbl, '封板质量明细表');
+  assert.ok(tbl.querySelectorAll('tbody tr').length >= 1, '表内至少 1 行');
+  assert.ok(/硬板率/.test(tbl.textContent) && /炸板率/.test(tbl.textContent), '表头含硬板率/炸板率');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：资金视图渲染（龙虎快照 + 主线资金集中度）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+
+  const root = w.document.getElementById('tRoot');
+  const btn = [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'fund');
+  assert.ok(btn, '有资金视图按钮');
+  btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 280));
+
+  const stats = root.querySelector('.t-stats');
+  assert.ok(stats, '龙虎资金快照指标块');
+  for (const k of ['龙虎净额', '上榜个股', '当日成交榜', '两市成交额']) {
+    assert.ok(stats.textContent.includes(k), `含指标：${k}`);
+  }
+  const bar = root.querySelector('.t-dv-fill');
+  assert.ok(bar, '主线资金集中度进度条');
+  assert.match(bar.getAttribute('style') || '', /width:/, '宽度已按占比设置（0~100% 夹紧）');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+// 回归：首期总览的「涨跌停分布」因读 archive-recent.json 的 .days（该档无此键）恒为空态
+test('terminal：总览涨跌停柱状不再恒空（emotion_history.history 回归）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 420));
+
+  const root = w.document.getElementById('tRoot');
+  assert.ok(/涨停 vs 连板/.test(root.textContent), '总览含涨跌停分布面板（口径已如实标注）');
+  assert.ok(!/无涨跌停历史/.test(root.textContent), '总览涨跌停柱状不得再落到空态');
+  const svgs = [...root.querySelectorAll('svg.t-chart')];
+  assert.ok(svgs.some((s) => s.getAttribute('aria-label') === '涨跌停分布'), '柱状图本体已渲染');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
