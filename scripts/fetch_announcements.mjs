@@ -25,6 +25,8 @@ import { atomicWriteJSON } from '../src/fsutil.js';
 import { decodeArchive } from '../src/lhb_codec.js';
 import { bjStamp } from '../src/time.js';
 import { fetchWithRetry } from '../src/util.js';
+import { loadEnv } from '../src/loadenv.js';
+loadEnv(); // 幂等加载 .env（仅填缺失变量；公告抓取当前不依赖密钥，但为一致性/后续源预留）
 
 const args = process.argv.slice(2);
 const argOf = (k, d) => { const i = args.indexOf(k); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
@@ -84,7 +86,8 @@ function exPrefix(code) {
 //   notice_date, pdf_url, ... } ] } }。本沙箱对该 host 返回空属网络限制；生产环境正常。
 const emAnnUrl = (codes) =>
   'https://np-anotice-stock.eastmoney.com/api/security/announcement?sr=-1&page_size=30'
-  + `&page_index=1&ann_type=0&client_source=web&stock_list=${codes.map((c) => exPrefix(c) + c).join(',')}`;
+  + `&page_index=1&ann_type=0&client_source=web&ut=bd1d9ddb04089700cf9c27f6f7426281`
+  + `&stock_list=${codes.map((c) => exPrefix(c) + c).join(',')}`;
 
 // 解析东方财富返回 → { code: [{title,date,url}] }
 function parseEM(text) {

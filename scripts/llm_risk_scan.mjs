@@ -25,6 +25,8 @@ import { atomicWriteJSON } from '../src/fsutil.js';
 import { decodeArchive } from '../src/lhb_codec.js';
 import { bjStamp } from '../src/time.js';
 import { fetchWithRetry } from '../src/util.js';
+import { loadEnv } from '../src/loadenv.js';
+loadEnv(); // 幂等加载 .env（仅填缺失变量），standalone / EOD 均可直接拿到 LLM_API_*
 
 const args = process.argv.slice(2);
 const argOf = (k, d) => { const i = args.indexOf(k); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
