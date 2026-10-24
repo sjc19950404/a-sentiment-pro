@@ -33,7 +33,7 @@ const argOf = (k, d) => { const i = args.indexOf(k); return i >= 0 && args[i + 1
 const hasFlag = (k) => args.includes(k);
 const MOCK = hasFlag('--mock');
 const LIMIT = Math.max(10, (parseInt(argOf('--limit', '60'), 10) || 60));
-const OUT = new URL('../data/macro-sector-sentiment-latest.json', import.meta.url);
+const OUT = argOf('--out') ? new URL(argOf('--out'), import.meta.url) : new URL('../data/macro-sector-sentiment-latest.json', import.meta.url);
 
 // ── 0. 板块/概念口径（供 GLM 选词 + 聚合归一；与 A 股常用板块对齐）─────────────
 const SECTORS = [
