@@ -638,7 +638,7 @@ export function readLogs(acct, filter = {}) {
 export function logsToReport(acct, filter = {}) {
   const rows = readLogs(acct, filter);
   if (!rows.length) return '';
-  const STAGE = { lhb: '龙虎过滤', risk: '风控', order: '委托', settle: '结算', stop: '止损' };
+  const STAGE = { lhb: '龙虎过滤', risk: '风控', order: '委托', settle: '结算', stop: '止损', glm: 'AI预检' };
   const RESULT = { pass: '通过', rejected: '拦截', submitted: '已提交', filled: '已成交', expired: '失效', cancelled: '已撤单', info: '记录' };
   const lines = rows.map((r) => {
     const head = `- \`${r.date || '—'}\` ${r.code ? r.code + ' ' + (r.name || '') : ''} `

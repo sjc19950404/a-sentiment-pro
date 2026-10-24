@@ -18,7 +18,7 @@ import {
   // 批量下单面板与事件日志面板的**全部规则判断**仍由引擎负责，UI 只解析输入、渲染结果。
   // 为什么不在 UI 里自己拼一遍过滤/风控链路：那就是规则的第二出处，一旦漂移，
   // 页面上显示的「拦没拦住」就和账本里实际发生的「拦没拦住」不是一回事。
-  batchSubmit, batchSell, readLogs, logsToReport, orderDetail, MAX_LOGS,
+  batchSubmit, batchSell, readLogs, logsToReport, orderDetail, appendLog, MAX_LOGS,
   // 风控口径常量：日志面板在「全部/风控」过滤之外还要按档位说明拦截原因，取同一份阈值
   MAX_DAILY_POSITION_CHANGE, HARD_STOP_LOSS, DD_TIERS,
 } from './src/paper.js';
@@ -1059,6 +1059,21 @@ function renderOrderForm() {
     }
   }
 
+  // ── AI 妖股逻辑推演（方向 C）：纯情绪炒作 → 判词浮现在强制买入按钮上方 ──
+  const glmGate = $('poGlmGate');
+  if (glmGate) {
+    const d = (ORDER.code && ORDER.side === 'buy' && window.__glm) ? window.__glm.dragonOf(ORDER.code) : null;
+    if (d) {
+      const pure = !!d.is_pure_sentiment;
+      glmGate.hidden = false;
+      glmGate.innerHTML = `<div class="po-gate-h">🕵 妖股逻辑推演${pure ? ' · 纯情绪炒作预警' : ''}</div>`
+        + `<div class="po-gate-b">${esc(d.name || d.code)}（${d.lb}板·${esc(d.hybk || '—')}）→ ${esc(d.reason || (pure ? '纯情绪博弈，明日晋级风险极大，建议列为高危观察' : '（无判词）'))}</div>`;
+    } else {
+      glmGate.hidden = true;
+      glmGate.innerHTML = '';
+    }
+  }
+
   // 数量快捷项
   const qty = ORDER.qty;
   const prev = $('poPreview');
@@ -1694,7 +1709,7 @@ function renderPicks() {
         <span class="pk-rank${i === 0 ? ' top' : ''}">${i + 1}</span>
         <div class="pk-main">
           <div class="pk-line1">
-            <b class="pk-name">${esc(p.name || p.code)}</b>
+            <b class="pk-name">${esc(p.name || p.code)}</b>${window.__glm ? window.__glm.tagSpan(p) : ''}
             <span class="pk-code muted">${esc(p.code)}</span>
             ${chg == null ? '' : `<span class="pk-chg ${chgCls}">${pct(chg)}</span>`}
             ${p.streakTop
@@ -2287,17 +2302,38 @@ async function runBatch() {
   // date 同单票路径用真实提交日：风控的「单日累计买入」按此分组，且 T+1 门禁据此顺延
   const opts = { date: bjToday(), applyLhbFilter: applyLhb, checkRisk };
   // 卖出：不做龙虎过滤（规则原文只对买入做前置过滤），也不做仓位变动风控（降仓必须放行）
+  // ── AI 深度情报·批量买前预检（方向 A 排雷）：命中黑名单的标的从提交清单剔除并记入日志 ──
+  //   （与 scripts/paper_daily.mjs 的 glmBuyGuard 同源意图；此处走前端窗桥，因浏览器无 fs。
+  //   C 妖股逻辑在手动批量路径只警示不拦，交由单票下单区的 AI 判词预警自行判断。）
+  const glmBlocked = side === 'buy'
+    ? items.filter((it) => window.__glm && window.__glm.riskOf(it.code))
+    : [];
+  const passItems = glmBlocked.length ? items.filter((it) => !glmBlocked.some((b) => b.code === it.code)) : items;
+  if (glmBlocked.length) {
+    glmBlocked.forEach((b) => {
+      const rr = (window.__glm.riskOf(b.code) || {}).reason || '命中 AI 晚间排雷黑名单';
+      ACCT = { ...ACCT, logs: appendLog(ACCT, { stage: 'glm', result: 'rejected', code: b.code, name: b.name, side: 'buy', reason: rr, text: `[AI预检拦截] 拒单 ${b.code}：${rr}` }) };
+    });
+  }
   const r = side === 'buy'
-    ? batchSubmit(ACCT, items, day, opts)
+    ? batchSubmit(ACCT, passItems, day, opts)
     : batchSell(ACCT, items, day, { date: opts.date });
+  // 把 GLM 预检拦截的标的并入批量结果表（status=blocked, stage=glm），原因逐条可见
+  const glmResults = glmBlocked.map((b) => ({
+    code: b.code, name: b.name, side: 'buy', qty: null, status: 'blocked', stage: 'glm',
+    reason: (window.__glm.riskOf(b.code) || {}).reason || '命中 AI 晚间排雷黑名单',
+  }));
+  const summaryAug = r.summary
+    ? { ...r.summary, blocked: (r.summary.blocked || 0) + glmResults.length }
+    : { submitted: 0, blocked: glmResults.length };
 
   ACCT = r.next;
   save();
-  BATCH = { ...BATCH, result: { side, items: r.results, errors, summary: r.summary } };
+  BATCH = { ...BATCH, result: { side, items: [...r.results, ...glmResults], errors, summary: summaryAug } };
   renderAllPaper();
   syncPositionsLive();
 
-  const s = r.summary || {};
+  const s = summaryAug || {};
   const okN = s.submitted ?? 0;
   const blkN = s.blocked ?? 0;
   if (okN && !blkN) {
@@ -2400,8 +2436,8 @@ function renderBatch() {
 // settleDay / scanStopLoss 都会 appendLog）。UI 只读不写——这样「日志完整性」不依赖于
 // 用户是否打开了某个面板，也就不会出现「因为界面没渲染所以没记录」的漏洞。
 
-const LOG_STAGE_LABEL = { lhb: '龙虎过滤', risk: '风控', order: '委托', settle: '结算', stop: '止损' };
-const LOG_STAGE_CLS = { lhb: 'warn', risk: 'bad', order: 'mut', settle: 'ok', stop: 'warn' };
+const LOG_STAGE_LABEL = { lhb: '龙虎过滤', risk: '风控', order: '委托', settle: '结算', stop: '止损', glm: 'AI预检' };
+const LOG_STAGE_CLS = { lhb: 'warn', risk: 'bad', order: 'mut', settle: 'ok', stop: 'warn', glm: 'bad' };
 const LOG_RESULT_LABEL = {
   pass: '通过', rejected: '拦截', submitted: '已提交', filled: '已成交',
   expired: '失效', cancelled: '已撤单', info: '记录',
@@ -2527,6 +2563,20 @@ async function submit() {
         + `该票已扣综合分 ${LHB_NET_OUTFLOW_PENALTY.SCORE} 分 / 上涨概率 ${LHB_NET_OUTFLOW_PENALTY.PROB} 个百分点，`
         + `当前落入备选观察池（禁止自动下单）。请先确认下方告警详情，再点一次「确认复核并下单」。`, 'err');
       renderOrderForm();   // 让复核按钮显形
+      return;
+    }
+  }
+  // ── AI 深度情报·买前预检（方向 A 排雷黑名单）：命中 → 红牌拦截并记入日志 ──
+  //   与 scripts/paper_daily.mjs 的 glmBuyGuard 同源意图；此处走前端窗桥（window.__glm，
+  //   浏览器无 fs 不能 import 引擎侧 glm_guard.js）。黑名单属真实基本面风险，手动下单也拦。
+  if (ORDER.side === 'buy') {
+    const risk = window.__glm ? window.__glm.riskOf(ORDER.code) : null;
+    if (risk) {
+      const reason = `命中 AI 晚间排雷黑名单${risk.riskLevel ? '（' + risk.riskLevel + '）' : ''}：${risk.reason || '该票被判定有雷，已禁止自动建仓'}`;
+      ACCT = { ...ACCT, logs: appendLog(ACCT, { stage: 'glm', result: 'rejected', code: info.code, name: info.name, side: 'buy', qty: ORDER.qty, reason, text: `[AI预检拦截] 拒单 ${ORDER.code}：${reason}` }) };
+      save();
+      renderLogs();
+      msg(`⛔ AI 排雷拦截：${reason}`, 'err');
       return;
     }
   }

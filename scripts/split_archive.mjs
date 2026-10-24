@@ -14,6 +14,8 @@ import { buildIndex, buildShards, shardName, buildRecent, buildSignals, RECENT_D
 import { buildReasonCodes, encodeArchive, decodeArchive } from '../src/lhb_codec.js';
 import { marketAlerts } from '../src/alerts.js';
 import { healthReport } from '../src/health.js';
+import { macroSectorSentimentBlock } from '../src/macro_sector_sentiment.js';
+import { dragonLogicBlock } from '../src/dragon_logic.js';
 import { assessFreshness } from '../src/freshness.js';
 import { resolveHolidays } from '../src/calendar.js';
 import { buildSeatSeries, seatSeriesSummary, seatVerdict } from '../src/seats_daily.js';
@@ -168,6 +170,31 @@ const signals = buildSignals(packed, {
       });
     } catch { return null; }
   },
+  // 板块情绪因子（场景二 / 方向 B）：与 engine/write.js **同源同形态**——只读同一份
+  //   data/macro-sector-sentiment-latest.json，转换走 src/macro_sector_sentiment.js。
+  //   两路径（write.js / split_archive.mjs）必须同形态，否则 --check 的 signals 段一致性会露馅。
+  sectorSentimentFn: () => {
+    try {
+      const p = join(DATA, 'macro-sector-sentiment-latest.json');
+      if (!existsSync(p)) return null;
+      const raw = JSON.parse(readFileSync(p, 'utf8'));
+      const all = arc.all_days || [];
+      const last = all[all.length - 1] || null;
+      return macroSectorSentimentBlock(raw, { tradeDate: last?.trade_date ?? null });
+    } catch { return null; }
+  },
+  // 妖股逻辑推演（方向 C）：与 engine/write.js **同源同形态**——只读同一份
+  //   data/llm-dragon-logic-latest.json，转换走 src/dragon_logic.js。
+  dragonLogicFn: () => {
+    try {
+      const p = join(DATA, 'llm-dragon-logic-latest.json');
+      if (!existsSync(p)) return null;
+      const raw = JSON.parse(readFileSync(p, 'utf8'));
+      const all = arc.all_days || [];
+      const last = all[all.length - 1] || null;
+      return dragonLogicBlock(raw, { tradeDate: last?.trade_date ?? null });
+    } catch { return null; }
+  },
 });
 const years = Object.keys(shards).sort();
 
@@ -238,7 +265,7 @@ if (check) {
   if (!existsSync(sp)) problems.push(`缺少最轻档 ${SIGNALS_FILE}`);
   else {
     const sb = Buffer.byteLength(readFileSync(sp, 'utf8'), 'utf8');
-    if (sb > 44 * 1024) problems.push(`${SIGNALS_FILE} 体积 ${(sb / 1024).toFixed(1)}KB 超过 44KB 上限（临时止血值，瘦身后再降回）`);
+    if (sb > 64 * 1024) problems.push(`${SIGNALS_FILE} 体积 ${(sb / 1024).toFixed(1)}KB 超过 64KB 上限（临时止血值；2026-10-24 上调：场景二/三板块情绪+妖股逻辑注入 signals 后增量 ~14KB，瘦身后再评估）`);
     const sg = JSON.parse(readFileSync(sp, 'utf8'));
     if (sg.kind !== 'signals-latest') problems.push(`${SIGNALS_FILE}.kind=${sg.kind}`);
     if (sg.latest && sg.latest.trade_date !== arc.all_days[arc.all_days.length - 1].trade_date) {

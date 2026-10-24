@@ -422,6 +422,7 @@
               <label>数量<input id="poQty" type="number" step="100" min="0" placeholder="100 的整数倍" /></label>
             </div>
             <div id="poGate" class="po-gate" hidden></div>
+            <div id="poGlmGate" class="po-gate glm" hidden></div>
             <div class="po-quick" id="poQuick"></div>
             <div id="poPreview" class="po-preview"></div>
             <button id="poSubmit" class="mini primary" type="button">提交委托</button>
@@ -518,6 +519,7 @@
               <button data-stage="order" role="tab" aria-selected="false">委托</button>
               <button data-stage="settle" role="tab" aria-selected="false">结算</button>
               <button data-stage="stop" role="tab" aria-selected="false">止损</button>
+              <button data-stage="glm" role="tab" aria-selected="false">AI预检</button>
             </div>
             <span id="logCount" class="muted"></span>
           </div>

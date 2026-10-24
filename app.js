@@ -677,7 +677,7 @@ function chgCell(r) {
 const HOT_COLS = {
   hot: [
     { key: 'code', t: '代码' },
-    { key: 'name', t: '名称' },
+    { key: 'name', t: '名称', cell: (r) => esc(nf(r.name)) + (window.__glm ? window.__glm.tagSpan(r) : ''), raw: (r) => r.name },
     { key: 'change_pct', t: '涨幅', num: true, hint: '当日涨跌幅（新股无涨跌幅限制，涨幅不具可比性）',
       cell: chgCell,
       raw: (r) => r.change_pct },
@@ -689,7 +689,7 @@ const HOT_COLS = {
   ],
   lhb: [
     { key: 'code', t: '代码' },
-    { key: 'name', t: '名称' },
+    { key: 'name', t: '名称', cell: (r) => esc(nf(r.name)) + (window.__glm ? window.__glm.tagSpan(r) : ''), raw: (r) => r.name },
     { key: 'change_pct', t: '涨幅', num: true, hint: '当日涨跌幅（新股无涨跌幅限制，涨幅不具可比性）',
       cell: chgCell,
       raw: (r) => r.change_pct },
@@ -723,7 +723,7 @@ function hotCardHTML(r, cols) {
   const reason = last ? String(r[last.key] ?? '').trim() : '';
   return `<div class="hcard" data-act="stock" data-code="${esc(r.code)}" tabindex="0" role="button"`
     + ` aria-label="查看 ${esc(name)} 的席位与资金详情" title="点击查看 ${esc(name)} 的席位与资金详情">`
-    + `<div class="hc-head"><span class="hc-name">${esc(name)}</span>`
+    + `<div class="hc-head"><span class="hc-name">${esc(name)}${window.__glm ? window.__glm.tagSpan(r) : ''}</span>`
     + `<span class="hc-code muted">${esc(r[c0?.key] ?? r.code)}</span>`
     + `<span class="hc-big ${big ? trendCls(big.raw ? big.raw(r) : r[big.key]) : 'muted'}">${cellOf(big)}</span></div>`
     + `<div class="hc-tags">${tags.map((c) => `<span class="hc-tag"><i>${esc(c.t)}</i>${cellOf(c)}</span>`).join('')}</div>`
@@ -861,6 +861,21 @@ let lastArc = null; // 最近一次 archive.json：BT 就绪后用它重刷报�
 // 模板③规定的口径折叠件标题。放模块级是因为多个章节的 cal() 共用同一标题——
 // 复制一份字符串迟早会漂移，导出层 src/report.js 的 CALIBER_SUMMARY 也是同一份约定。
 const CAL_SUMMARY = '🔍 点击展开查看口径';
+
+// AI 情报·打字机效果：把 .glm-bt-body / .glm-judg（带 data-tw）的整段文本逐字打出。
+// 仅视觉，不影响审计——审计在 body.innerHTML 写入前已对初始 DOM 跑完。
+function glmTypewriter(scope) {
+  if (!scope || typeof scope.querySelectorAll !== 'function') return;
+  scope.querySelectorAll('.glm-bt-body, .glm-judg').forEach((el) => {
+    const full = el.getAttribute('data-tw');
+    if (full == null) return;
+    el.textContent = '';
+    let i = 0;
+    const tick = () => { if (i <= full.length) { el.textContent = full.slice(0, i); i += 1; setTimeout(tick, 16); } };
+    el.classList.add('tw-cursor');
+    tick();
+  });
+}
 const TH_DEFAULT = { panic: 24, hi: 44, lo: 65, overheat: 80 };
 // config.json 唯一事实源桥：index.html 的 config 桥模块脚本动态 import config.json 后挂
 // window.ASENT_CONFIG；本文件是经典脚本拿不到 import，运行时从这里读。
@@ -1228,7 +1243,9 @@ function buildBrief(days, arc) {
         // 地天板徽章（2026-10-23 用户校准）：盘中触及跌停、收盘封回涨停——高标分歧
         // 极大的形态，只看板数会把「健康换手」与「极端分歧」混为一谈。
         const dtd = s.zt_dtd && s.zt_dtd[c] ? '<span class="bf-warn">·地天</span>' : '';
-        return (Number.isFinite(cv) && cv !== k ? `${nm}<span class="muted">·连${cv}</span>` : nm) + dtd;
+        const dg = window.__glm && window.__glm.dragonOf(c);
+        const dtag = dg ? `<span class="tag glm" title="${esc((dg.reason || 'AI 妖股逻辑推演').replace(/[\r\n]+/g, ' '))}">🕵${dg.is_pure_sentiment ? '纯情绪' : ''}</span>` : '';
+        return (Number.isFinite(cv) && cv !== k ? `${nm}<span class="muted">·连${cv}</span>` : nm) + dtag + dtd;
       });
       return `<tr><td>${k} 板</td><td>${arr.length} 只</td><td>${shown.join('、')}${arr.length > 8 ? ` 等 ${arr.length} 只` : ''}</td></tr>`;
     }).join('');
@@ -1520,6 +1537,74 @@ function buildBrief(days, arc) {
 
   // 段序号：一、（黑体）——号码由版式层给，标题文本不再自带序号
   const sec7 = buildPaperReviewSection();
+
+  // ── 九、板块情绪雷达（AI 题材翻译官 = 场景二板块情绪因子）──
+  // 注意：write.js / split_archive 注入的 sectorSentiment / dragonLogic 在 signals 顶层
+  //   （与 signals 子对象并列），不在 arc.signals 内；这里优先读顶层，并对「传内层」的调用兜底。
+  const SS = arc.sectorSentiment || (arc.signals && arc.signals.sectorSentiment) || null;
+  let sec9;
+  if (!SS) {
+    sec9 = li('板块情绪因子未生成（需盘后/周末跑 scripts/fetch_macro_sector_sentiment.mjs；未跑 ≠ 板块中性）')
+      + cal('板块情绪因子 = 新浪滚动新闻 → 智谱映射板块/方向/强度 → 聚合；score∈[-1,1] 纯参考，不独立生成买卖信号；缺失时本段只报缺，不冒充中性。');
+  } else if (SS.degraded) {
+    sec9 = li(`⚠ ${SS.effectNote || '板块情绪获取失败，默认中性'}（调用失败/超时兜底，不冒充真实情绪）`)
+      + cal('口径同前；证据日期 ' + (SS.asOfDate || '—') + '，模型 ' + (SS.model || '未留痕'));
+  } else {
+    const sectors = SS.sectors || [];
+    const rows = sectors.map((s) => {
+      const v = typeof s.score === 'number' ? s.score : 0;
+      const w = Math.abs(v) * 50;
+      const cls = v > 0.05 ? 'pos' : v < -0.05 ? 'neg' : 'zero';
+      const fill = `<div class="glm-bar-fill ${cls}" style="left:${v < 0 ? (50 - w) : 50}%;width:${w}%"></div>`;
+      const cats = [];
+      if (v > 0.15) cats.push('<span class="glm-cat hot">🔥 强催化</span>');
+      else if (v < -0.15) cats.push('<span class="glm-cat cold">⚠ 利空</span>');
+      else cats.push('<span class="glm-cat neu">➖ 中性</span>');
+      // 个股级催化剂：宏观档给的是 headlines（新闻标题字符串），取首条作催化剂上下文
+      const ev = (Array.isArray(s.headlines) && s.headlines[0]) || null;
+      if (ev) cats.push(`<span class="glm-cat ${v > 0 ? 'hot' : 'warn'}">${esc(((typeof ev === 'string' ? ev : (ev.reason || ev.headline || '')).slice(0, 26)))}</span>`);
+      return `<div class="glm-radar-row"><div class="glm-radar-name">${esc(s.sector)}</div>`
+        + `<div class="glm-radar-cell"><div class="glm-bar"><div class="glm-bar-mid"></div>${fill}<span class="glm-bar-val">${v > 0 ? '+' : ''}${v.toFixed(2)}</span></div>${cats.join('')}</div></div>`;
+    }).join('');
+    const bull = (SS.topBullish || []).slice(0, 5).map((x) => `${esc(x.sector)}(+${x.score})`).join('、') || '无';
+    const bear = (SS.topBearish || []).slice(0, 5).map((x) => `${esc(x.sector)}(${x.score})`).join('、') || '无';
+    const btText = SS.blackTalk
+      ? SS.blackTalk
+      : (function () { const hyped = /机器人|算力|半导体|AI|低空/.test(bull); return '今日盘后' + ((SS.macro && SS.macro.label) || '情绪中性') + '。多头主线：' + bull + '；空头压制：' + bear + '。' + (hyped ? '题材高潮次日易分歧，谨记「买在分歧、卖在一致」，切勿盲目顶一字。' : '板块轮动加快，控制仓位，别上头。'); })();
+    const blacktalk = `<div class="glm-blacktalk"><span class="glm-bt-h">🔥 游资复盘黑话：</span><span class="glm-bt-body" data-tw="${esc(btText)}">${esc(btText)}</span></div>`;
+    sec9 = `<div class="glm-radar">${rows}</div>`
+      + blacktalk
+      + li(`宏观情绪：${(SS.macro && SS.macro.label) || '中性'}（score ${SS.macro && SS.macro.sentiment != null ? SS.macro.sentiment : 0}）｜利好：${bull}｜利空：${bear}`)
+      + li(`证据日期 ${SS.asOfDate || '—'}｜模型 ${SS.model || '未留痕'}｜新闻源 ${SS.source || 'sina-roll'}｜涉及板块 ${sectors.length} 个、事件 ${SS.events ? SS.events.length : 0} 条`)
+      + cal('板块情绪因子 = 新浪滚动新闻 → 智谱映射板块/方向/强度 → 聚合；score∈[-1,1]，仅作参考，不独立生成买卖信号；证据日期不符或为空即视为缺数据。');
+  }
+
+  // ── 十、妖股逻辑推演（AI 妖股透视镜 = 方向 C）──
+  const DL = arc.dragonLogic || (arc.signals && arc.signals.dragonLogic) || null;
+  let sec10;
+  if (!DL) {
+    sec10 = li('妖股逻辑推演未生成（需盘后跑 scripts/fetch_dragon_logic.mjs；未跑 ≠ 无妖股）')
+      + cal('妖股逻辑 = 连板梯队 → 智谱推断涨停逻辑/纯情绪炒作；纯参考，不修改 regime/emotion 分数；由下游决定是否采纳。');
+  } else if (DL.degraded) {
+    sec10 = li(`⚠ ${DL.effectNote || '妖股逻辑推演获取失败，默认空'}（调用失败/超时兜底，不冒充结论）`)
+      + cal('口径同前；证据日期 ' + (DL.asOfDate || '—'));
+  } else {
+    const pure = DL.pureSentiment || [];
+    const byType = DL.byType || {};
+    const typeStr = Object.keys(byType).map((k) => `${k}:${byType[k]}`).join('、') || '无';
+    const pureHtml = pure.slice(0, 12).map((x) => {
+      const reason = x.reason || '纯情绪博弈，晋级风险极大';
+      return `<div class="glm-tag-line"><span class="glm-role fomo">${esc(x.name)}(${x.lb}板)</span>`
+        + `<span class="glm-cat fomo">纯情绪炒作</span>`
+        + `<span class="glm-judg is-pure" data-tw="${esc(reason)}">${esc(reason)}</span></div>`;
+    }).join('');
+    sec10 = (pure.length ? `<div class="dw-glm">${pureHtml}</div>` : li('本轮无被判定为「纯情绪炒作」的连板股'))
+      + li(`连板股推演 ${DL.dragons ? DL.dragons.length : 0} 只｜类型分布：${typeStr}`)
+      + li(`证据日期 ${DL.asOfDate || '—'}｜模型 ${DL.model || '未留痕'}${DL.scanned != null ? '｜扫描 ' + DL.scanned + ' 只' : ''}`)
+      + li('口径：纯参考，不修改 regime/emotion 分数；由下游（paper 等）决定采不采纳。')
+      + cal('妖股逻辑 = 连板梯队 → 智谱推断涨停逻辑/纯情绪炒作；纯参考不改分；证据日期不符或为空即视为缺数据。');
+  }
+
   const S = [
     ['情绪定位（核心因子·25%）', sec1, 'bfsec1'],
     ['资金面（龙虎榜）· 参与打分（主分数 s_net 权重 20%）+ 辅助观测（北向/机构行为）', sec2, 'bfsec2'],
@@ -1528,6 +1613,8 @@ function buildBrief(days, arc) {
     ['题材结构（核心因子·20%）', sec5, 'bfsec5'],
     ['综合研判（含 V5.2 仓位档位）', sec6, 'bfsec6'],
     ['模拟交易复盘（为什么赚/为什么亏）', sec7, 'bfsec7'],
+    ['板块情绪雷达（AI 题材翻译官）', sec9, 'bfsec9'],
+    ['妖股逻辑推演（AI 妖股透视镜）', sec10, 'bfsec10'],
   ];
   const CN = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
   return head + stamp + absBlock + healthBlock
@@ -1888,6 +1975,7 @@ function renderBrief(days, arc) {
 
   if (result.pass) {
     body.innerHTML = html;
+    glmTypewriter(body);
     body.classList.remove('audit-blocked');
     renderBriefNav(); // 段落标题由 DOM 读出，不硬编码，避免与 buildBrief 的段落数漂移
     paintAudit('pass', result);
@@ -2171,7 +2259,7 @@ function renderBacktest(bt) {
         c.title = `点击查看 ${st.name} 的席位与资金详情`;
         // 仓位管理（第三步）：ATR 波动分档 + 建议仓位（数据不足 → ATR —，权重取 mid 默认）
         const atrTxt = st.atr_pct != null ? `ATR ${numS(st.atr_pct, 1)}%` : 'ATR —';
-        c.innerHTML = `${esc(st.name)} <span class="${trendCls(st.changePct)}">${numS(st.changePct, 2)}%</span>`
+        c.innerHTML = `${esc(st.name)} ${window.__glm ? window.__glm.tagSpan(st) : ''}<span class="${trendCls(st.changePct)}">${numS(st.changePct, 2)}%</span>`
           + ` <span class="muted">${atrTxt} / 建议仓位 ${numS(st.suggested_weight, 0)}%</span>`;
         wrap.appendChild(c);
       });
@@ -2279,6 +2367,54 @@ async function loadHealth() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const s = await res.json();
     SIGNALS = s || null;
+    // 窗桥：把整份 signals 暴露给 paper_ui.js / 个股抽屉 / 连板天梯——
+    //   板块情绪（B）与妖股逻辑（C）两段已内嵌于此，供前端打标与详情侧边栏读取。
+    window.__signals = s || null;
+    // AI 深度情报·前端查询助手（方向 A/B/C 打标与拦截共用）：只读 window 上的
+    //   __signals / __glmBlacklist（由本函数与下方 fetch 注入），懒求值——调用时才查，
+    //   故即便排雷黑名单档晚于 signals 到位也不影响。
+    window.__glm = {
+      riskOf(code) {
+        const bl = window.__glmBlacklist;
+        if (!bl || !Array.isArray(bl.blacklist)) return null;
+        return bl.blacklist.find((x) => String(x.code) === String(code)) || null;
+      },
+      dragonOf(code) {
+        const dl = window.__signals && window.__signals.dragonLogic;
+        if (!dl || !Array.isArray(dl.dragons)) return null;
+        return dl.dragons.find((x) => String(x.code) === String(code)) || null;
+      },
+      // 个股名称旁的红/紫标签（A 排雷 + C 妖股）；title 即 AI 无情吐槽/判词
+      tagSpan(r) {
+        if (!r || r.code == null) return '';
+        let s = '';
+        const risk = this.riskOf(r.code);
+        if (risk) {
+          const tip = esc((risk.reason || 'AI 排雷：该票被判定有雷，已禁止自动建仓').replace(/[\r\n]+/g, ' '));
+          s += `<span class="tag risk" title="${tip}">☠ AI 排雷</span>`;
+        }
+        const dg = this.dragonOf(r.code);
+        if (dg) {
+          const tip = esc((dg.reason || 'AI 妖股逻辑推演').replace(/[\r\n]+/g, ' '));
+          s += `<span class="tag glm" title="${tip}">🕵 ${dg.is_pure_sentiment ? '纯情绪' : '妖股'}</span>`;
+        }
+        return s;
+      },
+      // 个股详情抽屉里的「🕵 妖股逻辑推演」块（C）
+      drawerSec(code) {
+        const dg = this.dragonOf(code);
+        if (!dg) return '';
+        const isPure = !!dg.is_pure_sentiment;
+        const role = isPure ? 'fomo' : (dg.logic_type === '基本面支撑' ? 'fund' : (dg.logic_type === '题材叠加' ? 'hot' : 'lead'));
+        const roleLabel = isPure ? '纯情绪炒作' : (dg.logic_type || '—');
+        const cat = dg.hybk ? `<span class="glm-cat neu">${esc(dg.hybk)}</span>` : '';
+        const judg = `<div class="glm-judg ${isPure ? 'is-pure' : ''}">${esc(dg.reason || '（无判词）')}</div>`;
+        return dwSection('🕵 妖股逻辑推演（方向C）',
+          `<div class="dw-glm"><div class="glm-tag-line">`
+          + `<span class="glm-role ${role}">${esc(roleLabel)}</span>${cat}`
+          + `<span class="glm-cat ${dg.lb >= 4 ? 'fomo' : 'neu'}">${dg.lb}板</span></div>${judg}</div>`);
+      },
+    };
     HEALTH = s && s.health ? s.health : null;
     renderHealth(HEALTH);
     // 席位属性（#1）与亏钱效应（#2）同在 signals-latest.json 里 → 一次 fetch 全取，
@@ -2303,6 +2439,13 @@ async function loadHealth() {
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => { MANUAL_REVIEW = (j && Array.isArray(j.entries)) ? j : null; renderDirty(DIRTY); })
       .catch(() => {});
+    // AI 深度情报·排雷黑名单（方向 A）：盘后由 scripts/llm_risk_scan.mjs 落盘
+    //   data/llm_risk-blacklist.json，前端拉取供「选股池/详情抽屉打标 + 模拟交易台下单预检拦截」。
+    //   fail-open：档缺失/解析失败 → window.__glmBlacklist=null（不打标、不拦截，绝不误伤）。
+    fetch('./data/llm_risk_blacklist.json?_=' + Date.now(), { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { window.__glmBlacklist = (j && Array.isArray(j.blacklist)) ? j : null; })
+      .catch(() => { window.__glmBlacklist = null; });
     // 跨源一致性互证（#2）同源同次取。
     XCHECK = s && s.crosscheck ? s.crosscheck : null;
     renderXcheck(XCHECK);
@@ -4360,6 +4503,7 @@ function stockDetail(code) {
     + themeSec
     + histSec
     + (inMain ? dwSection('主线归属', `<div class="dw-kv"><div class="k">主线题材</div><div class="v"><span class="chip click" data-act="theme" data-theme="${esc(inMain.theme)}" tabindex="0">${esc(inMain.theme)}</span>（强度分 ${inMain.mainScore}，当日涨停 ${inMain.themeCount} 只）</div></div>`) : '')
+    + (window.__glm ? window.__glm.drawerSec(code) : '')
     + `<div class="dw-note">诱因：${esc(reason || '—')}${isNew ? '（<b>独立新股</b>：上市首 5 日无涨跌幅限制，其资金不宜直接计入主线强度）' : ''}</div>`;
 
   return {

@@ -1846,3 +1846,56 @@ body::before {
      三列排布会被截成「1,000,0…」——金额截断不可接受，宁可少放一列 */
   .ps-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AI 深度情报（方向 A/B/C）前端呈现 · 2026-10-24
+   标签/雷达条/催化剂/红牌拦截/抽屉块/打字机光标。配色走 ui/tokens.css 单一事实源。
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* 标签：A 排雷红 / C 妖股紫 —— 复用 .tag / .pk-tag 基线，仅改底色字色 */
+.tag.risk { background: rgba(240, 97, 109, .18); color: var(--up); font-weight: 700; }
+.tag.glm { background: rgba(176, 124, 255, .18); color: var(--glm); font-weight: 700; }
+.pk-tag.glm { background: rgba(176, 124, 255, .16); color: var(--glm); }
+.pk-tag.risk { background: rgba(240, 97, 109, .16); color: var(--up); }
+/* 红牌拦截横幅（模拟交易台·AI 预检拒单） */
+.glm-banner { border: 1px solid rgba(240, 97, 109, .5); background: rgba(240, 97, 109, .12);
+  color: var(--up); border-radius: 8px; padding: 8px 11px; margin: 6px 0; font-size: 12px; line-height: 1.65; }
+.glm-banner b { color: var(--up); }
+.glm-banner .glm-ban-code { font-variant-numeric: tabular-nums; font-weight: 700; }
+/* B 板块情绪雷达：每行 名称 + 情绪条(-1..+1) + 催化剂标签 */
+.glm-radar { display: grid; gap: 7px; margin: 4px 0 2px; }
+.glm-radar-row { display: grid; grid-template-columns: 104px 1fr; gap: 9px; align-items: center; font-size: 12px; }
+.glm-radar-cell { min-width: 0; }
+.glm-radar-name { color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.glm-bar { position: relative; height: 14px; border-radius: 7px;
+  background: linear-gradient(90deg, rgba(63, 185, 80, .20), rgba(139, 148, 158, .10) 50%, rgba(240, 97, 109, .20)); }
+.glm-bar-mid { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--line); }
+.glm-bar-fill { position: absolute; top: 2px; bottom: 2px; border-radius: 5px; transition: width .5s ease; }
+.glm-bar-fill.pos { background: linear-gradient(90deg, rgba(240, 97, 109, .35), var(--up)); }
+.glm-bar-fill.neg { background: linear-gradient(90deg, var(--down), rgba(63, 185, 80, .35)); }
+.glm-bar-fill.zero { background: var(--muted); }
+.glm-bar-val { position: absolute; right: 6px; top: -1px; font-size: 10px; color: var(--txt); font-variant-numeric: tabular-nums; }
+.glm-cat { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 8px; margin: 2px 4px 0 0; }
+.glm-cat.hot { background: rgba(240, 97, 109, .16); color: var(--up); }
+.glm-cat.cold { background: rgba(63, 185, 80, .16); color: var(--down); }
+.glm-cat.warn { background: rgba(210, 153, 34, .16); color: var(--warn); }
+.glm-cat.neu { background: rgba(139, 148, 158, .16); color: var(--muted); }
+/* B 游资黑话（暗黑系复盘吐槽） */
+.glm-blacktalk { margin-top: 9px; font-size: 12px; line-height: 1.75; color: var(--warn);
+  border-left: 3px solid var(--warn); padding: 6px 11px; background: rgba(210, 153, 34, .08); border-radius: 0 8px 8px 0; }
+.glm-blacktalk .glm-bt-h { font-weight: 700; letter-spacing: .5px; }
+/* C 妖股逻辑：抽屉块 + 标签 */
+.dw-glm { border-left: 3px solid var(--glm); }
+.dw-glm .glm-tag-line { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 0 7px; }
+.dw-glm .glm-judg { font-size: 12px; line-height: 1.7; color: var(--txt); }
+.dw-glm .glm-judg.is-pure { color: var(--up); }
+.glm-role { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 9px; }
+.glm-role.lead { background: rgba(176, 124, 255, .20); color: var(--glm); }
+.glm-role.fomo { background: rgba(240, 97, 109, .18); color: var(--up); }
+.glm-role.fund { background: rgba(63, 185, 80, .18); color: var(--down); }
+.glm-role.hot { background: rgba(232, 132, 60, .18); color: var(--hot); }
+/* 下单区·AI 判词预警（强制买入按钮上方） */
+.po-gate.glm { border-color: rgba(176, 124, 255, .5); background: rgba(176, 124, 255, .10); }
+.po-gate.glm .po-gate-h { color: var(--glm); }
+/* 打字机光标 */
+.tw-cursor::after { content: '▋'; color: var(--warn); margin-left: 1px; animation: tw-blink 1s steps(2) infinite; }
+@keyframes tw-blink { 0% { opacity: 1; } 50% { opacity: 0; } }
