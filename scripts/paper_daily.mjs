@@ -31,7 +31,7 @@ import {
 } from '../src/paper.js';
 import { recommendPicks, marketTier } from '../src/picks.js';
 import { reviewAccount } from '../src/paper_review.js';
-import { riskBlacklistReason } from '../src/risk_blacklist.js';
+import { glmBuyGuard } from '../src/glm_guard.js';
 
 const ACCOUNT_FILE = new URL('../data/paper/account.json', import.meta.url);
 const REVIEW_FILE = new URL('../data/paper/review-latest.json', import.meta.url);
@@ -121,21 +121,22 @@ if (!tier) {
   const picks = (recommendPicks(day, { topN: TOP_N, emotionScore }).picks || [])
     .filter((p) => p && p.code && quotes[String(p.code)]); // 仅选有当日行情者（否则 batchSubmit 会 NO_QUOTE 拦截）
   const items = picks.slice(0, TOP_N).map((p) => ({
-    code: String(p.code), pct: PER_POS_PCT,
+    code: String(p.code), pct: PER_POS_PCT, hybk: p.hybk || null,
     reason: (bypassed ? '【压力测试·熔断绕过】' : '') + `自动建仓（主线选股候选 ${p.name || p.code}）`,
   }));
-  // 排雷守卫（V5.3 P2）：自动建仓前剔除晚间公告排雷黑名单命中者（正向封禁，fail-open）。
-  //   黑名单缺失/为空 = 不剔除（绝不误伤正常候选）；立案/ST/减持属真实基本面风险，
-  //   即便 --force-trade 压力测试也不绕过（与 regime 熔断是两回事）。
-  const blacklisted = [];
+  // 场景三 GLM 附加过滤守卫（买前三合一闸门）：方向 A 排雷黑名单 + 方向 C 妖股逻辑 + 方向 B 板块情绪。
+  //   三档均为独立落盘的 side-car（军规#1：绝不改 emotion/regime），此处由代码采纳——命中即拒买。
+  //   全部 fail-open：档缺失/空/degraded/asOfDate 不符 → 不拦（绝不误伤正常候选）；
+  //   即便 --force-trade 压力测试也不绕过（与 regime 熔断是两回事，属真实风险过滤）。
+  const blocked = [];
   const safeItems = [];
   for (const it of items) {
-    const r = riskBlacklistReason(it.code);
-    if (r) blacklisted.push({ code: it.code, reason: r });
+    const g = glmBuyGuard(it.code, { hybk: it.hybk, asOfDate: date });
+    if (!g.pass) blocked.push({ code: it.code, reasons: g.reasons });
     else safeItems.push(it);
   }
-  if (blacklisted.length) {
-    console.log(`  ⛔ 排雷黑名单拦截 ${blacklisted.length} 只（不建仓）：${blacklisted.map((b) => `${b.code}(${b.reason})`).join('、')}`);
+  if (blocked.length) {
+    console.log(`  ⛔ GLM 附加过滤拦截 ${blocked.length} 只（不建仓）：${blocked.map((b) => `${b.code}(${b.reasons.join('/')})`).join('、')}`);
   }
   if (!safeItems.length) {
     console.log('  无合格选股（候选均缺行情/不推荐或命中排雷黑名单）');
