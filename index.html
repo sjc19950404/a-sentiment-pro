@@ -467,6 +467,20 @@
 /* 抽屉里的 K 线宿主：与上方详情块留出分隔 */
 .t-dkhost { padding-top: 4px; border-top: 1px solid var(--t-line); }
 
+/* ── 决策日志 / 委托流水语义徽标（与 src/paper.js 的 STAGE/RESULT 同义）────── */
+.t-log-tag {
+  display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10.5px;
+  background: rgba(255, 255, 255, .05); color: var(--t-ink-2);
+}
+.t-res {
+  display: inline-block; padding: 1px 6px; border-radius: 3px;
+  font-size: 10.5px; font-weight: 600;
+}
+.t-res.is-pass { background: rgba(34, 200, 138, .14); color: var(--t-dn); }
+.t-res.is-no { background: rgba(255, 43, 43, .14); color: var(--t-alert); }
+.t-res.is-sub { background: rgba(34, 211, 238, .14); color: var(--t-acc); }
+.t-res.is-info { background: rgba(255, 255, 255, .05); color: var(--t-ink-3); }
+
 /* ── AI 条内的可点项与筛选开关 ───────────────────────────────────────────── */
 /* 「🕵 妖股纯情绪 N 只」→ 跳选股视图并自动停在纯情绪子集 */
 .t-ai-strip .t-ai-item.is-jump {
@@ -1914,35 +1928,111 @@
   }
 
   // ── 7. 视图：模拟盘 ────────────────────────────────────────────────────
+  //   数据：data/paper/account.json（引擎与 paper_daily 落盘，终端只读）。
+  //   纪律：**一律展示已落盘原值**，零新增计算——
+  //     · 总资产/持仓市值取 nav 末条的 equity/marketValue（引擎算好的口径），
+  //       绝不自己拼「现金 + 市值 + 冻结」合并式（口径归属引擎，展示层不抢）；
+  //     · 唯一例外是「累计收益率」这类**占比现算**，已在副标题标注口径来源。
+  //   徽标语义与 src/paper.js 的 STAGE / RESULT 同义（防漂移，改那边要同步这里）。
+  const LOG_STAGE = { lhb: '龙虎过滤', risk: '风控', order: '委托', settle: '结算', stop: '止损', glm: 'AI预检' };
+  const LOG_RESULT = { pass: '通过', rejected: '拒绝', submitted: '已报送', info: '提示' };
+  const RES_CLS = { pass: 'is-pass', rejected: 'is-no', submitted: 'is-sub', info: 'is-info' };
+
   async function viewPaper() {
     const g = el('div', 't-grid');
-    const navPanel = panel('模拟盘净值', 'account.nav 序列', '<div class="t-loading">加载…</div>', 't-c8');
-    const posPanel = panel('持仓', '点击行看日K', '<div class="t-loading">加载…</div>', 't-c4');
+    const a = (await jget('data/paper/account.json')) || {};
+
+    // ── ① 账户概览（原值直出）──
+    const nav = a.nav || [];
+    const last = nav[nav.length - 1] || {};
+    const wan0 = (v) => (v == null || !Number.isFinite(+v)) ? '—' : `${(+v / 10000).toFixed(2)} 万`;
+    const cum = (last.equity != null && a.initCash) ? ((last.equity - a.initCash) / a.initCash) * 100 : null;
+    g.appendChild(panel('账户概览', `结算日 ${esc(a.lastSettle || '—')} · 起始 ${esc(a.startDate || '—')}`,
+      `<div class="t-stats">
+        ${stat('总资产（净值）', wan0(last.equity), `account.nav[].equity · ${esc(last.date || '—')}`, 'is-acc')}
+        ${stat('持仓市值', wan0(last.marketValue), 'nav[].marketValue')}
+        ${stat('可用现金', wan0(a.cash), 'account.cash')}
+        ${stat('冻结资金', wan0(a.freeze), '待成交占用 · account.freeze')}
+        ${stat('期初资金', wan0(a.initCash), 'account.initCash')}
+        ${stat('累计收益率', cum == null ? '—' : sgn(cum, 2), cum == null ? '—' : '（净值−期初）/期初 · 展示层现算')}
+        ${stat('已实现盈亏', wan0(a.realized), 'account.realized')}
+        ${stat('累计费用', wan0(a.totalFee), 'account.totalFee（佣金+印花+过户）')}
+      </div>`, 't-c12'));
+
+    // ── ② 净值曲线 + 持仓 ──
+    const navPanel = panel('模拟盘净值', `account.nav 序列 · ${nav.length} 个交易日`,
+      nav.length > 1
+        ? lineChart(nav.map((r) => ({ date: String(r.date).slice(5), v: r.equity })), { w: 640, h: 210 })
+        : '<div class="t-empty">净值序列不足（账户起步，仅 1 个结算日）</div>', 't-c8');
+    const pos = Object.values(a.positions || {}).filter((p) => p && p.qty > 0);
+    const posPanel = panel('持仓', '点行看个股详情', !pos.length ? '<div class="t-empty">当前空仓</div>'
+      : `<div class="t-tbl-wrap"><table class="t-tbl"><thead><tr><th>标的</th><th>持仓</th><th>成本</th><th>浮亏</th><th>占比</th></tr></thead><tbody>${
+        pos.map((p) => {
+          const pnl = p.last != null && p.avgCost ? ((p.last - p.avgCost) / p.avgCost) * 100 : null;
+          return `<tr data-code="${esc(p.code)}" data-name="${esc(p.name || p.code)}">
+            <td>${esc(p.name || p.code)}<div class="t-code">${esc(p.code)}</div></td>
+            <td>${fmtInt(p.qty)}</td><td>${fmt(p.avgCost, 2)}</td>
+            <td class="${pnl == null ? 'mut' : pnl >= 0 ? 'up' : 'dn'}">${pnl == null ? '—' : sgn(pnl, 2)}</td>
+            <td>${a.initCash && p.cost ? pct(p.cost / a.initCash, 1) : '—'}</td></tr>`;
+        }).join('')}</tbody></table></div>`, 't-c4');
     g.appendChild(navPanel); g.appendChild(posPanel);
-    const a = await jget('data/paper/account.json');
-    const nav = (a && a.nav) || [];
-    const h1 = navPanel.lastElementChild;
-    if (h1) h1.outerHTML = nav.length > 1 ? lineChart(nav.map((r) => ({ date: String(r.date).slice(5), v: r.equity })), { w: 640, h: 210 }) : '<div class="t-empty">净值序列不足</div>';
-    const pos = Object.values((a && a.positions) || {}).filter((p) => p && p.qty > 0);
-    const h2 = posPanel.lastElementChild;
-    if (h2) {
-      if (!pos.length) h2.outerHTML = '<div class="t-empty">当前空仓</div>';
-      else {
-        const st = a.initCash || 0;
-        h2.outerHTML = `<div class="t-tbl-wrap"><table class="t-tbl"><thead><tr><th>标的</th><th>持仓</th><th>成本</th><th>浮亏</th><th>占比</th></tr></thead><tbody>${
-          pos.map((p) => {
-            const pnl = p.last != null && p.avgCost ? ((p.last - p.avgCost) / p.avgCost) * 100 : null;
-            return `<tr data-code="${esc(p.code)}" data-name="${esc(p.name || p.code)}">
-              <td>${esc(p.name || p.code)}<div class="t-code">${esc(p.code)}</div></td>
-              <td>${fmtInt(p.qty)}</td><td>${fmt(p.avgCost, 2)}</td>
-              <td class="${pnl == null ? 'mut' : pnl >= 0 ? 'up' : 'dn'}">${pnl == null ? '—' : sgn(pnl, 2)}</td>
-              <td>${st && p.cost ? pct(p.cost / st, 1) : '—'}</td></tr>`;
-          }).join('')}</tbody></table></div>`;
-        $('.t-tbl', posPanel).addEventListener('click', (e) => {
-          const tr = e.target.closest('tr[data-code]'); if (tr) LINK.set({ code: tr.dataset.code, name: tr.dataset.name });
-        });
-      }
+    if (pos.length) {
+      $('.t-tbl', posPanel).addEventListener('click', (e) => {
+        const tr = e.target.closest('tr[data-code]'); if (tr) LINK.set({ code: tr.dataset.code, name: tr.dataset.name });
+      });
     }
+
+    // ── ③ 待成交委托（pending：已下单未结算，资金被冻结中）──
+    const pend = a.pending || [];
+    const pendPanel = panel('待成交委托', `${pend.length} 笔 · 资金冻结 ${wan0(a.freeze)}`,
+      !pend.length ? '<div class="t-empty">无待成交委托</div>'
+        : `<div class="t-tbl-wrap"><table class="t-tbl"><thead><tr>
+            <th>标的</th><th>方向</th><th>数量</th><th>报单价</th><th>预估成交</th><th>预估费用</th><th>需款</th><th>滑点</th><th>原因</th>
+          </tr></thead><tbody>${
+        pend.map((o) => `<tr data-code="${esc(o.code)}" data-name="${esc(o.name || o.code)}">
+            <td>${esc(o.name || o.code)}<div class="t-code">${esc(o.code)}</div></td>
+            <td class="${o.side === 'sell' ? 'dn' : 'up'}">${o.side === 'sell' ? '卖出' : '买入'}</td>
+            <td>${fmtInt(o.qty)}</td><td>${fmt(o.submitPrice, 2)}</td>
+            <td>${fmt(o.estPrice, 2)}</td><td>${fmt(o.estFee, 2)}</td>
+            <td>${fmt(o.need, 2)}</td><td>${pct(o.slip != null ? o.slip * 100 : null, 2)}</td>
+            <td title="${esc(o.reason || '')}">${esc(String(o.reason || '—').slice(0, 18))}</td>
+          </tr>`).join('')}</tbody></table></div>`, 't-c12');
+    g.appendChild(pendPanel);
+    if (pend.length) {
+      $('.t-tbl', pendPanel).addEventListener('click', (e) => {
+        const tr = e.target.closest('tr[data-code]'); if (tr) LINK.set({ code: tr.dataset.code, name: tr.dataset.name });
+      });
+    }
+
+    // ── ④ 决策日志（下单链路留痕：龙虎过滤 → 风控 → AI预检 → 委托）──
+    //   ⚠ stage=glm 即 GLM 三合一守卫的执行留痕 → 与全站约定一致，**紫色**标注。
+    const logs = (a.logs || []).slice().sort((x, y) => (+y.ts || 0) - (+x.ts || 0));
+    const logPanel = panel('决策日志', `最近 ${logs.length} 条 · ${esc(a.lastSettle || '')} 当日全链路留痕`,
+      !logs.length ? '<div class="t-empty">当日无决策日志</div>'
+        : `<div class="t-tbl-wrap"><table class="t-tbl"><thead><tr>
+            <th>时间</th><th>标的</th><th>环节</th><th>结论</th><th>判词 / 原因</th>
+          </tr></thead><tbody>${
+        logs.map((r) => {
+          const tm = r.ts ? new Date(+r.ts).toTimeString().slice(0, 8) : '—';
+          const txt = String(r.text || r.reason || '—');
+          return `<tr data-code="${esc(r.code || '')}" data-name="${esc(r.name || '')}">
+            <td class="mut">${esc(tm)}</td>
+            <td>${esc(r.name || '—')}<div class="t-code">${esc(r.code || '—')}</div></td>
+            <td>${r.stage === 'glm' ? '<span class="t-tag-ai">AI预检</span>' : `<span class="t-log-tag">${esc(LOG_STAGE[r.stage] || r.stage || '—')}</span>`}</td>
+            <td><span class="t-res ${RES_CLS[r.result] || 'is-info'}">${esc(LOG_RESULT[r.result] || r.result || '—')}</span></td>
+            <td title="${esc(txt)}">${esc(txt.length > 46 ? `${txt.slice(0, 46)}…` : txt)}</td>
+          </tr>`;
+        }).join('')}</tbody></table></div>`, 't-c12');
+    g.appendChild(logPanel);
+    // ⚠ 空日志时面板里没有 .t-tbl（是空态 div），直接取会拿到 null → addEventListener 抛 TypeError。
+    //   必须判空后再挂，否则「当日无决策日志」这种正常状态会把整个视图带崩。
+    if (logs.length) {
+      $('.t-tbl', logPanel).addEventListener('click', (e) => {
+        const tr = e.target.closest('tr[data-code]');
+        if (tr && tr.dataset.code) LINK.set({ code: tr.dataset.code, name: tr.dataset.name });
+      });
+    }
+
     return g;
   }
 

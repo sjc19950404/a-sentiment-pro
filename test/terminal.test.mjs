@@ -413,6 +413,90 @@ test('terminal：点个股看详情 —— 抽屉含 AI 判词(紫)/排雷/持�
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
+test('terminal：模拟盘视图增强 —— 账户概览/待成交委托/决策日志（glm 环节用紫标）', async () => {
+  const { w, errors } = makeDom();
+  // 造一份含 pending + logs 的账户（真实档当前 pending 有 1 笔、logs 10 条，这里补齐 glm 环节以验紫标）
+  const acct = readJsonSafe('data/paper/account.json') || {};
+  acct.positions = acct.positions || {};
+  acct.positions['003021'] = { code: '003021', name: '兆威机电', qty: 1000, avail: 0, avgCost: 91.73, cost: 91730, last: 95.2 };
+  acct.logs = [
+    { ts: Date.parse('2026-10-23T09:31:05'), date: '2026-10-23', code: '003021', name: '兆威机电', side: 'buy', stage: 'lhb', result: 'pass', text: '龙虎榜前置过滤通过。' },
+    { ts: Date.parse('2026-10-23T09:31:06'), date: '2026-10-23', code: '600838', name: '上海九百', side: 'buy', stage: 'glm', result: 'rejected', text: 'GLM 三合一守卫：命中夜间排雷黑名单（立案调查），拒买。' },
+    { ts: Date.parse('2026-10-23T09:31:07'), date: '2026-10-23', code: '003021', name: '兆威机电', side: 'buy', stage: 'order', result: 'submitted', text: '自动建仓委托已报送。' },
+  ];
+  w.fetch = (url) => {
+    const u = String(url).replace(/^https?:\/\/localhost\//, '');
+    if (u === 'data/paper/account.json') return Promise.resolve({ ok: true, json: async () => acct });
+    const body = readJsonSafe(u);
+    return Promise.resolve({ ok: body !== null, json: async () => body });
+  };
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 300));
+
+  const root = w.document.getElementById('tRoot');
+  [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'paper')
+    .dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 320));
+
+  // ① 账户概览：八项原值直出
+  const stats = root.querySelector('.t-stats');
+  assert.ok(stats, '账户概览指标块');
+  for (const k of ['总资产（净值）', '持仓市值', '可用现金', '冻结资金', '期初资金', '累计收益率', '已实现盈亏', '累计费用']) {
+    assert.ok(stats.textContent.includes(k), `账户概览含：${k}`);
+  }
+  assert.ok(!/NaN/.test(stats.textContent), '账户概览不得出现 NaN（原值缺失应显示 —）');
+
+  // ② 持仓 / ③ 待成交委托 / ④ 决策日志 三张表
+  const titles = [...root.querySelectorAll('.t-panel-h .t-pt')].map((n) => n.textContent);
+  for (const t of ['账户概览', '模拟盘净值', '持仓', '待成交委托', '决策日志']) {
+    assert.ok(titles.includes(t), `模拟盘视图含面板：${t}`);
+  }
+  const tbls = [...root.querySelectorAll('table.t-tbl')];
+  assert.equal(tbls.length, 3, '持仓 / 待成交委托 / 决策日志 三张表');
+  const pendTbl = tbls[1];
+  assert.match(pendTbl.textContent, /003021/, '待成交委托含挂单标的');
+  assert.match(pendTbl.textContent, /买入/, '待成交委托标注方向');
+
+  // ④ 日志：三条齐全、倒序（最新在上）、glm 环节用紫标
+  const logTbl = tbls[2];
+  const logRows = logTbl.querySelectorAll('tbody tr');
+  assert.equal(logRows.length, 3, '决策日志 3 条');
+  assert.match(logRows[0].textContent, /自动建仓委托已报送/, '日志按时间倒序（最新在上）');
+  const glmRow = [...logRows].find((r) => /GLM 三合一守卫/.test(r.textContent));
+  assert.ok(glmRow, '含 GLM 守卫留痕行');
+  assert.ok(glmRow.querySelector('.t-tag-ai'), 'glm 环节用紫色 AI 标（看到紫 = AI 说的）');
+  assert.ok(logTbl.querySelector('.t-res.is-no'), '拒绝结论有红色徽标');
+  assert.ok(logTbl.querySelector('.t-res.is-pass'), '通过结论有绿色徽标');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：模拟盘视图 —— 空账户（无持仓/无挂单/无日志）不崩，如实空态', async () => {
+  const { w, errors } = makeDom();
+  w.fetch = (url) => {
+    const u = String(url).replace(/^https?:\/\/localhost\//, '');
+    if (u === 'data/paper/account.json') {
+      return Promise.resolve({ ok: true, json: async () => ({ version: 1, initCash: 1000000, cash: 1000000, nav: [{ date: '2026-10-23', equity: 1000000, cash: 1000000, marketValue: 0 }] }) });
+    }
+    const body = readJsonSafe(u);
+    return Promise.resolve({ ok: body !== null, json: async () => body });
+  };
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 300));
+
+  const root = w.document.getElementById('tRoot');
+  [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'paper')
+    .dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 320));
+
+  const txt = root.textContent;
+  assert.match(txt, /当前空仓/, '无持仓 → 如实空态');
+  assert.match(txt, /无待成交委托/, '无挂单 → 如实空态');
+  assert.match(txt, /当日无决策日志/, '无日志 → 如实空态');
+  assert.match(txt, /净值序列不足/, '净值仅 1 个结算日 → 如实提示（不画单点折线）');
+  assert.equal(root.querySelectorAll('table.t-tbl').length, 0, '三处皆空 → 无表格（也不该因取 null 表而崩）');
+  assert.deepEqual(errors, [], `空账户不应有 JS 错误：${errors.join(' | ')}`);
+});
+
 // 回归：首期总览的「涨跌停分布」因读 archive-recent.json 的 .days（该档无此键）恒为空态
 test('terminal：总览涨跌停柱状不再恒空（emotion_history.history 回归）', async () => {
   const { w, errors } = makeDom();

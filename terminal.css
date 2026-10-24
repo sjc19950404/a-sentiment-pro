@@ -450,6 +450,20 @@
 /* 抽屉里的 K 线宿主：与上方详情块留出分隔 */
 .t-dkhost { padding-top: 4px; border-top: 1px solid var(--t-line); }
 
+/* ── 决策日志 / 委托流水语义徽标（与 src/paper.js 的 STAGE/RESULT 同义）────── */
+.t-log-tag {
+  display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10.5px;
+  background: rgba(255, 255, 255, .05); color: var(--t-ink-2);
+}
+.t-res {
+  display: inline-block; padding: 1px 6px; border-radius: 3px;
+  font-size: 10.5px; font-weight: 600;
+}
+.t-res.is-pass { background: rgba(34, 200, 138, .14); color: var(--t-dn); }
+.t-res.is-no { background: rgba(255, 43, 43, .14); color: var(--t-alert); }
+.t-res.is-sub { background: rgba(34, 211, 238, .14); color: var(--t-acc); }
+.t-res.is-info { background: rgba(255, 255, 255, .05); color: var(--t-ink-3); }
+
 /* ── AI 条内的可点项与筛选开关 ───────────────────────────────────────────── */
 /* 「🕵 妖股纯情绪 N 只」→ 跳选股视图并自动停在纯情绪子集 */
 .t-ai-strip .t-ai-item.is-jump {
