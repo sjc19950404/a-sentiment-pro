@@ -667,3 +667,59 @@ test('terminal：键盘快捷键 1–7 切视图（输入框聚焦时拦截 / Es
   assert.ok(isOn('kline'), '非数字键不触发切换');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
+
+test('terminal：K线视图 ←/→ 切周期（与下拉同语义：只重绘不重抓）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 120));
+  const root = w.document.getElementById('tRoot');
+  const entryBtn = [...w.document.body.querySelectorAll('button')].find((b) => /终端/.test(b.textContent));
+  entryBtn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 40));
+  w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: '7', bubbles: true }));   // 切到 K线视图
+  await new Promise((r) => setTimeout(r, 40));
+  const input = root.querySelector('.t-kcode');
+  assert.ok(input, 'K线视图含代码输入框');
+  input.value = '600000';
+  root.querySelector('.t-kgo').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 400));   // 等 kline 分片 fetch
+  const sel = root.querySelector('.t-kperiod');
+  assert.ok(sel, '存在周期下拉');
+  const km0 = root.querySelector('.t-kmeta');
+  assert.ok(km0, 'K线已加载（含 kmeta 单位）');
+  assert.ok(/日/.test(km0.textContent), '初始周期为日');
+
+  const unit = () => {
+    const km = root.querySelector('.t-kmeta');
+    return km ? km.textContent : '';
+  };
+  w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+  await new Promise((r) => setTimeout(r, 80));
+  assert.ok(/周/.test(unit()), '按 → 后 K线单位变「周」（周期切换生效）');
+  w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+  await new Promise((r) => setTimeout(r, 80));
+  assert.ok(/月/.test(unit()), '再按 → 变「月」');
+  w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+  await new Promise((r) => setTimeout(r, 80));
+  assert.ok(/周/.test(unit()), '按 ← 回「周」');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：总览「辅助面板」可折叠 + 公告流/外围汇率（引擎原值）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 500));   // 公告/外围档异步回填，等足
+  const root = w.document.getElementById('tRoot');
+  const aux = root.querySelector('.t-aux');
+  assert.ok(aux, '总览含辅助面板（details）');
+  assert.ok(!aux.open, '辅助面板默认折叠（可选）');
+  assert.ok(root.textContent.includes('公告流'), '辅助面板含公告流面板');
+  assert.ok(root.textContent.includes('外围'), '辅助面板含外围/汇率面板');
+
+  const a = readJsonSafe('data/announcements-latest.json') || {};
+  const d0 = (a.details || [])[0];
+  if (d0 && d0.name) assert.ok(aux.textContent.includes(String(d0.name)), `公告流含引擎原值公告名：${d0.name}`);
+  assert.ok(aux.textContent.includes('美元离岸'), '外围面板含离岸美元');
+  assert.ok(/A50|富时中国A50/.test(aux.textContent), '外围含 A50 锚');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});

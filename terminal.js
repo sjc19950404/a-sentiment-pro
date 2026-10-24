@@ -328,6 +328,7 @@
         + candles(tail, { w: 660, h: 380 });
     };
     sel.addEventListener('change', () => { state.period = sel.value; draw(state.k); });
+    state.redraw = () => draw(state.k);   // 供键盘 ←/→ 切周期复用（与下拉同语义：只重绘不重抓）
     jget(`ui/kline/${prefix}${cc}.json`).then((k) => { state.k = k; draw(k); });
   }
 
@@ -502,6 +503,66 @@
     }).catch(() => {
       const host = thPanel.lastElementChild;
       if (host) host.outerHTML = '<div class="t-empty">主线历史档读取失败（fail-open）</div>';
+    });
+
+    // ── 辅助面板（可选，默认折叠）：公告流 + 外围/汇率 ──
+    //   均为引擎原值，fail-open；用原生 <details> 折叠 → 无需 JS、移动端友好，天然「可选查看」。
+    const aux = el('details', 't-aux t-c12');
+    const auxSum = el('summary', 't-aux-sum');
+    auxSum.innerHTML = '辅助信息 · 公告流 / 外围汇率<span class="t-aux-hint">（可选，点击展开 / 收起）</span>';
+    const auxGrid = el('div', 't-grid');
+    const annPanel = panel('公告流', '连板股最新公告 · announcements-latest', '<div class="t-loading">加载…</div>', 't-c6');
+    const gloPanel = panel('外围 / 汇率', 'global.json · 外围锚 + 离岸/在岸美元', '<div class="t-loading">加载…</div>', 't-c6');
+    auxGrid.appendChild(annPanel); auxGrid.appendChild(gloPanel);
+    aux.appendChild(auxSum); aux.appendChild(auxGrid);
+    g.appendChild(aux);
+
+    // 公告流回填（连板股异常波动/风险提示/财报，含原文链接）
+    jget('data/announcements-latest.json').then((a) => {
+      if (!annPanel.isConnected) return;
+      const host = annPanel.lastElementChild;
+      if (!host) return;
+      const ds = (a && Array.isArray(a.details)) ? a.details : [];
+      if (!ds.length) { host.outerHTML = '<div class="t-empty">无公告数据（fail-open）</div>'; return; }
+      host.outerHTML = `<div class="t-anlist">${ds.slice(0, 14).map((d) => `
+        <div class="t-anrow">
+          <span class="t-anc">${esc(d.code || '—')}</span>
+          <span class="t-ann">${esc(d.name || '—')}</span>
+          <span class="t-ant">${(Array.isArray(d.announcements) ? d.announcements : []).map((x) => `<a class="t-antitle" href="${esc(x.url || '#')}" target="_blank" rel="noopener">${esc(x.title || '—')}</a>${x.date ? `<span class="t-and">${esc(x.date)}</span>` : ''}`).join('')}</span>
+        </div>`).join('')}</div>`;
+    }).catch(() => {
+      const host = annPanel.lastElementChild;
+      if (host) host.outerHTML = '<div class="t-empty">公告档读取失败（fail-open）</div>';
+    });
+
+    // 外围 / 汇率回填（A50/费半/纳指/金龙/WTI 等外围锚 + 离岸/在岸美元 + 外围判语）
+    jget('data/global.json').then((gl) => {
+      if (!gloPanel.isConnected) return;
+      const host = gloPanel.lastElementChild;
+      if (!host) return;
+      if (!gl) { host.outerHTML = '<div class="t-empty">外围档缺失（fail-open）</div>'; return; }
+      const rmb = gl.rmb || {};
+      const qs = Array.isArray(gl.quotes) ? gl.quotes : [];
+      const wv = (gl.watch && gl.watch.verdict) || {};
+      host.outerHTML = `<div class="t-glob">
+        <div class="t-stats">
+          ${stat('美元离岸', rmb.usdcnh_last != null ? fmt(rmb.usdcnh_last, 4) : '—', 'USDCNH')}
+          ${stat('美元在岸', rmb.usdcny_last != null ? fmt(rmb.usdcny_last, 4) : '—', 'USDCNY')}
+        </div>
+        <div class="t-gqlist">${qs.map((q) => {
+          const chg = q.chg_pct != null ? +q.chg_pct : null;
+          const cls = chg == null ? '' : (chg >= 0 ? 'up' : 'dn');
+          return `<div class="t-gqrow${q.ok === false ? ' is-miss' : ''}">
+            <span class="t-gqname">${esc(q.name || q.key || '—')}</span>
+            <span class="t-gqval ${cls}">${q.last != null ? fmt(q.last, 2) : '—'}<span class="t-gqchg ${cls}">${chg == null ? '' : sgn(chg, 2)}</span></span>
+            <span class="t-gqst">${esc(q.stateText || '')}</span>
+          </div>`;
+        }).join('')}</div>
+        ${wv.label ? `<div class="t-dnote ${wv.key === 'bull' ? 'is-ok' : wv.key === 'bear' ? 'is-alert' : ''}">外围判语：<b>${esc(wv.label)}</b>${wv.hint ? ` · ${esc(wv.hint)}` : ''}</div>` : ''}
+      </div>`;
+    }).catch(() => {
+      const host = gloPanel.lastElementChild;
+      if (host) host.outerHTML = '<div class="t-empty">外围档读取失败（fail-open）</div>';
     });
 
     return g;
@@ -816,7 +877,6 @@
   // ── 6e. 视图：K线（独立视图；与抽屉共用 renderKline，周期规则同一套）────
   function viewKline() {
     const g = el('div', 't-grid');
-    const state = { period: 'day', k: null };
     const cur = (LINK.sel && LINK.sel.code) ? String(LINK.sel.code) : '';
     const curName = (LINK.sel && LINK.sel.name) ? String(LINK.sel.name) : '';
 
@@ -832,6 +892,7 @@
     g.appendChild(p1);
 
     const host = $('.t-khost', p1);
+    viewKHost = host;
     const input = $('.t-kcode', p1);
     const load = () => {
       const code = String(input.value || '').trim();
@@ -839,12 +900,12 @@
         host.innerHTML = '<div class="t-empty">请输入 6 位数字代码（如 600000）</div>';
         return;
       }
-      state.k = null;
-      renderKline(host, code, state);
+      viewKState.k = null;
+      renderKline(host, code, viewKState);
     };
     $('.t-kgo', p1).addEventListener('click', load);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') load(); });
-    if (/^\d{6}$/.test(cur)) renderKline(host, cur, state);
+    if (/^\d{6}$/.test(cur)) renderKline(host, cur, viewKState);
 
     return g;
   }
@@ -961,6 +1022,9 @@
   // ── 8. K线抽屉（全站唯一真磨砂玻璃件）─────────────────────────────────
   let drawerRefs = null;
   const drawerKState = { period: 'day', k: null };   // 抽屉的周期选择（跨开关保持）
+  // 视图 K线的周期选择（跨视图切换保持，与抽屉同款语义）；redraw 由 renderKline 注入
+  const viewKState = { period: 'day', k: null };
+  let viewKHost = null;
 
   // 代码归一：'600000' / 'sh600000' / '600000.SH' 都收敛到 6 位纯数字，
   //   用于三份档之间的关联匹配（侧车 / 黑名单 / 账户持仓）——只做**匹配**，不改任何值。
@@ -1223,11 +1287,25 @@
     document.addEventListener('keydown', (e) => {
       if (root.hidden) return;                              // 仅终端可见时响应（研报视图下不误触发）
       const t = e.target;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      // 焦点在输入框/文本域/下拉/可编辑区时不拦截（不抢 K线代码输入、下拉原生 ←/→、浏览器快捷键）
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === 'Escape') return;                       // 抽屉已独立处理 Esc
       const n = parseInt(e.key, 10);
-      if (!(n >= 1 && n <= VIEWS.length)) return;
+      if (!(n >= 1 && n <= VIEWS.length)) {
+        // 非数字键：处理 K线周期 ←/→ 切换（仅 K线视图或抽屉 K线可见时）
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+          const useDrawer = drawerRefs && drawerRefs.dw.classList.contains('is-open');
+          const st = useDrawer ? drawerKState : viewKState;
+          if (!st || !st.redraw) return;
+          const i = PERIODS.findIndex((p) => p.k === st.period);
+          const ni = e.key === 'ArrowRight' ? Math.min(PERIODS.length - 1, i + 1) : Math.max(0, i - 1);
+          if (ni === i) return;
+          st.period = PERIODS[ni].k;
+          st.redraw();
+        }
+        return;
+      }
       const v = VIEWS[n - 1];
       if (drawerRefs && drawerRefs.dw.classList.contains('is-open')) {
         drawerRefs.mask.classList.remove('is-open');
