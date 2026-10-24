@@ -663,3 +663,22 @@ test('pushReports signal_sync：成功推送 + 同日重跑去重防刷屏（跨
     assert.equal(r3.pushed, 1, '跨日新信号照推');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+// ── 10. EOD 优先级引擎：时间错峰（delayMs）+ urgent 最高特权豁免 ─────────────
+test('pushReports：delayMs 错峰（非 urgent 间隔 ≥delayMs；urgent 免延迟立即发）', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'airpt-stagger-'));
+  const mk = (t, urgent = false) => ({ report_type: 'signal_sync', date: '2026-10-24', trigger: 'schedule', urgent, status: 'ok', generated_at: new Date().toISOString(), payload: { text: t } });
+  const ok = async () => ({ ok: true, status: 200, json: async () => ({ errcode: 0, errmsg: 'ok' }) });
+  try {
+    // 两条非 urgent → 第二次发送应晚于第一次约 ≥ delayMs（错峰生效）
+    const t1 = [];
+    const r1 = await pushReports([mk('A'), mk('B')], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => { t1.push(Date.now()); return ok(); }, stateFile: join(dir, 's1.json'), delayMs: 150, now: new Date() });
+    assert.equal(r1.pushed, 2, '两条都推出');
+    assert.ok(t1[1] - t1[0] >= 120, `非 urgent 应错峰 ≥~delayMs，实际 ${t1[1] - t1[0]}ms`);
+    // 两条 urgent → 免错峰，间隔接近 0（最高特权，打断一切安静）
+    const t2 = [];
+    const r2 = await pushReports([mk('C', true), mk('D', true)], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => { t2.push(Date.now()); return ok(); }, stateFile: join(dir, 's2.json'), delayMs: 800, now: new Date() });
+    assert.equal(r2.pushed, 2, 'urgent 免防风暴直达，两条都推出');
+    assert.ok(t2[1] - t2[0] < 120, `urgent 免错峰，实际 ${t2[1] - t2[0]}ms`);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

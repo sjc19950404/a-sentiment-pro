@@ -88,8 +88,7 @@ export function computePeriodStats(account, { startDate, endDate }) {
   };
 }
 
-const mkReport = (report_type, date, text) => ({
-  report_type,
+const mkReport = (report_type, date, text) => ({  report_type,
   date,
   trigger: 'schedule',
   status: 'ok',
@@ -123,4 +122,22 @@ export function buildMonthlyReviewReport({ date, month, range, s, macroReview })
     '只读复盘 · 不构成投资建议',
   ];
   return mkReport('monthly_review', date, lines.join('\n'));
+}
+
+/**
+ * EOD 推送优先级路由（纯函数，供编排与单测共用）。
+ * 优先级：月报 > 周报(+周盈利战报) > 盘后基础复盘 > AI 盘后情报。
+ *   · 月末：仅【月报】+【盘后基础复盘数据】；周报与 AI 盘后情报静默（avoid 同质化轰炸）。
+ *   · 周五（非月末）：【周报】+【周盈利战绩】+【盘后基础复盘数据】；AI 盘后情报静默。
+ *   · 普通交易日：【盘后基础复盘数据】+【AI 盘后情报】。
+ * order 为消息发送顺序（供错峰调度依次发）；extras 标记需要额外构建的战报。
+ */
+export function composeEodPlan({ isMonthEnd, isWeekEnd }) {
+  if (isMonthEnd) {
+    return { suppressAiBrief: true, weekly: false, weeklyPerf: false, monthly: true, order: ['monthly_review', 'post_market_base'] };
+  }
+  if (isWeekEnd) {
+    return { suppressAiBrief: true, weekly: true, weeklyPerf: true, monthly: false, order: ['weekly', 'weekly_performance', 'post_market_base'] };
+  }
+  return { suppressAiBrief: false, weekly: false, weeklyPerf: false, monthly: false, order: ['post_market_base', 'ai_brief'] };
 }

@@ -63,16 +63,9 @@ case "$MODE" in
       log "pi_build 失败（守卫拦截），不推送"; alert "pi_run: 盘后管道守卫失败，未推送"; exit 1
     fi
     bash scripts/pi_push.sh || { log "data 推送失败"; alert "pi_run: data 推送失败"; }
-    # 汇总推企微（盘前→盘中→盘后，push_ai_report 自带指纹去重防刷屏）
-    ARGS=""
-    PM=$(node -e "try{const i=require('./data/reports/index.json');console.log(i.reports&&i.reports.pre_market&&i.reports.pre_market.file||'')}catch(e){}" 2>/dev/null)
-    [ -n "$PM" ] && [ -f "data/reports/$PM" ] && ARGS="data/reports/$PM"
-    [ -f "data/reports/intraday_${TODAY}.json" ] && ARGS="$ARGS data/reports/intraday_${TODAY}.json"
-    [ -f "data/reports/post_market_${TODAY}.json" ] && ARGS="$ARGS data/reports/post_market_${TODAY}.json"
-    [ -n "$ARGS" ] && node scripts/push_ai_report.mjs $ARGS 2>/dev/null
-    node scripts/push_ai_report.mjs --latest weekly 2>/dev/null || true
-    # 战绩报表（周度盈利战报 / 月度大复盘）：月末优先于周末，只读账户、复用指纹去重、fail-open
-    node scripts/push_battle_report.mjs 2>/dev/null || true
+    # EOD 推送「优先级 + 时间错峰」引擎：月报 > 周报(+周盈利战报) > 盘后基础复盘 > AI盘后情报；
+    #   多条错峰发送（默认 3s）。盘中紧急异动 / 盘前排雷与观察清单由各自独立 cron 模式推送，不受此 gate。
+    node scripts/push_eod.mjs 2>/dev/null || true
     ;;
   us_close|a50)
     node scripts/fetch_global.mjs || log "外围抓取失败"

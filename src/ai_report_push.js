@@ -324,13 +324,16 @@ export function buildSignalSyncReports({ date, buys = [], sells = [], stopLabel 
 /**
  * 推送一组报告（按序；同批内也做指纹去重——重跑同内容只推一次）。
  * @param {Array<object>|object} reports 报告对象（信封完整结构）
- * @param {{env?:object, fetchImpl?:Function, stateFile?:string|null, now?:Date}} opts
+ * @param {{env?:object, fetchImpl?:Function, stateFile?:string|null, now?:Date, delayMs?:number, suppressAiBrief?:boolean}} opts
  *   env.fetchImpl/stateFile 全部可注入（测试零网络零磁盘）；
- *   stateFile 为 null → 纯推送不落状态（不推荐 CI 用，仅供测试/预览）。
+ *   stateFile 为 null → 纯推送不落状态（不推荐 CI 用，仅供测试/预览）；
+ *   delayMs > 0 → 多条消息间错峰 sleep（防企微限流/指纹误判），urgent 消息豁免延迟；
+ *   suppressAiBrief → 抑制 post_market 的「AI 盘后情报」副报文（周五/月末降噪，极端异动复盘仍保留）。
  * @returns {{results:Array, pushed:number, skipped:number, state:object}}
  *   永不 reject（告警纪律：推送失败不炸数据管线，错误进 results[].reason）。
  */
-export async function pushReports(reports, { env = process.env, fetchImpl, stateFile = null, now = new Date() } = {}) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+export async function pushReports(reports, { env = process.env, fetchImpl, stateFile = null, now = new Date(), delayMs = 0, suppressAiBrief = false } = {}) {
   const list = (Array.isArray(reports) ? reports : [reports]).filter(Boolean);
   const rawWebhook = env?.[PUSH_CONSTS.WEBHOOK_ENV];
   // secret 值清洗（对齐 Worker push_proxy，2026-10-10 BOM 踩坑根治）：
@@ -349,6 +352,7 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
     return { results, pushed: 0, skipped: list.length, state };
   }
   const fetchFn = fetchImpl || (typeof fetch === 'function' ? fetch : null);
+  let sentCount = 0;   // 本次调用已成功发送的条数（错峰基准）
   for (const report of list) {
     // ── 主报文 A（数据日报，复用既有 renderPushText；盘后强限制 800 字）──
     let aText = renderPushText(report);
@@ -358,7 +362,7 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
     try {
       if (report.report_type === 'pre_market') { const m = buildMineAlert(report); if (m) messages.push(m); }
       if (report.report_type === 'post_market') {
-        const m = buildAiBrief(report); if (m) messages.push(m);
+        if (!suppressAiBrief) { const m = buildAiBrief(report); if (m) messages.push(m); }
         const rev = buildReversalAlert(report, now); if (rev) messages.push(rev);
       }
       if (report.report_type === 'intraday') { const a = buildIntradayAlert(report, now); if (a) messages.push(a); }
@@ -373,6 +377,8 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
       const verdict = shouldPush(m.synthetic, state, now);
       if (!verdict.push) { results.push({ type: m.synthetic.report_type, date: report.date, pushed: false, reason: verdict.reason }); continue; }
       if (!fetchFn) { results.push({ type: m.synthetic.report_type, date: report.date, pushed: false, reason: '当前环境无 fetch' }); continue; }
+      // 时间错峰（T+N）：本次调用已成功发过、且本条非 urgent → 先 sleep 再发（防企微限流/指纹误判）；urgent 最高特权豁免
+      if (sentCount > 0 && delayMs > 0 && !(m.urgent === true || m.synthetic?.urgent === true)) await sleep(delayMs);
       try {
         const res = await fetchFn(url, {
           method: 'POST',
@@ -398,6 +404,7 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
           continue;
         }
         pushed += 1;
+        sentCount += 1;
         state = recordPushed(state, {
           fingerprint: verdict.fingerprint,
           type: m.synthetic.report_type,

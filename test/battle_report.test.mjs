@@ -1,7 +1,7 @@
 // ═══ 战绩报表（src/battle_report.js）+ 月末闸门（gateMonthly）══════════════
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computePeriodStats, buildWeeklyPerformanceReport, buildMonthlyReviewReport } from '../src/battle_report.js';
+import { computePeriodStats, buildWeeklyPerformanceReport, buildMonthlyReviewReport, composeEodPlan } from '../src/battle_report.js';
 import { gateMonthly, gateWeekly } from '../src/ai_report_push.js';
 
 // 夹具：一周（10-19 周一 ~ 10-24 周五）的账户，含 2 笔平仓（1 盈 1 亏）+ 一个未平持仓
@@ -90,4 +90,23 @@ test('gateMonthly：月末放行 / 周中拦截 / 月末逢周五也放行（配
   assert.equal(gateMonthly('2026-09-29', ['2026-09-30']).ok, true, '9-30 休市 → 9-29 即本月最后交易日（closedDays 只影响 tradeDate 之后的同月日）');
   // 月末逢周五：月报与周报闸门同时为真 → 编排层按月报优先（此处仅证明两闸门可同时成立）
   assert.equal(gateMonthly('2026-10-30', []).ok && gateWeekly('2026-10-30', []).ok, true, '10-30 同时是月末与周末');
+});
+
+test('composeEodPlan：月末/周五/普通 三态优先级路由 + AI 情报抑制', () => {
+  // 月末：月报 + 基础复盘；周报与 AI 情报静默
+  const m = composeEodPlan({ isMonthEnd: true, isWeekEnd: true });
+  assert.deepEqual(m.order, ['monthly_review', 'post_market_base'], '月末：月报优先，仅 + 基础复盘');
+  assert.equal(m.suppressAiBrief, true, '月末静默 AI 情报');
+  assert.equal(m.weekly, false); assert.equal(m.weeklyPerf, false); assert.equal(m.monthly, true);
+
+  // 周五（非月末）：周报 + 周盈利战报 + 基础复盘；AI 情报静默
+  const w = composeEodPlan({ isMonthEnd: false, isWeekEnd: true });
+  assert.deepEqual(w.order, ['weekly', 'weekly_performance', 'post_market_base'], '周五：周报+周盈利+基础复盘');
+  assert.equal(w.suppressAiBrief, true, '周五静默 AI 情报');
+  assert.equal(w.weekly, true); assert.equal(w.weeklyPerf, true); assert.equal(w.monthly, false);
+
+  // 普通交易日：基础复盘 + AI 情报（不抑制）
+  const n = composeEodPlan({ isMonthEnd: false, isWeekEnd: false });
+  assert.deepEqual(n.order, ['post_market_base', 'ai_brief'], '普通日：基础复盘 + AI 情报');
+  assert.equal(n.suppressAiBrief, false, '普通日照常推 AI 情报');
 });

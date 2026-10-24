@@ -1,15 +1,13 @@
 #!/usr/bin/env node
-// ── 战绩报表推送编排（周度盈利战报 + 月度大复盘）────────────────────────────
+// ── 战绩报表构建 + 独立推送（周度盈利战报 + 月度大复盘）────────────────────
 //
-// 在 pi_run.sh eod 中、常规周报推送之后调用：
-//   · 月末最后一个交易日 → 推「月度大复盘」（含 GLM 宏观复盘）；
-//   · 否则周五（周末最后交易日）→ 推「周度盈利战报」（含 AI 纪律点评）；
-//   · 优先级：月报 > 周报（同一天既月末又周末时只推月报，避免同质化轰炸）。
+// 两个入口：
+//   · buildBattleReport({account, archive, refDate, closedDays}) —— 纯构建（只读），
+//     返回当期战报 report 对象或 null；供 scripts/push_eod.mjs 复用（纳入统一错峰编排）。
+//   · 直接运行（node scripts/push_battle_report.mjs）—— 独立构建并推送（手动/兜底用）。
 //
-// 纪律（用户铁律）：
-//   · **只读** account.json / archive.json / calendar.json，绝不写回账户、绝不干预引擎交易；
-//   · 复用现有企微通道（OPS_WEBHOOK）+ pushReports 指纹去重（同 stateFile）；
-//   · 全程 fail-open：缺档/GLM 不可用/推送失败均只记日志，绝不退出非零炸 EOD 管线。
+// 纪律（用户铁律）：**只读** account/archive，绝不写回账户、绝不干预引擎交易；
+//   复用 OPS_WEBHOOK + pushReports 指纹去重；全程 fail-open。
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname, resolve } from 'node:path';
@@ -25,9 +23,9 @@ const CALENDAR_FILE = join(DATA, 'calendar.json');
 const STATE_FILE = join(DATA, 'reports', 'push_state.json');
 
 const readJson = (p) => { try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; } };
-const closedDays = (() => { const c = readJson(CALENDAR_FILE); return Array.isArray(c?.closed) ? c.closed : []; })();
+export const closedDaysOf = () => { const c = readJson(CALENDAR_FILE); return Array.isArray(c?.closed) ? c.closed : []; };
 
-// ── GLM（OpenAI 兼容；glm-* → bigmodel 网关；与其它脚本同款，缺配置/失败 → fail-open）──
+// ── GLM（OpenAI 兼容；glm-* → bigmodel 网关；缺配置/失败 → fail-open）──
 function glmConfig() {
   const API_URL = process.env.LLM_API_URL
     || ((process.env.LLM_MODEL || '').startsWith('glm') ? 'https://open.bigmodel.cn/api/paas/v4' : '');
@@ -66,12 +64,11 @@ function monthProfile(archive, month) {
     avgEmotion: avg != null ? Math.round(avg * 10) / 10 : null,
     maxEmotion: emos.length ? Math.max(...emos) : null,
     minEmotion: emos.length ? Math.min(...emos) : null,
-    highDays: emos.filter((v) => v >= 70).length,   // 情绪高分日 ≈ 连板/主升活跃
-    lowDays: emos.filter((v) => v < 40).length,      // 情绪低分日 ≈ 退潮/权重阴跌
+    highDays: emos.filter((v) => v >= 70).length,
+    lowDays: emos.filter((v) => v < 40).length,
   };
 }
 
-// ── AI 纪律点评（周报，规则驱动 + GLM 润色，≤50 字）────────────────────────
 function ruleDiscipline(s, stopCount) {
   const ddTxt = s.maxDd <= 0.03 ? '回撤控制良好' : '回撤偏大需收敛';
   let t = `本周触发纪律${stopCount}次，最大回撤${(s.maxDd * 100).toFixed(1)}%，${ddTxt}。`;
@@ -88,8 +85,6 @@ async function weeklyDiscipline(s, stopCount) {
   const out = (ai || rule).replace(/\s+/g, ' ').trim();
   return out.length > 50 ? `${out.slice(0, 49)}…` : out;
 }
-
-// ── AI 宏观复盘（月报，GLM；fail-open → 规则兜底）──────────────────────────
 async function monthlyMacro(s, prof, month) {
   const fallback = prof
     ? `本月${prof.tradeDays}个交易日、平均情绪${prof.avgEmotion ?? '—'}（${prof.highDays} 高/${prof.lowDays} 低）。`
@@ -108,51 +103,49 @@ async function monthlyMacro(s, prof, month) {
   return out.length > 200 ? `${out.slice(0, 199)}…` : out;
 }
 
-async function main() {
-  const acctRaw = readJson(ACCOUNT_FILE);
-  if (!acctRaw) { console.log('[battle] 无账户档案，跳过'); return; }
-  // account.json 即 exportAccount(acct) 落盘的账户对象本身（含 version/nav/trades/lastSettle），只读使用
-  const account = acctRaw;
-  const archive = readJson(ARCHIVE_FILE);
-  const refDate = account.lastSettle
-    || (Array.isArray(archive?.all_days) && archive.all_days.length ? archive.all_days[archive.all_days.length - 1].trade_date : null);
-  if (!refDate) { console.log('[battle] 无法确定最近交易日，跳过'); return; }
-
+/**
+ * 构建当期战报（只读 account/archive）。月末→月报，否则周五→周盈利战报，其它日→null。
+ * @returns {Promise<object|null>} report 对象或 null（无可报内容也返回 null）
+ */
+export async function buildBattleReport({ account, archive, refDate, closedDays = [] }) {
+  if (!account || !refDate) return null;
   const isMonthEnd = gateMonthly(refDate, closedDays).ok;
   const isWeekEnd = gateWeekly(refDate, closedDays).ok;
-  console.log(`[battle] 参考交易日 ${refDate}｜月末=${isMonthEnd}｜周末=${isWeekEnd}`);
 
-  let report = null;
   if (isMonthEnd) {
     const month = refDate.slice(0, 7);
     const range = { startDate: `${month}-01`, endDate: refDate };
     const s = computePeriodStats(account, range);
-    if (!s.started && s.navDeltaPct != null && Math.abs(s.navDeltaPct) < 1e-9) {
-      console.log('[battle] 本月无交易且净值无变动，跳过月度汇报'); return;
-    }
-    const prof = monthProfile(archive, month);
-    const macro = await monthlyMacro(s, prof, month);
-    report = buildMonthlyReviewReport({ date: refDate, month, range, s, macroReview: macro });
-  } else if (isWeekEnd) {
-    const monday = isoWeekStart(refDate);
-    const range = { startDate: monday, endDate: refDate };
+    if (!s.started && Math.abs(s.navDeltaPct || 0) < 1e-9) { console.log('[battle] 本月无交易且净值无变动，跳过'); return null; }
+    const macro = await monthlyMacro(s, monthProfile(archive, month), month);
+    return buildMonthlyReviewReport({ date: refDate, month, range, s, macroReview: macro });
+  }
+  if (isWeekEnd) {
+    const range = { startDate: isoWeekStart(refDate), endDate: refDate };
     const s = computePeriodStats(account, range);
-    if (!s.started && s.navDeltaPct != null && Math.abs(s.navDeltaPct) < 1e-9) {
-      console.log('[battle] 本周无交易且净值无变动，跳过周度汇报'); return;
-    }
-    // 本周期内触发纪律的卖出次数（出场/止损 submitted + 跌停逃生 fill）
+    if (!s.started && Math.abs(s.navDeltaPct || 0) < 1e-9) { console.log('[battle] 本周无交易且净值无变动，跳过'); return null; }
     const stopCount = (account.logs || []).filter((l) => l && l.date >= range.startDate && l.date <= range.endDate
       && (l.stage === 'exit' || l.stage === 'stop') && l.result === 'submitted').length;
     const discipline = await weeklyDiscipline(s, stopCount);
-    report = buildWeeklyPerformanceReport({ date: refDate, range, s, discipline });
-  } else {
-    console.log('[battle] 非月末/周末，无战绩报表可推');
-    return;
+    return buildWeeklyPerformanceReport({ date: refDate, range, s, discipline });
   }
+  return null;
+}
 
+// ── 独立运行（手动/兜底）：构建并推送 ─────────────────────────────────────
+async function main() {
+  const account = readJson(ACCOUNT_FILE);
+  if (!account) { console.log('[battle] 无账户档案，跳过'); return; }
+  const archive = readJson(ARCHIVE_FILE);
+  const refDate = account.lastSettle
+    || (Array.isArray(archive?.all_days) && archive.all_days.length ? archive.all_days[archive.all_days.length - 1].trade_date : null);
+  if (!refDate) { console.log('[battle] 无法确定最近交易日，跳过'); return; }
+  const report = await buildBattleReport({ account, archive, refDate, closedDays: closedDaysOf() });
+  if (!report) { console.log('[battle] 当日无战绩报表可推'); return; }
   const { results, pushed, skipped } = await pushReports([report], { stateFile: STATE_FILE });
   for (const r of results) console.log(`[battle] ${r.type} ${r.date}: ${r.pushed ? '已推送' : '未推送'}（${r.reason}）`);
   console.log(`[battle] 完成：推 ${pushed} / 跳 ${skipped} · 通道 ${PUSH_CONSTS.WEBHOOK_ENV}${process.env[PUSH_CONSTS.WEBHOOK_ENV] ? '' : '（未配置 → 仅落盘）'}`);
 }
 
-main().catch((e) => { console.error(`[battle] 致命错误（fail-open，不炸管线）: ${e?.message || e}`); process.exit(0); });
+const invokedDirectly = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (invokedDirectly) main().catch((e) => { console.error(`[battle] 致命错误（fail-open）: ${e?.message || e}`); process.exit(0); });
