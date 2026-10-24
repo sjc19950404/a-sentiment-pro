@@ -353,6 +353,7 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
   }
   const fetchFn = fetchImpl || (typeof fetch === 'function' ? fetch : null);
   let sentCount = 0;   // 本次调用已成功发送的条数（错峰基准）
+  let msgTotal = 0;    // 本次调用排队待发的消息总条数（含各副报文）——skipped 的正确分母
   for (const report of list) {
     // ── 主报文 A（数据日报，复用既有 renderPushText；盘后强限制 800 字）──
     let aText = renderPushText(report);
@@ -369,6 +370,7 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
     } catch (e) {
       console.error(`[企微副报文] 构造异常（跳过副报文，不影响主报文）: ${e?.message || e}`);
     }
+    msgTotal += messages.length;
     for (const m of messages) {
       if (m.dedupeContent && m.cfp && contentSeenRecently(state, m.cfp, now)) {
         results.push({ type: m.synthetic.report_type, date: report.date, pushed: false, reason: 'ai_content_repeat（与前值一致，跳过防刷屏）' });
@@ -427,7 +429,12 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
     }
   }
   if (stateFile) savePushState(stateFile, state);
-  return { results, pushed, skipped: list.length - pushed, state };
+  // 2026-10-25 修复：分母原为 list.length（**输入报告数**），而 pushed 计的是**发出的消息条数**
+  //   （1 份 post_market 会展开成「主报文 + AI 副报文 + 异动告警」多条），两者量纲不同 →
+  //   1 进 2 出时算出 skipped = 1 − 2 = **−1**，EOD 日志因此打出「推 2 / 跳 -1」。
+  //   改为按「排队的消息总条数 − 已发条数」，量纲一致，且恒 ≥ 0。
+  //   （上方「无 webhook / url 非法」两条早退仍用 list.length：那时每份报告只产 1 条，量纲一致。）
+  return { results, pushed, skipped: msgTotal - pushed, state };
 }
 
 // ── 调度闸门（纯函数；跳过 = 正常退出，不是错误）────────────────────────

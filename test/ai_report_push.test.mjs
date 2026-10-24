@@ -267,7 +267,8 @@ test('pushReports：无 webhook 跳过 / 成功记指纹 / 二次去重 / 失败
 
     const calls = [];
     const fetchOk = { ok: true };
-    const ok1 = await pushReports([r], { env: { OPS_WEBHOOK: 'https://example.test/hook' }, fetchImpl: async (u, init) => { calls.push({ u, init }); return fetchOk; }, stateFile, now: new Date('2026-10-06T13:00:00Z') });
+    // suppressAiBrief：本组测的是「去重/指纹/自愈」基础设施，隔离 AI 副报文展开（其另有专测）
+    const ok1 = await pushReports([r], { env: { OPS_WEBHOOK: 'https://example.test/hook' }, fetchImpl: async (u, init) => { calls.push({ u, init }); return fetchOk; }, suppressAiBrief: true, stateFile, now: new Date('2026-10-06T13:00:00Z') });
     assert.equal(ok1.pushed, 1);
     assert.equal(calls.length, 1);
     assert.equal(calls[0].u, 'https://example.test/hook');
@@ -277,7 +278,7 @@ test('pushReports：无 webhook 跳过 / 成功记指纹 / 二次去重 / 失败
     assert.equal(loadPushState(stateFile).pushed.length, 1, '成功记指纹');
 
     // 同内容二次推送 → 指纹去重
-    const ok2 = await pushReports([r], { env: { OPS_WEBHOOK: 'https://example.test/hook' }, fetchImpl: async () => fetchOk, stateFile, now: new Date('2026-10-06T13:30:00Z') });
+    const ok2 = await pushReports([r], { env: { OPS_WEBHOOK: 'https://example.test/hook' }, fetchImpl: async () => fetchOk, suppressAiBrief: true, stateFile, now: new Date('2026-10-06T13:30:00Z') });
     assert.equal(ok2.pushed, 0);
     assert.match(ok2.results[0].reason, /duplicate_fingerprint/);
 
@@ -293,7 +294,7 @@ test('pushReports：无 webhook 跳过 / 成功记指纹 / 二次去重 / 失败
     }
     // urgent 免防风暴：同内容已推过也直达
     const urgent = mkReport({ trigger: 'event:trend_switch', urgent: true });
-    const okU = await pushReports([urgent], { env: { OPS_WEBHOOK: 'https://example.test/hook' }, fetchImpl: async () => fetchOk, stateFile, now: new Date('2026-10-06T13:30:00Z') });
+    const okU = await pushReports([urgent], { env: { OPS_WEBHOOK: 'https://example.test/hook' }, fetchImpl: async () => fetchOk, suppressAiBrief: true, stateFile, now: new Date('2026-10-06T13:30:00Z') });
     assert.equal(okU.pushed, 1, 'urgent 同内容也直达（trigger 进指纹故本就为新；双保险）');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
@@ -310,7 +311,7 @@ test('pushReports：企微 HTTP 200 + errcode≠0 静默丢包 → 不记指纹�
       headers: { get: () => 'application/json' },
       json: async () => ({ errcode: 93000, errmsg: '机器人被移除，请先补群' }),
     });
-    const fail = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: failWechat, stateFile, now: new Date('2026-10-08T13:30:00Z') });
+    const fail = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: failWechat, suppressAiBrief: true, stateFile, now: new Date('2026-10-08T13:30:00Z') });
     assert.equal(fail.pushed, 0, 'errcode≠0 → 不算成功');
     assert.match(fail.results[0].reason, /errcode=93000/, 'reason 暴露 errcode，便于排查（这是漏洞修复的核心证据）');
     assert.match(fail.results[0].reason, /未记指纹/, '同 HTTP 失败：失败不记指纹');
@@ -322,7 +323,7 @@ test('pushReports：企微 HTTP 200 + errcode≠0 静默丢包 → 不记指纹�
       headers: { get: () => 'application/json' },
       json: async () => ({ errcode: 0, errmsg: 'ok' }),
     });
-    const ok = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: okWechat, stateFile, now: new Date('2026-10-08T13:30:00Z') });
+    const ok = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: okWechat, suppressAiBrief: true, stateFile, now: new Date('2026-10-08T13:30:00Z') });
     assert.equal(ok.pushed, 1, 'errcode=0 → 推送成功');
     assert.match(ok.results[0].reason, /new_content/);
     assert.equal(loadPushState(stateFile).pushed.length, 1, '记指纹');
@@ -340,7 +341,7 @@ test('pushReports：webhook 带 BOM 清洗自愈；清洗后非法 → 值非法
     const ok = await pushReports([r], {
       env: { OPS_WEBHOOK: '\uFEFF\uFEFFhttps://example.test/hook\u200B' },
       fetchImpl: async (u) => { calls.push(u); return { ok: true }; },
-      stateFile, now: new Date('2026-10-08T13:30:00Z'),
+      suppressAiBrief: true, stateFile, now: new Date('2026-10-08T13:30:00Z'),
     });
     assert.equal(ok.pushed, 1, 'BOM 剥除后推送成功（消费端自愈）');
     assert.equal(calls[0], 'https://example.test/hook', 'fetch 收到清洗后的 URL');
@@ -365,12 +366,12 @@ test('pushReports：fetchImpl 返回 { ok, status } 无 body 方法时，行为�
   const dir = mkdtempSync(join(tmpdir(), 'airpt-legacy-mock-'));
   try {
     // 失败路径（先做，避免被后置成功去重）：{ ok:false, status:502 } → 走原 HTTP reason
-    const bad = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ({ ok: false, status: 502 }), stateFile: join(dir, 'bad.json'), now: new Date('2026-10-08T13:30:00Z') });
+    const bad = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ({ ok: false, status: 502 }), suppressAiBrief: true, stateFile: join(dir, 'bad.json'), now: new Date('2026-10-08T13:30:00Z') });
     assert.equal(bad.pushed, 0);
     assert.match(bad.results[0].reason, /HTTP 502/, '无 body 方法时仍报 HTTP reason');
 
     // 成功路径（独立 stateFile）：{ ok: true } 无 .json → 仍应算成功（errcode 未暴露 → 不算失败）
-    const ok = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ({ ok: true }), stateFile: join(dir, 'ok.json'), now: new Date('2026-10-08T13:30:00Z') });
+    const ok = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ({ ok: true }), suppressAiBrief: true, stateFile: join(dir, 'ok.json'), now: new Date('2026-10-08T13:30:00Z') });
     assert.equal(ok.pushed, 1, '无 body 方法 + res.ok=true → 成功（与升级前兼容）');
     assert.equal(loadPushState(join(dir, 'ok.json')).pushed.length, 1);
   } finally { rmSync(dir, { recursive: true, force: true }); }
@@ -591,8 +592,11 @@ test('pushReports：成功推送记指纹时携带 verified 审计摘要（每�
       fetchImpl: async () => ({ ok: true }),
       stateFile, now: new Date('2026-10-12T06:55:00Z'),
     });
-    assert.equal(ok.pushed, 1);
-    const entry = loadPushState(stateFile).pushed[0];
+    // intraday 会展开成「主报文 + 盘中异动副报文」2 条（副报文不受 suppressAiBrief 管）
+    assert.equal(ok.pushed, 2, 'intraday：主报文 + 盘中异动副报文');
+    // verified 审计摘要只挂主报文（副报文不冒充校验结论）→ 取带 verified 的那条
+    const entry = loadPushState(stateFile).pushed.find((e) => e.verified);
+    assert.ok(entry, '主报文条目在场且携带 verified');
     assert.ok(entry.fingerprint, '指纹在场');
     assert.deepEqual(entry.verified, {
       checked_at: '14:54', snapshot_at: '2026-10-12 14:53',
@@ -681,4 +685,49 @@ test('pushReports：delayMs 错峰（非 urgent 间隔 ≥delayMs；urgent 免�
     assert.equal(r2.pushed, 2, 'urgent 免防风暴直达，两条都推出');
     assert.ok(t2[1] - t2[0] < 120, `urgent 免错峰，实际 ${t2[1] - t2[0]}ms`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// ── AI 副报文展开 + skipped 计数口径（2026-10-25 修复回归）──────────────────
+// 背景：1 份 post_market 会展开成「主报文 + AI 盘后情报」2 条消息，而 skipped 原按
+//   「输入报告数 − 已发消息数」计算（量纲不同）→ 1 进 2 出时算出 skipped = −1，
+//   EOD 日志因此打出「推 2 / 跳 -1」。现改为按消息条数计，恒定非负。
+test('pushReports：post_market 展开 AI 副报文；skipped 按消息条数计（1 进 2 出不得为 -1）', async () => {
+  const r = mkReport();
+  const env = { OPS_WEBHOOK: 'https://example.test/hook' };
+  const fetchOk = async () => ({ ok: true });
+  const now = new Date('2026-10-26T10:00:00Z');
+  const mkDir = () => mkdtempSync(join(tmpdir(), 'airpt-expand-'));
+
+  // 1) 不抑制副报文 → 主报文 + AI 盘后情报 = 2 条
+  const d1 = mkDir();
+  try {
+    const sf = join(d1, 's.json');
+    const full = await pushReports([r], { env, fetchImpl: fetchOk, stateFile: sf, now });
+    assert.equal(full.pushed, 2, '1 份 post_market → 2 条（主报文 + AI 副报文）');
+    assert.ok(full.results.some((x) => x.type === 'post_market'), '主报文在场');
+    assert.ok(full.results.some((x) => x.type === 'post_market_ai'), 'AI 副报文在场');
+    // 回归核心：skipped 恒非负，绝不为 −1
+    assert.equal(full.skipped, 0, 'skipped = 0（不得因 1 进 2 出算出 −1）');
+    assert.ok(full.skipped >= 0, 'skipped 恒非负');
+    assert.equal(loadPushState(sf).pushed.length, 2, '两条各记指纹');
+  } finally { rmSync(d1, { recursive: true, force: true }); }
+
+  // 2) suppressAiBrief → 仅主报文 1 条（周五/月末降噪路径，EOD 优先级矩阵在用）
+  const d2 = mkDir();
+  try {
+    const sf = join(d2, 's.json');
+    const sup = await pushReports([r], { env, fetchImpl: fetchOk, suppressAiBrief: true, stateFile: sf, now });
+    assert.equal(sup.pushed, 1, 'suppressAiBrief → 仅主报文');
+    assert.equal(sup.skipped, 0);
+  } finally { rmSync(d2, { recursive: true, force: true }); }
+
+  // 3) 全失败 → 两条都没发出，skipped = 2（仍非负），且不记指纹
+  const d3 = mkDir();
+  try {
+    const sf = join(d3, 's.json');
+    const bad = await pushReports([r], { env, fetchImpl: async () => ({ ok: false, status: 500 }), stateFile: sf, now });
+    assert.equal(bad.pushed, 0, '两条都未发出');
+    assert.equal(bad.skipped, 2, 'skipped = 2（两条都未发出）');
+    assert.equal(loadPushState(sf).pushed.length, 0, '失败不记指纹 → 下拍自愈');
+  } finally { rmSync(d3, { recursive: true, force: true }); }
 });
