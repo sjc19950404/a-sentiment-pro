@@ -22,6 +22,7 @@ import { stalePainReason } from '../pain.js';
 import { buildRegimeBlock, buildDivergenceBlock } from '../regime.js';
 import { buildDailyReport } from '../daily_report.js';
 import { llmSentimentBlock } from '../llm_sentiment.js';
+import { macroSectorSentimentBlock } from '../macro_sector_sentiment.js';
 import { dualTrackDisclosureFn } from '../dual_track.js';
 import { guardModule } from '../module_freshness.js';
 
@@ -204,6 +205,19 @@ export function writeShards(archive, dir = DATA_DIR) {
           score: last?.emotion?.value ?? last?.emotion?.score ?? null,
           tradeDate: last?.trade_date ?? null,
         });
+      } catch { return null; }
+    },
+    // 板块情绪因子（场景二）：只读已落盘的 macro-sector-sentiment-latest.json
+    //   （由 scripts/fetch_macro_sector_sentiment.mjs 抓新浪滚动新闻 + GLM 分类聚合写入）。
+    //   同上「只读不现调」纪律：同步写盘路径不能 await LLM；读不到即 null（前端显示「未生成」）。
+    sectorSentimentFn: () => {
+      try {
+        const p = path.join(dir, 'macro-sector-sentiment-latest.json');
+        if (!existsSync(p)) return null;
+        const raw = JSON.parse(readFileSync(p, 'utf8'));
+        const all = archive.all_days || [];
+        const last = all[all.length - 1] || null;
+        return macroSectorSentimentBlock(raw, { tradeDate: last?.trade_date ?? null });
       } catch { return null; }
     },
     // 拐点标签（#4）：**纯函数、只读档案**（不读盘、不联网）→ 每次写档都刷新，

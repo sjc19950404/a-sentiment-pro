@@ -99,6 +99,10 @@ export function buildDailyReport(signals = {}) {
   //   ⚠ 2026-10-17 用户指令：试点暂停（太贵且无效）。本节点仍生成（数据/代码保留归档），
   //     但前端 renderDailyReport 已按 id==='llm' 跳过渲染；定时任务已在 daily.yml 关停。
   sections.push(buildLlmSection(S.llm));
+  // ── 节 9：板块情绪因子（场景二，2026-10-24 启用）──────────────────────
+  //   宏观/行业新闻 → GLM 映射 A 股板块/方向/强度 → 聚合板块情绪；与节八同理定位为
+  //   "参考"软信息，score 不进交易信号（原分不动），仅作板块热度提示。
+  sections.push(buildSectorSentimentSection(S.sectorSentiment));
 
   // 汇总 caveats（从各节与 regime 收集，集中给用户看）
   if (regFull.caution) caveats.push(regFull.caution);
@@ -136,6 +140,7 @@ export function buildDailyReport(signals = {}) {
       dirty: 'src/dirty.js',
       health: 'src/health.js',
       llm: 'src/llm_sentiment.js + scripts/fetch_llm_sentiment.mjs（data/llm-sentiment-latest.json）',
+      sectorSentiment: 'src/macro_sector_sentiment.js + scripts/fetch_macro_sector_sentiment.mjs（data/macro-sector-sentiment-latest.json）',
     },
     // 免责与口径声明（报告尾部固定输出）
     disclaimer: '本日报只描述市场状态与风险特征，不构成投资建议；所有读数来自当日已归档数据，缺失项一律标注"未采集/未计算"而非补 0。'
@@ -421,6 +426,35 @@ function buildLlmSection(llm) {
   // level：生效且方向向下 → warn（提示风险）；其余 info（试点信息位，不上告警色）
   const level = llm.effective && llm.direction === 'bearish' ? 'warn' : 'info';
   return { id: 'llm', title: '八、舆情参考（LLM 试点）', level, missing: false, points: pts };
+}
+
+// ── 节 9：板块情绪因子（场景二）──────────────────────────────────────────
+//   读取 signals.sectorSentiment（src/macro_sector_sentiment.js 转换后的块）。
+//   未生成 / 降级 / 正常三态同款显式区分，不冒充"中性"。
+function buildSectorSentimentSection(ss) {
+  if (!ss) {
+    return {
+      id: 'sectorSentiment', title: '九、板块情绪因子（场景二）', level: 'unknown', missing: true,
+      missingReason: '未生成（需盘后/周末跑 scripts/fetch_macro_sector_sentiment.mjs；未跑 ≠ 板块中性）',
+    };
+  }
+  if (ss.degraded) {
+    const pts = [];
+    pts.push({ text: `⚠ ${ss.effectNote || (ss.macro && ss.macro.reason) || '板块情绪获取失败，默认中性'}（调用失败/超时兜底，不冒充真实情绪）`, kind: 'warn' });
+    pts.push({ text: `证据日期 ${ss.asOfDate}｜模型 ${ss.model || '未留痕'}`, kind: 'info' });
+    return { id: 'sectorSentiment', title: '九、板块情绪因子（场景二）', level: 'warn', missing: false, points: pts };
+  }
+  const pts = [];
+  const m = ss.macro || {};
+  pts.push({ text: `宏观情绪：${m.label || '中性'}（score ${m.sentiment != null ? m.sentiment : 0}，置信度 ${m.confidence != null ? m.confidence : 0}）`, kind: 'evidence' });
+  pts.push({ text: `利好板块：${(ss.topBullish || []).map((x) => `${x.sector}+${x.score}`).join('、') || '无'}`, kind: 'evidence' });
+  pts.push({ text: `利空板块：${(ss.topBearish || []).map((x) => `${x.sector}${x.score}`).join('、') || '无'}`, kind: 'evidence' });
+  pts.push({ text: `涉及板块 ${ss.sectors ? ss.sectors.length : 0} 个、事件 ${ss.events ? ss.events.length : 0} 条`, kind: 'info' });
+  if (m.reason) pts.push({ text: `依据：${m.reason}`, kind: 'evidence' });
+  pts.push({ text: `证据日期 ${ss.asOfDate}｜模型 ${ss.model || '未留痕'}｜新闻源 ${ss.source || 'sina-roll'}`, kind: 'info' });
+  pts.push({ text: '口径：score∈[-1,1]、score100∈[0,100]，仅作参考，不独立生成买卖信号', kind: 'info' });
+  const level = (m.sentiment != null && m.sentiment < -0.2) ? 'warn' : 'info';
+  return { id: 'sectorSentiment', title: '九、板块情绪因子（场景二）', level, missing: false, points: pts };
 }
 
 // ── 首屏一句话结论 ────────────────────────────────────────────────────────

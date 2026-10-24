@@ -405,6 +405,9 @@ export function buildSignals(archive, opts = {}) {
   // LLM 舆情参考（V5.3 P2 试点）——LLM 事件抽取/情感打分须联网调模型，
   // 同步写盘路径做不了 → 照 pain/crosscheck 先例只读已落盘缓存，读不到即 null。
   const lFn = typeof opts.llmFn === 'function' ? opts.llmFn : null;
+  // 板块情绪因子（场景二）——新闻→GLM 映射板块/方向/强度→聚合，须联网调模型，
+  // 同步写盘路径做不了 → 照 pain/crosscheck/llm 先例只读已落盘缓存，读不到即 null。
+  const ssFn = typeof opts.sectorSentimentFn === 'function' ? opts.sectorSentimentFn : null;
   const score = last.emotion?.value ?? last.emotion?.score ?? null;
   const market = fn ? fn({ emotionScore: score, total: assumedTotal, marketValue: 0 }) : null;
   // 数据健康报告（#115）：随轻量档一起下发，让"盯盘/巡检"的读者不必拉完整档
@@ -511,6 +514,12 @@ export function buildSignals(archive, opts = {}) {
   const dtFn = typeof opts.dualTrackFn === 'function' ? opts.dualTrackFn : null;
   if (dtFn) {
     try { dualTrack = dtFn(days, { meta: archive?.meta || {} }); } catch { dualTrack = null; }
+  }
+  // 板块情绪因子（场景二）：注入方完成「读缓存 + macroSectorSentimentBlock 转换」（含证据
+  // 日期防伪），本处只透传结果——保持纯拼装纪律（llm 同款分工）。
+  let sectorSentiment = null;
+  if (ssFn) {
+    try { sectorSentiment = ssFn(days); } catch { sectorSentiment = null; }
   }
   let dailyReport = null;
   if (repFn) {
@@ -669,6 +678,10 @@ export function buildSignals(archive, opts = {}) {
         + 'asOf 是双轨账本末日（旁路工具每日一跑），与 meta.tradeDate 不同步时以 asOf 为披露口径。'
         + '数字唯一出处 tools/backtest/paper_dual_track.mjs（本段只搬运不重算）。'
       : '未生成（调用方未注入 dualTrackFn，需 tools/backtest/paper_dual_track.mjs 产出 data/paper/dual_track_latest.json）',
+    sectorSentiment,
+    sectorSentimentNote: ssFn
+      ? '板块情绪因子（场景二）：新闻→GLM 映射板块/方向/强度→聚合；score∈[-1,1]、score100∈[0,100]，仅作参考，不独立生成买卖信号；证据日期与档案日不符即 null。'
+      : '未生成（调用方未注入 sectorSentimentFn，需 scripts/fetch_macro_sector_sentiment.mjs 落盘 data/macro-sector-sentiment-latest.json）',
     marketAlerts: market,
     marketAlertsNote: fn
       ? `仅大盘层告警，按假设总资产 ${assumedTotal} 元、空仓计算；持仓层告警依赖本地模拟账户（模拟交易台面已下线），本轮不提供`

@@ -111,3 +111,4 @@ ui/kline/
 # 公告爬虫 / 排雷机 当日运行产物（按交易日变化、可由 EOD 重跑重建，勿入库以免 git status 长期挂脏）
 data/announcements-latest.json
 data/llm_risk_blacklist.json
+data/macro-sector-sentiment-latest.json

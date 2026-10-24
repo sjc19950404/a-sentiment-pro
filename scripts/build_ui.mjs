@@ -174,6 +174,28 @@ try {
   }
 } catch (e) { /* 舆情段缺失不影响主构建 */ }
 
+// ── 6.2 把「九、板块情绪因子（场景二）」并入最新一期简报（网页端可见）──
+//   与 6.1 同思路：signals-latest.json.dailyReport.sections[九] 文字化后贴到简报末尾。
+try {
+  const sigPath = path.join(ROOT, 'data', 'signals-latest.json');
+  if (existsSync(sigPath)) {
+    const sig = JSON.parse(readFileSync(sigPath, 'utf8'));
+    const dr = sig.dailyReport || {};
+    const secs = dr.sections || [];
+    const ss = secs.find((s) => s && s.id === 'sectorSentiment');
+    const dDate = dr.date || sig.date;
+    if (dDate && briefs[dDate] != null && ss) {
+      let body;
+      if (ss.missing || !ss.points || !ss.points.length) {
+        body = (ss.missingReason || '未生成（需盘后/周末跑 scripts/fetch_macro_sector_sentiment.mjs；未跑 ≠ 板块中性）');
+      } else {
+        body = ss.points.map((p) => p.text).join('；');
+      }
+      briefs[dDate] += `\n九、板块情绪因子（场景二）：${body}`;
+    }
+  }
+} catch (e) { /* 板块情绪段缺失不影响主构建 */ }
+
 // ── 7. signals.industry（行业 5 日动量，移植自老 build.js——口径不变）──
 function addIndustryMomentum() {
   if (days.length < 5) return 0;
