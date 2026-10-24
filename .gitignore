@@ -107,3 +107,7 @@ shell_hunter*.py
 # 且盘中/盘后每次 git reset --hard 都会把「已跟踪的增量」回滚掉——这正是
 # 分片停在 10-20 的根因。不入库后本地缓存才能持续累积。生成方式见 ui/README.md。
 ui/kline/
+
+# 公告爬虫 / 排雷机 当日运行产物（按交易日变化、可由 EOD 重跑重建，勿入库以免 git status 长期挂脏）
+data/announcements-latest.json
+data/llm_risk_blacklist.json

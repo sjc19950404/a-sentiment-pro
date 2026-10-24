@@ -8,7 +8,8 @@
 // 数据流（照 llm_sentiment 三段式）：
 //   本脚本（收盘后跑）→ data/llm_risk_blacklist.json → paper.js 建仓守卫（后续接入）
 //
-// 公告源：当前无真实公告抓取（需求明确允许先用 mock）。两种模式：
+// 公告源：由 scripts/fetch_announcements.mjs 抓取（默认 --source auto：东财优先→被墙回退新浪），
+//   产出 data/announcements-latest.json；本脚本读取它作为公告源。两种模式：
 //   --mock           离线演示：合成公告 + 本地关键词启发式判定（不调 GLM，不耗 API，零配置可跑）
 //   默认（无 --mock）真实链路：读 data/announcements-latest.json（若存在）作为公告源，
 //                    调 LLM_API_* 配置的 GLM 做结构化判定；无公告源 / 无配置则诚实退出或空表。
@@ -118,6 +119,11 @@ const RISK_KEYWORDS = [
   { re: /终止(重组|重大资产重组|筹划)/, level: 'low', tag: '终止重组' },
 ];
 
+// 确定性兜底：仅「例行异动/风险提示/异常波动问询函回函」等无实质利空的一律不判风险。
+// 与 GLM 判定互补——GLM 偶尔会把纯例行公告误判为 medium，这里用强利空关键词兜底纠偏。
+// 注意：刻意排除「问询函」本身（连板股的异常波动问询函属必然流程），只保留监管工作函/监管函/警示函等实质监管动作。
+const STRONG_NEG = /(立案(调查|告知|稽查)|退市|暂停上市|终止上市|(股东|控股|实控人|大股东).{0,8}(减持|拟减持|被动减持)|爆仓|质押.{0,6}平仓|强制平仓|\bST\b|其他风险警示|实施风险警示|(业绩|净利|扣非).{0,8}(预亏|亏损|大幅下滑|下降\s*\d{2,})|重大诉讼|诉讼(标的|金额)|监管工作函|监管函|警示函|通报批评|终止(重组|重大资产重组|筹划)|商誉(减值|计提)|债务违约|展期|违法违规|被处罚|行政处罚)/;
+
 function heuristicJudge(text) {
   const reasons = [];
   const rank = { none: 0, low: 1, medium: 2, high: 3 };
@@ -129,11 +135,20 @@ function heuristicJudge(text) {
   return { level, reasons };
 }
 
-const SYSTEM = '你是 A 股初级量化研究员，专做「公告排雷」。我会给你若干股票及其当晚公开公告文本'
-  + '（可能含减持/立案/业绩预亏/重大诉讼/股东爆仓/ST/退市/监管函等利空，也可能写「无重大公告」）。'
-  + '请逐只判断重大利空风险等级：high=必须回避（立案/退市/爆仓/ST 等），medium=警惕'
-  + '（减持/业绩预亏/重大诉讼/监管函），low=轻微，none=无显著利空。'
-  + '只输出一个 JSON 数组，元素：{"code":"","name":"","riskLevel":"high|medium|low|none","reasons":["关键词"]}。不要任何其他文字。';
+const SYSTEM = `你是 A 股初级量化研究员，专做「公告排雷」。我会给你若干股票及其当晚公开公告（公告可能是标题列表，来自交易所公开披露）。请逐只判断是否存在「重大利空」：
+
+风险等级：
+- high = 必须回避：立案调查/立案告知书、退市/暂停上市、股东或高管大幅减持、股东爆仓/强制平仓、被实施 ST/风险警示、巨额预亏/财务造假等；
+- medium = 警惕：实质利空如业绩预亏或大幅下滑、重大诉讼/仲裁且金额重大、监管函/问询函涉及实质违规或风险、终止重大资产重组、商誉大额减值、债务违约/展期、信息披露违法违规被处罚等；
+- low = 轻微；none = 无显著利空。
+
+重要判定纪律（务必遵守）：
+1. 「股票交易异常波动公告」「股票交易风险提示公告」属于价格异动后的例行法定披露，本身不含利空实质，不得仅据此判定 medium/high；只有其中明确写出具体利空（如夹带减持、立案、业绩下滑等）才算。
+2. 监管函/问询函须看是否指向实质违规或风险；单纯流程性、交易所常规问询不构成风险。
+3. 对于已是连板（连续涨停）的票，其「异动/风险提示公告」同样是必然披露、不判风险；但只要公告中夹带任何实质利空（减持/立案/业绩下滑/诉讼/监管实质等），仍须按对应等级判定，不得因连板而放过。
+4. 若公告写「无重大公告」「运营正常」或无公告数据，判 none。
+
+只输出一个 JSON 数组，元素：{"code":"","name":"","riskLevel":"high|medium|low|none","reasons":["触发的关键词或要点"]}。不要任何其他文字。`;
 
 function glmConfig() {
   const API_URL = process.env.LLM_API_URL
@@ -181,11 +196,19 @@ async function scanBatch(stocksBatch, annMap) {
     });
   }
   const arr = await callGLM(stocksBatch, annMap);
-  // 真实模式补 evidence（公告原文片段，供审计）
-  return (Array.isArray(arr) ? arr : []).map((x) => ({
-    code: x.code, name: x.name, riskLevel: x.riskLevel, reasons: x.reasons || [],
-    evidence: (annMap[x.code] || '').slice(0, 120),
-  }));
+  // 真实模式补 evidence（公告原文片段，供审计）；并以强利空关键词兜底纠偏
+  return (Array.isArray(arr) ? arr : []).map((x) => {
+    const code = x.code;
+    const text = annMap[code] || '';
+    let level = x.riskLevel || 'none';
+    // 仅例行异动/风险提示/问询函回函等、文本中无强利空关键词 → 不判风险（放宽连板股例行披露）
+    if (level !== 'none' && !STRONG_NEG.test(text)) level = 'none';
+    return {
+      code, name: x.name, riskLevel: level,
+      reasons: level === 'none' ? [] : (x.reasons || []),
+      evidence: text.slice(0, 120),
+    };
+  });
 }
 
 // ── 4. 主流程 ─────────────────────────────────────────────────────────────
@@ -268,4 +291,8 @@ async function main() {
   console.log(`[risk-scan] 写出 ${fileURLToPath(OUT)}`);
 }
 
-main().catch((e) => { console.error('[risk-scan] 致命错误：', e); process.exit(1); });
+if (process.argv[1] && process.argv[1].endsWith('llm_risk_scan.mjs')) {
+  main().catch((e) => { console.error('[risk-scan] 致命错误：', e); process.exit(1); });
+}
+
+export { SYSTEM, callGLM };
