@@ -1,0 +1,14 @@
+[Unit]
+Description=Rotate /var/log/aquant logs (SSD write hygiene)
+Documentation=file:///opt/a-sentiment-pro/docs/ssd_and_ops_hardening.md
+# 以用户身份跑即可：/var/log/aquant 归属 sjc19950404，无需 sudo
+
+[Service]
+Type=oneshot
+# %h 由 systemd 展开为用户家目录；state 文件单独存放，避免与 root 的 /var/lib/logrotate 冲突
+ExecStart=/usr/sbin/logrotate --state %h/.local/state/aquant-logrotate.state /opt/a-sentiment-pro/scripts/logrotate-aquant.conf
+Nice=19
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=default.target
