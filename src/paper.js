@@ -456,6 +456,26 @@ export const DD_TIERS = [
 export const HARD_STOP_LOSS = -0.08;
 
 /**
+ * 出场纪律 v1（PAPER_EXIT=strict_v1 开启；默认关闭，不影响既有行为）。
+ * 设计动机（来自一年回放尸检）：原策略**无任盈机制**且 -8% 止损过松，亏损单平均扛 80 天才砍，
+ * 连板票的 1 日动量其实有正期望（强制次日卖 +38%），死因在「出场/持有纪律」而非选股。
+ * 本套规则把「买入靠逻辑、卖出靠纪律」写进引擎：
+ *   ztNextDay     连板/打板仓位：买入后首个可卖日（days>=2，即 T+1 成交后的次日）无条件清仓，不论盈亏；
+ *   trailTrigger  趋势仓盈利超过该比例 → 激活移动止盈；
+ *   trailPullback 移动止盈激活后，从最高点回撤该比例 → 触发止盈卖出；
+ *   hardStop      趋势仓硬止损收紧到 -5%（替代原 -8%）；
+ *   lossMaxDays   趋势亏损仓不允许过第 N 个交易日的强制平仓铁律（"绝不让亏损单过第三个交易日"）。
+ * 注：连板仓只走 ztNextDay（不走移动止盈/硬止损），因为次日即清；趋势仓走后三条。
+ */
+export const EXIT_V1 = {
+  ztNextDay: true,
+  trailTrigger: 0.05,
+  trailPullback: 0.03,
+  hardStop: -0.05,
+  lossMaxDays: 3,
+};
+
+/**
  * 按当前回撤取仓位上限档位。返回 {threshold, cap, label}（永远非空，回撤正常时 cap=1）。
  * 注意档位是**从高回撤到低回撤**排列的，取第一个满足 threshold 的——保证取到最严的那档。
  */
@@ -637,6 +657,7 @@ export function submitOrder(acct, order, quote, ctx = {}) {
   const base = {
     id, submitDate: date, code: order.code, name: quote?.name || '',
     side: order.side, qty: order.qty, reason: order.reason || '手动下单',
+    tag: order.tag || null,   // 选股侧传来的分类标签（如 'zt' 连板/打板），仅透传，不参与任何校验
     submitPrice: quote?.price != null ? +quote.price : null,
   };
   if (!v.ok) {
@@ -866,7 +887,7 @@ export function batchSubmit(acct, items, day, opts = {}) {
     }
 
     // ③④ 提交委托（validateOrder 在 submitOrder 内部执行）
-    const sub = submitOrder(cur, { code, side: 'buy', qty, reason: raw?.reason || '批量买入委托', slip: raw?.slip, sector: raw?.sector || raw?.hybk || null }, { ...quote, name: row.name }, { date });
+    const sub = submitOrder(cur, { code, side: 'buy', qty, reason: raw?.reason || '批量买入委托', slip: raw?.slip, sector: raw?.sector || raw?.hybk || null, tag: raw?.tag || null }, { ...quote, name: row.name }, { date });
     cur = sub.next;
     row.order = sub.order;
     row.status = sub.order.status === 'pending' ? 'submitted' : 'blocked';
@@ -1147,7 +1168,9 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
       }
       const pos = cur.positions[p.code] || { code: p.code, name, qty: 0, avail: 0, avgCost: 0, cost: 0, grossBuy: 0, fee: 0, openDate: date, days: 0, lastBuyDate: null };
       const applied = applyBuy(pos, { qty: p.qty, price: px, fee });
-      const newPos = { ...pos, ...applied, name, avail: pos.avail || 0, openDate: pos.openDate || date, lastBuyDate: date, last: +q.price, lastDate: date, pxStale: false, sector: (p.sector || pos.sector || null) };
+      // 连板/打板标签：① 持仓已有 ② 选股透传 tag==='zt' ③ 买入当日涨停（兜底，打板即涨停价成交）
+      const isZtLb = !!(pos.isZtLb || p.tag === 'zt' || (q.changePct != null && q.changePct >= 9.8));
+      const newPos = { ...pos, ...applied, name, avail: pos.avail || 0, openDate: pos.openDate || date, lastBuyDate: date, last: +q.price, lastDate: date, pxStale: false, sector: (p.sector || pos.sector || null), isZtLb };
       cur = {
         ...cur,
         cash: toYuan(cashBack - toCents(need)),
@@ -1231,11 +1254,21 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
     };
   }
 
-  // ⑤ 收盘持仓扫描止损（规则第七块）：浮亏达 −8% 自动生成 T+1 卖出委托。
-  //    必须在净值记录「之前」做，否则止损产生的挂单不会体现在当天的仓位里。
-  //    止损卖出同样受 T+1 约束：当日买入的票不可卖（avail 不足则本轮跳过，留痕说明）。
-  const stops = opts.scanStopLoss === false ? { list: [], apply: (a) => a } : scanStopLoss(logged, date);
-  if (stops.list.length) logged = stops.apply(logged, date);
+  // ⑤ 收盘持仓出场扫描（规则第七块 / 出场纪律 v1）：
+  //    - 默认（无 exitMode）：沿用原 scanStopLoss（−8% 硬止损），保持旧行为；
+  //    - exitMode==='strict_v1'：启用「出场纪律 v1」——隔日强制了结(连板)+移动止盈+硬止损-5%+亏损不过三。
+  //    必须在净值记录「之前」做，否则出场产生的挂单不会体现在当天的仓位里。
+  //    出场卖出同样受 T+1 约束：当日买入的票不可卖（avail 不足则本轮跳过，留痕说明）。
+  let exitList = [];
+  if (opts.exitMode === 'strict_v1') {
+    const ex = strictV1Exits(logged, date);
+    logged = ex.next;
+    exitList = ex.list;
+  } else {
+    const stops = opts.scanStopLoss === false ? { list: [], apply: (a) => a } : scanStopLoss(logged, date);
+    if (stops.list.length) logged = stops.apply(logged, date);
+    exitList = stops.list || [];
+  }
 
   const stats = accountStats(logged);
   const navRow = { date, equity: round2(stats.total), cash: round2(stats.cash + stats.freeze), marketValue: round2(stats.marketValue) };
@@ -1247,9 +1280,90 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
     fills: log.filter((x) => x.status === 'filled'),
     expired: log.filter((x) => x.status !== 'filled'),
     t1Hold,                        // 因 T+1 门禁顺延的委托数（留在 pending，未失效）
-    stopLoss: stops.list || [],    missing,
+    stopLoss: exitList,             missing,
     ...navRow,
   };
+}
+
+/**
+ * 出场纪律 v1（PAPER_EXIT=strict_v1）：替代原 scanStopLoss，统一管「出场」。
+ *
+ * 判据（优先级从高到低）：
+ *   ① 连板/打板仓（isZtLb）且已进入可卖日（days>=2）→ 隔日强制清仓，不论盈亏（rule 1）。
+ *   ② 趋势仓（非 isZtLb）：
+ *        a) 移动止盈：盈利 > trailTrigger(5%) 激活；激活后从最高点回撤 trailPullback(3%) → 止盈（rule 2）；
+ *        b) 硬止损：浮亏 ≤ hardStop(-5%) → 止损（rule 3a，替代原 -8%）；
+ *        c) 亏损铁律：浮亏 且 持仓已到第 lossMaxDays(3) 个交易日 → 强制平仓（rule 3b）。
+ * 返回 { next, list } —— list 供上层展示（沿用 scanStopLoss 的 list 形态），apply 已内联在 next 中。
+ * 与 scanStopLoss 一样：生成的卖出委托次日才撮合（T+1），当日买入的票因 avail=0 自然跳过（避免噪音）。
+ */
+export function strictV1Exits(acct, date, cfg = EXIT_V1) {
+  const list = [];
+  let cur = acct;
+  for (const [code, p] of Object.entries(cur.positions || {})) {
+    if (!p || p.qty <= 0 || !(p.avgCost > 0) || p.last == null) continue;
+    const pnl = (p.last - p.avgCost) / p.avgCost;   // 浮亏/盈比例（与止损线同口径）
+    const days = p.days || 0;
+    const isZt = !!p.isZtLb;
+
+    // 趋势仓更新移动止盈轨迹（连板仓不走这条）
+    let peak = p.peak != null ? p.peak : p.last;
+    let trailActive = !!p.trailActive;
+    if (!isZt) {
+      if (pnl > 0) peak = Math.max(peak, p.last);          // 只在盈利时抬高最高点
+      if (pnl > cfg.trailTrigger) trailActive = true;       // 盈利超阈值 → 激活
+      if (pnl <= 0) trailActive = false;                   // 跌回成本下方 → 止盈失效
+    }
+    // 回写轨迹到持仓（即便不卖也要持久化，供次日判据）
+    if (!isZt && (peak !== p.peak || trailActive !== p.trailActive)) {
+      cur = { ...cur, positions: { ...cur.positions, [code]: { ...p, peak, trailActive } } };
+    }
+
+    // 决定卖出原因（优先级）
+    let reason = null;
+    if (isZt && cfg.ztNextDay && days >= 2) {
+      reason = '隔日强制了结(连板)';
+    } else if (!isZt) {
+      if (trailActive && pnl > 0 && (peak - p.last) / peak >= cfg.trailPullback) reason = '移动止盈(回撤3%)';
+      else if (pnl <= cfg.hardStop) reason = '硬止损(-5%)';
+      else if (pnl < 0 && days >= cfg.lossMaxDays) reason = '亏损不过三(强制平仓)';
+    }
+    if (!reason) continue;
+
+    const avail = Math.max(0, p.avail || 0);
+    const frozen = (cur.pending || []).filter((x) => x.code === code && x.side === 'sell').reduce((a, x) => a + x.qty, 0);
+    const freeAvail = Math.max(0, avail - frozen);
+    const item = {
+      code, name: p.name || code, pnlPct: round2(pnl * 100), last: p.last, avgCost: p.avgCost,
+      qty: p.qty, avail, freeAvail, willSell: Math.min(freeAvail, p.qty), reason, skipped: null,
+    };
+    if (freeAvail <= 0) {
+      item.skipped = frozen > 0 ? '已有卖出委托待成交' : 'T+1 约束：当日买入次一交易日才可卖';
+    } else if ((cur.pending || []).some((x) => x.code === code)) {
+      item.skipped = '该股已有待成交委托';
+    }
+    list.push(item);
+  }
+
+  // 生成卖出委托（与 scanStopLoss.apply 同口径）
+  for (const it of list) {
+    if (it.skipped || it.willSell <= 0) {
+      cur = { ...cur, logs: appendLog(cur, { date, code: it.code, name: it.name, side: 'sell', qty: it.qty, stage: 'exit', result: 'expired',
+        reason: it.skipped, text: `触发「${it.reason}」（浮亏 ${it.pnlPct}%），但无法生成卖出委托：${it.skipped}` }) };
+      continue;
+    }
+    const q = { code: it.code, name: it.name, price: it.last };
+    const sub = submitOrder(cur, { code: it.code, side: 'sell', qty: it.willSell, reason: it.reason }, q, { date });
+    cur = sub.next;
+    if (sub.order.status !== 'pending') {
+      cur = { ...cur, logs: appendLog(cur, { date, code: it.code, name: it.name, side: 'sell', qty: it.willSell, stage: 'exit', result: 'rejected',
+        reason: sub.order.reject, text: `触发「${it.reason}」，但卖出委托被拒：${sub.order.reject}${sub.order.detail ? '（' + sub.order.detail + '）' : ''}` }) };
+    } else {
+      cur = { ...cur, logs: appendLog(cur, { date, code: it.code, name: it.name, side: 'sell', qty: it.willSell, stage: 'exit', result: 'submitted',
+        reason: it.reason, text: `触发「${it.reason}」（浮亏 ${it.pnlPct}% / 成本 ${it.avgCost} / 现价 ${it.last}），已生成 T+1 卖出委托 ${it.willSell} 股` }) };
+    }
+  }
+  return { next: cur, list };
 }
 
 /**

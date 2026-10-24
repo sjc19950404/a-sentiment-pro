@@ -62,6 +62,7 @@ function runAutopsy(exitMode) {
   const trades = [];                // 已平仓：含 holdDays / realized / cause
   const blocked = new Set();         // 曾因「跌停卖不掉」而平仓失败过的 code
   const pendingEntry = new Map();    // code -> {type,streak}，提交时写入，成交时消费
+  const lastExitReason = new Map();  // code -> 当日出场原因（v1 的 strictV1Exits 带 reason），平仓时归因
   let slippageCost = 0;             // strict 下非涨停买入多付的滑点成本合计
   let buyFills = 0, sellFills = 0, manualSells = 0; // 调试计数
   let peak = 1000000, maxDd = 0;
@@ -70,14 +71,20 @@ function runAutopsy(exitMode) {
   for (const day of days) {
     const date = day.trade_date;
     const qDay = richQuotes(day);
-    // ① 结算当日（T+1 撮合 + 硬止损）
-    const r = settleDay(acct, date, qDay, { exec, scanStopLoss: exitMode === 'default' });
+    // ① 结算当日（T+1 撮合 + 出场扫描）：v1 走新纪律，其余默认/对照由开关决定
+    let settleOpts = { exec };
+    if (exitMode === 'strict_v1') settleOpts.exitMode = 'strict_v1';
+    else if (exitMode !== 'default') settleOpts.scanStopLoss = false;   // stop5/nextday 由脚本自定义出场
+    const r = settleDay(acct, date, qDay, settleOpts);
     acct = r.account;
+    // 记录当日生成的出场原因（v1 的 strictV1Exits.list 带有 reason，供平仓时归因）
+    for (const e of (r.stopLoss || [])) if (e.code) lastExitReason.set(e.code, e.reason);
 
     // ② 记录成交：买→开仓；卖→平仓（FIFO 配对同 code）
     for (const f of r.fills) {
       if (f.side === 'buy') {
         buyFills++;
+        lastExitReason.delete(f.code);   // 新开仓，清空旧出场原因
         const meta = pendingEntry.get(f.code) || { type: 'unknown', streak: null };
         const up = (qDay[f.code]?.changePct ?? 0) >= 9.8;
         opens.push({
@@ -95,9 +102,10 @@ function runAutopsy(exitMode) {
           const o = opens.splice(i, 1)[0];
           const holdDays = (dateIndex.get(date) || 0) - (dateIndex.get(o.entryDate) || 0);
           const cause = blocked.has(f.code) ? 'limit_down_block'
-            : exitMode === 'nextday' ? 'forced_nextday'
-            : exitMode === 'stop5' ? 'stop5'
-            : 'stop_loss';
+            : lastExitReason.get(f.code)
+            || (exitMode === 'nextday' ? 'forced_nextday'
+              : exitMode === 'stop5' ? 'stop5'
+              : 'stop_loss');
           trades.push({
             code: f.code, name: o.name, type: o.type, streak: o.streak,
             entryDate: o.entryDate, entryPrice: o.entryPrice, entryIsLimitUp: o.entryIsLimitUp,
@@ -137,6 +145,7 @@ function runAutopsy(exitMode) {
     }
     const items = picks.slice(0, TOP_N).map((p) => ({
       code: String(p.code), pct: PER_POS_PCT, hybk: p.hybk || null, sector: p.hybk || p.theme || null,
+      tag: (p.isZt || (p.streak || 0) >= 2) ? 'zt' : null,   // 连板/打板标签 → v1 出场纪律据此隔日强制了结
       reason: `回放自动建仓（${p.name || p.code}）`,
     }));
     const safe = [];
@@ -237,9 +246,22 @@ const cgN = runAutopsy('nextday');
 const sN = summarize('对照组B：强制「次日开盘无脑卖出」', cgN);
 deathCauses('对照组B', cgN.trades);
 
+// ── 关键 A/B：新出场纪律（PAPER_EXIT=strict_v1）── 与基准同 universe、同选股，只改出场
+const v1 = runAutopsy('strict_v1');
+const sV1 = summarize('新出场规则（PAPER_EXIT=strict_v1）：隔日了结(连板)+移动止盈+硬止损-5%+亏损不过三', v1);
+breakdownByType('新出场规则', v1.trades);
+breakdownByHold('新出场规则', v1.trades);
+deathCauses('新出场规则', v1.trades);
+
 console.log('\n════════════════════ 尸检结论（参谋视角） ════════════════');
 console.log(`  【核验】基准买入成交 ${base.buyFills} 笔 / 卖出成交 ${base.sellFills} 笔 / 配对平仓 ${base.trades.length} 笔 / 期末仍未平 ${base.openRemaining} 仓。`);
-console.log(`  【核验】对照组A 手动卖单提交 ${cg5.manualSells} / 配对 ${cg5.trades.length}；对照组B 手动卖 ${cgN.manualSells} / 配对 ${cgN.trades.length}。`);
+console.log(`  【核验】对照组A 手动卖单提交 ${cg5.manualSells} / 配对 ${cg5.trades.length}；对照组B 手动卖 ${cgN.manualSells} / 配对 ${cgN.trades.length}；`);
+console.log(`          v1 买入成交 ${v1.buyFills} 笔 / 配对 ${v1.trades.length} / 未平 ${v1.openRemaining} 仓（更快周转→更多笔数，非重复计数）。`);
+console.log(`  ────────────────────────────────────────────────`);
+console.log(`  ★★★ 关键 A/B（同 universe、同选股，只改出场）：`);
+console.log(`     基准(现状 -8%止损)：${pct(sBase.winRate)} 胜率 / 净值 ${money(base.finalEquity)} / 回撤 ${pct(base.maxDd)}`);
+console.log(`     v1(隔日了结+移动止盈-5%+亏损不过三)：${pct(sV1.winRate)} 胜率 / 净值 ${money(v1.finalEquity)} / 回撤 ${pct(v1.maxDd)}`);
+console.log(`     ⇒ 新出场纪律使净值 ${v1.finalEquity>=base.finalEquity?'扭亏/改善':'恶化'} ${money(v1.finalEquity-base.finalEquity)}，回撤 ${pct(v1.maxDd)} vs ${pct(base.maxDd)}。`);
 console.log(`  ────────────────────────────────────────────────`);
 console.log(`  1. 结构死穴：策略**没有止盈**——只会 -8% 硬止损出局，从不在盈利时主动了结；`);
 console.log(`     且 -8% 太松，亏损单平均被扛 ${(base.trades.reduce((a,x)=>a+x.holdDays,0)/Math.max(1,base.trades.length)).toFixed(0)} 天才砍（20/23 笔拖到第 6 天+），`);
@@ -252,6 +274,8 @@ console.log(`  4. 对照组（同 universe、同选股，只改出场）给出�
 console.log(`     · 止损收 -5%：胜率 ${pct(s5.winRate)} / 净值 ${money(cg5.finalEquity)}（仍小亏，但亏损从 ${money(base.finalEquity)} 收窄到 ${money(cg5.finalEquity)}）—— 砍早有用，但还不够。`);
 console.log(`     · 强制「次日开盘无脑卖出」：胜率 ${pct(sN.winRate)} / 净值 ${money(cgN.finalEquity)}（+${money(cgN.finalEquity-1000000)}，最大回撤仅 ${pct(cgN.maxDd)}）`);
 console.log(`       —— 三个组里**唯一赚钱**的。同一批连板票，只要「次日就走、绝不隔夜扛」，就从 -14% 翻到 +38%。`);
+console.log(`     · v1 出场纪律（隔日了结+移动止盈+硬止损-5%+亏损不过三）：胜率 ${pct(sV1.winRate)} / 净值 ${money(v1.finalEquity)} / 回撤 ${pct(v1.maxDd)} ——`);
+console.log(`       在「次日卖」基础上补上了「盈利保护(移动止盈)」与「亏损不过三」，比纯无脑次日更完整（有止损兜底、能锁利）。`);
 console.log(`  ⇒ 结论：死因在「出场/持有纪律」，不在「选股」。连板票的**1 日动量确有正期望**（次日卖能赢 63%），`);
 console.log(`     但被「无 Profit-taking + -8% 过松止损 + 长期扛单」这三件事吃光。重构方向优先级：`);
 console.log(`     ① 先加「次日/隔日强制了结 + 盈利保护（trailing stop）」—— 仅此一项（见对照组B）就把策略从亏转盈，性价比最高；`);

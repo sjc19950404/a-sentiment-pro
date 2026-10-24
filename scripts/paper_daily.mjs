@@ -53,6 +53,8 @@ let EXEC_CFG = {};
 try { EXEC_CFG = EXEC_ENV.trim().startsWith('{') ? JSON.parse(EXEC_ENV) : (EXEC_ENV ? { mode: EXEC_ENV } : {}); } catch { EXEC_CFG = {}; }
 if (process.env.PAPER_SECTOR_LIMIT) EXEC_CFG.sectorLimitRatio = Number(process.env.PAPER_SECTOR_LIMIT) || 0;
 const exec = normalizeExec(EXEC_CFG);
+// 出场纪律 v1 开关（默认关闭；PAPER_EXIT=strict_v1 启用「隔日强制了结(连板)+移动止盈+硬止损-5%+亏损不过三」）
+const EXIT_MODE = process.env.PAPER_EXIT || '';
 if (exec.mode === 'strict' || exec.sectorLimitRatio > 0) {
   console.log(`[paper-daily] 执行层现实假设：mode=${exec.mode} 滑点±${(exec.slipNonLimit * 100).toFixed(0)}% 打板撤单${(exec.limitCancelRate * 100).toFixed(0)}% 板块暴露上限${(exec.sectorLimitRatio * 100).toFixed(0)}%`);
 }
@@ -85,7 +87,7 @@ if (existsSync(fileURLToPath(ACCOUNT_FILE))) {
 // ── 3. 每日结算：盯市 + T+1 解冻 + 扫描 -8% 硬止损 ──
 step(`结算 ${date}`);
 const quotes = quotesFromDay(day);
-acct = settleDay(acct, date, quotes, { exec }).account;
+acct = settleDay(acct, date, quotes, { exec, ...(EXIT_MODE ? { exitMode: EXIT_MODE } : {}) }).account;
 {
   const s = accountStats(acct);
   console.log(`  净值 ${r2(s.total)} 元（现金 ${r2(s.cash)}，市值 ${r2(s.marketValue)}），持仓 ${Object.keys(acct.positions || {}).length} 只`);
@@ -136,6 +138,7 @@ if (!tier) {
   const items = picks.slice(0, TOP_N).map((p) => ({
     code: String(p.code), pct: PER_POS_PCT, hybk: p.hybk || null,
     sector: p.hybk || p.theme || null,
+    tag: (p.isZt || (p.streak || 0) >= 2) ? 'zt' : null,   // 连板/打板标签 → 出场纪律 v1 据此隔日强制了结
     reason: (bypassed ? '【压力测试·熔断绕过】' : '') + `自动建仓（主线选股候选 ${p.name || p.code}）`,
   }));
   // 场景三 GLM 附加过滤守卫（买前三合一闸门）：方向 A 排雷黑名单 + 方向 C 妖股逻辑 + 方向 B 板块情绪。
