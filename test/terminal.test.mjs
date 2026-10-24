@@ -497,6 +497,76 @@ test('terminal：模拟盘视图 —— 空账户（无持仓/无挂单/无日�
   assert.deepEqual(errors, [], `空账户不应有 JS 错误：${errors.join(' | ')}`);
 });
 
+test('terminal：板块视图增强 —— 宽度 / 双基准切换 / AI 板块情绪(紫) / 事件流', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 300));
+
+  const root = w.document.getElementById('tRoot');
+  [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'sector')
+    .dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 320));
+
+  const panelBy = (t) => [...root.querySelectorAll('.t-panel')].find((p) => {
+    const h = p.querySelector('.t-pt'); return h && h.textContent.trim() === t;
+  });
+  const titles = [...root.querySelectorAll('.t-panel-h .t-pt')].map((n) => n.textContent.trim());
+  for (const t of ['板块宽度', '板块相对强弱', 'AI 板块情绪榜', '板块事件流']) {
+    assert.ok(titles.includes(t), `板块视图含面板：${t}`);
+  }
+
+  // ① 板块宽度（引擎原值）
+  const wd = panelBy('板块宽度');
+  for (const k of ['上涨板块', '上涨占比', '行业中位数', '降级状态']) {
+    assert.ok(wd.textContent.includes(k), `板块宽度含：${k}`);
+  }
+  const sig = readJsonSafe('data/signals-latest.json') || {};
+  const ir = ((sig.latest || {}).industry_relative) || {};
+  assert.ok(wd.textContent.includes(String(ir.upCount)), '上涨板块家数取引擎原值 upCount');
+
+  // ② 双基准切换：默认对比指数 → 切到行业中位数（换一组引擎原值重画，不重算）
+  const rs = panelBy('板块相对强弱');
+  const segBtns = [...rs.querySelectorAll('.t-seg button')];
+  assert.equal(segBtns.length, 2, '两个对比基准按钮（指数 / 行业中位数）');
+  assert.ok(segBtns[0].classList.contains('is-on'), '默认停在「对比指数」');
+  assert.ok(rs.textContent.includes(String((ir.vsIndex || {}).baseLabel || '')), '默认展示 vs 指数的基准名');
+
+  segBtns[1].dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 320));
+  const rs2 = panelBy('板块相对强弱');
+  const on2 = [...rs2.querySelectorAll('.t-seg button')].filter((b) => b.classList.contains('is-on'));
+  assert.equal(on2.length, 1, '切换后仍只有一个基准选中');
+  assert.equal(on2[0].dataset.b, 'median', '已切到「行业中位数」');
+  assert.ok(rs2.textContent.includes(String((ir.vsMedian || {}).baseLabel || '行业中位数')), '切换后展示 vs 中位数的基准名');
+
+  // ③ AI 板块情绪（紫）：来源条 + 条数与侧车一致
+  const ss = sig.sectorSentiment || {};
+  assert.match(root.textContent, /题材翻译官/, 'AI 来源条声明是 GLM 题材翻译官');
+  assert.ok(root.textContent.includes(String(ss.asOfDate || '')), 'AI 来源条带 asOfDate');
+  const emo = panelBy('AI 板块情绪榜');
+  const bars = emo.querySelectorAll('.t-dv-row');
+  assert.equal(bars.length, (ss.sectors || []).length, '情绪榜条数 = 侧车板块数');
+  assert.ok(emo.textContent.includes('工业母机'), '含侧车真实板块名');
+  // 多/空两侧着色：看多走 up(红)、看空走 dn(绿)，不得反色
+  const upFills = emo.querySelectorAll('.t-dv-track:not(.is-l) .t-dv-fill.up').length;
+  const dnFills = emo.querySelectorAll('.t-dv-track.is-l .t-dv-fill.dn').length;
+  const posN = (ss.sectors || []).filter((x) => (+x.score || 0) > 0).length;
+  const negN = (ss.sectors || []).filter((x) => (+x.score || 0) < 0).length;
+  assert.equal(upFills, posN, `看多${posN}个 → 右侧红条同数`);
+  assert.equal(dnFills, negN, `看空${negN}个 → 左侧绿条同数`);
+  if (ss.blackTalk) {
+    assert.ok(root.querySelector('.t-blacktalk'), '游资黑话块（GLM 生成）');
+    assert.ok(root.querySelector('.t-blacktalk').textContent.includes(String(ss.blackTalk).slice(0, 8)), '黑话取自侧车原值');
+  }
+
+  // ④ 板块事件流
+  const ev = panelBy('板块事件流');
+  const evRows = ev.querySelectorAll('tbody tr');
+  assert.equal(evRows.length, (ss.events || []).length, '事件流行数 = 侧车事件数');
+  assert.ok(ev.querySelector('.t-res.is-pass') || ev.querySelector('.t-res.is-no'), '事件流有方向徽标（利多/利空）');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
 // 回归：首期总览的「涨跌停分布」因读 archive-recent.json 的 .days（该档无此键）恒为空态
 test('terminal：总览涨跌停柱状不再恒空（emotion_history.history 回归）', async () => {
   const { w, errors } = makeDom();

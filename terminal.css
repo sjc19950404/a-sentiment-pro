@@ -450,6 +450,36 @@
 /* 抽屉里的 K 线宿主：与上方详情块留出分隔 */
 .t-dkhost { padding-top: 4px; border-top: 1px solid var(--t-line); }
 
+/* 通用分段控件（青色 = 引擎数据的口径切换；紫色 .t-ai-filter 才代表 AI 侧） */
+.t-seg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.t-seg-lbl { font-size: 11px; color: var(--t-ink-3); }
+.t-seg { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--t-ink-3); }
+.t-seg button {
+  font: inherit; font-size: 11px; cursor: pointer; padding: 2px 8px; border-radius: 4px;
+  color: var(--t-ink-2); background: transparent; border: 1px solid var(--t-line-hi);
+}
+.t-seg button:hover { color: var(--t-ink); border-color: var(--t-acc); }
+.t-seg button.is-on { font-weight: 600; color: #0b0f16; background: var(--t-acc); border-color: var(--t-acc); }
+
+/* AI 板块情绪榜：每个板块条形下挂一条头条（小字，hover 看全部） */
+.t-sec-hl {
+  margin: -2px 0 5px 86px; font-size: 10.5px; color: var(--t-ink-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.t-dv-val .t-sv-mut { margin-left: 6px; font-size: 10.5px; color: var(--t-ink-3); }
+
+/* 游资黑话（GLM 生成，锚定当日快照） */
+.t-blacktalk {
+  display: flex; align-items: baseline; gap: 9px;
+  padding: 8px 13px; border-radius: var(--t-radius); font-size: 12px;
+  background: rgba(167, 139, 250, .07);
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, .2);
+}
+.t-blacktalk .t-bt-tag {
+  flex: none; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; color: var(--t-ai);
+}
+.t-blacktalk .t-bt-body { color: var(--t-ink-2); }
+
 /* ── 决策日志 / 委托流水语义徽标（与 src/paper.js 的 STAGE/RESULT 同义）────── */
 .t-log-tag {
   display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10.5px;

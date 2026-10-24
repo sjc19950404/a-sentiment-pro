@@ -71,6 +71,7 @@
   //     ⚠ 只是**同一批引擎/侧车原值的子集切换**（过滤），不做任何打分或重排序。
   let goView = () => {};
   let pickFilter = null;
+  let sectorBase = 'index';   // 板块视图的对比基准：'index'=对比指数 | 'median'=对比行业中位数
 
   // ── 2. 常量与数据加载 ──────────────────────────────────────────────────
   const jget = async (url) => { try { const r = await fetch(url, { cache: 'force-cache' }); return r.ok ? await r.json() : null; } catch { return null; } };
@@ -457,10 +458,31 @@
 
   // ── 6. 视图：板块 ──────────────────────────────────────────────────────
   function viewSector(S) {
-    const ir = (S.latest && S.latest.industry_relative) || {};
-    const vs = ir.vsIndex || {};
-    const atk = vs.attack || [], def = vs.defense || [];
+    const L = S.latest || {};
+    const ir = L.industry_relative || {};
+    const ss = S.sectorSentiment || {};
     const g = el('div', 't-grid');
+
+    // ── ① 板块宽度（引擎原值；仅「上涨占比」为展示层现算，已标注口径）──
+    g.appendChild(panel('板块宽度', `交易日 ${esc(L.trade_date || '—')} · industry_relative`,
+      `<div class="t-stats">
+        ${stat('上涨板块', `${fmtInt(ir.upCount)} <span style="color:var(--t-ink-3)">/</span> ${fmtInt(ir.total)}`, 'engine：upCount / total')}
+        ${stat('上涨占比', (ir.upCount != null && ir.total) ? pct((ir.upCount / ir.total) * 100, 1) : '—', '展示层现算 upCount/total')}
+        ${stat('行业中位数', sgn(ir.medianPct, 2), 'medianPct：全行业涨跌中位数')}
+        ${stat('攻防取样', fmtInt(ir.topN), 'topN：攻防各取前 N 个行业')}
+        ${stat('降级状态', ir.degraded ? '已降级' : '正常', ir.degraded ? esc(ir.degradedReason || '—') : 'industry_relative 未降级')}
+      </div>`, 't-c12'));
+
+    // ── ② 板块相对强弱：两套基准（引擎都给了，切换只是换一组原值来画）──
+    //   vsIndex = 对比指数（如沪深300），vsMedian = 对比行业中位数；两者都是**引擎已算好的超额**，
+    //   这里不做任何减法，只切换取哪一组。视觉语言沿用：左=落后基准（绿）· 右=跑赢基准（红）。
+    const bases = [
+      { k: 'index', d: ir.vsIndex || {} },
+      { k: 'median', d: ir.vsMedian || {} },
+    ];
+    const cur = bases.find((b) => b.k === sectorBase) || bases[0];
+    const vs = cur.d;
+    const atk = vs.attack || [], def = vs.defense || [];
     const maxAbs = Math.max(1, ...atk.map((x) => Math.abs(x.excess || 0)), ...def.map((x) => Math.abs(x.excess || 0)));
     const rows = [];
     for (let i = 0; i < Math.max(atk.length, def.length); i++) {
@@ -472,8 +494,88 @@
         <span class="t-dv-val"><span class="${a ? 'up' : ''}">${a ? sgn(a.change_pct, 2) : ''}</span> <span class="${d ? 'dn' : ''}" style="opacity:.75">${d ? sgn(d.change_pct, 2) : ''}</span></span>
       </div>`);
     }
-    g.appendChild(panel('板块相对强弱', `基准 ${esc(vs.baseLabel || '—')} ${sgn(vs.basePct, 2)} · 左=防御 · 右=进攻（超额）`,
-      rows.length ? `<div>${rows.join('')}</div>` : '<div class="t-empty">无板块数据</div>', 't-c12'));
+    // ⚠ 分段控件必须放 **body**（panel() 的 key 参数会走 esc()，塞 HTML 进去会被转义成文本，
+    //   既显示不出按钮，也 querySelector 不到 → 下面那句 addEventListener 直接抛 null）。
+    const seg = `<div class="t-seg-row"><span class="t-seg-lbl">对比基准</span><span class="t-seg" role="group" aria-label="对比基准">
+      ${bases.map((b) => `<button type="button" data-b="${b.k}"${b.k === cur.k ? ' class="is-on"' : ''}>${esc(b.d.baseLabel || (b.k === 'index' ? '指数' : '中位数'))}</button>`).join('')}
+    </span></div>`;
+    const rsPanel = panel('板块相对强弱', `左=落后基准 · 右=跑赢基准 · 基准涨跌 ${sgn(vs.basePct, 2)}`,
+      seg + (rows.length ? `<div>${rows.join('')}</div>` : '<div class="t-empty">无板块数据</div>'), 't-c12');
+    g.appendChild(rsPanel);
+    $('.t-seg', rsPanel).addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-b]');
+      if (!b || b.dataset.b === sectorBase) return;
+      sectorBase = b.dataset.b;
+      SAFE(() => goView('sector'), 'sector-base');   // 换一组引擎原值重画，不重算
+    });
+
+    // ── ③ AI 板块情绪（GLM 场景二「题材翻译官」）—— 全紫，看到紫 = AI 说的 ──
+    const secs = (ss.sectors || []).slice().sort((a, b2) => (+b2.score || 0) - (+a.score || 0));
+    const pos = secs.filter((x) => (+x.score || 0) > 0).length;
+    const neg = secs.filter((x) => (+x.score || 0) < 0).length;
+    const mc = ss.macro || {};
+    g.appendChild(el('div', 't-c12', `<div class="t-ai-strip">
+      <span class="t-ai-tag">AI Side-car</span>
+      <span class="t-ai-item">GLM 板块情绪（方向 B · 题材翻译官）</span>
+      <span class="t-ai-item">asOf ${esc(ss.asOfDate || '—')} · 扫描 ${fmtInt(ss.scanned || 0)} 个板块</span>
+      <span class="t-ai-item">宏观读数 <b>${esc(mc.label || '—')}</b>（${fmt(mc.score100, 0)} · 置信 ${pct(mc.confidence != null ? mc.confidence * 100 : null, 0)}）</span>
+      <span class="t-ai-item">仅参考，不修改引擎情绪分 / regime 判定</span>
+      ${ss.degraded ? '<span class="t-ai-item">⚠ 侧车降级，结论可能不完整</span>' : ''}
+    </div>`));
+
+    if (!secs.length) {
+      g.appendChild(panel('AI 板块情绪', '侧车未产出', '<div class="t-empty">当日无板块情绪侧车数据（非交易日或 GLM 未产出）</div>', 't-c12'));
+    } else {
+      // 双向条：左侧=看空（绿），右侧=看多（红），宽度按 |score| 相对最大值
+      const mAbs = Math.max(0.01, ...secs.map((x) => Math.abs(+x.score || 0)));
+      const bars = secs.map((x) => {
+        const sc = +x.score || 0;
+        const hl = (x.headlines || [])[0] || '';
+        const rs = (x.headlines || []).slice(1).join(' / ');
+        return `<div class="t-dv-row" style="grid-template-columns:86px 1fr 1fr 116px">
+          <span class="t-dv-name" title="${esc(x.sector || '')}">${esc(x.sector || '—')}</span>
+          <span class="t-dv-track is-l">${sc < 0 ? `<span class="t-dv-fill dn" style="width:${(Math.abs(sc) / mAbs * 100).toFixed(1)}%"></span>` : ''}</span>
+          <span class="t-dv-track">${sc > 0 ? `<span class="t-dv-fill up" style="width:${(Math.abs(sc) / mAbs * 100).toFixed(1)}%"></span>` : ''}</span>
+          <span class="t-dv-val"><span class="${sc >= 0 ? 'up' : 'dn'}">${sc >= 0 ? '+' : ''}${fmt(sc, 2)}</span>
+            <span class="t-sv-mut" title="${esc(rs)}">${fmtInt(x.newsCount)}条·多${fmtInt(x.bullish)}/空${fmtInt(x.bearish)}</span></span>
+        </div>
+        <div class="t-sec-hl" title="${esc(rs)}">${esc(hl || '—')}</div>`;
+      }).join('');
+      g.appendChild(panel('AI 板块情绪榜', `${secs.length} 个板块 · 多 ${pos} / 空 ${neg} · 左=看空 · 右=看多`,
+        `<div>${bars}</div>
+        ${mc.reason ? `<div class="t-dnote" style="margin-top:10px">${esc(String(mc.reason))}</div>` : ''}`, 't-c12'));
+    }
+
+    // 游资黑话（GLM 生成，锚定当日快照；缺则不显示，不套模板冒充）
+    if (ss.blackTalk) {
+      g.appendChild(el('div', 't-c12', `<div class="t-blacktalk">
+        <span class="t-bt-tag">游资黑话</span><span class="t-bt-body">${esc(String(ss.blackTalk))}</span>
+      </div>`));
+    }
+
+    // ── ④ 板块事件流（GLM 从滚动新闻映射出的「哪条新闻影响了哪个板块」）──
+    const evs = ss.events || [];
+    const evPanel = panel('板块事件流', `GLM 新闻→板块 映射 · ${evs.length} 条`,
+      !evs.length ? '<div class="t-empty">当日无事件映射</div>'
+        : `<div class="t-tbl-wrap"><table class="t-tbl"><thead><tr>
+            <th>日期</th><th>方向</th><th>强度</th><th>影响板块</th><th>事件</th><th>判词</th>
+          </tr></thead><tbody>${
+        evs.map((e) => {
+          const dir = String(e.direction || '').toLowerCase();
+          const cls = dir === 'positive' ? 'is-pass' : dir === 'negative' ? 'is-no' : 'is-info';
+          const lb = dir === 'positive' ? '利多' : dir === 'negative' ? '利空' : '中性';
+          const rs = String(e.reason || '—');
+          return `<tr>
+            <td class="mut">${esc(String(e.date || '—').slice(5))}</td>
+            <td><span class="t-res ${cls}">${lb}</span></td>
+            <td>${pct(e.intensity != null ? e.intensity * 100 : null, 0)}</td>
+            <td>${(e.sectors || []).map((s2) => esc(s2)).join('、') || '—'}</td>
+            <td title="${esc(e.headline || '')}">${esc(String(e.headline || '—').slice(0, 30))}</td>
+            <td title="${esc(rs)}">${esc(rs.length > 26 ? `${rs.slice(0, 26)}…` : rs)}</td>
+          </tr>`;
+        }).join('')}</tbody></table></div>`, 't-c12');
+    g.appendChild(evPanel);
+
     return g;
   }
 
