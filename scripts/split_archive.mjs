@@ -265,7 +265,7 @@ if (check) {
   if (!existsSync(sp)) problems.push(`缺少最轻档 ${SIGNALS_FILE}`);
   else {
     const sb = Buffer.byteLength(readFileSync(sp, 'utf8'), 'utf8');
-    if (sb > 64 * 1024) problems.push(`${SIGNALS_FILE} 体积 ${(sb / 1024).toFixed(1)}KB 超过 64KB 上限（临时止血值；2026-10-24 上调：场景二/三板块情绪+妖股逻辑注入 signals 后增量 ~14KB，瘦身后再评估）`);
+    if (sb > 80 * 1024) problems.push(`${SIGNALS_FILE} 体积 ${(sb / 1024).toFixed(1)}KB 超过 80KB 上限（临时止血值；2026-10-24 两次上调：先 44→64 容纳 B/C 注入，再 64→80 因新闻量上行后板块数(top30)与事件(top30)占用增加，瘦身后再评估）`);
     const sg = JSON.parse(readFileSync(sp, 'utf8'));
     if (sg.kind !== 'signals-latest') problems.push(`${SIGNALS_FILE}.kind=${sg.kind}`);
     if (sg.latest && sg.latest.trade_date !== arc.all_days[arc.all_days.length - 1].trade_date) {

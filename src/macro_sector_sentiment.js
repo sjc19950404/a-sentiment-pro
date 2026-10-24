@@ -61,6 +61,7 @@ export function macroSectorSentimentBlock(report, { tradeDate } = {}) {
     topBullish,
     topBearish,
     events,
+    blackTalk: report.blackTalk || null,
     source: report.source || null,
     scanned: (report.scanned != null) ? report.scanned : null,
     note: '板块情绪因子（场景二）：新闻→GLM 映射板块/方向/强度→聚合；score∈[-1,1]，仅作参考，不独立生成买卖信号。',

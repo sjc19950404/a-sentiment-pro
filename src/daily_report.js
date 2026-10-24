@@ -455,6 +455,7 @@ function buildSectorSentimentSection(ss) {
   pts.push({ text: `利空板块：${(ss.topBearish || []).map((x) => `${x.sector}${x.score}`).join('、') || '无'}`, kind: 'evidence' });
   pts.push({ text: `涉及板块 ${ss.sectors ? ss.sectors.length : 0} 个、事件 ${ss.events ? ss.events.length : 0} 条`, kind: 'info' });
   if (m.reason) pts.push({ text: `依据：${m.reason}`, kind: 'evidence' });
+  if (ss.blackTalk) pts.push({ text: `🔥 游资复盘黑话：${ss.blackTalk}`, kind: 'quote' });
   pts.push({ text: `证据日期 ${ss.asOfDate}｜模型 ${ss.model || '未留痕'}｜新闻源 ${ss.source || 'sina-roll'}`, kind: 'info' });
   pts.push({ text: '口径：score∈[-1,1]、score100∈[0,100]，仅作参考，不独立生成买卖信号', kind: 'info' });
   const level = (m.sentiment != null && m.sentiment < -0.2) ? 'warn' : 'info';

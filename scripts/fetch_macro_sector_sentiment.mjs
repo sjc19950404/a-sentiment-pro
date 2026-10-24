@@ -130,9 +130,9 @@ async function callGLM(items, { API_URL, API_KEY, MODEL }, newsDate) {
         { role: 'user', content: user },
       ],
       temperature: 0.2,
-      max_tokens: 2500,
+      max_tokens: 1500,
     }),
-    timeout: 120000,
+    timeout: 90000,
     read: async (r) => {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const j = await r.json();
@@ -144,6 +144,56 @@ async function callGLM(items, { API_URL, API_KEY, MODEL }, newsDate) {
   const m = chat.match(/\[[\s\S]*\]/);
   if (!m) throw new Error('回复中未找到 JSON 数组');
   return JSON.parse(m[0]);
+}
+
+// ── 2b. GLM 生成「游资复盘黑话」（场景二·暗黑系口吻，纯情绪吐槽，不涉建议）──
+const BLACKTALK_SYSTEM = `你是 A 股游资圈摸爬滚打十年的老炮，说话市井、接地气、带情绪节奏感。
+任务：根据今天板块情绪快照，写一句「盘后游资复盘暗语」给散户提个醒。
+要求：
+1. ≤50 字，可带 1~2 个 emoji，口语化、像群里老哥吐槽，不要书面官话。
+2. 必须且只能基于给出的「多头主线 / 空头压制 / 宏观情绪」来写；只可使用上面列出的板块名，严禁引入任何未列出的板块或个股（防训练记忆穿越）。
+3. 纯情绪节奏吐槽，严禁给出具体买卖建议或个股代码。
+4. 可以泼冷水（题材高潮次日易分歧、别上头、控制仓位），但别制造恐慌。
+
+只输出一个 JSON 对象（不要任何其他文字、不要 Markdown 代码块）：{"blackTalk":"..."}`;
+
+async function callBlackTalk(ctx, { API_URL, API_KEY, MODEL }, newsDate) {
+  const user = `当前时间：${newsDate}（据此而非训练记忆）。
+今日板块情绪快照：
+- 宏观情绪：${ctx.macroLabel}（分 ${ctx.macroSentiment}）
+- 多头主线：${ctx.topBull || '无'}
+- 空头压制：${ctx.topBear || '无'}
+- 涉及板块 ${ctx.sectorCount} 个
+
+写一句游资复盘暗语：`;
+  const chat = await fetchWithRetry(`${API_URL.replace(/\/$/, '')}/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${API_KEY}` },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [
+        { role: 'system', content: BLACKTALK_SYSTEM },
+        { role: 'user', content: user },
+      ],
+      temperature: 0.85,
+      max_tokens: 200,
+    }),
+    timeout: 60000,
+    read: async (r) => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      const text = j?.choices?.[0]?.message?.content;
+      if (typeof text !== 'string' || !text.trim()) throw new Error('返回无 content');
+      return text;
+    },
+  }, 3, 2000);
+  // 解析：优先整段 JSON 对象；否则抓首个 {...}；再退而求其次当裸字符串。
+  const cleaned = chat.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+  try { const o = JSON.parse(cleaned); if (o && typeof o.blackTalk === 'string' && o.blackTalk.trim()) return o.blackTalk.trim(); } catch { /* fallthrough */ }
+  const m = cleaned.match(/\{[\s\S]*?\}/);
+  if (m) { try { const o = JSON.parse(m[0]); if (o && typeof o.blackTalk === 'string' && o.blackTalk.trim()) return o.blackTalk.trim(); } catch { /* fallthrough */ } }
+  const bare = cleaned.replace(/^["']|["']$/g, '');
+  return bare.length ? bare : null;
 }
 
 // ── 3. 聚合为板块情绪因子 ───────────────────────────────────────────────
@@ -194,6 +244,8 @@ function aggregate(events) {
   return {
     macro: { sentiment: Math.round(overall * 100) / 100, score100: Math.round((overall + 1) * 50), label, confidence, reason },
     sectors,
+    topBull,
+    topBear,
   };
 }
 
@@ -206,7 +258,7 @@ function getAsOfDate() {
   return todayBeijing();
 }
 
-function writePayload({ asOfDate, newsDate, model, macro, sectors, events, scanned, source, degraded }) {
+function writePayload({ asOfDate, newsDate, model, macro, sectors, events, scanned, source, degraded, blackTalk }) {
   const payload = {
     kind: 'macro-sector-sentiment-latest',
     version: 1,
@@ -220,6 +272,7 @@ function writePayload({ asOfDate, newsDate, model, macro, sectors, events, scann
     scanned,
     source,
     degraded: !!degraded,
+    blackTalk: degraded ? null : (blackTalk || null),
     note: degraded
       ? '新闻抓取/GLM 获取失败兜底档（中性占位，不冒充真实情绪）。'
       : '板块情绪因子：新闻→GLM 映射板块/方向/强度→聚合。消费端按 signals.sectorSentiment 注入；'
@@ -262,9 +315,10 @@ async function main() {
       process.exit(2);
     }
     events = [];
-    const BATCH = 20;
+    const BATCH = 10;
     for (let i = 0; i < rawItems.length; i += BATCH) {
       const batch = rawItems.slice(i, i + BATCH);
+      console.log(`[macro-sent] 分类批次 ${Math.ceil((i + 1) / BATCH)}/${Math.ceil(rawItems.length / BATCH)}…`);
       try {
         const arr = await callGLM(batch, { API_URL, API_KEY, MODEL }, newsDate);
         (Array.isArray(arr) ? arr : []).forEach((x) => {
@@ -282,7 +336,7 @@ async function main() {
       } catch (e) {
         console.error(`[macro-sent] ⚠ 批次分类失败：${e && e.message ? e.message : e}（继续，不阻塞）`);
       }
-      await new Promise((r) => setTimeout(r, 300)); // 错峰，降低 GLM 免费档限流/超时概率
+      await new Promise((r) => setTimeout(r, 1500)); // 错峰，降低 GLM 免费档限流/超时概率
     }
     if (!events.length) {
       console.error('[macro-sent] ⚠ 全部批次分类失败——兜底落中性档（不阻塞 EOD）');
@@ -291,8 +345,25 @@ async function main() {
     }
   }
 
-  const { macro, sectors } = aggregate(events);
-  const payload = writePayload({ asOfDate, newsDate, model: MODEL, macro, sectors, events, scanned: rawItems.length, source, degraded: false });
+  const { macro, sectors, topBull, topBear } = aggregate(events);
+  // 游资复盘黑话：独立 GLM 小调用（不污染分类数组，守军规#2）；失败则沿用 SPA 模板兜底。
+  let blackTalk = null;
+  if (MOCK) {
+    blackTalk = '题材轮得飞起，前排加速后排掉队，别追高接飞刀，留点子弹等分歧。';
+  } else if (API_URL && API_KEY && MODEL) {
+    try {
+      const topBullCtx = sectors.filter((s) => s.score > 0.2).slice(0, 15).map((s) => `${s.sector}(+${s.score})`).join('、') || '无';
+      const topBearCtx = sectors.filter((s) => s.score < -0.2).slice(0, 10).map((s) => `${s.sector}(${s.score})`).join('、') || '无';
+      blackTalk = await callBlackTalk({
+        macroLabel: macro.label, macroSentiment: macro.sentiment,
+        topBull: topBullCtx, topBear: topBearCtx, sectorCount: sectors.length,
+      }, { API_URL, API_KEY, MODEL }, newsDate);
+    } catch (e) {
+      console.error(`[macro-sent] ⚠ 黑话生成失败：${e && e.message ? e.message : e}（沿用模板兜底）`);
+    }
+  }
+  const payload = writePayload({ asOfDate, newsDate, model: MODEL, macro, sectors, events, scanned: rawItems.length, source, degraded: false, blackTalk });
+  console.log(`[macro-sent] 黑话：${blackTalk || '（模板兜底）'}`);
   console.log(`[macro-sent] ${asOfDate} 宏观情绪=${payload.macro.label}(${payload.macro.sentiment}) | 涉及板块 ${sectors.length} 个`);
   sectors.slice(0, 8).forEach((s) => console.log(`   ${s.sector}: ${s.score} (${s.newsCount}条, 多${s.bullish}/空${s.bearish})`));
   console.log(`[macro-sent] 写出 ${fileURLToPath(OUT)}`);
