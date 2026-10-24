@@ -12,9 +12,17 @@
               latest.factors（七因子）/ regime.seriesCompact（90 日 [日期,分,分位,regime]）
               regime.counts（状态分布）/ dailyReport.positionReconcile（仓位结论+风控帽）
               industry_relative（板块攻防）/ main_theme（主线）/ AI 三侧车
-          data/archive-recent.json —— 近 30 日涨跌停（后台拉，不阻塞首屏）
+              dragonLogic.dragons（40 只连板梯队：code/name/lb 连板数/hybk 行业/
+                logic_type/is_pure_sentiment/confidence/reason）
+          data/emotion_history.json —— 涨跌停历史（.history，250 天；后台拉 + 缓存）
+              metrics.limit_up_count 涨停家数 / continuous_count 连板家数 /
+              max_board 最高板 / broken_rate 炸板率 / hard_board_rate 硬板率
+              ⚠ 不含跌停历史，故全站无跌停序列图（图例如实标注，不冒充）
           data/paper/account.json  —— 模拟盘净值/持仓
-          ui/kline/{code}.json     —— 个股日K（按需 fetch，绝不预载 5554 个）
+          ui/kline/{code}.json     —— 个股日K 649 根（按需 fetch，绝不预载 5554 个）
+              [date, open, close, high, low, volume]；**仅日K**，无多周期字段。
+              周/月/季/半年/年K 由日K 在展示层聚合（标准 OHLCV 口径），
+              分时/30分/60分 **无分钟数据源，不做**。
 
    设计纪律：chrome 柔、数据锐；辉光只三处；动画只 opacity/transform；
              AI 信息一律紫色（视觉上区分「AI 说的」与「引擎算的」）。
@@ -35,8 +43,13 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   // ── 1. LINK 总线（选中态 + 订阅）────────────────────────────────────────
+  // 时间窗（全局，作用于所有按日序列图：情绪分折线、涨停/连板柱、最高板柱等）。
+  //   由顶栏按钮切换 → 走 LINK 总线 → 当前视图重绘。只影响**取多少天来画**，
+  //   不重算任何指标、不改判阈值。
+  const RANGES = [20, 60, 250];
+
   const LINK = {
-    sel: { code: null, name: null, sector: null, range: 90 },
+    sel: { code: null, name: null, sector: null, range: 60 },
     subs: [],
     set(patch) { Object.assign(this.sel, patch); this.subs.forEach((f) => SAFE(() => f(this.sel), 'link-sub')); },
     on(fn) { this.subs.push(fn); },
@@ -188,7 +201,10 @@
     const W = opt.w || 620, H = opt.h || 330, PV = 64, P = { l: 8, r: 54, t: 10, b: 18 };
     if (!bars || bars.length < 2) return '<div class="t-empty">K线数据不足</div>';
     const iw = W - P.l - P.r, ih = H - PV - P.t - P.b;
-    const lo = Math.min(...bars.map((b) => b[3])), hi = Math.max(...bars.map((b) => b[2]));
+    // bar 格式（见下方解构 const [, o, c, h, l, v]）：b[3]=最高价、b[4]=最低价。
+    //   2026-10-25 修正：原取 lo=min(b[3])（最高价的最小值）、hi=max(b[2])（收盘价的最大值），
+    //   两个都取错字段 → 区间既不含真实最低价也不含真实最高价，蜡烛会画出画布被裁掉。
+    const lo = Math.min(...bars.map((b) => b[4])), hi = Math.max(...bars.map((b) => b[3]));
     const span = (hi - lo) || 1;
     const Y = (p) => P.t + ih - ((p - lo) / span) * ih;
     const n = bars.length, cw = iw / n, bw = Math.max(1.2, cw * 0.62);
@@ -217,6 +233,84 @@
     s += `<text class="t-tick-r" x="${W - P.r + 5}" y="${P.t + 9}" fill="${chg >= 0 ? '#b0413e' : '#22c88a'}">${lastC.toFixed(2)}</text>`;
     s += `<text class="t-tick" x="${W - P.r + 5}" y="${P.t + 21}" fill="${chg >= 0 ? '#b0413e' : '#22c88a'}">${sgn(chg, 2)}</text>`;
     return s + '</svg>';
+  }
+
+  // ── 3b. K线周期：日 → 周/月/季/半年/年（展示层聚合）───────────────────────
+  //   ⚠ 纪律：这是**展示层周期转换**（同炒股软件切周期），聚合规则为业界标准 OHLCV：
+  //     开 = 区间首根开盘 / 高 = 区间最高 / 低 = 区间最低 / 收 = 区间末根收盘 / 量 = 区间求和。
+  //     **不是重算指标、不改判任何阈值**，也不做平滑、插值、复权。
+  //   数据源只有日K（ui/kline 无多周期字段），故只有这 6 档；
+  //   分时 / 30分 / 60分 **系统无分钟数据源，不做**（不伪造、不冒充）。
+  const PERIODS = [
+    { k: 'day', n: '日K' }, { k: 'week', n: '周K' }, { k: 'month', n: '月K' },
+    { k: 'quarter', n: '季K' }, { k: 'half', n: '半年K' }, { k: 'year', n: '年K' },
+  ];
+  function periodKey(ds, p) {
+    const y = +ds.slice(0, 4), m = +ds.slice(5, 7), d = +ds.slice(8, 10);
+    if (p === 'week') {                                  // ISO 周：以该周周一为分组键
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      dt.setUTCDate(dt.getUTCDate() - ((dt.getUTCDay() + 6) % 7));   // 周一 = 0
+      return dt.toISOString().slice(0, 10);
+    }
+    if (p === 'month') return `${y}-${String(m).padStart(2, '0')}`;
+    if (p === 'quarter') return `${y}-Q${Math.floor((m - 1) / 3) + 1}`;
+    if (p === 'half') return `${y}-H${Math.floor((m - 1) / 6) + 1}`;
+    if (p === 'year') return String(y);
+    return ds;                                           // day：逐日，不聚合
+  }
+  function aggregateBars(bars, period) {
+    if (!period || period === 'day') return bars;
+    const groups = new Map();
+    for (const b of bars) {
+      const k = periodKey(String(b[0]), period);
+      const g = groups.get(k);
+      if (!g) groups.set(k, { date: String(b[0]), o: b[1], c: b[2], h: b[3], l: b[4], v: b[5] });
+      else {
+        g.c = b[2];                                      // 收 = 区间末根收盘
+        if (b[3] > g.h) g.h = b[3];                      // 高 = 区间最高
+        if (b[4] < g.l) g.l = b[4];                      // 低 = 区间最低
+        g.v += b[5];                                     // 量 = 区间求和
+        g.date = String(b[0]);                           // 标签取区间末日
+      }
+    }
+    return [...groups.values()]
+      .sort((a, b2) => (a.date < b2.date ? -1 : a.date > b2.date ? 1 : 0))
+      .map((g) => [g.date, g.o, g.c, g.h, g.l, g.v]);
+  }
+
+  /** 通用 K线渲染（抽屉与 K线视图共用）：周期下拉 + 蜡烛 + 成交量副图 */
+  function renderKline(host, code, state) {
+    const cc = String(code).replace(/^(sh|sz|bj)/, '');
+    const prefix = /^(6|9)/.test(cc) ? 'sh' : /^(4|8)/.test(cc) ? 'bj' : 'sz';
+    const period = state.period || 'day';
+    const opts = PERIODS.map((p) => `<option value="${p.k}"${p.k === period ? ' selected' : ''}>${p.n}</option>`).join('');
+    host.innerHTML = `<div class="t-kbar"><label>周期
+      <select class="t-kperiod" aria-label="K线周期">${opts}</select></label></div>
+      <div class="t-kbody"><div class="t-loading">加载日K…</div></div>`;
+    const body = $('.t-kbody', host);
+    const sel = $('.t-kperiod', host);
+
+    const draw = (k) => {
+      const raw = (k && k.bars) || [];
+      if (raw.length < 2) {
+        body.innerHTML = '<div class="t-empty">该标的暂无 K 线分片（kline 分片仅覆盖历史上榜股）</div>';
+        return;
+      }
+      // ⚠ period 必须在 draw **内部**取：切周期时只改 state.period 并重绘，
+      //   若在闭包外捕获一次，切换后仍用旧值（曾导致下拉选周/月/年都还是日K）。
+      const period = state.period || 'day';
+      const bars = aggregateBars(raw, period);
+      const unit = (PERIODS.find((p) => p.k === period) || {}).n || period;
+      const tail = bars.slice(-120);
+      const last = tail[tail.length - 1], prev = tail.length > 1 ? tail[tail.length - 2][2] : null;
+      const chg = prev ? ((last[2] - prev) / prev) * 100 : null;
+      // 样本过少时如实提示（源数据仅 649 根日K ≈ 2.6 年，年K 只有约 3 根）
+      const warn = bars.length < 3 ? ' · <span class="t-warn-inline">⚠ 样本过少（源数据仅 649 根日K ≈ 2.6 年）</span>' : '';
+      body.innerHTML = `<div class="t-kmeta">${esc(unit)} <b>${bars.length}</b> 根 · 源 ${raw.length} 根日K · 最新 ${esc(last[0])} · 收 <b>${fmt(last[2], 2)}</b> <span class="${chg == null ? '' : chg >= 0 ? 'up' : 'dn'}">${sgn(chg, 2)}</span>${warn}</div>`
+        + candles(tail, { w: 660, h: 380 });
+    };
+    sel.addEventListener('change', () => { state.period = sel.value; draw(state.k); });
+    jget(`ui/kline/${prefix}${cc}.json`).then((k) => { state.k = k; draw(k); });
   }
 
   const sparkline = (vals, w = 52, h = 14) => {
@@ -276,7 +370,10 @@
     g.appendChild(panel('核心指标', L.trade_date, stats.outerHTML, 't-c12'));
 
     // ── 主图：情绪分折线（seriesCompact，零额外请求）──
-    const series = (S.regime && S.regime.seriesCompact) || [];
+    //   按全局时间窗取尾部 N 天；仅影响画多少天，不重算任何指标
+    const rng = LINK.sel.range || 60;
+    const seriesAll = (S.regime && S.regime.seriesCompact) || [];
+    const series = seriesAll.slice(-rng);
     const rows = series.map((r) => ({ date: String(r[0]).slice(5), v: +r[1], pct: r[2] == null ? null : +r[2], reg: r[3] }));
     const mainBody = rows.length > 1
       ? lineChart(rows, { w: 760, h: 230 })
@@ -316,9 +413,9 @@
     // ── 涨跌停柱状（后台拉 emotion_history，不阻塞首屏）──
     //    2026-10-25 修正：原取 archive-recent.json 的 .days（该档无此键）→ 恒为空态；
     //    且原图例写死「涨停/跌停」而跌停历史并不落盘，改用「涨停/连板」如实标注。
-    const barPanel = panel('涨跌停分布', '近 30 交易日 · 涨停 vs 连板', '<div class="t-loading">加载…</div>', 't-c12');
+    const barPanel = panel('涨跌停分布', `近 ${rng} 交易日 · 涨停 vs 连板`, '<div class="t-loading">加载…</div>', 't-c12');
     g.appendChild(barPanel);
-    loadHist(30).then((hist) => {
+    loadHist(rng).then((hist) => {
       const data = hist.filter((r) => r.zt != null).map((r) => ({ date: r.date, a: r.zt, b: r.lb }));
       const host = barPanel.lastElementChild;
       if (host) host.outerHTML = data.length ? barChart(data, { w: 900, h: 170, legend: ['涨停', '连板'] }) : '<div class="t-empty">无涨跌停历史</div>';
@@ -365,19 +462,20 @@
         ${stat('下跌家数', fmtInt(L.down_count), 'down_count', 'dn')}
       </div>`, 't-c12'));
 
-    // 涨停 vs 连板（30 日）
-    const hPanel = panel('涨停家数 vs 连板家数', '近 30 交易日 · 引擎原值', '<div class="t-loading">加载…</div>', 't-c12');
+    const rng = LINK.sel.range || 60;
+    // 涨停 vs 连板（按全局时间窗取尾部 N 日）
+    const hPanel = panel('涨停家数 vs 连板家数', `近 ${rng} 交易日 · 引擎原值`, '<div class="t-loading">加载…</div>', 't-c12');
     g.appendChild(hPanel);
-    loadHist(30).then((hist) => {
+    loadHist(rng).then((hist) => {
       const data = hist.filter((r) => r.zt != null).map((r) => ({ date: r.date, a: r.zt, b: r.lb }));
       const host = hPanel.lastElementChild;
       if (host) host.outerHTML = data.length ? barChart(data, { w: 900, h: 200, legend: ['涨停', '连板'] }) : '<div class="t-empty">无涨跌停历史</div>';
     });
 
-    // 最高连板高度（30 日）
-    const bPanel = panel('最高连板高度', '近 30 交易日 · max_board', '<div class="t-loading">加载…</div>', 't-c12');
+    // 最高连板高度（同时间窗）
+    const bPanel = panel('最高连板高度', `近 ${rng} 交易日 · max_board`, '<div class="t-loading">加载…</div>', 't-c12');
     g.appendChild(bPanel);
-    loadHist(30).then((hist) => {
+    loadHist(rng).then((hist) => {
       const data = hist.filter((r) => r.maxb != null).map((r) => ({ date: r.date, a: r.maxb }));
       const host = bPanel.lastElementChild;
       if (host) host.outerHTML = data.length ? barChart(data, { w: 900, h: 170, legend: ['最高板', ''] }) : '<div class="t-empty">无历史</div>';
@@ -434,6 +532,113 @@
     return g;
   }
 
+  // ── 6d. 视图：选股（数据来自 GLM 侧车 dragonLogic.dragons，非引擎选股）──
+  //   ⚠ 纪律：本视图 100% 是 AI 侧车输出 → 一律紫色标注（看到紫 = AI 说的），
+  //     并明示「不修改引擎情绪分与 regime 判定」。这里**不做任何筛选/打分**，
+  //     只做「按连板数降序 + 聚合统计」两类纯展示操作，不重算任何指标。
+  function viewPicks(S) {
+    const dg = S.dragonLogic || {};
+    const arr = Array.isArray(dg.dragons) ? dg.dragons.slice() : [];
+    const g = el('div', 't-grid');
+
+    // AI 来源条（紫）——先声明数据来源，再谈内容
+    g.appendChild(el('div', 't-c12', `<div class="t-ai-strip">
+      <span class="t-ai-tag">AI Side-car</span>
+      <span class="t-ai-item">GLM 妖股逻辑推演（方向 C）</span>
+      <span class="t-ai-item">asOf ${esc(dg.asOfDate || '—')}</span>
+      <span class="t-ai-item">仅参考，不修改引擎情绪分 / regime 判定</span>
+      ${dg.degraded ? '<span class="t-ai-item">⚠ 侧车降级，结论可能不完整</span>' : ''}
+    </div>`));
+
+    if (!arr.length) {
+      g.appendChild(panel('连板梯队', '当日无数据', '<div class="t-empty">当日无连板梯队数据（非交易日或侧车未产出）</div>', 't-c12'));
+      return g;
+    }
+
+    // 排序：连板数降序 → 代码升序（纯展示排序，非打分）
+    const sorted = arr.slice().sort((a, b) => (+b.lb || 0) - (+a.lb || 0) || String(a.code).localeCompare(String(b.code)));
+    const maxLb = sorted.reduce((m, x) => Math.max(m, +x.lb || 0), 0);
+    const pure = sorted.filter((x) => x.is_pure_sentiment === true).length;
+
+    g.appendChild(panel('梯队概览', `共 ${sorted.length} 只 · 最高 ${maxLb} 板`,
+      `<div class="t-stats">
+        ${stat('扫描只数', fmtInt(sorted.length), 'dragons')}
+        ${stat('最高连板', fmtInt(maxLb), 'max(lb)')}
+        ${stat('纯情绪炒作', fmtInt(pure), 'is_pure_sentiment')}
+        ${stat('纯情绪占比', pct((pure / sorted.length) * 100), `${pure}/${sorted.length}`)}
+      </div>`, 't-c12'));
+
+    // 连板高度分布（阶梯柱；按连板数聚合计数，引擎原值）
+    const byLb = {};
+    for (const x of sorted) { const k = +x.lb || 0; byLb[k] = (byLb[k] || 0) + 1; }
+    const dist = Object.keys(byLb).map(Number).sort((a, b) => a - b).map((k) => ({ date: `${k}板`, a: byLb[k] }));
+    g.appendChild(panel('连板高度分布', '按连板数聚合计数 · 引擎原值',
+      barChart(dist, { w: 900, h: 180, legend: ['只数', ''] }), 't-c12'));
+
+    // 连板天梯表 —— 点任一票 → LINK 总线 → 打开 K 线抽屉（与其它视图同一套联动）
+    const rows = sorted.map((x) => {
+      const rs = String(x.reason || '—');
+      return `<tr data-code="${esc(x.code)}" data-name="${esc(x.name || '')}">
+        <td>${esc(x.code)}</td>
+        <td>${esc(x.name || '—')}</td>
+        <td class="up">${fmtInt(x.lb)}</td>
+        <td>${esc(x.hybk || '—')}</td>
+        <td>${x.is_pure_sentiment ? '<span class="t-tag-ai">纯情绪</span> ' : ''}${esc(x.logic_type || '—')}</td>
+        <td>${pct(x.confidence != null ? x.confidence * 100 : null, 0)}</td>
+        <td title="${esc(rs)}">${esc(rs.length > 22 ? `${rs.slice(0, 22)}…` : rs)}</td>
+      </tr>`;
+    }).join('');
+
+    const tblPanel = panel('连板天梯', '按连板数降序 · 点任一票看 K 线',
+      `<div class="t-tbl-wrap"><table class="t-tbl"><thead><tr>
+        <th>代码</th><th>名称</th><th>连板</th><th>行业</th><th>逻辑</th><th>置信</th><th>理由</th>
+      </tr></thead><tbody>${rows}</tbody></table></div>`, 't-c12');
+    g.appendChild(tblPanel);
+    // 在 tblPanel 内查（与 viewPaper 同款修正：勿用 outerHTML 替换后的节点查 parentElement）
+    $('.t-tbl', tblPanel).addEventListener('click', (e) => {
+      const tr = e.target.closest('tr[data-code]');
+      if (tr) LINK.set({ code: tr.dataset.code, name: tr.dataset.name });
+    });
+
+    return g;
+  }
+
+  // ── 6e. 视图：K线（独立视图；与抽屉共用 renderKline，周期规则同一套）────
+  function viewKline() {
+    const g = el('div', 't-grid');
+    const state = { period: 'day', k: null };
+    const cur = (LINK.sel && LINK.sel.code) ? String(LINK.sel.code) : '';
+    const curName = (LINK.sel && LINK.sel.name) ? String(LINK.sel.name) : '';
+
+    const p1 = panel('个股 K 线', '输入 6 位代码，或从「选股 / 模拟盘」点任一票跳转',
+      `<div class="t-kbar">
+        <label>代码 <input class="t-kcode" type="text" inputmode="numeric" maxlength="6"
+          placeholder="如 600000" value="${esc(cur)}" aria-label="股票代码"></label>
+        <button class="t-kgo" type="button">查询</button>
+        <span class="t-khint">${esc(curName)}</span>
+      </div>
+      <div class="t-khost"><div class="t-empty">${cur ? '加载中…' : '请输入代码，或从「选股 / 模拟盘」点任一票跳转过来'}</div></div>`,
+      't-c12');
+    g.appendChild(p1);
+
+    const host = $('.t-khost', p1);
+    const input = $('.t-kcode', p1);
+    const load = () => {
+      const code = String(input.value || '').trim();
+      if (!/^\d{6}$/.test(code)) {
+        host.innerHTML = '<div class="t-empty">请输入 6 位数字代码（如 600000）</div>';
+        return;
+      }
+      state.k = null;
+      renderKline(host, code, state);
+    };
+    $('.t-kgo', p1).addEventListener('click', load);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') load(); });
+    if (/^\d{6}$/.test(cur)) renderKline(host, cur, state);
+
+    return g;
+  }
+
   // ── 7. 视图：模拟盘 ────────────────────────────────────────────────────
   async function viewPaper() {
     const g = el('div', 't-grid');
@@ -469,6 +674,7 @@
 
   // ── 8. K线抽屉（全站唯一真磨砂玻璃件）─────────────────────────────────
   let drawerRefs = null;
+  const drawerKState = { period: 'day', k: null };   // 抽屉的周期选择（跨开关保持）
   function openDrawer(code, name) {
     if (!code) return;
     let refs = drawerRefs;
@@ -489,25 +695,22 @@
     refs.body.innerHTML = '<div class="t-loading">加载日K…</div>';
     refs.mask.classList.add('is-open');
     refs.dw.classList.add('is-open');
-    const cc = String(code).replace(/^(sh|sz|bj)/, '');
-    const prefix = /^(6|9)/.test(cc) ? 'sh' : /^(4|8)/.test(cc) ? 'bj' : 'sz';
-    jget(`ui/kline/${prefix}${cc}.json`).then((k) => {
-      const bars = (k && k.bars) || [];
-      refs.body.innerHTML = bars.length > 1
-        ? `<div style="margin-bottom:12px;font-size:12px;color:var(--t-ink-2)">${bars.length} 根日K · 最新 ${bars[bars.length - 1][0]} · 收盘 <b style="color:var(--t-ink)">${bars[bars.length - 1][2]}</b></div>`
-          + candles(bars.slice(-90), { w: 600, h: 330 })
-        : '<div class="t-empty">该标的暂无 K 线分片（kline 分片仅覆盖历史上榜股）</div>';
-    });
+    // 与 K线视图共用渲染器（周期下拉 + 蜡烛 + 成交量）；周期选择跨开关保持
+    renderKline(refs.body, code, drawerKState);
   }
 
   // ── 9. 挂载与视图切换 ─────────────────────────────────────────────────
+  // 「研报」不列为终端内视图：① 方向已定「不想要报告型」；② 顶部 ⚡终端/📄研报
+  //   切换开关已能直达原研报视图（含复制全文/导出文档/打印PDF/导出CSV），
+  //   在终端里再塞一份研报属重复。故终端内共 7 个视图，无占位。
   const VIEWS = [
     { k: 'overview', n: '总览' },
     { k: 'zt', n: '涨跌停' },
     { k: 'fund', n: '资金' },
     { k: 'sector', n: '板块' },
+    { k: 'picks', n: '选股' },
     { k: 'paper', n: '模拟盘' },
-    { k: 'soon', n: '选股 · K线 · 研报', soon: true },
+    { k: 'kline', n: 'K线' },
   ];
 
   function mount() {
@@ -530,7 +733,10 @@
       <span class="t-dot ${meta.stale ? 'is-off' : ''}"></span>
       <span>${meta.stale ? '数据滞后' : '已收盘'}</span><span class="t-sep">│</span>
       <span>数据 <b>${esc(meta.tradeDate || L.trade_date || '—')}</b></span><span class="t-sep">│</span>
-      <span>regime 序列 <b>${((S.regime && S.regime.seriesCompact) || []).length}</b> 日</span>
+      <span>regime 序列 <b>${((S.regime && S.regime.seriesCompact) || []).length}</b> 日</span><span class="t-sep">│</span>
+      <span class="t-range" role="group" aria-label="时间窗">窗
+        ${RANGES.map((r) => `<button type="button" data-r="${r}"${r === LINK.sel.range ? ' class="is-on"' : ''}>${r}</button>`).join('')}
+      </span>
       <span class="t-viewswitch">
         <button data-v="terminal" class="is-on">⚡ 终端</button>
         <button data-v="report">📄 研报</button>
@@ -547,6 +753,8 @@
         else if (k === 'zt') node = viewZt(S);
         else if (k === 'fund') node = viewFund(S);
         else if (k === 'sector') node = viewSector(S);
+        else if (k === 'picks') node = viewPicks(S);
+        else if (k === 'kline') node = viewKline();
         else if (k === 'paper') node = await viewPaper();   // 异步视图必须 await，否则拿到 Promise 而非 Node
       } catch (e) { console.error('[terminal] render', k, e); node = null; }
       if (!node || !(node instanceof Node)) {
@@ -576,6 +784,18 @@
       if (!b) return;
       [...$('.t-viewswitch', top).children].forEach((x) => x.classList.toggle('is-on', x === b));
       switchTo(b.dataset.v);
+    });
+
+    // 时间窗切换：只改「取多少天来画」，随后重绘当前视图
+    //   （不重算指标、不改判阈值；订阅 LINK 的其它部件也会一并收到通知）
+    $('.t-range', top).addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-r]');
+      if (!b) return;
+      const r = +b.dataset.r;
+      if (!Number.isFinite(r) || r === LINK.sel.range) return;
+      [...$('.t-range', top).children].forEach((x) => x.classList.toggle('is-on', +x.dataset.r === r));
+      LINK.set({ range: r });
+      SAFE(() => render(cur), 'render-range');
     });
 
     root.appendChild(top); root.appendChild(nav); root.appendChild(body); root.appendChild(tick);

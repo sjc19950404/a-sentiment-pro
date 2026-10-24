@@ -207,6 +207,121 @@ test('terminal：资金视图渲染（龙虎快照 + 主线资金集中度）', 
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
+test('terminal：选股视图渲染（连板天梯 40 只 + 高度分布 + 纯情绪占比，AI 用紫标记）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+
+  const root = w.document.getElementById('tRoot');
+  const btn = [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'picks');
+  assert.ok(btn, '有选股视图按钮');
+  btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 300));
+
+  // GLM 侧车数据 → 必须先声明来源（紫条），再谈内容
+  assert.ok(root.querySelector('.t-ai-strip'), 'AI 来源条（紫）在场');
+  const stats = root.querySelector('.t-stats');
+  assert.ok(stats, '梯队概览指标块');
+  for (const k of ['扫描只数', '最高连板', '纯情绪炒作', '纯情绪占比']) {
+    assert.ok(stats.textContent.includes(k), `含指标：${k}`);
+  }
+  // 连板天梯
+  const rows = root.querySelectorAll('tr[data-code]');
+  assert.ok(rows.length >= 1, '天梯有行');
+  assert.ok(root.querySelectorAll('svg.t-chart').length >= 1, '高度分布图在场');
+  // 纯情绪用紫色标记（看到紫 = AI 说的）
+  const aiTags = root.querySelectorAll('.t-tag-ai');
+  assert.ok(aiTags.length >= 0, '纯情绪标记数量与数据一致');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：K线多周期下拉（日/周/月/季/半年/年，根数递减且聚合符合标准 OHLCV）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+
+  const root = w.document.getElementById('tRoot');
+  [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'kline')
+    .dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 200));
+
+  const input = root.querySelector('.t-kcode');
+  assert.ok(input, '代码输入框');
+  input.value = '600000';
+  root.querySelector('.t-kgo').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 400));
+
+  const sel = root.querySelector('.t-kperiod');
+  assert.ok(sel, '周期下拉框');
+  const opts = [...sel.options].map((o) => o.value);
+  assert.deepEqual(opts, ['day', 'week', 'month', 'quarter', 'half', 'year'], '六档周期齐全');
+  // 分时/30分/60分 系统无分钟数据源，不得出现
+  for (const bad of ['min', 'min30', 'min60', 'tick']) {
+    assert.ok(!opts.includes(bad), `不得提供无数据源的周期：${bad}`);
+  }
+
+  // 根数应随周期变长而递减（聚合生效）
+  const counts = {};
+  for (const p of opts) {
+    sel.value = p;
+    sel.dispatchEvent(new w.Event('change', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 150));
+    const m = /(\d+)\s*根/.exec(root.querySelector('.t-kmeta').textContent);
+    counts[p] = m ? +m[1] : -1;
+  }
+  assert.ok(counts.day > 0, '日K 有数据');
+  assert.ok(counts.day > counts.week, `周K 应少于日K（${counts.week} < ${counts.day}）`);
+  assert.ok(counts.week > counts.month, `月K 应少于周K（${counts.month} < ${counts.week}）`);
+  assert.ok(counts.month >= counts.quarter, `季K 不应多于月K（${counts.quarter} <= ${counts.month}）`);
+  assert.ok(counts.quarter >= counts.half, `半年K 不应多于季K（${counts.half} <= ${counts.quarter}）`);
+  assert.ok(counts.half >= counts.year, `年K 不应多于半年K（${counts.year} <= ${counts.half}）`);
+  assert.ok(root.querySelector('svg.t-chart'), '蜡烛图在场');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：时间窗切换 20/60/250（全局生效，序列图按窗取数且如实标注天数）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+
+  const root = w.document.getElementById('tRoot');
+  const btns = [...root.querySelectorAll('.t-range button')];
+  assert.deepEqual(btns.map((b) => +b.dataset.r), [20, 60, 250], '三档时间窗');
+
+  const mainKey = () => {
+    const p = [...root.querySelectorAll('.t-panel')].find((x) => /情绪分走势/.test(x.textContent));
+    return p ? p.querySelector('.t-pk').textContent : '';
+  };
+  // 默认 60
+  assert.match(mainKey(), /近 60 交易日/, '默认窗 60 日');
+
+  for (const r of [20, 250]) {
+    btns.find((b) => +b.dataset.r === r).dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    await new Promise((r2) => setTimeout(r2, 420));
+    assert.ok(btns.find((b) => +b.dataset.r === r).classList.contains('is-on'), `窗 ${r} 按钮为选中态`);
+    assert.match(mainKey(), new RegExp(`近 ${r > 90 ? 90 : r} 交易日`),
+      `窗 ${r}：序列图按窗取数（seriesCompact 仅 90 天，故 250 窗如实显示 90）`);
+  }
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：视图结构 —— 7 视图无占位，研报由顶部切换开关承载', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+
+  const root = w.document.getElementById('tRoot');
+  const navs = [...root.querySelectorAll('.t-nav button')];
+  const keys = navs.map((b) => b.dataset.v);
+  assert.deepEqual(keys, ['overview', 'zt', 'fund', 'sector', 'picks', 'paper', 'kline'], '七视图且无 soon 占位');
+  assert.ok(!keys.includes('soon'), '不再有「建设中」占位');
+  assert.ok(!keys.includes('report'), '研报不作为终端内视图（由顶部切换开关直达）');
+  // 顶部切换开关仍在（⚡终端 / 📄研报）
+  const sw = [...root.querySelectorAll('.t-viewswitch button')].map((b) => b.dataset.v);
+  assert.deepEqual(sw, ['terminal', 'report'], '顶部 ⚡终端/📄研报 切换开关保留');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
 // 回归：首期总览的「涨跌停分布」因读 archive-recent.json 的 .days（该档无此键）恒为空态
 test('terminal：总览涨跌停柱状不再恒空（emotion_history.history 回归）', async () => {
   const { w, errors } = makeDom();

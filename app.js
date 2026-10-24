@@ -2088,15 +2088,17 @@ function renderBriefNav() {
     b.title = `跳转到 ${full}`;
     nav.appendChild(b);
   }
-  const tg = $('briefToggle');
-  if (tg) tg.textContent = '全部折叠';
+  // 「全部折叠」按钮已移除（2026-10-25），此处无需再同步按钮文案
 }
 
-// 「全部折叠/展开」按钮文案跟随实际段落状态，避免按钮说反话
+// 「全部折叠/展开」按钮文案同步 —— 按钮已于 2026-10-25 移除，保留函数使既有三处调用点
+//   保持有效（$('briefToggle') 返回 null → 无副作用），避免为删一个按钮去动三处调用。
+//   逐段折叠照常可用（document 委托的 bftoggle）。
 function syncBriefToggleLabel() {
-  const secs = [...document.querySelectorAll('#briefBody .bf-sec')];
   const tg = $('briefToggle');
-  if (tg) tg.textContent = (secs.length && secs.every((s) => s.classList.contains('collapsed'))) ? '全部展开' : '全部折叠';
+  if (!tg) return;
+  const secs = [...document.querySelectorAll('#briefBody .bf-sec')];
+  tg.textContent = (secs.length && secs.every((s) => s.classList.contains('collapsed'))) ? '全部展开' : '全部折叠';
 }
 
 // ── V5.2 策略回测面板：读 data/backtest.json（由 node scripts/backtest.mjs 预生成）──
@@ -5039,17 +5041,8 @@ $('hotSortDir')?.addEventListener('click', () => {
   renderHotTable();
 });
 
-// 报告：一键折叠/展开（逐段折叠由 document 委托的 bftoggle 处理，两处不重复绑定）
-$('briefToggle')?.addEventListener('click', () => {
-  const secs = [...document.querySelectorAll('#briefBody .bf-sec')];
-  const anyOpen = secs.some((s) => !s.classList.contains('collapsed'));
-  for (const s of secs) {
-    s.classList.toggle('collapsed', anyOpen);
-    const h = s.querySelector('.bf-h');
-    if (h) h.setAttribute('aria-expanded', anyOpen ? 'false' : 'true');
-  }
-  syncBriefToggleLabel();
-});
+// 报告「全部折叠 / 全部展开」按钮已于 2026-10-25 移除（方向：不想要报告型的一键收放）。
+// 逐段折叠仍可用——由 document 委托的 bftoggle 处理，点各段标题即可展开/收起。
 
 // ── 报告：复制全文 / 导出文档 / 打印 ──
 // 三者都消费同一份东西——**屏幕上已经渲染出来的报告 DOM**（#briefBody）。
