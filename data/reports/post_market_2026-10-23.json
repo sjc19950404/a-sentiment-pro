@@ -4,19 +4,19 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-23",
- "generated_at": "2026-10-23T10:34:11.454Z",
+ "generated_at": "2026-10-24T08:02:40.694Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
    "ops_alerts": "fresh",
    "intraday": "fresh",
-   "paper_account": "missing"
+   "paper_account": "live"
   }
  },
  "data_completeness": {
@@ -33,12 +33,12 @@
    "confidence": "missing"
   },
   "pnl_daily": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "pnl_cumulative": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "max_drawdown_daily": {
    "source": "missing",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -76,9 +76,13 @@
    "source": "derived",
    "confidence": "measured"
   },
+  "nav_realtime": {
+   "source": "live",
+   "confidence": "measured"
+  },
   "close_drawdown": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "max_drawdown_intraday": {
    "source": "missing",
@@ -93,22 +97,14 @@
    "confidence": "missing"
   },
   "backtest_deviation": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "derived",
+   "confidence": "measured"
   },
   "market_context": {
    "source": "archived",
    "confidence": "measured"
   },
-  "fee_total": {
-   "source": "missing",
-   "confidence": "missing"
-  },
   "slippage_total": {
-   "source": "missing",
-   "confidence": "missing"
-  },
-  "net_pnl": {
    "source": "missing",
    "confidence": "missing"
   },
@@ -125,19 +121,47 @@
   "date": "2026-10-23",
   "grid_triggers": null,
   "counter_trend_losses": null,
-  "pnl_daily": null,
-  "pnl_cumulative": null,
+  "pnl_daily": 0.006117,
+  "pnl_cumulative": -0.033454,
   "max_drawdown_daily": null,
   "trend_switch_hits": 1,
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "shift",
+   "label": "高潮分歧/状态切换期",
+   "cap": 0.3,
+   "position_range": "0%~30%",
+   "positionReconcile": {
+    "score": 88.5,
+    "base": {
+     "key": "base_attack",
+     "minPos": 0.6,
+     "maxPos": 1,
+     "label": "进攻（情绪极高位）"
+    },
+    "baseRange": "60%~100%",
+    "cap": {
+     "key": "shift",
+     "minPos": 0,
+     "maxPos": 0.3,
+     "label": "高潮分歧/状态切换期",
+     "advice": "强制降仓：限制新开进攻仓，只留核心仓",
+     "tone": "defend",
+     "force": true
+    },
+    "capRange": "0%~30%",
+    "force": true,
+    "conflict": true,
+    "finalRange": "0%~30%"
+   }
+  },
   "circuit_breaker": {
-   "dd_tier": null,
-   "hard_stop_triggered": null,
+   "dd_tier": 0,
+   "hard_stop_triggered": false,
    "risk_events": 0,
-   "note": "归档轨无账户日内回撤与止损记录，档位未知；ops-alerts 事件计数如上"
+   "note": "即时轨：运行回撤 0.00%，距档位边界见 drawdown_vs_threshold；单笔止损/风控拦截当日 无"
   },
   "overseas": [
    {
@@ -159,11 +183,17 @@
   "externalStale": [
    "外围「富时中国A50期货」已陈旧（采集失败未刷新），已置空"
   ],
-  "close_drawdown": null,
+  "nav_realtime": 1000000,
+  "close_drawdown": 0.15861,
   "max_drawdown_intraday": null,
   "grid_trigger_detail": null,
   "counter_trend_loss_ratio": null,
-  "backtest_deviation": null,
+  "backtest_deviation": {
+   "live_cum": -0.033454,
+   "backtest_v52": -0.0335,
+   "delta": 0.000046,
+   "note": "执行轨 vs 回测 v52 锚点（零偏差为设计约束）"
+  },
   "market_context": {
    "emotion": 88.5,
    "pct_rank": 100,
@@ -175,13 +205,11 @@
    "up_down": "4239/913/144",
    "amount_yi": 19562.8,
    "zt_dt": "82/6",
-   "breadth": null,
+   "breadth": "站上20日线仅 17.4%",
    "pain": "接力顺畅",
    "seats": "游资/其他（营业部·分公司·自营）主导"
   },
-  "fee_total": null,
   "slippage_total": null,
-  "net_pnl": null,
   "simulation_stock": null,
   "ma20_degraded": false,
   "status": "degraded"
@@ -201,11 +229,6 @@
    "field": "counter_trend_loss_ratio",
    "reason": "旁注：当日分歧 posGap（保费敞口）见 overnight/pre 段",
    "ref": "data/paper/dual_track_latest.json"
-  },
-  {
-   "field": "max_drawdown_daily / fee_total / net_pnl / cost_ratio / slippage 实测",
-   "reason": "个人账本成交与日内 equity 仅存在于浏览器 localStorage（即时轨一等公民，决议 1）",
-   "ref": "paper_ui.js __paperSnapshot"
   }
  ],
  "concepts": {
