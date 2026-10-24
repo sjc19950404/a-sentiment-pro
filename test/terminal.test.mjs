@@ -363,7 +363,7 @@ test('terminal：总览「妖股纯情绪 N 只」可点 → 跳选股视图并�
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
-test('terminal：点个股看详情 —— 抽屉含 AI 判词(紫)/排雷/持仓 三块 + K线', async () => {
+test('terminal：点个股看详情 —— 抽屉含 盘口快照/AI判词(紫)/排雷/持仓 四块 + K线', async () => {
   const { w, errors } = makeDom();
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
   await new Promise((r) => setTimeout(r, 300));
@@ -382,31 +382,46 @@ test('terminal：点个股看详情 —— 抽屉含 AI 判词(紫)/排雷/持�
 
   const ddet = w.document.querySelector('.t-drawer .t-ddet');
   assert.ok(ddet, '抽屉内含个股详情块（K 线之上）');
-  // 三块齐全：AI 判词 / 排雷 / 持仓
+  // 四块齐全：盘口快照 / AI 判词 / 排雷 / 持仓（顺序不写死，按语义定位）
   const secs = [...ddet.querySelectorAll('.t-dsec')];
-  assert.equal(secs.length, 3, '详情三块：妖股逻辑 + 排雷 + 持仓');
-  assert.ok(secs[0].classList.contains('is-ai'), '妖股逻辑块标紫（AI 侧车）');
-  assert.match(secs[0].textContent, /妖股逻辑推演/, '第一块是妖股逻辑推演');
+  assert.equal(secs.length, 4, '详情四块：盘口快照 + 妖股逻辑 + 排雷 + 持仓');
+  assert.ok(ddet.querySelector('.t-dsec.is-snap'), '含盘口快照块');
+  const aiSec = ddet.querySelector('.t-dsec.is-ai');
+  assert.ok(aiSec, '妖股逻辑块标紫（AI 侧车）');
+  assert.match(aiSec.textContent, /妖股逻辑推演/, 'AI 块是妖股逻辑推演');
   for (const k of ['连板', '行业', '逻辑', '置信']) {
-    assert.ok(secs[0].textContent.includes(k), `判词含字段：${k}`);
+    assert.ok(aiSec.textContent.includes(k), `判词含字段：${k}`);
   }
-  assert.match(secs[0].textContent, /asOf/, '判词带 asOfDate 防伪戳');
+  assert.match(aiSec.textContent, /asOf/, '判词带 asOfDate 防伪戳');
 
-  // 异步两块（黑名单 / 账户）已回填，不再是「读取中…」
-  assert.ok(!/读取中/.test(ddet.textContent), '排雷/持仓两块已异步回填');
+  // 异步三块（盘口 / 黑名单 / 账户）已回填，不再是「读取中…」
+  assert.ok(!/读取中/.test(ddet.textContent), '盘口/排雷/持仓三块已异步回填');
   const sig = readJsonSafe('data/signals-latest.json') || {};
   const dg = ((sig.dragonLogic || {}).dragons || []).find((x) => String(x.code) === code) || {};
-  assert.ok(secs[0].textContent.includes(String(dg.hybk || '—')), '行业取自侧车原值');
+  assert.ok(aiSec.textContent.includes(String(dg.hybk || '—')), '行业取自侧车原值');
+
+  const iq = readJsonSafe('data/intraday-quotes-latest.json') || {};
+  const q = (iq.quotes || []).find((x) => String(x.code) === code);
+  if (q) {
+    const snap = ddet.querySelector('.t-dsec.is-snap');
+    assert.ok(snap.querySelector('.t-dkv'), '盘口快照显示现价/涨跌/今高/今低/昨收');
+    assert.ok(snap.textContent.includes('盘中快照'), '盘口快照标注数据来源');
+    // 绝不展示脱敏 name（样本XXX）
+    assert.ok(!/样本/.test(snap.textContent), '盘口快照不展示脱敏占位 name');
+  } else {
+    assert.match(ddet.querySelector('.t-dsec.is-snap').textContent, /不在盘中快照名单内|盘口快照档缺失/, '该股不在快照名单 → 如实空态（fail-open）');
+  }
 
   const bl = readJsonSafe('data/llm_risk_blacklist.json') || {};
   const hit = (bl.blacklist || []).find((x) => String(x.code) === code);
+  const riskSec = ddet.querySelector('.t-dsec.is-risk');
   if (hit) {
-    assert.ok(secs[1].querySelector('.t-dhit'), `命中黑名单 → 显示风险等级（${hit.riskLevel}）`);
-    assert.ok(secs[1].textContent.includes(String(hit.reasons[0])), '显示风险理由标签');
+    assert.ok(riskSec.querySelector('.t-dhit'), `命中黑名单 → 显示风险等级（${hit.riskLevel}）`);
+    assert.ok(riskSec.textContent.includes(String(hit.reasons[0])), '显示风险理由标签');
   } else {
-    assert.match(secs[1].textContent, /未命中黑名单|排雷档缺失/, '未命中/缺档如实显示（fail-open）');
+    assert.match(riskSec.textContent, /未命中黑名单|排雷档缺失/, '未命中/缺档如实显示（fail-open）');
   }
-  assert.match(secs[2].textContent, /未持有|账户档缺失|持股/, '持仓块如实显示（当前账户为空仓）');
+  assert.match(ddet.querySelector('.t-dsec.is-pos').textContent, /未持有|账户档缺失|持股/, '持仓块如实显示（当前账户为空仓）');
 
   // K 线仍在抽屉内（详情块之上是新加的，不能挤掉原功能）
   assert.ok(w.document.querySelector('.t-drawer .t-dkhost svg'), '抽屉下半仍是 K 线 SVG');
@@ -578,5 +593,23 @@ test('terminal：总览涨跌停柱状不再恒空（emotion_history.history 回
   assert.ok(!/无涨跌停历史/.test(root.textContent), '总览涨跌停柱状不得再落到空态');
   const svgs = [...root.querySelectorAll('svg.t-chart')];
   assert.ok(svgs.some((s) => s.getAttribute('aria-label') === '涨跌停分布'), '柱状图本体已渲染');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：总览「市场宽度」面板（engine 原值：站上均线/新高新低/涨跌比）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 600));   // 宽度档异步回填，等足
+
+  const root = w.document.getElementById('tRoot');
+  assert.ok(/市场宽度/.test(root.textContent), '总览含市场宽度面板');
+  assert.ok(!/宽度档读取失败/.test(root.textContent), '宽度档不得落到失败态');
+
+  const bw = readJsonSafe('data/breadth-latest.json') || {};
+  const bm = bw.aboveMa || {}, nh = bw.newHigh || {}, nl = bw.newLow || {}, ud = bw.updown || {};
+  assert.ok(root.textContent.includes(String(bm.n)), `站上20日线家数取引擎原值 aboveMa.n=${bm.n}`);
+  assert.ok(root.textContent.includes(`${ud.up.toLocaleString('en-US')}:${ud.down.toLocaleString('en-US')}`), `涨跌比取引擎原值 ${ud.up}:${ud.down}（千分位）`);
+  assert.ok(root.textContent.includes(String(nh.n)), `历史新高家数取引擎原值 newHigh.n=${nh.n}`);
+  assert.match(root.textContent, /宽度判语/, '含宽度判语（engine verdict）');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });

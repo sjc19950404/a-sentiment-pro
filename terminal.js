@@ -453,6 +453,31 @@
       if (host) host.outerHTML = data.length ? barChart(data, { w: 900, h: 170, legend: ['涨停', '连板'] }) : '<div class="t-empty">无涨跌停历史</div>';
     });
 
+    // ── 市场宽度（全市场健康度核心）：站上均线占比 / 新高新低 / 涨跌比 ──
+    //   全取 engine 原值（data/breadth-latest.json），**不重算**；后台拉，不阻塞首屏。
+    const bwPanel = panel('市场宽度', '站上均线 / 新高新低 / 涨跌比 · engine 原值', '<div class="t-loading">加载…</div>', 't-c12');
+    g.appendChild(bwPanel);
+    jget('data/breadth-latest.json').then((bw) => {
+      if (!bwPanel.isConnected) return;
+      const host = bwPanel.lastElementChild;
+      if (!host) return;
+      if (!bw) { host.outerHTML = '<div class="t-empty">宽度档缺失 → 不显示（fail-open）</div>'; return; }
+      const bm = bw.aboveMa || {}, nh = bw.newHigh || {}, nl = bw.newLow || {}, ud = bw.updown || {};
+      const udTotal = (ud.up || 0) + (ud.down || 0) + (ud.flat || 0);
+      const vcls = bw.verdict === 'bull' ? 'is-ok' : bw.verdict === 'bear' ? 'is-alert' : '';
+      host.outerHTML = `<div class="t-stats">
+          ${stat('站上20日线', pct(bm.ratio != null ? bm.ratio * 100 : null, 1), `(${fmtInt(bm.n)}/${fmtInt(bm.den)}) · ${esc(bm.verdict || '—')}`)}
+          ${stat('历史新高', fmtInt(nh.n), `250日窗口 · 分母 ${fmtInt(nh.den)}`)}
+          ${stat('历史新低', fmtInt(nl.n), `250日窗口 · 分母 ${fmtInt(nl.den)}`)}
+          ${stat('涨跌比', `${fmtInt(ud.up)}:${fmtInt(ud.down)}`, `${fmtInt(ud.flat)} 平 · 全市场口径`)}
+        </div>
+        ${barChart([{ date: '涨', a: ud.up || 0 }, { date: '跌', a: ud.down || 0 }, { date: '平', a: ud.flat || 0 }], { w: 900, h: 110, legend: ['家数', ''] })}
+        <div class="t-dnote ${vcls}">宽度判语：<b>${esc(bw.verdict || '—')}</b>${bw.divergence ? ` · 背离：${esc(bw.divergence)}` : ''} · asOf ${esc(bw.date || '—')}</div>`;
+    }).catch(() => {
+      const host = bwPanel.lastElementChild;
+      if (host) host.outerHTML = '<div class="t-empty">宽度档读取失败（fail-open）</div>';
+    });
+
     return g;
   }
 
@@ -927,6 +952,10 @@
     const dl = S.dragonLogic || {};
     const dg = (Array.isArray(dl.dragons) ? dl.dragons : []).find((x) => normCode(x.code) === code);
 
+    // ① 盘口快照（引擎盘中快照档，中性色）：**只用 price/chgPct/high/low/prevClose 数值**，
+    //   ⚠ 该档的 name 是「样本XXX」脱敏占位 → 绝不用它，name 仍由抽屉标题（来自天梯/持仓真实名）承担。
+    //   仅含活跃标的，不在名单内 → 如实「无盘口」，不占位。
+
     // ① 妖股逻辑（同步可得：signals 已在内存）
     const dragonBody = dg
       ? `<div class="t-dkv">
@@ -939,7 +968,11 @@
       : `<div class="t-dnone">不在当日连板梯队名单内（侧车当日扫描 ${fmtInt(dl.scanned || 0)} 只）→ 无 GLM 涨停逻辑判词</div>`;
     const srcLine = `<div class="t-dsrc">来源 GLM ${esc(dl.model || '—')} · asOf ${esc(dl.asOfDate || '—')} · 仅参考，不改引擎情绪分 / regime</div>`;
 
-    host.innerHTML = `<section class="t-dsec is-ai">
+    host.innerHTML = `<section class="t-dsec is-snap" data-sec="snap">
+        <div class="t-dsec-h">📈 盘口快照</div>
+        <div class="t-dsec-b"><span class="t-mut">读取中…</span></div>
+      </section>
+      <section class="t-dsec is-ai">
         <div class="t-dsec-h">🕵 妖股逻辑推演<span class="t-dsec-tag">AI Side-car</span></div>
         <div class="t-dsec-b">${dragonBody}${srcLine}</div>
       </section>
@@ -952,12 +985,32 @@
         <div class="t-dsec-b"><span class="t-mut">读取中…</span></div>
       </section>`;
 
-    // ②③ 异步两档（黑名单 / 账户），失败各自降级；抽屉已切票则丢弃结果（防串台）
-    Promise.all([jget('data/llm_risk_blacklist.json'), jget('data/paper/account.json')])
-      .then(([bl, acct]) => {
+    // ②③④ 异步三档（盘口 / 黑名单 / 账户），失败各自降级；抽屉已切票则丢弃结果（防串台）
+    Promise.all([jget('data/intraday-quotes-latest.json'), jget('data/llm_risk_blacklist.json'), jget('data/paper/account.json')])
+      .then(([iq, bl, acct]) => {
         if (!host.isConnected) return;
+        const secS = $('[data-sec="snap"] .t-dsec-b', host);
         const secR = $('[data-sec="risk"] .t-dsec-b', host);
         const secP = $('[data-sec="pos"] .t-dsec-b', host);
+
+        // ② 盘口快照（仅含活跃标的；数值取引擎原值，脱敏 name 一律不用）
+        if (secS) {
+          const q = (iq && Array.isArray(iq.quotes)) ? iq.quotes.find((x) => normCode(x.code) === code) : null;
+          if (!iq) secS.innerHTML = '<div class="t-dnone">盘口快照档缺失 → 不显示（fail-open）</div>';
+          else if (!q) secS.innerHTML = '<div class="t-dnone">该股不在盘中快照名单内（仅含活跃标的）→ 无盘口</div>';
+          else {
+            const up = (+q.chgPct || 0) >= 0;
+            secS.innerHTML = `<div class="t-dkv">
+                <div><span class="t-dk">现价</span><span class="t-dv">${fmt(q.price, 2)}</span></div>
+                <div><span class="t-dk">涨跌</span><span class="t-dv ${up ? 'up' : 'dn'}">${sgn(q.chgPct, 2)}</span></div>
+                <div><span class="t-dk">今高</span><span class="t-dv">${fmt(q.high, 2)}</span></div>
+                <div><span class="t-dk">今低</span><span class="t-dv">${fmt(q.low, 2)}</span></div>
+                <div><span class="t-dk">昨收</span><span class="t-dv">${fmt(q.prevClose, 2)}</span></div>
+              </div>
+              <div class="t-dsrc">盘中快照 ${esc(iq.generatedAt || '—')} · 仅含活跃标的 · 口径归采集层</div>`;
+          }
+        }
+
 
         // ② 排雷黑名单
         const hit = (bl && Array.isArray(bl.blacklist) ? bl.blacklist : []).find((x) => normCode(x.code) === code);
@@ -996,8 +1049,10 @@
         }
       })
       .catch(() => {
+        const secS = $('[data-sec="snap"] .t-dsec-b', host);
         const secR = $('[data-sec="risk"] .t-dsec-b', host);
         const secP = $('[data-sec="pos"] .t-dsec-b', host);
+        if (secS) secS.innerHTML = '<div class="t-dnone">读取失败 → 不显示盘口（fail-open）</div>';
         if (secR) secR.innerHTML = '<div class="t-dnone">读取失败 → 不打标、不拦截（fail-open）</div>';
         if (secP) secP.innerHTML = '<div class="t-dnone">读取失败 → 不显示持仓</div>';
       });
