@@ -537,16 +537,10 @@
         ${stat('主线净买', wan(mt.main_yi != null ? mt.main_yi * 10000 : null), `全榜 ${wan(mt.tot_yi != null ? mt.tot_yi * 10000 : null)}`, (mt.main_yi != null ? mt.main_yi : 0) >= 0 ? 'up' : 'dn')}
       </div>` : '<div class="t-empty">当日无主线</div>', 't-c8'));
 
-    // ── 涨跌停柱状（后台拉 emotion_history，不阻塞首屏）──
-    //    2026-10-25 修正：原取 archive-recent.json 的 .days（该档无此键）→ 恒为空态；
-    //    且原图例写死「涨停/跌停」而跌停历史并不落盘，改用「涨停/连板」如实标注。
-    const barPanel = panel('涨跌停分布', `近 ${rng} 交易日 · 涨停 vs 连板`, '<div class="t-loading">加载…</div>', 't-c12');
-    g.appendChild(barPanel);
-    loadHist(rng).then((hist) => {
-      const data = hist.filter((r) => r.zt != null).map((r) => ({ date: r.date, a: r.zt, b: r.lb }));
-      const host = barPanel.lastElementChild;
-      if (host) host.outerHTML = data.length ? barChart(data, { w: 900, h: 170, legend: ['涨停', '连板'] }) : '<div class="t-empty">无涨跌停历史</div>';
-    });
+    // 近 N 日「涨停 vs 连板」柱状图归属「涨跌停」专题视图（viewZt），
+    // 总览不再重复陈列，避免与涨跌停视图图面重合/冗余。
+
+
 
     // ── 市场宽度（全市场健康度核心）：站上均线占比 / 新高新低 / 涨跌比 ──
     //   全取 engine 原值（data/breadth-latest.json），**不重算**；后台拉，不阻塞首屏。

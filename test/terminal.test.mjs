@@ -587,19 +587,9 @@ test('terminal：板块视图增强 —— 宽度 / 双基准切换 / AI 板块�
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
-// 回归：首期总览的「涨跌停分布」因读 archive-recent.json 的 .days（该档无此键）恒为空态
-test('terminal：总览涨跌停柱状不再恒空（emotion_history.history 回归）', async () => {
-  const { w, errors } = makeDom();
-  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
-  await new Promise((r) => setTimeout(r, 420));
+// 回归：首期总览的「涨跌停分布」因读 archive-recent.json 的 .days（该档无此键）恒为空态；
+//   现该图归属「涨跌停」专题视图（viewZt），其数据通路由 viewZt 历史图测试覆盖，此处不再重复断言。
 
-  const root = w.document.getElementById('tRoot');
-  assert.ok(/涨停 vs 连板/.test(root.textContent), '总览含涨跌停分布面板（口径已如实标注）');
-  assert.ok(!/无涨跌停历史/.test(root.textContent), '总览涨跌停柱状不得再落到空态');
-  const svgs = [...root.querySelectorAll('svg.t-chart')];
-  assert.ok(svgs.some((s) => s.getAttribute('aria-label') === '涨跌停分布'), '柱状图本体已渲染');
-  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
-});
 
 test('terminal：总览「市场宽度」面板（engine 原值：站上均线/新高新低/涨跌比）', async () => {
   const { w, errors } = makeDom();
@@ -842,5 +832,16 @@ test('terminal：终端视图整体可竖向滚动（body 不被 overflow:hidden
   termBtn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 200));
   assert.notEqual(w.document.body.style.overflow, 'hidden', '终端视图下 body 不应被 overflow:hidden 锁死（应可竖向滚动）');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：总览不再重复陈列「涨跌停分布」图（归涨跌停视图）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+  const root = w.document.getElementById('tRoot');
+  [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'overview').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 400));
+  assert.ok(!/涨跌停分布/.test(root.textContent), '总览不应再出现「涨跌停分布」面板（已归涨跌停视图，避免与涨跌停视图图面重合）');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
