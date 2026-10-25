@@ -2,59 +2,59 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-10-23",
- "generatedAt": "2026-10-24T18:30:32.545+08:00",
+ "generatedAt": "2026-10-25T18:30:26.115+08:00",
  "model": "glm-4-flash",
  "sentiment": 0.9,
  "confidence": 0.8,
- "reason": "市场整体情绪积极，涨停家数远超跌停，成交额放大，题材动量活跃，强势股表现强劲。",
+ "reason": "市场整体情绪积极，涨停家数远超跌停家数，强势股多与新技术、业绩增长相关。",
  "events": [
   {
    "type": "业绩预告",
    "target": "恩捷股份",
    "tone": "positive",
-   "note": "业绩扭亏，固态电池材料概念助力股价上涨。"
+   "note": "锂电池隔膜业务扭亏为盈，固态电池材料业务增长"
   },
   {
    "type": "行业催化",
    "target": "物理AI",
    "tone": "positive",
-   "note": "新晋题材物理AI受到市场关注。"
+   "note": "物理AI概念股活跃，新晋题材"
   },
   {
    "type": "行业催化",
    "target": "PCB",
    "tone": "positive",
-   "note": "新晋题材PCB概念活跃。"
+   "note": "PCB概念股活跃，新晋题材"
   },
   {
    "type": "行业催化",
    "target": "汽车电子",
    "tone": "positive",
-   "note": "新晋题材汽车电子受到市场追捧。"
+   "note": "汽车电子概念股活跃，新晋题材"
   },
   {
    "type": "行业催化",
    "target": "机器人零部件",
    "tone": "positive",
-   "note": "新晋题材机器人零部件概念走强。"
+   "note": "机器人零部件概念股活跃，新晋题材"
   },
   {
    "type": "行业催化",
    "target": "三季报增长",
    "tone": "positive",
-   "note": "三季报增长题材持续活跃。"
+   "note": "三季报增长题材活跃，新晋题材"
   },
   {
    "type": "行业催化",
    "target": "微短剧",
    "tone": "positive",
-   "note": "延续题材微短剧保持热度。"
+   "note": "微短剧题材延续活跃"
   },
   {
    "type": "行业催化",
    "target": "低空经济",
    "tone": "positive",
-   "note": "延续题材低空经济概念受到关注。"
+   "note": "低空经济题材延续活跃"
   }
  ],
  "inputDigest": {

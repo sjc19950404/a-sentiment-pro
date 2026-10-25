@@ -1,7 +1,7 @@
 {
  "kind": "trading-calendar",
  "version": "1.0",
- "generatedAt": "2026-10-24T10:30:02.431Z",
+ "generatedAt": "2026-10-25T10:30:02.664Z",
  "source": "tencent-kline-derived",
  "upstream": "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=sh000001,day,2025-01-01,2027-12-31,640,qfq",
  "coveredFrom": "2025-01-02",

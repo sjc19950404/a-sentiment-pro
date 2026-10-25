@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-23",
- "generated_at": "2026-10-24T08:02:40.694Z",
+ "generated_at": "2026-10-25T10:40:36.006Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -174,7 +174,7 @@
    {
     "key": "sox",
     "name": "费城半导体指数",
-    "chgPct": -0.06723499999999999,
+    "chgPct": 0.004425,
     "state": "ok",
     "stale": false,
     "cacheNote": null
@@ -205,7 +205,7 @@
    "up_down": "4239/913/144",
    "amount_yi": 19562.8,
    "zt_dt": "82/6",
-   "breadth": "站上20日线仅 17.4%",
+   "breadth": "站上20日线仅 17.5%",
    "pain": "接力顺畅",
    "seats": "游资/其他（营业部·分公司·自营）主导"
   },
