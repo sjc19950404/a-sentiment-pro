@@ -1357,6 +1357,11 @@
         node = el('div', 't-panel t-c12', `<div class="t-empty">「${esc(k)}」视图数据已就绪，下期接入。<br>终端外壳 / 设计令牌 / 图表助手（折线·柱状·仪表·K线）/ 联动总线均已就绪——加面板即可。</div>`);
       }
       body.innerHTML = '';
+      // 视图标题条：滚动时钉在 sticky 顶栏正下方，始终显示当前视图名（总览/涨跌停/…）
+      const vhMeta = VIEWS.find((v) => v.k === k);
+      const viewHead = el('div', 't-viewhead', `<span class="t-vh-name">${esc(vhMeta ? vhMeta.n : k)}</span>`);
+      viewHead.style.top = (top.offsetHeight || 44) + 'px';
+      body.appendChild(viewHead);
       body.appendChild(node);
       const reg = (S.regime && S.regime.latest) || {};
       // ⚠ t-tk-lbl 原用字符 '›'（U+203A），在 Windows 字体下渲染得极像逗号/顿号，

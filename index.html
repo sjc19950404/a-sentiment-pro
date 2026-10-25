@@ -188,6 +188,10 @@
 
 /* ── 主栅格 ─────────────────────────────────────────────────────────────── */
 .t-main { padding: var(--t-pad) 16px 28px; }
+/* 视图标题条：滚动时钉在 sticky 顶栏正下方，始终显示当前视图名（总览/涨跌停/资金/板块/选股/模拟盘/K线） */
+.t-viewhead { position: sticky; top: 44px; z-index: 25; background: var(--t-bg); padding: 7px 2px 9px; margin-bottom: 8px; border-bottom: 1px solid var(--t-line); display: flex; align-items: center; gap: 8px; }
+.t-viewhead::before { content: ""; width: 3px; height: 14px; background: var(--t-acc); border-radius: 2px; }
+.t-viewhead .t-vh-name { font-size: 14px; font-weight: 650; color: var(--t-ink); letter-spacing: .02em; }
 .t-grid { display: grid; gap: var(--t-pad); grid-template-columns: repeat(12, 1fr); }
 .t-c3 { grid-column: span 3; }
 .t-c4 { grid-column: span 4; }
@@ -2718,6 +2722,11 @@
         node = el('div', 't-panel t-c12', `<div class="t-empty">「${esc(k)}」视图数据已就绪，下期接入。<br>终端外壳 / 设计令牌 / 图表助手（折线·柱状·仪表·K线）/ 联动总线均已就绪——加面板即可。</div>`);
       }
       body.innerHTML = '';
+      // 视图标题条：滚动时钉在 sticky 顶栏正下方，始终显示当前视图名（总览/涨跌停/…）
+      const vhMeta = VIEWS.find((v) => v.k === k);
+      const viewHead = el('div', 't-viewhead', `<span class="t-vh-name">${esc(vhMeta ? vhMeta.n : k)}</span>`);
+      viewHead.style.top = (top.offsetHeight || 44) + 'px';
+      body.appendChild(viewHead);
       body.appendChild(node);
       const reg = (S.regime && S.regime.latest) || {};
       // ⚠ t-tk-lbl 原用字符 '›'（U+203A），在 Windows 字体下渲染得极像逗号/顿号，

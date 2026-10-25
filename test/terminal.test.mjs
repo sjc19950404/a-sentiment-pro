@@ -822,6 +822,23 @@ test('terminal：图表 hover → tooltip 显示数值（P0 交互）', async ()
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
+test('terminal：每个视图顶部有 sticky 视图标题（滚动时固定显示视图名）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+  const root = w.document.getElementById('tRoot');
+  const head = root.querySelector('.t-viewhead');
+  assert.ok(head, '存在视图标题条 .t-viewhead');
+  assert.ok(/总览/.test(head.textContent), `标题含当前视图名「总览」（实际：${head.textContent}）`);
+  assert.ok(/px$/.test(head.style.top || ''), `标题 sticky top 已按顶栏高度设置（实际：${head.style.top}）`);
+  // 切到涨跌停，标题应更新
+  [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'zt').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 300));
+  const head2 = root.querySelector('.t-viewhead');
+  assert.ok(/涨跌停/.test(head2.textContent), `切换后标题更新为「涨跌停」（实际：${head2.textContent}）`);
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
 test('terminal：终端视图整体可竖向滚动（body 不被 overflow:hidden 锁死）', async () => {
   const { w, errors } = makeDom();
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
