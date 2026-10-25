@@ -1,17 +1,17 @@
 {
   "meta": {
-    "generatedAt": "2026-10-25T20:30:02.695Z",
+    "generatedAt": "2026-10-25T21:20:03.486Z",
     "source": "sina",
     "sourceUrl": "https://hq.sinajs.cn/list=",
     "usSessionDate": "2026-10-23",
     "aShareTradeDate": "2026-10-23",
     "quoteCount": 16,
-    "okCount": 15,
+    "okCount": 16,
     "failed": [],
     "usReadiness": {
       "ready": true,
-      "etText": "16:30 ET",
-      "reason": "美东 16:30 ET 已收盘（≥16:30 ET），可采信当日收盘",
+      "etText": "17:20 ET",
+      "reason": "美东 17:20 ET 已收盘（≥16:30 ET），可采信当日收盘",
       "readyAfterEt": "16:30 ET（收盘 + 30 分钟结算缓冲）= 北京次日 04:30"
     },
     "usNoSession": [],
@@ -21,7 +21,7 @@
     "usSessionDates": [],
     "usSessionsBeforeOpen": 0,
     "lastAttempt": {
-      "at": "2026-10-25T20:30:02.695Z",
+      "at": "2026-10-25T21:20:03.486Z",
       "outcome": "ok",
       "reason": null
     }
@@ -34,13 +34,13 @@
       "kind": "hf",
       "role": "a_share_proxy",
       "note": "新加坡交易所。夜盘 17:00–次日 05:15（北京），05:15 收盘集合竞价、结算价出清。报告口径取「富时A50期货夜盘」——仅在北京 05:15 后的抓取才采信为夜盘收盘，早于此时点显示「夜盘未收」、绝不取盘中瞬时价",
-      "ok": false,
-      "state": "night-open",
-      "stateText": "夜盘未收",
+      "ok": true,
+      "state": "ok",
+      "stateText": "",
       "last": 12989.64,
       "prevClose": 13039,
-      "chg": null,
-      "chgPct": null,
+      "chg": -49.36,
+      "chgPct": -0.3786,
       "chgPctReported": null,
       "chgReported": null,
       "hi52": null,
@@ -52,7 +52,7 @@
       "low": 12974,
       "dp": 1,
       "lastText": "12989.6",
-      "chgPctText": "夜盘未收"
+      "chgPctText": "-0.38%"
     },
     {
       "key": "dji",
@@ -307,22 +307,22 @@
       "ok": true,
       "state": "ok",
       "stateText": "",
-      "last": 101.752,
-      "prevClose": 101.6219,
-      "chg": 0.1301,
-      "chgPct": 0.128,
+      "last": 101.6887,
+      "prevClose": 101.752,
+      "chg": -0.0633,
+      "chgPct": -0.0622,
       "chgPctReported": null,
       "chgReported": null,
       "hi52": null,
       "lo52": null,
-      "quoteTime": "04:59:00",
-      "sessionDate": "2026-10-24",
-      "open": 101.6241,
-      "high": 101.8564,
-      "low": 101.489,
+      "quoteTime": "05:19:59",
+      "sessionDate": "2026-10-26",
+      "open": 101.6818,
+      "high": 101.6938,
+      "low": 101.6602,
       "dp": 3,
-      "lastText": "101.752",
-      "chgPctText": "+0.13%"
+      "lastText": "101.689",
+      "chgPctText": "-0.06%"
     },
     {
       "key": "cnh",
@@ -334,21 +334,21 @@
       "ok": true,
       "state": "ok",
       "stateText": "",
-      "last": 6.669,
+      "last": 6.6692,
       "prevClose": 6.669,
-      "chg": 0,
-      "chgPct": 0,
+      "chg": 0.0002,
+      "chgPct": 0.003,
       "chgPctReported": null,
       "chgReported": null,
       "hi52": 6.9957,
       "lo52": 6.6686,
-      "quoteTime": "04:23:37",
+      "quoteTime": "05:19:30",
       "sessionDate": "2026-10-26",
       "open": 6.6692,
-      "high": 6.6692,
+      "high": 6.6693,
       "low": 6.6676,
       "dp": 4,
-      "lastText": "6.6690",
+      "lastText": "6.6692",
       "chgPctText": "0.00%"
     },
     {
@@ -461,9 +461,9 @@
     }
   ],
   "rmb": {
-    "usdcnh_last": 6.669,
-    "usdcnh_chg_pct": 0,
-    "rmb_up_pct": 0,
+    "usdcnh_last": 6.6692,
+    "usdcnh_chg_pct": 0.003,
+    "rmb_up_pct": -0.003,
     "usdcny_last": 6.6702
   },
   "anchors": [
@@ -583,18 +583,16 @@
   },
   "watch": {
     "verdict": {
-      "key": "insufficient",
-      "label": "判据不足",
-      "hint": "主锚（A50 期货 / 费半 / 中国金龙）中有品种未取到数据，外围方向**无法判定**——这不是\"外围中性\"，而是\"没看到\"。节后开盘请认准 A 股自身资金与主线，勿以本栏为方向依据。"
+      "key": "neutral",
+      "label": "外围中性",
+      "hint": "外围未给方向，A 股开盘方向主要由自身资金决定，重点看主线反核与量能"
     },
-    "bias": -0.5,
+    "bias": -1,
     "signals": [
       {
-        "level": "unknown",
+        "level": "info",
         "key": "a50",
-        "text": "A50 期货（主锚） 数据缺失（夜盘未收（取数时点早于 05:15，源给的是盘中瞬时价））→ 未参与判定",
-        "missing": true,
-        "main": true
+        "text": "A50 期货 -0.38% → 假期定价基本持平，无明确方向"
       },
       {
         "level": "info",
@@ -614,12 +612,8 @@
     ],
     "biasGate": 2,
     "holiday": false,
-    "missing": [
-      "a50"
-    ],
-    "mainMissing": [
-      "a50"
-    ],
-    "missingNote": "1 个品种数据缺失（a50），已按\"未参与判定\"处理，不计入方向分。缺失 ≠ 中性：把没数据读成\"没波动\"会伪造出一个确定结论。"
+    "missing": [],
+    "mainMissing": [],
+    "missingNote": ""
   }
 }
