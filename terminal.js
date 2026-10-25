@@ -1282,7 +1282,7 @@
       dw.innerHTML = `<div class="t-drawer-h"><span class="t-dn-name"></span><span class="t-dn-code"></span><button class="t-close" aria-label="关闭">✕</button></div><div class="t-drawer-b"></div>`;
       document.body.appendChild(mask); document.body.appendChild(dw);
       refs = { mask, dw, name: $('.t-dn-name', dw), code: $('.t-dn-code', dw), body: $('.t-drawer-b', dw) };
-      const close = () => { mask.classList.remove('is-open'); dw.classList.remove('is-open'); LINK.set({ code: null }); };
+      const close = () => { mask.classList.remove('is-open'); dw.classList.remove('is-open'); LINK.set({ code: null }); document.body.style.overflow = ''; };
       $('.t-close', dw).addEventListener('click', close);
       mask.addEventListener('click', close);
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
@@ -1294,6 +1294,7 @@
     refs.body.innerHTML = '<div class="t-ddet"></div><div class="t-dkhost"></div>';
     refs.mask.classList.add('is-open');
     refs.dw.classList.add('is-open');
+    document.body.style.overflow = 'hidden';   // 抽屉打开：锁背景滚动，关闭时解锁
     SAFE(() => renderDetail($('.t-ddet', refs.body), code), 'drawer-detail');
     renderKline($('.t-dkhost', refs.body), code, drawerKState);
   }
@@ -1391,7 +1392,8 @@
     const switchTo = (v) => {
       const term = v === 'terminal';
       root.hidden = !term;
-      document.body.style.overflow = term ? 'hidden' : '';
+      // 终端视图允许整体竖向滚动（矮屏/窄屏内容多时可见底部），不再锁 body 滚动
+      document.body.style.overflow = '';
       if (term) render(cur);
     };
     top.addEventListener('click', (e) => {
@@ -1470,7 +1472,6 @@
     })();
     if (wantTerminal) {
       root.hidden = false;
-      document.body.style.overflow = 'hidden';
       [...$('.t-viewswitch', top).children].forEach((x) => x.classList.toggle('is-on', x.dataset.v === 'terminal'));
     }
 

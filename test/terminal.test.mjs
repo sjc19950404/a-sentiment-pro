@@ -831,3 +831,16 @@ test('terminal：图表 hover → tooltip 显示数值（P0 交互）', async ()
   assert.ok(first.classList.contains('is-hot'), '点击后元素锁定高亮 is-hot');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
+
+test('terminal：终端视图整体可竖向滚动（body 不被 overflow:hidden 锁死）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+  const root = w.document.getElementById('tRoot');
+  const termBtn = [...root.querySelectorAll('.t-viewswitch button')].find((b) => b.dataset.v === 'terminal');
+  assert.ok(termBtn, '存在 ⚡终端 切换按钮');
+  termBtn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 200));
+  assert.notEqual(w.document.body.style.overflow, 'hidden', '终端视图下 body 不应被 overflow:hidden 锁死（应可竖向滚动）');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
