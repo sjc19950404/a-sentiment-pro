@@ -1479,6 +1479,7 @@
 
   /** 折线图 + regime 色带 + 四档参考线 + 当前值微光点 */
   function lineChart(rows, opt = {}) {
+    const gid = 'tGrad' + (lineChart._g = (lineChart._g || 0) + 1);   // 每实例唯一渐变 id，避免多图同 id 冲突
     const W = opt.w || 760, H = opt.h || 230, P = { l: 34, r: 12, t: 12, b: 26 };
     const iw = W - P.l - P.r, ih = H - P.t - P.b;
     const n = rows.length;
@@ -1488,7 +1489,7 @@
     const vMin = usePct ? 0 : opt.vMin, vMax = usePct ? 100 : opt.vMax;
     const Y = (v) => P.t + ih - ((v - vMin) / ((vMax - vMin) || 1)) * ih;
     let s = `<svg class="t-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(opt.n || '情绪分走势')}">`;
-    s += `<defs><linearGradient id="tGradAcc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22d3ee" stop-opacity=".26"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/></linearGradient></defs>`;
+    s += `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22d3ee" stop-opacity=".26"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/></linearGradient></defs>`;
     // 四档参考线 + regime 色带：仅情绪分（usePct）模式有意义，真实域序列（净值等）跳过
     if (usePct) {
       [[24, '清仓'], [65, '满仓'], [80, '过热']].forEach(([v, lb]) => {
@@ -1508,11 +1509,23 @@
     }
     s += `<line class="t-axis" x1="${P.l}" y1="${P.t}" x2="${P.l}" y2="${H - P.b}"/>`;
     s += `<line class="t-axis" x1="${P.l}" y1="${H - P.b}" x2="${W - P.r}" y2="${H - P.b}"/>`;
+    // 真实域序列（如净值）：补画 Y 轴刻度（量级清晰，如「100.0万」）+ X 轴日期（抽稀防重叠）
+    if (!usePct) {
+      const fmtTick = (v) => (Math.abs(v) >= 10000 ? (v / 10000).toFixed(1) + '万' : (Math.abs(v) >= 1 ? v.toFixed(1) : v.toFixed(2)));
+      const yt = 4;
+      for (let i = 0; i <= yt; i++) {
+        const v = vMin + (vMax - vMin) * i / yt, y = Y(v);
+        s += `<line class="t-gridln" x1="${P.l}" y1="${y.toFixed(1)}" x2="${W - P.r}" y2="${y.toFixed(1)}" opacity="${i === 0 || i === yt ? .9 : .35}"/>`;
+        s += `<text class="t-tick" x="${P.l - 4}" y="${(y + 3).toFixed(1)}" text-anchor="end">${fmtTick(v)}</text>`;
+      }
+      const xStep = Math.max(1, Math.floor(n / 6));
+      rows.forEach((r, i) => { if (i % xStep === 0 || i === n - 1) { const x = X(i); s += `<text class="t-tick" x="${x.toFixed(1)}" y="${H - P.b + 13}" text-anchor="middle">${esc(r.date || '')}</text>`; } });
+    }
     // 面积 + 折线
     let d = '', a = `M ${X(0)} ${H - P.b} `;
     rows.forEach((r, i) => { d += `${i ? 'L' : 'M'} ${X(i).toFixed(1)} ${Y(r.v).toFixed(1)} `; a += `L ${X(i).toFixed(1)} ${Y(r.v).toFixed(1)} `; });
     a += `L ${X(n - 1)} ${H - P.b} Z`;
-    if (!opt.noArea) s += `<path class="t-area" d="${a}"/>`;
+    if (!opt.noArea) s += `<path class="t-area" d="${a}" fill="url(#${gid})"/>`;
     s += `<path class="t-line" d="${d}"${opt.lineColor ? ` stroke="${opt.lineColor}"` : ''}/>`;
     // 分位虚线
     if (rows.some((r) => r.pct != null)) {
@@ -1967,7 +1980,9 @@
     const cur = bases.find((b) => b.k === sectorBase) || bases[0];
     const vs = cur.d;
     const atk = vs.attack || [], def = vs.defense || [];
-    const maxAbs = Math.max(1, ...atk.map((x) => Math.abs(x.excess || 0)), ...def.map((x) => Math.abs(x.excess || 0)));
+    // ⚠ 柱宽必须与右侧显示的数值（change_pct，涨跌幅）同口径等比例，否则「数值接近、柱长差很大」的视觉欺骗。
+    //   绝不混用 excess（相对基准超额，语义不同）。
+    const maxAbs = Math.max(1, ...atk.map((x) => Math.abs(x.change_pct || 0)), ...def.map((x) => Math.abs(x.change_pct || 0)));
     const rows = [];
     // ⚠ attack（跑赢基准·红）与 defense（落后基准·绿）是**两个独立榜单**，按名次对齐展示；
     //   每行左右各成一个**完整单元**（各自带板块名 + 数值），绝不共用一行的 name → 杜绝张冠李戴。
@@ -1976,12 +1991,12 @@
       rows.push(`<div class="t-dv-row t-dv-row--dual">
         <div class="t-dv-side is-dn">
           <span class="t-dv-name" title="${esc((d && d.name) || '')}">${esc((d && d.name) || '—')}</span>
-          <span class="t-dv-track is-l">${d ? `<span class="t-dv-fill dn" style="width:${(Math.abs(d.excess) / maxAbs * 100).toFixed(1)}%"></span>` : ''}</span>
+          <span class="t-dv-track is-l">${d ? `<span class="t-dv-fill dn" style="width:${(Math.abs(d.change_pct) / maxAbs * 100).toFixed(1)}%"></span>` : ''}</span>
           <span class="t-dv-val"><span class="${d ? 'dn' : ''}">${d ? sgn(d.change_pct, 2) : ''}</span></span>
         </div>
         <div class="t-dv-side is-up">
           <span class="t-dv-val"><span class="${a ? 'up' : ''}">${a ? sgn(a.change_pct, 2) : ''}</span></span>
-          <span class="t-dv-track">${a ? `<span class="t-dv-fill up" style="width:${(Math.abs(a.excess) / maxAbs * 100).toFixed(1)}%"></span>` : ''}</span>
+          <span class="t-dv-track">${a ? `<span class="t-dv-fill up" style="width:${(Math.abs(a.change_pct) / maxAbs * 100).toFixed(1)}%"></span>` : ''}</span>
           <span class="t-dv-name" title="${esc((a && a.name) || '')}">${esc((a && a.name) || '—')}</span>
         </div>
       </div>`);

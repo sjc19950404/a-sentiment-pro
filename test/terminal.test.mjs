@@ -789,3 +789,17 @@ test('terminal：总览 —— 资金正向红色 + 顶栏 regime 徽章', async
   if (rl) assert.ok(badge.textContent.includes(rl), `徽章显示 regime 原文：${rl}`);
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
+
+test('terminal：涨跌停视图 —— 历史图从 emotion_history 画出（非无历史）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+  const root = w.document.getElementById('tRoot');
+  [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'zt').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 500));
+  // 涨停vs连板 + 最高连板 → 应各有一个 barChart（共 2 个），封板质量表不计入
+  const charts = root.querySelectorAll('svg.t-chart');
+  assert.ok(charts.length >= 2, `涨跌停历史图应画出 barChart（实际 ${charts.length}，不应为「无历史」）`);
+  assert.ok(!/无历史/.test(root.textContent), '不应显示「无历史」（数据档 emotion_history.json 含 250 条）');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});

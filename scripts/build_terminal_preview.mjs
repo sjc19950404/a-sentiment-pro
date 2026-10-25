@@ -17,6 +17,7 @@ const DATA = {
   'data/signals-latest.json': rdJson(join(ROOT, 'data/signals-latest.json')),
   'data/archive-recent.json': rdJson(join(ROOT, 'data/archive-recent.json')),
   'data/paper/account.json': rdJson(join(ROOT, 'data/paper/account.json')),
+  'data/emotion_history.json': rdJson(join(ROOT, 'data/emotion_history.json')),
   'ui/kline/sh600000.json': rdJson(join(ROOT, 'ui/kline/sh600000.json')),
   'ui/kline/sz000001.json': rdJson(join(ROOT, 'ui/kline/sz000001.json')),
 };
