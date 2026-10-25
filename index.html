@@ -369,13 +369,15 @@
 .t-gauge .t-g-lbl-below { font-size: 10.5px; color: var(--t-ink-2); margin-top: 1px; }
 
 /* ── 密排表（数据锐：1px 实线内框 + 等宽右对齐）─────────────────────────── */
-.t-tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.t-tbl-wrap { max-height: 56vh; overflow: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: var(--t-line-hi) transparent; }
 .t-tbl { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 320px; }
 .t-tbl th {
   text-align: right; font-weight: 500; font-size: 11px; color: var(--t-ink-3);
   padding: 5px 8px; border-bottom: 1px solid var(--t-line-hi); white-space: nowrap;
 }
 .t-tbl th:first-child, .t-tbl td:first-child { text-align: left; }
+/* 滚动时表头钉住，行不穿透（纯 CSS，零 JS） */
+.t-tbl thead th { position: sticky; top: 0; z-index: 2; background: var(--t-panel); }
 .t-tbl td {
   text-align: right; padding: 4px 8px;          /* 紧凑：行高更紧，像机构操盘软件 */
   border-bottom: 1px solid var(--t-line); white-space: nowrap; color: var(--t-ink);
