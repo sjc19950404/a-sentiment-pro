@@ -192,6 +192,12 @@
     [0, Math.floor((n - 1) / 2), n - 1].forEach((i) => {
       s += `<text class="t-tick" x="${X(i)}" y="${H - P.b + 15}" text-anchor="${i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}">${rows[i].date}</text>`;
     });
+    // 交互命中区（透明竖条覆盖整列：hover/触摸/点击 → tooltip 出该点数值）
+    const hitW = Math.max(iw / Math.max(1, n - 1), 14);
+    rows.forEach((r, i) => {
+      const tip = [r.date, `值 ${fmt(r.v)}`, (r.pct != null ? `分位 ${pct(r.pct)}` : '')].filter(Boolean).join('|');
+      s += `<rect class="t-hit" x="${(X(i) - hitW / 2).toFixed(1)}" y="${P.t}" width="${hitW.toFixed(1)}" height="${ih}" fill="transparent" data-tip="${esc(tip)}"/>`;
+    });
     return s + '</svg>';
   }
 
@@ -210,16 +216,18 @@
       s += `<text class="t-tick" x="${P.l - 4}" y="${y + 3}" text-anchor="end">${Math.round(v)}</text>`;
     });
     s += `<line class="t-axis" x1="${P.l}" y1="${H - P.b}" x2="${W - P.r}" y2="${H - P.b}"/>`;
+    const [lgA, lgB] = opt.legend || ['涨停', '跌停'];
     rows.forEach((r, i) => {
       const cx = P.l + i * slot + slot / 2;
       if (r.a != null) s += `<rect class="t-bar is-up" x="${(cx - bw - 1).toFixed(1)}" y="${Y(r.a).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, H - P.b - Y(r.a)).toFixed(1)}" rx="1"/>`;
       if (r.b != null) s += `<rect class="t-bar is-dn" x="${(cx + 1).toFixed(1)}" y="${Y(r.b).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, H - P.b - Y(r.b)).toFixed(1)}" rx="1"/>`;
+      const tip = [r.date, (r.a != null ? `${lgA} ${fmt(r.a)}` : ''), (r.b != null ? `${lgB} ${fmt(r.b)}` : '')].filter(Boolean).join('|');
+      s += `<rect class="t-hit" x="${(P.l + i * slot).toFixed(1)}" y="${P.t}" width="${slot.toFixed(1)}" height="${ih}" fill="transparent" data-tip="${esc(tip)}"/>`;
     });
     (opt.xLabels === 'all' ? rows.map((_, i) => i) : [0, rows.length - 1]).forEach((i) => {
       s += `<text class="t-tick" x="${P.l + i * slot + slot / 2}" y="${H - P.b + 12}" text-anchor="middle">${rows[i].date}</text>`;
     });
     // 图例可配（默认 涨停/跌停）：同一图表复用给「涨停/连板」等其它对儿时不至于说谎
-    const [lgA, lgB] = opt.legend || ['涨停', '跌停'];
     if (lgA) s += `<rect class="t-bar is-up" x="${W - P.r - 92}" y="${3}" width="7" height="7" rx="1.5"/><text class="t-tick" x="${W - P.r - 82}" y="${10}">${esc(lgA)}</text>`;
     if (lgB) s += `<rect class="t-bar is-dn" x="${W - P.r - 48}" y="${3}" width="7" height="7" rx="1.5"/><text class="t-tick" x="${W - P.r - 38}" y="${10}">${esc(lgB)}</text>`;
     return s + '</svg>';
@@ -233,7 +241,7 @@
     const arc = (r, f) => { const a = A0 + (A1 - A0) * Math.max(0, Math.min(1, f)); const [x0, y0] = pol(A0, r), [x1, y1] = pol(a, r); const large = (A1 - A0) * f > 180 ? 1 : 0; return `M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`; };
     const f1 = v == null ? 0 : v / 100;
     const col = opt.color || (v >= 80 ? '#ff2b2b' : v >= 40 ? '#22d3ee' : '#4d5b68');
-    let s = `<svg viewBox="0 0 ${S} ${S}" width="${S}" height="${S}" role="img" aria-label="${esc(opt.n || '')} ${fmt(v)}">`;
+    let s = `<svg viewBox="0 0 ${S} ${S}" width="${S}" height="${S}" role="img" aria-label="${esc(opt.n || '')} ${fmt(v)}" data-tip="${esc(opt.tip || ((opt.n || '值') + ' ' + (v == null ? '—' : fmt(v))))}">`;
     s += `<path class="t-g-track" d="${arc(R, 1)}"/>`;
     s += `<path class="t-g-arc" d="${arc(R, f1)}" stroke="${col}"/>`;
     s += `<text class="t-g-num" x="${cx}" y="${cy - 1}" text-anchor="middle">${v == null ? '—' : Math.round(v)}</text>`;
@@ -253,6 +261,8 @@
     const span = (hi - lo) || 1;
     const Y = (p) => P.t + ih - ((p - lo) / span) * ih;
     const n = bars.length, cw = iw / n, bw = Math.max(1.2, cw * 0.62);
+    const maA = {};   // 预存 MA 值（纯展示，用已聚合收盘价，不重算引擎指标），供 tooltip 显示
+    [5, 10, 20].forEach((N) => { const a = []; for (let i = 0; i < n; i++) { if (i >= N - 1) { let sum = 0; for (let j = i - N + 1; j <= i; j++) sum += bars[j][2]; a.push(sum / N); } else a.push(null); } maA[N] = a; });
     const vmax = Math.max(1, ...bars.map((b) => b[5]));
     const YV = (v) => H - P.b - (v / vmax) * (PV - 8);
     let s = `<svg class="t-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="日K线">`;
@@ -269,6 +279,9 @@
       s += `<line class="${cls}" x1="${x.toFixed(1)}" y1="${Y(h).toFixed(1)}" x2="${x.toFixed(1)}" y2="${Y(l).toFixed(1)}" stroke-width="1"/>`;
       s += `<rect class="${cls}" x="${(x - bw / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, bot - top).toFixed(1)}"/>`;
       s += `<rect class="${up ? 't-vol-up' : 't-vol-dn'}" x="${(x - bw / 2).toFixed(1)}" y="${YV(v).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, H - P.b - YV(v)).toFixed(1)}"/>`;
+      const ma = [5, 10, 20].map((N) => maA[N][i] != null ? `MA${N} ${fmt(maA[N][i], 2)}` : '').filter(Boolean);
+      const tip = [b[0], `开 ${fmt(o, 2)}`, `高 ${fmt(h, 2)}`, `低 ${fmt(l, 2)}`, `收 ${fmt(c, 2)}`, `量 ${fmt(v)}`].concat(ma).join('|');
+      s += `<rect class="t-hit" x="${(P.l + i * cw).toFixed(1)}" y="${P.t}" width="${cw.toFixed(1)}" height="${(H - P.t - P.b).toFixed(1)}" fill="transparent" data-tip="${esc(tip)}"/>`;
     });
     // MA5 / MA10 / MA20（对收盘价 b[2] 的移动平均；纯展示叠加，不重算引擎指标）
     [{ n: 5, c: '#e6f0f5' }, { n: 10, c: '#f5a623' }, { n: 20, c: '#a78bfa' }].forEach((m) => {
@@ -287,6 +300,51 @@
     s += `<text class="t-tick-r" x="${W - P.r + 5}" y="${P.t + 9}" fill="${chg >= 0 ? '#ff5a4d' : '#22c88a'}">${lastC.toFixed(2)}</text>`;
     s += `<text class="t-tick" x="${W - P.r + 5}" y="${P.t + 21}" fill="${chg >= 0 ? '#ff5a4d' : '#22c88a'}">${sgn(chg, 2)}</text>`;
     return s + '</svg>';
+  }
+
+  // ── 3c. 图表交互：统一 tooltip 浮窗 + 事件委托（hover / 点击锁定 / 移动端触摸）──
+  let _tipEl = null, _tipLocked = null, _tipTouch = false;
+  function tipEl() {
+    if (!_tipEl) {
+      _tipEl = document.createElement('div');
+      _tipEl.id = 'tTip'; _tipEl.className = 't-tip'; _tipEl.style.display = 'none';
+      (document.body || document.documentElement).appendChild(_tipEl);
+    }
+    return _tipEl;
+  }
+  function tipText(raw) {
+    return String(raw || '').split('|').map((l, i) => i === 0 ? `<b>${esc(l)}</b>` : `<span>${esc(l)}</span>`).join('<br>');
+  }
+  function tipShow(raw, x, y) {
+    const el = tipEl(); el.innerHTML = tipText(raw); el.style.display = 'block';
+    const r = el.getBoundingClientRect();
+    let left = x + 14, top = y + 14;
+    const W = window.innerWidth || 800, H = window.innerHeight || 600;
+    if (left + r.width > W - 8) left = x - r.width - 14;
+    if (top + r.height > H - 8) top = y - r.height - 14;
+    el.style.left = Math.max(8, left) + 'px'; el.style.top = Math.max(8, top) + 'px';
+  }
+  function tipHide() { if (_tipEl) _tipEl.style.display = 'none'; }
+  function bindTip(root) {
+    if (root.__tipBound) return; root.__tipBound = true;
+    const hit = (e) => (e.target && e.target.closest) ? e.target.closest('[data-tip]') : null;
+    root.addEventListener('mouseover', (e) => { const el = hit(e); if (el) { tipShow(el.getAttribute('data-tip'), e.clientX, e.clientY); el.classList.add('is-hot'); } });
+    root.addEventListener('mouseout', (e) => { const el = hit(e); if (el && el !== _tipLocked) { tipHide(); el.classList.remove('is-hot'); } });
+    root.addEventListener('mousemove', (e) => { if (_tipLocked) return; const el = hit(e); if (el) tipShow(el.getAttribute('data-tip'), e.clientX, e.clientY); });
+    root.addEventListener('click', (e) => {
+      if (_tipTouch) { _tipTouch = false; return; }   // 移动端 touch 已处理，避免合成 click 二次 toggle
+      const el = hit(e);
+      if (el) {
+        if (_tipLocked === el) { _tipLocked = null; el.classList.remove('is-hot'); tipHide(); }
+        else { if (_tipLocked) _tipLocked.classList.remove('is-hot'); _tipLocked = el; el.classList.add('is-hot'); tipShow(el.getAttribute('data-tip'), e.clientX, e.clientY); }
+      } else if (_tipLocked) { _tipLocked.classList.remove('is-hot'); _tipLocked = null; tipHide(); }
+    });
+    // 移动端：touchstart 临时显示 / touchmove 滑动探图 / touchend 判定 tap(锁定)或滑动(清除)
+    let tsX = 0, tsY = 0, tsEl = null;
+    root.addEventListener('touchstart', (e) => { const t = e.touches && e.touches[0]; if (!t) return; tsX = t.clientX; tsY = t.clientY; tsEl = hit(e); if (tsEl) { tipShow(tsEl.getAttribute('data-tip'), t.clientX, t.clientY); tsEl.classList.add('is-hot'); } }, { passive: true });
+    root.addEventListener('touchmove', (e) => { const t = e.touches && e.touches[0]; if (!t) return; const el = document.elementFromPoint(t.clientX, t.clientY); const he = el && el.closest ? el.closest('[data-tip]') : null; if (he && he !== tsEl) { if (tsEl) tsEl.classList.remove('is-hot'); tsEl = he; he.classList.add('is-hot'); tipShow(he.getAttribute('data-tip'), t.clientX, t.clientY); } }, { passive: true });
+    root.addEventListener('touchend', (e) => { const t = e.changedTouches && e.changedTouches[0]; if (!t) return; _tipTouch = true; const moved = Math.hypot(t.clientX - tsX, t.clientY - tsY) > 10; if (moved) { if (tsEl && tsEl !== _tipLocked) { tsEl.classList.remove('is-hot'); tsEl = null; tipHide(); } } else { if (tsEl) { if (_tipLocked === tsEl) { _tipLocked = null; tsEl.classList.remove('is-hot'); tipHide(); } else { if (_tipLocked) _tipLocked.classList.remove('is-hot'); _tipLocked = tsEl; tsEl.classList.add('is-hot'); tipShow(tsEl.getAttribute('data-tip'), t.clientX, t.clientY); } tsEl = null;       } else if (_tipLocked) { _tipLocked.classList.remove('is-hot'); _tipLocked = null; tipHide(); } } }, { passive: true });
+  tipEl();   // 立即创建隐藏浮窗，保证 #tTip 常驻 DOM（不依赖首次 hover）
   }
 
   // ── 3b. K线周期：日 → 周/月/季/半年/年（展示层聚合）───────────────────────
@@ -815,7 +873,7 @@
     //   ⚠ 龙虎榜 TOP5 / 游资机构北向三方 **系统尚未产出对应档** → 不伪造，扎实展示已有值。
     g.appendChild(panel('主线资金集中度', `主线「${esc(mt.name || '—')}」· 口径 ${esc(mt.caliber || 'daily')}`,
       `<div class="t-gauge-row">
-        <div class="t-gauge">${gauge(p, { n: '集中度', color: p != null && p >= 50 ? '#ff5a4d' : '#22d3ee' })}</div>
+        <div class="t-gauge">${gauge(p, { n: '集中度', color: p != null && p >= 50 ? '#ff5a4d' : '#22d3ee', tip: `主线资金集中度|集中度 ${p == null ? '—' : fmt(p, 1) + '%'}|主线净额 ${main != null ? fmt(main, 2) : '—'} 亿|龙虎总额 ${tot != null ? fmt(tot, 2) : '—'} 亿` })}</div>
         <div class="t-gauge-side">
           ${stat('主线净额', `${fmt(main, 2)} 亿`, 'main_yi', +main > 0 ? 'up' : 'dn')}
           ${stat('龙虎总额', `${fmt(tot, 2)} 亿`, 'tot_yi')}
@@ -1259,6 +1317,7 @@
     if (!root) return;
     root.className = 't-scope';
     root.hidden = true;
+    bindTip(root);   // 图表交互：统一 tooltip 浮窗 + 事件委托（hover/点击锁定/移动端触摸）
 
     const top = el('header', 't-topbar');
     const nav = el('nav', 't-nav');

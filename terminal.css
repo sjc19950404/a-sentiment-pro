@@ -386,6 +386,15 @@
 }
 .t-tbl .t-lbtag.hi { background: rgba(255, 43, 43, .18); color: var(--t-alert); }
 
+/* ── 图表交互 tooltip（hover / 点击锁定 / 移动端触摸）── */
+.t-tip { position: fixed; z-index: 9999; display: none; pointer-events: none; max-width: 260px; padding: 7px 9px; border-radius: 7px; background: rgba(8,12,18,.96); border: 1px solid var(--t-line-hi); box-shadow: 0 6px 22px rgba(0,0,0,.5); color: var(--t-ink); font-size: 11.5px; line-height: 1.55; font-variant-numeric: tabular-nums; }
+.t-tip b { color: var(--t-ink); font-weight: 600; }
+.t-tip .t-up { color: var(--t-up); }
+.t-tip .t-dn { color: var(--t-dn); }
+[data-tip] { cursor: pointer; }
+.t-chart [data-tip].is-hot, .t-chart [data-tip]:hover { filter: brightness(1.3) drop-shadow(0 0 4px var(--t-acc)); }
+.t-hit { pointer-events: all; }
+
 /* 行内 sparkline */
 .t-spark { display: inline-block; vertical-align: middle; }
 

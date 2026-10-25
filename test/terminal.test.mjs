@@ -803,3 +803,31 @@ test('terminal：涨跌停视图 —— 历史图从 emotion_history 画出（�
   assert.ok(!/无历史/.test(root.textContent), '不应显示「无历史」（数据档 emotion_history.json 含 250 条）');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
+
+test('terminal：图表 hover → tooltip 显示数值（P0 交互）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+  const root = w.document.getElementById('tRoot');
+  // 涨跌停视图含 barChart（确定有 data-tip 命中区）
+  [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'zt').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 500));
+  const tip = w.document.getElementById('tTip');
+  assert.ok(tip, 'tooltip 浮窗 #tTip 已创建');
+  const rect = root.querySelector('[data-tip]');
+  assert.ok(rect, '图表存在 data-tip 命中元素');
+  rect.dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true, clientX: 20, clientY: 20 }));
+  assert.equal(tip.style.display, 'block', 'mouseover 后 tooltip 显示');
+  assert.ok(tip.textContent.replace(/\s/g, '').length > 0, `tooltip 含文本内容：${tip.textContent}`);
+  // 总览应含 lineChart 命中区（情绪分主图）
+  [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'overview').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 200));
+  const tips = root.querySelectorAll('[data-tip]').length;
+  assert.ok(tips > 0, `总览图表含交互命中区（实测 ${tips}）`);
+  // 点击锁定：再次点击同一元素应锁定（is-hot）
+  const first = root.querySelector('[data-tip]');
+  first.dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true, clientX: 20, clientY: 20 }));
+  first.dispatchEvent(new w.MouseEvent('click', { bubbles: true, clientX: 20, clientY: 20 }));
+  assert.ok(first.classList.contains('is-hot'), '点击后元素锁定高亮 is-hot');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
