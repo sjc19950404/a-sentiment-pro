@@ -1940,7 +1940,12 @@
       if (!bw) { host.outerHTML = '<div class="t-empty">宽度档缺失 → 不显示（fail-open）</div>'; return; }
       const bm = bw.aboveMa || {}, nh = bw.newHigh || {}, nl = bw.newLow || {}, ud = bw.updown || {};
       const udTotal = (ud.up || 0) + (ud.down || 0) + (ud.flat || 0);
-      const vcls = bw.verdict === 'bull' ? 'is-ok' : bw.verdict === 'bear' ? 'is-alert' : '';
+      // ⚠ breadth.verdict 是对象 {level,label,detail}（src/breadth.js::breadthVerdict），而 aboveMa.verdict 是字符串；
+      //   这里统一兼容两种形态取 level/label，避免整段 verdict 被当字符串渲染成「[object Object]」、且着色判据失效。
+      const bv = bw.verdict;
+      const bvLevel = (bv && typeof bv === 'object') ? (bv.level || '') : (bv || '');
+      const bvLabel = (bv && typeof bv === 'object') ? (bv.label || bv.level || '—') : (bv || '—');
+      const vcls = bvLevel === 'broad' ? 'is-ok' : bvLevel === 'diverged' ? 'is-alert' : '';
       host.outerHTML = `<div class="t-stats">
           ${stat('站上20日线', pct(bm.ratio != null ? bm.ratio * 100 : null, 1), `(${fmtInt(bm.n)}/${fmtInt(bm.den)}) · ${esc(bm.verdict || '—')}`)}
           ${stat('历史新高', fmtInt(nh.n), `250日窗口 · 分母 ${fmtInt(nh.den)}`)}
@@ -1948,7 +1953,7 @@
           ${stat('涨跌比', `${fmtInt(ud.up)}:${fmtInt(ud.down)}`, `${fmtInt(ud.flat)} 平 · 全市场口径`)}
         </div>
         ${barChart([{ date: '涨', a: ud.up || 0 }, { date: '跌', a: ud.down || 0 }, { date: '平', a: ud.flat || 0 }], { w: 900, h: 110, legend: ['家数', ''] })}
-        <div class="t-dnote ${vcls}">宽度判语：<b>${esc(bw.verdict || '—')}</b>${bw.divergence ? ` · 背离：${esc(bw.divergence)}` : ''} · asOf ${esc(bw.date || '—')}</div>`;
+        <div class="t-dnote ${vcls}">宽度判语：<b>${esc(bvLabel)}</b>${bw.divergence ? ` · 背离：${esc(bw.divergence)}` : ''} · asOf ${esc(bw.date || '—')}</div>`;
     }).catch(() => {
       const host = bwPanel.lastElementChild;
       if (host) host.outerHTML = '<div class="t-empty">宽度档读取失败（fail-open）</div>';
