@@ -316,10 +316,10 @@ test('terminal：视图结构 —— 7 视图无占位，研报由顶部切换�
   const keys = navs.map((b) => b.dataset.v);
   assert.deepEqual(keys, ['overview', 'zt', 'fund', 'sector', 'picks', 'paper', 'kline'], '七视图且无 soon 占位');
   assert.ok(!keys.includes('soon'), '不再有「建设中」占位');
-  assert.ok(!keys.includes('report'), '研报不作为终端内视图（由顶部切换开关直达）');
-  // 顶部切换开关仍在（⚡终端 / 📄研报）
+  assert.ok(!keys.includes('report'), '研报不作为终端内视图（由顶部返回按钮直达）');
+  // 顶部仅保留「📄 研报」返回按钮（冗余的 ⚡终端 自切换钮已移除）
   const sw = [...root.querySelectorAll('.t-viewswitch button')].map((b) => b.dataset.v);
-  assert.deepEqual(sw, ['terminal', 'report'], '顶部 ⚡终端/📄研报 切换开关保留');
+  assert.deepEqual(sw, ['report'], '顶部仅保留 📄研报 返回按钮');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
@@ -401,16 +401,17 @@ test('terminal：点个股看详情 —— 抽屉含 盘口快照/AI判词(紫)/
   const dg = ((sig.dragonLogic || {}).dragons || []).find((x) => String(x.code) === code) || {};
   assert.ok(aiSec.textContent.includes(String(dg.hybk || '—')), '行业取自侧车原值');
 
-  const iq = readJsonSafe('data/intraday-quotes-latest.json') || {};
-  const q = (iq.quotes || []).find((x) => String(x.code) === code);
-  if (q) {
-    const snap = ddet.querySelector('.t-dsec.is-snap');
-    assert.ok(snap.querySelector('.t-dkv'), '盘口快照显示现价/涨跌/今高/今低/昨收');
-    assert.ok(snap.textContent.includes('盘中快照'), '盘口快照标注数据来源');
-    // 绝不展示脱敏 name（样本XXX）
-    assert.ok(!/样本/.test(snap.textContent), '盘口快照不展示脱敏占位 name');
+  // 日终快照：取自该股 K线分片最后一根（与 K线 同源）；无分片 → 暂无该股日终快照
+  const _cc = String(code).replace(/^(sh|sz|bj)/, '');
+  const _prefix = /^(6|9)/.test(_cc) ? 'sh' : /^(4|8)/.test(_cc) ? 'bj' : 'sz';
+  const kshard = readJsonSafe(`ui/kline/${_prefix}${_cc}.json`);
+  const snap = ddet.querySelector('.t-dsec.is-snap');
+  if (kshard && Array.isArray(kshard.bars) && kshard.bars.length) {
+    assert.ok(snap.querySelector('.t-dkv'), '日终快照显示 收盘价/涨跌/最高/最低/昨收');
+    assert.ok(snap.textContent.includes('数据基准'), '日终快照标注数据基准日期（已定稿收盘价）');
+    assert.ok(!/样本/.test(snap.textContent), '日终快照不展示任何脱敏占位 name');
   } else {
-    assert.match(ddet.querySelector('.t-dsec.is-snap').textContent, /不在盘中快照名单内|盘口快照档缺失/, '该股不在快照名单 → 如实空态（fail-open）');
+    assert.match(snap.textContent, /暂无该股日终快照/, '无 K线分片 → 如实空态（暂无该股日终快照）');
   }
 
   const bl = readJsonSafe('data/llm_risk_blacklist.json') || {};
@@ -634,7 +635,7 @@ test('terminal：键盘快捷键 1–7 切视图（输入框聚焦时拦截 / Es
   const root = w.document.getElementById('tRoot');
   // 默认 makeDom 不进终端（root.hidden=true）；快捷键仅在终端可见时响应 → 先点入口进入
   const entryBtn = [...w.document.body.querySelectorAll('button')].find((b) => /终端/.test(b.textContent));
-  assert.ok(entryBtn, '存在「⚡ 终端」入口按钮');
+  assert.ok(entryBtn, '存在「⚡ 图表终端」入口按钮');
   entryBtn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 60));
   assert.ok(!root.hidden, '点击入口后终端可见');
@@ -844,10 +845,12 @@ test('terminal：终端视图整体可竖向滚动（body 不被 overflow:hidden
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
   await new Promise((r) => setTimeout(r, 260));
   const root = w.document.getElementById('tRoot');
-  const termBtn = [...root.querySelectorAll('.t-viewswitch button')].find((b) => b.dataset.v === 'terminal');
-  assert.ok(termBtn, '存在 ⚡终端 切换按钮');
-  termBtn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  // 通过老页面入口按钮进入终端（switchTo('terminal') 会解锁 body 滚动）
+  const entryBtn = [...w.document.body.querySelectorAll('button')].find((b) => /图表终端/.test(b.textContent));
+  assert.ok(entryBtn, '存在「⚡ 图表终端」入口按钮');
+  entryBtn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 200));
+  assert.equal(root.hidden, false, '点击入口按钮 → 终端覆盖层显示');
   assert.notEqual(w.document.body.style.overflow, 'hidden', '终端视图下 body 不应被 overflow:hidden 锁死（应可竖向滚动）');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });

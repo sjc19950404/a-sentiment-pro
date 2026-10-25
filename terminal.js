@@ -255,10 +255,12 @@
     if (!bars || bars.length < 2) return '<div class="t-empty">K线数据不足</div>';
     const iw = W - P.l - P.r, ih = H - PV - P.t - P.b;
     // bar 格式（见下方解构 const [, o, c, h, l, v]）：b[3]=最高价、b[4]=最低价。
-    //   2026-10-25 修正：原取 lo=min(b[3])（最高价的最小值）、hi=max(b[2])（收盘价的最大值），
-    //   两个都取错字段 → 区间既不含真实最低价也不含真实最高价，蜡烛会画出画布被裁掉。
-    const lo = Math.min(...bars.map((b) => b[4])), hi = Math.max(...bars.map((b) => b[3]));
-    const span = (hi - lo) || 1;
+    // Y 轴自适应当前显示窗口（bars 已是切片后的 tail），并上下各留 6% 边距，
+    // 避免最高/最低蜡烛的影线被裁到画布边缘（历史上曾因取错字段被极值拉偏）。
+    const lo0 = Math.min(...bars.map((b) => b[4])), hi0 = Math.max(...bars.map((b) => b[3]));
+    const span0 = (hi0 - lo0) || 1;
+    const pad = span0 * 0.06;
+    const lo = lo0 - pad, hi = hi0 + pad, span = hi - lo;
     const Y = (p) => P.t + ih - ((p - lo) / span) * ih;
     const n = bars.length, cw = iw / n, bw = Math.max(1.2, cw * 0.62);
     const maA = {};   // 预存 MA 值（纯展示，用已聚合收盘价，不重算引擎指标），供 tooltip 显示
@@ -297,8 +299,8 @@
     [0, n - 1].forEach((i) => { s += `<text class="t-tick" x="${P.l + i * cw + cw / 2}" y="${H - P.b + 12}" text-anchor="${i ? 'end' : 'start'}">${bars[i][0]}</text>`; });
     const lastC = bars[n - 1][2], prevC = bars[n - 2][2];
     const chg = prevC ? ((lastC - prevC) / prevC) * 100 : null;
-    s += `<text class="t-tick-r" x="${W - P.r + 5}" y="${P.t + 9}" fill="${chg >= 0 ? '#ff5a4d' : '#22c88a'}">${lastC.toFixed(2)}</text>`;
-    s += `<text class="t-tick" x="${W - P.r + 5}" y="${P.t + 21}" fill="${chg >= 0 ? '#ff5a4d' : '#22c88a'}">${sgn(chg, 2)}</text>`;
+    s += `<text class="t-tick-r" x="${W - P.r + 5}" y="${P.t + 9}" fill="${chg >= 0 ? '#ff4d4f' : '#00e676'}">${lastC.toFixed(2)}</text>`;
+    s += `<text class="t-tick" x="${W - P.r + 5}" y="${P.t + 21}" fill="${chg >= 0 ? '#ff4d4f' : '#00e676'}">${sgn(chg, 2)}</text>`;
     return s + '</svg>';
   }
 
@@ -419,6 +421,7 @@
       // 样本过少时如实提示（源数据仅 649 根日K ≈ 2.6 年，年K 只有约 3 根）
       const warn = bars.length < 3 ? ' · <span class="t-warn-inline">⚠ 样本过少（源数据仅 649 根日K ≈ 2.6 年）</span>' : '';
       body.innerHTML = `<div class="t-kmeta">${esc(unit)} <b>${bars.length}</b> 根 · 源 ${raw.length} 根日K · 最新 ${esc(last[0])} · 收 <b>${fmt(last[2], 2)}</b> <span class="${chg == null ? '' : chg >= 0 ? 'up' : 'dn'}">${sgn(chg, 2)}</span>${warn}</div>`
+        + `<div class="t-kcap">日 K 线（截至上一交易日收盘）</div>`
         + candles(tail, { w: 660, h: 380 });
     };
     sel.addEventListener('change', () => { state.period = sel.value; draw(state.k); });
@@ -1195,31 +1198,45 @@
       </section>`;
 
     // ②③④ 异步三档（盘口 / 黑名单 / 账户），失败各自降级；抽屉已切票则丢弃结果（防串台）
-    Promise.all([jget('data/intraday-quotes-latest.json'), jget('data/llm_risk_blacklist.json'), jget('data/paper/account.json')])
-      .then(([iq, bl, acct]) => {
+    // 盘口快照：日终静态定稿，直接取自该股 K线分片最后一根 —— 与下方 K线 100% 同源对齐，绝不复用任何假样本。
+    const _cc = String(code).replace(/^(sh|sz|bj)/, '');
+    const _prefix = /^(6|9)/.test(_cc) ? 'sh' : /^(4|8)/.test(_cc) ? 'bj' : 'sz';
+    jget(`ui/kline/${_prefix}${_cc}.json`).then((k) => {
+      if (!host.isConnected) return;
+      const secS = $('[data-sec="snap"] .t-dsec-b', host);
+      if (!secS) return;
+      const bars = (k && Array.isArray(k.bars)) ? k.bars : [];
+      if (!bars.length) {
+        secS.innerHTML = '<div class="t-dnone">暂无该股日终快照（K线分片仅覆盖历史上榜股）</div>';
+        return;
+      }
+      const last = bars[bars.length - 1];
+      const prev = bars.length > 1 ? bars[bars.length - 2] : null;
+      const [, o, c, h, l] = last;
+      const prevClose = prev ? prev[2] : o;                       // 昨收 = 上一交易日收盘（日K 连续）
+      const chgPct = (prevClose && prevClose !== 0) ? ((c - prevClose) / prevClose) * 100 : null;
+      const up = (chgPct == null) ? (c >= o) : chgPct >= 0;
+      const dstr = String(last[0]);
+      // 收盘价 c 即 K线 最后一根收盘价 → 下方蜡烛收价 100% 相等（同源，无编造）
+      secS.innerHTML = `<div class="t-dbase">数据基准：${esc(dstr)}（已定稿收盘价）</div>`
+        + `<div class="t-dkv">
+            <div><span class="t-dk">收盘价</span><span class="t-dv">${fmt(c, 2)}</span></div>
+            <div><span class="t-dk">涨跌</span><span class="t-dv ${up ? 'up' : 'dn'}">${chgPct == null ? '—' : sgn(chgPct, 2)}</span></div>
+            <div><span class="t-dk">最高</span><span class="t-dv">${fmt(h, 2)}</span></div>
+            <div><span class="t-dk">最低</span><span class="t-dv">${fmt(l, 2)}</span></div>
+            <div><span class="t-dk">昨收</span><span class="t-dv">${fmt(prevClose, 2)}</span></div>
+          </div>
+          <div class="t-dsrc">日终静态定稿 · 取自 K线分片最后一根（与下方 K线 100% 同源，收盘价完全一致）</div>`;
+    }).catch(() => {
+      const secS = $('[data-sec="snap"] .t-dsec-b', host);
+      if (secS) secS.innerHTML = '<div class="t-dnone">K线分片读取失败 → 不显示日终快照（fail-open）</div>';
+    });
+
+    Promise.all([jget('data/llm_risk_blacklist.json'), jget('data/paper/account.json')])
+      .then(([bl, acct]) => {
         if (!host.isConnected) return;
-        const secS = $('[data-sec="snap"] .t-dsec-b', host);
         const secR = $('[data-sec="risk"] .t-dsec-b', host);
         const secP = $('[data-sec="pos"] .t-dsec-b', host);
-
-        // ② 盘口快照（仅含活跃标的；数值取引擎原值，脱敏 name 一律不用）
-        if (secS) {
-          const q = (iq && Array.isArray(iq.quotes)) ? iq.quotes.find((x) => normCode(x.code) === code) : null;
-          if (!iq) secS.innerHTML = '<div class="t-dnone">盘口快照档缺失 → 不显示（fail-open）</div>';
-          else if (!q) secS.innerHTML = '<div class="t-dnone">该股不在盘中快照名单内（仅含活跃标的）→ 无盘口</div>';
-          else {
-            const up = (+q.chgPct || 0) >= 0;
-            secS.innerHTML = `<div class="t-dkv">
-                <div><span class="t-dk">现价</span><span class="t-dv">${fmt(q.price, 2)}</span></div>
-                <div><span class="t-dk">涨跌</span><span class="t-dv ${up ? 'up' : 'dn'}">${sgn(q.chgPct, 2)}</span></div>
-                <div><span class="t-dk">今高</span><span class="t-dv">${fmt(q.high, 2)}</span></div>
-                <div><span class="t-dk">今低</span><span class="t-dv">${fmt(q.low, 2)}</span></div>
-                <div><span class="t-dk">昨收</span><span class="t-dv">${fmt(q.prevClose, 2)}</span></div>
-              </div>
-              <div class="t-dsrc">盘中快照 ${esc(iq.generatedAt || '—')} · 仅含活跃标的 · 口径归采集层</div>`;
-          }
-        }
-
 
         // ② 排雷黑名单
         const hit = (bl && Array.isArray(bl.blacklist) ? bl.blacklist : []).find((x) => normCode(x.code) === code);
@@ -1258,10 +1275,8 @@
         }
       })
       .catch(() => {
-        const secS = $('[data-sec="snap"] .t-dsec-b', host);
         const secR = $('[data-sec="risk"] .t-dsec-b', host);
         const secP = $('[data-sec="pos"] .t-dsec-b', host);
-        if (secS) secS.innerHTML = '<div class="t-dnone">读取失败 → 不显示盘口（fail-open）</div>';
         if (secR) secR.innerHTML = '<div class="t-dnone">读取失败 → 不打标、不拦截（fail-open）</div>';
         if (secP) secP.innerHTML = '<div class="t-dnone">读取失败 → 不显示持仓</div>';
       });
@@ -1294,9 +1309,10 @@
   }
 
   // ── 9. 挂载与视图切换 ─────────────────────────────────────────────────
-  // 「研报」不列为终端内视图：① 方向已定「不想要报告型」；② 顶部 ⚡终端/📄研报
-  //   切换开关已能直达原研报视图（含复制全文/导出文档/打印PDF/导出CSV），
-  //   在终端里再塞一份研报属重复。故终端内共 7 个视图，无占位。
+  // 「研报」不列为终端内视图：① 方向已定「不想要报告型」；② 终端为整屏覆盖层，
+  //   顶栏「📄 研报」按钮（switchTo('report') 把 #tRoot 重新 hidden）即可退回原研报
+  //   视图（含复制全文/导出文档/打印PDF/导出CSV），在终端里再塞一份研报属重复。
+  //   故终端内共 7 个视图，无占位；顶栏右上角不再保留无意义的「⚡终端」自切换钮。
   const VIEWS = [
     { k: 'overview', n: '总览' },
     { k: 'zt', n: '涨跌停' },
@@ -1334,8 +1350,7 @@
       </span>
       <span class="t-regime-badge" id="tRegime">regime —</span>
       <span class="t-viewswitch">
-        <button data-v="terminal" class="is-on">⚡ 终端</button>
-        <button data-v="report">📄 研报</button>
+        <button data-v="report" class="is-on">📄 研报</button>
       </span>`;
 
     let cur = 'overview';
@@ -1452,10 +1467,10 @@
 
     root.appendChild(top); root.appendChild(nav); root.appendChild(body); root.appendChild(tick);
 
-    // 入口按钮（挂在研报页）
-    const entry = el('button', '', '⚡ 终端');
-    entry.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9998;font:inherit;font-size:12px;'
-      + 'padding:8px 13px;border-radius:8px;cursor:pointer;color:#22d3ee;background:rgba(11,15,22,.9);'
+    // 入口按钮（挂在研报页顶部，点击 → 整屏覆盖层切到终端；关闭由终端顶栏「📄 研报」负责）
+    const entry = el('button', '', '⚡ 图表终端');
+    entry.style.cssText = 'position:fixed;top:8px;right:12px;z-index:9998;font:inherit;font-size:12px;'
+      + 'padding:8px 13px;border-radius:8px;cursor:pointer;color:#22d3ee;background:rgba(11,15,22,.92);'
       + 'border:1px solid rgba(34,211,238,.45);box-shadow:0 0 14px rgba(34,211,238,.22)';
     entry.addEventListener('click', () => switchTo('terminal'));
     document.body.appendChild(entry);
@@ -1471,7 +1486,6 @@
     })();
     if (wantTerminal) {
       root.hidden = false;
-      [...$('.t-viewswitch', top).children].forEach((x) => x.classList.toggle('is-on', x.dataset.v === 'terminal'));
     }
 
     render('overview');
