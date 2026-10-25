@@ -255,13 +255,17 @@
     if (!bars || bars.length < 2) return '<div class="t-empty">K线数据不足</div>';
     const iw = W - P.l - P.r, ih = H - PV - P.t - P.b;
     // bar 格式（见下方解构 const [, o, c, h, l, v]）：b[3]=最高价、b[4]=最低价。
-    // Y 轴自适应当前显示窗口（bars 已是切片后的 tail），并上下各留 6% 边距，
-    // 避免最高/最低蜡烛的影线被裁到画布边缘（历史上曾因取错字段被极值拉偏）。
-    const lo0 = Math.min(...bars.map((b) => b[4])), hi0 = Math.max(...bars.map((b) => b[3]));
+    // Y 轴「稳健自适应」：用末 RECENT 根（默认 60）定标，避免 6 个月前的历史极值把近期蜡烛
+    // 整片压扁（用户反馈的「被历史极值拉偏」）。全部蜡烛仍照画，超出近期区间的古老极值坐标
+    // 夹紧到绘图区上下缘（不溢出、不改写任何历史价）。
+    const RECENT = Math.min(60, bars.length);
+    const win = bars.slice(-RECENT);
+    const lo0 = Math.min(...win.map((b) => b[4])), hi0 = Math.max(...win.map((b) => b[3]));
     const span0 = (hi0 - lo0) || 1;
     const pad = span0 * 0.06;
     const lo = lo0 - pad, hi = hi0 + pad, span = hi - lo;
-    const Y = (p) => P.t + ih - ((p - lo) / span) * ih;
+    const Yraw = (p) => P.t + ih - ((p - lo) / span) * ih;
+    const Y = (p) => Math.max(P.t, Math.min(P.t + ih, Yraw(p)));   // 夹紧：古老极值不溢出绘图区
     const n = bars.length, cw = iw / n, bw = Math.max(1.2, cw * 0.62);
     const maA = {};   // 预存 MA 值（纯展示，用已聚合收盘价，不重算引擎指标），供 tooltip 显示
     [5, 10, 20].forEach((N) => { const a = []; for (let i = 0; i < n; i++) { if (i >= N - 1) { let sum = 0; for (let j = i - N + 1; j <= i; j++) sum += bars[j][2]; a.push(sum / N); } else a.push(null); } maA[N] = a; });
@@ -1164,8 +1168,8 @@
     const dl = S.dragonLogic || {};
     const dg = (Array.isArray(dl.dragons) ? dl.dragons : []).find((x) => normCode(x.code) === code);
 
-    // ① 盘口快照（引擎盘中快照档，中性色）：**只用 price/chgPct/high/low/prevClose 数值**，
-    //   ⚠ 该档的 name 是「样本XXX」脱敏占位 → 绝不用它，name 仍由抽屉标题（来自天梯/持仓真实名）承担。
+    // ① 日终快照（EOD 定稿）：取自该股 K线分片最后一根（与下方 K线 100% 同源），
+    //   ⚠ 不再依赖盘中快照档；收盘价 严格等于 K线 最后一根收盘价，绝不编造。
     //   仅含活跃标的，不在名单内 → 如实「无盘口」，不占位。
 
     // ① 妖股逻辑（同步可得：signals 已在内存）
