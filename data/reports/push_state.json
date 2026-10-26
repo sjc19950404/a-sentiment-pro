@@ -2,6 +2,19 @@
  "schema_version": "1.0",
  "pushed": [
   {
+   "fingerprint": "7ed0d29bcf823e91_d58",
+   "type": "pre_market",
+   "date": "2026-10-26",
+   "pushed_at": "2026-10-26T01:00:03.170Z"
+  },
+  {
+   "fingerprint": "b739d84591f87d09_ec",
+   "type": "pre_market_mine",
+   "date": "2026-10-26",
+   "cfp": "0b437846ff8b1c0a_77",
+   "pushed_at": "2026-10-26T01:00:03.170Z"
+  },
+  {
    "fingerprint": "3480858f1c4e9fc7_5c9",
    "type": "intraday",
    "date": "2026-10-23",
