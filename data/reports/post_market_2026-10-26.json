@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-26",
- "generated_at": "2026-10-26T10:42:47.669Z",
+ "generated_at": "2026-10-26T13:11:50.062Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -81,8 +81,8 @@
    "confidence": "measured"
   },
   "close_drawdown": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "max_drawdown_intraday": {
    "source": "missing",
@@ -97,8 +97,8 @@
    "confidence": "missing"
   },
   "backtest_deviation": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "derived",
+   "confidence": "measured"
   },
   "market_context": {
    "source": "archived",
@@ -128,7 +128,34 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "ice",
+   "label": "冰点",
+   "cap": 0.2,
+   "position_range": "0%~20%",
+   "positionReconcile": {
+    "score": 42.5,
+    "base": {
+     "key": "base_defend",
+     "minPos": 0,
+     "maxPos": 0.3,
+     "label": "防守"
+    },
+    "baseRange": "0%~30%",
+    "cap": {
+     "key": "ice",
+     "minPos": 0,
+     "maxPos": 0.2,
+     "label": "冰点",
+     "advice": "优先空仓，仅极端错杀才值得试探",
+     "tone": "defend"
+    },
+    "capRange": "0%~20%",
+    "force": false,
+    "conflict": false,
+    "finalRange": "0%~20%"
+   }
+  },
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -162,11 +189,16 @@
    "外围「纳斯达克中国金龙指数」已陈旧 2 天（采集失败未刷新），已置空"
   ],
   "nav_realtime": 1000000,
-  "close_drawdown": null,
+  "close_drawdown": 0.15861,
   "max_drawdown_intraday": null,
   "grid_trigger_detail": null,
   "counter_trend_loss_ratio": null,
-  "backtest_deviation": null,
+  "backtest_deviation": {
+   "live_cum": -0.03686,
+   "backtest_v52": -0.0369,
+   "delta": 0.00004,
+   "note": "执行轨 vs 回测 v52 锚点（零偏差为设计约束）"
+  },
   "market_context": {
    "emotion": 42.5,
    "pct_rank": 10.2,
@@ -178,7 +210,7 @@
    "up_down": "2110/3033/151",
    "amount_yi": 16087.9,
    "zt_dt": "55/26",
-   "breadth": "站上20日线仅 19.4%",
+   "breadth": "站上20日线仅 17.6%",
    "pain": "接力顺畅",
    "seats": "沪深股通（北向）主导"
   },

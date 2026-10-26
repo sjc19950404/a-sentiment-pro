@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-26",
- "generated_at": "2026-10-26T10:42:48.039Z",
+ "generated_at": "2026-10-26T13:11:50.434Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -81,12 +81,12 @@
    "confidence": "measured"
   },
   "prev_nav": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "derived",
+   "confidence": "measured"
   },
   "positions": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "overnight_exposure": {
    "source": "archived",
@@ -132,7 +132,34 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "ice",
+   "label": "冰点",
+   "cap": 0.2,
+   "position_range": "0%~20%",
+   "positionReconcile": {
+    "score": 42.5,
+    "base": {
+     "key": "base_defend",
+     "minPos": 0,
+     "maxPos": 0.3,
+     "label": "防守"
+    },
+    "baseRange": "0%~30%",
+    "cap": {
+     "key": "ice",
+     "minPos": 0,
+     "maxPos": 0.2,
+     "label": "冰点",
+     "advice": "优先空仓，仅极端错杀才值得试探",
+     "tone": "defend"
+    },
+    "capRange": "0%~20%",
+    "force": false,
+    "conflict": false,
+    "finalRange": "0%~20%"
+   }
+  },
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -166,12 +193,20 @@
    "外围「纳斯达克中国金龙指数」已陈旧 2 天（采集失败未刷新），已置空"
   ],
   "nav_realtime": 1000000,
-  "prev_nav": null,
-  "positions": null,
+  "prev_nav": 0.9665451385230166,
+  "positions": {
+   "targetPos": {
+    "上证指数": 0.7,
+    "深证成指": 0.4,
+    "创业板指": 0.4
+   },
+   "poolPos": 0.5,
+   "executed": true
+  },
   "overnight_exposure": {
    "a50_chgPct": null,
    "a50NightOpen": true,
-   "posGap": null,
+   "posGap": 0.2,
    "us_close": {
     "dji": null,
     "spx": null,
@@ -181,9 +216,9 @@
     "hxc": null,
     "fxi": -0.004314
    },
-   "cnh_chgPct": -0.000135,
+   "cnh_chgPct": -0.00021,
    "usReady": false,
-   "usReason": "美东 06:38 ET 盘前（09:30 才开盘），此刻美股无收盘价"
+   "usReason": "美东 09:06 ET 盘前（09:30 才开盘），此刻美股无收盘价"
   },
   "key_levels": null,
   "events_today": null,

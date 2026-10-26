@@ -2,59 +2,59 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-10-26",
- "generatedAt": "2026-10-26T18:31:06.806+08:00",
+ "generatedAt": "2026-10-26T21:00:52.330+08:00",
  "model": "glm-4-flash",
- "sentiment": 0.1,
+ "sentiment": 0.3,
  "confidence": 0.8,
- "reason": "市场整体情绪偏向正面，涨停家数多于跌停家数，且亏钱效应较低，强势股多数因新题材或业绩增长驱动。",
+ "reason": "市场整体情绪偏向中性，但部分题材如‘羊’字辈、机器人概念等表现强势。",
  "events": [
   {
    "type": "题材催化",
    "target": "羊字辈",
    "tone": "positive",
-   "note": "新晋题材‘羊’字辈带动相关股票上涨。"
+   "note": "新晋题材‘羊’字辈表现活跃，带动相关个股上涨。"
   },
   {
-   "type": "业绩增长",
-   "target": "上纬新材",
+   "type": "业绩预告",
+   "target": "三羊马",
    "tone": "positive",
-   "note": "上纬新材因机器人下线和风电树脂业务表现良好而上涨。"
+   "note": "三羊马因‘羊’字辈题材及汽车物流概念上涨。"
+  },
+  {
+   "type": "行业催化",
+   "target": "电子水泵",
+   "tone": "positive",
+   "note": "电子水泵题材新晋，带动相关个股如奥雅股份上涨。"
+  },
+  {
+   "type": "行业催化",
+   "target": "机器人概念",
+   "tone": "positive",
+   "note": "机器人概念持续活跃，如上纬新材、泛亚微透等表现强势。"
+  },
+  {
+   "type": "政策",
+   "target": "AI算力",
+   "tone": "positive",
+   "note": "AI算力题材延续强势，国脉科技等个股受益。"
+  },
+  {
+   "type": "行业催化",
+   "target": "新能源",
+   "tone": "positive",
+   "note": "新能源题材延续，部分个股如晶华新材受益。"
   },
   {
    "type": "回购",
    "target": "达瑞电子",
    "tone": "positive",
-   "note": "达瑞电子因回购和折叠屏技术而上涨。"
+   "note": "达瑞电子因回购及折叠屏概念上涨。"
   },
   {
-   "type": "重组",
-   "target": "*ST瑞茂",
+   "type": "业绩预告",
+   "target": "永创智能",
    "tone": "positive",
-   "note": "*ST瑞茂因庭外重组和海外煤炭业务而上涨。"
-  },
-  {
-   "type": "AI应用",
-   "target": "国脉科技",
-   "tone": "positive",
-   "note": "国脉科技因AI应用和通信服务业务而上涨。"
-  },
-  {
-   "type": "机器人概念",
-   "target": "锋龙股份",
-   "tone": "positive",
-   "note": "锋龙股份因机器人概念和优必选入主而上涨。"
-  },
-  {
-   "type": "毛利率提升",
-   "target": "模塑科技",
-   "tone": "positive",
-   "note": "模塑科技因毛利率提升而上涨。"
-  },
-  {
-   "type": "AI算力",
-   "target": "泛亚微透",
-   "tone": "positive",
-   "note": "泛亚微透因机器人、电子皮肤和微透膜技术而上涨。"
+   "note": "永创智能因人形机器人及半年报增长概念上涨。"
   }
  ],
  "inputDigest": {
