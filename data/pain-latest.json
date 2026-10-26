@@ -1,153 +1,173 @@
 {
- "date": "2026-10-22",
- "prevZtCount": 33,
+ "date": "2026-10-23",
+ "prevZtCount": 82,
  "perf": {
-  "n": 33,
-  "universe": 33,
+  "n": 82,
+  "universe": 82,
   "missing": 0,
   "reliable": true,
-  "avg": 3.38,
-  "median": 4.55,
+  "avg": 2.66,
+  "median": 2.38,
   "lossRatio": 0.33,
-  "worst": -9.95,
+  "worst": -13.97,
   "best": 20,
-  "limitUpAgain": 13,
-  "limitDown": 1,
-  "bigLoss": 4,
+  "limitUpAgain": 18,
+  "limitDown": 4,
+  "bigLoss": 7,
   "note": null
  },
  "advance": {
-  "n": 9,
-  "kept": 3,
-  "failed": 6,
-  "failRate": 0.67,
+  "n": 12,
+  "kept": 7,
+  "failed": 5,
+  "failRate": 0.42,
   "byTier": {
    "2": {
-    "n": 5,
-    "kept": 1,
-    "failed": 4,
-    "failRate": 0.8
+    "n": 9,
+    "kept": 6,
+    "failed": 3,
+    "failRate": 0.33
    },
    "3": {
+    "n": 1,
+    "kept": 1,
+    "failed": 0,
+    "failRate": 0
+   },
+   "4+": {
     "n": 2,
     "kept": 0,
     "failed": 2,
     "failRate": 1
-   },
-   "4+": {
-    "n": 2,
-    "kept": 2,
-    "failed": 0,
-    "failRate": 0
    }
   },
   "reliable": true,
-  "maxLb": 5,
+  "maxLb": 6,
   "detail": [
    {
-    "code": "603278",
-    "lb": 5,
-    "chg": 9.99,
-    "kept": true
-   },
-   {
     "code": "002724",
-    "lb": 5,
-    "chg": 9.99,
-    "kept": true
-   },
-   {
-    "code": "002076",
-    "lb": 3,
-    "chg": -7.78,
+    "lb": 6,
+    "chg": -3.49,
     "kept": false
    },
    {
-    "code": "600293",
-    "lb": 3,
-    "chg": -6.12,
-    "kept": false
-   },
-   {
-    "code": "600202",
-    "lb": 2,
-    "chg": -9.95,
-    "kept": false
-   },
-   {
-    "code": "603138",
-    "lb": 2,
-    "chg": -8.69,
-    "kept": false
-   },
-   {
-    "code": "601999",
-    "lb": 2,
-    "chg": -7.34,
-    "kept": false
-   },
-   {
-    "code": "603330",
-    "lb": 2,
-    "chg": -6.31,
+    "code": "603278",
+    "lb": 6,
+    "chg": 8.08,
     "kept": false
    },
    {
     "code": "600838",
-    "lb": 2,
+    "lb": 3,
     "chg": 10,
+    "kept": true
+   },
+   {
+    "code": "603933",
+    "lb": 2,
+    "chg": -2.72,
+    "kept": false
+   },
+   {
+    "code": "603280",
+    "lb": 2,
+    "chg": 3.35,
+    "kept": false
+   },
+   {
+    "code": "003021",
+    "lb": 2,
+    "chg": 4.94,
+    "kept": false
+   },
+   {
+    "code": "002535",
+    "lb": 2,
+    "chg": 9.9,
+    "kept": true
+   },
+   {
+    "code": "603028",
+    "lb": 2,
+    "chg": 9.95,
+    "kept": true
+   },
+   {
+    "code": "603528",
+    "lb": 2,
+    "chg": 9.95,
+    "kept": true
+   },
+   {
+    "code": "000678",
+    "lb": 2,
+    "chg": 9.98,
+    "kept": true
+   },
+   {
+    "code": "603089",
+    "lb": 2,
+    "chg": 10.01,
+    "kept": true
+   },
+   {
+    "code": "301502",
+    "lb": 2,
+    "chg": 20,
     "kept": true
    }
   ],
   "note": null
  },
  "bigLoss": {
-  "n": 4,
+  "n": 7,
   "list": [
    {
-    "code": "600202",
-    "name": "哈空调",
-    "chg": -9.95
+    "code": "688368",
+    "name": "晶丰明源",
+    "chg": -13.97
    },
    {
-    "code": "603138",
-    "name": "海量数据",
-    "chg": -8.69
+    "code": "002343",
+    "name": "慈文传媒",
+    "chg": -10.01
    },
    {
-    "code": "002076",
-    "name": "星光股份",
-    "chg": -7.78
+    "code": "001216",
+    "name": "华瓷股份",
+    "chg": -9.99
    },
    {
-    "code": "601999",
-    "name": "出版传媒",
-    "chg": -7.34
+    "code": "600303",
+    "name": "曙光股份",
+    "chg": -9.87
+   },
+   {
+    "code": "301660",
+    "name": "粤芯半导体-U",
+    "chg": -7.73
+   },
+   {
+    "code": "300296",
+    "name": "利亚德",
+    "chg": -7.38
+   },
+   {
+    "code": "001359",
+    "name": "平安电工",
+    "chg": -7.05
    }
   ]
  },
  "skyFloor": {
-  "n": 2,
-  "list": [
-   {
-    "code": "600293",
-    "name": "三峡新材",
-    "chg": -6.12,
-    "amplitude": 19.9
-   },
-   {
-    "code": "001360",
-    "name": "南矿集团",
-    "chg": -3.77,
-    "amplitude": 19.7
-   }
-  ]
+  "n": 0,
+  "list": []
  },
- "scanned": 33,
+ "scanned": 82,
  "verdict": {
   "level": "strong",
   "label": "接力顺畅",
-  "reason": "昨涨停今日翻绿仅 33%、高位板晋级失败 67%，赚钱效应占优"
+  "reason": "昨涨停今日翻绿仅 33%、高位板晋级失败 42%，赚钱效应占优"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -158,6 +178,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-10-23T10:30:28.427Z",
- "curDate": "2026-10-23"
+ "generatedAt": "2026-10-26T10:30:27.329Z",
+ "curDate": "2026-10-26"
 }

@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-10-23",
- "generatedAt": "2026-10-25T18:30:26.115+08:00",
+ "asOfDate": "2026-10-26",
+ "generatedAt": "2026-10-26T18:31:06.806+08:00",
  "model": "glm-4-flash",
- "sentiment": 0.9,
+ "sentiment": 0.1,
  "confidence": 0.8,
- "reason": "市场整体情绪积极，涨停家数远超跌停家数，强势股多与新技术、业绩增长相关。",
+ "reason": "市场整体情绪偏向正面，涨停家数多于跌停家数，且亏钱效应较低，强势股多数因新题材或业绩增长驱动。",
  "events": [
   {
-   "type": "业绩预告",
-   "target": "恩捷股份",
+   "type": "题材催化",
+   "target": "羊字辈",
    "tone": "positive",
-   "note": "锂电池隔膜业务扭亏为盈，固态电池材料业务增长"
+   "note": "新晋题材‘羊’字辈带动相关股票上涨。"
   },
   {
-   "type": "行业催化",
-   "target": "物理AI",
+   "type": "业绩增长",
+   "target": "上纬新材",
    "tone": "positive",
-   "note": "物理AI概念股活跃，新晋题材"
+   "note": "上纬新材因机器人下线和风电树脂业务表现良好而上涨。"
   },
   {
-   "type": "行业催化",
-   "target": "PCB",
+   "type": "回购",
+   "target": "达瑞电子",
    "tone": "positive",
-   "note": "PCB概念股活跃，新晋题材"
+   "note": "达瑞电子因回购和折叠屏技术而上涨。"
   },
   {
-   "type": "行业催化",
-   "target": "汽车电子",
+   "type": "重组",
+   "target": "*ST瑞茂",
    "tone": "positive",
-   "note": "汽车电子概念股活跃，新晋题材"
+   "note": "*ST瑞茂因庭外重组和海外煤炭业务而上涨。"
   },
   {
-   "type": "行业催化",
-   "target": "机器人零部件",
+   "type": "AI应用",
+   "target": "国脉科技",
    "tone": "positive",
-   "note": "机器人零部件概念股活跃，新晋题材"
+   "note": "国脉科技因AI应用和通信服务业务而上涨。"
   },
   {
-   "type": "行业催化",
-   "target": "三季报增长",
+   "type": "机器人概念",
+   "target": "锋龙股份",
    "tone": "positive",
-   "note": "三季报增长题材活跃，新晋题材"
+   "note": "锋龙股份因机器人概念和优必选入主而上涨。"
   },
   {
-   "type": "行业催化",
-   "target": "微短剧",
+   "type": "毛利率提升",
+   "target": "模塑科技",
    "tone": "positive",
-   "note": "微短剧题材延续活跃"
+   "note": "模塑科技因毛利率提升而上涨。"
   },
   {
-   "type": "行业催化",
-   "target": "低空经济",
+   "type": "AI算力",
+   "target": "泛亚微透",
    "tone": "positive",
-   "note": "低空经济题材延续活跃"
+   "note": "泛亚微透因机器人、电子皮肤和微透膜技术而上涨。"
   }
  ],
  "inputDigest": {
-  "themes": 70,
+  "themes": 49,
   "hotListed": 15,
-  "ztCount": 82,
-  "emotionValue": 88.5,
-  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 33%、高位板晋级失败 67%，赚钱效应占优）"
+  "ztCount": 55,
+  "emotionValue": 42.5,
+  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 33%、高位板晋级失败 42%，赚钱效应占优）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }

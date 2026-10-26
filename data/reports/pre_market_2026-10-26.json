@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-26",
- "generated_at": "2026-10-26T01:00:02.935Z",
+ "generated_at": "2026-10-26T10:42:48.039Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "fresh",
+   "dual_track": "stale",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -33,11 +33,11 @@
    "confidence": "missing"
   },
   "pnl_daily": {
-   "source": "archived",
+   "source": "live",
    "confidence": "measured"
   },
   "pnl_cumulative": {
-   "source": "archived",
+   "source": "live",
    "confidence": "measured"
   },
   "max_drawdown_daily": {
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -81,12 +81,12 @@
    "confidence": "measured"
   },
   "prev_nav": {
-   "source": "derived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "positions": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "overnight_exposure": {
    "source": "archived",
@@ -122,45 +122,17 @@
   }
  },
  "payload": {
-  "date": "2026-10-23",
+  "date": "2026-10-26",
   "grid_triggers": null,
   "counter_trend_losses": null,
-  "pnl_daily": 0.006117,
-  "pnl_cumulative": -0.033454,
+  "pnl_daily": 0,
+  "pnl_cumulative": 0,
   "max_drawdown_daily": null,
   "trend_switch_hits": 1,
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": {
-   "key": "shift",
-   "label": "高潮分歧/状态切换期",
-   "cap": 0.3,
-   "position_range": "0%~30%",
-   "positionReconcile": {
-    "score": 88.5,
-    "base": {
-     "key": "base_attack",
-     "minPos": 0.6,
-     "maxPos": 1,
-     "label": "进攻（情绪极高位）"
-    },
-    "baseRange": "60%~100%",
-    "cap": {
-     "key": "shift",
-     "minPos": 0,
-     "maxPos": 0.3,
-     "label": "高潮分歧/状态切换期",
-     "advice": "强制降仓：限制新开进攻仓，只留核心仓",
-     "tone": "defend",
-     "force": true
-    },
-    "capRange": "0%~30%",
-    "force": true,
-    "conflict": true,
-    "finalRange": "0%~30%"
-   }
-  },
+  "regime": null,
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -171,10 +143,9 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": -0.003786,
-    "state": "ok",
-    "stale": false,
-    "cacheNote": null
+    "chgPct": null,
+    "state": "night-open",
+    "nightOpen": true
    },
    {
     "key": "sox",
@@ -186,29 +157,21 @@
    }
   ],
   "externalStale": [
+   "外围「富时中国A50期货」已陈旧（采集失败未刷新），已置空",
    "外围「道琼斯」已陈旧 2 天（采集失败未刷新），已置空",
    "外围「标普500」已陈旧 2 天（采集失败未刷新），已置空",
    "外围「纳斯达克」已陈旧 2 天（采集失败未刷新），已置空",
    "外围「纳斯达克100」已陈旧 2 天（采集失败未刷新），已置空",
    "外围「费城半导体指数」已陈旧 2 天（采集失败未刷新），已置空",
-   "外围「纳斯达克中国金龙指数」已陈旧 2 天（采集失败未刷新），已置空",
-   "外围「富时中国ETF（FXI）」已陈旧 2 天（采集失败未刷新），已置空"
+   "外围「纳斯达克中国金龙指数」已陈旧 2 天（采集失败未刷新），已置空"
   ],
   "nav_realtime": 1000000,
-  "prev_nav": 0.9606695841537317,
-  "positions": {
-   "targetPos": {
-    "上证指数": 0.5,
-    "深证成指": 0.2,
-    "创业板指": 0.2
-   },
-   "poolPos": 0.3,
-   "executed": true
-  },
+  "prev_nav": null,
+  "positions": null,
   "overnight_exposure": {
-   "a50_chgPct": -0.003786,
-   "a50NightOpen": false,
-   "posGap": 0.2,
+   "a50_chgPct": null,
+   "a50NightOpen": true,
+   "posGap": null,
    "us_close": {
     "dji": null,
     "spx": null,
@@ -216,11 +179,11 @@
    },
    "cn_overnight": {
     "hxc": null,
-    "fxi": null
+    "fxi": -0.004314
    },
-   "cnh_chgPct": 0.00003,
-   "usReady": true,
-   "usReason": "美东 17:20 ET 已收盘（≥16:30 ET），可采信当日收盘"
+   "cnh_chgPct": -0.000135,
+   "usReady": false,
+   "usReason": "美东 06:38 ET 盘前（09:30 才开盘），此刻美股无收盘价"
   },
   "key_levels": null,
   "events_today": null,
@@ -230,81 +193,89 @@
    "basis": "pain.advance.detail 昨收口径连板梯队（封板质量以晋级结果+近期上榜频次代理，个股级封单额无档案）；不含操作建议",
    "ladder": [
     {
-     "code": "603278",
-     "name": "大业股份",
-     "lb": 5,
-     "kept": true,
-     "chg": 9.99,
-     "appearances": 27
-    },
-    {
      "code": "002724",
      "name": "海洋王",
-     "lb": 5,
-     "kept": true,
-     "chg": 9.99,
+     "lb": 6,
+     "kept": false,
+     "chg": -3.49,
      "appearances": 11
     },
     {
-     "code": "002076",
-     "name": "星光股份",
-     "lb": 3,
+     "code": "603278",
+     "name": "大业股份",
+     "lb": 6,
      "kept": false,
-     "chg": -7.78,
-     "appearances": 7
-    },
-    {
-     "code": "600293",
-     "name": "三峡新材",
-     "lb": 3,
-     "kept": false,
-     "chg": -6.12,
-     "appearances": 12
-    },
-    {
-     "code": "600202",
-     "name": "哈空调",
-     "lb": 2,
-     "kept": false,
-     "chg": -9.95,
-     "appearances": 3
-    },
-    {
-     "code": "603138",
-     "name": "海量数据",
-     "lb": 2,
-     "kept": false,
-     "chg": -8.69,
-     "appearances": 9
-    },
-    {
-     "code": "601999",
-     "name": "出版传媒",
-     "lb": 2,
-     "kept": false,
-     "chg": -7.34,
-     "appearances": 5
-    },
-    {
-     "code": "603330",
-     "name": "天洋新材",
-     "lb": 2,
-     "kept": false,
-     "chg": -6.31,
-     "appearances": 19
+     "chg": 8.08,
+     "appearances": 28
     },
     {
      "code": "600838",
      "name": "上海九百",
-     "lb": 2,
+     "lb": 3,
      "kept": true,
      "chg": 10,
+     "appearances": 12
+    },
+    {
+     "code": "603933",
+     "name": "睿能科技",
+     "lb": 2,
+     "kept": false,
+     "chg": -2.72,
+     "appearances": 14
+    },
+    {
+     "code": "603280",
+     "name": "南方路机",
+     "lb": 2,
+     "kept": false,
+     "chg": 3.35,
+     "appearances": 23
+    },
+    {
+     "code": "003021",
+     "name": "兆威机电",
+     "lb": 2,
+     "kept": false,
+     "chg": 4.94,
+     "appearances": 5
+    },
+    {
+     "code": "002535",
+     "name": "林州重机",
+     "lb": 2,
+     "kept": true,
+     "chg": 9.9,
+     "appearances": 6
+    },
+    {
+     "code": "603028",
+     "name": "赛福天",
+     "lb": 2,
+     "kept": true,
+     "chg": 9.95,
+     "appearances": 4
+    },
+    {
+     "code": "603528",
+     "name": "多伦科技",
+     "lb": 2,
+     "kept": true,
+     "chg": 9.95,
+     "appearances": 5
+    },
+    {
+     "code": "000678",
+     "name": "襄阳轴承",
+     "lb": 2,
+     "kept": true,
+     "chg": 9.98,
      "appearances": 11
     }
    ],
    "overnight_sectors": null,
-   "max_lb": 5,
-   "broken_limit_ratio": 0.1276595744680851
+   "max_lb": 6,
+   "broken_limit_ratio": 0.2948717948717949
   },
   "simulation_stock": null,
   "ma20_degraded": false,
