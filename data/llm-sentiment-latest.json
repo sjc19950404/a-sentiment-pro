@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-10-26",
- "generatedAt": "2026-10-26T21:00:52.330+08:00",
+ "asOfDate": "2026-10-27",
+ "generatedAt": "2026-10-27T18:20:36.597+08:00",
  "model": "glm-4-flash",
- "sentiment": 0.3,
- "confidence": 0.8,
- "reason": "市场整体情绪偏向中性，但部分题材如‘羊’字辈、机器人概念等表现强势。",
+ "sentiment": 0,
+ "confidence": 0.5,
+ "reason": "市场情绪多空拉锯，涨停与跌停家数接近，强势股表现多样，市场整体情绪中性。",
  "events": [
   {
-   "type": "题材催化",
-   "target": "羊字辈",
-   "tone": "positive",
-   "note": "新晋题材‘羊’字辈表现活跃，带动相关个股上涨。"
-  },
-  {
    "type": "业绩预告",
-   "target": "三羊马",
+   "target": "国芳集团",
    "tone": "positive",
-   "note": "三羊马因‘羊’字辈题材及汽车物流概念上涨。"
+   "note": "连锁零售和消费场景表现良好，带动股价上涨。"
   },
   {
-   "type": "行业催化",
-   "target": "电子水泵",
+   "type": "高管变动",
+   "target": "新华百货",
    "tone": "positive",
-   "note": "电子水泵题材新晋，带动相关个股如奥雅股份上涨。"
+   "note": "零售促销和股份回购动作，股价上涨。"
   },
   {
-   "type": "行业催化",
-   "target": "机器人概念",
+   "type": "重大重组",
+   "target": "科瑞思",
    "tone": "positive",
-   "note": "机器人概念持续活跃，如上纬新材、泛亚微透等表现强势。"
+   "note": "重组消息带动股价大幅上涨。"
   },
   {
-   "type": "政策",
-   "target": "AI算力",
+   "type": "中报扭亏",
+   "target": "申达股份",
    "tone": "positive",
-   "note": "AI算力题材延续强势，国脉科技等个股受益。"
+   "note": "中报扭亏为盈，股价上涨。"
   },
   {
-   "type": "行业催化",
-   "target": "新能源",
+   "type": "三季报扭亏",
+   "target": "天邑股份",
    "tone": "positive",
-   "note": "新能源题材延续，部分个股如晶华新材受益。"
+   "note": "三季报扭亏为盈，股价上涨。"
   },
   {
-   "type": "回购",
-   "target": "达瑞电子",
+   "type": "机器人应用",
+   "target": "凯众股份",
    "tone": "positive",
-   "note": "达瑞电子因回购及折叠屏概念上涨。"
+   "note": "机器人应用题材带动股价上涨。"
   },
   {
-   "type": "业绩预告",
-   "target": "永创智能",
+   "type": "景区索道",
+   "target": "峨眉山A",
    "tone": "positive",
-   "note": "永创智能因人形机器人及半年报增长概念上涨。"
+   "note": "景区索道业务增长，股价上涨。"
+  },
+  {
+   "type": "绿色算力",
+   "target": "*ST正平",
+   "tone": "positive",
+   "note": "绿色算力题材带动股价上涨。"
   }
  ],
  "inputDigest": {
-  "themes": 49,
+  "themes": 44,
   "hotListed": 15,
-  "ztCount": 55,
-  "emotionValue": 42.5,
-  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 33%、高位板晋级失败 42%，赚钱效应占优）"
+  "ztCount": 41,
+  "emotionValue": 53.3,
+  "painVerdict": "多空拉锯（昨涨停今日翻绿 49%、高位板晋级失败 73%，追高盈亏各半）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }

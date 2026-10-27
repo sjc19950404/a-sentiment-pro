@@ -1,173 +1,200 @@
 {
- "date": "2026-10-23",
- "prevZtCount": 82,
+ "date": "2026-10-26",
+ "prevZtCount": 55,
  "perf": {
-  "n": 82,
-  "universe": 82,
+  "n": 55,
+  "universe": 55,
   "missing": 0,
   "reliable": true,
-  "avg": 2.66,
-  "median": 2.38,
-  "lossRatio": 0.33,
-  "worst": -13.97,
+  "avg": 1.36,
+  "median": 0.82,
+  "lossRatio": 0.49,
+  "worst": -10.53,
   "best": 20,
-  "limitUpAgain": 18,
-  "limitDown": 4,
-  "bigLoss": 7,
+  "limitUpAgain": 13,
+  "limitDown": 3,
+  "bigLoss": 5,
   "note": null
  },
  "advance": {
-  "n": 12,
-  "kept": 7,
-  "failed": 5,
-  "failRate": 0.42,
+  "n": 15,
+  "kept": 4,
+  "failed": 11,
+  "failRate": 0.73,
   "byTier": {
    "2": {
-    "n": 9,
-    "kept": 6,
-    "failed": 3,
-    "failRate": 0.33
+    "n": 8,
+    "kept": 0,
+    "failed": 8,
+    "failRate": 1
    },
    "3": {
+    "n": 6,
+    "kept": 3,
+    "failed": 3,
+    "failRate": 0.5
+   },
+   "4+": {
     "n": 1,
     "kept": 1,
     "failed": 0,
     "failRate": 0
-   },
-   "4+": {
-    "n": 2,
-    "kept": 0,
-    "failed": 2,
-    "failRate": 1
    }
   },
   "reliable": true,
-  "maxLb": 6,
+  "maxLb": 4,
   "detail": [
    {
-    "code": "002724",
-    "lb": 6,
-    "chg": -3.49,
-    "kept": false
-   },
-   {
-    "code": "603278",
-    "lb": 6,
-    "chg": 8.08,
-    "kept": false
-   },
-   {
     "code": "600838",
-    "lb": 3,
+    "lb": 4,
     "chg": 10,
     "kept": true
    },
    {
-    "code": "603933",
-    "lb": 2,
-    "chg": -2.72,
-    "kept": false
-   },
-   {
-    "code": "603280",
-    "lb": 2,
-    "chg": 3.35,
-    "kept": false
-   },
-   {
-    "code": "003021",
-    "lb": 2,
-    "chg": 4.94,
+    "code": "603089",
+    "lb": 3,
+    "chg": -10.02,
     "kept": false
    },
    {
     "code": "002535",
-    "lb": 2,
-    "chg": 9.9,
-    "kept": true
+    "lb": 3,
+    "chg": -9.91,
+    "kept": false
+   },
+   {
+    "code": "301502",
+    "lb": 3,
+    "chg": -2.65,
+    "kept": false
    },
    {
     "code": "603028",
-    "lb": 2,
-    "chg": 9.95,
-    "kept": true
-   },
-   {
-    "code": "603528",
-    "lb": 2,
-    "chg": 9.95,
-    "kept": true
-   },
-   {
-    "code": "000678",
-    "lb": 2,
-    "chg": 9.98,
-    "kept": true
-   },
-   {
-    "code": "603089",
-    "lb": 2,
+    "lb": 3,
     "chg": 10.01,
     "kept": true
    },
    {
-    "code": "301502",
-    "lb": 2,
-    "chg": 20,
+    "code": "000678",
+    "lb": 3,
+    "chg": 10.03,
     "kept": true
+   },
+   {
+    "code": "603528",
+    "lb": 3,
+    "chg": 10.06,
+    "kept": true
+   },
+   {
+    "code": "000559",
+    "lb": 2,
+    "chg": -5.74,
+    "kept": false
+   },
+   {
+    "code": "000810",
+    "lb": 2,
+    "chg": -4.26,
+    "kept": false
+   },
+   {
+    "code": "002931",
+    "lb": 2,
+    "chg": -3.04,
+    "kept": false
+   },
+   {
+    "code": "600094",
+    "lb": 2,
+    "chg": -2.28,
+    "kept": false
+   },
+   {
+    "code": "603901",
+    "lb": 2,
+    "chg": -1.69,
+    "kept": false
+   },
+   {
+    "code": "603337",
+    "lb": 2,
+    "chg": 2.78,
+    "kept": false
+   },
+   {
+    "code": "000700",
+    "lb": 2,
+    "chg": 3.9,
+    "kept": false
+   },
+   {
+    "code": "605488",
+    "lb": 2,
+    "chg": 5.29,
+    "kept": false
    }
   ],
   "note": null
  },
  "bigLoss": {
-  "n": 7,
+  "n": 5,
   "list": [
    {
-    "code": "688368",
-    "name": "晶丰明源",
-    "chg": -13.97
+    "code": "300916",
+    "name": "朗特智能",
+    "chg": -10.53
    },
    {
-    "code": "002343",
-    "name": "慈文传媒",
-    "chg": -10.01
+    "code": "603089",
+    "name": "正裕工业",
+    "chg": -10.02
    },
    {
-    "code": "001216",
-    "name": "华瓷股份",
-    "chg": -9.99
+    "code": "002535",
+    "name": "林州重机",
+    "chg": -9.91
    },
    {
-    "code": "600303",
-    "name": "曙光股份",
-    "chg": -9.87
+    "code": "002869",
+    "name": "金溢科技",
+    "chg": -9.63
    },
    {
-    "code": "301660",
-    "name": "粤芯半导体-U",
-    "chg": -7.73
-   },
-   {
-    "code": "300296",
-    "name": "利亚德",
-    "chg": -7.38
-   },
-   {
-    "code": "001359",
-    "name": "平安电工",
-    "chg": -7.05
+    "code": "603657",
+    "name": "春光科技",
+    "chg": -8.94
    }
   ]
  },
  "skyFloor": {
-  "n": 0,
-  "list": []
+  "n": 3,
+  "list": [
+   {
+    "code": "002535",
+    "name": "林州重机",
+    "chg": -9.91,
+    "amplitude": 17.4
+   },
+   {
+    "code": "002696",
+    "name": "百洋股份",
+    "chg": -5.14,
+    "amplitude": 16
+   },
+   {
+    "code": "603657",
+    "name": "春光科技",
+    "chg": -8.94,
+    "amplitude": 15.1
+   }
+  ]
  },
- "scanned": 82,
+ "scanned": 55,
  "verdict": {
-  "level": "strong",
-  "label": "接力顺畅",
-  "reason": "昨涨停今日翻绿仅 33%、高位板晋级失败 42%，赚钱效应占优"
+  "level": "normal",
+  "label": "多空拉锯",
+  "reason": "昨涨停今日翻绿 49%、高位板晋级失败 73%，追高盈亏各半"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -178,6 +205,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-10-26T13:00:29.224Z",
- "curDate": "2026-10-26"
+ "generatedAt": "2026-10-27T10:20:17.179Z",
+ "curDate": "2026-10-27"
 }
