@@ -242,7 +242,9 @@ async function runDaily() {
     const bars = shard.bars;
     const last = bars.length ? bars[bars.length - 1][0] : '';
     if (bar[0] <= last) { unchanged++; return; }              // 已在档（幂等）
-    if (bars.length && last && bar[0] > last && bars.length > 700) bars.shift();   // 硬顶 700 条防无限膨胀
+    // 硬顶 700 条（≈2.8 年）防无限膨胀——此上限即 R2 免费额度保险：每只 ≤700 条 × ~5556 股 ≈ 163MB，
+    //   离 10GB 免费额度约 60 倍，保证 R2 存储永不触顶、无需绑卡付费（2026-10-28）。
+    if (bars.length && last && bar[0] > last && bars.length > 700) bars.shift();
     bars.push(bar);
     shard.n = it.n || shard.n;
     atomicWriteJSON(fp, JSON.stringify(shard));
