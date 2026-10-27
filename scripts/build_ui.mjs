@@ -223,10 +223,17 @@ try {
     const dDate = dr.date || sig.date;
     if (dDate && briefs[dDate] != null && dl) {
       let body;
-      if (dl.missing || !dl.points || !dl.points.length) {
-        body = (dl.missingReason || '未生成（需盘后跑 scripts/fetch_dragon_logic.mjs；未跑 ≠ 无妖股）');
-      } else {
+      if (dl && !dl.missing && dl.points && dl.points.length) {
         body = dl.points.map((p) => p.text).join('；');
+      } else {
+        const top = sig.dragonLogic;
+        if (top && !top.degraded) {
+          const n = top.dragons ? top.dragons.length : 0;
+          const pure = (top.pureSentiment || []).length;
+          body = `连板股推演 ${n} 只｜纯情绪炒作 ${pure} 只（证据 ${top.asOfDate || '—'}）`;
+        } else {
+          body = (dl && dl.missingReason) || '未生成（需盘后跑 scripts/fetch_dragon_logic.mjs；未跑 ≠ 无妖股）';
+        }
       }
       briefs[dDate] += `\n十、妖股逻辑推演（方向C）：${body}`;
     }

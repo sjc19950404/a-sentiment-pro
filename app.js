@@ -1543,89 +1543,17 @@ function buildBrief(days, arc) {
   // 读者须先看完七个量价/结构节再看这条软信息——试点定位，权重天然最低。
   // 数据侧 arc.llm（src/llm_sentiment.js 转换块）；与每日日报第八节同源。
   const LLM = arc.llm || (arc.signals && arc.signals.llm) || null;
-  let sec8;
-  if (!LLM) {
-    sec8 = li('舆情参考（LLM 试点）未生成（需收盘后跑 scripts/fetch_llm_sentiment.mjs；未跑 ≠ 舆情中性）')
-      + cal('舆情参考 = 智谱读盘后舆情 → 给 ±5 参考修正；原分不动、不独立生成买卖信号；仅与原因子同向时生效，观望区/反向不生效；缺失时本段只报缺，不冒充中性。');
-  } else if (LLM.degraded) {
-    sec8 = li(`⚠ ${LLM.effectNote || LLM.reason || 'AI 舆情获取失败，默认中性'}（调用失败/超时兜底，不冒充真实舆情）`)
-      + cal('口径同前；证据日期 ' + (LLM.asOfDate || '—') + '，模型 ' + (LLM.model || '未留痕'));
-  } else {
-    const raw = (typeof LLM.sentimentRaw === 'number') ? LLM.sentimentRaw : 0;
-    const dirText = raw > 0.05 ? '正面' : (raw < -0.05 ? '负面' : '中性');
-    sec8 = li(`舆情方向：${dirText}（LLM 读数 ${raw}，置信度 ${LLM.confidence != null ? LLM.confidence : '—'}）`)
-      + li(`参考修正：${(LLM.adj != null ? (LLM.adj > 0 ? '+' : '') + LLM.adj : 0)} 分（±5 软修正，原分不动，不进交易信号）`)
-      + li((LLM.effectNote || (LLM.reason || '')).slice(0, 200))
-      + li(`证据日期 ${LLM.asOfDate || '—'}｜模型 ${LLM.model || '未留痕'}｜原分 ${LLM.original != null ? LLM.original : '—'}${LLM.modified != null ? ' → 参考分 ' + LLM.modified : ''}`)
-      + cal('舆情参考 = 智谱读盘后舆情 → 给 ±5 参考修正；原分不动、不独立生成买卖信号；仅与原因子同向增强时生效，观望区/反向一律不生效（保守保持原分）；证据日期不符或为空即视为缺数据。');
-  }
+  const sec8 = renderLlmSection(LLM);
 
   // ── 九、板块情绪雷达（AI 题材翻译官 = 场景二板块情绪因子）──
   // 注意：write.js / split_archive 注入的 sectorSentiment / dragonLogic 在 signals 顶层
   //   （与 signals 子对象并列），不在 arc.signals 内；这里优先读顶层，并对「传内层」的调用兜底。
   const SS = arc.sectorSentiment || (arc.signals && arc.signals.sectorSentiment) || null;
-  let sec9;
-  if (!SS) {
-    sec9 = li('板块情绪因子未生成（需盘后/周末跑 scripts/fetch_macro_sector_sentiment.mjs；未跑 ≠ 板块中性）')
-      + cal('板块情绪因子 = 新浪滚动新闻 → 智谱映射板块/方向/强度 → 聚合；score∈[-1,1] 纯参考，不独立生成买卖信号；缺失时本段只报缺，不冒充中性。');
-  } else if (SS.degraded) {
-    sec9 = li(`⚠ ${SS.effectNote || '板块情绪获取失败，默认中性'}（调用失败/超时兜底，不冒充真实情绪）`)
-      + cal('口径同前；证据日期 ' + (SS.asOfDate || '—') + '，模型 ' + (SS.model || '未留痕'));
-  } else {
-    const sectors = SS.sectors || [];
-    const rows = sectors.map((s) => {
-      const v = typeof s.score === 'number' ? s.score : 0;
-      const w = Math.abs(v) * 50;
-      const cls = v > 0.05 ? 'pos' : v < -0.05 ? 'neg' : 'zero';
-      const fill = `<div class="glm-bar-fill ${cls}" style="left:${v < 0 ? (50 - w) : 50}%;width:${w}%"></div>`;
-      const cats = [];
-      if (v > 0.15) cats.push('<span class="glm-cat hot">🔥 强催化</span>');
-      else if (v < -0.15) cats.push('<span class="glm-cat cold">⚠ 利空</span>');
-      else cats.push('<span class="glm-cat neu">➖ 中性</span>');
-      // 个股级催化剂：宏观档给的是 headlines（新闻标题字符串），取首条作催化剂上下文
-      const ev = (Array.isArray(s.headlines) && s.headlines[0]) || null;
-      if (ev) cats.push(`<span class="glm-cat ${v > 0 ? 'hot' : 'warn'}">${esc(((typeof ev === 'string' ? ev : (ev.reason || ev.headline || '')).slice(0, 26)))}</span>`);
-      return `<div class="glm-radar-row"><div class="glm-radar-name">${esc(s.sector)}</div>`
-        + `<div class="glm-radar-cell"><div class="glm-bar"><div class="glm-bar-mid"></div>${fill}<span class="glm-bar-val">${v > 0 ? '+' : ''}${v.toFixed(2)}</span></div>${cats.join('')}</div></div>`;
-    }).join('');
-    const bull = (SS.topBullish || []).slice(0, 5).map((x) => `${esc(x.sector)}(+${x.score})`).join('、') || '无';
-    const bear = (SS.topBearish || []).slice(0, 5).map((x) => `${esc(x.sector)}(${x.score})`).join('、') || '无';
-    const btText = SS.blackTalk
-      ? SS.blackTalk
-      : (function () { const hyped = /机器人|算力|半导体|AI|低空/.test(bull); return '今日盘后' + ((SS.macro && SS.macro.label) || '情绪中性') + '。多头主线：' + bull + '；空头压制：' + bear + '。' + (hyped ? '题材高潮次日易分歧，谨记「买在分歧、卖在一致」，切勿盲目顶一字。' : '板块轮动加快，控制仓位，别上头。'); })();
-    const blacktalk = `<div class="glm-blacktalk"><span class="glm-bt-h">🔥 游资复盘黑话：</span><span class="glm-bt-body" data-tw="${esc(btText)}">${esc(btText)}</span></div>`;
-    sec9 = `<div class="glm-radar">${rows}</div>`
-      + blacktalk
-      + li(`宏观情绪：${(SS.macro && SS.macro.label) || '中性'}（score ${SS.macro && SS.macro.sentiment != null ? SS.macro.sentiment : 0}）｜利好：${bull}｜利空：${bear}`)
-      + li(`证据日期 ${SS.asOfDate || '—'}｜模型 ${SS.model || '未留痕'}｜新闻源 ${SS.source || 'sina-roll'}｜涉及板块 ${sectors.length} 个、事件 ${SS.events ? SS.events.length : 0} 条`)
-      + cal('板块情绪因子 = 新浪滚动新闻 → 智谱映射板块/方向/强度 → 聚合；score∈[-1,1]，仅作参考，不独立生成买卖信号；证据日期不符或为空即视为缺数据。');
-  }
+  const sec9 = renderSectorSentimentSection(SS);
 
   // ── 十、妖股逻辑推演（AI 妖股透视镜 = 方向 C）──
   const DL = arc.dragonLogic || (arc.signals && arc.signals.dragonLogic) || null;
-  let sec10;
-  if (!DL) {
-    sec10 = li('妖股逻辑推演未生成（需盘后跑 scripts/fetch_dragon_logic.mjs；未跑 ≠ 无妖股）')
-      + cal('妖股逻辑 = 连板梯队 → 智谱推断涨停逻辑/纯情绪炒作；纯参考，不修改 regime/emotion 分数；由下游决定是否采纳。');
-  } else if (DL.degraded) {
-    sec10 = li(`⚠ ${DL.effectNote || '妖股逻辑推演获取失败，默认空'}（调用失败/超时兜底，不冒充结论）`)
-      + cal('口径同前；证据日期 ' + (DL.asOfDate || '—'));
-  } else {
-    const pure = DL.pureSentiment || [];
-    const byType = DL.byType || {};
-    const typeStr = Object.keys(byType).map((k) => `${k}:${byType[k]}`).join('、') || '无';
-    const pureHtml = pure.slice(0, 12).map((x) => {
-      const reason = x.reason || '纯情绪博弈，晋级风险极大';
-      return `<div class="glm-tag-line"><span class="glm-role fomo">${esc(x.name)}(${x.lb}板)</span>`
-        + `<span class="glm-cat fomo">纯情绪炒作</span>`
-        + `<span class="glm-judg is-pure" data-tw="${esc(reason)}">${esc(reason)}</span></div>`;
-    }).join('');
-    sec10 = (pure.length ? `<div class="dw-glm">${pureHtml}</div>` : li('本轮无被判定为「纯情绪炒作」的连板股'))
-      + li(`连板股推演 ${DL.dragons ? DL.dragons.length : 0} 只｜类型分布：${typeStr}`)
-      + li(`证据日期 ${DL.asOfDate || '—'}｜模型 ${DL.model || '未留痕'}${DL.scanned != null ? '｜扫描 ' + DL.scanned + ' 只' : ''}`)
-      + li('口径：纯参考，不修改 regime/emotion 分数；由下游（paper 等）决定采不采纳。')
-      + cal('妖股逻辑 = 连板梯队 → 智谱推断涨停逻辑/纯情绪炒作；纯参考不改分；证据日期不符或为空即视为缺数据。');
-  }
+  const sec10 = renderDragonLogicSection(DL);
 
   const S = [
     ['情绪定位（核心因子·25%）', sec1, 'bfsec1'],
@@ -3100,6 +3028,121 @@ function regimeKeyOf(r, label) {
 // ── 每日盘后日报（#4）──────────────────────────────────────────────────────
 //   把当天的证据串成七节可读简报。它是**翻译层**：只把屏幕上已有的数字翻成人话，
 //   不重算任何指标。缺失节显示「未生成＋原因」，绝不补 0 伪装成正常。
+// ── 八/九/十 节渲染（研判报告与每日日报共用，保证两处口径完全一致）──
+//   数据侧：日常由 dailyReport.sections 快照承载；若快照 missing（生成早于 fetch 落地），
+//   每日日报在 renderDailyReport 处回退读顶层 llm/sectorSentiment/dragonLogic 真数据，
+//   经同一渲染器输出 → 前端两处内容完全一致，绝不呈现"未生成"空白块。
+function renderLlmSection(llm) {
+  if (!llm) {
+    return li('舆情参考（LLM 试点）未生成（需收盘后跑 scripts/fetch_llm_sentiment.mjs；未跑 ≠ 舆情中性）')
+      + cal('舆情参考 = 智谱读盘后舆情 → 给 ±5 参考修正；原分不动、不独立生成买卖信号；仅与原因子同向时生效，观望区/反向不生效；缺失时本段只报缺，不冒充中性。');
+  }
+  if (llm.degraded) {
+    return li(`⚠ ${llm.effectNote || llm.reason || 'AI 舆情获取失败，默认中性'}（调用失败/超时兜底，不冒充真实舆情）`)
+      + cal('口径同前；证据日期 ' + (llm.asOfDate || '—') + '，模型 ' + (llm.model || '未留痕'));
+  }
+  const raw = (typeof llm.sentimentRaw === 'number') ? llm.sentimentRaw : 0;
+  const dirText = raw > 0.05 ? '正面' : (raw < -0.05 ? '负面' : '中性');
+  return li(`舆情方向：${dirText}（LLM 读数 ${raw}，置信度 ${llm.confidence != null ? llm.confidence : '—'}）`)
+    + li(`参考修正：${(llm.adj != null ? (llm.adj > 0 ? '+' : '') + llm.adj : 0)} 分（±5 软修正，原分不动，不进交易信号）`)
+    + li((llm.effectNote || (llm.reason || '')).slice(0, 200))
+    + li(`证据日期 ${llm.asOfDate || '—'}｜模型 ${llm.model || '未留痕'}｜原分 ${llm.original != null ? llm.original : '—'}${llm.modified != null ? ' → 参考分 ' + llm.modified : ''}`)
+    + cal('舆情参考 = 智谱读盘后舆情 → 给 ±5 参考修正；原分不动、不独立生成买卖信号；仅与原因子同向增强时生效，观望区/反向一律不生效（保守保持原分）；证据日期不符或为空即视为缺数据。');
+}
+
+function renderSectorSentimentSection(ss) {
+  if (!ss) {
+    return li('板块情绪因子未生成（需盘后/周末跑 scripts/fetch_macro_sector_sentiment.mjs；未跑 ≠ 板块中性）')
+      + cal('板块情绪因子 = 新浪滚动新闻 → 智谱映射板块/方向/强度 → 聚合；score∈[-1,1] 纯参考，不独立生成买卖信号；缺失时本段只报缺，不冒充中性。');
+  }
+  if (ss.degraded) {
+    return li(`⚠ ${ss.effectNote || '板块情绪获取失败，默认中性'}（调用失败/超时兜底，不冒充真实情绪）`)
+      + cal('口径同前；证据日期 ' + (ss.asOfDate || '—') + '，模型 ' + (ss.model || '未留痕'));
+  }
+  const sectors = ss.sectors || [];
+  const rows = sectors.map((s) => {
+    const v = typeof s.score === 'number' ? s.score : 0;
+    const w = Math.abs(v) * 50;
+    const cls = v > 0.05 ? 'pos' : v < -0.05 ? 'neg' : 'zero';
+    const fill = `<div class="glm-bar-fill ${cls}" style="left:${v < 0 ? (50 - w) : 50}%;width:${w}%"></div>`;
+    const cats = [];
+    if (v > 0.15) cats.push('<span class="glm-cat hot">🔥 强催化</span>');
+    else if (v < -0.15) cats.push('<span class="glm-cat cold">⚠ 利空</span>');
+    else cats.push('<span class="glm-cat neu">➖ 中性</span>');
+    const ev = (Array.isArray(s.headlines) && s.headlines[0]) || null;
+    if (ev) cats.push(`<span class="glm-cat ${v > 0 ? 'hot' : 'warn'}">${esc(((typeof ev === 'string' ? ev : (ev.reason || ev.headline || '')).slice(0, 26)))}</span>`);
+    return `<div class="glm-radar-row"><div class="glm-radar-name">${esc(s.sector)}</div>`
+      + `<div class="glm-radar-cell"><div class="glm-bar"><div class="glm-bar-mid"></div>${fill}<span class="glm-bar-val">${v > 0 ? '+' : ''}${v.toFixed(2)}</span></div>${cats.join('')}</div></div>`;
+  }).join('');
+  const bull = (ss.topBullish || []).slice(0, 5).map((x) => `${esc(x.sector)}(+${x.score})`).join('、') || '无';
+  const bear = (ss.topBearish || []).slice(0, 5).map((x) => `${esc(x.sector)}(${x.score})`).join('、') || '无';
+  const btText = ss.blackTalk
+    ? ss.blackTalk
+    : (function () { const hyped = /机器人|算力|半导体|AI|低空/.test(bull); return '今日盘后' + ((ss.macro && ss.macro.label) || '情绪中性') + '。多头主线：' + bull + '；空头压制：' + bear + '。' + (hyped ? '题材高潮次日易分歧，谨记「买在分歧、卖在一致」，切勿盲目顶一字。' : '板块轮动加快，控制仓位，别上头。'); })();
+  const blacktalk = `<div class="glm-blacktalk"><span class="glm-bt-h">🔥 游资复盘黑话：</span><span class="glm-bt-body" data-tw="${esc(btText)}">${esc(btText)}</span></div>`;
+  return `<div class="glm-radar">${rows}</div>`
+    + blacktalk
+    + li(`宏观情绪：${(ss.macro && ss.macro.label) || '中性'}（score ${ss.macro && ss.macro.sentiment != null ? ss.macro.sentiment : 0}）｜利好：${bull}｜利空：${bear}`)
+    + li(`证据日期 ${ss.asOfDate || '—'}｜模型 ${ss.model || '未留痕'}｜新闻源 ${ss.source || 'sina-roll'}｜涉及板块 ${sectors.length} 个、事件 ${ss.events ? ss.events.length : 0} 条`)
+    + cal('板块情绪因子 = 新浪滚动新闻 → 智谱映射板块/方向/强度 → 聚合；score∈[-1,1]，仅作参考，不独立生成买卖信号；证据日期不符或为空即视为缺数据。');
+}
+
+function renderDragonLogicSection(dl) {
+  if (!dl) {
+    return li('妖股逻辑推演未生成（需盘后跑 scripts/fetch_dragon_logic.mjs；未跑 ≠ 无妖股）')
+      + cal('妖股逻辑 = 连板梯队 → 智谱推断涨停逻辑/纯情绪炒作；纯参考，不修改 regime/emotion 分数；由下游决定是否采纳。');
+  }
+  if (dl.degraded) {
+    return li(`⚠ ${dl.effectNote || '妖股逻辑推演获取失败，默认空'}（调用失败/超时兜底，不冒充结论）`)
+      + cal('口径同前；证据日期 ' + (dl.asOfDate || '—'));
+  }
+  const pure = dl.pureSentiment || [];
+  const byType = dl.byType || {};
+  const typeStr = Object.keys(byType).map((k) => `${k}:${byType[k]}`).join('、') || '无';
+  const pureHtml = pure.slice(0, 12).map((x) => {
+    const reason = x.reason || '纯情绪博弈，晋级风险极大';
+    return `<div class="glm-tag-line"><span class="glm-role fomo">${esc(x.name)}(${x.lb}板)</span>`
+      + `<span class="glm-cat fomo">纯情绪炒作</span>`
+      + `<span class="glm-judg is-pure" data-tw="${esc(reason)}">${esc(reason)}</span></div>`;
+  }).join('');
+  return (pure.length ? `<div class="dw-glm">${pureHtml}</div>` : li('本轮无被判定为「纯情绪炒作」的连板股'))
+    + li(`连板股推演 ${dl.dragons ? dl.dragons.length : 0} 只｜类型分布：${typeStr}`)
+    + li(`证据日期 ${dl.asOfDate || '—'}｜模型 ${dl.model || '未留痕'}${dl.scanned != null ? '｜扫描 ' + dl.scanned + ' 只' : ''}`)
+    + li('口径：纯参考，不修改 regime/emotion 分数；由下游（paper 等）决定采不采纳。')
+    + cal('妖股逻辑 = 连板梯队 → 智谱推断涨停逻辑/纯情绪炒作；纯参考不改分；证据日期不符或为空即视为缺数据。');
+}
+
+// 每日日报遇 dailyReport.sections 某项 missing 时，回退读顶层 llm/sectorSentiment/dragonLogic 真数据并复用上面渲染器
+function renderDailyExtraSection(id, obj) {
+  if (!obj || obj.degraded) return null;
+  if (id === 'llm') return renderLlmSection(obj);
+  if (id === 'sectorSentiment') return renderSectorSentimentSection(obj);
+  if (id === 'dragonLogic') return renderDragonLogicSection(obj);
+  return null;
+}
+
+// 纯文本兜底（复制/打印共用）：与上面渲染器同源，保证每日日报文本与研判报告一致
+function dailyExtraPlain(id, obj) {
+  if (!obj || obj.degraded) return null;
+  if (id === 'llm') {
+    const raw = (typeof obj.sentimentRaw === 'number') ? obj.sentimentRaw : 0;
+    const dirText = raw > 0.05 ? '正面' : (raw < -0.05 ? '负面' : '中性');
+    return `舆情方向：${dirText}（读数 ${raw}，置信度 ${obj.confidence != null ? obj.confidence : '—'}）｜参考修正 ${obj.adj != null ? (obj.adj > 0 ? '+' : '') + obj.adj : 0} 分`;
+  }
+  if (id === 'sectorSentiment') {
+    const bull = (obj.topBullish || []).slice(0, 5).map((x) => `${x.sector}(+${x.score})`).join('、') || '无';
+    const bear = (obj.topBearish || []).slice(0, 5).map((x) => `${x.sector}(${x.score})`).join('、') || '无';
+    const macro = (obj.macro && obj.macro.label) || '中性';
+    return `板块情绪（${macro}）：多头主线 ${bull}；空头压制 ${bear}`;
+  }
+  if (id === 'dragonLogic') {
+    const n = obj.dragons ? obj.dragons.length : 0;
+    const pure = (obj.pureSentiment || []).length;
+    return `妖股逻辑推演 ${n} 只｜纯情绪炒作 ${pure} 只`;
+  }
+  return null;
+}
+
 function renderDailyReport(rep, errMsg) {
   const box = $('reportPanel');
   if (!box) return;
@@ -3114,23 +3157,32 @@ function renderDailyReport(rep, errMsg) {
   // 2026-10-24 用户指令：取消隐藏第八节（舆情参考 LLM 试点）——恢复渲染；
   //   数据未生成时由 buildLlmSection 显式标「未生成」，不冒充中性（与其他节同款缺数据口径）。
   const visSecs = secs;
-  const missingN = visSecs.filter((s) => s.missing).length;
+  // 展示层回退（2026-10-27）：dailyReport.sections 某项 missing（生成早于 fetch 落地）时，
+  // 回退读顶层 llm/sectorSentiment/dragonLogic 真数据，复用八/九/十节共用渲染器 → 与研判报告完全一致；
+  // 仍缺（顶层也无）→ 才报"未生成"。missingN 只统计真正仍缺的区块。
+  const missingN = visSecs.filter((s) => s.missing && !renderDailyExtraSection(s.id, rep[s.id])).length;
   const tagTone = REGIME_TONE[rep.tag && rep.tag.key] || 'unknown';
 
   const secHtml = visSecs.map((s) => {
+    // 缺失项优先回退顶层真数据（复用研判报告同款渲染器，保证两处口径一致）
+    const fb = s.missing ? renderDailyExtraSection(s.id, rep[s.id]) : null;
     const pts = (s.points || []).map((p) => {
       const cls = p.kind === 'caution' ? 'rp-pt warn'
         : (p.kind === 'main' ? 'rp-pt main'
           : (p.kind === 'unknown' ? 'rp-pt unknown' : 'rp-pt'));
       return `<li class="${cls}">${esc(p.text)}</li>`;
     }).join('');
-    const miss = s.missing
+    const isMissing = s.missing && !fb;
+    const miss = isMissing
       ? `<div class="rp-missing">未生成：${esc(s.missingReason || '原因未知')}</div>` : '';
-    return `<div class="rp-sec${s.missing ? ' is-missing' : ''}">`
+    const body = fb
+      ? `<div class="rp-sec-body">${fb}</div>`
+      : (pts ? `<ul class="rp-pts">${pts}</ul>` : '');
+    return `<div class="rp-sec${isMissing ? ' is-missing' : ''}">`
       + `<div class="rp-sec-title">${esc(s.title || '')}`
       + `<span class="rp-sec-lv lv-${esc(s.level || 'info')}">${esc(secLevelText(s.level))}</span></div>`
       + miss
-      + (pts ? `<ul class="rp-pts">${pts}</ul>` : '')
+      + body
       + `</div>`;
   }).join('');
 
@@ -3188,7 +3240,12 @@ function reportToText(rep) {
   }
   (rep.sections || []).forEach((s) => {
     lines.push(s.title || '');
-    if (s.missing) lines.push(`  （未生成：${s.missingReason || '原因未知'}）`);
+    const fbPlain = s.missing ? dailyExtraPlain(s.id, rep[s.id]) : null;
+    if (fbPlain) {
+      fbPlain.split('\n').forEach((l) => lines.push(`  - ${l}`));
+    } else if (s.missing) {
+      lines.push(`  （未生成：${s.missingReason || '原因未知'}）`);
+    }
     (s.points || []).forEach((p) => lines.push(`  - ${p.text}`));
     lines.push('');
   });
