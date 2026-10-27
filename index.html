@@ -2272,33 +2272,32 @@
     const cur = bases.find((b) => b.k === sectorBase) || bases[0];
     const vs = cur.d;
     const atk = vs.attack || [], def = vs.defense || [];
-    // ⚠ 柱宽必须与右侧显示的数值（change_pct，涨跌幅）同口径等比例，否则「数值接近、柱长差很大」的视觉欺骗。
-    //   绝不混用 excess（相对基准超额，语义不同）。
-    const maxAbs = Math.max(1, ...atk.map((x) => Math.abs(x.change_pct || 0)), ...def.map((x) => Math.abs(x.change_pct || 0)));
-    const rows = [];
-    // ⚠ attack（跑赢基准·红）与 defense（落后基准·绿）是**两个独立榜单**，按名次对齐展示；
-    //   每行左右各成一个**完整单元**（各自带板块名 + 数值），绝不共用一行的 name → 杜绝张冠李戴。
-    for (let i = 0; i < Math.max(atk.length, def.length); i++) {
-      const a = atk[i], d = def[i];
-      rows.push(`<div class="t-dv-row t-dv-row--dual">
-        <div class="t-dv-side is-dn">
-          <span class="t-dv-name" title="${esc((d && d.name) || '')}">${esc((d && d.name) || '—')}</span>
-          <span class="t-dv-track is-l">${d ? `<span class="t-dv-fill dn" style="width:${(Math.abs(d.change_pct) / maxAbs * 100).toFixed(1)}%"></span>` : ''}</span>
-          <span class="t-dv-val"><span class="${d ? 'dn' : ''}">${d ? sgn(d.change_pct, 2) : ''}</span></span>
-        </div>
-        <div class="t-dv-side is-up">
-          <span class="t-dv-val"><span class="${a ? 'up' : ''}">${a ? sgn(a.change_pct, 2) : ''}</span></span>
-          <span class="t-dv-track">${a ? `<span class="t-dv-fill up" style="width:${(Math.abs(a.change_pct) / maxAbs * 100).toFixed(1)}%"></span>` : ''}</span>
-          <span class="t-dv-name" title="${esc((a && a.name) || '')}">${esc((a && a.name) || '—')}</span>
-        </div>
-      </div>`);
-    }
+    // ⚠ 修复「张冠李戴」：把「板块名(name) + 超额收益(excess)」封装成**单个对象数组**，整体按
+    //   excess 降序排序后再渲染；绝不允许把名称与数值拆成两条独立数组分别排序。
+    //   旧实现把 attack（跑赢）与 defense（落后）当两个独立榜单、按名次跨侧对齐，导致同一行里
+    //   左名(落后板块)与右值(跑赢板块)分属不同行业 → 主理人误读为「名值错配」。
+    const merged = [];
+    for (const x of atk) merged.push({ name: x.name, excess: +x.excess || 0, change_pct: +x.change_pct || 0 });
+    for (const x of def) merged.push({ name: x.name, excess: +x.excess || 0, change_pct: +x.change_pct || 0 });
+    merged.sort((p, q) => q.excess - p.excess); // 整体排序：name 与 excess 始终绑定在同一对象
+    const maxAbs = Math.max(0.01, ...merged.map((m) => Math.abs(m.excess)));
+    const rows = merged.map((m) => {
+      const w = (Math.abs(m.excess) / maxAbs * 100).toFixed(1);
+      const cls = m.excess >= 0 ? 'up' : 'dn';
+      return `<div class="t-dv-row" style="grid-template-columns:96px 1fr 1fr 150px">
+        <span class="t-dv-name" title="${esc(m.name)}">${esc(m.name)}</span>
+        <span class="t-dv-track is-l">${m.excess < 0 ? `<span class="t-dv-fill dn" style="width:${w}%"></span>` : ''}</span>
+        <span class="t-dv-track">${m.excess >= 0 ? `<span class="t-dv-fill up" style="width:${w}%"></span>` : ''}</span>
+        <span class="t-dv-val"><span class="${cls}">${sgn(m.excess, 2)}</span>
+          <span class="t-sv-mut">涨幅 ${sgn(m.change_pct, 2)}%</span></span>
+      </div>`;
+    });
     // ⚠ 分段控件必须放 **body**（panel() 的 key 参数会走 esc()，塞 HTML 进去会被转义成文本，
     //   既显示不出按钮，也 querySelector 不到 → 下面那句 addEventListener 直接抛 null）。
     const seg = `<div class="t-seg-row"><span class="t-seg-lbl">对比基准</span><span class="t-seg" role="group" aria-label="对比基准">
       ${bases.map((b) => `<button type="button" data-b="${b.k}"${b.k === cur.k ? ' class="is-on"' : ''}>${esc(b.d.baseLabel || (b.k === 'index' ? '指数' : '中位数'))}</button>`).join('')}
     </span></div>`;
-    const rsPanel = panel('板块相对强弱', `左=落后基准 · 右=跑赢基准 · 基准涨跌 ${sgn(vs.basePct, 2)}`,
+    const rsPanel = panel('板块相对强弱', `红=跑赢基准 · 绿=落后基准 · 基准涨跌 ${sgn(vs.basePct, 2)}`,
       seg + (rows.length ? `<div>${rows.join('')}</div>` : '<div class="t-empty">无板块数据</div>'), 't-c12');
     g.appendChild(rsPanel);
     $('.t-seg', rsPanel).addEventListener('click', (e) => {
@@ -2327,10 +2326,15 @@
     } else {
       // 双向条：左侧=看空（绿），右侧=看多（红），宽度按 |score| 相对最大值
       const mAbs = Math.max(0.01, ...secs.map((x) => Math.abs(+x.score || 0)));
+      // ⚠ 修复「满屏复制粘贴」：GLM 常把同一篇新闻（如化工「乙二醇采购上行」）糊到所有板块。
+      //   跨板块去重——同一摘要仅保留首个出现，其余直接丢弃（只留板块得分），杜绝重复摘要辣眼睛。
+      const seenHl = new Set();
       const bars = secs.map((x) => {
         const sc = +x.score || 0;
-        const hl = (x.headlines || [])[0] || '';
+        let hl = (x.headlines || [])[0] || '';
         const rs = (x.headlines || []).slice(1).join(' / ');
+        const norm = hl.trim();
+        if (norm) { if (seenHl.has(norm)) hl = ''; else seenHl.add(norm); }
         return `<div class="t-dv-row" style="grid-template-columns:86px 1fr 1fr 116px">
           <span class="t-dv-name" title="${esc(x.sector || '')}">${esc(x.sector || '—')}</span>
           <span class="t-dv-track is-l">${sc < 0 ? `<span class="t-dv-fill dn" style="width:${(Math.abs(sc) / mAbs * 100).toFixed(1)}%"></span>` : ''}</span>
@@ -2530,15 +2534,16 @@
       </div>`, 't-c12'));
 
     // 连板高度分布（阶梯柱；按连板数聚合计数，引擎原值）
-    const byLb = {};
-    for (const x of sorted) { const k = +x.lb || 0; byLb[k] = (byLb[k] || 0) + 1; }
     // ⚠ X 轴必须**固定枚举** 1–6 板（极端行情延展到更高板），缺失补 0；
     //   绝不能按「当前有的数据」直接映射——否则缺 4 板时 5 板会被挤到 4 板位置（张冠李戴）。
+    const byLb = {};
+    for (const x of sorted) { const k = +x.lb || 0; if (k > 0) byLb[k] = (byLb[k] || 0) + 1; }
     const maxLbAxis = Math.max(6, ...Object.keys(byLb).map(Number));
     const dist = [];
     for (let k = 1; k <= maxLbAxis; k++) dist.push({ date: `${k}板`, a: byLb[k] || 0 });
-    g.appendChild(panel('连板高度分布', `按连板数聚合计数 · 引擎原值${subKey}`,
-      barChart(dist, { w: 900, h: 180, legend: ['只数', ''], k: '连板高度分布', xLabels: 'all' }), 't-c12'));
+    g.appendChild(panel('连板高度分布', `按连板数聚合计数 · 引擎原值${subKey}`, sorted.length
+      ? barChart(dist, { w: 900, h: 180, legend: ['只数', ''], k: '连板高度分布', xLabels: 'all' })
+      : '<div class="t-empty">当日无连板梯队数据</div>', 't-c12'));
 
     // 连板天梯表 —— 点任一票 → LINK 总线 → 打开个股详情抽屉（K 线 + AI 判词 + 排雷）
     const rows = sorted.map((x) => {

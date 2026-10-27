@@ -337,7 +337,9 @@ test('terminal：总览「妖股纯情绪 N 只」可点 → 跳选股视图并�
   const sig = readJsonSafe('data/signals-latest.json') || {};
   const pureN = ((sig.dragonLogic || {}).pureSentiment || []).length;
   const allN = ((sig.dragonLogic || {}).dragons || []).length;
-  assert.ok(pureN > 0 && allN > pureN, `侧车数据：全梯队 ${allN} 只 / 纯情绪 ${pureN} 只`);
+  // 注：侧车某日可能「全梯队都判为纯情绪」（pureN==allN），故只要求存在纯情绪标的；
+  //   子集过滤是否生效由下方 rows.length===pureN 校验，不强求纯情绪是真子集。
+  assert.ok(pureN > 0, `侧车应有纯情绪标的：全梯队 ${allN} 只 / 纯情绪 ${pureN} 只`);
 
   jump.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 320));
@@ -998,3 +1000,142 @@ test('terminal：选股买点预期面板容错（无 reco 文件 → 隐藏整�
   assert.ok(!panel || panel.style.display === 'none', '读不到信号 → 面板隐藏（display:none），严禁白屏');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
+
+// ─────────────── 图表 Bug 修复回归（2026-10-27 用户反馈）───────────────────────
+
+// Bug1：板块相对强弱「张冠李戴」——旧实现把 attack(跑赢)/defense(落后) 当两个独立榜单、按名次跨侧对齐，
+//   同一行左名(落后板块)与右值(跑赢板块)分属不同行业 → 主理人误读为「名值错配」。
+//   修复后：把「名称 + 超额收益」封装成单个对象数组、整体排序，每行 = 单个板块（名值绑定）。
+test('terminal：板块相对强弱-单一名值绑定（修复张冠李戴）', async () => {
+  const base = readJsonSafe('data/signals-latest.json') || {};
+  const SYN = {
+    latest: {
+      ...base.latest,
+      trade_date: '2026-10-27',
+      industry_relative: {
+        primary: 'index', degraded: false,
+        vsIndex: {
+          base: 'index', baseLabel: '指数', basePct: 0.5,
+          attack: [{ name: '电机', change_pct: 6, excess: 5 }],
+          defense: [{ name: '银行', change_pct: -1, excess: -2 }],
+        },
+        vsMedian: null,
+      },
+    },
+    sectorSentiment: { sectors: [] },
+  };
+  const { w, errors } = makeDom();
+  const realFetch = w.fetch;
+  w.fetch = (url) => {
+    const u = String(url).replace(/^https?:\/\/localhost\//, '');
+    if (u === 'data/signals-latest.json') return Promise.resolve({ ok: true, json: async () => SYN });
+    return realFetch(url);
+  };
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+  const root = w.document.getElementById('tRoot');
+  const btn = [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'sector');
+  assert.ok(btn, '有「板块」视图按钮');
+  btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 240));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /板块相对强弱/.test(p.textContent));
+  assert.ok(panel, '存在「板块相对强弱」面板');
+  // 核心断言：每行只能有 1 个板块名（旧实现每行 2 名 = 跨侧配对 = 张冠李戴）
+  const rows = panel.querySelectorAll('.t-dv-row');
+  assert.ok(rows.length >= 2, '应渲染出排行行');
+  for (const row of rows) assert.equal(row.querySelectorAll('.t-dv-name').length, 1, '每行仅 1 个板块名（名值绑定，无跨侧错配）');
+  assert.match(panel.textContent, /电机/, '含 电机');
+  assert.match(panel.textContent, /银行/, '含 银行');
+  assert.match(panel.textContent, /5\.00/, '电机 超额 +5.00 与名绑定');
+  assert.match(panel.textContent, /-2\.00/, '银行 超额 -2.00 与名绑定');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+// Bug3：AI 板块情绪榜「满屏复制粘贴」——GLM 把同一篇新闻（如化工「乙二醇采购上行」）糊到所有板块。
+//   修复：跨板块去重，同一摘要仅保留首个出现，其余直接丢弃（只留板块得分）。
+test('terminal：AI 板块情绪榜-跨板块头条去重（修复满屏复制粘贴）', async () => {
+  const dup = '今天跑出乙二醇采购上行，甲醇也涨，化工链集体异动';
+  const SYN = {
+    latest: { trade_date: '2026-10-27' },
+    sectorSentiment: {
+      asOfDate: '2026-10-27', scanned: 3,
+      macro: { label: '中性', score100: 50, confidence: 0.5 },
+      sectors: [
+        { sector: '基建', score: 3.2, newsCount: 2, bullish: 1, bearish: 0, headlines: [dup, '基建利好A'] },
+        { sector: 'AI', score: 2.1, newsCount: 2, bullish: 1, bearish: 0, headlines: [dup, 'AI利好B'] },
+        { sector: '算力', score: -1.0, newsCount: 1, bullish: 0, bearish: 1, headlines: ['算力独立新闻C'] },
+      ],
+    },
+  };
+  const base = readJsonSafe('data/signals-latest.json') || {};
+  const S = { ...base, latest: { ...base.latest, trade_date: '2026-10-27' }, sectorSentiment: SYN.sectorSentiment };
+  const { w, errors } = makeDom();
+  const realFetch = w.fetch;
+  w.fetch = (url) => {
+    const u = String(url).replace(/^https?:\/\/localhost\//, '');
+    if (u === 'data/signals-latest.json') return Promise.resolve({ ok: true, json: async () => S });
+    return realFetch(url);
+  };
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+  const root = w.document.getElementById('tRoot');
+  const btn = [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'sector');
+  assert.ok(btn, '有「板块」视图按钮');
+  btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 240));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /AI 板块情绪榜/.test(p.textContent));
+  assert.ok(panel, '存在「AI 板块情绪榜」面板');
+  // 重复摘要 dup 只能出现 1 次（首个基建保留，AI 被去重丢弃）
+  const dupCount = [...panel.querySelectorAll('.t-sec-hl')].filter((e) => e.textContent.includes('乙二醇')).length;
+  assert.equal(dupCount, 1, '同一摘要仅保留 1 次（跨板块去重，杜绝满屏复制粘贴）');
+  assert.match(panel.textContent, /AI/, 'AI 板块仍列出（得分保留）');
+  assert.match(panel.textContent, /基建/, '基建板块列出');
+  assert.match(panel.textContent, /算力/, '算力板块列出');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+// Bug2：连板高度分布 X 轴断层——旧构建按当日已有数据直接映射会跳项。
+//   修复：固定枚举 1–6 板（缺失补 0 柱），绝不允许跳项。
+test('terminal：连板高度分布-X轴固定枚举（修复断层，缺3板仍画轴）', async () => {
+  const SYN = {
+    latest: { trade_date: '2026-10-27' },
+    dragonLogic: {
+      asOfDate: '2026-10-27', degraded: false,
+      dragons: [
+        { code: '600001', name: 'A', lb: 1, is_pure_sentiment: false, reason: 'x', confidence: 0.5, newsCount: 1, bullish: 1, bearish: 0 },
+        { code: '600002', name: 'B', lb: 2, is_pure_sentiment: false, reason: 'x', confidence: 0.5, newsCount: 1, bullish: 1, bearish: 0 },
+        { code: '600004', name: 'D', lb: 4, is_pure_sentiment: false, reason: 'x', confidence: 0.5, newsCount: 1, bullish: 1, bearish: 0 },
+        { code: '600005', name: 'E', lb: 5, is_pure_sentiment: false, reason: 'x', confidence: 0.5, newsCount: 1, bullish: 1, bearish: 0 },
+      ],
+    },
+  };
+  const base = readJsonSafe('data/signals-latest.json') || {};
+  const S = { ...base, latest: { ...base.latest, trade_date: '2026-10-27' }, dragonLogic: SYN.dragonLogic };
+  const { w, errors } = makeDom();
+  const realFetch = w.fetch;
+  w.fetch = (url) => {
+    const u = String(url).replace(/^https?:\/\/localhost\//, '');
+    if (u === 'data/signals-latest.json') return Promise.resolve({ ok: true, json: async () => S });
+    return realFetch(url);
+  };
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+  const root = w.document.getElementById('tRoot');
+  const btn = [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'picks');
+  assert.ok(btn, '有「选股」视图按钮');
+  btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 240));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /连板高度分布/.test(p.textContent));
+  assert.ok(panel, '存在「连板高度分布」面板');
+  const svg = panel.querySelector('svg.t-chart');
+  assert.ok(svg, '含柱状图 SVG');
+  // 关键：数据缺 3 板，但固定枚举必须含 3板（画 0 柱，不跳项）；且至少到 6 板
+  assert.match(svg.textContent, /1板/, 'X 轴含 1板');
+  assert.match(svg.textContent, /2板/, 'X 轴含 2板');
+  assert.match(svg.textContent, /3板/, 'X 轴含 3板（缺数据时补 0 柱，不跳项）');
+  assert.match(svg.textContent, /4板/, 'X 轴含 4板');
+  assert.match(svg.textContent, /5板/, 'X 轴含 5板');
+  assert.match(svg.textContent, /6板/, 'X 轴含 6板（固定枚举至少到 6 板）');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
