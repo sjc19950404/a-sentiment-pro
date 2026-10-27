@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-27",
- "generated_at": "2026-10-27T01:35:02.404Z",
+ "generated_at": "2026-10-27T06:05:04.126Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -80,6 +80,10 @@
    "source": "live",
    "confidence": "measured"
   },
+  "market_context": {
+   "source": "archived",
+   "confidence": "measured"
+  },
   "approx": {
    "source": "derived",
    "confidence": "measured"
@@ -146,7 +150,7 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": 0.0014010000000000001,
+    "chgPct": 0.002378,
     "state": "ok",
     "stale": false,
     "cacheNote": null
@@ -162,6 +166,22 @@
   ],
   "externalStale": [],
   "nav_realtime": 1000000,
+  "market_context": {
+   "emotion": 42.5,
+   "pct_rank": 10.2,
+   "indexes": {
+    "上证指数": 0.19,
+    "深证成指": -1.19,
+    "创业板指": -1.71
+   },
+   "up_down": "2110/3033/151",
+   "amount_yi": 16087.9,
+   "zt_dt": "55/26",
+   "breadth": "站上20日线仅 17.6%",
+   "pain": "接力顺畅",
+   "seats": "沪深股通（北向）主导",
+   "highest_chain": 6
+  },
   "approx": false,
   "drawdown_vs_threshold": {
    "dd_now": 0,
@@ -201,7 +221,7 @@
   "date": "data/paper/dual_track_latest.json::day.date",
   "pnl_daily": "data/paper/dual_track_latest.json::day.dayReturns.A（即时轨覆盖为账本 nav 当日变化）",
   "pnl_cumulative": "data/paper/dual_track_latest.json::summary.trackA.total（即时轨覆盖为 accountStats.ret）",
-  "close_drawdown": "data/paper/dual_track_latest.json::summary.trackA.maxDd",
+  "close_drawdown": "live 实时账户当前回撤 accountStats.drawdown（决议 A：禁混双轨 trackA.maxDd）；空仓→null；归档轨回退 dual_track trackA.maxDd",
   "max_drawdown_daily": "即时轨当日 equity 序列峰谷（S3-1 注入：opts.drawdownDaily ← window.__intradayLive.drawdownDaily ← src/intraday_live.js::dailyDrawdown）",
   "trend_switch_hits": "data/signals-latest.json::regime.turns",
   "overseas": "data/global.json::quotes（A50 + 费半；美股仅美东 16:30 后可信）",
@@ -215,8 +235,8 @@
  },
  "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
  "push_verification": {
-  "checkedAtBJ": "09:35",
-  "snapshotAtBJ": "2026-10-27 09:30",
+  "checkedAtBJ": "14:05",
+  "snapshotAtBJ": "2026-10-27 14:00",
   "tradeDate": "2026-10-27",
   "trend_pool_mode": "trend",
   "minutes_to_close": null,
