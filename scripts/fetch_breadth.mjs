@@ -266,7 +266,9 @@ function recordSourceHealth() {
   const today = new Date().toISOString().slice(0, 10);
   const prev = doc.sources['eastmoney-universe'] || {};
   doc.sources['eastmoney-universe'] = {
-    ok: EM_OK ? 1 : 0, fail: EM_OK ? 0 : 1, streak: EM_OK ? 0 : 3,
+    // 备注性质：破净率缺失（东财 PB 源被墙）不是核心告警源，streak 恒 0（不触发 source_health.mjs 的企微告警；
+    // 该源也不在其探针集内）。仅记录 lastFail/lastDay 供溯源，绝不作为"连续失败告警"呈现。
+    ok: EM_OK ? 1 : 0, fail: EM_OK ? 0 : 1, streak: 0,
     lastOk: EM_OK ? today : (prev.lastOk ?? null),
     lastFail: EM_OK ? null : today, lastDay: today,
   };

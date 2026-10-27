@@ -103,20 +103,12 @@ for (const [key, pick] of Object.entries(pickers)) {
   rows.push({ key, label: LABELS[key], file, date, anchor, state, note, staleReason: stale });
 }
 
-// 宽度数据源降级提示（info-only，不计入 bad）：区分「源不可用（环境限制）」与「真·数据陈旧」。
-// breadth 口径日已 equal（K 线源腾讯正常）→ 数据新鲜；仅东财代码清单(PB)被墙 → 破净率未计算。
-const bMeta = (readJson(path.join(DATA, 'breadth-latest.json')).meta) || {};
-const emDegraded = !!bMeta?.eastmoneyUniverse?.degraded;
-const emNote = emDegraded
-  ? 'ℹ 宽度数据源降级：东财代码清单源不可用（环境限制）→ 破净率未计算；K线源(腾讯)正常、宽度口径已 equal，非数据陈旧。'
-  : null;
-
 const bad = rows.filter((r) => r.state === 'behind' || r.state === 'missing'
   || (r.state === 'ahead' && !AHEAD_OK.has(r.key)));
 const warn = rows.filter((r) => r.state === 'ahead' && AHEAD_OK.has(r.key));
 
 if (WANT_JSON) {
-  const payload = JSON.stringify({ anchor, generatedAt: new Date().toISOString(), ok: bad.length === 0, rows, sourceDegradedNote: emNote }, null, 2);
+  const payload = JSON.stringify({ anchor, generatedAt: new Date().toISOString(), ok: bad.length === 0, rows }, null, 2);
   console.log(payload);
   if (OUT_ARG) writeFileSync(OUT_ARG, payload, 'utf8'); // 自检落盘，编码恒定
   if (bad.length) process.exit(1); // 机读模式同样诚实红（CI 消费退出码）
@@ -127,7 +119,6 @@ if (WANT_JSON) {
     console.log(`${sym[r.state]} ${r.label.padEnd(6, '　')} ${r.date ?? '—'}  ${r.note}${r.staleReason ? `｜${r.staleReason}` : ''}`);
   }
   if (warn.length) console.log(`ℹ 先行档（正常时序）：${warn.map((r) => r.key).join('、')}`);
-  if (emNote) console.log(emNote);
   if (bad.length) {
     console.log(`\n[FAIL] ${bad.length} 项口径违例（behind/missing/异常 ahead）——数据断供或字段缺失，宁红不假。`);
     process.exit(1);
