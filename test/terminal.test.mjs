@@ -880,3 +880,71 @@ test('terminal：总览不再重复陈列「涨跌停分布」图（归涨跌停
   assert.ok(!/涨跌停分布/.test(root.textContent), '总览不应再出现「涨跌停分布」面板（已归涨跌停视图，避免与涨跌停视图图面重合）');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
+
+test('terminal：ETF 防守反击卡（待命态，读取真实 etf_hedge_signal.json）', async () => {
+  const { w, errors } = makeDom();
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 600)); // 等 ETF 异步回填
+  const root = w.document.getElementById('tRoot');
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /ETF 防守反击避险/.test(p.textContent));
+  assert.ok(panel, '总览含 ETF 防守反击避险面板');
+  assert.ok(panel.querySelector('.t-etf-ring'), '含圆环主视觉');
+  assert.match(panel.textContent, /待命/, '常态 → 圆环中心大字「待命」');
+  assert.match(panel.textContent, /主策略运作中/, '常态 → 小字「主策略运作中」');
+  // 副视觉：双 ETF 动量长条（待命时动量未评估，显示 —）
+  assert.ok(panel.querySelector('.t-etf-barrow'), '含动量长条行');
+  assert.match(panel.textContent, /红利低波/, '含 510880 红利低波');
+  assert.match(panel.textContent, /沪深300/, '含 510300 沪深300');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：ETF 卡（触发态，注入合成信号）', async () => {
+  const { w, errors } = makeDom();
+  const realFetch = w.fetch;
+  w.fetch = (url) => {
+    const u = String(url).replace(/^https?:\/\/localhost\//, '');
+    if (u === 'data/etf_hedge_signal.json') {
+      const sig = {
+        active: true, forced_close: true, is_friday: true, cap: 0, regimeKey: 'freeze',
+        winner: '510880', hedge: '510880', allocation_pct: 100,
+        momentum: { returns: { '510880': 12.3, '510300': -4.5 }, winner: '510880' },
+        momentum_missing: false, date: '2026-10-30',
+        recommendation: '建议买入 510880(红利低波ETF)，仓位 100%',
+      };
+      return Promise.resolve({ ok: true, json: async () => sig });
+    }
+    return realFetch(url);
+  };
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 600));
+  const root = w.document.getElementById('tRoot');
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /ETF 防守反击避险/.test(p.textContent));
+  assert.ok(panel, '触发态：ETF 面板存在');
+  assert.ok(panel.querySelector('.t-etf-ring.is-active'), '触发态：圆环变 .is-active（荧光警戒色）');
+  assert.match(panel.textContent, /买入 510880/, '触发态：中心大字「买入 510880」');
+  assert.match(panel.textContent, /仓位 100%/, '触发态：小字「仓位 100%」');
+  assert.match(panel.textContent, /强制空仓\+周五/, '触发态：foot 标注触发原因');
+  // 动量长条：510880 正（绿 up）/ 510300 负（红 dn）
+  assert.equal(panel.querySelectorAll('.t-etf-barfill').length, 2, '触发态：双动量长条');
+  assert.ok(panel.querySelector('.t-etf-barfill.is-up'), '510880 正动量 → 绿 bar');
+  assert.ok(panel.querySelector('.t-etf-barfill.is-dn'), '510300 负动量 → 红 bar');
+  assert.match(panel.textContent, /\+12\.3%/, '510880 动量值 +12.3%');
+  assert.match(panel.textContent, /-4\.5%/, '510300 动量值 -4.5%');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：ETF 卡容错（无 etf_hedge_signal.json → 隐藏整卡，不白屏）', async () => {
+  const { w, errors } = makeDom();
+  const realFetch = w.fetch;
+  w.fetch = (url) => {
+    const u = String(url).replace(/^https?:\/\/localhost\//, '');
+    if (u === 'data/etf_hedge_signal.json') return Promise.resolve({ ok: false, json: async () => null });
+    return realFetch(url);
+  };
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 600));
+  const root = w.document.getElementById('tRoot');
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /ETF 防守反击避险/.test(p.textContent));
+  assert.ok(!panel || panel.style.display === 'none', '读不到信号 → ETF 卡被隐藏（display:none），严禁白屏');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});

@@ -682,3 +682,36 @@
   .t-alert.is-breath, .t-alert.is-crit.is-breath { animation: none; }
   .t-drawer, .t-drawer-mask { transition: none; }
 }
+
+/* ── ETF 防守反击避险卡（2026-10-27 用户指令）─────────────────────────────
+   主视觉：圆环（待命=暗灰0 / 触发=荧光绿按仓位填充 + 辉光）；副视觉：双 ETF 动量长条。 */
+.t-etf { display: flex; gap: 18px; align-items: center; padding: 6px 2px 4px; flex-wrap: wrap; }
+.t-etf-ring { position: relative; width: 120px; height: 120px; flex: 0 0 auto; }
+.t-etf-ring svg { transform: rotate(-90deg); display: block; }
+.t-etf-track { fill: none; stroke: var(--t-line); stroke-width: 10; }
+.t-etf-prog { fill: none; stroke: var(--t-ink-3); stroke-width: 10; stroke-linecap: round;
+  transition: stroke-dasharray .6s ease, stroke .3s ease; }
+.t-etf-ring.is-active .t-etf-track { stroke: rgba(0, 230, 118, .20); }
+.t-etf-ring.is-active .t-etf-prog { stroke: var(--t-dn);
+  filter: drop-shadow(0 0 6px rgba(0, 230, 118, .75)); }
+.t-etf-center { position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center; }
+.t-etf-big { font-size: 20px; font-weight: 700; letter-spacing: .5px; color: var(--t-ink); line-height: 1.1; }
+.t-etf-ring.is-active .t-etf-big { color: var(--t-dn); text-shadow: 0 0 10px rgba(0, 230, 118, .65); }
+.t-etf-sub { font-size: 11px; color: var(--t-ink-2); margin-top: 3px; }
+.t-etf-side { flex: 1 1 220px; min-width: 190px; }
+.t-etf-barrow { display: flex; align-items: center; gap: 8px; margin: 7px 0; }
+.t-etf-bname { width: 100px; flex: 0 0 auto; font-size: 12px; color: var(--t-ink-2); white-space: nowrap; }
+.t-etf-bcode { color: var(--t-ink-3); font-size: 10px; margin-left: 2px; }
+.t-etf-bartrack { flex: 1 1 auto; height: 10px; background: var(--t-panel-2);
+  border: 1px solid var(--t-line); border-radius: 5px; overflow: hidden; }
+.t-etf-barfill { height: 100%; border-radius: 4px; transition: width .6s ease; min-width: 2px; }
+.t-etf-barfill.is-up { background: linear-gradient(90deg, rgba(0, 230, 118, .35), var(--t-dn));
+  box-shadow: 0 0 6px rgba(0, 230, 118, .5); }
+.t-etf-barfill.is-dn { background: linear-gradient(90deg, rgba(255, 77, 79, .35), var(--t-up));
+  box-shadow: 0 0 6px rgba(255, 77, 79, .5); }
+.t-etf-bval { width: 62px; flex: 0 0 auto; text-align: right; font-size: 12px;
+  color: var(--t-ink); font-variant-numeric: tabular-nums; }
+.t-etf-bnote { font-size: 11px; color: var(--t-ink-3); margin: 6px 0; }
+.t-etf-foot { margin-top: 10px; font-size: 11px; color: var(--t-ink-2);
+  border-top: 1px solid var(--t-line-hi); padding-top: 7px; }

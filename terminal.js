@@ -267,6 +267,59 @@
     return s + '</svg>';
   }
 
+  /** ETF 防守反击避险卡（2026-10-27 用户指令）：只读 data/etf_hedge_signal.json，零交易。
+   *   主视觉圆环（待命=暗灰0 / 触发=荧光绿按仓位填充）+ 副视觉双 ETF 动量长条。
+   *   容错：sig 为 null/缺字段 → 返回 null，由调用方隐藏卡片（fail-open，严禁白屏报错）。 */
+  function renderEtfHedgeCard(sig) {
+    if (!sig || typeof sig !== 'object') return null;
+    const active = sig.active === true;
+    const hedge = sig.hedge;
+    const winner = sig.winner;
+    const alloc = Number.isFinite(sig.allocation_pct) ? sig.allocation_pct : 0;
+    const cap = Number.isFinite(sig.cap) ? sig.cap : null;
+    const mom = (sig.momentum && sig.momentum.returns) || {};
+    const momMissing = sig.momentum_missing === true;
+    const date = sig.date || '—';
+
+    // 主视觉：圆环（旋转 -90° 使进度从 12 点起顺时针填充）
+    const R = 46, C = 2 * Math.PI * R;
+    const frac = active ? Math.max(0, Math.min(1, alloc / 100)) : 0;
+    const ringCls = active ? 'is-active' : 'is-standby';
+    const big = active ? (hedge === 'both' ? '等权双持' : `买入 ${esc(winner)}`) : '待命';
+    const sub = active ? `仓位 ${alloc}% · 防守反击` : '主策略运作中';
+    const ring = `
+      <div class="t-etf-ring ${ringCls}">
+        <svg viewBox="0 0 120 120" width="120" height="120" aria-label="ETF 避险状态：${esc(big)}">
+          <circle class="t-etf-track" cx="60" cy="60" r="${R}"/>
+          <circle class="t-etf-prog" cx="60" cy="60" r="${R}" stroke-dasharray="${(C * frac).toFixed(1)} ${C.toFixed(1)}"/>
+        </svg>
+        <div class="t-etf-center"><div class="t-etf-big">${big}</div><div class="t-etf-sub">${sub}</div></div>
+      </div>`;
+
+    // 副视觉：双 ETF 动量长条（直观体现系统为什么选它）
+    const bar = (code, name, v) => {
+      const num = Number.isFinite(v) ? v : null;
+      const mag = num == null ? 0 : Math.max(0, Math.min(100, Math.abs(num) * 4)); // ±25% → 满条（视觉夸张）
+      const dir = num == null ? '' : (num >= 0 ? 'is-up' : 'is-dn');
+      const val = num == null ? '—' : `${num >= 0 ? '+' : ''}${num.toFixed(1)}%`;
+      return `
+        <div class="t-etf-barrow">
+          <div class="t-etf-bname">${esc(name)}<span class="t-etf-bcode">${code}</span></div>
+          <div class="t-etf-bartrack"><div class="t-etf-barfill ${dir}" style="width:${mag.toFixed(1)}%"></div></div>
+          <div class="t-etf-bval">${val}</div>
+        </div>`;
+    };
+    // 副视觉：双 ETF 动量长条（始终展示，直观体现系统为什么选它；缺失显示 —）
+    const bars = `${bar('510880', '红利低波', mom['510880'])}${bar('510300', '沪深300', mom['510300'])}`;
+    const note = momMissing
+      ? `<div class="t-etf-bnote">${active ? '动量数据缺失（触发时兜底等权双持）' : '常态：动量未评估'}</div>`
+      : '';
+
+    const foot = `<div class="t-etf-foot">判定 cap=${cap == null ? '—' : cap} ｜ ${active ? '强制空仓+周五 → 触发动量择优' : `未触发（强制空仓=${sig.forced_close === true}｜周五=${sig.is_friday === true}）`} ｜ 数据日 ${esc(date)}</div>`;
+
+    return `<div class="t-etf">${ring}<div class="t-etf-side">${bars}${note}${foot}</div></div>`;
+  }
+
   /** K线 + 成交量副图 */
   function candles(bars, opt = {}) {
     const W = opt.w || 620, H = opt.h || 330, PV = 64, P = { l: 8, r: 54, t: 10, b: 18 };
@@ -596,6 +649,20 @@
       const host = bwPanel.lastElementChild;
       if (host) host.outerHTML = '<div class="t-empty">宽度档读取失败（fail-open）</div>';
     });
+
+    // ── ETF 防守反击避险（2026-10-27 用户指令）：只读 data/etf_hedge_signal.json，零交易 ──
+    const etfPanel = panel('ETF 防守反击避险', 'data/etf_hedge_signal.json · 只读信号 · 零交易', '<div class="t-loading">加载…</div>', 't-c6');
+    g.appendChild(etfPanel);
+    jget('data/etf_hedge_signal.json').then((sig) => {
+      if (!etfPanel.isConnected) return;
+      const host = etfPanel.lastElementChild;
+      if (!host) return;
+      // 容错：文件缺失/读不到 → 隐藏整卡（fail-open，严禁白屏报错）
+      if (!sig) { etfPanel.style.display = 'none'; return; }
+      const body = renderEtfHedgeCard(sig);
+      if (!body) { etfPanel.style.display = 'none'; return; }
+      host.outerHTML = body;
+    }).catch(() => { etfPanel.style.display = 'none'; });
 
     // ── 主线题材脉络（近几日轮动：main_theme_history.days）──
     //   ⚠ 每天主线是数组（多主线并存），且每天主线名不同 → 不做单一时间序列折线，
