@@ -1350,10 +1350,25 @@
       var secure = location.protocol === 'https:' || location.hostname === 'localhost'
         || location.hostname === '127.0.0.1';
       if (!secure) return;
+      // 记录"本页加载时是否已有 SW 在控制"：区分「首次安装」与「版本更新」。
+      // 只在更新（已有旧 SW）时才自动重载，避免首次访问多刷一次。
+      var hadController = !!navigator.serviceWorker.controller;
+      // 新 SW 接管（skip-waiting 生效）→ 自动重载一次拿新外壳，免手动强刷/清缓存。
+      // 2026-10-27「强刷也不行」根治：外壳走 cache-first，只有新 SW activate 才会清旧缓存；
+      // 监听 controllerchange 让用户一次访问内自动完成换壳。swRefreshed 防重载循环（每次更新最多刷一次）。
+      var swRefreshed = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (swRefreshed || !hadController) return;
+        swRefreshed = true;
+        location.reload();
+      });
       window.addEventListener('load', function () {
         navigator.serviceWorker.register('./sw.js', { scope: './' }).then(function (reg) {
           window.__swReg = reg;
           window.dispatchEvent(new CustomEvent('sw-ready', { detail: { scope: reg.scope } }));
+          // 主动探测更新：浏览器默认只在导航或 24h 间隔时查 sw.js，这里强制查一次，
+          // 让部署后的新外壳尽快被发现（sw.js 自身 HTTP 缓存最多再拖 ~10 分钟）。
+          try { if (reg.update) reg.update(); } catch (e) {}
           // 有新 SW 在等待 → 立刻接管（否则用户要刷两次才拿到新外壳）
           reg.addEventListener('updatefound', function () {
             var sw = reg.installing;
