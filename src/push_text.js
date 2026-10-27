@@ -292,7 +292,7 @@ export function renderPushText(report) {
       // ①（2026-10-27）：候选池缺席（模拟选股关闭/无主线）→ 空仓防守提示（≤100字，有温度但不啰嗦）
       if (!p.simulation_stock || !(Array.isArray(p.simulation_stock.candidate_pool) ? p.simulation_stock.candidate_pool.length : false)) {
         const regimeLabel = (p.regime && (p.regime.label || (p.regime.tag && p.regime.tag.label))) || '';
-        lines.push(regimeLabel ? `当前大盘处于${regimeLabel}期，系统执行空仓防守，无买卖动作。` : `当前系统执行空仓防守，无买卖动作。`);
+        lines.push(regimeLabel ? `当前大盘处于${regimeLabel}，系统执行空仓防守，无买卖动作。` : `当前系统执行空仓防守，无买卖动作。`);
       }
       lines.push(`运行回撤 ${pct(p.drawdown_vs_threshold?.dd_now)} · 距回撤档位 ${p.drawdown_vs_threshold?.distance_pp != null ? `${p.drawdown_vs_threshold.distance_pp} 个百分点` : '—'}（${p.drawdown_vs_threshold?.basis ?? '—'}）`);
       lines.push(`昨收口径: 当日 ${pct(p.pnl_daily)} · 累计 ${pct(p.pnl_cumulative)} · 富时A50期货夜盘 ${overseas(p, 'a50')}`);
