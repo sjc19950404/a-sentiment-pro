@@ -76,17 +76,18 @@
   // ── 2. 常量与数据加载 ──────────────────────────────────────────────────
   const jget = async (url) => { try { const r = await fetch(url, { cache: 'force-cache' }); return r.ok ? await r.json() : null; } catch { return null; } };
 
-  // ── 数据起源（2026-10-27 · 方案一 Cloudflare R2 对象存储）────────────────────
+  // ── 数据起源（2026-10-27 · 方案B：jsDelivr + 独立数据仓，绕开 Cloudflare）──────────
   //   背景：个股K线（ui/kline，163MB/5554 分片）与聚合侧车档（emotion_history /
   //   main_theme_history / announcements / paper-account / llm_risk_blacklist）属
-  //   本地重/私数据，刻意不入 git（避免撑爆仓库 + churn），故 GitHub Pages 上相对路径
-  //   404 → 终端这些图空白。这里给它们一个可配置的对象存储起源：
-  //     · 仅在 github.io 域名下、且配置了起源时，才把这些 fetch 改道 R2；
+  //   本地重/私数据，刻意不入主仓 git（避免撑爆仓库 + churn），故 GitHub Pages 上相对
+  //   路径 404 → 终端这些图空白。这里给它们一个可配置的外部数据起源：
+  //     · 仅在 github.io 域名下、且配置了起源时，才把这些 fetch 改道起源地址；
   //     · Pi 本地/隧道同源仍走相对路径（零改动、向后兼容）；
   //     · 未配置（空）= 关闭，Pages 上保持原空态，绝不报错（jget 本就 fail-open）。
-  //   起源来源：优先读 config.json 顶层 dataOrigin，否则用下方 DATA_ORIGIN 常量。
-  //   配套：Pi 侧 EOD 后跑 scripts/sync_public_data.mjs 把这些档同步到 R2（见该脚本头注释）。
-  const DATA_ORIGIN = ''; // ← 建好 R2 桶后填公开读 URL，如 'https://pub-xxxxxxxx.r2.dev' 或自定义域
+  //   起源来源：优先读 config.json 顶层 dataOrigin（默认已指向 jsDelivr 数据仓
+  //   sjc19950404/a-sentiment-kline@main），否则用下方 DATA_ORIGIN 常量兜底。
+  //   配套：Pi 侧 EOD 后跑 scripts/push_data_repo.sh 把这些档推送到数据仓（见脚本头注释）。
+  const DATA_ORIGIN = ''; // 兜底；正常用 config.json 的 dataOrigin（jsDelivr 地址）
   const durl = (p) => {
     const origin = (typeof window !== 'undefined' && window.ASENT_CONFIG && window.ASENT_CONFIG.dataOrigin) || DATA_ORIGIN;
     if (!origin || !/(^|\.)github\.io$/.test(location.hostname)) return p;
