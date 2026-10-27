@@ -92,6 +92,10 @@ case "$MODE" in
     # EOD 推送「优先级 + 时间错峰」引擎：月报 > 周报(+周盈利战报) > 盘后基础复盘 > AI盘后情报；
     #   多条错峰发送（默认 3s）。盘中紧急异动 / 盘前排雷与观察清单由各自独立 cron 模式推送，不受此 gate。
     node scripts/push_eod.mjs 2>/dev/null || true
+    # 2026-10-27 用户指令：EOD 结束后把本地 ui/kline + 聚合侧车档增量同步到 Cloudflare R2（S3 协议），
+    #   供 Pages 终端经 terminal.js durl() 改道 R2 公共地址拉取（config.json dataOrigin 已切到 R2）。
+    #   脚本内部容错：缺凭证 / SDK 未装 / 桶连不通 仅告警并 exit 0，绝不破坏 EOD 主流程。
+    node scripts/sync_to_r2.mjs 2>>"$LOG_FILE" || log "R2 同步失败（best-effort，不影响 EOD）"
     ;;
   us_close|a50)
     node scripts/fetch_global.mjs || log "外围抓取失败"
