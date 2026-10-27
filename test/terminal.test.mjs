@@ -569,7 +569,8 @@ test('terminal：板块视图增强 —— 宽度 / 双基准切换 / AI 板块�
   const emo = panelBy('AI 板块情绪榜');
   const bars = emo.querySelectorAll('.t-dv-row');
   assert.equal(bars.length, (ss.sectors || []).length, '情绪榜条数 = 侧车板块数');
-  assert.ok(emo.textContent.includes('工业母机'), '含侧车真实板块名');
+  const realSectorName = ((ss.sectors || [])[0] && (ss.sectors[0].sector || ss.sectors[0].name)) || '';
+  assert.ok(realSectorName && emo.textContent.includes(realSectorName), '含侧车真实板块名');
   // 多/空两侧着色：看多走 up(红)、看空走 dn(绿)，不得反色
   const upFills = emo.querySelectorAll('.t-dv-track:not(.is-l) .t-dv-fill.up').length;
   const dnFills = emo.querySelectorAll('.t-dv-track.is-l .t-dv-fill.dn').length;

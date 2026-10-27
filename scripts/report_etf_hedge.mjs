@@ -28,7 +28,7 @@ function readJson(p) {
   try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; }
 }
 
-// 从 kline 文件提取收盘价序列（bars[][1] = close），升序
+// 从 kline 文件提取收盘价序列（bars[][2] = close；bars[][1] = open，勿混淆），升序
 function closesOf(code) {
   const d = readJson(KLINE(code));
   if (!d || !Array.isArray(d.bars)) {
@@ -36,7 +36,7 @@ function closesOf(code) {
     return null;
   }
   const closes = d.bars
-    .map((b) => (Array.isArray(b) ? b[1] : (b && b.close)))
+    .map((b) => (Array.isArray(b) ? b[2] : (b && b.close)))
     .filter((v) => Number.isFinite(v));
   return closes.length ? closes : null;
 }

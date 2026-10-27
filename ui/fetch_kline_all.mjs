@@ -26,6 +26,16 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// ── 显式纳入的额外标的：ETF 避险模块（510880 红利低波 / 510300 沪深300）──
+//   不在沪深A股枚举区间内，故在此硬编码补齐；runInit 写入代码清单、runDaily 运行时兜底合并。
+const EXTRA_CODES = ['sh510880', 'sh510300'];
+function mergeExtra(list) {
+  for (const c of EXTRA_CODES) {
+    if (!list.find((l) => l.c === c)) list.push({ c, n: '' });
+  }
+  return list;
+}
+
 async function getText(url, gbk, tries = 2) {
   for (let i = 0; i < tries; i++) {
     try {
@@ -161,8 +171,9 @@ async function runInit() {
   if (!list) {
     console.log('代码清单: 枚举候选区间 ' + candidateRanges().length + ' 个…');
     list = await enumMarket();
-    if (!DRY) atomicWriteJSON(LIST_FILE, JSON.stringify({ generated: Date.now(), generatedAt: new Date().toISOString().slice(0, 10), note: '沪深A股清单（北交所 v4.8 未含），qt.gtimg 批量行情枚举', codes: list }));
-    console.log('代码清单: 识别 ' + list.length + ' 只沪深A股');
+    mergeExtra(list);
+    if (!DRY) atomicWriteJSON(LIST_FILE, JSON.stringify({ generated: Date.now(), generatedAt: new Date().toISOString().slice(0, 10), note: '沪深A股清单（北交所 v4.8 未含）+ ETF 避险标的（510880/510300），qt.gtimg 批量行情枚举', codes: list }));
+    console.log('代码清单: 识别 ' + list.length + ' 只沪深A股（含 ETF 避险标的）');
   }
   if (LIMIT) { list = list.slice(0, LIMIT); console.log('（SENT_KLINE_LIMIT 限 ' + LIMIT + ' 只）'); }
   if (DRY) { console.log('--dry 干跑结束'); return; }
@@ -194,8 +205,8 @@ async function runInit() {
 async function runDaily() {
   if (!fs.existsSync(LIST_FILE)) { console.error('FATAL: 无代码清单，先跑 --init'); process.exit(1); }
   const meta = JSON.parse(fs.readFileSync(LIST_FILE, 'utf8'));
-  const list = meta.codes;
-  if (!DRY) console.log('清单: ' + list.length + ' 只（' + meta.generatedAt + '）'); else console.log('清单: ' + list.length + ' 只');
+  const list = mergeExtra(meta.codes);
+  if (!DRY) console.log('清单: ' + list.length + ' 只（' + meta.generatedAt + '，含 ETF 避险标的）'); else console.log('清单: ' + list.length + ' 只');
   if (LIMIT) list.length = Math.min(list.length, LIMIT);
 
   // 批量行情 → 当日 bar 表
