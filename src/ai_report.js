@@ -60,7 +60,7 @@ const SOURCE_REFS = {
   date: 'data/paper/dual_track_latest.json::day.date',
   pnl_daily: 'data/paper/dual_track_latest.json::day.dayReturns.A（即时轨覆盖为账本 nav 当日变化）',
   pnl_cumulative: 'data/paper/dual_track_latest.json::summary.trackA.total（即时轨覆盖为 accountStats.ret）',
-  close_drawdown: 'data/paper/dual_track_latest.json::summary.trackA.maxDd',
+  close_drawdown: 'live 实时账户当前回撤 accountStats.drawdown（决议 A：禁混双轨 trackA.maxDd）；空仓→null；归档轨回退 dual_track trackA.maxDd',
   max_drawdown_daily: '即时轨当日 equity 序列峰谷（S3-1 注入：opts.drawdownDaily ← window.__intradayLive.drawdownDaily ← src/intraday_live.js::dailyDrawdown）',
   trend_switch_hits: 'data/signals-latest.json::regime.turns',
   overseas: 'data/global.json::quotes（A50 + 费半；美股仅美东 16:30 后可信）',
@@ -493,7 +493,19 @@ export function generateIntraday(input, opts = {}) {
 export function generatePostMarket(input, opts = {}) {
   const { payload, overrides, ext } = buildBase(input);
   const summary = pick(input, 'dualTrack.summary');
-  payload.close_drawdown = num(pick(summary, 'trackA.maxDd'));
+  // 收盘回撤（用户 2026-10-27 决议 A）：严格锁定为实时账户当前回撤（dd_now），
+  //   禁止混入双轨 trackA.maxDd —— trackA 是 V5.2 策略基准模拟（archive 情绪因子跑
+  //   positions()），与实时账户非同源，其"历史最大回撤"会误导播报（如 10-26 显示 15.86%
+  //   而实时实际 0%）。空仓（无持仓）→ null（渲染 —），不冒充回撤；归档轨（非 live）
+  //   无实时账户 → 回退 trackA.maxDd 保历史档可读。
+  if (input.live) {
+    const liveStats = accountStats(input.paperAccount);
+    const livePos = Object.values(input.paperAccount?.positions || {}).filter((p) => p && Number(p.qty) > 0);
+    const liveDd = Number.isFinite(liveStats?.drawdown) ? Math.abs(liveStats.drawdown) : null;
+    payload.close_drawdown = (livePos.length > 0 && liveDd != null) ? liveDd : null;
+  } else {
+    payload.close_drawdown = num(pick(summary, 'trackA.maxDd'));
+  }
   payload.max_drawdown_intraday = null; // 同 max_drawdown_daily：日内 equity 采样未接入
   payload.grid_trigger_detail = null;
   payload.counter_trend_loss_ratio = null;
@@ -600,7 +612,9 @@ export function mergeReports(a, b) {
   const mergedPayload = { ...older.payload };
   const backfilled = [];
   for (const [k, v] of Object.entries(base.payload)) {
-    if (v == null && older.payload && older.payload[k] != null) {
+    // close_drawdown 是 live-only 字段（决议 A：实时账户当前回撤 dd_now），禁止从 archived
+    //   （双轨 trackA.maxDd）回填——否则会把"策略基准历史最大回撤"跨源混入播报，正是要杜绝的。
+    if (v == null && older.payload && older.payload[k] != null && k !== 'close_drawdown') {
       mergedPayload[k] = older.payload[k];
       backfilled.push(k);
     } else mergedPayload[k] = v;

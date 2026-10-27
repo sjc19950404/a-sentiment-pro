@@ -11,7 +11,7 @@
 //   ⑦ isoWeekStart（周报周一起点推导）+ 候选池 intraday_chg（不在强势榜 = null ≠ 0）。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -586,6 +586,13 @@ test('pushReports：成功推送记指纹时携带 verified 审计摘要（每�
   });
   const dir = mkdtempSync(join(tmpdir(), 'airpt-verify-'));
   const stateFile = join(dir, 'push_state.json');
+  // 注入确定性盘中急跌标的（chgPct<=-5）→ buildIntradayAlert 必展开「主报文+盘中异动副报文」2 条，
+  //   使 verified 审计摘要（仅挂主报文）可被本测试稳定覆盖，不再依赖真实盘中报价侧车。
+  const qPath = join(process.cwd(), 'data', 'intraday-quotes-latest.json');
+  const qOrig = existsSync(qPath) ? readFileSync(qPath, 'utf8') : null;
+  writeFileSync(qPath, JSON.stringify({ generatedAt: new Date().toISOString(), degraded: false, quotes: [
+    { code: '600801', name: '测试急跌股', chgPct: -6.0 },
+  ] }));
   try {
     const ok = await pushReports([r], {
       env: { OPS_WEBHOOK: 'https://example.test/hook' },
@@ -614,7 +621,10 @@ test('pushReports：成功推送记指纹时携带 verified 审计摘要（每�
       const e2 = loadPushState(join(dir2, 's.json')).pushed[0];
       assert.equal(e2.verified, undefined, '无校验台账 → verified 缺席（undefined 不入 JSON）');
     } finally { rmSync(dir2, { recursive: true, force: true }); }
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally {
+    if (qOrig != null) writeFileSync(qPath, qOrig); else rmSync(qPath, { force: true });
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 // ── 9. 实盘跟单指令（Signal Sync · 2026-10-24 用户需求）──────────────────

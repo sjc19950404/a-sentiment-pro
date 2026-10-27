@@ -441,6 +441,8 @@ test('terminal：模拟盘视图增强 —— 账户概览/待成交委托/决�
     { ts: Date.parse('2026-10-23T09:31:06'), date: '2026-10-23', code: '600838', name: '上海九百', side: 'buy', stage: 'glm', result: 'rejected', text: 'GLM 三合一守卫：命中夜间排雷黑名单（立案调查），拒买。' },
     { ts: Date.parse('2026-10-23T09:31:07'), date: '2026-10-23', code: '003021', name: '兆威机电', side: 'buy', stage: 'order', result: 'submitted', text: '自动建仓委托已报送。' },
   ];
+  // 注入确定性挂单：真实档 pending 当前为 0（测试依赖真实数据而飘），这里补齐使「待成交委托」面板稳定渲染为表格
+  acct.pending = [{ code: '003021', name: '兆威机电', side: 'buy', qty: 1000, submitPrice: 91.73, estPrice: 91.73, slip: 0, reason: '自动建仓委托已报送' }];
   w.fetch = (url) => {
     const u = String(url).replace(/^https?:\/\/localhost\//, '');
     if (u === 'data/paper/account.json') return Promise.resolve({ ok: true, json: async () => acct });
@@ -763,6 +765,19 @@ test('terminal：选股连板高度 X 轴固定枚举 1..max（修缺板挤位�
 
 test('terminal：总览 —— 资金正向红色 + 顶栏 regime 徽章', async () => {
   const { w, errors } = makeDom();
+  // 注入确定性正样本：龙虎净买为正 → 验证「资金正向标红(up)」；其余字段沿用真实档，避免测试依赖真实数据的符号而飘
+  const _realFetch = w.fetch;
+  w.fetch = (url) => {
+    const u = String(url).replace(/^https?:\/\/localhost\//, '');
+    if (u === 'data/signals-latest.json') {
+      const sig = readJsonSafe('data/signals-latest.json') || {};
+      const clone = JSON.parse(JSON.stringify(sig));
+      clone.latest = clone.latest || {};
+      clone.latest.lhb_daily_net = 12.3; // 正样本
+      return Promise.resolve({ ok: true, json: async () => clone });
+    }
+    return _realFetch(url);
+  };
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
   await new Promise((r) => setTimeout(r, 300));
   const root = w.document.getElementById('tRoot');

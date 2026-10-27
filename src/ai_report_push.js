@@ -412,15 +412,15 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
           type: m.synthetic.report_type,
           date: report.date,
           cfp: m.cfp || undefined,
-          // 推送前校验审计摘要仅挂主报文（m.cfp 缺席者即主报文；副报文不冒充校验结论）
-          verified: m.cfp ? undefined : (report.push_verification ? {
+          // 推送前校验审计摘要仅挂主报文（messages[0]）；副报文（AI简报/异动/反转）不冒充校验结论
+          verified: (m === messages[0] && report.push_verification) ? {
             checked_at: report.push_verification.checkedAtBJ ?? null,
             snapshot_at: report.push_verification.snapshotAtBJ ?? null,
             removed: (report.push_verification.trend?.removed?.length || 0)
               + (report.push_verification.streak?.removed?.length || 0),
             degraded: report.push_verification.mode_degraded === true,
             skipped: report.push_verification.applied !== true,
-          } : undefined),
+          } : undefined,
         }, now);
         results.push({ type: m.synthetic.report_type, date: report.date, pushed: true, reason: verdict.reason });
       } catch (e) {
