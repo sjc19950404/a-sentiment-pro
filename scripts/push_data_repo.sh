@@ -27,7 +27,9 @@
 set -uo pipefail
 
 KREPO="a-sentiment-kline"
-WORK="/opt/a-sentiment-kline-data"   # 数据仓本地工作副本（与主仓平级，独立于主仓 git）
+# 数据仓本地工作副本。注意：/opt 归 root 不可写，放用户可写的 XDG 数据目录（持久、跨重启保留，
+# 使后续推送为增量）。
+WORK="${XDG_DATA_HOME:-$HOME/.local/share}/a-sentiment-kline"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT" || exit 0
 

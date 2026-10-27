@@ -255,10 +255,11 @@ export function renderPushText(report) {
       break;
     case 'intraday':
       lines.push(`【AI 盘中 · 候选池】${report.date}${report.trigger !== 'schedule' ? ` · ${zhLabel(report.trigger, TRIGGER_LABELS)}` : ''}`);
-      // ①（2026-10-27）：盘面快照始终展示（涨跌家数/涨停跌停/最高连板），防御期也汇报盘面温度
+      // ①（2026-10-27）：盘面快照始终展示（大盘情绪分/涨跌家数/涨停跌停/最高连板），防御期也汇报盘面温度
       if (p.market_context) {
         const hc = p.market_context.highest_chain != null ? p.market_context.highest_chain : (p.watchlist?.max_lb ?? '—');
-        lines.push(`盘面：涨跌 ${txt(p.market_context.up_down)} · 涨停/跌停 ${txt(p.market_context.zt_dt)} · 最高连板 ${txt(hc)}`);
+        const emo = (p.regime && p.regime.score != null) ? p.regime.score : null; // 大盘情绪分（0-100）
+        lines.push(`盘面：情绪 ${emo != null ? Math.round(emo) : '—'} · 涨跌 ${txt(p.market_context.up_down)} · 涨停/跌停 ${txt(p.market_context.zt_dt)} · 最高连板 ${txt(hc)}`);
       }
       { // 双池推送（P0 双池物理拆分）：连板池白名单（昨日涨停+今日非一字）独立评分
         //   独立模板；趋势池黑名单（滤昨日涨停/今日涨停/一字板）保留四条件描述——
@@ -289,10 +290,12 @@ export function renderPushText(report) {
           if (bits.length) lines.push(`推送前校验（快照 ${pv.snapshotAtBJ ?? '—'}）：${bits.join('；')}`);
         }
       }
-      // ①（2026-10-27）：候选池缺席（模拟选股关闭/无主线）→ 空仓防守提示（≤100字，有温度但不啰嗦）
-      if (!p.simulation_stock || !(Array.isArray(p.simulation_stock.candidate_pool) ? p.simulation_stock.candidate_pool.length : false)) {
-        const regimeLabel = (p.regime && (p.regime.label || (p.regime.tag && p.regime.tag.label))) || '';
-        lines.push(regimeLabel ? `当前大盘处于${regimeLabel}，系统执行空仓防守，无买卖动作。` : `当前系统执行空仓防守，无买卖动作。`);
+      // ①（2026-10-27）：候选池缺席（模拟选股关闭/无主线）→ 极简盘面快报。
+      //   冰点(ice)/过热(climax) 期 → "防守期，继续空仓看戏"；其余状态中性观察（不冒充防守姿态）。
+      const poolEmpty = !p.simulation_stock || !(Array.isArray(p.simulation_stock.candidate_pool) ? p.simulation_stock.candidate_pool.length : false);
+      if (poolEmpty) {
+        const regimeKey = p.regime && (p.regime.key || (p.regime.tag && p.regime.tag.key));
+        lines.push(regimeKey === 'ice' || regimeKey === 'climax' ? '防守期，继续空仓看戏' : '暂无符合标准的候选标的，继续观察');
       }
       lines.push(`运行回撤 ${pct(p.drawdown_vs_threshold?.dd_now)} · 距回撤档位 ${p.drawdown_vs_threshold?.distance_pp != null ? `${p.drawdown_vs_threshold.distance_pp} 个百分点` : '—'}（${p.drawdown_vs_threshold?.basis ?? '—'}）`);
       lines.push(`昨收口径: 当日 ${pct(p.pnl_daily)} · 累计 ${pct(p.pnl_cumulative)} · 富时A50期货夜盘 ${overseas(p, 'a50')}`);

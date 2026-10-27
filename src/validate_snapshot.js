@@ -79,9 +79,15 @@ export function validateExternal(global, opts = {}) {
     const state = action === 'null' ? 'stale' : (q.state || (ok ? 'ok' : 'unknown'));
 
     if (action === 'null') {
-      // 仅在全局抓取确失败（fetchFailed）时才称"采集失败"；否则中性报"外围未刷新到最新会话"——绝不谎报军情
-      const failNote = fetchFailed ? '（采集失败未刷新）' : '（外围未刷新到最新会话）';
-      alerts.push(`外围「${name}」已陈旧${age != null ? ` ${age} 天` : ''}${failNote}，已置空`);
+      // 用户指令（2026-10-27）：时间差（年龄≥2天）导致的外围未刷新 → 中性「已陈旧 N 天（未刷新）」，
+      // 绝不写「采集失败」（采集失败是另一回事，只在无日期陈旧的真正抓取失败场景标注）。
+      if (age != null && age >= STALE_DAYS) {
+        alerts.push(`外围「${name}」已陈旧 ${age} 天（未刷新），已置空`);
+      } else {
+        // 非时间差导致的置空（如单 quote ok=false、无 quoteTime 且抓取失败）：按是否真失败标注
+        const failNote = fetchFailed ? '（采集失败未刷新）' : '（外围未刷新到最新会话）';
+        alerts.push(`外围「${name}」${failNote}，已置空`);
+      }
     } else if (action === 'keep_tag') {
       alerts.push(`外围「${name}」为历史缓存（今日采集失败），仅供参考`);
     }

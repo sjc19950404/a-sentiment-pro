@@ -185,6 +185,7 @@ function buildRegime(input) {
   return {
     key: capKey ?? day.regime?.key ?? null,
     label: (posRec && posRec.cap && posRec.cap.label) || day.regime?.label || null,
+    score: (day && Number.isFinite(day.score)) ? day.score : null, // 大盘情绪分（0-100，任务一·盘中温度计播报用）
     cap: (posRec && posRec.cap && Number.isFinite(posRec.cap.maxPos)) ? posRec.cap.maxPos : (Number.isFinite(day.regime?.cap) ? day.regime.cap : null),
     position_range: posRec ? posRec.finalRange : (range ? range.position.range : null),
     positionReconcile: posRec,
