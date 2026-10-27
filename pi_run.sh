@@ -11,7 +11,7 @@
 #     pre_open    盘前观察清单 + 推送（09:00）
 #     candidates  盘中候选池 + 推送（09:35 / 10:30 / 14:00）
 #
-#   流程：校时 → git fetch + reset --hard origin/main（干净起点；.env / dist / node_modules 因 gitignore 保留）
+#   流程：校时 → git fetch + reset --hard origin/main（干净起点；网络不可达时自动降级为「本地代码继续」，绝不中断报告）
 #        → 跑对应任务（产生 data/）→ 渲染 dist/（供本地隧道）→ 安全推送 data/ 到 main → 推送企微报告
 # ─────────────────────────────────────────────────────────────
 set -uo pipefail
@@ -27,17 +27,29 @@ cd "$REPO_DIR" || { alert "pi_run: 仓库不存在 $REPO_DIR"; exit 1; }
 [ -f .env ] && { set -a; . ./.env; set +a; }   # 仅取 OPS_WEBHOOK（企微 key，非 repo 凭据）
 
 # 单实例锁（与 pi_push.sh 同纪律）：并发调度撞车时（实例：14:00 盘中快照与候选池
-# 同时触发）后来者优雅跳过——否则两个实例抢 git index.lock，把 reset 打挂、
-# 还误发「reset 失败」企微告警（2026-10-23 实测 candidates 当日因此整轮丢失）
+# 同时触发）后来者优雅跳过——否则两个实例抢 git index.lock，把 reset 打挂。
+# （注：reset 失败现已软化，仅发极简提示不中断；历史上曾因硬 exit 误发「reset 失败」
+# 企微告警，2026-10-23 实测 candidates 当日因此整轮丢失——故「锁 + 软化」双保险）
 exec 9>/tmp/pi_run.lock
 flock -n 9 || { log "已有 pi_run 实例在跑，跳过本次（$MODE）"; exit 0; }
 
 # 校时闸（坏时间=脏数据）
 [ -x /usr/local/bin/ensure_time.sh ] && { bash /usr/local/bin/ensure_time.sh || { log "校时失败，中止"; alert "pi_run: 校时失败"; exit 1; }; }
 
-# 干净起点：拉最新代码并硬重置（丢弃本地旧 data/，已推送故无损失；.env/dist/node_modules 因 gitignore 保留）
-git fetch origin main 2>/dev/null || log "git fetch 失败，用本地数据继续"
-git reset --hard origin/main 2>/dev/null || { log "reset 失败"; alert "pi_run: reset 失败"; exit 1; }
+# 干净起点（网络容错：树莓派稳定性 >> GitHub 连通性）
+#   优先 fetch + reset --hard 到远端，得到干净最新代码；若 fetch / reset 任一失败
+#   （通常是网络抖动或远端锁定），只记安静本地日志 + 一条极简运维提示，绝不以网络
+#   问题 exit 1。网络不行就不拉取远端，直接用本地现有最新版代码跑 build_ai_report
+#   （降级启动原则）；若本地存在未解决冲突（严重污染）也先清理到 HEAD 再继续。
+git fetch origin main 2>>"$LOG_FILE" || log "git fetch 失败：远端不可达，将使用本地代码继续"
+if ! git reset --hard origin/main >>"$LOG_FILE" 2>&1; then
+  if git diff --name-only --diff-filter=U | grep -q .; then
+    log "reset 远端失败且本地存在未解决冲突，git reset --hard HEAD 清理后继续"
+    git reset --hard HEAD >>"$LOG_FILE" 2>&1 || true
+  fi
+  log "git reset --hard origin/main 失败：使用本地现有最新代码继续（未拉取远端）"
+  alert "[提示] $(date +%H:%M) 代码同步网络抖动，已使用本地代码继续生成盘前简报。"
+fi
 # 执行位自愈：reset --hard 按 git 模式落盘，历史上出现过仓库内脚本执行位丢失
 # （100644）→ cron 直接调用 pi_run.sh 全部 Permission denied → 调度全线停摆的事故。
 # 这里在每次重置后显式补执行位，不依赖仓库里模式是否正确。
