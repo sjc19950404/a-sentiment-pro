@@ -95,3 +95,45 @@ export function formatHedgeReport(decision) {
     : ETF_OPTIONS[decision.hedge];
   return `${decision.reason} → 避险标的：${name}`;
 }
+
+// ── ⑦ 接入实际数据流的核心计算（纯函数，便于单测；脚本负责 IO）────────────────
+//   @param {{cap:?number, regimeKey:?string, pricesMap?:Record<string,number[]>, now?:Date|{getDay:Function}}} arg
+//   @returns 信号对象（与 scripts/report_etf_hedge.mjs 写出格式一致）：
+//     { active, forced_close, is_friday, cap, regimeKey, winner, hedge, allocation_pct,
+//       momentum, momentum_missing, reason, recommendation }
+//
+//   判定（用户 2026-10-27 铁律）：positionCap <= 0（强制空仓）且 周五收盘 → 触发动量择优选股；
+//     否则不动作。双重校验：isForcedClose（仓位上限≤0/硬止损）+ isEvaluationDay（周五）。
+export function computeEtfHedgeSignal({ cap = null, regimeKey = null, pricesMap = {}, now = new Date() } = {}) {
+  const isFriday = isEvaluationDay(now);
+  const forcedClose = isForcedClose({ positionCap: cap });
+  const momentumMissing = !Array.isArray(pricesMap['510880']) && !Array.isArray(pricesMap['510300']);
+  if (forcedClose && isFriday) {
+    const inner = decideEtfHedge({ forcedClose: true, pricesMap, now });
+    // decideEtfHedge 返回 hedge: winner（'both' 时为等权双标的）；winner 在 inner.momentum.winner
+    const win = inner.hedge === 'both' ? null : inner.hedge;
+    const rec = inner.hedge === 'both'
+      ? `建议等权买入 510880(${ETF_OPTIONS['510880']})+510300(${ETF_OPTIONS['510300']})，仓位 100%（ETF日K线缺失，兜底等权）`
+      : `建议买入 ${inner.hedge}(${ETF_OPTIONS[inner.hedge]})，仓位 100%`;
+    return {
+      active: true, forced_close: true, is_friday: true, cap, regimeKey,
+      winner: win, hedge: inner.hedge, allocation_pct: 100,
+      momentum: inner.momentum, momentum_missing: momentumMissing,
+      reason: inner.reason, recommendation: rec,
+    };
+  }
+  return {
+    active: false, forced_close: forcedClose, is_friday: isFriday, cap, regimeKey,
+    momentum_missing: momentumMissing,
+    reason: `未触发（强制空仓=${forcedClose}｜周五=${isFriday}）`, recommendation: null,
+  };
+}
+
+// ── ⑧ EOD 盘后企微推送行（只读信号，绝不交易）────────────────────────────────
+//   返回推送文案行，或 null（不触发时）。示例：🛡 【防守反击】系统强制空仓，建议闲置资金买入 510880 避险
+export function buildEodPushLine(signal) {
+  if (!signal || !signal.active) return null;
+  return signal.hedge === 'both'
+    ? '🛡 【防守反击】系统强制空仓，建议闲置资金等权买入 510880+510300 避险'
+    : `🛡 【防守反击】系统强制空仓，建议闲置资金买入 ${signal.winner} 避险`;
+}

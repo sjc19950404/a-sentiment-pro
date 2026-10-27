@@ -82,6 +82,9 @@ case "$MODE" in
     bash scripts/push_data_repo.sh || log "数据仓推送失败（best-effort，不影响 EOD）"
     # data 同步 GitHub 失败不影响本地交易与复盘推送：pi_push.sh 已发企微友好通知并保留本地提交
     bash scripts/pi_push.sh || log "data 同步 GitHub 失败（已发企微通知，详见 push.log），继续复盘推送"
+    # 2026-10-27 用户指令：EOD 盘前生成 ETF 防守反击避险信号（只读 dual_track + ETF k线，绝不交易）；
+    #   写出 data/etf_hedge_signal.json，供下方 push_eod 经副报文整合进盘后企微推送。
+    node scripts/report_etf_hedge.mjs 2>>"$LOG_FILE" || log "ETF 避险信号生成失败（best-effort，不影响 EOD 推送）"
     # EOD 推送「优先级 + 时间错峰」引擎：月报 > 周报(+周盈利战报) > 盘后基础复盘 > AI盘后情报；
     #   多条错峰发送（默认 3s）。盘中紧急异动 / 盘前排雷与观察清单由各自独立 cron 模式推送，不受此 gate。
     node scripts/push_eod.mjs 2>/dev/null || true

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   momentumReturn, pickEtfByMomentum, isForcedClose, isEvaluationDay,
   decideEtfHedge, formatHedgeReport, ETF_CODES, DEFAULT_LOOKBACK,
+  computeEtfHedgeSignal, buildEodPushLine,
 } from '../src/etf_rotation.js';
 
 // ── 动量收益 ──
@@ -123,4 +124,64 @@ test('formatHedgeReport：激活 + 单标的 → 含标的名', () => {
 test('导出契约：双标的 + 默认回看 20 天', () => {
   assert.deepEqual(ETF_CODES.sort(), ['510300', '510880']);
   assert.equal(DEFAULT_LOOKBACK, 20);
+});
+
+// ── computeEtfHedgeSignal：接入实际数据流的判定（双校验：强制空仓 + 周五）──
+test('computeEtfHedgeSignal：cap>0（非强制空仓）→ 不触发', () => {
+  const s = computeEtfHedgeSignal({ cap: 0.2, regimeKey: 'ice', pricesMap: {}, now: { getDay: () => 5 } });
+  assert.equal(s.active, false);
+  assert.equal(s.forced_close, false);
+  assert.equal(s.is_friday, true);
+  assert.match(s.reason, /未触发/);
+  assert.equal(s.recommendation, null);
+});
+
+test('computeEtfHedgeSignal：cap<=0 但非周五 → 不触发', () => {
+  const s = computeEtfHedgeSignal({ cap: 0, regimeKey: 'freeze', pricesMap: {}, now: { getDay: () => 3 } });
+  assert.equal(s.active, false);
+  assert.equal(s.forced_close, true);
+  assert.equal(s.is_friday, false);
+});
+
+test('computeEtfHedgeSignal：cap<=0 且 周五（ETF 数据齐）→ 触发单标的动量择优', () => {
+  const p510880 = [1.0, 1.1, 1.2, 1.3];   // +30%
+  const p510300 = [2.0, 2.0, 2.0, 1.9];   // -5%
+  const s = computeEtfHedgeSignal({ cap: 0, regimeKey: 'freeze', pricesMap: { '510880': p510880, '510300': p510300 }, now: { getDay: () => 5 } });
+  assert.equal(s.active, true);
+  assert.equal(s.hedge, '510880');
+  assert.equal(s.winner, '510880');
+  assert.equal(s.allocation_pct, 100);
+  assert.equal(s.momentum_missing, false);
+  assert.match(s.recommendation, /建议买入 510880\(红利低波ETF\)，仓位 100%/);
+});
+
+test('computeEtfHedgeSignal：cap<=0 且 周五（ETF 数据全缺）→ 触发兜底等权双 ETF', () => {
+  const s = computeEtfHedgeSignal({ cap: 0, regimeKey: 'freeze', pricesMap: { '510880': null, '510300': null }, now: { getDay: () => 5 } });
+  assert.equal(s.active, true);
+  assert.equal(s.hedge, 'both');
+  assert.equal(s.winner, null);
+  assert.equal(s.momentum_missing, true);
+  assert.match(s.recommendation, /等权买入 510880/);
+});
+
+test('computeEtfHedgeSignal：透传 cap / regimeKey', () => {
+  const s = computeEtfHedgeSignal({ cap: -1, regimeKey: 'climax', pricesMap: {}, now: { getDay: () => 5 } });
+  assert.equal(s.cap, -1);
+  assert.equal(s.regimeKey, 'climax');
+});
+
+// ── buildEodPushLine：EOD 盘后推送行 ──
+test('buildEodPushLine：不触发 → null', () => {
+  assert.equal(buildEodPushLine(null), null);
+  assert.equal(buildEodPushLine({ active: false }), null);
+});
+
+test('buildEodPushLine：单标的 → 用户格式「买入 510880 避险」', () => {
+  const line = buildEodPushLine({ active: true, winner: '510880', hedge: '510880' });
+  assert.equal(line, '🛡 【防守反击】系统强制空仓，建议闲置资金买入 510880 避险');
+});
+
+test('buildEodPushLine：双标的兜底 → 等权买入行', () => {
+  const line = buildEodPushLine({ active: true, winner: null, hedge: 'both' });
+  assert.equal(line, '🛡 【防守反击】系统强制空仓，建议闲置资金等权买入 510880+510300 避险');
 });

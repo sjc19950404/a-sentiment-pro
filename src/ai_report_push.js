@@ -28,6 +28,7 @@ import { marketPhase } from './freshness.js';
 import { resolveHolidays } from './calendar.js';
 import { PUSH_CONSTS, renderPushText, sanitizeWebhookUrl, fingerprintOf } from './push_text.js';
 import { loadRiskBlacklist } from './risk_blacklist.js';
+import { buildEodPushLine } from './etf_rotation.js';
 
 export { PUSH_CONSTS, renderPushText, fingerprintOf }; // 纯渲染层 re-export（Worker/浏览器经 push_text.js 直取，既有 import 路径零改动；fingerprintOf 统一实现见 push_text.js）
 
@@ -225,6 +226,20 @@ export function buildReversalAlert(report, now) {
   return { text, synthetic: { report_type: 'post_market_reversal', date: report.date, trigger: 'event:reversal', status: 'ok', generated_at: report.generated_at || (now && now.toISOString()) || new Date().toISOString(), payload: { text }, missing_notes: null } };
 }
 
+// ── 副报文：ETF 防守反击避险行（2026-10-27 用户指令）────────────────────────────
+//   只读 data/etf_hedge_signal.json（scripts/report_etf_hedge.mjs 产出，零交易、零账户改动）；
+//   铁律：本函数绝不调用任何买卖接口、绝不修改模拟盘账户。signalOverride 用于单测注入；
+//   生产调用不传（走 readJsonSafe 磁盘读取）。返回企微副报文对象，或 null（信号未触发/数据缺失→fail-open 不推）。
+export function buildEtfHedgeLine(report, signalOverride) {
+  if (!report) return null;
+  const sig = signalOverride !== undefined ? signalOverride : readJsonSafe('etf_hedge_signal.json');
+  const line = buildEodPushLine(sig);
+  if (!line) return null;
+  const text = line;
+  const cfp = fingerprintOf({ payload: { t: text } });
+  return { text, cfp, dedupeContent: true, synthetic: { report_type: 'post_market_etf_hedge', date: report.date, trigger: 'etf:hedge', status: 'ok', generated_at: (sig && sig.generated_at) || new Date().toISOString(), payload: { text }, missing_notes: null } };
+}
+
 // 盘中异动单条预警（≤30 字硬约束）：急跌幅度 + 新闻一句话（若无则提示留意消息面）
 function makeIntradayAlertLine(name, code, chg, news) {
   const tag = `⚠${name}急跌${chg.toFixed(1)}%`;
@@ -365,6 +380,8 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
       if (report.report_type === 'post_market') {
         if (!suppressAiBrief) { const m = buildAiBrief(report); if (m) messages.push(m); }
         const rev = buildReversalAlert(report, now); if (rev) messages.push(rev);
+        // 2026-10-27 用户指令：ETF 防守反击避险行（只读 data/etf_hedge_signal.json，绝不交易）
+        const etf = buildEtfHedgeLine(report); if (etf) messages.push(etf);
       }
       if (report.report_type === 'intraday') { const a = buildIntradayAlert(report, now); if (a) messages.push(a); }
     } catch (e) {

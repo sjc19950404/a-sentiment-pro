@@ -18,6 +18,7 @@ import {
   PUSH_CONSTS, fingerprintOf, shouldPush, pruneState, recordPushed,
   loadPushState, savePushState, renderPushText, pushReports,
   gatePreMarket, gateIntraday, gateWeekly, buildSignalSyncReports,
+  buildEtfHedgeLine,
 } from '../src/ai_report_push.js';
 import { isoWeekStart, buildCandidatePool } from '../src/ai_report.js';
 
@@ -740,4 +741,29 @@ test('pushReports：post_market 展开 AI 副报文；skipped 按消息条数计
     assert.equal(bad.skipped, 2, 'skipped = 2（两条都未发出）');
     assert.equal(loadPushState(sf).pushed.length, 0, '失败不记指纹 → 下拍自愈');
   } finally { rmSync(d3, { recursive: true, force: true }); }
+});
+
+// ── buildEtfHedgeLine：ETF 防守反击副报文（2026-10-27）────────────────────
+test('buildEtfHedgeLine：信号未触发（null）→ 返回 null（fail-open 不推）', () => {
+  assert.equal(buildEtfHedgeLine(mkReport(), null), null);
+});
+
+test('buildEtfHedgeLine：active 单标的 → 返回含「买入 510880 避险」的副报文', () => {
+  const sig = { active: true, winner: '510880', hedge: '510880' };
+  const line = buildEtfHedgeLine(mkReport(), sig);
+  assert.ok(line, '应返回副报文');
+  assert.match(line.text, /🛡 【防守反击】系统强制空仓，建议闲置资金买入 510880 避险/);
+  assert.equal(line.synthetic.report_type, 'post_market_etf_hedge');
+  assert.equal(line.dedupeContent, true);
+});
+
+test('buildEtfHedgeLine：active 双标的兜底（hedge=both）→ 等权买入行', () => {
+  const sig = { active: true, winner: null, hedge: 'both' };
+  const line = buildEtfHedgeLine(mkReport(), sig);
+  assert.ok(line);
+  assert.match(line.text, /建议闲置资金等权买入 510880\+510300 避险/);
+});
+
+test('buildEtfHedgeLine：缺 report → 返回 null', () => {
+  assert.equal(buildEtfHedgeLine(null, { active: true, winner: '510880' }), null);
 });

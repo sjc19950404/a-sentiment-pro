@@ -116,6 +116,8 @@ data/announcements-latest.json
 data/llm_risk_blacklist.json
 data/macro-sector-sentiment-latest.json
 data/llm-dragon-logic-latest.json
+# ETF 防守反击避险信号（EOD 由 scripts/report_etf_hedge.mjs 生成，零交易，勿入库）
+data/etf_hedge_signal.json
 
 # 盘中监控侧车（持仓/连板池报价快照 + 急跌新闻快讯，盘中 cron 实时生成、可由脚本重跑，勿入库）
 data/intraday-quotes-latest.json
