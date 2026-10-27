@@ -3158,14 +3158,15 @@ function renderDailyReport(rep, errMsg) {
   //   数据未生成时由 buildLlmSection 显式标「未生成」，不冒充中性（与其他节同款缺数据口径）。
   const visSecs = secs;
   // 展示层回退（2026-10-27）：dailyReport.sections 某项 missing（生成早于 fetch 落地）时，
-  // 回退读顶层 llm/sectorSentiment/dragonLogic 真数据，复用八/九/十节共用渲染器 → 与研判报告完全一致；
-  // 仍缺（顶层也无）→ 才报"未生成"。missingN 只统计真正仍缺的区块。
-  const missingN = visSecs.filter((s) => s.missing && !renderDailyExtraSection(s.id, rep[s.id])).length;
+  // 回退读真数据：优先 dailyReport[s.id]（若快照自带），否则读【顶层 SIGNALS】根级
+  // llm/sectorSentiment/dragonLogic（dailyReport 自身通常不含这些键）——复用八/九/十节共用渲染器
+  // → 与研判报告完全一致；仍缺（顶层也无）→ 才报"未生成"。
+  const missingN = visSecs.filter((s) => s.missing && !renderDailyExtraSection(s.id, rep[s.id] || (SIGNALS && SIGNALS[s.id]))).length;
   const tagTone = REGIME_TONE[rep.tag && rep.tag.key] || 'unknown';
 
   const secHtml = visSecs.map((s) => {
     // 缺失项优先回退顶层真数据（复用研判报告同款渲染器，保证两处口径一致）
-    const fb = s.missing ? renderDailyExtraSection(s.id, rep[s.id]) : null;
+    const fb = s.missing ? renderDailyExtraSection(s.id, rep[s.id] || (SIGNALS && SIGNALS[s.id])) : null;
     const pts = (s.points || []).map((p) => {
       const cls = p.kind === 'caution' ? 'rp-pt warn'
         : (p.kind === 'main' ? 'rp-pt main'
@@ -3240,7 +3241,7 @@ function reportToText(rep) {
   }
   (rep.sections || []).forEach((s) => {
     lines.push(s.title || '');
-    const fbPlain = s.missing ? dailyExtraPlain(s.id, rep[s.id]) : null;
+    const fbPlain = s.missing ? dailyExtraPlain(s.id, rep[s.id] || (SIGNALS && SIGNALS[s.id])) : null;
     if (fbPlain) {
       fbPlain.split('\n').forEach((l) => lines.push(`  - ${l}`));
     } else if (s.missing) {
