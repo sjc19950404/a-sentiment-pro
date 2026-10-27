@@ -1471,6 +1471,23 @@
   // ── 2. 常量与数据加载 ──────────────────────────────────────────────────
   const jget = async (url) => { try { const r = await fetch(url, { cache: 'force-cache' }); return r.ok ? await r.json() : null; } catch { return null; } };
 
+  // ── 数据起源（2026-10-27 · 方案一 Cloudflare R2 对象存储）────────────────────
+  //   背景：个股K线（ui/kline，163MB/5554 分片）与聚合侧车档（emotion_history /
+  //   main_theme_history / announcements / paper-account / llm_risk_blacklist）属
+  //   本地重/私数据，刻意不入 git（避免撑爆仓库 + churn），故 GitHub Pages 上相对路径
+  //   404 → 终端这些图空白。这里给它们一个可配置的对象存储起源：
+  //     · 仅在 github.io 域名下、且配置了起源时，才把这些 fetch 改道 R2；
+  //     · Pi 本地/隧道同源仍走相对路径（零改动、向后兼容）；
+  //     · 未配置（空）= 关闭，Pages 上保持原空态，绝不报错（jget 本就 fail-open）。
+  //   起源来源：优先读 config.json 顶层 dataOrigin，否则用下方 DATA_ORIGIN 常量。
+  //   配套：Pi 侧 EOD 后跑 scripts/sync_public_data.mjs 把这些档同步到 R2（见该脚本头注释）。
+  const DATA_ORIGIN = ''; // ← 建好 R2 桶后填公开读 URL，如 'https://pub-xxxxxxxx.r2.dev' 或自定义域
+  const durl = (p) => {
+    const origin = (typeof window !== 'undefined' && window.ASENT_CONFIG && window.ASENT_CONFIG.dataOrigin) || DATA_ORIGIN;
+    if (!origin || !/(^|\.)github\.io$/.test(location.hostname)) return p;
+    return origin.replace(/\/+$/, '') + '/' + String(p).replace(/^\.?\//, '');
+  };
+
   // ── 涨跌停历史：emotion_history.json（83KB，250 天）按需后台拉 + 结果缓存 ──
   //   ⚠ 档案键是 **.history**（不是 .days）。首期误用 archive-recent.json 的 .days
   //     （该档根本没有 days 键，只有 signals{momentum…}）→ 总览「涨跌停分布」恒落到
@@ -1478,7 +1495,7 @@
   //   字段一律取引擎已落盘的原始值，**不反推、不重算**（如炸板数不由炸板率推导）。
   let _histP = null;
   function loadHist(n = 30) {
-    if (!_histP) _histP = jget('data/emotion_history.json').catch(() => null);
+    if (!_histP) _histP = jget(durl('data/emotion_history.json')).catch(() => null);
     return _histP.then((raw) => {
       const arr = (raw && raw.history) || [];
       return arr.slice(-n).map((x) => {
@@ -1825,7 +1842,7 @@
     };
     sel.addEventListener('change', () => { state.period = sel.value; draw(state.k); });
     state.redraw = () => draw(state.k);   // 供键盘 ←/→ 切周期复用（与下拉同语义：只重绘不重抓）
-    jget(`ui/kline/${prefix}${cc}.json`).then((k) => { state.k = k; draw(k); });
+    jget(durl(`ui/kline/${prefix}${cc}.json`)).then((k) => { state.k = k; draw(k); });
   }
 
   const sparkline = (vals, w = 52, h = 14) => {
@@ -1979,7 +1996,7 @@
     //     改成「按天时间轴」逐日列出主线 chip（强度着色 / 续日标「续」）+ 轮动标记。全取引擎原值。
     const thPanel = panel('主线题材脉络', '近 N 日主线轮动 · main_theme_history', '<div class="t-loading">加载…</div>', 't-c12');
     g.appendChild(thPanel);
-    jget('data/main_theme_history.json').then((mh) => {
+    jget(durl('data/main_theme_history.json')).then((mh) => {
       if (!thPanel.isConnected) return;
       const host = thPanel.lastElementChild;
       if (!host) return;
@@ -2013,7 +2030,7 @@
     g.appendChild(aux);
 
     // 公告流回填（连板股异常波动/风险提示/财报，含原文链接）
-    jget('data/announcements-latest.json').then((a) => {
+    jget(durl('data/announcements-latest.json')).then((a) => {
       if (!annPanel.isConnected) return;
       const host = annPanel.lastElementChild;
       if (!host) return;
@@ -2438,7 +2455,7 @@
 
   async function viewPaper() {
     const g = el('div', 't-grid');
-    const a = (await jget('data/paper/account.json')) || {};
+    const a = (await jget(durl('data/paper/account.json'))) || {};
 
     // ── ① 账户概览（原值直出）──
     const nav = a.nav || [];
@@ -2605,7 +2622,7 @@
     // 盘口快照：日终静态定稿，直接取自该股 K线分片最后一根 —— 与下方 K线 100% 同源对齐，绝不复用任何假样本。
     const _cc = String(code).replace(/^(sh|sz|bj)/, '');
     const _prefix = /^(6|9)/.test(_cc) ? 'sh' : /^(4|8)/.test(_cc) ? 'bj' : 'sz';
-    jget(`ui/kline/${_prefix}${_cc}.json`).then((k) => {
+    jget(durl(`ui/kline/${_prefix}${_cc}.json`)).then((k) => {
       if (!host.isConnected) return;
       const secS = $('[data-sec="snap"] .t-dsec-b', host);
       if (!secS) return;
@@ -2636,7 +2653,7 @@
       if (secS) secS.innerHTML = '<div class="t-dnone">K线分片读取失败 → 不显示日终快照（fail-open）</div>';
     });
 
-    Promise.all([jget('data/llm_risk_blacklist.json'), jget('data/paper/account.json')])
+    Promise.all([jget(durl('data/llm_risk_blacklist.json')), jget(durl('data/paper/account.json'))])
       .then(([bl, acct]) => {
         if (!host.isConnected) return;
         const secR = $('[data-sec="risk"] .t-dsec-b', host);

@@ -76,6 +76,10 @@ case "$MODE" in
     if ! bash scripts/pi_build.sh "${@:2}"; then
       log "pi_build 失败（守卫拦截），不推送"; alert "pi_run: 盘后管道守卫失败，未推送"; exit 1
     fi
+    # 方案一（2026-10-27）：EOD 数据生成后，把 K线+聚合侧车档增量同步到 Cloudflare R2，
+    #   供 GitHub Pages 终端经 terminal.js 的 durl() 拉取（这些档刻意不入 git，避免撑爆仓库）。
+    #   rclone 未配置时脚本内部静默跳过（exit 0），绝不影响 EOD 主流程。
+    bash scripts/sync_public_data.sh || log "R2 同步失败（best-effort，不影响 EOD）"
     # data 同步 GitHub 失败不影响本地交易与复盘推送：pi_push.sh 已发企微友好通知并保留本地提交
     bash scripts/pi_push.sh || log "data 同步 GitHub 失败（已发企微通知，详见 push.log），继续复盘推送"
     # EOD 推送「优先级 + 时间错峰」引擎：月报 > 周报(+周盈利战报) > 盘后基础复盘 > AI盘后情报；
