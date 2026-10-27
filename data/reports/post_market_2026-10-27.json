@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-27",
- "generated_at": "2026-10-27T10:29:19.729Z",
+ "generated_at": "2026-10-27T10:40:01.083Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -97,8 +97,8 @@
    "confidence": "missing"
   },
   "backtest_deviation": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "derived",
+   "confidence": "measured"
   },
   "market_context": {
    "source": "archived",
@@ -128,7 +128,35 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "recover",
+   "label": "复苏/酝酿期",
+   "score": 53.84,
+   "cap": 0.5,
+   "position_range": "30%~50%",
+   "positionReconcile": {
+    "score": 53.8,
+    "base": {
+     "key": "base_neutral",
+     "minPos": 0.3,
+     "maxPos": 0.5,
+     "label": "中性"
+    },
+    "baseRange": "30%~50%",
+    "cap": {
+     "key": "recover",
+     "minPos": 0.3,
+     "maxPos": 0.5,
+     "label": "复苏/酝酿期",
+     "advice": "中性震荡试仓，跟随确认再加",
+     "tone": "balanced"
+    },
+    "capRange": "30%~50%",
+    "force": false,
+    "conflict": false,
+    "finalRange": "30%~50%"
+   }
+  },
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -160,9 +188,14 @@
   "max_drawdown_intraday": null,
   "grid_trigger_detail": null,
   "counter_trend_loss_ratio": null,
-  "backtest_deviation": null,
+  "backtest_deviation": {
+   "live_cum": -0.042982,
+   "backtest_v52": -0.043,
+   "delta": 0.000018,
+   "note": "执行轨 vs 回测 v52 锚点（零偏差为设计约束）"
+  },
   "market_context": {
-   "emotion": 52.5,
+   "emotion": 52.3,
    "pct_rank": 18.6,
    "indexes": {
     "上证指数": -1.33,
