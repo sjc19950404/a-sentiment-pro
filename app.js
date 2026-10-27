@@ -3032,6 +3032,11 @@ function regimeKeyOf(r, label) {
 //   数据侧：日常由 dailyReport.sections 快照承载；若快照 missing（生成早于 fetch 落地），
 //   每日日报在 renderDailyReport 处回退读顶层 llm/sectorSentiment/dragonLogic 真数据，
 //   经同一渲染器输出 → 前端两处内容完全一致，绝不呈现"未生成"空白块。
+// ── 模块级 li/cal：八/九/十节共用渲染器位于模块作用域，引不到 buildBrief 函数内的同名
+//   局部定义（直接引用会抛 ReferenceError）。这里补模块级实现，与 buildBrief 内同名局部
+//   函数逐字一致；函数内局部定义遮蔽模块级，互不冲突。esc/CAL_SUMMARY 本就在模块级，可直接用。
+const li = (t) => `<div class="bf-li">${t}</div>`;
+const cal = (t) => t ? `<details class="bf-caliber"><summary>${CAL_SUMMARY}</summary><div class="bf-cal-body">${t}</div></details>` : '';
 function renderLlmSection(llm) {
   if (!llm) {
     return li('舆情参考（LLM 试点）未生成（需收盘后跑 scripts/fetch_llm_sentiment.mjs；未跑 ≠ 舆情中性）')
