@@ -14,12 +14,14 @@ import { fileURLToPath } from 'node:url';
 import { recommendPicks } from '../src/picks.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const DUAL = resolve(ROOT, 'data/paper/dual_track_latest.json');
+// 与 scripts/paper_daily.mjs 同源：读 data/archive.json（完整档案，day 含 hot/lhb/summary.zt_codes 候选），
+// 而非 dual_track_latest.json（仅 track 精简快照，无候选）。这是生产 recommendPicks 真正使用的数据。
+const ARCHIVE = resolve(ROOT, 'data/archive.json');
 const ZTPOOL = resolve(ROOT, 'data/ztpool_history.json');
 const OUT = resolve(ROOT, 'data/reco_picks_latest.json');
 const TOP_N = 6;
 
-// 当日涨停池：ztpool_history 按日匹配 day.date（归一化去非数字）
+// 当日涨停池：ztpool_history 按日匹配 day.trade_date（归一化去非数字）
 function loadZtpoolForDay(dateStr) {
   try {
     const hist = JSON.parse(readFileSync(ZTPOOL, 'utf8'));
@@ -33,12 +35,19 @@ function readJsonSafe(p) {
   try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; }
 }
 
+// 取档案最新交易日（与 paper_daily.mjs 一致：days = all_days 过滤 trade_date，取末日）
+function latestDay() {
+  const arch = readJsonSafe(ARCHIVE);
+  if (!arch) return null;
+  const days = (arch.all_days || []).filter((d) => d && d.trade_date);
+  return days.length ? days[days.length - 1] : null;
+}
+
 function main() {
-  const dual = readJsonSafe(DUAL);
-  if (!dual) { console.error('[reco-picks] 读取 dual_track_latest.json 失败 → 跳过'); process.exit(0); }
-  const day = dual.day || dual;
-  const date = day.date || (dual.day && dual.day.date) || null;
-  const emotionScore = Number.isFinite(+day.score) ? +day.score : null;
+  const day = latestDay();
+  if (!day) { console.error('[reco-picks] 读取 archive.json 失败或无可交易日 → 跳过'); process.exit(0); }
+  const date = day.trade_date || null;
+  const emotionScore = Number.isFinite(+(day.emotion && day.emotion.value)) ? +(day.emotion.value) : (Number.isFinite(+day.score) ? +day.score : null);
   const ztpool = loadZtpoolForDay(date);
 
   const res = recommendPicks(day, { topN: TOP_N, emotionScore, ztpool });
@@ -63,7 +72,7 @@ function main() {
     rejected: (res.rejected || []).map((r) => ({
       code: r.code != null ? String(r.code) : null,
       name: r.name || null,
-      reasons: r.reasons || [],
+      reasons: [r.reason, r.why].filter(Boolean),
     })),
     note: res.note || null,
   };
