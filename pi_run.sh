@@ -48,7 +48,7 @@ if ! git reset --hard origin/main >>"$LOG_FILE" 2>&1; then
     git reset --hard HEAD >>"$LOG_FILE" 2>&1 || true
   fi
   log "git reset --hard origin/main 失败：使用本地现有最新代码继续（未拉取远端）"
-  alert "[提示] $(date +%H:%M) 代码同步网络抖动，已使用本地代码继续生成盘前简报。"
+  alert "[提示] $(date +%H:%M) 代码同步网络抖动，已使用本地代码继续（未拉取远端）"
 fi
 # 执行位自愈：reset --hard 按 git 模式落盘，历史上出现过仓库内脚本执行位丢失
 # （100644）→ cron 直接调用 pi_run.sh 全部 Permission denied → 调度全线停摆的事故。
