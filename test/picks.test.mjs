@@ -9,6 +9,7 @@ import {
   PICK_TOP_N, SCORE_WEIGHTS, TIER_THRESHOLDS, POSITION_TIERS,
   marketTier, buildCandidates, scoreFund, scoreStreak, scoreCandidate,
   reasonsOf, risksOf, suggestWeight, recommendPicks, applyEmotionGates,
+  applyTradabilityFilters,
 } from '../src/picks.js';
 
 // 构造一份最小可用的「存档日」。字段名与 archive.json 严格一致，
@@ -429,3 +430,104 @@ test('档位表常量自洽：仓位随市场转冷而降低，过热档是「�
   assert.equal(by('full').allowNew, true);
   assert.equal(by('half').allowNew, true);
 });
+
+// ────────────────────── 可交易性硬过滤（2026-10-27 实战化升级） ──────────────────────
+// ztpool 条目字段同 ztpool_history：c/hs(换手率%)/lbc(连板)/fbt(首封HHMMSS)/fund(封单额元)/
+//   ltsz(流通市值元)/zdp(涨跌幅%)/zbc(炸板次数)。
+const rpEntry = (c, over = {}) => ({ c, n: c, zdp: 10, hs: 10, lbc: 1, fbt: 92500, fund: 1e8, ltsz: 2e9, zbc: 0, ...over });
+
+test('applyTradabilityFilters：无 ztpool → 零回归（原样返回）', () => {
+  const picks = [{ code: '600030', name: 'X' }];
+  const r = applyTradabilityFilters(picks, null);
+  assert.equal(r.picks.length, 1);
+  assert.equal(r.rejected.length, 0);
+});
+
+test('规则1a：极端缩量板（涨停+换手率<5%）→ 剔除并标注「买不进」', () => {
+  const picks = [{ code: '600030', name: '缩量硬板' }];
+  const r = applyTradabilityFilters(picks, [rpEntry('600030', { zdp: 10.02, hs: 3 })]);
+  assert.equal(r.picks.length, 0, '应被剔除');
+  assert.equal(r.rejected.length, 1);
+  assert.match(r.rejected[0].reasons[0], /缩量硬板/);
+  assert.match(r.rejected[0].reasons[0], /买不进/);
+});
+
+test('规则1b：封单锁死（封单占流通市值>5%）→ 剔除', () => {
+  const picks = [{ code: '600030', name: '一字锁死' }];
+  // fund=2e8, ltsz=2e9 → 10% > 5%
+  const r = applyTradabilityFilters(picks, [rpEntry('600030', { zdp: 10.02, hs: 8, fund: 2e8, ltsz: 2e9 })]);
+  assert.equal(r.picks.length, 0);
+  assert.match(r.rejected[0].reasons[0], /封单锁死/);
+});
+
+test('规则2：高位连板无换手（连板≥4 且 换手率<8%）→ 剔除', () => {
+  const picks = [{ code: '600030', name: '高位加速' }];
+  const r = applyTradabilityFilters(picks, [rpEntry('600030', { zdp: 10.02, hs: 2, lbc: 5 })]);
+  assert.equal(r.picks.length, 0);
+  assert.match(r.rejected[0].reasons[0], /高位连板/);
+});
+
+test('规则3：放量烂板（涨停+炸板+换手≥8%）→ 保留并标注「弱转强·低吸」买点', () => {
+  const picks = [{ code: '600030', name: '烂板票' }];
+  const r = applyTradabilityFilters(picks, [rpEntry('600030', { zdp: 10.02, hs: 12, zbc: 2, fbt: 140000 })]);
+  assert.equal(r.picks.length, 1, '应保留');
+  assert.equal(r.rejected.length, 0);
+  assert.match(r.picks[0].buyPoint, /弱转强/);
+  assert.match(r.picks[0].buyPoint, /低吸/);
+  assert.equal(r.picks[0].weakToStrong, false, 'hs=12<15 → 非「爆量烂板」弱转强优选');
+});
+
+test('规则3：偏缩量硬板（涨停+换手5~8%）→ 保留但标注「⚠ 偏缩量硬板」', () => {
+  const picks = [{ code: '600030', name: '偏缩量' }];
+  const r = applyTradabilityFilters(picks, [rpEntry('600030', { zdp: 10.02, hs: 6 })]);
+  assert.equal(r.picks.length, 1);
+  assert.match(r.picks[0].buyPoint, /偏缩量硬板/);
+});
+
+test('规则4：爆量烂板（涨停+换手>15%+炸板）→ 标记 weakToStrong 并优先置顶', () => {
+  const picks = [{ code: '600030', name: '普通票' }, { code: '600031', name: '爆量烂板' }];
+  const r = applyTradabilityFilters(picks, [
+    rpEntry('600030', { zdp: 10.02, hs: 6 }),
+    rpEntry('600031', { zdp: 10.02, hs: 18, zbc: 1, fbt: 143000 }),
+  ]);
+  assert.equal(r.picks.length, 2);
+  assert.equal(r.weakToStrong.length, 1);
+  assert.equal(r.picks[0].code, '600031', '弱转强票应优先置顶');
+  assert.equal(r.picks[0].weakToStrong, true);
+  assert.match(r.picks[0].buyPoint, /烂板弱转强/);
+  assert.ok((r.picks[0].gateTags || []).includes('烂板弱转强'));
+});
+
+test('无涨停池记录的票（纯龙虎榜）→ 保留且给常规买点标注', () => {
+  const picks = [{ code: '600099', name: '龙虎票' }];
+  const r = applyTradabilityFilters(picks, [rpEntry('600030')]); // 不含 600099
+  assert.equal(r.picks.length, 1);
+  assert.match(r.picks[0].buyPoint, /常规买点/);
+});
+
+// ── recommendPicks 集成：ctx.ztpool 接入后，可交易性过滤真正在生产链路生效 ──
+test('recommendPicks 集成：传入 ctx.ztpool，缩量硬板候选被剔除进 rejected', () => {
+  const d = day({
+    hot: [{ code: '600030', name: '缩量硬板', close: 12, change_pct: 10, huanshou: 3, reason: 'X' }],
+    summary: { zt_codes: ['600030'], zt_lb: { 600030: 1 } },
+  });
+  const ztpool = [rpEntry('600030', { zdp: 10.02, hs: 3 })];
+  const res = recommendPicks(d, { topN: 5, emotionScore: 80, minProb: 0, ztpool });
+  assert.ok(Array.isArray(res.picks) && Array.isArray(res.rejected), '返回结构正常');
+  const untradable = res.rejected.filter((r) => (r.reasons || []).some((x) => /买不进/.test(x)));
+  assert.equal(untradable.length, 1, '缩量硬板候选应进入可交易性剔除桶');
+  assert.equal(res.picks.length, 0, '该候选不应出现在推荐中');
+});
+
+test('recommendPicks 集成：爆量烂板候选保留且 weakToStrong/buyPoint 透出', () => {
+  const d = day({
+    hot: [{ code: '600031', name: '爆量烂板', close: 12, change_pct: 10, huanshou: 18, reason: 'Y' }],
+    summary: { zt_codes: ['600031'], zt_lb: { 600031: 1 } },
+  });
+  const ztpool = [rpEntry('600031', { zdp: 10.02, hs: 18, zbc: 1, fbt: 143000 })];
+  const res = recommendPicks(d, { topN: 5, emotionScore: 80, minProb: 0, ztpool });
+  assert.equal(res.picks.length, 1, '应保留');
+  assert.equal(res.picks[0].weakToStrong, true);
+  assert.match(res.picks[0].buyPoint, /烂板弱转强/);
+});
+

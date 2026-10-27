@@ -320,6 +320,37 @@
     return `<div class="t-etf">${ring}<div class="t-etf-side">${bars}${note}${foot}</div></div>`;
   }
 
+  /** 今日选股 · 买点预期（2026-10-27 用户指令）：只读 data/reco_picks_latest.json（report_reco_picks.mjs 产出，零交易）。
+   *   展示「可交易性」过滤后的推荐票买点预期 + 被剔除的「实盘买不进」票。容错：入参异常 → 返回 null。 */
+  function renderRecoPicksCard(d) {
+    if (!d || typeof d !== 'object') return null;
+    const picks = Array.isArray(d.picks) ? d.picks : [];
+    const rejected = Array.isArray(d.rejected) ? d.rejected : [];
+
+    // 单只推荐：买点预期（颜色分级）+ 烂板弱转强标签
+    const pickRow = (p) => {
+      const cls = p.weakToStrong ? 'is-wts'
+        : (p.buyPoint && /⚠|缩量硬板|买不进/.test(p.buyPoint)) ? 'is-warn' : 'is-ok';
+      const tag = p.weakToStrong ? '<span class="t-reco-tag">烂板弱转强</span>' : '';
+      return `<div class="t-reco-row">
+        <div class="t-reco-name">${esc(p.name || p.code)}<span class="t-reco-code">${esc(p.code || '')}</span>${tag}</div>
+        <div class="t-reco-buy ${cls}">${esc(p.buyPoint || '—')}</div>
+      </div>`;
+    };
+    const pickHtml = picks.length
+      ? picks.map(pickRow).join('')
+      : '<div class="t-reco-empty">今日无可交易性达标的推荐标的</div>';
+
+    // 被剔除（实盘买不进 / 其他未推荐原因）
+    const rejRow = (r) => `<div class="t-reco-rej">⚠ ${esc(r.name || r.code || '')}（${esc(r.code || '')}）：${esc((r.reasons || []).join('；'))}</div>`;
+    const rejHtml = rejected.length
+      ? `<div class="t-reco-rejtitle">剔除（未推荐 · ${rejected.length} 只）</div>${rejected.map(rejRow).join('')}`
+      : '';
+
+    const foot = `<div class="t-reco-foot">数据日 ${esc(d.date || '—')} ｜ 涨停池${d.ztpoolLoaded ? '已载入' : '缺失(no-op)'} ｜ 推荐 ${picks.length} 只（弱转强 ${picks.filter((p) => p.weakToStrong).length}）</div>`;
+    return `<div class="t-reco">${pickHtml}${rejHtml}${foot}</div>`;
+  }
+
   /** K线 + 成交量副图 */
   function candles(bars, opt = {}) {
     const W = opt.w || 620, H = opt.h || 330, PV = 64, P = { l: 8, r: 54, t: 10, b: 18 };
@@ -663,6 +694,20 @@
       if (!body) { etfPanel.style.display = 'none'; return; }
       host.outerHTML = body;
     }).catch(() => { etfPanel.style.display = 'none'; });
+
+    // ── 今日选股 · 买点预期（2026-10-27 用户指令）：只读 data/reco_picks_latest.json，零交易 ──
+    const recoPanel = panel('今日选股 · 买点预期', 'data/reco_picks_latest.json · 可交易性过滤 · 零交易', '<div class="t-loading">加载…</div>', 't-c12');
+    g.appendChild(recoPanel);
+    jget('data/reco_picks_latest.json').then((d) => {
+      if (!recoPanel.isConnected) return;
+      const host = recoPanel.lastElementChild;
+      if (!host) return;
+      // 容错：文件缺失/读不到 → 隐藏整卡（fail-open，严禁白屏报错）
+      if (!d) { recoPanel.style.display = 'none'; return; }
+      const body = renderRecoPicksCard(d);
+      if (!body) { recoPanel.style.display = 'none'; return; }
+      host.outerHTML = body;
+    }).catch(() => { recoPanel.style.display = 'none'; });
 
     // ── 主线题材脉络（近几日轮动：main_theme_history.days）──
     //   ⚠ 每天主线是数组（多主线并存），且每天主线名不同 → 不做单一时间序列折线，

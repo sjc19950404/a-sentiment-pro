@@ -949,3 +949,52 @@ test('terminal：ETF 卡容错（无 etf_hedge_signal.json → 隐藏整卡，�
   assert.ok(!panel || panel.style.display === 'none', '读不到信号 → ETF 卡被隐藏（display:none），严禁白屏');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
+
+test('terminal：选股买点预期面板（注入合成 reco，含弱转强+剔除）', async () => {
+  const { w, errors } = makeDom();
+  const realFetch = w.fetch;
+  w.fetch = (url) => {
+    const u = String(url).replace(/^https?:\/\/localhost\//, '');
+    if (u === 'data/reco_picks_latest.json') {
+      return Promise.resolve({ ok: true, json: async () => ({
+        date: '2026-10-27', ztpoolLoaded: true,
+        picks: [
+          { code: '600031', name: '爆量烂板A', buyPoint: '烂板弱转强：今日爆量换手(18%) 尾盘封板 → 明日早盘极大概率给低吸买点', weakToStrong: true, probText: '高', streakText: null, gateTags: ['烂板弱转强'], suggestWeight: 0.1 },
+          { code: '600032', name: '常规B', buyPoint: '正常换手涨停，竞价/开盘分歧转一致可参与', weakToStrong: false, probText: '中' },
+        ],
+        rejected: [
+          { code: '600030', name: '缩量硬板C', reasons: ['⚠ 缩量硬板(换手率3.0%<5%) → 实盘买不进，已剔除'] },
+        ],
+      }) });
+    }
+    return realFetch(url);
+  };
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 400));
+  const root = w.document.getElementById('tRoot');
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /今日选股/.test(p.textContent));
+  assert.ok(panel, '总览含「今日选股 · 买点预期」面板');
+  assert.ok(panel.querySelector('.t-reco-row'), '含推荐票行');
+  assert.match(panel.textContent, /爆量烂板A/);
+  assert.match(panel.textContent, /烂板弱转强/, '弱转强票打标签');
+  assert.match(panel.textContent, /正常换手涨停/, '常规票买点标注');
+  assert.match(panel.textContent, /缩量硬板C/, '剔除列表含被剔除票');
+  assert.match(panel.textContent, /买不进/, '剔除原因标注「买不进」');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+test('terminal：选股买点预期面板容错（无 reco 文件 → 隐藏整卡，不白屏）', async () => {
+  const { w, errors } = makeDom();
+  const realFetch = w.fetch;
+  w.fetch = (url) => {
+    const u = String(url).replace(/^https?:\/\/localhost\//, '');
+    if (u === 'data/reco_picks_latest.json') return Promise.resolve({ ok: false, json: async () => null });
+    return realFetch(url);
+  };
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 400));
+  const root = w.document.getElementById('tRoot');
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /今日选股/.test(p.textContent));
+  assert.ok(!panel || panel.style.display === 'none', '读不到信号 → 面板隐藏（display:none），严禁白屏');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});

@@ -85,6 +85,10 @@ case "$MODE" in
     # 2026-10-27 用户指令：EOD 盘前生成 ETF 防守反击避险信号（只读 dual_track + ETF k线，绝不交易）；
     #   写出 data/etf_hedge_signal.json，供下方 push_eod 经副报文整合进盘后企微推送。
     node scripts/report_etf_hedge.mjs 2>>"$LOG_FILE" || log "ETF 避险信号生成失败（best-effort，不影响 EOD 推送）"
+    # 2026-10-27 用户指令：实战化「可交易性」只读报告——复用 recommendPicks（内置剔除买不进的票 +
+    #   买点预期标注 + 烂板弱转强偏好），落盘 data/reco_picks_latest.json，供终端展示「买点预期」。
+    #   只读 dual_track + ztpool_history，绝不交易。
+    node scripts/report_reco_picks.mjs 2>>"$LOG_FILE" || log "可交易性选股报告生成失败（best-effort，不影响 EOD 推送）"
     # EOD 推送「优先级 + 时间错峰」引擎：月报 > 周报(+周盈利战报) > 盘后基础复盘 > AI盘后情报；
     #   多条错峰发送（默认 3s）。盘中紧急异动 / 盘前排雷与观察清单由各自独立 cron 模式推送，不受此 gate。
     node scripts/push_eod.mjs 2>/dev/null || true

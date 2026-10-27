@@ -24,6 +24,17 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { atomicWriteJSON } from '../src/fsutil.js';
+
+// 当日涨停池（可交易性过滤数据源）：ztpool_history 按日匹配 day.trade_date。
+// fail-open：文件缺失/无当日条目 → 返回 null（recommendPicks 内过滤自动 no-op，零回归）。
+function loadZtpoolForDay(dateStr) {
+  try {
+    const hist = JSON.parse(readFileSync('data/ztpool_history.json', 'utf8'));
+    const key = String(dateStr == null ? '' : dateStr).replace(/\D/g, '');
+    const hit = (Array.isArray(hist) ? hist : []).find((e) => e && String(e.date).replace(/\D/g, '') === key);
+    return hit && Array.isArray(hit.pool) ? hit.pool : null;
+  } catch { return null; }
+}
 import { decodeArchive } from '../src/lhb_codec.js';
 import {
   emptyAccount, importAccount, exportAccount, settleDay, batchSubmit, batchSell,
@@ -165,7 +176,9 @@ if (!tier) {
   if (bypassed) {
     console.log(`  ⚠ 强制测试模式（--force-trade）：忽略熔断（情绪档=${tier.label}/regime=${regimeKey || '无'}），强行建仓——仅反向压力测试，非真实信号`);
   }
-  const picks = (recommendPicks(day, { topN: TOP_N, emotionScore }).picks || [])
+  const ztpool = loadZtpoolForDay(day.trade_date);
+  console.log(`  可交易性过滤数据源：当日涨停池 ${ztpool ? ztpool.length + ' 只' : '缺失（no-op）'}`);
+  const picks = (recommendPicks(day, { topN: TOP_N, emotionScore, ztpool }).picks || [])
     .filter((p) => p && p.code && quotes[String(p.code)]); // 仅选有当日行情者（否则 batchSubmit 会 NO_QUOTE 拦截）
   const items = picks.slice(0, TOP_N).map((p) => ({
     code: String(p.code), pct: PER_POS_PCT, hybk: p.hybk || null,

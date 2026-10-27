@@ -523,6 +523,98 @@ export function applyEmotionGates(picks, ctx = {}) {
   return { picks: kept, climaxWarnings, climaxBlocked, sectorTrimmed };
 }
 
+// ──────────────────────── 五-B、可交易性硬过滤（2026-10-27 实战化升级）────────────────────────
+//   纯函数（浏览器/Node 通用，零 IO）：解决「系统推的票实盘买不进」的痛点。
+//   仅在 ztpool 提供时生效；无数据→原样返回（零回归，与 applyEmotionGates 同约定）。
+//   数据源：ctx.ztpool = 当日涨停池原始档（ztpool_history 当日 pool，含 c/hs/lbc/fbt/fund/ltsz/zdp/zbc）。
+//
+//   规则（与用户指令一一对应）：
+//     1. 极端缩量板 / 封单锁死  → 剔除（筹码锁死，次日大概率一字，买不进）
+//     2. 连板高位且无换手       → 剔除（高位加速板，开板即天地板）
+//     3. 买点预期标注          → 给每只保留票打 buyPoint（分歧转一致可买 / 缩量硬板买不进）
+//     4. 烂板弱转强选股         → 放量烂板(hs>15% 且 尾盘封住) 标记为 weakToStrong 并优先置顶
+//
+//   @returns { picks:Array(保留·弱转强优先重排), rejected:Array, weakToStrong:Array }
+export function applyTradabilityFilters(picks, ztpool) {
+  const pool = Array.isArray(ztpool) ? ztpool : null;
+  if (!pool || !pool.length || !Array.isArray(picks)) {
+    return { picks: picks || [], rejected: [], weakToStrong: [] };
+  }
+  const byCode = new Map();
+  for (const s of pool) if (s && s.c != null) byCode.set(String(s.c), s);
+
+  const HIGH_LIANBAN_MIN = 4;   // 规则2：几板算「高位」（4 板及以上）
+  const LATE_SEAL_TIME = 100000; // 规则3/4：首封晚于 10:00 → 视为晚封/烂板信号（HHMMSS 数值）
+  const WEAK_TO_STRONG_HS = 15;  // 规则4：换手率 > 15% 才算「爆量烂板」
+
+  const rejected = [];
+  const kept = [];
+  for (const p of picks) {
+    const ps = byCode.get(String(p.code));
+    // 无涨停池记录（纯龙虎榜且未涨停）→ 不参与缩量/封单/连板判定，保留并给常规标注
+    if (!ps) {
+      if (!p.buyPoint) p.buyPoint = '非涨停池标的（龙虎榜驱动），按常规买点';
+      kept.push(p);
+      continue;
+    }
+    const hs = finite(ps.hs) ? +ps.hs : null;     // 换手率(%)
+    const lbc = finite(ps.lbc) ? +ps.lbc : 0;      // 连板天数
+    const fund = finite(ps.fund) ? +ps.fund : 0;   // 封单额(元)
+    const ltsz = finite(ps.ltsz) ? +ps.ltsz : 0;   // 流通市值(元)
+    const zdp = finite(ps.zdp) ? +ps.zdp : 0;      // 涨跌幅(%)
+    const zbc = finite(ps.zbc) ? +ps.zbc : 0;      // 炸板次数
+    const fbt = finite(ps.fbt) ? +ps.fbt : 999999; // 首封时间(HHMMSS)
+    const isLimitUp = zdp >= 9.5;                   // 涨停板（≈10% 上限）
+
+    // 封单占流通市值比例（封单量 vs 流通盘 的等价口径：封单额/流通市值，量纲无关、可直接比 5%）
+    const sealRatio = (ltsz > 0 && fund > 0) ? fund / ltsz : 0;
+
+    // ── 规则1：极端缩量板 / 封单锁死 ──
+    const shrinkBoard = isLimitUp && hs != null && hs < 5;     // 换手率 < 5%
+    const lockedSeal = isLimitUp && sealRatio > 0.05;          // 封单 > 流通盘 5%
+    // ── 规则2：连板高位且无换手（高位加速板） ──
+    const highLianbanNoTurn = lbc >= HIGH_LIANBAN_MIN && (hs == null || hs < 8);
+
+    if (shrinkBoard || lockedSeal || highLianbanNoTurn) {
+      const why = [];
+      if (shrinkBoard) why.push(`缩量硬板(换手率${hs.toFixed(1)}%<5%)`);
+      if (lockedSeal) why.push(`封单锁死(封单占流通市值${(sealRatio * 100).toFixed(1)}%>5%)`);
+      if (highLianbanNoTurn) why.push(`高位连板(${lbc}板)无换手(换手率${hs == null ? '—' : hs.toFixed(1) + '%'})`);
+      rejected.push({ code: p.code, name: p.name, reasons: [`⚠ ${why.join('；')} → 实盘买不进，已剔除`] });
+      continue;
+    }
+
+    // ── 规则3：买点预期标注 ──
+    const isWeakBoard = zbc > 0 || fbt >= LATE_SEAL_TIME;  // 盘中开板 / 晚封 = 烂板
+    let buyPoint;
+    if (isWeakBoard && hs != null && hs >= 8) {
+      buyPoint = '弱转强：今日放量烂板，明日早盘低开/回踩均线可低吸';
+    } else if (isLimitUp && hs != null && hs < 8) {
+      buyPoint = '⚠ 偏缩量硬板，次日易一字/秒板，实盘买点苛刻，谨慎';
+    } else if (isLimitUp) {
+      buyPoint = '正常换手涨停，竞价/开盘分歧转一致可参与';
+    } else {
+      buyPoint = '非涨停（龙虎榜驱动），按常规买点';
+    }
+    p.buyPoint = buyPoint;
+
+    // ── 规则4：放量烂板（换手率>15% 且 封住/收红）→ 弱转强优选 ──
+    const weakToStrong = isLimitUp && hs != null && hs > WEAK_TO_STRONG_HS && (zbc > 0 || fbt >= LATE_SEAL_TIME);
+    p.weakToStrong = weakToStrong;
+    if (weakToStrong) {
+      p.gateTags = [...(p.gateTags || []), '烂板弱转强'];
+      p.buyPoint = `烂板弱转强：今日爆量换手(${hs.toFixed(0)}%) 尾盘封板 → 明日早盘极大概率给低吸买点`;
+    }
+
+    kept.push(p);
+  }
+
+  // 规则4 偏好：放量烂板（弱转强）优先置顶（组内核保序，维持可复现）
+  const wts = kept.filter((p) => p.weakToStrong);
+  const rest = kept.filter((p) => !p.weakToStrong);
+  return { picks: [...wts, ...rest], rejected, weakToStrong: wts };
+}
+
 // ────────────────────────── 六、主入口 ──────────────────────────
 
 /**
@@ -570,6 +662,12 @@ export function recommendPicks(day, ctx = {}) {
   // 情绪闸门：高潮预警 / 去弱留强 / 接力验证（无 ctx.ztpool 时原样返回，零回归）
   const gate = applyEmotionGates(pred.picks, ctx);
   let picks = gate.picks;
+
+  // 2026-10-27 实战化：可交易性硬过滤（剔除买不进的票）+ 买点标注 + 烂板弱转强偏好。
+  //   仅当调用方提供 ctx.ztpool（当日涨停池）时生效；未提供→零回归（与情绪闸门同约定）。
+  const tradPool = Array.isArray(ctx.ztpool) ? ctx.ztpool : null;
+  const trad = applyTradabilityFilters(picks, tradPool);
+  picks = trad.picks;
 
   const weight = suggestWeight(tier, picks.length);
   for (const p of picks) {
@@ -628,7 +726,8 @@ export function recommendPicks(day, ctx = {}) {
     //   rejected       —— 命中剔除规则（大概率亏），必须展示原因
     //   belowThreshold —— 概率分不足门槛（没把握，宁可不推）
     //   overflow       —— 达门槛但被 topN 截断（够格，只是名额有限）
-    rejected: pred.rejected.slice(0, 12),
+    // 可交易性剔除（买不进的票）优先透出，再接预测引擎的剔除（总计 ≤12）
+    rejected: trad.rejected.concat(pred.rejected).slice(0, 12),
     belowThreshold: pred.belowThreshold.slice(0, 8),
     overflow: pred.overflow.slice(0, 8),
     note, pool: candidates.length, asOf: d.trade_date || null,

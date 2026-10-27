@@ -715,3 +715,22 @@
 .t-etf-bnote { font-size: 11px; color: var(--t-ink-3); margin: 6px 0; }
 .t-etf-foot { margin-top: 10px; font-size: 11px; color: var(--t-ink-2);
   border-top: 1px solid var(--t-line-hi); padding-top: 7px; }
+
+/* ── 今日选股 · 买点预期（2026-10-27 用户指令）──────────────────────────────
+   每行：标的 + 买点预期（绿=弱转强可买 / 红=⚠缩量硬板买不进 / 灰=常规）；下方列出剔除的买不进票。 */
+.t-reco { padding: 6px 2px 4px; }
+.t-reco-row { display: flex; align-items: baseline; gap: 10px; margin: 7px 0; flex-wrap: wrap; }
+.t-reco-name { flex: 0 0 150px; font-size: 13px; color: var(--t-ink); }
+.t-reco-code { color: var(--t-ink-3); font-size: 10px; margin-left: 3px; }
+.t-reco-tag { margin-left: 5px; font-size: 10px; padding: 1px 5px; border-radius: 8px;
+  color: var(--t-dn); border: 1px solid var(--t-dn); background: rgba(0, 230, 118, .10); }
+.t-reco-buy { flex: 1 1 auto; min-width: 200px; font-size: 12px; line-height: 1.35; }
+.t-reco-buy.is-ok { color: var(--t-ink-2); }
+.t-reco-buy.is-wts { color: var(--t-dn); text-shadow: 0 0 8px rgba(0, 230, 118, .45); }
+.t-reco-buy.is-warn { color: var(--t-up); }
+.t-reco-empty { font-size: 12px; color: var(--t-ink-3); margin: 6px 0; }
+.t-reco-rejtitle { margin-top: 10px; font-size: 11px; color: var(--t-ink-2);
+  border-top: 1px solid var(--t-line); padding-top: 7px; }
+.t-reco-rej { font-size: 11px; color: var(--t-up); margin: 3px 0; line-height: 1.3; }
+.t-reco-foot { margin-top: 10px; font-size: 11px; color: var(--t-ink-2);
+  border-top: 1px solid var(--t-line-hi); padding-top: 7px; }
