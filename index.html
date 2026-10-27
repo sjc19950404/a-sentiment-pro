@@ -2271,12 +2271,13 @@
     // ── ② 板块相对强弱：两套基准（引擎都给了，切换只是换一组原值来画）──
     //   vsIndex = 对比指数（如沪深300），vsMedian = 对比行业中位数；两者都是**引擎已算好的超额**，
     //   这里不做任何减法，只切换取哪一组。视觉语言沿用：左=落后基准（绿）· 右=跑赢基准（红）。
+    // ⚠ 仅保留「引擎有产出」的基准（无 attack/defense 数据的基准不显示按钮，避免点过去一片空白）
     const bases = [
       { k: 'index', d: ir.vsIndex || {} },
       { k: 'median', d: ir.vsMedian || {} },
-    ];
+    ].filter((b) => b.d && (b.d.attack || b.d.defense));
     const cur = bases.find((b) => b.k === sectorBase) || bases[0];
-    const vs = cur.d;
+    const vs = (cur && cur.d) || {};
     const atk = vs.attack || [], def = vs.defense || [];
     // ⚠ 修复「张冠李戴」：把「板块名(name) + 超额收益(excess)」封装成**单个对象数组**，整体按
     //   excess 降序排序后再渲染；绝不允许把名称与数值拆成两条独立数组分别排序。

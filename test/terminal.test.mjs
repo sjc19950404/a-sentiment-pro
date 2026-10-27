@@ -1180,4 +1180,71 @@ test('terminal：AI 板块情绪榜-模板化警示（同头条≥3板块→提�
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
+// 板块相对强弱：双基准切换（上证指数 ↔ 行业中位数）必须真实刷新绿条/红条（不同基准=不同超额榜）
+//   + 回归此前修复：空基准不显示按钮（避免点过去一片空白/崩溃）。
+test('terminal：板块相对强弱-双基准切换真实刷新绿条红条', async () => {
+  const SYN = {
+    latest: {
+      ...(readJsonSafe('data/signals-latest.json') || {}).latest,
+      trade_date: '2026-10-27',
+      industry_relative: {
+        primary: 'index', degraded: false,
+        vsIndex: {
+          base: 'index', baseLabel: '上证指数', basePct: 0.3,
+          attack: [{ name: '银行', change_pct: 1, excess: 2 }],
+          defense: [{ name: '煤炭', change_pct: -4, excess: -3 }],
+        },
+        vsMedian: {
+          base: 'median', baseLabel: '行业中位数', basePct: 0.1,
+          attack: [{ name: '白酒', change_pct: 4, excess: 5 }],
+          defense: [{ name: '钢铁', change_pct: -2, excess: -1 }],
+        },
+      },
+    },
+    sectorSentiment: { sectors: [] },
+  };
+  const { w, errors } = makeDom();
+  const realFetch = w.fetch;
+  w.fetch = (url) => {
+    const u = String(url).replace(/^https?:\/\/localhost\//, '');
+    if (u === 'data/signals-latest.json') return Promise.resolve({ ok: true, json: async () => SYN });
+    return realFetch(url);
+  };
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+  const root = w.document.getElementById('tRoot');
+  const btn = [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'sector');
+  assert.ok(btn, '有「板块」视图按钮');
+  btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 240));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /板块相对强弱/.test(p.textContent));
+  assert.ok(panel, '存在「板块相对强弱」面板');
+  // 默认（上证指数）基准：应显示 银行/煤炭，按钮高亮 上证指数
+  assert.match(panel.textContent, /银行/, '指数基准含 银行（攻）');
+  assert.match(panel.textContent, /煤炭/, '指数基准含 煤炭（守）');
+  const idxBtn = [...panel.querySelectorAll('.t-seg button')].find((b) => /上证/.test(b.textContent));
+  const medBtn = [...panel.querySelectorAll('.t-seg button')].find((b) => /中位数/.test(b.textContent));
+  assert.ok(idxBtn && medBtn, '两个基准按钮都在');
+  assert.ok(idxBtn.classList.contains('is-on'), '默认高亮 上证指数');
+  // 点击 行业中位数 → 绿条红条必须换成 白酒/钢铁（刷新，不是空）
+  medBtn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 240));
+  const panel2 = [...root.querySelectorAll('.t-panel')].find((p) => /板块相对强弱/.test(p.textContent));
+  assert.match(panel2.textContent, /白酒/, '切换中位数后显示 白酒（攻）');
+  assert.match(panel2.textContent, /钢铁/, '切换中位数后显示 钢铁（守）');
+  assert.ok(!/银行/.test(panel2.textContent), '切换后不再显示 银行（旧基准数据已刷新掉）');
+  const medBtn2 = [...panel2.querySelectorAll('.t-seg button')].find((b) => /中位数/.test(b.textContent));
+  assert.ok(medBtn2.classList.contains('is-on'), '切换后高亮 行业中位数');
+  // 点回 上证指数 → 还原
+  const idxBtn2 = [...panel2.querySelectorAll('.t-seg button')].find((b) => /上证/.test(b.textContent));
+  idxBtn2.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 240));
+  const panel3 = [...root.querySelectorAll('.t-panel')].find((p) => /板块相对强弱/.test(p.textContent));
+  assert.match(panel3.textContent, /银行/, '切回上证指数后还原显示 银行');
+  const idxBtn3 = [...panel3.querySelectorAll('.t-seg button')].find((b) => /上证/.test(b.textContent));
+  assert.ok(idxBtn3.classList.contains('is-on'), '切回后高亮 上证指数');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+
 
