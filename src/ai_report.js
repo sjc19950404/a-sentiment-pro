@@ -438,7 +438,8 @@ export function generateIntraday(input, opts = {}) {
   const { payload, overrides, ext } = buildBase(input);
   // ①（2026-10-27）：盘中报告始终携带盘面快照（涨跌家数/涨停跌停/最高连板），
   // 即使候选池缺席也不空窗——配合 push_text 防御提示给盘面温度。
-  payload.market_context = buildMarketContext(input.signals);
+  // 仅当 buildBase（双轨回填）未提供时才从 signals 合成；绝不覆盖已有值。
+  if (payload.market_context == null) payload.market_context = buildMarketContext(input.signals);
   if (payload.market_context) payload.market_context.highest_chain = num(pick(input, 'signals.pain.advance.maxLb'));
   if (!input.live) payload.nav_realtime = null; // 归档轨无指数点位合成源（intraday.json 无指数），S1 诚实置 null
   // S3-1 注入（取数+赋值一行）：当日 equity 序列峰谷回撤。数据链 = 浏览器采样器
