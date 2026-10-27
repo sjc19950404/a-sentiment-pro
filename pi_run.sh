@@ -67,10 +67,12 @@ case "$MODE" in
     bash scripts/pi_push.sh
     ;;
   intraday)
+    node scripts/fetch_global.mjs 2>>"$LOG_FILE" || log "外围抓取失败（best-effort，继续）"
     node scripts/snapshot_intraday.mjs || log "盘中快照失败"
     bash scripts/pi_push.sh
     ;;
   eod|supplement)
+    node scripts/fetch_global.mjs 2>>"$LOG_FILE" || log "外围抓取失败（best-effort，继续）"
     if ! bash scripts/pi_build.sh "${@:2}"; then
       log "pi_build 失败（守卫拦截），不推送"; alert "pi_run: 盘后管道守卫失败，未推送"; exit 1
     fi
@@ -85,11 +87,13 @@ case "$MODE" in
     bash scripts/pi_push.sh
     ;;
   pre_open)
+    node scripts/fetch_global.mjs 2>>"$LOG_FILE" || log "外围抓取失败（best-effort，继续）"
     node scripts/build_ai_report.mjs --type pre_market 2>/dev/null || true
     node scripts/push_ai_report.mjs --latest pre_market 2>/dev/null || true
     bash scripts/pi_push.sh
     ;;
   candidates)
+    node scripts/fetch_global.mjs 2>>"$LOG_FILE" || log "外围抓取失败（best-effort，继续）"
     node scripts/build_ai_report.mjs --type intraday 2>/dev/null || true
     node scripts/push_ai_report.mjs --latest intraday 2>/dev/null || true
     bash scripts/pi_push.sh

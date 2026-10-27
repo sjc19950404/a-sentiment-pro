@@ -164,10 +164,18 @@ try {
     const dDate = dr.date || sig.date;
     if (dDate && briefs[dDate] != null && llm) {
       let body;
-      if (llm.missing || !llm.points || !llm.points.length) {
-        body = (llm.missingReason || '未生成（需收盘后跑 scripts/fetch_llm_sentiment.mjs；未跑 ≠ 舆情中性）');
-      } else {
+      if (llm && !llm.missing && llm.points && llm.points.length) {
         body = llm.points.map((p) => p.text).join('；');
+      } else {
+        // 快照 missing（生成早于 fetch 落地）→ 回退读顶层 llm 真数据，绝不呈现"未生成"空白
+        const top = sig.llm;
+        if (top && !top.degraded) {
+          const raw = (typeof top.sentimentRaw === 'number') ? top.sentimentRaw : 0;
+          const dirText = raw > 0.05 ? '正面' : (raw < -0.05 ? '负面' : '中性');
+          body = `舆情方向：${dirText}（读数 ${raw}，置信度 ${top.confidence != null ? top.confidence : '—'}）｜参考修正 ${top.adj != null ? (top.adj > 0 ? '+' : '') + top.adj : 0} 分（证据 ${top.asOfDate || '—'}）`;
+        } else {
+          body = (llm && llm.missingReason) || '未生成（需收盘后跑 scripts/fetch_llm_sentiment.mjs；未跑 ≠ 舆情中性）';
+        }
       }
       briefs[dDate] += `\n八、舆情参考（LLM 试点）：${body}`;
     }
@@ -186,10 +194,18 @@ try {
     const dDate = dr.date || sig.date;
     if (dDate && briefs[dDate] != null && ss) {
       let body;
-      if (ss.missing || !ss.points || !ss.points.length) {
-        body = (ss.missingReason || '未生成（需盘后/周末跑 scripts/fetch_macro_sector_sentiment.mjs；未跑 ≠ 板块中性）');
-      } else {
+      if (ss && !ss.missing && ss.points && ss.points.length) {
         body = ss.points.map((p) => p.text).join('；');
+      } else {
+        const top = sig.sectorSentiment;
+        if (top && !top.degraded) {
+          const bull = (top.topBullish || []).slice(0, 5).map((x) => `${x.sector}(+${x.score})`).join('、') || '无';
+          const bear = (top.topBearish || []).slice(0, 5).map((x) => `${x.sector}(${x.score})`).join('、') || '无';
+          const macro = (top.macro && top.macro.label) || '中性';
+          body = `板块情绪（${macro}）：多头主线 ${bull}；空头压制 ${bear}（证据 ${top.asOfDate || '—'}）`;
+        } else {
+          body = (ss && ss.missingReason) || '未生成（需盘后/周末跑 scripts/fetch_macro_sector_sentiment.mjs；未跑 ≠ 板块中性）';
+        }
       }
       briefs[dDate] += `\n九、板块情绪因子（场景二）：${body}`;
     }

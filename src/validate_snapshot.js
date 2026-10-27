@@ -79,7 +79,9 @@ export function validateExternal(global, opts = {}) {
     const state = action === 'null' ? 'stale' : (q.state || (ok ? 'ok' : 'unknown'));
 
     if (action === 'null') {
-      alerts.push(`外围「${name}」已陈旧${age != null ? ` ${age} 天` : ''}（采集失败未刷新），已置空`);
+      // 仅在全局抓取确失败（fetchFailed）时才称"采集失败"；否则中性报"外围未刷新到最新会话"——绝不谎报军情
+      const failNote = fetchFailed ? '（采集失败未刷新）' : '（外围未刷新到最新会话）';
+      alerts.push(`外围「${name}」已陈旧${age != null ? ` ${age} 天` : ''}${failNote}，已置空`);
     } else if (action === 'keep_tag') {
       alerts.push(`外围「${name}」为历史缓存（今日采集失败），仅供参考`);
     }
