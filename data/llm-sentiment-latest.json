@@ -2,66 +2,66 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-10-27",
- "generatedAt": "2026-10-27T18:30:49.074+08:00",
+ "generatedAt": "2026-10-27T21:00:49.742+08:00",
  "model": "glm-4-flash",
  "sentiment": 0,
- "confidence": 0.8,
- "reason": "市场整体情绪中性，涨停家数与跌停家数接近，炸板率较高，多空双方力量均衡。",
+ "confidence": 0.5,
+ "reason": "市场情绪多空拉锯，涨停与跌停数量接近，强势股诱因多样，市场整体情绪中性。",
  "events": [
   {
    "type": "业绩预告",
    "target": "国芳集团",
    "tone": "positive",
-   "note": "连锁零售板块表现强劲，带动股价上涨。"
+   "note": "连锁零售和消费场景助力股价上涨"
   },
   {
    "type": "高管变动",
    "target": "新华百货",
    "tone": "positive",
-   "note": "零售促销和股份回购政策提振股价。"
+   "note": "零售促销、股份回购和硬折扣策略提升股价"
   },
   {
    "type": "重大重组",
    "target": "科瑞思",
    "tone": "positive",
-   "note": "重组消息带动股价大幅上涨。"
+   "note": "重组消息带动股价大幅上涨"
   },
   {
    "type": "中报扭亏",
    "target": "申达股份",
    "tone": "positive",
-   "note": "中报扭亏为盈，股价受益。"
+   "note": "汽车内饰和整车配套业务扭亏为盈"
   },
   {
    "type": "三季报扭亏",
    "target": "天邑股份",
    "tone": "positive",
-   "note": "三季报扭亏为盈，股价上涨。"
+   "note": "通信设备业务扭亏为盈"
   },
   {
    "type": "机器人布局",
    "target": "凯中精密",
    "tone": "positive",
-   "note": "机器人布局概念带动股价上涨。"
+   "note": "机器人布局和汽车连接器业务推动股价上涨"
   },
   {
    "type": "新能源车铁芯",
    "target": "华新精科",
    "tone": "positive",
-   "note": "新能源车铁芯业务增长，股价上涨。"
+   "note": "新能源车铁芯业务助力股价上涨"
   },
   {
    "type": "央企控股",
    "target": "国统股份",
    "tone": "positive",
-   "note": "央企控股概念支撑股价。"
+   "note": "央企控股地位增强市场信心"
   }
  ],
  "inputDigest": {
   "themes": 44,
   "hotListed": 15,
   "ztCount": 41,
-  "emotionValue": 53.8,
+  "emotionValue": 47.6,
   "painVerdict": "多空拉锯（昨涨停今日翻绿 49%、高位板晋级失败 73%，追高盈亏各半）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"

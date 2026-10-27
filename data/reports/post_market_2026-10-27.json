@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-27",
- "generated_at": "2026-10-27T10:40:01.083Z",
+ "generated_at": "2026-10-27T13:10:35.545Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -131,18 +131,18 @@
   "regime": {
    "key": "recover",
    "label": "复苏/酝酿期",
-   "score": 53.84,
+   "score": 47.58,
    "cap": 0.5,
    "position_range": "30%~50%",
    "positionReconcile": {
-    "score": 53.8,
+    "score": 47.6,
     "base": {
-     "key": "base_neutral",
-     "minPos": 0.3,
-     "maxPos": 0.5,
-     "label": "中性"
+     "key": "base_defend",
+     "minPos": 0,
+     "maxPos": 0.3,
+     "label": "防守"
     },
-    "baseRange": "30%~50%",
+    "baseRange": "0%~30%",
     "cap": {
      "key": "recover",
      "minPos": 0.3,
@@ -195,14 +195,14 @@
    "note": "执行轨 vs 回测 v52 锚点（零偏差为设计约束）"
   },
   "market_context": {
-   "emotion": 52.3,
-   "pct_rank": 18.6,
+   "emotion": 47.6,
+   "pct_rank": 11.9,
    "indexes": {
     "上证指数": -1.33,
     "深证成指": -2.5,
     "创业板指": -3.41
    },
-   "up_down": null,
+   "up_down": "594/4653/47",
    "amount_yi": 14609.6,
    "zt_dt": "41/22",
    "breadth": "站上20日线仅 17.4%",

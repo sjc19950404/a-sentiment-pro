@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-27",
- "generated_at": "2026-10-27T10:40:01.497Z",
+ "generated_at": "2026-10-27T13:10:35.925Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -135,18 +135,18 @@
   "regime": {
    "key": "recover",
    "label": "复苏/酝酿期",
-   "score": 53.84,
+   "score": 47.58,
    "cap": 0.5,
    "position_range": "30%~50%",
    "positionReconcile": {
-    "score": 53.8,
+    "score": 47.6,
     "base": {
-     "key": "base_neutral",
-     "minPos": 0.3,
-     "maxPos": 0.5,
-     "label": "中性"
+     "key": "base_defend",
+     "minPos": 0,
+     "maxPos": 0.3,
+     "label": "防守"
     },
-    "baseRange": "30%~50%",
+    "baseRange": "0%~30%",
     "cap": {
      "key": "recover",
      "minPos": 0.3,
@@ -211,9 +211,9 @@
     "hxc": 0.006306000000000001,
     "fxi": 0.00619
    },
-   "cnh_chgPct": -0.00006,
+   "cnh_chgPct": -0.000375,
    "usReady": false,
-   "usReason": "美东 06:35 ET 盘前（09:30 才开盘），此刻美股无收盘价"
+   "usReason": "美东 09:06 ET 盘前（09:30 才开盘），此刻美股无收盘价"
   },
   "key_levels": null,
   "events_today": null,
