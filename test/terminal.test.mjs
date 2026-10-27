@@ -1139,3 +1139,45 @@ test('terminal：连板高度分布-X轴固定枚举（修复断层，缺3板仍
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
+// Bug3 延伸：AI 板块情绪榜「模板化」置信度警示——同头条命中 ≥3 板块时提示右侧数值为罐头数据。
+test('terminal：AI 板块情绪榜-模板化警示（同头条≥3板块→提示仅供参考）', async () => {
+  const dup = '摩根基金：持续看好中国资本市场长期发展';
+  const SYN = {
+    latest: { trade_date: '2026-10-27' },
+    sectorSentiment: {
+      asOfDate: '2026-10-27', scanned: 8,
+      macro: { label: '中性', score100: 50, confidence: 0.5, reason: 'r' },
+      sectors: [
+        { sector: '白酒', score: 0.8, newsCount: 1, bullish: 1, bearish: 0, headlines: [dup] },
+        { sector: '中药', score: 0.8, newsCount: 1, bullish: 1, bearish: 0, headlines: [dup] },
+        { sector: 'CPO', score: 0.8, newsCount: 1, bullish: 1, bearish: 0, headlines: [dup] },
+        { sector: 'AI', score: 0.7, newsCount: 3, bullish: 3, bearish: 0, headlines: ['AI独立新闻'] },
+      ],
+    },
+  };
+  const base = readJsonSafe('data/signals-latest.json') || {};
+  const S = { ...base, latest: { ...base.latest, trade_date: '2026-10-27' }, sectorSentiment: SYN.sectorSentiment };
+  const { w, errors } = makeDom();
+  const realFetch = w.fetch;
+  w.fetch = (url) => {
+    const u = String(url).replace(/^https?:\/\/localhost\//, '');
+    if (u === 'data/signals-latest.json') return Promise.resolve({ ok: true, json: async () => S });
+    return realFetch(url);
+  };
+  w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
+  await new Promise((r) => setTimeout(r, 260));
+  const root = w.document.getElementById('tRoot');
+  const btn = [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'sector');
+  assert.ok(btn, '有「板块」视图按钮');
+  btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 240));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /AI 板块情绪榜/.test(p.textContent));
+  assert.ok(panel, '存在「AI 板块情绪榜」面板');
+  const warn = panel.querySelector('.t-sec-warn');
+  assert.ok(warn, '模板化时显示置信度警示');
+  assert.match(warn.textContent, /3 个板块头条完全一致/, '警示含命中板块数');
+  assert.match(warn.textContent, /仅供参考/, '警示提示右侧数值仅供参考');
+  assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
+});
+
+

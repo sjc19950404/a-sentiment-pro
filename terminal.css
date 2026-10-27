@@ -569,6 +569,12 @@
   margin: -2px 0 5px 86px; font-size: 10.5px; color: var(--t-ink-3);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* 板块情绪「模板化」置信度警示：同头条命中多板块时提示右侧数值系罐头数据、仅供参考 */
+.t-sec-warn {
+  margin: 0 0 9px; padding: 6px 9px; font-size: 11px; line-height: 1.4;
+  color: var(--t-alert); border: 1px solid var(--t-alert);
+  border-radius: 7px; background: rgba(255, 82, 82, .08);
+}
 .t-dv-val .t-sv-mut { margin-left: 6px; font-size: 10.5px; color: var(--t-ink-3); }
 
 /* 游资黑话（GLM 生成，锚定当日快照） */

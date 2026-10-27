@@ -864,6 +864,12 @@
     const secs = (ss.sectors || []).slice().sort((a, b2) => (+b2.score || 0) - (+a.score || 0));
     const pos = secs.filter((x) => (+x.score || 0) > 0).length;
     const neg = secs.filter((x) => (+x.score || 0) < 0).length;
+    // ⚠ 模板化检测：GLM 常把同一篇新闻糊到所有板块，连 score/条数也成桶雷同（如本日 27 板块同头条）。
+    //   某条头条命中 ≥3 个板块即判定为模板化，面板顶部提示主理人「情绪数据疑似模板化·仅供参考」。
+    const hlHist = new Map();
+    for (const x of secs) { const h = ((x.headlines || [])[0] || '').trim(); if (h) hlHist.set(h, (hlHist.get(h) || 0) + 1); }
+    const maxHlRepeat = Math.max(0, ...hlHist.values());
+    const templated = maxHlRepeat >= 3;
     const mc = ss.macro || {};
     g.appendChild(el('div', 't-c12', `<div class="t-ai-strip">
       <span class="t-ai-tag">AI Side-car</span>
@@ -898,7 +904,7 @@
         <div class="t-sec-hl" title="${esc(rs)}">${esc(hl || '—')}</div>`;
       }).join('');
       g.appendChild(panel('AI 板块情绪榜', `${secs.length} 个板块 · 多 ${pos} / 空 ${neg} · 左=看空 · 右=看多`,
-        `<div>${bars}</div>
+        `<div>${templated ? `<div class="t-sec-warn">⚠ 本日 ${maxHlRepeat} 个板块头条完全一致，情绪数据疑似模板化 · 右侧数值仅供参考</div>` : ''}${bars}</div>
         ${mc.reason ? `<div class="t-dnote" style="margin-top:10px">${esc(String(mc.reason))}</div>` : ''}`, 't-c12'));
     }
 
