@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { recommendPicks } from '../src/picks.js';
 // V5.3 核心引擎调优（2026-10-28）：极寒分化惩罚 + 主线降权过滤的共享纯函数（只读报告侧消费结论）。
 import {
-  detectClusteringBubble, computeRedIndustryRatio, buildMainLineInput, selectMainLine,
+  detectClusteringBubble, computeRedIndustryRatio, buildMainLineInput, selectMainLine, penaltyApplies,
 } from '../src/mainline_guard.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -54,16 +54,21 @@ function main() {
   const emotionScore = Number.isFinite(+(day.emotion && day.emotion.value)) ? +(day.emotion.value) : (Number.isFinite(+day.score) ? +day.score : null);
   const ztpool = loadZtpoolForDay(date);
 
-  // 补丁一（V5.3·2026-10-28）：极寒分化惩罚——读取完整日的上涨家数与红盘行业占比。
-  //   仅作用于本次只读报告的推演结论（不写归档）。
+  // 补丁一（V5.3·2026-10-28 收紧调参·第二种方案）：极寒分化惩罚——读取完整日的上涨家数与红盘行业占比。
+  //   仅作用于本次只读报告的推演结论（不写归档）。收紧：仅当「原 regime 已是 recover/climax」且触发极寒分化才扣分降级。
   const _upCount = Number.isFinite(day?.summary?.up_count) ? day.summary.up_count : null;
   const _redIndustryRatio = computeRedIndustryRatio(day?.industry);
   const { isClusteringBubble, penalty } = detectClusteringBubble({ upCount: _upCount, redIndustryRatio: _redIndustryRatio });
+  // 当日 regime（与 paper_daily 同口径，取自 signals-latest；缺失 → null → 保守不扣分）
+  let regimeKey = null;
+  try { regimeKey = JSON.parse(readFileSync('data/signals-latest.json', 'utf8'))?.dailyReport?.tag?.key || null; }
+  catch { regimeKey = null; }
+  const _applyPenalty = penaltyApplies(isClusteringBubble, regimeKey);
   // 补丁三依赖：权威主线（day.summary.main_theme）构造主线对象 + 克隆打标。
   const _mainLineInput = buildMainLineInput(day, day?.summary?.main_theme);
   const mainLine = selectMainLine(_mainLineInput ? [_mainLineInput] : []);
-  // 情绪分扣分（仅本次推演；原始 day 不动）
-  const effEmotionScore = emotionScore != null ? emotionScore - penalty : emotionScore;
+  // 情绪分扣分（仅本次推演；原始 day 不动）：仅 applyPenalty 时扣分
+  const effEmotionScore = emotionScore != null ? emotionScore - (_applyPenalty ? penalty : 0) : emotionScore;
 
   const res = recommendPicks(day, { topN: TOP_N, emotionScore: effEmotionScore, ztpool, isClusteringBubble, mainLine });
 

@@ -669,23 +669,31 @@ export function recommendPicks(day, ctx = {}) {
   const trad = applyTradabilityFilters(picks, tradPool);
   picks = trad.picks;
 
-  // 补丁三（V5.3·2026-10-28）：极寒分化联动风控（依赖补丁一标记 isClusteringBubble，独立计算、互不耦合）。
-  //   触发（ctx.isClusteringBubble === true）时开启最高防御：选股池仅保留「属于主线 且 主线有效 且
-  //   主线龙虎榜净额为正」的标的，其余过滤剔除——资金出逃空心题材（isValidMain=false / 净额<0）一律不接力。
+  // 补丁三（V5.3·2026-10-28 收紧调参·第二种方案）：极寒分化联动风控（依赖补丁一标记 isClusteringBubble，独立计算、互不耦合）。
+  //   触发（ctx.isClusteringBubble === true）时开启温和防御——不再「无有效主线就全清」，避免缩头乌龟：
+  //     · 若主线有效（isValidMain===true 且 龙虎榜净额>0，真金白银支撑）→ 维持原样，不误伤；
+  //     · 若主线无效/缺失（资金出逃空心题材）→ 仅剔除「该无效主线的跟风票（inMainTheme）」，
+  //       非主线的强势票（龙虎榜净买为正 netWan>0）仍可进候选池。
   //   ⚠ 数据不可变：给保留标的克隆挂载 p.theme（来自主线对象克隆体），绝不引用 / 改动原始归档主线对象，
   //     满足「只约束当日候选池推送、不污染历史归档」。ctx 未传该标记 → 零回归（与情绪闸门同约定）。
   let clusterFilterNote = null;
   if (ctx.isClusteringBubble) {
     const mainLine = ctx.mainLine && typeof ctx.mainLine === 'object' ? ctx.mainLine : null;
-    // 主线有效性：必须 isValidMain===true 且 龙虎榜净额 > 0（空心题材 / 净流出 → 整体不接力）
+    // 主线有效性：必须 isValidMain===true 且 龙虎榜净额 > 0（空心题材 / 净流出 → 无效）
     const validMain = !!(mainLine && mainLine.isValidMain === true
       && Number.isFinite(mainLine.longHuNet) && mainLine.longHuNet > 0);
     const kept = [];
     for (const p of picks) {
       // 克隆主线对象挂载到标的（不引用原始归档主线，满足不可变约束）；原始 picks 仅新增一个只读引用字段
       p.theme = mainLine ? structuredClone(mainLine) : null;
-      // 仅保留：确实属于主线（inMainTheme，基于 day.summary.main_theme 口径）且 主线有效
-      if (p.inMainTheme === true && validMain) kept.push(p);
+      if (validMain) {
+        // 主线有真金白银支撑：维持原样，不误伤（避免缩头乌龟）
+        kept.push(p);
+      } else {
+        // 主线无效/缺失（资金出逃空心题材）：仅剔除「该无效主线的跟风票」，其余非主线强势票按资金面放行
+        if (p.inMainTheme === true) continue; // 跟风票剔除
+        if (Number.isFinite(p.netWan) && p.netWan > 0) kept.push(p); // 非主线但龙虎榜净买为正的强势票
+      }
     }
     const filteredOut = picks.length - kept.length;
     if (filteredOut > 0) {
@@ -693,7 +701,7 @@ export function recommendPicks(day, ctx = {}) {
       clusterFilterNote = {
         reason: 'clustering_bubble_mainline_filter',
         count: filteredOut,
-        note: '极寒分化最高风控：仅保留「属主线 且 主线有效(isValidMain) 且 主线龙虎榜净额>0」的标的',
+        note: '极寒分化温和风控：剔除无效主线跟风票；非主线且龙虎榜净买为正的强势票保留',
       };
     }
     picks = kept;

@@ -43,7 +43,7 @@ import {
 import { recommendPicks, marketTier } from '../src/picks.js';
 // V5.3 核心引擎调优（2026-10-28）：极寒分化惩罚 + 主线降权过滤的共享纯函数（Node 侧消费结论）。
 import {
-  detectClusteringBubble, computeRedIndustryRatio, buildMainLineInput, selectMainLine,
+  detectClusteringBubble, computeRedIndustryRatio, buildMainLineInput, selectMainLine, penaltyApplies,
 } from '../src/mainline_guard.js';
 import { reviewAccount } from '../src/paper_review.js';
 import { glmBuyGuard } from '../src/glm_guard.js';
@@ -99,19 +99,25 @@ const date = day.trade_date;
 const emotionScore = day.emotion?.value ?? null;
 console.log(`[paper-daily] 交易日 ${date}｜情绪分 ${emotionScore ?? '缺失'}`);
 
-// 补丁一（V5.3·2026-10-28）：极寒分化惩罚——读取完整日的上涨家数与红盘行业占比，判定是否处于
+// 补丁一（V5.3·2026-10-28 收紧调参·第二种方案）：极寒分化惩罚——读取完整日的上涨家数与红盘行业占比，判定是否处于
 //   妖股抱团假回暖结构。该标记仅用于「当日实时推演」（降低情绪分 + 联动选股风控），不写归档。
+//   收紧：仅当「原 regime 已是 recover(回暖)/climax(高潮)」且触发极寒分化时，才扣分 + 降级；
+//   neutral/ebb/ice 本就保守，不额外攻击（避免缩头乌龟）。regime 取自 signals-latest（与 step5 盖帽同口径）。
 const _upCount = Number.isFinite(day?.summary?.up_count) ? day.summary.up_count : null;
 const _redIndustryRatio = computeRedIndustryRatio(day?.industry);
 const { isClusteringBubble, penalty } = detectClusteringBubble({ upCount: _upCount, redIndustryRatio: _redIndustryRatio });
+let regimeKey = null;
+try { regimeKey = JSON.parse(readFileSync('data/signals-latest.json', 'utf8'))?.dailyReport?.tag?.key || null; }
+catch { console.warn('[paper-daily] 读 signals 失败，补丁一降级按保守处理（不扣分）'); }
+const _applyPenalty = penaltyApplies(isClusteringBubble, regimeKey);
 // 补丁三依赖：从权威主线（day.summary.main_theme）构造主线对象（含 longHuNet），经 selectMainLine 克隆打标。
 const _mainLineInput = buildMainLineInput(day, day?.summary?.main_theme);
 const mainLine = selectMainLine(_mainLineInput ? [_mainLineInput] : []);
-// 情绪分扣分（仅作用于本次推演；原始 day.emotion 不动）：极寒分化时压低档位 → 缩小/不新建仓。
-const effEmotionScore = emotionScore != null ? emotionScore - penalty : emotionScore;
+// 情绪分扣分（仅作用于本次推演；原始 day.emotion 不动）：仅在 applyPenalty 时压低档位 → 缩小/不新建仓。
+const effEmotionScore = emotionScore != null ? emotionScore - (_applyPenalty ? penalty : 0) : emotionScore;
 if (isClusteringBubble) {
   console.log(`[paper-daily] ⚠ 极寒分化气泡：上涨家数 ${_upCount ?? '?'} < 1500 且 红盘行业占比 ${(_redIndustryRatio != null ? (_redIndustryRatio * 100).toFixed(1) : '?')}% < 10%`
-    + ` → 情绪分扣 ${penalty}（${emotionScore}→${effEmotionScore}）`
+    + `；regime=${regimeKey || '无'} → ${_applyPenalty ? `情绪分扣 ${penalty}（${emotionScore}→${effEmotionScore}）` : '本就保守，不额外扣分'}`
     + (mainLine ? `；主线「${mainLine.theme}」isValidMain=${mainLine.isValidMain}（龙虎榜净额 ${mainLine.longHuNet} 万）` : '；主线缺失'));
 }
 
@@ -181,9 +187,7 @@ if (broken.length) {
 
 // ── 5. 自动建仓：情绪档位允许新建 且 未触发 regime 盖帽（--force-trade 可绕过双闸）──
 step(`自动建仓（主线选股 top${TOP_N} @ ${Math.round(PER_POS_PCT * 100)}%）${FORCE_TRADE ? '  [强制测试模式]' : ''}`);
-let regimeKey = null;
-try { regimeKey = JSON.parse(readFileSync('data/signals-latest.json', 'utf8'))?.dailyReport?.tag?.key || null; }
-catch { console.warn('  [paper-daily] 读 signals 失败，仅按情绪档位判断'); }
+// 注：regimeKey 已在「补丁一极寒分化」块提前读取（同口径 signals-latest.dailyReport.tag.key），此处直接复用。
 const tier = marketTier(emotionScore);
 const regimeBlocked = RESPECT_REGIME && regimeKey && RESTRICTIVE_REGIME.has(regimeKey);
 if (!tier) {

@@ -26,7 +26,7 @@ import { QUOTE_STATE } from './global.js';
 import { reconcilePosition } from './position_policy.js';
 // V5.3 核心引擎调优（2026-10-28）：极寒分化惩罚 / 主线降权过滤的共享纯函数。
 //   浏览器/Node 双端安全（零 IO、不 import fs/backtest/paper），供报告层与选股引擎共用。
-import { detectClusteringBubble, computeRedIndustryRatio } from './mainline_guard.js';
+import { detectClusteringBubble, computeRedIndustryRatio, penaltyApplies } from './mainline_guard.js';
 
 export const SCHEMA_VERSION = '1.0';
 export const REPORT_TYPES = ['pre_market', 'intraday', 'post_market', 'weekly'];
@@ -216,10 +216,13 @@ function applyClusteringBubbleOverride(regime, input) {
   const redIndustryRatio = computeRedIndustryRatio(day?.industry);
   const { isClusteringBubble, penalty } = detectClusteringBubble({ upCount, redIndustryRatio });
   regime.clustering_bubble = isClusteringBubble;
-  regime.sentiment_penalty = isClusteringBubble ? penalty : 0;
-  if (regime.score != null) regime.score_adjusted = isClusteringBubble ? regime.score - penalty : regime.score;
+  // 收紧调参（2026-10-28·第二种方案）：仅在「原周期已是 recover(回暖)/climax(高潮)」且触发极寒分化时，
+  //   才扣分 + 强制降级；neutral/ebb/ice 本就保守，不额外攻击（避免缩头乌龟，也不重复降级）。
+  const applyPenalty = penaltyApplies(isClusteringBubble, regime.key);
+  regime.sentiment_penalty = applyPenalty ? penalty : 0;
+  if (regime.score != null) regime.score_adjusted = applyPenalty ? regime.score - penalty : regime.score;
   const ratioTxt = redIndustryRatio != null ? `${(redIndustryRatio * 100).toFixed(1)}%` : '?';
-  if (isClusteringBubble && (regime.key === 'recover' || regime.key === 'climax')) {
+  if (applyPenalty) {
     // 强制锁死情绪周期：取消回暖/高潮判定，降级为中性（震荡），避免妖股抱团假回暖误导仓位。
     const fromLabel = regime.label || regime.key;
     regime.key = 'neutral';
@@ -227,7 +230,7 @@ function applyClusteringBubbleOverride(regime, input) {
     regime.clustering_bubble_downgraded = true;
     regime.clustering_bubble_note = `标记：抱团分化，取消${fromLabel}判定（上涨家数 ${upCount ?? '?'} < 1500 且 红盘行业占比 ${ratioTxt} < 10%）`;
   } else if (isClusteringBubble) {
-    regime.clustering_bubble_note = `抱团分化泡沫（上涨家数 ${upCount ?? '?'} < 1500 且 红盘行业占比 ${ratioTxt} < 10%）；原周期未处于回暖/高潮，维持当前判定`;
+    regime.clustering_bubble_note = `抱团分化泡沫（上涨家数 ${upCount ?? '?'} < 1500 且 红盘行业占比 ${ratioTxt} < 10%）；原周期非回暖/高潮（本就保守），不额外降级`;
   }
   return regime;
 }

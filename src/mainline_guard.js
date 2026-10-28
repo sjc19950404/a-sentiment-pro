@@ -47,6 +47,20 @@ export function detectClusteringBubble({ upCount, redIndustryRatio } = {}) {
 }
 
 /**
+ * 补丁一「降级 / 扣分」是否真正生效（用户收紧调参·2026-10-28·第二种方案）：
+ *   仅在「原 regime 已被判定为 recover(回暖) 或 climax(高潮)」且「触发极寒分化」时，才执行强制降级与扣分；
+ *   若为 neutral / ebb / ice 等本就保守的周期，不额外降级（本来就不允许重仓），避免无差别攻击、变成缩头乌龟。
+ * 纯函数，不修改任何对象。
+ *
+ * @param {boolean} isClusteringBubble 极寒分化检测结果
+ * @param {string} [regimeKey] 当日情绪周期 key
+ * @returns {boolean}
+ */
+export function penaltyApplies(isClusteringBubble, regimeKey) {
+  return isClusteringBubble && (regimeKey === 'recover' || regimeKey === 'climax');
+}
+
+/**
  * 红盘行业占比：day.industry（[{name, change_pct}, ...]）中涨跌幅 > 0 的行业占比。
  * 无行业明细（null / 空数组）→ 返回 null（不可判即不判，调用方据此保守处理，不冒充 0）。
  * 纯函数、只读入参，不修改任何对象。

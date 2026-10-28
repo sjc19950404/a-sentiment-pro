@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  detectClusteringBubble, computeRedIndustryRatio, themeLongHuNet, buildMainLineInput, selectMainLine,
+  detectClusteringBubble, computeRedIndustryRatio, themeLongHuNet, buildMainLineInput, selectMainLine, penaltyApplies,
   SENTIMENT_PENALTY, CLUSTER_RISE_COUNT_MAX, CLUSTER_RED_INDUSTRY_RATIO_MAX,
 } from '../src/mainline_guard.js';
 import { recommendPicks } from '../src/picks.js';
@@ -39,6 +39,24 @@ test('补丁一：任一输入缺失（null）→ 保守不降级（未知即不
 test('补丁一：阈值常量边界（等于阈值不触发，需严格小于）', () => {
   assert.equal(detectClusteringBubble({ upCount: CLUSTER_RISE_COUNT_MAX, redIndustryRatio: CLUSTER_RED_INDUSTRY_RATIO_MAX }).isClusteringBubble, false);
   assert.equal(detectClusteringBubble({ upCount: CLUSTER_RISE_COUNT_MAX - 1, redIndustryRatio: CLUSTER_RED_INDUSTRY_RATIO_MAX - 0.01 }).isClusteringBubble, true);
+});
+
+// ───────────── 补丁一收紧调参：penaltyApplies 闸门 ─────────────
+test('penaltyApplies：recover + 气泡 → true（回暖遇假回暖才扣分降级）', () => {
+  assert.equal(penaltyApplies(true, 'recover'), true);
+});
+test('penaltyApplies：climax + 气泡 → true（高潮遇假回暖才扣分降级）', () => {
+  assert.equal(penaltyApplies(true, 'climax'), true);
+});
+test('penaltyApplies：neutral/ebb/ice + 气泡 → false（本就保守，不无差别攻击）', () => {
+  assert.equal(penaltyApplies(true, 'neutral'), false);
+  assert.equal(penaltyApplies(true, 'ebb'), false);
+  assert.equal(penaltyApplies(true, 'ice'), false);
+  assert.equal(penaltyApplies(true, 'shift'), false);
+});
+test('penaltyApplies：未触发气泡 → false（无论 regime）', () => {
+  assert.equal(penaltyApplies(false, 'recover'), false);
+  assert.equal(penaltyApplies(false, 'climax'), false);
 });
 
 // ───────────── 补丁一：computeRedIndustryRatio ─────────────
@@ -142,20 +160,30 @@ function bubbleDay(mainYi) {
   };
 }
 
-test('补丁三：isClusteringBubble 且 主线有效(net>0) → 仅保留属主线的标的', () => {
+test('补丁三·温和版：isClusteringBubble 且 主线有效(net>0) → 维持原样（属/不属主线都保留，不缩头）', () => {
   const day = bubbleDay(5); // main_yi=5亿 → longHuNet=50000>0 → isValidMain=true
   const mainLine = selectMainLine([{ theme: '机器人', longHuNet: 50000, strength: 90 }]);
   const res = recommendPicks(day, { topN: 10, emotionScore: 90, minProb: 0, isClusteringBubble: true, mainLine });
   const codes = (res.picks || []).map((p) => String(p.code));
   assert.ok(codes.includes('600001'), '属主线的 600001 应保留');
-  assert.ok(!codes.includes('600002'), '不属主线的 600002 应被过滤');
+  assert.ok(codes.includes('600002'), '非主线的 600002 也应保留（主线有效时不误伤，避免缩头乌龟）');
 });
 
-test('补丁三：isClusteringBubble 且 主线净流出(net<0) → 全部剔除（最高风控，空心题材不接力）', () => {
+test('补丁三·温和版：isClusteringBubble 且 主线净流出(net<0) → 仅剔无效主线跟风票，非主线净买为正的强势票保留', () => {
   const day = bubbleDay(-5); // main_yi=-5亿 → longHuNet<0 → isValidMain=false
   const mainLine = selectMainLine([{ theme: '机器人', longHuNet: -50000, strength: 90 }]);
   const res = recommendPicks(day, { topN: 10, emotionScore: 90, minProb: 0, isClusteringBubble: true, mainLine });
-  assert.equal((res.picks || []).length, 0, '主线无效时不应保留任何标的');
+  const codes = (res.picks || []).map((p) => String(p.code));
+  assert.ok(!codes.includes('600001'), '属无效主线的跟风票 600001 应被剔除');
+  assert.ok(codes.includes('600002'), '非主线且龙虎榜净买为正的 600002 应保留');
+});
+
+test('补丁三·温和版：isClusteringBubble 且 无主线对象 → 仅剔 inMainTheme 跟风票，非主线净买为正保留', () => {
+  const day = bubbleDay(-5); // 无 mainLine 传入
+  const res = recommendPicks(day, { topN: 10, emotionScore: 90, minProb: 0, isClusteringBubble: true });
+  const codes = (res.picks || []).map((p) => String(p.code));
+  assert.ok(!codes.includes('600001'), '无主线时 inMainTheme 的 600001 应剔除');
+  assert.ok(codes.includes('600002'), '非主线净买为正的 600002 保留');
 });
 
 test('补丁三：isClusteringBubble 缺失 → 零回归（不过滤，属/不属主线都保留）', () => {
@@ -209,4 +237,21 @@ test('ai_report 补丁一：数据缺失（redIndustryRatio=null）时保守不�
   const rep = generatePostMarket(input, { generatedBy: 'ci' });
   assert.equal(rep.payload.regime.clustering_bubble, false);
   assert.equal(rep.payload.regime.key, 'recover');
+});
+
+test('ai_report 补丁一·收紧：neutral + 极寒分化 → 不扣分、不降级（本就保守，不无差别攻击）', () => {
+  const input = buildInput({
+    dualTrack: {
+      day: { date: '2026-10-28', score: 70, regime: { key: 'neutral', label: '中性', cap: 0.5 }, summary: { up_count: 1000 }, industry: [{ name: 'a', change_pct: -1 }, { name: 'b', change_pct: -2 }] },
+      summary: {},
+    },
+    signals: { meta: { tradeDate: '2026-10-28' } },
+  });
+  const rep = generatePostMarket(input, { generatedBy: 'ci' });
+  assert.equal(rep.payload.regime.clustering_bubble, true);
+  assert.equal(rep.payload.regime.key, 'neutral'); // 未降级
+  assert.equal(rep.payload.regime.sentiment_penalty, 0); // 未扣分
+  assert.equal(rep.payload.regime.score_adjusted, 70); // 不扣
+  // ⚠ 不可变：原始 day.regime.key 仍是 neutral
+  assert.equal(input.dualTrack.day.regime.key, 'neutral');
 });
