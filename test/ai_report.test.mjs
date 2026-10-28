@@ -397,6 +397,27 @@ test('buildSimulationStock：09-30 夹具 → 发酵期/neutral/候选池齐 + �
   mustPass(bare, 'intraday 无 sim 段');
 });
 
+// ── 12.1 实盘权限过滤（2026-10-29·老板无创业板300/301、科创板688权限）──
+//   推送候选池/连板池也须剔除无权限板块，与 recommendPicks 选股引擎口径一致（仅观察/推荐主板+北交所）。
+test('buildSimulationStock：候选池剔除 300/301/688（推送不推无权限板块）', () => {
+  const input = mkInput({
+    signals: {
+      ...SIG,
+      pain: { ...SIG.pain, advance: { ...SIG.pain.advance, detail: [
+        { code: '600825', lb: 6, chg: 9.99, kept: true },
+        { code: '000678', lb: 3, chg: 9.98, kept: true },
+        { code: '300888', lb: 4, chg: 20, kept: true }, // 创业板 → 应被剔除
+        { code: '688999', lb: 5, chg: 20, kept: true }, // 科创板 → 应被剔除
+      ] } },
+    },
+  });
+  const sim = buildSimulationStock(input, {});
+  const codes = sim.candidate_pool.map((p) => p.code);
+  assert.ok(!codes.includes('300888'), '创业板 300888 不得进入推送候选池');
+  assert.ok(!codes.includes('688999'), '科创板 688999 不得进入推送候选池');
+  assert.deepEqual(codes, ['600825', '000678'], '主板标的不应被误伤');
+});
+
 // ── 12.5 P0-2 陈旧闸（2026-10-10）：pain 口径日 ≠ signals 档案锚 → 拒收 ──
 //   10-08 事故实录：fetch_pain exit 2 被 continue-on-error 吞 → pain-latest 定格
 //   9-29→9-30 口径 → 候选池「新华传媒 6 连板」（真实 10-08 收盘 8 板）。

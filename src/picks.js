@@ -633,6 +633,19 @@ export function applyTradabilityFilters(picks, ztpool) {
  * @returns {{tier:object|null, score:number|null, picks:Array, rejected:Array,
  *            note:object, asOf:string|null, pool:number, pred:object, version:string}}
  */
+
+// 实盘权限过滤（2026-10-29·老板账户无创业板300/301、科创板688权限）。
+// 选股引擎(recommendPicks)与推送候选池(buildSimulationStock)共用同一套口径：
+//   仅主板(000/001/002/600/601/603/605)+北交所(8/4/920)可交易，剔除 300/301/688。
+const NO_TRADE_PREFIX = /^(300|301|688)/;
+export function isTradableByPermission(code) {
+  return !NO_TRADE_PREFIX.test(String(code || ''));
+}
+export function filterByPermission(list) {
+  if (!Array.isArray(list)) return [];
+  return list.filter((x) => isTradableByPermission(x && x.code));
+}
+
 export function recommendPicks(day, ctx = {}) {
   const d = day || {};
   const tier = marketTier(ctx.emotionScore);
@@ -642,7 +655,7 @@ export function recommendPicks(day, ctx = {}) {
     // 实盘权限过滤（2026-10-29·老板账户无创业板300/301、科创板688权限）：在选股引擎最前端直接剔除，绝不进入候选池。
     //   主线涨停家数 / 情绪周期仍用 day 全量数据（含创业板）计算（见 mainline_guard / breadth），不受此过滤影响；
     //   仅“选股”从主板(000/001/002/600/601/603/605)+北交所(8/4/920)挑选（剔除 300/301/688 即等价于该约束）。
-    .filter((c) => !/^(300|301|688)/.test(String(c.code || '')));
+    .filter((c) => isTradableByPermission(c.code));
   const totalDealWan = candidates.reduce((a, c) => a + (finite(c.buyWan) ? +c.buyWan : 0) + (finite(c.sellWan) ? +c.sellWan : 0), 0);
 
   // 先补上「可核验理由/风险」与流动性分（这些是展示字段，与预测相互独立）

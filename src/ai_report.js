@@ -27,6 +27,7 @@ import { reconcilePosition } from './position_policy.js';
 // V5.3 核心引擎调优（2026-10-28）：极寒分化惩罚 / 主线降权过滤的共享纯函数。
 //   浏览器/Node 双端安全（零 IO、不 import fs/backtest/paper），供报告层与选股引擎共用。
 import { detectClusteringBubble, computeRedIndustryRatio, penaltyApplies } from './mainline_guard.js';
+import { filterByPermission } from './picks.js';
 
 export const SCHEMA_VERSION = '1.0';
 export const REPORT_TYPES = ['pre_market', 'intraday', 'post_market', 'weekly'];
@@ -1300,6 +1301,11 @@ export function buildSimulationStock(input, opts = {}) {
       ? `连板梯队缺席：pain ${painStaleReason}——宁缺毋假，不用旧连板数冒充今日梯队（2026-10-10 P0-2）`
       : 'pain.advance.detail 连板活跃明细按连板数降序（情绪面规则现算，决议 8：人工输入模式的辅助建议，可一键采纳不自动生效）';
   }
+  // 实盘权限过滤（2026-10-29·老板无创业板300/301、科创板688权限）：推送候选池/连板池也剔除无权限板块，
+  //   与 recommendPicks 选股引擎口径一致（仅观察/推荐主板+北交所标的）。模拟持仓(simulation_positions)是真实已有仓位，
+  //   不在此列——权限只约束"新推荐/新观察"，不篡改历史持仓展示。
+  pool = filterByPermission(pool);
+  if (streakPool) streakPool = filterByPermission(streakPool);
   let simulation_positions = null;
   if (input.live && input.paperAccount?.positions) {
     // 绑定联查（读写职责边界）：绑定写入由 S3 前端 UI 在用户确认剧本时触发

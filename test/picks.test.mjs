@@ -9,7 +9,7 @@ import {
   PICK_TOP_N, SCORE_WEIGHTS, TIER_THRESHOLDS, POSITION_TIERS,
   marketTier, buildCandidates, scoreFund, scoreStreak, scoreCandidate,
   reasonsOf, risksOf, suggestWeight, recommendPicks, applyEmotionGates,
-  applyTradabilityFilters,
+  applyTradabilityFilters, isTradableByPermission, filterByPermission,
 } from '../src/picks.js';
 
 // 构造一份最小可用的「存档日」。字段名与 archive.json 严格一致，
@@ -569,6 +569,35 @@ test('实盘权限：最前端剔除 300/301/688，保留主板(000/002/600/601/
   // 候选池统计也应剔除权限外标的：6 只候选(300/301/688 各1 + 600/000/830 各1) - 3 只权限外 = 3
   // （说明北交所 830006 仍留在候选池，未被权限过滤误伤；能否进 picks 由其它关卡决定，不属本需求范围）
   assert.equal(r.pool, 3, `候选池应剔除 300/301/688（保留主板/北交所候选），实际 ${r.pool}`);
+});
+
+// ────────────────────── 实盘权限过滤 helper（选股引擎与推送候选池共用） ──────────────────────
+test('权限helper：isTradableByPermission 剔除 300/301/688，保留主板/北交所/其余', () => {
+  assert.equal(isTradableByPermission('300001'), false);
+  assert.equal(isTradableByPermission('301002'), false);
+  assert.equal(isTradableByPermission('688003'), false);
+  assert.equal(isTradableByPermission('600004'), true);
+  assert.equal(isTradableByPermission('000005'), true);
+  assert.equal(isTradableByPermission('002006'), true);
+  assert.equal(isTradableByPermission('830006'), true, '北交所应可交易');
+  assert.equal(isTradableByPermission('400007'), true, '北交所老三板应可交易');
+  assert.equal(isTradableByPermission('920008'), true, '北交所新股应可交易');
+  assert.equal(isTradableByPermission(null), true, '缺 code 不误杀');
+  assert.equal(isTradableByPermission(''), true, '空 code 不误杀');
+});
+
+test('权限helper：filterByPermission 按 code 前缀过滤列表', () => {
+  const list = [
+    { code: '600001', name: 'A' },
+    { code: '300002', name: 'B' },
+    { code: '688003', name: 'C' },
+    { code: '000004', name: 'D' },
+    { code: '301005', name: 'E' },
+  ];
+  const out = filterByPermission(list);
+  assert.deepEqual(out.map((x) => x.code), ['600001', '000004'], '仅剔除 300/301/688');
+  assert.equal(filterByPermission(null).length, 0, '非数组零回归');
+  assert.equal(filterByPermission([]).length, 0, '空数组零回归');
 });
 
 
