@@ -1,0 +1,256 @@
+{
+ "schema_version": "1.0",
+ "report_type": "intraday",
+ "trigger": "schedule",
+ "urgent": false,
+ "date": "2026-10-28",
+ "generated_at": "2026-10-28T01:35:04.434Z",
+ "generated_by": "ci",
+ "status": "degraded",
+ "track": "A",
+ "data_health": {
+  "sources": {
+   "dual_track": "fresh",
+   "signals": "fresh",
+   "global": "fresh",
+   "backtest": "fresh",
+   "ops_alerts": "fresh",
+   "intraday": "fresh",
+   "paper_account": "live"
+  }
+ },
+ "data_completeness": {
+  "date": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "grid_triggers": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "counter_trend_losses": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "pnl_daily": {
+   "source": "live",
+   "confidence": "measured"
+  },
+  "pnl_cumulative": {
+   "source": "live",
+   "confidence": "measured"
+  },
+  "max_drawdown_daily": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "trend_switch_hits": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "cost_ratio": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "slippage_avg": {
+   "source": "assumed",
+   "confidence": "assumed"
+  },
+  "slippage_source": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "regime": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "circuit_breaker": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "overseas": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "externalStale": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "nav_realtime": {
+   "source": "live",
+   "confidence": "measured"
+  },
+  "market_context": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "approx": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "drawdown_vs_threshold": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "simulation_stock": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "ma20_degraded": {
+   "source": "derived",
+   "confidence": "measured"
+  }
+ },
+ "payload": {
+  "date": "2026-10-27",
+  "grid_triggers": null,
+  "counter_trend_losses": null,
+  "pnl_daily": 0,
+  "pnl_cumulative": 0,
+  "max_drawdown_daily": null,
+  "trend_switch_hits": 1,
+  "cost_ratio": null,
+  "slippage_avg": 0.0002,
+  "slippage_source": "assumed_constant",
+  "regime": {
+   "key": "recover",
+   "label": "复苏/酝酿期",
+   "score": 47.58,
+   "cap": 0.5,
+   "position_range": "30%~50%",
+   "positionReconcile": {
+    "score": 47.6,
+    "base": {
+     "key": "base_defend",
+     "minPos": 0,
+     "maxPos": 0.3,
+     "label": "防守"
+    },
+    "baseRange": "0%~30%",
+    "cap": {
+     "key": "recover",
+     "minPos": 0.3,
+     "maxPos": 0.5,
+     "label": "复苏/酝酿期",
+     "advice": "中性震荡试仓，跟随确认再加",
+     "tone": "balanced"
+    },
+    "capRange": "30%~50%",
+    "force": false,
+    "conflict": false,
+    "finalRange": "30%~50%"
+   }
+  },
+  "circuit_breaker": {
+   "dd_tier": 0,
+   "hard_stop_triggered": false,
+   "risk_events": 0,
+   "note": "即时轨：运行回撤 0.00%，距档位边界见 drawdown_vs_threshold；单笔止损/风控拦截当日 无"
+  },
+  "overseas": [
+   {
+    "key": "a50",
+    "name": "富时中国A50期货",
+    "chgPct": 0.0051459999999999995,
+    "state": "ok",
+    "stale": false,
+    "cacheNote": null
+   },
+   {
+    "key": "sox",
+    "name": "费城半导体指数",
+    "chgPct": 0.036003,
+    "state": "ok",
+    "stale": false,
+    "cacheNote": null
+   }
+  ],
+  "externalStale": [],
+  "nav_realtime": 1000000,
+  "market_context": {
+   "emotion": 47.6,
+   "pct_rank": 11.9,
+   "indexes": {
+    "上证指数": -1.33,
+    "深证成指": -2.5,
+    "创业板指": -3.41
+   },
+   "up_down": "594/4653/47",
+   "amount_yi": 14609.6,
+   "zt_dt": "41/22",
+   "breadth": "站上20日线仅 17.4%",
+   "pain": "多空拉锯",
+   "seats": "游资/其他（营业部·分公司·自营）主导",
+   "highest_chain": 4
+  },
+  "approx": false,
+  "drawdown_vs_threshold": {
+   "dd_now": 0,
+   "tier_edges": [
+    0.09,
+    0.15
+   ],
+   "distance_pp": 9,
+   "basis": "即时轨·运行回撤"
+  },
+  "simulation_stock": null,
+  "ma20_degraded": false,
+  "status": "degraded"
+ },
+ "missing_notes": [
+  {
+   "field": "grid_triggers / grid_trigger_detail",
+   "reason": "系统无网格交易引擎（grid_parallel 是参数寻优并行器，非交易网格）",
+   "ref": "src/grid_parallel.js"
+  },
+  {
+   "field": "counter_trend_losses / counter_trend_loss_ratio",
+   "reason": "无逆势加仓/亏损记账；参考 divergence.posGap（保费敞口）",
+   "ref": "data/paper/dual_track_latest.json"
+  },
+  {
+   "field": "max_drawdown_daily",
+   "reason": "即时轨当日权益序列不足两点（采样刚启动/实时行情降级），无日内回撤语义",
+   "ref": "src/intraday_live.js::dailyDrawdown"
+  }
+ ],
+ "concepts": {
+  "trend_switch": "regime 状态机（src/regime.js）",
+  "circuit_breaker": "DD_TIERS + HARD_STOP_LOSS + ops-alerts（src/paper.js / src/opsalerts.js）"
+ },
+ "sources": {
+  "date": "data/paper/dual_track_latest.json::day.date",
+  "pnl_daily": "data/paper/dual_track_latest.json::day.dayReturns.A（即时轨覆盖为账本 nav 当日变化）",
+  "pnl_cumulative": "data/paper/dual_track_latest.json::summary.trackA.total（即时轨覆盖为 accountStats.ret）",
+  "close_drawdown": "live 实时账户当前回撤 accountStats.drawdown（决议 A：禁混双轨 trackA.maxDd）；空仓→null；归档轨回退 dual_track trackA.maxDd",
+  "max_drawdown_daily": "即时轨当日 equity 序列峰谷（S3-1 注入：opts.drawdownDaily ← window.__intradayLive.drawdownDaily ← src/intraday_live.js::dailyDrawdown）",
+  "trend_switch_hits": "data/signals-latest.json::regime.turns",
+  "overseas": "data/global.json::quotes（A50 + 费半；美股仅美东 16:30 后可信）",
+  "backtest_deviation": "data/backtest.json::v52 vs dual_track summary.trackA",
+  "market_context": "data/signals-latest.json::latest / breadth / pain / seats",
+  "circuit_breaker": "data/ops-alerts-latest.json::events + src/paper.js::DD_TIERS",
+  "regime": "data/paper/dual_track_latest.json::day.regime + signals.dailyReport（仓位区间）",
+  "slippage_avg": "src/paper.js::DEFAULT_SLIP（归档轨假设常量）/ orders×trades 逐笔实测（即时轨）",
+  "cost_ratio": "即时轨当日 trades 费用合计 / 成交额合计；归档轨无成交明细 → null",
+  "win_rate": "口径 = 剧本命中次数 / 总剧本执行次数（决议 4，2026-10-06 拍板）；剧本绑定记录（airpt_sim_bindings_v1）缺席 → null，不降级为日收益口径"
+ },
+ "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
+ "push_verification": {
+  "checkedAtBJ": "09:35",
+  "snapshotAtBJ": "2026-10-28 09:30",
+  "tradeDate": "2026-10-28",
+  "trend_pool_mode": "trend",
+  "minutes_to_close": null,
+  "mode_degraded": false,
+  "trend": {
+   "checked": 0,
+   "removed": []
+  },
+  "streak": {
+   "checked": 0,
+   "removed": []
+  },
+  "applied": false,
+  "note": "档案无 simulation_stock.candidate_pool（模拟选股关闭或缺席）"
+ }
+}
