@@ -41,6 +41,10 @@ import {
   accountStats, quotesFromDay, isLimitHit, normalizeExec,
 } from '../src/paper.js';
 import { recommendPicks, marketTier } from '../src/picks.js';
+// V5.3 核心引擎调优（2026-10-28）：极寒分化惩罚 + 主线降权过滤的共享纯函数（Node 侧消费结论）。
+import {
+  detectClusteringBubble, computeRedIndustryRatio, buildMainLineInput, selectMainLine,
+} from '../src/mainline_guard.js';
 import { reviewAccount } from '../src/paper_review.js';
 import { glmBuyGuard } from '../src/glm_guard.js';
 import { pushReports, buildSignalSyncReports } from '../src/ai_report_push.js';
@@ -94,6 +98,22 @@ const day = days[days.length - 1];
 const date = day.trade_date;
 const emotionScore = day.emotion?.value ?? null;
 console.log(`[paper-daily] 交易日 ${date}｜情绪分 ${emotionScore ?? '缺失'}`);
+
+// 补丁一（V5.3·2026-10-28）：极寒分化惩罚——读取完整日的上涨家数与红盘行业占比，判定是否处于
+//   妖股抱团假回暖结构。该标记仅用于「当日实时推演」（降低情绪分 + 联动选股风控），不写归档。
+const _upCount = Number.isFinite(day?.summary?.up_count) ? day.summary.up_count : null;
+const _redIndustryRatio = computeRedIndustryRatio(day?.industry);
+const { isClusteringBubble, penalty } = detectClusteringBubble({ upCount: _upCount, redIndustryRatio: _redIndustryRatio });
+// 补丁三依赖：从权威主线（day.summary.main_theme）构造主线对象（含 longHuNet），经 selectMainLine 克隆打标。
+const _mainLineInput = buildMainLineInput(day, day?.summary?.main_theme);
+const mainLine = selectMainLine(_mainLineInput ? [_mainLineInput] : []);
+// 情绪分扣分（仅作用于本次推演；原始 day.emotion 不动）：极寒分化时压低档位 → 缩小/不新建仓。
+const effEmotionScore = emotionScore != null ? emotionScore - penalty : emotionScore;
+if (isClusteringBubble) {
+  console.log(`[paper-daily] ⚠ 极寒分化气泡：上涨家数 ${_upCount ?? '?'} < 1500 且 红盘行业占比 ${(_redIndustryRatio != null ? (_redIndustryRatio * 100).toFixed(1) : '?')}% < 10%`
+    + ` → 情绪分扣 ${penalty}（${emotionScore}→${effEmotionScore}）`
+    + (mainLine ? `；主线「${mainLine.theme}」isValidMain=${mainLine.isValidMain}（龙虎榜净额 ${mainLine.longHuNet} 万）` : '；主线缺失'));
+}
 
 // ── 2. 载入 / 初始化账户 ──
 let acct;
@@ -178,7 +198,7 @@ if (!tier) {
   }
   const ztpool = loadZtpoolForDay(day.trade_date);
   console.log(`  可交易性过滤数据源：当日涨停池 ${ztpool ? ztpool.length + ' 只' : '缺失（no-op）'}`);
-  const picks = (recommendPicks(day, { topN: TOP_N, emotionScore, ztpool }).picks || [])
+  const picks = (recommendPicks(day, { topN: TOP_N, emotionScore: effEmotionScore, ztpool, isClusteringBubble, mainLine }).picks || [])
     .filter((p) => p && p.code && quotes[String(p.code)]); // 仅选有当日行情者（否则 batchSubmit 会 NO_QUOTE 拦截）
   const items = picks.slice(0, TOP_N).map((p) => ({
     code: String(p.code), pct: PER_POS_PCT, hybk: p.hybk || null,

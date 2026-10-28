@@ -24,6 +24,9 @@ import { bjDate } from './time.js';
 import { validateExternal } from './validate_snapshot.js';
 import { QUOTE_STATE } from './global.js';
 import { reconcilePosition } from './position_policy.js';
+// V5.3 核心引擎调优（2026-10-28）：极寒分化惩罚 / 主线降权过滤的共享纯函数。
+//   浏览器/Node 双端安全（零 IO、不 import fs/backtest/paper），供报告层与选股引擎共用。
+import { detectClusteringBubble, computeRedIndustryRatio } from './mainline_guard.js';
 
 export const SCHEMA_VERSION = '1.0';
 export const REPORT_TYPES = ['pre_market', 'intraday', 'post_market', 'weekly'];
@@ -182,7 +185,7 @@ function buildRegime(input) {
   const posRec = reconcilePosition({ score: day.score, regimeKey: capKey });
   // 展示层合并落地：长文版 regime 的 key/label/range 一律以「合并后的 cap（日报权威 regime）」为准，
   // 不再透出 dualTrack.day.regime 的裸 climax（高潮/60%~100%）——否则长文简报会与前端日报打架。
-  return {
+  const regime = {
     key: capKey ?? day.regime?.key ?? null,
     label: (posRec && posRec.cap && posRec.cap.label) || day.regime?.label || null,
     score: (day && Number.isFinite(day.score)) ? day.score : null, // 大盘情绪分（0-100，任务一·盘中温度计播报用）
@@ -190,6 +193,43 @@ function buildRegime(input) {
     position_range: posRec ? posRec.finalRange : (range ? range.position.range : null),
     positionReconcile: posRec,
   };
+  // 补丁一（V5.3·2026-10-28）：极寒分化惩罚的「报告侧」落地——只改写本函数当场新建的 regime 对象，
+  //   绝不修改 day / 任何原始归档。引擎七态无「震荡」key，最接近等价的降级目标是 neutral(中性)。
+  return applyClusteringBubbleOverride(regime, input);
+}
+
+/**
+ * 补丁一（V5.3）：极寒分化惩罚——仅作用于传入的 regime 对象（必须是新建体，非 day 引用），不改归档。
+ *   触发（detectClusteringBubble）：上涨家数 < 1500 且 红盘行业占比 < 0.10 → 抱团分化泡沫。
+ *   若原判定为 recover(回暖) / climax(高潮)，强制覆盖为 neutral(中性，即用户语义的「震荡」) 并标注降级原因；
+ *   情绪分扣除 SENTIMENT_PENALTY 透出（score_adjusted）。该标记仅影响当日报告/仓位建议，不写历史。
+ *   两输入任一缺失 → 保守不降级（未知即不判）。
+ */
+function applyClusteringBubbleOverride(regime, input) {
+  const day = pick(input, 'dualTrack.day') || {};
+  const signals = input?.signals || {};
+  // 上涨家数：优先 day.summary.up_count（归档完整日），回退 signals.latest.up_count（宽度口径）
+  const upCount = Number.isFinite(day?.summary?.up_count)
+    ? day.summary.up_count
+    : (Number.isFinite(pick(signals, 'latest.up_count')) ? pick(signals, 'latest.up_count') : null);
+  // 红盘行业占比：由 day.industry 实时计算（精简快照无行业明细 → null → 保守不判）
+  const redIndustryRatio = computeRedIndustryRatio(day?.industry);
+  const { isClusteringBubble, penalty } = detectClusteringBubble({ upCount, redIndustryRatio });
+  regime.clustering_bubble = isClusteringBubble;
+  regime.sentiment_penalty = isClusteringBubble ? penalty : 0;
+  if (regime.score != null) regime.score_adjusted = isClusteringBubble ? regime.score - penalty : regime.score;
+  const ratioTxt = redIndustryRatio != null ? `${(redIndustryRatio * 100).toFixed(1)}%` : '?';
+  if (isClusteringBubble && (regime.key === 'recover' || regime.key === 'climax')) {
+    // 强制锁死情绪周期：取消回暖/高潮判定，降级为中性（震荡），避免妖股抱团假回暖误导仓位。
+    const fromLabel = regime.label || regime.key;
+    regime.key = 'neutral';
+    regime.label = '中性(抱团分化)';
+    regime.clustering_bubble_downgraded = true;
+    regime.clustering_bubble_note = `标记：抱团分化，取消${fromLabel}判定（上涨家数 ${upCount ?? '?'} < 1500 且 红盘行业占比 ${ratioTxt} < 10%）`;
+  } else if (isClusteringBubble) {
+    regime.clustering_bubble_note = `抱团分化泡沫（上涨家数 ${upCount ?? '?'} < 1500 且 红盘行业占比 ${ratioTxt} < 10%）；原周期未处于回暖/高潮，维持当前判定`;
+  }
+  return regime;
 }
 
 function turnsIn(input, from, to) {

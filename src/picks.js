@@ -669,6 +669,36 @@ export function recommendPicks(day, ctx = {}) {
   const trad = applyTradabilityFilters(picks, tradPool);
   picks = trad.picks;
 
+  // 补丁三（V5.3·2026-10-28）：极寒分化联动风控（依赖补丁一标记 isClusteringBubble，独立计算、互不耦合）。
+  //   触发（ctx.isClusteringBubble === true）时开启最高防御：选股池仅保留「属于主线 且 主线有效 且
+  //   主线龙虎榜净额为正」的标的，其余过滤剔除——资金出逃空心题材（isValidMain=false / 净额<0）一律不接力。
+  //   ⚠ 数据不可变：给保留标的克隆挂载 p.theme（来自主线对象克隆体），绝不引用 / 改动原始归档主线对象，
+  //     满足「只约束当日候选池推送、不污染历史归档」。ctx 未传该标记 → 零回归（与情绪闸门同约定）。
+  let clusterFilterNote = null;
+  if (ctx.isClusteringBubble) {
+    const mainLine = ctx.mainLine && typeof ctx.mainLine === 'object' ? ctx.mainLine : null;
+    // 主线有效性：必须 isValidMain===true 且 龙虎榜净额 > 0（空心题材 / 净流出 → 整体不接力）
+    const validMain = !!(mainLine && mainLine.isValidMain === true
+      && Number.isFinite(mainLine.longHuNet) && mainLine.longHuNet > 0);
+    const kept = [];
+    for (const p of picks) {
+      // 克隆主线对象挂载到标的（不引用原始归档主线，满足不可变约束）；原始 picks 仅新增一个只读引用字段
+      p.theme = mainLine ? structuredClone(mainLine) : null;
+      // 仅保留：确实属于主线（inMainTheme，基于 day.summary.main_theme 口径）且 主线有效
+      if (p.inMainTheme === true && validMain) kept.push(p);
+    }
+    const filteredOut = picks.length - kept.length;
+    if (filteredOut > 0) {
+      // 透明披露被本补丁剔除的数量，不静默吞掉（并入返回 rejected 台账）
+      clusterFilterNote = {
+        reason: 'clustering_bubble_mainline_filter',
+        count: filteredOut,
+        note: '极寒分化最高风控：仅保留「属主线 且 主线有效(isValidMain) 且 主线龙虎榜净额>0」的标的',
+      };
+    }
+    picks = kept;
+  }
+
   const weight = suggestWeight(tier, picks.length);
   for (const p of picks) {
     p.suggestWeight = weight;
@@ -727,7 +757,7 @@ export function recommendPicks(day, ctx = {}) {
     //   belowThreshold —— 概率分不足门槛（没把握，宁可不推）
     //   overflow       —— 达门槛但被 topN 截断（够格，只是名额有限）
     // 可交易性剔除（买不进的票）优先透出，再接预测引擎的剔除（总计 ≤12）
-    rejected: trad.rejected.concat(pred.rejected).slice(0, 12),
+    rejected: trad.rejected.concat(pred.rejected).concat(clusterFilterNote ? [clusterFilterNote] : []).slice(0, 12),
     belowThreshold: pred.belowThreshold.slice(0, 8),
     overflow: pred.overflow.slice(0, 8),
     note, pool: candidates.length, asOf: d.trade_date || null,
