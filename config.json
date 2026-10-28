@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "formulaVersion": "v5.2-pro",
   "dataOrigin": "https://pub-5a2d9fd0ca4547c5b9e561c4c50f6448.r2.dev",
-  "apiOrigin": "",
+  "apiOrigin": "https://totally-tobago-vocals-trainers.trycloudflare.com",
   "_dataOriginNote": "Pages 终端数据源（2026-10-27 方案C：Cloudflare R2 云端仓库，S3 协议，绕开 Cloudflare）。github.io 上的终端会把 ui/kline 与聚合侧车档（emotion_history/main_theme_history/announcements/paper-account/llm_risk_blacklist）改道到这个 R2 公共地址拉取（数据在 R2 桶 a-sentiment-kline，主仓不进 163MB）。留空=关闭（Pi 本地同源仍走相对路径）。配套：scripts/sync_to_r2.mjs 由 pi_run.sh eod 分支把本地 ui/kline 与侧车档增量同步到 R2 桶（S3 协议；已验证：5561 对象/159.7MB 上传成功、公共读可达）。前端 terminal.js 的 durl() 惰性读 window.ASENT_CONFIG.dataOrigin。R2 公共对象按 max-age=300 缓存，EOD 数据足够。⚠ 需在 R2 桶配置 CORS 允许 Pages 源（如 https://sjc19950404.github.io）跨域 GET，否则浏览器拉取会被 CORS 拦截。",
   "_apiOriginNote": "⚙ 参数控制台云端通道（2026-10-28）：家里 Cloudflare Tunnel 的公共主机名（如 https://a-sentiment-ui.<你的隧道>.trycloudflare.com 或命名隧道自定义域）。留空=关闭——github.io 上的控制台只读降级、不连后端。仅在 github.io 域名下、且本字段非空时，前端才会把 /api/*（取参/保存/沙盒推演）改道到这个隧道（复用 durl() 同款 github.io 门控）；Pi 本地、或经隧道主机名直接访问时仍走相对路径（同源，零改动）。配套：① 家里 ui_server.mjs 必须挂进隧道 ingress（target http://localhost:8791）；② ui_server 已开 CORS（默认允许 *，供 github.io 跨域 GET/POST）；③ ⚠ 隧道会暴露后端的 /api/update-config 写接口（可改家里 config.json），强烈建议用 Cloudflare Access（零信任）给隧道加一层登录/PIN 保护，否则任何拿到隧道地址的人都能改你家的交易参数。",
   "_about2": "安全红线（沿用全局）：本文件是公开提交到仓库的 config，绝不存放任何密钥/.env；.env 由 src/loadenv.js 仅 Node 侧运行时加载，前端/本文件一律不碰。apiOrigin 只是隧道公共主机名（非密钥），可安全提交。",
