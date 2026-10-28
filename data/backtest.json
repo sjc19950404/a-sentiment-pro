@@ -1,9 +1,9 @@
 {
  "meta": {
-  "generatedAt": "2026-10-27T13:06:08.279Z",
+  "generatedAt": "2026-10-28T10:36:42.824Z",
   "formulaVersion": "v5.2-pro",
-  "tradeDate": "2026-10-27",
-  "days": 252,
+  "tradeDate": "2026-10-28",
+  "days": 253,
   "assets": [
    "上证指数",
    "深证成指",
@@ -11,17 +11,17 @@
   ],
   "signal": "七因子加权情绪分（权重取 src/config.js weights，与页面 emotion.value 同口径）",
   "costNote": "佣金 0.0003（双边）· 印花税 0.0005（卖出）· 滑点 0.0002；按仓位变动幅度计提",
-  "caveat": "样本仅 252 个交易日，年化/夏普等指标的统计意义有限，仅用于管线自检与参数对比，不构成投资建议。",
+  "caveat": "样本仅 253 个交易日，年化/夏普等指标的统计意义有限，仅用于管线自检与参数对比，不构成投资建议。",
   "sampleNote": {
-   "archiveDays": 252,
-   "backtestDays": 252,
+   "archiveDays": 253,
+   "backtestDays": 253,
    "excludedBackfillDays": 0,
    "klineRebuildDays": 223
   },
   "weightDrift": 0.075,
   "indexCoverage": {
-   "coveredDays": 252,
-   "totalDays": 252,
+   "coveredDays": 253,
+   "totalDays": 253,
    "ratio": 1
   }
  },
@@ -336,7 +336,8 @@
    "2026-10-22",
    "2026-10-23",
    "2026-10-26",
-   "2026-10-27"
+   "2026-10-27",
+   "2026-10-28"
   ],
   "emotion": [
    75.5,
@@ -590,7 +591,8 @@
    33.4,
    88.5,
    42.5,
-   47.6
+   47.6,
+   76.3
   ],
   "navBase": [
    1,
@@ -844,7 +846,8 @@
    0.8751,
    0.8865,
    0.8785,
-   0.8679
+   0.8679,
+   0.8771
   ],
   "navV52": [
    1,
@@ -1098,7 +1101,8 @@
    0.9607,
    0.9665,
    0.9631,
-   0.957
+   0.957,
+   0.9619
   ],
   "navV53": [
    1,
@@ -1352,7 +1356,8 @@
    0.9379,
    0.9402,
    0.9376,
-   0.9351
+   0.9351,
+   0.9395
   ],
   "navHold": [
    1.0117,
@@ -1606,7 +1611,8 @@
    0.9007,
    0.9242,
    0.9158,
-   0.8937
+   0.8937,
+   0.9126
   ],
   "posV52": [
    0,
@@ -1860,6 +1866,7 @@
    0.3,
    0.3,
    0.5,
+   0.3,
    0.3
   ],
   "posV53": [
@@ -2114,7 +2121,8 @@
    0.25,
    0.1,
    0.3,
-   0.1
+   0.1,
+   0.23
   ]
  },
  "base": {
@@ -2127,15 +2135,15 @@
    "s_zbl": 0.1,
    "s_amt": 0.15
   },
-  "sharpe": -0.669,
+  "sharpe": -0.61,
   "maxDd": 0.2384,
-  "calmar": -0.554,
-  "annual": -0.1321,
-  "total": -0.1321,
-  "winRate": 0.4797,
-  "profitRatio": 0.89,
-  "sortino": -0.915,
-  "emptyRatio": 0.0238
+  "calmar": -0.514,
+  "annual": -0.1225,
+  "total": -0.1229,
+  "winRate": 0.4818,
+  "profitRatio": 0.899,
+  "sortino": -0.834,
+  "emptyRatio": 0.0237
  },
  "v52": {
   "w": {
@@ -2147,14 +2155,14 @@
    "s_zbl": 0.1,
    "s_amt": 0.15
   },
-  "sharpe": -0.22,
+  "sharpe": -0.185,
   "maxDd": 0.1618,
-  "calmar": -0.266,
-  "annual": -0.043,
-  "total": -0.043,
-  "winRate": 0.494,
-  "profitRatio": 0.964,
-  "sortino": -0.328,
+  "calmar": -0.234,
+  "annual": -0.0379,
+  "total": -0.0381,
+  "winRate": 0.496,
+  "profitRatio": 0.97,
+  "sortino": -0.276,
   "emptyRatio": 0.004
  },
  "v53": {
@@ -2167,14 +2175,14 @@
    "s_zbl": 0.1,
    "s_amt": 0.15
   },
-  "sharpe": -0.847,
+  "sharpe": -0.782,
   "maxDd": 0.1141,
-  "calmar": -0.569,
-  "annual": -0.0649,
-  "total": -0.0649,
-  "winRate": 0.4618,
-  "profitRatio": 0.858,
-  "sortino": -1.104,
+  "calmar": -0.529,
+  "annual": -0.0603,
+  "total": -0.0605,
+  "winRate": 0.464,
+  "profitRatio": 0.868,
+  "sortino": -1.02,
   "emptyRatio": 0.0119,
   "params": {
    "confirmDays": 1,
@@ -2182,7 +2190,7 @@
   },
   "regimeCounts": {
    "unknown": 2,
-   "ebb": 43,
+   "ebb": 44,
    "climax": 59,
    "ice": 64,
    "recover": 43,
@@ -2202,14 +2210,14 @@
    "s_zbl": 0.1,
    "s_amt": 0.15
   },
-  "sharpe": -0.884,
+  "sharpe": -0.819,
   "maxDd": 0.1146,
-  "calmar": -0.58,
-  "annual": -0.0665,
-  "total": -0.0665,
-  "winRate": 0.4659,
-  "profitRatio": 0.851,
-  "sortino": -1.137,
+  "calmar": -0.541,
+  "annual": -0.062,
+  "total": -0.0622,
+  "winRate": 0.468,
+  "profitRatio": 0.861,
+  "sortino": -1.052,
   "emptyRatio": 0.0119,
   "params": {
    "mode": "partial",
@@ -2238,14 +2246,14 @@
    "s_zbl": 0.1,
    "s_amt": 0.15
   },
-  "sharpe": -0.802,
+  "sharpe": -0.737,
   "maxDd": 0.1109,
-  "calmar": -0.555,
-  "annual": -0.0615,
-  "total": -0.0615,
-  "winRate": 0.4618,
-  "profitRatio": 0.865,
-  "sortino": -1.046,
+  "calmar": -0.513,
+  "annual": -0.0569,
+  "total": -0.0571,
+  "winRate": 0.464,
+  "profitRatio": 0.875,
+  "sortino": -0.962,
   "emptyRatio": 0.0119,
   "params": {
    "mode": "trailing",
@@ -2266,14 +2274,14 @@
    "s_zbl": 0.0714,
    "s_amt": 0.1786
   },
-  "sharpe": -0.032,
+  "sharpe": 0.003,
   "maxDd": 0.1533,
-  "calmar": -0.098,
-  "annual": -0.0149,
-  "total": -0.0149,
-  "winRate": 0.494,
-  "profitRatio": 0.995,
-  "sortino": -0.049,
+  "calmar": -0.064,
+  "annual": -0.0099,
+  "total": -0.0099,
+  "winRate": 0.496,
+  "profitRatio": 1.001,
+  "sortino": 0.005,
   "emptyRatio": 0.004
  },
  "pareto": {
@@ -2292,14 +2300,14 @@
      "s_zbl": 0.1304,
      "s_amt": 0.163
     },
-    "sharpe": 0.055,
+    "sharpe": 0.088,
     "maxDd": 0.1698,
-    "calmar": -0.02,
-    "annual": -0.0034,
-    "total": -0.0034,
-    "winRate": 0.494,
-    "profitRatio": 1.009,
-    "sortino": 0.084,
+    "calmar": 0.01,
+    "annual": 0.0016,
+    "total": 0.0017,
+    "winRate": 0.496,
+    "profitRatio": 1.015,
+    "sortino": 0.134,
     "emptyRatio": 0.004,
     "np": true
    },
@@ -2313,14 +2321,14 @@
      "s_zbl": 0.0741,
      "s_amt": 0.2222
     },
-    "sharpe": 0.043,
+    "sharpe": 0.076,
     "maxDd": 0.1646,
-    "calmar": -0.032,
-    "annual": -0.0052,
-    "total": -0.0052,
-    "winRate": 0.494,
-    "profitRatio": 1.007,
-    "sortino": 0.065,
+    "calmar": -0.001,
+    "annual": -0.0001,
+    "total": -0.0001,
+    "winRate": 0.496,
+    "profitRatio": 1.013,
+    "sortino": 0.116,
     "emptyRatio": 0.004,
     "np": true
    },
@@ -2334,14 +2342,14 @@
      "s_zbl": 0.0889,
      "s_amt": 0.2
     },
-    "sharpe": 0.043,
+    "sharpe": 0.076,
     "maxDd": 0.1638,
-    "calmar": -0.032,
-    "annual": -0.0052,
-    "total": -0.0052,
-    "winRate": 0.494,
-    "profitRatio": 1.007,
-    "sortino": 0.064,
+    "calmar": -0.001,
+    "annual": -0.0001,
+    "total": -0.0001,
+    "winRate": 0.496,
+    "profitRatio": 1.013,
+    "sortino": 0.115,
     "emptyRatio": 0.004,
     "np": true
    },
@@ -2355,14 +2363,14 @@
      "s_zbl": 0.1224,
      "s_amt": 0.2143
     },
-    "sharpe": 0.036,
+    "sharpe": 0.072,
     "maxDd": 0.1605,
-    "calmar": -0.032,
-    "annual": -0.0051,
-    "total": -0.0051,
-    "winRate": 0.494,
-    "profitRatio": 1.006,
-    "sortino": 0.056,
+    "calmar": 0,
+    "annual": 0,
+    "total": 0,
+    "winRate": 0.496,
+    "profitRatio": 1.012,
+    "sortino": 0.11,
     "emptyRatio": 0.004,
     "np": true
    },
@@ -2376,14 +2384,14 @@
      "s_zbl": 0.1628,
      "s_amt": 0.2442
     },
-    "sharpe": 0.033,
+    "sharpe": 0.068,
     "maxDd": 0.154,
-    "calmar": -0.038,
-    "annual": -0.0058,
-    "total": -0.0058,
-    "winRate": 0.498,
-    "profitRatio": 1.006,
-    "sortino": 0.051,
+    "calmar": -0.004,
+    "annual": -0.0007,
+    "total": -0.0007,
+    "winRate": 0.5,
+    "profitRatio": 1.011,
+    "sortino": 0.104,
     "emptyRatio": 0.004,
     "np": true
    },
@@ -2397,14 +2405,14 @@
      "s_zbl": 0.1489,
      "s_amt": 0.2234
     },
-    "sharpe": 0.032,
+    "sharpe": 0.068,
     "maxDd": 0.1536,
-    "calmar": -0.038,
-    "annual": -0.0058,
-    "total": -0.0058,
-    "winRate": 0.498,
-    "profitRatio": 1.005,
-    "sortino": 0.049,
+    "calmar": -0.004,
+    "annual": -0.0007,
+    "total": -0.0007,
+    "winRate": 0.5,
+    "profitRatio": 1.011,
+    "sortino": 0.102,
     "emptyRatio": 0.004,
     "np": true
    },
@@ -2418,14 +2426,14 @@
      "s_zbl": 0.0811,
      "s_amt": 0.2838
     },
-    "sharpe": 0.014,
+    "sharpe": 0.05,
     "maxDd": 0.1533,
-    "calmar": -0.054,
-    "annual": -0.0082,
-    "total": -0.0082,
-    "winRate": 0.498,
-    "profitRatio": 1.002,
-    "sortino": 0.021,
+    "calmar": -0.02,
+    "annual": -0.0031,
+    "total": -0.0031,
+    "winRate": 0.5,
+    "profitRatio": 1.008,
+    "sortino": 0.076,
     "emptyRatio": 0.004,
     "np": true
    },
@@ -2439,14 +2447,14 @@
      "s_zbl": 0.0714,
      "s_amt": 0.1786
     },
-    "sharpe": -0.032,
+    "sharpe": 0.003,
     "maxDd": 0.1533,
-    "calmar": -0.098,
-    "annual": -0.0149,
-    "total": -0.0149,
-    "winRate": 0.494,
-    "profitRatio": 0.995,
-    "sortino": -0.049,
+    "calmar": -0.064,
+    "annual": -0.0099,
+    "total": -0.0099,
+    "winRate": 0.496,
+    "profitRatio": 1.001,
+    "sortino": 0.005,
     "emptyRatio": 0.004,
     "np": true
    },
@@ -2460,14 +2468,14 @@
      "s_zbl": 0.1188,
      "s_amt": 0.1782
     },
-    "sharpe": 0.042,
+    "sharpe": 0.075,
     "maxDd": 0.1698,
-    "calmar": -0.032,
-    "annual": -0.0054,
-    "total": -0.0054,
-    "winRate": 0.494,
-    "profitRatio": 1.007,
-    "sortino": 0.064,
+    "calmar": -0.002,
+    "annual": -0.0003,
+    "total": -0.0003,
+    "winRate": 0.496,
+    "profitRatio": 1.012,
+    "sortino": 0.114,
     "emptyRatio": 0.004,
     "np": false
    },
@@ -2481,14 +2489,14 @@
      "s_zbl": 0.1319,
      "s_amt": 0.2308
     },
-    "sharpe": 0.041,
+    "sharpe": 0.074,
     "maxDd": 0.1641,
-    "calmar": -0.035,
-    "annual": -0.0057,
-    "total": -0.0057,
-    "winRate": 0.494,
-    "profitRatio": 1.007,
-    "sortino": 0.063,
+    "calmar": -0.003,
+    "annual": -0.0006,
+    "total": -0.0006,
+    "winRate": 0.496,
+    "profitRatio": 1.012,
+    "sortino": 0.113,
     "emptyRatio": 0.004,
     "np": false
    },
@@ -2502,14 +2510,14 @@
      "s_zbl": 0.1263,
      "s_amt": 0.2211
     },
-    "sharpe": 0.041,
+    "sharpe": 0.073,
     "maxDd": 0.1644,
-    "calmar": -0.035,
-    "annual": -0.0058,
-    "total": -0.0058,
-    "winRate": 0.494,
-    "profitRatio": 1.007,
-    "sortino": 0.061,
+    "calmar": -0.004,
+    "annual": -0.0007,
+    "total": -0.0007,
+    "winRate": 0.496,
+    "profitRatio": 1.012,
+    "sortino": 0.109,
     "emptyRatio": 0.004,
     "np": false
    },
@@ -2523,14 +2531,14 @@
      "s_zbl": 0.1212,
      "s_amt": 0.2121
     },
-    "sharpe": 0.04,
+    "sharpe": 0.073,
     "maxDd": 0.1638,
-    "calmar": -0.035,
-    "annual": -0.0057,
-    "total": -0.0057,
-    "winRate": 0.494,
-    "profitRatio": 1.007,
-    "sortino": 0.061,
+    "calmar": -0.004,
+    "annual": -0.0006,
+    "total": -0.0006,
+    "winRate": 0.496,
+    "profitRatio": 1.012,
+    "sortino": 0.111,
     "emptyRatio": 0.004,
     "np": false
    },
@@ -2544,14 +2552,14 @@
      "s_zbl": 0.1538,
      "s_amt": 0.2308
     },
-    "sharpe": 0.04,
+    "sharpe": 0.073,
     "maxDd": 0.1662,
-    "calmar": -0.035,
-    "annual": -0.0058,
-    "total": -0.0058,
-    "winRate": 0.494,
-    "profitRatio": 1.007,
-    "sortino": 0.06,
+    "calmar": -0.004,
+    "annual": -0.0007,
+    "total": -0.0007,
+    "winRate": 0.496,
+    "profitRatio": 1.012,
+    "sortino": 0.111,
     "emptyRatio": 0.004,
     "np": false
    },
@@ -2565,14 +2573,14 @@
      "s_zbl": 0.0962,
      "s_amt": 0.2019
     },
-    "sharpe": 0.038,
+    "sharpe": 0.071,
     "maxDd": 0.1698,
-    "calmar": -0.035,
-    "annual": -0.006,
-    "total": -0.006,
-    "winRate": 0.494,
-    "profitRatio": 1.006,
-    "sortino": 0.058,
+    "calmar": -0.006,
+    "annual": -0.001,
+    "total": -0.001,
+    "winRate": 0.496,
+    "profitRatio": 1.012,
+    "sortino": 0.108,
     "emptyRatio": 0.004,
     "np": false
    },
@@ -2586,14 +2594,14 @@
      "s_zbl": 0.0909,
      "s_amt": 0.2386
     },
-    "sharpe": 0.037,
+    "sharpe": 0.07,
     "maxDd": 0.1646,
-    "calmar": -0.038,
-    "annual": -0.0063,
-    "total": -0.0063,
-    "winRate": 0.494,
-    "profitRatio": 1.006,
-    "sortino": 0.056,
+    "calmar": -0.007,
+    "annual": -0.0012,
+    "total": -0.0012,
+    "winRate": 0.496,
+    "profitRatio": 1.012,
+    "sortino": 0.106,
     "emptyRatio": 0.004,
     "np": false
    }
@@ -3985,48 +3993,267 @@
   }
  },
  "mainLine": {
-  "tradeDate": "2026-10-27",
-  "mains": [],
+  "tradeDate": "2026-10-28",
+  "mains": [
+   {
+    "theme": "三季报增长",
+    "themeCount": 19,
+    "density": 0.161,
+    "mainScore": 3.06,
+    "stocks": [
+     {
+      "code": "920896",
+      "name": "旺成科技",
+      "changePct": 29.94,
+      "reason": "工业机器人齿轮+新能源传动+三季报增长",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "301080",
+      "name": "百普赛斯",
+      "changePct": 20,
+      "reason": "重组蛋白+三季报增长+回购提价",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "301261",
+      "name": "恒工精密",
+      "changePct": 20,
+      "reason": "三季报增长+人形机器人+减速器零部件",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "301359",
+      "name": "东南电子",
+      "changePct": 20,
+      "reason": "三季报增长+微动开关+募投变更",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "600078",
+      "name": "澄星股份",
+      "changePct": 10.05,
+      "reason": "三季报增长+磷化工+电子级磷酸",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "603006",
+      "name": "联明股份",
+      "changePct": 10.04,
+      "reason": "三季报增长+新能源水冷板+供应链服务",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "002962",
+      "name": "五方光电",
+      "changePct": 10.03,
+      "reason": "三季报增长+TGV光学+红外截止滤光片",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "002164",
+      "name": "宁波东力",
+      "changePct": 10.03,
+      "reason": "三季报增长+精密减速器+齿轮传动+机器人",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "001219",
+      "name": "青岛食品",
+      "changePct": 10.01,
+      "reason": "股权转让+三季报增长+饼干食品",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "603061",
+      "name": "金海通",
+      "changePct": 10,
+      "reason": "半导体测试分选机+三季报增长",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     }
+    ],
+    "stockCount": 19
+   },
+   {
+    "theme": "机器人",
+    "themeCount": 15,
+    "density": 0.1271,
+    "mainScore": 1.91,
+    "stocks": [
+     {
+      "code": "920220",
+      "name": "朗信电气",
+      "changePct": 30,
+      "reason": "人形机器人+汽车热管理",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "920896",
+      "name": "旺成科技",
+      "changePct": 29.94,
+      "reason": "工业机器人齿轮+新能源传动+三季报增长",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "688045",
+      "name": "必易微",
+      "changePct": 20,
+      "reason": "模拟芯片+数字电源+机器人传感",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "301261",
+      "name": "恒工精密",
+      "changePct": 20,
+      "reason": "三季报增长+人形机器人+减速器零部件",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "300613",
+      "name": "富瀚微",
+      "changePct": 20,
+      "reason": "三季报高增+视觉芯片+端侧AI+供货机器人",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "301488",
+      "name": "豪恩汽电",
+      "changePct": 20,
+      "reason": "前一交易日竞价波动+机器人域控+机器人感知+智能驾驶",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "301525",
+      "name": "儒竞科技",
+      "changePct": 19.99,
+      "reason": "机器人+数据中心温控+新能源汽车热管理",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "603135",
+      "name": "中重科技",
+      "changePct": 10.06,
+      "reason": "工业机器人+冶金装备+海外项目",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "603037",
+      "name": "凯众股份",
+      "changePct": 10.03,
+      "reason": "机器人零部件+汽车减震+拟收购拓盛",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     },
+     {
+      "code": "603633",
+      "name": "徕木股份",
+      "changePct": 10.03,
+      "reason": "人形机器人+汽车连接器",
+      "atr_10d": null,
+      "atr_pct": null,
+      "volatility_bucket": "unknown",
+      "suggested_weight": 10
+     }
+    ],
+    "stockCount": 36
+   }
+  ],
   "topIndustries": [
    {
-    "name": "电机",
-    "change_pct": 1.68
+    "name": "半导体",
+    "change_pct": 4.85
    },
    {
-    "name": "银行",
-    "change_pct": 1.34
+    "name": "自动化设备",
+    "change_pct": 4.66
    },
    {
-    "name": "零售",
-    "change_pct": 0.38
+    "name": "非金属材料",
+    "change_pct": 4.5
    },
    {
-    "name": "港口航运",
-    "change_pct": 0.08
+    "name": "医疗服务",
+    "change_pct": 4.27
    },
    {
-    "name": "煤炭开采加工",
-    "change_pct": -0.21
+    "name": "电子化学品",
+    "change_pct": 4.1
    }
   ],
   "threshold": {
-   "up_count_threshold": 12.766727684330426,
-   "density_threshold": 0.11711567675960755,
+   "up_count_threshold": 12.829947564403922,
+   "density_threshold": 0.11743575094403798,
    "mode": "dynamic",
    "samples": 60,
    "window": {
-    "up_mean": 8.783333333333333,
-    "up_std": 7.966788701994187,
-    "dn_mean": 0.08472252563261803,
-    "dn_std": 0.06478630225397904
+    "up_mean": 8.883333333333333,
+    "up_std": 7.893228462141177,
+    "dn_mean": 0.08572314115458482,
+    "dn_std": 0.06342521957890632
    }
   },
   "gating": {
    "market_state": "normal",
    "sentiment_state": "stable",
    "max_output": 2,
-   "base_up_count_threshold": 12.766727684330426,
-   "base_density_threshold": 0.11711567675960755
+   "base_up_count_threshold": 12.829947564403922,
+   "base_density_threshold": 0.11743575094403798
   }
  }
 }

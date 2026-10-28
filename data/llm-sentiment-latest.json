@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-10-27",
- "generatedAt": "2026-10-27T21:00:49.742+08:00",
+ "asOfDate": "2026-10-28",
+ "generatedAt": "2026-10-28T18:30:52.174+08:00",
  "model": "glm-4-flash",
- "sentiment": 0,
- "confidence": 0.5,
- "reason": "市场情绪多空拉锯，涨停与跌停数量接近，强势股诱因多样，市场整体情绪中性。",
+ "sentiment": 0.6,
+ "confidence": 0.9,
+ "reason": "市场整体情绪积极，涨停家数远多于跌停家数，成交额较高，亏钱效应较低，题材动量活跃，强势股表现良好。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "国芳集团",
+   "target": "朗信电气",
    "tone": "positive",
-   "note": "连锁零售和消费场景助力股价上涨"
+   "note": "人形机器人+汽车热管理题材带动股价上涨"
   },
   {
-   "type": "高管变动",
-   "target": "新华百货",
+   "type": "行业催化",
+   "target": "机器人概念",
    "tone": "positive",
-   "note": "零售促销、股份回购和硬折扣策略提升股价"
+   "note": "机器人相关题材活跃，带动相关个股上涨"
   },
   {
-   "type": "重大重组",
-   "target": "科瑞思",
+   "type": "行业催化",
+   "target": "汽车零部件",
    "tone": "positive",
-   "note": "重组消息带动股价大幅上涨"
+   "note": "汽车零部件题材持续活跃，推动相关个股上涨"
   },
   {
-   "type": "中报扭亏",
-   "target": "申达股份",
+   "type": "行业催化",
+   "target": "数据中心液冷",
    "tone": "positive",
-   "note": "汽车内饰和整车配套业务扭亏为盈"
+   "note": "数据中心液冷题材受到关注，相关个股表现良好"
   },
   {
-   "type": "三季报扭亏",
-   "target": "天邑股份",
+   "type": "行业催化",
+   "target": "半导体供应链",
    "tone": "positive",
-   "note": "通信设备业务扭亏为盈"
+   "note": "半导体供应链题材受到关注，推动相关个股上涨"
   },
   {
-   "type": "机器人布局",
-   "target": "凯中精密",
+   "type": "行业催化",
+   "target": "AI智能体",
    "tone": "positive",
-   "note": "机器人布局和汽车连接器业务推动股价上涨"
+   "note": "AI智能体题材新晋活跃，相关个股表现良好"
   },
   {
-   "type": "新能源车铁芯",
-   "target": "华新精科",
+   "type": "行业催化",
+   "target": "工业自动化",
    "tone": "positive",
-   "note": "新能源车铁芯业务助力股价上涨"
+   "note": "工业自动化题材新晋活跃，相关个股表现良好"
   },
   {
-   "type": "央企控股",
-   "target": "国统股份",
+   "type": "行业催化",
+   "target": "机器人零部件",
    "tone": "positive",
-   "note": "央企控股地位增强市场信心"
+   "note": "机器人零部件题材新晋活跃，相关个股表现良好"
   }
  ],
  "inputDigest": {
-  "themes": 44,
+  "themes": 69,
   "hotListed": 15,
-  "ztCount": 41,
-  "emotionValue": 47.6,
-  "painVerdict": "多空拉锯（昨涨停今日翻绿 49%、高位板晋级失败 73%，追高盈亏各半）"
+  "ztCount": 72,
+  "emotionValue": 76.3,
+  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 29%、高位板晋级失败 75%，赚钱效应占优）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }
