@@ -12,22 +12,27 @@ const MAIN_BOARD_PREFIX = /^(00|60)/; // 深市主板(00，含 002 中小板) + 
 // ST / *ST / 退（风险警示 + 退市）。负向预查 (?![A-Za-z]) 防止把 "STAGE" 等含 ST 的英文词误判为 ST 股。
 const RISK_NAME_RE = /(^|\s)\*?ST(?![A-Za-z])|退/;
 
+// ETF 特例（2026-10-29·老板允许模拟盘未来的 ETF 自动轮动模块买入，不被主板 allowlist 误伤）
+export const ETF_ALLOWLIST = ['510880', '511010'];
+
 export function isRiskName(name) {
   return RISK_NAME_RE.test(String(name || ''));
 }
 
 /**
- * 标的实盘准入判定。
+ * 标的实盘准入判定（选股引擎 / 推送候选池 / 模拟盘买闸 共用唯一口径）。
  * @param {string|number} code 股票代码
  * @param {string} [name] 股票名称（用于 ST / 退 判定；缺失时不判 ST，仅看板块）
  * @param {number} [klineDays] K 线数据天数（用于次新判定；缺失时不判次新）
- * @returns {boolean} true=可交易（主板且非风险警示且非次新）
+ * @param {{allowEtfs?:boolean}} [opts] allowEtfs=true 时放行 ETF_ALLOWLIST（仅模拟盘买闸用于未来 ETF 模块）
+ * @returns {boolean} true=可交易（主板且非风险警示且非次新；或 ETF 特例）
  */
-export function isAdmissible(code, name, klineDays) {
+export function isAdmissible(code, name, klineDays, opts = {}) {
   const c = String(code || '');
-  if (!MAIN_BOARD_PREFIX.test(c)) return false;                  // 非主板（30x/68x/8/4/920…）一律剔除
-  if (isRiskName(name)) return false;                            // ST / *ST / 退
-  if (Number.isFinite(klineDays) && klineDays < 5) return false; // 次新（K线<5天）
+  if (opts.allowEtfs && ETF_ALLOWLIST.includes(c)) return true;   // ETF 特例：510880/511010 放行
+  if (!MAIN_BOARD_PREFIX.test(c)) return false;                   // 非主板（30x/68x/8/4/920…）一律剔除
+  if (isRiskName(name)) return false;                             // ST / *ST / 退
+  if (Number.isFinite(klineDays) && klineDays < 5) return false;  // 次新（K线<5天）
   return true;
 }
 

@@ -599,6 +599,15 @@ test('准入helper：isAdmissible 只留主板 00/60，剔除北交所/创业板
   assert.equal(isAdmissible('', 'x'), false, '空 code 不通过');
 });
 
+test('准入helper：ETF 特例 510880/511010 经 allowEtfs 放行，其余 ETF 仍拦', () => {
+  assert.equal(isAdmissible('510880', '红利ETF', undefined, { allowEtfs: true }), true, '510880 经 allowEtfs 放行');
+  assert.equal(isAdmissible('511010', '国债ETF', undefined, { allowEtfs: true }), true, '511010 经 allowEtfs 放行');
+  assert.equal(isAdmissible('510300', '沪深300ETF', undefined, { allowEtfs: true }), false, '其他 ETF 不在白名单，仍拦');
+  assert.equal(isAdmissible('510880', '红利ETF', undefined), false, 'allowEtfs 缺省时 ETF 仍被主板 allowlist 拦');
+  // 510880/511010 普通股 allowEtfs=false 也走主板 allowlist → 拦（不会被误当 ETF 放行）
+  assert.equal(isAdmissible('510880', '红利ETF'), false, '缺省不认 ETF 特例');
+});
+
 test('准入helper：isRiskName 识别 ST / *ST / 退', () => {
   assert.equal(isRiskName('ST 某某'), true);
   assert.equal(isRiskName('*ST 某某'), true);

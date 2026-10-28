@@ -770,6 +770,27 @@ test('★ 模拟盘买闸 filterOne：主板 00/60 通过准入（不被 NON_ADM
   }
 });
 
+test('★ 模拟盘买闸 filterOne：ETF 特例 510880/511010 放行（不被主板 allowlist 误伤）', () => {
+  for (const code of ['510880', '511010']) {
+    const r = filterOne(code, admitDay);
+    assert.ok(!r.rejectedBy.some((x) => x.code === 'NON_ADMISSIBLE'), `${code} 应作为 ETF 特例放行`);
+  }
+  // 其它 ETF（如 510300）不在白名单，仍被准入闸拦截
+  const r = filterOne('510300', admitDay);
+  assert.ok(r.rejectedBy.some((x) => x.code === 'NON_ADMISSIBLE'), '510300 不在 ETF 白名单，仍应被拦截');
+});
+
+test('★ 模拟盘买闸 filterOne：次新(上市<5交易日，K线<5天) 经 day.klineLens 拦截', () => {
+  const dayNew = { ...admitDay, klineLens: { '600999': 2 } }; // 主板次新，K线仅 2 天
+  const r = filterOne('600999', dayNew);
+  assert.ok(!r.passed, '次新应被拦截（passed=false）');
+  assert.ok(r.rejectedBy.some((x) => x.code === 'NON_ADMISSIBLE'), '次新应被 NON_ADMISSIBLE 拦截');
+  // K线满 5 天：次新维度不拦（但仍可能受其它买闸规则约束，这里只验证准入维度）
+  const dayMature = { ...admitDay, klineLens: { '600999': 6 } };
+  const r2 = filterOne('600999', dayMature);
+  assert.ok(!r2.rejectedBy.some((x) => x.code === 'NON_ADMISSIBLE'), '满 5 天不被准入闸拦截');
+});
+
 // ────────────────────── 精确停板价（isLimitHit 的 prevClose 口径） ──────────────────────
 // 背景：近似口径 |change_pct| ≥ 幅度−0.5pp 会把 20cm 板涨 19.5%~19.99% **未封板**的
 // 收盘误判涨停（买入委托被错误失效）。实时源天然带昨收 → 按真实停板价判。

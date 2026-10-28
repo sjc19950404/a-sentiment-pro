@@ -334,11 +334,13 @@ export function filterOne(code, day, opts = {}) {
   // ① 上市 5 日内无涨跌幅限制新股 —— 涨跌幅不予板段约束，与正常股不可比
   if (f.isNewStock) push('NEW_STOCK', REJECT_LHB.NEW_STOCK, f.reason);
 
-  // ①-b 实盘准入（2026-10-29·老板实盘权限）：仅主板(00/60)可交易，剔除北交所/创业板/科创板/ST/退。
-  //   次新(上市未满5交易日)已由 ① NEW_STOCK 拦截；此处只补「板块 + 风险警示」维度。
+  // ①-b 实盘准入（2026-10-29·老板实盘权限，与实盘绝对同源）：仅主板(00/60)可交易，
+  //   剔除北交所(8/4/920)/创业板(300/301)/科创板(688)/ST/*ST/退；次新(上市未满5交易日，K线<5天)由 ① NEW_STOCK 与 klineLens 双重拦截。
+  //   ETF 特例：510880/511010 放行（未来 ETF 自动轮动模块可买入，不被主板 allowlist 误伤）。
   //   与 recommendPicks / buildSimulationStock 共用 src/admission.js 唯一口径。
-  if (!isAdmissible(code, f.name)) {
-    push('NON_ADMISSIBLE', '实盘权限：仅主板(00/60)可交易，剔除北交所/创业板/科创板/ST/退', f.name);
+  const klineDays = (day && day.klineLens && day.klineLens[code] != null) ? day.klineLens[code] : undefined;
+  if (!isAdmissible(code, f.name, klineDays, { allowEtfs: true })) {
+    push('NON_ADMISSIBLE', '实盘权限：仅主板(00/60)可交易，剔除北交所/创业板/科创板/ST/退（ETF 510880/511010 除外）', f.name);
   }
 
   // ② 个股当日龙虎榜净买入 ≤ 0 —— **降级规则，不阻断**（见文件上部「降级规则」注释）
