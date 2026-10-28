@@ -2,59 +2,59 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-10-28",
- "generatedAt": "2026-10-28T18:30:52.174+08:00",
+ "generatedAt": "2026-10-28T21:00:56.084+08:00",
  "model": "glm-4-flash",
  "sentiment": 0.6,
  "confidence": 0.9,
- "reason": "市场整体情绪积极，涨停家数远多于跌停家数，成交额较高，亏钱效应较低，题材动量活跃，强势股表现良好。",
+ "reason": "市场整体情绪积极，涨停家数远多于跌停家数，成交额放大，亏钱效应较低，强势股多数因业绩或行业利好驱动。",
  "events": [
   {
    "type": "业绩预告",
    "target": "朗信电气",
    "tone": "positive",
-   "note": "人形机器人+汽车热管理题材带动股价上涨"
+   "note": "人形机器人+汽车热管理概念股，股价大幅上涨。"
   },
   {
    "type": "行业催化",
    "target": "机器人概念",
    "tone": "positive",
-   "note": "机器人相关题材活跃，带动相关个股上涨"
-  },
-  {
-   "type": "行业催化",
-   "target": "汽车零部件",
-   "tone": "positive",
-   "note": "汽车零部件题材持续活跃，推动相关个股上涨"
-  },
-  {
-   "type": "行业催化",
-   "target": "数据中心液冷",
-   "tone": "positive",
-   "note": "数据中心液冷题材受到关注，相关个股表现良好"
-  },
-  {
-   "type": "行业催化",
-   "target": "半导体供应链",
-   "tone": "positive",
-   "note": "半导体供应链题材受到关注，推动相关个股上涨"
+   "note": "机器人概念持续活跃，相关个股表现强势。"
   },
   {
    "type": "行业催化",
    "target": "AI智能体",
    "tone": "positive",
-   "note": "AI智能体题材新晋活跃，相关个股表现良好"
+   "note": "AI智能体概念新晋活跃，相关个股涨幅明显。"
   },
   {
    "type": "行业催化",
-   "target": "工业自动化",
+   "target": "汽车零部件",
    "tone": "positive",
-   "note": "工业自动化题材新晋活跃，相关个股表现良好"
+   "note": "汽车零部件概念延续强势，部分个股涨幅较大。"
   },
   {
    "type": "行业催化",
-   "target": "机器人零部件",
+   "target": "数据中心液冷",
    "tone": "positive",
-   "note": "机器人零部件题材新晋活跃，相关个股表现良好"
+   "note": "数据中心液冷概念延续强势，部分个股表现良好。"
+  },
+  {
+   "type": "行业催化",
+   "target": "半导体供应链",
+   "tone": "positive",
+   "note": "半导体供应链概念活跃，相关个股涨幅明显。"
+  },
+  {
+   "type": "行业催化",
+   "target": "mRNA原料酶",
+   "tone": "positive",
+   "note": "mRNA原料酶概念新晋活跃，相关个股涨幅较大。"
+  },
+  {
+   "type": "行业催化",
+   "target": "卫星通信",
+   "tone": "positive",
+   "note": "卫星通信概念活跃，相关个股表现良好。"
   }
  ],
  "inputDigest": {

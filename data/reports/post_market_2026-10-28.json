@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-28",
- "generated_at": "2026-10-28T10:41:13.295Z",
+ "generated_at": "2026-10-28T13:11:11.974Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -97,8 +97,8 @@
    "confidence": "missing"
   },
   "backtest_deviation": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "derived",
+   "confidence": "measured"
   },
   "market_context": {
    "source": "archived",
@@ -128,7 +128,38 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "ebb",
+   "label": "退潮",
+   "score": 76.33,
+   "cap": 0.2,
+   "position_range": "0%~20%",
+   "positionReconcile": {
+    "score": 76.3,
+    "base": {
+     "key": "base_bull",
+     "minPos": 0.3,
+     "maxPos": 0.6,
+     "label": "偏多"
+    },
+    "baseRange": "30%~60%",
+    "cap": {
+     "key": "ebb",
+     "minPos": 0,
+     "maxPos": 0.2,
+     "label": "退潮",
+     "advice": "高位下行，防补跌优先，只减不加",
+     "tone": "defend"
+    },
+    "capRange": "0%~20%",
+    "force": false,
+    "conflict": true,
+    "finalRange": "0%~20%"
+   },
+   "clustering_bubble": false,
+   "sentiment_penalty": 0,
+   "score_adjusted": 76.33
+  },
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -160,7 +191,12 @@
   "max_drawdown_intraday": null,
   "grid_trigger_detail": null,
   "counter_trend_loss_ratio": null,
-  "backtest_deviation": null,
+  "backtest_deviation": {
+   "live_cum": -0.038073,
+   "backtest_v52": -0.0381,
+   "delta": 0.000027,
+   "note": "执行轨 vs 回测 v52 锚点（零偏差为设计约束）"
+  },
   "market_context": {
    "emotion": 76.3,
    "pct_rank": 67.8,
