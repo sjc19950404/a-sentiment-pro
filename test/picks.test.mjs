@@ -505,6 +505,44 @@ test('无涨停池记录的票（纯龙虎榜）→ 保留且给常规买点标�
   assert.match(r.picks[0].buyPoint, /常规买点/);
 });
 
+// ────────────────────── 高开/急拉过滤（2026-10-28·参数控制台 openGapFilterPct） ──────────────────────
+// 仅当日 ctx.openGapFilterPct 传入且 >0 时生效；用快照 changePct 近似（日线无开盘价）。
+
+test('openGap：未传该参数 → 零回归（与历史行为一致）', () => {
+  const r = recommendPicks(fullDay(), { emotionScore: 70 });
+  assert.equal(r.picks.length, 2, '未传 openGapFilterPct 应保持原样选股');
+});
+
+test('openGap：传入 openGapFilterPct=8，快照涨幅≥8% 的候选被剔除并计入 rejected', () => {
+  // 显式让 lhb/hot 的 change_pct 一致为 10（候选 changePct 由 lhb 主导，须两者一致才真实）
+  const d = day({
+    hot: [{ code: '600301', name: '高开票A', close: 10, change_pct: 10, huanshou: 22, reason: '固态电池+铝塑膜' }],
+    lhb: [lhbRow('600301', '高开票A', 60000, { change_pct: 10 }), lhbRow('600302', '高开票B', 3000, { change_pct: 10 })],
+    themes: { 固态电池: 4, 铝塑膜: 2 },
+    summary: { main_theme: { name: '固态电池' }, zt_codes: ['600301', '600302'], zt_lb: { 600301: 3, 600302: 1 } },
+  });
+  const r = recommendPicks(d, { emotionScore: 70, openGapFilterPct: 8 });
+  assert.equal(r.picks.length, 0, '候选涨幅均≥阈值，应被过滤空');
+  const gap = r.rejected.filter((x) => x.reason === 'open_gap_filter');
+  assert.equal(gap.length, 1, 'open_gap_filter 应聚合为一条台账');
+  assert.equal(gap[0].count, 2, '应记录被剔除 2 只');
+  assert.ok(/防追高/.test(gap[0].note), gap[0].note);
+});
+
+test('openGap：快照涨幅<阈值的强势票仍保留（只剔追高，不误伤）', () => {
+  const d = day({
+    hot: [{ code: '600201', name: '低开强势', close: 10, change_pct: 3, huanshou: 12, reason: '机器人+减速器' }],
+    lhb: [lhbRow('600201', '低开强势', 60000, { change_pct: 3 })],
+    themes: { 机器人: 3, 减速器: 1 },
+    summary: { main_theme: { name: '机器人' }, zt_codes: ['600201'], zt_lb: { 600201: 1 } },
+  });
+  const r = recommendPicks(d, { emotionScore: 70, openGapFilterPct: 8 });
+  assert.equal(r.picks.length, 1, '涨幅 3% < 8%，应保留');
+  assert.equal(r.picks[0].code, '600201');
+  assert.ok(!r.rejected.some((x) => x.reason === 'open_gap_filter'), '不应触发 open_gap_filter');
+});
+
+
 // ── recommendPicks 集成：ctx.ztpool 接入后，可交易性过滤真正在生产链路生效 ──
 test('recommendPicks 集成：传入 ctx.ztpool，缩量硬板候选被剔除进 rejected', () => {
   const d = day({

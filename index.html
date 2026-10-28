@@ -757,6 +757,38 @@
 .t-reco-rej { font-size: 11px; color: var(--t-up); margin: 3px 0; line-height: 1.3; }
 .t-reco-foot { margin-top: 10px; font-size: 11px; color: var(--t-ink-2);
   border-top: 1px solid var(--t-line-hi); padding-top: 7px; }
+
+/* ════════════ ⚙ 系统设置（参数控制台 + 沙盒推演） ════════════ */
+.t-settings { padding: 14px 16px; }
+.t-set-head { font-size: 16px; font-weight: 600; color: var(--t-ink-1); margin-bottom: 8px; }
+.t-set-note { font-size: 12px; color: var(--t-ink-3); margin-bottom: 12px; line-height: 1.5; }
+.t-set-grid { display: flex; flex-direction: column; gap: 12px; max-width: 560px; }
+.t-set-row { display: grid; grid-template-columns: 150px 90px 1fr 64px; align-items: center; gap: 10px; }
+.t-set-lbl { font-size: 13px; color: var(--t-ink-1); display: flex; flex-direction: column; }
+.t-set-rng { font-size: 10px; color: var(--t-ink-3); margin-top: 2px; }
+.t-set-num { width: 84px; background: var(--t-bg-2); border: 1px solid var(--t-line); color: var(--t-ink-1);
+  border-radius: 6px; padding: 5px 6px; font-size: 13px; }
+.t-set-rng { -webkit-appearance: none; appearance: none; height: 4px; background: var(--t-line-hi); border-radius: 3px; }
+.t-set-rng::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--glm, #8b5cf6); cursor: pointer; border: 2px solid #fff; }
+.t-set-rng::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--glm, #8b5cf6); cursor: pointer; border: 2px solid #fff; }
+.t-set-val { font-size: 13px; color: var(--t-ink-2); text-align: right; font-variant-numeric: tabular-nums; }
+.t-set-actions { display: flex; gap: 12px; margin: 16px 0 10px; }
+.t-set-btn { background: var(--t-bg-2); border: 1px solid var(--t-line-hi); color: var(--t-ink-1);
+  border-radius: 8px; padding: 9px 16px; font-size: 13px; cursor: pointer; transition: .15s; }
+.t-set-btn:hover { border-color: var(--glm, #8b5cf6); color: #fff; background: var(--glm, #8b5cf6); }
+.t-set-save { font-weight: 600; }
+.t-set-diff { font-size: 13px; min-height: 20px; line-height: 1.6; }
+.t-diff-block { background: var(--t-bg-2); border: 1px solid var(--t-line); border-radius: 10px; padding: 12px 14px; margin-top: 6px; }
+.t-diff-line { color: var(--t-ink-1); margin: 3px 0; }
+.t-diff-add { color: var(--t-up); margin: 3px 0; font-size: 12px; }
+.t-diff-del { color: var(--t-dn); margin: 3px 0; font-size: 12px; }
+.t-diff-note { color: var(--t-ink-3); font-size: 11px; margin-top: 6px; }
+.t-ok { color: var(--t-up); }
+.t-err { color: var(--t-dn); }
+.t-warn { color: #e0a458; }
+.t-tag { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-left: 6px;
+  background: rgba(139,92,246,.18); color: var(--glm, #8b5cf6); border: 1px solid var(--glm, #8b5cf6); }
   </style>
 </head>
 <body>
@@ -2925,7 +2957,105 @@
     { k: 'picks', n: '选股' },
     { k: 'paper', n: '模拟盘' },
     { k: 'kline', n: 'K线' },
+    { k: 'settings', n: '⚙ 系统设置' },
   ];
+
+  // ─────────────────────────── ⚙ 系统设置（参数控制台 + 沙盒推演） ───────────────────────────
+  // 2026-10-28 新增：参数从硬编码抽离到 config.json 后，这里提供可视化面板热更新 + 保存即时沙盒推演。
+  // 安全铁律：推演纯内存计算，绝不生成委托、绝不写盘、绝不碰 .env；写盘仅经 /api/update-config（服务端校验+.bak）。
+  // API 不可达（如 GitHub Pages 静态部署）时优雅降级为只读展示。
+  function viewSettings() {
+    const panel = el('div', 't-panel t-c12 t-settings');
+    panel.innerHTML = `
+      <div class="t-set-head">⚙ 系统设置 · 参数控制台</div>
+      <div class="t-set-note" id="tSetNote"></div>
+      <div class="t-set-grid" id="tSetGrid"></div>
+      <div class="t-set-actions">
+        <button class="t-set-btn t-set-save" id="tSetSave">保存并写盘（自动备份 .bak）</button>
+        <button class="t-set-btn t-set-dry" id="tSetDry">沙盒推演（内存计算·不写盘）</button>
+      </div>
+      <div class="t-set-diff" id="tSetDiff"></div>`;
+
+    (async () => {
+      // 取当前参数：优先 /api/config（本地服务端），回退 window.ASENT_CONFIG（静态部署只读）
+      let cfg = null;
+      try { cfg = await fetch('/api/config').then((r) => (r.ok ? r.json() : null)); } catch { cfg = null; }
+      const stops = (cfg && cfg.params && cfg.params.live && cfg.params.live.stops)
+        || (window.ASENT_CONFIG && window.ASENT_CONFIG.params && window.ASENT_CONFIG.params.live && window.ASENT_CONFIG.params.live.stops)
+        || {};
+      const backtest = (cfg && cfg.backtest) || window.ASENT_CONFIG || {};
+      const cur = {
+        maxPos: stops.maxPos != null ? stops.maxPos : (backtest.maxPos != null ? backtest.maxPos : 0.1),
+        stopLoss: stops.stopLoss != null ? stops.stopLoss : (backtest.stopLoss != null ? backtest.stopLoss : -0.08),
+        sentimentPenalty: stops.sentimentPenalty != null ? stops.sentimentPenalty : 10,
+        clusterRiseMax: stops.clusterRiseMax != null ? stops.clusterRiseMax : 1500,
+        openGapFilterPct: stops.openGapFilterPct != null ? stops.openGapFilterPct : 8,
+      };
+      // 字段口径与服务端 scripts/ui_server.mjs 的 RANGES 保持一致（防呆同源）
+      const FIELDS = [
+        { k: 'maxPos', label: '单笔最大仓位', min: 0.01, max: 1, step: 0.01, pct: true },
+        { k: 'stopLoss', label: '止损线', min: -0.20, max: 0, step: 0.01, pct: true },
+        { k: 'sentimentPenalty', label: '极寒分化扣分', min: 0, max: 50, step: 1 },
+        { k: 'clusterRiseMax', label: '上涨家数阈值', min: 50, max: 5000, step: 10 },
+        { k: 'openGapFilterPct', label: '高开/急拉过滤比例', min: 0, max: 100, step: 1 },
+      ];
+      const grid = panel.querySelector('#tSetGrid');
+      const state = Object.assign({}, cur);
+      FIELDS.forEach((f) => {
+        const row = el('div', 't-set-row');
+        row.innerHTML = `<label class="t-set-lbl">${esc(f.label)}<span class="t-set-rng">[${f.min}, ${f.max}]</span></label>`;
+        const num = el('input', 't-set-num'); num.type = 'number'; num.min = f.min; num.max = f.max; num.step = f.step; num.value = state[f.k];
+        const rng = el('input', 't-set-rng'); rng.type = 'range'; rng.min = f.min; rng.max = f.max; rng.step = f.step; rng.value = state[f.k];
+        const val = el('span', 't-set-val', `${fmt(state[f.k], f.pct ? 2 : 0)}${f.pct ? '' : '%'}`);
+        const sync = (v) => { state[f.k] = Number(v); num.value = v; rng.value = v; val.textContent = `${fmt(state[f.k], f.pct ? 2 : 0)}${f.pct ? '' : '%'}`; };
+        num.addEventListener('input', () => sync(num.value));
+        rng.addEventListener('input', () => sync(rng.value));
+        row.appendChild(num); row.appendChild(rng); row.appendChild(val);
+        grid.appendChild(row);
+      });
+
+      const note = panel.querySelector('#tSetNote');
+      const diffBox = panel.querySelector('#tSetDiff');
+      if (!cfg) {
+        note.innerHTML = '<span class="t-warn">⚠ 未连上本地服务端（需运行：node scripts/ui_server.mjs）。当前为只读展示；保存 / 沙盒推演请在本地服务端下使用。</span>';
+      } else {
+        note.innerHTML = '参数来自 config.json（控制台实时生效，无需改代码；保存即写盘并备份 config.json.bak）。';
+      }
+
+      const jpost = async (url, body) => {
+        try {
+          const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          if (!r.ok) { if (r.status === 404 || r.status === 405) return null; return await r.json().catch(() => ({ ok: false, errors: [r.status] })); }
+          return await r.json();
+        } catch { return null; }
+      };
+
+      panel.querySelector('#tSetSave').addEventListener('click', async () => {
+        const r = await jpost('/api/update-config', { stops: state });
+        if (!r) { diffBox.innerHTML = '<span class="t-warn">保存失败：服务端不可达（需本地运行 node scripts/ui_server.mjs）。</span>'; return; }
+        if (!r.ok) { diffBox.innerHTML = `<span class="t-err">拒绝保存：${(r.errors || []).join('；')}</span>`; return; }
+        diffBox.innerHTML = `<span class="t-ok">✓ 已保存并备份 config.json.bak（下次运行时读取生效）。写入字段：${(r.written || []).join(', ')}</span>`;
+      });
+
+      panel.querySelector('#tSetDry').addEventListener('click', async () => {
+        diffBox.innerHTML = '沙盒推演中…（内存计算，不写盘）';
+        const r = await jpost('/api/dry-run', { stops: state });
+        if (!r) { diffBox.innerHTML = '<span class="t-warn">沙盒推演需本地服务端（node scripts/ui_server.mjs）。</span>'; return; }
+        if (!r.ok) { diffBox.innerHTML = `<span class="t-err">推演失败：${(r.errors || []).join('；')}</span>`; return; }
+        const o = r.old, n = r.new;
+        const parts = [
+          `<div class="t-diff-line">情绪分（扣分后）：<b>${fmt(o.emotionScore, 1)}</b> → <b>${fmt(n.emotionScore, 1)}</b>${o.isClusteringBubble ? ' <span class="t-tag">气泡日</span>' : ''}</div>`,
+          `<div class="t-diff-line">选股数量：<b>${o.count}</b> → <b>${n.count}</b> 只</div>`,
+          r.added.length ? `<div class="t-diff-add">新增可买：${esc(r.added.join(', '))}</div>` : '',
+          r.removed.length ? `<div class="t-diff-del">剔除风险：${esc(r.removed.join(', '))}</div>` : '',
+          `<div class="t-diff-note">${esc(r.note)}</div>`,
+        ].filter(Boolean).join('');
+        diffBox.innerHTML = `<div class="t-diff-block">${parts}</div>`;
+      });
+    })();
+
+    return panel;
+  }
 
   function mount() {
     const root = $('#tRoot');
@@ -2970,6 +3100,7 @@
         else if (k === 'sector') node = viewSector(S);
         else if (k === 'picks') node = viewPicks(S);
         else if (k === 'kline') node = viewKline();
+        else if (k === 'settings') node = viewSettings();
         else if (k === 'paper') node = await viewPaper();   // 异步视图必须 await，否则拿到 Promise 而非 Node
       } catch (e) { console.error('[terminal] render', k, e); node = null; }
       if (!node || !(node instanceof Node)) {

@@ -12,9 +12,13 @@
 
 // ═══════════════════════════════ 配置常量（抽顶层，方便后续回测调参） ═══════════════════════════════
 // 扣分阈值统一出处，避免散落魔数导致多处口径不同步（口径守卫的同源原则）。
-export const SENTIMENT_PENALTY = 10;                 // 极寒分化触发时，从情绪分扣除的基础分（用户常量）
-export const CLUSTER_RISE_COUNT_MAX = 1500;           // 上涨家数硬阈值：低于此值视为「极少数票在涨」
-export const CLUSTER_RED_INDUSTRY_RATIO_MAX = 0.10;   // 红盘行业占比硬阈值：低于此值视为「绝大多数行业下跌」
+// 2026-10-28 起改读 config.json（params.live.stops），带 fallback 常量——既支持控制台热更新，
+//   又保证 config 缺失/解析失败时引擎仍可降级运行（绝不带病）。
+import config from './config.js';
+const _liveStops = (config && config.params && config.params.live && config.params.live.stops) || {};
+export const SENTIMENT_PENALTY = Number.isFinite(+_liveStops.sentimentPenalty) ? +_liveStops.sentimentPenalty : 10; // 极寒分化触发时从情绪分扣除的基础分
+export const CLUSTER_RISE_COUNT_MAX = Number.isFinite(+_liveStops.clusterRiseMax) ? +_liveStops.clusterRiseMax : 1500; // 上涨家数硬阈值：低于此值视为「极少数票在涨」
+export const CLUSTER_RED_INDUSTRY_RATIO_MAX = 0.10;   // 红盘行业占比硬阈值：低于此值视为「绝大多数行业下跌」（未入控制台，固定）
 
 // ═══════════════════════════════ 补丁一：极寒分化惩罚（防妖股抱团假回暖） ═══════════════════════════════
 /**
@@ -29,20 +33,24 @@ export const CLUSTER_RED_INDUSTRY_RATIO_MAX = 0.10;   // 红盘行业占比硬�
  *   绝不修改调用方的 day / signals / 任何原始归档对象。任一输入缺失（null）→ 保守判定为
  *   false（未知即不降级），避免无源时误伤正常回暖。
  *
- * @param {{upCount?:number, redIndustryRatio?:number}} m 上涨家数 与 红盘行业占比
+ * @param {{upCount?:number, redIndustryRatio?:number, riseCountMax?:number, penaltyOverride?:number}} m
+ *   上涨家数、红盘行业占比；可选覆盖 riseCountMax / penaltyOverride（供沙盒推演用新参数而不写盘）。
  * @returns {{isClusteringBubble:boolean, penalty:number}}
  */
-export function detectClusteringBubble({ upCount, redIndustryRatio } = {}) {
+export function detectClusteringBubble({ upCount, redIndustryRatio, riseCountMax, penaltyOverride } = {}) {
   const rise = Number.isFinite(upCount) ? upCount : null;
   const red = Number.isFinite(redIndustryRatio) ? redIndustryRatio : null;
+  // 可选覆盖（沙盒推演）：未传则用 config 同步的常量；保证默认行为与线上一致。
+  const riseMax = Number.isFinite(+riseCountMax) ? +riseCountMax : CLUSTER_RISE_COUNT_MAX;
+  const penalty = Number.isFinite(+penaltyOverride) ? +penaltyOverride : SENTIMENT_PENALTY;
   // 两条件同时成立才判定为抱团分化泡沫；任一缺失（null）→ 保守为 false
   const isClusteringBubble = rise != null && red != null
-    && rise < CLUSTER_RISE_COUNT_MAX
+    && rise < riseMax
     && red < CLUSTER_RED_INDUSTRY_RATIO_MAX;
   return {
     isClusteringBubble,
     // 仅当触发时返回扣分（正数），调用方从情绪分里减去；未触发返回 0（无扣分）
-    penalty: isClusteringBubble ? SENTIMENT_PENALTY : 0,
+    penalty: isClusteringBubble ? penalty : 0,
   };
 }
 

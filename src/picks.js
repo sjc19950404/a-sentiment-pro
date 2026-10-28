@@ -707,6 +707,23 @@ export function recommendPicks(day, ctx = {}) {
     picks = kept;
   }
 
+  // 高开/急拉过滤（2026-10-28·参数控制台）：当 ctx.openGapFilterPct 传入且 >0 时生效，
+  //   剔除「快照涨幅已 ≥ 阈值」的候选（防追高/接飞刀）。仅按当日快照 changePct 代理——
+  //   日线快照仅含收盘价与涨跌幅、无开盘价，故用 changePct 近似；未传该参数 → 零回归（与历史行为一致）。
+  // ⚠ 不修改任何输入对象；仅对本次 picks 做过滤，不改归档。
+  if (ctx.openGapFilterPct != null && +ctx.openGapFilterPct > 0) {
+    const gapMax = +ctx.openGapFilterPct;
+    const before = picks.length;
+    picks = picks.filter((p) => !(Number.isFinite(+p.changePct) && +p.changePct >= gapMax));
+    const removed = before - picks.length;
+    if (removed > 0) {
+      clusterFilterNote = clusterFilterNote || { reason: 'open_gap_filter', count: 0, note: '' };
+      clusterFilterNote.reason = 'open_gap_filter';
+      clusterFilterNote.count = (clusterFilterNote.count || 0) + removed;
+      clusterFilterNote.note = `高开/急拉过滤：剔除快照涨幅≥${gapMax}% 的候选（防追高）`;
+    }
+  }
+
   const weight = suggestWeight(tier, picks.length);
   for (const p of picks) {
     p.suggestWeight = weight;

@@ -48,11 +48,15 @@ import {
 import { reviewAccount } from '../src/paper_review.js';
 import { glmBuyGuard } from '../src/glm_guard.js';
 import { pushReports, buildSignalSyncReports } from '../src/ai_report_push.js';
+import config from '../src/config.js';
 
 const ACCOUNT_FILE = new URL('../data/paper/account.json', import.meta.url);
 const REVIEW_FILE = new URL('../data/paper/review-latest.json', import.meta.url);
 const TOP_N = Math.max(1, Math.floor(Number(process.env.PAPER_AUTO_TOPN) || 3));
-const PER_POS_PCT = Number(process.env.PAPER_AUTO_PCT) || 0.10;
+// 单笔最大仓位：优先读控制台参数（config.backtest.maxPos），允许 PAPER_AUTO_PCT 环境变量覆盖；兜底 0.10
+const PER_POS_PCT = Number.isFinite(+process.env.PAPER_AUTO_PCT) && +process.env.PAPER_AUTO_PCT > 0
+  ? +process.env.PAPER_AUTO_PCT
+  : (config.backtest && Number.isFinite(+config.backtest.maxPos) ? +config.backtest.maxPos : 0.10);
 const RESPECT_REGIME = (process.env.PAPER_AUTO_RESPECT_REGIME ?? '1') !== '0';
 const RESTRICTIVE_REGIME = new Set(['shift', 'ebb', 'ice']);
 const FORCE_TRADE = process.argv.includes('--force-trade');
@@ -202,7 +206,7 @@ if (!tier) {
   }
   const ztpool = loadZtpoolForDay(day.trade_date);
   console.log(`  可交易性过滤数据源：当日涨停池 ${ztpool ? ztpool.length + ' 只' : '缺失（no-op）'}`);
-  const picks = (recommendPicks(day, { topN: TOP_N, emotionScore: effEmotionScore, ztpool, isClusteringBubble, mainLine }).picks || [])
+  const picks = (recommendPicks(day, { topN: TOP_N, emotionScore: effEmotionScore, ztpool, isClusteringBubble, mainLine, openGapFilterPct: config.backtest?.openGapFilterPct }).picks || [])
     .filter((p) => p && p.code && quotes[String(p.code)]); // 仅选有当日行情者（否则 batchSubmit 会 NO_QUOTE 拦截）
   const items = picks.slice(0, TOP_N).map((p) => ({
     code: String(p.code), pct: PER_POS_PCT, hybk: p.hybk || null,

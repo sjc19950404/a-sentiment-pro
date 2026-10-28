@@ -5,7 +5,12 @@
     "who": "操作人（git user 或 --who）",
     "what": "改了什么（块级摘要）",
     "why": "为什么改（--why 必填）",
-    "validation": { "type": "baseline|oos-20pct", "pass": "bool", "oosDays": "样本外天数", "note": "说明" },
+    "validation": {
+      "type": "baseline|oos-20pct",
+      "pass": "bool",
+      "oosDays": "样本外天数",
+      "note": "说明"
+    },
     "liveAfter": "晋升后的 live 五块快照（weights/thresholds/stops/lookback/costModel），与 config.json 的 params.live 逐位相等"
   },
   "entries": [
@@ -14,13 +19,106 @@
       "who": "baseline",
       "what": "v5.2-pro 基线冻结（TRAIN_PARAMS 与 LIVE_PARAMS 初始对齐）",
       "why": "过拟合防线落地（#134/#141 配套）：以现状为冻结起点，此后任何 live 变动必须过样本外 20% 门禁并留痕；寻优锚点（scripts/backtest.mjs）同步切至 train。",
-      "validation": { "type": "baseline", "pass": true, "oosDays": null, "note": "基线快照无需样本外验证；下一次改动起强制走 promote 门禁。" },
+      "validation": {
+        "type": "baseline",
+        "pass": true,
+        "oosDays": null,
+        "note": "基线快照无需样本外验证；下一次改动起强制走 promote 门禁。"
+      },
       "liveAfter": {
-        "weights": { "s_net20": 0.2, "s_pos10": 0.1, "s_brd20": 0.2, "s_hot10": 0.1, "s_zdt15": 0.15, "s_zbl10": 0.1, "s_amt15": 0.15 },
-        "thresholds": { "panic": 24, "hi": 44, "lo": 65, "overheat": 80 },
-        "stops": { "maxPos": 1, "stopLoss": -0.08, "ddTrigger": -0.15, "maxPosChg": 0.2 },
-        "lookback": { "rolling": { "trainWindow": 20, "testWindow": 6 }, "momentumRecent": 5, "momentumPrev": 5, "rankWindow": 60, "rankMin": 20 },
-        "costModel": { "comm": 0.0003, "stamp": 0.0005, "slip": 0.0002, "priceLimit": { "enabled": false } }
+        "weights": {
+          "s_net20": 0.2,
+          "s_pos10": 0.1,
+          "s_brd20": 0.2,
+          "s_hot10": 0.1,
+          "s_zdt15": 0.15,
+          "s_zbl10": 0.1,
+          "s_amt15": 0.15
+        },
+        "thresholds": {
+          "panic": 24,
+          "hi": 44,
+          "lo": 65,
+          "overheat": 80
+        },
+        "stops": {
+          "maxPos": 1,
+          "stopLoss": -0.08,
+          "ddTrigger": -0.15,
+          "maxPosChg": 0.2
+        },
+        "lookback": {
+          "rolling": {
+            "trainWindow": 20,
+            "testWindow": 6
+          },
+          "momentumRecent": 5,
+          "momentumPrev": 5,
+          "rankWindow": 60,
+          "rankMin": 20
+        },
+        "costModel": {
+          "comm": 0.0003,
+          "stamp": 0.0005,
+          "slip": 0.0002,
+          "priceLimit": {
+            "enabled": false
+          }
+        }
+      }
+    },
+    {
+      "at": "2026-10-28",
+      "who": "CodeBuddy(主理人拍板:参数控制台抽离)",
+      "what": "params.live.stops 新增 sentimentPenalty/clusterRiseMax/openGapFilterPct（硬编码抽离到控制台）",
+      "why": "前端参数控制台+沙盒推演需求：将极寒分化扣分/上涨家数阈值/高开过滤比例从魔数抽离到 config.json，支持热更新而不改引擎；生产侧 paper_daily 单笔最大仓位改读 backtest.maxPos。",
+      "validation": {
+        "pass": true,
+        "note": "仅新增参数键、未改权重/阈值；params_governance 全过；新增字段不参与打分/选股权重，仅作风控阈值，无过拟合风险"
+      },
+      "liveAfter": {
+        "weights": {
+          "s_net20": 0.2,
+          "s_pos10": 0.1,
+          "s_brd20": 0.2,
+          "s_hot10": 0.1,
+          "s_zdt15": 0.15,
+          "s_zbl10": 0.1,
+          "s_amt15": 0.15
+        },
+        "thresholds": {
+          "panic": 24,
+          "hi": 44,
+          "lo": 65,
+          "overheat": 80
+        },
+        "stops": {
+          "maxPos": 1,
+          "stopLoss": -0.08,
+          "ddTrigger": -0.15,
+          "maxPosChg": 0.2,
+          "sentimentPenalty": 10,
+          "clusterRiseMax": 1500,
+          "openGapFilterPct": 8
+        },
+        "lookback": {
+          "rolling": {
+            "trainWindow": 20,
+            "testWindow": 6
+          },
+          "momentumRecent": 5,
+          "momentumPrev": 5,
+          "rankWindow": 60,
+          "rankMin": 20
+        },
+        "costModel": {
+          "comm": 0.0003,
+          "stamp": 0.0005,
+          "slip": 0.0002,
+          "priceLimit": {
+            "enabled": false
+          }
+        }
       }
     }
   ]

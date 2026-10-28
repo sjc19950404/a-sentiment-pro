@@ -186,6 +186,10 @@ out.backtest = {
   rolling: LIVE.lookback.rolling,
   maxPos: LIVE.stops.maxPos, stopLoss: LIVE.stops.stopLoss,
   ddTrigger: LIVE.stops.ddTrigger, maxPosChg: LIVE.stops.maxPosChg,
+  // 控制台新增参数镜像（2026-10-28）：与 params.live.stops 逐位相等，杜绝第二份口径
+  sentimentPenalty: LIVE.stops.sentimentPenalty,
+  clusterRiseMax: LIVE.stops.clusterRiseMax,
+  openGapFilterPct: LIVE.stops.openGapFilterPct,
 };
 out.momentumRecent = LIVE.lookback.momentumRecent;
 out.momentumPrev = LIVE.lookback.momentumPrev;

@@ -26,7 +26,10 @@
         "maxPos": 1,
         "stopLoss": -0.08,
         "ddTrigger": -0.15,
-        "maxPosChg": 0.2
+        "maxPosChg": 0.2,
+        "sentimentPenalty": 10,
+        "clusterRiseMax": 1500,
+        "openGapFilterPct": 8
       },
       "lookback": {
         "rolling": {
@@ -67,7 +70,10 @@
         "maxPos": 1,
         "stopLoss": -0.08,
         "ddTrigger": -0.15,
-        "maxPosChg": 0.2
+        "maxPosChg": 0.2,
+        "sentimentPenalty": 10,
+        "clusterRiseMax": 1500,
+        "openGapFilterPct": 8
       },
       "lookback": {
         "rolling": {
@@ -143,6 +149,9 @@
     "stopLoss": -0.08,
     "ddTrigger": -0.15,
     "maxPosChg": 0.2,
+    "sentimentPenalty": 10,
+    "clusterRiseMax": 1500,
+    "openGapFilterPct": 8,
     "gridSteps": [
       0.6,
       0.8,
