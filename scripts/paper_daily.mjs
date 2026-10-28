@@ -142,7 +142,7 @@ if (existsSync(fileURLToPath(ACCOUNT_FILE))) {
 // ── 3. 每日结算：盯市 + T+1 解冻 + 扫描 -8% 硬止损 ──
 step(`结算 ${date}`);
 const quotes = quotesFromDay(day);
-const sd = settleDay(acct, date, quotes, { exec, trailingStopPct: config.backtest?.trailingStopPct ?? 0, ...(EXIT_MODE ? { exitMode: EXIT_MODE } : {}) });
+const sd = settleDay(acct, date, quotes, { exec, trailingStopPct: config.backtest?.trailingStopPct ?? 0.025, trailingTriggerPct: config.backtest?.trailingTriggerPct ?? 0.06, ...(EXIT_MODE ? { exitMode: EXIT_MODE } : {}) });
 acct = sd.account;
 { // 实盘跟单：收集本日系统触发的卖出信号（v1 出场纪律 + 跌停逃生 + 断板清仓）
   const escapeCodes = new Set();

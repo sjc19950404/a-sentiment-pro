@@ -175,6 +175,62 @@
           }
         }
       }
+    },
+    {
+      "at": "2026-10-28T18:14:38.350Z",
+      "who": "长工（老板 2026-10-29 精修）",
+      "what": "移动止盈默认参数精修：激活阈值 +6%、回撤 2.5%、新增涨停豁免（封死涨停绝不触发）",
+      "why": "老板硬需求：多给主力拉升空间防洗（激活+6%而非+3%）；极敏锐刺客（回撤2.5%）；涨停封板期间一直拿、炸板且回撤≥2.5%才卖",
+      "validation": {
+        "pass": true,
+        "note": "trailingTriggerPct=0.06 / trailingStopPct=0.025 已加至 live/train/backtest 三处镜像；governance deepEqual + 涨停豁免单测自测通过"
+      },
+      "liveAfter": {
+        "weights": {
+          "s_net20": 0.2,
+          "s_pos10": 0.1,
+          "s_brd20": 0.2,
+          "s_hot10": 0.1,
+          "s_zdt15": 0.15,
+          "s_zbl10": 0.1,
+          "s_amt15": 0.15
+        },
+        "thresholds": {
+          "panic": 24,
+          "hi": 44,
+          "lo": 65,
+          "overheat": 80
+        },
+        "stops": {
+          "maxPos": 1,
+          "stopLoss": -0.08,
+          "ddTrigger": -0.15,
+          "maxPosChg": 0.2,
+          "sentimentPenalty": 10,
+          "clusterRiseMax": 1500,
+          "openGapFilterPct": 8,
+          "trailingStopPct": 0.025,
+          "trailingTriggerPct": 0.06
+        },
+        "lookback": {
+          "rolling": {
+            "trainWindow": 20,
+            "testWindow": 6
+          },
+          "momentumRecent": 5,
+          "momentumPrev": 5,
+          "rankWindow": 60,
+          "rankMin": 20
+        },
+        "costModel": {
+          "comm": 0.0003,
+          "stamp": 0.0005,
+          "slip": 0.0002,
+          "priceLimit": {
+            "enabled": false
+          }
+        }
+      }
     }
   ]
 }

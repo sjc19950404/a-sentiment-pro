@@ -33,7 +33,8 @@
         "sentimentPenalty": 10,
         "clusterRiseMax": 1500,
         "openGapFilterPct": 8,
-        "trailingStopPct": 0.03
+        "trailingStopPct": 0.025,
+        "trailingTriggerPct": 0.06
       },
       "lookback": {
         "rolling": {
@@ -78,7 +79,8 @@
         "sentimentPenalty": 10,
         "clusterRiseMax": 1500,
         "openGapFilterPct": 8,
-        "trailingStopPct": 0.03
+        "trailingStopPct": 0.025,
+        "trailingTriggerPct": 0.06
       },
       "lookback": {
         "rolling": {
@@ -157,7 +159,8 @@
     "sentimentPenalty": 10,
     "clusterRiseMax": 1500,
     "openGapFilterPct": 8,
-    "trailingStopPct": 0.03,
+    "trailingStopPct": 0.025,
+    "trailingTriggerPct": 0.06,
     "gridSteps": [
       0.6,
       0.8,

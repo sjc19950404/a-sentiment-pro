@@ -191,6 +191,7 @@ out.backtest = {
   clusterRiseMax: LIVE.stops.clusterRiseMax,
   openGapFilterPct: LIVE.stops.openGapFilterPct,
   trailingStopPct: LIVE.stops.trailingStopPct, // 移动止盈回撤比例（控制台 2026-10-29）
+  trailingTriggerPct: LIVE.stops.trailingTriggerPct, // 移动止盈激活阈值（控制台 2026-10-29）
   };
 out.momentumRecent = LIVE.lookback.momentumRecent;
 out.momentumPrev = LIVE.lookback.momentumPrev;

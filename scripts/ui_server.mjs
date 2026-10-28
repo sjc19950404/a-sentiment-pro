@@ -45,6 +45,7 @@ const RANGES = {
   clusterRiseMax: { min: 50, max: 5000, label: '上涨家数阈值' },
   openGapFilterPct: { min: 0, max: 100, label: '高开/急拉过滤比例' },
   trailingStopPct: { min: 0, max: 0.1, label: '移动止盈回撤比例（0~10%）' },
+  trailingTriggerPct: { min: 0, max: 0.2, label: '移动止盈激活阈值（默认 +6%）' },
 };
 const STOP_KEYS = Object.keys(RANGES);
 

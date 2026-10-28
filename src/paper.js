@@ -1276,7 +1276,7 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
     // 增量移动止盈层（2026-10-29·老板）：trailingStopPct>0 时启用；盈利≥3% 启动追踪，
     // 回撤≥trailingStopPct 市价卖。保留既有 −8% 硬止损（additive，不改既有行为）。
     if (opts.trailingStopPct > 0) {
-      const tr = trailingStopExits(logged, date, { trigger: 0.03, pullback: opts.trailingStopPct });
+      const tr = trailingStopExits(logged, date, quotes, { trigger: opts.trailingTriggerPct ?? 0.06, pullback: opts.trailingStopPct ?? 0.025 });
       logged = tr.apply(logged, date);
       exitList = exitList.concat(tr.list);
     }
@@ -1450,13 +1450,15 @@ export function scanStopLoss(acct, date) {
  * 不影响既有行为，只多一层「盈利保护」。
  *
  * 口径（收盘价口径，与系统既有移动止盈一致；模拟盘无盘中最高价数据，故以收盘涨幅近似“次日最高涨幅”）：
- *   ① 持仓浮盈（p.last 相对 avgCost）> trigger(0.03) → 激活追踪（trailActive=true）；
- *   ② 激活后，价格从运行峰值 peak 回撤 ≥ pullback(=trailingStopPct) → 市价卖出（移动止盈）；
- *   ③ 跌回成本下方（pnl<=0）→ 追踪失效（trailActive=false），不卖（交由 −8% 硬止损兜底）。
+ *   ① 持仓浮盈（p.last 相对 avgCost）> trigger（默认 0.06，即 +6% 才激活，多给主力拉升空间防洗）→ 激活追踪；
+ *   ② 激活后，价格从运行峰值 peak 回撤 ≥ pullback（默认 0.025，即 2.5%）→ 市价卖出（移动止盈，极敏锐刺客）；
+ *   ③ 跌回成本下方（pnl<=0）→ 追踪失效（trailActive=false），不卖（交由 −8% 硬止损兜底）；
+ *   ④ 涨停豁免（核心）：封死涨停（isLimitHit==='up'，优先 prevClose 精确、否则 changePct 近似）绝不触发；
+ *      只要一直封板就一直拿，炸板且从峰值回撤≥pullback 才卖。
  * 峰值 peak 跨日持久化到持仓（p.peak / p.trailActive），供次日判据。
  * 返回 { list, apply }，与 scanStopLoss 同形态，便于 settleDay 增量拼接。
  */
-export function trailingStopExits(acct, date, { trigger = 0.03, pullback = 0.03 } = {}) {
+export function trailingStopExits(acct, date, quotes, { trigger = 0.06, pullback = 0.025 } = {}) {
   const list = [];
   const positions = acct?.positions || {};
   // 第一遍：更新每张持仓的 peak / trailActive 轨迹（即便不卖也要持久化到持仓）
@@ -1472,8 +1474,12 @@ export function trailingStopExits(acct, date, { trigger = 0.03, pullback = 0.03 
     if (peak !== p.peak || trailActive !== p.trailActive) {
       curTrack = { ...curTrack, positions: { ...curTrack.positions, [code]: { ...p, peak, trailActive } } };
     }
+    // 涨停豁免（核心）：封死涨停（isLimitHit==='up'，优先 prevClose 精确、否则 changePct 近似）绝不触发移动止盈；
+    //   只要一直封板就一直拿，炸板（不再涨停）且从峰值回撤≥pullback 才卖。
+    const q = quotes?.[code];
+    const hit = q ? isLimitHit(q.changePct, code, p.name, 0.5, q.price, q.prevClose ?? null) : null;
     // 触发卖出？
-    if (trailActive && pnl > 0 && (peak - p.last) / peak >= pullback) {
+    if (trailActive && pnl > 0 && hit !== 'up' && (peak - p.last) / peak >= pullback) {
       const avail = Math.max(0, p.avail || 0);
       const frozen = (curTrack.pending || []).filter((x) => x.code === code && x.side === 'sell').reduce((a, x) => a + x.qty, 0);
       const freeAvail = Math.max(0, avail - frozen);
