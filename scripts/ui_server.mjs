@@ -44,6 +44,7 @@ const RANGES = {
   sentimentPenalty: { min: 0, max: 50, label: '极寒分化扣分' },
   clusterRiseMax: { min: 50, max: 5000, label: '上涨家数阈值' },
   openGapFilterPct: { min: 0, max: 100, label: '高开/急拉过滤比例' },
+  trailingStopPct: { min: 0, max: 0.1, label: '移动止盈回撤比例（0~10%）' },
 };
 const STOP_KEYS = Object.keys(RANGES);
 

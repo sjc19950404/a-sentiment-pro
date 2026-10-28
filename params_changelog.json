@@ -120,6 +120,61 @@
           }
         }
       }
+    },
+    {
+      "at": "2026-10-28T17:55:11.982Z",
+      "who": "长工（老板 2026-10-29 硬需求）",
+      "what": "live.stops 新增 trailingStopPct=0.03（移动止盈回撤比例，控制台可调）",
+      "why": "模拟盘接入移动止盈：盈利≥3% 启动追踪，回撤≥设定比例市价卖；default 0.03，范围[0,0.1]",
+      "validation": {
+        "pass": true,
+        "note": "已加至 live/train/backtest 三处镜像；governance 键集合 + 台账 deepEqual 自测通过"
+      },
+      "liveAfter": {
+        "weights": {
+          "s_net20": 0.2,
+          "s_pos10": 0.1,
+          "s_brd20": 0.2,
+          "s_hot10": 0.1,
+          "s_zdt15": 0.15,
+          "s_zbl10": 0.1,
+          "s_amt15": 0.15
+        },
+        "thresholds": {
+          "panic": 24,
+          "hi": 44,
+          "lo": 65,
+          "overheat": 80
+        },
+        "stops": {
+          "maxPos": 1,
+          "stopLoss": -0.08,
+          "ddTrigger": -0.15,
+          "maxPosChg": 0.2,
+          "sentimentPenalty": 10,
+          "clusterRiseMax": 1500,
+          "openGapFilterPct": 8,
+          "trailingStopPct": 0.03
+        },
+        "lookback": {
+          "rolling": {
+            "trainWindow": 20,
+            "testWindow": 6
+          },
+          "momentumRecent": 5,
+          "momentumPrev": 5,
+          "rankWindow": 60,
+          "rankMin": 20
+        },
+        "costModel": {
+          "comm": 0.0003,
+          "stamp": 0.0005,
+          "slip": 0.0002,
+          "priceLimit": {
+            "enabled": false
+          }
+        }
+      }
     }
   ]
 }

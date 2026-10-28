@@ -190,7 +190,8 @@ out.backtest = {
   sentimentPenalty: LIVE.stops.sentimentPenalty,
   clusterRiseMax: LIVE.stops.clusterRiseMax,
   openGapFilterPct: LIVE.stops.openGapFilterPct,
-};
+  trailingStopPct: LIVE.stops.trailingStopPct, // 移动止盈回撤比例（控制台 2026-10-29）
+  };
 out.momentumRecent = LIVE.lookback.momentumRecent;
 out.momentumPrev = LIVE.lookback.momentumPrev;
 // 主线识别动态阈值（可缺省：引擎缺配置时按 fixedFallback 语义处理，见 src/backtest.js）

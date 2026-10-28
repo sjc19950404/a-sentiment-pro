@@ -2997,6 +2997,7 @@
         sentimentPenalty: stops.sentimentPenalty != null ? stops.sentimentPenalty : 10,
         clusterRiseMax: stops.clusterRiseMax != null ? stops.clusterRiseMax : 1500,
         openGapFilterPct: stops.openGapFilterPct != null ? stops.openGapFilterPct : 8,
+        trailingStopPct: stops.trailingStopPct != null ? stops.trailingStopPct : 0.03,
       };
       // 字段口径与服务端 scripts/ui_server.mjs 的 RANGES 保持一致（防呆同源）
       const FIELDS = [
@@ -3005,6 +3006,7 @@
         { k: 'sentimentPenalty', label: '极寒分化扣分', min: 0, max: 50, step: 1 },
         { k: 'clusterRiseMax', label: '上涨家数阈值', min: 50, max: 5000, step: 10 },
         { k: 'openGapFilterPct', label: '高开/急拉过滤比例', min: 0, max: 100, step: 1 },
+        { k: 'trailingStopPct', label: '移动止盈回撤比例', min: 0, max: 0.1, step: 0.01, pct: true },
       ];
       const grid = panel.querySelector('#tSetGrid');
       const state = Object.assign({}, cur);

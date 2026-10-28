@@ -8,7 +8,7 @@ import {
   LOT, MIN_COMMISSION, COMMISSION_RATE, STAMP_TAX_RATE, TRANSFER_FEE_RATE,
   boardOf, isStName, limitPctOf, isLimitHit, fees, fillPrice,
   applyBuy, applySell, emptyAccount, accountStats,
-  validateOrder, submitOrder, cancelOrder, settleDay, paperMetrics,
+  validateOrder, submitOrder, cancelOrder, settleDay, paperMetrics, trailingStopExits,
   exportAccount, importAccount, quotesFromDay, REJECT,
   POS_TIERS, CUT_TIERS, qtyByAssetPct, qtyByHoldPct, DEFAULT_SLIP,
   normalizeExec, limitBuyOutcome, riskGuard, RISK_REJECT, batchSubmit,
@@ -1040,6 +1040,86 @@ test('v1 跌停逃生边界：非一字跌停（盘中止损/竞价未跌停）�
   assert.ok(fill, '应正常成交');
   assert.ok(!(fill.reason || '').includes('逃生'), '非跌停日不应打逃生标记（reason 应为原出场原因而非逃生）');
   assert.ok(Math.abs(fill.price - 9.5) < 0.01, `成交价应为当日真实价（含默认万二滑点 ≈9.498，非跌停价 9），实际 ${fill.price}`);
+});
+
+// ────────────────────── 移动止盈 trailingStopPct（2026-10-29·老板） ──────────────────────
+
+test('trailingStopExits：触发逻辑（list 生成，不依赖下单）', () => {
+  const mk = (over) => ({ code: '600519', name: '贵州茅台', qty: 1000, avail: 1000, avgCost: 100, cost: 100000, grossBuy: 100000, fee: 0, openDate: '2026-09-25', days: 5, lastBuyDate: '2026-09-25', ...over });
+  const base = { cash: 0, freeze: 0, initCash: 1000000, pending: [], orders: [], logs: [], nav: [] };
+  // 1) 已启动 + 回撤≥3% → 卖出
+  {
+    const acct = { ...base, positions: { '600519': mk({ last: 106.6, peak: 110, trailActive: true }) } };
+    const r = trailingStopExits(acct, '2026-10-10', { trigger: 0.03, pullback: 0.03 });
+    assert.equal(r.list.length, 1, '回撤≥3% 应触发移动止盈');
+    assert.match(r.list[0].reason, /移动止盈/);
+    assert.equal(r.list[0].willSell, 1000);
+  }
+  // 2) 盈利未达 3% → 不启动、不卖
+  {
+    const acct = { ...base, positions: { '600519': mk({ last: 102, peak: 102, trailActive: false }) } };
+    const r = trailingStopExits(acct, '2026-10-10', { trigger: 0.03, pullback: 0.03 });
+    assert.equal(r.list.length, 0, '盈利<3% 不应触发');
+  }
+  // 3) 已启动但回撤<3% → 不卖
+  {
+    const acct = { ...base, positions: { '600519': mk({ last: 108, peak: 110, trailActive: true }) } };
+    const r = trailingStopExits(acct, '2026-10-10', { trigger: 0.03, pullback: 0.03 });
+    assert.equal(r.list.length, 0, '回撤<3% 不应触发');
+  }
+  // 4) 跌回成本下方（pnl<=0）→ 追踪失效、不卖（交由 -8% 兜底），且失效状态应持久化
+  {
+    const acct = { ...base, positions: { '600519': mk({ last: 95, peak: 110, trailActive: true }) } };
+    const r = trailingStopExits(acct, '2026-10-10', { trigger: 0.03, pullback: 0.03 });
+    assert.equal(r.list.length, 0, '亏损态不卖（硬止损另管）');
+    const next = r.apply(acct, '2026-10-10');
+    assert.equal(next.positions['600519'].trailActive, false, '跌回成本应失效追踪');
+  }
+});
+
+test('★ settleDay + trailingStopPct：盈利≥3% 启动追踪，回撤≥设定比例市价卖（增量层）', () => {
+  const code = '600519', name = '贵州茅台';
+  let a = fresh(1000000);
+  a = submitOrder(a, { code, side: 'buy', qty: 1000 }, Q(code, name, 100), { date: '2026-09-28' }).next;
+  a = settleDay(a, '2026-09-29', { [code]: Q(code, name, 100) }).account;  // 成交日（T+1 未解冻）
+  a = settleDay(a, '2026-09-30', { [code]: Q(code, name, 100) }).account;  // 解冻，可卖
+  assert.equal(a.positions[code].avail, 1000, '持仓应可卖');
+
+  // 次日收盘 +10% → 启动追踪（peak=110, trailActive=true），不卖
+  const r1 = settleDay(a, '2026-10-08', { [code]: Q(code, name, 110) }, { trailingStopPct: 0.03 });
+  assert.equal(r1.account.positions[code].trailActive, true, '盈利≥3% 应启动追踪');
+  assert.equal(r1.account.positions[code].peak, 110, '峰值应更新为 110');
+  assert.equal(r1.account.pending.filter((o) => o.code === code && o.side === 'sell').length, 0, '启动日不应有卖出委托');
+
+  // 回撤 ≥3%（110→106.7，回撤 3.0%）→ 移动止盈 T+1 市价卖
+  const r2 = settleDay(r1.account, '2026-10-09', { [code]: Q(code, name, 106.6) }, { trailingStopPct: 0.03 });
+  const sell = r2.account.pending.find((o) => o.code === code && o.side === 'sell');
+  assert.ok(sell, '回撤≥设定比例应生成 T+1 卖出委托');
+  assert.ok(r2.stopLoss.some((x) => x.code === code && /移动止盈/.test(x.reason || '')), '出场清单应标注移动止盈');
+});
+
+test('settleDay + trailingStopPct=0：关闭移动止盈（不触发）', () => {
+  const code = '600519', name = '贵州茅台';
+  let a = fresh(1000000);
+  a = submitOrder(a, { code, side: 'buy', qty: 1000 }, Q(code, name, 100), { date: '2026-09-28' }).next;
+  a = settleDay(a, '2026-09-29', { [code]: Q(code, name, 100) }).account;
+  a = settleDay(a, '2026-09-30', { [code]: Q(code, name, 100) }).account;
+  a = { ...a, positions: { ...a.positions, [code]: { ...a.positions[code], peak: 110, trailActive: true } } };
+  const r = settleDay(a, '2026-10-09', { [code]: Q(code, name, 106.7) }, { trailingStopPct: 0 });
+  assert.equal(r.account.pending.filter((o) => o.code === code && o.side === 'sell').length, 0, 'trailingStopPct=0 不应触发移动止盈');
+});
+
+test('settleDay 移动止盈与 -8% 硬止损共存（additive，互不干扰）', () => {
+  const code = '600519', name = '贵州茅台';
+  let a = fresh(1000000);
+  a = submitOrder(a, { code, side: 'buy', qty: 1000 }, Q(code, name, 100), { date: '2026-09-28' }).next;
+  a = settleDay(a, '2026-09-29', { [code]: Q(code, name, 100) }).account;
+  a = settleDay(a, '2026-09-30', { [code]: Q(code, name, 100) }).account;
+  // 跌 -9%（< -8%）→ scanStopLoss 触发；trailing 因 pnl<0 不触发
+  const r = settleDay(a, '2026-10-09', { [code]: Q(code, name, 91) }, { trailingStopPct: 0.03 });
+  const sell = r.account.pending.find((o) => o.code === code && o.side === 'sell');
+  assert.ok(sell, '-8% 硬止损仍应触发卖出');
+  assert.ok(r.stopLoss.some((x) => x.code === code), '出场清单应含该票（触发 -8% 硬止损，与移动止盈 additive 互不干扰）');
 });
 
 

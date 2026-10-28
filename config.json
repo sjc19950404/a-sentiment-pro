@@ -32,7 +32,8 @@
         "maxPosChg": 0.2,
         "sentimentPenalty": 10,
         "clusterRiseMax": 1500,
-        "openGapFilterPct": 8
+        "openGapFilterPct": 8,
+        "trailingStopPct": 0.03
       },
       "lookback": {
         "rolling": {
@@ -76,7 +77,8 @@
         "maxPosChg": 0.2,
         "sentimentPenalty": 10,
         "clusterRiseMax": 1500,
-        "openGapFilterPct": 8
+        "openGapFilterPct": 8,
+        "trailingStopPct": 0.03
       },
       "lookback": {
         "rolling": {
@@ -155,6 +157,7 @@
     "sentimentPenalty": 10,
     "clusterRiseMax": 1500,
     "openGapFilterPct": 8,
+    "trailingStopPct": 0.03,
     "gridSteps": [
       0.6,
       0.8,

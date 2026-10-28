@@ -1273,6 +1273,13 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
     const stops = opts.scanStopLoss === false ? { list: [], apply: (a) => a } : scanStopLoss(logged, date);
     if (stops.list.length) logged = stops.apply(logged, date);
     exitList = stops.list || [];
+    // 增量移动止盈层（2026-10-29·老板）：trailingStopPct>0 时启用；盈利≥3% 启动追踪，
+    // 回撤≥trailingStopPct 市价卖。保留既有 −8% 硬止损（additive，不改既有行为）。
+    if (opts.trailingStopPct > 0) {
+      const tr = trailingStopExits(logged, date, { trigger: 0.03, pullback: opts.trailingStopPct });
+      logged = tr.apply(logged, date);
+      exitList = exitList.concat(tr.list);
+    }
   }
 
   const stats = accountStats(logged);
@@ -1430,6 +1437,79 @@ export function scanStopLoss(acct, date) {
         } else {
           cur = { ...cur, logs: appendLog(cur, { date: d, code: it.code, name: it.name, side: 'sell', qty: it.willSell, stage: 'stop', result: 'submitted',
             reason: `止损 -8%`, text: `触发 −8% 止损（浮亏 ${it.pnlPct}%，现价 ${it.last} 元 / 成本 ${it.avgCost} 元），已生成 T+1 卖出委托 ${it.willSell} 股` }) };
+        }
+      }
+      return cur;
+    },
+  };
+}
+
+/**
+ * 移动止盈（增量出场层，2026-10-29·老板）。
+ * 仅在 settleDay 默认分支、opts.trailingStopPct > 0 时调用，作为 scanStopLoss(−8% 硬止损) 的补充——
+ * 不影响既有行为，只多一层「盈利保护」。
+ *
+ * 口径（收盘价口径，与系统既有移动止盈一致；模拟盘无盘中最高价数据，故以收盘涨幅近似“次日最高涨幅”）：
+ *   ① 持仓浮盈（p.last 相对 avgCost）> trigger(0.03) → 激活追踪（trailActive=true）；
+ *   ② 激活后，价格从运行峰值 peak 回撤 ≥ pullback(=trailingStopPct) → 市价卖出（移动止盈）；
+ *   ③ 跌回成本下方（pnl<=0）→ 追踪失效（trailActive=false），不卖（交由 −8% 硬止损兜底）。
+ * 峰值 peak 跨日持久化到持仓（p.peak / p.trailActive），供次日判据。
+ * 返回 { list, apply }，与 scanStopLoss 同形态，便于 settleDay 增量拼接。
+ */
+export function trailingStopExits(acct, date, { trigger = 0.03, pullback = 0.03 } = {}) {
+  const list = [];
+  const positions = acct?.positions || {};
+  // 第一遍：更新每张持仓的 peak / trailActive 轨迹（即便不卖也要持久化到持仓）
+  let curTrack = acct;
+  for (const [code, p] of Object.entries(positions)) {
+    if (!p || p.qty <= 0 || !(p.avgCost > 0) || p.last == null) continue;
+    const pnl = (p.last - p.avgCost) / p.avgCost;
+    let peak = p.peak != null ? p.peak : p.last;
+    let trailActive = !!p.trailActive;
+    if (pnl > 0) peak = Math.max(peak, p.last);          // 只在盈利时抬高峰值
+    if (pnl > trigger) trailActive = true;                // 浮盈超阈值 → 激活追踪
+    if (pnl <= 0) trailActive = false;                    // 跌回成本下方 → 失效
+    if (peak !== p.peak || trailActive !== p.trailActive) {
+      curTrack = { ...curTrack, positions: { ...curTrack.positions, [code]: { ...p, peak, trailActive } } };
+    }
+    // 触发卖出？
+    if (trailActive && pnl > 0 && (peak - p.last) / peak >= pullback) {
+      const avail = Math.max(0, p.avail || 0);
+      const frozen = (curTrack.pending || []).filter((x) => x.code === code && x.side === 'sell').reduce((a, x) => a + x.qty, 0);
+      const freeAvail = Math.max(0, avail - frozen);
+      const item = {
+        code, name: p.name || code, pnlPct: round2(pnl * 100), last: p.last, avgCost: p.avgCost,
+        qty: p.qty, avail, freeAvail, willSell: Math.min(freeAvail, p.qty), skipped: null,
+        reason: `移动止盈(回撤${(pullback * 100).toFixed(0)}%)`,
+      };
+      if (freeAvail <= 0) {
+        item.skipped = frozen > 0 ? '已有卖出委托待成交' : 'T+1 约束：当日买入次一交易日才可卖';
+      } else if ((curTrack.pending || []).some((x) => x.code === code)) {
+        item.skipped = '该股已有待成交委托';
+      }
+      list.push(item);
+    }
+  }
+  return {
+    list,
+    apply: (account, d) => {
+      let cur = account;
+      if (curTrack !== acct) cur = { ...cur, positions: curTrack.positions }; // 先持久化追踪轨迹
+      for (const it of list) {
+        if (it.skipped || it.willSell <= 0) {
+          cur = { ...cur, logs: appendLog(cur, { date: d, code: it.code, name: it.name, side: 'sell', qty: it.qty, stage: 'exit', result: 'expired',
+            reason: it.skipped, text: `触发「${it.reason}」（浮盈 ${it.pnlPct}%），但无法生成卖出委托：${it.skipped}` }) };
+          continue;
+        }
+        const q = { code: it.code, name: it.name, price: it.last };
+        const sub = submitOrder(cur, { code: it.code, side: 'sell', qty: it.willSell, reason: it.reason }, q, { date: d });
+        cur = sub.next;
+        if (sub.order.status !== 'pending') {
+          cur = { ...cur, logs: appendLog(cur, { date: d, code: it.code, name: it.name, side: 'sell', qty: it.willSell, stage: 'exit', result: 'rejected',
+            reason: sub.order.reject, text: `触发「${it.reason}」，但卖出委托被拒：${sub.order.reject}${sub.order.detail ? '（' + sub.order.detail + '）' : ''}` }) };
+        } else {
+          cur = { ...cur, logs: appendLog(cur, { date: d, code: it.code, name: it.name, side: 'sell', qty: it.willSell, stage: 'exit', result: 'submitted',
+            reason: it.reason, text: `触发「${it.reason}」（浮盈 ${it.pnlPct}% / 成本 ${it.avgCost} / 现价 ${it.last}），已生成 T+1 卖出委托 ${it.willSell} 股` }) };
         }
       }
       return cur;
