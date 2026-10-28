@@ -1,0 +1,25 @@
+[Unit]
+Description=a-sentiment 参数控制台 + 实时沙盒推演后端 (ui_server.mjs)
+Documentation=https://github.com/sjc19950404/a-sentiment-pro/blob/main/deploy/ui-server-deploy.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# ⚠ 按实际环境修改两处：项目路径 / node 路径（用 `which node` 查）
+WorkingDirectory=/opt/a-sentiment-pro
+ExecStart=/usr/bin/node /opt/a-sentiment-pro/scripts/ui_server.mjs --host 0.0.0.0 --port 8791
+# 不设 User → 以 root 运行（家庭 Pi 可接受）。如需非 root，取消下一行注释并改成你的用户名，
+#   且该用户需对 /opt/a-sentiment-pro 有读写权（保存配置会写 config.json + config.json.bak）。
+# User=pi
+Restart=always
+RestartSec=5
+# 日志统一进 journald，排查：journalctl -u a-sentiment-ui -f
+StandardOutput=journal
+StandardError=journal
+# 安全（可选）：收窄 CORS 到你的 Pages 源（默认 * 允许任何源跨域；隧道暴露 /api/update-config 写接口，
+#   强烈建议叠加 Cloudflare Access 零信任登录/PIN 兜底，否则任何拿到隧道地址的人都能改你家的交易参数）。
+# Environment=UI_CORS_ORIGIN=https://sjc19950404.github.io
+
+[Install]
+WantedBy=multi-user.target

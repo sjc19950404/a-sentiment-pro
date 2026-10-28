@@ -2,7 +2,7 @@
 // ui_server.mjs —— 本地「参数控制台 + 实时沙盒推演」服务端（2026-10-28 新增）
 //
 // 职责（用户需求）：
-//   1) 静态托管终端 SPA（与 scripts/_serve.cjs 同源，但扩展出 API 端点）。
+//   1) 静态托管终端 SPA（取代旧 scripts/_serve.cjs 的静态能力并扩展出 API 端点；_serve.cjs 已退役）。
 //   2) GET  /api/config          → 返回当前 config.json（无密钥；绝不读 .env）。
 //   3) POST /api/update-config   → 严格范围校验（防呆）→ 备份 config.json.bak → 覆写 config.json。
 //                                  铁律：只写 config.json，绝不触碰 .env（代码中无任何 .env 引用）。
@@ -30,6 +30,11 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = resolve(__dirname, '..');                 // 项目根
 const CONFIG_PATH = join(ROOT, 'config.json');          // 唯一可写配置文件
 const CONFIG_BAK = join(ROOT, 'config.json.bak');
+
+// CORS（2026-10-28）：允许 github.io 等前端跨域访问 /api/*（隧道暴露的家庭后端）。
+//   默认 *；可用环境变量 UI_CORS_ORIGIN 收窄到具体源（如 https://sjc19950404.github.io）。
+//   ⚠ 隧道会暴露 /api/update-config 写接口，强烈建议叠加 Cloudflare Access 零信任保护。
+const CORS_ORIGIN = process.env.UI_CORS_ORIGIN || '*';
 
 // ─────────────────────── 参数范围（防呆，与控制台滑块一致） ───────────────────────
 // 任何越界或类型错误都被拒绝，且不产生任何写入/备份。
@@ -210,6 +215,11 @@ function serveStatic(req, res, pathname) {
 export function startServer(port = 8791, host = '127.0.0.1') {
   const server = http.createServer(async (req, res) => {
     try {
+      // CORS：github.io 等前端跨域访问 /api/* 必须通过；同源（Pi 本地 / 隧道直连）也不受影响。
+      res.setHeader('Access-Control-Allow-Origin', CORS_ORIGIN);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); } // 预检
       const url = new URL(req.url, `http://${host}:${port}`);
       const p = url.pathname;
       if (req.method === 'GET' && p === '/api/config') {

@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
-  validateConfigPatch, applyConfigPatch, computeDryRun, readConfigJson,
+  validateConfigPatch, applyConfigPatch, computeDryRun, readConfigJson, startServer,
 } from '../scripts/ui_server.mjs';
 
 // ────────────────────── 一、范围校验（防呆） ──────────────────────
@@ -99,4 +99,24 @@ test('computeDryRun：改变 clusterRiseMax 会改变气泡判定输入（参数
   // 至少保证 dry-run 在该参数下返回合法结构（不抛错、情绪分已按新参数计算）。
   const diff = computeDryRun({ stops: { clusterRiseMax: 5000, sentimentPenalty: 50 } });
   assert.ok(Number.isFinite(diff.old.emotionScore) && Number.isFinite(diff.new.emotionScore));
+});
+
+// ────────────────────── HTTP 层：CORS（2026-10-28，github.io → 隧道跨域放行） ──────────────────────
+test('HTTP 层：CORS 头 + OPTIONS 预检（github.io → 隧道跨域放行）', async () => {
+  const srv = startServer(0, '127.0.0.1'); // 端口 0 → 系统分配空闲端口
+  await new Promise((r) => (srv.listening ? r() : srv.once('listening', r)));
+  const port = srv.address().port;
+  const base = `http://127.0.0.1:${port}`;
+  try {
+    const opt = await fetch(`${base}/api/config`, { method: 'OPTIONS', headers: { Origin: 'https://sjc19950404.github.io' } });
+    assert.equal(opt.status, 204, 'OPTIONS 预检必须 204');
+    assert.equal(opt.headers.get('access-control-allow-origin'), '*', '必须允许跨域');
+    const get = await fetch(`${base}/api/config`, { headers: { Origin: 'https://sjc19950404.github.io' } });
+    assert.equal(get.status, 200);
+    assert.equal(get.headers.get('access-control-allow-origin'), '*', 'GET 跨域必须带 ACAO');
+    const same = await fetch(`${base}/api/config`); // 同源（无 Origin）也应正常
+    assert.equal(same.status, 200);
+  } finally {
+    srv.close();
+  }
 });

@@ -1492,9 +1492,16 @@
       <div class="t-set-diff" id="tSetDiff"></div>`;
 
     (async () => {
-      // 取当前参数：优先 /api/config（本地服务端），回退 window.ASENT_CONFIG（静态部署只读）
+      // API 起源：仅在 github.io 域名 + 配置了 apiOrigin（家里 Cloudflare 隧道）时，把 /api/* 改道隧道；
+      //   Pi 本地 / 隧道同源仍走相对路径（零改动、向后兼容）。复用 durl() 同款 github.io 门控。
+      const apiBase = (() => {
+        const origin = (typeof window !== 'undefined' && window.ASENT_CONFIG && window.ASENT_CONFIG.apiOrigin) || '';
+        if (!origin || !/(^|\.)github\.io$/.test(location.hostname)) return '';
+        return origin.replace(/\/+$/, '');
+      })();
+      // 取当前参数：优先 /api/config（本地/隧道服务端），回退 window.ASENT_CONFIG（静态部署只读）
       let cfg = null;
-      try { cfg = await fetch('/api/config').then((r) => (r.ok ? r.json() : null)); } catch { cfg = null; }
+      try { cfg = await fetch(apiBase + '/api/config').then((r) => (r.ok ? r.json() : null)); } catch { cfg = null; }
       const stops = (cfg && cfg.params && cfg.params.live && cfg.params.live.stops)
         || (window.ASENT_CONFIG && window.ASENT_CONFIG.params && window.ASENT_CONFIG.params.live && window.ASENT_CONFIG.params.live.stops)
         || {};
@@ -1546,7 +1553,7 @@
       };
 
       panel.querySelector('#tSetSave').addEventListener('click', async () => {
-        const r = await jpost('/api/update-config', { stops: state });
+        const r = await jpost(apiBase + '/api/update-config', { stops: state });
         if (!r) { diffBox.innerHTML = '<span class="t-warn">保存失败：服务端不可达（需本地运行 node scripts/ui_server.mjs）。</span>'; return; }
         if (!r.ok) { diffBox.innerHTML = `<span class="t-err">拒绝保存：${(r.errors || []).join('；')}</span>`; return; }
         diffBox.innerHTML = `<span class="t-ok">✓ 已保存并备份 config.json.bak（下次运行时读取生效）。写入字段：${(r.written || []).join(', ')}</span>`;
@@ -1554,7 +1561,7 @@
 
       panel.querySelector('#tSetDry').addEventListener('click', async () => {
         diffBox.innerHTML = '沙盒推演中…（内存计算，不写盘）';
-        const r = await jpost('/api/dry-run', { stops: state });
+        const r = await jpost(apiBase + '/api/dry-run', { stops: state });
         if (!r) { diffBox.innerHTML = '<span class="t-warn">沙盒推演需本地服务端（node scripts/ui_server.mjs）。</span>'; return; }
         if (!r.ok) { diffBox.innerHTML = `<span class="t-err">推演失败：${(r.errors || []).join('；')}</span>`; return; }
         const o = r.old, n = r.new;
