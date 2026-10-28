@@ -8,9 +8,10 @@ import { readFileSync, existsSync } from 'node:fs';
 import {
   buildInput, generatePreMarket, generateIntraday, generatePostMarket, generateWeekly,
   mergeReports, buildDataCompleteness, TRIGGER_ENUM, DD_TIER_EDGES, SCHEMA_VERSION,
-  mapPhase, buildScripts, buildCandidatePool, buildSimulationStock, emptyFundamentals, buildWatchlist,
+  mapPhase,   buildScripts, buildCandidatePool, buildSimulationStock, emptyFundamentals, buildWatchlist,
   makeBinding, mergeBindings, loadBindings, saveBindings, exportSimulation, BINDINGS_KEY,
   PHASE_LABELS, SIM_SCRIPT_CONSTS, STARTUP_PCT_RANK_MAX,
+  freshIntradayMarket,
 } from '../src/ai_report.js';
 import { validateContract } from '../src/contract.js';
 
@@ -504,4 +505,46 @@ test('真实档冒烟：buildSimulationStock 过契约 + 真实断言（不写�
   } else {
     assert.match(sim.pool_basis, /陈旧|拒收|缺席/, '陈旧拒收必须报因（不静默空池）');
   }
+});
+
+// ── 15. 盘中涨跌家数新鲜度闸门（2026-10-28 紧急修复）─────────────────────
+// 老板反馈 14:05 盘中推送显示昨收陈旧 594/4653，而盘中已逼空 3940/1437。
+// 根因：market_context.up_down 原取自 signals.latest（仅盘后刷新），盘中全天陈旧。
+// 修复：generateIntraday 改取实时 intraday 快照；快照缺失/跨交易日/采集过久/源失败 → 置 null（push_text 显式“暂不可用”）。
+
+test('freshIntradayMarket 纯函数：当日新鲜快照 → 返回 breadth/pools', () => {
+  const snap = { tradeDate: '2026-09-30', capturedAtBJ: '2026-09-30 10:30', breadth: { up: 3940, down: 1437, flat: 50 }, pools: { zt: 80, dt: 5 }, sourcesFailed: [] };
+  const r = freshIntradayMarket(snap, '2026-09-30T02:35:00.000Z'); // 02:35Z = 10:35 BJ → 差 5min
+  assert.ok(r, '应判定新鲜');
+  assert.deepEqual(r.breadth, { up: 3940, down: 1437, flat: 50 });
+  assert.equal(r.pools.zt, 80);
+});
+
+test('freshIntradayMarket 纯函数：采集过久（>25min）/ 跨交易日 / 缺 breadth / 源失败 → null', () => {
+  const base = { tradeDate: '2026-09-30', capturedAtBJ: '2026-09-30 09:30', breadth: { up: 1, down: 2, flat: 3 }, pools: { zt: 1, dt: 1 }, sourcesFailed: [] };
+  assert.equal(freshIntradayMarket(base, '2026-09-30T02:35:00.000Z'), null, '采集过久（65min）必须判滞后'); // 09:30 vs 10:35
+  assert.equal(freshIntradayMarket({ ...base, tradeDate: '2026-09-29' }, '2026-09-30T02:35:00.000Z'), null, '跨交易日必须判滞后');
+  assert.equal(freshIntradayMarket({ ...base, breadth: null }, '2026-09-30T02:35:00.000Z'), null, '缺 breadth 必须判滞后');
+  assert.equal(freshIntradayMarket({ ...base, sourcesFailed: ['breadth snapshot 东财 push2 失败'] }, '2026-09-30T02:35:00.000Z'), null, 'breadth 源失败（限流）必须判滞后');
+});
+
+test('generateIntraday：实时快照新鲜 → up_down/zt_dt 用实时值，不取 signals 陈旧 EOD', () => {
+  const snap = { tradeDate: '2026-09-30', capturedAtBJ: '2026-09-30 10:30', breadth: { up: 3940, down: 1437, flat: 50 }, pools: { zt: 80, dt: 5 }, sourcesFailed: [] };
+  const r = generateIntraday(mkInput({ intraday: snap }), { generatedAt: '2026-09-30T02:35:00.000Z' }); // 10:35 BJ
+  assert.equal(r.payload.market_context.up_down, '3940/1437/50', '必须用实时快照涨跌家数');
+  assert.equal(r.payload.market_context.zt_dt, '80/5');
+  assert.equal(r.payload.market_context.breadth_stale, false);
+});
+
+test('generateIntraday：快照滞后/缺失 → up_down 置 null（绝不输出 signals 陈旧 EOD 2393/2730/167）', () => {
+  // SIG.latest.up_count=2393 是陈旧 EOD 值；即便快照滞后，也必须隐藏，不能把 2393 推给老板
+  const stale = { tradeDate: '2026-09-30', capturedAtBJ: '2026-09-30 09:30', breadth: { up: 2393, down: 2730, flat: 167 }, pools: { zt: 52, dt: 9 }, sourcesFailed: [] };
+  const r = generateIntraday(mkInput({ intraday: stale }), { generatedAt: '2026-09-30T02:35:00.000Z' }); // 10:35 vs 09:30 → 滞后
+  assert.equal(r.payload.market_context.up_down, null, '滞后快照必须隐藏，绝不输出陈旧 EOD 2393');
+  assert.equal(r.payload.market_context.breadth_stale, true);
+  assert.ok(r.missing_notes.some((n) => n.field === 'market_context.up_down'), '必须留痕：已隐藏陈旧 EOD 值');
+  // 无快照（盘中快照缺失）同样不能回退到陈旧 EOD
+  const none = generateIntraday(mkInput(), { generatedAt: '2026-09-30T02:35:00.000Z' });
+  assert.equal(none.payload.market_context.up_down, null, '无实时快照也必须隐藏，绝不回退陈旧 EOD');
+  assert.equal(none.payload.market_context.breadth_stale, true);
 });

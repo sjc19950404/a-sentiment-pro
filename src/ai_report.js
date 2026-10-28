@@ -20,7 +20,7 @@ import { accountStats, DEFAULT_SLIP, HARD_STOP_LOSS, exportAccount } from './pap
 import { guardModuleFreshness } from './module_freshness.js';
 import { stalePainReason } from './pain.js';
 import { todayBeijing } from './util.js';
-import { bjDate } from './time.js';
+import { bjDate, bjTime, bjInstant } from './time.js';
 import { validateExternal } from './validate_snapshot.js';
 import { QUOTE_STATE } from './global.js';
 import { reconcilePosition } from './position_policy.js';
@@ -283,6 +283,30 @@ function buildMarketContext(signals) {
   };
 }
 
+// ───────────── 盘中实时涨跌家数新鲜度闸门（2026-10-28 紧急修复） ─────────────
+// 老板反馈 14:05 盘中推送显示 594/4653（昨收 EOD 陈旧值），而盘中已逼空 3940/1437。
+// 根因：buildMarketContext 的涨跌家数取自 signals.latest（仅 18:30/21:00 盘后刷新），盘中全天陈旧。
+// 本闸门只认「当日实时 intraday 快照」的 breadth/pools：跨交易日 / 缺失 / 采集过久 / 源失败 → 返回 null，
+//   强制调用方隐藏陈旧值（push_text 显式输出“暂不可用（数据滞后）”）。宁可不报也不糊弄老板。
+const INTRADAY_MARKET_FRESH_MS = 25 * 60 * 1000; // 采集距推送 ≤25 分钟才算实时（30 分 tick + 调度余量）
+
+export function freshIntradayMarket(snapshot, nowISO) {
+  if (!snapshot || typeof snapshot !== 'object') return null;
+  const now = nowISO ? new Date(nowISO) : new Date();
+  const today = bjDate(now);
+  if (snapshot.tradeDate !== today) return null;            // 跨交易日 → 陈旧
+  if (!snapshot.breadth || !Number.isFinite(snapshot.breadth.up)) return null;
+  const m = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})/.exec(snapshot.capturedAtBJ || '');
+  if (!m) return null;
+  const capMs = bjInstant(m[1], m[2]);
+  const nowMs = bjInstant(today, bjTime(now));
+  if (!Number.isFinite(capMs) || !Number.isFinite(nowMs)) return null;
+  if (capMs > nowMs || nowMs - capMs > INTRADAY_MARKET_FRESH_MS) return null; // 未来 or 过久
+  const failed = Array.isArray(snapshot.sourcesFailed) ? snapshot.sourcesFailed : [];
+  if (failed.some((e) => /breadth|快照|snapshot|snapshotSource/i.test(String(e)))) return null; // 源失败（限流等）
+  return { breadth: snapshot.breadth, pools: snapshot.pools || null };
+}
+
 // ── data_completeness（决议 5）：字段级来源与可信度 ─────────────────────
 const FIELD_SOURCE_DEFAULTS = {
   date: 'derived', status: 'derived',
@@ -491,6 +515,27 @@ export function generateIntraday(input, opts = {}) {
   // opts 传入。opts 缺/序列不足两点 → null（不冒充，data_completeness 呈 missing）。
   payload.max_drawdown_daily = input.live ? num(opts.drawdownDaily) : null;
   const extraNotes = [];
+  // 2026-10-28 紧急修复：盘中「涨跌家数 / 涨停跌停」必须取推送那一刻的实时 intraday 快照，
+  //   绝不用 signals.latest 的 EOD 陈旧值（老板 14:05 实录：显示昨收 594/4653，盘中已逼空 3940/1437）。
+  //   快照缺失/跨交易日/采集过久/源失败 → 判滞后，up_down/zt_dt 置 null → push_text 显式“暂不可用（数据滞后）”。
+  const intraFresh = freshIntradayMarket(input.intraday, opts.generatedAt || new Date().toISOString());
+  if (payload.market_context) {
+    if (intraFresh) {
+      payload.market_context.up_down = `${intraFresh.breadth.up}/${intraFresh.breadth.down}/${intraFresh.breadth.flat}`;
+      payload.market_context.zt_dt = (intraFresh.pools && Number.isFinite(intraFresh.pools.zt) && Number.isFinite(intraFresh.pools.dt))
+        ? `${intraFresh.pools.zt}/${intraFresh.pools.dt}` : payload.market_context.zt_dt;
+      payload.market_context.breadth_stale = false;
+    } else {
+      payload.market_context.up_down = null;
+      payload.market_context.zt_dt = null;
+      payload.market_context.breadth_stale = true;
+      extraNotes.push({
+        field: 'market_context.up_down',
+        reason: '盘中实时涨跌家数快照缺失/跨交易日/采集滞后/源失败——已隐藏陈旧 EOD 值，宁可不报也不糊弄',
+        ref: 'src/ai_report.js::generateIntraday',
+      });
+    }
+  }
   if (input.live && payload.max_drawdown_daily == null) {
     extraNotes.push({ field: 'max_drawdown_daily', reason: '即时轨当日权益序列不足两点（采样刚启动/实时行情降级），无日内回撤语义', ref: 'src/intraday_live.js::dailyDrawdown' });
   }

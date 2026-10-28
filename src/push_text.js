@@ -259,7 +259,13 @@ export function renderPushText(report) {
       if (p.market_context) {
         const hc = p.market_context.highest_chain != null ? p.market_context.highest_chain : (p.watchlist?.max_lb ?? '—');
         const emo = (p.regime && p.regime.score != null) ? p.regime.score : null; // 大盘情绪分（0-100）
-        lines.push(`盘面：情绪 ${emo != null ? Math.round(emo) : '—'} · 涨跌 ${txt(p.market_context.up_down)} · 涨停/跌停 ${txt(p.market_context.zt_dt)} · 最高连板 ${txt(hc)}`);
+        // 2026-10-28 紧急修复：涨跌家数/涨停跌停必须取实时 intraday 快照；若快照滞后/缺失（限流等），
+        //   breadth_stale=true → 显式提示“暂不可用（数据滞后）”，绝不输出昨收陈旧值糊弄老板。
+        const ud = p.market_context.up_down;
+        const udTxt = ud ? `涨跌 ${txt(ud)}` : '涨跌家数：暂不可用（数据滞后，未取实时）';
+        const zdt = p.market_context.zt_dt;
+        const zdtTxt = zdt ? `涨停/跌停 ${txt(zdt)}` : '涨停/跌停：暂不可用（数据滞后）';
+        lines.push(`盘面：情绪 ${emo != null ? Math.round(emo) : '—'} · ${udTxt} · ${zdtTxt} · 最高连板 ${txt(hc)}`);
       }
       { // 双池推送（P0 双池物理拆分）：连板池白名单（昨日涨停+今日非一字）独立评分
         //   独立模板；趋势池黑名单（滤昨日涨停/今日涨停/一字板）保留四条件描述——

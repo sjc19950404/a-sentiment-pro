@@ -109,6 +109,9 @@ case "$MODE" in
     ;;
   candidates)
     node scripts/fetch_global.mjs 2>>"$LOG_FILE" || log "外围抓取失败（best-effort，继续）"
+    # 2026-10-28 紧急修复：推送前强制刷新实时盘中快照（涨跌家数/涨停池），争取推送那一刻最新；
+    #   即便失败也不阻断推送——freshIntradayMarket 闸门会让陈旧值“暂不可用”而非糊弄老板。
+    node scripts/snapshot_intraday.mjs 2>>"$LOG_FILE" || log "盘中实时快照失败（best-effort，按滞后处理）"
     node scripts/build_ai_report.mjs --type intraday 2>/dev/null || true
     node scripts/push_ai_report.mjs --latest intraday 2>/dev/null || true
     bash scripts/pi_push.sh
