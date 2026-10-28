@@ -368,7 +368,7 @@ export function risksOf(c) {
   }
   // 科创板/创业板 20% 振幅
   const code = String(c.code || '');
-  if (/^(30|688)/.test(code)) out.push('20% 涨跌幅品种，波动天然大于主板');
+  if (/^(30|301|688)/.test(code)) out.push('20% 涨跌幅品种，波动天然大于主板');
   if (/^(4|8|920)/.test(code)) out.push('北交所标的，流动性弱于沪深');
   return out;
 }
@@ -638,7 +638,11 @@ export function recommendPicks(day, ctx = {}) {
   const tier = marketTier(ctx.emotionScore);
   const topN = finite(ctx.topN) && +ctx.topN > 0 ? Math.floor(+ctx.topN) : PICK_TOP_N;
 
-  const candidates = buildCandidates(d);
+  const candidates = buildCandidates(d)
+    // 实盘权限过滤（2026-10-29·老板账户无创业板300/301、科创板688权限）：在选股引擎最前端直接剔除，绝不进入候选池。
+    //   主线涨停家数 / 情绪周期仍用 day 全量数据（含创业板）计算（见 mainline_guard / breadth），不受此过滤影响；
+    //   仅“选股”从主板(000/001/002/600/601/603/605)+北交所(8/4/920)挑选（剔除 300/301/688 即等价于该约束）。
+    .filter((c) => !/^(300|301|688)/.test(String(c.code || '')));
   const totalDealWan = candidates.reduce((a, c) => a + (finite(c.buyWan) ? +c.buyWan : 0) + (finite(c.sellWan) ? +c.sellWan : 0), 0);
 
   // 先补上「可核验理由/风险」与流动性分（这些是展示字段，与预测相互独立）

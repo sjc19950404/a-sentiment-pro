@@ -34,10 +34,16 @@ export function dragonLogicBlock(report, { tradeDate } = {}) {
     };
   }
 
-  const dragons = Array.isArray(report.dragons) ? report.dragons : [];
+  // 实盘权限过滤（2026-10-29·老板无创业板300/301、科创板688权限）：妖股透视仍保留全市场连板（含 300/688）
+  //   用于参考市场情绪，但在名称前打 [无权限] 标签，提示这些标的不在可交易范围内。
+  const NO_PERM = /^(300|301|688)/;
+  const tagDragon = (d) => (NO_PERM.test(String(d.code || ''))
+    ? { ...d, name: `[无权限] ${d.name}`, noPermission: true }
+    : d);
+  const dragons = (Array.isArray(report.dragons) ? report.dragons : []).map(tagDragon);
   const pureSentiment = dragons
     .filter((d) => d.is_pure_sentiment)
-    .map((d) => ({ code: d.code, name: d.name, lb: d.lb, hybk: d.hybk, logic_type: d.logic_type, reason: d.reason, confidence: d.confidence }));
+    .map((d) => ({ code: d.code, name: d.name, lb: d.lb, hybk: d.hybk, logic_type: d.logic_type, reason: d.reason, confidence: d.confidence, noPermission: d.noPermission }));
   const byType = {};
   dragons.forEach((d) => { byType[d.logic_type] = (byType[d.logic_type] || 0) + 1; });
 

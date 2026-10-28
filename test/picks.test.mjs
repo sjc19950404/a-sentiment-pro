@@ -542,6 +542,35 @@ test('openGap：快照涨幅<阈值的强势票仍保留（只剔追高，不误
   assert.ok(!r.rejected.some((x) => x.reason === 'open_gap_filter'), '不应触发 open_gap_filter');
 });
 
+// ────────────────────── 实盘权限过滤（2026-10-29·老板无创业板300/301、科创板688权限） ──────────────────────
+// 需求：①选股引擎最前端剔除 300/301/688，绝不进候选池；②主线涨停家数/情绪周期仍用 day 全量（含创业板），不受此过滤影响；
+//       ③妖股透视保留全市场连板（含300/688）仅打 [无权限] 标签（见 dragon_logic.test.mjs）。
+test('实盘权限：最前端剔除 300/301/688，保留主板(000/002/600/601/603/605)+北交所(8/4/920)', () => {
+  const d = day({
+    hot: [{ code: '300001', name: '创业票', close: 10, change_pct: 10, huanshou: 20, reason: '机器人' }],
+    lhb: [
+      lhbRow('300001', '创业票', 60000, { change_pct: 10, reason: '机器人' }),
+      lhbRow('301002', '创二票', 60000, { change_pct: 10, reason: '机器人' }),
+      lhbRow('688003', '科创票', 60000, { change_pct: 10, reason: '机器人' }),
+      lhbRow('600004', '沪主票', 60000, { change_pct: 10, reason: '机器人' }),
+      lhbRow('000005', '深主票', 60000, { change_pct: 10, reason: '机器人' }),
+      lhbRow('830006', '北交票', 60000, { change_pct: 10, reason: '机器人' }),
+    ],
+    themes: { 机器人: 3 },
+    summary: { main_theme: { name: '机器人' }, zt_codes: ['300001', '301002', '688003', '600004', '000005', '830006'], zt_lb: { '300001': 2, '301002': 2, '688003': 2, '600004': 1, '000005': 1, '830006': 1 } },
+  });
+  const r = recommendPicks(d, { emotionScore: 70 });
+  const codes = r.picks.map((p) => p.code);
+  // 核心不变量：任一入选标的都不是权限外板块
+  assert.ok(!codes.some((c) => /^(300|301|688)/.test(c)), `权限外标的不得入选，实际 ${codes}`);
+  // 主板仍正常入选（与既有选股逻辑零破坏）
+  assert.ok(codes.includes('600004'), `沪主 600004 应入选，实际 ${codes}`);
+  assert.ok(codes.includes('000005'), `深主 000005 应入选，实际 ${codes}`);
+  // 候选池统计也应剔除权限外标的：6 只候选(300/301/688 各1 + 600/000/830 各1) - 3 只权限外 = 3
+  // （说明北交所 830006 仍留在候选池，未被权限过滤误伤；能否进 picks 由其它关卡决定，不属本需求范围）
+  assert.equal(r.pool, 3, `候选池应剔除 300/301/688（保留主板/北交所候选），实际 ${r.pool}`);
+});
+
 
 // ── recommendPicks 集成：ctx.ztpool 接入后，可交易性过滤真正在生产链路生效 ──
 test('recommendPicks 集成：传入 ctx.ztpool，缩量硬板候选被剔除进 rejected', () => {
