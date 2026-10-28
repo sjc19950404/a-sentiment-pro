@@ -9,7 +9,7 @@ import {
   PICK_TOP_N, SCORE_WEIGHTS, TIER_THRESHOLDS, POSITION_TIERS,
   marketTier, buildCandidates, scoreFund, scoreStreak, scoreCandidate,
   reasonsOf, risksOf, suggestWeight, recommendPicks, applyEmotionGates,
-  applyTradabilityFilters, isTradableByPermission, filterByPermission,
+  applyTradabilityFilters, isAdmissible, isRiskName, filterAdmissible,
 } from '../src/picks.js';
 
 // 构造一份最小可用的「存档日」。字段名与 archive.json 严格一致，
@@ -542,10 +542,11 @@ test('openGap：快照涨幅<阈值的强势票仍保留（只剔追高，不误
   assert.ok(!r.rejected.some((x) => x.reason === 'open_gap_filter'), '不应触发 open_gap_filter');
 });
 
-// ────────────────────── 实盘权限过滤（2026-10-29·老板无创业板300/301、科创板688权限） ──────────────────────
-// 需求：①选股引擎最前端剔除 300/301/688，绝不进候选池；②主线涨停家数/情绪周期仍用 day 全量（含创业板），不受此过滤影响；
+// ────────────────────── 实盘准入（2026-10-29·老板实盘权限：买不进的票物理拉黑） ──────────────────────
+// 需求：①选股引擎最前端强制过滤——剔除北交所(8/4/920)、创业板(300/301)、科创板(688)、ST/*ST/退、次新(<5天K线)，只留主板 00/60；
+//       ②主线涨停家数/情绪周期仍用 day 全量（含创业板），不受此过滤影响；
 //       ③妖股透视保留全市场连板（含300/688）仅打 [无权限] 标签（见 dragon_logic.test.mjs）。
-test('实盘权限：最前端剔除 300/301/688，保留主板(000/002/600/601/603/605)+北交所(8/4/920)', () => {
+test('实盘准入：只留主板(00/60)，剔除北交所/创业板/科创板/ST', () => {
   const d = day({
     hot: [{ code: '300001', name: '创业票', close: 10, change_pct: 10, huanshou: 20, reason: '机器人' }],
     lhb: [
@@ -555,49 +556,72 @@ test('实盘权限：最前端剔除 300/301/688，保留主板(000/002/600/601/
       lhbRow('600004', '沪主票', 60000, { change_pct: 10, reason: '机器人' }),
       lhbRow('000005', '深主票', 60000, { change_pct: 10, reason: '机器人' }),
       lhbRow('830006', '北交票', 60000, { change_pct: 10, reason: '机器人' }),
+      lhbRow('002007', '中小板票', 60000, { change_pct: 10, reason: '机器人' }),
     ],
     themes: { 机器人: 3 },
-    summary: { main_theme: { name: '机器人' }, zt_codes: ['300001', '301002', '688003', '600004', '000005', '830006'], zt_lb: { '300001': 2, '301002': 2, '688003': 2, '600004': 1, '000005': 1, '830006': 1 } },
+    summary: { main_theme: { name: '机器人' }, zt_codes: ['300001', '301002', '688003', '600004', '000005', '830006', '002007'], zt_lb: { '300001': 2, '301002': 2, '688003': 2, '600004': 1, '000005': 1, '830006': 1, '002007': 1 } },
   });
   const r = recommendPicks(d, { emotionScore: 70 });
   const codes = r.picks.map((p) => p.code);
-  // 核心不变量：任一入选标的都不是权限外板块
-  assert.ok(!codes.some((c) => /^(300|301|688)/.test(c)), `权限外标的不得入选，实际 ${codes}`);
+  // 核心不变量：任一入选标的都是主板 00/60，绝不混入 30x/68x/8/4/920
+  assert.ok(!codes.some((c) => !/^(00|60)/.test(c)), `只应留主板 00/60，实际 ${codes}`);
   // 主板仍正常入选（与既有选股逻辑零破坏）
   assert.ok(codes.includes('600004'), `沪主 600004 应入选，实际 ${codes}`);
   assert.ok(codes.includes('000005'), `深主 000005 应入选，实际 ${codes}`);
-  // 候选池统计也应剔除权限外标的：6 只候选(300/301/688 各1 + 600/000/830 各1) - 3 只权限外 = 3
-  // （说明北交所 830006 仍留在候选池，未被权限过滤误伤；能否进 picks 由其它关卡决定，不属本需求范围）
-  assert.equal(r.pool, 3, `候选池应剔除 300/301/688（保留主板/北交所候选），实际 ${r.pool}`);
+  assert.ok(codes.includes('002007'), `中小板 002007 应入选，实际 ${codes}`);
+  // 候选池统计也应剔除权限外标的：7 只候选 - 4 只权限外(300/301/688/830) = 3
+  assert.equal(r.pool, 3, `候选池应剔除北交所/创业板/科创板，实际 ${r.pool}`);
 });
 
-// ────────────────────── 实盘权限过滤 helper（选股引擎与推送候选池共用） ──────────────────────
-test('权限helper：isTradableByPermission 剔除 300/301/688，保留主板/北交所/其余', () => {
-  assert.equal(isTradableByPermission('300001'), false);
-  assert.equal(isTradableByPermission('301002'), false);
-  assert.equal(isTradableByPermission('688003'), false);
-  assert.equal(isTradableByPermission('600004'), true);
-  assert.equal(isTradableByPermission('000005'), true);
-  assert.equal(isTradableByPermission('002006'), true);
-  assert.equal(isTradableByPermission('830006'), true, '北交所应可交易');
-  assert.equal(isTradableByPermission('400007'), true, '北交所老三板应可交易');
-  assert.equal(isTradableByPermission('920008'), true, '北交所新股应可交易');
-  assert.equal(isTradableByPermission(null), true, '缺 code 不误杀');
-  assert.equal(isTradableByPermission(''), true, '空 code 不误杀');
+// ────────────────────── 实盘准入 helper（选股引擎/推送候选池/模拟盘买闸共用） ──────────────────────
+test('准入helper：isAdmissible 只留主板 00/60，剔除北交所/创业板/科创板/ST/次新', () => {
+  // 板块
+  assert.equal(isAdmissible('600004', '沪主'), true);
+  assert.equal(isAdmissible('000005', '深主'), true);
+  assert.equal(isAdmissible('002006', '中小板'), true, '002 中小板属 00 空间，应可交易');
+  assert.equal(isAdmissible('300001', '创业'), false, '创业板剔除');
+  assert.equal(isAdmissible('301002', '创业二'), false, '创业板(301)剔除');
+  assert.equal(isAdmissible('688003', '科创'), false, '科创板剔除');
+  assert.equal(isAdmissible('830006', '北交'), false, '北交所(8)剔除');
+  assert.equal(isAdmissible('400007', '北交老三板'), false, '北交老三板(4)剔除');
+  assert.equal(isAdmissible('920008', '北交新股'), false, '北交新股(920)剔除');
+  // ST / 退
+  assert.equal(isAdmissible('600100', 'ST 某某'), false, 'ST 剔除');
+  assert.equal(isAdmissible('600100', '*ST 某某'), false, '*ST 剔除');
+  assert.equal(isAdmissible('600100', '某某退'), false, '退 剔除');
+  assert.equal(isAdmissible('600100', '某某退市'), false, '退 子串剔除');
+  // 次新（K线<5天）
+  assert.equal(isAdmissible('600200', '次新', 3), false, '次新(<5天)剔除');
+  assert.equal(isAdmissible('600200', '满5天', 5), true, '满5天不拦');
+  assert.equal(isAdmissible('600200', '无kline', undefined), true, '缺 klineDays 不误杀');
+  // 边界：缺 code / 空 code
+  assert.equal(isAdmissible(null, 'x'), false, '缺 code 不通过');
+  assert.equal(isAdmissible('', 'x'), false, '空 code 不通过');
 });
 
-test('权限helper：filterByPermission 按 code 前缀过滤列表', () => {
+test('准入helper：isRiskName 识别 ST / *ST / 退', () => {
+  assert.equal(isRiskName('ST 某某'), true);
+  assert.equal(isRiskName('*ST 某某'), true);
+  assert.equal(isRiskName('某某退'), true);
+  assert.equal(isRiskName('某某退市'), true);
+  assert.equal(isRiskName('正常票'), false);
+  assert.equal(isRiskName('STAGE 概念'), false, 'ST 仅作前缀/空白后生效，不误伤含ST单词');
+});
+
+test('准入helper：filterAdmissible 按准入口径过滤列表', () => {
   const list = [
     { code: '600001', name: 'A' },
     { code: '300002', name: 'B' },
     { code: '688003', name: 'C' },
     { code: '000004', name: 'D' },
-    { code: '301005', name: 'E' },
+    { code: '830005', name: 'E' },
+    { code: '600006', name: 'ST 风险', klineDays: 10 },
+    { code: '600007', name: '次新', klineDays: 2 },
   ];
-  const out = filterByPermission(list);
-  assert.deepEqual(out.map((x) => x.code), ['600001', '000004'], '仅剔除 300/301/688');
-  assert.equal(filterByPermission(null).length, 0, '非数组零回归');
-  assert.equal(filterByPermission([]).length, 0, '空数组零回归');
+  const out = filterAdmissible(list);
+  assert.deepEqual(out.map((x) => x.code), ['600001', '000004'], '剔除 30x/68x/8/ST/次新，仅留主板');
+  assert.equal(filterAdmissible(null).length, 0, '非数组零回归');
+  assert.equal(filterAdmissible([]).length, 0, '空数组零回归');
 });
 
 

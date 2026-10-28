@@ -399,15 +399,17 @@ test('buildSimulationStock：09-30 夹具 → 发酵期/neutral/候选池齐 + �
 
 // ── 12.1 实盘权限过滤（2026-10-29·老板无创业板300/301、科创板688权限）──
 //   推送候选池/连板池也须剔除无权限板块，与 recommendPicks 选股引擎口径一致（仅观察/推荐主板+北交所）。
-test('buildSimulationStock：候选池剔除 300/301/688（推送不推无权限板块）', () => {
+test('buildSimulationStock：候选池只留主板 00/60，剔除北交所/创业板/科创板（推送不推无权限板块）', () => {
   const input = mkInput({
     signals: {
       ...SIG,
       pain: { ...SIG.pain, advance: { ...SIG.pain.advance, detail: [
         { code: '600825', lb: 6, chg: 9.99, kept: true },
         { code: '000678', lb: 3, chg: 9.98, kept: true },
+        { code: '002900', lb: 2, chg: 9.97, kept: true }, // 中小板(002) → 应保留
         { code: '300888', lb: 4, chg: 20, kept: true }, // 创业板 → 应被剔除
         { code: '688999', lb: 5, chg: 20, kept: true }, // 科创板 → 应被剔除
+        { code: '830777', lb: 4, chg: 30, kept: true }, // 北交所 → 应被剔除
       ] } },
     },
   });
@@ -415,7 +417,8 @@ test('buildSimulationStock：候选池剔除 300/301/688（推送不推无权限
   const codes = sim.candidate_pool.map((p) => p.code);
   assert.ok(!codes.includes('300888'), '创业板 300888 不得进入推送候选池');
   assert.ok(!codes.includes('688999'), '科创板 688999 不得进入推送候选池');
-  assert.deepEqual(codes, ['600825', '000678'], '主板标的不应被误伤');
+  assert.ok(!codes.includes('830777'), '北交所 830777 不得进入推送候选池');
+  assert.deepEqual(codes, ['600825', '000678', '002900'], '主板/中小板标的不应被误伤');
 });
 
 // ── 12.5 P0-2 陈旧闸（2026-10-10）：pain 口径日 ≠ signals 档案锚 → 拒收 ──

@@ -13,6 +13,7 @@ import {
   POS_TIERS, CUT_TIERS, qtyByAssetPct, qtyByHoldPct, DEFAULT_SLIP,
   normalizeExec, limitBuyOutcome, riskGuard, RISK_REJECT, batchSubmit,
 } from '../src/paper.js';
+import { filterOne } from '../src/lhbfilter.js';
 import config from '../src/config.js';
 
 const Q = (code, name, price, changePct = 0) => ({ code, name, price, changePct });
@@ -737,6 +738,36 @@ test('★ quotesFromDay：纯存档日（无 quotes 字段）行为不变', () =
   assert.equal(m['600519'].price, 100);
   assert.equal(m['000001'].price, 20);
   assert.equal(m['600519'].src, 'hot');
+});
+
+// ────────────────────── 实盘准入（2026-10-29·老板实盘权限，模拟盘买闸同样适用） ──────────────────────
+// 与 recommendPicks / buildSimulationStock 共用 src/admission.js 唯一口径：只留主板 00/60，
+// 剔除北交所(8/4/920)/创业板(300/301)/科创板(688)/ST/退，次新由 filterOne ①NEW_STOCK 已拦。
+const admitDay = {
+  trade_date: '2026-10-08',
+  summary: { main_theme: { name: '机器人', pct: 20 }, zt_codes: [], seats: {}, lhb_daily_net: 5 },
+  lhb: [], hot: [],
+};
+
+test('★ 模拟盘买闸 filterOne：北交所/创业板/科创板 被 NON_ADMISSIBLE 拦截（passed=false）', () => {
+  for (const code of ['830006', '300001', '688003', '920008', '400007']) {
+    const r = filterOne(code, admitDay);
+    assert.ok(!r.passed, `${code} 应被拦截 passed=false`);
+    assert.ok(r.rejectedBy.some((x) => x.code === 'NON_ADMISSIBLE'), `${code} 应被 NON_ADMISSIBLE 拦截`);
+  }
+});
+
+test('★ 模拟盘买闸 filterOne：ST / 退 被 NON_ADMISSIBLE 拦截', () => {
+  const r = filterOne('600100', { ...admitDay, lhb: [{ code: '600100', name: 'ST 风险', net_buy_wan: 60000, reason: '日涨幅偏离值达7%' }] });
+  assert.ok(!r.passed, 'ST 应被拦截');
+  assert.ok(r.rejectedBy.some((x) => x.code === 'NON_ADMISSIBLE'), 'ST 应被 NON_ADMISSIBLE 拦截');
+});
+
+test('★ 模拟盘买闸 filterOne：主板 00/60 通过准入（不被 NON_ADMISSIBLE 拦截）', () => {
+  for (const code of ['600004', '000005', '002007']) {
+    const r = filterOne(code, admitDay);
+    assert.ok(!r.rejectedBy.some((x) => x.code === 'NON_ADMISSIBLE'), `${code} 主板不应被准入闸拦截`);
+  }
 });
 
 // ────────────────────── 精确停板价（isLimitHit 的 prevClose 口径） ──────────────────────
