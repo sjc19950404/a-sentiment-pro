@@ -120,6 +120,7 @@ data/llm-dragon-logic-latest.json
 # 盘中监控侧车（持仓/连板池报价快照 + 急跌新闻快讯，盘中 cron 实时生成、可由脚本重跑，勿入库）
 data/intraday-quotes-latest.json
 data/intraday-news-latest.json
+data/intraday-antinuke-state.json
 
 # R2 同步增量清单（本地元数据，非源码）
 .r2_sync_manifest.json

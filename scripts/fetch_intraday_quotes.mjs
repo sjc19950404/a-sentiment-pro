@@ -10,10 +10,13 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { atomicWriteJSON } from '../src/fsutil.js';
+import { pushOpsAlerts } from '../src/opsalerts.js';
+import { runAntiNukeMonitor } from '../src/intraday_antinuke.js';
 import path from 'node:path';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'data', 'intraday-quotes-latest.json');
+const STATE_FILE = path.join(ROOT, 'data', 'intraday-antinuke-state.json');
 const KLINE_DIR = path.join(ROOT, 'ui', 'kline');
 
 function marketOf(code) {
@@ -65,7 +68,7 @@ function eodOf(code) {
   };
 }
 
-function main() {
+async function main() {
   const codes = watchCodes();
   console.log(`[eod-snapshot] 监控 ${codes.length} 只（持仓 + 连板池）`);
   const quotes = [];
@@ -84,6 +87,29 @@ function main() {
   atomicWriteJSON(OUT, JSON.stringify(payload, null, 1));
   console.log(`[eod-snapshot] 写出 ${quotes.length}/${codes.length} 只（缺分片 ${missing.length}） → ${OUT}`);
   if (missing.length) console.log(`   缺 K线分片：${missing.slice(0, 20).join(', ')}${missing.length > 20 ? ' …' : ''}`);
+
+  // ── 挂件三配套·反核预警（2026-10-30）：监控冰点试错仓持仓是否出现「日内跌超 5% 后翻红」地天板特征 ──
+  //   数据源即上方 K线分片当日 bar 的 low(深跌谷)/close(翻红)；fail-open，无 ice-trial 持仓/缺快照则静默。
+  try {
+    const acc = JSON.parse(readFileSync(path.join(ROOT, 'data', 'paper', 'account.json'), 'utf8'));
+    const date = (quotes.find((x) => x && x.date) || {}).date || new Date().toISOString().slice(0, 10);
+    let prevState = {};
+    try { prevState = JSON.parse(readFileSync(STATE_FILE, 'utf8')) || {}; } catch { /* 首次 */ }
+    const { alerts, state } = runAntiNukeMonitor({ account: acc, quotes, state: prevState, date });
+    if (alerts.length) {
+      atomicWriteJSON(STATE_FILE, JSON.stringify(state, null, 1));
+      console.log(`[反核预警] 命中 ${alerts.length} 只，推送企微：`);
+      for (const a of alerts) console.log(`   ${a.detail}`);
+      const r = await pushOpsAlerts(alerts);
+      if (r && r.error) console.error('[反核预警] 企微推送失败：', r.error);
+      else console.log(`[反核预警] 企微推送成功 ${r.pushed} 条`);
+    } else {
+      // 即便无预警也回写 state（可能新增了已监控标的的日期键，保持去重态新鲜）
+      atomicWriteJSON(STATE_FILE, JSON.stringify(state, null, 1));
+    }
+  } catch (e) {
+    console.warn(`[反核预警] 监控跳过（${e.message || e}）`);
+  }
 }
 
-main();
+void main().catch((e) => { console.error('[eod-snapshot] 致命错误：', e); process.exitCode = 1; });
