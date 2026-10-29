@@ -62,6 +62,22 @@ test('attributeTrades：弱转强三态（true/false/null 各自成组）', () =
   assert.ok(keys.includes('弱转强') && keys.includes('非弱转强') && keys.includes('未知(回放无涨停池)'), `三态应各自成组：${keys}`);
 });
 
+test('attributeTrades：第 1 步诊断切片（出场原因/止损回补/入场月份）', () => {
+  const trades = [
+    { ret: -0.10, win: false, exitReason: '止损（浮亏 -8%）', recovered: true, entryDate: '2026-01-05' },
+    { ret: -0.05, win: false, exitReason: '止损（浮亏 -9%）', recovered: false, entryDate: '2026-01-20' },
+    { ret: 0.08, win: true, exitReason: '移动止盈(回撤2%)', recovered: null, entryDate: '2026-02-01' },
+    { ret: -0.20, win: false, exitReason: '隔日强制了结(连板)', recovered: null, entryDate: '2026-02-15' },
+  ];
+  const a = attributeTrades(trades);
+  const reasons = a.byExitReason.map((g) => g.key).sort();
+  assert.deepEqual(reasons, ['止损（浮亏 -8%）', '止损（浮亏 -9%）', '移动止盈(回撤2%)', '隔日强制了结(连板)'].sort());
+  const rec = a.byRecovered.map((g) => g.key).sort();
+  assert.ok(rec.includes('假摔(已回补)') && rec.includes('真跌(未回补)') && rec.includes('未知(无出场后数据)'), `回补三态：${rec}`);
+  const months = a.byEntryMonth.map((g) => g.key).sort();
+  assert.deepEqual(months, ['2026-01', '2026-02'].sort());
+});
+
 test('attributeTrades：盈亏比为 0 或 ∞ 的边界', () => {
   // 全亏 → sumWin=0 → profitFactor 0
   const allLoss = [{ ret: -0.05, win: false }, { ret: -0.10, win: false }];

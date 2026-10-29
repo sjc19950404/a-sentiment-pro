@@ -38,6 +38,7 @@ for (let i = 2; i < process.argv.length; i++) {
 
 const TOP_N = Math.max(1, args.get('topn') || 3);
 const PER_POS_PCT = args.get('pct') || 0.10;
+const RECOVERY_WINDOW = 5;   // 假摔判定窗口：硬止损出场后 N 个交易日是否回补至出场价上方
 const RESTRICTIVE_REGIME = new Set(['shift', 'ebb', 'ice']);
 const USE_GLM = !args.get('noGlm');
 
@@ -95,7 +96,7 @@ function runReplay(mode, { collectTrades = false } = {}) {
         if (o && t.qty > 0) {
           const ret = t.realized / (o.entryPrice * t.qty);   // 已实现盈亏 / 买入名义额
           const win = t.realized > 0;
-          trades.push({ code: String(t.code), sector: o.sector || null, entryDate: o.entryDate, exitDate: date, holdingDays: holdDays(o.entryDate, date), ret, win, weakToStrong: o.weakToStrong, streak: o.streak, hotMoney: o.hotMoney, emotionScore: o.emotionScore, emotionBand: o.emotionBand });
+          trades.push({ code: String(t.code), sector: o.sector || null, entryDate: o.entryDate, exitDate: date, exitPrice: t.price, holdingDays: holdDays(o.entryDate, date), ret, win, exitReason: t.reason || null, weakToStrong: o.weakToStrong, streak: o.streak, hotMoney: o.hotMoney, emotionScore: o.emotionScore, emotionBand: o.emotionBand });
           soldTrades++; if (win) winTrades++;
         }
       }
@@ -140,6 +141,27 @@ function runReplay(mode, { collectTrades = false } = {}) {
     if (safe.length) acct = batchSubmit(acct, safe, day, { date, exec, applyLhbFilter: !args.get('noLhb') }).next;
   }
 
+  // —— 第 1 步诊断·假摔判定：硬止损出场后 N 日内是否回补（close ≥ 出场价）。
+  //   数据源：存档每日 hot/lhb 的 close（非 ztpool 分钟级，故仅日频代理；缺出场后数据→recovered=null）。
+  //   ⚠ 覆盖局限：出场后该股若不再进 hot/lhb，则无法判假摔，按"无数据"计，报告时如实披露覆盖率。
+  const closeSeries = {};   // code -> [{date, close}]
+  for (const d of days) {
+    for (const arr of [d.hot, d.lhb]) {
+      if (!Array.isArray(arr)) continue;
+      for (const x of arr) {
+        if (x && x.code != null && Number.isFinite(+x.close)) {
+          const k = String(x.code);
+          (closeSeries[k] ||= []).push({ date: d.trade_date, close: +x.close });
+        }
+      }
+    }
+  }
+  for (const tr of trades) {
+    const series = closeSeries[String(tr.code)] || [];
+    const later = series.filter((p) => p.date > tr.exitDate).slice(0, RECOVERY_WINDOW);
+    tr.recovered = later.length ? later.some((p) => p.close >= (tr.exitPrice ?? 0)) : null;
+  }
+
   const last = navSeries[navSeries.length - 1];
   const totalRet = (last.equity / 1000000 - 1) * 100;
   const winRate = soldTrades ? (winTrades / soldTrades * 100) : null;
@@ -173,9 +195,21 @@ function reportAttrition(trades) {
   if (o) console.log(`  整体：胜率 ${fmtPct(o.winRate)}  均收益 ${fmtPct(o.avgRet)}  均盈 ${fmtPct(o.avgWin)}  均亏 ${fmtPct(o.avgLoss)}  盈亏比 ${fmtPF(o.profitFactor)}  单笔期望 ${fmtPct(o.expectancy)}`);
   printSlice('按情绪档：', a.byEmotionBand);
   printSlice('按弱转强：', a.byWeakToStrong);
-  printSlice('按连板数：', a.byStreak);
+  printSlice('按连板数（追高代理）：', a.byStreak);
   printSlice('按游资净买（回放未注入席位→仅供参考）：', a.byHotMoney);
   printSlice('按板块（Top12）：', a.bySector, 12);
+  console.log('\n  ── 第 1 步诊断：连板票全亏的三类假设 ──');
+  printSlice('按出场原因：', a.byExitReason);
+  printSlice('按止损后回补(假摔)：', a.byRecovered);
+  printSlice('按入场月份(区间聚类)：', a.byEntryMonth);
+  // 假摔专项：仅看"硬止损"出场且出场后有数据的交易，统计回补率
+  const stopTrades = trades.filter((t) => t.exitReason && t.exitReason.includes('止损') && t.recovered != null);
+  if (stopTrades.length) {
+    const rec = stopTrades.filter((t) => t.recovered).length;
+    console.log(`\n  假摔判定：硬止损出场且有出场后数据的 ${stopTrades.length} 笔中，${rec} 笔在 ${RECOVERY_WINDOW} 日内回补至出场价上方（即被洗）→ 假摔率 ${(rec / stopTrades.length * 100).toFixed(1)}%`);
+  } else {
+    console.log('\n  假摔判定：无「硬止损」出场或出场后无行情数据，无法判定（连板票多为隔日强制了结而非硬止损）。');
+  }
   console.log('\n  诊断：盈亏比<1 的切片 = 期望为负的伪信号；盈亏比>1 且 n 足够 = 真有效因子。');
 }
 

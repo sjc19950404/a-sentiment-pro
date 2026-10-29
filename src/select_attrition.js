@@ -64,6 +64,10 @@ export function attributeTrades(trades) {
     byStreak: groupBy((t) => (t.streak >= 4 ? '4连板+' : t.streak >= 2 ? '2-3连板' : '首板(1)')),
     byHotMoney: groupBy((t) => (t.hotMoney ? '游资净买' : '非游资')),
     bySector: groupBy((t) => t.sector || '未知板块'),
+    // —— 第 1 步诊断维度 ——
+    byExitReason: groupBy((t) => t.exitReason || '未知'),          // 区分 隔日强制了结(连板)/止损/移动止盈/亏损不过三
+    byRecovered: groupBy((t) => (t.recovered == null ? '未知(无出场后数据)' : (t.recovered ? '假摔(已回补)' : '真跌(未回补)'))),  // 硬止损后 N 日是否回补
+    byEntryMonth: groupBy((t) => String(t.entryDate || '').slice(0, 7) || '未知'),  // 区间聚类：亏损是否集中在某段
   };
 }
 
