@@ -195,11 +195,16 @@ step(`自动建仓（主线选股 top${TOP_N} @ ${Math.round(PER_POS_PCT * 100)}
 // 注：regimeKey 已在「补丁一极寒分化」块提前读取（同口径 signals-latest.dailyReport.tag.key），此处直接复用。
 const tier = marketTier(emotionScore);
 const regimeBlocked = RESPECT_REGIME && regimeKey && RESTRICTIVE_REGIME.has(regimeKey);
+// 挂件一（2026-10-30·进攻）：冰点期允许极小仓位试错「首板烂板弱转强」，对了吃连板、错了-8%铁血止损。
+//   仅限 regimeKey==='ice' 且非强制测试；退潮/假繁荣仍严格不建仓（与系统纪律一致）。
+const iceTrialMode = regimeKey === 'ice' && !FORCE_TRADE;
 if (!tier) {
   console.log('  情绪分缺失 → 跳过自动建仓');
-} else if ((!tier.allowNew || regimeBlocked) && !FORCE_TRADE) {
+} else if ((!tier.allowNew || regimeBlocked) && !iceTrialMode && !FORCE_TRADE) {
   if (!tier.allowNew) console.log(`  情绪档位不允新建（${tier.label}）→ 跳过自动建仓`);
   else console.log(`  regime=${regimeKey} 风控盖帽（假繁荣/退潮）→ 跳过自动建仓（与系统纪律一致）`);
+} else if (iceTrialMode) {
+  console.log(`  ❄ 冰点试错仓模式：仅试错「首板烂板弱转强」，总仓不超过 ${(+config.params.live.stops.iceTrialPos * 100).toFixed(0)}%`);
 } else {
   const bypassed = FORCE_TRADE && (!tier.allowNew || regimeBlocked);
   if (bypassed) {
@@ -207,13 +212,20 @@ if (!tier) {
   }
   const ztpool = loadZtpoolForDay(day.trade_date);
   console.log(`  可交易性过滤数据源：当日涨停池 ${ztpool ? ztpool.length + ' 只' : '缺失（no-op）'}`);
-  const picks = (recommendPicks(day, { topN: TOP_N, emotionScore: effEmotionScore, ztpool, isClusteringBubble, mainLine, openGapFilterPct: config.backtest?.openGapFilterPct }).picks || [])
+  const ICE_TRIAL_TOPN = 3;   // 冰点试错仓最多试错几只（极小仓位，控制总暴露）
+  const rawPicks = (recommendPicks(day, { topN: TOP_N, emotionScore: effEmotionScore, ztpool, isClusteringBubble, mainLine, openGapFilterPct: config.backtest?.openGapFilterPct, seatsDetail: day.summary?.seats?.detail, hotmoney: config.params?.live?.hotmoney }).picks || [])
     .filter((p) => p && p.code && quotes[String(p.code)]); // 仅选有当日行情者（否则 batchSubmit 会 NO_QUOTE 拦截）
-  const items = picks.slice(0, TOP_N).map((p) => ({
-    code: String(p.code), pct: PER_POS_PCT, hybk: p.hybk || null,
+  // 挂件一：冰点试错仓——只取「首板烂板弱转强」标的，数量上限 ICE_TRIAL_TOPN，总仓不超 iceTrialPos。
+  const picks = iceTrialMode ? rawPicks.filter((p) => p.weakToStrong && (p.streak || 0) >= 1).slice(0, ICE_TRIAL_TOPN) : rawPicks;
+  if (iceTrialMode) console.log(`  试错候选（首板烂板弱转强）${picks.length} 只：${picks.map((p) => p.code).join(',') || '无（冰点期无合格弱转强首板）'}`);
+  const icePct = iceTrialMode ? (+config.params.live.stops.iceTrialPos) / Math.max(1, picks.length) : PER_POS_PCT;
+  const items = picks.slice(0, iceTrialMode ? ICE_TRIAL_TOPN : TOP_N).map((p) => ({
+    code: String(p.code), pct: icePct, hybk: p.hybk || null,
     sector: p.hybk || p.theme || null,
     tag: (p.isZt || (p.streak || 0) >= 2) ? 'zt' : null,   // 连板/打板标签 → 出场纪律 v1 据此隔日强制了结
-    reason: (bypassed ? '【压力测试·熔断绕过】' : '') + `自动建仓（主线选股候选 ${p.name || p.code}）`,
+    iceTrial: iceTrialMode || undefined,
+    antiNuke: iceTrialMode ? (config.params.live.stops.antiNuke !== false) : undefined,   // 挂件三：冰点试错仓可反核（放宽硬止损至跌停才砍）
+    reason: (iceTrialMode ? '【冰点试错仓·首板烂板弱转强】' : (bypassed ? '【压力测试·熔断绕过】' : '')) + `自动建仓（主线选股候选 ${p.name || p.code}）`,
   }));
   // 场景三 GLM 附加过滤守卫（买前三合一闸门）：方向 A 排雷黑名单 + 方向 C 妖股逻辑 + 方向 B 板块情绪。
   //   三档均为独立落盘的 side-car（军规#1：绝不改 emotion/regime），此处由代码采纳——命中即拒买。
@@ -235,7 +247,8 @@ if (!tier) {
     // 2026-10-30 强制接入 regime 仓位帽（#3）：无论历史回撤多少，账户总仓位绝不允许超过 regime 帽。
     //   从 regimeKey 经 bandFor 求 cap（冰点 0.20 / 退潮 0.35 / 发酵 0.90 / 修复 1.0 ……）；
     //   缺失/不匹配 → fail-open 退化为 1.0（不额外限仓），不阻塞建仓。
-    const regimeCap = (regimeKey && bandFor(regimeKey)?.cap != null) ? bandFor(regimeKey).cap : 1;
+    // 冰点试错仓：强制把总仓帽压到 iceTrialPos（极小仓位），与「绝不超 10%」一致；其余档用 regime 帽。
+    const regimeCap = iceTrialMode ? (+config.params.live.stops.iceTrialPos || 0.10) : ((regimeKey && bandFor(regimeKey)?.cap != null) ? bandFor(regimeKey).cap : 1);
     const res = batchSubmit(acct, safeItems, day, { date, exec, regimeCap });
     acct = res.next;
     if (bypassed) {

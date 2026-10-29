@@ -1,3 +1,22 @@
+import { seatsOf } from './seats.js';
+
+// 挂件二（2026-10-30·进攻）：游资席位追踪默认清单（顶级游资营业部关键词；speculative——seats.js 明确点名归属不可核验，仅作增强信号，绝不污染核心打分）
+const DEFAULT_HOTMONEY_SEAT_PATTERNS = ['华鑫', '拉萨', '章建平', '财通', '国泰君安', '东方财富', '方新侠', '赵老哥', '作手新一', '宁波', '溧阳路', '古北路', '金田路', '苏南帮', '上塘路', '佛山', '成都', '歌神', '炒新一族', '著名刺客', '小鳄鱼', '上海江苏路', '桑田路', '虹桥路', '溧阳'];
+
+// 计算某票买方席位中命中顶级游资清单的净买入额（万元）；异常/未命中 → 0
+function hotMoneyNetWanOf(detailMap, code, patterns) {
+  if (!detailMap || code == null) return 0;
+  const { b } = seatsOf(detailMap, code);
+  if (!Array.isArray(b)) return 0;
+  let net = 0;
+  for (const row of b) {
+    const name = String(row && row[0] != null ? row[0] : '');
+    const wan = Number(row && row[1] != null ? row[1] : 0) || 0;
+    if (patterns.some((pat) => name.includes(pat))) net += wan;
+  }
+  return net;
+}
+
 // 研判推荐引擎（唯一来源，ESM 纯函数、零依赖、Node 与浏览器共用）
 //
 // 定位：把系统已有的「市场研判结论」落到**具体个股**上，作为模拟交易的下单参考。
@@ -746,6 +765,27 @@ export function recommendPicks(day, ctx = {}) {
     // 连板标签：只有达到置顶门槛的票才给标签，避免「所有 2 板都贴连板」
     p.streakText = streakTagText(p.limitUp);
     p.streakBandText = p.limitUp && p.limitUp.prob != null ? streakBandText(p.limitUp.prob) : null;
+  }
+
+  // 挂件二（2026-10-30·进攻）：游资席位追踪因子（高精度制导）。
+  //   若 ctx.seatsDetail（day.summary.seats.detail）提供席位数据、且 ctx.hotmoney 提供营业部清单，
+  //   对「买方席位净买命中顶级游资营业部」的标的，标记 hotMoney 并放大其排序分（默认翻倍）。
+  //   ⚠ seats.js 明确「点名归属不可核验」，故仅作可选增强信号；ctx 未提供 seatsDetail/hotmoney → 零回归。
+  const hmCfg = (ctx && ctx.hotmoney) || { seatPatterns: DEFAULT_HOTMONEY_SEAT_PATTERNS, doubleWeight: 2.0 };
+  const hmPatterns = Array.isArray(hmCfg.seatPatterns) && hmCfg.seatPatterns.length ? hmCfg.seatPatterns : DEFAULT_HOTMONEY_SEAT_PATTERNS;
+  const hmDbl = Number.isFinite(+hmCfg.doubleWeight) && +hmCfg.doubleWeight > 0 ? +hmCfg.doubleWeight : 2.0;
+  if (ctx && ctx.seatsDetail) {
+    for (const p of picks) {
+      const net = hotMoneyNetWanOf(ctx.seatsDetail, p.code, hmPatterns);
+      if (net > 0) {
+        p.hotMoney = true;
+        p.hotMoneyNetWan = net;
+        const base = Number.isFinite(p.prob?.score) ? p.prob.score : (Number.isFinite(p.score) ? p.score : 0);
+        p.score = Math.round(Math.min(100, base * hmDbl) * 100) / 100;   // 游资净买 → 排序分翻倍（增强信号，不改模型概率）
+        if (!Array.isArray(p.tags)) p.tags = [];
+        if (!p.tags.includes('游资净买')) p.tags.push('游资净买');
+      }
+    }
   }
 
   // 空态与拒绝态必须说清原因，不能只给一个空列表

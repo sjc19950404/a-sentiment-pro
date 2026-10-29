@@ -211,7 +211,9 @@
           "openGapFilterPct": 8,
           "trailingStopPct": 0.025,
           "trailingTriggerPct": 0.06,
-          "clusterRedIndustryRatioMax": 0.10
+          "clusterRedIndustryRatioMax": 0.1,
+          "iceTrialPos": 0.1,
+          "antiNuke": true
         },
         "lookback": {
           "rolling": {
@@ -228,8 +230,18 @@
           "levelHighAbs": 65
         },
         "poolFilters": {
-          "intraday": { "chg_min": 3, "chg_max": 7, "liangbi_min": 2.0, "top": 10 },
-          "streak": { "min_lb": 2, "liangbi_min": 2.0, "main_net_min": 0, "top": 10 }
+          "intraday": {
+            "chg_min": 3,
+            "chg_max": 7,
+            "liangbi_min": 2,
+            "top": 10
+          },
+          "streak": {
+            "min_lb": 2,
+            "liangbi_min": 2,
+            "main_net_min": 0,
+            "top": 10
+          }
         },
         "costModel": {
           "comm": 0.0003,
@@ -238,6 +250,36 @@
           "priceLimit": {
             "enabled": false
           }
+        },
+        "hotmoney": {
+          "seatPatterns": [
+            "华鑫",
+            "拉萨",
+            "章建平",
+            "财通",
+            "国泰君安",
+            "东方财富",
+            "方新侠",
+            "赵老哥",
+            "作手新一",
+            "宁波",
+            "溧阳路",
+            "古北路",
+            "金田路",
+            "苏南帮",
+            "上塘路",
+            "佛山",
+            "成都",
+            "歌神",
+            "炒新一族",
+            "著名刺客",
+            "小鳄鱼",
+            "上海江苏路",
+            "桑田路",
+            "虹桥路",
+            "溧阳"
+          ],
+          "doubleWeight": 2
         }
       }
     }

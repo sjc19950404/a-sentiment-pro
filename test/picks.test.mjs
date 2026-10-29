@@ -660,3 +660,29 @@ test('recommendPicks 集成：爆量烂板候选保留且 weakToStrong/buyPoint 
   assert.match(res.picks[0].buyPoint, /烂板弱转强/);
 });
 
+// ───────── 挂件二·游资席位追踪因子 ─────────
+test('挂件二·游资席位追踪：买方席位命中顶级游资清单 → 标记 hotMoney 且排序分放大', () => {
+  const code = '600031';
+  const d = day({
+    hot: [{ code, name: '爆量烂板', close: 12, change_pct: 10, huanshou: 18, reason: 'Y' }],
+    summary: { zt_codes: [code], zt_lb: { [code]: 1 }, seats: { detail: { [code]: { b: [['华鑫证券上海分公司', 5000]], s: [] } } } },
+  });
+  const ztpool = [rpEntry(code, { zdp: 10.02, hs: 18, zbc: 1, fbt: 143000 })];
+  const base = recommendPicks(d, { topN: 5, emotionScore: 80, minProb: 0, ztpool });
+  const withSeats = recommendPicks(d, {
+    topN: 5, emotionScore: 80, minProb: 0, ztpool,
+    seatsDetail: d.summary.seats.detail, hotmoney: { seatPatterns: ['华鑫'], doubleWeight: 2.0 },
+  });
+  assert.equal(base.picks.length, 1, '基线应保留 1 只');
+  const wp = withSeats.picks[0];
+  assert.equal(wp.hotMoney, true, '命中顶级游资营业部的标的应标记 hotMoney');
+  assert.equal(wp.hotMoneyNetWan, 5000, '游资净买额应取自买方席位命中行的万元值');
+  assert.ok(Array.isArray(wp.tags) && wp.tags.includes('游资净买'), '应打上游资净买标签');
+  // 排序分放大：基线分(prob.score 或 score)的 2 倍，封顶 100
+  const baseScore = Number.isFinite(wp.prob?.score) ? wp.prob.score : (Number.isFinite(wp.score) ? wp.score : 0);
+  assert.equal(wp.score, Math.round(Math.min(100, baseScore * 2) * 100) / 100, '命中游资后排序分应放大为基线的 2 倍（封顶 100）');
+  // 零回归：未提供 seatsDetail → 不得标记 hotMoney
+  const noSeats = recommendPicks(d, { topN: 5, emotionScore: 80, minProb: 0, ztpool });
+  assert.equal(noSeats.picks[0].hotMoney, undefined, '无席位数据时不得标记 hotMoney（零回归）');
+});
+

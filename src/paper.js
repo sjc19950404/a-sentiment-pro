@@ -682,6 +682,8 @@ export function submitOrder(acct, order, quote, ctx = {}) {
     side: order.side, qty: order.qty, reason: order.reason || '手动下单',
     tag: order.tag || null,   // 选股侧传来的分类标签（如 'zt' 连板/打板），仅透传，不参与任何校验
     escape: order.escape || null,   // 跌停逃生标记：v1 紧急卖单置 true，触及跌停时改以跌停价排队成交
+    iceTrial: order.iceTrial || null,   // 挂件一：冰点试错仓标记（极小仓位试错首板烂板弱转强）
+    antiNuke: order.antiNuke || null,   // 挂件三：反核标记（放宽 -8% 硬止损至跌停才砍，给一日反杀机会）
     submitPrice: quote?.price != null ? +quote.price : null,
   };
   if (!v.ok) {
@@ -1203,7 +1205,7 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
       const applied = applyBuy(pos, { qty: p.qty, price: px, fee });
       // 连板/打板标签：① 持仓已有 ② 选股透传 tag==='zt' ③ 买入当日涨停（兜底，打板即涨停价成交）
       const isZtLb = !!(pos.isZtLb || p.tag === 'zt' || (q.changePct != null && q.changePct >= 9.8));
-      const newPos = { ...pos, ...applied, name, avail: pos.avail || 0, openDate: pos.openDate || date, lastBuyDate: date, last: +q.price, lastDate: date, pxStale: false, sector: (p.sector || pos.sector || null), isZtLb };
+      const newPos = { ...pos, ...applied, name, avail: pos.avail || 0, openDate: pos.openDate || date, lastBuyDate: date, last: +q.price, lastDate: date, pxStale: false, sector: (p.sector || pos.sector || null), isZtLb, iceTrial: p.iceTrial || pos.iceTrial || null, antiNuke: p.antiNuke || pos.antiNuke || null };
       cur = {
         ...cur,
         cash: toYuan(cashBack - toCents(need)),
@@ -1428,7 +1430,11 @@ export function scanStopLoss(acct, date) {
   for (const [code, p] of Object.entries(positions)) {
     if (!p || p.qty <= 0 || !(p.avgCost > 0) || p.last == null) continue;
     const pnlPct = (p.last - p.avgCost) / p.avgCost;      // 浮亏比例（未含卖出费用，与止损线同口径）
-    if (pnlPct > HARD_STOP_LOSS + 1e-12) continue;        // 未触及 −8%，不动作
+    // 挂件三（2026-10-30·进攻·日频代理）：冰点试错仓(antiNuke)放宽硬止损至 −10%——
+    //   给「开盘恐慌砸盘后翻红（地天板反杀）」一日观察机会；跌停(−10%)才砍、避免假摔被洗。
+    //   ⚠ 真实「开盘−5%→翘板→15分钟」需日内 open/tick 数据，日频引擎无此字段，此为日收盘代理版。
+    const floor = (p.antiNuke) ? -0.10 : HARD_STOP_LOSS;
+    if (pnlPct > floor + 1e-12) continue;                 // 未触及对应止损线，不动作
 
     const avail = Math.max(0, p.avail || 0);
     const frozen = (acct.pending || []).filter((x) => x.code === code && x.side === 'sell').reduce((a, x) => a + x.qty, 0);

@@ -8,7 +8,7 @@ import {
   LOT, MIN_COMMISSION, COMMISSION_RATE, STAMP_TAX_RATE, TRANSFER_FEE_RATE,
   boardOf, isStName, limitPctOf, isLimitHit, fees, fillPrice,
   applyBuy, applySell, emptyAccount, accountStats,
-  validateOrder, submitOrder, cancelOrder, settleDay, paperMetrics, trailingStopExits,
+  validateOrder, submitOrder, cancelOrder, settleDay, scanStopLoss, paperMetrics, trailingStopExits,
   exportAccount, importAccount, quotesFromDay, REJECT,
   POS_TIERS, CUT_TIERS, qtyByAssetPct, qtyByHoldPct, DEFAULT_SLIP,
   normalizeExec, limitBuyOutcome, riskGuard, RISK_REJECT, batchSubmit,
@@ -1151,6 +1151,35 @@ test('settleDay 移动止盈与 -8% 硬止损共存（additive，互不干扰）
   const sell = r.account.pending.find((o) => o.code === code && o.side === 'sell');
   assert.ok(sell, '-8% 硬止损仍应触发卖出');
   assert.ok(r.stopLoss.some((x) => x.code === code), '出场清单应含该票（触发 -8% 硬止损，与移动止盈 additive 互不干扰）');
+});
+
+// ───────── 挂件一/三：冰点试错仓标记随建仓带入持仓 ─────────
+test('挂件一/三：ice-trial 与 antiNuke 标记随建仓带入持仓', () => {
+  const code = '600001', name = '试错A';
+  let a = fresh(1000000);
+  a = submitOrder(a, { code, side: 'buy', qty: 1000, reason: '冰点试错', iceTrial: true, antiNuke: true }, Q(code, name, 10), { date: '2026-09-28' }).next;
+  a = settleDay(a, '2026-09-29', { [code]: Q(code, name, 10) }).account;   // T+1 买入成交
+  const pos = a.positions[code];
+  assert.ok(pos, '冰点试错仓应建仓成功');
+  assert.equal(pos.iceTrial, true, '持仓应继承 iceTrial 标记');
+  assert.equal(pos.antiNuke, true, '持仓应继承 antiNuke 标记');
+});
+
+// ───────── 挂件三·反核代理：ice-trial(antiNuke) 放宽硬止损至 -10% ─────────
+test('挂件三·反核代理：antiNuke 持仓放宽硬止损至 -10%（跌停才砍），普通持仓仍 -8%', () => {
+  const anti = '600001', norm = '600002';
+  const mk = (code, name, antiNuke) => ({
+    code, name, qty: 1000, avail: 1000, avgCost: 10, last: 9.1, openDate: '2026-09-30', lastDate: '2026-09-30', pxStale: false, antiNuke: antiNuke || null,
+  });
+  let a = { ...fresh(1000000), positions: { [anti]: mk(anti, 'A', true), [norm]: mk(norm, 'B', false) } };
+  // 两仓均 -9% 浮亏（成本10 → 现价9.1）
+  const sl = scanStopLoss(a, '2026-10-01');
+  assert.ok(!sl.list.find((x) => x.code === anti), 'antiNuke 持仓 -9% 不应触发 -8% 硬止损（放宽至 -10%）');
+  assert.ok(sl.list.find((x) => x.code === norm), '普通持仓 -9% 应触发 -8% 硬止损');
+  // 跌停(-10%)时 antiNuke 仍砍（不纵容真崩盘）
+  a.positions[anti] = { ...a.positions[anti], last: 9.0 };
+  const sl2 = scanStopLoss(a, '2026-10-02');
+  assert.ok(sl2.list.find((x) => x.code === anti), 'antiNuke 持仓 -10%(跌停) 仍应触发止损');
 });
 
 
