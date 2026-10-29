@@ -29,6 +29,8 @@
 //     退潮 = 水位高/中 + 方向下   （从高位掉下来 —— 拐点）
 //   高+下 与 低+上 是两个方向的**拐点**，正是本项目最有价值的信号。
 
+import config from './config.js';   // 2026-10-30（#9）：LEVEL 绝对阈值改读 config.params.live.regime（兜底 40/65）
+
 // ── 阈值唯一出处 ──────────────────────────────────────────────────────────
 
 export const REGIME_RULES = {
@@ -47,9 +49,9 @@ export const REGIME_RULES = {
   //   对分布形状免疫、恒能把 241 天铺开到 0-100。
   //
   //   故 level 判定 = 以分位为主判据；分位缺失时才退化为绝对水位（并标低 confidence）。
-  //   下面这两个绝对阈值**不作为主判据**，只用于 `levelCheck` 的交叉披露。
-  LEVEL_LOW_ABS: 40,
-  LEVEL_HIGH_ABS: 65,
+  //   下面这两个绝对阈值**不作为主判据**，只用于 `levelCheck` 的交叉披露（2026-10-30 收拢到 config：#9）。
+  LEVEL_LOW_ABS: (config?.params?.live?.regime?.levelLowAbs != null) ? config.params.live.regime.levelLowAbs : 40,
+  LEVEL_HIGH_ABS: (config?.params?.live?.regime?.levelHighAbs != null) ? config.params.live.regime.levelHighAbs : 65,
   // 方向判据：用「相对 N 日前的情绪分变化」而不是斜率回归——样本短、稳健优先
   DIR_LOOKBACK: 3,   // 与 3 个交易日前比
   // ⚠ 方向阈值同样受"分布压缩"影响：241 天里 p25→p75 只有 8.6 分跨度，
@@ -208,11 +210,10 @@ export function classifyRegime(ctx = {}, opts = {}) {
       detail: '判据不足，无法给出状态标签。',
     };
   }
-  // ★ 只有水位、完全没有方向（历史不足）→ 也不能给"中性/高潮"这种**有方向的结论**。
-  //   实测抓出：首日（2025-10-09）曾因 level=mid 被判"中性"，但那天没有任何历史，
-  //   "中性"是一个**方向性判断**（= 不涨不跌），用 0 天历史得出它是伪造结论。
-  //   故：无方向 → 一律 UNKNOWN（可附"仅知水位"的提示），绝不假装判出了状态。
-  if (dir === null) {
+  // ★ 无水位 或 无方向 → 都不能给"中性/高潮/回暖/退潮"这类**有方向的结论**。
+  //   双缺失（score 与 pctRank 都缺失 → level=null）尤其危险：此时既无水位也无方向，
+  //   若落入下方 else 会被当成 mid 给「回暖/退潮/中性」伪造方向。故 level===null 或 dir===null → UNKNOWN（#8，2026-10-30）。
+  if (level === null || dir === null) {
     return {
       key: REGIME_LABELS.UNKNOWN.key, label: REGIME_LABELS.UNKNOWN.label,
       level, dir: null, confidence: 'low',

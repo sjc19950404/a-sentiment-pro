@@ -17,6 +17,7 @@
 import { readFileSync, writeFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { pushOpsAlerts } from '../src/opsalerts.js';   // 复用项目统一企微告警通道（#7/#15）
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -158,6 +159,7 @@ async function main() {
         fail++;
         if (failed.length < 50) failed.push(`${item.rp}: ${e.message}`);
         console.warn(`[r2] 上传失败 ${item.rp}: ${e.message}`);
+        delete manifest[item.rp];   // #7 显式标为未完成 → 下个周期自动重试（避免被旧条目误判已传而永久跳过）
       }
     }
   }
@@ -180,6 +182,16 @@ async function main() {
   console.log(`[r2] 完成 · 上传 ${ok} · 跳过(未变) ${skipped} · 失败 ${fail} · 字节 ${(bytes / 1e6).toFixed(1)}MB · 本地共 ${sources.length}`);
   if (failed.length) console.warn(`[r2] 失败明细(前20):\n  ` + failed.slice(0, 20).join('\n  '));
   if (PUBLIC_URL && toUpload.length) console.log(`[r2] 公共地址示例：${PUBLIC_URL}/${encodeURI(toUpload[0].rp)}`);
+  // #7/#15：同步不完整 → 非静默 exit(0)。发企微告警 + 非零退出（pi_run.sh 已用 || log 容错，不阻断 EOD）。
+  if (fail > 0) {
+    const detail = `R2 同步有 ${fail} 个文件上传失败（本批待传 ${toUpload.length}）。失败项已在 manifest 标为未完成，下个周期自动重试。\n失败明细(前20):\n` + failed.slice(0, 20).join('\n');
+    console.error(`[r2] ❌ 同步不完整：失败 ${fail} 个文件，已发企微告警，退出码 1（pi_run.sh 已容错）`);
+    try {
+      const r = await pushOpsAlerts([{ severity: 'error', kind: 'r2-sync-failed', source: 'r2', detail }]);
+      if (r && r.error) console.error('[r2] 告警推送失败：', r.error);
+    } catch (e) { console.error('[r2] 告警推送异常：', e?.message || e); }
+    return finish(1);
+  }
   return finish(0);
 }
 

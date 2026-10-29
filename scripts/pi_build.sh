@@ -8,6 +8,8 @@ set -uo pipefail
 REPO_DIR="${REPO_DIR:-/opt/a-sentiment-pro}"
 cd "$REPO_DIR" || exit 1
 export MODE=live
+# 2026-10-30 加固：限制 Node 堆上限，防止 EOD 大档处理被 OOM-killer 静默杀进程（与 pi_run.sh 同源）。
+export NODE_OPTIONS="--max-old-space-size=1024"
 # OPS_WEBHOOK 由 pi_run.sh 从 .env 导出；缺失则脚本内部静默跳过运维告警。
 
 step() { echo "── $(date '+%T') $* ──"; }

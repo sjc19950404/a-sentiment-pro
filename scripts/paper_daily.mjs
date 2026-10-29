@@ -24,6 +24,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { atomicWriteJSON } from '../src/fsutil.js';
+import { bandFor } from '../src/position_policy.js';
 
 // 当日涨停池（可交易性过滤数据源）：ztpool_history 按日匹配 day.trade_date。
 // fail-open：文件缺失/无当日条目 → 返回 null（recommendPicks 内过滤自动 no-op，零回归）。
@@ -231,7 +232,11 @@ if (!tier) {
   if (!safeItems.length) {
     console.log('  无合格选股（候选均缺行情/不推荐或命中排雷黑名单）');
   } else {
-    const res = batchSubmit(acct, safeItems, day, { date, exec });
+    // 2026-10-30 强制接入 regime 仓位帽（#3）：无论历史回撤多少，账户总仓位绝不允许超过 regime 帽。
+    //   从 regimeKey 经 bandFor 求 cap（冰点 0.20 / 退潮 0.35 / 发酵 0.90 / 修复 1.0 ……）；
+    //   缺失/不匹配 → fail-open 退化为 1.0（不额外限仓），不阻塞建仓。
+    const regimeCap = (regimeKey && bandFor(regimeKey)?.cap != null) ? bandFor(regimeKey).cap : 1;
+    const res = batchSubmit(acct, safeItems, day, { date, exec, regimeCap });
     acct = res.next;
     if (bypassed) {
       for (const s of res.submitted) { const pos = acct.positions && acct.positions[String(s.code)]; if (pos) pos.stress = true; }

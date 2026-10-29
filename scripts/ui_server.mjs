@@ -31,10 +31,10 @@ const ROOT = resolve(__dirname, '..');                 // 项目根
 const CONFIG_PATH = join(ROOT, 'config.json');          // 唯一可写配置文件
 const CONFIG_BAK = join(ROOT, 'config.json.bak');
 
-// CORS（2026-10-28）：允许 github.io 等前端跨域访问 /api/*（隧道暴露的家庭后端）。
-//   默认 *；可用环境变量 UI_CORS_ORIGIN 收窄到具体源（如 https://sjc19950404.github.io）。
-//   ⚠ 隧道会暴露 /api/update-config 写接口，强烈建议叠加 Cloudflare Access 零信任保护。
-const CORS_ORIGIN = process.env.UI_CORS_ORIGIN || '*';
+// CORS（2026-10-30 收窄，#4）：默认只允许本项目 github.io 前端 + 本机 127.0.0.1/localhost 跨域，
+//   防止经隧道暴露后被任意第三方网页跨域改写 config。仍可用环境变量 UI_CORS_ORIGIN 覆盖（逗号分隔白名单）。
+const CORS_ALLOW = (process.env.UI_CORS_ORIGIN || 'https://sjc19950404.github.io,http://127.0.0.1:8080,http://localhost:8080')
+  .split(',').map((s) => s.trim()).filter(Boolean);
 
 // ─────────────────────── 参数范围（防呆，与控制台滑块一致） ───────────────────────
 // 任何越界或类型错误都被拒绝，且不产生任何写入/备份。
@@ -62,7 +62,8 @@ export function validateConfigPatch(patch) {
   }
   const src = (patch.stops && typeof patch.stops === 'object') ? patch.stops : patch; // 兼容两种提交形态
   for (const k of STOP_KEYS) {
-    if (!(k in src) || src[k] === undefined || src[k] === null || src[k] === '') continue; // 未提供则不改
+    if (!(k in src) || src[k] === undefined || src[k] === null) continue; // 未提供则不改
+    if (typeof src[k] === 'string' && src[k].trim() === '') { errors.push(`${r.label}(${k}) 不允许为空/空白`); continue; } // 空白串拒收（防 Number(' ')→0 静默污染，#21）
     const v = Number(src[k]);
     const r = RANGES[k];
     if (!Number.isFinite(v)) { errors.push(`${r.label}(${k}) 必须是数字`); continue; }
@@ -100,9 +101,11 @@ export function readConfigJson() {
  * @param {object} newCfg 已合并的新 config 对象
  */
 export function writeConfigJsonWithBackup(newCfg) {
-  // 防御：即便被误用也只允许写 config.json（绝不动 .env）
-  if (resolve(CONFIG_PATH) !== CONFIG_PATH && !CONFIG_PATH.endsWith('config.json')) {
-    throw new Error('安全拦截：只允许写 config.json');
+  // 防御（#20，2026-10-30 修死代码）：原判断 `resolve(CONFIG_PATH) !== CONFIG_PATH` 恒假（CONFIG_PATH 已是绝对路径），
+  //   形同虚设。改为真正有意义校验：目标必须是项目根内的 config.json，杜绝目录穿越 / 误写其他文件。
+  const abs = resolve(CONFIG_PATH);
+  if (!abs.endsWith('config.json') || !abs.startsWith(ROOT)) {
+    throw new Error('安全拦截：只允许写项目根内的 config.json');
   }
   if (existsSync(CONFIG_PATH)) copyFileSync(CONFIG_PATH, CONFIG_BAK); // 备份上一版
   writeFileSync(CONFIG_PATH, JSON.stringify(newCfg, null, 2) + '\n', 'utf8');
@@ -217,8 +220,10 @@ function serveStatic(req, res, pathname) {
 export function startServer(port = 8791, host = '127.0.0.1') {
   const server = http.createServer(async (req, res) => {
     try {
-      // CORS：github.io 等前端跨域访问 /api/* 必须通过；同源（Pi 本地 / 隧道直连）也不受影响。
-      res.setHeader('Access-Control-Allow-Origin', CORS_ORIGIN);
+      // CORS（#4）：仅反射白名单内的请求 Origin；非白名单一律回 'null'（拒绝跨域），杜绝任意站点改写 config。
+      const reqOrigin = req.headers.origin;
+      const allowOrigin = (reqOrigin && CORS_ALLOW.includes(reqOrigin)) ? reqOrigin : 'null';
+      res.setHeader('Access-Control-Allow-Origin', allowOrigin);
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
       if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); } // 预检

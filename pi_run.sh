@@ -26,6 +26,11 @@ MODE="${1:-eod}"
 cd "$REPO_DIR" || { alert "pi_run: 仓库不存在 $REPO_DIR"; exit 1; }
 [ -f .env ] && { set -a; . ./.env; set +a; }   # 仅取 OPS_WEBHOOK（企微 key，非 repo 凭据）
 
+# 2026-10-30 加固：限制 Node 堆上限，防止 EOD 大档（archive 6.9MB + 241 天重算）被 OOM-killer 静默杀进程。
+# 树莓派物理内存有限（1~2GB），不设上限时 GC 目标超物理内存 → 进程被杀且无报错（脚本多 || true 吞错）。
+# 按 Pi 物理内存可上调到 1536（1.5G）；此处按 1G 设，覆盖绝大多数 Pi 场景。
+export NODE_OPTIONS="--max-old-space-size=1024"
+
 # 单实例锁（与 pi_push.sh 同纪律）：并发调度撞车时（实例：14:00 盘中快照与候选池
 # 同时触发）后来者优雅跳过——否则两个实例抢 git index.lock，把 reset 打挂。
 # （注：reset 失败现已软化，仅发极简提示不中断；历史上曾因硬 exit 误发「reset 失败」

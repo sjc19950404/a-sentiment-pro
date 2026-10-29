@@ -902,8 +902,10 @@ export function buildWatchlist(input, opts = {}) {
   };
 }
 
-/** 盘中候选池筛选阈值（任务二指令口径：涨幅 3-7%、量比 >2.0、主力净流入为正、未涨停）——**趋势池**专用。 */
-export const INTRADAY_POOL_FILTERS = { chg_min: 3, chg_max: 7, liangbi_min: 2.0, top: 10 };
+// 2026-10-30 收拢到 config（#18）：盘中池过滤器阈值从 config.params.live.poolFilters 读取（含兜底，避免 config 缺失时行为漂移）。
+import config from './config.js';
+const _poolFilters = (config?.params?.live?.poolFilters) || {};
+export const INTRADAY_POOL_FILTERS = _poolFilters.intraday || { chg_min: 3, chg_max: 7, liangbi_min: 2.0, top: 10 };
 
 /** 连板池独立筛选规则（2026-10-10 P0 边界写死，用户指令「另行配置、只是不再复用趋势池涨幅过滤」）：
  *  · 连板计数：zt_lb 连板数 ≥ min_lb（2）——首板涨停属趋势池语义（被「未涨停」正常剔除），
@@ -913,7 +915,7 @@ export const INTRADAY_POOL_FILTERS = { chg_min: 3, chg_max: 7, liangbi_min: 2.0,
  *  · 封单/换手：盘中快照无此二字段，不设判据（宁缺毋假——不发明数据源，数据源升级再扩）。
  *  ⚠ 与趋势池 INTRADAY_POOL_FILTERS 完全解耦——数值巧合相同（量比 2.0/Top 10）也各自独立演进，
  *    改一处绝不隐式影响另一处（这正是 10-09 事故的教训：判据复用 = 错配温床）。 */
-export const STREAK_POOL_FILTERS = { min_lb: 2, liangbi_min: 2.0, main_net_min: 0, top: 10 };
+export const STREAK_POOL_FILTERS = _poolFilters.streak || { min_lb: 2, liangbi_min: 2.0, main_net_min: 0, top: 10 };
 export const STREAK_POOL_MIN_LB = STREAK_POOL_FILTERS.min_lb; // 兼容别名（历史引用/测试沿用）
 
 /** A 股连续竞价收盘（北京 15:00）——收盘倒计时闸的唯一出处。 */

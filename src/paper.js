@@ -490,6 +490,7 @@ export const RISK_REJECT = {
   DAILY_CHANGE: '单日账户仓位变动超过 20% 总资产上限',
   DD_CAP: '账户回撤触发动态降仓，本次委托将突破当前仓位上限',
   SECTOR_LIMIT: '板块暴露超过上限，强行拒绝买入（系统性风险）',
+  SINGLE_STOCK_CAP: '单票持仓占比超过硬上限（同票多单/跨日合并不得突破）',
 };
 
 /**
@@ -529,6 +530,11 @@ export function riskGuard(acct, order, quote, ctx = {}) {
   const tier = ddTier(stats.drawdown);
   const todayBuy = Math.max(0, +ctx.todayBuyAmount || 0);
 
+  // ①a 2026-10-30 强制接入 regime 仓位帽（#3）：无论历史回撤多少，账户总仓位绝不允许超过 regime 帽。
+  //    effectiveCap = min(回撤档位上限, regime 帽)；regimeCap 未提供 / 非有限数 / 为负时退化为仅回撤档位。
+  const regimeCap = ctx.regimeCap;
+  const effCap = (Number.isFinite(+regimeCap) && +regimeCap >= 0) ? Math.min(tier.cap, +regimeCap) : tier.cap;
+
   // ① 单日仓位变动（今日已提交买入累计 + 本笔）≤ 20% 总资产
   const changePct = (todayBuy + amount) / total;
   if (changePct > MAX_DAILY_POSITION_CHANGE + 1e-9) {
@@ -536,22 +542,38 @@ export function riskGuard(acct, order, quote, ctx = {}) {
       ok: false, reason: RISK_REJECT.DAILY_CHANGE,
       detail: `今日已买入 ${todayBuy.toFixed(2)} 元 + 本笔 ${amount.toFixed(2)} 元 = `
         + `${(changePct * 100).toFixed(2)}% 总资产，超过 ${MAX_DAILY_POSITION_CHANGE * 100}% 上限`,
-      cap: tier.cap, drawdown: stats.drawdown, thisChangePct: changePct, tier,
+      cap: effCap, drawdown: stats.drawdown, thisChangePct: changePct, tier,
     };
   }
 
-  // ② 下单后总仓位不超过回撤档位上限
+  // ② 下单后总仓位不超过 effectiveCap（回撤档位 ∩ regime 帽 的更严者）
   //    仓位口径 = (已持股市值 + 已冻结资金 + 本笔占用) ÷ 总资产
   //    注：总资产 status.total 已含冻结，故冻结部分不再重复加，用它算「占比」即可。
   const heldValue = stats.marketValue;               // 已持股市值
   const afterPosPct = (heldValue + (stats.freeze || 0) + amount) / total;
-  if (afterPosPct > tier.cap + 1e-9) {
+  if (afterPosPct > effCap + 1e-9) {
     return {
       ok: false, reason: RISK_REJECT.DD_CAP,
       detail: `下单后仓位将达 ${(afterPosPct * 100).toFixed(2)}% 总资产，`
-        + `当前档位上限 ${(tier.cap * 100).toFixed(0)}%（${tier.label}，当前回撤 ${(stats.drawdown * 100).toFixed(2)}%）`,
-      cap: tier.cap, drawdown: stats.drawdown, afterPosPct, tier,
+        + `当前上限 ${(effCap * 100).toFixed(0)}%（回撤档位 ${(tier.cap * 100).toFixed(0)}% ∩ regime 帽 ${Number.isFinite(+regimeCap) ? (effCap * 100).toFixed(0) + '%' : '未提供'}；${tier.label}，回撤 ${(stats.drawdown * 100).toFixed(2)}%）`,
+      cap: effCap, drawdown: stats.drawdown, afterPosPct, tier,
     };
+  }
+
+  // ②b 单票仓位硬上限（#12，2026-10-30）：防止同票多单 / 跨日合并突破单票上限。
+  //     下单后「该票持仓占比」不得超过 singleStockCap（默认 20%），否则强制拦截（非裁剪）。
+  const singleStockCap = ctx.singleStockCap;
+  if (Number.isFinite(+singleStockCap) && +singleStockCap > 0) {
+    const pos0 = acct.positions && acct.positions[String(order?.code)];
+    const codeVal = pos0 ? (pos0.last != null ? pos0.last * pos0.qty : (pos0.avgCost || 0) * pos0.qty) : 0;
+    const afterCodePct = (codeVal + amount) / total;
+    if (afterCodePct > +singleStockCap + 1e-9) {
+      return {
+        ok: false, reason: RISK_REJECT.SINGLE_STOCK_CAP,
+        detail: `下单后单票 ${order?.code} 持仓将达 ${(afterCodePct * 100).toFixed(2)}% 总资产，超过单票上限 ${(+singleStockCap * 100).toFixed(0)}%`,
+        cap: effCap, drawdown: stats.drawdown, afterCodePct, tier,
+      };
+    }
   }
 
   // 板块暴露限制（Step 4：防单板块满仓一锅端）。exec.sectorLimitRatio>0 且为买入时启用。
@@ -864,7 +886,7 @@ export function batchSubmit(acct, items, day, opts = {}) {
     let qty = Number.isInteger(raw?.qty) ? raw.qty : null;
     if (qty == null && Number.isFinite(+raw?.pct)) {
       const stats = accountStats(cur);
-      const px = fillPrice(+quote.price, 'buy', (exec.mode === 'strict') ? exec.slipNonLimit : (raw?.slip ?? DEFAULT_SLIP));
+      const px = fillPrice(+quote.price, 'buy', (exec.mode === 'strict') ? exec.slipNonLimit : (Number.isFinite(raw?.slip) ? raw?.slip : DEFAULT_SLIP));
       const r = qtyByAssetPct(stats.total, +raw.pct, px, { cash: cur.cash });
       qty = r.qty;
       row.capped = r.capped;
@@ -878,7 +900,7 @@ export function batchSubmit(acct, items, day, opts = {}) {
 
     // ② 账户全局风控 —— 用「当日累计」口径
     if (checkRisk) {
-      const g = riskGuard(cur, { side: 'buy', qty, slip: raw?.slip, sector: raw?.sector || raw?.hybk || null }, quote, { todayBuyAmount: todayBuy, exec });
+      const g = riskGuard(cur, { side: 'buy', qty, slip: Number.isFinite(raw?.slip) ? raw?.slip : DEFAULT_SLIP, sector: raw?.sector || raw?.hybk || null }, quote, { todayBuyAmount: todayBuy, exec, regimeCap: opts.regimeCap, singleStockCap: opts.singleStockCap != null ? opts.singleStockCap : (opts.perStockCap != null ? opts.perStockCap : 0.20) });
       if (!g.ok) {
         row.status = 'blocked'; row.stage = 'risk'; row.reason = g.reason; row.detail = g.detail; row.risk = g;
         cur = { ...cur, logs: appendLog(cur, { date, code, name: row.name, side: 'buy', qty, stage: 'risk', result: 'rejected', reason: g.reason, text: g.detail }) };
@@ -1144,19 +1166,25 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
         continue;
       }
     }
-    // 跌停卖不掉：默认委托失效（无买盘）。带 escape 逃生标记的卖单（v1「跌停逃生」）改以跌停价挂单排队，
-    // 尽量在首个跌停日脱身，避免后续跌停瀑布式下挫（等同 9:25 前已挂跌停价卖单抢排队；盘中非一字跌停则正常卖出）。
-    if (p.side === 'sell' && hit === 'down' && !p.escape) {
+    // 跌停卖不掉（#10/#11，2026-10-30）：
+    //   带 escape（v1 紧急逃生单）或 requeue（普通止损单）标记的卖单，跌停无买盘卖不掉——
+    //   不冒充成交、也不失效移除，保留委托留待次日重新挂单（排队脱身，避免跌停瀑布）。
+    //   其余普通卖单维持既有行为：跌停无买盘 → 委托失效。
+    if (p.side === 'sell' && hit === 'down') {
+      if (p.escape || p.requeue) {
+        log.push({ ...pick(p), status: 'queued', reason: '跌停价无法卖出，保留委托次日重试', detail: `${date} ${q.changePct}% 触及跌停，无买盘，委托保留排队` });
+        continue;   // 不 markDone → 留在 pending，下个交易日重新撮合
+      }
       log.push({ ...pick(p), status: 'expired', reason: '跌停价无法卖出', detail: `${date} ${q.changePct}% 触及跌停，无买盘，委托失效` });
       cur = { ...cur, orders: cur.orders.map((o) => (o.id === p.id ? { ...o, status: 'expired', settleDate: date, reject: '跌停价无法卖出', detail: `${date} 触及跌停，无买盘` } : o)) };
       markDone(p.id);
       continue;
     }
-    const escaped = p.side === 'sell' && hit === 'down' && !!p.escape;
+    const escaped = false; // 跌停逃生已在上方分支处理（仅保留排队、不成交）
 
     // 悲观滑点（Step 1）：strict 模式下，非涨停买卖按 ±slipNonLimit 成交；涨停打板仍用万二
-    const slip = (exec.mode === 'strict' && hit == null) ? exec.slipNonLimit : (p.slip ?? DEFAULT_SLIP);
-    const px = escaped ? +q.price : fillPrice(+q.price, p.side, slip);
+    const slip = (exec.mode === 'strict' && hit == null) ? exec.slipNonLimit : (Number.isFinite(p.slip) ? p.slip : DEFAULT_SLIP);
+    const px = fillPrice(+q.price, p.side, slip);
     const gross = round2(px * p.qty);
     const fee = fees(gross, p.side).total;
     const need = p.side === 'buy' ? round2(gross + fee) : 0;
@@ -1365,7 +1393,7 @@ export function strictV1Exits(acct, date, cfg = EXIT_V1) {
       continue;
     }
     const q = { code: it.code, name: it.name, price: it.last };
-    const sub = submitOrder(cur, { code: it.code, side: 'sell', qty: it.willSell, reason: it.reason, escape: cfg.escape }, q, { date });
+    const sub = submitOrder(cur, { code: it.code, side: 'sell', qty: it.willSell, reason: it.reason, escape: cfg.escape, requeue: true }, q, { date });
     cur = sub.next;
     if (sub.order.status !== 'pending') {
       cur = { ...cur, logs: appendLog(cur, { date, code: it.code, name: it.name, side: 'sell', qty: it.willSell, stage: 'exit', result: 'rejected',
@@ -1429,7 +1457,7 @@ export function scanStopLoss(acct, date) {
           continue;
         }
         const q = { code: it.code, name: it.name, price: it.last };
-        const sub = submitOrder(cur, { code: it.code, side: 'sell', qty: it.willSell, reason: `止损（浮亏 ${it.pnlPct}%）` }, q, { date: d });
+        const sub = submitOrder(cur, { code: it.code, side: 'sell', qty: it.willSell, reason: `止损（浮亏 ${it.pnlPct}%）`, requeue: true }, q, { date: d });
         cur = sub.next;
         if (sub.order.status !== 'pending') {
           cur = { ...cur, logs: appendLog(cur, { date: d, code: it.code, name: it.name, side: 'sell', qty: it.willSell, stage: 'stop', result: 'rejected',

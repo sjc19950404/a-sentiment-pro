@@ -1,3 +1,4 @@
+import { fetchWithRetry } from './util.js';
 // sources.js — 多源实时抓取（移植自 sjc19950404/a-sentiment fetch-daily.js 已验证接口）
 // 数据源:
 //   1. 同花顺强势股 zx.10jqka.com.cn/event/api/getharden（兼交易日探测: data[0].date）
@@ -46,7 +47,7 @@ class LhbNotPublishedError extends Error {
 }
 
 async function fetchText(url, opts = {}) {
-  const r = await fetch(url, { headers: { 'User-Agent': UA, ...(opts.headers || {}) } });
+  const r = await fetchWithRetry(url, { headers: { 'User-Agent': UA, ...(opts.headers || {}) } });
   if (!r.ok) throw new Error('HTTP ' + r.status + ' @ ' + url.slice(0, 80));
   return r;
 }
@@ -203,7 +204,7 @@ export async function fetchLhb(date) {
   while (page <= 5) {
     const url = 'https://datacenter-web.eastmoney.com/api/data/v1/get?pageSize=200&pageNumber=' + page +
       '&reportName=RPT_DAILYBILLBOARD_DETAILSNEW&columns=ALL&filter=(TRADE_DATE%3D%27' + date + '%27)';
-    const r = await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://data.eastmoney.com/' } });
+    const r = await fetchWithRetry(url, { headers: { 'User-Agent': UA, Referer: 'https://data.eastmoney.com/' } });
     const j = await r.json();
     if (!j.success || !j.result) {
       if (page === 1 && !j.result) throw new LhbNotPublishedError(date);
@@ -235,7 +236,7 @@ export async function fetchBoards(date) {
       let got = null;
       for (let att = 0; att < 2 && !got; att++) {
         try {
-          const t = await (await fetch('http://d.10jqka.com.cn/v6/line/48_' + code + '/01/' + year + '.js',
+          const t = await (await fetchWithRetry('http://d.10jqka.com.cn/v6/line/48_' + code + '/01/' + year + '.js',
             { headers: { 'User-Agent': UA, Referer: 'https://q.10jqka.com.cn/' } })).text();
           const s = t.slice(t.indexOf('(') + 1, t.lastIndexOf(')'));
           const obj = JSON.parse(s);
@@ -469,7 +470,7 @@ export async function fetchAmountMap({ anchor } = {}) {
     const m = {};
     for (const year of years) {
       try {
-        const t = await (await fetch('https://d.10jqka.com.cn/v6/line/' + code + '/01/' + year + '.js',
+        const t = await (await fetchWithRetry('https://d.10jqka.com.cn/v6/line/' + code + '/01/' + year + '.js',
           { headers: { 'User-Agent': UA, Referer: 'https://q.10jqka.com.cn/' } })).text();
         const obj = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
         (obj.data || '').split(';').filter(Boolean).forEach((l) => {
@@ -514,7 +515,7 @@ export async function fetchAmountMap({ anchor } = {}) {
 async function fetchAmountTencentFallback(ymd) {
   for (let att = 0; att < 3; att++) {
     try {
-      const t = await (await fetch('https://qt.gtimg.cn/q=sh000001,sz399001&r=' + Date.now(),
+      const t = await (await fetchWithRetry('https://qt.gtimg.cn/q=sh000001,sz399001&r=' + Date.now(),
         { headers: { 'User-Agent': UA } })).text();
       // 两市各自解析到有效值才返回（2026-10-08 事故：深证行缺失/解析失败时旧逻辑
       // any=true 即收，只加了沪市 8301 亿——单市冒充两市混入两市口径序列（近 20 日均
@@ -655,7 +656,7 @@ async function fetchSeatRows(reportName, date, code, sortCol) {
       const url = 'https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=' + reportName +
         '&columns=ALL&filter=(TRADE_DATE%3D%27' + date + '%27)(SECURITY_CODE%3D%22' + code + '%22)' +
         '&pageSize=50&pageNumber=1&sortColumns=' + sortCol + '&sortTypes=-1&source=WEB&client=WEB';
-      const j = await (await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://data.eastmoney.com/' } })).json();
+      const j = await (await fetchWithRetry(url, { headers: { 'User-Agent': UA, Referer: 'https://data.eastmoney.com/' } })).json();
       return (j.result && j.result.data) || [];
     } catch (e) { await sleep(400); }
   }

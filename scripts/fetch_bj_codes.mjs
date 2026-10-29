@@ -1,3 +1,4 @@
+import { fetchWithRetry } from '../src/util.js';
 // 北交所存活代码枚举：qt.gtimg 批量行情探测（43/83/87/92 段）+ 腾讯 bj K 线可达性
 // 产物：data/bt_bj_codes.json = [["bj430047","代码名"],...]
 import { writeFileSync, existsSync, readFileSync } from 'node:fs';
@@ -12,7 +13,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // 腾讯 bj K 线可达性
 try {
-  const r = await fetch('https://web.ifzq.gtimg.cn/appstock/app/kline/kline?param=bj920002,day,,,10', { headers: { Referer: 'https://gu.qq.com/', 'User-Agent': UA } });
+  const r = await fetchWithRetry('https://web.ifzq.gtimg.cn/appstock/app/kline/kline?param=bj920002,day,,,10', { headers: { Referer: 'https://gu.qq.com/', 'User-Agent': UA } });
   const j = await r.json();
   const d = j.data && j.data.bj920002;
   console.log('腾讯 bj K 线:', d && d.day ? 'OK · ' + d.day.length + ' bars · 末条 ' + JSON.stringify(d.day[d.day.length - 1]) : '无数据 ' + JSON.stringify(j).slice(0, 120));
@@ -26,7 +27,7 @@ if (existsSync(OUT)) {
 // GBK 解码
 const dec = new TextDecoder('gbk');
 async function quoteBatch(codes) {
-  const r = await fetch('https://qt.gtimg.cn/q=' + codes.join(','), { headers: { 'User-Agent': UA } });
+  const r = await fetchWithRetry('https://qt.gtimg.cn/q=' + codes.join(','), { headers: { 'User-Agent': UA } });
   const buf = await r.arrayBuffer();
   const txt = dec.decode(buf);
   const out = [];

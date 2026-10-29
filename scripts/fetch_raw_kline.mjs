@@ -1,3 +1,4 @@
+import { fetchWithRetry } from '../src/util.js';
 // 历史六因子回填 · 步骤1：全市场不复权日K抓取（腾讯 kline/kline 端点）
 //
 // 为什么不复权：涨停/炸板/跌停判定需要「实际成交价 == 交易所涨停价（round(prev×(1+pct),2)）」
@@ -70,7 +71,7 @@ async function worker() {
     for (let att = 0; att < 3 && !bars; att++) {
       try {
         const u = 'https://web.ifzq.gtimg.cn/appstock/app/kline/kline?param=' + code + ',day,,,640';
-        const j = await (await fetch(u, { headers: { Referer: 'https://gu.qq.com/', 'User-Agent': UA } })).json();
+        const j = await (await fetchWithRetry(u, { headers: { Referer: 'https://gu.qq.com/', 'User-Agent': UA } })).json();
         const d = j.data && j.data[code];
         const day = d && d.day;
         if (Array.isArray(day) && day.length) bars = day;

@@ -15,19 +15,45 @@
 // 用法：
 //   node scripts/emotion_history.mjs                 # 只计算，输出 data/emotion_history.json
 //   node scripts/emotion_history.mjs --fetch-latest  # 先抓最近交易日涨停池入库再计算（每日定时跑）
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { computeEmotion, computeEmotionMetrics, classifyEmotion, computeEmotionScore } from '../src/emotion_cycle.js';
+import { atomicWriteJSON } from '../src/fsutil.js';
+import { fetchWithRetry } from '../src/util.js';
+import { num } from '../src/dirty.js';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 const data = (f) => `${ROOT}data/${f}`;
 const ymd = (d) => String(d).replace(/-/g, '');
 const r4 = (v) => (Number.isFinite(v) ? Math.round(v * 10000) / 10000 : null);
 
+// 2026-10-30 脏数据校验（#6）：涨停池条目入库前逐条清洗，剔除无 code / 非数字 / 异常大值条目，
+//   避免东财异常数据（字符串字段、异常大值、负号）污染情绪分与连板池。脏条目 console.warn 留痕。
+function sanitizePool(pool) {
+  if (!Array.isArray(pool)) return { clean: [], dropped: 0 };
+  const clean = [];
+  let dropped = 0;
+  for (const it of pool) {
+    if (!it || it.c == null) { dropped++; continue; }        // 无 code → 剔除
+    if (num(it.c) == null) { dropped++; continue; }          // code 非数字/字符串 → 剔除
+    const fbt = num(it.fbt), zbc = num(it.zbc), fund = num(it.fund), lbc = num(it.lbc);
+    // 负值 / 量级异常（fbt>86400s、zbc>200、lbc>100 均不可能；fund 非有限数）→ 该条剔除
+    if ((fbt != null && (fbt < 0 || fbt > 86400))
+        || (zbc != null && (zbc < 0 || zbc > 200))
+        || (fund != null && !Number.isFinite(fund))
+        || (lbc != null && (lbc < 0 || lbc > 100))) {
+      console.warn(`[dirty] 涨停池条目剔除 code=${it.c} fbt=${it.fbt} zbc=${it.zbc} fund=${it.fund} lbc=${it.lbc}`);
+      dropped++; continue;
+    }
+    clean.push(it);
+  }
+  return { clean, dropped };
+}
+
 // ── 精确轨数据源：东财涨停池（与 src/sources.js fetchPools 同端点同参数口径）──
 async function fetchLatestPool() {
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const url = `https://push2ex.eastmoney.com/getTopicZTPool?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=500&sort=fbt%3Aasc&date=${today}&_=${Date.now()}`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       'Referer': 'https://quote.eastmoney.com/',
@@ -68,11 +94,14 @@ if (existsSync(data('ztpool_history.json'))) {
 if (fetchLatest) {
   const got = await fetchLatestPool();
   if (got) {
-    const i = hist.findIndex((x) => x.date === got.date);
-    if (i >= 0) hist[i] = got; else hist.push(got);
+    const san = sanitizePool(got.pool);              // #6 入库前逐条清洗
+    if (san.dropped) console.warn(`[dirty] ${got.date} 涨停池剔除脏条目 ${san.dropped} 条`);
+    const cleanGot = { date: got.date, pool: san.clean };
+    const i = hist.findIndex((x) => x.date === cleanGot.date);
+    if (i >= 0) hist[i] = cleanGot; else hist.push(cleanGot);
     hist.sort((a, b) => (a.date < b.date ? -1 : 1));
-    writeFileSync(data('ztpool_history.json'), JSON.stringify(hist, null, 1));
-    console.log(`[fetch-latest] ${got.date} 涨停池 ${got.pool.length} 只已入库（ztpool_history.json 共 ${hist.length} 天）`);
+    atomicWriteJSON(data('ztpool_history.json'), JSON.stringify(hist, null, 1));   // #2 原子写
+    console.log(`[fetch-latest] ${got.date} 涨停池 ${cleanGot.pool.length} 只已入库（ztpool_history.json 共 ${hist.length} 天）`);
   } else {
     console.log('[fetch-latest] 接口今日无数据（非交易日或池未生成），跳过');
   }
@@ -120,7 +149,7 @@ const payload = {
   },
   history: out,
 };
-writeFileSync(data('emotion_history.json'), JSON.stringify(payload, null, 1));
+atomicWriteJSON(data('emotion_history.json'), JSON.stringify(payload, null, 1));
 console.log(`\n情绪历史 ${out.length} 天已写入 data/emotion_history.json（精确 ${exact} / 近似 ${out.length - exact}）`);
 console.log('状态分布:', JSON.stringify(dist));
 console.log('\n最近 10 天:');

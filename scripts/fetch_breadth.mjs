@@ -1,3 +1,4 @@
+import { fetchWithRetry } from '../src/util.js';
 // 全市场 K 线扫描 → 多维宽度（#3）
 //
 // ── 为什么必须分片（用户的硬要求：不能一把梭）────────────────────────────────
@@ -98,7 +99,7 @@ async function fetchEastmoneyList() {
   try {
     for (let pn = 1; pn <= 60; pn++) {
       const url = `https://push2.eastmoney.com/api/qt/clist/get?pn=${pn}&pz=100&po=1&np=1&fltt=2&invt=2&fid=f3&fs=${fs}&fields=f12,f14,f23`;
-      const r = await fetch(url, { headers: { Referer: 'https://quote.eastmoney.com/', 'User-Agent': 'Mozilla/5.0 Chrome/120' } });
+      const r = await fetchWithRetry(url, { headers: { Referer: 'https://quote.eastmoney.com/', 'User-Agent': 'Mozilla/5.0 Chrome/120' } });
       const j = await r.json();
       const diff = j && j.data && Array.isArray(j.data.diff) ? j.data.diff : null;
       if (!diff || !diff.length) break;
@@ -133,7 +134,7 @@ async function kline(code) {
   const url = `https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?param=${sym},day,2024-01-01,2030-12-31,${FETCH_BARS},qfq`;
   for (let i = 0; i < 3; i++) {
     try {
-      const res = await fetch(url, { headers: { Referer: 'https://finance.qq.com', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120' } });
+      const res = await fetchWithRetry(url, { headers: { Referer: 'https://finance.qq.com', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120' } });
       const j = await res.json();
       const node = (j && j.data && j.data[sym]) || {};
       const rows = node.qfqday || node.day || [];

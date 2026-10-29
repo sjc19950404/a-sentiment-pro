@@ -210,7 +210,8 @@
           "clusterRiseMax": 1500,
           "openGapFilterPct": 8,
           "trailingStopPct": 0.025,
-          "trailingTriggerPct": 0.06
+          "trailingTriggerPct": 0.06,
+          "clusterRedIndustryRatioMax": 0.10
         },
         "lookback": {
           "rolling": {
@@ -221,6 +222,14 @@
           "momentumPrev": 5,
           "rankWindow": 60,
           "rankMin": 20
+        },
+        "regime": {
+          "levelLowAbs": 40,
+          "levelHighAbs": 65
+        },
+        "poolFilters": {
+          "intraday": { "chg_min": 3, "chg_max": 7, "liangbi_min": 2.0, "top": 10 },
+          "streak": { "min_lb": 2, "liangbi_min": 2.0, "main_net_min": 0, "top": 10 }
         },
         "costModel": {
           "comm": 0.0003,

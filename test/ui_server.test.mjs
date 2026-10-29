@@ -110,10 +110,13 @@ test('HTTP 层：CORS 头 + OPTIONS 预检（github.io → 隧道跨域放行）
   try {
     const opt = await fetch(`${base}/api/config`, { method: 'OPTIONS', headers: { Origin: 'https://sjc19950404.github.io' } });
     assert.equal(opt.status, 204, 'OPTIONS 预检必须 204');
-    assert.equal(opt.headers.get('access-control-allow-origin'), '*', '必须允许跨域');
+    assert.equal(opt.headers.get('access-control-allow-origin'), 'https://sjc19950404.github.io', '白名单内 Origin 必须反射放行');
     const get = await fetch(`${base}/api/config`, { headers: { Origin: 'https://sjc19950404.github.io' } });
     assert.equal(get.status, 200);
-    assert.equal(get.headers.get('access-control-allow-origin'), '*', 'GET 跨域必须带 ACAO');
+    assert.equal(get.headers.get('access-control-allow-origin'), 'https://sjc19950404.github.io', '白名单内 GET 跨域必须反射 ACAO');
+    // 非白名单第三方站点跨域 → 必须拒绝（回 null），防止经隧道篡改 config（#4）
+    const evil = await fetch(`${base}/api/config`, { headers: { Origin: 'https://evil.example.com' } });
+    assert.equal(evil.headers.get('access-control-allow-origin'), 'null', '非白名单 Origin 必须拒绝跨域');
     const same = await fetch(`${base}/api/config`); // 同源（无 Origin）也应正常
     assert.equal(same.status, 200);
   } finally {

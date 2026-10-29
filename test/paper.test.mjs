@@ -1006,14 +1006,14 @@ test('v1 跌停逃生：连板隔日了结仓在跌停日改以跌停价排队�
   assert.ok(pend, 'v1 应生成连板隔日了结的待卖单');
   assert.equal(pend.escape, true, 'v1 紧急卖单必须带 escape 逃生标记（竞价排雷 / 盘中止损共用）');
   assert.equal(r1.fills.length, 0, 'T+1：当日提交的卖单当日不成交');
-  // Day2：该票一字跌停（prevClose=10 → 跌停价 9）。逃生应以跌停价排队成交，截断瀑布
+  // Day2：该票一字跌停（prevClose=10 → 跌停价 9）。逃生单在跌停日**不记成交、保留排队**（#10，2026-10-30）：
+  //   不冒充成交、不虚假清仓，委托留待次日重新挂单脱身；不把"账面已卖"掩盖真实跌停瀑布风险。
   const r2 = settleDay(r1.account, '2026-10-09', { [code]: { code, name, price: 9, changePct: -10, prevClose: 10 } }, { exitMode: 'strict_v1' });
-  assert.equal(r2.account.positions[code], undefined, '跌停日逃生后应已清仓');
-  const fill = r2.fills.find((f) => f.code === code && f.side === 'sell');
-  assert.ok(fill, '应产生卖成记录');
-  assert.match(fill.reason || '', /逃生/, '应以「跌停逃生」方式成交');
-  assert.equal(fill.price, 9, '逃生成交价 = 跌停价（不叠加悲观滑点）');
-  assert.ok(r2.account.realized < 0, '跌停逃生仍有亏损，但已锁定在首个跌停日，不再瀑布');
+  assert.ok(r2.account.positions[code], '跌停日逃生单不计成交 → 持仓仍在（未虚假清仓）');
+  assert.equal(r2.fills.filter((f) => f.code === code && f.side === 'sell').length, 0, '跌停日不应产生卖成记录');
+  const stillPending = r2.account.pending.find((o) => o.code === code && o.side === 'sell' && o.escape);
+  assert.ok(stillPending, '跌停日逃生单应保留在 pending（次日重试，不失效）');
+  assert.equal(r2.account.realized, 0, '跌停日未成交 → 当日未实现盈亏仍为 0（不假装逃生成功）');
 });
 
 test('v1 跌停逃生对照：无 escape 的普通卖单在跌停日仍失效（逃生是 v1 专属，不改 legacy）', () => {

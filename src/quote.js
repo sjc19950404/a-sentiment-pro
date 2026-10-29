@@ -129,9 +129,14 @@ export async function fetchQuotes(codes, opts = {}) {
     const syms = batch.map(quoteSymbol).filter(Boolean);
     if (!syms.length) continue;
     try {
+      // 2026-10-30 超时保护（#1，浏览器安全版）：quote.js 会被打包进前端，不能硬换 Node 版
+      //   fetchWithRetry；改用浏览器/Node 通用的 AbortSignal.timeout 给默认 fetch 加 10s 上限，
+      //   超时即抛错进入 catch（单批失败只影响这一批，不炸整体）。注入的 fetchImpl 会忽略 signal。
+      const ctrl = (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(10000) : undefined;
       const res = await f(QUOTE_ENDPOINT + syms.join(','), {
         // 腾讯行情对 Referer 敏感：带上才稳定返回（实测无 Referer 偶发空响应）
         headers: { Referer: 'https://finance.qq.com' },
+        ...(ctrl ? { signal: ctrl } : {}),
       });
       // 腾讯返回 GBK；浏览器侧用 arrayBuffer + TextDecoder('gbk') 解码
       let text;

@@ -34,7 +34,8 @@
         "clusterRiseMax": 1500,
         "openGapFilterPct": 8,
         "trailingStopPct": 0.025,
-        "trailingTriggerPct": 0.06
+        "trailingTriggerPct": 0.06,
+        "clusterRedIndustryRatioMax": 0.10
       },
       "lookback": {
         "rolling": {
@@ -53,9 +54,17 @@
         "priceLimit": {
           "enabled": false
         }
-      }
-    },
-    "train": {
+        },
+        "regime": {
+        "levelLowAbs": 40,
+        "levelHighAbs": 65
+        },
+        "poolFilters": {
+        "intraday": { "chg_min": 3, "chg_max": 7, "liangbi_min": 2.0, "top": 10 },
+        "streak": { "min_lb": 2, "liangbi_min": 2.0, "main_net_min": 0, "top": 10 }
+        }
+        },
+        "train": {
       "weights": {
         "s_net20": 0.2,
         "s_pos10": 0.1,
@@ -80,7 +89,8 @@
         "clusterRiseMax": 1500,
         "openGapFilterPct": 8,
         "trailingStopPct": 0.025,
-        "trailingTriggerPct": 0.06
+        "trailingTriggerPct": 0.06,
+        "clusterRedIndustryRatioMax": 0.10
       },
       "lookback": {
         "rolling": {
@@ -99,9 +109,17 @@
         "priceLimit": {
           "enabled": false
         }
-      }
-    },
-    "governance": "live 冻结（薄壳递归 Object.freeze）；改动唯一通道 = scripts/promote_params.mjs --apply（样本外20%门禁 + params_changelog.json 留痕 who/when/why/验证结果）。train 为实验区，寻优锚点已切至 train（scripts/backtest.mjs）。"
+        },
+        "regime": {
+        "levelLowAbs": 40,
+        "levelHighAbs": 65
+        },
+        "poolFilters": {
+        "intraday": { "chg_min": 3, "chg_max": 7, "liangbi_min": 2.0, "top": 10 },
+        "streak": { "min_lb": 2, "liangbi_min": 2.0, "main_net_min": 0, "top": 10 }
+        }
+        },
+        "governance": "live 冻结（薄壳递归 Object.freeze）；改动唯一通道 = scripts/promote_params.mjs --apply（样本外20%门禁 + params_changelog.json 留痕 who/when/why/验证结果）。train 为实验区，寻优锚点已切至 train（scripts/backtest.mjs）。"
   },
   "lookback": {
     "rolling": {

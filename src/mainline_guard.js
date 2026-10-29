@@ -18,7 +18,7 @@ import config from './config.js';
 const _liveStops = (config && config.params && config.params.live && config.params.live.stops) || {};
 export const SENTIMENT_PENALTY = Number.isFinite(+_liveStops.sentimentPenalty) ? +_liveStops.sentimentPenalty : 10; // 极寒分化触发时从情绪分扣除的基础分
 export const CLUSTER_RISE_COUNT_MAX = Number.isFinite(+_liveStops.clusterRiseMax) ? +_liveStops.clusterRiseMax : 1500; // 上涨家数硬阈值：低于此值视为「极少数票在涨」
-export const CLUSTER_RED_INDUSTRY_RATIO_MAX = 0.10;   // 红盘行业占比硬阈值：低于此值视为「绝大多数行业下跌」（未入控制台，固定）
+export const CLUSTER_RED_INDUSTRY_RATIO_MAX = Number.isFinite(+_liveStops.clusterRedIndustryRatioMax) ? +_liveStops.clusterRedIndustryRatioMax : 0.10;   // 2026-10-30 收拢到 config（#17）：红盘行业占比硬阈值，从 config.params.live.stops 读取（兜底 0.10）
 
 // ═══════════════════════════════ 补丁一：极寒分化惩罚（防妖股抱团假回暖） ═══════════════════════════════
 /**
