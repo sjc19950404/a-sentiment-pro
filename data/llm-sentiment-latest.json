@@ -2,66 +2,66 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-10-29",
- "generatedAt": "2026-10-29T18:31:09.405+08:00",
+ "generatedAt": "2026-10-29T21:00:50.122+08:00",
  "model": "glm-4-flash",
  "sentiment": -0.5,
  "confidence": 0.8,
- "reason": "市场涨停数量少于跌停，炸板率高，亏钱效应显著，多数强势股涨幅有限，市场情绪偏向负面。",
+ "reason": "市场整体亏钱效应显著，涨停数量少于跌停，炸板率高，强势股多为业绩增长或行业热点，但整体市场情绪偏弱。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "桂林三金",
+   "target": "一鸣食品",
    "tone": "positive",
-   "note": "三季报增长带动股价上涨"
-  },
-  {
-   "type": "业绩预告",
-   "target": "天顺风能",
-   "tone": "positive",
-   "note": "三季报增长及海上风电概念助力股价"
-  },
-  {
-   "type": "业绩预告",
-   "target": "西部材料",
-   "tone": "positive",
-   "note": "商业航天概念及航天铌合金等题材推动股价"
-  },
-  {
-   "type": "业绩预告",
-   "target": "中国卫星",
-   "tone": "positive",
-   "note": "三季报增长及卫星制造概念支撑股价"
+   "note": "低温乳品和烘焙食品行业增长，带动股价上涨。"
   },
   {
    "type": "业绩预告",
    "target": "福建金森",
    "tone": "positive",
-   "note": "三季报增长及林业题材带动股价"
+   "note": "林业和FSC森林认证助力股价上涨。"
   },
   {
-   "type": "行业催化",
-   "target": "机器人",
+   "type": "业绩预告",
+   "target": "桂林三金",
    "tone": "positive",
-   "note": "机器人概念持续活跃"
+   "note": "三季报增长和中成药业务推动股价上涨。"
   },
   {
-   "type": "行业催化",
-   "target": "商业航天",
+   "type": "业绩预告",
+   "target": "宇晶股份",
    "tone": "positive",
-   "note": "商业航天概念成为市场热点"
+   "note": "机器人概念和碳化硅设备业务增长。"
   },
   {
-   "type": "行业催化",
-   "target": "卫星通信",
+   "type": "业绩预告",
+   "target": "航天晨光",
    "tone": "positive",
-   "note": "卫星通信终端概念受到关注"
+   "note": "商业航天和特种装备业务增长。"
+  },
+  {
+   "type": "业绩预告",
+   "target": "中国卫星",
+   "tone": "positive",
+   "note": "三季报增长和卫星制造业务推动股价上涨。"
+  },
+  {
+   "type": "业绩预告",
+   "target": "天顺风能",
+   "tone": "positive",
+   "note": "三季报增长和海上风电业务增长。"
+  },
+  {
+   "type": "业绩预告",
+   "target": "西部材料",
+   "tone": "positive",
+   "note": "商业航天和航天铌合金业务推动股价上涨。"
   }
  ],
  "inputDigest": {
   "themes": 43,
   "hotListed": 15,
   "ztCount": 39,
-  "emotionValue": 28,
+  "emotionValue": 27.9,
   "painVerdict": "亏钱效应显著（昨涨停今日翻绿 64%、高位板晋级失败 50%，追高者整体受损）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
