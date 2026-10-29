@@ -1,148 +1,195 @@
 {
- "date": "2026-10-27",
- "prevZtCount": 41,
+ "date": "2026-10-28",
+ "prevZtCount": 72,
  "perf": {
-  "n": 41,
-  "universe": 41,
+  "n": 72,
+  "universe": 72,
   "missing": 0,
   "reliable": true,
-  "avg": 2.33,
-  "median": 2.03,
-  "lossRatio": 0.29,
-  "worst": -9.95,
-  "best": 15.55,
-  "limitUpAgain": 9,
-  "limitDown": 1,
-  "bigLoss": 2,
+  "avg": -0.94,
+  "median": -2.4,
+  "lossRatio": 0.64,
+  "worst": -14.36,
+  "best": 10.19,
+  "limitUpAgain": 10,
+  "limitDown": 3,
+  "bigLoss": 13,
   "note": null
  },
  "advance": {
-  "n": 12,
-  "kept": 3,
-  "failed": 9,
-  "failRate": 0.75,
+  "n": 8,
+  "kept": 4,
+  "failed": 4,
+  "failRate": 0.5,
   "byTier": {
    "2": {
-    "n": 8,
+    "n": 5,
     "kept": 2,
-    "failed": 6,
-    "failRate": 0.75
+    "failed": 3,
+    "failRate": 0.6
    },
    "3": {
-    "n": 0,
-    "kept": 0,
+    "n": 2,
+    "kept": 2,
     "failed": 0,
-    "failRate": null
+    "failRate": 0
    },
    "4+": {
-    "n": 4,
-    "kept": 1,
-    "failed": 3,
-    "failRate": 0.75
+    "n": 1,
+    "kept": 0,
+    "failed": 1,
+    "failRate": 1
    }
   },
   "reliable": true,
   "maxLb": 5,
   "detail": [
    {
-    "code": "600838",
-    "lb": 5,
-    "chg": 5.11,
-    "kept": false
-   },
-   {
-    "code": "603528",
-    "lb": 4,
-    "chg": -9.95,
-    "kept": false
-   },
-   {
-    "code": "603028",
-    "lb": 4,
-    "chg": 0.68,
-    "kept": false
-   },
-   {
     "code": "000678",
-    "lb": 4,
-    "chg": 9.99,
-    "kept": true
-   },
-   {
-    "code": "002820",
-    "lb": 2,
-    "chg": -7.67,
-    "kept": false
-   },
-   {
-    "code": "301314",
-    "lb": 2,
-    "chg": -1.72,
-    "kept": false
-   },
-   {
-    "code": "001318",
-    "lb": 2,
-    "chg": 0,
-    "kept": false
-   },
-   {
-    "code": "002093",
-    "lb": 2,
-    "chg": 1.26,
-    "kept": false
-   },
-   {
-    "code": "001331",
-    "lb": 2,
-    "chg": 2.28,
-    "kept": false
-   },
-   {
-    "code": "605333",
-    "lb": 2,
-    "chg": 4.52,
+    "lb": 5,
+    "chg": 6.47,
     "kept": false
    },
    {
     "code": "002708",
-    "lb": 2,
-    "chg": 9.99,
+    "lb": 3,
+    "chg": 9.98,
     "kept": true
    },
    {
     "code": "001219",
-    "lb": 2,
+    "lb": 3,
     "chg": 10.01,
+    "kept": true
+   },
+   {
+    "code": "600828",
+    "lb": 2,
+    "chg": -7.11,
+    "kept": false
+   },
+   {
+    "code": "603037",
+    "lb": 2,
+    "chg": -2.22,
+    "kept": false
+   },
+   {
+    "code": "001400",
+    "lb": 2,
+    "chg": 4.36,
+    "kept": false
+   },
+   {
+    "code": "601956",
+    "lb": 2,
+    "chg": 10.02,
+    "kept": true
+   },
+   {
+    "code": "600715",
+    "lb": 2,
+    "chg": 10.19,
     "kept": true
    }
   ],
   "note": null
  },
  "bigLoss": {
-  "n": 2,
+  "n": 13,
   "list": [
    {
-    "code": "603528",
-    "name": "多伦科技",
-    "chg": -9.95
+    "code": "920896",
+    "name": "旺成科技",
+    "chg": -14.36
    },
    {
-    "code": "002820",
-    "name": "桂发祥",
-    "chg": -7.67
+    "code": "002731",
+    "name": "萃华退",
+    "chg": -10.71
+   },
+   {
+    "code": "002534",
+    "name": "西子洁能",
+    "chg": -10
+   },
+   {
+    "code": "603633",
+    "name": "徕木股份",
+    "chg": -8.96
+   },
+   {
+    "code": "600601",
+    "name": "方正科技",
+    "chg": -7.95
+   },
+   {
+    "code": "002889",
+    "name": "东方嘉盛",
+    "chg": -7.84
+   },
+   {
+    "code": "603920",
+    "name": "世运电路",
+    "chg": -7.71
+   },
+   {
+    "code": "688045",
+    "name": "必易微",
+    "chg": -7.71
+   },
+   {
+    "code": "300806",
+    "name": "斯迪克",
+    "chg": -7.45
+   },
+   {
+    "code": "605366",
+    "name": "宏柏新材",
+    "chg": -7.36
    }
   ]
  },
  "skyFloor": {
-  "n": 0,
-  "list": []
+  "n": 5,
+  "list": [
+   {
+    "code": "301359",
+    "name": "东南电子",
+    "chg": -4.45,
+    "amplitude": 19.7
+   },
+   {
+    "code": "002731",
+    "name": "萃华退",
+    "chg": -10.71,
+    "amplitude": 17.9
+   },
+   {
+    "code": "002889",
+    "name": "东方嘉盛",
+    "chg": -7.84,
+    "amplitude": 17.4
+   },
+   {
+    "code": "600828",
+    "name": "茂业商业",
+    "chg": -7.11,
+    "amplitude": 15.9
+   },
+   {
+    "code": "920896",
+    "name": "旺成科技",
+    "chg": -14.36,
+    "amplitude": 15.3
+   }
+  ]
  },
- "scanned": 41,
+ "scanned": 72,
  "verdict": {
-  "level": "strong",
-  "label": "接力顺畅",
-  "reason": "昨涨停今日翻绿仅 29%、高位板晋级失败 75%，赚钱效应占优"
+  "level": "severe",
+  "label": "亏钱效应显著",
+  "reason": "昨涨停今日翻绿 64%、高位板晋级失败 50%，追高者整体受损"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -153,6 +200,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-10-28T13:00:32.356Z",
- "curDate": "2026-10-28"
+ "generatedAt": "2026-10-29T10:30:35.996Z",
+ "curDate": "2026-10-29"
 }

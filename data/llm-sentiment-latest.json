@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-10-28",
- "generatedAt": "2026-10-28T21:00:56.084+08:00",
+ "asOfDate": "2026-10-29",
+ "generatedAt": "2026-10-29T18:31:09.405+08:00",
  "model": "glm-4-flash",
- "sentiment": 0.6,
- "confidence": 0.9,
- "reason": "市场整体情绪积极，涨停家数远多于跌停家数，成交额放大，亏钱效应较低，强势股多数因业绩或行业利好驱动。",
+ "sentiment": -0.5,
+ "confidence": 0.8,
+ "reason": "市场涨停数量少于跌停，炸板率高，亏钱效应显著，多数强势股涨幅有限，市场情绪偏向负面。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "朗信电气",
+   "target": "桂林三金",
    "tone": "positive",
-   "note": "人形机器人+汽车热管理概念股，股价大幅上涨。"
+   "note": "三季报增长带动股价上涨"
+  },
+  {
+   "type": "业绩预告",
+   "target": "天顺风能",
+   "tone": "positive",
+   "note": "三季报增长及海上风电概念助力股价"
+  },
+  {
+   "type": "业绩预告",
+   "target": "西部材料",
+   "tone": "positive",
+   "note": "商业航天概念及航天铌合金等题材推动股价"
+  },
+  {
+   "type": "业绩预告",
+   "target": "中国卫星",
+   "tone": "positive",
+   "note": "三季报增长及卫星制造概念支撑股价"
+  },
+  {
+   "type": "业绩预告",
+   "target": "福建金森",
+   "tone": "positive",
+   "note": "三季报增长及林业题材带动股价"
   },
   {
    "type": "行业催化",
-   "target": "机器人概念",
+   "target": "机器人",
    "tone": "positive",
-   "note": "机器人概念持续活跃，相关个股表现强势。"
+   "note": "机器人概念持续活跃"
   },
   {
    "type": "行业催化",
-   "target": "AI智能体",
+   "target": "商业航天",
    "tone": "positive",
-   "note": "AI智能体概念新晋活跃，相关个股涨幅明显。"
-  },
-  {
-   "type": "行业催化",
-   "target": "汽车零部件",
-   "tone": "positive",
-   "note": "汽车零部件概念延续强势，部分个股涨幅较大。"
-  },
-  {
-   "type": "行业催化",
-   "target": "数据中心液冷",
-   "tone": "positive",
-   "note": "数据中心液冷概念延续强势，部分个股表现良好。"
-  },
-  {
-   "type": "行业催化",
-   "target": "半导体供应链",
-   "tone": "positive",
-   "note": "半导体供应链概念活跃，相关个股涨幅明显。"
-  },
-  {
-   "type": "行业催化",
-   "target": "mRNA原料酶",
-   "tone": "positive",
-   "note": "mRNA原料酶概念新晋活跃，相关个股涨幅较大。"
+   "note": "商业航天概念成为市场热点"
   },
   {
    "type": "行业催化",
    "target": "卫星通信",
    "tone": "positive",
-   "note": "卫星通信概念活跃，相关个股表现良好。"
+   "note": "卫星通信终端概念受到关注"
   }
  ],
  "inputDigest": {
-  "themes": 69,
+  "themes": 43,
   "hotListed": 15,
-  "ztCount": 72,
-  "emotionValue": 76.3,
-  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 29%、高位板晋级失败 75%，赚钱效应占优）"
+  "ztCount": 39,
+  "emotionValue": 28,
+  "painVerdict": "亏钱效应显著（昨涨停今日翻绿 64%、高位板晋级失败 50%，追高者整体受损）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }

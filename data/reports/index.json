@@ -2,8 +2,8 @@
  "schema_version": "1.0",
  "reports": {
   "post_market": {
-   "date": "2026-10-28",
-   "file": "post_market_2026-10-28.json",
+   "date": "2026-10-29",
+   "file": "post_market_2026-10-29.json",
    "is_sample": true
   },
   "weekly": {
@@ -12,8 +12,8 @@
    "is_sample": true
   },
   "pre_market": {
-   "date": "2026-10-28",
-   "file": "pre_market_2026-10-28.json",
+   "date": "2026-10-29",
+   "file": "pre_market_2026-10-29.json",
    "is_sample": true
   },
   "intraday": {
@@ -22,6 +22,6 @@
    "is_sample": true
   }
  },
- "generatedAt": "2026-10-29T06:05:14.923Z",
+ "generatedAt": "2026-10-29T10:41:27.835Z",
  "sampleNote": "首屏示例：首次打开页面时显示 2026-09-30 报告（docs/ai_report_module_design.md §3.4）"
 }
