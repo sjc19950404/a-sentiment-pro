@@ -64,6 +64,22 @@ test('verify：四条件各剔一种——涨幅出带/量比不足/主力转负
   assert.equal(reasons[3], '主力净流入转负');
 });
 
+// ── 2026-10-29 放宽口径：主力净流入缺失（null）不再误剔 ─────────────────────────
+test('verify：趋势池主力净流入缺失（null）不再误剔——缺失视为通过（≤0 仍剔）', () => {
+  const r = mkReport(mkSim({ trend: [trendItem('600001')] }));
+  const { summary, patched } = verifyIntradayPools(r, mkSnap([row('600001', { change_pct: 5, main_net: null })]));
+  assert.deepEqual(patched.candidate_pool.map((x) => x.code), ['600001'], '主力净流入缺失应保留（放宽）');
+  const r2 = mkReport(mkSim({ trend: [trendItem('600002')] }));
+  const v2 = verifyIntradayPools(r2, mkSnap([row('600002', { change_pct: 5, main_net: -5 })]));
+  assert.deepEqual(v2.patched.candidate_pool, [], '主力净流入转负仍剔（硬条件不变）');
+});
+
+test('verify：连板池主力净流入缺失（null）不再误剔——缺失视为通过', () => {
+  const r = mkReport(mkSim({ streak: [streakItem('600101')] }));
+  const { summary, patched } = verifyIntradayPools(r, mkSnap([row('600101', { main_net: null })], { ztlb: { 600101: 3 } }));
+  assert.deepEqual(patched.streak_pool.map((x) => x.code), ['600101'], '连板池主力净流入缺失应保留（放宽）');
+});
+
 test('verify：掉出数据底座（最新快照已无此股）→ 剔除不冒充', () => {
   const r = mkReport(mkSim({ trend: [trendItem('600009')] }));
   const { summary, patched } = verifyIntradayPools(r, mkSnap([row('600001')]));

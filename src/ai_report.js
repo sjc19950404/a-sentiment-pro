@@ -1050,14 +1050,14 @@ export function buildIntradayPool(intraday, opts = {}) {
       //   成 6 位 HHMMSS 字符串，数字档/字符串档同判。
       const fbt = ztd?.fbt != null ? String(ztd.fbt).padStart(6, '0') : null;
       if (fbt && fbt <= '092500') { streakRejected.yizi++; continue; }
-      if (lb == null || mn == null) { streakRejected.unverifiable++; continue; }
+      if (lb == null) { streakRejected.unverifiable++; continue; }
       if (lb <= SF.liangbi_min) { streakRejected.liangbi++; continue; }
-      if (mn <= SF.main_net_min) { streakRejected.main_net++; continue; }
+      if (mn != null && mn <= SF.main_net_min) { streakRejected.main_net++; continue; }
       streakCands.push({ r, chg, lb, mn, lbc, fund: ztd?.fund != null ? ztd.fund : null, tags });
       continue;
     }
     // ── 趋势池轨（四条件 + 黑名单：昨日涨停/今日涨停/一字板）────────────────────
-    if (chg == null || lb == null || mn == null) { rejected.unverifiable++; continue; }
+    if (chg == null || lb == null) { rejected.unverifiable++; continue; }
     // 今日涨停判定先于带外：~10% 的涨停股同时也在 3-7 带外，先归类「已涨停」台账更有
     //   信息量（zt_codes 是权威名单；chg≥9.9 是名单缺席时的兜底——正常涨停涨幅恒 >7）。
     //   一字板是今日涨停的子集（集合竞价封死），此闸一并覆盖「未涨停未一字」。
@@ -1072,7 +1072,7 @@ export function buildIntradayPool(intraday, opts = {}) {
     if (prevZtCodes && prevZtCodes.has(String(r.code))) { rejected.prev_zt++; continue; }
     if (chg < F.chg_min || chg > F.chg_max) { rejected.chg_band++; continue; }
     if (lb <= F.liangbi_min) { rejected.liangbi++; continue; }
-    if (mn <= 0) { rejected.main_net++; continue; }
+    if (mn != null && mn <= 0) { rejected.main_net++; continue; }
     cands.push({ r, chg, lb, mn, tags });
   }
   const maxMn = cands.length ? Math.max(...cands.map((c) => c.mn)) : 0;
@@ -1114,14 +1114,14 @@ export function buildIntradayPool(intraday, opts = {}) {
         pb,
       },
       data_completeness: { level: missing.length ? 'partial' : 'full', missing },
-      fund_flow_note: `主力净流入 +${Math.round(mn / 1e4)} 万（东财 push2 盘中实时）`,
+      fund_flow_note: `主力净流入 ${mn == null ? '未知' : '+' + Math.round(mn / 1e4) + ' 万'}（东财 push2 盘中实时）`,
       scripts: buildScripts({ code: String(r.code) }, { regimeCap: opts.regimeCap ?? 0 }),
       risks: ['盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化',
         chg >= 6.5 ? '贴近带内上沿（≥6.5%），追高风险放大' : null].filter(Boolean),
     };
   });
   const basis = (pool.length ? '' : '今日无符合条件标的（宁缺毋假，不凑数填充）；')
-    + `${universeName} 实时现算（每轮全量重算，不沿用上轮）：涨幅 ${F.chg_min}-${F.chg_max}% · 量比 >${F.liangbi_min} · 未涨停未一字（pools.zt_codes）· 主力净流入为正`
+    + `${universeName} 实时现算（每轮全量重算，不沿用上轮）：涨幅 ${F.chg_min}-${F.chg_max}% · 量比 >${F.liangbi_min} · 未涨停未一字（pools.zt_codes）· 主力净流入为正（缺失视为通过）`
     + (prevZtCodes ? ` · 已滤昨日涨停 ${prevZtCodes.size} 只黑名单` : ' · ⚠ 昨日涨停黑名单缺席（旧快照无 prev_zt_codes）——断板股可能漏进趋势池')
     + `；扫 ${universe.length} 只，剔除——带外 ${rejected.chg_band} / 量比不足 ${rejected.liangbi} / 已涨停 ${rejected.zt} / 跌停 ${rejected.dt} / 昨日涨停 ${rejected.prev_zt} / 净流出或无源 ${rejected.main_net} / 字段缺失 ${rejected.unverifiable}；`
     + `得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）`
@@ -1168,7 +1168,7 @@ export function buildIntradayPool(intraday, opts = {}) {
         pb,
       },
       data_completeness: { level: missing.length ? 'partial' : 'full', missing },
-      fund_flow_note: `主力净流入 +${Math.round(mn / 1e4)} 万（东财 push2 盘中实时）`,
+      fund_flow_note: `主力净流入 ${mn == null ? '未知' : '+' + Math.round(mn / 1e4) + ' 万'}（东财 push2 盘中实时）`,
       scripts: buildScripts({ code: String(r.code) }, { regimeCap: opts.regimeCap ?? 0 }),
       risks: ['连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）',
         '连板高度越高，晋级失败风险越大（断板负反馈）'],

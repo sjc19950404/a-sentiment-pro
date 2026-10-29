@@ -169,7 +169,7 @@ export function verifyIntradayPools(report, intraday, opts = {}) {
     const chg = isValidNum(r.change_pct) ? +r.change_pct : null;
     const lb = isValidNum(r.liangbi) ? +r.liangbi : null;
     const mn = isValidNum(r.main_net) ? +r.main_net : null;
-    if (chg == null || lb == null || mn == null) { rem('核验字段缺失（涨幅/量比/主力净流入）'); continue; }
+    if (chg == null || lb == null) { rem('核验字段缺失（涨幅/量比）'); continue; }
     // 结构判据（恒剔——涨跌停/连板身份/昨日涨停黑名单与快照时点无关）
     if (ztCodes.has(code) || chg >= 9.9) { rem(`已涨停（最新快照现 ${chg}%）——结构违背恒剔除`, 'structural'); continue; }
     if (chg <= -9.9) { rem(`跌停（最新快照现 ${chg}%）——结构违背恒剔除`, 'structural'); continue; }
@@ -180,7 +180,7 @@ export function verifyIntradayPools(report, intraday, opts = {}) {
     // 时点判据（仅同拍）：盘中行情波动是正常漂移，剔除只对构建拍快照应用
     if (chg < F.chg_min || chg > F.chg_max) { rem(`涨幅出带（现 ${chg}%，带 ${F.chg_min}-${F.chg_max}%）`); continue; }
     if (lb <= F.liangbi_min) { rem(`量比不足（现 ${lb}）`); continue; }
-    if (mn <= 0) { rem('主力净流入转负'); continue; }
+    if (r.main_net != null && mn <= 0) { rem('主力净流入转负'); continue; }
     keptTrend.push(item);
   }
   // ── 连板池逐只复核（结构恒剔 + 时点仅同拍）──────────────────────────────────
@@ -212,9 +212,9 @@ export function verifyIntradayPools(report, intraday, opts = {}) {
     if (lbc == null || lbc < S.min_lb) { rem('连板身份消失（最新快照涨停池无此股——疑似炸板）'); continue; }
     const lb = isValidNum(r.liangbi) ? +r.liangbi : null;
     const mn = isValidNum(r.main_net) ? +r.main_net : null;
-    if (lb == null || mn == null) { rem('核验字段缺失（量比/主力净流入）'); continue; }
+    if (lb == null) { rem('核验字段缺失（量比）'); continue; }
     if (lb <= S.liangbi_min) { rem(`量比不足（现 ${lb}）`); continue; }
-    if (mn <= S.main_net_min) { rem('主力净流入转负'); continue; }
+    if (r.main_net != null && mn <= S.main_net_min) { rem('主力净流入转负'); continue; }
     keptStreak.push(item);
   }
   // ── 降级窗复核（推送时点进窗 → trend 升 tomorrow_watch；只升不降）───────────
