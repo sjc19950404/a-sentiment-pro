@@ -537,6 +537,14 @@ export function generateIntraday(input, opts = {}) {
       });
     }
   }
+  // 2026-10-29 兜底源披露：快照经 snapshot_intraday 兜底（hot/screener/pools/breadth 由上次成功
+  //   快照补全）时，把 fallbackUsed 与兜底源时间透出，供 push_text 显式标注「盘面数据：兜底自 HH:MM 快照」。
+  //   宁缺毋假不破——兜底源本身也是真实抓取值，仅标注其来源，绝不冒充实时。
+  const fbUsed = input.intraday?.dataHealth?.fallbackUsed;
+  if (Array.isArray(fbUsed) && fbUsed.length && payload.market_context) {
+    payload.market_context.fallbackUsed = fbUsed;
+    payload.market_context.fallbackFromAt = input.intraday?.capturedAt ?? null; // 兜底后 snapshot.capturedAt = 兜底源 capturedAt
+  }
   if (input.live && payload.max_drawdown_daily == null) {
     extraNotes.push({ field: 'max_drawdown_daily', reason: '即时轨当日权益序列不足两点（采样刚启动/实时行情降级），无日内回撤语义', ref: 'src/intraday_live.js::dailyDrawdown' });
   }

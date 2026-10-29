@@ -266,6 +266,12 @@ export function renderPushText(report) {
         const zdt = p.market_context.zt_dt;
         const zdtTxt = zdt ? `涨停/跌停 ${txt(zdt)}` : '涨停/跌停：暂不可用（数据滞后）';
         lines.push(`盘面：情绪 ${emo != null ? Math.round(emo) : '—'} · ${udTxt} · ${zdtTxt} · 最高连板 ${txt(hc)}`);
+        // 2026-10-29 兜底源显式披露：盘面/候选宇宙由上次成功快照补全时，让老板一眼看到哪次是兜底出来的
+        //   （数据真实性不可糊弄：兜底源本身也是真实抓取值，只标注来源，不冒充实时）。
+        const fb = p.market_context?.fallbackUsed;
+        if (Array.isArray(fb) && fb.length) {
+          lines.push(`盘面数据：兜底自 ${formatBJ(p.market_context?.fallbackFromAt || report.generated_at)} 快照（${fb.join('/')} 由上次成功快照补全，宁缺毋假不冒充实时）`);
+        }
       }
       { // 双池推送（P0 双池物理拆分）：连板池白名单（昨日涨停+今日非一字）独立评分
         //   独立模板；趋势池黑名单（滤昨日涨停/今日涨停/一字板）保留四条件描述——

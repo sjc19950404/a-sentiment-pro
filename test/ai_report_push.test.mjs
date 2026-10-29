@@ -215,6 +215,22 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
   }));
   assert.match(intraEmpty, /趋势池 0 只 · 今日无符合条件标的（宁缺毋假）/, '空池显式话术，不静默省略候选池段');
 
+  // 2026-10-29 兜底源显式披露：快照经 snapshot_intraday 兜底（宇宙/行情由上次成功快照补全）时，
+  //   推送必须一眼可见「盘面数据：兜底自 HH:MM 快照」，避免把兜底数据当成实时。
+  const baseIntra = {
+    report_type: 'intraday',
+    payload: { date: '2026-09-30', drawdown_vs_threshold: { dd_now: 0.088, distance_pp: 0.2, basis: '归档轨' }, pnl_daily: 0.0002, pnl_cumulative: -0.015, overseas: [],
+      market_context: { up_down: '2600/2400/400', zt_dt: '52/3', pain: '晋级失败 40%' },
+      simulation_stock: { ...mkReport().payload.simulation_stock, candidate_pool: [] } },
+    missing_notes: [],
+  };
+  const noFb = renderPushText(mkReport(baseIntra));
+  assert.ok(!noFb.includes('兜底自'), '默认（无兜底）不出现兜底披露行');
+  const fb = renderPushText(mkReport({ ...baseIntra,
+    payload: { ...baseIntra.payload, market_context: { ...baseIntra.payload.market_context, fallbackUsed: ['hot', 'screener'], fallbackFromAt: '2026-09-30T04:35:00.000Z' } } }));
+  assert.match(fb, /盘面数据：兜底自 2026-09-30 12:35 快照（hot\/screener 由上次成功快照补全，宁缺毋假不冒充实时）/,
+    '兜底源启用时显式披露兜底时间与来源字段');
+
   const week = renderPushText(mkReport({
     report_type: 'weekly',
     payload: { date: '2026-09-30', week_return: -0.011, max_drawdown_week: 0.02, profit_trade_ratio: 0.4, win_rate: null, trend_switch_hits: 2, trend_switch_effect: { shadow_note: 'trackC 影子线累计 -0.9 vs 执行轨 -1.5' } },
