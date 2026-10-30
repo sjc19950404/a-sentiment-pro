@@ -23,6 +23,9 @@ import { glmBuyGuard } from '../src/glm_guard.js';
 import { attributeTrades, bandOf, holdDays } from '../src/select_attrition.js';
 import { readFileSync, writeFileSync } from 'node:fs';
 import config from '../src/config.js';
+import SHARED from '../src/backtest_params.js';
+import { getKline } from '../src/kline.js';
+import { recommendPicksV2, buildKlineCache, buildIndexCache, klineQuoteOn } from '../src/picks_v2.js';
 
 function loadSeatsHistory() {
   try { return JSON.parse(readFileSync('data/seats_history.json','utf8')); } catch { return {}; }
@@ -43,6 +46,10 @@ for (let i = 2; i < process.argv.length; i++) {
   else if (a.startsWith('--pool-mix')) { const v = a.split('=')[1]; args.set('poolMix', v || 'legacy'); }
   else if (a.startsWith('--fb-boost')) { const v = a.split('=')[1]; args.set('fbBoost', v || '1'); }
   else if (a.startsWith('--dump-trade-picks')) args.set('dumpTradePicks', '1');
+  else if (a === '--base') args.set('base', process.argv[++i] || 'legacy');
+  else if (a.startsWith('--base=')) args.set('base', a.split('=')[1] || 'legacy');
+  else if (a === '--limit-days') args.set('limitDays', Number(process.argv[++i]) || 0);
+  else if (a.startsWith('--limit-days=')) args.set('limitDays', Number(a.split('=')[1]) || 0);
 }
 
 // 分级止损对照开关：streak-tier=开启连板分级止损；legacy=强制关闭（与旧规则一致，作对照组）。
@@ -71,9 +78,9 @@ function resolveFbBoost() {
   return Number.isFinite(n) && n > 1 ? n : 1;
 }
 
-const TOP_N = Math.max(1, args.get('topn') || 3);
-const PER_POS_PCT = args.get('pct') || 0.10;
-const RECOVERY_WINDOW = 5;   // 假摔判定窗口：硬止损出场后 N 个交易日是否回补至出场价上方
+const TOP_N = Math.max(1, args.get('topn') ?? SHARED.TOP_N);
+const PER_POS_PCT = args.get('pct') ?? SHARED.PER_POS_PCT;
+const RECOVERY_WINDOW = SHARED.RECOVERY_WINDOW;   // 假摔判定窗口：硬止损出场后 N 个交易日是否回补至出场价上方
 const RESTRICTIVE_REGIME = new Set(['shift', 'ebb', 'ice']);
 const USE_GLM = !args.get('noGlm');
 
@@ -90,17 +97,37 @@ function richQuotes(day) {
   return q;
 }
 
+// v2(趋势跟随) 行情预加载：仅回放 --base v2 时调用
+async function loadKlineCache() {
+  const uni = JSON.parse(readFileSync('data/paper_universe.json', 'utf8'));
+  const active = (uni.symbols ? Object.values(uni.symbols) : []).filter((x) => x.active && x.tradable && !x.st);
+  const { cache, ok, skip } = await buildKlineCache(active.map((x) => x.code));
+  for (const x of active) if (cache.has(x.code)) cache.get(x.code).name = x.name;
+  console.error('[kline preload] active=' + active.length + ' ok=' + ok + ' skip=' + skip);
+  return cache;
+}
+async function loadHs300() {
+  try { const kl = await buildIndexCache('sh000300'); console.error('[kline preload] hs300 ok'); return kl; }
+  catch (e) { console.error('hs300 fail', e.message); return null; }
+}
+
 function buildExec(mode) {
   const cfg = { mode: mode || 'ideal' };
 if (args.get('sectorLimit')) cfg.sectorLimitRatio = args.get('sectorLimit');
   return normalizeExec(cfg);
 }
 
-function runReplay(mode, { collectTrades = false } = {}) {
+async function runReplay(mode, { collectTrades = false } = {}) {
   const exec = buildExec(mode);
   const arch = decodeArchive(JSON.parse(readFileSync('data/archive.json', 'utf8')));
   const days = (arch.all_days || []).filter((d) => d && d.trade_date);
   if (!days.length) throw new Error('档案无交易日');
+
+  const base = args.get('base') || 'legacy';
+  const limitDays = args.get('limitDays') ? Math.max(0, Math.min(+args.get('limitDays'), days.length)) : days.length;
+  const daysToRun = limitDays < days.length ? days.slice(0, limitDays) : days;
+  let klineCache = null, hsSeries = null;
+  if (base === 'v2') { klineCache = await loadKlineCache(); hsSeries = await loadHs300(); }
 
   const first = days[0].trade_date;
   const seatsHistory = loadSeatsHistory();
@@ -114,7 +141,7 @@ function runReplay(mode, { collectTrades = false } = {}) {
   const openTrades = {};       // code -> { entryPrice, entryDate, sector, weakToStrong, streak, hotMoney, emotionBand, emotionScore }
   const pendingFeatures = {};   // code -> 决策日选股特征（买入成交时归因用）
 
-  for (const day of days) {
+  for (const day of daysToRun) {
     const date = day.trade_date;
     // ① 结算当日：盯市 + T+1 解冻 + 硬止损（与 paper_daily 同）
     const qDay = richQuotes(day);
@@ -152,40 +179,65 @@ function runReplay(mode, { collectTrades = false } = {}) {
     const emotionScore = day.emotion?.value ?? null;
     // 注：回放环境无预测模型，predictPicks 的默认 minProb(57) 会把候选全滤掉 → 0 交易。
     // 作为诊断工具，这里用 minProb:0 绕过概率门，专门衡量「选股信号本身」的质量（与 picks.test.mjs 一致）。
-    const picks = (recommendPicks(day, { topN: TOP_N, emotionScore, minProb: 0, firstBoardReserve: resolvePoolMix(), firstBoardBoost: resolveFbBoost() }).picks || [])
-      .filter((p) => p && p.code && qDay[String(p.code)]);
-    for (const p of picks) { const sh = seatsHistory[date] && seatsHistory[date][String(p.code)]; if (sh) p.hotMoney = !!sh.hotMoney; }
-    const items = picks.slice(0, TOP_N).map((p) => ({
-      code: String(p.code), pct: PER_POS_PCT, hybk: p.hybk || null, sector: p.hybk || p.theme || null,
-      streak: p.streak || 0,   // 传入入场连板数，供 scanStopLoss 分级止损匹配（主线第1步）
-      reason: `回放自动建仓（${p.name || p.code}）`,
-    }));
-    // 采集决策日选股特征（买入成交时归因用）。注：回放未注入席位数据 → hotMoney 恒 false（仅供参考）
-    if (collectTrades) {
-      for (const p of picks.slice(0, TOP_N)) {
-        // 注：回放候选由 recommendPicks 产出，字段为 streak/themes，weakToStrong 需 ztpool 涨停池才算（存档无→标记未知），hybk 实为 themes 数组。
-        const sector = p.hybk || (Array.isArray(p.themes) ? p.themes[0] : null) || p.theme || null;
-        pendingFeatures[String(p.code)] = {
-          entryDate: date, sector,
-          weakToStrong: (p.weakToStrong === true ? true : (p.weakToStrong === false ? false : null)),
-          streak: p.streak || 0, hotMoney: !!p.hotMoney,
-          emotionScore, emotionBand: bandOf(emotionScore),
-        };
+    let picks;
+    let items;
+    let applyLhbFilterEff = !args.get('noLhb');
+    if (base === 'v2') {
+      applyLhbFilterEff = false;
+      picks = recommendPicksV2(day, { tradeDate: date, klineCache, hs300: hsSeries, topN: TOP_N });
+      // 为持仓中 + 本日选中票补行情（T 日 close 撮合，与 v1 口径一致）
+      const need = new Set([...Object.keys(acct.openTrades || {}), ...picks.map((p) => p.code)]);
+      for (const code of need) {
+        const qv = klineQuoteOn(klineCache.get(code), date);
+        if (qv) qDay[code] = { code, ...qv };
+      }
+      items = picks.slice(0, TOP_N).map((p) => ({
+        code: String(p.code), pct: PER_POS_PCT, hybk: null, sector: null, streak: 0,
+        reason: `回放自动建仓(v2趋势)（${p.code}）`,
+      }));
+      if (collectTrades) {
+        for (const p of picks.slice(0, TOP_N)) {
+          pendingFeatures[String(p.code)] = {
+            entryDate: date, sector: null, weakToStrong: null, streak: 0, hotMoney: null,
+            emotionScore, emotionBand: bandOf(emotionScore), base: 'v2',
+            score: p.score, maBull: p.maBull, slope20: p.slope20, slope60: p.slope60, rs10: p.rs10, rs20: p.rs20,
+          };
+        }
+      }
+    } else {
+      picks = (recommendPicks(day, { topN: TOP_N, emotionScore, minProb: 0, firstBoardReserve: resolvePoolMix(), firstBoardBoost: resolveFbBoost() }).picks || [])
+        .filter((p) => p && p.code && qDay[String(p.code)]);
+      for (const p of picks) { const sh = seatsHistory[date] && seatsHistory[date][String(p.code)]; if (sh) p.hotMoney = !!sh.hotMoney; }
+      items = picks.slice(0, TOP_N).map((p) => ({
+        code: String(p.code), pct: PER_POS_PCT, hybk: p.hybk || null, sector: p.hybk || p.theme || null,
+        streak: p.streak || 0,   // 传入入场连板数，供 scanStopLoss 分级止损匹配（主线第1步）
+        reason: `回放自动建仓（${p.name || p.code}）`,
+      }));
+      if (collectTrades) {
+        for (const p of picks.slice(0, TOP_N)) {
+          const sector = p.hybk || (Array.isArray(p.themes) ? p.themes[0] : null) || p.theme || null;
+          pendingFeatures[String(p.code)] = {
+            entryDate: date, sector,
+            weakToStrong: (p.weakToStrong === true ? true : (p.weakToStrong === false ? false : null)),
+            streak: p.streak || 0, hotMoney: !!p.hotMoney,
+            emotionScore, emotionBand: bandOf(emotionScore),
+          };
+        }
       }
     }
     const safe = [];
     for (const it of items) {
-      if (USE_GLM && !glmBuyGuard(it.code, { hybk: it.hybk, asOfDate: date }).pass) continue;
+      if (USE_GLM && base !== 'v2' && !glmBuyGuard(it.code, { hybk: it.hybk, asOfDate: date }).pass) continue;
       safe.push(it);
     }
-    if (safe.length) acct = batchSubmit(acct, safe, day, { date, exec, applyLhbFilter: !args.get('noLhb') }).next;
+    if (safe.length) acct = batchSubmit(acct, safe, day, { date, exec, applyLhbFilter: applyLhbFilterEff }).next;
   }
 
   // —— 第 1 步诊断·假摔判定：硬止损出场后 N 日内是否回补（close ≥ 出场价）。
   //   数据源：存档每日 hot/lhb 的 close（非 ztpool 分钟级，故仅日频代理；缺出场后数据→recovered=null）。
   //   ⚠ 覆盖局限：出场后该股若不再进 hot/lhb，则无法判假摔，按"无数据"计，报告时如实披露覆盖率。
   const closeSeries = {};   // code -> [{date, close}]
-  for (const d of days) {
+  for (const d of daysToRun) {
     for (const arr of [d.hot, d.lhb]) {
       if (!Array.isArray(arr)) continue;
       for (const x of arr) {
@@ -261,15 +313,15 @@ function reportAttrition(trades) {
 
 const mode = args.get('mode');
 if (args.get('attrition')) {
-  const r = runReplay(mode || 'ideal', { collectTrades: true });
+  const r = await runReplay(mode || 'ideal', { collectTrades: true });
   print(r);
   reportAttrition(r.trades);
 } else if (args.get('compare')) {
-  const a = runReplay('ideal'); print(a);
-  const b = runReplay('strict'); print(b);
+  const a = await runReplay('ideal'); print(a);
+  const b = await runReplay('strict'); print(b);
   console.log('\n  差异（strict − ideal）：');
   console.log(`     总收益 ${ (b.totalRet - a.totalRet).toFixed(2) } pp｜最大回撤 ${ (b.maxDd - a.maxDd).toFixed(2) } pp｜平仓胜率 ${ b.winRate!=null&&a.winRate!=null ? (b.winRate - a.winRate).toFixed(1)+' pp' : '—' }`);
   console.log(`     若 strict 下总收益仍为正 → 策略在悲观执行下仍存活，可实盘；若转负 → 需调整。`);
 } else {
-  print(runReplay(mode || 'ideal'));
+  print(await runReplay(mode || 'ideal'));
 }

@@ -22,27 +22,46 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * @param {string} [cacheDir] 缓存目录（测试可传临时目录，避免污染 data/.bt_kline）
  * @returns {Promise<Array<{date:string, open:number, close:number}>>}
  */
+// 主源：腾讯 ifzq 前复权日K（原唯一源）；备源：新浪历史日K（腾讯被 WAF 拦截时降级，源无关缓存）。
+async function fetchGtimgRows(sym) {
+  const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${sym},day,,,320,qfq`;
+  const j = await (await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://gu.qq.com/' } })).json();
+  const node = j && j.data && j.data[sym];
+  const rows = node && (node.qfqday || node.day);
+  if (!Array.isArray(rows)) throw new Error('gtimg 无K线数据');
+  return rows;
+}
+async function fetchSinaRows(sym) {
+  const url = `https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=${sym}&scale=240&ma=no&datalen=320&fqt=1`;
+  const txt = await (await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://finance.sina.com.cn/' } })).text();
+  const arr = JSON.parse(txt);
+  if (!Array.isArray(arr) || !arr.length) throw new Error('sina 无K线数据');
+  return arr.map((r) => [r.day, r.open, r.close]);
+}
+
 export async function getKline(sym, minLen = 20, cacheDir = KLINE_DIR) {
   const cache = path.join(cacheDir, sym + '.json');
   if (existsSync(cache)) return JSON.parse(readFileSync(cache, 'utf8'));
+  let lastErr;
   for (let att = 0; att < 3; att++) {
     try {
-      const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${sym},day,,,320,qfq`;
-      const j = await (await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://gu.qq.com/' } })).json();
-      const node = j && j.data && j.data[sym];
-      const rows = node && (node.qfqday || node.day);
+      let rows;
+      try { rows = await fetchGtimgRows(sym); }
+      catch (e1) { rows = await fetchSinaRows(sym); }
       if (!Array.isArray(rows) || rows.length < minLen) {
         throw new Error(`K线结构异常/过短(${rows ? rows.length : 0} < ${minLen})`);
       }
       const k = rows.map((r) => ({ date: String(r[0]), open: +r[1], close: +r[2] }))
         .filter((x) => Number.isFinite(x.open) && x.open > 0 && Number.isFinite(x.close) && x.close > 0);
+      if (k.length < minLen) throw new Error(`K线过滤后过短(${k.length} < ${minLen})`);
       mkdirSync(cacheDir, { recursive: true });
       atomicWriteJSON(cache, JSON.stringify(k));
       return k;
     } catch (e) {
+      lastErr = e;
       if (att === 2) throw new Error(`${sym} 日K获取失败: ${e.message}`);
       await sleep(800 * (att + 1));
     }
   }
-  return []; // 不可达（循环内必 return 或 throw），仅为满足静态分析
+  throw lastErr || new Error(`${sym} 日K获取失败`);
 }
