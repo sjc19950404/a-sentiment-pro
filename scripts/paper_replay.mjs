@@ -13,7 +13,6 @@
 //
 // 说明：封单量（limitVol）在存档里无干净字段，故回放时涨停打板只走「撤单率」
 // （容量门在实时行情带 limitVol 时才生效）；这与 paper_daily 线上路径一致。
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { decodeArchive } from '../src/lhb_codec.js';
 import {
@@ -22,7 +21,12 @@ import {
 import { recommendPicks } from '../src/picks.js';
 import { glmBuyGuard } from '../src/glm_guard.js';
 import { attributeTrades, bandOf, holdDays } from '../src/select_attrition.js';
+import { readFileSync, writeFileSync } from 'node:fs';
 import config from '../src/config.js';
+
+function loadSeatsHistory() {
+  try { return JSON.parse(readFileSync('data/seats_history.json','utf8')); } catch { return {}; }
+}
 
 const args = new Map();
 for (let i = 2; i < process.argv.length; i++) {
@@ -38,6 +42,7 @@ for (let i = 2; i < process.argv.length; i++) {
   else if (a.startsWith('--stop-override')) { const v = a.split('=')[1]; args.set('stopOverride', v || 'legacy'); }
   else if (a.startsWith('--pool-mix')) { const v = a.split('=')[1]; args.set('poolMix', v || 'legacy'); }
   else if (a.startsWith('--fb-boost')) { const v = a.split('=')[1]; args.set('fbBoost', v || '1'); }
+  else if (a.startsWith('--dump-trade-picks')) args.set('dumpTradePicks', '1');
 }
 
 // 分级止损对照开关：streak-tier=开启连板分级止损；legacy=强制关闭（与旧规则一致，作对照组）。
@@ -98,6 +103,7 @@ function runReplay(mode, { collectTrades = false } = {}) {
   if (!days.length) throw new Error('档案无交易日');
 
   const first = days[0].trade_date;
+  const seatsHistory = loadSeatsHistory();
   let acct = emptyAccount(1000000, first);
   const navSeries = [];
   let fills = 0, soldTrades = 0, winTrades = 0;
@@ -148,6 +154,7 @@ function runReplay(mode, { collectTrades = false } = {}) {
     // 作为诊断工具，这里用 minProb:0 绕过概率门，专门衡量「选股信号本身」的质量（与 picks.test.mjs 一致）。
     const picks = (recommendPicks(day, { topN: TOP_N, emotionScore, minProb: 0, firstBoardReserve: resolvePoolMix(), firstBoardBoost: resolveFbBoost() }).picks || [])
       .filter((p) => p && p.code && qDay[String(p.code)]);
+    for (const p of picks) { const sh = seatsHistory[date] && seatsHistory[date][String(p.code)]; if (sh) p.hotMoney = !!sh.hotMoney; }
     const items = picks.slice(0, TOP_N).map((p) => ({
       code: String(p.code), pct: PER_POS_PCT, hybk: p.hybk || null, sector: p.hybk || p.theme || null,
       streak: p.streak || 0,   // 传入入场连板数，供 scanStopLoss 分级止损匹配（主线第1步）
@@ -200,7 +207,12 @@ function runReplay(mode, { collectTrades = false } = {}) {
   const winRate = soldTrades ? (winTrades / soldTrades * 100) : null;
   const res = { mode, days: days.length, dateRange: `${first}~${last.date}`, finalEquity: last.equity, totalRet, maxDd: maxDd * 100, fills, soldTrades, winRate };
   if (collectTrades) res.trades = trades;
-  console.error('DEBUG buyFills=', global.__bf, 'totalFills=', fills);
+  if (args.get('dumpTradePicks')) {
+    const seen = new Set(); const out = [];
+    for (const t of trades) { const k = t.entryDate + ':' + t.code; if (seen.has(k)) continue; seen.add(k); out.push({ date: t.entryDate, code: t.code }); }
+    writeFileSync('data/_trade_picks.json', JSON.stringify(out));
+    console.error('[dump-trade-picks]', out.length, 'written');
+  }  console.error('DEBUG buyFills=', global.__bf, 'totalFills=', fills);
   return res;
 }
 
@@ -230,7 +242,7 @@ function reportAttrition(trades) {
   printSlice('按情绪档：', a.byEmotionBand);
   printSlice('按弱转强：', a.byWeakToStrong);
   printSlice('按连板数（追高代理）：', a.byStreak);
-  printSlice('按游资净买（回放未注入席位→仅供参考）：', a.byHotMoney);
+  printSlice('按游资净买（真实席位·回放注入）：', a.byHotMoney);
   printSlice('按板块（Top12）：', a.bySector, 12);
   console.log('\n  ── 第 1 步诊断：连板票全亏的三类假设 ──');
   printSlice('按出场原因：', a.byExitReason);
