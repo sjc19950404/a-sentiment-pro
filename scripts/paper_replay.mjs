@@ -58,6 +58,7 @@ for (let i = 2; i < process.argv.length; i++) {
   else if (a === '--regime-cap') args.set('regimeCap', '1');   // 默认关闭；开启后按 day.emotion 推导的 regime 档位压仓位（执行层挂件，开关对比基线）
   else if (a === '--regime-warm') args.set('regimeWarm', process.argv[++i]);   // regime 帽扫描：覆盖 warm(回暖) 档仓位帽（配合 --regime-cap 使用）
   else if (a === '--regime-scale') args.set('regimeScale', process.argv[++i]);   // 全局缩放 ice/ebb/warm/high 四档仓位帽（连续平滑整体风险暴露；须配合 --regime-cap 生效，双模式并存）
+  else if (a === '--limit-fill-prob') args.set('limitFillProb', '1');   // 涨跌停排队概率模型（默认关；开启后涨停买入按前排比例概率成交、跌停卖出按概率成交否则排队）
 }
 
 // 分级止损对照开关：streak-tier=开启连板分级止损；legacy=强制关闭（与旧规则一致，作对照组）。
@@ -129,6 +130,8 @@ function buildExec(mode) {
   // 分批建仓：--tranche N 把单票 pct 拆成 N 日等额建仓（1=不拆）
   const tr = Number(args.get('tranche')) || 1;
   if (tr > 1) cfg.tranche = tr;
+  // 涨跌停排队概率模型：--limit-fill-prob 开启（默认关，保基线）
+  if (args.get('limitFillProb')) cfg.limitFillProb = true;
   return normalizeExec(cfg);
 }
 
@@ -388,6 +391,7 @@ function print(r) {
   if (args.get('slipModel') === 'profile') flags.push('滑点剖面=profile');
   if ((args.get('tranche') || 1) > 1) flags.push(`分批建仓=${args.get('tranche')}`);
   if (args.get('regimeCap')) flags.push('regime帽=on' + (args.get('regimeScale') != null ? '×' + args.get('regimeScale') : ''));
+  if (args.get('limitFillProb')) flags.push('涨跌停排队=on');
   if (flags.length) console.log(`     执行挂件：${flags.join('，')}`);
 }
 

@@ -73,6 +73,12 @@ export const EXEC_DEFAULTS = {
   slipCloseTrend: 0.003,    // 平仓·趋势中大票滑点
   slipCloseLimitDown: 0.02, // 跌停卖出特殊：流动性枯竭，被迫折价
   tranche: 1,              // 分批建仓：把单票 pct 拆成 N 日等额建仓（1=不拆）
+  // ── 涨跌停排队成交概率插件（执行层·可配置挂件，limitFillProb 开关，默认关）──
+  //   默认关=沿用旧逻辑；开启后更贴实盘排队现实：涨停买入按前排比例概率成交、余单当日撤单；
+  //   跌停卖出按成交概率成交、未成交则排队次日重试；保守档把比例设 0 即封死涨跌停开平仓。
+  limitFillProb: false,      // 总开关
+  limitUpFillRatio: 0.5,     // 涨停买入前排成交比例（0~1）
+  limitDownFillProb: 0.5,    // 跌停卖出成交概率（0~1）
 };
 
 export function normalizeExec(exec) {
@@ -92,6 +98,9 @@ export function normalizeExec(exec) {
   m.slipCloseTrend = Number.isFinite(+m.slipCloseTrend) ? +m.slipCloseTrend : 0.003;
   m.slipCloseLimitDown = Number.isFinite(+m.slipCloseLimitDown) ? +m.slipCloseLimitDown : 0.02;
   m.tranche = Math.max(1, Number.isFinite(+m.tranche) ? Math.floor(+m.tranche) : 1);
+  m.limitFillProb = !!m.limitFillProb;
+  m.limitUpFillRatio = Math.min(1, Math.max(0, Number.isFinite(+m.limitUpFillRatio) ? +m.limitUpFillRatio : 0.5));
+  m.limitDownFillProb = Math.min(1, Math.max(0, Number.isFinite(+m.limitDownFillProb) ? +m.limitDownFillProb : 0.5));
   return m;
 }
 
@@ -1207,13 +1216,25 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
     // 跌停卖不掉 / 涨停买不进——按「该日」的实际情况判定，而非下单日
     if (p.side === 'buy' && hit === 'up') {
       if (exec.mode === 'strict') {
-        // Step 1：涨停打板不再 100% 失效，改为「容量门 + 撤单率」概率成交
-        const oc = limitBuyOutcome(p, q, exec, date);
-        if (!oc.fill) {
-          log.push({ ...pick(p), status: 'expired', reason: '打板未成交', detail: `${date} ${q.changePct}% 涨停打板：${oc.reason}` });
-          cur = releaseFreeze(cur, p, { status: 'expired', settleDate: date, reject: '打板未成交', detail: oc.reason });
-          markDone(p.id);
-          continue;
+        if (exec.limitFillProb) {
+          // 排队概率模型：按前排成交比例决定能否排到，未排到→当日撤单（不复活）
+          const rng = fillRng(p.id, date, exec.seed);
+          if (rng() >= exec.limitUpFillRatio) {
+            log.push({ ...pick(p), status: 'expired', reason: '涨停排队未排到', detail: `${date} ${q.changePct}% 涨停，前排成交比例 ${((exec.limitUpFillRatio * 100) | 0)}%，本单未排到，当日撤单` });
+            cur = releaseFreeze(cur, p, { status: 'expired', settleDate: date, reject: '涨停排队未排到', detail: '当日撤单' });
+            markDone(p.id);
+            continue;
+          }
+          // 排到前排 → 落到下方 fill（涨停价 + 默认万二滑点）
+        } else {
+          // 旧逻辑：容量门 + 撤单率概率成交
+          const oc = limitBuyOutcome(p, q, exec, date);
+          if (!oc.fill) {
+            log.push({ ...pick(p), status: 'expired', reason: '打板未成交', detail: `${date} ${q.changePct}% 涨停打板：${oc.reason}` });
+            cur = releaseFreeze(cur, p, { status: 'expired', settleDate: date, reject: '打板未成交', detail: oc.reason });
+            markDone(p.id);
+            continue;
+          }
         }
         // 成交：落到下方 fill（涨停价 + 默认万二滑点，打板不额外加悲观滑点）
       } else {
@@ -1232,10 +1253,20 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
         log.push({ ...pick(p), status: 'queued', reason: '跌停价无法卖出，保留委托次日重试', detail: `${date} ${q.changePct}% 触及跌停，无买盘，委托保留排队` });
         continue;   // 不 markDone → 留在 pending，下个交易日重新撮合
       }
-      log.push({ ...pick(p), status: 'expired', reason: '跌停价无法卖出', detail: `${date} ${q.changePct}% 触及跌停，无买盘，委托失效` });
-      cur = { ...cur, orders: cur.orders.map((o) => (o.id === p.id ? { ...o, status: 'expired', settleDate: date, reject: '跌停价无法卖出', detail: `${date} 触及跌停，无买盘` } : o)) };
-      markDone(p.id);
-      continue;
+      if (exec.limitFillProb) {
+        // 排队概率模型：按成交概率砸出，未砸出→排队次日重试（避免跌停瀑布）
+        const rng = fillRng(p.id, date, exec.seed);
+        if (rng() >= exec.limitDownFillProb) {
+          log.push({ ...pick(p), status: 'queued', reason: '跌停卖出未成交，保留委托次日重试', detail: `${date} ${q.changePct}% 触及跌停，成交概率 ${((exec.limitDownFillProb * 100) | 0)}%，本单未砸出，排队` });
+          continue;   // 不 markDone → 次日重新撮合
+        }
+        // 砸出 → 落到下方 fill（跌停价）
+      } else {
+        log.push({ ...pick(p), status: 'expired', reason: '跌停价无法卖出', detail: `${date} ${q.changePct}% 触及跌停，无买盘，委托失效` });
+        cur = { ...cur, orders: cur.orders.map((o) => (o.id === p.id ? { ...o, status: 'expired', settleDate: date, reject: '跌停价无法卖出', detail: `${date} 触及跌停，无买盘` } : o)) };
+        markDone(p.id);
+        continue;
+      }
     }
     const escaped = false; // 跌停逃生已在上方分支处理（仅保留排队、不成交）
 
