@@ -56,6 +56,7 @@ for (let i = 2; i < process.argv.length; i++) {
   else if (a === '--tranche') args.set('tranche', Math.max(1, Number(process.argv[++i]) || 1));
   else if (a.startsWith('--tranche=')) args.set('tranche', Math.max(1, Number(a.split('=')[1]) || 1));
   else if (a === '--regime-cap') args.set('regimeCap', '1');   // 默认关闭；开启后按 day.emotion 推导的 regime 档位压仓位（执行层挂件，开关对比基线）
+  else if (a === '--regime-warm') args.set('regimeWarm', process.argv[++i]);   // regime 帽扫描：覆盖 warm(回暖) 档仓位帽（配合 --regime-cap 使用）
 }
 
 // 分级止损对照开关：streak-tier=开启连板分级止损；legacy=强制关闭（与旧规则一致，作对照组）。
@@ -170,7 +171,12 @@ async function runReplay(mode, { collectTrades = false } = {}) {
   for (const day of daysToRun) {
     const date = day.trade_date;
     setExecContext(exec);   // 注入模块级执行上下文，供 submitOrder 在 profile 模式统一解析滑点
-    const regimeCap = args.get('regimeCap') ? REGIME_CAP[regimeOfEmotion(day.emotion?.value)] : null;   // 默认 null=基线（不压）
+    // regime 帽：默认 null=基线（不压）。开启后按 day.emotion 推导档位压仓位；--regime-warm 可覆盖 warm 档用于扫描拐点。
+    let regimeCap = null;
+    if (args.get('regimeCap')) {
+      const rg = regimeOfEmotion(day.emotion?.value);
+      regimeCap = (rg === 'warm' && args.get('regimeWarm') != null) ? +args.get('regimeWarm') : REGIME_CAP[rg];
+    }
     // ① 结算当日：盯市 + T+1 解冻 + 硬止损（与 paper_daily 同）
     const qDay = richQuotes(day);
     // v2 趋势跟随：按日把持仓票的 MA60 注入持仓（供 scanStopLoss 跌破MA60 破位出场）；v1 不注入→零污染
