@@ -881,6 +881,11 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .bt-row input[type="number"]:focus { border-color: var(--acc); }
 .bt-chk { user-select: none; }
 .bt-chk input { accent-color: var(--acc); }
+.paper-exec .exec-grid { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-bottom: 10px; }
+.paper-exec .exec-adv { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12px; color: var(--muted); }
+.paper-exec .exec-adv label { display: inline-flex; align-items: center; gap: 6px; }
+.paper-exec .exec-adv input[type="number"] { width: 66px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 3px 6px; color: var(--text); }
+.paper-exec .exec-adv input:disabled { opacity: .4; }
 .bt-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .bt-summary { font-size: 12px; margin: 8px 0 2px; }
 .bt-sum-line { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }

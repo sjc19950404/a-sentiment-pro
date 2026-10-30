@@ -1171,6 +1171,24 @@
           <div id="paperNote" class="bf-foot"></div>
         </section>
 
+        <section class="card paper-exec">
+          <h2>执行层模拟 <span class="bf-auto">实验性挂件 · 默认全部关闭</span></h2>
+          <div class="exec-grid">
+            <label class="bt-chk"><input id="execProfile" type="checkbox" /> 滑点剖面（动态冲击滑点 + 单笔量上限）</label>
+            <label class="bt-chk"><input id="execLimitFill" type="checkbox" /> 涨跌停排队概率</label>
+            <label class="bt-chk"><input id="execRegime" type="checkbox" /> 情绪压仓（批量生效）</label>
+            <label class="bt-chk"><input id="execTranche" type="checkbox" /> 分批建仓（同日内拆单）</label>
+          </div>
+          <div class="exec-adv">
+            <label>压仓上限<input id="execRegimeCap" type="number" step="0.05" min="0" max="1" value="0.6" />（占净值比）</label>
+            <label>拆单份数<input id="execTrancheN" type="number" step="1" min="1" max="20" value="3" />（qty 批量/单笔）</label>
+            <label>持仓上限<input id="execTrancheCapLimit" type="number" step="1" min="1" max="200" value="" placeholder="不限" />（分批持仓数）</label>
+            <label>涨停前排<input id="execUpRatio" type="number" step="0.05" min="0" max="1" value="0.5" />（成交比例）</label>
+            <label>跌停成交<input id="execDownProb" type="number" step="0.05" min="0" max="1" value="0.5" />（概率）</label>
+          </div>
+          <div id="paperExecNote" class="bf-foot"></div>
+        </section>
+
         <section class="card paper-alerts">
           <h2>交易预警 <span class="bf-auto">大盘 + 持仓双层 · 点条目看触发依据</span></h2>
           <div id="alertsAttr" class="alerts-attr"></div>

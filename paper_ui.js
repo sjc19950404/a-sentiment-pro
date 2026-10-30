@@ -18,7 +18,7 @@ import {
   // 批量下单面板与事件日志面板的**全部规则判断**仍由引擎负责，UI 只解析输入、渲染结果。
   // 为什么不在 UI 里自己拼一遍过滤/风控链路：那就是规则的第二出处，一旦漂移，
   // 页面上显示的「拦没拦住」就和账本里实际发生的「拦没拦住」不是一回事。
-  batchSubmit, batchSell, readLogs, logsToReport, orderDetail, appendLog, MAX_LOGS,
+  batchSubmit, batchSell, readLogs, logsToReport, orderDetail, appendLog, MAX_LOGS, setExecContext,
   // 风控口径常量：日志面板在「全部/风控」过滤之外还要按档位说明拦截原因，取同一份阈值
   MAX_DAILY_POSITION_CHANGE, HARD_STOP_LOSS, DD_TIERS,
 } from './src/paper.js';
@@ -69,6 +69,71 @@ const num = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—'
   : (+v).toLocaleString('zh-CN', { minimumFractionDigits: d, maximumFractionDigits: d });
 const yi = (v) => (v == null || !Number.isFinite(+v)) ? '—' : (v / 1e4).toFixed(2);
 const pct = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—' : `${v > 0 ? '+' : ''}${(+v).toFixed(d)}%`;
+
+// ────────────────────────── 执行层插件（前端可调开关，默认全部关闭） ──────────────────────────
+// 与引擎 src/paper.js 同一套语义：slipModel(滑点剖面=基础6档滑点+成交量冲击+单笔量上限) /
+// limitFillProb(涨跌停排队概率) / tranche(分批建仓) / regimeCap(情绪压仓)。
+// 默认全关 = 生产基线：不注入 exec 时引擎退化为 flat 滑点、无压仓、无排队、不拆单。
+function readExecSettings() {
+  const on = (id) => !!($(id) && $(id).checked);
+  const rd = (id, d) => { const v = parseFloat($(id)?.value); return Number.isFinite(v) ? v : d; };
+  const profile = on('execProfile');
+  const limitFill = on('execLimitFill');
+  const regimeOn = on('execRegime');
+  const trancheOn = on('execTranche');
+  const tranche = trancheOn ? Math.max(1, Math.floor(rd('execTrancheN', 3))) : 1;
+  const capRaw = $('execTrancheCapLimit')?.value;
+  const trancheCapLimit = (capRaw != null && String(capRaw).trim() !== '') ? Math.max(1, Math.floor(rd('execTrancheCapLimit', 12))) : null;
+  const exec = {
+    slipModel: profile ? 'profile' : 'flat',
+    limitFillProb: !!limitFill,
+    limitUpFillRatio: Math.min(1, Math.max(0, rd('execUpRatio', 0.5))),
+    limitDownFillProb: Math.min(1, Math.max(0, rd('execDownProb', 0.5))),
+    tranche,
+  };
+  const regimeCap = regimeOn ? Math.min(1, Math.max(0, rd('execRegimeCap', 0.6))) : null;
+  return { exec, regimeCap, tranche, trancheCapLimit };
+}
+
+// 把执行层上下文注入引擎：submitOrder 读模块级 _execCtx；batchSubmit/settleDay 经 opts.exec。
+// 不传 mode → normalizeExec 默认 'ideal'，与「不注入」的基线冻结口径(DEFAULT_SLIP)逐位一致，保 UI 基线。
+function getExec() {
+  const s = readExecSettings();
+  setExecContext(s.exec);
+  return s;
+}
+
+// 把数量拆成 n 笔整数手（末笔吸收余数），用于分批建仓
+function splitLots(qty, n) {
+  const total = Math.max(0, Math.floor(qty / LOT) * LOT);
+  if (n <= 1 || total <= 0) return [total];
+  const per = Math.max(LOT, Math.floor((total / n) / LOT) * LOT);
+  const out = [];
+  for (let i = 0; i < n - 1; i++) out.push(per);
+  out.push(total - per * (n - 1));
+  return out.filter((x) => x > 0);
+}
+
+// 联动：开关关掉时禁用其依赖的数值输入，并更新说明文案
+function wireExecControls() {
+  const map = [
+    ['execProfile', []],
+    ['execLimitFill', ['execUpRatio', 'execDownProb']],
+    ['execRegime', ['execRegimeCap']],
+    ['execTranche', ['execTrancheN', 'execTrancheCapLimit']],
+  ];
+  const note = $('paperExecNote');
+  const sync = () => {
+    for (const [toggle, deps] of map) {
+      const on = !!($(toggle)?.checked);
+      for (const d of deps) { const el = $(d); if (el) el.disabled = !on; }
+    }
+    if (note) note.innerHTML = '实验性执行摩擦挂件：全部关闭 = 生产基线（flat 滑点、无压仓、无排队、不拆单）。'
+      + '开启后按更写实的口径撮合——仅影响本页模拟器，不改引擎选股/出场逻辑。';
+  };
+  for (const [toggle] of map) { const el = $(toggle); if (el) el.addEventListener('change', sync); }
+  sync();
+}
 // 涨跌配色沿用中文语境：涨=红、跌=绿
 const cls = (v) => (v == null || !Number.isFinite(+v)) ? 'muted' : (v > 0 ? 'hl' : v < 0 ? 'hl-dn' : 'muted');
 
@@ -598,7 +663,7 @@ function autoCatchUp(days) {
   let cur = ACCT;
   let filled = 0, expired = 0;
   for (const d of todo) {
-    const r = settleDay(cur, d.trade_date, quotesFromDay(d));
+    const r = settleDay(cur, d.trade_date, quotesFromDay(d), { exec: readExecSettings().exec });
     cur = r.account;
     filled += r.fills.length;
     expired += r.expired.length;
@@ -2299,8 +2364,6 @@ async function runBatch() {
   await refreshLive(items.map((it) => it.code));
 
   const day = batchDay();
-  // date 同单票路径用真实提交日：风控的「单日累计买入」按此分组，且 T+1 门禁据此顺延
-  const opts = { date: bjToday(), applyLhbFilter: applyLhb, checkRisk };
   // 卖出：不做龙虎过滤（规则原文只对买入做前置过滤），也不做仓位变动风控（降仓必须放行）
   // ── AI 深度情报·批量买前预检（方向 A 排雷）：命中黑名单的标的从提交清单剔除并记入日志 ──
   //   （与 scripts/paper_daily.mjs 的 glmBuyGuard 同源意图；此处走前端窗桥，因浏览器无 fs。
@@ -2315,8 +2378,39 @@ async function runBatch() {
       ACCT = { ...ACCT, logs: appendLog(ACCT, { stage: 'glm', result: 'rejected', code: b.code, name: b.name, side: 'buy', reason: rr, text: `[AI预检拦截] 拒单 ${b.code}：${rr}` }) };
     });
   }
+  // 执行层开关（前端可调，默认全关）：把滑点剖面/排队概率/分批/压仓注入引擎
+  const execSettings = getExec();
+  const { exec, regimeCap, tranche: execTranche, trancheCapLimit } = execSettings;
+  let itemsForBatch = passItems;
+  // 分批建仓：仅买入 + qty 模式把每笔下单数拆成 N 笔整数手（同日内拆单，降低单笔冲击/量上限触发）
+  if (execTranche > 1 && side === 'buy') {
+    const expanded = [];
+    for (const it of passItems) {
+      if (it.qty != null && it.qty > 0) {
+        for (const lot of splitLots(it.qty, execTranche)) expanded.push({ ...it, qty: lot });
+      } else {
+        expanded.push(it);   // pct 模式由引擎按资金算股数，UI 不预拆
+      }
+    }
+    itemsForBatch = expanded;
+  }
+  // 分批持仓数约束：达上限后不开新仓（已持仓/已计划继续），保持总敞口与整单一致
+  if (trancheCapLimit != null && side === 'buy') {
+    const openCodes = new Set(Object.keys(ACCT.positions || {}));
+    const planned = new Set();
+    const filtered = [];
+    for (const it of itemsForBatch) {
+      const c = String(it.code);
+      if (!openCodes.has(c) && !planned.has(c) && (openCodes.size + planned.size) >= trancheCapLimit) continue;
+      planned.add(c);
+      filtered.push(it);
+    }
+    itemsForBatch = filtered;
+  }
+  // date 同单票路径用真实提交日：风控的「单日累计买入」按此分组，且 T+1 门禁据此顺延
+  const opts = { date: bjToday(), applyLhbFilter: applyLhb, checkRisk, exec, ...(regimeCap != null ? { regimeCap } : {}) };
   const r = side === 'buy'
-    ? batchSubmit(ACCT, passItems, day, opts)
+    ? batchSubmit(ACCT, itemsForBatch, day, opts)
     : batchSell(ACCT, items, day, { date: opts.date });
   // 把 GLM 预检拦截的标的并入批量结果表（status=blocked, stage=glm），原因逐条可见
   const glmResults = glmBlocked.map((b) => ({
@@ -2598,18 +2692,30 @@ async function submit() {
   // submitDate 必须用**真实提交日**（北京时间今天），不能用存档最新交易日（LAST_DATE）：
   //   引擎的 T+1 门禁按 submitDate ≥ 结算日顺延——若记成存档日（盘中时是昨天），
   //   当天点「按实时价结算」就能同日撮合 = T+0 作弊。存档滞后时两者差着整个交易日。
-  const r = submitOrder(ACCT, { code: info.code, side: ORDER.side, qty: ORDER.qty, slip: SLIP }, q, { date: bjToday() });
-  ACCT = r.next;
+  const { exec, tranche } = getExec();
+  const slip = exec.slipModel === 'profile' ? undefined : SLIP;   // profile 模式让引擎统一算滑点（基础+冲击）
+  const lots = splitLots(ORDER.qty, tranche);
+  let lastR = null, okCount = 0, rejCount = 0;
+  for (const lot of lots) {
+    if (lot <= 0) continue;
+    const r = submitOrder(ACCT, { code: info.code, side: ORDER.side, qty: lot, slip }, q, { date: bjToday() });
+    ACCT = r.next;
+    lastR = r;
+    if (r.order.status === 'rejected') rejCount++; else okCount++;
+  }
+  if (!lastR) { msg('委托数量为 0，未下单', 'err'); return; }
   save();
   renderAllPaper();
   syncOrderInputs();
-  if (r.order.status === 'rejected') {
-    msg(`委托被拒：${r.order.reject}${r.order.detail ? '（' + r.order.detail + '）' : ''}`, 'err');
+  const pxSrc = info.src === 'live' ? `按${info.srcLabel} ${num(info.price)} 元` : `按${info.srcLabel || '行情'} ${num(info.price)} 元`;
+  if (rejCount && !okCount) {
+    msg(`委托被拒：${lastR.order.reject}${lastR.order.detail ? '（' + lastR.order.detail + '）' : ''}`, 'err');
+  } else if (rejCount) {
+    msg(`分 ${lots.length} 笔挂单，其中 ${rejCount} 笔被拒（见事件日志）`, 'warn');
   } else {
-    const pxSrc = info.src === 'live' ? `按${info.srcLabel} ${num(info.price)} 元` : `按${info.srcLabel || '行情'} ${num(info.price)} 元`;
-    msg(`${ORDER.side === 'buy' ? '买入' : '卖出'} ${info.name || info.code} ${ORDER.qty} 股已挂单（${pxSrc}预估冻结），将于下一交易日按真实收盘价撮合`, 'ok');
-  }
-}
+    const tag = lots.length > 1 ? `（分 ${lots.length} 笔挂单）` : '';
+    msg(`${ORDER.side === 'buy' ? '买入' : '卖出'} ${info.name || ORDER.code} ${ORDER.qty} 股已挂单${tag}（${pxSrc}预估冻结），将于下一交易日按真实收盘价撮合`, 'ok');
+  }}
 
 function cancel(id) {
   const r = cancelOrder(ACCT, id);
@@ -2653,7 +2759,8 @@ async function closeAll() {
       continue;
     }
     const q = { code: info.code, name: info.name, price: info.price, changePct: info.changePct };
-    const r = submitOrder(ACCT, { code: p.code, side: 'sell', qty: free, slip: SLIP }, q, { date: LAST_DATE });
+    const slip = getExec().exec.slipModel === 'profile' ? undefined : SLIP;   // 卖出跟随滑点剖面（跌停卖出折价等）
+    const r = submitOrder(ACCT, { code: p.code, side: 'sell', qty: free, slip }, q, { date: LAST_DATE });
     if (r.order.status === 'rejected') {
       skipped.push(`${p.name || p.code}：${r.order.reject}${r.order.detail ? '（' + r.order.detail + '）' : ''}`);
       continue;
@@ -2796,7 +2903,7 @@ async function settleByLive(date) {
   if (stale.length) {
     return { ok: false, tone: 'warn', reason: `行情还是 ${stale[0].tickDate} 的（今日 ${today} 尚无成交价：未开盘或休市）——用旧价结算会击穿防前视设计，拒绝。今日开盘后再结算` };
   }
-  const res = settleDay(ACCT, today, quotes);
+  const res = settleDay(ACCT, today, quotes, { exec: readExecSettings().exec });
   ACCT = res.account;
   save();
   renderAllPaper();
@@ -2839,7 +2946,7 @@ function settleNow() {
             + `如需补齐更早日期，请重跑 node scripts/split_archive.mjs 后刷新`, 'err');
         }
         let cur = ACCT, filled = 0, expired = 0, held = 0;
-        for (const d of todo) { const rr = settleDay(cur, d.trade_date, quotesFromDay(d)); cur = rr.account; filled += rr.fills.length; expired += rr.expired.length; held += rr.t1Hold || 0; }
+        for (const d of todo) { const rr = settleDay(cur, d.trade_date, quotesFromDay(d), { exec: readExecSettings().exec }); cur = rr.account; filled += rr.fills.length; expired += rr.expired.length; held += rr.t1Hold || 0; }
         ACCT = cur;
         QMAP = { ...QMAP, ...quotesFromDay(days[days.length - 1]) };
         LAST_DATE = days[days.length - 1].trade_date;
@@ -3029,6 +3136,7 @@ $('paperApplyInit')?.addEventListener('click', applyInitCash);
 $('paperExport')?.addEventListener('click', doExport);
 $('paperImport')?.addEventListener('click', doImport);
 $('paperSettle')?.addEventListener('click', settleNow);
+wireExecControls();
 // 一键空仓：先确认（会一次性挂出多笔卖单，误点代价大）
 $('paperCloseAll')?.addEventListener('click', () => {
   const n = Object.keys(ACCT?.positions || {}).length;
