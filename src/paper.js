@@ -79,6 +79,12 @@ export const EXEC_DEFAULTS = {
   limitFillProb: false,      // 总开关
   limitUpFillRatio: 0.5,     // 涨停买入前排成交比例（0~1）
   limitDownFillProb: 0.5,    // 跌停卖出成交概率（0~1）
+  // ── 动态成交量冲击滑点 + 单笔成交量上限（执行层·随 --slip-model profile 生效）──
+  volImpactCoef: 0.02,       // 冲击系数：名义额达到参考成交额时附加的滑点比例
+  volCapRatio: 0.03,         // 单笔上限=当日成交额的该比例（有 amount 时硬拒超量）
+  maxOrderNotional: 2000000, // 无 amount 时的单笔名义额上限（元）兜底拒超量
+  refAmountSmall: 5e7,       // 小票代理参考日成交额（元）
+  refAmountTrend: 5e8,       // 趋势中大票代理参考日成交额（元）
 };
 
 export function normalizeExec(exec) {
@@ -101,6 +107,11 @@ export function normalizeExec(exec) {
   m.limitFillProb = !!m.limitFillProb;
   m.limitUpFillRatio = Math.min(1, Math.max(0, Number.isFinite(+m.limitUpFillRatio) ? +m.limitUpFillRatio : 0.5));
   m.limitDownFillProb = Math.min(1, Math.max(0, Number.isFinite(+m.limitDownFillProb) ? +m.limitDownFillProb : 0.5));
+  m.volImpactCoef = Number.isFinite(+m.volImpactCoef) ? Math.max(0, +m.volImpactCoef) : 0;
+  m.volCapRatio = Number.isFinite(+m.volCapRatio) ? Math.min(1, Math.max(0, +m.volCapRatio)) : 0;
+  m.maxOrderNotional = Number.isFinite(+m.maxOrderNotional) ? Math.max(0, +m.maxOrderNotional) : 0;
+  m.refAmountSmall = Number.isFinite(+m.refAmountSmall) ? Math.max(0, +m.refAmountSmall) : 5e7;
+  m.refAmountTrend = Number.isFinite(+m.refAmountTrend) ? Math.max(0, +m.refAmountTrend) : 5e8;
   return m;
 }
 
@@ -113,6 +124,26 @@ export function pickSlip(exec, { side, profile = 'trend', isLimitUp = false, isL
   }
   if (isLimitDown) return exec.slipCloseLimitDown;         // 跌停卖出特殊：流动性枯竭折价
   return profile === 'small' ? exec.slipCloseSmall : exec.slipCloseTrend;
+}
+
+export const EXEC_SLIP_MAX = 0.05;   // 单笔滑点上限（5%），防极端冲击侵蚀净值
+// 动态成交量冲击滑点（执行层插件，仅 profile 模式调用）：下单名义额相对当日成交额越大，冲击成本越高。
+//   - 有当日成交额(amount, 元)：impact = coef * min(1, notional/amount)（线性饱和）
+//   - 无 amount（热点股仅换手率）：按标的类型代理参考成交额(refAmountSmall/Trend)估算；
+//     换手率越低（流动性越差）进一步放大冲击。属代理估算，因存档个股成交额仅龙虎榜股具备。
+export function impactSlip(exec, { side, notional = 0, amount = null, huanshou = null, profile = 'trend' } = {}) {
+  const coef = exec.volImpactCoef || 0;
+  if (!(coef > 0)) return 0;
+  let ref = (amount != null && amount > 0) ? amount : null;
+  if (ref == null) {
+    ref = (profile === 'small' ? exec.refAmountSmall : exec.refAmountTrend) || 1e8;
+    if (huanshou != null && huanshou > 0) {
+      const medianHs = 5; // 经验中位换手率(%)；低于此放大冲击
+      ref = ref * Math.min(2, Math.max(0.5, medianHs / huanshou));
+    }
+  }
+  const ratio = Math.min(1, notional / ref);
+  return coef * ratio;
 }
 
 // 模块级执行上下文（replay 每日循环 setExecContext 注入），供 submitOrder 在 profile 模式统一解析滑点，
@@ -737,14 +768,17 @@ export function submitOrder(acct, order, quote, ctx = {}) {
     streak: order.streak || null,       // 入场连板数（主线第1步·分级止损匹配用，仅透传，不参与校验）
     submitPrice: quote?.price != null ? +quote.price : null,
   };
-  // 滑点解析：profile 模式下按「标的类型 × 开平仓 × 涨跌停」取滑点；flat 模式不改写 order.slip（沿用 fillPrice 旧基线）。
-  let slip = order.slip;
-  if (slip == null && _execCtx && _execCtx.slipModel === 'profile') {
+  // 滑点解析（profile 模式）：基础滑点按「标的类型×开平仓×涨跌停」；冲击滑点按「下单名义额/当日成交额」在 validateOrder 后追加（见下方 rec 前）。
+  let slipBase = order.slip;
+  let profileMode = false;
+  let prof = 'trend';
+  if (slipBase == null && _execCtx && _execCtx.slipModel === 'profile') {
+    profileMode = true;
     const pos = acct.positions && acct.positions[String(order.code)];
-    const profile = order.slipProfile || (pos && pos.slipProfile) || 'trend';
+    prof = order.slipProfile || (pos && pos.slipProfile) || 'trend';
     const isLimitUp = quote && quote.changePct != null && +quote.changePct >= 9;
     const isLimitDown = pos && pos.changePct != null && +pos.changePct <= -9;
-    slip = pickSlip(_execCtx, { side: order.side, profile, isLimitUp, isLimitDown });
+    slipBase = pickSlip(_execCtx, { side: order.side, profile: prof, isLimitUp, isLimitDown });
   }
   if (!v.ok) {
     const rec = { ...base, status: 'rejected', reject: v.reason, detail: v.detail };
@@ -757,10 +791,16 @@ export function submitOrder(acct, order, quote, ctx = {}) {
       order: rec,
     };
   }
+  let slipImpact = 0;
+  if (profileMode) {
+    slipImpact = impactSlip(_execCtx, { side: order.side, notional: v.gross, amount: quote && quote.amount != null ? +quote.amount : null, huanshou: quote && quote.huanshou != null ? +quote.huanshou : null, profile: prof });
+  }
+  const baseSlip = slipBase != null ? slipBase : (order.slip ?? null);   // 基础滑点：profileMode 取 pickSlip；回放预置 slip 则取预置值
+  const slip = Math.min(EXEC_SLIP_MAX, (baseSlip != null ? baseSlip : DEFAULT_SLIP) + slipImpact);
   const rec = {
     ...base, status: 'pending',
     estPrice: v.price, estFee: v.fee, estGross: v.gross, need: v.need,
-    slip: slip ?? DEFAULT_SLIP,
+    slip, slipBase: baseSlip, slipImpact: profileMode ? slipImpact : 0,
     sector: order.sector || null,
   };
   return {
@@ -955,6 +995,18 @@ export function batchSubmit(acct, items, day, opts = {}) {
       const r = qtyByAssetPct(stats.total, +raw.pct, px, { cash: cur.cash });
       qty = r.qty;
       row.capped = r.capped;
+    }
+    // 单笔成交量上限（profile 模式·执行真实性）：大单买不进——超当日成交额比例/兜底名义额上限的部分直接砍掉（超额拒单）
+    if ((exec.volCapRatio > 0 || exec.maxOrderNotional > 0) && qty != null && qty > 0 && quote && quote.price > 0) {
+      const p0 = +quote.price;
+      let maxQty = Infinity;
+      if (exec.volCapRatio > 0 && quote.amount != null && quote.amount > 0) {
+        maxQty = Math.min(maxQty, Math.floor((exec.volCapRatio * quote.amount / p0) / LOT) * LOT);
+      }
+      if (exec.maxOrderNotional > 0) {
+        maxQty = Math.min(maxQty, Math.floor((exec.maxOrderNotional / p0) / LOT) * LOT);
+      }
+      if (maxQty < qty) { qty = Math.max(0, maxQty); row.capped = true; }
     }
     row.qty = qty;
     if (!qty || qty <= 0) {
@@ -1301,7 +1353,7 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
         orders: cur.orders.map((o) => (o.id === p.id ? fillRec(o, { date, px, gross, fee }) : o)),
         trades: [...cur.trades, tradeRec(p, { date, px, gross, fee, name })],
       };
-      log.push({ ...pick(p), status: 'filled', price: px, gross, fee, slip: p.slip ?? null });
+      log.push({ ...pick(p), status: 'filled', price: px, gross, fee, slip: p.slip ?? null, slipBase: p.slipBase ?? null, slipImpact: p.slipImpact ?? null });
       markDone(p.id);
     } else {
       const pos = cur.positions[p.code];
@@ -1324,7 +1376,7 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
         orders: cur.orders.map((o) => (o.id === p.id ? fillRec(o, { date, px, gross, fee }) : o)),
         trades: [...cur.trades, tradeRec(p, { date, px, gross, fee, name })],
       };
-      log.push({ ...pick(p), status: 'filled', price: px, gross, fee, realized: applied.realized, slip: p.slip ?? null, reason: escaped ? '跌停逃生(排队成交)' : (p.reason || null) });
+      log.push({ ...pick(p), status: 'filled', price: px, gross, fee, realized: applied.realized, slip: p.slip ?? null, slipBase: p.slipBase ?? null, slipImpact: p.slipImpact ?? null, reason: escaped ? '跌停逃生(排队成交)' : (p.reason || null) });
       markDone(p.id);
     }
   }
@@ -1690,7 +1742,7 @@ function tradeRec(p, { date, px, gross, fee, name }) {
   return {
     id: p.id, code: p.code, name, side: p.side, qty: p.qty,
     submitDate: p.submitDate, fillDate: date, submitPrice: p.submitPrice, price: px,
-    gross, fee, slip: p.slip ?? null, net: p.side === 'buy' ? round2(gross + fee) : round2(gross - fee),
+    gross, fee, slip: p.slip ?? null, slipBase: p.slipBase ?? null, slipImpact: p.slipImpact ?? null, net: p.side === 'buy' ? round2(gross + fee) : round2(gross - fee),
     reason: p.reason || '手动下单',
     // 委托价 → 成交价的漂移：T+1 撮合的必然结果，如实展示（真实交易也是这个体验）
     driftPct: p.submitPrice ? +(((px - p.submitPrice) / p.submitPrice) * 100).toFixed(2) : null,
@@ -1811,7 +1863,7 @@ export function quotesFromDay(day) {
   }
   for (const l of day?.lhb || []) {
     if (l?.code && l.close != null && Number.isFinite(+l.close)) {
-      out[l.code] = { code: l.code, name: l.name || '', price: +l.close, changePct: l.change_pct ?? null, reason: l.reason || '', src: 'lhb' };
+      out[l.code] = { code: l.code, name: l.name || '', price: +l.close, changePct: l.change_pct ?? null, reason: l.reason || '', amount: (l.deal_wan != null ? +l.deal_wan * 10000 : null), src: 'lhb' };
     }
   }
   // 实时价覆盖层：paper_ui 的 batchDay() 会把腾讯实时价写进 day.quotes——
