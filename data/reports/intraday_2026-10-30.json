@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-30",
- "generated_at": "2026-10-30T02:30:33.335Z",
+ "generated_at": "2026-10-30T06:05:44.570Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -154,7 +154,7 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": -0.0052,
+    "chgPct": -0.002087,
     "state": "ok",
     "stale": false,
     "cacheNote": null
@@ -178,18 +178,14 @@
     "深证成指": -2.92,
     "创业板指": -4.45
    },
-   "up_down": null,
+   "up_down": "1344/3811/139",
    "amount_yi": 15565.2,
-   "zt_dt": null,
+   "zt_dt": "56/31",
    "breadth": "站上20日线仅 17.4%",
    "pain": "亏钱效应显著",
    "seats": "游资/其他（营业部·分公司·自营）主导",
    "highest_chain": 5,
-   "breadth_stale": true,
-   "fallbackUsed": [
-    "hot"
-   ],
-   "fallbackFromAt": "2026-10-30T02:00:04.358Z"
+   "breadth_stale": false
   },
   "approx": false,
   "drawdown_vs_threshold": {
@@ -215,11 +211,6 @@
    "field": "counter_trend_losses / counter_trend_loss_ratio",
    "reason": "无逆势加仓/亏损记账；参考 divergence.posGap（保费敞口）",
    "ref": "data/paper/dual_track_latest.json"
-  },
-  {
-   "field": "market_context.up_down",
-   "reason": "盘中实时涨跌家数快照缺失/跨交易日/采集滞后/源失败——已隐藏陈旧 EOD 值，宁可不报也不糊弄",
-   "ref": "src/ai_report.js::generateIntraday"
   },
   {
    "field": "max_drawdown_daily",
@@ -249,8 +240,8 @@
  },
  "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
  "push_verification": {
-  "checkedAtBJ": "10:30",
-  "snapshotAtBJ": "2026-10-30 10:00",
+  "checkedAtBJ": "14:05",
+  "snapshotAtBJ": "2026-10-30 14:05",
   "tradeDate": "2026-10-30",
   "trend_pool_mode": "trend",
   "minutes_to_close": null,
