@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { decodeArchive } from '../src/lhb_codec.js';
 import {
   emptyAccount, settleDay, batchSubmit, accountStats, quotesFromDay, normalizeExec,
+  pickSlip, setExecContext,
 } from '../src/paper.js';
 import { recommendPicks } from '../src/picks.js';
 import { glmBuyGuard } from '../src/glm_guard.js';
@@ -50,6 +51,11 @@ for (let i = 2; i < process.argv.length; i++) {
   else if (a.startsWith('--base=')) args.set('base', a.split('=')[1] || 'legacy');
   else if (a === '--limit-days') args.set('limitDays', Number(process.argv[++i]) || 0);
   else if (a.startsWith('--limit-days=')) args.set('limitDays', Number(a.split('=')[1]) || 0);
+  else if (a === '--slip-model') args.set('slipModel', process.argv[++i] || 'flat');
+  else if (a.startsWith('--slip-model=')) args.set('slipModel', a.split('=')[1] || 'flat');
+  else if (a === '--tranche') args.set('tranche', Math.max(1, Number(process.argv[++i]) || 1));
+  else if (a.startsWith('--tranche=')) args.set('tranche', Math.max(1, Number(a.split('=')[1]) || 1));
+  else if (a === '--regime-cap') args.set('regimeCap', '1');   // 默认关闭；开启后按 day.emotion 推导的 regime 档位压仓位（执行层挂件，开关对比基线）
 }
 
 // 分级止损对照开关：streak-tier=开启连板分级止损；legacy=强制关闭（与旧规则一致，作对照组）。
@@ -115,8 +121,25 @@ async function loadHs300() {
 
 function buildExec(mode) {
   const cfg = { mode: mode || 'ideal' };
-if (args.get('sectorLimit')) cfg.sectorLimitRatio = args.get('sectorLimit');
+  if (args.get('sectorLimit')) cfg.sectorLimitRatio = args.get('sectorLimit');
+  // 滑点剖面插件：--slip-model profile 启用差异化滑点（flat=基线，不改历史回测数字）
+  if (args.get('slipModel') === 'profile') cfg.slipModel = 'profile';
+  // 分批建仓：--tranche N 把单票 pct 拆成 N 日等额建仓（1=不拆）
+  const tr = Number(args.get('tranche')) || 1;
+  if (tr > 1) cfg.tranche = tr;
   return normalizeExec(cfg);
+}
+
+// 执行层·regime 情绪风控挂件：存档无 day.regime 字段，从 day.emotion.value(0-100) 推导四档仓位帽。
+// 冰点/退潮 压仓（防守），回暖 放大，高潮 反手压（防追高）。阈值/帽值均可配置，调参不改选股/出场。
+const REGIME_CAP = { ice: 0.20, ebb: 0.35, warm: 0.60, high: 0.45 };
+function regimeOfEmotion(v) {
+  if (v == null || !Number.isFinite(+v)) return 'warm';
+  const x = +v;
+  if (x < 25) return 'ice';    // 冰点
+  if (x < 45) return 'ebb';    // 退潮
+  if (x <= 65) return 'warm';  // 回暖
+  return 'high';               // 高潮
 }
 
 async function runReplay(mode, { collectTrades = false } = {}) {
@@ -140,11 +163,14 @@ async function runReplay(mode, { collectTrades = false } = {}) {
 
   // —— 逐笔归因采集容器（仅 --attrition 时启用，不影响原有回放逻辑）——
   const trades = [];
-  const openTrades = {};       // code -> { entryPrice, entryDate, sector, weakToStrong, streak, hotMoney, emotionBand, emotionScore }
+  const openTrades = {};       // code -> { entryPrice, entrySlip, entryGross, ...选股特征 }
   const pendingFeatures = {};   // code -> 决策日选股特征（买入成交时归因用）
+  const planned = {};          // code -> 分批建仓剩余待部署占比（exec.tranche>1 时生效）
 
   for (const day of daysToRun) {
     const date = day.trade_date;
+    setExecContext(exec);   // 注入模块级执行上下文，供 submitOrder 在 profile 模式统一解析滑点
+    const regimeCap = args.get('regimeCap') ? REGIME_CAP[regimeOfEmotion(day.emotion?.value)] : null;   // 默认 null=基线（不压）
     // ① 结算当日：盯市 + T+1 解冻 + 硬止损（与 paper_daily 同）
     const qDay = richQuotes(day);
     // v2 趋势跟随：按日把持仓票的 MA60 注入持仓（供 scanStopLoss 跌破MA60 破位出场）；v1 不注入→零污染
@@ -158,20 +184,26 @@ async function runReplay(mode, { collectTrades = false } = {}) {
     const r = settleDay(acct, date, qDay, { exec, stops: resolveStops() });
     acct = r.account;
     fills += r.fills.length;
-    if (!global.__bf) global.__bf = 0;
-    for (const t of r.fills) if (t.side === 'buy' && t.status === 'filled') global.__bf++;
 
     // 成交单 → 逐笔交易配对（买开仓 / 卖平仓）。注：单笔配对近似，不计加仓/减仓精确 FIFO。
     for (const t of r.fills) {
       if (t.side === 'buy' && t.status === 'filled') {
         const f = pendingFeatures[String(t.code)];
-        if (f) openTrades[String(t.code)] = { entryPrice: t.price, ...f };
+        if (f) openTrades[String(t.code)] = { entryPrice: t.price, entrySlip: t.slip, entryGross: t.gross, ...f };
       } else if (t.side === 'sell' && t.status === 'filled') {
         const o = openTrades[String(t.code)];
         if (o && t.qty > 0) {
           const ret = t.realized / (o.entryPrice * t.qty);   // 已实现盈亏 / 买入名义额
           const win = t.realized > 0;
-          trades.push({ code: String(t.code), sector: o.sector || null, entryDate: o.entryDate, exitDate: date, exitPrice: t.price, holdingDays: holdDays(o.entryDate, date), ret, win, exitReason: t.reason || null, weakToStrong: o.weakToStrong, streak: o.streak, hotMoney: o.hotMoney, emotionScore: o.emotionScore, emotionBand: o.emotionBand });
+          const slipCost = (o.entrySlip || 0) * (o.entryGross || 0) + (t.slip || 0) * t.gross;  // 买卖双边滑点损耗（元）
+          trades.push({
+            code: String(t.code), sector: o.sector || null, entryDate: o.entryDate, exitDate: date, exitPrice: t.price,
+            holdingDays: holdDays(o.entryDate, date), ret, win, exitReason: t.reason || null,
+            weakToStrong: o.weakToStrong, streak: o.streak, hotMoney: o.hotMoney, emotionScore: o.emotionScore, emotionBand: o.emotionBand,
+            base: o.base || base, regimeEntry: o.regimeEntry || null,   // 选股来源 + 入场日市场 regime
+            signal: { weakToStrong: o.weakToStrong, streak: o.streak, hotMoney: o.hotMoney, emotionBand: o.emotionBand, base: o.base, score: o.score, maBull: o.maBull, slope20: o.slope20, slope60: o.slope60, rs10: o.rs10, rs20: o.rs20 },  // 触发信号
+            slipCost,   // 滑点损耗（元）
+          });
           soldTrades++; if (win) winTrades++;
         }
       }
@@ -203,13 +235,15 @@ async function runReplay(mode, { collectTrades = false } = {}) {
       }
       items = picks.slice(0, TOP_N).map((p) => ({
         code: String(p.code), pct: PER_POS_PCT, hybk: null, sector: null, streak: 0,
+        slipProfile: 'trend',   // 趋势中大票滑点剖面
+        slip: (exec.slipModel === 'profile') ? pickSlip(exec, { side: 'buy', profile: 'trend', isLimitUp: (qDay[String(p.code)]?.changePct ?? 0) >= 9 }) : undefined,
         reason: `回放自动建仓(v2趋势)（${p.code}）`,
       }));
       if (collectTrades) {
         for (const p of picks.slice(0, TOP_N)) {
           pendingFeatures[String(p.code)] = {
             entryDate: date, sector: null, weakToStrong: null, streak: 0, hotMoney: null,
-            emotionScore, emotionBand: bandOf(emotionScore), base: 'v2',
+            emotionScore, emotionBand: bandOf(emotionScore), base: 'v2', regimeEntry: regimeOfEmotion(emotionScore),
             score: p.score, maBull: p.maBull, slope20: p.slope20, slope60: p.slope60, rs10: p.rs10, rs20: p.rs20,
           };
         }
@@ -221,6 +255,8 @@ async function runReplay(mode, { collectTrades = false } = {}) {
       items = picks.slice(0, TOP_N).map((p) => ({
         code: String(p.code), pct: PER_POS_PCT, hybk: p.hybk || null, sector: p.hybk || p.theme || null,
         streak: p.streak || 0,   // 传入入场连板数，供 scanStopLoss 分级止损匹配（主线第1步）
+        slipProfile: 'small',    // 连板小票滑点剖面
+        slip: (exec.slipModel === 'profile') ? pickSlip(exec, { side: 'buy', profile: 'small', isLimitUp: (qDay[String(p.code)]?.changePct ?? 0) >= 9 }) : undefined,
         reason: `回放自动建仓（${p.name || p.code}）`,
       }));
       if (collectTrades) {
@@ -230,17 +266,30 @@ async function runReplay(mode, { collectTrades = false } = {}) {
             entryDate: date, sector,
             weakToStrong: (p.weakToStrong === true ? true : (p.weakToStrong === false ? false : null)),
             streak: p.streak || 0, hotMoney: !!p.hotMoney,
-            emotionScore, emotionBand: bandOf(emotionScore),
+            emotionScore, emotionBand: bandOf(emotionScore), regimeEntry: regimeOfEmotion(emotionScore),
           };
         }
       }
     }
     const safe = [];
+    const tr = exec.tranche || 1;
     for (const it of items) {
       if (USE_GLM && base !== 'v2' && !glmBuyGuard(it.code, { hybk: it.hybk, asOfDate: date }).pass) continue;
-      safe.push(it);
+      let pct = PER_POS_PCT;
+      if (tr > 1) {
+        // 分批建仓：新选 → 首份建仓并挂剩余计划；已在进行 → 再投一份。信号弱化掉出榜单则计划停滞（贴近真实）。
+        if (planned[it.code] != null) {
+          pct = Math.min(planned[it.code], PER_POS_PCT / tr);
+          planned[it.code] = Math.max(0, planned[it.code] - pct);
+          if (planned[it.code] <= 1e-9) delete planned[it.code];
+        } else {
+          pct = PER_POS_PCT / tr;
+          planned[it.code] = PER_POS_PCT - pct;
+        }
+      }
+      safe.push({ ...it, pct });
     }
-    if (safe.length) acct = batchSubmit(acct, safe, day, { date, exec, applyLhbFilter: applyLhbFilterEff }).next;
+    if (safe.length) acct = batchSubmit(acct, safe, day, { date, exec, applyLhbFilter: applyLhbFilterEff, regimeCap, singleStockCap: SHARED.SINGLE_STOCK_CAP }).next;
   }
 
   // —— 第 1 步诊断·假摔判定：硬止损出场后 N 日内是否回补（close ≥ 出场价）。
@@ -274,7 +323,7 @@ async function runReplay(mode, { collectTrades = false } = {}) {
     for (const t of trades) { const k = t.entryDate + ':' + t.code; if (seen.has(k)) continue; seen.add(k); out.push({ date: t.entryDate, code: t.code }); }
     writeFileSync('data/_trade_picks.json', JSON.stringify(out));
     console.error('[dump-trade-picks]', out.length, 'written');
-  }  console.error('DEBUG buyFills=', global.__bf, 'totalFills=', fills);
+  }
   return res;
 }
 
@@ -282,6 +331,11 @@ function print(r) {
   console.log(`  [${r.mode}] ${r.dateRange} 共 ${r.days} 交易日`);
   console.log(`     期末净值 ${r.finalEquity.toFixed(0)} 元｜总收益 ${r.totalRet.toFixed(2)}%｜最大回撤 ${r.maxDd.toFixed(2)}%`);
   console.log(`     成交 ${r.fills} 笔｜平仓 ${r.soldTrades} 笔｜平仓胜率 ${r.winRate == null ? '—' : r.winRate.toFixed(1) + '%'}`);
+  const flags = [];
+  if (args.get('slipModel') === 'profile') flags.push('滑点剖面=profile');
+  if ((args.get('tranche') || 1) > 1) flags.push(`分批建仓=${args.get('tranche')}`);
+  if (args.get('regimeCap')) flags.push('regime帽=on');
+  if (flags.length) console.log(`     执行挂件：${flags.join('，')}`);
 }
 
 // 选股胜率复盘 · 逐笔归因报告（2026-10-30 主线）：把亏损拆到因子切片，找出期望为负的伪信号。
@@ -296,6 +350,22 @@ function printSlice(title, arr, topN) {
     console.log(`    ${name} n=${String(g.n).padStart(4)}  胜率 ${fmtPct(g.winRate).padStart(6)}  均收益 ${fmtPct(g.avgRet).padStart(7)}  盈亏比 ${fmtPF(g.profitFactor).padStart(6)}  期望 ${fmtPct(g.expectancy).padStart(7)}`);
   }
 }
+function aggSlice(trades, keyFn) {
+  const groups = {};
+  for (const t of trades) { const k = keyFn(t); (groups[k] ||= []).push(t); }
+  return Object.entries(groups).map(([key, arr]) => {
+    const n = arr.length;
+    const wins = arr.filter((t) => t.win).length;
+    const winRate = n ? wins / n * 100 : null;
+    const avgRet = n ? arr.reduce((s, t) => s + t.ret, 0) / n * 100 : null;
+    const sumWin = arr.filter((t) => t.win).reduce((s, t) => s + t.ret, 0);
+    const sumLoss = arr.filter((t) => !t.win).reduce((s, t) => s + t.ret, 0);
+    const profitFactor = sumLoss < 0 ? (sumWin / -sumLoss) : (sumWin > 0 ? Infinity : null);
+    const expectancy = n ? arr.reduce((s, t) => s + t.ret, 0) / n * 100 : null;
+    return { key, n, winRate, avgRet, profitFactor, expectancy };
+  }).sort((x, y) => y.n - x.n);
+}
+
 function reportAttrition(trades) {
   const a = attributeTrades(trades);
   const o = a.overall;
@@ -306,6 +376,10 @@ function reportAttrition(trades) {
   printSlice('按连板数（追高代理）：', a.byStreak);
   printSlice('按游资净买（真实席位·回放注入）：', a.byHotMoney);
   printSlice('按板块（Top12）：', a.bySector, 12);
+  printSlice('按选股来源(base)：', aggSlice(trades, (t) => t.base || 'legacy'));
+  printSlice('按入场regime：', aggSlice(trades, (t) => t.regimeEntry || 'n/a'));
+  const totalSlip = trades.reduce((s, t) => s + (t.slipCost || 0), 0);
+  console.log(`\n  滑点损耗合计：${totalSlip.toFixed(0)} 元（${trades.length} 笔平仓，含买卖双边）`);
   console.log('\n  ── 第 1 步诊断：连板票全亏的三类假设 ──');
   printSlice('按出场原因：', a.byExitReason);
   printSlice('按止损后回补(假摔)：', a.byRecovered);

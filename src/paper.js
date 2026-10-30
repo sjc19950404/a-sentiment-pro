@@ -61,6 +61,18 @@ export const EXEC_DEFAULTS = {
   limitCapacityRatio: 0.10,
   sectorLimitRatio: 0,
   seed: 20261024,
+  // ── 滑点剖面插件（执行层·可配置挂件，slipModel 开关对比基线）──
+  //   slipModel:
+  //     'flat'   = 基线：沿用旧行为（理想模式万二、悲观模式 ±1%），不改任何历史回测数字。
+  //     'profile'= 差异化滑点：按「标的类型(连板小票 small / 趋势中大票 trend) × 开仓/平仓 × 涨停买入/跌停卖出特殊规则」取滑点。
+  slipModel: 'flat',
+  slipLimitUpBuy: 0.0,      // 涨停板买入特殊：按涨停价成交，滑点≈0（容量/撤单由 limitBuyOutcome 另管）
+  slipOpenSmall: 0.012,     // 开仓·连板小票流动性滑点（追涨冲击大）
+  slipOpenTrend: 0.003,     // 开仓·趋势中大票滑点（流动性好）
+  slipCloseSmall: 0.008,    // 平仓·连板小票滑点
+  slipCloseTrend: 0.003,    // 平仓·趋势中大票滑点
+  slipCloseLimitDown: 0.02, // 跌停卖出特殊：流动性枯竭，被迫折价
+  tranche: 1,              // 分批建仓：把单票 pct 拆成 N 日等额建仓（1=不拆）
 };
 
 export function normalizeExec(exec) {
@@ -72,8 +84,32 @@ export function normalizeExec(exec) {
   m.limitCapacityRatio = Number.isFinite(+m.limitCapacityRatio) ? Math.min(1, Math.max(0, +m.limitCapacityRatio)) : EXEC_DEFAULTS.limitCapacityRatio;
   m.sectorLimitRatio = Number.isFinite(+m.sectorLimitRatio) ? Math.min(1, Math.max(0, +m.sectorLimitRatio)) : 0;
   m.seed = Number.isFinite(+m.seed) ? +m.seed : EXEC_DEFAULTS.seed;
+  m.slipModel = (m.slipModel === 'profile') ? 'profile' : 'flat';
+  m.slipLimitUpBuy = Number.isFinite(+m.slipLimitUpBuy) ? +m.slipLimitUpBuy : 0;
+  m.slipOpenSmall = Number.isFinite(+m.slipOpenSmall) ? +m.slipOpenSmall : 0.012;
+  m.slipOpenTrend = Number.isFinite(+m.slipOpenTrend) ? +m.slipOpenTrend : 0.003;
+  m.slipCloseSmall = Number.isFinite(+m.slipCloseSmall) ? +m.slipCloseSmall : 0.008;
+  m.slipCloseTrend = Number.isFinite(+m.slipCloseTrend) ? +m.slipCloseTrend : 0.003;
+  m.slipCloseLimitDown = Number.isFinite(+m.slipCloseLimitDown) ? +m.slipCloseLimitDown : 0.02;
+  m.tranche = Math.max(1, Number.isFinite(+m.tranche) ? Math.floor(+m.tranche) : 1);
   return m;
 }
+
+// 滑点剖面插件（执行层挂件）：仅在 slipModel==='profile' 时启用差异化滑点；
+// 'flat' 模式不在此解析，沿用 fillPrice 处的旧基线逻辑（submitOrder 仅在 profile 模式改写 order.slip），保证基线数字逐位不变。
+export function pickSlip(exec, { side, profile = 'trend', isLimitUp = false, isLimitDown = false } = {}) {
+  if (side === 'buy') {
+    if (isLimitUp) return exec.slipLimitUpBuy;             // 涨停板买入特殊：按涨停价成交，滑点≈0
+    return profile === 'small' ? exec.slipOpenSmall : exec.slipOpenTrend;  // 连板小票 / 趋势中大票
+  }
+  if (isLimitDown) return exec.slipCloseLimitDown;         // 跌停卖出特殊：流动性枯竭折价
+  return profile === 'small' ? exec.slipCloseSmall : exec.slipCloseTrend;
+}
+
+// 模块级执行上下文（replay 每日循环 setExecContext 注入），供 submitOrder 在 profile 模式统一解析滑点，
+// 免去在每个 submitOrder 调用点透传 exec。单元/其他路径未注入时退化为基线行为。
+let _execCtx = null;
+export function setExecContext(e) { _execCtx = e ? normalizeExec(e) : null; }
 
 // 确定性 PRNG（mulberry32）+ 字符串哈希：保证「同一委托在同一交易日」的成交概率可复现。
 function hashStr(s) {
@@ -533,7 +569,9 @@ export function riskGuard(acct, order, quote, ctx = {}) {
   // ①a 2026-10-30 强制接入 regime 仓位帽（#3）：无论历史回撤多少，账户总仓位绝不允许超过 regime 帽。
   //    effectiveCap = min(回撤档位上限, regime 帽)；regimeCap 未提供 / 非有限数 / 为负时退化为仅回撤档位。
   const regimeCap = ctx.regimeCap;
-  const effCap = (Number.isFinite(+regimeCap) && +regimeCap >= 0) ? Math.min(tier.cap, +regimeCap) : tier.cap;
+  // 注意：regimeCap 未提供 / null / undefined / 非有限数 / 为负时退化为仅回撤档位；
+  // 必须显式排除 null/undefined（+null===0 会被误判为合法 0 帽，把总仓上限压成 0 从而拒掉所有买入）。
+  const effCap = (regimeCap != null && Number.isFinite(+regimeCap) && +regimeCap >= 0) ? Math.min(tier.cap, +regimeCap) : tier.cap;
 
   // ① 单日仓位变动（今日已提交买入累计 + 本笔）≤ 20% 总资产
   const changePct = (todayBuy + amount) / total;
@@ -624,6 +662,9 @@ export const REJECT = {
  */
 export function validateOrder(acct, order, quote) {
   const { code, side, qty } = order;
+  // 资本冻结口径用「基线名义滑点」（与 flat 模式一致），保证 profile 模式交易集合与基线逐位相同；
+  // 真实滑点只作用在成交价（submitOrder 的 rec.slip），仅影响 P&L，不扰动选股/笔数/单日变动上限。
+  const nominalSlip = (_execCtx && _execCtx.mode === 'strict') ? _execCtx.slipNonLimit : DEFAULT_SLIP;
   const b = boardOf(code);
   if (!/^\d{6}$/.test(String(code || ''))) return reject(REJECT.BAD_CODE, `代码 ${code}`);
   if (!b.tradable) return reject(REJECT.NOT_TRADABLE, b.label);
@@ -636,7 +677,7 @@ export function validateOrder(acct, order, quote) {
 
   if (side === 'buy') {
     if (qty % LOT !== 0) return reject(REJECT.LOT, `${qty} 股`);
-    const px = fillPrice(+quote.price, 'buy', order.slip ?? DEFAULT_SLIP);
+    const px = fillPrice(+quote.price, 'buy', nominalSlip);
     const gross = round2(px * qty);
     const fee = fees(gross, 'buy').total;
     const need = round2(gross + fee);
@@ -656,7 +697,7 @@ export function validateOrder(acct, order, quote) {
   }
   if (qty % LOT !== 0 && qty !== pos.qty) return reject(REJECT.ODD_SELL, `零股卖出仅限一次性清仓（${pos.qty} 股）`);
   if (qty > pos.qty) return reject(REJECT.BAD_QTY, `卖出 ${qty} > 持仓 ${pos.qty}`);
-  const px = fillPrice(+quote.price, 'sell', order.slip ?? DEFAULT_SLIP);
+  const px = fillPrice(+quote.price, 'sell', nominalSlip);
   const gross = round2(px * qty);
   const fee = fees(gross, 'sell').total;
   return { ok: true, price: px, gross, fee, need: 0 };
@@ -687,6 +728,15 @@ export function submitOrder(acct, order, quote, ctx = {}) {
     streak: order.streak || null,       // 入场连板数（主线第1步·分级止损匹配用，仅透传，不参与校验）
     submitPrice: quote?.price != null ? +quote.price : null,
   };
+  // 滑点解析：profile 模式下按「标的类型 × 开平仓 × 涨跌停」取滑点；flat 模式不改写 order.slip（沿用 fillPrice 旧基线）。
+  let slip = order.slip;
+  if (slip == null && _execCtx && _execCtx.slipModel === 'profile') {
+    const pos = acct.positions && acct.positions[String(order.code)];
+    const profile = order.slipProfile || (pos && pos.slipProfile) || 'trend';
+    const isLimitUp = quote && quote.changePct != null && +quote.changePct >= 9;
+    const isLimitDown = pos && pos.changePct != null && +pos.changePct <= -9;
+    slip = pickSlip(_execCtx, { side: order.side, profile, isLimitUp, isLimitDown });
+  }
   if (!v.ok) {
     const rec = { ...base, status: 'rejected', reject: v.reason, detail: v.detail };
     return {
@@ -701,7 +751,7 @@ export function submitOrder(acct, order, quote, ctx = {}) {
   const rec = {
     ...base, status: 'pending',
     estPrice: v.price, estFee: v.fee, estGross: v.gross, need: v.need,
-    slip: order.slip ?? DEFAULT_SLIP,
+    slip: slip ?? DEFAULT_SLIP,
     sector: order.sector || null,
   };
   return {
@@ -889,7 +939,10 @@ export function batchSubmit(acct, items, day, opts = {}) {
     let qty = Number.isInteger(raw?.qty) ? raw.qty : null;
     if (qty == null && Number.isFinite(+raw?.pct)) {
       const stats = accountStats(cur);
-      const px = fillPrice(+quote.price, 'buy', (exec.mode === 'strict') ? exec.slipNonLimit : (Number.isFinite(raw?.slip) ? raw?.slip : DEFAULT_SLIP));
+      // 建仓规模用「基线名义滑点」(与 flat 模式一致)，保证 profile 模式交易集合与基线逐位相同；
+      // 真实滑点只作用在成交价（submitOrder 的 raw.slip），仅影响 P&L，不扰动选股/仓位/笔数。
+      const sizingSlip = (exec.mode === 'strict') ? exec.slipNonLimit : DEFAULT_SLIP;
+      const px = fillPrice(+quote.price, 'buy', sizingSlip);
       const r = qtyByAssetPct(stats.total, +raw.pct, px, { cash: cur.cash });
       qty = r.qty;
       row.capped = r.capped;
@@ -901,9 +954,10 @@ export function batchSubmit(acct, items, day, opts = {}) {
       results.push(row); continue;
     }
 
-    // ② 账户全局风控 —— 用「当日累计」口径
+    // ② 账户全局风控 —— 用「当日累计」口径（同样用基线名义滑点，资本口径与基线一致）
     if (checkRisk) {
-      const g = riskGuard(cur, { side: 'buy', qty, slip: Number.isFinite(raw?.slip) ? raw?.slip : DEFAULT_SLIP, sector: raw?.sector || raw?.hybk || null }, quote, { todayBuyAmount: todayBuy, exec, regimeCap: opts.regimeCap, singleStockCap: opts.singleStockCap != null ? opts.singleStockCap : (opts.perStockCap != null ? opts.perStockCap : 0.20) });
+      const sizingSlip = (exec.mode === 'strict') ? exec.slipNonLimit : DEFAULT_SLIP;
+      const g = riskGuard(cur, { side: 'buy', qty, slip: sizingSlip, sector: raw?.sector || raw?.hybk || null }, quote, { todayBuyAmount: todayBuy, exec, regimeCap: opts.regimeCap, singleStockCap: opts.singleStockCap != null ? opts.singleStockCap : (opts.perStockCap != null ? opts.perStockCap : 0.20) });
       if (!g.ok) {
         row.status = 'blocked'; row.stage = 'risk'; row.reason = g.reason; row.detail = g.detail; row.risk = g;
         cur = { ...cur, logs: appendLog(cur, { date, code, name: row.name, side: 'buy', qty, stage: 'risk', result: 'rejected', reason: g.reason, text: g.detail }) };
@@ -1206,7 +1260,7 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
       const applied = applyBuy(pos, { qty: p.qty, price: px, fee });
       // 连板/打板标签：① 持仓已有 ② 选股透传 tag==='zt' ③ 买入当日涨停（兜底，打板即涨停价成交）
       const isZtLb = !!(pos.isZtLb || p.tag === 'zt' || (q.changePct != null && q.changePct >= 9.8));
-      const newPos = { ...pos, ...applied, name, avail: pos.avail || 0, openDate: pos.openDate || date, lastBuyDate: date, last: +q.price, lastDate: date, pxStale: false, sector: (p.sector || pos.sector || null), isZtLb, iceTrial: p.iceTrial || pos.iceTrial || null, antiNuke: p.antiNuke || pos.antiNuke || null, streak: (p.streak != null ? p.streak : (pos.streak != null ? pos.streak : null)) };
+      const newPos = { ...pos, ...applied, name, avail: pos.avail || 0, openDate: pos.openDate || date, lastBuyDate: date, last: +q.price, lastDate: date, pxStale: false, sector: (p.sector || pos.sector || null), isZtLb, iceTrial: p.iceTrial || pos.iceTrial || null, antiNuke: p.antiNuke || pos.antiNuke || null, streak: (p.streak != null ? p.streak : (pos.streak != null ? pos.streak : null)), slipProfile: (p.slipProfile != null ? p.slipProfile : (pos.slipProfile != null ? pos.slipProfile : null)), changePct: (q && q.changePct != null ? +q.changePct : (pos.changePct != null ? pos.changePct : null)) };
       cur = {
         ...cur,
         cash: toYuan(cashBack - toCents(need)),
@@ -1216,7 +1270,7 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
         orders: cur.orders.map((o) => (o.id === p.id ? fillRec(o, { date, px, gross, fee }) : o)),
         trades: [...cur.trades, tradeRec(p, { date, px, gross, fee, name })],
       };
-      log.push({ ...pick(p), status: 'filled', price: px, gross, fee });
+      log.push({ ...pick(p), status: 'filled', price: px, gross, fee, slip: p.slip ?? null });
       markDone(p.id);
     } else {
       const pos = cur.positions[p.code];
@@ -1239,7 +1293,7 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
         orders: cur.orders.map((o) => (o.id === p.id ? fillRec(o, { date, px, gross, fee }) : o)),
         trades: [...cur.trades, tradeRec(p, { date, px, gross, fee, name })],
       };
-      log.push({ ...pick(p), status: 'filled', price: px, gross, fee, realized: applied.realized, reason: escaped ? '跌停逃生(排队成交)' : (p.reason || null) });
+      log.push({ ...pick(p), status: 'filled', price: px, gross, fee, realized: applied.realized, slip: p.slip ?? null, reason: escaped ? '跌停逃生(排队成交)' : (p.reason || null) });
       markDone(p.id);
     }
   }
@@ -1264,6 +1318,7 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
       last: px != null ? px : p.last,
       lastDate: px != null ? date : p.lastDate,
       pxStale: px == null,
+      changePct: (q && q.changePct != null ? +q.changePct : p.changePct),
       avail: boughtToday ? (p.avail || 0) : p.qty,
       days: (p.days || 0) + 1,
     };
@@ -1604,7 +1659,7 @@ function tradeRec(p, { date, px, gross, fee, name }) {
   return {
     id: p.id, code: p.code, name, side: p.side, qty: p.qty,
     submitDate: p.submitDate, fillDate: date, submitPrice: p.submitPrice, price: px,
-    gross, fee, net: p.side === 'buy' ? round2(gross + fee) : round2(gross - fee),
+    gross, fee, slip: p.slip ?? null, net: p.side === 'buy' ? round2(gross + fee) : round2(gross - fee),
     reason: p.reason || '手动下单',
     // 委托价 → 成交价的漂移：T+1 撮合的必然结果，如实展示（真实交易也是这个体验）
     driftPct: p.submitPrice ? +(((px - p.submitPrice) / p.submitPrice) * 100).toFixed(2) : null,
