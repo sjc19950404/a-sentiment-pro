@@ -1543,7 +1543,7 @@
         "c": "001287",
         "lbc": 1,
         "lbw": 1,
-        "zbc": 1,
+        "zbc": 2,
         "hybk": "其他电子",
         "fbt": "093012",
         "fund": 121187000
@@ -3103,20 +3103,29 @@
   "ztDerived": null,
   "dataHealth": {
     "snapshotSource": "node-eastmoney",
-    "snapshotRows": 100,
-    "errors": [],
-    "degradations": []
+    "snapshotRows": 0,
+    "errors": [
+      "universe(hot/quotes): universe 全主机失败: push2.eastmoney.com#0: fetch failed | push2.eastmoney.com#1: fetch failed | 1.push2.eastmoney.com#0: fetch failed | 1.push2.eastmoney.com#1: fetch failed | 2.push2.eastmoney.com#0: fetch failed | 2.push2.eastmoney.com#1: fetch failed | 7.push2.eastmoney.com#0: fetch failed | 7.push2.eastmoney.com#1: fetch failed | 82.push2.eastmoney.com#0: fetch failed | 82.push2.eastmoney.com#1: fetch failed | 84.push2.eastmoney.com#0: fetch failed | 84.push2.eastmoney.com#1: fetch failed | push2delay.eastmoney.com#0: fetch failed | push2delay.eastmoney.com#1: fetch failed | hqdigi2.eastmoney.com#0: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON | hqdigi2.eastmoney.com#1: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON"
+    ],
+    "degradations": [],
+    "fallbackUsed": [
+      "hot",
+      "screener",
+      "breadth"
+    ]
   },
-  "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-10-30 11:00",
+  "sourcesFailed": [
+    "universe(hot/quotes): universe 全主机失败: push2.eastmoney.com#0: fetch failed | push2.eastmoney.com#1: fetch failed | 1.push2.eastmoney.com#0: fetch failed | 1.push2.eastmoney.com#1: fetch failed | 2.push2.eastmoney.com#0: fetch failed | 2.push2.eastmoney.com#1: fetch failed | 7.push2.eastmoney.com#0: fetch failed | 7.push2.eastmoney.com#1: fetch failed | 82.push2.eastmoney.com#0: fetch failed | 82.push2.eastmoney.com#1: fetch failed | 84.push2.eastmoney.com#0: fetch failed | 84.push2.eastmoney.com#1: fetch failed | push2delay.eastmoney.com#0: fetch failed | push2delay.eastmoney.com#1: fetch failed | hqdigi2.eastmoney.com#0: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON | hqdigi2.eastmoney.com#1: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON"
+  ],
+  "prevCapturedAtBJ": "2026-10-30 11:30",
   "prevPools": {
-    "zt": 37,
-    "zb": 15,
-    "seal_pct": 71.2
+    "zt": 43,
+    "zb": 14,
+    "seal_pct": 75.4
   },
   "rolling": {
-    "generatedAtBJ": "2026-10-30 11:30",
-    "minutes_to_close": 210,
+    "generatedAtBJ": "2026-10-30 12:00",
+    "minutes_to_close": 180,
     "trend_pool_mode": "trend",
     "streak_pool": [
       {
