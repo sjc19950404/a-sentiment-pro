@@ -282,6 +282,132 @@
           "doubleWeight": 2
         }
       }
+    },
+    {
+      "at": "2026-10-29T23:50:09+08:00",
+      "who": "boss-experiment",
+      "what": "stops 块新增分级连板止损配置（baseHardStopPct/streakTier/tier/t1Grace），默认 streakTier:false 保持生产不变",
+      "why": "主线第1步诊断：统一-8%硬止损对高波动连板票过半为假摔误伤。新增可配置分级止损，供 paper_replay --stop-override 对照实验；生产默认关闭，行为零变化。",
+      "validation": {
+        "type": "baseline",
+        "pass": true,
+        "oosDays": null,
+        "note": "仅新增配置字段、默认关闭且值与旧档一致，生产路径未读取该开关→行为不变；待回放对照实验后再决定是否 promote 开启。"
+      },
+      "liveAfter": {
+        "weights": {
+          "s_net20": 0.2,
+          "s_pos10": 0.1,
+          "s_brd20": 0.2,
+          "s_hot10": 0.1,
+          "s_zdt15": 0.15,
+          "s_zbl10": 0.1,
+          "s_amt15": 0.15
+        },
+        "thresholds": {
+          "panic": 24,
+          "hi": 44,
+          "lo": 65,
+          "overheat": 80
+        },
+        "stops": {
+          "maxPos": 1,
+          "stopLoss": -0.08,
+          "ddTrigger": -0.15,
+          "maxPosChg": 0.2,
+          "sentimentPenalty": 10,
+          "clusterRiseMax": 1500,
+          "openGapFilterPct": 8,
+          "trailingStopPct": 0.025,
+          "trailingTriggerPct": 0.06,
+          "clusterRedIndustryRatioMax": 0.1,
+          "iceTrialPos": 0.1,
+          "antiNuke": true,
+          "baseHardStopPct": -0.08,
+          "streakTier": false,
+          "tier": [
+            {
+              "streak": 1,
+              "stop": -0.08
+            },
+            {
+              "streak": 2,
+              "stop": -0.12
+            },
+            {
+              "streak": 3,
+              "stop": -0.15
+            }
+          ],
+          "t1Grace": true
+        },
+        "lookback": {
+          "rolling": {
+            "trainWindow": 20,
+            "testWindow": 6
+          },
+          "momentumRecent": 5,
+          "momentumPrev": 5,
+          "rankWindow": 60,
+          "rankMin": 20
+        },
+        "costModel": {
+          "comm": 0.0003,
+          "stamp": 0.0005,
+          "slip": 0.0002,
+          "priceLimit": {
+            "enabled": false
+          }
+        },
+        "regime": {
+          "levelLowAbs": 40,
+          "levelHighAbs": 65
+        },
+        "poolFilters": {
+          "intraday": {
+            "chg_min": 3,
+            "chg_max": 7,
+            "liangbi_min": 2,
+            "top": 10
+          },
+          "streak": {
+            "min_lb": 2,
+            "liangbi_min": 2,
+            "main_net_min": 0,
+            "top": 10
+          }
+        },
+        "hotmoney": {
+          "seatPatterns": [
+            "华鑫",
+            "拉萨",
+            "章建平",
+            "财通",
+            "国泰君安",
+            "东方财富",
+            "方新侠",
+            "赵老哥",
+            "作手新一",
+            "宁波",
+            "溧阳路",
+            "古北路",
+            "金田路",
+            "苏南帮",
+            "上塘路",
+            "佛山",
+            "成都",
+            "歌神",
+            "炒新一族",
+            "著名刺客",
+            "小鳄鱼",
+            "上海江苏路",
+            "桑田路",
+            "虹桥路",
+            "溧阳"
+          ],
+          "doubleWeight": 2
+        }
+      }
     }
   ]
 }

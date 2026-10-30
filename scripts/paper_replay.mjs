@@ -22,6 +22,7 @@ import {
 import { recommendPicks } from '../src/picks.js';
 import { glmBuyGuard } from '../src/glm_guard.js';
 import { attributeTrades, bandOf, holdDays } from '../src/select_attrition.js';
+import config from '../src/config.js';
 
 const args = new Map();
 for (let i = 2; i < process.argv.length; i++) {
@@ -34,6 +35,17 @@ for (let i = 2; i < process.argv.length; i++) {
   else if (a.startsWith('--topn')) args.set('topn', Number(process.argv[++i]) || 3);
   else if (a.startsWith('--pct')) args.set('pct', Number(process.argv[++i]) || 0.10);
   else if (a === '--attrition') { args.set('attrition', '1'); args.set('noGlm', '1'); args.set('noLhb', '1'); } // 归因只测「选股信号本身」，隔离 GLM/LHB 侧车门
+  else if (a.startsWith('--stop-override')) { const v = a.split('=')[1]; args.set('stopOverride', v || 'legacy'); }
+}
+
+// 分级止损对照开关：streak-tier=开启连板分级止损；legacy=强制关闭（与旧规则一致，作对照组）。
+// 默认（未指定）按生产口径（config.streaks.streakTier=false → 全局 -8%），保持历史回放不变。
+function resolveStops() {
+  const base = config.params.live.stops || {};
+  const ov = args.get('stopOverride');
+  if (ov === 'streak-tier') return { ...base, streakTier: true };
+  if (ov === 'legacy') return { ...base, streakTier: false };
+  return { ...base, streakTier: false };
 }
 
 const TOP_N = Math.max(1, args.get('topn') || 3);
@@ -82,7 +94,7 @@ function runReplay(mode, { collectTrades = false } = {}) {
     const date = day.trade_date;
     // ① 结算当日：盯市 + T+1 解冻 + 硬止损（与 paper_daily 同）
     const qDay = richQuotes(day);
-    const r = settleDay(acct, date, qDay, { exec });
+    const r = settleDay(acct, date, qDay, { exec, stops: resolveStops() });
     acct = r.account;
     fills += r.fills.length;
 
@@ -118,6 +130,7 @@ function runReplay(mode, { collectTrades = false } = {}) {
       .filter((p) => p && p.code && qDay[String(p.code)]);
     const items = picks.slice(0, TOP_N).map((p) => ({
       code: String(p.code), pct: PER_POS_PCT, hybk: p.hybk || null, sector: p.hybk || p.theme || null,
+      streak: p.streak || 0,   // 传入入场连板数，供 scanStopLoss 分级止损匹配（主线第1步）
       reason: `回放自动建仓（${p.name || p.code}）`,
     }));
     // 采集决策日选股特征（买入成交时归因用）。注：回放未注入席位数据 → hotMoney 恒 false（仅供参考）

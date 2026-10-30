@@ -1182,4 +1182,19 @@ test('挂件三·反核代理：antiNuke 持仓放宽硬止损至 -10%（跌停�
   assert.ok(sl2.list.find((x) => x.code === anti), 'antiNuke 持仓 -10%(跌停) 仍应触发止损');
 });
 
+// ───────── 主线第1步·分级连板止损（可配置 local patch） ─────────
+test('分级连板止损：streak>=2 放宽至 -12%，streak=1 / legacy 仍为 -8%', () => {
+  const code = '600010';
+  const mk = (streak) => ({ code, name: 'S', qty: 1000, avail: 1000, avgCost: 10, last: 9.0, openDate: '2026-09-30', lastDate: '2026-09-30', pxStale: false, streak });
+  const tier = { baseHardStopPct: -0.08, streakTier: true, tier: [{ streak: 1, stop: -0.08 }, { streak: 2, stop: -0.12 }, { streak: 3, stop: -0.15 }], t1Grace: true };
+  // -10% 浮亏：streak=2 + 分级 → 不触发（-12% 更宽松）；streak=1 + 分级 → 触发（-8%）；legacy → 触发（-8%）
+  assert.ok(!scanStopLoss({ ...fresh(1000000), positions: { [code]: mk(2) } }, '2026-10-01', tier).list.find((x) => x.code === code), 'streak=2+分级：-10% 不触发（-12% 更宽松）');
+  assert.ok(scanStopLoss({ ...fresh(1000000), positions: { [code]: mk(1) } }, '2026-10-01', tier).list.find((x) => x.code === code), 'streak=1+分级：-10% 触发（-8%）');
+  assert.ok(scanStopLoss({ ...fresh(1000000), positions: { [code]: mk(2) } }, '2026-10-01', { ...tier, streakTier: false }).list.find((x) => x.code === code), 'legacy(streakTier:false)：-10% 触发（-8%）');
+  // streak=2 在 -15% 触发，且标记分级档 -0.12（供归因切片区分）
+  const item = scanStopLoss({ ...fresh(1000000), positions: { [code]: { ...mk(2), last: 8.5 } } }, '2026-10-01', tier).list.find((x) => x.code === code);
+  assert.ok(item, 'streak=2 在 -15% 应触发');
+  assert.equal(item.tierStop, -0.12, 'streak=2 触发应标记分级档 -0.12');
+});
+
 

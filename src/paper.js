@@ -684,6 +684,7 @@ export function submitOrder(acct, order, quote, ctx = {}) {
     escape: order.escape || null,   // 跌停逃生标记：v1 紧急卖单置 true，触及跌停时改以跌停价排队成交
     iceTrial: order.iceTrial || null,   // 挂件一：冰点试错仓标记（极小仓位试错首板烂板弱转强）
     antiNuke: order.antiNuke || null,   // 挂件三：反核标记（放宽 -8% 硬止损至跌停才砍，给一日反杀机会）
+    streak: order.streak || null,       // 入场连板数（主线第1步·分级止损匹配用，仅透传，不参与校验）
     submitPrice: quote?.price != null ? +quote.price : null,
   };
   if (!v.ok) {
@@ -913,7 +914,7 @@ export function batchSubmit(acct, items, day, opts = {}) {
     }
 
     // ③④ 提交委托（validateOrder 在 submitOrder 内部执行）
-    const sub = submitOrder(cur, { code, side: 'buy', qty, reason: raw?.reason || '批量买入委托', slip: raw?.slip, sector: raw?.sector || raw?.hybk || null, tag: raw?.tag || null }, { ...quote, name: row.name }, { date });
+    const sub = submitOrder(cur, { code, side: 'buy', qty, reason: raw?.reason || '批量买入委托', slip: raw?.slip, sector: raw?.sector || raw?.hybk || null, tag: raw?.tag || null, streak: raw?.streak || null }, { ...quote, name: row.name }, { date });
     cur = sub.next;
     row.order = sub.order;
     row.status = sub.order.status === 'pending' ? 'submitted' : 'blocked';
@@ -1205,7 +1206,7 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
       const applied = applyBuy(pos, { qty: p.qty, price: px, fee });
       // 连板/打板标签：① 持仓已有 ② 选股透传 tag==='zt' ③ 买入当日涨停（兜底，打板即涨停价成交）
       const isZtLb = !!(pos.isZtLb || p.tag === 'zt' || (q.changePct != null && q.changePct >= 9.8));
-      const newPos = { ...pos, ...applied, name, avail: pos.avail || 0, openDate: pos.openDate || date, lastBuyDate: date, last: +q.price, lastDate: date, pxStale: false, sector: (p.sector || pos.sector || null), isZtLb, iceTrial: p.iceTrial || pos.iceTrial || null, antiNuke: p.antiNuke || pos.antiNuke || null };
+      const newPos = { ...pos, ...applied, name, avail: pos.avail || 0, openDate: pos.openDate || date, lastBuyDate: date, last: +q.price, lastDate: date, pxStale: false, sector: (p.sector || pos.sector || null), isZtLb, iceTrial: p.iceTrial || pos.iceTrial || null, antiNuke: p.antiNuke || pos.antiNuke || null, streak: (p.streak != null ? p.streak : (pos.streak != null ? pos.streak : null)) };
       cur = {
         ...cur,
         cash: toYuan(cashBack - toCents(need)),
@@ -1300,7 +1301,7 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
     logged = ex.next;
     exitList = ex.list;
   } else {
-    const stops = opts.scanStopLoss === false ? { list: [], apply: (a) => a } : scanStopLoss(logged, date);
+    const stops = opts.scanStopLoss === false ? { list: [], apply: (a) => a } : scanStopLoss(logged, date, opts.stops);
     if (stops.list.length) logged = stops.apply(logged, date);
     exitList = stops.list || [];
     // 增量移动止盈层（2026-10-29·老板）：trailingStopPct>0 时启用；盈利≥3% 启动追踪，
@@ -1424,16 +1425,27 @@ export function strictV1Exits(acct, date, cfg = EXIT_V1) {
  * 返回 { list, apply } —— list 供上层展示，apply(account, date) 返回新账户。
  * 拆成两段是为了：即使不应用（如回测只想看信号），也能拿到止损清单。
  */
-export function scanStopLoss(acct, date) {
+export function scanStopLoss(acct, date, stops) {
   const list = [];
   const positions = acct?.positions || {};
   for (const [code, p] of Object.entries(positions)) {
     if (!p || p.qty <= 0 || !(p.avgCost > 0) || p.last == null) continue;
     const pnlPct = (p.last - p.avgCost) / p.avgCost;      // 浮亏比例（未含卖出费用，与止损线同口径）
-    // 挂件三（2026-10-30·进攻·日频代理）：冰点试错仓(antiNuke)放宽硬止损至 −10%——
-    //   给「开盘恐慌砸盘后翻红（地天板反杀）」一日观察机会；跌停(−10%)才砍、避免假摔被洗。
-    //   ⚠ 真实「开盘−5%→翘板→15分钟」需日内 open/tick 数据，日频引擎无此字段，此为日收盘代理版。
-    const floor = (p.antiNuke) ? -0.10 : HARD_STOP_LOSS;
+    // 出场纪律补丁（主线第1步结论·可配置·local patch）：按入场连板数(streak)分级硬止损。
+    //   stops.streakTier=true 时，匹配 tier 中 streak<=入场连板数 的最高档止损线（更宽松，如-0.15）；
+    //   否则回退全局 baseHardStopPct/HARD_STOP_LOSS（与旧行为一致，保证对照公平）。
+    //   仅改阈值；移动止盈 / 隔日强制了结 / 跌停逃生逻辑不动。
+    let floor = HARD_STOP_LOSS;
+    if (stops && stops.baseHardStopPct != null) floor = stops.baseHardStopPct;
+    let tierStop = null;
+    const sEntry = Number.isFinite(+p.streak) ? +p.streak : 0;
+    if (stops && stops.streakTier && Array.isArray(stops.tier) && stops.tier.length) {
+      const tiers = [...stops.tier].sort((a, b) => (+b.streak) - (+a.streak));   // 降序，优先高连板档
+      const hit = tiers.find((t) => sEntry >= +t.streak);
+      if (hit != null && hit.stop != null) { floor = Math.min(floor, hit.stop); tierStop = hit.stop; }
+    }
+    // 挂件三（2026-10-30·进攻·日频代理）：冰点试错仓(antiNuke)放宽硬止损至 −10%（跌停才砍），优先于分级档、保持不变。
+    if (p.antiNuke) { floor = -0.10; tierStop = null; }
     if (pnlPct > floor + 1e-12) continue;                 // 未触及对应止损线，不动作
 
     const avail = Math.max(0, p.avail || 0);
@@ -1442,6 +1454,7 @@ export function scanStopLoss(acct, date) {
     const item = {
       code, name: p.name || code, pnlPct: round2(pnlPct * 100), last: p.last, avgCost: p.avgCost,
       qty: p.qty, avail, freeAvail, willSell: Math.min(freeAvail, p.qty), skipped: null,
+      tierStop, streak: sEntry,
     };
     if (freeAvail <= 0) {
       // T+1 未解冻 / 已全部挂单 —— 无法生成止损委托，如实记录，不假装已处理
@@ -1463,7 +1476,10 @@ export function scanStopLoss(acct, date) {
           continue;
         }
         const q = { code: it.code, name: it.name, price: it.last };
-        const sub = submitOrder(cur, { code: it.code, side: 'sell', qty: it.willSell, reason: `止损（浮亏 ${it.pnlPct}%）`, requeue: true }, q, { date: d });
+        const stopReason = (it.tierStop != null)
+          ? `止损（分级浮亏 ${it.pnlPct}%，连板${it.streak}板）`
+          : `止损（浮亏 ${it.pnlPct}%）`;
+        const sub = submitOrder(cur, { code: it.code, side: 'sell', qty: it.willSell, reason: stopReason, requeue: true }, q, { date: d });
         cur = sub.next;
         if (sub.order.status !== 'pending') {
           cur = { ...cur, logs: appendLog(cur, { date: d, code: it.code, name: it.name, side: 'sell', qty: it.willSell, stage: 'stop', result: 'rejected',

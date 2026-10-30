@@ -37,7 +37,15 @@
         "trailingTriggerPct": 0.06,
         "clusterRedIndustryRatioMax": 0.1,
         "iceTrialPos": 0.1,
-        "antiNuke": true
+        "antiNuke": true,
+        "baseHardStopPct": -0.08,
+        "streakTier": false,
+        "tier": [
+          { "streak": 1, "stop": -0.08 },
+          { "streak": 2, "stop": -0.12 },
+          { "streak": 3, "stop": -0.15 }
+        ],
+        "t1Grace": true
       },
       "lookback": {
         "rolling": {
@@ -134,7 +142,15 @@
         "trailingTriggerPct": 0.06,
         "clusterRedIndustryRatioMax": 0.1,
         "iceTrialPos": 0.1,
-        "antiNuke": true
+        "antiNuke": true,
+        "baseHardStopPct": -0.08,
+        "streakTier": false,
+        "tier": [
+          { "streak": 1, "stop": -0.08 },
+          { "streak": 2, "stop": -0.12 },
+          { "streak": 3, "stop": -0.15 }
+        ],
+        "t1Grace": true
       },
       "lookback": {
         "rolling": {
