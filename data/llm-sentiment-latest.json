@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-10-29",
- "generatedAt": "2026-10-29T21:00:50.122+08:00",
+ "asOfDate": "2026-10-30",
+ "generatedAt": "2026-10-30T18:33:25.768+08:00",
  "model": "glm-4-flash",
- "sentiment": -0.5,
- "confidence": 0.8,
- "reason": "市场整体亏钱效应显著，涨停数量少于跌停，炸板率高，强势股多为业绩增长或行业热点，但整体市场情绪偏弱。",
+ "sentiment": -0.3,
+ "confidence": 0.7,
+ "reason": "市场涨停家数少于跌停家数，炸板率较高，亏钱效应明显，市场情绪偏负面。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "一鸣食品",
+   "target": "新乳业",
    "tone": "positive",
-   "note": "低温乳品和烘焙食品行业增长，带动股价上涨。"
+   "note": "三季报增长，带动股价上涨"
   },
   {
    "type": "业绩预告",
-   "target": "福建金森",
+   "target": "巴比食品",
    "tone": "positive",
-   "note": "林业和FSC森林认证助力股价上涨。"
+   "note": "三季报增长，带动股价上涨"
   },
   {
    "type": "业绩预告",
-   "target": "桂林三金",
+   "target": "首旅酒店",
    "tone": "positive",
-   "note": "三季报增长和中成药业务推动股价上涨。"
+   "note": "三季报净利增长，带动股价上涨"
   },
   {
    "type": "业绩预告",
-   "target": "宇晶股份",
+   "target": "泸州老窖",
    "tone": "positive",
-   "note": "机器人概念和碳化硅设备业务增长。"
+   "note": "业绩环增，带动股价上涨"
   },
   {
-   "type": "业绩预告",
-   "target": "航天晨光",
+   "type": "行业催化",
+   "target": "固态电池",
    "tone": "positive",
-   "note": "商业航天和特种装备业务增长。"
+   "note": "上海洗霸带动固态电池概念股上涨"
   },
   {
-   "type": "业绩预告",
-   "target": "中国卫星",
+   "type": "行业催化",
+   "target": "农批市场",
    "tone": "positive",
-   "note": "三季报增长和卫星制造业务推动股价上涨。"
+   "note": "浙江东日带动农批市场概念股上涨"
   },
   {
-   "type": "业绩预告",
-   "target": "天顺风能",
+   "type": "行业催化",
+   "target": "医药外包",
    "tone": "positive",
-   "note": "三季报增长和海上风电业务增长。"
+   "note": "百花医药带动医药外包概念股上涨"
   },
   {
-   "type": "业绩预告",
-   "target": "西部材料",
+   "type": "行业催化",
+   "target": "CRO",
    "tone": "positive",
-   "note": "商业航天和航天铌合金业务推动股价上涨。"
+   "note": "万邦医药带动CRO概念股上涨"
   }
  ],
  "inputDigest": {
-  "themes": 43,
+  "themes": 48,
   "hotListed": 15,
-  "ztCount": 39,
-  "emotionValue": 27.9,
-  "painVerdict": "亏钱效应显著（昨涨停今日翻绿 64%、高位板晋级失败 50%，追高者整体受损）"
+  "ztCount": 47,
+  "emotionValue": 50.6,
+  "painVerdict": "多空拉锯（昨涨停今日翻绿 51%、高位板晋级失败 70%，追高盈亏各半）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }

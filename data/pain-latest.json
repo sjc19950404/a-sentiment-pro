@@ -1,195 +1,189 @@
 {
- "date": "2026-10-28",
- "prevZtCount": 72,
+ "date": "2026-10-29",
+ "prevZtCount": 39,
  "perf": {
-  "n": 72,
-  "universe": 72,
+  "n": 39,
+  "universe": 39,
   "missing": 0,
   "reliable": true,
-  "avg": -0.94,
-  "median": -2.4,
-  "lossRatio": 0.64,
-  "worst": -14.36,
-  "best": 10.19,
-  "limitUpAgain": 10,
-  "limitDown": 3,
-  "bigLoss": 13,
+  "avg": -0.67,
+  "median": -0.28,
+  "lossRatio": 0.51,
+  "worst": -10.13,
+  "best": 10.12,
+  "limitUpAgain": 9,
+  "limitDown": 8,
+  "bigLoss": 11,
   "note": null
  },
  "advance": {
-  "n": 8,
-  "kept": 4,
-  "failed": 4,
-  "failRate": 0.5,
+  "n": 10,
+  "kept": 3,
+  "failed": 7,
+  "failRate": 0.7,
   "byTier": {
    "2": {
-    "n": 5,
+    "n": 6,
     "kept": 2,
-    "failed": 3,
-    "failRate": 0.6
+    "failed": 4,
+    "failRate": 0.67
    },
    "3": {
     "n": 2,
-    "kept": 2,
-    "failed": 0,
-    "failRate": 0
+    "kept": 0,
+    "failed": 2,
+    "failRate": 1
    },
    "4+": {
-    "n": 1,
-    "kept": 0,
+    "n": 2,
+    "kept": 1,
     "failed": 1,
-    "failRate": 1
+    "failRate": 0.5
    }
   },
   "reliable": true,
-  "maxLb": 5,
+  "maxLb": 4,
   "detail": [
    {
-    "code": "000678",
-    "lb": 5,
-    "chg": 6.47,
+    "code": "002708",
+    "lb": 4,
+    "chg": -8.69,
     "kept": false
    },
    {
-    "code": "002708",
-    "lb": 3,
+    "code": "001219",
+    "lb": 4,
     "chg": 9.98,
     "kept": true
    },
    {
-    "code": "001219",
+    "code": "600715",
     "lb": 3,
-    "chg": 10.01,
-    "kept": true
-   },
-   {
-    "code": "600828",
-    "lb": 2,
-    "chg": -7.11,
-    "kept": false
-   },
-   {
-    "code": "603037",
-    "lb": 2,
-    "chg": -2.22,
-    "kept": false
-   },
-   {
-    "code": "001400",
-    "lb": 2,
-    "chg": 4.36,
+    "chg": -10.13,
     "kept": false
    },
    {
     "code": "601956",
+    "lb": 3,
+    "chg": -10,
+    "kept": false
+   },
+   {
+    "code": "002526",
     "lb": 2,
-    "chg": 10.02,
+    "chg": -10.06,
+    "kept": false
+   },
+   {
+    "code": "603006",
+    "lb": 2,
+    "chg": -9.99,
+    "kept": false
+   },
+   {
+    "code": "002862",
+    "lb": 2,
+    "chg": -9.99,
+    "kept": false
+   },
+   {
+    "code": "002943",
+    "lb": 2,
+    "chg": -7.1,
+    "kept": false
+   },
+   {
+    "code": "603131",
+    "lb": 2,
+    "chg": 10.03,
     "kept": true
    },
    {
-    "code": "600715",
+    "code": "002172",
     "lb": 2,
-    "chg": 10.19,
+    "chg": 10.06,
     "kept": true
    }
   ],
   "note": null
  },
  "bigLoss": {
-  "n": 13,
+  "n": 11,
   "list": [
    {
-    "code": "920896",
-    "name": "旺成科技",
-    "chg": -14.36
+    "code": "600715",
+    "name": "文投控股",
+    "chg": -10.13
    },
    {
-    "code": "002731",
-    "name": "萃华退",
-    "chg": -10.71
+    "code": "002526",
+    "name": "山东矿机",
+    "chg": -10.06
    },
    {
-    "code": "002534",
-    "name": "西子洁能",
+    "code": "601956",
+    "name": "东贝集团",
     "chg": -10
    },
    {
-    "code": "603633",
-    "name": "徕木股份",
-    "chg": -8.96
+    "code": "603006",
+    "name": "联明股份",
+    "chg": -9.99
    },
    {
-    "code": "600601",
-    "name": "方正科技",
-    "chg": -7.95
+    "code": "002862",
+    "name": "实丰文化",
+    "chg": -9.99
    },
    {
-    "code": "002889",
-    "name": "东方嘉盛",
-    "chg": -7.84
+    "code": "603103",
+    "name": "横店影视",
+    "chg": -9.98
    },
    {
-    "code": "603920",
-    "name": "世运电路",
-    "chg": -7.71
+    "code": "002679",
+    "name": "福建金森",
+    "chg": -9.95
    },
    {
-    "code": "688045",
-    "name": "必易微",
-    "chg": -7.71
+    "code": "600592",
+    "name": "龙溪股份",
+    "chg": -9.94
    },
    {
-    "code": "300806",
-    "name": "斯迪克",
-    "chg": -7.45
+    "code": "603536",
+    "name": "惠发食品",
+    "chg": -9.39
    },
    {
-    "code": "605366",
-    "name": "宏柏新材",
-    "chg": -7.36
+    "code": "002708",
+    "name": "光洋股份",
+    "chg": -8.69
    }
   ]
  },
  "skyFloor": {
-  "n": 5,
+  "n": 2,
   "list": [
    {
-    "code": "301359",
-    "name": "东南电子",
-    "chg": -4.45,
-    "amplitude": 19.7
+    "code": "600592",
+    "name": "龙溪股份",
+    "chg": -9.94,
+    "amplitude": 19
    },
    {
-    "code": "002731",
-    "name": "萃华退",
-    "chg": -10.71,
-    "amplitude": 17.9
-   },
-   {
-    "code": "002889",
-    "name": "东方嘉盛",
-    "chg": -7.84,
-    "amplitude": 17.4
-   },
-   {
-    "code": "600828",
-    "name": "茂业商业",
-    "chg": -7.11,
-    "amplitude": 15.9
-   },
-   {
-    "code": "920896",
-    "name": "旺成科技",
-    "chg": -14.36,
-    "amplitude": 15.3
+    "code": "603536",
+    "name": "惠发食品",
+    "chg": -9.39,
+    "amplitude": 17.7
    }
   ]
  },
- "scanned": 72,
+ "scanned": 39,
  "verdict": {
-  "level": "severe",
-  "label": "亏钱效应显著",
-  "reason": "昨涨停今日翻绿 64%、高位板晋级失败 50%，追高者整体受损"
+  "level": "normal",
+  "label": "多空拉锯",
+  "reason": "昨涨停今日翻绿 51%、高位板晋级失败 70%，追高盈亏各半"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -200,6 +194,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-10-29T13:00:30.439Z",
- "curDate": "2026-10-29"
+ "generatedAt": "2026-10-30T10:32:45.200Z",
+ "curDate": "2026-10-30"
 }

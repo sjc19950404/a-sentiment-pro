@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-30",
- "generated_at": "2026-10-30T01:00:03.386Z",
+ "generated_at": "2026-10-30T10:46:58.080Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "fresh",
+   "dual_track": "stale",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -81,12 +81,12 @@
    "confidence": "measured"
   },
   "prev_nav": {
-   "source": "derived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "positions": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "overnight_exposure": {
    "source": "archived",
@@ -122,48 +122,17 @@
   }
  },
  "payload": {
-  "date": "2026-10-29",
+  "date": "2026-10-30",
   "grid_triggers": null,
   "counter_trend_losses": null,
   "pnl_daily": 0,
   "pnl_cumulative": 0,
   "max_drawdown_daily": null,
-  "trend_switch_hits": 1,
+  "trend_switch_hits": 0,
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": {
-   "key": "ice",
-   "label": "冰点",
-   "score": 27.93,
-   "cap": 0.2,
-   "position_range": "0%~20%",
-   "positionReconcile": {
-    "score": 27.9,
-    "base": {
-     "key": "base_defend",
-     "minPos": 0,
-     "maxPos": 0.3,
-     "label": "防守"
-    },
-    "baseRange": "0%~30%",
-    "cap": {
-     "key": "ice",
-     "minPos": 0,
-     "maxPos": 0.2,
-     "label": "冰点",
-     "advice": "优先空仓，仅极端错杀才值得试探",
-     "tone": "defend"
-    },
-    "capRange": "0%~20%",
-    "force": false,
-    "conflict": false,
-    "finalRange": "0%~20%"
-   },
-   "clustering_bubble": false,
-   "sentiment_penalty": 0,
-   "score_adjusted": 27.93
-  },
+  "regime": null,
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -174,10 +143,9 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": -0.006918,
-    "state": "ok",
-    "stale": false,
-    "cacheNote": null
+    "chgPct": null,
+    "state": "night-open",
+    "nightOpen": true
    },
    {
     "key": "sox",
@@ -189,24 +157,15 @@
    }
   ],
   "externalStale": [
-   "外围「恒生指数」（外围未刷新到最新会话），已置空",
-   "外围「恒生科技」（外围未刷新到最新会话），已置空"
+   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空"
   ],
   "nav_realtime": 1000000,
-  "prev_nav": 0.9619272182642487,
-  "positions": {
-   "targetPos": {
-    "上证指数": 0.7,
-    "深证成指": 0.4,
-    "创业板指": 0.4
-   },
-   "poolPos": 0.5,
-   "executed": true
-  },
+  "prev_nav": null,
+  "positions": null,
   "overnight_exposure": {
-   "a50_chgPct": -0.006918,
-   "a50NightOpen": false,
-   "posGap": 0.3,
+   "a50_chgPct": null,
+   "a50NightOpen": true,
+   "posGap": null,
    "us_close": {
     "dji": -0.002526,
     "spx": -0.0030459999999999997,
@@ -216,9 +175,9 @@
     "hxc": 0.00202,
     "fxi": 0.007086
    },
-   "cnh_chgPct": -0.00021,
-   "usReady": true,
-   "usReason": "美东 21:00 ET 已收盘（≥16:30 ET），可采信当日收盘"
+   "cnh_chgPct": -0.0008709999999999999,
+   "usReady": false,
+   "usReason": "美东 06:42 ET 盘前（09:30 才开盘），此刻美股无收盘价"
   },
   "key_levels": null,
   "events_today": null,
@@ -228,73 +187,89 @@
    "basis": "pain.advance.detail 昨收口径连板梯队（封板质量以晋级结果+近期上榜频次代理，个股级封单额无档案）；不含操作建议",
    "ladder": [
     {
-     "code": "000678",
-     "name": "襄阳轴承",
-     "lb": 5,
-     "kept": false,
-     "chg": 6.47,
-     "appearances": 14
-    },
-    {
      "code": "002708",
      "name": "光洋股份",
-     "lb": 3,
-     "kept": true,
-     "chg": 9.98,
-     "appearances": 8
+     "lb": 4,
+     "kept": false,
+     "chg": -8.69,
+     "appearances": 9
     },
     {
      "code": "001219",
      "name": "青岛食品",
-     "lb": 3,
+     "lb": 4,
      "kept": true,
-     "chg": 10.01,
-     "appearances": 4
-    },
-    {
-     "code": "600828",
-     "name": "茂业商业",
-     "lb": 2,
-     "kept": false,
-     "chg": -7.11,
-     "appearances": 19
-    },
-    {
-     "code": "603037",
-     "name": "凯众股份",
-     "lb": 2,
-     "kept": false,
-     "chg": -2.22,
-     "appearances": 5
-    },
-    {
-     "code": "001400",
-     "name": "江顺科技",
-     "lb": 2,
-     "kept": false,
-     "chg": 4.36,
-     "appearances": 18
-    },
-    {
-     "code": "601956",
-     "name": "东贝集团",
-     "lb": 2,
-     "kept": true,
-     "chg": 10.02,
+     "chg": 9.98,
      "appearances": 5
     },
     {
      "code": "600715",
      "name": "文投控股",
+     "lb": 3,
+     "kept": false,
+     "chg": -10.13,
+     "appearances": 7
+    },
+    {
+     "code": "601956",
+     "name": "东贝集团",
+     "lb": 3,
+     "kept": false,
+     "chg": -10,
+     "appearances": 5
+    },
+    {
+     "code": "002526",
+     "name": "山东矿机",
+     "lb": 2,
+     "kept": false,
+     "chg": -10.06,
+     "appearances": 2
+    },
+    {
+     "code": "603006",
+     "name": "联明股份",
+     "lb": 2,
+     "kept": false,
+     "chg": -9.99,
+     "appearances": 3
+    },
+    {
+     "code": "002862",
+     "name": "实丰文化",
+     "lb": 2,
+     "kept": false,
+     "chg": -9.99,
+     "appearances": 4
+    },
+    {
+     "code": "002943",
+     "name": "宇晶股份",
+     "lb": 2,
+     "kept": false,
+     "chg": -7.1,
+     "appearances": 13
+    },
+    {
+     "code": "603131",
+     "name": "上海沪工",
      "lb": 2,
      "kept": true,
-     "chg": 10.19,
-     "appearances": 6
+     "chg": 10.03,
+     "appearances": 4
+    },
+    {
+     "code": "002172",
+     "name": "澳洋健康",
+     "lb": 2,
+     "kept": true,
+     "chg": 10.06,
+     "appearances": 26
     }
    ],
    "overnight_sectors": null,
-   "max_lb": 5,
-   "broken_limit_ratio": 0.390625
+   "max_lb": 4,
+   "broken_limit_ratio": 0.3974358974358974
   },
   "simulation_stock": null,
   "ma20_degraded": false,
