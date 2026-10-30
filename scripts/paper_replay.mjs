@@ -104,7 +104,7 @@ function richQuotes(day) {
   const q = quotesFromDay(day);
   for (const z of (day.ztpool || [])) {
     if (z && z.code && z.close != null && q[z.code] == null) {
-      q[z.code] = { code: z.code, name: z.name || '', price: +z.close, changePct: z.change_pct ?? null, prevClose: z.prevClose ?? null, src: 'ztpool' };
+      q[z.code] = { code: z.code, name: z.name || '', price: +z.close, changePct: z.change_pct ?? null, prevClose: z.prevClose ?? null, huanshou: z.hs ?? null, freeFloatCap: z.ltsz ?? null, src: 'ztpool' };   // 若补数据带 hs(换手率)/ltsz(流通市值)，tier2 代理自动生效
     }
   }
   return q;
@@ -169,8 +169,11 @@ function buildExec(mode) {
 //     --regime-cap（+--regime-scale 连续缩放 / --regime-warm 单档精调）=情绪压仓；
 //     --limit-fill-prob=涨跌停排队概率（涨停买入按前排比例成交/跌停卖出按概率成交否则排队）；
 //     --tranche N（+--tranche-cap-limit 约束持仓数）=分批建仓。
-//   · 注：成交量冲击滑点依赖个股当日成交额，存档仅龙虎榜股具备(deal_wan)，热点股无绝对额→
-//     走 proxy 参考额(refAmountSmall/Trend, 按换手率微调)，小仓位(10%)冲击极小属真实；大单/小盘需补数据才显著。
+//   · 成交量冲击滑点 / 单笔量上限分母（三层降级，见 paper.js effectiveRefAmount）：
+//     tier1 真实成交额（仅龙虎榜股 deal_wan）→ tier2 换手率×流通市值（amount 缺失但有 freeFloatCap 时，已接线 ztpool.ltsz，未来补数据自动启用）→
+//     tier3 按标的类型固定参考额(refAmountSmall=5e7/refAmountTrend=5e8，附换手率微调)。
+//   · 数据缺口（如实）：存档热点股只有换手率%、无任何流通市值字段 → tier2 无分母，自动降到 tier3；
+//     10% 小仓位冲击极小(实测14元)属真实，大单/小盘需补全全市场成交额/流通市值字段才显著。
 //   · 不继续遍历参数网格寻优。
 //
 // 【V1 · profile 滑点 + regime 帽 · warm 档扫描结果留存表（255 交易日，本金 100 万）】
@@ -214,6 +217,7 @@ async function runReplay(mode, { collectTrades = false } = {}) {
   const navSeries = [];
   let fills = 0, soldTrades = 0, winTrades = 0;
   QUEUE_UNFILLED = 0;
+  const amtFallbackCodes = new Set();   // profile 模式下走「固定参考额代理」的个股（无真实成交额且无流通市值）
   let peak = 1000000, maxDd = 0;
 
   // —— 逐笔归因采集容器（仅 --attrition 时启用，不影响原有回放逻辑）——
@@ -252,6 +256,10 @@ async function runReplay(mode, { collectTrades = false } = {}) {
     // 只计 limitFillProb 模型产生的真实排队事件（涨停排队未排到/跌停卖出未成交/排队）；
     // 排除 ideal 模式旧近似的「涨停价无法买入」（非真实排队，会污染基线）。
     for (const lg of (r.expired || [])) { if (lg && lg.reason && /涨停排队未排到|跌停卖出未成交|排队/.test(lg.reason || '')) QUEUE_UNFILLED++; }
+    // 数据缺口告警计数：profile 模式下，无真实成交额(amount)且无流通市值(freeFloatCap)的个股，其冲击滑点/量上限分母走固定参考额代理(tier3)；汇总后报告末尾告警（不中断回测）。
+    if (exec.slipModel === 'profile') {
+      for (const code of Object.keys(qDay)) { const q = qDay[code]; if (q && q.amount == null && q.freeFloatCap == null) amtFallbackCodes.add(code); }
+    }
 
     // 成交单 → 逐笔交易配对（买开仓 / 卖平仓）。注：单笔配对近似，不计加仓/减仓精确 FIFO。
     for (const t of r.fills) {
@@ -393,6 +401,7 @@ async function runReplay(mode, { collectTrades = false } = {}) {
   const totalRet = (last.equity / 1000000 - 1) * 100;
   const winRate = soldTrades ? (winTrades / soldTrades * 100) : null;
   const res = { mode, days: days.length, dateRange: `${first}~${last.date}`, finalEquity: last.equity, totalRet, maxDd: maxDd * 100, fills, soldTrades, winRate };
+  if (amtFallbackCodes.size) console.error(`\n⚠ 数据缺口告警：共 ${amtFallbackCodes.size} 只个股无真实成交额且无流通市值，其「成交量冲击滑点 / 单笔量上限」分母走固定参考额代理（小盘5e7 / 趋势5e8，附换手率微调）。补全全市场成交额 / 流通市值字段后，tier1/tier2 自动生效，模型逻辑无需改动。`);
   if (collectTrades) res.trades = trades;
   if (args.get('dumpTradePicks')) {
     const seen = new Set(); const out = [];

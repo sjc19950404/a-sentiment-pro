@@ -127,22 +127,32 @@ export function pickSlip(exec, { side, profile = 'trend', isLimitUp = false, isL
 }
 
 export const EXEC_SLIP_MAX = 0.05;   // 单笔滑点上限（5%），防极端冲击侵蚀净值
-// 动态成交量冲击滑点（执行层插件，仅 profile 模式调用）：下单名义额相对当日成交额越大，冲击成本越高。
-//   - 有当日成交额(amount, 元)：impact = coef * min(1, notional/amount)（线性饱和）
-//   - 无 amount（热点股仅换手率）：按标的类型代理参考成交额(refAmountSmall/Trend)估算；
-//     换手率越低（流动性越差）进一步放大冲击。属代理估算，因存档个股成交额仅龙虎榜股具备。
-export function impactSlip(exec, { side, notional = 0, amount = null, huanshou = null, profile = 'trend' } = {}) {
+
+// 有效参考成交额（三层降级，供「冲击滑点」与「单笔量上限」共用分母）：
+//   tier1 真实成交额(amount, 元) → tier2 换手率×自由流通市值(amount 缺失但有 freeFloatCap 时) →
+//   tier3 按标的类型固定参考额(refAmountSmall/Trend) + 换手率微调。
+//   ⚠ 存档现状：仅龙虎榜股有真实 deal_wan；热点股只有换手率、且无自由流通市值字段 → tier2 无分母，自动降到 tier3。
+//     补全全市场成交额/流通市值字段后，tier1/tier2 自动生效，模型逻辑无需改动。
+export function effectiveRefAmount(exec, { amount = null, huanshou = null, freeFloatCap = null, profile = 'trend' } = {}) {
+  if (amount != null && amount > 0) return { amt: amount, src: 'real' };
+  if (freeFloatCap != null && freeFloatCap > 0 && huanshou != null && huanshou > 0) {
+    return { amt: (huanshou / 100) * freeFloatCap, src: 'proxy' };   // 换手率(%)×流通市值 = 日成交额代理
+  }
+  let ref = (profile === 'small' ? exec.refAmountSmall : exec.refAmountTrend) || 1e8;
+  if (huanshou != null && huanshou > 0) {
+    const medianHs = 5; // 经验中位换手率(%)；低于此放大冲击
+    ref = ref * Math.min(2, Math.max(0.5, medianHs / huanshou));
+  }
+  return { amt: ref, src: 'fallback' };
+}
+
+// 动态成交量冲击滑点（执行层插件，仅 profile 模式调用）：下单名义额相对有效参考成交额越大，冲击成本越高。
+//   impact = coef * min(1, notional / 有效参考成交额)（线性饱和）；coef=volImpactCoef，分母走三层降级（见 effectiveRefAmount）。
+export function impactSlip(exec, { side, notional = 0, amount = null, huanshou = null, freeFloatCap = null, profile = 'trend' } = {}) {
   const coef = exec.volImpactCoef || 0;
   if (!(coef > 0)) return 0;
-  let ref = (amount != null && amount > 0) ? amount : null;
-  if (ref == null) {
-    ref = (profile === 'small' ? exec.refAmountSmall : exec.refAmountTrend) || 1e8;
-    if (huanshou != null && huanshou > 0) {
-      const medianHs = 5; // 经验中位换手率(%)；低于此放大冲击
-      ref = ref * Math.min(2, Math.max(0.5, medianHs / huanshou));
-    }
-  }
-  const ratio = Math.min(1, notional / ref);
+  const { amt } = effectiveRefAmount(exec, { amount, huanshou, freeFloatCap, profile });
+  const ratio = Math.min(1, notional / amt);
   return coef * ratio;
 }
 
@@ -793,7 +803,7 @@ export function submitOrder(acct, order, quote, ctx = {}) {
   }
   let slipImpact = 0;
   if (profileMode) {
-    slipImpact = impactSlip(_execCtx, { side: order.side, notional: v.gross, amount: quote && quote.amount != null ? +quote.amount : null, huanshou: quote && quote.huanshou != null ? +quote.huanshou : null, profile: prof });
+    slipImpact = impactSlip(_execCtx, { side: order.side, notional: v.gross, amount: quote && quote.amount != null ? +quote.amount : null, huanshou: quote && quote.huanshou != null ? +quote.huanshou : null, freeFloatCap: quote && quote.freeFloatCap != null ? +quote.freeFloatCap : null, profile: prof });
   }
   const baseSlip = slipBase != null ? slipBase : (order.slip ?? null);   // 基础滑点：profileMode 取 pickSlip；回放预置 slip 则取预置值
   const slip = Math.min(EXEC_SLIP_MAX, (baseSlip != null ? baseSlip : DEFAULT_SLIP) + slipImpact);
@@ -996,12 +1006,19 @@ export function batchSubmit(acct, items, day, opts = {}) {
       qty = r.qty;
       row.capped = r.capped;
     }
-    // 单笔成交量上限（profile 模式·执行真实性）：大单买不进——超当日成交额比例/兜底名义额上限的部分直接砍掉（超额拒单）
-    if ((exec.volCapRatio > 0 || exec.maxOrderNotional > 0) && qty != null && qty > 0 && quote && quote.price > 0) {
+    // 单笔成交量上限（仅 --slip-model profile 生效；flat 基线不触发，保基线）：大单买不进——
+    //   超「有效参考成交额 × volCapRatio」或兜底 maxOrderNotional 的部分直接砍掉（超额拒单）；分母走三层降级。
+    if (exec.slipModel === 'profile' && (exec.volCapRatio > 0 || exec.maxOrderNotional > 0) && qty != null && qty > 0 && quote && quote.price > 0) {
       const p0 = +quote.price;
+      const { amt: refAmt } = effectiveRefAmount(exec, {
+        amount: quote.amount != null ? quote.amount : null,
+        huanshou: quote.huanshou != null ? quote.huanshou : null,
+        freeFloatCap: quote.freeFloatCap != null ? quote.freeFloatCap : null,
+        profile: raw.slipProfile || 'trend',
+      });
       let maxQty = Infinity;
-      if (exec.volCapRatio > 0 && quote.amount != null && quote.amount > 0) {
-        maxQty = Math.min(maxQty, Math.floor((exec.volCapRatio * quote.amount / p0) / LOT) * LOT);
+      if (exec.volCapRatio > 0 && refAmt > 0) {
+        maxQty = Math.min(maxQty, Math.floor((exec.volCapRatio * refAmt / p0) / LOT) * LOT);
       }
       if (exec.maxOrderNotional > 0) {
         maxQty = Math.min(maxQty, Math.floor((exec.maxOrderNotional / p0) / LOT) * LOT);
@@ -1861,7 +1878,7 @@ export function quotesFromDay(day) {
   }
   for (const l of day?.lhb || []) {
     if (l?.code && l.close != null && Number.isFinite(+l.close)) {
-      out[l.code] = { code: l.code, name: l.name || '', price: +l.close, changePct: l.change_pct ?? null, reason: l.reason || '', amount: (l.deal_wan != null ? +l.deal_wan * 10000 : null), src: 'lhb' };
+      out[l.code] = { code: l.code, name: l.name || '', price: +l.close, changePct: l.change_pct ?? null, reason: l.reason || '', amount: (l.deal_wan != null ? +l.deal_wan * 10000 : null), huanshou: l.turnover_pct ?? null, freeFloatCap: l.free_float_cap ?? null, src: 'lhb' };
     }
   }
   // 实时价覆盖层：paper_ui 的 batchDay() 会把腾讯实时价写进 day.quotes——
