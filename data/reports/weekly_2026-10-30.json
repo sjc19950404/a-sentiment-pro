@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-30",
- "generated_at": "2026-10-30T10:46:57.870Z",
+ "generated_at": "2026-10-30T13:16:10.026Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -136,7 +136,38 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "ice",
+   "label": "冰点",
+   "score": 50.61,
+   "cap": 0.2,
+   "position_range": "0%~20%",
+   "positionReconcile": {
+    "score": 50.6,
+    "base": {
+     "key": "base_neutral",
+     "minPos": 0.3,
+     "maxPos": 0.5,
+     "label": "中性"
+    },
+    "baseRange": "30%~50%",
+    "cap": {
+     "key": "ice",
+     "minPos": 0,
+     "maxPos": 0.2,
+     "label": "冰点",
+     "advice": "优先空仓，仅极端错杀才值得试探",
+     "tone": "defend"
+    },
+    "capRange": "0%~20%",
+    "force": false,
+    "conflict": false,
+    "finalRange": "0%~20%"
+   },
+   "clustering_bubble": false,
+   "sentiment_penalty": 0,
+   "score_adjusted": 50.61
+  },
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -154,14 +185,21 @@
    {
     "key": "sox",
     "name": "费城半导体指数",
-    "chgPct": -0.014190000000000001,
-    "state": "ok",
+    "chgPct": null,
+    "state": "stale",
     "stale": false,
     "cacheNote": null
    }
   ],
   "externalStale": [
-   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空"
+   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空",
+   "外围「道琼斯」（外围未刷新到最新会话），已置空",
+   "外围「标普500」（外围未刷新到最新会话），已置空",
+   "外围「纳斯达克」（外围未刷新到最新会话），已置空",
+   "外围「纳斯达克100」（外围未刷新到最新会话），已置空",
+   "外围「费城半导体指数」（外围未刷新到最新会话），已置空",
+   "外围「纳斯达克中国金龙指数」（外围未刷新到最新会话），已置空",
+   "外围「富时中国ETF（FXI）」（外围未刷新到最新会话），已置空"
   ],
   "nav_realtime": 1000000,
   "nav_series": [
@@ -188,13 +226,19 @@
     "day_return": -0.01184,
     "score": 27.93,
     "regime": "ice"
+   },
+   {
+    "date": "2026-10-30",
+    "day_return": -0.007173,
+    "score": 50.61,
+    "regime": "ice"
    }
   ],
-  "week_return": -0.016561600221222217,
-  "max_drawdown_week": 0.016561600221222217,
+  "week_return": -0.02361580386283535,
+  "max_drawdown_week": 0.02361580386283535,
   "win_rate": null,
   "win_rate_note": "口径 = 剧本命中次数 / 总剧本执行次数（决议 4，2026-10-06 拍板）；剧本绑定记录（airpt_sim_bindings_v1）缺席 → null，不降级为日收益口径",
-  "profit_trade_ratio": 0.25,
+  "profit_trade_ratio": 0.2,
   "cost_ratio_week": null,
   "trend_switch_effect": {
    "turns": [
@@ -223,9 +267,15 @@
      "value": 27.9
     }
    ],
-   "shadow_note": null
+   "shadow_note": "trackC 影子线（0.5 档）累计 -0.032332 vs 执行轨 -0.05628；episodes 18（晋升门禁 ≥10，仍须走 promote_params）"
   },
-  "param_suggestions": [],
+  "param_suggestions": [
+   {
+    "topic": "posGap 阈值",
+    "fact": "分歧 >0.02 达 240/255 天，0.02/0.03 告警阈值仍是 [待确认] 状态",
+    "action": "提议进入确认流程，非本模块职责"
+   }
+  ],
   "simulation_stock": null,
   "ma20_degraded": false,
   "status": "degraded"

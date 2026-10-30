@@ -2,59 +2,59 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-10-30",
- "generatedAt": "2026-10-30T18:33:25.768+08:00",
+ "generatedAt": "2026-10-30T21:03:38.832+08:00",
  "model": "glm-4-flash",
- "sentiment": -0.3,
- "confidence": 0.7,
- "reason": "市场涨停家数少于跌停家数，炸板率较高，亏钱效应明显，市场情绪偏负面。",
+ "sentiment": -0.5,
+ "confidence": 0.8,
+ "reason": "市场涨停家数少于跌停家数，炸板率较高，亏钱效应明显，市场情绪偏向负面。",
  "events": [
   {
    "type": "业绩预告",
    "target": "新乳业",
    "tone": "positive",
-   "note": "三季报增长，带动股价上涨"
+   "note": "三季报增长带动股价上涨"
   },
   {
    "type": "业绩预告",
    "target": "巴比食品",
    "tone": "positive",
-   "note": "三季报增长，带动股价上涨"
+   "note": "三季报增长带动股价上涨"
   },
   {
    "type": "业绩预告",
    "target": "首旅酒店",
    "tone": "positive",
-   "note": "三季报净利增长，带动股价上涨"
+   "note": "三季报净利增长带动股价上涨"
   },
   {
    "type": "业绩预告",
    "target": "泸州老窖",
    "tone": "positive",
-   "note": "业绩环增，带动股价上涨"
+   "note": "业绩环增带动股价上涨"
   },
   {
    "type": "行业催化",
    "target": "固态电池",
    "tone": "positive",
-   "note": "上海洗霸带动固态电池概念股上涨"
+   "note": "固态电池概念带动上海洗霸股价上涨"
   },
   {
    "type": "行业催化",
    "target": "农批市场",
    "tone": "positive",
-   "note": "浙江东日带动农批市场概念股上涨"
+   "note": "农批市场概念带动浙江东日股价上涨"
   },
   {
    "type": "行业催化",
    "target": "医药外包",
    "tone": "positive",
-   "note": "百花医药带动医药外包概念股上涨"
+   "note": "医药外包概念带动百花医药股价上涨"
   },
   {
    "type": "行业催化",
-   "target": "CRO",
+   "target": "脑机接口",
    "tone": "positive",
-   "note": "万邦医药带动CRO概念股上涨"
+   "note": "脑机接口概念带动澳洋健康股价上涨"
   }
  ],
  "inputDigest": {

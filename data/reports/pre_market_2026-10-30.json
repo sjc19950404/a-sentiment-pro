@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-10-30",
- "generated_at": "2026-10-30T10:46:58.080Z",
+ "generated_at": "2026-10-30T13:16:10.264Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -81,12 +81,12 @@
    "confidence": "measured"
   },
   "prev_nav": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "derived",
+   "confidence": "measured"
   },
   "positions": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "overnight_exposure": {
    "source": "archived",
@@ -132,7 +132,38 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "ice",
+   "label": "冰点",
+   "score": 50.61,
+   "cap": 0.2,
+   "position_range": "0%~20%",
+   "positionReconcile": {
+    "score": 50.6,
+    "base": {
+     "key": "base_neutral",
+     "minPos": 0.3,
+     "maxPos": 0.5,
+     "label": "中性"
+    },
+    "baseRange": "30%~50%",
+    "cap": {
+     "key": "ice",
+     "minPos": 0,
+     "maxPos": 0.2,
+     "label": "冰点",
+     "advice": "优先空仓，仅极端错杀才值得试探",
+     "tone": "defend"
+    },
+    "capRange": "0%~20%",
+    "force": false,
+    "conflict": false,
+    "finalRange": "0%~20%"
+   },
+   "clustering_bubble": false,
+   "sentiment_penalty": 0,
+   "score_adjusted": 50.61
+  },
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -150,34 +181,49 @@
    {
     "key": "sox",
     "name": "费城半导体指数",
-    "chgPct": -0.014190000000000001,
-    "state": "ok",
+    "chgPct": null,
+    "state": "stale",
     "stale": false,
     "cacheNote": null
    }
   ],
   "externalStale": [
-   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空"
+   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空",
+   "外围「道琼斯」（外围未刷新到最新会话），已置空",
+   "外围「标普500」（外围未刷新到最新会话），已置空",
+   "外围「纳斯达克」（外围未刷新到最新会话），已置空",
+   "外围「纳斯达克100」（外围未刷新到最新会话），已置空",
+   "外围「费城半导体指数」（外围未刷新到最新会话），已置空",
+   "外围「纳斯达克中国金龙指数」（外围未刷新到最新会话），已置空",
+   "外围「富时中国ETF（FXI）」（外围未刷新到最新会话），已置空"
   ],
   "nav_realtime": 1000000,
-  "prev_nav": null,
-  "positions": null,
+  "prev_nav": 0.9505382105845228,
+  "positions": {
+   "targetPos": {
+    "上证指数": 0.5,
+    "深证成指": 0.2,
+    "创业板指": 0.2
+   },
+   "poolPos": 0.3,
+   "executed": true
+  },
   "overnight_exposure": {
    "a50_chgPct": null,
    "a50NightOpen": true,
-   "posGap": null,
+   "posGap": 0.2,
    "us_close": {
-    "dji": -0.002526,
-    "spx": -0.0030459999999999997,
-    "ixic": -0.013752
+    "dji": null,
+    "spx": null,
+    "ixic": null
    },
    "cn_overnight": {
-    "hxc": 0.00202,
-    "fxi": 0.007086
+    "hxc": null,
+    "fxi": null
    },
-   "cnh_chgPct": -0.0008709999999999999,
+   "cnh_chgPct": -0.000661,
    "usReady": false,
-   "usReason": "美东 06:42 ET 盘前（09:30 才开盘），此刻美股无收盘价"
+   "usReason": "美东 09:11 ET 盘前（09:30 才开盘），此刻美股无收盘价"
   },
   "key_levels": null,
   "events_today": null,
