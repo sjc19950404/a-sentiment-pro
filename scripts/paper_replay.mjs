@@ -165,7 +165,12 @@ function buildExec(mode) {
 //
 // 【后续使用模式】
 //   · 基线回归：默认 flat（不挂任何执行层插件），用于校验改动是否污染原有策略逻辑。
-//   · 写实评估：固定带上 --slip-model profile，按需叠加 --regime-cap（情绪压仓）。
+//   · 写实评估：固定带上 --slip-model profile（基础价差+成交量冲击滑点，量上限拒超量），按需叠加：
+//     --regime-cap（+--regime-scale 连续缩放 / --regime-warm 单档精调）=情绪压仓；
+//     --limit-fill-prob=涨跌停排队概率（涨停买入按前排比例成交/跌停卖出按概率成交否则排队）；
+//     --tranche N（+--tranche-cap-limit 约束持仓数）=分批建仓。
+//   · 注：成交量冲击滑点依赖个股当日成交额，存档仅龙虎榜股具备(deal_wan)，热点股无绝对额→
+//     走 proxy 参考额(refAmountSmall/Trend, 按换手率微调)，小仓位(10%)冲击极小属真实；大单/小盘需补数据才显著。
 //   · 不继续遍历参数网格寻优。
 //
 // 【V1 · profile 滑点 + regime 帽 · warm 档扫描结果留存表（255 交易日，本金 100 万）】
@@ -244,7 +249,9 @@ async function runReplay(mode, { collectTrades = false } = {}) {
     const r = settleDay(acct, date, qDay, { exec, stops: resolveStops() });
     acct = r.account;
     fills += r.fills.length;
-    for (const lg of (r.logs || [])) { if (lg && lg.reason && /涨停排队未排到|跌停卖出未成交|排队/.test(lg.reason)) QUEUE_UNFILLED++; }
+    // 只计 limitFillProb 模型产生的真实排队事件（涨停排队未排到/跌停卖出未成交/排队）；
+    // 排除 ideal 模式旧近似的「涨停价无法买入」（非真实排队，会污染基线）。
+    for (const lg of (r.expired || [])) { if (lg && lg.reason && /涨停排队未排到|跌停卖出未成交|排队/.test(lg.reason || '')) QUEUE_UNFILLED++; }
 
     // 成交单 → 逐笔交易配对（买开仓 / 卖平仓）。注：单笔配对近似，不计加仓/减仓精确 FIFO。
     for (const t of r.fills) {

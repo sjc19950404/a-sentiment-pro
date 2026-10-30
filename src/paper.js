@@ -1267,26 +1267,24 @@ export function settleDay(acct, date, quotes = {}, opts = {}) {
 
     // 跌停卖不掉 / 涨停买不进——按「该日」的实际情况判定，而非下单日
     if (p.side === 'buy' && hit === 'up') {
-      if (exec.mode === 'strict') {
-        if (exec.limitFillProb) {
-          // 排队概率模型：按前排成交比例决定能否排到，未排到→当日撤单（不复活）
-          const rng = fillRng(p.id, date, exec.seed);
-          if (rng() >= exec.limitUpFillRatio) {
-            log.push({ ...pick(p), status: 'expired', reason: '涨停排队未排到', detail: `${date} ${q.changePct}% 涨停，前排成交比例 ${((exec.limitUpFillRatio * 100) | 0)}%，本单未排到，当日撤单` });
-            cur = releaseFreeze(cur, p, { status: 'expired', settleDate: date, reject: '涨停排队未排到', detail: '当日撤单' });
-            markDone(p.id);
-            continue;
-          }
-          // 排到前排 → 落到下方 fill（涨停价 + 默认万二滑点）
-        } else {
-          // 旧逻辑：容量门 + 撤单率概率成交
-          const oc = limitBuyOutcome(p, q, exec, date);
-          if (!oc.fill) {
-            log.push({ ...pick(p), status: 'expired', reason: '打板未成交', detail: `${date} ${q.changePct}% 涨停打板：${oc.reason}` });
-            cur = releaseFreeze(cur, p, { status: 'expired', settleDate: date, reject: '打板未成交', detail: oc.reason });
-            markDone(p.id);
-            continue;
-          }
+      if (exec.limitFillProb) {
+        // 排队概率模型（与 mode 无关，--limit-fill-prob 独立生效）：按前排成交比例决定能否排到，未排到→当日撤单（不复活）
+        const rng = fillRng(p.id, date, exec.seed);
+        if (rng() >= exec.limitUpFillRatio) {
+          log.push({ ...pick(p), status: 'expired', reason: '涨停排队未排到', detail: `${date} ${q.changePct}% 涨停，前排成交比例 ${((exec.limitUpFillRatio * 100) | 0)}%，本单未排到，当日撤单` });
+          cur = releaseFreeze(cur, p, { status: 'expired', settleDate: date, reject: '涨停排队未排到', detail: '当日撤单' });
+          markDone(p.id);
+          continue;
+        }
+        // 排到前排 → 落到下方 fill（涨停价 + 默认万二滑点）
+      } else if (exec.mode === 'strict') {
+        // 旧逻辑：容量门 + 撤单率概率成交
+        const oc = limitBuyOutcome(p, q, exec, date);
+        if (!oc.fill) {
+          log.push({ ...pick(p), status: 'expired', reason: '打板未成交', detail: `${date} ${q.changePct}% 涨停打板：${oc.reason}` });
+          cur = releaseFreeze(cur, p, { status: 'expired', settleDate: date, reject: '打板未成交', detail: oc.reason });
+          markDone(p.id);
+          continue;
         }
         // 成交：落到下方 fill（涨停价 + 默认万二滑点，打板不额外加悲观滑点）
       } else {
