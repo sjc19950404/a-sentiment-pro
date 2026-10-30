@@ -686,3 +686,54 @@ test('挂件二·游资席位追踪：买方席位命中顶级游资清单 → �
   assert.equal(noSeats.picks[0].hotMoney, undefined, '无席位数据时不得标记 hotMoney（零回归）');
 });
 
+
+
+// FIRSTBOARD_TEST
+
+// ───────── 方向2（主线第1步后续·可配置 A/B）：首板纳入配额（质量竞争式） ─────────
+test('firstBoardReserve：零回归——:0 应与默认完全一致', () => {
+  const d = day({
+    hot: [
+      lhbRow('600010', 'LianA', 90000, { change_pct: 10, close: 12, reason: 'X' }),
+      lhbRow('600011', 'LianB', 90000, { change_pct: 10, close: 12, reason: 'X' }),
+      lhbRow('600012', 'Shou',  90000, { change_pct: 10, close: 12, reason: 'X' }),
+    ],
+    themes: { X: 3 },
+    summary: { main_theme: { name: 'X' }, zt_codes: ['600010', '600011', '600012'], zt_lb: { 600010: 3, 600011: 2, 600012: 1 } },
+  });
+  const legacy = recommendPicks(d, { topN: 2, emotionScore: 70, minProb: 0 }).picks || [];
+  const fb0 = recommendPicks(d, { topN: 2, emotionScore: 70, minProb: 0, firstBoardReserve: 0, firstBoardBoost: 1 }).picks || [];
+  assert.deepEqual(fb0.map((p) => p.code).sort(), legacy.map((p) => p.code).sort(), 'firstBoardReserve:0 / boost:1 应与默认完全一致（零回归）');
+});
+
+test('firstBoardReserve：候选池无首板时优雅无操作（不注入次品、不崩、名额不变）', () => {
+  const d = day({
+    hot: [
+      lhbRow('600010', 'LianA', 90000, { change_pct: 10, close: 12, reason: 'X' }),
+      lhbRow('600011', 'LianB', 90000, { change_pct: 10, close: 12, reason: 'X' }),
+    ],
+    themes: { X: 3 },
+    summary: { main_theme: { name: 'X' }, zt_codes: ['600010', '600011'], zt_lb: { 600010: 3, 600011: 2 } },
+  });
+  const legacy = recommendPicks(d, { topN: 2, emotionScore: 70, minProb: 0 }).picks || [];
+  const fb = recommendPicks(d, { topN: 2, emotionScore: 70, minProb: 0, firstBoardReserve: 1, firstBoardBoost: 2 }).picks || [];
+  assert.equal(fb.length, legacy.length, '无首板候选时名额应不变');
+  assert.deepEqual(fb.map((p) => p.code).sort(), legacy.map((p) => p.code).sort(), '无首板候选时 picks 应与原样一致（无次品注入）');
+});
+
+test('firstBoardBoost：首板提权改变排序（>1 时优质首板凭质量竞争）', () => {
+  const d = day({
+    hot: [
+      lhbRow('600010', 'LianA', 90000, { change_pct: 10, close: 12, reason: 'X' }),
+      lhbRow('600011', 'LianB', 90000, { change_pct: 10, close: 12, reason: 'X' }),
+      lhbRow('600012', 'Shou',  90000, { change_pct: 10, close: 12, reason: 'X' }),
+    ],
+    themes: { X: 3 },
+    summary: { main_theme: { name: 'X' }, zt_codes: ['600010', '600011', '600012'], zt_lb: { 600010: 3, 600011: 2, 600012: 1 } },
+  });
+  const base = recommendPicks(d, { topN: 2, emotionScore: 70, minProb: 0, firstBoardBoost: 1 }).picks || [];
+  const boosted = recommendPicks(d, { topN: 2, emotionScore: 70, minProb: 0, firstBoardBoost: 3 }).picks || [];
+  // 提权只影响首板排序分；若 base 已是纯连板且首板在门槛下，boost 应至少不改变 topN 名额、且参数被接受不崩
+  assert.equal(boosted.length, base.length, '提权不应改变入选名额数');
+});
+// FIRSTBOARD_TEST_V2

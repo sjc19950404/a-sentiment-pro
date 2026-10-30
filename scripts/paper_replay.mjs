@@ -36,6 +36,8 @@ for (let i = 2; i < process.argv.length; i++) {
   else if (a.startsWith('--pct')) args.set('pct', Number(process.argv[++i]) || 0.10);
   else if (a === '--attrition') { args.set('attrition', '1'); args.set('noGlm', '1'); args.set('noLhb', '1'); } // 归因只测「选股信号本身」，隔离 GLM/LHB 侧车门
   else if (a.startsWith('--stop-override')) { const v = a.split('=')[1]; args.set('stopOverride', v || 'legacy'); }
+  else if (a.startsWith('--pool-mix')) { const v = a.split('=')[1]; args.set('poolMix', v || 'legacy'); }
+  else if (a.startsWith('--fb-boost')) { const v = a.split('=')[1]; args.set('fbBoost', v || '1'); }
 }
 
 // 分级止损对照开关：streak-tier=开启连板分级止损；legacy=强制关闭（与旧规则一致，作对照组）。
@@ -46,6 +48,22 @@ function resolveStops() {
   if (ov === 'streak-tier') return { ...base, streakTier: true };
   if (ov === 'legacy') return { ...base, streakTier: false };
   return { ...base, streakTier: false };
+}
+
+// 方向2对照开关：firstboard[:N]=topN 内预留 N 个首板名额（N 默认 1）；legacy=不干预（作对照组）。
+function resolvePoolMix() {
+  const v = args.get('poolMix') || 'legacy';
+  if (v === 'legacy') return 0;
+  const m = v.match(/^firstboard(?::(\d+))?$/);
+  if (m) return m[1] ? Math.max(0, +m[1]) : 1;
+  return 0;
+}
+
+// 方向2·首板提权系数（质量竞争式）：>1 时对首板概率分乘系数，让其凭质量跨过最弱连板；默认 1（不提权）。
+function resolveFbBoost() {
+  const v = args.get('fbBoost');
+  const n = v != null ? +v : 1;
+  return Number.isFinite(n) && n > 1 ? n : 1;
 }
 
 const TOP_N = Math.max(1, args.get('topn') || 3);
@@ -97,6 +115,8 @@ function runReplay(mode, { collectTrades = false } = {}) {
     const r = settleDay(acct, date, qDay, { exec, stops: resolveStops() });
     acct = r.account;
     fills += r.fills.length;
+    if (!global.__bf) global.__bf = 0;
+    for (const t of r.fills) if (t.side === 'buy' && t.status === 'filled') global.__bf++;
 
     // 成交单 → 逐笔交易配对（买开仓 / 卖平仓）。注：单笔配对近似，不计加仓/减仓精确 FIFO。
     for (const t of r.fills) {
@@ -126,7 +146,7 @@ function runReplay(mode, { collectTrades = false } = {}) {
     const emotionScore = day.emotion?.value ?? null;
     // 注：回放环境无预测模型，predictPicks 的默认 minProb(57) 会把候选全滤掉 → 0 交易。
     // 作为诊断工具，这里用 minProb:0 绕过概率门，专门衡量「选股信号本身」的质量（与 picks.test.mjs 一致）。
-    const picks = (recommendPicks(day, { topN: TOP_N, emotionScore, minProb: 0 }).picks || [])
+    const picks = (recommendPicks(day, { topN: TOP_N, emotionScore, minProb: 0, firstBoardReserve: resolvePoolMix(), firstBoardBoost: resolveFbBoost() }).picks || [])
       .filter((p) => p && p.code && qDay[String(p.code)]);
     const items = picks.slice(0, TOP_N).map((p) => ({
       code: String(p.code), pct: PER_POS_PCT, hybk: p.hybk || null, sector: p.hybk || p.theme || null,
@@ -180,6 +200,7 @@ function runReplay(mode, { collectTrades = false } = {}) {
   const winRate = soldTrades ? (winTrades / soldTrades * 100) : null;
   const res = { mode, days: days.length, dateRange: `${first}~${last.date}`, finalEquity: last.equity, totalRet, maxDd: maxDd * 100, fills, soldTrades, winRate };
   if (collectTrades) res.trades = trades;
+  console.error('DEBUG buyFills=', global.__bf, 'totalFills=', fills);
   return res;
 }
 

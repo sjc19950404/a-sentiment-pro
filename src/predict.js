@@ -445,7 +445,10 @@ export function predictPicks(candidates, ctx = {}) {
     // 连板概率与上涨概率是两个独立目标，各自算、各自标注
     const limitUp = limitUpProb(c);
     const streakTop = isStreakTop(limitUp.prob, streakTopMin);
-    scored.push({ ...c, prob, exp, stop, limitUp, streakTop });
+    // 方向2（主线）·首板提权（质量竞争式）：ctx.firstBoardBoost>1 时，对首板(streak<=1)的上涨概率分乘以系数，
+    //   让其凭质量跨过最弱连板进入候选 topN；默认 1（不提权）。仅影响排序与概率门槛，不改模型其他逻辑。
+    const fbBoost = (Number.isFinite(+ctx.firstBoardBoost) && +ctx.firstBoardBoost > 1 && Number.isFinite(+c.streak) && +c.streak <= 1) ? Math.min(100, prob.score * +ctx.firstBoardBoost) : prob.score;
+    scored.push({ ...c, prob: (fbBoost === prob.score ? prob : { ...prob, score: fbBoost, band: probBand(fbBoost) }), exp, stop, limitUp, streakTop });
   }
 
   // 三级排序：连板置顶组优先 → 组内连板概率降序 → 其余上涨概率降序 → 净买额 → 代码

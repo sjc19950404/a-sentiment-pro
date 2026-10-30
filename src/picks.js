@@ -687,7 +687,7 @@ export function recommendPicks(day, ctx = {}) {
   const ztCount = finite(d.summary && d.summary.zt_count) ? +d.summary.zt_count : null;
   const pred = predictPicks(enriched, {
     topN, ztCount, minProb: ctx.minProb, stopLossPct: ctx.stopLossPct,
-    streakTopMin: ctx.streakTopMin,
+    streakTopMin: ctx.streakTopMin, firstBoardBoost: ctx.firstBoardBoost,
   });
 
   // 情绪闸门：高潮预警 / 去弱留强 / 接力验证（无 ctx.ztpool 时原样返回，零回归）
@@ -784,6 +784,31 @@ export function recommendPicks(day, ctx = {}) {
         p.score = Math.round(Math.min(100, base * hmDbl) * 100) / 100;   // 游资净买 → 排序分翻倍（增强信号，不改模型概率）
         if (!Array.isArray(p.tags)) p.tags = [];
         if (!p.tags.includes('游资净买')) p.tags.push('游资净买');
+      }
+    }
+  }
+
+  // 方向2（主线第1步后续·可配置 A/B）：首板纳入配额（质量竞争式 · RESERVE_V2）。
+  //   ctx.firstBoardReserve>0 时，从「已入选之外的全量候选」中取分数最高的前 N 只首板(streak<=1)，
+  //   替换 picks 中分数最低的同等数量非首板，强制 topN 内混入首板（默认 0 = 不干预，零回归）。
+  //   质量竞争式：① 首板排序分已在 predictPicks 按 ctx.firstBoardBoost 提权，让其凭质量跨过最弱连板；
+  //   ② 候选源只用 pred.picks+pred.overflow（通过概率门槛的优质首板），排除 pred.belowThreshold（次品格），避免注入次品。
+  //   真实回放用 minProb:0，belowThreshold 恒空，不影响真实口径；生产路径不传这些参数即保持原行为。
+  //   ⚠ 仅影响最终 picks 构成；不改动任何原始对象、不污染归档。
+  if (Number.isFinite(+ctx.firstBoardReserve) && +ctx.firstBoardReserve > 0) {
+    const reserve = Math.min(Math.floor(+ctx.firstBoardReserve), Math.max(0, picks.length));
+    const isFirstBoard = (p) => Number.isFinite(+p.streak) && +p.streak <= 1;
+    const inFirst = picks.filter(isFirstBoard).length;
+    if (inFirst < reserve) {
+      const need = reserve - inFirst;
+      const ranked = (pred.picks || []).concat(pred.overflow || []);   // 仅优质首板（已过概率门槛），排除次品格 belowThreshold
+      const candFirst = ranked.filter((p) => !picks.includes(p) && isFirstBoard(p))
+        .sort((a, b) => ((b.prob?.score ?? b.score ?? 0) - (a.prob?.score ?? a.score ?? 0)));
+      const toAdd = candFirst.slice(0, need);
+      if (toAdd.length) {
+        const nonFirst = picks.filter((p) => !isFirstBoard(p)).sort((a, b) => ((a.prob?.score ?? a.score ?? 0) - (b.prob?.score ?? b.score ?? 0)));
+        const removeCodes = new Set(nonFirst.slice(0, toAdd.length).map((p) => p.code));
+        picks = picks.filter((p) => !removeCodes.has(p.code)).concat(toAdd);
       }
     }
   }
