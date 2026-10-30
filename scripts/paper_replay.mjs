@@ -57,7 +57,7 @@ for (let i = 2; i < process.argv.length; i++) {
   else if (a.startsWith('--tranche=')) args.set('tranche', Math.max(1, Number(a.split('=')[1]) || 1));
   else if (a === '--regime-cap') args.set('regimeCap', '1');   // 默认关闭；开启后按 day.emotion 推导的 regime 档位压仓位（执行层挂件，开关对比基线）
   else if (a === '--regime-warm') args.set('regimeWarm', process.argv[++i]);   // regime 帽扫描：覆盖 warm(回暖) 档仓位帽（配合 --regime-cap 使用）
-  else if (a === '--regime-scale') args.set('regimeScale', process.argv[++i]);   // 可选预留旋钮：全局缩放 ice/ebb/warm/high 四档仓位帽（本次实验闭环未启用，仅供文档记录）
+  else if (a === '--regime-scale') args.set('regimeScale', process.argv[++i]);   // 全局缩放 ice/ebb/warm/high 四档仓位帽（连续平滑整体风险暴露；须配合 --regime-cap 生效，双模式并存）
 }
 
 // 分级止损对照开关：streak-tier=开启连板分级止损；legacy=强制关闭（与旧规则一致，作对照组）。
@@ -154,7 +154,7 @@ function buildExec(mode) {
 //   3) 两个旋钮区分（务必分清）：
 //        · --regime-warm：单独调整回暖档上限，精细化档位调参，输出噪声高（本次已扫，结论见上）。
 //        · --regime-scale：全局系数同步缩放四档仓位帽，才是平滑调整整体风险暴露的旋钮；
-//          本次不启用，标记为【可选预留】，实验闭环不用。
+//          已接线：须配合 --regime-cap 生效，对四档统一乘系数（连续缩放，消除离散档跳变）。
 //   4) 约束重申：选股层持续封盘；所有 V1/V2 底层选股、出场逻辑冻结。本回测框架定位固定为
 //      「执行摩擦 + 情绪风控模拟器」，只评估给定信号的资金与流动性代价，不再寻找能稳定盈利的选股参数。
 //
@@ -213,11 +213,16 @@ async function runReplay(mode, { collectTrades = false } = {}) {
   for (const day of daysToRun) {
     const date = day.trade_date;
     setExecContext(exec);   // 注入模块级执行上下文，供 submitOrder 在 profile 模式统一解析滑点
-    // regime 帽：默认 null=基线（不压）。开启后按 day.emotion 推导档位压仓位；--regime-warm 可覆盖 warm 档用于扫描拐点。
+    // regime 帽：默认 null=基线（不压）。开启后按 day.emotion 推导档位压仓位；
+    //   --regime-warm 覆盖 warm 档（离散精调）；--regime-scale 全局线性缩放四档（连续平滑整体敞口）；
+    //   双模式并存：--regime-cap 打开离散档位，--regime-scale 在其上乘系数。
     let regimeCap = null;
+    const regimeScale = (args.get('regimeScale') != null && Number.isFinite(+args.get('regimeScale'))) ? +args.get('regimeScale') : null;
     if (args.get('regimeCap')) {
       const rg = regimeOfEmotion(day.emotion?.value);
-      regimeCap = (rg === 'warm' && args.get('regimeWarm') != null) ? +args.get('regimeWarm') : REGIME_CAP[rg];
+      let c = (rg === 'warm' && args.get('regimeWarm') != null) ? +args.get('regimeWarm') : REGIME_CAP[rg];
+      if (regimeScale != null) c *= regimeScale;   // 连续缩放整体风险暴露，消除离散档跳变
+      regimeCap = c;
     }
     // ① 结算当日：盯市 + T+1 解冻 + 硬止损（与 paper_daily 同）
     const qDay = richQuotes(day);
@@ -382,7 +387,7 @@ function print(r) {
   const flags = [];
   if (args.get('slipModel') === 'profile') flags.push('滑点剖面=profile');
   if ((args.get('tranche') || 1) > 1) flags.push(`分批建仓=${args.get('tranche')}`);
-  if (args.get('regimeCap')) flags.push('regime帽=on');
+  if (args.get('regimeCap')) flags.push('regime帽=on' + (args.get('regimeScale') != null ? '×' + args.get('regimeScale') : ''));
   if (flags.length) console.log(`     执行挂件：${flags.join('，')}`);
 }
 
