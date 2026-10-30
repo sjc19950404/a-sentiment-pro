@@ -25,7 +25,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import config from '../src/config.js';
 import SHARED from '../src/backtest_params.js';
 import { getKline } from '../src/kline.js';
-import { recommendPicksV2, buildKlineCache, buildIndexCache, klineQuoteOn } from '../src/picks_v2.js';
+import { recommendPicksV2, buildKlineCache, buildIndexCache, klineQuoteOn, maAt } from '../src/picks_v2.js';
 
 function loadSeatsHistory() {
   try { return JSON.parse(readFileSync('data/seats_history.json','utf8')); } catch { return {}; }
@@ -55,11 +55,13 @@ for (let i = 2; i < process.argv.length; i++) {
 // 分级止损对照开关：streak-tier=开启连板分级止损；legacy=强制关闭（与旧规则一致，作对照组）。
 // 默认（未指定）按生产口径（config.streaks.streakTier=false → 全局 -8%），保持历史回放不变。
 function resolveStops() {
-  const base = config.params.live.stops || {};
+  const s = config.params.live.stops || {};
   const ov = args.get('stopOverride');
-  if (ov === 'streak-tier') return { ...base, streakTier: true };
-  if (ov === 'legacy') return { ...base, streakTier: false };
-  return { ...base, streakTier: false };
+  if (ov === 'streak-tier') return { ...s, streakTier: true };
+  if (ov === 'legacy') return { ...s, streakTier: false };
+  // v2 趋势跟随专属出场：宽硬止损(-15%)仅作灾难兜底；趋势破位(跌破MA60)由 scanStopLoss 用 p.trendMa60 判定，v1 不注入→零污染
+  if (args.get('base') === 'v2') return { ...s, baseHardStopPct: -0.15, streakTier: false };
+  return { ...s, streakTier: false };
 }
 
 // 方向2对照开关：firstboard[:N]=topN 内预留 N 个首板名额（N 默认 1）；legacy=不干预（作对照组）。
@@ -145,6 +147,14 @@ async function runReplay(mode, { collectTrades = false } = {}) {
     const date = day.trade_date;
     // ① 结算当日：盯市 + T+1 解冻 + 硬止损（与 paper_daily 同）
     const qDay = richQuotes(day);
+    // v2 趋势跟随：按日把持仓票的 MA60 注入持仓（供 scanStopLoss 跌破MA60 破位出场）；v1 不注入→零污染
+    if (base === 'v2' && klineCache) {
+      for (const code of Object.keys(acct.positions || {})) {
+        const kl = klineCache.get(code);
+        const ma = kl ? maAt(kl, date, 60) : null;
+        if (ma != null) acct.positions[code] = { ...acct.positions[code], trendMa60: ma };
+      }
+    }
     const r = settleDay(acct, date, qDay, { exec, stops: resolveStops() });
     acct = r.account;
     fills += r.fills.length;
@@ -186,7 +196,7 @@ async function runReplay(mode, { collectTrades = false } = {}) {
       applyLhbFilterEff = false;
       picks = recommendPicksV2(day, { tradeDate: date, klineCache, hs300: hsSeries, topN: TOP_N });
       // 为持仓中 + 本日选中票补行情（T 日 close 撮合，与 v1 口径一致）
-      const need = new Set([...Object.keys(acct.openTrades || {}), ...picks.map((p) => p.code)]);
+      const need = new Set([...Object.keys(acct.positions || {}), ...picks.map((p) => p.code)]);
       for (const code of need) {
         const qv = klineQuoteOn(klineCache.get(code), date);
         if (qv) qDay[code] = { code, ...qv };

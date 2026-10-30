@@ -109,6 +109,15 @@ async function fetchOne(code, minLen) {
   }
 }
 
+// T 日及之前 n 日收盘均线（严格点进时点，杜绝未来函数）。posByDate 缺 T → null。
+export function maAt(kl, date, n) {
+  const i = kl.posByDate.get(String(date).replace(/-/g, ''));
+  if (i == null || i < n - 1) return null;
+  let s = 0;
+  for (let j = i - n + 1; j <= i; j++) s += +kl.series[j].close;
+  return s / n;
+}
+
 export async function buildKlineCache(codes, { chunk = 10, minLen = 70 } = {}) {
   const cache = new Map();
   let ok = 0;

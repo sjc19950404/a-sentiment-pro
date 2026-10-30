@@ -1431,6 +1431,17 @@ export function scanStopLoss(acct, date, stops) {
   for (const [code, p] of Object.entries(positions)) {
     if (!p || p.qty <= 0 || !(p.avgCost > 0) || p.last == null) continue;
     const pnlPct = (p.last - p.avgCost) / p.avgCost;      // 浮亏比例（未含卖出费用，与止损线同口径）
+    // 趋势破位出场（仅 V2 趋势仓）：p.trendMa60 由回放按日注入；v1 仓位无此字段 → 跳过，零污染、不改 v1 任何行为。
+    if (p.trendMa60 != null && p.last != null && p.last < p.trendMa60) {
+      const avail = Math.max(0, p.avail || 0);
+      const frozen = (acct.pending || []).filter((x) => x.code === code && x.side === 'sell').reduce((a, x) => a + x.qty, 0);
+      const freeAvail = Math.max(0, avail - frozen);
+      list.push({
+        code, name: p.name || code, pnlPct: round2(pnlPct * 100), last: p.last, avgCost: p.avgCost,
+        qty: p.qty, avail, freeAvail, willSell: Math.min(freeAvail, p.qty), skipped: null, exitKind: 'trend',
+      });
+      continue;
+    }
     // 出场纪律补丁（主线第1步结论·可配置·local patch）：按入场连板数(streak)分级硬止损。
     //   stops.streakTier=true 时，匹配 tier 中 streak<=入场连板数 的最高档止损线（更宽松，如-0.15）；
     //   否则回退全局 baseHardStopPct/HARD_STOP_LOSS（与旧行为一致，保证对照公平）。
@@ -1470,23 +1481,25 @@ export function scanStopLoss(acct, date, stops) {
     apply: (account, d) => {
       let cur = account;
       for (const it of list) {
+        const stopReason = (it.exitKind === 'trend')
+          ? `趋势破位（跌破MA60，现价${it.last}）`
+          : (it.tierStop != null
+            ? `止损（分级浮亏 ${it.pnlPct}%，连板${it.streak}板）`
+            : `止损（浮亏 ${it.pnlPct}%）`);
         if (it.skipped || it.willSell <= 0) {
           cur = { ...cur, logs: appendLog(cur, { date: d, code: it.code, name: it.name, side: 'sell', qty: it.qty, stage: 'stop', result: 'expired',
-            reason: it.skipped, text: `触发 −8% 止损（浮亏 ${it.pnlPct}%），但无法生成卖出委托：${it.skipped}` }) };
+            reason: it.skipped, text: `触发 ${stopReason}（浮亏 ${it.pnlPct}%），但无法生成卖出委托：${it.skipped}` }) };
           continue;
         }
         const q = { code: it.code, name: it.name, price: it.last };
-        const stopReason = (it.tierStop != null)
-          ? `止损（分级浮亏 ${it.pnlPct}%，连板${it.streak}板）`
-          : `止损（浮亏 ${it.pnlPct}%）`;
         const sub = submitOrder(cur, { code: it.code, side: 'sell', qty: it.willSell, reason: stopReason, requeue: true }, q, { date: d });
         cur = sub.next;
         if (sub.order.status !== 'pending') {
           cur = { ...cur, logs: appendLog(cur, { date: d, code: it.code, name: it.name, side: 'sell', qty: it.willSell, stage: 'stop', result: 'rejected',
-            reason: sub.order.reject, text: `触发 −8% 止损，但卖出委托被拒：${sub.order.reject}${sub.order.detail ? '（' + sub.order.detail + '）' : ''}` }) };
+            reason: sub.order.reject, text: `触发 ${stopReason}，但卖出委托被拒：${sub.order.reject}${sub.order.detail ? '（' + sub.order.detail + '）' : ''}` }) };
         } else {
           cur = { ...cur, logs: appendLog(cur, { date: d, code: it.code, name: it.name, side: 'sell', qty: it.willSell, stage: 'stop', result: 'submitted',
-            reason: `止损 -8%`, text: `触发 −8% 止损（浮亏 ${it.pnlPct}%，现价 ${it.last} 元 / 成本 ${it.avgCost} 元），已生成 T+1 卖出委托 ${it.willSell} 股` }) };
+            reason: stopReason, text: `触发 ${stopReason}（浮亏 ${it.pnlPct}%，现价 ${it.last} 元 / 成本 ${it.avgCost} 元），已生成 T+1 卖出委托 ${it.willSell} 股` }) };
         }
       }
       return cur;
