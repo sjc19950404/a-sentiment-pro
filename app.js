@@ -667,6 +667,17 @@ function renderThemes(latest) {
 // 涨幅单元格：数值 + 新股标记 + 无行情标记。
 // 「无行情」与「0」必须区分开：0 是真实行情（如一字板当日换手可为 0），
 // 无行情是数据源没覆盖到这条代码，两者含义完全不同，混在一起会让人以为数据出错。
+
+// 板块徽章：与 paper.js boardOf 同源前缀口径；仅创业/科创/北交打标签（主板不打，减噪音）。
+// 在连板天梯、个股明细表、明细卡片等多处个股名后统一展示板块识别。
+function boardBadge(code) {
+  const c = String(code || '');
+  if (/^68/.test(c)) return '<span class="tag board star" title="科创板">科创</span>';
+  if (/^30/.test(c)) return '<span class="tag board gem" title="创业板">创业</span>';
+  if (/^(8|4|92)/.test(c)) return '<span class="tag board bj" title="北交所">北交</span>';
+  return '';
+}
+
 function chgCell(r) {
   return `<span class="${trendCls(r.change_pct)}">${pctOf2(r.change_pct)}</span>`
     + (isNewStock(r) ? '<span class="newb" title="无价格涨跌幅限制（新股/次新），涨幅与普通个股不可比">新股</span>' : '')
@@ -677,7 +688,7 @@ function chgCell(r) {
 const HOT_COLS = {
   hot: [
     { key: 'code', t: '代码' },
-    { key: 'name', t: '名称', cell: (r) => esc(nf(r.name)) + (window.__glm ? window.__glm.tagSpan(r) : ''), raw: (r) => r.name },
+    { key: 'name', t: '名称', cell: (r) => esc(nf(r.name)) + boardBadge(r.code) + (window.__glm ? window.__glm.tagSpan(r) : ''), raw: (r) => r.name },
     { key: 'change_pct', t: '涨幅', num: true, hint: '当日涨跌幅（新股无涨跌幅限制，涨幅不具可比性）',
       cell: chgCell,
       raw: (r) => r.change_pct },
@@ -689,7 +700,7 @@ const HOT_COLS = {
   ],
   lhb: [
     { key: 'code', t: '代码' },
-    { key: 'name', t: '名称', cell: (r) => esc(nf(r.name)) + (window.__glm ? window.__glm.tagSpan(r) : ''), raw: (r) => r.name },
+    { key: 'name', t: '名称', cell: (r) => esc(nf(r.name)) + boardBadge(r.code) + (window.__glm ? window.__glm.tagSpan(r) : ''), raw: (r) => r.name },
     { key: 'change_pct', t: '涨幅', num: true, hint: '当日涨跌幅（新股无涨跌幅限制，涨幅不具可比性）',
       cell: chgCell,
       raw: (r) => r.change_pct },
@@ -723,7 +734,7 @@ function hotCardHTML(r, cols) {
   const reason = last ? String(r[last.key] ?? '').trim() : '';
   return `<div class="hcard" data-act="stock" data-code="${esc(r.code)}" tabindex="0" role="button"`
     + ` aria-label="查看 ${esc(name)} 的席位与资金详情" title="点击查看 ${esc(name)} 的席位与资金详情">`
-    + `<div class="hc-head"><span class="hc-name">${esc(name)}${window.__glm ? window.__glm.tagSpan(r) : ''}</span>`
+    + `<div class="hc-head"><span class="hc-name">${esc(name)}${boardBadge(r.code)}${window.__glm ? window.__glm.tagSpan(r) : ''}</span>`
     + `<span class="hc-code muted">${esc(r[c0?.key] ?? r.code)}</span>`
     + `<span class="hc-big ${big ? trendCls(big.raw ? big.raw(r) : r[big.key]) : 'muted'}">${cellOf(big)}</span></div>`
     + `<div class="hc-tags">${tags.map((c) => `<span class="hc-tag"><i>${esc(c.t)}</i>${cellOf(c)}</span>`).join('')}</div>`
@@ -1226,14 +1237,6 @@ function buildBrief(days, arc) {
     const m = s.zt_lbw && typeof s.zt_lbw === 'object' ? s.zt_lbw : s.zt_lb;
     const cont = s.zt_lb && typeof s.zt_lb === 'object' ? s.zt_lb : null;
     if (!m || typeof m !== 'object') return '';
-    // 板块徽章：与 paper.js boardOf 同源前缀口径；仅创业/科创/北交打标签（主板不打，减噪音）
-    const boardBadge = (code) => {
-      const c = String(code || '');
-      if (/^68/.test(c)) return '<span class="tag board star" title="科创板">科创</span>';
-      if (/^30/.test(c)) return '<span class="tag board gem" title="创业板">创业</span>';
-      if (/^(8|4|92)/.test(c)) return '<span class="tag board bj" title="北交所">北交</span>';
-      return '';
-    };
     const buckets = {};
     for (const [code, n] of Object.entries(m)) {
       const v = Number(n);
