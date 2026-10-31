@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { dragonLogicBlock } from '../src/dragon_logic.js';
 
 // 实盘权限过滤（2026-10-29·老板无创业板300/301、科创板688权限）：
-// 妖股透视保留全市场连板（含 300/688）用于参考市场情绪，但无权限标的在名称前打 [无权限] 标签，不剔除。
-test('dragonLogicBlock：300/301/688 妖股打 [无权限] 标签（保留全量、不剔除）', () => {
+// 妖股透视保留全市场连板（含 300/688）用于参考市场情绪；名称前 [无权限] 文本标签已弃用（板块徽章已标识板块），
+// tradability 改用 noPermission 数据属性承载（前端不渲染文字）。
+test('dragonLogicBlock：300/301/688 妖股保留 noPermission 属性、名称不再加 [无权限] 前缀（保留全量、不剔除）', () => {
   const report = {
     asOfDate: '2026-10-29',
     tradeDate: '2026-10-29',
@@ -21,20 +22,20 @@ test('dragonLogicBlock：300/301/688 妖股打 [无权限] 标签（保留全量
   const d601 = dragons.find((d) => d.code === '601222');
   const d688 = dragons.find((d) => d.code === '688333');
 
-  // 标签：300/301/688 打 [无权限]，主板不打
-  assert.ok(d300.name.startsWith('[无权限]'), '300 妖股名称应前缀 [无权限]');
+  // 名称不再加 [无权限] 前缀（板块徽章已标识板块）
+  assert.equal(d300.name, '创业妖', '300 妖股名称不应前缀 [无权限]');
   assert.equal(d300.noPermission, true);
-  assert.ok(!d601.name.startsWith('[无权限]'), '601 主板妖股不应打标签');
+  assert.equal(d601.name, '沪主妖', '601 主板妖股名称不变');
   assert.equal(d601.noPermission, undefined);
-  assert.ok(d688.name.startsWith('[无权限]'), '688 妖股名称应前缀 [无权限]');
+  assert.equal(d688.name, '科创妖', '688 妖股名称不应前缀 [无权限]');
   assert.equal(d688.noPermission, true);
 
-  // 保留全量（不剔除），仅打标签用于情绪参考
-  assert.equal(dragons.length, 3, '妖股仍保留全量（含 300/688），仅打标签不剔除');
+  // 保留全量（不剔除），仅标记 noPermission 用于情绪参考
+  assert.equal(dragons.length, 3, '妖股仍保留全量（含 300/688），不剔除');
 
-  // pureSentiment（纯情绪炒作分支）同样带标签
+  // pureSentiment（纯情绪炒作分支）同样带 noPermission、名称无前缀
   const p300 = pureSentiment.find((p) => p.code === '300111');
-  assert.ok(p300.name.startsWith('[无权限]'), 'pureSentiment 中 300 也应打标签');
+  assert.equal(p300.name, '创业妖', 'pureSentiment 中 300 名称无前缀');
   assert.equal(p300.noPermission, true);
 });
 

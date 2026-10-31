@@ -35,10 +35,12 @@ export function dragonLogicBlock(report, { tradeDate } = {}) {
   }
 
   // 实盘权限过滤（2026-10-29·老板无创业板300/301、科创板688权限）：妖股透视仍保留全市场连板（含 300/688）
-  //   用于参考市场情绪，但在名称前打 [无权限] 标签，提示这些标的不在可交易范围内。
+  //   用于参考市场情绪；原「名称前缀 [无权限]」文本标签已弃用——板块徽章（创业/科创）已能标识板块，
+  //   且北交所本就无该文本标签，继续保留只会造成冗余。tradability 改用 noPermission 数据属性承载
+  //   （前端不渲染文字标签，仅在数据层保留「不可交易」语义，供未来按需展示）。
   const NO_PERM = /^(300|301|688)/;
   const tagDragon = (d) => (NO_PERM.test(String(d.code || ''))
-    ? { ...d, name: `[无权限] ${d.name}`, noPermission: true }
+    ? { ...d, noPermission: true }
     : d);
   const dragons = (Array.isArray(report.dragons) ? report.dragons : []).map(tagDragon);
   const pureSentiment = dragons
