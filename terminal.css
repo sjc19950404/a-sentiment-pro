@@ -415,6 +415,13 @@
   border: 1px solid rgba(167, 139, 250, .3);
 }
 
+/* 板块徽章（创业/科创/北交，主板不打，减噪音）——与旧仪表盘 .tag.board 同色语义，
+   终端暗色主题适配；terminal.js 连板天梯已在名称列注入 .t-tag-board，此前缺样式故只显裸文本 */
+.t-tag-board { display: inline-block; font-weight: 700; font-size: 10.5px; padding: 0 5px; border-radius: 3px; margin-left: 6px; vertical-align: middle; }
+.t-tag-board.gem { background: rgba(232, 132, 60, .20); color: #e8843c; }   /* 创业板 橙 */
+.t-tag-board.star { background: rgba(64, 169, 255, .20); color: #40a9ff; }  /* 科创板 蓝 */
+.t-tag-board.bj { background: rgba(139, 148, 158, .20); color: #9aa4ae; }   /* 北交 灰 */
+
 /* ── 顶栏时间窗切换（20/60/250 日，全局生效）───────────────────────────── */
 .t-range { display: inline-flex; align-items: center; gap: 4px; }
 .t-range button {
