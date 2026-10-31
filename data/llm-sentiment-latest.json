@@ -2,11 +2,11 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-10-30",
- "generatedAt": "2026-10-30T21:03:38.832+08:00",
+ "generatedAt": "2026-10-31T18:30:50.627+08:00",
  "model": "glm-4-flash",
- "sentiment": -0.5,
- "confidence": 0.8,
- "reason": "市场涨停家数少于跌停家数，炸板率较高，亏钱效应明显，市场情绪偏向负面。",
+ "sentiment": -0.3,
+ "confidence": 0.7,
+ "reason": "市场涨停家数少于跌停家数，炸板率较高，亏钱效应明显，市场情绪偏负面。",
  "events": [
   {
    "type": "业绩预告",
@@ -36,25 +36,25 @@
    "type": "行业催化",
    "target": "固态电池",
    "tone": "positive",
-   "note": "固态电池概念带动上海洗霸股价上涨"
+   "note": "固态电池相关概念股上涨"
   },
   {
    "type": "行业催化",
    "target": "农批市场",
    "tone": "positive",
-   "note": "农批市场概念带动浙江东日股价上涨"
+   "note": "农批市场相关概念股上涨"
   },
   {
    "type": "行业催化",
    "target": "医药外包",
    "tone": "positive",
-   "note": "医药外包概念带动百花医药股价上涨"
+   "note": "医药外包相关概念股上涨"
   },
   {
    "type": "行业催化",
    "target": "脑机接口",
    "tone": "positive",
-   "note": "脑机接口概念带动澳洋健康股价上涨"
+   "note": "脑机接口相关概念股上涨"
   }
  ],
  "inputDigest": {
