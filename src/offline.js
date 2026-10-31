@@ -18,7 +18,7 @@
 //     断网时回退到最近一次成功缓存的那一份，并在页面上显式标注「离线」。
 //     绝不因离线就用空数据——宁可显示旧数据 + 明确标注。
 
-export const CACHE_VERSION = 'v3';
+export const CACHE_VERSION = 'v4';
 export const SHELL_CACHE = `aspro-shell-${CACHE_VERSION}`;
 export const DATA_CACHE = `aspro-data-${CACHE_VERSION}`;
 
