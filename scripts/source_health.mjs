@@ -36,6 +36,9 @@ const SOURCES = [
   { id: 'node-main-net', label: '主力净流入榜·Node东财直连(替代AkShare fund_flow)', probe: (d) => d.screener != null },
   // 涨跌停池：原 ztpool 探针沿用，Node 直连 push2ex（复用 sources.fetchPools）
   { id: 'node-pools', label: '涨跌停池·Node东财直连(push2ex)', probe: (d) => d.pools != null },
+  // 腾讯 gtimg 兜底（物理独立备用）：主源东财降级时接管全市场快照报价；常态与 node-* 同绿，
+  // 仅当「东财挂 且 gtimg 也挂」才转红——避免常态 idle 误报警（gtimg 仅在被启用时做真实连通性校验）。
+  { id: 'node-gtimg-backup', label: '全市场快照·腾讯gtimg直连兜底(物理独立备用)', probe: (d) => { const s = d.dataHealth?.snapshotSource; if (s === 'node-gtimg-backup') return Array.isArray(d.hot?.rows) && d.hot.rows.length > 0; return true; } },
 ];
 
 const log = (...a) => { if (!AS_JSON) console.log(...a); };

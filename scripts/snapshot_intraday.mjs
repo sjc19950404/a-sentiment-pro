@@ -81,9 +81,15 @@ log(`相位 ${FORCE && ph.phase !== 'live' ? ph.phase + '（--force 强制）' :
 // ── ② 抓取盘中源（2026-10-10 数据层迁移：一次 python 进程拉齐六源——全市场快照
 //     QuantDash 主/AkShare 兜底、涨跌停池 AkShare、主力净流入榜 AkShare，全部批量；
 //     旧源（同花顺 getharden/腾讯 qt.gtimg/东财 push2 直连/eastmoney-probe）退役）──
+// ── ②b 读取上次成功快照（兜底源 + TTL 判定用，提前到抓取前——gtimg 兜底需要 prev.hot 代码作宇宙）──
+const prev = (() => {
+  try { return existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : null; } catch { return null; }
+})();
+const prevHotCodes = (prev?.hot?.rows && Array.isArray(prev.hot.rows)) ? prev.hot.rows.map((r) => r.code).filter(Boolean) : [];
+
 let raw = null;
 const fetchOnce = async () => {
-  try { return await fetchIntradayRaw(); } catch (e) { log('数据层失败 →', String(e?.message || e)); return null; }
+  try { return await fetchIntradayRaw(prevHotCodes); } catch (e) { log('数据层失败 →', String(e?.message || e)); return null; }
 };
 raw = await fetchOnce();
 if (!raw) { // 进程级瞬时失败（python 子进程偶发退出 / 套接字抖动）→ 重试一次
@@ -101,10 +107,7 @@ if (!raw) errs.push('market_data: 数据层进程失败（六源全部缺席，�
 else if (raw.meta?.degradations?.length) log('数据层降级链 →', raw.meta.degradations.map((d) => `${d.chain}`).join(' ⇄ '));
 for (const e of errs) log('源失败 →', e);
 
-// ── ②b 读取上次成功快照（兜底源 + TTL 判定用，提前到抓取后）──
-const prev = (() => {
-  try { return existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : null; } catch { return null; }
-})();
+// （prev 已提前至抓取前读取，见上方 ②b）
 
 // ── ③ 交易日核验：强势股返回的 date 必须等于北京当日 ──────────────────────────
 // 为什么必须核：该接口在非交易日 / 数据源未切换时会**返回上一交易日的数据**（不报错）。

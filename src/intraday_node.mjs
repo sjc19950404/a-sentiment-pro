@@ -57,51 +57,137 @@ async function fetchUniverse(top = 200) {
   throw new Error('universe 全主机失败: ' + errs.join(' | '));
 }
 
+// ── 腾讯 gtimg 兜底源（qt.gtimg.cn，物理独立于东财，免费免密钥）──────────────────
+// 仅用于「东财 clist 全市场快照（hot/quotes）」失败时，提供一份新鲜报价兜底。
+// 注意：gtimg 只给逐只报价，不给 涨跌停池/涨跌家数/主力净流入 —— 那些仍靠东财 + TTL 缓存兜底。
+// gtimg 字段索引随版本漂移，故只取稳定可靠的：现价(p3)/昨收(p4)→涨跌幅(自算)/名称(p1)/代码(p2)；
+// 换手率/量比/PE/PB 等不猜，缺失保持 null（绝不落成 0，遵循系统「宁缺毋假」纪律）。
+const GBK = new TextDecoder('gbk');
+
+// 纯解析（无网络）：把 qt.gtimg.cn/q= 的 GBK 文本解析成股票数组
+export function parseGtimgBatch(text) {
+  const stocks = [];
+  for (const line of String(text).split(';')) {
+    const m = line.match(/v_(\w+)="([^"]*)"/);
+    if (!m) continue;
+    const p = m[2].split('~');
+    if (p.length < 35 || !p[1] || p[1] === '') continue; // 无效/缺席过滤（gtimg 对无效代码直接缺席响应）
+    const code = p[2], name = p[1];
+    if (!/^\d{6}$/.test(code)) continue;
+    const prevClose = num(p[4]);
+    const close = num(p[3]);
+    const change_pct = (close != null && prevClose && prevClose !== 0)
+      ? Math.round(((close - prevClose) / prevClose) * 10000) / 100
+      : null;
+    stocks.push({ code, name, close, change_pct, open: num(p[5]), huanshou: null, liangbi: null, pe_ttm: null, pb: null, avg_price: null });
+  }
+  return stocks;
+}
+
+// A 股代码全集（沪深主板/创业板/科创板；不含北交——gtimg 对北交支持弱），作为无 prev 时的兜底宇宙。
+// 仅在「东财挂 且 无上次成功快照」的极端边缘才会枚举全市场（≈6000 只 / 60 每批 ≈ 100 请求，谨慎）。
+function gtimgUniverseFallback() {
+  const out = [];
+  for (let i = 600000; i <= 605999; i++) out.push('sh' + i);
+  for (let i = 688000; i <= 689999; i++) out.push('sh' + i);
+  for (let i = 1; i <= 3999; i++) out.push('sz' + String(i).padStart(6, '0'));
+  for (let i = 300000; i <= 301999; i++) out.push('sz' + i);
+  return out;
+}
+
+// 实际拉取：分批 qt.gtimg.cn，GBK 解码，2 次重试；全批次失败才抛错（交上层回落 TTL 缓存）
+async function fetchGtimgRaw(codes) {
+  if (!Array.isArray(codes) || !codes.length) return [];
+  const out = [];
+  const errs = [];
+  const BATCH = 60;
+  for (let i = 0; i < codes.length; i += BATCH) {
+    const batch = codes.slice(i, i + BATCH);
+    for (let att = 0; att < 2; att++) {
+      try {
+        const url = `https://qt.gtimg.cn/q=${batch.join(',')}`;
+        const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(15000) });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        out.push(...parseGtimgBatch(GBK.decode(await res.arrayBuffer())));
+        break;
+      } catch (e) {
+        errs.push('gtimg#' + i + ' att' + att + ': ' + e.message);
+        if (att === 0) await sleep(300);
+      }
+    }
+  }
+  if (!out.length && errs.length) throw new Error('gtimg 全批次失败: ' + errs.slice(0, 3).join(' | '));
+  return out;
+}
+
 /**
  * 盘中六源（Node 直连东财版）——契约对齐旧 market_data.py::intraday_raw。
  * @returns {Promise<object>} { hot, pools, breadth, quotes, mainNet, screener, breadthCross, ztDerived, meta }
  */
-export async function fetchIntradayRaw() {
-  const errors = [];
-  const degradations = [];
-  const date = bjDate(new Date()); // YYYY-MM-DD（北京当日）
-  const ymd = date.replace(/-/g, '');
-
-  // ① 全市场快照（涨幅榜前 200）→ hot + quotes
-  let snapRows = [];
-  try { snapRows = await fetchUniverse(200); }
-  catch (e) { errors.push('universe(hot/quotes): ' + e.message); }
-
-  const hot = snapRows.length ? snapRows
+// 纯函数：把「东财 diff 行 或 gtimg 股票」统一成 hot 行（字段对齐，缺失保持 null）
+export function buildHotFromRows(rows, sourceLabel, date) {
+  return rows.length ? rows
     .map((r) => ({
-      code: String(r.f12 ?? ''),
-      name: r.f14 ?? null,
-      reason: '全市场快照涨幅榜（Node 直连东财派生）',
-      close: num(r.f2),
-      zhangfu: num(r.f3),
-      huanshou: num(r.f8),
+      code: String(r.code ?? r.f12 ?? ''),
+      name: r.name ?? r.f14 ?? null,
+      reason: '全市场快照涨幅榜（' + sourceLabel + '）',
+      close: num(r.close ?? r.f2),
+      zhangfu: num(r.change_pct ?? r.f3),
+      huanshou: num(r.huanshou ?? r.f8),
       avg_price: null, // 已暂停：旧映射 f9 实为市盈率(PE)，非分时均价；待 VWAP 公式确认后重建（见 schemas/intraday.schema.json 标记 deprecated）
       date,
     }))
     .filter((x) => x.code)
     .sort((a, b) => (b.zhangfu ?? -1e9) - (a.zhangfu ?? -1e9))
     : null;
+}
 
-  // 候选池行情（与 hot 同源，零新增请求）
+// 纯函数：把同一批行统一成 quotes 字典（字段对齐东财源格式）
+export function buildQuotesFromRows(rows) {
   const quotes = {};
-  for (const r of snapRows) {
-    const c = String(r.f12 ?? '');
+  for (const r of rows) {
+    const c = String(r.code ?? r.f12 ?? '');
     if (!c) continue;
     quotes[c] = {
-      close: num(r.f2),
-      change_pct: num(r.f3),
-      huanshou: num(r.f8),
+      close: num(r.close ?? r.f2),
+      change_pct: num(r.change_pct ?? r.f3),
+      huanshou: num(r.huanshou ?? r.f8),
       avg_price: null, // 已暂停：旧映射 f9 实为市盈率(PE)，非分时均价；待 VWAP 公式确认后重建（见 schemas/intraday.schema.json 标记 deprecated）
-      pe_ttm: num(r.f115),
-      pb: num(r.f23),
-      liangbi: num(r.f10),
+      pe_ttm: num(r.pe_ttm ?? r.f115),
+      pb: num(r.pb ?? r.f23),
+      liangbi: num(r.liangbi ?? r.f10),
     };
   }
+  return quotes;
+}
+
+export async function fetchIntradayRaw(prevHotCodes = []) {
+  const errors = [];
+  const degradations = [];
+  const date = bjDate(new Date()); // YYYY-MM-DD（北京当日）
+  const ymd = date.replace(/-/g, '');
+
+  // ① 全市场快照（涨幅榜前 200）→ hot + quotes（东财主源；失败则腾讯 gtimg 兜底）
+  let snapRows = [];
+  let hotSource = 'node-eastmoney';
+  try { snapRows = await fetchUniverse(200); }
+  catch (e) {
+    errors.push('universe(hot/quotes)[em]: ' + e.message);
+    // 东财主源降级 → 标记腾讯 gtimg 兜底（成败都标记，便于探针区分主/备健康度）
+    hotSource = 'node-gtimg-backup';
+    // 腾讯 gtimg 兜底（物理独立于东财，免费免密钥）：用上次成功快照的 hot 代码拉新鲜报价；
+    // 无 prev 时用 A 股代码全集。gtimg 只给报价，不给池/广度/主力净流入——那些仍靠东财 + TTL 缓存。
+    const universe = (Array.isArray(prevHotCodes) && prevHotCodes.length) ? prevHotCodes : gtimgUniverseFallback();
+    try {
+      const g = await fetchGtimgRaw(universe);
+      if (g.length) { snapRows = g; degradations.push({ chain: 'universe: node-eastmoney → node-gtimg-backup（腾讯兜底）' }); }
+      else errors.push('universe(hot/quotes)[gtimg]: 返回空');
+    } catch (e2) { errors.push('universe(hot/quotes)[gtimg]: ' + e2.message); }
+  }
+
+  const hot = buildHotFromRows(snapRows, hotSource === 'node-gtimg-backup' ? '腾讯gtimg直连兜底' : 'Node 直连东财派生', date);
+  // 候选池行情（与 hot 同源，零新增请求）
+  const quotes = buildQuotesFromRows(snapRows);
 
   // ② 涨跌停/炸板池（复用 sources.js fetchPools，东财 push2ex 直连）
   let pools = null;
@@ -133,7 +219,7 @@ export async function fetchIntradayRaw() {
     breadthCross: null, ztDerived: null,
     meta: {
       generatedAt: new Date().toISOString(),
-      snapshotSource: 'node-eastmoney',
+      snapshotSource: hotSource,
       snapshotRows: snapRows.length,
       errors,
       degradations,
