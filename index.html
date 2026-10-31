@@ -432,6 +432,13 @@
   border: 1px solid rgba(167, 139, 250, .3);
 }
 
+/* 板块徽章（创业/科创/北交，主板不打，减噪音）——与旧仪表盘 .tag.board 同色语义，
+   终端暗色主题适配；terminal.js 连板天梯已在名称列注入 .t-tag-board，此前缺样式故只显裸文本 */
+.t-tag-board { display: inline-block; font-weight: 700; font-size: 10.5px; padding: 0 5px; border-radius: 3px; margin-left: 6px; vertical-align: middle; }
+.t-tag-board.gem { background: rgba(232, 132, 60, .20); color: #e8843c; }   /* 创业板 橙 */
+.t-tag-board.star { background: rgba(64, 169, 255, .20); color: #40a9ff; }  /* 科创板 蓝 */
+.t-tag-board.bj { background: rgba(139, 148, 158, .20); color: #9aa4ae; }   /* 北交 灰 */
+
 /* ── 顶栏时间窗切换（20/60/250 日，全局生效）───────────────────────────── */
 .t-range { display: inline-flex; align-items: center; gap: 4px; }
 .t-range button {
@@ -2609,6 +2616,14 @@
       : '<div class="t-empty">当日无连板梯队数据</div>', 't-c12'));
 
     // 连板天梯表 —— 点任一票 → LINK 总线 → 打开个股详情抽屉（K 线 + AI 判词 + 排雷）
+    // 板块徽章：与 paper.js boardOf 同源前缀口径；仅创业/科创/北交打标签（主板不打，减噪音）
+    const boardBadge = (code) => {
+      const c = String(code || '');
+      if (/^68/.test(c)) return '<span class="t-tag-board star" title="科创板">科创</span>';
+      if (/^30/.test(c)) return '<span class="t-tag-board gem" title="创业板">创业</span>';
+      if (/^(8|4|92)/.test(c)) return '<span class="t-tag-board bj" title="北交所">北交</span>';
+      return '';
+    };
     const rows = sorted.map((x) => {
       const rs = String(x.reason || '—');
       const conf = x.confidence != null ? x.confidence * 100 : null;
@@ -2616,7 +2631,7 @@
       const confCls = conf == null ? '' : conf >= 80 ? 'is-crit' : conf >= 60 ? 'is-warn' : '';
       return `<tr data-code="${esc(x.code)}" data-name="${esc(x.name || '')}">
         <td>${esc(x.code)}</td>
-        <td>${esc(x.name || '—')}</td>
+        <td>${esc(x.name || '—')}${boardBadge(x.code)}</td>
         <td class="up">${fmtInt(x.lb)}</td>
         <td>${esc(x.hybk || '—')}</td>
         <td>${x.is_pure_sentiment ? '<span class="t-tag-ai">纯情绪</span> ' : ''}${esc(x.logic_type || '—')}</td>
@@ -3015,8 +3030,6 @@
         sentimentPenalty: stops.sentimentPenalty != null ? stops.sentimentPenalty : 10,
         clusterRiseMax: stops.clusterRiseMax != null ? stops.clusterRiseMax : 1500,
         openGapFilterPct: stops.openGapFilterPct != null ? stops.openGapFilterPct : 8,
-        trailingStopPct: stops.trailingStopPct != null ? stops.trailingStopPct : 0.025,
-        trailingTriggerPct: stops.trailingTriggerPct != null ? stops.trailingTriggerPct : 0.06,
       };
       // 字段口径与服务端 scripts/ui_server.mjs 的 RANGES 保持一致（防呆同源）
       const FIELDS = [
@@ -3025,8 +3038,6 @@
         { k: 'sentimentPenalty', label: '极寒分化扣分', min: 0, max: 50, step: 1 },
         { k: 'clusterRiseMax', label: '上涨家数阈值', min: 50, max: 5000, step: 10 },
         { k: 'openGapFilterPct', label: '高开/急拉过滤比例', min: 0, max: 100, step: 1 },
-        { k: 'trailingStopPct', label: '移动止盈回撤比例', min: 0, max: 0.1, step: 0.01, pct: true },
-        { k: 'trailingTriggerPct', label: '移动止盈激活阈值', min: 0, max: 0.2, step: 0.01, pct: true },
       ];
       const grid = panel.querySelector('#tSetGrid');
       const state = Object.assign({}, cur);
