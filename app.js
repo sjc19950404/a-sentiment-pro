@@ -1226,6 +1226,14 @@ function buildBrief(days, arc) {
     const m = s.zt_lbw && typeof s.zt_lbw === 'object' ? s.zt_lbw : s.zt_lb;
     const cont = s.zt_lb && typeof s.zt_lb === 'object' ? s.zt_lb : null;
     if (!m || typeof m !== 'object') return '';
+    // 板块徽章：与 paper.js boardOf 同源前缀口径；仅创业/科创/北交打标签（主板不打，减噪音）
+    const boardBadge = (code) => {
+      const c = String(code || '');
+      if (/^68/.test(c)) return '<span class="tag board star" title="科创板">科创</span>';
+      if (/^30/.test(c)) return '<span class="tag board gem" title="创业板">创业</span>';
+      if (/^(8|4|92)/.test(c)) return '<span class="tag board bj" title="北交所">北交</span>';
+      return '';
+    };
     const buckets = {};
     for (const [code, n] of Object.entries(m)) {
       const v = Number(n);
@@ -1245,7 +1253,7 @@ function buildBrief(days, arc) {
         const dtd = s.zt_dtd && s.zt_dtd[c] ? '<span class="bf-warn">·地天</span>' : '';
         const dg = window.__glm && window.__glm.dragonOf(c);
         const dtag = dg ? `<span class="tag glm" title="${esc((dg.reason || 'AI 妖股逻辑推演').replace(/[\r\n]+/g, ' '))}">🕵${dg.is_pure_sentiment ? '纯情绪' : ''}</span>` : '';
-        return (Number.isFinite(cv) && cv !== k ? `${nm}<span class="muted">·连${cv}</span>` : nm) + dtag + dtd;
+        return (Number.isFinite(cv) && cv !== k ? `${nm}<span class="muted">·连${cv}</span>` : nm) + dtag + dtd + boardBadge(c);
       });
       return `<tr><td>${k} 板</td><td>${arr.length} 只</td><td>${shown.join('、')}${arr.length > 8 ? ` 等 ${arr.length} 只` : ''}</td></tr>`;
     }).join('');
@@ -2748,6 +2756,22 @@ function renderBreadth(b, errMsg) {
     + `<td class="bw-updown"><span class="pos">${r.up ?? '—'}</span>/<span class="neg">${r.down ?? '—'}</span></td>`
     + `</tr>`).join('');
 
+  // 板块拆分（创业/科创/主板/北交）：满足「广度指标按板块拆分」需求；与总量同源同口径。
+  const BOARD_LABEL = { main: '主板', gem: '创业板', star: '科创板', bj: '北交所', other: '其他' };
+  const bb = snap.boardBreakdown;
+  const boardRows = bb ? ['main', 'gem', 'star', 'bj', 'other'].filter((k) => bb[k] && bb[k].scanned > 0).map((k) => {
+    const x = bb[k];
+    const ma = x.aboveMa && x.aboveMa.den ? `${x.aboveMa.n}/${x.aboveMa.den}` : '—';
+    const up = x.updown ? (x.updown.up ?? 0) : 0;
+    const dn = x.updown ? (x.updown.down ?? 0) : 0;
+    return `<tr><td>${BOARD_LABEL[k]}</td><td class="bw-num">${ma}</td>`
+      + `<td class="bw-updown"><span class="pos">${up}↑</span>/<span class="neg">${dn}↓</span></td></tr>`;
+  }).join('') : '';
+  const bwBoardHtml = boardRows
+    ? `<div class="bw-board"><div class="bw-board-h">板块拆分（创业板/科创板 · 主板/北交）</div>`
+      + `<table class="bw-table bw-board-table"><thead><tr><th>板块</th><th>站上20日线 n/den</th><th>涨跌家数 ↑/↓</th></tr></thead><tbody>${boardRows}</tbody></table></div>`
+    : '';
+
   box.innerHTML = `<details class="bw-fold" open>`
     + `<summary><b>市场宽度（结构）</b>`
     + `<span class="bw-chip ${esc(tone)}">${esc(v.label || '未评估')}</span>`
@@ -2755,6 +2779,7 @@ function renderBreadth(b, errMsg) {
     + `</summary>`
     + `<div class="bw-body">`
     + `<div class="bw-kpis">${kpis}</div>`
+    + bwBoardHtml
     + (rows ? `<table class="bw-table"><thead><tr><th>日期</th><th>站上20日线</th><th>新高</th><th>新低</th><th>破净</th><th>涨/跌</th></tr></thead><tbody>${rows}</tbody></table>` : '')
     + `<div class="bw-note muted">口径：由全市场真实前复权日K计算（前复权是本口径的正确性前提——不复权时除权日的假暴跌会同时打掉均线并伪造新低）。`
     + `占比分母是当次扫描的有效样本数，不是全市场总数。`

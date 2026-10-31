@@ -1106,6 +1106,14 @@
       : '<div class="t-empty">当日无连板梯队数据</div>', 't-c12'));
 
     // 连板天梯表 —— 点任一票 → LINK 总线 → 打开个股详情抽屉（K 线 + AI 判词 + 排雷）
+    // 板块徽章：与 paper.js boardOf 同源前缀口径；仅创业/科创/北交打标签（主板不打，减噪音）
+    const boardBadge = (code) => {
+      const c = String(code || '');
+      if (/^68/.test(c)) return '<span class="t-tag-board star" title="科创板">科创</span>';
+      if (/^30/.test(c)) return '<span class="t-tag-board gem" title="创业板">创业</span>';
+      if (/^(8|4|92)/.test(c)) return '<span class="t-tag-board bj" title="北交所">北交</span>';
+      return '';
+    };
     const rows = sorted.map((x) => {
       const rs = String(x.reason || '—');
       const conf = x.confidence != null ? x.confidence * 100 : null;
@@ -1113,7 +1121,7 @@
       const confCls = conf == null ? '' : conf >= 80 ? 'is-crit' : conf >= 60 ? 'is-warn' : '';
       return `<tr data-code="${esc(x.code)}" data-name="${esc(x.name || '')}">
         <td>${esc(x.code)}</td>
-        <td>${esc(x.name || '—')}</td>
+        <td>${esc(x.name || '—')}${boardBadge(x.code)}</td>
         <td class="up">${fmtInt(x.lb)}</td>
         <td>${esc(x.hybk || '—')}</td>
         <td>${x.is_pure_sentiment ? '<span class="t-tag-ai">纯情绪</span> ' : ''}${esc(x.logic_type || '—')}</td>

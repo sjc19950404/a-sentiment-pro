@@ -140,6 +140,7 @@ export function stockBreadth(o = {}) {
  */
 function updownFromKline(list, th) {
   let up = 0, down = 0, flat = 0, n = 0;
+  const byBoard = { main: blankUpdown(), gem: blankUpdown(), star: blankUpdown(), bj: blankUpdown(), other: blankUpdown() };
   for (const s of list) {
     const c = num(s && s.close);
     const cs = s && Array.isArray(s.closes) ? s.closes.map(num).filter((v) => v != null) : [];
@@ -147,9 +148,11 @@ function updownFromKline(list, th) {
     const prev = cs[cs.length - 2];
     const chg = c - prev;
     n++;
-    if (chg > 0) up++; else if (chg < 0) down++; else flat++;
+    const b = boardFromCode(s.code);
+    if (chg > 0) { up++; byBoard[b].up++; } else if (chg < 0) { down++; byBoard[b].down++; } else { flat++; byBoard[b].flat++; }
+    byBoard[b].n++;
   }
-  return { up, down, flat, n };
+  return { up, down, flat, n, byBoard };
 }
 
 /** 北交所 / 新三板代码（剔除出"沪深两市"口径）：8xxxxx / 4xxxxx / 92xxxx。
@@ -157,6 +160,30 @@ function updownFromKline(list, th) {
 function isBJCode(code) {
   const c = String(code || '');
   return /^8/.test(c) || /^4/.test(c) || /^92/.test(c);
+}
+
+/** 板块归类（宽度指标按板块拆分用，轻量实现、不依赖 paper.js 以保持本模块零 IO）。
+ *  与 isBJCode 同源，但额外区分 创业/科创，满足「创业/科创个股打标签」需求。
+ *  @returns {'main'|'gem'|'star'|'bj'|'other'}
+ *    main = 主板（60/00，含 002 中小板）；gem = 创业板（30）；star = 科创板（68）；
+ *    bj = 北交所（8/4/92）；other = 基金/可转债/B股/未知（不参与主板口径，但仍计入总量以保持自洽）。 */
+function boardFromCode(code) {
+  const c = String(code || '');
+  if (/^(8|4|92)/.test(c)) return 'bj';
+  if (/^68/.test(c)) return 'star';
+  if (/^30/.test(c)) return 'gem';
+  if (/^(60|00)/.test(c)) return 'main';
+  return 'other';
+}
+
+/** 板块拆解的零值骨架 */
+function blankBoard() {
+  return { n: 0, maNum: 0, maDen: 0, hiNum: 0, hiDen: 0, loNum: 0, brokenNum: 0, brokenDen: 0 };
+}
+
+/** 单只票按板块把「涨跌」归桶（与 updownFromKline 同口径，仅多一层按板块分桶）。 */
+function blankUpdown() {
+  return { up: 0, down: 0, flat: 0, n: 0 };
 }
 
 export function computeBreadth(stocks, opts = {}) {
@@ -169,15 +196,19 @@ export function computeBreadth(stocks, opts = {}) {
   let loDen = 0, loNum = 0;        // 新低
   let pbDen = 0, pbNum = 0;        // 破净
   const maMiss = [], hiMiss = [], pbMiss = [];
+  // 按板块拆分（创业/科创/主板/北交）：与总量同源同口径，仅多一层分桶
+  const bb = { main: blankBoard(), gem: blankBoard(), star: blankBoard(), bj: blankBoard(), other: blankBoard() };
 
   for (const s of list) {
     if (!s || !s.code) continue;
+    const bd = boardFromCode(s.code);
     const b = stockBreadth(s);
     if (b.barsUsed >= th.MA_WINDOW) {
       scanned++;
-      if (b.aboveMa != null) { maDen++; if (b.aboveMa) maNum++; } else maMiss.push(s.code);
-      if (b.isNewHigh != null) { hiDen++; if (b.isNewHigh) hiNum++; if (b.isNewLow) loNum++; } else hiMiss.push(s.code);
-      if (b.broken != null) { pbDen++; if (b.broken) pbNum++; } else pbMiss.push(s.code);
+      bb[bd].n++;
+      if (b.aboveMa != null) { maDen++; bb[bd].maDen++; if (b.aboveMa) { maNum++; bb[bd].maNum++; } } else maMiss.push(s.code);
+      if (b.isNewHigh != null) { hiDen++; bb[bd].hiDen++; if (b.isNewHigh) { hiNum++; bb[bd].hiNum++; } if (b.isNewLow) { loNum++; bb[bd].loNum++; } } else hiMiss.push(s.code);
+      if (b.broken != null) { pbDen++; bb[bd].brokenDen++; if (b.broken) { pbNum++; bb[bd].brokenNum++; } } else pbMiss.push(s.code);
     } else {
       maMiss.push(s.code);
     }
@@ -215,6 +246,24 @@ export function computeBreadth(stocks, opts = {}) {
     maVerdict = maRatio > th.MA_BULL ? 'bull' : maRatio < th.MA_BEAR ? 'bear' : 'neutral';
   }
 
+  // ── 按板块拆分（创业/科创/主板/北交）────────────────────────────────────────────
+  // 与总量同源同口径，仅多一层按代码前缀分桶；updown 取全市场（含北交所）K 线自算口径，
+  // 与 aboveMa 等总量口径一致（总量循环本就含北交所）。
+  const mkBoardMetric = (n2, d) => ({ n: n2, den: d, ratio: d >= 1 ? Math.round((n2 / d) * 10000) / 10000 : null });
+  const boardBreakdown = {};
+  for (const k of ['main', 'gem', 'star', 'bj', 'other']) {
+    const x = bb[k];
+    const u = (allUpdown.byBoard && allUpdown.byBoard[k]) || blankUpdown();
+    boardBreakdown[k] = {
+      scanned: x.n,
+      aboveMa: mkBoardMetric(x.maNum, x.maDen),
+      newHigh: mkBoardMetric(x.hiNum, x.hiDen),
+      newLow: mkBoardMetric(x.loNum, x.hiDen),
+      brokenPb: mkBoardMetric(x.brokenNum, x.brokenDen),
+      updown: { up: u.up, down: u.down, flat: u.flat, n: u.n },
+    };
+  }
+
   return {
     // 有效样本
     scanned,
@@ -234,6 +283,9 @@ export function computeBreadth(stocks, opts = {}) {
     // 两套 scope 字段显式标注统计范围，渲染层/报告文案须与数据对应、不得错配。
     updownAll,
     updownCn,
+    // 按板块拆分（创业/科创/主板/北交）——满足「广度指标按板块拆分」需求；与总量同源同口径，
+    // 仅多一层按代码前缀分桶。updown 取全市场（含北交所）K 线自算口径，与 aboveMa 等总量口径一致。
+    boardBreakdown,
     // 分化的直观量化：新高与新低同时高企 → 结构市。
     divergence: (reliable && hiDen >= 1)
       ? Math.round(((hiNum + loNum) / hiDen) * 10000) / 10000 : null,

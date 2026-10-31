@@ -16,7 +16,7 @@
 //
 // 接线：scripts/build_ai_report.mjs（CI 归档轨）与页面 S3（即时轨）调用同一
 //   组生成函数；本模块自身零 IO，测试用内联夹具 + 真实档冒烟双轨覆盖。
-import { accountStats, DEFAULT_SLIP, HARD_STOP_LOSS, exportAccount } from './paper.js';
+import { accountStats, DEFAULT_SLIP, HARD_STOP_LOSS, exportAccount, boardOf } from './paper.js';
 import { guardModuleFreshness } from './module_freshness.js';
 import { stalePainReason } from './pain.js';
 import { todayBeijing } from './util.js';
@@ -1101,6 +1101,7 @@ export function buildIntradayPool(intraday, opts = {}) {
     return { ...c, score };
   }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || b.mn - a.mn).slice(0, F.top);
   const pool = scored.map(({ r, chg, lb, mn, tags, score }) => {
+    const bo = boardOf(String(r.code)); // 板块识别（含 创业板/科创板 标签）
     const pe = isValidNum(r.pe_ttm) ? +r.pe_ttm : null;
     const pb = isValidNum(r.pb) ? +r.pb : null;
     // 数据完整度（2026-10-09 用户指令）：题材/估值/资金三要素逐项清点，缺啥标啥——
@@ -1113,6 +1114,8 @@ export function buildIntradayPool(intraday, opts = {}) {
     return {
       code: String(r.code),
       name: isValidText(r.name), // 空名 → null 渲染 —，不脑补
+      board: bo.board,        // 板块键：main/gem/star/bj/fund/...（创业=gem，科创=star）
+      boardLabel: bo.label,   // 板块标签：创业板/科创板/沪市主板/...（创业/科创个股在此显式打标签）
       score,
       themes: tags.length ? tags : null, // 题材：接口无标签 = null（渲染 —），不猜行业
       selection_reason: `量比 ${lb}`, // 推送行紧凑（口径在标题行；主力净流入在 fund_flow_note，页面完整版可见）
@@ -1155,6 +1158,7 @@ export function buildIntradayPool(intraday, opts = {}) {
     return { ...c, streak_score };
   }).sort((a, b) => (b.streak_score ?? -1) - (a.streak_score ?? -1) || b.lbc - a.lbc || b.mn - a.mn).slice(0, SF.top);
   const streak_pool = streakScored.map(({ r, chg, lb, mn, lbc, fund, streak_score, tags }) => {
+    const bo = boardOf(String(r.code)); // 板块识别（含 创业板/科创板 标签）
     const pe = isValidNum(r.pe_ttm) ? +r.pe_ttm : null;
     const pb = isValidNum(r.pb) ? +r.pb : null;
     const missing = [
@@ -1166,6 +1170,8 @@ export function buildIntradayPool(intraday, opts = {}) {
     return {
       code: String(r.code),
       name: isValidText(r.name), // 空名 → null 渲染 —，不脑补
+      board: bo.board,        // 板块键：main/gem/star/bj/fund/...（创业=gem，科创=star）
+      boardLabel: bo.label,   // 板块标签：创业板/科创板/沪市主板/...（创业/科创个股在此显式打标签）
       score: null, // 趋势池综合分（量价/资金流）不套连板池——拆分即互不复用（10-09 事故根因）
       streak_score, // 连板池独立梯队分（连板高度 0.6 + 主力 0.4，缺席重归一）
       seal_amount: fund, // 封单资金（元，东财涨停池 fund 原值）——「封单质量」唯一真实源；缺席 null 渲染 —

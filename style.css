@@ -1130,6 +1130,10 @@ tr.empty-row td { color: var(--muted); padding: 8px 8px; }
 .bw-updown .neg { color: var(--down); }
 .bw-note { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line);
   font-size: 11px; line-height: 1.6; }
+/* 板块拆分表（创业板/科创板 · 主板/北交） */
+.bw-board { margin: 8px 0 4px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.02); }
+.bw-board-h { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+.bw-board-table { margin-top: 0; }
 
 /* ── 数据质量面板（#3 异常值/脏数据）────────────────────────────────────────
    与宽度面板同款结构，但状态语义不同：
@@ -1866,6 +1870,15 @@ body::before {
 .tag.risk { background: rgba(240, 97, 109, .18); color: var(--up); font-weight: 700; }
 .tag.glm { background: rgba(176, 124, 255, .18); color: var(--glm); font-weight: 700; }
 .pk-tag.glm { background: rgba(176, 124, 255, .16); color: var(--glm); }
+/* 板块徽章：创业/科创/北交（与 paper.js boardOf 同源口径；主板不打，减噪音） */
+.tag.board { font-weight: 700; }
+.tag.board.gem { background: rgba(232, 132, 60, .20); color: var(--hot); }   /* 创业板 橙 */
+.tag.board.star { background: rgba(64, 169, 255, .20); color: #40a9ff; }    /* 科创板 蓝 */
+.tag.board.bj { background: rgba(139, 148, 158, .20); color: var(--muted); } /* 北交 灰 */
+.t-tag-board { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 8px; font-size: 10px; font-weight: 700; }
+.t-tag-board.gem { background: rgba(232, 132, 60, .20); color: var(--hot); }
+.t-tag-board.star { background: rgba(64, 169, 255, .20); color: #40a9ff; }
+.t-tag-board.bj { background: rgba(139, 148, 158, .20); color: var(--muted); }
 .pk-tag.risk { background: rgba(240, 97, 109, .16); color: var(--up); }
 /* 红牌拦截横幅（模拟交易台·AI 预检拒单） */
 .glm-banner { border: 1px solid rgba(240, 97, 109, .5); background: rgba(240, 97, 109, .12);

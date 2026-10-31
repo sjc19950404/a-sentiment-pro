@@ -37,6 +37,8 @@
 //   LOSS_WARN_RATIO 亏钱效应分级告警线：昨涨停今日翻绿比例 ≥ 0.5 视为"接力受损"。
 //                  半数为界，直观且稳健（实测 9-30 = 49%、9-29 = 52%，正好卡在边界，
 //                  说明这个阈值对真实市场有分辨力，不是拍脑袋）。
+import { boardOf } from './paper.js'; // 板块识别（与盘面池/广度口径一致：创业板/科创板标签）
+
 export const PAIN_THRESHOLDS = {
   BIG_LOSS_PCT: -7,
   AMPLITUDE_PCT: 15,
@@ -162,7 +164,8 @@ export function advanceFailure(curQuotes, prevZtLb, opts = {}) {
     if (c == null) continue; // 缺行情不计入分母（避免把"没数据"当"失败"）
     const kept = c >= ZT_THRESHOLD_PCT; // 今日是否仍封板
     const bucket = n >= 4 ? '4+' : String(n);
-    tiers[bucket].push({ code: String(code), lb: n, chg: r2(c), kept });
+    const bo = boardOf(String(code)); // 板块识别（创业板/科创板标签）
+    tiers[bucket].push({ code: String(code), lb: n, chg: r2(c), kept, board: bo.board, boardLabel: bo.label });
   }
 
   const summarize = (rows) => {
