@@ -2,10 +2,10 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-10-30",
- "generatedAt": "2026-10-31T18:30:50.627+08:00",
+ "generatedAt": "2026-11-01T18:30:42.874+08:00",
  "model": "glm-4-flash",
  "sentiment": -0.3,
- "confidence": 0.7,
+ "confidence": 0.8,
  "reason": "市场涨停家数少于跌停家数，炸板率较高，亏钱效应明显，市场情绪偏负面。",
  "events": [
   {
@@ -33,28 +33,28 @@
    "note": "业绩环增带动股价上涨"
   },
   {
-   "type": "行业催化",
-   "target": "固态电池",
+   "type": "业绩预告",
+   "target": "上海洗霸",
    "tone": "positive",
-   "note": "固态电池相关概念股上涨"
+   "note": "固态电池和数据中心液冷概念带动股价上涨"
   },
   {
-   "type": "行业催化",
-   "target": "农批市场",
+   "type": "业绩预告",
+   "target": "浙江东日",
    "tone": "positive",
-   "note": "农批市场相关概念股上涨"
+   "note": "农批市场和温州国资概念带动股价上涨"
   },
   {
-   "type": "行业催化",
-   "target": "医药外包",
+   "type": "业绩预告",
+   "target": "百花医药",
    "tone": "positive",
-   "note": "医药外包相关概念股上涨"
+   "note": "医药外包和控制权变更带动股价上涨"
   },
   {
-   "type": "行业催化",
-   "target": "脑机接口",
+   "type": "业绩预告",
+   "target": "黑牡丹",
    "tone": "positive",
-   "note": "脑机接口相关概念股上涨"
+   "note": "牛仔布和新型城镇化概念带动股价上涨"
   }
  ],
  "inputDigest": {
