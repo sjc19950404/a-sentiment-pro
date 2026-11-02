@@ -383,8 +383,10 @@ check('研判报告·因子分解已降级（标注不参与档位判定）',
     const addsArchive = /git add[^\n]*archive\.json/.test(jobBody);
     check('CI：盘中 job 绝不提交 archive.json（盘中值不得进入收盘存档）',
       !addsArchive, addsArchive ? '盘中 job 提交了 archive.json' : '');
-    check('CI：盘中 job 有独立 cron（每 30 分钟，仅工作日）',
-      /cron:\s*'0,30 1-7 \* \* 1-5'/.test(wf), '');
+    // 盘中调度已于 2026 迁树莓派 Pi（pi_run.sh），CI 不再挂盘中 cron（否则与 Pi 双跑）。
+    // 守卫改为反向钉死：daily.yml 不得含已退役的盘中 cron '0,30 1-7 * * 1-5'（防误加回导致双跑）。
+    check('CI：盘中调度已迁 Pi（CI 不再挂盘中 cron，避免与 Pi 双跑）',
+      !/cron:\s*'0,30 1-7 \* \* 1-5'/.test(wf), '');
     // 盘后 job 必须排除该 cron，否则盘中会触发完整管道
     check('CI：盘后 job 显式排除盘中 cron（否则每 30 分钟跑一次完整管道）',
       /github\.event\.schedule != '0,30 1-7 \* \* 1-5'/.test(wf), '');
@@ -590,7 +592,10 @@ check('布局：详情抽屉与遮罩骨架存在（初始关闭）',
   !!$('drawer') && !!$('drawerMask') && !!$('dwTitle') && !!$('dwBody') && !drawerOpen(), '');
 check('布局：个股表已升级为整行卡片且含工具条（视图切换/搜索/计数）',
   !!$('hotTabs') && !!$('hotSearch') && !!$('hotCount') && !!$('hotHead'), '');
-check('布局：报告卡含目录与折叠控制', !!$('briefNav') && !!$('briefToggle'), '');
+// 「全部折叠」按钮（briefToggle）已于 2026-10-25 移除，折叠改为逐段点标题（.bf-h[data-act=bftoggle]）。
+// 守卫相应改为：目录（briefNav）存在 + 每段标题都是折叠开关。
+check('布局：报告卡含目录且每段标题可折叠（data-act=bftoggle）',
+  !!$('briefNav') && window.document.querySelectorAll('#briefBody .bf-sec .bf-h[data-act="bftoggle"]').length === EXPECTED_SECTIONS, '');
 // 1) 表格行 → 个股详情
 const firstRow = $('hotTable').querySelector('tbody tr.clickable');
 const firstCode = firstRow?.dataset.code || '';
@@ -774,10 +779,13 @@ if (c779) {
 check(`布局：报告目录 chip 数 = 段落数（${EXPECTED_SECTIONS}）`,
   $('briefNav').querySelectorAll('button[data-act="brsec"]').length === EXPECTED_SECTIONS,
   `${$('briefNav').querySelectorAll('button').length} 个`);
-clickEl($('briefToggle'));
+// 「一键折叠全部」按钮（briefToggle）已移除，折叠现由逐段点标题（.bf-h[data-act=bftoggle]）完成。
+// 守卫相应改为：点击每段标题折叠全部 → 段数齐 = EXPECTED_SECTIONS；再点一次展开全部。
+const foldHeaders = [...window.document.querySelectorAll('#briefBody .bf-sec .bf-h[data-act="bftoggle"]')];
+foldHeaders.forEach((h) => clickEl(h));
 check(`交互：一键折叠报告全部 ${EXPECTED_SECTIONS} 段`,
   window.document.querySelectorAll('#briefBody .bf-sec.collapsed').length === EXPECTED_SECTIONS, '');
-clickEl($('briefToggle'));
+foldHeaders.forEach((h) => clickEl(h));
 check('交互：一键展开报告全部段落',
   window.document.querySelectorAll('#briefBody .bf-sec.collapsed').length === 0, '');
 
@@ -1186,10 +1194,16 @@ escClose();
   //   · ./lhb.js 的 isNewStock / RANGE_BOARD_RE → 取 window.__lhb__
   //   · ./seats.js 的 buySeatsOf / sellSeatsOf / sideStats / seatTypeOf → 取 window.__seats__
   // 包 IIFE：lhbfilter 与 paper.js 存在同名内部辅助（finite / r2 / r3），平铺会「Identifier already declared」。
+  // src/admission.js（准入/风险名/过滤）：零依赖纯函数 ESM。lhbfilter.js、picks.js import 它，
+  //   loader 此前漏打包，残留 import 致 window.eval 炸。按 lhbBundle 同模式挂 window.__admission__。
+  const admissionBundle = `window.__admission__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/admission.js'), 'utf8').replace(/^export\s+/gm, '')
+    + '\nreturn { ETF_ALLOWLIST, isRiskName, isAdmissible, filterAdmissible };\n})();';
   const lhbFilterBundle = `window.__lhbfilter__ = (function(){\n`
     + readFileSync(join(ROOT, 'src/lhbfilter.js'), 'utf8')
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhb\.js';/m, 'const { isNewStock, RANGE_BOARD_RE } = window.__lhb__;')
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/seats\.js';/m, 'const { buySeatsOf, sellSeatsOf, sideStats, seatTypeOf } = window.__seats__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/admission\.js';/m, 'const { isAdmissible } = window.__admission__;')
       .replace(/^export\s+/gm, '')
     + '\nreturn { filterOne, filterBatch, featuresOf, themeStrengthOf, BUCKET, REJECT_LHB, SKIPPED_RULES,'
     + ' MAX_SHARE_OF_MARKET, MAX_TOP3_CONC, MAX_TOP3_CONC_STRICT, ADMIT, THEME_FULL_PCT, LHBFILTER_VERSION,'
@@ -1238,6 +1252,8 @@ escClose();
         'const { predictPicks, probBandText, streakBandText, streakTagText, PREDICT_VERSION, BASELINE_UP, STREAK_BASELINE } = window.__predict__;')
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/main_theme\.js';/m,
         'const { clusterThemes, classifyThemeStrength } = window.__maintheme__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/admission\.js';/m,
+        'const { isAdmissible, isRiskName, filterAdmissible } = window.__admission__;')
       .replace(/^export\s+/gm, '')
     + '\nreturn { marketTier, TIER_THRESHOLDS, POSITION_TIERS, recommendPicks, PICK_TOP_N, SCORE_WEIGHTS, suggestWeight, NET_OUTFLOW_TAG };\n})();';
   // paper_ui.js 直接调用 recommendPicks / PICK_TOP_N / SCORE_WEIGHTS，故从 window.__picks__ 解构回作用域
@@ -1322,7 +1338,7 @@ escClose();
     return null;
   }`;
   try {
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${mainThemeBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${admissionBundle}\n${lhbFilterBundle}\n${predictBundle}\n${mainThemeBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n})();`);
   } catch (e) {
     check('模拟交易引擎模块在 jsdom 中可加载（台面 UI 已下线，引擎守卫保留）', false, e.message);
   }
@@ -1375,7 +1391,7 @@ escClose();
       screenTitles.length === EXPECTED_SECTIONS && rep.sections.every((s, i) => s.title === screenTitles[i]),
       `屏幕 ${screenTitles.length} 段 / 导出 ${rep.sections.length} 段`);
     check('报告导出：屏幕段序号为公文「一、」（圆形序号已退役）',
-      screenNos.join('') === ['一、', '二、', '三、', '四、', '五、', '六、', '七、'].slice(0, EXPECTED_SECTIONS).join(''),
+      screenNos.join('') === ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'].slice(0, EXPECTED_SECTIONS).map((n) => n + '、').join(''),
       screenNos.join(' ') || '未找到 .bf-sec-no');
     check('报告导出：导出标题不含序号（序号由版式层统一重加，防双序号）',
       rep.sections.every((s) => !/^[一二三四五六七八九十]+、/.test(s.title) && !/[①②③④⑤⑥⑦]/.test(s.title)),
