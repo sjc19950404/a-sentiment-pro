@@ -2,59 +2,59 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-02",
- "generatedAt": "2026-11-02T22:15:25.644+08:00",
+ "generatedAt": "2026-11-03T00:43:20.146+08:00",
  "model": "glm-4-flash",
- "sentiment": 0.8,
- "confidence": 0.9,
- "reason": "市场整体情绪积极，涨停家数远超跌停家数，成交额放大，亏钱效应较低，强势股表现活跃。",
+ "sentiment": 0.9,
+ "confidence": 0.8,
+ "reason": "市场整体情绪积极，涨停家数远超跌停家数，强势股表现活跃，多只股票因业绩、科技、AI等利好消息上涨。",
  "events": [
   {
    "type": "业绩预告",
    "target": "ST豆神",
    "tone": "positive",
-   "note": "业绩大幅增长带动股价上涨"
+   "note": "业绩预告显示扭亏为盈，带动股价上涨。"
+  },
+  {
+   "type": "投资合作",
+   "target": "七匹狼",
+   "tone": "positive",
+   "note": "投资科技和基金备案消息提振股价。"
+  },
+  {
+   "type": "三季报减亏",
+   "target": "*ST棒杰",
+   "tone": "positive",
+   "note": "三季报减亏消息带动股价上涨。"
   },
   {
    "type": "行业催化",
    "target": "精密零组件",
    "tone": "positive",
-   "note": "新晋题材带动相关个股活跃"
+   "note": "行业催化带动相关股票上涨。"
   },
   {
-   "type": "行业催化",
+   "type": "政策利好",
+   "target": "国企改革",
+   "tone": "positive",
+   "note": "国企改革政策利好相关股票。"
+  },
+  {
+   "type": "技术进步",
    "target": "机器人布局",
    "tone": "positive",
-   "note": "机器人概念持续升温"
+   "note": "机器人布局技术进步带动相关股票上涨。"
   },
   {
-   "type": "行业催化",
+   "type": "市场热点",
    "target": "光通信",
    "tone": "positive",
-   "note": "光通信行业延续活跃"
+   "note": "光通信市场热点带动相关股票上涨。"
   },
   {
-   "type": "行业催化",
-   "target": "业绩线",
+   "type": "AI概念",
+   "target": "AI短剧+政务AI+智算中心",
    "tone": "positive",
-   "note": "业绩预增概念持续受到关注"
-  },
-  {
-   "type": "高管变动",
-   "target": "凯撒文化",
-   "tone": "positive",
-   "note": "实控人变更可能带来新的发展机遇"
-  },
-  {
-   "type": "政策",
-   "target": "AI短剧",
-   "tone": "positive",
-   "note": "AI短剧题材受到市场追捧"
-  },
-  {
-   "type": "行业催化",
-   "target": "半导体物流",
-   "tone": "positive",
-   "note": "半导体物流概念股表现强劲"
+   "note": "AI概念持续发酵，相关股票表现活跃。"
   }
  ],
  "inputDigest": {
