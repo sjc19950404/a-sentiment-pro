@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-10-30",
- "generatedAt": "2026-11-01T18:30:42.874+08:00",
+ "asOfDate": "2026-11-02",
+ "generatedAt": "2026-11-02T22:15:25.644+08:00",
  "model": "glm-4-flash",
- "sentiment": -0.3,
- "confidence": 0.8,
- "reason": "市场涨停家数少于跌停家数，炸板率较高，亏钱效应明显，市场情绪偏负面。",
+ "sentiment": 0.8,
+ "confidence": 0.9,
+ "reason": "市场整体情绪积极，涨停家数远超跌停家数，成交额放大，亏钱效应较低，强势股表现活跃。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "新乳业",
+   "target": "ST豆神",
    "tone": "positive",
-   "note": "三季报增长带动股价上涨"
+   "note": "业绩大幅增长带动股价上涨"
   },
   {
-   "type": "业绩预告",
-   "target": "巴比食品",
+   "type": "行业催化",
+   "target": "精密零组件",
    "tone": "positive",
-   "note": "三季报增长带动股价上涨"
+   "note": "新晋题材带动相关个股活跃"
   },
   {
-   "type": "业绩预告",
-   "target": "首旅酒店",
+   "type": "行业催化",
+   "target": "机器人布局",
    "tone": "positive",
-   "note": "三季报净利增长带动股价上涨"
+   "note": "机器人概念持续升温"
   },
   {
-   "type": "业绩预告",
-   "target": "泸州老窖",
+   "type": "行业催化",
+   "target": "光通信",
    "tone": "positive",
-   "note": "业绩环增带动股价上涨"
+   "note": "光通信行业延续活跃"
   },
   {
-   "type": "业绩预告",
-   "target": "上海洗霸",
+   "type": "行业催化",
+   "target": "业绩线",
    "tone": "positive",
-   "note": "固态电池和数据中心液冷概念带动股价上涨"
+   "note": "业绩预增概念持续受到关注"
   },
   {
-   "type": "业绩预告",
-   "target": "浙江东日",
+   "type": "高管变动",
+   "target": "凯撒文化",
    "tone": "positive",
-   "note": "农批市场和温州国资概念带动股价上涨"
+   "note": "实控人变更可能带来新的发展机遇"
   },
   {
-   "type": "业绩预告",
-   "target": "百花医药",
+   "type": "政策",
+   "target": "AI短剧",
    "tone": "positive",
-   "note": "医药外包和控制权变更带动股价上涨"
+   "note": "AI短剧题材受到市场追捧"
   },
   {
-   "type": "业绩预告",
-   "target": "黑牡丹",
+   "type": "行业催化",
+   "target": "半导体物流",
    "tone": "positive",
-   "note": "牛仔布和新型城镇化概念带动股价上涨"
+   "note": "半导体物流概念股表现强劲"
   }
  ],
  "inputDigest": {
-  "themes": 48,
+  "themes": 121,
   "hotListed": 15,
-  "ztCount": 47,
-  "emotionValue": 50.6,
-  "painVerdict": "多空拉锯（昨涨停今日翻绿 51%、高位板晋级失败 70%，追高盈亏各半）"
+  "ztCount": 125,
+  "emotionValue": 85.4,
+  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 34%、高位板晋级失败 44%，赚钱效应占优）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }
