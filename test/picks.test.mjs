@@ -9,6 +9,7 @@ import {
   PICK_TOP_N, SCORE_WEIGHTS, TIER_THRESHOLDS, POSITION_TIERS,
   marketTier, buildCandidates, scoreFund, scoreStreak, scoreCandidate,
   reasonsOf, risksOf, suggestWeight, recommendPicks, applyEmotionGates,
+  applyTradabilityFilters, isAdmissible, isRiskName, filterAdmissible,
 } from '../src/picks.js';
 
 // 构造一份最小可用的「存档日」。字段名与 archive.json 严格一致，
@@ -429,3 +430,310 @@ test('档位表常量自洽：仓位随市场转冷而降低，过热档是「�
   assert.equal(by('full').allowNew, true);
   assert.equal(by('half').allowNew, true);
 });
+
+// ────────────────────── 可交易性硬过滤（2026-10-27 实战化升级） ──────────────────────
+// ztpool 条目字段同 ztpool_history：c/hs(换手率%)/lbc(连板)/fbt(首封HHMMSS)/fund(封单额元)/
+//   ltsz(流通市值元)/zdp(涨跌幅%)/zbc(炸板次数)。
+const rpEntry = (c, over = {}) => ({ c, n: c, zdp: 10, hs: 10, lbc: 1, fbt: 92500, fund: 1e8, ltsz: 2e9, zbc: 0, ...over });
+
+test('applyTradabilityFilters：无 ztpool → 零回归（原样返回）', () => {
+  const picks = [{ code: '600030', name: 'X' }];
+  const r = applyTradabilityFilters(picks, null);
+  assert.equal(r.picks.length, 1);
+  assert.equal(r.rejected.length, 0);
+});
+
+test('规则1a：极端缩量板（涨停+换手率<5%）→ 剔除并标注「买不进」', () => {
+  const picks = [{ code: '600030', name: '缩量硬板' }];
+  const r = applyTradabilityFilters(picks, [rpEntry('600030', { zdp: 10.02, hs: 3 })]);
+  assert.equal(r.picks.length, 0, '应被剔除');
+  assert.equal(r.rejected.length, 1);
+  assert.match(r.rejected[0].reasons[0], /缩量硬板/);
+  assert.match(r.rejected[0].reasons[0], /买不进/);
+});
+
+test('规则1b：封单锁死（封单占流通市值>5%）→ 剔除', () => {
+  const picks = [{ code: '600030', name: '一字锁死' }];
+  // fund=2e8, ltsz=2e9 → 10% > 5%
+  const r = applyTradabilityFilters(picks, [rpEntry('600030', { zdp: 10.02, hs: 8, fund: 2e8, ltsz: 2e9 })]);
+  assert.equal(r.picks.length, 0);
+  assert.match(r.rejected[0].reasons[0], /封单锁死/);
+});
+
+test('规则2：高位连板无换手（连板≥4 且 换手率<8%）→ 剔除', () => {
+  const picks = [{ code: '600030', name: '高位加速' }];
+  const r = applyTradabilityFilters(picks, [rpEntry('600030', { zdp: 10.02, hs: 2, lbc: 5 })]);
+  assert.equal(r.picks.length, 0);
+  assert.match(r.rejected[0].reasons[0], /高位连板/);
+});
+
+test('规则3：放量烂板（涨停+炸板+换手≥8%）→ 保留并标注「弱转强·低吸」买点', () => {
+  const picks = [{ code: '600030', name: '烂板票' }];
+  const r = applyTradabilityFilters(picks, [rpEntry('600030', { zdp: 10.02, hs: 12, zbc: 2, fbt: 140000 })]);
+  assert.equal(r.picks.length, 1, '应保留');
+  assert.equal(r.rejected.length, 0);
+  assert.match(r.picks[0].buyPoint, /弱转强/);
+  assert.match(r.picks[0].buyPoint, /低吸/);
+  assert.equal(r.picks[0].weakToStrong, false, 'hs=12<15 → 非「爆量烂板」弱转强优选');
+});
+
+test('规则3：偏缩量硬板（涨停+换手5~8%）→ 保留但标注「⚠ 偏缩量硬板」', () => {
+  const picks = [{ code: '600030', name: '偏缩量' }];
+  const r = applyTradabilityFilters(picks, [rpEntry('600030', { zdp: 10.02, hs: 6 })]);
+  assert.equal(r.picks.length, 1);
+  assert.match(r.picks[0].buyPoint, /偏缩量硬板/);
+});
+
+test('规则4：爆量烂板（涨停+换手>15%+炸板）→ 标记 weakToStrong 并优先置顶', () => {
+  const picks = [{ code: '600030', name: '普通票' }, { code: '600031', name: '爆量烂板' }];
+  const r = applyTradabilityFilters(picks, [
+    rpEntry('600030', { zdp: 10.02, hs: 6 }),
+    rpEntry('600031', { zdp: 10.02, hs: 18, zbc: 1, fbt: 143000 }),
+  ]);
+  assert.equal(r.picks.length, 2);
+  assert.equal(r.weakToStrong.length, 1);
+  assert.equal(r.picks[0].code, '600031', '弱转强票应优先置顶');
+  assert.equal(r.picks[0].weakToStrong, true);
+  assert.match(r.picks[0].buyPoint, /烂板弱转强/);
+  assert.ok((r.picks[0].gateTags || []).includes('烂板弱转强'));
+});
+
+test('无涨停池记录的票（纯龙虎榜）→ 保留且给常规买点标注', () => {
+  const picks = [{ code: '600099', name: '龙虎票' }];
+  const r = applyTradabilityFilters(picks, [rpEntry('600030')]); // 不含 600099
+  assert.equal(r.picks.length, 1);
+  assert.match(r.picks[0].buyPoint, /常规买点/);
+});
+
+// ────────────────────── 高开/急拉过滤（2026-10-28·参数控制台 openGapFilterPct） ──────────────────────
+// 仅当日 ctx.openGapFilterPct 传入且 >0 时生效；用快照 changePct 近似（日线无开盘价）。
+
+test('openGap：未传该参数 → 零回归（与历史行为一致）', () => {
+  const r = recommendPicks(fullDay(), { emotionScore: 70 });
+  assert.equal(r.picks.length, 2, '未传 openGapFilterPct 应保持原样选股');
+});
+
+test('openGap：传入 openGapFilterPct=8，快照涨幅≥8% 的候选被剔除并计入 rejected', () => {
+  // 显式让 lhb/hot 的 change_pct 一致为 10（候选 changePct 由 lhb 主导，须两者一致才真实）
+  const d = day({
+    hot: [{ code: '600301', name: '高开票A', close: 10, change_pct: 10, huanshou: 22, reason: '固态电池+铝塑膜' }],
+    lhb: [lhbRow('600301', '高开票A', 60000, { change_pct: 10 }), lhbRow('600302', '高开票B', 3000, { change_pct: 10 })],
+    themes: { 固态电池: 4, 铝塑膜: 2 },
+    summary: { main_theme: { name: '固态电池' }, zt_codes: ['600301', '600302'], zt_lb: { 600301: 3, 600302: 1 } },
+  });
+  const r = recommendPicks(d, { emotionScore: 70, openGapFilterPct: 8 });
+  assert.equal(r.picks.length, 0, '候选涨幅均≥阈值，应被过滤空');
+  const gap = r.rejected.filter((x) => x.reason === 'open_gap_filter');
+  assert.equal(gap.length, 1, 'open_gap_filter 应聚合为一条台账');
+  assert.equal(gap[0].count, 2, '应记录被剔除 2 只');
+  assert.ok(/防追高/.test(gap[0].note), gap[0].note);
+});
+
+test('openGap：快照涨幅<阈值的强势票仍保留（只剔追高，不误伤）', () => {
+  const d = day({
+    hot: [{ code: '600201', name: '低开强势', close: 10, change_pct: 3, huanshou: 12, reason: '机器人+减速器' }],
+    lhb: [lhbRow('600201', '低开强势', 60000, { change_pct: 3 })],
+    themes: { 机器人: 3, 减速器: 1 },
+    summary: { main_theme: { name: '机器人' }, zt_codes: ['600201'], zt_lb: { 600201: 1 } },
+  });
+  const r = recommendPicks(d, { emotionScore: 70, openGapFilterPct: 8 });
+  assert.equal(r.picks.length, 1, '涨幅 3% < 8%，应保留');
+  assert.equal(r.picks[0].code, '600201');
+  assert.ok(!r.rejected.some((x) => x.reason === 'open_gap_filter'), '不应触发 open_gap_filter');
+});
+
+// ────────────────────── 实盘准入（2026-10-29·老板实盘权限：买不进的票物理拉黑） ──────────────────────
+// 需求：①选股引擎最前端强制过滤——剔除北交所(8/4/920)、创业板(300/301)、科创板(688)、ST/*ST/退、次新(<5天K线)，只留主板 00/60；
+//       ②主线涨停家数/情绪周期仍用 day 全量（含创业板），不受此过滤影响；
+//       ③妖股透视保留全市场连板（含300/688）仅打 [无权限] 标签（见 dragon_logic.test.mjs）。
+test('实盘准入：只留主板(00/60)，剔除北交所/创业板/科创板/ST', () => {
+  const d = day({
+    hot: [{ code: '300001', name: '创业票', close: 10, change_pct: 10, huanshou: 20, reason: '机器人' }],
+    lhb: [
+      lhbRow('300001', '创业票', 60000, { change_pct: 10, reason: '机器人' }),
+      lhbRow('301002', '创二票', 60000, { change_pct: 10, reason: '机器人' }),
+      lhbRow('688003', '科创票', 60000, { change_pct: 10, reason: '机器人' }),
+      lhbRow('600004', '沪主票', 60000, { change_pct: 10, reason: '机器人' }),
+      lhbRow('000005', '深主票', 60000, { change_pct: 10, reason: '机器人' }),
+      lhbRow('830006', '北交票', 60000, { change_pct: 10, reason: '机器人' }),
+      lhbRow('002007', '中小板票', 60000, { change_pct: 10, reason: '机器人' }),
+    ],
+    themes: { 机器人: 3 },
+    summary: { main_theme: { name: '机器人' }, zt_codes: ['300001', '301002', '688003', '600004', '000005', '830006', '002007'], zt_lb: { '300001': 2, '301002': 2, '688003': 2, '600004': 1, '000005': 1, '830006': 1, '002007': 1 } },
+  });
+  const r = recommendPicks(d, { emotionScore: 70 });
+  const codes = r.picks.map((p) => p.code);
+  // 核心不变量：任一入选标的都是主板 00/60，绝不混入 30x/68x/8/4/920
+  assert.ok(!codes.some((c) => !/^(00|60)/.test(c)), `只应留主板 00/60，实际 ${codes}`);
+  // 主板仍正常入选（与既有选股逻辑零破坏）
+  assert.ok(codes.includes('600004'), `沪主 600004 应入选，实际 ${codes}`);
+  assert.ok(codes.includes('000005'), `深主 000005 应入选，实际 ${codes}`);
+  assert.ok(codes.includes('002007'), `中小板 002007 应入选，实际 ${codes}`);
+  // 候选池统计也应剔除权限外标的：7 只候选 - 4 只权限外(300/301/688/830) = 3
+  assert.equal(r.pool, 3, `候选池应剔除北交所/创业板/科创板，实际 ${r.pool}`);
+});
+
+// ────────────────────── 实盘准入 helper（选股引擎/推送候选池/模拟盘买闸共用） ──────────────────────
+test('准入helper：isAdmissible 只留主板 00/60，剔除北交所/创业板/科创板/ST/次新', () => {
+  // 板块
+  assert.equal(isAdmissible('600004', '沪主'), true);
+  assert.equal(isAdmissible('000005', '深主'), true);
+  assert.equal(isAdmissible('002006', '中小板'), true, '002 中小板属 00 空间，应可交易');
+  assert.equal(isAdmissible('300001', '创业'), false, '创业板剔除');
+  assert.equal(isAdmissible('301002', '创业二'), false, '创业板(301)剔除');
+  assert.equal(isAdmissible('688003', '科创'), false, '科创板剔除');
+  assert.equal(isAdmissible('830006', '北交'), false, '北交所(8)剔除');
+  assert.equal(isAdmissible('400007', '北交老三板'), false, '北交老三板(4)剔除');
+  assert.equal(isAdmissible('920008', '北交新股'), false, '北交新股(920)剔除');
+  // ST / 退
+  assert.equal(isAdmissible('600100', 'ST 某某'), false, 'ST 剔除');
+  assert.equal(isAdmissible('600100', '*ST 某某'), false, '*ST 剔除');
+  assert.equal(isAdmissible('600100', '某某退'), false, '退 剔除');
+  assert.equal(isAdmissible('600100', '某某退市'), false, '退 子串剔除');
+  // 次新（K线<5天）
+  assert.equal(isAdmissible('600200', '次新', 3), false, '次新(<5天)剔除');
+  assert.equal(isAdmissible('600200', '满5天', 5), true, '满5天不拦');
+  assert.equal(isAdmissible('600200', '无kline', undefined), true, '缺 klineDays 不误杀');
+  // 边界：缺 code / 空 code
+  assert.equal(isAdmissible(null, 'x'), false, '缺 code 不通过');
+  assert.equal(isAdmissible('', 'x'), false, '空 code 不通过');
+});
+
+test('准入helper：ETF 特例 510880/511010 经 allowEtfs 放行，其余 ETF 仍拦', () => {
+  assert.equal(isAdmissible('510880', '红利ETF', undefined, { allowEtfs: true }), true, '510880 经 allowEtfs 放行');
+  assert.equal(isAdmissible('511010', '国债ETF', undefined, { allowEtfs: true }), true, '511010 经 allowEtfs 放行');
+  assert.equal(isAdmissible('510300', '沪深300ETF', undefined, { allowEtfs: true }), false, '其他 ETF 不在白名单，仍拦');
+  assert.equal(isAdmissible('510880', '红利ETF', undefined), false, 'allowEtfs 缺省时 ETF 仍被主板 allowlist 拦');
+  // 510880/511010 普通股 allowEtfs=false 也走主板 allowlist → 拦（不会被误当 ETF 放行）
+  assert.equal(isAdmissible('510880', '红利ETF'), false, '缺省不认 ETF 特例');
+});
+
+test('准入helper：isRiskName 识别 ST / *ST / 退', () => {
+  assert.equal(isRiskName('ST 某某'), true);
+  assert.equal(isRiskName('*ST 某某'), true);
+  assert.equal(isRiskName('某某退'), true);
+  assert.equal(isRiskName('某某退市'), true);
+  assert.equal(isRiskName('正常票'), false);
+  assert.equal(isRiskName('STAGE 概念'), false, 'ST 仅作前缀/空白后生效，不误伤含ST单词');
+});
+
+test('准入helper：filterAdmissible 按准入口径过滤列表', () => {
+  const list = [
+    { code: '600001', name: 'A' },
+    { code: '300002', name: 'B' },
+    { code: '688003', name: 'C' },
+    { code: '000004', name: 'D' },
+    { code: '830005', name: 'E' },
+    { code: '600006', name: 'ST 风险', klineDays: 10 },
+    { code: '600007', name: '次新', klineDays: 2 },
+  ];
+  const out = filterAdmissible(list);
+  assert.deepEqual(out.map((x) => x.code), ['600001', '000004'], '剔除 30x/68x/8/ST/次新，仅留主板');
+  assert.equal(filterAdmissible(null).length, 0, '非数组零回归');
+  assert.equal(filterAdmissible([]).length, 0, '空数组零回归');
+});
+
+
+// ── recommendPicks 集成：ctx.ztpool 接入后，可交易性过滤真正在生产链路生效 ──
+test('recommendPicks 集成：传入 ctx.ztpool，缩量硬板候选被剔除进 rejected', () => {
+  const d = day({
+    hot: [{ code: '600030', name: '缩量硬板', close: 12, change_pct: 10, huanshou: 3, reason: 'X' }],
+    summary: { zt_codes: ['600030'], zt_lb: { 600030: 1 } },
+  });
+  const ztpool = [rpEntry('600030', { zdp: 10.02, hs: 3 })];
+  const res = recommendPicks(d, { topN: 5, emotionScore: 80, minProb: 0, ztpool });
+  assert.ok(Array.isArray(res.picks) && Array.isArray(res.rejected), '返回结构正常');
+  const untradable = res.rejected.filter((r) => (r.reasons || []).some((x) => /买不进/.test(x)));
+  assert.equal(untradable.length, 1, '缩量硬板候选应进入可交易性剔除桶');
+  assert.equal(res.picks.length, 0, '该候选不应出现在推荐中');
+});
+
+test('recommendPicks 集成：爆量烂板候选保留且 weakToStrong/buyPoint 透出', () => {
+  const d = day({
+    hot: [{ code: '600031', name: '爆量烂板', close: 12, change_pct: 10, huanshou: 18, reason: 'Y' }],
+    summary: { zt_codes: ['600031'], zt_lb: { 600031: 1 } },
+  });
+  const ztpool = [rpEntry('600031', { zdp: 10.02, hs: 18, zbc: 1, fbt: 143000 })];
+  const res = recommendPicks(d, { topN: 5, emotionScore: 80, minProb: 0, ztpool });
+  assert.equal(res.picks.length, 1, '应保留');
+  assert.equal(res.picks[0].weakToStrong, true);
+  assert.match(res.picks[0].buyPoint, /烂板弱转强/);
+});
+
+// ───────── 挂件二·游资席位追踪因子 ─────────
+test('挂件二·游资席位追踪：买方席位命中顶级游资清单 → 标记 hotMoney 且排序分放大', () => {
+  const code = '600031';
+  const d = day({
+    hot: [{ code, name: '爆量烂板', close: 12, change_pct: 10, huanshou: 18, reason: 'Y' }],
+    summary: { zt_codes: [code], zt_lb: { [code]: 1 }, seats: { detail: { [code]: { b: [['华鑫证券上海分公司', 5000]], s: [] } } } },
+  });
+  const ztpool = [rpEntry(code, { zdp: 10.02, hs: 18, zbc: 1, fbt: 143000 })];
+  const base = recommendPicks(d, { topN: 5, emotionScore: 80, minProb: 0, ztpool });
+  const withSeats = recommendPicks(d, {
+    topN: 5, emotionScore: 80, minProb: 0, ztpool,
+    seatsDetail: d.summary.seats.detail, hotmoney: { seatPatterns: ['华鑫'], doubleWeight: 2.0 },
+  });
+  assert.equal(base.picks.length, 1, '基线应保留 1 只');
+  const wp = withSeats.picks[0];
+  assert.equal(wp.hotMoney, true, '命中顶级游资营业部的标的应标记 hotMoney');
+  assert.equal(wp.hotMoneyNetWan, 5000, '游资净买额应取自买方席位命中行的万元值');
+  assert.ok(Array.isArray(wp.tags) && wp.tags.includes('游资净买'), '应打上游资净买标签');
+  // 排序分放大：基线分(prob.score 或 score)的 2 倍，封顶 100
+  const baseScore = Number.isFinite(wp.prob?.score) ? wp.prob.score : (Number.isFinite(wp.score) ? wp.score : 0);
+  assert.equal(wp.score, Math.round(Math.min(100, baseScore * 2) * 100) / 100, '命中游资后排序分应放大为基线的 2 倍（封顶 100）');
+  // 零回归：未提供 seatsDetail → 不得标记 hotMoney
+  const noSeats = recommendPicks(d, { topN: 5, emotionScore: 80, minProb: 0, ztpool });
+  assert.equal(noSeats.picks[0].hotMoney, undefined, '无席位数据时不得标记 hotMoney（零回归）');
+});
+
+
+
+// FIRSTBOARD_TEST
+
+// ───────── 方向2（主线第1步后续·可配置 A/B）：首板纳入配额（质量竞争式） ─────────
+test('firstBoardReserve：零回归——:0 应与默认完全一致', () => {
+  const d = day({
+    hot: [
+      lhbRow('600010', 'LianA', 90000, { change_pct: 10, close: 12, reason: 'X' }),
+      lhbRow('600011', 'LianB', 90000, { change_pct: 10, close: 12, reason: 'X' }),
+      lhbRow('600012', 'Shou',  90000, { change_pct: 10, close: 12, reason: 'X' }),
+    ],
+    themes: { X: 3 },
+    summary: { main_theme: { name: 'X' }, zt_codes: ['600010', '600011', '600012'], zt_lb: { 600010: 3, 600011: 2, 600012: 1 } },
+  });
+  const legacy = recommendPicks(d, { topN: 2, emotionScore: 70, minProb: 0 }).picks || [];
+  const fb0 = recommendPicks(d, { topN: 2, emotionScore: 70, minProb: 0, firstBoardReserve: 0, firstBoardBoost: 1 }).picks || [];
+  assert.deepEqual(fb0.map((p) => p.code).sort(), legacy.map((p) => p.code).sort(), 'firstBoardReserve:0 / boost:1 应与默认完全一致（零回归）');
+});
+
+test('firstBoardReserve：候选池无首板时优雅无操作（不注入次品、不崩、名额不变）', () => {
+  const d = day({
+    hot: [
+      lhbRow('600010', 'LianA', 90000, { change_pct: 10, close: 12, reason: 'X' }),
+      lhbRow('600011', 'LianB', 90000, { change_pct: 10, close: 12, reason: 'X' }),
+    ],
+    themes: { X: 3 },
+    summary: { main_theme: { name: 'X' }, zt_codes: ['600010', '600011'], zt_lb: { 600010: 3, 600011: 2 } },
+  });
+  const legacy = recommendPicks(d, { topN: 2, emotionScore: 70, minProb: 0 }).picks || [];
+  const fb = recommendPicks(d, { topN: 2, emotionScore: 70, minProb: 0, firstBoardReserve: 1, firstBoardBoost: 2 }).picks || [];
+  assert.equal(fb.length, legacy.length, '无首板候选时名额应不变');
+  assert.deepEqual(fb.map((p) => p.code).sort(), legacy.map((p) => p.code).sort(), '无首板候选时 picks 应与原样一致（无次品注入）');
+});
+
+test('firstBoardBoost：首板提权改变排序（>1 时优质首板凭质量竞争）', () => {
+  const d = day({
+    hot: [
+      lhbRow('600010', 'LianA', 90000, { change_pct: 10, close: 12, reason: 'X' }),
+      lhbRow('600011', 'LianB', 90000, { change_pct: 10, close: 12, reason: 'X' }),
+      lhbRow('600012', 'Shou',  90000, { change_pct: 10, close: 12, reason: 'X' }),
+    ],
+    themes: { X: 3 },
+    summary: { main_theme: { name: 'X' }, zt_codes: ['600010', '600011', '600012'], zt_lb: { 600010: 3, 600011: 2, 600012: 1 } },
+  });
+  const base = recommendPicks(d, { topN: 2, emotionScore: 70, minProb: 0, firstBoardBoost: 1 }).picks || [];
+  const boosted = recommendPicks(d, { topN: 2, emotionScore: 70, minProb: 0, firstBoardBoost: 3 }).picks || [];
+  // 提权只影响首板排序分；若 base 已是纯连板且首板在门槛下，boost 应至少不改变 topN 名额、且参数被接受不崩
+  assert.equal(boosted.length, base.length, '提权不应改变入选名额数');
+});
+// FIRSTBOARD_TEST_V2

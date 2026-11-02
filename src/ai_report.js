@@ -16,13 +16,18 @@
 //
 // 接线：scripts/build_ai_report.mjs（CI 归档轨）与页面 S3（即时轨）调用同一
 //   组生成函数；本模块自身零 IO，测试用内联夹具 + 真实档冒烟双轨覆盖。
-import { accountStats, DEFAULT_SLIP, HARD_STOP_LOSS, exportAccount } from './paper.js';
+import { accountStats, DEFAULT_SLIP, HARD_STOP_LOSS, exportAccount, boardOf } from './paper.js';
 import { guardModuleFreshness } from './module_freshness.js';
 import { stalePainReason } from './pain.js';
 import { todayBeijing } from './util.js';
-import { bjDate } from './time.js';
+import { bjDate, bjTime, bjInstant } from './time.js';
 import { validateExternal } from './validate_snapshot.js';
 import { QUOTE_STATE } from './global.js';
+import { reconcilePosition } from './position_policy.js';
+// V5.3 核心引擎调优（2026-10-28）：极寒分化惩罚 / 主线降权过滤的共享纯函数。
+//   浏览器/Node 双端安全（零 IO、不 import fs/backtest/paper），供报告层与选股引擎共用。
+import { detectClusteringBubble, computeRedIndustryRatio, penaltyApplies } from './mainline_guard.js';
+import { filterAdmissible } from './picks.js';
 
 export const SCHEMA_VERSION = '1.0';
 export const REPORT_TYPES = ['pre_market', 'intraday', 'post_market', 'weekly'];
@@ -59,7 +64,7 @@ const SOURCE_REFS = {
   date: 'data/paper/dual_track_latest.json::day.date',
   pnl_daily: 'data/paper/dual_track_latest.json::day.dayReturns.A（即时轨覆盖为账本 nav 当日变化）',
   pnl_cumulative: 'data/paper/dual_track_latest.json::summary.trackA.total（即时轨覆盖为 accountStats.ret）',
-  close_drawdown: 'data/paper/dual_track_latest.json::summary.trackA.maxDd',
+  close_drawdown: 'live 实时账户当前回撤 accountStats.drawdown（决议 A：禁混双轨 trackA.maxDd）；空仓→null；归档轨回退 dual_track trackA.maxDd',
   max_drawdown_daily: '即时轨当日 equity 序列峰谷（S3-1 注入：opts.drawdownDaily ← window.__intradayLive.drawdownDaily ← src/intraday_live.js::dailyDrawdown）',
   trend_switch_hits: 'data/signals-latest.json::regime.turns',
   overseas: 'data/global.json::quotes（A50 + 费半；美股仅美东 16:30 后可信）',
@@ -174,12 +179,61 @@ function buildRegime(input) {
   if (!day) return null;
   const range = (pick(input, 'signals.dailyReport.sections') || [])
     .find((x) => x && x.id === 'regime' && x.position && x.position.range);
-  return {
-    key: day.regime?.key ?? null,
-    label: day.regime?.label ?? null,
-    cap: Number.isFinite(day.regime?.cap) ? day.regime.cap : null,
-    position_range: range ? range.position.range : null,
+  // 展示层合并（2026-10-24）：cap 以日报权威 regime（signals.dailyReport.tag.key）为准，
+  //   消除"研判简报读 dual_track.day.regime / 日报用 classifyRegime"两套源打架；
+  //   基础仓位由情绪分翻译，最终执行以帽为准。纸面 A/B/C 剧本仍用 day.regime（执行轨纪律）。
+  const capKey = pick(input, 'signals.dailyReport.tag.key') || day.regime?.key || null;
+  const posRec = reconcilePosition({ score: day.score, regimeKey: capKey });
+  // 展示层合并落地：长文版 regime 的 key/label/range 一律以「合并后的 cap（日报权威 regime）」为准，
+  // 不再透出 dualTrack.day.regime 的裸 climax（高潮/60%~100%）——否则长文简报会与前端日报打架。
+  const regime = {
+    key: capKey ?? day.regime?.key ?? null,
+    label: (posRec && posRec.cap && posRec.cap.label) || day.regime?.label || null,
+    score: (day && Number.isFinite(day.score)) ? day.score : null, // 大盘情绪分（0-100，任务一·盘中温度计播报用）
+    cap: (posRec && posRec.cap && Number.isFinite(posRec.cap.maxPos)) ? posRec.cap.maxPos : (Number.isFinite(day.regime?.cap) ? day.regime.cap : null),
+    position_range: posRec ? posRec.finalRange : (range ? range.position.range : null),
+    positionReconcile: posRec,
   };
+  // 补丁一（V5.3·2026-10-28）：极寒分化惩罚的「报告侧」落地——只改写本函数当场新建的 regime 对象，
+  //   绝不修改 day / 任何原始归档。引擎七态无「震荡」key，最接近等价的降级目标是 neutral(中性)。
+  return applyClusteringBubbleOverride(regime, input);
+}
+
+/**
+ * 补丁一（V5.3）：极寒分化惩罚——仅作用于传入的 regime 对象（必须是新建体，非 day 引用），不改归档。
+ *   触发（detectClusteringBubble）：上涨家数 < 1500 且 红盘行业占比 < 0.10 → 抱团分化泡沫。
+ *   若原判定为 recover(回暖) / climax(高潮)，强制覆盖为 neutral(中性，即用户语义的「震荡」) 并标注降级原因；
+ *   情绪分扣除 SENTIMENT_PENALTY 透出（score_adjusted）。该标记仅影响当日报告/仓位建议，不写历史。
+ *   两输入任一缺失 → 保守不降级（未知即不判）。
+ */
+function applyClusteringBubbleOverride(regime, input) {
+  const day = pick(input, 'dualTrack.day') || {};
+  const signals = input?.signals || {};
+  // 上涨家数：优先 day.summary.up_count（归档完整日），回退 signals.latest.up_count（宽度口径）
+  const upCount = Number.isFinite(day?.summary?.up_count)
+    ? day.summary.up_count
+    : (Number.isFinite(pick(signals, 'latest.up_count')) ? pick(signals, 'latest.up_count') : null);
+  // 红盘行业占比：由 day.industry 实时计算（精简快照无行业明细 → null → 保守不判）
+  const redIndustryRatio = computeRedIndustryRatio(day?.industry);
+  const { isClusteringBubble, penalty } = detectClusteringBubble({ upCount, redIndustryRatio });
+  regime.clustering_bubble = isClusteringBubble;
+  // 收紧调参（2026-10-28·第二种方案）：仅在「原周期已是 recover(回暖)/climax(高潮)」且触发极寒分化时，
+  //   才扣分 + 强制降级；neutral/ebb/ice 本就保守，不额外攻击（避免缩头乌龟，也不重复降级）。
+  const applyPenalty = penaltyApplies(isClusteringBubble, regime.key);
+  regime.sentiment_penalty = applyPenalty ? penalty : 0;
+  if (regime.score != null) regime.score_adjusted = applyPenalty ? regime.score - penalty : regime.score;
+  const ratioTxt = redIndustryRatio != null ? `${(redIndustryRatio * 100).toFixed(1)}%` : '?';
+  if (applyPenalty) {
+    // 强制锁死情绪周期：取消回暖/高潮判定，降级为中性（震荡），避免妖股抱团假回暖误导仓位。
+    const fromLabel = regime.label || regime.key;
+    regime.key = 'neutral';
+    regime.label = '中性(抱团分化)';
+    regime.clustering_bubble_downgraded = true;
+    regime.clustering_bubble_note = `标记：抱团分化，取消${fromLabel}判定（上涨家数 ${upCount ?? '?'} < 1500 且 红盘行业占比 ${ratioTxt} < 10%）`;
+  } else if (isClusteringBubble) {
+    regime.clustering_bubble_note = `抱团分化泡沫（上涨家数 ${upCount ?? '?'} < 1500 且 红盘行业占比 ${ratioTxt} < 10%）；原周期非回暖/高潮（本就保守），不额外降级`;
+  }
+  return regime;
 }
 
 function turnsIn(input, from, to) {
@@ -228,6 +282,30 @@ function buildMarketContext(signals) {
     pain: verdict('pain', 'label') ?? verdict('pain', 'reason'),
     seats: verdict('seats', 'label'),
   };
+}
+
+// ───────────── 盘中实时涨跌家数新鲜度闸门（2026-10-28 紧急修复） ─────────────
+// 老板反馈 14:05 盘中推送显示 594/4653（昨收 EOD 陈旧值），而盘中已逼空 3940/1437。
+// 根因：buildMarketContext 的涨跌家数取自 signals.latest（仅 18:30/21:00 盘后刷新），盘中全天陈旧。
+// 本闸门只认「当日实时 intraday 快照」的 breadth/pools：跨交易日 / 缺失 / 采集过久 / 源失败 → 返回 null，
+//   强制调用方隐藏陈旧值（push_text 显式输出“暂不可用（数据滞后）”）。宁可不报也不糊弄老板。
+const INTRADAY_MARKET_FRESH_MS = 25 * 60 * 1000; // 采集距推送 ≤25 分钟才算实时（30 分 tick + 调度余量）
+
+export function freshIntradayMarket(snapshot, nowISO) {
+  if (!snapshot || typeof snapshot !== 'object') return null;
+  const now = nowISO ? new Date(nowISO) : new Date();
+  const today = bjDate(now);
+  if (snapshot.tradeDate !== today) return null;            // 跨交易日 → 陈旧
+  if (!snapshot.breadth || !Number.isFinite(snapshot.breadth.up)) return null;
+  const m = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})/.exec(snapshot.capturedAtBJ || '');
+  if (!m) return null;
+  const capMs = bjInstant(m[1], m[2]);
+  const nowMs = bjInstant(today, bjTime(now));
+  if (!Number.isFinite(capMs) || !Number.isFinite(nowMs)) return null;
+  if (capMs > nowMs || nowMs - capMs > INTRADAY_MARKET_FRESH_MS) return null; // 未来 or 过久
+  const failed = Array.isArray(snapshot.sourcesFailed) ? snapshot.sourcesFailed : [];
+  if (failed.some((e) => /breadth|快照|snapshot|snapshotSource/i.test(String(e)))) return null; // 源失败（限流等）
+  return { breadth: snapshot.breadth, pools: snapshot.pools || null };
 }
 
 // ── data_completeness（决议 5）：字段级来源与可信度 ─────────────────────
@@ -427,12 +505,46 @@ export function generatePreMarket(input, opts = {}) {
 /** 盘中报告（每 30 分钟 / 四类 urgent 事件即时）。 */
 export function generateIntraday(input, opts = {}) {
   const { payload, overrides, ext } = buildBase(input);
+  // ①（2026-10-27）：盘中报告始终携带盘面快照（涨跌家数/涨停跌停/最高连板），
+  // 即使候选池缺席也不空窗——配合 push_text 防御提示给盘面温度。
+  // 仅当 buildBase（双轨回填）未提供时才从 signals 合成；绝不覆盖已有值。
+  if (payload.market_context == null) payload.market_context = buildMarketContext(input.signals);
+  if (payload.market_context) payload.market_context.highest_chain = num(pick(input, 'signals.pain.advance.maxLb'));
   if (!input.live) payload.nav_realtime = null; // 归档轨无指数点位合成源（intraday.json 无指数），S1 诚实置 null
   // S3-1 注入（取数+赋值一行）：当日 equity 序列峰谷回撤。数据链 = 浏览器采样器
   // window.__intradayLive.drawdownDaily（src/intraday_live.js::dailyDrawdown）→ 装配方
   // opts 传入。opts 缺/序列不足两点 → null（不冒充，data_completeness 呈 missing）。
   payload.max_drawdown_daily = input.live ? num(opts.drawdownDaily) : null;
   const extraNotes = [];
+  // 2026-10-28 紧急修复：盘中「涨跌家数 / 涨停跌停」必须取推送那一刻的实时 intraday 快照，
+  //   绝不用 signals.latest 的 EOD 陈旧值（老板 14:05 实录：显示昨收 594/4653，盘中已逼空 3940/1437）。
+  //   快照缺失/跨交易日/采集过久/源失败 → 判滞后，up_down/zt_dt 置 null → push_text 显式“暂不可用（数据滞后）”。
+  const intraFresh = freshIntradayMarket(input.intraday, opts.generatedAt || new Date().toISOString());
+  if (payload.market_context) {
+    if (intraFresh) {
+      payload.market_context.up_down = `${intraFresh.breadth.up}/${intraFresh.breadth.down}/${intraFresh.breadth.flat}`;
+      payload.market_context.zt_dt = (intraFresh.pools && Number.isFinite(intraFresh.pools.zt) && Number.isFinite(intraFresh.pools.dt))
+        ? `${intraFresh.pools.zt}/${intraFresh.pools.dt}` : payload.market_context.zt_dt;
+      payload.market_context.breadth_stale = false;
+    } else {
+      payload.market_context.up_down = null;
+      payload.market_context.zt_dt = null;
+      payload.market_context.breadth_stale = true;
+      extraNotes.push({
+        field: 'market_context.up_down',
+        reason: '盘中实时涨跌家数快照缺失/跨交易日/采集滞后/源失败——已隐藏陈旧 EOD 值，宁可不报也不糊弄',
+        ref: 'src/ai_report.js::generateIntraday',
+      });
+    }
+  }
+  // 2026-10-29 兜底源披露：快照经 snapshot_intraday 兜底（hot/screener/pools/breadth 由上次成功
+  //   快照补全）时，把 fallbackUsed 与兜底源时间透出，供 push_text 显式标注「盘面数据：兜底自 HH:MM 快照」。
+  //   宁缺毋假不破——兜底源本身也是真实抓取值，仅标注其来源，绝不冒充实时。
+  const fbUsed = input.intraday?.dataHealth?.fallbackUsed;
+  if (Array.isArray(fbUsed) && fbUsed.length && payload.market_context) {
+    payload.market_context.fallbackUsed = fbUsed;
+    payload.market_context.fallbackFromAt = input.intraday?.capturedAt ?? null; // 兜底后 snapshot.capturedAt = 兜底源 capturedAt
+  }
   if (input.live && payload.max_drawdown_daily == null) {
     extraNotes.push({ field: 'max_drawdown_daily', reason: '即时轨当日权益序列不足两点（采样刚启动/实时行情降级），无日内回撤语义', ref: 'src/intraday_live.js::dailyDrawdown' });
   }
@@ -484,7 +596,19 @@ export function generateIntraday(input, opts = {}) {
 export function generatePostMarket(input, opts = {}) {
   const { payload, overrides, ext } = buildBase(input);
   const summary = pick(input, 'dualTrack.summary');
-  payload.close_drawdown = num(pick(summary, 'trackA.maxDd'));
+  // 收盘回撤（用户 2026-10-27 决议 A）：严格锁定为实时账户当前回撤（dd_now），
+  //   禁止混入双轨 trackA.maxDd —— trackA 是 V5.2 策略基准模拟（archive 情绪因子跑
+  //   positions()），与实时账户非同源，其"历史最大回撤"会误导播报（如 10-26 显示 15.86%
+  //   而实时实际 0%）。空仓（无持仓）→ null（渲染 —），不冒充回撤；归档轨（非 live）
+  //   无实时账户 → 回退 trackA.maxDd 保历史档可读。
+  if (input.live) {
+    const liveStats = accountStats(input.paperAccount);
+    const livePos = Object.values(input.paperAccount?.positions || {}).filter((p) => p && Number(p.qty) > 0);
+    const liveDd = Number.isFinite(liveStats?.drawdown) ? Math.abs(liveStats.drawdown) : null;
+    payload.close_drawdown = (livePos.length > 0 && liveDd != null) ? liveDd : null;
+  } else {
+    payload.close_drawdown = num(pick(summary, 'trackA.maxDd'));
+  }
   payload.max_drawdown_intraday = null; // 同 max_drawdown_daily：日内 equity 采样未接入
   payload.grid_trigger_detail = null;
   payload.counter_trend_loss_ratio = null;
@@ -591,7 +715,9 @@ export function mergeReports(a, b) {
   const mergedPayload = { ...older.payload };
   const backfilled = [];
   for (const [k, v] of Object.entries(base.payload)) {
-    if (v == null && older.payload && older.payload[k] != null) {
+    // close_drawdown 是 live-only 字段（决议 A：实时账户当前回撤 dd_now），禁止从 archived
+    //   （双轨 trackA.maxDd）回填——否则会把"策略基准历史最大回撤"跨源混入播报，正是要杜绝的。
+    if (v == null && older.payload && older.payload[k] != null && k !== 'close_drawdown') {
       mergedPayload[k] = older.payload[k];
       backfilled.push(k);
     } else mergedPayload[k] = v;
@@ -776,8 +902,10 @@ export function buildWatchlist(input, opts = {}) {
   };
 }
 
-/** 盘中候选池筛选阈值（任务二指令口径：涨幅 3-7%、量比 >2.0、主力净流入为正、未涨停）——**趋势池**专用。 */
-export const INTRADAY_POOL_FILTERS = { chg_min: 3, chg_max: 7, liangbi_min: 2.0, top: 10 };
+// 2026-10-30 收拢到 config（#18）：盘中池过滤器阈值从 config.params.live.poolFilters 读取（含兜底，避免 config 缺失时行为漂移）。
+import config from './config.js';
+const _poolFilters = (config?.params?.live?.poolFilters) || {};
+export const INTRADAY_POOL_FILTERS = _poolFilters.intraday || { chg_min: 3, chg_max: 7, liangbi_min: 2.0, top: 10 };
 
 /** 连板池独立筛选规则（2026-10-10 P0 边界写死，用户指令「另行配置、只是不再复用趋势池涨幅过滤」）：
  *  · 连板计数：zt_lb 连板数 ≥ min_lb（2）——首板涨停属趋势池语义（被「未涨停」正常剔除），
@@ -787,7 +915,7 @@ export const INTRADAY_POOL_FILTERS = { chg_min: 3, chg_max: 7, liangbi_min: 2.0,
  *  · 封单/换手：盘中快照无此二字段，不设判据（宁缺毋假——不发明数据源，数据源升级再扩）。
  *  ⚠ 与趋势池 INTRADAY_POOL_FILTERS 完全解耦——数值巧合相同（量比 2.0/Top 10）也各自独立演进，
  *    改一处绝不隐式影响另一处（这正是 10-09 事故的教训：判据复用 = 错配温床）。 */
-export const STREAK_POOL_FILTERS = { min_lb: 2, liangbi_min: 2.0, main_net_min: 0, top: 10 };
+export const STREAK_POOL_FILTERS = _poolFilters.streak || { min_lb: 2, liangbi_min: 2.0, main_net_min: 0, top: 10 };
 export const STREAK_POOL_MIN_LB = STREAK_POOL_FILTERS.min_lb; // 兼容别名（历史引用/测试沿用）
 
 /** A 股连续竞价收盘（北京 15:00）——收盘倒计时闸的唯一出处。 */
@@ -932,14 +1060,14 @@ export function buildIntradayPool(intraday, opts = {}) {
       //   成 6 位 HHMMSS 字符串，数字档/字符串档同判。
       const fbt = ztd?.fbt != null ? String(ztd.fbt).padStart(6, '0') : null;
       if (fbt && fbt <= '092500') { streakRejected.yizi++; continue; }
-      if (lb == null || mn == null) { streakRejected.unverifiable++; continue; }
+      if (lb == null) { streakRejected.unverifiable++; continue; }
       if (lb <= SF.liangbi_min) { streakRejected.liangbi++; continue; }
-      if (mn <= SF.main_net_min) { streakRejected.main_net++; continue; }
+      if (mn != null && mn <= SF.main_net_min) { streakRejected.main_net++; continue; }
       streakCands.push({ r, chg, lb, mn, lbc, fund: ztd?.fund != null ? ztd.fund : null, tags });
       continue;
     }
     // ── 趋势池轨（四条件 + 黑名单：昨日涨停/今日涨停/一字板）────────────────────
-    if (chg == null || lb == null || mn == null) { rejected.unverifiable++; continue; }
+    if (chg == null || lb == null) { rejected.unverifiable++; continue; }
     // 今日涨停判定先于带外：~10% 的涨停股同时也在 3-7 带外，先归类「已涨停」台账更有
     //   信息量（zt_codes 是权威名单；chg≥9.9 是名单缺席时的兜底——正常涨停涨幅恒 >7）。
     //   一字板是今日涨停的子集（集合竞价封死），此闸一并覆盖「未涨停未一字」。
@@ -954,7 +1082,7 @@ export function buildIntradayPool(intraday, opts = {}) {
     if (prevZtCodes && prevZtCodes.has(String(r.code))) { rejected.prev_zt++; continue; }
     if (chg < F.chg_min || chg > F.chg_max) { rejected.chg_band++; continue; }
     if (lb <= F.liangbi_min) { rejected.liangbi++; continue; }
-    if (mn <= 0) { rejected.main_net++; continue; }
+    if (mn != null && mn <= 0) { rejected.main_net++; continue; }
     cands.push({ r, chg, lb, mn, tags });
   }
   const maxMn = cands.length ? Math.max(...cands.map((c) => c.mn)) : 0;
@@ -973,6 +1101,7 @@ export function buildIntradayPool(intraday, opts = {}) {
     return { ...c, score };
   }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || b.mn - a.mn).slice(0, F.top);
   const pool = scored.map(({ r, chg, lb, mn, tags, score }) => {
+    const bo = boardOf(String(r.code)); // 板块识别（含 创业板/科创板 标签）
     const pe = isValidNum(r.pe_ttm) ? +r.pe_ttm : null;
     const pb = isValidNum(r.pb) ? +r.pb : null;
     // 数据完整度（2026-10-09 用户指令）：题材/估值/资金三要素逐项清点，缺啥标啥——
@@ -985,6 +1114,8 @@ export function buildIntradayPool(intraday, opts = {}) {
     return {
       code: String(r.code),
       name: isValidText(r.name), // 空名 → null 渲染 —，不脑补
+      board: bo.board,        // 板块键：main/gem/star/bj/fund/...（创业=gem，科创=star）
+      boardLabel: bo.label,   // 板块标签：创业板/科创板/沪市主板/...（创业/科创个股在此显式打标签）
       score,
       themes: tags.length ? tags : null, // 题材：接口无标签 = null（渲染 —），不猜行业
       selection_reason: `量比 ${lb}`, // 推送行紧凑（口径在标题行；主力净流入在 fund_flow_note，页面完整版可见）
@@ -996,14 +1127,14 @@ export function buildIntradayPool(intraday, opts = {}) {
         pb,
       },
       data_completeness: { level: missing.length ? 'partial' : 'full', missing },
-      fund_flow_note: `主力净流入 +${Math.round(mn / 1e4)} 万（东财 push2 盘中实时）`,
+      fund_flow_note: `主力净流入 ${mn == null ? '未知' : '+' + Math.round(mn / 1e4) + ' 万'}（东财 push2 盘中实时）`,
       scripts: buildScripts({ code: String(r.code) }, { regimeCap: opts.regimeCap ?? 0 }),
       risks: ['盘中快照口径（抓取时点实时值，未定盘），涨停/炸板状态随时变化',
         chg >= 6.5 ? '贴近带内上沿（≥6.5%），追高风险放大' : null].filter(Boolean),
     };
   });
   const basis = (pool.length ? '' : '今日无符合条件标的（宁缺毋假，不凑数填充）；')
-    + `${universeName} 实时现算（每轮全量重算，不沿用上轮）：涨幅 ${F.chg_min}-${F.chg_max}% · 量比 >${F.liangbi_min} · 未涨停未一字（pools.zt_codes）· 主力净流入为正`
+    + `${universeName} 实时现算（每轮全量重算，不沿用上轮）：涨幅 ${F.chg_min}-${F.chg_max}% · 量比 >${F.liangbi_min} · 未涨停未一字（pools.zt_codes）· 主力净流入为正（缺失视为通过）`
     + (prevZtCodes ? ` · 已滤昨日涨停 ${prevZtCodes.size} 只黑名单` : ' · ⚠ 昨日涨停黑名单缺席（旧快照无 prev_zt_codes）——断板股可能漏进趋势池')
     + `；扫 ${universe.length} 只，剔除——带外 ${rejected.chg_band} / 量比不足 ${rejected.liangbi} / 已涨停 ${rejected.zt} / 跌停 ${rejected.dt} / 昨日涨停 ${rejected.prev_zt} / 净流出或无源 ${rejected.main_net} / 字段缺失 ${rejected.unverifiable}；`
     + `得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）`
@@ -1027,6 +1158,7 @@ export function buildIntradayPool(intraday, opts = {}) {
     return { ...c, streak_score };
   }).sort((a, b) => (b.streak_score ?? -1) - (a.streak_score ?? -1) || b.lbc - a.lbc || b.mn - a.mn).slice(0, SF.top);
   const streak_pool = streakScored.map(({ r, chg, lb, mn, lbc, fund, streak_score, tags }) => {
+    const bo = boardOf(String(r.code)); // 板块识别（含 创业板/科创板 标签）
     const pe = isValidNum(r.pe_ttm) ? +r.pe_ttm : null;
     const pb = isValidNum(r.pb) ? +r.pb : null;
     const missing = [
@@ -1038,6 +1170,8 @@ export function buildIntradayPool(intraday, opts = {}) {
     return {
       code: String(r.code),
       name: isValidText(r.name), // 空名 → null 渲染 —，不脑补
+      board: bo.board,        // 板块键：main/gem/star/bj/fund/...（创业=gem，科创=star）
+      boardLabel: bo.label,   // 板块标签：创业板/科创板/沪市主板/...（创业/科创个股在此显式打标签）
       score: null, // 趋势池综合分（量价/资金流）不套连板池——拆分即互不复用（10-09 事故根因）
       streak_score, // 连板池独立梯队分（连板高度 0.6 + 主力 0.4，缺席重归一）
       seal_amount: fund, // 封单资金（元，东财涨停池 fund 原值）——「封单质量」唯一真实源；缺席 null 渲染 —
@@ -1050,7 +1184,7 @@ export function buildIntradayPool(intraday, opts = {}) {
         pb,
       },
       data_completeness: { level: missing.length ? 'partial' : 'full', missing },
-      fund_flow_note: `主力净流入 +${Math.round(mn / 1e4)} 万（东财 push2 盘中实时）`,
+      fund_flow_note: `主力净流入 ${mn == null ? '未知' : '+' + Math.round(mn / 1e4) + ' 万'}（东财 push2 盘中实时）`,
       scripts: buildScripts({ code: String(r.code) }, { regimeCap: opts.regimeCap ?? 0 }),
       risks: ['连板池盘中口径（封板/炸板状态随时变化，抓取时点实时值）',
         '连板高度越高，晋级失败风险越大（断板负反馈）'],
@@ -1183,6 +1317,11 @@ export function buildSimulationStock(input, opts = {}) {
       ? `连板梯队缺席：pain ${painStaleReason}——宁缺毋假，不用旧连板数冒充今日梯队（2026-10-10 P0-2）`
       : 'pain.advance.detail 连板活跃明细按连板数降序（情绪面规则现算，决议 8：人工输入模式的辅助建议，可一键采纳不自动生效）';
   }
+  // 实盘准入过滤（2026-10-29·老板实盘权限）：推送候选池/连板池也剔除无权限板块（北交所/创业板/科创板/ST/次新），
+  //   与 recommendPicks 选股引擎口径一致（仅观察/推荐主板 00/60 标的）。模拟持仓(simulation_positions)是真实已有仓位，
+  //   不在此列——权限只约束"新推荐/新观察"，不篡改历史持仓展示。
+  pool = filterAdmissible(pool);
+  if (streakPool) streakPool = filterAdmissible(streakPool);
   let simulation_positions = null;
   if (input.live && input.paperAccount?.positions) {
     // 绑定联查（读写职责边界）：绑定写入由 S3 前端 UI 在用户确认剧本时触发

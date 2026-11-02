@@ -1,3 +1,4 @@
+import { fetchWithRetry } from '../src/util.js';
 // 全市场 K 线扫描 → 多维宽度（#3）
 //
 // ── 为什么必须分片（用户的硬要求：不能一把梭）────────────────────────────────
@@ -41,6 +42,11 @@ import { computeBreadth, breadthVerdict, buildBreadthSeries, BREADTH_THRESHOLDS,
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname + '/..';
+
+// 东财代码清单（含 PB）是否成功拉取——源健康标记。被墙/超时→false，宽度回退
+// paper_universe.json（破净率恒为 null）。写入 breadth meta + source-health.json，
+// 让 CI/网页能区分「源不可用（环境限制）」与「真·数据陈旧」。
+let EM_OK = false;
 
 const argv = process.argv.slice(2);
 const has = (k) => argv.includes(k);
@@ -93,7 +99,7 @@ async function fetchEastmoneyList() {
   try {
     for (let pn = 1; pn <= 60; pn++) {
       const url = `https://push2.eastmoney.com/api/qt/clist/get?pn=${pn}&pz=100&po=1&np=1&fltt=2&invt=2&fid=f3&fs=${fs}&fields=f12,f14,f23`;
-      const r = await fetch(url, { headers: { Referer: 'https://quote.eastmoney.com/', 'User-Agent': 'Mozilla/5.0 Chrome/120' } });
+      const r = await fetchWithRetry(url, { headers: { Referer: 'https://quote.eastmoney.com/', 'User-Agent': 'Mozilla/5.0 Chrome/120' } });
       const j = await r.json();
       const diff = j && j.data && Array.isArray(j.data.diff) ? j.data.diff : null;
       if (!diff || !diff.length) break;
@@ -109,7 +115,8 @@ async function fetchEastmoneyList() {
     console.error('[breadth] 东财清单不可用：', e.message);
     return null;
   }
-  return out.length ? out : null;
+  if (out.length) { EM_OK = true; return out; }
+  return null;
 }
 
 // ── K 线抓取（腾讯前复权；与 backtest_limit_up_streak.mjs 同源）────────────
@@ -127,7 +134,7 @@ async function kline(code) {
   const url = `https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?param=${sym},day,2024-01-01,2030-12-31,${FETCH_BARS},qfq`;
   for (let i = 0; i < 3; i++) {
     try {
-      const res = await fetch(url, { headers: { Referer: 'https://finance.qq.com', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120' } });
+      const res = await fetchWithRetry(url, { headers: { Referer: 'https://finance.qq.com', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120' } });
       const j = await res.json();
       const node = (j && j.data && j.data[sym]) || {};
       const rows = node.qfqday || node.day || [];
@@ -247,6 +254,29 @@ function report(res) {
   return verdict;
 }
 
+// 源健康落盘：把东财清单源状态写进 source-health.json（与既有 sources 模式一致）。
+// 该档此前为孤儿档（无脚本读写），本处 revival 使其成为真实信号，供 CI/巡检区分
+// 「源不可用（环境限制）」与「真·数据陈旧」。
+function recordSourceHealth() {
+  const p = join(ROOT, 'data', 'source-health.json');
+  let doc = { kind: 'source-health', version: 1, sources: {} };
+  try {
+    const ex = JSON.parse(readFileSync(p, 'utf8'));
+    if (ex && ex.sources) doc.sources = ex.sources;
+  } catch (e) { /* 首次生成 */ }
+  const today = new Date().toISOString().slice(0, 10);
+  const prev = doc.sources['eastmoney-universe'] || {};
+  doc.sources['eastmoney-universe'] = {
+    // 备注性质：破净率缺失（东财 PB 源被墙）不是核心告警源，streak 恒 0（不触发 source_health.mjs 的企微告警；
+    // 该源也不在其探针集内）。仅记录 lastFail/lastDay 供溯源，绝不作为"连续失败告警"呈现。
+    ok: EM_OK ? 1 : 0, fail: EM_OK ? 0 : 1, streak: 0,
+    lastOk: EM_OK ? today : (prev.lastOk ?? null),
+    lastFail: EM_OK ? null : today, lastDay: today,
+  };
+  doc.updatedAt = new Date().toISOString();
+  atomicWriteJSON(p, JSON.stringify(doc));
+}
+
 // ── 主流程 ──────────────────────────────────────────────────────────────────
 const universe0 = await loadUniverse();
 const universe = LIMIT ? universe0.slice(0, LIMIT) : universe0;
@@ -284,6 +314,9 @@ const payload = {
     generatedAt: new Date().toISOString(),
     tradeDate: targetDate,
     source: 'tencent-qfq-kline',
+    // 源健康：东财代码清单（含 PB）是否可用。degraded=true 表示被墙/超时→回退
+    // paper_universe.json，破净率恒为 null（环境限制，非数据陈旧；K 线源腾讯正常）。
+    eastmoneyUniverse: { ok: EM_OK, degraded: !EM_OK, effect: EM_OK ? null : 'pb-ratio-unavailable' },
     scanned: breadth.scanned,
     requested: breadth.requested,
     staleExcluded: stale,
@@ -314,5 +347,6 @@ daily.rows.push({
 daily.rows.sort((a, b) => (a.date < b.date ? -1 : 1));
 daily.meta = { updatedAt: new Date().toISOString(), days: daily.rows.length };
 atomicWriteJSON(DAILY, JSON.stringify(daily));
+recordSourceHealth();
 const series = buildBreadthSeries(daily.rows);
 console.log(`[breadth] 已写出 ${DAILY}（累积 ${series.length} 天，最新 ${series.length ? series[series.length - 1].date : '—'}）`);

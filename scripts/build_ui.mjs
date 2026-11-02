@@ -150,6 +150,96 @@ function makeBrief(day, prevDay, allDays) {
 const briefs = {};
 days.forEach((d, i) => { briefs[d.trade_date] = makeBrief(d, days[i - 1], days); });
 
+// ── 6.1 把「八、舆情参考（LLM 试点）」并入最新一期简报 ──
+// 前端 S3 只读 pageData.briefs（makeBrief 只产出 一~五，且不读 signals），
+// 而 LLM 舆情只在 signals-latest.json.dailyReport.sections[八] 里。
+// 这里把该节文字化后贴到对应交易日的简报末尾，使舆情参考在网页端可见。
+try {
+  const sigPath = path.join(ROOT, 'data', 'signals-latest.json');
+  if (existsSync(sigPath)) {
+    const sig = JSON.parse(readFileSync(sigPath, 'utf8'));
+    const dr = sig.dailyReport || {};
+    const secs = dr.sections || [];
+    const llm = secs.find((s) => s && s.id === 'llm') || secs.find((s) => (s.title || '').includes('舆情'));
+    const dDate = dr.date || sig.date;
+    if (dDate && briefs[dDate] != null && llm) {
+      let body;
+      if (llm && !llm.missing && llm.points && llm.points.length) {
+        body = llm.points.map((p) => p.text).join('；');
+      } else {
+        // 快照 missing（生成早于 fetch 落地）→ 回退读顶层 llm 真数据，绝不呈现"未生成"空白
+        const top = sig.llm;
+        if (top && !top.degraded) {
+          const raw = (typeof top.sentimentRaw === 'number') ? top.sentimentRaw : 0;
+          const dirText = raw > 0.05 ? '正面' : (raw < -0.05 ? '负面' : '中性');
+          body = `舆情方向：${dirText}（读数 ${raw}，置信度 ${top.confidence != null ? top.confidence : '—'}）｜参考修正 ${top.adj != null ? (top.adj > 0 ? '+' : '') + top.adj : 0} 分（证据 ${top.asOfDate || '—'}）`;
+        } else {
+          body = (llm && llm.missingReason) || '未生成（需收盘后跑 scripts/fetch_llm_sentiment.mjs；未跑 ≠ 舆情中性）';
+        }
+      }
+      briefs[dDate] += `\n八、舆情参考（LLM 试点）：${body}`;
+    }
+  }
+} catch (e) { /* 舆情段缺失不影响主构建 */ }
+
+// ── 6.2 把「九、板块情绪因子（场景二）」并入最新一期简报（网页端可见）──
+//   与 6.1 同思路：signals-latest.json.dailyReport.sections[九] 文字化后贴到简报末尾。
+try {
+  const sigPath = path.join(ROOT, 'data', 'signals-latest.json');
+  if (existsSync(sigPath)) {
+    const sig = JSON.parse(readFileSync(sigPath, 'utf8'));
+    const dr = sig.dailyReport || {};
+    const secs = dr.sections || [];
+    const ss = secs.find((s) => s && s.id === 'sectorSentiment');
+    const dDate = dr.date || sig.date;
+    if (dDate && briefs[dDate] != null && ss) {
+      let body;
+      if (ss && !ss.missing && ss.points && ss.points.length) {
+        body = ss.points.map((p) => p.text).join('；');
+      } else {
+        const top = sig.sectorSentiment;
+        if (top && !top.degraded) {
+          const bull = (top.topBullish || []).slice(0, 5).map((x) => `${x.sector}(+${x.score})`).join('、') || '无';
+          const bear = (top.topBearish || []).slice(0, 5).map((x) => `${x.sector}(${x.score})`).join('、') || '无';
+          const macro = (top.macro && top.macro.label) || '中性';
+          body = `板块情绪（${macro}）：多头主线 ${bull}；空头压制 ${bear}（证据 ${top.asOfDate || '—'}）`;
+        } else {
+          body = (ss && ss.missingReason) || '未生成（需盘后/周末跑 scripts/fetch_macro_sector_sentiment.mjs；未跑 ≠ 板块中性）';
+        }
+      }
+      briefs[dDate] += `\n九、板块情绪因子（场景二）：${body}`;
+    }
+  }
+} catch (e) { /* 板块情绪段缺失不影响主构建 */ }
+
+// ── 6.3 把「十、妖股逻辑推演（方向C）」并入最新一期简报（网页端可见）──
+try {
+  const sigPath = path.join(ROOT, 'data', 'signals-latest.json');
+  if (existsSync(sigPath)) {
+    const sig = JSON.parse(readFileSync(sigPath, 'utf8'));
+    const dr = sig.dailyReport || {};
+    const secs = dr.sections || [];
+    const dl = secs.find((s) => s && s.id === 'dragonLogic');
+    const dDate = dr.date || sig.date;
+    if (dDate && briefs[dDate] != null && dl) {
+      let body;
+      if (dl && !dl.missing && dl.points && dl.points.length) {
+        body = dl.points.map((p) => p.text).join('；');
+      } else {
+        const top = sig.dragonLogic;
+        if (top && !top.degraded) {
+          const n = top.dragons ? top.dragons.length : 0;
+          const pure = (top.pureSentiment || []).length;
+          body = `连板股推演 ${n} 只｜纯情绪炒作 ${pure} 只（证据 ${top.asOfDate || '—'}）`;
+        } else {
+          body = (dl && dl.missingReason) || '未生成（需盘后跑 scripts/fetch_dragon_logic.mjs；未跑 ≠ 无妖股）';
+        }
+      }
+      briefs[dDate] += `\n十、妖股逻辑推演（方向C）：${body}`;
+    }
+  }
+} catch (e) { /* 妖股逻辑段缺失不影响主构建 */ }
+
 // ── 7. signals.industry（行业 5 日动量，移植自老 build.js——口径不变）──
 function addIndustryMomentum() {
   if (days.length < 5) return 0;

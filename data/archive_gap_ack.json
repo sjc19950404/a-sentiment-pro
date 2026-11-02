@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "note": "档案缺交易日销案台账（machine-readable）。audit_archive_gaps.mjs 读取本档，把这里裁决过的缺档/空壳从 recentMissing 剔除（仍单列 acknowledged 留痕），使守卫只对『新出现的洞』红，避免已知且不可补的洞天天拖红、演变成告警疲劳（createGuardIssue 无去重，每天会建新 issue + 推企微）。新增销案须在此追加条目并 commit 评审；不得用来静默任何尚可被补的洞。",
+  "acked": [
+    {
+      "date": "2026-10-13",
+      "reason": "build job 连续被平台取消源（#200/#201），CI 无 backfill 调度。当日 ztpool 已入库（可忠实补），但按 docs/data-gaps.md 口径补录净收益仅『序列连续』（回测排除 _backfill），成本高、风险大（序列/meta/signals.meta/切片四处写），挂账待补未补。",
+      "decidedAt": "2026-10-19",
+      "ref": "docs/data-gaps.md"
+    },
+    {
+      "date": "2026-10-14",
+      "reason": "build 取消；ztpool 当日永久未入库（不可补那层丢失），data/ 下无原始池（仅盘中快照，非 EOD 口径）。按纪律四不零值填充 → 不可补。",
+      "decidedAt": "2026-10-19",
+      "ref": "docs/data-gaps.md"
+    },
+    {
+      "date": "2026-10-15",
+      "reason": "同 10-14：ztpool 永久未入库，不可补。",
+      "decidedAt": "2026-10-19",
+      "ref": "docs/data-gaps.md"
+    }
+  ]
+}

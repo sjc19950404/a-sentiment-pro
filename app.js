@@ -667,6 +667,17 @@ function renderThemes(latest) {
 // 涨幅单元格：数值 + 新股标记 + 无行情标记。
 // 「无行情」与「0」必须区分开：0 是真实行情（如一字板当日换手可为 0），
 // 无行情是数据源没覆盖到这条代码，两者含义完全不同，混在一起会让人以为数据出错。
+
+// 板块徽章：与 paper.js boardOf 同源前缀口径；仅创业/科创/北交打标签（主板不打，减噪音）。
+// 在连板天梯、个股明细表、明细卡片等多处个股名后统一展示板块识别。
+function boardBadge(code) {
+  const c = String(code || '');
+  if (/^68/.test(c)) return '<span class="tag board star" title="科创板">科创</span>';
+  if (/^30/.test(c)) return '<span class="tag board gem" title="创业板">创业</span>';
+  if (/^(8|4|92)/.test(c)) return '<span class="tag board bj" title="北交所">北交</span>';
+  return '';
+}
+
 function chgCell(r) {
   return `<span class="${trendCls(r.change_pct)}">${pctOf2(r.change_pct)}</span>`
     + (isNewStock(r) ? '<span class="newb" title="无价格涨跌幅限制（新股/次新），涨幅与普通个股不可比">新股</span>' : '')
@@ -677,7 +688,7 @@ function chgCell(r) {
 const HOT_COLS = {
   hot: [
     { key: 'code', t: '代码' },
-    { key: 'name', t: '名称' },
+    { key: 'name', t: '名称', cell: (r) => esc(nf(r.name)) + boardBadge(r.code) + (window.__glm ? window.__glm.tagSpan(r) : ''), raw: (r) => r.name },
     { key: 'change_pct', t: '涨幅', num: true, hint: '当日涨跌幅（新股无涨跌幅限制，涨幅不具可比性）',
       cell: chgCell,
       raw: (r) => r.change_pct },
@@ -689,7 +700,7 @@ const HOT_COLS = {
   ],
   lhb: [
     { key: 'code', t: '代码' },
-    { key: 'name', t: '名称' },
+    { key: 'name', t: '名称', cell: (r) => esc(nf(r.name)) + boardBadge(r.code) + (window.__glm ? window.__glm.tagSpan(r) : ''), raw: (r) => r.name },
     { key: 'change_pct', t: '涨幅', num: true, hint: '当日涨跌幅（新股无涨跌幅限制，涨幅不具可比性）',
       cell: chgCell,
       raw: (r) => r.change_pct },
@@ -723,7 +734,7 @@ function hotCardHTML(r, cols) {
   const reason = last ? String(r[last.key] ?? '').trim() : '';
   return `<div class="hcard" data-act="stock" data-code="${esc(r.code)}" tabindex="0" role="button"`
     + ` aria-label="查看 ${esc(name)} 的席位与资金详情" title="点击查看 ${esc(name)} 的席位与资金详情">`
-    + `<div class="hc-head"><span class="hc-name">${esc(name)}</span>`
+    + `<div class="hc-head"><span class="hc-name">${esc(name)}${boardBadge(r.code)}${window.__glm ? window.__glm.tagSpan(r) : ''}</span>`
     + `<span class="hc-code muted">${esc(r[c0?.key] ?? r.code)}</span>`
     + `<span class="hc-big ${big ? trendCls(big.raw ? big.raw(r) : r[big.key]) : 'muted'}">${cellOf(big)}</span></div>`
     + `<div class="hc-tags">${tags.map((c) => `<span class="hc-tag"><i>${esc(c.t)}</i>${cellOf(c)}</span>`).join('')}</div>`
@@ -861,6 +872,21 @@ let lastArc = null; // 最近一次 archive.json：BT 就绪后用它重刷报�
 // 模板③规定的口径折叠件标题。放模块级是因为多个章节的 cal() 共用同一标题——
 // 复制一份字符串迟早会漂移，导出层 src/report.js 的 CALIBER_SUMMARY 也是同一份约定。
 const CAL_SUMMARY = '🔍 点击展开查看口径';
+
+// AI 情报·打字机效果：把 .glm-bt-body / .glm-judg（带 data-tw）的整段文本逐字打出。
+// 仅视觉，不影响审计——审计在 body.innerHTML 写入前已对初始 DOM 跑完。
+function glmTypewriter(scope) {
+  if (!scope || typeof scope.querySelectorAll !== 'function') return;
+  scope.querySelectorAll('.glm-bt-body, .glm-judg').forEach((el) => {
+    const full = el.getAttribute('data-tw');
+    if (full == null) return;
+    el.textContent = '';
+    let i = 0;
+    const tick = () => { if (i <= full.length) { el.textContent = full.slice(0, i); i += 1; setTimeout(tick, 16); } };
+    el.classList.add('tw-cursor');
+    tick();
+  });
+}
 const TH_DEFAULT = { panic: 24, hi: 44, lo: 65, overheat: 80 };
 // config.json 唯一事实源桥：index.html 的 config 桥模块脚本动态 import config.json 后挂
 // window.ASENT_CONFIG；本文件是经典脚本拿不到 import，运行时从这里读。
@@ -1185,20 +1211,31 @@ function buildBrief(days, arc) {
     divs.length ? li(`<span class="bf-warn">背离校验：${divs.join('；')}</span>`) : '',
   ].join('') + cal('<b>席位分项（机构/北向/游资买卖总额）与锁仓统计覆盖的是「当日有席位明细的全部上榜个股」</b>，其只数多于「当日榜」家数（区间累计榜个股当日无独立榜、但其席位明细仍在披露名单内），故席位分项之和与「当日榜净买」不必相等，<b>二者不可相互校验</b>。上榜总成交、净买率、日度因子 s_net、近5日净额序列、新股扰动占比、主线题材资金占比全部只取「当日榜」口径（剔除「连续 N 个交易日累计」类区间榜——其买卖额与净额都是区间累计值，混入会把总成交放大数倍、净买率稀释至失真，并让日度因子把三天累计当成一天），分子分母一律同源；全量口径（含区间累计榜）仅在「完整参数」中单列作诊断，禁止与当日值混用。新股/独立标的＝上市首 5 日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部 3 席位集中度＝全市场前 3 席位买入 ÷ 全部买方买入（分子分母均已剔除「自然人/中小投资者/机构/其他自然人」这类投资者结构汇总行——它们非席位，混入会虚增买方总额并稀释集中度）；锁仓统计＝当日买方席位与近 2 日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比＝主线题材个股当日榜净买 ÷ 当日榜全榜净买。席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足 100% 时拆分为部分样本。');
 
-  // 3. 盈亏效应（涨跌停结构）——规格阈值：涨停≥50&跌停≤10强/30~49&11~20中等/<30或>20偏弱；封板率≥90优秀/80~90中等/<80弱；高标≥6板空间打开/3~5中等/≤2压制；2板以上≥15饱满/8~14一般/<8断层
-  const zt = s.zt_count, dt = s.dt_count, mlb = s.max_lb, lb2n = s.lb2_count;
+  // 3. 盈亏效应（涨跌停结构）——规格阈值：涨停≥50&跌停≤10强/30~49&11~20中等/<30或>20偏弱；封板率≥90优秀/80~90中等/<80弱；高标≥6板空间打开/3~5中等/≤2压制；连板梯队≥15饱满/8~14一般/<8断层
+  const zt = s.zt_count, dt = s.dt_count, mlb = s.max_lb;
+  // 连板梯队口径（2026-10-23 用户校准）：默认取**窗口口径** lbw2_count（近5交易日涨停
+  // 天数≥2 的只数，即公开复盘的「N天M板」梯队，含 5天3板/4天2板 等非连续连板）；
+  // 旧存档无窗口字段时回退连续口径 lb2_count。两口径并列展示，不混用。
+  const lbw2n = s.lbw2_count != null ? s.lbw2_count : s.lb2_count;
+  const lb2n = lbw2n;
   // 封板率/炸板率：新字段优先，旧存档回退到 zbl_pct（旧存档的 zbl_pct 存的是…见下）
   const sealPct = s.seal_pct != null ? s.seal_pct : s.zbl_pct;
   const zbPct = s.zb_pct != null ? s.zb_pct : (sealPct != null ? Math.round((100 - sealPct) * 10) / 10 : null);
   const deden = s.seal_den != null ? s.seal_den : ((s.zt_count != null && s.zb_count != null) ? s.zt_count + s.zb_count : null);
-  // 连板天梯：把 zt_lb（代码→连板数）按板数归组，让「最高板数 / 二板以上只数」可逐只核对。
+  // 连板天梯：按板数归组，让「最高板数 / 连板梯队只数」可逐只核对。
   // 数字一律现算，不写死任何具体板数或只数（口径守卫会拦硬编码）。
   //
   // 模板②要求「连板天梯用表格」——故这里产出真 <table class="bf-table">，
   // 而不是把结构摊平成一串竖线分隔的长文本（长文本既难扫读，导出后也无法逐列对齐）。
   // 表头/行内容全部由上面的 buckets 现算而来，未引入任何新指标。
+  //
+  // 口径（2026-10-23 用户校准）：默认按**窗口连板** zt_lbw（近5个交易日涨停天数，
+  // 即公开复盘「N天M板」的 M）归组——东财 lbc 只数连续板，「5天3板/4天2板」会被
+  // 记首板而少计三分之一；旧存档无 zt_lbw 时回退连续口径 zt_lb。逐只另标连续板数
+  // （·连N，与窗口板数不同才标），两口径并列、不混用。
   const ladderTbl = (() => {
-    const m = s.zt_lb;
+    const m = s.zt_lbw && typeof s.zt_lbw === 'object' ? s.zt_lbw : s.zt_lb;
+    const cont = s.zt_lb && typeof s.zt_lb === 'object' ? s.zt_lb : null;
     if (!m || typeof m !== 'object') return '';
     const buckets = {};
     for (const [code, n] of Object.entries(m)) {
@@ -1212,15 +1249,22 @@ function buildBrief(days, arc) {
       const arr = buckets[k];
       const shown = arr.slice(0, 8).map((c) => {
         const hit = (d.lhb || []).find((x) => x.code === c) || (d.hot || []).find((x) => x.code === c);
-        return hit && hit.name ? `${hit.name}(${c})` : c;
+        const nm = hit && hit.name ? `${hit.name}(${c})` : c;
+        const cv = cont ? Number(cont[c]) : null;
+        // 地天板徽章（2026-10-23 用户校准）：盘中触及跌停、收盘封回涨停——高标分歧
+        // 极大的形态，只看板数会把「健康换手」与「极端分歧」混为一谈。
+        const dtd = s.zt_dtd && s.zt_dtd[c] ? '<span class="bf-warn">·地天</span>' : '';
+        const dg = window.__glm && window.__glm.dragonOf(c);
+        const dtag = dg ? `<span class="tag glm" title="${esc((dg.reason || 'AI 妖股逻辑推演').replace(/[\r\n]+/g, ' '))}">🕵${dg.is_pure_sentiment ? '纯情绪' : ''}</span>` : '';
+        return (Number.isFinite(cv) && cv !== k ? `${nm}<span class="muted">·连${cv}</span>` : nm) + dtag + dtd + boardBadge(c);
       });
       return `<tr><td>${k} 板</td><td>${arr.length} 只</td><td>${shown.join('、')}${arr.length > 8 ? ` 等 ${arr.length} 只` : ''}</td></tr>`;
     }).join('');
     const tot = keys.reduce((a, k) => a + buckets[k].length, 0);
-    return `<table class="bf-table" data-caption="连板天梯（当日涨停股连板数映射 zt_lb，逐只可核）">`
-      + `<thead><tr><th>板数</th><th>只数</th><th>个股</th></tr></thead>`
+    return `<table class="bf-table" data-caption="连板天梯（近5交易日涨停天数口径 zt_lbw，逐只可核；·连N 为连续连板数，·地天 为盘中触及跌停后封回涨停）">`
+      + `<thead><tr><th>近5日板数</th><th>只数</th><th>个股（·连N＝连续连板数，·地天＝地天板）</th></tr></thead>`
       + `<tbody>${rows}</tbody>`
-      + `<tfoot><tr><td>合计</td><td>${tot} 只</td><td>2 板及以上梯队</td></tr></tfoot></table>`;
+      + `<tfoot><tr><td>合计</td><td>${tot} 只</td><td>连板梯队（N天M板口径）</td></tr></tfoot></table>`;
   })();
   let pnl = '';
   if (zt != null && dt != null) {
@@ -1232,9 +1276,9 @@ function buildBrief(days, arc) {
   const sec3 = [
     pnl ? li(pnl + `（昨日 ${ps.zt_count ?? '—'}/${ps.dt_count ?? '—'}）`) : '',
     sealPct != null ? li(`<b>封板率 ${sealPct}%</b>（收盘涨停 ${s.zt_count ?? '—'} ÷ 触板 ${deden ?? '—'}只，其中炸板 ${s.zb_count ?? '—'}只；炸板率 ${zbPct}%）。口径=盘中触及涨停的个股为分母，与各行情软件通用算法一致。${sealPct >= 90 ? '封板质量优秀' : sealPct >= 80 ? '封板质量中等' : '封板质量弱，接力意愿差'}`) : '',
-    mlb != null ? li(`连板高标 ${mlb} 板${mlb >= 6 ? '，空间打开' : mlb >= 3 ? '，空间中等' : '，空间压制，情绪偏弱'}；2板以上 ${lb2n ?? '—'} 只${lb2n != null ? (lb2n >= 15 ? '，梯队饱满' : lb2n >= 8 ? '，梯队一般' : '，梯队断层') : ''}<span class="muted">（取自当日 ${s.zt_count ?? '—'} 只涨停股的连板数映射 zt_lb，逐只可核；连板天梯见下方）</span>`) : '',
+    mlb != null ? li(`连板高标 ${mlb} 板${mlb >= 6 ? '，空间打开' : mlb >= 3 ? '，空间中等' : '，空间压制，情绪偏弱'}；连板梯队 ${lb2n ?? '—'} 只${lb2n != null ? (lb2n >= 15 ? '，梯队饱满' : lb2n >= 8 ? '，梯队一般' : '，梯队断层') : ''}${s.dtd_count ? `；<span class="bf-warn">地天板 ${s.dtd_count} 只</span>（盘中触及跌停后封回涨停，高标分歧极大，非健康换手）` : ''}<span class="muted">（口径＝近5个交易日涨停天数≥2 的只数，即公开复盘「N天M板」梯队，含 5天3板/4天2板 等非连续连板${s.lb2_count != null && s.lb2_count !== lb2n ? `；其中连续 2 板以上 ${s.lb2_count} 只` : ''}，逐只可核；连板天梯见下方）</span>`) : '',
     ladderTbl,
-  ].join('') + cal('封板率＝收盘涨停 ÷ 盘中触板个股（＝涨停+炸板），与各行情软件通用算法一致；炸板率＝100−封板率，二者同一分母互补。连板高度/梯队取自当日涨停股的连板数映射（zt_lb），可与公开连板天梯逐只核对。阈值：涨停≥50 且跌停≤10 为强／30~49 且 11~20 为中等／其余偏弱；封板率≥90 优秀／80~90 中等／<80 弱；高标≥6 板空间打开／3~5 中等／≤2 压制；2 板以上≥15 饱满／8~14 一般／<8 断层。');
+  ].join('') + cal('封板率＝收盘涨停 ÷ 盘中触板个股（＝涨停+炸板），与各行情软件通用算法一致；炸板率＝100−封板率，二者同一分母互补。连板梯队＝近5个交易日涨停天数≥2 的只数（「N天M板」口径，含非连续连板，与公开复盘同口径）；天梯逐只另标连续连板数（·连N）——东财 lbc 只数连续板，两口径并列不混用。阈值：涨停≥50 且跌停≤10 为强／30~49 且 11~20 为中等／其余偏弱；封板率≥90 优秀／80~90 中等／<80 弱；高标≥6 板空间打开／3~5 中等／≤2 压制；连板梯队≥15 饱满／8~14 一般／<8 断层。');
 
   // 4. 广度与量能——规格阈值：红盘占比≥65普涨/55~65结构性/45~55震荡分化/<45普跌；行业红盘≥70扩散好/50~70结构性/<50抱团；环比±10%放量/平稳/缩量；量能因子≥40高/20~40中/<20低
   const up = s.up_count, dn = s.down_count, amt = s.amount_yi, pamt = ps.amount_yi;
@@ -1504,6 +1548,24 @@ function buildBrief(days, arc) {
 
   // 段序号：一、（黑体）——号码由版式层给，标题文本不再自带序号
   const sec7 = buildPaperReviewSection();
+
+  // ── 八、舆情参考（LLM 试点 = V5.3 P2 软信息）──
+  // 与节九/十同理定位为「参考」软信息：±5 修正不进交易信号（原分不动），
+  // 读者须先看完七个量价/结构节再看这条软信息——试点定位，权重天然最低。
+  // 数据侧 arc.llm（src/llm_sentiment.js 转换块）；与每日日报第八节同源。
+  const LLM = arc.llm || (arc.signals && arc.signals.llm) || null;
+  const sec8 = renderLlmSection(LLM);
+
+  // ── 九、板块情绪雷达（AI 题材翻译官 = 场景二板块情绪因子）──
+  // 注意：write.js / split_archive 注入的 sectorSentiment / dragonLogic 在 signals 顶层
+  //   （与 signals 子对象并列），不在 arc.signals 内；这里优先读顶层，并对「传内层」的调用兜底。
+  const SS = arc.sectorSentiment || (arc.signals && arc.signals.sectorSentiment) || null;
+  const sec9 = renderSectorSentimentSection(SS);
+
+  // ── 十、妖股逻辑推演（AI 妖股透视镜 = 方向 C）──
+  const DL = arc.dragonLogic || (arc.signals && arc.signals.dragonLogic) || null;
+  const sec10 = renderDragonLogicSection(DL);
+
   const S = [
     ['情绪定位（核心因子·25%）', sec1, 'bfsec1'],
     ['资金面（龙虎榜）· 参与打分（主分数 s_net 权重 20%）+ 辅助观测（北向/机构行为）', sec2, 'bfsec2'],
@@ -1512,6 +1574,9 @@ function buildBrief(days, arc) {
     ['题材结构（核心因子·20%）', sec5, 'bfsec5'],
     ['综合研判（含 V5.2 仓位档位）', sec6, 'bfsec6'],
     ['模拟交易复盘（为什么赚/为什么亏）', sec7, 'bfsec7'],
+    ['舆情参考（LLM 试点）', sec8, 'bfsec8'],
+    ['板块情绪雷达（AI 题材翻译官）', sec9, 'bfsec9'],
+    ['妖股逻辑推演（AI 妖股透视镜）', sec10, 'bfsec10'],
   ];
   const CN = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
   return head + stamp + absBlock + healthBlock
@@ -1872,6 +1937,7 @@ function renderBrief(days, arc) {
 
   if (result.pass) {
     body.innerHTML = html;
+    glmTypewriter(body);
     body.classList.remove('audit-blocked');
     renderBriefNav(); // 段落标题由 DOM 读出，不硬编码，避免与 buildBrief 的段落数漂移
     paintAudit('pass', result);
@@ -1961,15 +2027,17 @@ function renderBriefNav() {
     b.title = `跳转到 ${full}`;
     nav.appendChild(b);
   }
-  const tg = $('briefToggle');
-  if (tg) tg.textContent = '全部折叠';
+  // 「全部折叠」按钮已移除（2026-10-25），此处无需再同步按钮文案
 }
 
-// 「全部折叠/展开」按钮文案跟随实际段落状态，避免按钮说反话
+// 「全部折叠/展开」按钮文案同步 —— 按钮已于 2026-10-25 移除，保留函数使既有三处调用点
+//   保持有效（$('briefToggle') 返回 null → 无副作用），避免为删一个按钮去动三处调用。
+//   逐段折叠照常可用（document 委托的 bftoggle）。
 function syncBriefToggleLabel() {
-  const secs = [...document.querySelectorAll('#briefBody .bf-sec')];
   const tg = $('briefToggle');
-  if (tg) tg.textContent = (secs.length && secs.every((s) => s.classList.contains('collapsed'))) ? '全部展开' : '全部折叠';
+  if (!tg) return;
+  const secs = [...document.querySelectorAll('#briefBody .bf-sec')];
+  tg.textContent = (secs.length && secs.every((s) => s.classList.contains('collapsed'))) ? '全部展开' : '全部折叠';
 }
 
 // ── V5.2 策略回测面板：读 data/backtest.json（由 node scripts/backtest.mjs 预生成）──
@@ -2155,7 +2223,7 @@ function renderBacktest(bt) {
         c.title = `点击查看 ${st.name} 的席位与资金详情`;
         // 仓位管理（第三步）：ATR 波动分档 + 建议仓位（数据不足 → ATR —，权重取 mid 默认）
         const atrTxt = st.atr_pct != null ? `ATR ${numS(st.atr_pct, 1)}%` : 'ATR —';
-        c.innerHTML = `${esc(st.name)} <span class="${trendCls(st.changePct)}">${numS(st.changePct, 2)}%</span>`
+        c.innerHTML = `${esc(st.name)} ${window.__glm ? window.__glm.tagSpan(st) : ''}<span class="${trendCls(st.changePct)}">${numS(st.changePct, 2)}%</span>`
           + ` <span class="muted">${atrTxt} / 建议仓位 ${numS(st.suggested_weight, 0)}%</span>`;
         wrap.appendChild(c);
       });
@@ -2263,6 +2331,54 @@ async function loadHealth() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const s = await res.json();
     SIGNALS = s || null;
+    // 窗桥：把整份 signals 暴露给 paper_ui.js / 个股抽屉 / 连板天梯——
+    //   板块情绪（B）与妖股逻辑（C）两段已内嵌于此，供前端打标与详情侧边栏读取。
+    window.__signals = s || null;
+    // AI 深度情报·前端查询助手（方向 A/B/C 打标与拦截共用）：只读 window 上的
+    //   __signals / __glmBlacklist（由本函数与下方 fetch 注入），懒求值——调用时才查，
+    //   故即便排雷黑名单档晚于 signals 到位也不影响。
+    window.__glm = {
+      riskOf(code) {
+        const bl = window.__glmBlacklist;
+        if (!bl || !Array.isArray(bl.blacklist)) return null;
+        return bl.blacklist.find((x) => String(x.code) === String(code)) || null;
+      },
+      dragonOf(code) {
+        const dl = window.__signals && window.__signals.dragonLogic;
+        if (!dl || !Array.isArray(dl.dragons)) return null;
+        return dl.dragons.find((x) => String(x.code) === String(code)) || null;
+      },
+      // 个股名称旁的红/紫标签（A 排雷 + C 妖股）；title 即 AI 无情吐槽/判词
+      tagSpan(r) {
+        if (!r || r.code == null) return '';
+        let s = '';
+        const risk = this.riskOf(r.code);
+        if (risk) {
+          const tip = esc((risk.reason || 'AI 排雷：该票被判定有雷，已禁止自动建仓').replace(/[\r\n]+/g, ' '));
+          s += `<span class="tag risk" title="${tip}">☠ AI 排雷</span>`;
+        }
+        const dg = this.dragonOf(r.code);
+        if (dg) {
+          const tip = esc((dg.reason || 'AI 妖股逻辑推演').replace(/[\r\n]+/g, ' '));
+          s += `<span class="tag glm" title="${tip}">🕵 ${dg.is_pure_sentiment ? '纯情绪' : '妖股'}</span>`;
+        }
+        return s;
+      },
+      // 个股详情抽屉里的「🕵 妖股逻辑推演」块（C）
+      drawerSec(code) {
+        const dg = this.dragonOf(code);
+        if (!dg) return '';
+        const isPure = !!dg.is_pure_sentiment;
+        const role = isPure ? 'fomo' : (dg.logic_type === '基本面支撑' ? 'fund' : (dg.logic_type === '题材叠加' ? 'hot' : 'lead'));
+        const roleLabel = isPure ? '纯情绪炒作' : (dg.logic_type || '—');
+        const cat = dg.hybk ? `<span class="glm-cat neu">${esc(dg.hybk)}</span>` : '';
+        const judg = `<div class="glm-judg ${isPure ? 'is-pure' : ''}">${esc(dg.reason || '（无判词）')}</div>`;
+        return dwSection('🕵 妖股逻辑推演（方向C）',
+          `<div class="dw-glm"><div class="glm-tag-line">`
+          + `<span class="glm-role ${role}">${esc(roleLabel)}</span>${cat}`
+          + `<span class="glm-cat ${dg.lb >= 4 ? 'fomo' : 'neu'}">${dg.lb}板</span></div>${judg}</div>`);
+      },
+    };
     HEALTH = s && s.health ? s.health : null;
     renderHealth(HEALTH);
     // 席位属性（#1）与亏钱效应（#2）同在 signals-latest.json 里 → 一次 fetch 全取，
@@ -2287,6 +2403,13 @@ async function loadHealth() {
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => { MANUAL_REVIEW = (j && Array.isArray(j.entries)) ? j : null; renderDirty(DIRTY); })
       .catch(() => {});
+    // AI 深度情报·排雷黑名单（方向 A）：盘后由 scripts/llm_risk_scan.mjs 落盘
+    //   data/llm_risk-blacklist.json，前端拉取供「选股池/详情抽屉打标 + 模拟交易台下单预检拦截」。
+    //   fail-open：档缺失/解析失败 → window.__glmBlacklist=null（不打标、不拦截，绝不误伤）。
+    fetch('./data/llm_risk_blacklist.json?_=' + Date.now(), { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { window.__glmBlacklist = (j && Array.isArray(j.blacklist)) ? j : null; })
+      .catch(() => { window.__glmBlacklist = null; });
     // 跨源一致性互证（#2）同源同次取。
     XCHECK = s && s.crosscheck ? s.crosscheck : null;
     renderXcheck(XCHECK);
@@ -2636,6 +2759,22 @@ function renderBreadth(b, errMsg) {
     + `<td class="bw-updown"><span class="pos">${r.up ?? '—'}</span>/<span class="neg">${r.down ?? '—'}</span></td>`
     + `</tr>`).join('');
 
+  // 板块拆分（创业/科创/主板/北交）：满足「广度指标按板块拆分」需求；与总量同源同口径。
+  const BOARD_LABEL = { main: '主板', gem: '创业板', star: '科创板', bj: '北交所', other: '其他' };
+  const bb = snap.boardBreakdown;
+  const boardRows = bb ? ['main', 'gem', 'star', 'bj', 'other'].filter((k) => bb[k] && bb[k].scanned > 0).map((k) => {
+    const x = bb[k];
+    const ma = x.aboveMa && x.aboveMa.den ? `${x.aboveMa.n}/${x.aboveMa.den}` : '—';
+    const up = x.updown ? (x.updown.up ?? 0) : 0;
+    const dn = x.updown ? (x.updown.down ?? 0) : 0;
+    return `<tr><td>${BOARD_LABEL[k]}</td><td class="bw-num">${ma}</td>`
+      + `<td class="bw-updown"><span class="pos">${up}↑</span>/<span class="neg">${dn}↓</span></td></tr>`;
+  }).join('') : '';
+  const bwBoardHtml = boardRows
+    ? `<div class="bw-board"><div class="bw-board-h">板块拆分（创业板/科创板 · 主板/北交）</div>`
+      + `<table class="bw-table bw-board-table"><thead><tr><th>板块</th><th>站上20日线 n/den</th><th>涨跌家数 ↑/↓</th></tr></thead><tbody>${boardRows}</tbody></table></div>`
+    : '';
+
   box.innerHTML = `<details class="bw-fold" open>`
     + `<summary><b>市场宽度（结构）</b>`
     + `<span class="bw-chip ${esc(tone)}">${esc(v.label || '未评估')}</span>`
@@ -2643,6 +2782,7 @@ function renderBreadth(b, errMsg) {
     + `</summary>`
     + `<div class="bw-body">`
     + `<div class="bw-kpis">${kpis}</div>`
+    + bwBoardHtml
     + (rows ? `<table class="bw-table"><thead><tr><th>日期</th><th>站上20日线</th><th>新高</th><th>新低</th><th>破净</th><th>涨/跌</th></tr></thead><tbody>${rows}</tbody></table>` : '')
     + `<div class="bw-note muted">口径：由全市场真实前复权日K计算（前复权是本口径的正确性前提——不复权时除权日的假暴跌会同时打掉均线并伪造新低）。`
     + `占比分母是当次扫描的有效样本数，不是全市场总数。`
@@ -2916,6 +3056,126 @@ function regimeKeyOf(r, label) {
 // ── 每日盘后日报（#4）──────────────────────────────────────────────────────
 //   把当天的证据串成七节可读简报。它是**翻译层**：只把屏幕上已有的数字翻成人话，
 //   不重算任何指标。缺失节显示「未生成＋原因」，绝不补 0 伪装成正常。
+// ── 八/九/十 节渲染（研判报告与每日日报共用，保证两处口径完全一致）──
+//   数据侧：日常由 dailyReport.sections 快照承载；若快照 missing（生成早于 fetch 落地），
+//   每日日报在 renderDailyReport 处回退读顶层 llm/sectorSentiment/dragonLogic 真数据，
+//   经同一渲染器输出 → 前端两处内容完全一致，绝不呈现"未生成"空白块。
+// ── 模块级 li/cal：八/九/十节共用渲染器位于模块作用域，引不到 buildBrief 函数内的同名
+//   局部定义（直接引用会抛 ReferenceError）。这里补模块级实现，与 buildBrief 内同名局部
+//   函数逐字一致；函数内局部定义遮蔽模块级，互不冲突。esc/CAL_SUMMARY 本就在模块级，可直接用。
+const li = (t) => `<div class="bf-li">${t}</div>`;
+const cal = (t) => t ? `<details class="bf-caliber"><summary>${CAL_SUMMARY}</summary><div class="bf-cal-body">${t}</div></details>` : '';
+function renderLlmSection(llm) {
+  if (!llm) {
+    return li('舆情参考（LLM 试点）未生成（需收盘后跑 scripts/fetch_llm_sentiment.mjs；未跑 ≠ 舆情中性）')
+      + cal('舆情参考 = 智谱读盘后舆情 → 给 ±5 参考修正；原分不动、不独立生成买卖信号；仅与原因子同向时生效，观望区/反向不生效；缺失时本段只报缺，不冒充中性。');
+  }
+  if (llm.degraded) {
+    return li(`⚠ ${llm.effectNote || llm.reason || 'AI 舆情获取失败，默认中性'}（调用失败/超时兜底，不冒充真实舆情）`)
+      + cal('口径同前；证据日期 ' + (llm.asOfDate || '—') + '，模型 ' + (llm.model || '未留痕'));
+  }
+  const raw = (typeof llm.sentimentRaw === 'number') ? llm.sentimentRaw : 0;
+  const dirText = raw > 0.05 ? '正面' : (raw < -0.05 ? '负面' : '中性');
+  return li(`舆情方向：${dirText}（LLM 读数 ${raw}，置信度 ${llm.confidence != null ? llm.confidence : '—'}）`)
+    + li(`参考修正：${(llm.adj != null ? (llm.adj > 0 ? '+' : '') + llm.adj : 0)} 分（±5 软修正，原分不动，不进交易信号）`)
+    + li((llm.effectNote || (llm.reason || '')).slice(0, 200))
+    + li(`证据日期 ${llm.asOfDate || '—'}｜模型 ${llm.model || '未留痕'}｜原分 ${llm.original != null ? llm.original : '—'}${llm.modified != null ? ' → 参考分 ' + llm.modified : ''}`)
+    + cal('舆情参考 = 智谱读盘后舆情 → 给 ±5 参考修正；原分不动、不独立生成买卖信号；仅与原因子同向增强时生效，观望区/反向一律不生效（保守保持原分）；证据日期不符或为空即视为缺数据。');
+}
+
+function renderSectorSentimentSection(ss) {
+  if (!ss) {
+    return li('板块情绪因子未生成（需盘后/周末跑 scripts/fetch_macro_sector_sentiment.mjs；未跑 ≠ 板块中性）')
+      + cal('板块情绪因子 = 新浪滚动新闻 → 智谱映射板块/方向/强度 → 聚合；score∈[-1,1] 纯参考，不独立生成买卖信号；缺失时本段只报缺，不冒充中性。');
+  }
+  if (ss.degraded) {
+    return li(`⚠ ${ss.effectNote || '板块情绪获取失败，默认中性'}（调用失败/超时兜底，不冒充真实情绪）`)
+      + cal('口径同前；证据日期 ' + (ss.asOfDate || '—') + '，模型 ' + (ss.model || '未留痕'));
+  }
+  const sectors = ss.sectors || [];
+  const rows = sectors.map((s) => {
+    const v = typeof s.score === 'number' ? s.score : 0;
+    const w = Math.abs(v) * 50;
+    const cls = v > 0.05 ? 'pos' : v < -0.05 ? 'neg' : 'zero';
+    const fill = `<div class="glm-bar-fill ${cls}" style="left:${v < 0 ? (50 - w) : 50}%;width:${w}%"></div>`;
+    const cats = [];
+    if (v > 0.15) cats.push('<span class="glm-cat hot">🔥 强催化</span>');
+    else if (v < -0.15) cats.push('<span class="glm-cat cold">⚠ 利空</span>');
+    else cats.push('<span class="glm-cat neu">➖ 中性</span>');
+    const ev = (Array.isArray(s.headlines) && s.headlines[0]) || null;
+    if (ev) cats.push(`<span class="glm-cat ${v > 0 ? 'hot' : 'warn'}">${esc(((typeof ev === 'string' ? ev : (ev.reason || ev.headline || '')).slice(0, 26)))}</span>`);
+    return `<div class="glm-radar-row"><div class="glm-radar-name">${esc(s.sector)}</div>`
+      + `<div class="glm-radar-cell"><div class="glm-bar"><div class="glm-bar-mid"></div>${fill}<span class="glm-bar-val">${v > 0 ? '+' : ''}${v.toFixed(2)}</span></div>${cats.join('')}</div></div>`;
+  }).join('');
+  const bull = (ss.topBullish || []).slice(0, 5).map((x) => `${esc(x.sector)}(+${x.score})`).join('、') || '无';
+  const bear = (ss.topBearish || []).slice(0, 5).map((x) => `${esc(x.sector)}(${x.score})`).join('、') || '无';
+  const btText = ss.blackTalk
+    ? ss.blackTalk
+    : (function () { const hyped = /机器人|算力|半导体|AI|低空/.test(bull); return '今日盘后' + ((ss.macro && ss.macro.label) || '情绪中性') + '。多头主线：' + bull + '；空头压制：' + bear + '。' + (hyped ? '题材高潮次日易分歧，谨记「买在分歧、卖在一致」，切勿盲目顶一字。' : '板块轮动加快，控制仓位，别上头。'); })();
+  const blacktalk = `<div class="glm-blacktalk"><span class="glm-bt-h">🔥 游资复盘黑话：</span><span class="glm-bt-body" data-tw="${esc(btText)}">${esc(btText)}</span></div>`;
+  return `<div class="glm-radar">${rows}</div>`
+    + blacktalk
+    + li(`宏观情绪：${(ss.macro && ss.macro.label) || '中性'}（score ${ss.macro && ss.macro.sentiment != null ? ss.macro.sentiment : 0}）｜利好：${bull}｜利空：${bear}`)
+    + li(`证据日期 ${ss.asOfDate || '—'}｜模型 ${ss.model || '未留痕'}｜新闻源 ${ss.source || 'sina-roll'}｜涉及板块 ${sectors.length} 个、事件 ${ss.events ? ss.events.length : 0} 条`)
+    + cal('板块情绪因子 = 新浪滚动新闻 → 智谱映射板块/方向/强度 → 聚合；score∈[-1,1]，仅作参考，不独立生成买卖信号；证据日期不符或为空即视为缺数据。');
+}
+
+function renderDragonLogicSection(dl) {
+  if (!dl) {
+    return li('妖股逻辑推演未生成（需盘后跑 scripts/fetch_dragon_logic.mjs；未跑 ≠ 无妖股）')
+      + cal('妖股逻辑 = 连板梯队 → 智谱推断涨停逻辑/纯情绪炒作；纯参考，不修改 regime/emotion 分数；由下游决定是否采纳。');
+  }
+  if (dl.degraded) {
+    return li(`⚠ ${dl.effectNote || '妖股逻辑推演获取失败，默认空'}（调用失败/超时兜底，不冒充结论）`)
+      + cal('口径同前；证据日期 ' + (dl.asOfDate || '—'));
+  }
+  const pure = dl.pureSentiment || [];
+  const byType = dl.byType || {};
+  const typeStr = Object.keys(byType).map((k) => `${k}:${byType[k]}`).join('、') || '无';
+  const pureHtml = pure.slice(0, 12).map((x) => {
+    const reason = x.reason || '纯情绪博弈，晋级风险极大';
+    return `<div class="glm-tag-line"><span class="glm-role fomo">${esc(x.name)}(${x.lb}板)</span>`
+      + `<span class="glm-cat fomo">纯情绪炒作</span>`
+      + `<span class="glm-judg is-pure" data-tw="${esc(reason)}">${esc(reason)}</span></div>`;
+  }).join('');
+  return (pure.length ? `<div class="dw-glm">${pureHtml}</div>` : li('本轮无被判定为「纯情绪炒作」的连板股'))
+    + li(`连板股推演 ${dl.dragons ? dl.dragons.length : 0} 只｜类型分布：${typeStr}`)
+    + li(`证据日期 ${dl.asOfDate || '—'}｜模型 ${dl.model || '未留痕'}${dl.scanned != null ? '｜扫描 ' + dl.scanned + ' 只' : ''}`)
+    + li('口径：纯参考，不修改 regime/emotion 分数；由下游（paper 等）决定采不采纳。')
+    + cal('妖股逻辑 = 连板梯队 → 智谱推断涨停逻辑/纯情绪炒作；纯参考不改分；证据日期不符或为空即视为缺数据。');
+}
+
+// 每日日报遇 dailyReport.sections 某项 missing 时，回退读顶层 llm/sectorSentiment/dragonLogic 真数据并复用上面渲染器
+function renderDailyExtraSection(id, obj) {
+  if (!obj || obj.degraded) return null;
+  if (id === 'llm') return renderLlmSection(obj);
+  if (id === 'sectorSentiment') return renderSectorSentimentSection(obj);
+  if (id === 'dragonLogic') return renderDragonLogicSection(obj);
+  return null;
+}
+
+// 纯文本兜底（复制/打印共用）：与上面渲染器同源，保证每日日报文本与研判报告一致
+function dailyExtraPlain(id, obj) {
+  if (!obj || obj.degraded) return null;
+  if (id === 'llm') {
+    const raw = (typeof obj.sentimentRaw === 'number') ? obj.sentimentRaw : 0;
+    const dirText = raw > 0.05 ? '正面' : (raw < -0.05 ? '负面' : '中性');
+    return `舆情方向：${dirText}（读数 ${raw}，置信度 ${obj.confidence != null ? obj.confidence : '—'}）｜参考修正 ${obj.adj != null ? (obj.adj > 0 ? '+' : '') + obj.adj : 0} 分`;
+  }
+  if (id === 'sectorSentiment') {
+    const bull = (obj.topBullish || []).slice(0, 5).map((x) => `${x.sector}(+${x.score})`).join('、') || '无';
+    const bear = (obj.topBearish || []).slice(0, 5).map((x) => `${x.sector}(${x.score})`).join('、') || '无';
+    const macro = (obj.macro && obj.macro.label) || '中性';
+    return `板块情绪（${macro}）：多头主线 ${bull}；空头压制 ${bear}`;
+  }
+  if (id === 'dragonLogic') {
+    const n = obj.dragons ? obj.dragons.length : 0;
+    const pure = (obj.pureSentiment || []).length;
+    return `妖股逻辑推演 ${n} 只｜纯情绪炒作 ${pure} 只`;
+  }
+  return null;
+}
+
 function renderDailyReport(rep, errMsg) {
   const box = $('reportPanel');
   if (!box) return;
@@ -2927,25 +3187,36 @@ function renderDailyReport(rep, errMsg) {
     return;
   }
   const secs = Array.isArray(rep.sections) ? rep.sections : [];
-  // ⚠ 2026-10-17 用户指令：LLM 舆情试点暂停，前端隐藏（id==='llm' 不渲染、不计入数据缺口）
-  const visSecs = secs.filter((s) => s.id !== 'llm');
-  const missingN = visSecs.filter((s) => s.missing).length;
+  // 2026-10-24 用户指令：取消隐藏第八节（舆情参考 LLM 试点）——恢复渲染；
+  //   数据未生成时由 buildLlmSection 显式标「未生成」，不冒充中性（与其他节同款缺数据口径）。
+  const visSecs = secs;
+  // 展示层回退（2026-10-27）：dailyReport.sections 某项 missing（生成早于 fetch 落地）时，
+  // 回退读真数据：优先 dailyReport[s.id]（若快照自带），否则读【顶层 SIGNALS】根级
+  // llm/sectorSentiment/dragonLogic（dailyReport 自身通常不含这些键）——复用八/九/十节共用渲染器
+  // → 与研判报告完全一致；仍缺（顶层也无）→ 才报"未生成"。
+  const missingN = visSecs.filter((s) => s.missing && !renderDailyExtraSection(s.id, rep[s.id] || (SIGNALS && SIGNALS[s.id]))).length;
   const tagTone = REGIME_TONE[rep.tag && rep.tag.key] || 'unknown';
 
   const secHtml = visSecs.map((s) => {
+    // 缺失项优先回退顶层真数据（复用研判报告同款渲染器，保证两处口径一致）
+    const fb = s.missing ? renderDailyExtraSection(s.id, rep[s.id] || (SIGNALS && SIGNALS[s.id])) : null;
     const pts = (s.points || []).map((p) => {
       const cls = p.kind === 'caution' ? 'rp-pt warn'
         : (p.kind === 'main' ? 'rp-pt main'
           : (p.kind === 'unknown' ? 'rp-pt unknown' : 'rp-pt'));
       return `<li class="${cls}">${esc(p.text)}</li>`;
     }).join('');
-    const miss = s.missing
+    const isMissing = s.missing && !fb;
+    const miss = isMissing
       ? `<div class="rp-missing">未生成：${esc(s.missingReason || '原因未知')}</div>` : '';
-    return `<div class="rp-sec${s.missing ? ' is-missing' : ''}">`
+    const body = fb
+      ? `<div class="rp-sec-body">${fb}</div>`
+      : (pts ? `<ul class="rp-pts">${pts}</ul>` : '');
+    return `<div class="rp-sec${isMissing ? ' is-missing' : ''}">`
       + `<div class="rp-sec-title">${esc(s.title || '')}`
       + `<span class="rp-sec-lv lv-${esc(s.level || 'info')}">${esc(secLevelText(s.level))}</span></div>`
       + miss
-      + (pts ? `<ul class="rp-pts">${pts}</ul>` : '')
+      + body
       + `</div>`;
   }).join('');
 
@@ -2955,12 +3226,19 @@ function renderDailyReport(rep, errMsg) {
 
   box.hidden = false;
   box.className = `report-panel rp-${tagTone}`;
+  // 展示层合并（2026-10-24）：基础仓位 × 风控帽 冲突时，顶部红字横幅"最终执行仓位"，一眼知今天不能买
+  const rec = rep.positionReconcile;
+  const recBanner = (rec && rec.conflict)
+    ? `<div class="rp-reconcile">⚠ 最终执行仓位：<b>${esc(rec.finalRange)}</b>${rec.force ? '（强制降仓）' : ''}`
+      + ` — 情绪分 ${esc(String(rec.score))} 基础建议 ${esc(rec.baseRange)}，但触发 regime=${esc(rec.cap.key)} 风控帽，系统强制降仓。只减仓不新建。</div>`
+    : '';
   box.innerHTML = `<details class="rp-fold" open>`
     + `<summary><b>每日日报</b>`
     + `<span class="rp-chip ${esc(tagTone)}">${esc((rep.tag && rep.tag.label) || '—')}</span>`
     + `<span class="muted rp-sum">${esc(rep.date || '')}${missingN ? ` · ${missingN} 个区块缺数据` : ''}</span>`
     + `</summary>`
     + `<div class="rp-body">`
+    + (recBanner ? `<div class="rp-reconcile-wrap">${recBanner}</div>` : '')
     + `<div class="rp-headline">${esc(rep.headline || '')}</div>`
     + caveats
     + `<div class="rp-secs">${secHtml}</div>`
@@ -2996,7 +3274,12 @@ function reportToText(rep) {
   }
   (rep.sections || []).forEach((s) => {
     lines.push(s.title || '');
-    if (s.missing) lines.push(`  （未生成：${s.missingReason || '原因未知'}）`);
+    const fbPlain = s.missing ? dailyExtraPlain(s.id, rep[s.id] || (SIGNALS && SIGNALS[s.id])) : null;
+    if (fbPlain) {
+      fbPlain.split('\n').forEach((l) => lines.push(`  - ${l}`));
+    } else if (s.missing) {
+      lines.push(`  （未生成：${s.missingReason || '原因未知'}）`);
+    }
     (s.points || []).forEach((p) => lines.push(`  - ${p.text}`));
     lines.push('');
   });
@@ -3895,7 +4178,7 @@ async function loadIntraday(meta) {
   const rows = [
     ['涨停', p ? i(p.zt) + delta(p.zt, prev && prev.zt) : '—', '触板未封（炸板）', p ? i(p.zb) + delta(p.zb, prev && prev.zb) : '—'],
     ['跌停', p ? i(p.dt) : '—', '封板率', p && p.seal_pct != null ? `<b>${n(p.seal_pct)}%</b>` + delta(p.seal_pct, prev && prev.seal_pct) : '—'],
-    ['最高连板', p ? i(p.max_lb) + ' 板' : '—', '2板以上', p ? i(p.lb2) + ' 只' : '—'],
+    ['最高连板', p ? i(p.max_lb) + ' 板' : '—', '连板梯队·N天M板', p ? (p.lbw2 != null ? i(p.lbw2) + ' 只' : i(p.lb2) + ' 只（连续口径）') : '—'],
     ['上涨家数', b ? i(b.up) : '—', '下跌家数', b ? i(b.down) : '—'],
   ];
 
@@ -4337,6 +4620,7 @@ function stockDetail(code) {
     + themeSec
     + histSec
     + (inMain ? dwSection('主线归属', `<div class="dw-kv"><div class="k">主线题材</div><div class="v"><span class="chip click" data-act="theme" data-theme="${esc(inMain.theme)}" tabindex="0">${esc(inMain.theme)}</span>（强度分 ${inMain.mainScore}，当日涨停 ${inMain.themeCount} 只）</div></div>`) : '')
+    + (window.__glm ? window.__glm.drawerSec(code) : '')
     + `<div class="dw-note">诱因：${esc(reason || '—')}${isNew ? '（<b>独立新股</b>：上市首 5 日无涨跌幅限制，其资金不宜直接计入主线强度）' : ''}</div>`;
 
   return {
@@ -4552,7 +4836,7 @@ function dayDetail(i) {
       + dwSection('涨跌与量能', dwKv([
         ['涨停 / 跌停', `${nf(s.zt_count)} / ${nf(s.dt_count)}`],
         ['封板率', s.seal_pct != null ? `${s.seal_pct}%（涨停 ${nf(s.zt_count)} ÷ 触板 ${nf(s.seal_den)} 只，炸板 ${nf(s.zb_count)} 只＝${s.zb_pct ?? '—'}%）` : (s.zbl_pct != null ? `${s.zbl_pct}%（旧档：字段名为炸板率口径）` : '—')],
-        ['连板高标', s.max_lb != null ? `${s.max_lb} 板（2 板以上 ${nf(s.lb2_count)} 只）` : '—'],
+        ['连板高标', s.max_lb != null ? `${s.max_lb} 板（连板梯队 ${nf(s.lbw2_count != null ? s.lbw2_count : s.lb2_count)} 只·N天M板口径${s.lb2_count != null && s.lbw2_count != null && s.lbw2_count !== s.lb2_count ? `，连续2板以上 ${nf(s.lb2_count)} 只` : ''}）` : '—'],
         ['涨跌家数', up != null ? `${up} / ${dn}（红盘 ${redPct != null ? redPct.toFixed(0) + '%' : '—'}）` : '—'],
         ['两市成交额', s.amount_yi != null ? `${s.amount_yi} 亿` : '—'],
         // 两套口径都列出并标明用途：只显示一个数就是「读者无从判断口径」，混用往往就是这么发生的
@@ -4848,17 +5132,8 @@ $('hotSortDir')?.addEventListener('click', () => {
   renderHotTable();
 });
 
-// 报告：一键折叠/展开（逐段折叠由 document 委托的 bftoggle 处理，两处不重复绑定）
-$('briefToggle')?.addEventListener('click', () => {
-  const secs = [...document.querySelectorAll('#briefBody .bf-sec')];
-  const anyOpen = secs.some((s) => !s.classList.contains('collapsed'));
-  for (const s of secs) {
-    s.classList.toggle('collapsed', anyOpen);
-    const h = s.querySelector('.bf-h');
-    if (h) h.setAttribute('aria-expanded', anyOpen ? 'false' : 'true');
-  }
-  syncBriefToggleLabel();
-});
+// 报告「全部折叠 / 全部展开」按钮已于 2026-10-25 移除（方向：不想要报告型的一键收放）。
+// 逐段折叠仍可用——由 document 委托的 bftoggle 处理，点各段标题即可展开/收起。
 
 // ── 报告：复制全文 / 导出文档 / 打印 ──
 // 三者都消费同一份东西——**屏幕上已经渲染出来的报告 DOM**（#briefBody）。

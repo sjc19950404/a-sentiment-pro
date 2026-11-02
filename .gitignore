@@ -64,6 +64,10 @@ data/emotion_history.json
 data/old_dragon_history.json
 data/main_theme_history.json
 
+# 纸面交易运行态（账户余额/复盘为运行时状态，勿入库；Pi 上需持久化，git reset 不丢）
+data/paper/account.json
+data/paper/review-latest.json
+
 # Python 数据层（2026-10-10 迁移）
 __pycache__/
 *.pyc
@@ -87,3 +91,36 @@ scripts/ops_log.mjs
 set_llm_secrets.ps1
 scripts/set_llm_secrets.ps1
 .codebuddy/
+
+# ── 安全：绝不入库的本地密钥/垃圾（2026-10-22 事故教训：.env 曾被误推，泄露企微 webhook key）──
+# 注意：.env.example 是模板，必须保留（下面 ! 反忽略）。
+.env
+.env.*
+!.env.example
+shell_hunter*.py
+~shell_hunter.py
+*.bak
+*~
+
+# 全市场日K分片（2026-10-24 移出版本控制）：163MB/5554 片的本地缓存，可由
+# ui/fetch_kline_all.mjs 随时重建（--init 全量 / 默认增量），丢失零损失；
+# 且盘中/盘后每次 git reset --hard 都会把「已跟踪的增量」回滚掉——这正是
+# 分片停在 10-20 的根因。不入库后本地缓存才能持续累积。生成方式见 ui/README.md。
+ui/kline/
+
+# npm 副产物（依赖版本锁由 package.json 表达；lock 不入库，与既有决策一致）
+package-lock.json
+
+# 公告爬虫 / 排雷机 当日运行产物（按交易日变化、可由 EOD 重跑重建，勿入库以免 git status 长期挂脏）
+data/announcements-latest.json
+data/llm_risk_blacklist.json
+data/macro-sector-sentiment-latest.json
+data/llm-dragon-logic-latest.json
+
+# 盘中监控侧车（持仓/连板池报价快照 + 急跌新闻快讯，盘中 cron 实时生成、可由脚本重跑，勿入库）
+data/intraday-quotes-latest.json
+data/intraday-news-latest.json
+data/intraday-antinuke-state.json
+
+# R2 同步增量清单（本地元数据，非源码）
+.r2_sync_manifest.json

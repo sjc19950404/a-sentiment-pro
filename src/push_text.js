@@ -255,6 +255,24 @@ export function renderPushText(report) {
       break;
     case 'intraday':
       lines.push(`【AI 盘中 · 候选池】${report.date}${report.trigger !== 'schedule' ? ` · ${zhLabel(report.trigger, TRIGGER_LABELS)}` : ''}`);
+      // ①（2026-10-27）：盘面快照始终展示（大盘情绪分/涨跌家数/涨停跌停/最高连板），防御期也汇报盘面温度
+      if (p.market_context) {
+        const hc = p.market_context.highest_chain != null ? p.market_context.highest_chain : (p.watchlist?.max_lb ?? '—');
+        const emo = (p.regime && p.regime.score != null) ? p.regime.score : null; // 大盘情绪分（0-100）
+        // 2026-10-28 紧急修复：涨跌家数/涨停跌停必须取实时 intraday 快照；若快照滞后/缺失（限流等），
+        //   breadth_stale=true → 显式提示“暂不可用（数据滞后）”，绝不输出昨收陈旧值糊弄老板。
+        const ud = p.market_context.up_down;
+        const udTxt = ud ? `涨跌 ${txt(ud)}` : '涨跌家数：暂不可用（数据滞后，未取实时）';
+        const zdt = p.market_context.zt_dt;
+        const zdtTxt = zdt ? `涨停/跌停 ${txt(zdt)}` : '涨停/跌停：暂不可用（数据滞后）';
+        lines.push(`盘面：情绪 ${emo != null ? Math.round(emo) : '—'} · ${udTxt} · ${zdtTxt} · 最高连板 ${txt(hc)}`);
+        // 2026-10-29 兜底源显式披露：盘面/候选宇宙由上次成功快照补全时，让老板一眼看到哪次是兜底出来的
+        //   （数据真实性不可糊弄：兜底源本身也是真实抓取值，只标注来源，不冒充实时）。
+        const fb = p.market_context?.fallbackUsed;
+        if (Array.isArray(fb) && fb.length) {
+          lines.push(`盘面数据：兜底自 ${formatBJ(p.market_context?.fallbackFromAt || report.generated_at)} 快照（${fb.join('/')} 由上次成功快照补全，宁缺毋假不冒充实时）`);
+        }
+      }
       { // 双池推送（P0 双池物理拆分）：连板池白名单（昨日涨停+今日非一字）独立评分
         //   独立模板；趋势池黑名单（滤昨日涨停/今日涨停/一字板）保留四条件描述——
         //   标题=标的一票一致，标题冒充口径 = 推送造假（10-09 实盘事故教训）。
@@ -284,6 +302,13 @@ export function renderPushText(report) {
           if (bits.length) lines.push(`推送前校验（快照 ${pv.snapshotAtBJ ?? '—'}）：${bits.join('；')}`);
         }
       }
+      // ①（2026-10-27）：候选池缺席（模拟选股关闭/无主线）→ 极简盘面快报。
+      //   冰点(ice)/过热(climax) 期 → "防守期，继续空仓看戏"；其余状态中性观察（不冒充防守姿态）。
+      const poolEmpty = !p.simulation_stock || !(Array.isArray(p.simulation_stock.candidate_pool) ? p.simulation_stock.candidate_pool.length : false);
+      if (poolEmpty) {
+        const regimeKey = p.regime && (p.regime.key || (p.regime.tag && p.regime.tag.key));
+        lines.push(regimeKey === 'ice' || regimeKey === 'climax' ? '防守期，继续空仓看戏' : '暂无符合标准的候选标的，继续观察');
+      }
       lines.push(`运行回撤 ${pct(p.drawdown_vs_threshold?.dd_now)} · 距回撤档位 ${p.drawdown_vs_threshold?.distance_pp != null ? `${p.drawdown_vs_threshold.distance_pp} 个百分点` : '—'}（${p.drawdown_vs_threshold?.basis ?? '—'}）`);
       lines.push(`昨收口径: 当日 ${pct(p.pnl_daily)} · 累计 ${pct(p.pnl_cumulative)} · 富时A50期货夜盘 ${overseas(p, 'a50')}`);
       break;
@@ -300,13 +325,28 @@ export function renderPushText(report) {
       lines.push(`趋势切换 ${txt(p.trend_switch_hits)} 次 · 胜率 ${p.win_rate != null ? pct(p.win_rate) : '—（剧本口径，绑定缺席则无值）'}`);
       if (p.trend_switch_effect?.shadow_note) lines.push(p.trend_switch_effect.shadow_note);
       break;
+    case 'signal_sync':
+      // 实盘跟单指令：极简、独立成条，不附「采集时间 / 完整版见页面」等尾注（已在主流程保证），直接透出 payload.text
+      return report?.payload?.text || '【实盘跟单指令】（内容为空）';
+    case 'weekly_performance':
+    case 'monthly_review':
+      // 战绩报表（周度盈利战报 / 月度大复盘）：完整文本已在构建器拼好（含尾部免责），直接透出
+      return report?.payload?.text || '【战绩汇报】（内容为空）';
     default:
       lines.push(`【AI 报告 · ${txt(report?.report_type)}】${txt(report?.date)}`);
   }
   // 外围陈旧告警（2026-10-12 用户指令）：validateExternal 混合策略产出的 meta 告警，
   // 全报告类型统一脚注——陈旧≥阈值已置空 / 当日失败保留值则提示历史缓存，二者皆在此点破。
+  // 2026-10-19 修（fix 1）：原按 join 全量罗列 → 行字节数无上限；8 项外围全 stale 时
+  //   单行 ~800B，顶爆企微 2048 字节上限，触发尾部整行回退截断，连带吞掉「数据采集时间」
+  //   与免责尾行（违反 10-12「每条必标采集时间」）。折叠为「前 2 项 + 等 N 项」有界形态，
+  //   保留陈旧告警本身、保住尾部必标行；完整清单于页面可见。
   if (Array.isArray(p.externalStale) && p.externalStale.length) {
-    lines.push(`⚠ 外围陈旧：${p.externalStale.join('；')}`);
+    const MAX_STALE_SHOW = 2;
+    const shown = p.externalStale.slice(0, MAX_STALE_SHOW).join('；');
+    const more = p.externalStale.length > MAX_STALE_SHOW
+      ? ` 等 ${p.externalStale.length} 项（完整清单见页面）` : '';
+    lines.push(`⚠ 外围陈旧：${shown}${more}`);
   }
   // MA20 降级红警（2026-10-08 推送前校验 ①）：量能因子走中性 50 → 推送里显式
   //   标红，一眼识别「降级版」（当日成交额缺或量能历史不足；判据唯一出处

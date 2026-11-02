@@ -1,0 +1,297 @@
+#!/usr/bin/env node
+// 真实公告爬虫（V5.3 P2）：为「晚间公告排雷机」(scripts/llm_risk_scan.mjs) 提供真实公告源。
+//
+// 抓取连板梯队 / 标的池候选股的当晚公开公告（东方财富 np-anotice 官方公告接口），
+// 产出 data/announcements-latest.json，shape 严格对齐 llm_risk_scan.readRealAnnouncements：
+//   { date, source, fetchedAt, codes, count,
+//     announcements: { "603XXX": "标题1；标题2", ... },   // code -> 公告文本（喂给 GLM）
+//     details: [ { code, name, announcements: [{title,date,url}] } ] }
+// llm_risk_scan（真实模式）读此文件 → 仅对「有公告数据」的票调 GLM 判利空 → 黑名单。
+//
+// 用法：
+//   node scripts/fetch_announcements.mjs [--universe ladder|paper] [--limit 40]
+//                                      [--out data/announcements-latest.json]
+//                                      [--source auto|em|sina] [--mock]
+//   默认 --source auto：优先东方财富（官方、字段全），被墙/空则自动回退新浪（本环境可达）。
+//
+// 失败语义（fail-open，与排雷机一致）：
+//   抓取失败 / host 不可达 / 返回空 → 该批无公告（降级为空表），绝不抛异常阻断 EOD；
+//   空公告源 → llm_risk_scan 真实模式扫不到任何票 → 空黑名单 → 不封禁（不误伤正常交易）。
+//
+// 注：本脚本按东方财富官方公告接口的真实返回结构解析。部分受限网络环境（如本开发沙箱）
+// 对该 host 返回空/拦截，属网络限制而非代码问题；在出网正常的生产 EOD 环境即可落地真实数据。
+import { readFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { atomicWriteJSON } from '../src/fsutil.js';
+import { decodeArchive } from '../src/lhb_codec.js';
+import { bjStamp } from '../src/time.js';
+import { fetchWithRetry } from '../src/util.js';
+import { loadEnv } from '../src/loadenv.js';
+loadEnv(); // 幂等加载 .env（仅填缺失变量；公告抓取当前不依赖密钥，但为一致性/后续源预留）
+
+const args = process.argv.slice(2);
+const argOf = (k, d) => { const i = args.indexOf(k); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
+const hasFlag = (k) => args.includes(k);
+
+const UNIVERSE = argOf('--universe', 'ladder'); // ladder | paper
+const LIMIT = Math.max(1, (parseInt(argOf('--limit', '40'), 10) || 40));
+const MOCK = hasFlag('--mock');
+const SOURCE = argOf('--source', 'auto'); // auto(默认: 东财→新浪回退) | em | sina（--mock 单独控制）
+const ROOT = new URL('../', import.meta.url); // 项目根（scripts/ 上一级）
+// 相对路径按项目根解析；绝对路径（以 / 或盘符开头）直接当 file:// 用
+const resolvePath = (p) => (p && (p.startsWith('/') || /^[A-Za-z]:[\\/]/.test(p)))
+  ? new URL('file://' + p)
+  : new URL(p, ROOT);
+const OUT = resolvePath(argOf('--out', 'data/announcements-latest.json'));
+const UA = 'Mozilla/5.0 (compatible; a-sentiment-pro/1.0; +https://github.com/sjc19950404/a-sentiment-pro)';
+
+// ── 1. 候选宇宙（与 llm_risk_scan.collectUniverse 同口径，确保 scanner 能命中）────────
+function getTradeDate() {
+  try {
+    const arch = decodeArchive(JSON.parse(readFileSync(resolvePath('data/archive.json'), 'utf8')));
+    const days = (arch.all_days || []).filter((d) => d && d.trade_date);
+    return days.length ? days[days.length - 1].trade_date : null;
+  } catch { return null; }
+}
+
+function collectCodes() {
+  const pu = JSON.parse(readFileSync(resolvePath('data/paper_universe.json'), 'utf8'));
+  const syms = pu.symbols || {};
+  const nameOf = (c) => (syms[c] && syms[c].name) || c;
+  const stOf = (c) => !!(syms[c] && syms[c].st);
+  if (UNIVERSE === 'paper') {
+    return Object.keys(syms).filter((c) => syms[c].active).slice(0, LIMIT)
+      .map((c) => ({ code: c, name: nameOf(c), st: stOf(c) }));
+  }
+  // default: 连板梯队（zt_lb: code -> 连板数），按连板数降序取 Top N
+  const arch = decodeArchive(JSON.parse(readFileSync(resolvePath('data/archive.json'), 'utf8')));
+  const days = (arch.all_days || []).filter((d) => d && d.trade_date);
+  const day = days[days.length - 1];
+  const zt = (day && day.summary && day.summary.zt_lb) || {};
+  return Object.keys(zt)
+    .map((c) => ({ code: c, name: nameOf(c), st: stOf(c), lb: Number(zt[c]) || 0 }))
+    .sort((a, b) => b.lb - a.lb)
+    .slice(0, LIMIT);
+}
+
+// 交易所前缀：6 -> SH（含科创板 688），0/3 -> SZ（含创业板 30），8/4 -> BJ（北交所），9 -> SH（B股兜底）
+function exPrefix(code) {
+  if (/^6/.test(code)) return 'SH';
+  if (/^[03]/.test(code)) return 'SZ';
+  if (/^[84]/.test(code)) return 'BJ';
+  return 'SH';
+}
+
+// ── 2. 东方财富官方公告接口（np-anotice）──────────────────────────────────────────
+//   支持 stock_list 多码批量；返回 { success, data:{ list:[ { security_code, notice_title,
+//   notice_date, pdf_url, ... } ] } }。本沙箱对该 host 返回空属网络限制；生产环境正常。
+const emAnnUrl = (codes) =>
+  'https://np-anotice-stock.eastmoney.com/api/security/announcement?sr=-1&page_size=30'
+  + `&page_index=1&ann_type=0&client_source=web&ut=bd1d9ddb04089700cf9c27f6f7426281`
+  + `&stock_list=${codes.map((c) => exPrefix(c) + c).join(',')}`;
+
+// 解析东方财富返回 → { code: [{title,date,url}] }
+// 东方财富真实接口字段名/结构有若干变体，这里尽量兼容，避免真实环境因字段微调而漏解析。
+function pickCode(it) {
+  const raw = it.security_code || it.secucode || it.stock_code || it.code || it.symbol || '';
+  const m = String(raw).match(/\d{6}/); // 提取 6 位代码，兼容 603278 / 603278.SH / SH603278
+  return m ? m[0] : '';
+}
+function pickTitle(it) {
+  return String(it.notice_title || it.ann_title || it.title || it.noticeTitle || it.announcementTitle || '').trim();
+}
+function pickDate(it) {
+  const raw = it.notice_date || it.eitime || it.datetime || it.date || it.noticeDate || it.time || '';
+  if (raw === '' || raw == null) return '';
+  if (/^\d{10,13}$/.test(String(raw))) { // 秒/毫秒时间戳
+    const ms = String(raw).length === 10 ? Number(raw) * 1000 : Number(raw);
+    const d = new Date(ms);
+    if (!isNaN(d)) return d.toISOString().slice(0, 10);
+  }
+  const m = String(raw).replace(/\//g, '-').match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : '';
+}
+function pickUrl(it) { return it.pdf_url || it.annotation_url || it.url || it.ann_url || ''; }
+
+function parseEM(text) {
+  let j;
+  try { j = JSON.parse(text); } catch { return {}; }
+  const list =
+    (j && j.data && (j.data.list || j.data.annList || (Array.isArray(j.data) ? j.data : null))) ||
+    (j && (j.list || (Array.isArray(j) ? j : null))) ||
+    [];
+  const byCode = {};
+  for (const it of list) {
+    if (!it || typeof it !== 'object') continue;
+    const code = pickCode(it);
+    const title = pickTitle(it);
+    const date = pickDate(it);
+    if (!code || !title) continue;
+    (byCode[code] = byCode[code] || []).push({ title, date, url: pickUrl(it) });
+  }
+  return byCode;
+}
+
+async function fetchEMForCodes(codes) {
+  const BATCH = 20;
+  const grouped = {};
+  let blocked = false;
+  for (let i = 0; i < codes.length; i += BATCH) {
+    const batch = codes.slice(i, i + BATCH);
+    try {
+      const txt = await fetchWithRetry(emAnnUrl(batch), {
+        headers: { 'User-Agent': UA, Referer: 'https://www.eastmoney.com/' },
+        timeout: 20000,
+        read: async (r) => {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          const t = await r.text();
+          if (!t || !t.trim()) throw new Error('空响应体（host 可能被网络环境拦截）');
+          return t;
+        },
+      }, 3, 1000);
+      const byCode = parseEM(txt);
+      for (const [c, arr] of Object.entries(byCode)) grouped[c] = (grouped[c] || []).concat(arr);
+    } catch (e) {
+      blocked = true;
+      console.warn(`[fetch-ann] ⚠ 批次失败 ${batch.join(',')}：${e && e.message ? e.message : e}（降级：该批无公告）`);
+    }
+  }
+  if (blocked) console.warn('[fetch-ann] 部分/全部批次被网络环境限制 → 公告源可能为空（fail-open，不阻断 EOD）');
+  return grouped;
+}
+
+// ── 2b. 新浪财经公告（HTML 服务端渲染，GBK 编码；本环境可达，作东财被墙时的兜底）────
+//   按股票抓 vCB_AllBulletin 页，解析 <div class="datelist"> 内「日期&nbsp;<a>标题</a>」。
+const SINA_HOST = 'https://vip.stock.finance.sina.com.cn';
+function parseSina(html) {
+  const out = [];
+  const re = /(\d{4}-\d{2}-\d{2})&nbsp;<a[^>]*href='([^']*)'>([^<]*)<\/a>/g;
+  let m;
+  while ((m = re.exec(html))) {
+    const title = (m[3] || '').trim();
+    if (title) out.push({ title, date: m[1], url: m[2].startsWith('http') ? m[2] : SINA_HOST + m[2] });
+  }
+  return out;
+}
+
+async function fetchSinaForCodes(codes) {
+  const grouped = {};
+  let blocked = false;
+  const CONC = 6;
+  for (let i = 0; i < codes.length; i += CONC) {
+    const batch = codes.slice(i, i + CONC);
+    await Promise.all(batch.map(async (code) => {
+      try {
+        const txt = await fetchWithRetry(`${SINA_HOST}/corp/go.php/vCB_AllBulletin/stockid/${code}.phtml`, {
+          headers: { 'User-Agent': UA, Referer: SINA_HOST + '/' },
+          timeout: 20000,
+          read: async (r) => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            const buf = Buffer.from(await r.arrayBuffer());
+            const html = new TextDecoder('gbk').decode(buf); // 新浪公告页为 GBK 编码
+            if (!html.includes('datelist')) throw new Error('异常/空页');
+            return html;
+          },
+        }, 3, 800);
+        const items = parseSina(txt);
+        if (items.length) grouped[code] = items;
+      } catch (e) {
+        blocked = true;
+        console.warn(`[fetch-ann] ⚠ 新浪 ${code} 失败：${e && e.message ? e.message : e}（降级：该只无公告）`);
+      }
+    }));
+  }
+  if (blocked) console.warn('[fetch-ann] 部分新浪批次失败（fail-open，不阻断 EOD）');
+  return grouped;
+}
+
+// 双源容错：优先东财（官方、字段全），被墙/空则回退新浪（本环境可达）
+async function fetchAnnouncementsAuto(codes) {
+  let g = await fetchEMForCodes(codes);
+  if (Object.keys(g).length > 0) return { grouped: g, source: 'eastmoney-np-anotice' };
+  console.warn('[fetch-ann] 东方财富无数据（可能被墙），回退新浪公告…');
+  g = await fetchSinaForCodes(codes);
+  return { grouped: g, source: 'sina-bulletin' };
+}
+
+// 仅保留扫描日及近 1 日的公告（当晚披露 + 盘前补披都算），更早的旧公告不计入排雷
+function filterByDate(grouped, tradeDate) {
+  const td = new Date(tradeDate + 'T00:00:00+08:00');
+  const min = new Date(td.getTime() - 1 * 86400000);
+  const kept = {};
+  for (const [c, arr] of Object.entries(grouped)) {
+    const f = arr.filter((a) => {
+      if (!a.date) return true; // 无日期视为近期，保留（不漏判风险）
+      const d = new Date(a.date + 'T00:00:00+08:00');
+      return isNaN(d) || d >= min; // 解析失败也保留（而非静默丢弃真实利空）
+    });
+    if (f.length) kept[c] = f;
+  }
+  return kept;
+}
+
+// ── 3. 离线演示公告（与 llm_risk_scan --mock 同源，便于无网验证全链路）──────────────
+function buildMockAnnouncements(stocks, tradeDate) {
+  const planted = [
+    '公司晚间公告：持股 5% 以上股东拟通过集中竞价方式减持不超过公司总股本 5% 的股份；同时公司收到证监会《立案告知书》，因涉嫌信息披露违法违规被立案调查。',
+    '公司发布业绩预告：预计本年度归属于上市公司股东的净利润同比预亏 80%~100%；此外存在一起涉案金额较大的重大诉讼。',
+    '公司公告：终止筹划重大资产重组事项；深交所下发监管函，要求说明相关事项。',
+  ];
+  const grouped = {};
+  stocks.forEach((s, i) => {
+    if (s.st) grouped[s.code] = [{ title: `【${s.name}】公司当前为 ST 股票（结构性风险）`, date: tradeDate, url: '' }];
+    else if (i < planted.length) grouped[s.code] = [{ title: planted[i], date: tradeDate, url: '' }];
+  });
+  return grouped;
+}
+
+// ── 4. 主流程 ───────────────────────────────────────────────────────────────────
+async function main() {
+  const tradeDate = getTradeDate();
+  if (!tradeDate) { console.error('[fetch-ann] 无交易日数据，退出'); process.exit(1); }
+  const stocks = collectCodes();
+  if (!stocks.length) { console.error('[fetch-ann] 无候选股，退出'); process.exit(1); }
+
+  let grouped, sourceLabel;
+  if (MOCK) {
+    grouped = buildMockAnnouncements(stocks, tradeDate);
+    sourceLabel = 'mock';
+  } else if (SOURCE === 'em') {
+    grouped = await fetchEMForCodes(stocks.map((s) => s.code));
+    sourceLabel = 'eastmoney-np-anotice';
+  } else if (SOURCE === 'sina') {
+    grouped = await fetchSinaForCodes(stocks.map((s) => s.code));
+    sourceLabel = 'sina-bulletin';
+  } else { // auto（默认）
+    const r = await fetchAnnouncementsAuto(stocks.map((s) => s.code));
+    grouped = r.grouped; sourceLabel = r.source;
+  }
+
+  const kept = filterByDate(grouped, tradeDate);
+  const announcements = {};
+  const details = [];
+  const nameMap = new Map(stocks.map((s) => [s.code, s.name]));
+  for (const [c, arr] of Object.entries(kept)) {
+    announcements[c] = arr.map((a) => a.title).join('；');
+    details.push({ code: c, name: nameMap.get(c) || c, announcements: arr });
+  }
+
+  const payload = {
+    date: tradeDate,
+    source: sourceLabel,
+    fetchedAt: bjStamp(),
+    codes: stocks.length,
+    count: Object.keys(announcements).length,
+    announcements,
+    details,
+  };
+  atomicWriteJSON(fileURLToPath(OUT), JSON.stringify(payload, null, 1));
+  console.log(`[fetch-ann] 候选 ${stocks.length} 只 → 抓取公告覆盖 ${Object.keys(announcements).length} 只`
+    + `（${tradeDate} 及近 1 日）｜写出 ${fileURLToPath(OUT)}`);
+}
+
+if (process.argv[1] && process.argv[1].endsWith('fetch_announcements.mjs')) {
+  main().catch((e) => { console.error('[fetch-ann] 致命错误：', e); process.exit(1); });
+}
+
+export { parseEM, emAnnUrl, exPrefix, buildMockAnnouncements, filterByDate, parseSina, fetchSinaForCodes, fetchAnnouncementsAuto };

@@ -1,0 +1,781 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   terminal.css — 量化研究工作台（终端型 · 磨砂黑）
+   ──────────────────────────────────────────────────────────────────────────
+   定位：根 index.html（PRO 页，nginx + Cloudflare Tunnel 伺服）的「终端」视图。
+        与既有 style.css（研报视图）**完全隔离**：所有选择器以 .t- 前缀命名，
+        不覆盖、不依赖任何既有类，研报视图与审计闸门零影响。
+
+   设计纪律（与 src/ 引擎解耦，纯展示层）：
+     · 磨砂黑 = 噪点纹理 + 内侧柔光边 + 7px 柔角 + 渐变淡出线，**不用 backdrop-filter**
+       （树莓派/中端手机滚动掉帧，且纯黑底背后无内容，磨砂效果也显形不了）
+     · chrome 柔、数据锐：面板柔（圆角/柔边/淡线），数据硬（等宽数字/右对齐/固定小数/1px 实线表内框）
+     · 辉光只允许三处：选中项细边光 / 警报呼吸 / 主图当前值微光点。其余一律平面。
+     · 动画只做 opacity / transform（GPU 友好）；尊重 prefers-reduced-motion。
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* 终端设计令牌提到 :root：抽屉 / tooltip 挂在 document.body（不在 .t-scope 子树内），
+   否则 var(--t-*) 取不到 → 抽屉黑蜡烛、面板无样式、涨跌幅无颜色。:root 上的 --t-*
+   对研报页无副作用（研报不使用 .t- 前缀类）。 */
+:root {
+  --t-bg: #000000;
+  --t-panel: #0b0f16;
+  --t-panel-2: #10161f;
+  --t-line: #1a222c;
+  --t-line-hi: #2a3644;
+  --t-ink: #e6f0f5;
+  --t-ink-2: #8b9bab;
+  --t-ink-3: #4d5b68;
+  --t-acc: #22d3ee;            /* 电光青：主色/导航/核心数据/选中态 */
+  --t-acc-dim: rgba(34, 211, 238, .16);
+  --t-ai: #a78bfa;             /* 紫罗兰：AI 侧车专属（排雷/妖股/板块情绪） */
+  --t-up: #ff4d4f;             /* 涨 / 净流入：亮红（A股习惯：涨红跌绿，深色背景下极显眼） */
+  --t-dn: #00e676;             /* 跌：亮绿 */
+  --t-alert: #ff2b2b;          /* 日常警报：纯红 */
+  --t-alert-ink: #ffffff;      /* 警报字：近白（黑底上最亮） */
+  --t-alert-glow: rgba(255, 43, 43, .38);
+  --t-crit-bg: #f2f5f7;        /* 重大警报：反白 */
+  --t-crit-ink: #b81e1e;
+  --t-radius: 7px;
+  --t-pad: 14px;
+}
+
+.t-scope {
+  background: var(--t-bg);
+  color: var(--t-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Zen Hei", sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  /* 数字一律等宽 + 右对齐基线（专业感的核心来源） */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+  /* 整屏覆盖层：点老页面顶部「⚡ 图表终端」后盖住研报（不再接在屁股底下）；
+     standalone 页（dist/terminal.html）也铺满视口。hidden 时由 UA [hidden] 变 display:none。 */
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  z-index: 9999;
+}
+
+/* 磨砂黑关键①：全站极淡噪点（消色带 + 哑光质感）。feTurbulence 作 background-image
+   只栅格化一次并被浏览器缓存，不作 filter 用，无重绘成本。 */
+.t-scope::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: .5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+.t-scope > * { position: relative; z-index: 1; }
+
+/* ── 顶部状态栏 ─────────────────────────────────────────────────────────── */
+.t-topbar {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 9px 16px;
+  background: var(--t-panel);
+  border-bottom: 1px solid var(--t-line);
+  font-size: 12px;
+  color: var(--t-ink-2);
+  position: sticky; top: 0; z-index: 30;   /* 滚动时头部（导航/视图切换）常驻可见 */
+}
+.t-topbar .t-brand {
+  font-weight: 700; font-size: 13px; letter-spacing: .04em;
+  color: var(--t-ink);
+}
+.t-topbar .t-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--t-dn); box-shadow: 0 0 6px rgba(34, 200, 138, .6);
+  flex: none;
+}
+.t-topbar .t-dot.is-off { background: var(--t-ink-3); box-shadow: none; }
+.t-topbar .t-sep { color: var(--t-line-hi); }
+.t-topbar b { color: var(--t-ink); font-weight: 600; }
+
+/* 视图切换（终端/研报） */
+.t-viewswitch { margin-left: auto; display: flex; gap: 6px; }
+.t-viewswitch button {
+  font: inherit; font-size: 12px; cursor: pointer;
+  padding: 4px 11px; border-radius: 5px;
+  background: transparent; border: 1px solid var(--t-line);
+  color: var(--t-ink-2);
+  transition: color .15s, border-color .15s, background .15s;
+}
+.t-viewswitch button:hover { color: var(--t-ink); border-color: var(--t-line-hi); }
+/* 辉光允许处①：选中项细边光 */
+.t-viewswitch button.is-on {
+  color: var(--t-acc); border-color: var(--t-acc);
+  background: var(--t-acc-dim);
+  box-shadow: 0 0 0 1px var(--t-acc-dim), 0 0 10px rgba(34, 211, 238, .18);
+}
+
+/* ── 视图导航（横排 tab，TradingView 式省宽）────────────────────────────── */
+.t-nav {
+  display: flex; gap: 2px; padding: 0 16px;
+  background: var(--t-panel);
+  border-bottom: 1px solid var(--t-line);
+  overflow-x: auto; scrollbar-width: thin;
+}
+.t-nav button {
+  font: inherit; font-size: 12.5px; white-space: nowrap; cursor: pointer;
+  padding: 9px 14px; border: 0; border-bottom: 2px solid transparent;
+  background: transparent; color: var(--t-ink-2);
+  transition: color .15s, border-color .15s;
+}
+.t-nav button:hover { color: var(--t-ink); }
+.t-nav button.is-on { color: var(--t-acc); border-bottom-color: var(--t-acc); }
+.t-nav .t-nav-soon { color: var(--t-ink-3); cursor: not-allowed; }
+.t-nav-hint { margin-left: auto; align-self: center; font-size: 11px; color: var(--t-ink-3); white-space: nowrap; padding-left: 12px; }
+.t-nav-hint::before { content: '⌨'; margin-right: 5px; opacity: .7; }
+
+/* 主线题材脉络（总览）：按天时间轴 */
+.t-thlist { display: flex; flex-direction: column; gap: 6px; }
+.t-throw { display: flex; align-items: baseline; gap: 10px; }
+.t-thdate { flex: 0 0 40px; font-size: 11.5px; color: var(--t-ink-3); font-variant-numeric: tabular-nums; }
+.t-thbody { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.t-thchip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 11px; font-size: 12px; border: 1px solid var(--t-line-hi); }
+.t-thchip.is-strong { background: rgba(255, 75, 75, .14); border-color: rgba(255, 75, 75, .4); color: #ff8a8a; }
+.t-thchip.is-weak { background: rgba(255, 255, 255, .04); color: var(--t-ink-2); }
+.t-thchip b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.t-thcon { font-size: 10px; color: var(--t-ink-3); border: 1px solid var(--t-line-hi); border-radius: 3px; padding: 0 3px; }
+.t-thempty { font-size: 12px; color: var(--t-ink-3); }
+.t-throt { font-size: 11px; color: #f5a623; border: 1px solid rgba(245, 166, 35, .4); border-radius: 3px; padding: 0 5px; }
+
+/* 辅助面板（可选，原生 details 折叠） */
+.t-aux { grid-column: span 12; border: 1px solid var(--t-line); border-radius: 10px; background: rgba(255, 255, 255, .02); overflow: hidden; }
+.t-aux > summary { cursor: pointer; padding: 10px 14px; font-size: 13px; color: var(--t-ink); user-select: none; list-style: none; }
+.t-aux > summary::-webkit-details-marker { display: none; }
+.t-aux > summary::before { content: '▸'; margin-right: 8px; color: var(--t-ink-3); display: inline-block; }
+.t-aux[open] > summary::before { content: '▾'; }
+.t-aux-hint { font-size: 11px; color: var(--t-ink-3); margin-left: 6px; }
+.t-aux > .t-grid { padding: 0 14px 14px; }
+
+/* 公告流 */
+.t-anlist { display: flex; flex-direction: column; gap: 7px; font-size: 12px; }
+.t-anrow { display: grid; grid-template-columns: 56px 1fr; gap: 3px 8px; align-items: baseline; }
+.t-anc { color: var(--t-ink-3); font-variant-numeric: tabular-nums; }
+.t-ann { color: var(--t-ink-2); font-weight: 600; }
+.t-ant { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 3px 10px; }
+.t-antitle { color: var(--t-acc); text-decoration: none; border-bottom: 1px dotted rgba(34, 211, 238, .4); }
+.t-antitle:hover { color: #5ce6f5; }
+.t-and { color: var(--t-ink-3); font-size: 10.5px; }
+
+/* 外围 / 汇率 */
+.t-glob { font-size: 12px; }
+.t-gqlist { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.t-gqrow { display: grid; grid-template-columns: 1fr auto auto; gap: 6px 10px; align-items: baseline; }
+.t-gqrow.is-miss { opacity: .5; }
+.t-gqname { color: var(--t-ink-2); }
+.t-gqval { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--t-ink); white-space: nowrap; }
+.t-gqval.up, .t-gqchg.up { color: var(--t-up); }
+.t-gqval.dn, .t-gqchg.dn { color: var(--t-dn); }
+.t-gqst { color: var(--t-ink-3); font-size: 10.5px; }
+
+/* ── 主栅格 ─────────────────────────────────────────────────────────────── */
+.t-main { padding: var(--t-pad) 16px 28px; }
+/* 视图标题条：滚动时钉在 sticky 顶栏正下方，始终显示当前视图名（总览/涨跌停/资金/板块/选股/模拟盘/K线） */
+.t-viewhead { position: sticky; top: 44px; z-index: 25; background: var(--t-bg); padding: 7px 2px 9px; margin-bottom: 8px; border-bottom: 1px solid var(--t-line); display: flex; align-items: center; gap: 8px; }
+.t-viewhead::before { content: ""; width: 3px; height: 14px; background: var(--t-acc); border-radius: 2px; }
+.t-viewhead .t-vh-name { font-size: 14px; font-weight: 650; color: var(--t-ink); letter-spacing: .02em; }
+.t-grid { display: grid; gap: var(--t-pad); grid-template-columns: repeat(12, 1fr); }
+.t-c3 { grid-column: span 3; }
+.t-c4 { grid-column: span 4; }
+.t-c5 { grid-column: span 5; }
+.t-c6 { grid-column: span 6; }
+.t-c7 { grid-column: span 7; }
+.t-c8 { grid-column: span 8; }
+.t-c9 { grid-column: span 9; }
+.t-c12 { grid-column: span 12; }
+
+/* ── 面板（磨砂黑：柔边 + 柔角 + 渐变淡出分隔）──────────────────────────── */
+.t-panel {
+  background: var(--t-panel);
+  border-radius: var(--t-radius);
+  /* 磨砂黑关键②：内侧一圈极淡柔光边，替代硬 1px 描边 */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045),
+              inset 0 0 0 1px rgba(255, 255, 255, .022);
+  padding: var(--t-pad);
+  min-width: 0;                 /* grid 内不溢出 */
+}
+.t-panel-h {
+  display: flex; align-items: baseline; gap: 8px;
+  margin: -2px 0 10px;
+  font-size: 12px; color: var(--t-ink-2);
+}
+.t-panel-h .t-pt { font-weight: 600; color: var(--t-ink); font-size: 12.5px; }
+.t-panel-h .t-pk { margin-left: auto; font-size: 11px; color: var(--t-ink-3); }
+
+/* ── 大数字指标 ─────────────────────────────────────────────────────────── */
+.t-stats { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+.t-stat { min-width: 0; }
+.t-stat .t-k { font-size: 11px; color: var(--t-ink-3); margin-bottom: 2px; }
+.t-stat .t-v {
+  font-size: 24px; font-weight: 650; line-height: 1.15; color: var(--t-ink);
+  letter-spacing: -.01em;
+}
+.t-stat .t-v.is-acc { color: var(--t-acc); text-shadow: 0 0 14px rgba(34, 211, 238, .28); }  /* 辉光允许处③：当前值 */
+.t-stat .t-v.is-up { color: var(--t-up); text-shadow: 0 0 9px rgba(255, 90, 77, .5); }  /* 资金正向/上涨：荧光红辉光 */
+.t-stat .t-v.is-dn { color: var(--t-dn); text-shadow: 0 0 9px rgba(34, 200, 138, .42); }
+.t-stat .t-v.is-crit-glow { color: #ff2b2b; text-shadow: 0 0 14px rgba(255, 43, 43, .6); }   /* 情绪分 ≥80：极度狂热（危险）红晕 */
+.t-stat .t-v.is-warn-glow { color: #f5a623; text-shadow: 0 0 12px rgba(245, 166, 35, .5); }   /* 情绪分 ≥65：偏热橙晕 */
+.t-stat .t-v.is-mut-glow { color: var(--t-acc); text-shadow: 0 0 12px rgba(34, 211, 238, .4); } /* 情绪分 <65：常态青晕 */
+
+/* 顶栏 regime 徽章（带高光边框的「皇冠」标签） */
+.t-regime-badge { display: inline-flex; align-items: center; padding: 2px 11px; border-radius: 11px; border: 1px solid; font-size: 11.5px; font-weight: 700; letter-spacing: .3px; box-shadow: 0 0 10px rgba(255, 90, 77, .22); }
+.t-stat .t-v.is-alert { color: var(--t-alert); }
+.t-stat .t-s { font-size: 11px; color: var(--t-ink-2); margin-top: 2px; }
+.t-stat .t-s b { color: var(--t-ink); font-weight: 600; }
+
+/* regime 徽标 */
+.t-regime {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 600;
+  background: var(--t-acc-dim); color: var(--t-acc);
+  border: 1px solid rgba(34, 211, 238, .3);
+}
+.t-regime.is-ebb { background: rgba(34, 200, 138, .12); color: var(--t-dn); border-color: rgba(34, 200, 138, .3); }
+.t-regime.is-ice { background: rgba(77, 91, 104, .18); color: var(--t-ink-2); border-color: var(--t-line-hi); }
+.t-regime.is-shift { background: rgba(255, 43, 43, .1); color: var(--t-alert); border-color: rgba(255, 43, 43, .32); }
+
+/* ── 警报横幅（三级紧急度）──────────────────────────────────────────────── */
+.t-alert {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 10px 13px; border-radius: var(--t-radius);
+  background: rgba(255, 43, 43, .12);
+  border: 1px solid var(--t-alert);
+  border-left: 3px solid var(--t-alert);
+  color: var(--t-alert-ink);
+  font-size: 13px; font-weight: 600;
+  box-shadow: 0 0 16px var(--t-alert-glow);
+}
+.t-alert .t-ico { flex: none; font-size: 15px; line-height: 1.3; }
+.t-alert .t-sub { font-weight: 400; font-size: 12px; color: var(--t-ink-2); margin-top: 2px; }
+/* 辉光允许处②：全站唯一常驻呼吸动画 */
+.t-alert.is-breath { animation: tBreath 2.4s ease-in-out infinite; }
+@keyframes tBreath {
+  0%, 100% { box-shadow: 0 0 10px rgba(255, 43, 43, .22); border-color: rgba(255, 43, 43, .75); }
+  50% { box-shadow: 0 0 22px var(--t-alert-glow); border-color: var(--t-alert); }
+}
+/* 重大警报：反白（黑底上对比度最高，零色相冲突） */
+.t-alert.is-crit {
+  background: var(--t-crit-bg); color: var(--t-crit-ink);
+  border: 1px solid var(--t-crit-ink); border-left: 4px solid var(--t-crit-ink);
+  box-shadow: 0 0 24px rgba(255, 255, 255, .14);
+}
+.t-alert.is-crit .t-sub { color: #6b5050; }
+.t-alert.is-crit.is-breath { animation: tBreathCrit 2s ease-in-out infinite; }
+@keyframes tBreathCrit {
+  0%, 100% { box-shadow: 0 0 12px rgba(255, 255, 255, .1); }
+  50% { box-shadow: 0 0 28px rgba(255, 255, 255, .26); }
+}
+
+/* AI 信息条（紫色 = AI 说的） */
+.t-ai-strip {
+  display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center;
+  padding: 9px 13px; border-radius: var(--t-radius);
+  background: rgba(167, 139, 250, .07);
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, .2);
+  font-size: 12px; color: var(--t-ink-2);
+}
+.t-ai-strip .t-ai-tag {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .05em;
+  color: var(--t-ai); text-transform: uppercase;
+}
+.t-ai-strip b { color: var(--t-ink); font-weight: 600; }
+.t-ai-strip .t-ai-item { display: inline-flex; align-items: center; gap: 5px; }
+.t-ai-strip .t-ai-item::before {
+  content: ""; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--t-ai); flex: none;
+}
+
+/* ── 图表通用 ───────────────────────────────────────────────────────────── */
+.t-chart { width: 100%; display: block; overflow: visible; }
+.t-chart text { font-variant-numeric: tabular-nums; }
+.t-axis { stroke: var(--t-line); stroke-width: 1; }
+.t-gridln { stroke: var(--t-line); stroke-width: 1; stroke-dasharray: 2 4; opacity: .7; }
+.t-tick { fill: var(--t-ink-3); font-size: 9.5px; }
+.t-tick-r { fill: var(--t-ink-2); font-size: 9.5px; }
+.t-lbl { fill: var(--t-ink-2); font-size: 10px; }
+
+/* 主图：情绪分折线 */
+.t-line { fill: none; stroke: var(--t-acc); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+.t-line-2 { fill: none; stroke: var(--t-ai); stroke-width: 1.2; stroke-dasharray: 3 3; opacity: .85; }
+.t-area { fill: url(#tGradAcc); opacity: .5; }
+.t-band { opacity: .13; }
+.t-band-ice { fill: #4d5b68; }
+.t-band-mid { fill: #22d3ee; }
+.t-band-high { fill: #ff2b2b; }
+.t-nowline { stroke: var(--t-acc); stroke-width: 1; stroke-dasharray: 4 3; opacity: .55; }
+/* 辉光允许处③：当前值微光点 */
+.t-nowdot { fill: var(--t-acc); filter: drop-shadow(0 0 5px rgba(34, 211, 238, .9)); }
+
+/* K线 */
+.t-cdl-up { fill: var(--t-up); stroke: var(--t-up); }
+.t-cdl-dn { fill: var(--t-dn); stroke: var(--t-dn); }
+.t-vol-up { fill: var(--t-up); opacity: .55; }
+.t-vol-dn { fill: var(--t-dn); opacity: .55; }
+
+/* 柱状 */
+.t-bar { fill: var(--t-acc); opacity: .82; }
+.t-bar.is-up { fill: var(--t-up); }
+.t-bar.is-dn { fill: var(--t-dn); }
+.t-bar.is-hi { fill: var(--t-acc); opacity: 1; }
+
+/* 对向条形（板块攻防） */
+.t-dv-row { display: grid; grid-template-columns: 78px 1fr 1fr 52px; align-items: center; gap: 8px; font-size: 11.5px; }
+.t-dv-row .t-dv-name { color: var(--t-ink-2); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-dv-track { display: flex; align-items: center; height: 12px; }
+.t-dv-track.is-l { justify-content: flex-end; }
+.t-dv-fill { height: 7px; border-radius: 2px; }
+.t-dv-fill.up { background: var(--t-up); }
+.t-dv-fill.dn { background: var(--t-dn); }
+.t-dv-val { text-align: right; color: var(--t-ink); }
+.t-dv-val.up { color: var(--t-up); }
+.t-dv-val.dn { color: var(--t-dn); }
+
+/* 板块相对强弱：攻防双榜单并排（左=落后·绿 / 右=跑赢·红），各自独立单元自带板块名 */
+.t-dv-row--dual { grid-template-columns: 1fr 1fr; gap: 0; }
+.t-dv-row--dual .t-dv-side { display: flex; align-items: center; gap: 6px; padding: 3px 10px; }
+.t-dv-row--dual .t-dv-side.is-dn { justify-content: flex-start; border-right: 1px solid var(--t-line); background: rgba(34, 200, 138, .05); }
+.t-dv-row--dual .t-dv-side.is-up { justify-content: flex-end; background: rgba(255, 90, 77, .05); }
+.t-dv-row--dual .t-dv-name { flex: 0 0 auto; max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.t-dv-row--dual .t-dv-side.is-up .t-dv-name { text-align: right; }
+.t-dv-row--dual .t-dv-track { flex: 1 1 auto; min-width: 0; }
+.t-dv-row--dual .t-dv-val { flex: 0 0 auto; }
+
+/* ── 仪表盘（七因子）────────────────────────────────────────────────────── */
+.t-gauges { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); }
+.t-gauge { text-align: center; cursor: pointer; border-radius: 6px; padding: 4px 2px; transition: background .15s; }
+.t-gauge:hover { background: rgba(255, 255, 255, .03); }
+.t-gauge.is-on { background: var(--t-acc-dim); box-shadow: inset 0 0 0 1px rgba(34, 211, 238, .3); }
+.t-gauge svg { display: block; margin: 0 auto; }
+.t-gauge .t-g-num { font-size: 17px; font-weight: 700; fill: var(--t-ink); }
+.t-gauge .t-g-lbl { font-size: 10px; fill: var(--t-ink-3); }
+.t-gauge .t-g-track { fill: none; stroke: var(--t-line-hi); stroke-width: 5; stroke-linecap: round; }
+.t-gauge .t-g-arc { fill: none; stroke: var(--t-acc); stroke-width: 5; stroke-linecap: round; }
+.t-gauge .t-g-arc2 { fill: none; stroke: var(--t-ai); stroke-width: 2.4; stroke-linecap: round; opacity: .8; }
+.t-gauge-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.t-gauge-side { display: flex; flex-direction: column; gap: 10px; }
+.t-gauge .t-g-lbl-below { font-size: 10.5px; color: var(--t-ink-2); margin-top: 1px; }
+
+/* ── 密排表（数据锐：1px 实线内框 + 等宽右对齐）─────────────────────────── */
+.t-tbl-wrap { max-height: 56vh; overflow: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: var(--t-line-hi) transparent; }
+.t-tbl { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 320px; }
+.t-tbl th {
+  text-align: right; font-weight: 500; font-size: 11px; color: var(--t-ink-3);
+  padding: 5px 8px; border-bottom: 1px solid var(--t-line-hi); white-space: nowrap;
+}
+.t-tbl th:first-child, .t-tbl td:first-child { text-align: left; }
+/* 滚动时表头钉住，行不穿透（纯 CSS，零 JS） */
+.t-tbl thead th { position: sticky; top: 0; z-index: 2; background: var(--t-panel); }
+.t-tbl td {
+  text-align: right; padding: 4px 8px;          /* 紧凑：行高更紧，像机构操盘软件 */
+  border-bottom: 1px solid var(--t-line); white-space: nowrap; color: var(--t-ink);
+}
+.t-tbl tbody tr { cursor: pointer; transition: background .12s; }
+.t-tbl tbody tr:hover { background: #1E2329; }    /* 行 hover：深灰，整行高亮 */
+/* 选中行：细边光（辉光允许处①） */
+.t-tbl tbody tr.is-on { background: var(--t-acc-dim); box-shadow: inset 2px 0 0 var(--t-acc); }
+.t-tbl td.up { color: var(--t-up); }
+.t-tbl td.dn { color: var(--t-dn); }
+.t-tbl td.mut { color: var(--t-ink-3); }
+/* 风险等级配色（展示性分档）：≥80% 血红 · ≥60% 暗黄 */
+.t-tbl td.is-crit { color: #ff2b2b; font-weight: 700; }
+.t-tbl td.is-warn { color: #f5a623; }
+/* 表格内的「纯情绪」标签：弱化紫（去掉实底，改描边），不抢视觉 */
+.t-tbl .t-tag-ai { background: transparent; border: 1px solid var(--t-ai); color: var(--t-ai); padding: 0 4px; border-radius: 3px; font-size: 10.5px; }
+.t-tbl .t-rank { color: var(--t-ink-3); width: 22px; }
+.t-tbl .t-code { color: var(--t-ink-2); font-size: 11px; }
+.t-tbl .t-lbtag {
+  display: inline-block; min-width: 20px; padding: 1px 5px; border-radius: 3px;
+  font-size: 11px; font-weight: 700; text-align: center;
+  background: rgba(176, 65, 62, .18); color: var(--t-up);
+}
+.t-tbl .t-lbtag.hi { background: rgba(255, 43, 43, .18); color: var(--t-alert); }
+
+/* ── 图表交互 tooltip（hover / 点击锁定 / 移动端触摸）── */
+.t-tip { position: fixed; z-index: 10000; display: none; pointer-events: none; max-width: 260px; padding: 7px 9px; border-radius: 7px; background: rgba(8,12,18,.96); border: 1px solid var(--t-line-hi); box-shadow: 0 6px 22px rgba(0,0,0,.5); color: var(--t-ink); font-size: 11.5px; line-height: 1.55; font-variant-numeric: tabular-nums; }
+.t-tip b { color: var(--t-ink); font-weight: 600; }
+.t-tip .t-up { color: var(--t-up); }
+.t-tip .t-dn { color: var(--t-dn); }
+[data-tip] { cursor: pointer; }
+.t-chart [data-tip].is-hot, .t-chart [data-tip]:hover { filter: brightness(1.3) drop-shadow(0 0 4px var(--t-acc)); }
+.t-hit { pointer-events: all; }
+
+/* 行内 sparkline */
+.t-spark { display: inline-block; vertical-align: middle; }
+
+/* AI 标记（紫） */
+.t-tag-ai {
+  display: inline-block; padding: 0 5px; border-radius: 3px; font-size: 10px; font-weight: 700;
+  background: rgba(167, 139, 250, .16); color: var(--t-ai);
+  border: 1px solid rgba(167, 139, 250, .3);
+}
+
+/* 板块徽章（创业/科创/北交，主板不打，减噪音）——与旧仪表盘 .tag.board 同色语义，
+   终端暗色主题适配；terminal.js 连板天梯已在名称列注入 .t-tag-board，此前缺样式故只显裸文本 */
+.t-tag-board { display: inline-block; font-weight: 700; font-size: 10.5px; padding: 0 5px; border-radius: 3px; margin-left: 6px; vertical-align: middle; }
+.t-tag-board.gem { background: rgba(232, 132, 60, .20); color: #e8843c; }   /* 创业板 橙 */
+.t-tag-board.star { background: rgba(64, 169, 255, .20); color: #40a9ff; }  /* 科创板 蓝 */
+.t-tag-board.bj { background: rgba(139, 148, 158, .20); color: #9aa4ae; }   /* 北交 灰 */
+
+/* ── 顶栏时间窗切换（20/60/250 日，全局生效）───────────────────────────── */
+.t-range { display: inline-flex; align-items: center; gap: 4px; }
+.t-range button {
+  font: inherit; font-size: 11.5px; cursor: pointer; padding: 3px 8px;
+  border: 1px solid var(--t-line-hi); border-radius: 4px;
+  background: transparent; color: var(--t-ink-2);
+  font-variant-numeric: tabular-nums;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.t-range button:hover { color: var(--t-ink); border-color: var(--t-ink-3); }
+.t-range button.is-on {
+  color: var(--t-acc); border-color: var(--t-acc); background: var(--t-acc-dim);
+}
+
+/* ── K线控件条（周期下拉 / 代码输入）——抽屉与 K线视图共用 ──────────────── */
+.t-kbar {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  margin-bottom: 10px; font-size: 12px; color: var(--t-ink-2);
+}
+.t-kbar label { display: inline-flex; align-items: center; gap: 6px; }
+.t-kperiod, .t-kcode {
+  font: inherit; font-size: 12px; color: var(--t-ink);
+  background: var(--t-panel-2); border: 1px solid var(--t-line-hi);
+  border-radius: 5px; padding: 4px 8px; outline: none;
+}
+.t-kcode { width: 108px; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.t-kperiod:focus, .t-kcode:focus { border-color: var(--t-acc); box-shadow: 0 0 0 2px var(--t-acc-dim); }
+.t-kgo {
+  font: inherit; font-size: 12px; cursor: pointer; color: var(--t-ink);
+  background: var(--t-acc-dim); border: 1px solid rgba(34, 211, 238, .34);
+  border-radius: 5px; padding: 4px 12px; transition: background .15s;
+}
+.t-kgo:hover { background: rgba(34, 211, 238, .26); }
+.t-khint { color: var(--t-ink-3); font-size: 11.5px; }
+.t-kbody { min-height: 120px; }
+.t-kmeta {
+  margin-bottom: 8px; font-size: 12px; color: var(--t-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.t-kmeta b { color: var(--t-ink); font-weight: 600; }
+.t-warn-inline { color: #f5a623; }
+
+/* ── 抽屉（个股 K线）——全站唯一真磨砂玻璃件 ────────────────────────────── */
+.t-drawer-mask {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0, 0, 0, .55);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  opacity: 0; transition: opacity .18s;
+  /* 关闭时（opacity:0）必须禁掉指针事件，否则这块全屏隐形遮罩仍盖在终端之上：
+     吃掉点击导致图表不可点，滚轮事件无处可滚而穿透到背后的研报。 */
+  pointer-events: none;
+}
+.t-drawer-mask.is-open { opacity: 1; pointer-events: auto; }
+.t-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 10001;
+  width: min(680px, 94vw);
+  background: rgba(11, 15, 22, .82);
+  backdrop-filter: blur(20px) saturate(1.3); -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, .07), -18px 0 50px rgba(0, 0, 0, .6);
+  transform: translateX(102%); transition: transform .22s cubic-bezier(.22, .61, .36, 1);
+  display: flex; flex-direction: column;
+}
+.t-drawer.is-open { transform: none; }
+.t-drawer-h {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 16px; border-bottom: 1px solid var(--t-line);
+}
+.t-drawer-h .t-dn-name { font-size: 15px; font-weight: 700; color: var(--t-ink); }
+.t-drawer-h .t-dn-code { font-size: 12px; color: var(--t-ink-3); }
+.t-drawer-h .t-close {
+  margin-left: auto; font: inherit; font-size: 18px; cursor: pointer;
+  background: transparent; border: 0; color: var(--t-ink-2); padding: 2px 8px; border-radius: 5px;
+}
+.t-drawer-h .t-close:hover { color: var(--t-ink); background: rgba(255, 255, 255, .06); }
+.t-drawer-b { padding: 14px 16px 24px; overflow-y: auto; flex: 1; }
+
+/* ── 抽屉内个股详情（AI 判词 / 排雷 / 持仓）——只读档位原值，fail-open ──── */
+.t-ddet { display: flex; flex-direction: column; gap: 9px; margin-bottom: 16px; }
+.t-ddet .t-dsec {
+  padding: 10px 12px; border-radius: var(--t-radius);
+  background: var(--t-panel-2);
+  box-shadow: inset 0 0 0 1px var(--t-line);
+}
+.t-ddet .t-dsec.is-ai {                       /* 紫 = AI 侧车说的 */
+  background: rgba(167, 139, 250, .07);
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, .22);
+}
+.t-ddet .t-dsec-h {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  font-size: 12px; font-weight: 600; color: var(--t-ink);
+}
+.t-ddet .t-dsec-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: .05em;
+  color: var(--t-ai); text-transform: uppercase;
+}
+.t-ddet .t-dsec-b { font-size: 12px; color: var(--t-ink-2); }
+.t-ddet .t-dkv { display: grid; grid-template-columns: repeat(auto-fit, minmax(94px, 1fr)); gap: 6px 12px; }
+.t-ddet .t-dk { margin-right: 5px; font-size: 11px; color: var(--t-ink-3); }
+.t-ddet .t-dv { color: var(--t-ink); font-variant-numeric: tabular-nums; }
+.t-ddet .t-dv b { font-weight: 600; }
+.t-ddet .t-dv.up { color: var(--t-up); }
+.t-ddet .t-dv.dn { color: var(--t-dn); }
+/* 通用说明条（总览「市场宽度」判语等使用；详情抽屉内另有 scoped 版本覆盖） */
+.t-dnote { margin-top: 8px; font-size: 11.5px; line-height: 1.55; color: var(--t-ink-3); }
+.t-dnote.is-alert { color: var(--t-alert); }
+.t-dnote.is-ok { color: var(--t-dn); }
+.t-ddet .t-dnote {
+  margin-top: 8px; padding: 7px 9px; border-radius: 5px;
+  background: rgba(255, 255, 255, .03);
+  font-size: 11.5px; line-height: 1.55; color: var(--t-ink-2);
+}
+.t-ddet .t-dsrc { margin-top: 6px; font-size: 10.5px; color: var(--t-ink-3); }
+/* 盘口快照「数据基准」标识：极其微小的暗灰字，注明日终定稿日期 */
+.t-ddet .t-dbase {
+  margin-bottom: 6px; font-size: 10px; line-height: 1.4; letter-spacing: .2px;
+  color: var(--t-ink-3); opacity: .85;
+}
+/* K线图例：右上角小灰字（日 K 线（截至上一交易日收盘）） */
+.t-kcap { text-align: right; font-size: 10px; color: var(--t-ink-3); margin: 2px 2px 0; opacity: .85; }
+.t-ddet .t-dnone { padding: 2px 0; font-size: 11.5px; color: var(--t-ink-3); }
+.t-ddet .t-dnone.is-ok { color: var(--t-dn); }
+.t-ddet .t-mut { color: var(--t-ink-3); }
+.t-ddet .t-dhit { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.t-ddet .t-dlv {
+  padding: 1px 7px; border-radius: 3px; font-size: 11px; font-weight: 700;
+  border: 1px solid var(--t-line-hi); color: var(--t-ink-2);
+}
+.t-ddet .t-dhit.is-high .t-dlv { background: rgba(255, 43, 43, .16); border-color: rgba(255, 43, 43, .45); color: var(--t-alert); }
+.t-ddet .t-dhit.is-medium .t-dlv { background: rgba(245, 166, 35, .14); border-color: rgba(245, 166, 35, .4); color: #f5a623; }
+.t-ddet .t-dhit.is-low .t-dlv { background: rgba(34, 200, 138, .12); border-color: rgba(34, 200, 138, .35); color: var(--t-dn); }
+.t-ddet .t-dtags { display: inline-flex; gap: 5px; flex-wrap: wrap; }
+.t-ddet .t-dtag {
+  padding: 1px 6px; border-radius: 3px; font-size: 10.5px;
+  background: rgba(255, 255, 255, .05); color: var(--t-ink-2);
+}
+/* 抽屉里的 K 线宿主：与上方详情块留出分隔 */
+.t-dkhost { padding-top: 4px; border-top: 1px solid var(--t-line); }
+
+/* 通用分段控件（青色 = 引擎数据的口径切换；紫色 .t-ai-filter 才代表 AI 侧） */
+.t-seg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.t-seg-lbl { font-size: 11px; color: var(--t-ink-3); }
+.t-seg { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--t-ink-3); }
+.t-seg button {
+  font: inherit; font-size: 11px; cursor: pointer; padding: 2px 8px; border-radius: 4px;
+  color: var(--t-ink-2); background: transparent; border: 1px solid var(--t-line-hi);
+}
+.t-seg button:hover { color: var(--t-ink); border-color: var(--t-acc); }
+.t-seg button.is-on { font-weight: 600; color: #0b0f16; background: var(--t-acc); border-color: var(--t-acc); }
+
+/* AI 板块情绪榜：每个板块条形下挂一条头条（小字，hover 看全部） */
+.t-sec-hl {
+  margin: -2px 0 5px 86px; font-size: 10.5px; color: var(--t-ink-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* 板块情绪「模板化」置信度警示：同头条命中多板块时提示右侧数值系罐头数据、仅供参考 */
+.t-sec-warn {
+  margin: 0 0 9px; padding: 6px 9px; font-size: 11px; line-height: 1.4;
+  color: var(--t-alert); border: 1px solid var(--t-alert);
+  border-radius: 7px; background: rgba(255, 82, 82, .08);
+}
+.t-dv-val .t-sv-mut { margin-left: 6px; font-size: 10.5px; color: var(--t-ink-3); }
+
+/* 游资黑话（GLM 生成，锚定当日快照） */
+.t-blacktalk {
+  display: flex; align-items: baseline; gap: 9px;
+  padding: 8px 13px; border-radius: var(--t-radius); font-size: 12px;
+  background: rgba(167, 139, 250, .07);
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, .2);
+}
+.t-blacktalk .t-bt-tag {
+  flex: none; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; color: var(--t-ai);
+}
+.t-blacktalk .t-bt-body { color: var(--t-ink-2); }
+
+/* ── 决策日志 / 委托流水语义徽标（与 src/paper.js 的 STAGE/RESULT 同义）────── */
+.t-log-tag {
+  display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10.5px;
+  background: rgba(255, 255, 255, .05); color: var(--t-ink-2);
+}
+.t-res {
+  display: inline-block; padding: 1px 6px; border-radius: 3px;
+  font-size: 10.5px; font-weight: 600;
+}
+.t-res.is-pass { background: rgba(34, 200, 138, .14); color: var(--t-dn); }
+.t-res.is-no { background: rgba(255, 43, 43, .14); color: var(--t-alert); }
+.t-res.is-sub { background: rgba(34, 211, 238, .14); color: var(--t-acc); }
+.t-res.is-info { background: rgba(255, 255, 255, .05); color: var(--t-ink-3); }
+
+/* ── AI 条内的可点项与筛选开关 ───────────────────────────────────────────── */
+/* 「🕵 妖股纯情绪 N 只」→ 跳选股视图并自动停在纯情绪子集 */
+.t-ai-strip .t-ai-item.is-jump {
+  font: inherit; color: inherit; background: transparent; border: 0; padding: 0;
+  cursor: pointer; border-radius: 4px;
+}
+.t-ai-strip .t-ai-item.is-jump:hover { color: var(--t-ink); }
+.t-ai-strip .t-ai-item.is-jump:focus-visible { outline: 1px solid var(--t-ai); outline-offset: 3px; }
+.t-jump-txt {
+  margin-left: 3px; padding: 0 4px; border-radius: 3px;
+  font-size: 10px; color: var(--t-ai);
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, .35);
+}
+.t-ai-strip .t-ai-item.is-jump:hover .t-jump-txt { background: rgba(167, 139, 250, .18); color: var(--t-ink); }
+/* 「全部 N / 仅纯情绪 M」子集过滤（会话级，只是换展示子集，不重算） */
+.t-ai-strip .t-ai-filter {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--t-ink-3);
+}
+.t-ai-strip .t-ai-filter button {
+  font: inherit; font-size: 11px; cursor: pointer; padding: 2px 7px; border-radius: 4px;
+  color: var(--t-ink-2); background: transparent; border: 1px solid var(--t-line-hi);
+}
+.t-ai-strip .t-ai-filter button:hover { color: var(--t-ink); border-color: var(--t-ai); }
+.t-ai-strip .t-ai-filter button.is-on {
+  font-weight: 600; color: #0b0f16; background: var(--t-ai); border-color: var(--t-ai);
+}
+
+/* ── 底部流水条（终端标志性细节）────────────────────────────────────────── */
+.t-ticker {
+  position: sticky; bottom: 0; z-index: 5;
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 16px; font-size: 11.5px; color: var(--t-ink-2);
+  background: var(--t-panel); border-top: 1px solid var(--t-line);
+  overflow: hidden; white-space: nowrap;
+}
+/* 流水条提示符：用 CSS 实心竖条而非字符（原 '›' 在 Windows 字体下像逗号） */
+.t-ticker .t-tk-lbl {
+  width: 3px; height: 11px; border-radius: 1px;
+  background: var(--t-acc); flex: none;
+}
+.t-ticker .t-tk-body { overflow: hidden; text-overflow: ellipsis; }
+.t-ticker .t-tk-body b { color: var(--t-ink); font-weight: 600; }
+
+/* ── 空态 / 加载 ────────────────────────────────────────────────────────── */
+.t-empty { padding: 22px 8px; text-align: center; color: var(--t-ink-3); font-size: 12px; }
+.t-loading { padding: 22px 8px; text-align: center; color: var(--t-ink-3); font-size: 12px; }
+
+/* ── 响应式：手机端单列，表格横滑不挤 ───────────────────────────────────── */
+@media (max-width: 1024px) {
+  .t-c3, .t-c4, .t-c5 { grid-column: span 6; }
+  .t-c7, .t-c8, .t-c9 { grid-column: span 12; }
+}
+@media (max-width: 680px) {
+  .t-main { padding: 10px 10px 20px; }
+  .t-grid { gap: 10px; }
+  .t-c3, .t-c4, .t-c5, .t-c6, .t-c7, .t-c8, .t-c9 { grid-column: span 12; }
+  .t-stat .t-v { font-size: 21px; }
+  .t-gauges { grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); }
+  .t-dv-row { grid-template-columns: 62px 1fr 1fr 46px; font-size: 11px; }
+  .t-topbar { padding: 8px 11px; font-size: 11.5px; }
+  .t-nav { padding: 0 10px; }
+}
+
+/* ── 4:3 方屏（1024×768 类）专门适配：栅格更紧凑、字号微调、顶栏换行、减留白 ── */
+@media (min-width: 681px) and (max-aspect-ratio: 4/3) {
+  .t-scope { font-size: 12.5px; }
+  .t-topbar { flex-wrap: wrap; row-gap: 6px; padding: 9px 14px; }
+  .t-main { padding: 12px 14px 18px; }
+  .t-grid { gap: 12px; }
+  .t-panel { padding: 10px 12px; }
+  .t-c6, .t-c7, .t-c8, .t-c9 { grid-column: span 12; }
+  .t-gauges { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+  .t-dv-row--dual .t-dv-name { max-width: 70px; }
+}
+/* 中等宽度（≤1180px，含多数笔记本/方屏）：半宽面板改满宽，减少拥挤 */
+@media (max-width: 1180px) {
+  .t-c6, .t-c7, .t-c8 { grid-column: span 12; }
+}
+
+/* ── 无障碍：尊重系统减少动画 ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .t-alert.is-breath, .t-alert.is-crit.is-breath { animation: none; }
+  .t-drawer, .t-drawer-mask { transition: none; }
+}
+
+/* ── ETF 防守反击避险卡（2026-10-27 用户指令）─────────────────────────────
+   主视觉：圆环（待命=暗灰0 / 触发=荧光绿按仓位填充 + 辉光）；副视觉：双 ETF 动量长条。 */
+.t-etf { display: flex; gap: 18px; align-items: center; padding: 6px 2px 4px; flex-wrap: wrap; }
+.t-etf-ring { position: relative; width: 120px; height: 120px; flex: 0 0 auto; }
+.t-etf-ring svg { transform: rotate(-90deg); display: block; }
+.t-etf-track { fill: none; stroke: var(--t-line); stroke-width: 10; }
+.t-etf-prog { fill: none; stroke: var(--t-ink-3); stroke-width: 10; stroke-linecap: round;
+  transition: stroke-dasharray .6s ease, stroke .3s ease; }
+.t-etf-ring.is-active .t-etf-track { stroke: rgba(0, 230, 118, .20); }
+.t-etf-ring.is-active .t-etf-prog { stroke: var(--t-dn);
+  filter: drop-shadow(0 0 6px rgba(0, 230, 118, .75)); }
+.t-etf-center { position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center; }
+.t-etf-big { font-size: 20px; font-weight: 700; letter-spacing: .5px; color: var(--t-ink); line-height: 1.1; }
+.t-etf-ring.is-active .t-etf-big { color: var(--t-dn); text-shadow: 0 0 10px rgba(0, 230, 118, .65); }
+.t-etf-sub { font-size: 11px; color: var(--t-ink-2); margin-top: 3px; }
+.t-etf-side { flex: 1 1 220px; min-width: 190px; }
+.t-etf-barrow { display: flex; align-items: center; gap: 8px; margin: 7px 0; }
+.t-etf-bname { width: 100px; flex: 0 0 auto; font-size: 12px; color: var(--t-ink-2); white-space: nowrap; }
+.t-etf-bcode { color: var(--t-ink-3); font-size: 10px; margin-left: 2px; }
+.t-etf-bartrack { flex: 1 1 auto; height: 10px; background: var(--t-panel-2);
+  border: 1px solid var(--t-line); border-radius: 5px; overflow: hidden; }
+.t-etf-barfill { height: 100%; border-radius: 4px; transition: width .6s ease; min-width: 2px; }
+.t-etf-barfill.is-up { background: linear-gradient(90deg, rgba(0, 230, 118, .35), var(--t-dn));
+  box-shadow: 0 0 6px rgba(0, 230, 118, .5); }
+.t-etf-barfill.is-dn { background: linear-gradient(90deg, rgba(255, 77, 79, .35), var(--t-up));
+  box-shadow: 0 0 6px rgba(255, 77, 79, .5); }
+.t-etf-bval { width: 62px; flex: 0 0 auto; text-align: right; font-size: 12px;
+  color: var(--t-ink); font-variant-numeric: tabular-nums; }
+.t-etf-bnote { font-size: 11px; color: var(--t-ink-3); margin: 6px 0; }
+.t-etf-foot { margin-top: 10px; font-size: 11px; color: var(--t-ink-2);
+  border-top: 1px solid var(--t-line-hi); padding-top: 7px; }
+
+/* ── 今日选股 · 买点预期（2026-10-27 用户指令）──────────────────────────────
+   每行：标的 + 买点预期（绿=弱转强可买 / 红=⚠缩量硬板买不进 / 灰=常规）；下方列出剔除的买不进票。 */
+.t-reco { padding: 6px 2px 4px; }
+.t-reco-row { display: flex; align-items: baseline; gap: 10px; margin: 7px 0; flex-wrap: wrap; }
+.t-reco-name { flex: 0 0 150px; font-size: 13px; color: var(--t-ink); }
+.t-reco-code { color: var(--t-ink-3); font-size: 10px; margin-left: 3px; }
+.t-reco-tag { margin-left: 5px; font-size: 10px; padding: 1px 5px; border-radius: 8px;
+  color: var(--t-dn); border: 1px solid var(--t-dn); background: rgba(0, 230, 118, .10); }
+.t-reco-buy { flex: 1 1 auto; min-width: 200px; font-size: 12px; line-height: 1.35; }
+.t-reco-buy.is-ok { color: var(--t-ink-2); }
+.t-reco-buy.is-wts { color: var(--t-dn); text-shadow: 0 0 8px rgba(0, 230, 118, .45); }
+.t-reco-buy.is-warn { color: var(--t-up); }
+.t-reco-empty { font-size: 12px; color: var(--t-ink-3); margin: 6px 0; }
+.t-reco-rejtitle { margin-top: 10px; font-size: 11px; color: var(--t-ink-2);
+  border-top: 1px solid var(--t-line); padding-top: 7px; }
+.t-reco-rej { font-size: 11px; color: var(--t-up); margin: 3px 0; line-height: 1.3; }
+.t-reco-foot { margin-top: 10px; font-size: 11px; color: var(--t-ink-2);
+  border-top: 1px solid var(--t-line-hi); padding-top: 7px; }
+
+/* ════════════ ⚙ 系统设置（参数控制台 + 沙盒推演） ════════════ */
+.t-settings { padding: 14px 16px; }
+.t-set-head { font-size: 16px; font-weight: 600; color: var(--t-ink-1); margin-bottom: 8px; }
+.t-set-note { font-size: 12px; color: var(--t-ink-3); margin-bottom: 12px; line-height: 1.5; }
+.t-set-grid { display: flex; flex-direction: column; gap: 12px; max-width: 560px; }
+.t-set-row { display: grid; grid-template-columns: 150px 90px 1fr 64px; align-items: center; gap: 10px; }
+.t-set-lbl { font-size: 13px; color: var(--t-ink-1); display: flex; flex-direction: column; }
+.t-set-rng { font-size: 10px; color: var(--t-ink-3); margin-top: 2px; }
+.t-set-num { width: 84px; background: var(--t-bg-2); border: 1px solid var(--t-line); color: var(--t-ink-1);
+  border-radius: 6px; padding: 5px 6px; font-size: 13px; }
+.t-set-rng { -webkit-appearance: none; appearance: none; height: 4px; background: var(--t-line-hi); border-radius: 3px; }
+.t-set-rng::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--glm, #8b5cf6); cursor: pointer; border: 2px solid #fff; }
+.t-set-rng::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--glm, #8b5cf6); cursor: pointer; border: 2px solid #fff; }
+.t-set-val { font-size: 13px; color: var(--t-ink-2); text-align: right; font-variant-numeric: tabular-nums; }
+.t-set-actions { display: flex; gap: 12px; margin: 16px 0 10px; }
+.t-set-btn { background: var(--t-bg-2); border: 1px solid var(--t-line-hi); color: var(--t-ink-1);
+  border-radius: 8px; padding: 9px 16px; font-size: 13px; cursor: pointer; transition: .15s; }
+.t-set-btn:hover { border-color: var(--glm, #8b5cf6); color: #fff; background: var(--glm, #8b5cf6); }
+.t-set-save { font-weight: 600; }
+.t-set-diff { font-size: 13px; min-height: 20px; line-height: 1.6; }
+.t-diff-block { background: var(--t-bg-2); border: 1px solid var(--t-line); border-radius: 10px; padding: 12px 14px; margin-top: 6px; }
+.t-diff-line { color: var(--t-ink-1); margin: 3px 0; }
+.t-diff-add { color: var(--t-up); margin: 3px 0; font-size: 12px; }
+.t-diff-del { color: var(--t-dn); margin: 3px 0; font-size: 12px; }
+.t-diff-note { color: var(--t-ink-3); font-size: 11px; margin-top: 6px; }
+.t-ok { color: var(--t-up); }
+.t-err { color: var(--t-dn); }
+.t-warn { color: #e0a458; }
+.t-tag { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-left: 6px;
+  background: rgba(139,92,246,.18); color: var(--glm, #8b5cf6); border: 1px solid var(--glm, #8b5cf6); }

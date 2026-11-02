@@ -1,27 +1,26 @@
 name: Daily Data Health
 
-# 每日数据健康检查（2026-10-10）：**只读**——不拉数据、不写档、不提交、不 push。
+# 姣忔棩鏁版嵁鍋ュ悍妫€鏌ワ紙2026-10-10锛夛細**鍙**鈥斺€斾笉鎷夋暟鎹€佷笉鍐欐。銆佷笉鎻愪氦銆佷笉 push銆?
 #
-# 为什么只读（用户 2026-10-10 拍板，勿改成"CI 也跑一遍 daily_fetch"）：
-#   · 数据拉取归本机 ASentiment-dailyfetch-1600（北京 16:00）纪律。CI 再跑一次
-#     scripts/daily_fetch.mjs 会与本机班次抢同一批东财接口，且拉到的 ztpool
-#     按纪律不入库（docs/cron.md §6：脏档只在本机对该文件单独处置）→ 纯白跑。
-#   · 本 job 因此只做"当班产物对不对"的体检：契约 / 新鲜度 / 归档切片 / 跨档口径。
+# 涓轰粈涔堝彧璇伙紙鐢ㄦ埛 2026-10-10 鎷嶆澘锛屽嬁鏀规垚"CI 涔熻窇涓€閬?daily_fetch"锛夛細
+#   路 鏁版嵁鎷夊彇褰掓湰鏈?ASentiment-dailyfetch-1600锛堝寳浜?16:00锛夌邯寰嬨€侰I 鍐嶈窇涓€娆?
+#     scripts/daily_fetch.mjs 浼氫笌鏈満鐝鎶㈠悓涓€鎵逛笢璐㈡帴鍙ｏ紝涓旀媺鍒扮殑 ztpool
+#     鎸夌邯寰嬩笉鍏ュ簱锛坉ocs/cron.md 搂6锛氳剰妗ｅ彧鍦ㄦ湰鏈哄璇ユ枃浠跺崟鐙缃級鈫?绾櫧璺戙€?
+#   路 鏈?job 鍥犳鍙仛"褰撶彮浜х墿瀵逛笉瀵?鐨勪綋妫€锛氬绾?/ 鏂伴矞搴?/ 褰掓。鍒囩墖 / 璺ㄦ。鍙ｅ緞銆?
 #
-# 排期：北京 16:30（周一至周五）= 本机 16:00 班次之后 30 分钟，看的是当班产物。
+# 鎺掓湡锛氬寳浜?16:30锛堝懆涓€鑷冲懆浜旓級= 鏈満 16:00 鐝涔嬪悗 30 鍒嗛挓锛岀湅鐨勬槸褰撶彮浜х墿銆?
 #
-# ★ schedule 只在**默认分支**生效（仓库 default_branch = main）。本文件先在 staging
-#   落盘时定时任务不会响，需经周一 09:30 merge-staging-to-main 窗 ff 进 main 后
-#   schedule 才活；在此之前用 workflow_dispatch 手动触发（见 docs/cron.md）。
+# 鈽?schedule 鍙湪**榛樿鍒嗘敮**鐢熸晥锛堜粨搴?default_branch = main锛夈€傛湰鏂囦欢鍏堝湪 staging
+#   钀界洏鏃跺畾鏃朵换鍔′笉浼氬搷锛岄渶缁忓懆涓€ 09:30 merge-staging-to-main 绐?ff 杩?main 鍚?
+#   schedule 鎵嶆椿锛涘湪姝や箣鍓嶇敤 workflow_dispatch 鎵嬪姩瑙﹀彂锛堣 docs/cron.md锛夈€?
 
 on:
-  schedule:
-    - cron: '30 8 * * 1-5'   # 08:30 UTC = 北京 16:30，周一至周五
+  # 自动调度已迁树莓派(pi_run.sh)，保留手动兜底
   workflow_dispatch:
 
 permissions:
   contents: read
-  issues: write               # 告警通道的 issue 兜底（guard_notify.mjs）
+  issues: write               # 鍛婅閫氶亾鐨?issue 鍏滃簳锛坓uard_notify.mjs锛?
 
 jobs:
   check:
@@ -30,43 +29,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 仓库零运行时依赖（无 package-lock.json，刻意不 npm ci）；门禁③ 那种
-      # 临时 jsdom 需求由各 workflow 自行安装，本 job 不需要。
+      # 浠撳簱闆惰繍琛屾椂渚濊禆锛堟棤 package-lock.json锛屽埢鎰忎笉 npm ci锛夛紱闂ㄧ鈶?閭ｇ
+      # 涓存椂 jsdom 闇€姹傜敱鍚?workflow 鑷瀹夎锛屾湰 job 涓嶉渶瑕併€?
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: 前后端接口契约守卫（数据档 vs schemas/）
+      - name: 鍓嶅悗绔帴鍙ｅ绾﹀畧鍗紙鏁版嵁妗?vs schemas/锛?
         run: node scripts/check_contract.mjs
 
-      # 只输出、**不设闸**（2026-10-10 实测定策，改前先读这段）：
-      #   CI 的收盘生产班次是北京 18:30 / 21:00（daily.yml schedule），本 job 排 16:30
-      #   ——早于当日生产。此时 `freshness.mjs --require-fresh` 会红在「离线模块今日
-      #   未刷新」，是**时序误杀**不是真滞后。实测：周一 16:30 时点模拟必红（exit 1）；
-      #   而节假日（10-01）模拟反而是 exit 0——脚本自带「假期同停不误杀」，恰恰印证
-      #   红的触发条件是"交易日当天且当日生产尚未跑完"。
-      #   真滞后门禁的**唯一出处**是 daily.yml 21:00 班次那个 step（生产之后跑，判定
-      #   才成立）；本 job 不重复设闸——重复只会制造每天一次的固定假红，把真告警淹没。
-      - name: 数据新鲜度判定（输出可读结论，不设闸）
+      # 鍙緭鍑恒€?*涓嶈闂?*锛?026-10-10 瀹炴祴瀹氱瓥锛屾敼鍓嶅厛璇昏繖娈碉級锛?
+      #   CI 鐨勬敹鐩樼敓浜х彮娆℃槸鍖椾含 18:30 / 21:00锛坉aily.yml schedule锛夛紝鏈?job 鎺?16:30
+      #   鈥斺€旀棭浜庡綋鏃ョ敓浜с€傛鏃?`freshness.mjs --require-fresh` 浼氱孩鍦ㄣ€岀绾挎ā鍧椾粖鏃?
+      #   鏈埛鏂般€嶏紝鏄?*鏃跺簭璇潃**涓嶆槸鐪熸粸鍚庛€傚疄娴嬶細鍛ㄤ竴 16:30 鏃剁偣妯℃嫙蹇呯孩锛坋xit 1锛夛紱
+      #   鑰岃妭鍋囨棩锛?0-01锛夋ā鎷熷弽鑰屾槸 exit 0鈥斺€旇剼鏈嚜甯︺€屽亣鏈熷悓鍋滀笉璇潃銆嶏紝鎭版伆鍗拌瘉
+      #   绾㈢殑瑙﹀彂鏉′欢鏄?浜ゆ槗鏃ュ綋澶╀笖褰撴棩鐢熶骇灏氭湭璺戝畬"銆?
+      #   鐪熸粸鍚庨棬绂佺殑**鍞竴鍑哄**鏄?daily.yml 21:00 鐝閭ｄ釜 step锛堢敓浜т箣鍚庤窇锛屽垽瀹?
+      #   鎵嶆垚绔嬶級锛涙湰 job 涓嶉噸澶嶈闂糕€斺€旈噸澶嶅彧浼氬埗閫犳瘡澶╀竴娆＄殑鍥哄畾鍋囩孩锛屾妸鐪熷憡璀︽饭娌°€?
+      - name: 鏁版嵁鏂伴矞搴﹀垽瀹氾紙杈撳嚭鍙缁撹锛屼笉璁鹃椄锛?
         run: node scripts/freshness.mjs
 
-      - name: 归档切片一致性（--check 只读）
+      - name: 褰掓。鍒囩墖涓€鑷存€э紙--check 鍙锛?
         run: node scripts/split_archive.mjs --check
 
-      # --out 由脚本自行落盘（UTF-8 恒定），不靠 shell 重定向（编码随宿主而变：
-      #   PS 默认 UTF-16 / 部分环境 UTF-8 BOM，都会让下游 JSON.parse 失败）。
-      #   退出码即审计结论——违例时 job 照旧红（宁红不假）。
-      - name: 跨档口径审计
+      # --out 鐢辫剼鏈嚜琛岃惤鐩橈紙UTF-8 鎭掑畾锛夛紝涓嶉潬 shell 閲嶅畾鍚戯紙缂栫爜闅忓涓昏€屽彉锛?
+      #   PS 榛樿 UTF-16 / 閮ㄥ垎鐜 UTF-8 BOM锛岄兘浼氳涓嬫父 JSON.parse 澶辫触锛夈€?
+      #   閫€鍑虹爜鍗冲璁＄粨璁衡€斺€旇繚渚嬫椂 job 鐓ф棫绾紙瀹佺孩涓嶅亣锛夈€?
+      - name: 璺ㄦ。鍙ｅ緞瀹¤
         id: caliber
         run: node scripts/audit_data_caliber.mjs --json --out data/caliber-latest.json
 
-      # 口径审计违例 · 专用文案（2026-10-11 修）：
-      #   之前复用 guard_notify（冒烟语义），判词是「守卫脚本自身异常：冒烟档不可读
-      #   （脚本未走到落盘即崩）」——可审计脚本压根没崩，它诚实红的是「pain 停 9-30
-      #   ≠ 档案锚 10-08」（断供未修）。文案把**数据违例**说成**工具崩了**，直接误导
-      #   排查方向。改走 notify_caliber_fail.mjs：文案直书哪档、哪天、为什么违例。
-      - name: 口径审计违例告警（企微 + issue 兜底）
+      # 鍙ｅ緞瀹¤杩濅緥 路 涓撶敤鏂囨锛?026-10-11 淇級锛?
+      #   涔嬪墠澶嶇敤 guard_notify锛堝啋鐑熻涔夛級锛屽垽璇嶆槸銆屽畧鍗剼鏈嚜韬紓甯革細鍐掔儫妗ｄ笉鍙
+      #   锛堣剼鏈湭璧板埌钀界洏鍗冲穿锛夈€嶁€斺€斿彲瀹¤鑴氭湰鍘嬫牴娌″穿锛屽畠璇氬疄绾㈢殑鏄€宲ain 鍋?9-30
+      #   鈮?妗ｆ閿?10-08銆嶏紙鏂緵鏈慨锛夈€傛枃妗堟妸**鏁版嵁杩濅緥**璇存垚**宸ュ叿宕╀簡**锛岀洿鎺ヨ瀵?
+      #   鎺掓煡鏂瑰悜銆傛敼璧?notify_caliber_fail.mjs锛氭枃妗堢洿涔﹀摢妗ｃ€佸摢澶┿€佷负浠€涔堣繚渚嬨€?
+      - name: 鍙ｅ緞瀹¤杩濅緥鍛婅锛堜紒寰?+ issue 鍏滃簳锛?
         if: steps.caliber.outcome == 'failure'
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
@@ -77,22 +76,22 @@ jobs:
             --run-id "${{ github.run_id }}" \
             --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-      # 其余健康检查步骤（契约守卫/新鲜度/切片一致性）失败 → 仍走既有 guard_notify。
-      #   排除 caliber：否则口径违例会同时收到两条（一条准确 + 一条"脚本崩了"）。
-      # 档案缺交易日检测（2026-10-11 加）：
-      #   2026-10-09 整档缺失是我翻数据时**偶然**发现的——起因是 10-10 那次 run
-      #   cancelled，而 CI 没有任何 backfill 调度，于是这天永久缺失且无人知晓。
-      #   历史遗留的 30 天字段缺口同属此类。本 step 把"静默缺失"变成**红出来**。
-      #   判据：交易日 = 覆盖区间内工作日 − 休市日（calendar 的 trading 是空的、
-      #   days 只记 closed，必须自己算）；**上界取昨天**——今天没采不算缺失，
-      #   否则天天误报，误报会让人习惯性忽略告警，等于没有告警。
-      - name: 档案缺交易日检测
+      # 鍏朵綑鍋ュ悍妫€鏌ユ楠わ紙濂戠害瀹堝崼/鏂伴矞搴?鍒囩墖涓€鑷存€э級澶辫触 鈫?浠嶈蛋鏃㈡湁 guard_notify銆?
+      #   鎺掗櫎 caliber锛氬惁鍒欏彛寰勮繚渚嬩細鍚屾椂鏀跺埌涓ゆ潯锛堜竴鏉″噯纭?+ 涓€鏉?鑴氭湰宕╀簡"锛夈€?
+      # 妗ｆ缂轰氦鏄撴棩妫€娴嬶紙2026-10-11 鍔狅級锛?
+      #   2026-10-09 鏁存。缂哄け鏄垜缈绘暟鎹椂**鍋剁劧**鍙戠幇鐨勨€斺€旇捣鍥犳槸 10-10 閭ｆ run
+      #   cancelled锛岃€?CI 娌℃湁浠讳綍 backfill 璋冨害锛屼簬鏄繖澶╂案涔呯己澶变笖鏃犱汉鐭ユ檽銆?
+      #   鍘嗗彶閬楃暀鐨?30 澶╁瓧娈电己鍙ｅ悓灞炴绫汇€傛湰 step 鎶?闈欓粯缂哄け"鍙樻垚**绾㈠嚭鏉?*銆?
+      #   鍒ゆ嵁锛氫氦鏄撴棩 = 瑕嗙洊鍖洪棿鍐呭伐浣滄棩 鈭?浼戝競鏃ワ紙calendar 鐨?trading 鏄┖鐨勩€?
+      #   days 鍙 closed锛屽繀椤昏嚜宸辩畻锛夛紱**涓婄晫鍙栨槰澶?*鈥斺€斾粖澶╂病閲囦笉绠楃己澶憋紝
+      #   鍚﹀垯澶╁ぉ璇姤锛岃鎶ヤ細璁╀汉涔犳儻鎬у拷鐣ュ憡璀︼紝绛変簬娌℃湁鍛婅銆?
+      - name: 妗ｆ缂轰氦鏄撴棩妫€娴?
         id: gapdays
         run: node scripts/audit_archive_gaps.mjs --json --out data/gap-days-latest.json
 
-      # 缺天专用文案：直书缺哪几天 + 档案末档/日历覆盖——这三样才决定"是不是真缺口"。
-      #   复用 guard_notify 只能得到「步骤失败，明细见 run 日志」，读者还得点进去翻。
-      - name: 缺交易日告警（企微 + issue 兜底）
+      # 缂哄ぉ涓撶敤鏂囨锛氱洿涔︾己鍝嚑澶?+ 妗ｆ鏈。/鏃ュ巻瑕嗙洊鈥斺€旇繖涓夋牱鎵嶅喅瀹?鏄笉鏄湡缂哄彛"銆?
+      #   澶嶇敤 guard_notify 鍙兘寰楀埌銆屾楠ゅけ璐ワ紝鏄庣粏瑙?run 鏃ュ織銆嶏紝璇昏€呰繕寰楃偣杩涘幓缈汇€?
+      - name: 缂轰氦鏄撴棩鍛婅锛堜紒寰?+ issue 鍏滃簳锛?
         if: steps.gapdays.outcome == 'failure'
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
@@ -103,19 +102,19 @@ jobs:
             --run-id "${{ github.run_id }}" \
             --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-      # 其余健康检查步骤（契约守卫/新鲜度/切片一致性）失败 → 仍走既有 guard_notify。
-      #   排除 caliber 与 gapdays：两者各有专用告警，否则同一问题收两条互相打架的告警。
-      - name: 守卫结果通知（企微 + issue 兜底）
+      # 鍏朵綑鍋ュ悍妫€鏌ユ楠わ紙濂戠害瀹堝崼/鏂伴矞搴?鍒囩墖涓€鑷存€э級澶辫触 鈫?浠嶈蛋鏃㈡湁 guard_notify銆?
+      #   鎺掗櫎 caliber 涓?gapdays锛氫袱鑰呭悇鏈変笓鐢ㄥ憡璀︼紝鍚﹀垯鍚屼竴闂鏀朵袱鏉′簰鐩告墦鏋剁殑鍛婅銆?
+      - name: 瀹堝崼缁撴灉閫氱煡锛堜紒寰?+ issue 鍏滃簳锛?
         if: failure() && steps.caliber.outcome != 'failure' && steps.gapdays.outcome != 'failure'
         env:
           OPS_WEBHOOK: ${{ secrets.OPS_WEBHOOK }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # --file 刻意指向不存在路径：本 job 不做冒烟，若让它读仓库里那份历史的
-          # data/smoke-latest.json（allOk=true），guardVerdict 会判 ERROR 且理由写成
-          # 「冒烟档为成功态，与 step 失败矛盾」，issue 标题会误导归因。显式传空档
-          # → smoke=null + outcome=failure，仍是 ERROR 级（企微 error + issue 兜底），
-          # 语义正确："健康检查步骤失败"（非冒烟类失败）。
+          # --file 鍒绘剰鎸囧悜涓嶅瓨鍦ㄨ矾寰勶細鏈?job 涓嶅仛鍐掔儫锛岃嫢璁╁畠璇讳粨搴撻噷閭ｄ唤鍘嗗彶鐨?
+          # data/smoke-latest.json锛坅llOk=true锛夛紝guardVerdict 浼氬垽 ERROR 涓旂悊鐢卞啓鎴?
+          # 銆屽啋鐑熸。涓烘垚鍔熸€侊紝涓?step 澶辫触鐭涚浘銆嶏紝issue 鏍囬浼氳瀵煎綊鍥犮€傛樉寮忎紶绌烘。
+          # 鈫?smoke=null + outcome=failure锛屼粛鏄?ERROR 绾э紙浼佸井 error + issue 鍏滃簳锛夛紝
+          # 璇箟姝ｇ‘锛?鍋ュ悍妫€鏌ユ楠ゅけ璐?锛堥潪鍐掔儫绫诲け璐ワ級銆?
           node scripts/guard_notify.mjs \
             --step-outcome failure \
             --file .github/workflows/no-smoke-report-for-this-job.json \

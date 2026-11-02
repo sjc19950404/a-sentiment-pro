@@ -11,7 +11,7 @@ import {
   REVIEW_CFG, ADVICE_LEVELS, REVIEW_TITLE,
 } from '../src/paper_review.js';
 import { POS_CFG, MARKET_CFG } from '../src/alerts.js';
-import { TIER_THRESHOLDS } from '../src/picks.js';
+import { TIER_THRESHOLDS, marketTier } from '../src/picks.js';
 import { emptyAccount, accountStats, fees } from '../src/paper.js';
 
 const T = 1_000_000;
@@ -603,4 +603,47 @@ test('档位阈值同源：TIER_THRESHOLDS 与 picks 一致（复盘不得自定
   assert.equal(over.tier.key, 'overheat');
   const clear = buildPaperReview({ account: acct, stats: st, emotionScore: TIER_THRESHOLDS.half });
   assert.equal(clear.tier.key, 'clear');
+});
+
+// ── 1/3/5 日持仓胜率分桶（2026-10-24 加，P2 要求）──
+test('reviewTrades.byHold：按持仓天数统计 1/3/5 日平仓胜率', () => {
+  // 持有 2 日的盈利回合（买 10 卖 11，holdDays=2）
+  const win2 = [
+    { code: 'A', side: 'buy', qty: 100, price: 10, fillDate: '2026-10-20', fee: 5 },
+    { code: 'A', side: 'sell', qty: 100, price: 11, fillDate: '2026-10-22', fee: 5 },
+  ];
+  // 持有 4 日的亏损回合（买 10 卖 9，holdDays=4）
+  const loss4 = [
+    { code: 'B', side: 'buy', qty: 100, price: 10, fillDate: '2026-10-18', fee: 5 },
+    { code: 'B', side: 'sell', qty: 100, price: 9, fillDate: '2026-10-22', fee: 5 },
+  ];
+  const r = reviewTrades([...win2, ...loss4], { initCash: T });
+  assert.equal(r.byHold.d1.n, 0, '两笔持仓都 >1 日，d1 无样本');
+  assert.equal(r.byHold.d1.winRate, null);
+  assert.equal(r.byHold.d3.n, 1, 'd3 仅含 win2（2日）');
+  assert.equal(r.byHold.d3.winRate, 1);
+  assert.equal(r.byHold.d5.n, 2, 'd5 含两笔');
+  assert.equal(r.byHold.d5.winRate, 0.5);
+  assert.equal(r.winRate, 0.5, '总胜率按全部平仓');
+});
+
+test('reviewTrades.byHold：买入日缺失 → holdDays 为 null，回合不计入任何桶（但总胜率照算）', () => {
+  const incomplete = [
+    { code: 'C', side: 'buy', qty: 100, price: 10, fee: 5 },                 // 无 fillDate → holdDays null
+    { code: 'C', side: 'sell', qty: 100, price: 11, fillDate: '2026-10-22', fee: 5 },
+  ];
+  const r = reviewTrades(incomplete, { initCash: T });
+  assert.equal(r.byHold.d1.n, 0);
+  assert.equal(r.byHold.d3.n, 0);
+  assert.equal(r.byHold.d5.n, 0);
+  assert.equal(r.closedCount, 1, '回合仍闭合，总胜率口径不受影响');
+});
+
+test('paper_daily 自动建仓闸门：过热/清仓档位 allowNew=false → 跳过（与"坚决不开新进攻仓"纪律一致）', () => {
+  // 直接验证闸门依赖的 marketTier.allowNew 语义（脚本用它 + regime 双闸）
+  const { overheat, full, half } = TIER_THRESHOLDS;
+  assert.equal(marketTier(overheat + 0.5).allowNew, false, '过热=只减仓不新建');
+  assert.equal(marketTier(half - 0.5).allowNew, false, '清仓=不新建');
+  assert.equal(marketTier((full + overheat) / 2).allowNew, true, '满仓=可新建');
+  assert.equal(marketTier((half + full) / 2).allowNew, true, '半仓=可新建');
 });

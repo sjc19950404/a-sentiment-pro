@@ -42,6 +42,7 @@ import { fetchIntradayRaw } from '../src/intraday_node.mjs';
 import { marketPhase, bjDate, bjTime } from '../src/freshness.js';
 import { buildIntradayPool, minutesToCloseBJ } from '../src/ai_report.js';
 import { computeEmotion } from '../src/emotion_cycle.js';
+import { applySnapshotFallback } from '../src/snapshot_fallback.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'intraday.json');
@@ -80,11 +81,21 @@ log(`相位 ${FORCE && ph.phase !== 'live' ? ph.phase + '（--force 强制）' :
 // ── ② 抓取盘中源（2026-10-10 数据层迁移：一次 python 进程拉齐六源——全市场快照
 //     QuantDash 主/AkShare 兜底、涨跌停池 AkShare、主力净流入榜 AkShare，全部批量；
 //     旧源（同花顺 getharden/腾讯 qt.gtimg/东财 push2 直连/eastmoney-probe）退役）──
+// ── ②b 读取上次成功快照（兜底源 + TTL 判定用，提前到抓取前——gtimg 兜底需要 prev.hot 代码作宇宙）──
+const prev = (() => {
+  try { return existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : null; } catch { return null; }
+})();
+const prevHotCodes = (prev?.hot?.rows && Array.isArray(prev.hot.rows)) ? prev.hot.rows.map((r) => r.code).filter(Boolean) : [];
+
 let raw = null;
-try {
-  raw = await fetchIntradayRaw();
-} catch (e) {
-  log('数据层整体失败 →', String(e?.message || e));
+const fetchOnce = async () => {
+  try { return await fetchIntradayRaw(prevHotCodes); } catch (e) { log('数据层失败 →', String(e?.message || e)); return null; }
+};
+raw = await fetchOnce();
+if (!raw) { // 进程级瞬时失败（python 子进程偶发退出 / 套接字抖动）→ 重试一次
+  log('数据层首次失败 → 1.5s 后重试一次');
+  await new Promise((r) => setTimeout(r, 1500));
+  raw = await fetchOnce();
 }
 
 const hot = raw?.hot ?? null;
@@ -96,6 +107,8 @@ if (!raw) errs.push('market_data: 数据层进程失败（六源全部缺席，�
 else if (raw.meta?.degradations?.length) log('数据层降级链 →', raw.meta.degradations.map((d) => `${d.chain}`).join(' ⇄ '));
 for (const e of errs) log('源失败 →', e);
 
+// （prev 已提前至抓取前读取，见上方 ②b）
+
 // ── ③ 交易日核验：强势股返回的 date 必须等于北京当日 ──────────────────────────
 // 为什么必须核：该接口在非交易日 / 数据源未切换时会**返回上一交易日的数据**（不报错）。
 // 若不核验就落盘，会把昨天的强势股当成今天的盘中快照——这是比"抓失败"更危险的静默错。
@@ -106,10 +119,7 @@ if (hotDate && hotDate !== ph.bjDate) {
   process.exit(0);
 }
 
-const anyOk = !!(hot || pools || breadth);
-if (!anyOk) {
-  log('三个源全部失败 → 本次不覆盖已有快照（避免网络抖动把页面刷成空白）。');
-}
+// anyOk 在「兜底源应用后」统一判定（见下方 ③c 之后），此处不提前判定。
 
 // ── ③b 盘中候选池数据源（2026-10-10 数据层迁移）───────────────────────────────
 //   量比/PE-TTM/PB 与主力净流入：新数据层在 intraday-raw 进程内已派生（零新增请求）。
@@ -158,6 +168,17 @@ const snapshot = {
     // v3（2026-10-10 双池拆分）：code→连板数映射。连板池判定唯一依据——
     //   缺席（旧快照）= null，报告层连板池报因不猜测，绝不拿 reason 标签冒充。
     zt_lb: pools.zt_lb || null,
+    // 窗口连板口径（N天M板，2026-10-23 用户校准新增）：lbc 只数连续板，「5天3板」这类
+    //   非连续连板会被记首板。按最近 5 个交易日（档案脊）的涨停天数重算，与公开连板
+    //   天梯同口径；连续口径 zt_lb 原样保留，两口径并列。旧快照缺席 = null，
+    //   前端回退连续口径，不猜测。
+    zt_lbw: pools.zt_lbw || null,
+    lbw2: pools.lbw2 ?? null,
+    max_lbw: pools.max_lbw ?? null,
+    // 地天板（2026-10-23 用户校准新增）：盘中触及跌停、收盘封回涨停的稀疏映射 + 只数。
+    //   高标分歧极大的信号，连板天梯需可见；行情缺失整批时 null，不猜。
+    zt_dtd: pools.zt_dtd || null,
+    dtd_count: pools.dtd_count ?? null,
     // v3（2026-10-10 滚动情绪）：涨停池每股明细 {c,lbc,zbc,hybk,fbt,fund}——
     //   emotion_cycle 六指标（判据唯一出处）的盘中原料，与收盘口径 ztpool_history
     //   同源同构；v4 增 fbt（首次封板 HHMMSS，一字判定）/fund（封单资金，元）。
@@ -205,9 +226,20 @@ const snapshot = {
   sourcesFailed: errs.length ? errs : [],
 };
 
+// ── ③c 兜底源（2026-10-29 加固）：本次任一源（hot/screener/pools/breadth）缺席即回落
+//   「同交易日 + ≤60 分钟」的上次成功快照，避免单源抖动把候选池/盘面整体抹成空白。
+//   宁缺毋假仍成立——兜底源本身也是真实抓取值（只是稍旧），且仅在 TTL 内接受；超出则继续判空。
+//   兜底后保留 prev 的真实 capturedAtBJ（数据真实年龄，不冒充实时），并在 dataHealth.fallbackUsed 留痕。
+const fbRes = applySnapshotFallback(snapshot, prev, { tradeDate: ph.bjDate, nowMs: now.getTime(), ttlMin: 60 });
+if (fbRes.fallbackUsed.length) {
+  log('兜底源启用（同交易日+TTL 内）：' + fbRes.fallbackUsed.join('/') + ' ← ' + (prev?.capturedAtBJ || '?'));
+}
+
+// 兜底后再判定：任一源（含兜底）在场即写盘；全缺（含兜底也不可用）→ 保留上次成功快照
+const anyOk = !!(snapshot.hot || snapshot.screener || snapshot.pools || snapshot.breadth);
+
 // ── ⑤ 写盘（保留上一次成功的快照供对比，但只保留最近一次，不做历史堆积）────
-let prev = null;
-if (existsSync(OUT)) { try { prev = JSON.parse(readFileSync(OUT, 'utf8')); } catch { prev = null; } }
+//   prev 已在上方统一读取（含兜底源判定）。
 
 if (!anyOk) {
   // 全失败：只更新 failed 留痕，不覆盖成功的快照内容

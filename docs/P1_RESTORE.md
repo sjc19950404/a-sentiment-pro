@@ -78,9 +78,9 @@ const fbt = ztd?.fbt != null ? String(ztd.fbt).padStart(6, '0') : null;
 
 ## 数据层迁移第一阶段（2026-10-10 凌晨追加）
 
-旧接口直连全部退役（eastmoney-probe / push2his / 同花顺 getharen / 腾讯 qt.gtimg），
-盘中六源改走 Python 数据层，`scripts/snapshot_intraday.mjs` 经 `src/sources_qd.mjs` 桥接
-`python market_data.py intraday-raw`（契约与旧六 fetch 逐字段一致，组装/三态校验/落盘逻辑零改动）。
+旧接口直连全部退役（eastmoney-probe / push2his / 同花顺 getharen / 腾讯 qt.gtimg）。
+盘中六源于 2026-10-15 迁回 Node.js 直连东财（`src/intraday_node.mjs`，替代 `market_data.py` 的 Python 源）；
+`scripts/snapshot_intraday.mjs` 直接消费其产出，不再经 `src/sources_qd.mjs` 桥接（该桥接文件已于 2026-10-31 删除）。
 
 **降级链与实测（本机墙内网络）**：
 

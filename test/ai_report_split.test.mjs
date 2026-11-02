@@ -59,16 +59,16 @@ test('buildIntradayPool：四条件筛选——带外/量比不足/已涨停/净
     row({ code: '600104', change_pct: 9.99 }),                     // 已涨停（涨幅兜底）
     row({ code: '600105' }),                                      // 涨停名单命中
     row({ code: '600106', main_net: -1e6 }),                       // 主力净流出
-    row({ code: '600107', main_net: null }),                       // 主力无源（核验不了）
+    row({ code: '600107', main_net: null }),                       // 主力无源（放宽口径：缺失视为通过 → 入选，不剔）
     row({ code: '600108', liangbi: null }),                       // 量比无源
   ];
   const { pool, basis } = buildIntradayPool(snap(rows, { zt_codes: ['600105'] }), {});
-  assert.deepEqual(pool.map((p) => p.code), ['600100'], '仅全条件可核验且达标的入选');
+  assert.deepEqual([...pool.map((p) => p.code)].sort(), ['600100', '600107'], '600100 全达标；600107 主力净流入缺失 → 放宽口径入选（不再误剔）');
   assert.ok(basis.includes('带外 2'), '带外 2 只（2.9% / 7.1%）');
   assert.ok(basis.includes('量比不足 1'), '量比 ≤2.0 剔 1 只（边界含等号）');
   assert.ok(basis.includes('已涨停 2'), '已涨停 2 只（名单命中 + 涨幅兜底）');
-  assert.ok(basis.includes('净流出或无源 1'), '净流出剔 1 只');
-  assert.ok(basis.includes('字段缺失 2'), '无源字段走 unverifiable 计数（宁缺毋假，不冒充 0）');
+  assert.ok(basis.includes('净流出或无源 1'), '净流出（在场且≤0）剔 1 只；主力缺失已不再计入');
+  assert.ok(basis.includes('字段缺失 1'), '无源字段（量比缺失）走 unverifiable 计数（宁缺毋假，不冒充 0）；主力缺失已不再计入');
 });
 
 test('buildIntradayPool：得分口径——中枢 5% 贴近者高于带边，权重缺席重归一，Top 10 截断', () => {
@@ -118,16 +118,16 @@ test('buildIntradayPool：is_valid 硬闸——空串/null 核验字段被拦（
   const rows = [
     row({ code: '600401', change_pct: '' }),   // 空串涨幅 → unverifiable（'' 是 +''===0 陷阱）
     row({ code: '600402', liangbi: undefined }), // undefined 量比 → unverifiable
-    row({ code: '600403', main_net: NaN }),       // NaN 主力净流入 → unverifiable
+    row({ code: '600403', main_net: NaN }),       // NaN 主力净流入 → 放宽口径：缺失视为通过（不冒充 0，不误剔）
     row({ code: '600404', name: '   ', pe_ttm: '', pb: '' }), // 入选但展示字段缺失
   ];
   const { pool, basis } = buildIntradayPool(snap(rows), {});
-  assert.deepEqual(pool.map((p) => p.code), ['600404'], '核验字段不过闸的三只全剔（宁缺毋假）');
+  assert.deepEqual([...pool.map((p) => p.code)].sort(), ['600403', '600404'], '600403 主力净流入 NaN→缺失→放宽入选；600404 展示字段缺失仍入选；价格面缺失的三只硬闸剔除');
   const [p] = pool;
   assert.equal(p.name, null, 'name 空白串 → null（渲染 —），不脑补');
   assert.equal(p.fundamentals.pe, null, 'pe 空串 → null（不冒充 0，负 PE 才是真实值保留）');
   assert.equal(p.fundamentals.pb, null, 'pb 空串 → null');
-  assert.ok(basis.includes('字段缺失 3'), 'unverifiable 计数如实（3 只）');
+  assert.ok(basis.includes('字段缺失 2'), 'unverifiable 计数如实（chg 空串 + 量比 undefined 共 2 只；主力缺失已不再计入）');
 });
 
 test('buildIntradayPool：筛后 0 只 → basis 首句显式报「今日无符合条件标的」，不凑数', () => {

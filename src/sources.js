@@ -1,3 +1,4 @@
+import { fetchWithRetry } from './util.js';
 // sources.js — 多源实时抓取（移植自 sjc19950404/a-sentiment fetch-daily.js 已验证接口）
 // 数据源:
 //   1. 同花顺强势股 zx.10jqka.com.cn/event/api/getharden（兼交易日探测: data[0].date）
@@ -16,8 +17,13 @@ import { computeSentiment } from './sentiment.js';
 import { normalizeRecord, summarizeCalibers, mergeDuplicateRecords } from './lhb.js';
 import { isAggregateSeatRow } from './seats.js';
 import { computeRelative } from './relative.js';
+import { computeWindowBoards, loadZtpoolHistory, loadRecent } from './ztpool_window.js';
+import { isDiTianBan } from './zt_rebuild.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const r2 = (v) => Math.round(v * 100) / 100;
@@ -41,7 +47,7 @@ class LhbNotPublishedError extends Error {
 }
 
 async function fetchText(url, opts = {}) {
-  const r = await fetch(url, { headers: { 'User-Agent': UA, ...(opts.headers || {}) } });
+  const r = await fetchWithRetry(url, { headers: { 'User-Agent': UA, ...(opts.headers || {}) } });
   if (!r.ok) throw new Error('HTTP ' + r.status + ' @ ' + url.slice(0, 80));
   return r;
 }
@@ -198,7 +204,7 @@ export async function fetchLhb(date) {
   while (page <= 5) {
     const url = 'https://datacenter-web.eastmoney.com/api/data/v1/get?pageSize=200&pageNumber=' + page +
       '&reportName=RPT_DAILYBILLBOARD_DETAILSNEW&columns=ALL&filter=(TRADE_DATE%3D%27' + date + '%27)';
-    const r = await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://data.eastmoney.com/' } });
+    const r = await fetchWithRetry(url, { headers: { 'User-Agent': UA, Referer: 'https://data.eastmoney.com/' } });
     const j = await r.json();
     if (!j.success || !j.result) {
       if (page === 1 && !j.result) throw new LhbNotPublishedError(date);
@@ -230,7 +236,7 @@ export async function fetchBoards(date) {
       let got = null;
       for (let att = 0; att < 2 && !got; att++) {
         try {
-          const t = await (await fetch('http://d.10jqka.com.cn/v6/line/48_' + code + '/01/' + year + '.js',
+          const t = await (await fetchWithRetry('http://d.10jqka.com.cn/v6/line/48_' + code + '/01/' + year + '.js',
             { headers: { 'User-Agent': UA, Referer: 'https://q.10jqka.com.cn/' } })).text();
           const s = t.slice(t.indexOf('(') + 1, t.lastIndexOf(')'));
           const obj = JSON.parse(s);
@@ -284,21 +290,37 @@ export async function fetchSecondIndustry() {
   throw new Error('第二行业源（腾讯/申万二级）连续失败: ' + (lastErr ? lastErr.message : 'unknown'));
 }
 
-// 源5: 腾讯三大指数
-export async function fetchIndexes(date) {  for (let att = 0; att < 3; att++) {
+// 源5: 腾讯三大指数 qt.gtimg.cn
+// ⚠ 日期语义（2026-10-20 修复）：腾讯实时报价恒带"当日"日期（f[30]），从不返回历史日。
+//   生产 fetchLive 传入 today，腾讯实时=今日 → 精确匹配，行为与旧逻辑一致。
+//   但冒烟锚点来自 getharden 的"最近一个有数据的交易日"，盘前会滞后于实盘
+//   （如锚 10-19、腾讯实时 10-20）→ 旧逻辑 ymd!==date 全丢弃 → 返回 null →
+//   s4 误判源故障 → 硬闸 build。改为：精确匹配请求日优先；匹配不到则取"最新可得日"
+//   （实时行情即当日，视为源存活，非故障）；仅当完全解析不出任何指数条目
+//   （schema 崩 / 限流空体）才返回 null。
+export async function fetchIndexes(date) {
+  for (let att = 0; att < 3; att++) {
     try {
       const txt = await fetchGBK('https://qt.gtimg.cn/q=sh000001,sz399001,sz399006');
-      const idx = {}; let ok = false;
+      const byDate = {}; let any = false;
       for (const m of txt.matchAll(/v_(sh|sz)\d+="([^"]*)"/g)) {
         const f = m[2].split('~');
         const name = f[1];
+        const chg = parseFloat(f[32]);
+        if (!name || isNaN(chg)) continue;
         const ymdNum = (f[30] || '').replace(/\D/g, '');
         const ymd = ymdNum.length >= 8 ? ymdNum.slice(0, 4) + '-' + ymdNum.slice(4, 6) + '-' + ymdNum.slice(6, 8) : '';
-        if (!ymd || ymd !== date) continue;
-        const chg = parseFloat(f[32]);
-        if (!isNaN(chg)) { idx[name] = r2(chg); ok = true; }
+        any = true;
+        (byDate[ymd] = byDate[ymd] || {})[name] = r2(chg);
       }
-      if (ok) return idx;
+      if (!any) continue; // 真·解析不出（schema 崩 / 限流空体）→ 重试
+      // 精确匹配请求日优先；否则取最新可得日（实时行情=当日，锚点滞后也能拿到真值）
+      const liveDate = Object.keys(byDate).sort().pop();
+      const got = byDate[date] || byDate[liveDate];
+      if (got && Object.keys(got).length >= 3) {
+        if (!byDate[date]) console.warn(`[fetchIndexes] 腾讯实时指数日期=${liveDate} ≠ 请求 ${date}，取最新日（源存活，非故障）`);
+        return got;
+      }
     } catch (e) { /* 重试 */ }
     await sleep(600);
   }
@@ -306,6 +328,32 @@ export async function fetchIndexes(date) {  for (let att = 0; att < 3; att++) {
 }
 
 // 源6: 东财涨跌停/炸板池
+// 地天板检测的行情批取（2026-10-23 新增）：腾讯 qt.gtimg 60 只/批，只取判定三价
+// （close/low/prevClose）+ 名称（ST 幅度判定用）。单批失败容错跳过；全批失败返回 null
+// （调用方据此让字段缺席，绝不拿「没抓到」当「没有地天板」）。
+async function detectDiTianBan(pool) {
+  const codes = pool.map((p) => p.c);
+  const nameOf = new Map(pool.map((p) => [String(p.c), p.n || '']));
+  const out = {};
+  let any = false;
+  for (let i = 0; i < codes.length; i += 60) {
+    const batch = codes.slice(i, i + 60).map(quoteSymbol).filter(Boolean);
+    if (!batch.length) continue;
+    try {
+      const txt = await fetchGBK('https://qt.gtimg.cn/q=' + batch.join(','));
+      for (const m of txt.matchAll(/v_(?:sh|sz|bj)(\d{6})="([^"]*)"/g)) {
+        const f = m[2].split('~');
+        const close = parseFloat(f[3]), low = parseFloat(f[34]), prev = parseFloat(f[4]);
+        if (!Number.isFinite(close) || close <= 0 || !Number.isFinite(low) || !Number.isFinite(prev)) continue;
+        any = true;
+        if (isDiTianBan({ close, low, prevClose: prev }, m[1], f[1] || nameOf.get(m[1]) || '')) out[m[1]] = true;
+      }
+    } catch (e) { /* 单批失败容错 */ }
+    await sleep(300);
+  }
+  return any ? out : null;
+}
+
 async function fetchPools(date) {
   const ymd = date.replace(/-/g, '');
   const base = 'ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=500';
@@ -314,7 +362,8 @@ async function fetchPools(date) {
     ['getTopicZBPool', 'zb', 'fbt%3Aasc'],
     ['getTopicDTPool', 'dt', 'fund%3Aasc'],
   ];
-  const out = { zt: null, zb: null, dt: null, max_lb: null, lb2: null, zt_codes: null, zt_lb: null, dt_detail: null, zb_detail: null };
+  const out = { zt: null, zb: null, dt: null, max_lb: null, lb2: null, zt_codes: null, zt_lb: null, dt_detail: null, zb_detail: null,
+    zt_lbw: null, lbw2: null, max_lbw: null, zt_dtd: null, dtd_count: null };
   let any = false;
   for (const [api, key, sort] of apis) {
     for (let att = 0; att < 3; att++) {
@@ -339,7 +388,29 @@ async function fetchPools(date) {
           //   09:25:00 落成 92500——前导零丢失），String(92500)="92500" 永不满足
           //   <="092500" → 一字闸全程失效（10-09 事故：新华传媒/时代万恒/紫竹高科三只
           //   一字板全部漏进连板池）。落盘即规范化为 6 位零填充字符串，与判据口径对齐。
-          out.zt_detail = pool.map((p) => ({ c: p.c, lbc: p.lbc || 1, zbc: p.zbc || 0, hybk: p.hybk || '', fbt: p.fbt != null ? String(p.fbt).padStart(6, '0') : null, fund: p.fund != null ? p.fund : null }));
+          // 窗口连板（N天M板，2026-10-23 用户校准）：lbc 只数连续板，「5天3板」这类
+          // 非连续连板会被记首板（实测福莱新材/凡拓数创/龙旗科技/中广天择 lbc=1）。
+          // 按最近 5 个交易日（档案脊 + archive-recent 各日 zt_codes，精确无断更）
+          // 的涨停天数重算；ztpool_history 仅作档案缺席日的兜底。
+          // 连续口径 lbc 原样保留，两口径并列；交易语义（连板池 lbc≥2）不变。
+          const _win = computeWindowBoards(loadZtpoolHistory(ROOT), pool, ymd, {
+            recent: loadRecent(ROOT),
+          });
+          out.zt_lbw = _win.ztLbw;
+          out.lbw2 = _win.lbw2;
+          out.max_lbw = _win.maxLbw;
+          out.zt_detail = pool.map((p) => ({ c: p.c, lbc: p.lbc || 1, lbw: _win.ztLbw[p.c] ?? 1, zbc: p.zbc || 0, hybk: p.hybk || '', fbt: p.fbt != null ? String(p.fbt).padStart(6, '0') : null, fund: p.fund != null ? p.fund : null }));
+          // 地天板检测（2026-10-23 用户校准）：池中「盘中触及跌停、收盘封回涨停」的个股
+          // （海洋王 10-23 即此）——高标分歧极大的信号，连板天梯必须可见。批量行情只取
+          // low/prevClose/close 三价，判定走 zt_rebuild.isDiTianBan（规则唯一出处）；
+          // 行情缺失 → 该股不判（宁缺毋假），整批失败 → 字段缺席 = null，不猜。
+          {
+            const dtd = await detectDiTianBan(pool);
+            if (dtd) {
+              out.zt_dtd = Object.keys(dtd).length ? dtd : null;
+              out.dtd_count = Object.keys(dtd).length;
+            }
+          }
         }
         if (api === 'getTopicDTPool' && pool) {
           out.dt_detail = pool.map((p) => ({ c: p.c, fba: p.fba || 0, amount: p.amount || 0, days: p.days || 0 }));
@@ -399,7 +470,7 @@ export async function fetchAmountMap({ anchor } = {}) {
     const m = {};
     for (const year of years) {
       try {
-        const t = await (await fetch('https://d.10jqka.com.cn/v6/line/' + code + '/01/' + year + '.js',
+        const t = await (await fetchWithRetry('https://d.10jqka.com.cn/v6/line/' + code + '/01/' + year + '.js',
           { headers: { 'User-Agent': UA, Referer: 'https://q.10jqka.com.cn/' } })).text();
         const obj = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
         (obj.data || '').split(';').filter(Boolean).forEach((l) => {
@@ -444,7 +515,7 @@ export async function fetchAmountMap({ anchor } = {}) {
 async function fetchAmountTencentFallback(ymd) {
   for (let att = 0; att < 3; att++) {
     try {
-      const t = await (await fetch('https://qt.gtimg.cn/q=sh000001,sz399001&r=' + Date.now(),
+      const t = await (await fetchWithRetry('https://qt.gtimg.cn/q=sh000001,sz399001&r=' + Date.now(),
         { headers: { 'User-Agent': UA } })).text();
       // 两市各自解析到有效值才返回（2026-10-08 事故：深证行缺失/解析失败时旧逻辑
       // any=true 即收，只加了沪市 8301 亿——单市冒充两市混入两市口径序列（近 20 日均
@@ -585,7 +656,7 @@ async function fetchSeatRows(reportName, date, code, sortCol) {
       const url = 'https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=' + reportName +
         '&columns=ALL&filter=(TRADE_DATE%3D%27' + date + '%27)(SECURITY_CODE%3D%22' + code + '%22)' +
         '&pageSize=50&pageNumber=1&sortColumns=' + sortCol + '&sortTypes=-1&source=WEB&client=WEB';
-      const j = await (await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://data.eastmoney.com/' } })).json();
+      const j = await (await fetchWithRetry(url, { headers: { 'User-Agent': UA, Referer: 'https://data.eastmoney.com/' } })).json();
       return (j.result && j.result.data) || [];
     } catch (e) { await sleep(400); }
   }
@@ -772,6 +843,13 @@ function buildDay(date, lhbRaw, hotRaw, industry, indexes, pools, amountYi, amou
     seal_den: (zt != null && zb != null) ? zt + zb : null, // 分母（触板个股），供报告如实披露口径
     zbl_pct,                  // [兼容] 旧字段名；语义=炸板率
     max_lb: pools ? pools.max_lb : null, lb2_count: pools ? pools.lb2 : null,
+    // 窗口连板口径（N天M板，2026-10-23 新增）：与 lb2_count（连续口径）并列。
+    // 旧档（无窗口数据）两字段为 null，前端回退连续口径。
+    lbw2_count: pools ? (pools.lbw2 ?? null) : null, max_lbw: pools ? (pools.max_lbw ?? null) : null,
+    zt_lbw: pools ? (pools.zt_lbw || null) : null,
+    // 地天板（2026-10-23 新增）：zt_dtd 为稀疏映射（code→true，只含命中个股），
+    // dtd_count 为只数。行情缺失整批时两者为 null（前端不渲染，不猜）。
+    zt_dtd: pools ? (pools.zt_dtd || null) : null, dtd_count: pools ? (pools.dtd_count ?? null) : null,
     zt_codes: pools ? (pools.zt_codes || null) : null,
     zt_lb: pools ? (pools.zt_lb || null) : null,
     amount_yi,

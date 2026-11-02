@@ -48,6 +48,26 @@ export function llmSentimentBlock(report, { score, tradeDate } = {}) {
   // 证据日期防伪（crosscheck 先例）：落盘 asOfDate 必须等于目标交易日——
   // LLM 报告是"某一天"的舆情快照，昨天的结论不能冒充今天的证据。
   if (!report.asOfDate || report.asOfDate !== tradeDate) return null;
+  // 失败兜底档（fetch 已配置但调用失败/超时/非法 JSON 落盘）：显式 degraded，
+  //   与「未生成（缺配置）」「真实中性」三者区分——渲染层据此给不同文案。
+  if (report.degraded) {
+    return {
+      asOfDate: report.asOfDate,
+      generatedAt: report.generatedAt || null,
+      model: report.model || null,
+      degraded: true,
+      effective: false,
+      effectNote: report.reason || report.summary || 'AI舆情获取失败，默认中性',
+      sentimentRaw: 0,
+      adj: 0,
+      original: Number.isFinite(+score) ? Math.round(+score * 10) / 10 : null,
+      modified: null,
+      events: Array.isArray(report.events) ? report.events.slice(0, 8) : [],
+      confidence: null,
+      reason: report.reason || report.summary || 'AI舆情获取失败，默认中性',
+      note: 'LLM 舆情获取失败兜底档（调用失败/超时/非法 JSON）；按中性占位，不冒充真实舆情方向。',
+    };
+  }
   const raw = Number(report.sentiment);
   if (!Number.isFinite(raw) || raw < -1 || raw > 1) return null;
 

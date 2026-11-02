@@ -1,3 +1,4 @@
+import { fetchWithRetry } from '../src/util.js';
 // 历史六因子回填 · 步骤2：同花顺 881xxx 行业板块年线抓取（行业广度因子 s_brd 原料）
 //
 // 与每日管线 fetchBoards 同源同端点（q.10jqka.com.cn/thshy/ 板块清单 + d.10jqka 年线），
@@ -23,7 +24,7 @@ if (existsSync(OUT) && !FORCE) {
 }
 
 async function fetchGBK(url) {
-  const r = await fetch(url, { headers: { 'User-Agent': UA } });
+  const r = await fetchWithRetry(url, { headers: { 'User-Agent': UA } });
   const buf = await r.arrayBuffer();
   return new TextDecoder('gbk').decode(buf);
 }
@@ -51,7 +52,7 @@ async function worker() {
       let gotYear = false;
       for (let att = 0; att < 3 && !gotYear; att++) {
         try {
-          const t = await (await fetch('http://d.10jqka.com.cn/v6/line/48_' + code + '/01/' + year + '.js',
+          const t = await (await fetchWithRetry('http://d.10jqka.com.cn/v6/line/48_' + code + '/01/' + year + '.js',
             { headers: { 'User-Agent': UA, Referer: 'https://q.10jqka.com.cn/' } })).text();
           const s = t.slice(t.indexOf('(') + 1, t.lastIndexOf(')'));
           const obj = JSON.parse(s);

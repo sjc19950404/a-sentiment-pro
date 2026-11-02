@@ -1,6 +1,25 @@
-# 每日收盘后自动采集（情绪历史 + 老龙头扫描）——crontab 示例
-#
-# 安装：crontab -e 后把下面这行粘贴进去，替换 /你的项目路径 为项目绝对路径
-# （node 路径用 `which node` 确认，默认 /usr/local/bin/node）
-# 15:30（收盘后）拉当日涨停池快照，日志追加到 logs/daily_fetch.log
-30 15 * * 1-5 cd /你的项目路径 && /usr/local/bin/node scripts/daily_fetch.mjs >> logs/daily_fetch.log 2>&1
+# 树莓派 crontab（新架构：pi_run.sh 总调度；GitHub=仓库+Pages 展示）
+# 安装：crontab -e 后粘贴本文件内容；或 crontab /path/to/crontab.example
+# 前提：Pi 时区 Asia/Shanghai（sudo timedatectl set-timezone Asia/Shanghai）。
+#      若 Pi 保持 UTC，请按每行尾部「UTC:」注释替换 时:分。
+PATH=/usr/local/bin:/usr/bin:/bin
+LOG=/var/log/aquant/run.log
+
+# 盘前六源冒烟（北京 08:30 | UTC 00:30）
+30  0  * * 1-5  /opt/a-sentiment-pro/pi_run.sh smoke       >>$LOG 2>&1
+# 盘中轻量快照（北京 09:30~15:00 每30分 | UTC 01:00~07:30）
+0,30 1-7 * * 1-5  /opt/a-sentiment-pro/pi_run.sh intraday  >>$LOG 2>&1
+# 盘后首抓（北京 18:30 | UTC 10:30）
+30 10 * * *      /opt/a-sentiment-pro/pi_run.sh eod        >>$LOG 2>&1
+# 盘后补抓（北京 21:00 | UTC 13:00）
+0  13 * * 1-5  /opt/a-sentiment-pro/pi_run.sh supplement  >>$LOG 2>&1
+# 美股收盘档（北京次日 04:30 | UTC 20:30）
+30 20 * * 1-5  /opt/a-sentiment-pro/pi_run.sh us_close    >>$LOG 2>&1
+# A50 夜盘收盘（北京 05:20 | UTC 21:20）
+20 21 * * 1-5  /opt/a-sentiment-pro/pi_run.sh a50         >>$LOG 2>&1
+# 盘前观察清单（北京 09:00 | UTC 01:00）
+0   1 * * 1-5  /opt/a-sentiment-pro/pi_run.sh pre_open    >>$LOG 2>&1
+# 盘中候选池（北京 09:35/10:30/14:00 | UTC 01:35/02:30/06:00）
+35  1 * * 1-5  /opt/a-sentiment-pro/pi_run.sh candidates  >>$LOG 2>&1
+30  2 * * 1-5  /opt/a-sentiment-pro/pi_run.sh candidates  >>$LOG 2>&1
+0   6 * * 1-5  /opt/a-sentiment-pro/pi_run.sh candidates  >>$LOG 2>&1

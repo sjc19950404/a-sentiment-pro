@@ -1,56 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-10-16",
- "generatedAt": "2026-10-17T00:01:14.278+08:00",
- "model": "Qwen/Qwen2.5-7B-Instruct",
- "sentiment": 0.4,
- "confidence": 0.7,
- "reason": "市场情绪偏向积极，涨停数量较多，且有多只业绩增长股表现强势",
+ "asOfDate": "2026-11-02",
+ "generatedAt": "2026-11-02T22:15:25.644+08:00",
+ "model": "glm-4-flash",
+ "sentiment": 0.8,
+ "confidence": 0.9,
+ "reason": "市场整体情绪积极，涨停家数远超跌停家数，成交额放大，亏钱效应较低，强势股表现活跃。",
  "events": [
   {
    "type": "业绩预告",
+   "target": "ST豆神",
+   "tone": "positive",
+   "note": "业绩大幅增长带动股价上涨"
+  },
+  {
+   "type": "行业催化",
+   "target": "精密零组件",
+   "tone": "positive",
+   "note": "新晋题材带动相关个股活跃"
+  },
+  {
+   "type": "行业催化",
+   "target": "机器人布局",
+   "tone": "positive",
+   "note": "机器人概念持续升温"
+  },
+  {
+   "type": "行业催化",
+   "target": "光通信",
+   "tone": "positive",
+   "note": "光通信行业延续活跃"
+  },
+  {
+   "type": "行业催化",
    "target": "业绩线",
    "tone": "positive",
-   "note": "业绩线延续，多只业绩增长股表现强势"
+   "note": "业绩预增概念持续受到关注"
+  },
+  {
+   "type": "高管变动",
+   "target": "凯撒文化",
+   "tone": "positive",
+   "note": "实控人变更可能带来新的发展机遇"
+  },
+  {
+   "type": "政策",
+   "target": "AI短剧",
+   "tone": "positive",
+   "note": "AI短剧题材受到市场追捧"
   },
   {
    "type": "行业催化",
-   "target": "低空经济",
+   "target": "半导体物流",
    "tone": "positive",
-   "note": "低空经济题材梯队中有多只个股涨停"
-  },
-  {
-   "type": "行业催化",
-   "target": "机器人",
-   "tone": "positive",
-   "note": "机器人题材梯队中有多只个股涨停"
-  },
-  {
-   "type": "行业催化",
-   "target": "汽车零部件",
-   "tone": "positive",
-   "note": "汽车零部件题材梯队中有多只个股涨停"
-  },
-  {
-   "type": "行业催化",
-   "target": "无人机",
-   "tone": "positive",
-   "note": "无人机题材梯队中有多只个股涨停"
-  },
-  {
-   "type": "行业催化",
-   "target": "军工",
-   "tone": "positive",
-   "note": "军工题材梯队中有多只个股涨停"
+   "note": "半导体物流概念股表现强劲"
   }
  ],
  "inputDigest": {
-  "themes": 54,
+  "themes": 121,
   "hotListed": 15,
-  "ztCount": 61,
-  "emotionValue": 69.8,
-  "painVerdict": "多空拉锯（昨涨停今日翻绿 54%、高位板晋级失败 89%，追高盈亏各半）"
+  "ztCount": 125,
+  "emotionValue": 85.4,
+  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 34%、高位板晋级失败 44%，赚钱效应占优）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }

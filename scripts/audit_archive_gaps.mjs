@@ -14,6 +14,9 @@
 //   ① **不含今天**：今天的数据可能尚未采集（管道未跑 / 盘中未收），不算缺失；
 //   ② **只看最近 N 个交易日**（默认 30，--days N 调整，--all 看全部）：
 //      更老的是已知历史遗留，由 backfill_gaps.mjs 管，混进来会淹没新缺口。
+//   ③ **已销案的不算缺失**：data/archive_gap_ack.json 裁决过的缺档/空壳从 recentMissing
+//      剔除（单列 acknowledged）——已知且不可补的洞不该每天拖红守卫（告警疲劳=没守卫），
+//      新出现的洞仍照常红。详见 data/archive_gap_ack.json 头注。
 //
 // 用法：
 //   node scripts/audit_archive_gaps.mjs            # 人类可读；有缺失 exit 1
@@ -68,7 +71,7 @@ export function tradingDaysInRange({ from, to, closed }) {
  * @param {string} today 北京今天（注入，便于测"今天不算缺失"）
  * @param {number} lookback 只报最近 N 个交易日窗口内的缺失；0 = 全部
  */
-export function findMissingTradeDays({ calendar, archiveDates, today = bjToday(), lookback = 30, hollowDates = [] }) {
+export function findMissingTradeDays({ calendar, archiveDates, today = bjToday(), lookback = 30, hollowDates = [], ackDates = [] }) {
   const from = calendar && calendar.coveredFrom;
   const to = calendar && calendar.coveredTo;
   // ① 上界取「昨天」：今天尚未采集不算缺失
@@ -88,7 +91,13 @@ export function findMissingTradeDays({ calendar, archiveDates, today = bjToday()
   //    判据用 === 0 而非 !：null/undefined 是「字段缺失」（归 backfill_gaps 管），
   //    只有明确的 0 才是「取到了、但取到的是空」。
   const hollow = new Set(hollowDates || []);
-  const missing = traded.filter((d) => !have.has(d) || hollow.has(d));
+  const acked = new Set(ackDates || []);
+  // ④ 已销案：在缺档/空壳判定里剔除，但单独留痕（见 data/archive_gap_ack.json）。
+  //   目的：已知且不可补的洞（build 被取消 + ztpool 永久丢失）不该每天把守卫拖红
+  //   ——那会演变成「告警疲劳」，等于没守卫；但新出现的洞仍照常红。
+  const isGap = (d) => !have.has(d) || hollow.has(d);
+  const missing = traded.filter((d) => isGap(d) && !acked.has(d));
+  const acknowledged = traded.filter((d) => isGap(d) && acked.has(d));
   // ② 只看最近 lookback 个交易日的窗口
   const window = lookback > 0 ? traded.slice(-lookback) : traded;
   const wset = new Set(window);
@@ -97,6 +106,7 @@ export function findMissingTradeDays({ calendar, archiveDates, today = bjToday()
     window,
     missing,
     recentMissing: missing.filter((d) => wset.has(d)),
+    acknowledged: acknowledged.filter((d) => wset.has(d)),
     // 单独列出空壳——告警文案必须能区分「缺档」与「有档但空」，否则读者会跑错方向
     hollowDays: window.filter((d) => hollow.has(d)),
     coveredTo: to,
@@ -125,7 +135,18 @@ if (isMain) {
     .filter((d) => d?.summary && d.summary.up_count === 0 && d.summary.zt_count === 0)
     .map((d) => d.trade_date)
     .filter(Boolean);
-  const r = findMissingTradeDays({ calendar: cal, archiveDates: dates, lookback: LOOKBACK, hollowDates });
+  // 销案台账：已知且不可补的缺档/空壳不计入 recentMissing（仍单列 acknowledged 留痕）。
+  const ACK = path.join(ROOT, 'data', 'archive_gap_ack.json');
+  let ackDates = [];
+  if (existsSync(ACK)) {
+    try {
+      const a = JSON.parse(readFileSync(ACK, 'utf8').replace(/^﻿/, ''));
+      ackDates = (a && a.acked || []).map((x) => x && x.date).filter(Boolean);
+    } catch (e) {
+      console.error(`[gap-days] 销案档解析失败，按无销案处理：${e?.message ?? e}`);
+    }
+  }
+  const r = findMissingTradeDays({ calendar: cal, archiveDates: dates, lookback: LOOKBACK, hollowDates, ackDates });
 
   if (WANT_JSON) {
     const payload = JSON.stringify({ ok: r.recentMissing.length === 0, ...r, generatedAt: new Date().toISOString() }, null, 2);
@@ -139,10 +160,12 @@ if (isMain) {
     if (r.hollowDays.length) {
       console.error(`  ⚠ 其中 ${r.hollowDays.length} 天是**空壳档**——在档但 up/zt 全为 0（${r.hollowDays.join(' ')}）：曲线看着连续，实际是空的`);
     }
+    if (r.acknowledged.length) console.log(`  （另有 ${r.acknowledged.length} 天已销案，不计入缺失：${r.acknowledged.join(' ')}）`);
     console.error(`  档案末档 ${r.archiveLast ?? '无'} · 日历覆盖至 ${r.coveredTo}`);
     console.error(`  窗口外另有 ${r.missing.length - r.recentMissing.length} 天缺失（历史遗留，--all 查看全部）`);
   } else {
     console.log(`[gap-days] ✓ 窗口内 ${r.window.length} 个交易日无缺失（档案末档 ${r.archiveLast ?? '无'}）`);
+    if (r.acknowledged.length) console.log(`  （${r.acknowledged.length} 天已销案：${r.acknowledged.join(' ')}）`);
     if (r.missing.length) console.log(`  （窗口外仍有 ${r.missing.length} 天历史缺失，--all 查看）`);
   }
   process.exit(r.recentMissing.length ? 1 : 0); // 宁红不假

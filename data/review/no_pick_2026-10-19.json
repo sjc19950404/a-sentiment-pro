@@ -1,0 +1,26 @@
+{
+  "tradeDate": "2026-10-19",
+  "generatedAt": "2026-10-20T20:56:11.088Z",
+  "selectedCount": 5,
+  "isEmpty": false,
+  "candidateRaw": 5,
+  "removedCount": 0,
+  "metrics": {
+    "zhabanRate": null,
+    "ztpoolCloseCount": 0,
+    "sectorTurnover5": 4,
+    "topicConc": 10.2
+  },
+  "macroReasons": [
+    {
+      "key": "rotation",
+      "label": "板块轮动过快（top5 行业日换手 4/5，无持续主线）",
+      "value": 0.8
+    }
+  ],
+  "microRemovalReasons": {},
+  "conclusion": "有票入选（存活 5 只），无需归因",
+  "suggestionForTomorrow": [
+    "板块轮动快→等主线沉淀（连续 2 日同主线再出手），不做一日游题材"
+  ]
+}

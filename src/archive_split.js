@@ -270,8 +270,12 @@ export function buildRecent(archive, n = RECENT_DAYS, opts = {}) {
     meta: archive?.meta || {},
     signals: archive?.signals || {},
     index: yearSummary(slice),
-    // 近 N-1 日：只保画曲线所需字段（见 trendPoint）
-    days: head.map(trendPoint),
+    // 近 N-1 日：只保画曲线所需字段（见 trendPoint）。
+    // detail 仅「最后 2 个历史日」保留：calcLockNew 读 days.slice(-3,-1) 的 seats.detail，
+    // 而本数组与 latest 拼起来正是前端的 ARC.all_days。其余历史日只留 cover——
+    // 不裁的话每个带 seats 的历史日都背 ~50KB detail，8 个重日就把滚动窗顶破 512KB
+    // （2026-10-20 build「龙虎榜口径守卫」实测 521.6KB 超线）。
+    days: head.map((d, i) => trendPoint(d, { keepDetail: i >= head.length - 2 })),
     // 最新日：完整明细，但惰性字段仍在 _sub（前端按需 pickDay）
     latest,
   };
@@ -286,11 +290,16 @@ export function buildRecent(archive, n = RECENT_DAYS, opts = {}) {
  *   表现为"报告少了结论"（本次实测：窗口内只剩最新 1 天有 seats，锁仓统计整段不见了）。
  *   代价很小：只有当天确实有 seats 时才多一个对象，且各只有几个数字字段。
  */
-export function trendPoint(d) {
+export function trendPoint(d, { keepDetail = true } = {}) {
   if (!d) return null;
   const e = d.emotion || {};
   const s = d.summary || {};
-  const seatKeys = SEAT_SUMMARY_KEYS.filter((k) => s.seats && s.seats[k] != null);
+  const seatKeys = SEAT_SUMMARY_KEYS.filter((k) => {
+    // detail 是滚动窗体积的头号来源（单日 ~50KB）。只有最后 2 个历史日需要它
+    // （calcLockNew 读前 2 天明细做名称比对），其余日子裁掉只留 cover。
+    if (k === 'detail' && !keepDetail) return false;
+    return s.seats && s.seats[k] != null;
+  });
   return {
     trade_date: d.trade_date,
     value: e.value ?? e.score ?? null,
@@ -306,6 +315,13 @@ export function trendPoint(d) {
     up_count: s.up_count ?? null,
     down_count: s.down_count ?? null,
     max_lb: s.max_lb ?? null,
+    // 当日涨停名单（2026-10-23 窗口连板口径新增）：src/ztpool_window.js 的 membership
+    // 数据源——档案口径精确无断更（250/250 天均有），比 ztpool_history（曾断更
+    // 10-19~10-22）与 K 线补档（受行情源限流制约）都可靠。取 zt_codes，
+    // 旧档缺它时回退 zt_lb 的键（同为当日涨停名单）。
+    zt_codes: (Array.isArray(s.zt_codes) && s.zt_codes.length)
+      ? s.zt_codes
+      : (s.zt_lb && typeof s.zt_lb === 'object' ? Object.keys(s.zt_lb) : null),
     amount_yi: s.amount_yi ?? null,
     lhb_daily_net: s.lhb_daily_net ?? null,
     // 板块相对强弱：走势点也带上——否则「回看更早交易日」时超额榜会整块消失
@@ -389,6 +405,12 @@ export function buildSignals(archive, opts = {}) {
   // LLM 舆情参考（V5.3 P2 试点）——LLM 事件抽取/情感打分须联网调模型，
   // 同步写盘路径做不了 → 照 pain/crosscheck 先例只读已落盘缓存，读不到即 null。
   const lFn = typeof opts.llmFn === 'function' ? opts.llmFn : null;
+  // 板块情绪因子（场景二）——新闻→GLM 映射板块/方向/强度→聚合，须联网调模型，
+  // 同步写盘路径做不了 → 照 pain/crosscheck/llm 先例只读已落盘缓存，读不到即 null。
+  const ssFn = typeof opts.sectorSentimentFn === 'function' ? opts.sectorSentimentFn : null;
+  // 妖股逻辑推演（方向 C）——连板股→GLM 推断涨停逻辑，须联网调模型，同步写盘路径做不了 →
+  // 照样只读已落盘缓存，读不到即 null。
+  const dlFn = typeof opts.dragonLogicFn === 'function' ? opts.dragonLogicFn : null;
   const score = last.emotion?.value ?? last.emotion?.score ?? null;
   const market = fn ? fn({ emotionScore: score, total: assumedTotal, marketValue: 0 }) : null;
   // 数据健康报告（#115）：随轻量档一起下发，让"盯盘/巡检"的读者不必拉完整档
@@ -495,6 +517,18 @@ export function buildSignals(archive, opts = {}) {
   const dtFn = typeof opts.dualTrackFn === 'function' ? opts.dualTrackFn : null;
   if (dtFn) {
     try { dualTrack = dtFn(days, { meta: archive?.meta || {} }); } catch { dualTrack = null; }
+  }
+  // 板块情绪因子（场景二）：注入方完成「读缓存 + macroSectorSentimentBlock 转换」（含证据
+  // 日期防伪），本处只透传结果——保持纯拼装纪律（llm 同款分工）。
+  let sectorSentiment = null;
+  if (ssFn) {
+    try { sectorSentiment = ssFn(days); } catch { sectorSentiment = null; }
+  }
+  // 妖股逻辑推演（方向 C）：注入方完成「读缓存 + dragonLogicBlock 转换」（含证据日期防伪），
+  // 本处只透传结果——保持纯拼装纪律。
+  let dragonLogic = null;
+  if (dlFn) {
+    try { dragonLogic = dlFn(days); } catch { dragonLogic = null; }
   }
   let dailyReport = null;
   if (repFn) {
@@ -653,6 +687,14 @@ export function buildSignals(archive, opts = {}) {
         + 'asOf 是双轨账本末日（旁路工具每日一跑），与 meta.tradeDate 不同步时以 asOf 为披露口径。'
         + '数字唯一出处 tools/backtest/paper_dual_track.mjs（本段只搬运不重算）。'
       : '未生成（调用方未注入 dualTrackFn，需 tools/backtest/paper_dual_track.mjs 产出 data/paper/dual_track_latest.json）',
+    sectorSentiment,
+    sectorSentimentNote: ssFn
+      ? '板块情绪因子（场景二）：新闻→GLM 映射板块/方向/强度→聚合；score∈[-1,1]、score100∈[0,100]，仅作参考，不独立生成买卖信号；证据日期与档案日不符即 null。'
+      : '未生成（调用方未注入 sectorSentimentFn，需 scripts/fetch_macro_sector_sentiment.mjs 落盘 data/macro-sector-sentiment-latest.json）',
+    dragonLogic,
+    dragonLogicNote: dFn
+      ? '妖股逻辑推演（方向C）：连板股→GLM 推断涨停逻辑/纯情绪炒作；纯参考，不修改 regime/emotion 分数；证据日期与档案日不符即 null。'
+      : '未生成（调用方未注入 dragonLogicFn，需 scripts/fetch_dragon_logic.mjs 落盘 data/llm-dragon-logic-latest.json）',
     marketAlerts: market,
     marketAlertsNote: fn
       ? `仅大盘层告警，按假设总资产 ${assumedTotal} 元、空仓计算；持仓层告警依赖本地模拟账户（模拟交易台面已下线），本轮不提供`

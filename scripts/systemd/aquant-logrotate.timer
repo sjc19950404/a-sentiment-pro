@@ -1,0 +1,13 @@
+[Unit]
+Description=Daily rotation of /var/log/aquant logs
+Documentation=file:///opt/a-sentiment-pro/docs/ssd_and_ops_hardening.md
+
+[Timer]
+OnCalendar=daily
+# 错开 0~30 分钟：不与其他定时任务挤在同一秒，也避免刚好撞上 EOD 管道写日志
+RandomizedDelaySec=30min
+# 关机漏跑的，开机后补跑一次
+Persistent=true
+
+[Install]
+WantedBy=timers.target

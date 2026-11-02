@@ -11,13 +11,14 @@
 //   ⑦ isoWeekStart（周报周一起点推导）+ 候选池 intraday_chg（不在强势榜 = null ≠ 0）。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   PUSH_CONSTS, fingerprintOf, shouldPush, pruneState, recordPushed,
   loadPushState, savePushState, renderPushText, pushReports,
-  gatePreMarket, gateIntraday, gateWeekly,
+  gatePreMarket, gateIntraday, gateWeekly, buildSignalSyncReports,
+  buildEtfHedgeLine,
 } from '../src/ai_report_push.js';
 import { isoWeekStart, buildCandidatePool } from '../src/ai_report.js';
 
@@ -214,6 +215,22 @@ test('renderPushText：四类各成版式；null → — 不冒充 0；工程告
   }));
   assert.match(intraEmpty, /趋势池 0 只 · 今日无符合条件标的（宁缺毋假）/, '空池显式话术，不静默省略候选池段');
 
+  // 2026-10-29 兜底源显式披露：快照经 snapshot_intraday 兜底（宇宙/行情由上次成功快照补全）时，
+  //   推送必须一眼可见「盘面数据：兜底自 HH:MM 快照」，避免把兜底数据当成实时。
+  const baseIntra = {
+    report_type: 'intraday',
+    payload: { date: '2026-09-30', drawdown_vs_threshold: { dd_now: 0.088, distance_pp: 0.2, basis: '归档轨' }, pnl_daily: 0.0002, pnl_cumulative: -0.015, overseas: [],
+      market_context: { up_down: '2600/2400/400', zt_dt: '52/3', pain: '晋级失败 40%' },
+      simulation_stock: { ...mkReport().payload.simulation_stock, candidate_pool: [] } },
+    missing_notes: [],
+  };
+  const noFb = renderPushText(mkReport(baseIntra));
+  assert.ok(!noFb.includes('兜底自'), '默认（无兜底）不出现兜底披露行');
+  const fb = renderPushText(mkReport({ ...baseIntra,
+    payload: { ...baseIntra.payload, market_context: { ...baseIntra.payload.market_context, fallbackUsed: ['hot', 'screener'], fallbackFromAt: '2026-09-30T04:35:00.000Z' } } }));
+  assert.match(fb, /盘面数据：兜底自 2026-09-30 12:35 快照（hot\/screener 由上次成功快照补全，宁缺毋假不冒充实时）/,
+    '兜底源启用时显式披露兜底时间与来源字段');
+
   const week = renderPushText(mkReport({
     report_type: 'weekly',
     payload: { date: '2026-09-30', week_return: -0.011, max_drawdown_week: 0.02, profit_trade_ratio: 0.4, win_rate: null, trend_switch_hits: 2, trend_switch_effect: { shadow_note: 'trackC 影子线累计 -0.9 vs 执行轨 -1.5' } },
@@ -267,7 +284,8 @@ test('pushReports：无 webhook 跳过 / 成功记指纹 / 二次去重 / 失败
 
     const calls = [];
     const fetchOk = { ok: true };
-    const ok1 = await pushReports([r], { env: { OPS_WEBHOOK: 'https://example.test/hook' }, fetchImpl: async (u, init) => { calls.push({ u, init }); return fetchOk; }, stateFile, now: new Date('2026-10-06T13:00:00Z') });
+    // suppressAiBrief：本组测的是「去重/指纹/自愈」基础设施，隔离 AI 副报文展开（其另有专测）
+    const ok1 = await pushReports([r], { env: { OPS_WEBHOOK: 'https://example.test/hook' }, fetchImpl: async (u, init) => { calls.push({ u, init }); return fetchOk; }, suppressAiBrief: true, stateFile, now: new Date('2026-10-06T13:00:00Z') });
     assert.equal(ok1.pushed, 1);
     assert.equal(calls.length, 1);
     assert.equal(calls[0].u, 'https://example.test/hook');
@@ -277,7 +295,7 @@ test('pushReports：无 webhook 跳过 / 成功记指纹 / 二次去重 / 失败
     assert.equal(loadPushState(stateFile).pushed.length, 1, '成功记指纹');
 
     // 同内容二次推送 → 指纹去重
-    const ok2 = await pushReports([r], { env: { OPS_WEBHOOK: 'https://example.test/hook' }, fetchImpl: async () => fetchOk, stateFile, now: new Date('2026-10-06T13:30:00Z') });
+    const ok2 = await pushReports([r], { env: { OPS_WEBHOOK: 'https://example.test/hook' }, fetchImpl: async () => fetchOk, suppressAiBrief: true, stateFile, now: new Date('2026-10-06T13:30:00Z') });
     assert.equal(ok2.pushed, 0);
     assert.match(ok2.results[0].reason, /duplicate_fingerprint/);
 
@@ -293,7 +311,7 @@ test('pushReports：无 webhook 跳过 / 成功记指纹 / 二次去重 / 失败
     }
     // urgent 免防风暴：同内容已推过也直达
     const urgent = mkReport({ trigger: 'event:trend_switch', urgent: true });
-    const okU = await pushReports([urgent], { env: { OPS_WEBHOOK: 'https://example.test/hook' }, fetchImpl: async () => fetchOk, stateFile, now: new Date('2026-10-06T13:30:00Z') });
+    const okU = await pushReports([urgent], { env: { OPS_WEBHOOK: 'https://example.test/hook' }, fetchImpl: async () => fetchOk, suppressAiBrief: true, stateFile, now: new Date('2026-10-06T13:30:00Z') });
     assert.equal(okU.pushed, 1, 'urgent 同内容也直达（trigger 进指纹故本就为新；双保险）');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
@@ -310,7 +328,7 @@ test('pushReports：企微 HTTP 200 + errcode≠0 静默丢包 → 不记指纹�
       headers: { get: () => 'application/json' },
       json: async () => ({ errcode: 93000, errmsg: '机器人被移除，请先补群' }),
     });
-    const fail = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: failWechat, stateFile, now: new Date('2026-10-08T13:30:00Z') });
+    const fail = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: failWechat, suppressAiBrief: true, stateFile, now: new Date('2026-10-08T13:30:00Z') });
     assert.equal(fail.pushed, 0, 'errcode≠0 → 不算成功');
     assert.match(fail.results[0].reason, /errcode=93000/, 'reason 暴露 errcode，便于排查（这是漏洞修复的核心证据）');
     assert.match(fail.results[0].reason, /未记指纹/, '同 HTTP 失败：失败不记指纹');
@@ -322,7 +340,7 @@ test('pushReports：企微 HTTP 200 + errcode≠0 静默丢包 → 不记指纹�
       headers: { get: () => 'application/json' },
       json: async () => ({ errcode: 0, errmsg: 'ok' }),
     });
-    const ok = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: okWechat, stateFile, now: new Date('2026-10-08T13:30:00Z') });
+    const ok = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: okWechat, suppressAiBrief: true, stateFile, now: new Date('2026-10-08T13:30:00Z') });
     assert.equal(ok.pushed, 1, 'errcode=0 → 推送成功');
     assert.match(ok.results[0].reason, /new_content/);
     assert.equal(loadPushState(stateFile).pushed.length, 1, '记指纹');
@@ -340,7 +358,7 @@ test('pushReports：webhook 带 BOM 清洗自愈；清洗后非法 → 值非法
     const ok = await pushReports([r], {
       env: { OPS_WEBHOOK: '\uFEFF\uFEFFhttps://example.test/hook\u200B' },
       fetchImpl: async (u) => { calls.push(u); return { ok: true }; },
-      stateFile, now: new Date('2026-10-08T13:30:00Z'),
+      suppressAiBrief: true, stateFile, now: new Date('2026-10-08T13:30:00Z'),
     });
     assert.equal(ok.pushed, 1, 'BOM 剥除后推送成功（消费端自愈）');
     assert.equal(calls[0], 'https://example.test/hook', 'fetch 收到清洗后的 URL');
@@ -365,12 +383,12 @@ test('pushReports：fetchImpl 返回 { ok, status } 无 body 方法时，行为�
   const dir = mkdtempSync(join(tmpdir(), 'airpt-legacy-mock-'));
   try {
     // 失败路径（先做，避免被后置成功去重）：{ ok:false, status:502 } → 走原 HTTP reason
-    const bad = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ({ ok: false, status: 502 }), stateFile: join(dir, 'bad.json'), now: new Date('2026-10-08T13:30:00Z') });
+    const bad = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ({ ok: false, status: 502 }), suppressAiBrief: true, stateFile: join(dir, 'bad.json'), now: new Date('2026-10-08T13:30:00Z') });
     assert.equal(bad.pushed, 0);
     assert.match(bad.results[0].reason, /HTTP 502/, '无 body 方法时仍报 HTTP reason');
 
     // 成功路径（独立 stateFile）：{ ok: true } 无 .json → 仍应算成功（errcode 未暴露 → 不算失败）
-    const ok = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ({ ok: true }), stateFile: join(dir, 'ok.json'), now: new Date('2026-10-08T13:30:00Z') });
+    const ok = await pushReports([r], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ({ ok: true }), suppressAiBrief: true, stateFile: join(dir, 'ok.json'), now: new Date('2026-10-08T13:30:00Z') });
     assert.equal(ok.pushed, 1, '无 body 方法 + res.ok=true → 成功（与升级前兼容）');
     assert.equal(loadPushState(join(dir, 'ok.json')).pushed.length, 1);
   } finally { rmSync(dir, { recursive: true, force: true }); }
@@ -585,14 +603,24 @@ test('pushReports：成功推送记指纹时携带 verified 审计摘要（每�
   });
   const dir = mkdtempSync(join(tmpdir(), 'airpt-verify-'));
   const stateFile = join(dir, 'push_state.json');
+  // 注入确定性盘中急跌标的（chgPct<=-5）→ buildIntradayAlert 必展开「主报文+盘中异动副报文」2 条，
+  //   使 verified 审计摘要（仅挂主报文）可被本测试稳定覆盖，不再依赖真实盘中报价侧车。
+  const qPath = join(process.cwd(), 'data', 'intraday-quotes-latest.json');
+  const qOrig = existsSync(qPath) ? readFileSync(qPath, 'utf8') : null;
+  writeFileSync(qPath, JSON.stringify({ generatedAt: new Date().toISOString(), degraded: false, quotes: [
+    { code: '600801', name: '测试急跌股', chgPct: -6.0 },
+  ] }));
   try {
     const ok = await pushReports([r], {
       env: { OPS_WEBHOOK: 'https://example.test/hook' },
       fetchImpl: async () => ({ ok: true }),
       stateFile, now: new Date('2026-10-12T06:55:00Z'),
     });
-    assert.equal(ok.pushed, 1);
-    const entry = loadPushState(stateFile).pushed[0];
+    // intraday 会展开成「主报文 + 盘中异动副报文」2 条（副报文不受 suppressAiBrief 管）
+    assert.equal(ok.pushed, 2, 'intraday：主报文 + 盘中异动副报文');
+    // verified 审计摘要只挂主报文（副报文不冒充校验结论）→ 取带 verified 的那条
+    const entry = loadPushState(stateFile).pushed.find((e) => e.verified);
+    assert.ok(entry, '主报文条目在场且携带 verified');
     assert.ok(entry.fingerprint, '指纹在场');
     assert.deepEqual(entry.verified, {
       checked_at: '14:54', snapshot_at: '2026-10-12 14:53',
@@ -610,5 +638,148 @@ test('pushReports：成功推送记指纹时携带 verified 审计摘要（每�
       const e2 = loadPushState(join(dir2, 's.json')).pushed[0];
       assert.equal(e2.verified, undefined, '无校验台账 → verified 缺席（undefined 不入 JSON）');
     } finally { rmSync(dir2, { recursive: true, force: true }); }
+  } finally {
+    if (qOrig != null) writeFileSync(qPath, qOrig); else rmSync(qPath, { force: true });
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// ── 9. 实盘跟单指令（Signal Sync · 2026-10-24 用户需求）──────────────────
+test('buildSignalSyncReports：买入/卖出/跌停逃生各自极简成条（<100 字、四行齐全）', () => {
+  const reports = buildSignalSyncReports({
+    date: '2026-10-24',
+    buys: [{ code: '003021', name: '兆威机电', price: 91.75, pct: 0.1 }],
+    sells: [
+      { code: '003021', name: '兆威机电', reason: '隔日强制了结(连板)', urgent: false },
+      { code: '002241', name: '歌尔股份', reason: '跌停逃生(排队成交)', urgent: true },
+    ],
+    stopLabel: '-5%',
+  });
+  assert.equal(reports.length, 3, '买入 + 两笔卖出 = 3 条独立指令');
+  assert.ok(reports.every((r) => r.report_type === 'signal_sync' && r.date === '2026-10-24'), '每条都是 signal_sync、同日期');
+  const buyTxt = reports[0].payload.text;
+  assert.ok(buyTxt.length < 100, `买入指令 <100 字（实际 ${buyTxt.length}）`);
+  assert.ok(buyTxt.includes('🚀【实盘跟单·买入】') && buyTxt.includes('标的：003021 兆威机电')
+    && buyTxt.includes('买价：≈91.75（含滑点）') && buyTxt.includes('仓位：总资金10%') && buyTxt.includes('止损：-5%无条件'), '买入四要素齐全');
+  const sellTxt = reports[1].payload.text;
+  assert.ok(sellTxt.length < 100 && sellTxt.includes('🚨【实盘跟单·卖出】') && sellTxt.includes('原因：隔日强制了结(连板)')
+    && sellTxt.includes('动作：明日开盘手动卖出（T+1 解冻）'), '普通卖出 = 明日手动卖');
+  const escTxt = reports[2].payload.text;
+  assert.ok(escTxt.includes('原因：跌停逃生(排队成交)') && escTxt.includes('动作：立刻市价卖出（今日已触发）'), '跌停逃生 = 立刻卖');
+});
+
+test('renderPushText signal_sync：直接透出 payload.text，不加采集时间/免责尾注', () => {
+  const out = renderPushText({ report_type: 'signal_sync', date: '2026-10-24', payload: { text: '🚀【实盘跟单·买入】2026-10-24\n标的：003021 兆威机电' } });
+  assert.equal(out, '🚀【实盘跟单·买入】2026-10-24\n标的：003021 兆威机电', '逐字透出');
+  assert.ok(!out.includes('数据采集时间') && !out.includes('不构成投资建议'), '不带日报尾注（独立极简）');
+  assert.equal(renderPushText({ report_type: 'signal_sync', date: 'x', payload: {} }), '【实盘跟单指令】（内容为空）', '空内容兜底');
+});
+
+test('pushReports signal_sync：成功推送 + 同日重跑去重防刷屏（跨日新内容照推）', async () => {
+  const mk = (date, code) => buildSignalSyncReports({ date, buys: [{ code, name: 'X', price: 10, pct: 0.1 }], stopLabel: '-5%' });
+  const dir = mkdtempSync(join(tmpdir(), 'airpt-signalsync-'));
+  const stateFile = join(dir, 's.json');
+  try {
+    const ok = { ok: true, status: 200, json: async () => ({ errcode: 0, errmsg: 'ok' }) };
+    const day1 = mk('2026-10-24', '003021');
+    const r1 = await pushReports(day1, { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ok, stateFile, now: new Date('2026-10-24T06:00:00Z') });
+    assert.equal(r1.pushed, 1, '首推成功');
+    // 同日同内容重跑 → 指纹去重，不再推送
+    const r2 = await pushReports(day1, { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ok, stateFile, now: new Date('2026-10-24T07:00:00Z') });
+    assert.equal(r2.pushed, 0, '同日同内容重跑被去重');
+    assert.match(r2.results[0].reason, /duplicate_fingerprint/, '去重 reason 可见');
+    // 次日不同内容 → 新指纹照推
+    const day2 = mk('2026-10-26', '003021');
+    const r3 = await pushReports(day2, { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => ok, stateFile, now: new Date('2026-10-26T06:00:00Z') });
+    assert.equal(r3.pushed, 1, '跨日新信号照推');
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// ── 10. EOD 优先级引擎：时间错峰（delayMs）+ urgent 最高特权豁免 ─────────────
+test('pushReports：delayMs 错峰（非 urgent 间隔 ≥delayMs；urgent 免延迟立即发）', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'airpt-stagger-'));
+  const mk = (t, urgent = false) => ({ report_type: 'signal_sync', date: '2026-10-24', trigger: 'schedule', urgent, status: 'ok', generated_at: new Date().toISOString(), payload: { text: t } });
+  const ok = async () => ({ ok: true, status: 200, json: async () => ({ errcode: 0, errmsg: 'ok' }) });
+  try {
+    // 两条非 urgent → 第二次发送应晚于第一次约 ≥ delayMs（错峰生效）
+    const t1 = [];
+    const r1 = await pushReports([mk('A'), mk('B')], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => { t1.push(Date.now()); return ok(); }, stateFile: join(dir, 's1.json'), delayMs: 150, now: new Date() });
+    assert.equal(r1.pushed, 2, '两条都推出');
+    assert.ok(t1[1] - t1[0] >= 120, `非 urgent 应错峰 ≥~delayMs，实际 ${t1[1] - t1[0]}ms`);
+    // 两条 urgent → 免错峰，间隔接近 0（最高特权，打断一切安静）
+    const t2 = [];
+    const r2 = await pushReports([mk('C', true), mk('D', true)], { env: { OPS_WEBHOOK: 'https://x.test' }, fetchImpl: async () => { t2.push(Date.now()); return ok(); }, stateFile: join(dir, 's2.json'), delayMs: 800, now: new Date() });
+    assert.equal(r2.pushed, 2, 'urgent 免防风暴直达，两条都推出');
+    assert.ok(t2[1] - t2[0] < 120, `urgent 免错峰，实际 ${t2[1] - t2[0]}ms`);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// ── AI 副报文展开 + skipped 计数口径（2026-10-25 修复回归）──────────────────
+// 背景：1 份 post_market 会展开成「主报文 + AI 盘后情报」2 条消息，而 skipped 原按
+//   「输入报告数 − 已发消息数」计算（量纲不同）→ 1 进 2 出时算出 skipped = −1，
+//   EOD 日志因此打出「推 2 / 跳 -1」。现改为按消息条数计，恒定非负。
+test('pushReports：post_market 展开 AI 副报文；skipped 按消息条数计（1 进 2 出不得为 -1）', async () => {
+  const r = mkReport();
+  const env = { OPS_WEBHOOK: 'https://example.test/hook' };
+  const fetchOk = async () => ({ ok: true });
+  const now = new Date('2026-10-26T10:00:00Z');
+  const mkDir = () => mkdtempSync(join(tmpdir(), 'airpt-expand-'));
+
+  // 1) 不抑制副报文 → 主报文 + AI 盘后情报 = 2 条
+  const d1 = mkDir();
+  try {
+    const sf = join(d1, 's.json');
+    const full = await pushReports([r], { env, fetchImpl: fetchOk, stateFile: sf, now });
+    assert.equal(full.pushed, 2, '1 份 post_market → 2 条（主报文 + AI 副报文）');
+    assert.ok(full.results.some((x) => x.type === 'post_market'), '主报文在场');
+    assert.ok(full.results.some((x) => x.type === 'post_market_ai'), 'AI 副报文在场');
+    // 回归核心：skipped 恒非负，绝不为 −1
+    assert.equal(full.skipped, 0, 'skipped = 0（不得因 1 进 2 出算出 −1）');
+    assert.ok(full.skipped >= 0, 'skipped 恒非负');
+    assert.equal(loadPushState(sf).pushed.length, 2, '两条各记指纹');
+  } finally { rmSync(d1, { recursive: true, force: true }); }
+
+  // 2) suppressAiBrief → 仅主报文 1 条（周五/月末降噪路径，EOD 优先级矩阵在用）
+  const d2 = mkDir();
+  try {
+    const sf = join(d2, 's.json');
+    const sup = await pushReports([r], { env, fetchImpl: fetchOk, suppressAiBrief: true, stateFile: sf, now });
+    assert.equal(sup.pushed, 1, 'suppressAiBrief → 仅主报文');
+    assert.equal(sup.skipped, 0);
+  } finally { rmSync(d2, { recursive: true, force: true }); }
+
+  // 3) 全失败 → 两条都没发出，skipped = 2（仍非负），且不记指纹
+  const d3 = mkDir();
+  try {
+    const sf = join(d3, 's.json');
+    const bad = await pushReports([r], { env, fetchImpl: async () => ({ ok: false, status: 500 }), stateFile: sf, now });
+    assert.equal(bad.pushed, 0, '两条都未发出');
+    assert.equal(bad.skipped, 2, 'skipped = 2（两条都未发出）');
+    assert.equal(loadPushState(sf).pushed.length, 0, '失败不记指纹 → 下拍自愈');
+  } finally { rmSync(d3, { recursive: true, force: true }); }
+});
+
+// ── buildEtfHedgeLine：ETF 防守反击副报文（2026-10-27）────────────────────
+test('buildEtfHedgeLine：信号未触发（null）→ 返回 null（fail-open 不推）', () => {
+  assert.equal(buildEtfHedgeLine(mkReport(), null), null);
+});
+
+test('buildEtfHedgeLine：active 单标的 → 返回含「买入 510880 避险」的副报文', () => {
+  const sig = { active: true, winner: '510880', hedge: '510880' };
+  const line = buildEtfHedgeLine(mkReport(), sig);
+  assert.ok(line, '应返回副报文');
+  assert.match(line.text, /🛡 【防守反击】系统强制空仓，建议闲置资金买入 510880 避险/);
+  assert.equal(line.synthetic.report_type, 'post_market_etf_hedge');
+  assert.equal(line.dedupeContent, true);
+});
+
+test('buildEtfHedgeLine：active 双标的兜底（hedge=both）→ 等权买入行', () => {
+  const sig = { active: true, winner: null, hedge: 'both' };
+  const line = buildEtfHedgeLine(mkReport(), sig);
+  assert.ok(line);
+  assert.match(line.text, /建议闲置资金等权买入 510880\+510300 避险/);
+});
+
+test('buildEtfHedgeLine：缺 report → 返回 null', () => {
+  assert.equal(buildEtfHedgeLine(null, { active: true, winner: '510880' }), null);
 });

@@ -492,20 +492,26 @@ check('研判报告·主线题材归属标注需人工核对',
 {
   const tbl = window.document.querySelector('#briefBody .bf-table');
   const ths = tbl ? [...tbl.querySelectorAll('thead th')].map((th) => th.textContent.trim()) : [];
-  check('研判报告·连板天梯为表格（模板②：表头 板数/只数/个股）',
-    !!tbl && ths.join('/') === '板数/只数/个股',
+  check('研判报告·连板天梯为表格（模板②：表头 近5日板数/只数/个股）',
+    !!tbl && ths.join('/') === '近5日板数/只数/个股（·连N＝连续连板数，·地天＝地天板）',
     tbl ? `表头 ${ths.join('/')}；${tbl.querySelectorAll('tbody tr').length} 行` : '未找到 .bf-table');
-  // 逐只可核：表格里列出的个股数必须等于 zt_lb 里连板数 ≥2 的只数
-  const ztLb = (arcAll.all_days || []).slice(-1)[0]?.summary?.zt_lb || {};
-  const lb2 = Object.values(ztLb).filter((n) => Number(n) >= 2).length;
+  // 逐只可核：表格里列出的个股数必须与连板梯队口径现算一致（防有人把天梯写死）。
+  // 口径（2026-10-23 校准）：优先窗口口径 zt_lbw（近5交易日涨停天数≥2，N天M板），
+  // 旧档无该字段时回退连续口径 zt_lb——与 app.js ladderTbl 的归组口径一致。
+  const lastDay = (arcAll.all_days || []).slice(-1)[0] || {};
+  const ztLbW = lastDay?.summary?.zt_lbw || null;
+  const ztLb = lastDay?.summary?.zt_lb || {};
+  const lb2 = ztLbW
+    ? Object.values(ztLbW).filter((n) => Number(n) >= 2).length
+    : Object.values(ztLb).filter((n) => Number(n) >= 2).length;
   const listed = tbl ? [...tbl.querySelectorAll('tbody tr')].reduce((a, tr) => {
     const cells = tr.children;
     const n = parseInt(String(cells[1]?.textContent || '').replace(/[^\d]/g, ''), 10);
     return a + (Number.isFinite(n) ? n : 0);
   }, 0) : -1;
-  check('研判报告·连板天梯只数与 zt_lb 现算一致（未硬编码）',
+  check('研判报告·连板天梯只数与连板梯队口径现算一致（未硬编码）',
     lb2 === 0 ? listed <= 0 : listed === lb2,
-    `表格合计 ${listed} 只 vs zt_lb 连板≥2 共 ${lb2} 只`);
+    `表格合计 ${listed} 只 vs ${ztLbW ? '窗口口径' : '连续口径（旧档回退）'}连板≥2 共 ${lb2} 只`);
 }
 
 // 模板①③④：极简摘要 / 章节口径折叠件 / 文末独立附录 / 跟踪项复选框
@@ -1416,7 +1422,7 @@ escClose();
       md.includes('**【摘要】**') && html.includes('class="doc-abstract"')
       && txt.includes('【摘要】'), '');
     check('模板②·导出：Markdown 含 GFM 表格语法（表头 + 分隔行，缺一不成表）',
-      /\|\s*板数\s*\|\s*只数\s*\|\s*个股\s*\|/.test(md) && /\|\s*---\s*\|/.test(md), '');
+      /\|\s*近5日板数\s*\|\s*只数\s*\|\s*个股[^|]*\|/.test(md) && /\|\s*---\s*\|/.test(md), '');
     check('模板③·导出：章节口径收进 <details>，文末有独立折叠附录',
       (md.match(/<details>/g) || []).length === (md.match(/<\/details>/g) || []).length
       && md.includes('<summary>📎 口径说明（附）</summary>')

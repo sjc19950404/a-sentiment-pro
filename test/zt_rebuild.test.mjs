@@ -2,7 +2,7 @@
 // 背景：历史六因子回填用不复权 K 线重建东财池口径，本测试锁定交易所规则的逐位判定。
 import test from 'node:test';
 import assert from 'node:assert';
-import { limitPctOf, classifyBar, consecutiveZt, poolsOf } from '../src/zt_rebuild.js';
+import { limitPctOf, classifyBar, consecutiveZt, poolsOf, isDiTianBan } from '../src/zt_rebuild.js';
 
 // 合成 K 线：[date, open, close, high, low, vol]
 // 前面垫 10 根平盘（满足 i>=5 的上市初期门槛），尾部接 closes 序列
@@ -111,4 +111,36 @@ test('字符串价格（腾讯 raw 返回 "9.220" 形态）同样精确判定', 
   for (let i = 0; i < 5; i++) bars.unshift(['2025-12-' + (30 - i), '10.000', '10.000', '10.000', '10.000', '1']);
   const c = classifyBar(bars, bars.length - 1, 'sh600000', '普通股');
   assert.equal(c.zt, true);
+});
+
+// ── 地天板判定（2026-10-23 用户校准新增）────────────────────────────────────
+test('地天板：盘中触及跌停价 + 收盘封涨停价', () => {
+  // 主板 10%：前收 10.00 → 涨停 11.00 / 跌停 9.00
+  assert.equal(isDiTianBan({ close: 11.00, low: 9.00, prevClose: 10.00 }, 'sh600000', '测试股'), true);
+  // 低点恰低于跌停价（异常数据也认——价格不可能低于跌停，等于即触及）
+  assert.equal(isDiTianBan({ close: 11.00, low: 8.99, prevClose: 10.00 }, 'sh600000', '测试股'), true);
+});
+
+test('地天板：未触及跌停 / 未封涨停 → 否', () => {
+  assert.equal(isDiTianBan({ close: 11.00, low: 9.50, prevClose: 10.00 }, 'sh600000', '测试股'), false, '低点没到跌停');
+  assert.equal(isDiTianBan({ close: 10.80, low: 9.00, prevClose: 10.00 }, 'sh600000', '测试股'), false, '收盘没封涨停');
+  assert.equal(isDiTianBan({ close: 9.20, low: 9.00, prevClose: 10.00 }, 'sh600000', '测试股'), false, '跌停收盘是天地板反向，不算');
+});
+
+test('地天板：幅度按板块/ST（创业板20 / 北交所30 / ST5）', () => {
+  // 创业板 20%：前收 20 → 涨停 24.00 / 跌停 16.00
+  assert.equal(isDiTianBan({ close: 24.00, low: 16.00, prevClose: 20.00 }, 'sz300750', '测试股'), true);
+  // 北交所 30%：前收 10 → 涨停 13.00 / 跌停 7.00
+  assert.equal(isDiTianBan({ close: 13.00, low: 7.00, prevClose: 10.00 }, 'bj920819', '测试股'), true);
+  // 主板 ST 5%：前收 5 → 涨停 5.25 / 跌停 4.75
+  assert.equal(isDiTianBan({ close: 5.25, low: 4.75, prevClose: 5.00 }, 'sh600000', 'ST测试'), true);
+  // 主板 10% 的票用 5% 跌停价去碰 → 否（幅度不串）
+  assert.equal(isDiTianBan({ close: 11.00, low: 4.75, prevClose: 5.00 }, 'sh600000', '普通股'), false);
+});
+
+test('地天板：价格缺失一律否（没数据 ≠ 不是）', () => {
+  assert.equal(isDiTianBan({ close: null, low: 9.00, prevClose: 10.00 }, 'sh600000', 'x'), false);
+  assert.equal(isDiTianBan({ close: 11.00, low: null, prevClose: 10.00 }, 'sh600000', 'x'), false);
+  assert.equal(isDiTianBan({ close: 11.00, low: 9.00, prevClose: 0 }, 'sh600000', 'x'), false);
+  assert.equal(isDiTianBan(null, 'sh600000', 'x'), false);
 });

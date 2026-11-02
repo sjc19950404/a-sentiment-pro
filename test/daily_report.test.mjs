@@ -3,6 +3,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildDailyReport, DISPLAY } from '../src/daily_report.js';
 
+// 十节契约（单一处声明，三处断言共用，避免「只改一处、另两处悄悄过期」）：
+//   ①市场状态 ②情绪与分位 ③涨跌与连板结构 ④亏钱效应/接力 ⑤资金与席位属性
+//   ⑥题材与相对强弱 ⑦数据质量与告警 ⑧舆情参考 ⑨板块情绪因子 ⑩妖股逻辑推演
+// ⚠ 增节/删节必须三处同改：本常量 + src/report_audit.js 的 EXPECTED_SECTIONS
+//   + test/report_audit.test.mjs 的常量断言（那边会红，这是设计意图）。
+const SEC_IDS = ['regime', 'sentiment', 'breadth', 'pain', 'seats', 'theme',
+  'quality', 'llm', 'sectorSentiment', 'dragonLogic'];
+
 // 一份"素材齐全"的 fixtures（贴近 signals-latest.json 真实形态）
 function fullSignals() {
   return {
@@ -41,16 +49,16 @@ test('buildDailyReport: 结构完整（date/headline/tag/divergence/sections/cav
   assert.ok(R.headline.includes('2026-09-30'));
   assert.ok(R.tag.key);
   assert.ok(Array.isArray(R.sections));
-  assert.equal(R.sections.length, 8, '应有八节（V5.3 增节 8 舆情参考）');
+  assert.equal(R.sections.length, SEC_IDS.length, `应有 ${SEC_IDS.length} 节（V5.3 增节 8 舆情参考 + 场景二/三 增节 9 板块情绪、节 10 妖股逻辑）`);
   assert.ok(Array.isArray(R.caveats));
   assert.ok(R.sources && R.sources.regime);
   assert.ok(typeof R.disclaimer === 'string' && R.disclaimer.length > 0);
 });
 
-test('buildDailyReport: 八个分节标题齐全且顺序固定', () => {
+test(`buildDailyReport: ${10} 个分节标题齐全且顺序固定`, () => {
   const R = buildDailyReport(fullSignals());
   const ids = R.sections.map((s) => s.id);
-  assert.deepEqual(ids, ['regime', 'sentiment', 'breadth', 'pain', 'seats', 'theme', 'quality', 'llm']);
+  assert.deepEqual(ids, SEC_IDS);
 });
 
 test('buildDailyReport: 高潮日 + 宽度窄 → ★ 切换期（V5.3 矛盾覆盖），headline 含"切换期"与"假繁荣"', () => {
@@ -136,7 +144,8 @@ test('buildDailyReport: ★ 全空输入 → 不炸，标签 unknown，headline 
   assert.equal(R.date, null);
   assert.equal(R.tag.key, 'unknown');
   assert.match(R.headline, /数据不足/);
-  assert.ok(R.sections.length === 8);
+  // 全空也要给满十节（缺数据 → 该节 missing + 明说原因，而不是整节消失）
+  assert.equal(R.sections.length, SEC_IDS.length);
 });
 
 test('buildDailyReport: null 输入不炸', () => {
@@ -395,4 +404,34 @@ test('buildDailyReport: llm 反向不生效块 → level=info 且只给原因不
   const sec = R.sections.find((x) => x.id === 'llm');
   assert.ok(sec.points.some((p) => /不生效/.test(p.text)));
   assert.ok(!sec.points.some((p) => /→/.test(p.text)), '不生效时无修正分形态');
+});
+
+// ── 展示层合并（2026-10-24）：基础仓位 × 风控帽 合成 ──────────────────────
+test('buildDailyReport: ★ 展示层合并 —— 情绪喊冲(88.5)遇 regime=shift 风控帽 → 冲突，headline/regime 区块合成"最终执行仓位"', () => {
+  const S = fullSignals();
+  // 把素材抬到"情绪绝对高位 + 宽度仍窄"：基础仓位=进攻(60~100)，但 regime 帽=shift(0~30) 强制降仓
+  S.latest.value = 88.5; S.latest.pct_rank = 100;
+  S.breadth = { verdict: { level: 'narrow', label: '宽度收窄', detail: '站上20日线仅 17.4%' }, summary: { latest: { maRatio: 0.174 } } };
+  const R = buildDailyReport(S);
+  assert.equal(R.tag.key, 'shift', '宽度窄 → regime=shift（风控帽 0~30%）');
+  assert.ok(R.positionReconcile, 'positionReconcile 已注入 rep');
+  assert.equal(R.positionReconcile.conflict, true, '88.5(进攻) × shift帽(0~30) → 冲突');
+  assert.equal(R.positionReconcile.finalRange, '0%~30%', '最终执行 = 风控帽');
+  assert.match(R.headline, /最终执行仓位：0%~30%/, '首屏 headline 直说最终执行仓位');
+  assert.match(R.headline, /基础建议 60%~100%/, 'headline 同时摆出基础仓位');
+  assert.match(R.headline, /强制降仓；交易纪律：只减仓不新建/, 'headline 含纪律提示');
+  const regPts = R.sections.find((s) => s.id === 'regime').points.map((p) => p.text).join('\n');
+  assert.match(regPts, /基础仓位（情绪分 88\.5）：60%~100%/, 'regime 区块摆出基础仓位');
+  assert.match(regPts, /风控帽（regime=shift）：0%~30%/, 'regime 区块摆出风控帽');
+  assert.match(regPts, /最终执行：0%~30%（强制）/, 'regime 区块摆出最终执行仓位');
+});
+
+test('buildDailyReport: ★ 展示层合并 —— 无冲突（中性情绪 × neutral 帽）不误报、不告警', () => {
+  const S = fullSignals();
+  S.latest.value = 55; S.latest.pct_rank = 50; // 中性
+  S.breadth = { verdict: { level: 'mid', label: '宽度中性' } };
+  const R = buildDailyReport(S);
+  assert.equal(R.positionReconcile.conflict, false);
+  assert.ok(!/强制降仓/.test(R.headline), '无冲突 headline 不含强制降仓');
+  assert.equal(R.positionReconcile.finalRange, '30%~50%');
 });

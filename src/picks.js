@@ -1,3 +1,22 @@
+import { seatsOf } from './seats.js';
+
+// 挂件二（2026-10-30·进攻）：游资席位追踪默认清单（顶级游资营业部关键词；speculative——seats.js 明确点名归属不可核验，仅作增强信号，绝不污染核心打分）
+const DEFAULT_HOTMONEY_SEAT_PATTERNS = ['华鑫', '拉萨', '章建平', '财通', '国泰君安', '东方财富', '方新侠', '赵老哥', '作手新一', '宁波', '溧阳路', '古北路', '金田路', '苏南帮', '上塘路', '佛山', '成都', '歌神', '炒新一族', '著名刺客', '小鳄鱼', '上海江苏路', '桑田路', '虹桥路', '溧阳'];
+
+// 计算某票买方席位中命中顶级游资清单的净买入额（万元）；异常/未命中 → 0
+function hotMoneyNetWanOf(detailMap, code, patterns) {
+  if (!detailMap || code == null) return 0;
+  const { b } = seatsOf(detailMap, code);
+  if (!Array.isArray(b)) return 0;
+  let net = 0;
+  for (const row of b) {
+    const name = String(row && row[0] != null ? row[0] : '');
+    const wan = Number(row && row[1] != null ? row[1] : 0) || 0;
+    if (patterns.some((pat) => name.includes(pat))) net += wan;
+  }
+  return net;
+}
+
 // 研判推荐引擎（唯一来源，ESM 纯函数、零依赖、Node 与浏览器共用）
 //
 // 定位：把系统已有的「市场研判结论」落到**具体个股**上，作为模拟交易的下单参考。
@@ -148,12 +167,14 @@ export function buildCandidates(day, opts = {}) {
   const mainTheme = s.main_theme && s.main_theme.name ? s.main_theme.name : null;
 
   const byCode = new Map();
+  const klineLens = (d && d.klineLens) || null; // 次新判定：Node 管线可注入 {code: klineDays}，浏览器端缺省不强制
 
   const ensure = (code, seed) => {
     if (!code) return null;
-    if (!byCode.has(code)) byCode.set(code, { code, name: seed.name || code, ...seed });
-    const c = byCode.get(code);
-    if (seed.name && (!c.name || c.name === c.code)) c.name = seed.name;
+    let c = byCode.get(code);
+    if (!c) { c = { code, name: seed.name || code, ...seed }; byCode.set(code, c); }
+    else if (seed.name && (!c.name || c.name === c.code)) c.name = seed.name;
+    if (klineLens && klineLens[code] != null && c.klineDays == null) c.klineDays = klineLens[code];
     return c;
   };
 
@@ -368,7 +389,7 @@ export function risksOf(c) {
   }
   // 科创板/创业板 20% 振幅
   const code = String(c.code || '');
-  if (/^(30|688)/.test(code)) out.push('20% 涨跌幅品种，波动天然大于主板');
+  if (/^(30|301|688)/.test(code)) out.push('20% 涨跌幅品种，波动天然大于主板');
   if (/^(4|8|920)/.test(code)) out.push('北交所标的，流动性弱于沪深');
   return out;
 }
@@ -523,6 +544,98 @@ export function applyEmotionGates(picks, ctx = {}) {
   return { picks: kept, climaxWarnings, climaxBlocked, sectorTrimmed };
 }
 
+// ──────────────────────── 五-B、可交易性硬过滤（2026-10-27 实战化升级）────────────────────────
+//   纯函数（浏览器/Node 通用，零 IO）：解决「系统推的票实盘买不进」的痛点。
+//   仅在 ztpool 提供时生效；无数据→原样返回（零回归，与 applyEmotionGates 同约定）。
+//   数据源：ctx.ztpool = 当日涨停池原始档（ztpool_history 当日 pool，含 c/hs/lbc/fbt/fund/ltsz/zdp/zbc）。
+//
+//   规则（与用户指令一一对应）：
+//     1. 极端缩量板 / 封单锁死  → 剔除（筹码锁死，次日大概率一字，买不进）
+//     2. 连板高位且无换手       → 剔除（高位加速板，开板即天地板）
+//     3. 买点预期标注          → 给每只保留票打 buyPoint（分歧转一致可买 / 缩量硬板买不进）
+//     4. 烂板弱转强选股         → 放量烂板(hs>15% 且 尾盘封住) 标记为 weakToStrong 并优先置顶
+//
+//   @returns { picks:Array(保留·弱转强优先重排), rejected:Array, weakToStrong:Array }
+export function applyTradabilityFilters(picks, ztpool) {
+  const pool = Array.isArray(ztpool) ? ztpool : null;
+  if (!pool || !pool.length || !Array.isArray(picks)) {
+    return { picks: picks || [], rejected: [], weakToStrong: [] };
+  }
+  const byCode = new Map();
+  for (const s of pool) if (s && s.c != null) byCode.set(String(s.c), s);
+
+  const HIGH_LIANBAN_MIN = 4;   // 规则2：几板算「高位」（4 板及以上）
+  const LATE_SEAL_TIME = 100000; // 规则3/4：首封晚于 10:00 → 视为晚封/烂板信号（HHMMSS 数值）
+  const WEAK_TO_STRONG_HS = 15;  // 规则4：换手率 > 15% 才算「爆量烂板」
+
+  const rejected = [];
+  const kept = [];
+  for (const p of picks) {
+    const ps = byCode.get(String(p.code));
+    // 无涨停池记录（纯龙虎榜且未涨停）→ 不参与缩量/封单/连板判定，保留并给常规标注
+    if (!ps) {
+      if (!p.buyPoint) p.buyPoint = '非涨停池标的（龙虎榜驱动），按常规买点';
+      kept.push(p);
+      continue;
+    }
+    const hs = finite(ps.hs) ? +ps.hs : null;     // 换手率(%)
+    const lbc = finite(ps.lbc) ? +ps.lbc : 0;      // 连板天数
+    const fund = finite(ps.fund) ? +ps.fund : 0;   // 封单额(元)
+    const ltsz = finite(ps.ltsz) ? +ps.ltsz : 0;   // 流通市值(元)
+    const zdp = finite(ps.zdp) ? +ps.zdp : 0;      // 涨跌幅(%)
+    const zbc = finite(ps.zbc) ? +ps.zbc : 0;      // 炸板次数
+    const fbt = finite(ps.fbt) ? +ps.fbt : 999999; // 首封时间(HHMMSS)
+    const isLimitUp = zdp >= 9.5;                   // 涨停板（≈10% 上限）
+
+    // 封单占流通市值比例（封单量 vs 流通盘 的等价口径：封单额/流通市值，量纲无关、可直接比 5%）
+    const sealRatio = (ltsz > 0 && fund > 0) ? fund / ltsz : 0;
+
+    // ── 规则1：极端缩量板 / 封单锁死 ──
+    const shrinkBoard = isLimitUp && hs != null && hs < 5;     // 换手率 < 5%
+    const lockedSeal = isLimitUp && sealRatio > 0.05;          // 封单 > 流通盘 5%
+    // ── 规则2：连板高位且无换手（高位加速板） ──
+    const highLianbanNoTurn = lbc >= HIGH_LIANBAN_MIN && (hs == null || hs < 8);
+
+    if (shrinkBoard || lockedSeal || highLianbanNoTurn) {
+      const why = [];
+      if (shrinkBoard) why.push(`缩量硬板(换手率${hs.toFixed(1)}%<5%)`);
+      if (lockedSeal) why.push(`封单锁死(封单占流通市值${(sealRatio * 100).toFixed(1)}%>5%)`);
+      if (highLianbanNoTurn) why.push(`高位连板(${lbc}板)无换手(换手率${hs == null ? '—' : hs.toFixed(1) + '%'})`);
+      rejected.push({ code: p.code, name: p.name, reasons: [`⚠ ${why.join('；')} → 实盘买不进，已剔除`] });
+      continue;
+    }
+
+    // ── 规则3：买点预期标注 ──
+    const isWeakBoard = zbc > 0 || fbt >= LATE_SEAL_TIME;  // 盘中开板 / 晚封 = 烂板
+    let buyPoint;
+    if (isWeakBoard && hs != null && hs >= 8) {
+      buyPoint = '弱转强：今日放量烂板，明日早盘低开/回踩均线可低吸';
+    } else if (isLimitUp && hs != null && hs < 8) {
+      buyPoint = '⚠ 偏缩量硬板，次日易一字/秒板，实盘买点苛刻，谨慎';
+    } else if (isLimitUp) {
+      buyPoint = '正常换手涨停，竞价/开盘分歧转一致可参与';
+    } else {
+      buyPoint = '非涨停（龙虎榜驱动），按常规买点';
+    }
+    p.buyPoint = buyPoint;
+
+    // ── 规则4：放量烂板（换手率>15% 且 封住/收红）→ 弱转强优选 ──
+    const weakToStrong = isLimitUp && hs != null && hs > WEAK_TO_STRONG_HS && (zbc > 0 || fbt >= LATE_SEAL_TIME);
+    p.weakToStrong = weakToStrong;
+    if (weakToStrong) {
+      p.gateTags = [...(p.gateTags || []), '烂板弱转强'];
+      p.buyPoint = `烂板弱转强：今日爆量换手(${hs.toFixed(0)}%) 尾盘封板 → 明日早盘极大概率给低吸买点`;
+    }
+
+    kept.push(p);
+  }
+
+  // 规则4 偏好：放量烂板（弱转强）优先置顶（组内核保序，维持可复现）
+  const wts = kept.filter((p) => p.weakToStrong);
+  const rest = kept.filter((p) => !p.weakToStrong);
+  return { picks: [...wts, ...rest], rejected, weakToStrong: wts };
+}
+
 // ────────────────────────── 六、主入口 ──────────────────────────
 
 /**
@@ -541,12 +654,22 @@ export function applyEmotionGates(picks, ctx = {}) {
  * @returns {{tier:object|null, score:number|null, picks:Array, rejected:Array,
  *            note:object, asOf:string|null, pool:number, pred:object, version:string}}
  */
+
+// 实盘准入（物理拉黑，绝不进候选池）——唯一事实源见 src/admission.js（选股/推送/模拟盘买闸共用口径）。
+// 在此 import 并 re-export，供 ai_report.js 等从本模块统一取用，避免与 lhbfilter.js 形成循环依赖。
+import { isAdmissible, isRiskName, filterAdmissible } from './admission.js';
+export { isAdmissible, isRiskName, filterAdmissible };
+
 export function recommendPicks(day, ctx = {}) {
   const d = day || {};
   const tier = marketTier(ctx.emotionScore);
   const topN = finite(ctx.topN) && +ctx.topN > 0 ? Math.floor(+ctx.topN) : PICK_TOP_N;
 
-  const candidates = buildCandidates(d);
+  const candidates = buildCandidates(d)
+    // 实盘准入过滤（2026-10-29·老板实盘权限）：在选股引擎最前端直接剔除，绝不进入候选池。
+    //   只保留主板(00/60，含 002 中小板)，剔除北交所(8/4/920)/创业板(300/301)/科创板(688)/ST/*ST/退/次新(<5天K线)。
+    //   主线涨停家数 / 情绪周期仍用 day 全量数据（含创业板）计算（见 mainline_guard / breadth），不受此过滤影响。
+    .filter((c) => isAdmissible(c.code, c.name, c.klineDays));
   const totalDealWan = candidates.reduce((a, c) => a + (finite(c.buyWan) ? +c.buyWan : 0) + (finite(c.sellWan) ? +c.sellWan : 0), 0);
 
   // 先补上「可核验理由/风险」与流动性分（这些是展示字段，与预测相互独立）
@@ -564,12 +687,73 @@ export function recommendPicks(day, ctx = {}) {
   const ztCount = finite(d.summary && d.summary.zt_count) ? +d.summary.zt_count : null;
   const pred = predictPicks(enriched, {
     topN, ztCount, minProb: ctx.minProb, stopLossPct: ctx.stopLossPct,
-    streakTopMin: ctx.streakTopMin,
+    streakTopMin: ctx.streakTopMin, firstBoardBoost: ctx.firstBoardBoost,
   });
 
   // 情绪闸门：高潮预警 / 去弱留强 / 接力验证（无 ctx.ztpool 时原样返回，零回归）
   const gate = applyEmotionGates(pred.picks, ctx);
   let picks = gate.picks;
+
+  // 2026-10-27 实战化：可交易性硬过滤（剔除买不进的票）+ 买点标注 + 烂板弱转强偏好。
+  //   仅当调用方提供 ctx.ztpool（当日涨停池）时生效；未提供→零回归（与情绪闸门同约定）。
+  const tradPool = Array.isArray(ctx.ztpool) ? ctx.ztpool : null;
+  const trad = applyTradabilityFilters(picks, tradPool);
+  picks = trad.picks;
+
+  // 补丁三（V5.3·2026-10-28 收紧调参·第二种方案）：极寒分化联动风控（依赖补丁一标记 isClusteringBubble，独立计算、互不耦合）。
+  //   触发（ctx.isClusteringBubble === true）时开启温和防御——不再「无有效主线就全清」，避免缩头乌龟：
+  //     · 若主线有效（isValidMain===true 且 龙虎榜净额>0，真金白银支撑）→ 维持原样，不误伤；
+  //     · 若主线无效/缺失（资金出逃空心题材）→ 仅剔除「该无效主线的跟风票（inMainTheme）」，
+  //       非主线的强势票（龙虎榜净买为正 netWan>0）仍可进候选池。
+  //   ⚠ 数据不可变：给保留标的克隆挂载 p.theme（来自主线对象克隆体），绝不引用 / 改动原始归档主线对象，
+  //     满足「只约束当日候选池推送、不污染历史归档」。ctx 未传该标记 → 零回归（与情绪闸门同约定）。
+  let clusterFilterNote = null;
+  if (ctx.isClusteringBubble) {
+    const mainLine = ctx.mainLine && typeof ctx.mainLine === 'object' ? ctx.mainLine : null;
+    // 主线有效性：必须 isValidMain===true 且 龙虎榜净额 > 0（空心题材 / 净流出 → 无效）
+    const validMain = !!(mainLine && mainLine.isValidMain === true
+      && Number.isFinite(mainLine.longHuNet) && mainLine.longHuNet > 0);
+    const kept = [];
+    for (const p of picks) {
+      // 克隆主线对象挂载到标的（不引用原始归档主线，满足不可变约束）；原始 picks 仅新增一个只读引用字段
+      p.theme = mainLine ? structuredClone(mainLine) : null;
+      if (validMain) {
+        // 主线有真金白银支撑：维持原样，不误伤（避免缩头乌龟）
+        kept.push(p);
+      } else {
+        // 主线无效/缺失（资金出逃空心题材）：仅剔除「该无效主线的跟风票」，其余非主线强势票按资金面放行
+        if (p.inMainTheme === true) continue; // 跟风票剔除
+        if (Number.isFinite(p.netWan) && p.netWan > 0) kept.push(p); // 非主线但龙虎榜净买为正的强势票
+      }
+    }
+    const filteredOut = picks.length - kept.length;
+    if (filteredOut > 0) {
+      // 透明披露被本补丁剔除的数量，不静默吞掉（并入返回 rejected 台账）
+      clusterFilterNote = {
+        reason: 'clustering_bubble_mainline_filter',
+        count: filteredOut,
+        note: '极寒分化温和风控：剔除无效主线跟风票；非主线且龙虎榜净买为正的强势票保留',
+      };
+    }
+    picks = kept;
+  }
+
+  // 高开/急拉过滤（2026-10-28·参数控制台）：当 ctx.openGapFilterPct 传入且 >0 时生效，
+  //   剔除「快照涨幅已 ≥ 阈值」的候选（防追高/接飞刀）。仅按当日快照 changePct 代理——
+  //   日线快照仅含收盘价与涨跌幅、无开盘价，故用 changePct 近似；未传该参数 → 零回归（与历史行为一致）。
+  // ⚠ 不修改任何输入对象；仅对本次 picks 做过滤，不改归档。
+  if (ctx.openGapFilterPct != null && +ctx.openGapFilterPct > 0) {
+    const gapMax = +ctx.openGapFilterPct;
+    const before = picks.length;
+    picks = picks.filter((p) => !(Number.isFinite(+p.changePct) && +p.changePct >= gapMax));
+    const removed = before - picks.length;
+    if (removed > 0) {
+      clusterFilterNote = clusterFilterNote || { reason: 'open_gap_filter', count: 0, note: '' };
+      clusterFilterNote.reason = 'open_gap_filter';
+      clusterFilterNote.count = (clusterFilterNote.count || 0) + removed;
+      clusterFilterNote.note = `高开/急拉过滤：剔除快照涨幅≥${gapMax}% 的候选（防追高）`;
+    }
+  }
 
   const weight = suggestWeight(tier, picks.length);
   for (const p of picks) {
@@ -581,6 +765,52 @@ export function recommendPicks(day, ctx = {}) {
     // 连板标签：只有达到置顶门槛的票才给标签，避免「所有 2 板都贴连板」
     p.streakText = streakTagText(p.limitUp);
     p.streakBandText = p.limitUp && p.limitUp.prob != null ? streakBandText(p.limitUp.prob) : null;
+  }
+
+  // 挂件二（2026-10-30·进攻）：游资席位追踪因子（高精度制导）。
+  //   若 ctx.seatsDetail（day.summary.seats.detail）提供席位数据、且 ctx.hotmoney 提供营业部清单，
+  //   对「买方席位净买命中顶级游资营业部」的标的，标记 hotMoney 并放大其排序分（默认翻倍）。
+  //   ⚠ seats.js 明确「点名归属不可核验」，故仅作可选增强信号；ctx 未提供 seatsDetail/hotmoney → 零回归。
+  const hmCfg = (ctx && ctx.hotmoney) || { seatPatterns: DEFAULT_HOTMONEY_SEAT_PATTERNS, doubleWeight: 2.0 };
+  const hmPatterns = Array.isArray(hmCfg.seatPatterns) && hmCfg.seatPatterns.length ? hmCfg.seatPatterns : DEFAULT_HOTMONEY_SEAT_PATTERNS;
+  const hmDbl = Number.isFinite(+hmCfg.doubleWeight) && +hmCfg.doubleWeight > 0 ? +hmCfg.doubleWeight : 2.0;
+  if (ctx && ctx.seatsDetail) {
+    for (const p of picks) {
+      const net = hotMoneyNetWanOf(ctx.seatsDetail, p.code, hmPatterns);
+      if (net > 0) {
+        p.hotMoney = true;
+        p.hotMoneyNetWan = net;
+        const base = Number.isFinite(p.prob?.score) ? p.prob.score : (Number.isFinite(p.score) ? p.score : 0);
+        p.score = Math.round(Math.min(100, base * hmDbl) * 100) / 100;   // 游资净买 → 排序分翻倍（增强信号，不改模型概率）
+        if (!Array.isArray(p.tags)) p.tags = [];
+        if (!p.tags.includes('游资净买')) p.tags.push('游资净买');
+      }
+    }
+  }
+
+  // 方向2（主线第1步后续·可配置 A/B）：首板纳入配额（质量竞争式 · RESERVE_V2）。
+  //   ctx.firstBoardReserve>0 时，从「已入选之外的全量候选」中取分数最高的前 N 只首板(streak<=1)，
+  //   替换 picks 中分数最低的同等数量非首板，强制 topN 内混入首板（默认 0 = 不干预，零回归）。
+  //   质量竞争式：① 首板排序分已在 predictPicks 按 ctx.firstBoardBoost 提权，让其凭质量跨过最弱连板；
+  //   ② 候选源只用 pred.picks+pred.overflow（通过概率门槛的优质首板），排除 pred.belowThreshold（次品格），避免注入次品。
+  //   真实回放用 minProb:0，belowThreshold 恒空，不影响真实口径；生产路径不传这些参数即保持原行为。
+  //   ⚠ 仅影响最终 picks 构成；不改动任何原始对象、不污染归档。
+  if (Number.isFinite(+ctx.firstBoardReserve) && +ctx.firstBoardReserve > 0) {
+    const reserve = Math.min(Math.floor(+ctx.firstBoardReserve), Math.max(0, picks.length));
+    const isFirstBoard = (p) => Number.isFinite(+p.streak) && +p.streak <= 1;
+    const inFirst = picks.filter(isFirstBoard).length;
+    if (inFirst < reserve) {
+      const need = reserve - inFirst;
+      const ranked = (pred.picks || []).concat(pred.overflow || []);   // 仅优质首板（已过概率门槛），排除次品格 belowThreshold
+      const candFirst = ranked.filter((p) => !picks.includes(p) && isFirstBoard(p))
+        .sort((a, b) => ((b.prob?.score ?? b.score ?? 0) - (a.prob?.score ?? a.score ?? 0)));
+      const toAdd = candFirst.slice(0, need);
+      if (toAdd.length) {
+        const nonFirst = picks.filter((p) => !isFirstBoard(p)).sort((a, b) => ((a.prob?.score ?? a.score ?? 0) - (b.prob?.score ?? b.score ?? 0)));
+        const removeCodes = new Set(nonFirst.slice(0, toAdd.length).map((p) => p.code));
+        picks = picks.filter((p) => !removeCodes.has(p.code)).concat(toAdd);
+      }
+    }
   }
 
   // 空态与拒绝态必须说清原因，不能只给一个空列表
@@ -628,7 +858,8 @@ export function recommendPicks(day, ctx = {}) {
     //   rejected       —— 命中剔除规则（大概率亏），必须展示原因
     //   belowThreshold —— 概率分不足门槛（没把握，宁可不推）
     //   overflow       —— 达门槛但被 topN 截断（够格，只是名额有限）
-    rejected: pred.rejected.slice(0, 12),
+    // 可交易性剔除（买不进的票）优先透出，再接预测引擎的剔除（总计 ≤12）
+    rejected: trad.rejected.concat(pred.rejected).concat(clusterFilterNote ? [clusterFilterNote] : []).slice(0, 12),
     belowThreshold: pred.belowThreshold.slice(0, 8),
     overflow: pred.overflow.slice(0, 8),
     note, pool: candidates.length, asOf: d.trade_date || null,

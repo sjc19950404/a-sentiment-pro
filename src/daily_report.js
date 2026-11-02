@@ -19,7 +19,7 @@
 //   • **不构成投资建议**：措辞只描述状态与风险，不给买卖动作。
 
 import { classifyRegime, detectDivergence, num } from './regime.js';
-import { positionLine, DISCLAIMER as POSITION_DISCLAIMER } from './position_policy.js';
+import { positionLine, positionNarrative, reconcilePosition, DISCLAIMER as POSITION_DISCLAIMER } from './position_policy.js';
 
 // 显示层舍入（唯一出处；不改动源数据）
 export const DISPLAY = { pct1: 1, score1: 1 };
@@ -65,11 +65,15 @@ export function buildDailyReport(signals = {}) {
       breadthVerdict: S.breadth && S.breadth.verdict,
     });
 
+  // ── 展示层合并（2026-10-24）：情绪基础仓位 × regime 风控帽 合成单一结论 ──
+  //   统一以本报告的权威 regime（regFull.key）为风控帽；最终执行以帽为准。
+  const posRec = reconcilePosition({ score: latest.value, regimeKey: regFull.key });
+
   const sections = [];
   const caveats = [];
 
   // ── 节 1：市场状态 ──────────────────────────────────────────────────────
-  sections.push(buildRegimeSection(regFull, div));
+  sections.push(buildRegimeSection(regFull, div, posRec));
 
   // ── 节 2：情绪与分位 ────────────────────────────────────────────────────
   sections.push(buildSentimentSection(latest, regFull));
@@ -92,9 +96,17 @@ export function buildDailyReport(signals = {}) {
   // ── 节 8：舆情参考（LLM 试点，V5.3 P2）─────────────────────────────────
   //   刻意放最后且 title 自带"参考"：±5 修正不进交易信号（原分不动），读者
   //   须先看完七个量价/结构节再看这条软信息——试点定位，权重天然最低。
-  //   ⚠ 2026-10-17 用户指令：试点暂停（太贵且无效）。本节点仍生成（数据/代码保留归档），
-  //     但前端 renderDailyReport 已按 id==='llm' 跳过渲染；定时任务已在 daily.yml 关停。
+  //   ⚠ 2026-10-17 用户指令：试点暂停（太贵且无效），定时任务在 daily.yml 关停；
+  //     2026-10-24 用户指令：取消前端隐藏（恢复渲染）——数据靠历史归档 / 手动跑
+  //     scripts/fetch_llm_sentiment.mjs 生成，缺则 buildLlmSection 显式标「未生成」（不冒充中性）。
   sections.push(buildLlmSection(S.llm));
+  // ── 节 9：板块情绪因子（场景二，2026-10-24 启用）──────────────────────
+  //   宏观/行业新闻 → GLM 映射 A 股板块/方向/强度 → 聚合板块情绪；与节八同理定位为
+  //   "参考"软信息，score 不进交易信号（原分不动），仅作板块热度提示。
+  sections.push(buildSectorSentimentSection(S.sectorSentiment));
+  // ── 节 10：妖股逻辑推演（方向 C，2026-10-24 启用）────────────────────
+  //   连板股→GLM 推断涨停逻辑/纯情绪炒作；纯参考软信息，不进交易信号。
+  sections.push(buildDragonSection(S.dragonLogic));
 
   // 汇总 caveats（从各节与 regime 收集，集中给用户看）
   if (regFull.caution) caveats.push(regFull.caution);
@@ -113,7 +125,9 @@ export function buildDailyReport(signals = {}) {
   return {
     date,
     // 一句话结论（供首屏大字）
-    headline: buildHeadline(regFull, div, date, missingCount),
+    headline: buildHeadline(regFull, div, date, missingCount, posRec),
+    // 展示层合并：基础仓位 × 风控帽 合成结果，前端 renderDailyReport 据此渲染红字横幅
+    positionReconcile: posRec,
     tag: { key: regFull.key, label: regFull.label, level: regFull.level, dir: regFull.dir, confidence: regFull.confidence },
     divergence: div,
     sections,
@@ -130,6 +144,8 @@ export function buildDailyReport(signals = {}) {
       dirty: 'src/dirty.js',
       health: 'src/health.js',
       llm: 'src/llm_sentiment.js + scripts/fetch_llm_sentiment.mjs（data/llm-sentiment-latest.json）',
+      sectorSentiment: 'src/macro_sector_sentiment.js + scripts/fetch_macro_sector_sentiment.mjs（data/macro-sector-sentiment-latest.json）',
+      dragonLogic: 'src/dragon_logic.js + scripts/fetch_dragon_logic.mjs（data/llm-dragon-logic-latest.json）',
     },
     // 免责与口径声明（报告尾部固定输出）
     disclaimer: '本日报只描述市场状态与风险特征，不构成投资建议；所有读数来自当日已归档数据，缺失项一律标注"未采集/未计算"而非补 0。'
@@ -139,7 +155,7 @@ export function buildDailyReport(signals = {}) {
 
 // ── 节构造器 ──────────────────────────────────────────────────────────────
 
-function buildRegimeSection(reg, div) {
+function buildRegimeSection(reg, div, posRec) {
   const pts = [];
   if (reg.key === 'unknown') {
     return {
@@ -154,6 +170,18 @@ function buildRegimeSection(reg, div) {
   pts.push({ text: reg.detail, kind: 'main' });
   (reg.evidence || []).forEach((e) => pts.push({ text: `${e.metric}：${e.reading}`, kind: 'evidence' }));
   if (reg.caution) pts.push({ text: `⚠ ${reg.caution}`, kind: 'caution' });
+  // 展示层合并（2026-10-24）：把"情绪基础仓位 × regime 风控帽"显式摆出来，消除两套镜头冲突。
+  if (posRec) {
+    if (posRec.conflict) {
+      pts.push({ text: positionNarrative(posRec, { regLabel: reg.label, divergence: div.diverged }), kind: 'caution' });
+    } else {
+      pts.push({ text: positionNarrative(posRec, { regLabel: reg.label }), kind: 'main' });
+    }
+    pts.push({
+      text: `基础仓位（情绪分 ${posRec.score}）：${posRec.baseRange}｜风控帽（regime=${posRec.cap.key}）：${posRec.capRange}｜最终执行：${posRec.finalRange}${posRec.force ? '（强制）' : ''}`,
+      kind: 'evidence',
+    });
+  }
   return {
     id: 'regime', title: '一、市场状态判定',
     level: reg.caution ? 'warn' : 'info',
@@ -376,6 +404,14 @@ function buildLlmSection(llm) {
       missingReason: '未生成（需收盘后跑 scripts/fetch_llm_sentiment.mjs；未跑 ≠ 舆情中性）',
     };
   }
+  // 失败兜底档（已配置但调用失败/超时/非法 JSON）：与「未生成（缺配置）」「真实中性」三者区分——
+  //   显式标 warn 并说明是"获取失败"，绝不冒充真实舆情方向（也不假装"没跑过"）。
+  if (llm.degraded) {
+    const pts = [];
+    pts.push({ text: `⚠ ${llm.reason || 'AI舆情获取失败，默认中性'}（调用失败/超时/非法 JSON 兜底，不冒充真实舆情方向）`, kind: 'warn' });
+    pts.push({ text: `证据日期 ${llm.asOfDate}｜模型 ${llm.model || '未留痕'}`, kind: 'info' });
+    return { id: 'llm', title: '八、舆情参考（LLM 试点）', level: 'warn', missing: false, points: pts };
+  }
   const pts = [];
   // 主读数：原始分 → 参考分（生效时）；不生效时只给原分与原因
   if (llm.effective) {
@@ -397,8 +433,69 @@ function buildLlmSection(llm) {
   return { id: 'llm', title: '八、舆情参考（LLM 试点）', level, missing: false, points: pts };
 }
 
+// ── 节 9：板块情绪因子（场景二）──────────────────────────────────────────
+//   读取 signals.sectorSentiment（src/macro_sector_sentiment.js 转换后的块）。
+//   未生成 / 降级 / 正常三态同款显式区分，不冒充"中性"。
+function buildSectorSentimentSection(ss) {
+  if (!ss) {
+    return {
+      id: 'sectorSentiment', title: '九、板块情绪因子（场景二）', level: 'unknown', missing: true,
+      missingReason: '未生成（需盘后/周末跑 scripts/fetch_macro_sector_sentiment.mjs；未跑 ≠ 板块中性）',
+    };
+  }
+  if (ss.degraded) {
+    const pts = [];
+    pts.push({ text: `⚠ ${ss.effectNote || (ss.macro && ss.macro.reason) || '板块情绪获取失败，默认中性'}（调用失败/超时兜底，不冒充真实情绪）`, kind: 'warn' });
+    pts.push({ text: `证据日期 ${ss.asOfDate}｜模型 ${ss.model || '未留痕'}`, kind: 'info' });
+    return { id: 'sectorSentiment', title: '九、板块情绪因子（场景二）', level: 'warn', missing: false, points: pts };
+  }
+  const pts = [];
+  const m = ss.macro || {};
+  pts.push({ text: `宏观情绪：${m.label || '中性'}（score ${m.sentiment != null ? m.sentiment : 0}，置信度 ${m.confidence != null ? m.confidence : 0}）`, kind: 'evidence' });
+  pts.push({ text: `利好板块：${(ss.topBullish || []).map((x) => `${x.sector}+${x.score}`).join('、') || '无'}`, kind: 'evidence' });
+  pts.push({ text: `利空板块：${(ss.topBearish || []).map((x) => `${x.sector}${x.score}`).join('、') || '无'}`, kind: 'evidence' });
+  pts.push({ text: `涉及板块 ${ss.sectors ? ss.sectors.length : 0} 个、事件 ${ss.events ? ss.events.length : 0} 条`, kind: 'info' });
+  if (m.reason) pts.push({ text: `依据：${m.reason}`, kind: 'evidence' });
+  if (ss.blackTalk) pts.push({ text: `🔥 游资复盘黑话：${ss.blackTalk}`, kind: 'quote' });
+  pts.push({ text: `证据日期 ${ss.asOfDate}｜模型 ${ss.model || '未留痕'}｜新闻源 ${ss.source || 'sina-roll'}`, kind: 'info' });
+  pts.push({ text: '口径：score∈[-1,1]、score100∈[0,100]，仅作参考，不独立生成买卖信号', kind: 'info' });
+  const level = (m.sentiment != null && m.sentiment < -0.2) ? 'warn' : 'info';
+  return { id: 'sectorSentiment', title: '九、板块情绪因子（场景二）', level, missing: false, points: pts };
+}
+
+// ── 节 10：妖股逻辑推演（方向 C）──────────────────────────────────────────
+//   读取 signals.dragonLogic（src/dragon_logic.js 转换后的块）。
+function buildDragonSection(dl) {
+  if (!dl) {
+    return { id: 'dragonLogic', title: '十、妖股逻辑推演（方向C）', level: 'unknown', missing: true,
+      missingReason: '未生成（需盘后跑 scripts/fetch_dragon_logic.mjs；未跑 ≠ 无妖股）' };
+  }
+  if (dl.degraded) {
+    const pts = [];
+    pts.push({ text: `⚠ ${dl.effectNote || '妖股逻辑推演获取失败，默认空'}（调用失败/超时兜底，不冒充结论）`, kind: 'warn' });
+    pts.push({ text: `证据日期 ${dl.asOfDate}｜模型 ${dl.model || '未留痕'}`, kind: 'info' });
+    return { id: 'dragonLogic', title: '十、妖股逻辑推演（方向C）', level: 'warn', missing: false, points: pts };
+  }
+  const pts = [];
+  const pure = dl.pureSentiment || [];
+  const byType = dl.byType || {};
+  const typeStr = Object.keys(byType).map((k) => `${k}:${byType[k]}`).join('、') || '无';
+  pts.push({ text: `连板股推演 ${dl.dragons ? dl.dragons.length : 0} 只｜类型分布：${typeStr}`, kind: 'info' });
+  if (pure.length) {
+    pts.push({ text: `纯情绪炒作预警（谨慎追高）：${pure.slice(0, 8).map((x) => `${x.name}(${x.lb}板)${x.reason ? '·' + x.reason : ''}`).join('、')}`, kind: 'warn' });
+  } else {
+    pts.push({ text: '本轮无被判定为「纯情绪炒作」的连板股', kind: 'evidence' });
+  }
+  if (dl.dragons && dl.dragons.length) {
+    pts.push({ text: '样例：' + dl.dragons.slice(0, 6).map((d) => `${d.name}(${d.lb}板·${d.hybk})→${d.logic_type}`).join('、'), kind: 'info' });
+  }
+  pts.push({ text: `证据日期 ${dl.asOfDate}｜模型 ${dl.model || '未留痕'}${dl.scanned != null ? '｜扫描 ' + dl.scanned + ' 只' : ''}`, kind: 'info' });
+  pts.push({ text: '口径：纯参考，不修改 regime/emotion 分数；由下游（paper.js 等）决定采不采纳。', kind: 'info' });
+  return { id: 'dragonLogic', title: '十、妖股逻辑推演（方向C）', level: pure.length ? 'warn' : 'info', missing: false, points: pts };
+}
+
 // ── 首屏一句话结论 ────────────────────────────────────────────────────────
-function buildHeadline(reg, div, date, missingCount) {
+function buildHeadline(reg, div, date, missingCount, posRec) {
   const d = date ? `${date} ` : '';
   if (reg.key === 'unknown') return `${d}数据不足，无法给出市场状态判断。`;
   // V5.3 简报格式：【市场状态判定】状态｜推荐仓位区间，情绪得分在第二节展开
@@ -408,5 +505,11 @@ function buildHeadline(reg, div, date, missingCount) {
   if (reg.confidence === 'low') s += '（判据不全，仅供参考）';
   if (div.diverged) s += `；${div.label}`;
   if (missingCount > 0) s += `（${missingCount} 个区块缺数据）`;
+  // 展示层合并（2026-10-24）：基础仓位与风控帽冲突时，首屏即说清"最终执行仓位"，
+  // 否则读者仍会在第二节看到情绪极高位叙事、却在此处看到 0~30%，回到"精神分裂"。
+  if (posRec && posRec.conflict) {
+    s = `${d}市场状态：${reg.label}${posRec.force ? '（假繁荣预警）' : ''}｜最终执行仓位：${posRec.finalRange}。`
+      + `情绪分 ${posRec.score}（历史极高位）基础建议 ${posRec.baseRange}，但触发 regime=${posRec.cap.key} 风控帽，强制降仓；交易纪律：只减仓不新建。`;
+  }
   return s;
 }

@@ -61,6 +61,17 @@ test('global 缺失/quotes 缺失 → 安全返回空结果', () => {
   assert.deepEqual(validateExternal({}, { today: TODAY }).results, {});
 });
 
+test('陈旧 ≥ STALE_DAYS 天 + 全局抓取失败（age=4, fetchFailed）→ 中性「未刷新」，绝不写「采集失败」', () => {
+  const r = validateExternal(
+    g([q('a50', { quoteTime: '2026-10-08T15:00:00+08:00' })], { outcome: 'failed', reason: 'timeout' }),
+    { today: TODAY },
+  );
+  assert.equal(r.results.a50.action, 'null');
+  assert.match(r.alerts[0], /已陈旧 4 天/);
+  assert.match(r.alerts[0], /（未刷新）/);
+  assert.ok(!/采集失败/.test(r.alerts[0]), '年龄≥2天的陈旧不得标注「采集失败」');
+});
+
 test('sox 与 a50 独立判定（各自陈旧度不同）', () => {
   const r = validateExternal(g([
     q('a50', { quoteTime: '2026-10-08T15:00:00+08:00' }), // age 4 → null

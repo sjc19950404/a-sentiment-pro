@@ -179,6 +179,42 @@ test('computeBreadth：双口径涨跌家数（updownCn=沪深不含北交所 / 
   assert.equal(b.updownCn.scope, '沪深两市（不含北交所，含ST/科创板）');
 });
 
+// ── ③-b boardBreakdown —— 按板块拆分（创业/科创/主板/北交/其他）──────────────
+test('computeBreadth：boardBreakdown 按板块拆分，且各板块求和等于总量', () => {
+  const up = (code) => { const c = ramp(30); return { code, close: c[29], closes: c, pb: null }; };   // 站上均线=true
+  const down = (code) => { const c = [...ramp(29), ramp(29)[28] - 5]; return { code, close: c[c.length - 1], closes: c, pb: null }; }; // 站上均线=false
+  const stocks = [
+    ...Array.from({ length: 50 }, (_, i) => up(`60000${i}`)),        // 主板（沪）
+    ...Array.from({ length: 20 }, (_, i) => down(`30000${i}`)),      // 创业板：站上均线=false
+    ...Array.from({ length: 10 }, (_, i) => up(`68800${i}`)),        // 科创板：站上均线=true
+    ...Array.from({ length: 5 }, (_, i) => up(`83${String(i).padStart(3, '0')}0`)), // 北交所
+    ...Array.from({ length: 5 }, (_, i) => up(`51088${i}`)),        // 基金/其他
+  ];
+  const b = computeBreadth(stocks);
+  const bb = b.boardBreakdown;
+  assert.ok(bb && bb.main && bb.gem && bb.star && bb.bj && bb.other, '五个板块桶都存在');
+
+  // 站上均线按板块计数
+  assert.deepEqual(bb.main.aboveMa, { n: 50, den: 50, ratio: 1 });
+  assert.deepEqual(bb.gem.aboveMa, { n: 0, den: 20, ratio: 0 });
+  assert.deepEqual(bb.star.aboveMa, { n: 10, den: 10, ratio: 1 });
+  assert.deepEqual(bb.bj.aboveMa, { n: 5, den: 5, ratio: 1 });
+  assert.deepEqual(bb.other.aboveMa, { n: 5, den: 5, ratio: 1 });
+
+  // 涨跌家数按板块（up() 单调递增 → up；down() 末日大跌 → down）
+  assert.equal(bb.main.updown.up, 50);
+  assert.equal(bb.gem.updown.up, 0);
+  assert.equal(bb.gem.updown.down, 20);
+  assert.equal(bb.star.updown.up, 10);
+  assert.equal(bb.bj.updown.up, 5);
+  assert.equal(bb.other.updown.up, 5);
+
+  // 不变量：各板块求和 == 总量（aboveMa 分母 == scanned）
+  const sumDen = bb.main.aboveMa.den + bb.gem.aboveMa.den + bb.star.aboveMa.den + bb.bj.aboveMa.den + bb.other.aboveMa.den;
+  assert.equal(sumDen, b.aboveMa.den, '板块 aboveMa 分母求和 = 总量 denominator');
+  assert.equal(sumDen, b.scanned, '板块 scanned 求和 = 总量 scanned');
+});
+
 // ── ④ breadthVerdict —— 结论归并 ───────────────────────────────────────────
 test('breadthVerdict：不可信 → unknown（不得猜）', () => {
   assert.equal(breadthVerdict(null).level, 'unknown');

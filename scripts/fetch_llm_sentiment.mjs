@@ -33,7 +33,8 @@ const argOf = (k, d) => { const i = args.indexOf(k); return i >= 0 && args[i + 1
 const ARCHIVE = argOf('--archive', 'data/archive.json');
 const OUT = new URL('../data/llm-sentiment-latest.json', import.meta.url);
 
-const API_URL = process.env.LLM_API_URL || '';
+const API_URL = process.env.LLM_API_URL
+  || ((process.env.LLM_MODEL || '').startsWith('glm') ? 'https://open.bigmodel.cn/api/paas/v4' : '');
 const API_KEY = process.env.LLM_API_KEY || '';
 const MODEL = process.env.LLM_MODEL || '';
 
@@ -102,45 +103,74 @@ const SYSTEM = '你是A股市场舆情分析师。基于提供的当日市场结
 
 const user = `当日市场结构数据如下：\n${brief}\n\n请按要求输出 JSON。`;
 
-const chat = await fetchWithRetry(`${API_URL.replace(/\/$/, '')}/chat/completions`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${API_KEY}`,
-  },
-  body: JSON.stringify({
-    model: MODEL,
-    messages: [
-      { role: 'system', content: SYSTEM },
-      { role: 'user', content: user },
-    ],
-    temperature: 0.3,
-    max_tokens: 800,
-  }),
-  timeout: 60000,
-  read: async (r) => {
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const j = await r.json();
-    const text = j?.choices?.[0]?.message?.content;
-    if (typeof text !== 'string' || !text.trim()) throw new Error('返回无 content');
-    return text;
-  },
-}, 3, 2000);
-
-// 从回复中提取 JSON（容忍 ```json 围栏与前后杂文）
-const m = chat.match(/\{[\s\S]*\}/);
-if (!m) {
-  console.error('[llm-sent] ⚠ LLM 回复中未找到 JSON 对象，拒绝落盘（原文前 200 字）：');
-  console.error(chat.slice(0, 200));
-  process.exit(3);
-}
+// ── 2.5 调 LLM（OpenAI 兼容协议）+ 严格容错 ───────────────────────────────
+//   设计纪律：缺配置 → 下方已退出非 0 不落档（诚实「未生成」，不冒充中性）；
+//   已配置但请求失败/超时/返回非法 JSON/超界 → 兜底落「获取失败，默认中性」档并退出 0，
+//   绝不阻塞 EOD 主流程（pi_build 中本步骤即容错 step）。
 let parsed;
-try { parsed = JSON.parse(m[0]); } catch { console.error('[llm-sent] ⚠ JSON 解析失败，拒绝落盘'); process.exit(3); }
+try {
+  const chat = await fetchWithRetry(`${API_URL.replace(/\/$/, '')}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [
+        { role: 'system', content: SYSTEM },
+        { role: 'user', content: user },
+      ],
+      temperature: 0.3,
+      max_tokens: 800,
+    }),
+    timeout: 60000,
+    read: async (r) => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = await r.json();
+      const text = j?.choices?.[0]?.message?.content;
+      if (typeof text !== 'string' || !text.trim()) throw new Error('返回无 content');
+      return text;
+    },
+  }, 3, 2000);
 
-const sentiment = Number(parsed.sentiment);
-if (!Number.isFinite(sentiment) || sentiment < -1 || sentiment > 1) {
-  console.error(`[llm-sent] ⚠ sentiment 超界（${parsed.sentiment}），拒绝落盘`);
-  process.exit(3);
+  // 从回复中提取 JSON（容忍 ```json 围栏与前后杂文）
+  const m = chat.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('回复中未找到 JSON 对象');
+  parsed = JSON.parse(m[0]);
+  const sentiment = Number(parsed.sentiment);
+  if (!Number.isFinite(sentiment) || sentiment < -1 || sentiment > 1) {
+    throw new Error(`sentiment 超界（${parsed.sentiment}）`);
+  }
+} catch (e) {
+  console.error(`[llm-sent] ⚠ LLM 调用失败/非法：${e && e.message ? e.message : e}`
+    + '——兜底落「获取失败，默认中性」档（不阻塞 EOD）');
+  const degraded = {
+    kind: 'llm-sentiment-latest',
+    version: 1,
+    asOfDate: day.trade_date,
+    generatedAt: bjStamp(),
+    model: MODEL,
+    degraded: true,
+    sentiment: 0,            // 中性（不冒充真实舆情方向）
+    confidence: null,
+    reason: 'AI舆情获取失败，默认中性',
+    summary: 'AI舆情获取失败，默认中性',
+    sentiment_score: 50,     // 用户约定兜底形状（0-100 中性）
+    events: [],
+    inputDigest: {
+      themes: Object.keys(themes).length,
+      hotListed: hotReasons.length,
+      ztCount: s.zt_count ?? null,
+      emotionValue: day.emotion?.value ?? null,
+      painVerdict: pain,
+    },
+    note: 'LLM 调用失败/超时/非法 JSON 的兜底档；消费端按「获取失败」展示，不冒充舆情中性。',
+  };
+  atomicWriteJSON(fileURLToPath(OUT), JSON.stringify(degraded, null, 1));
+  console.log(`[llm-sent] 已落兜底档 ${fileURLToPath(OUT)}（${day.trade_date}）`
+    + '——下次写档自动进简报「八、舆情参考」节，标注获取失败');
+  process.exit(0);
 }
 
 // ── 3. 落盘（证据留痕：asOfDate 防伪 + 输入摘要供审计）────────────────────
@@ -150,7 +180,7 @@ const payload = {
   asOfDate: day.trade_date,           // 证据属于哪一天（与档案最新交易日严格相等）
   generatedAt: bjStamp(),
   model: MODEL,
-  sentiment: Math.round(sentiment * 100) / 100,
+  sentiment: Math.round(Number(parsed.sentiment) * 100) / 100,
   confidence: Number.isFinite(+parsed.confidence) ? Math.round(+parsed.confidence * 100) / 100 : null,
   reason: typeof parsed.reason === 'string' ? parsed.reason.slice(0, 200) : null,
   events: (Array.isArray(parsed.events) ? parsed.events : []).slice(0, 8),

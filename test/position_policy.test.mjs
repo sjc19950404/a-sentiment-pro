@@ -92,3 +92,64 @@ test('★ 决策锁：position_policy 不得反向依赖 regime（regime 保持�
   assert.ok(!/from\s+['"]\.\/position_policy\.js['"]/.test(code),
     'regime.js 引入了 position_policy.js —— 分类层不得包含仓位建议（职责边界）');
 });
+
+// ── 展示层合并（2026-10-24）：基础仓位 × 风控帽 合成 ───────────────────────
+import {
+  scoreToBand, reconcilePosition, positionNarrative,
+} from '../src/position_policy.js';
+
+test('scoreToBand: 情绪分 → 基础仓位（与 POSITION_BANDS 同尺度，阈值锁死）', () => {
+  assert.deepEqual([scoreToBand(88.5).minPos, scoreToBand(88.5).maxPos], [0.6, 1.0], '≥80 → 进攻 60~100%');
+  assert.deepEqual([scoreToBand(70).minPos, scoreToBand(70).maxPos], [0.3, 0.6], '65~80 → 偏多');
+  assert.deepEqual([scoreToBand(55).minPos, scoreToBand(55).maxPos], [0.3, 0.5], '50~65 → 中性');
+  assert.deepEqual([scoreToBand(40).minPos, scoreToBand(40).maxPos], [0.0, 0.3], '<50 → 防守');
+});
+
+test('scoreToBand: 缺失显式化（null / undefined / 非数 → null，绝不补 0）', () => {
+  assert.equal(scoreToBand(null), null);
+  assert.equal(scoreToBand(undefined), null);
+  assert.equal(scoreToBand('nope'), null);
+  assert.equal(scoreToBand(NaN), null);
+});
+
+test('reconcilePosition: 情绪喊冲 × 风控盖帽 → 冲突，最终以帽为准', () => {
+  const r = reconcilePosition({ score: 88.5, regimeKey: 'shift' });
+  assert.equal(r.conflict, true, '88.5(基础60~100) vs shift帽0~30 → 冲突');
+  assert.equal(r.finalRange, '0%~30%', '最终执行 = 风控帽');
+  assert.equal(r.force, true);
+  assert.equal(r.baseRange, '60%~100%');
+  assert.equal(r.cap.key, 'shift');
+  // 偏多(30~60) 遇强制降仓帽同样冲突
+  assert.equal(reconcilePosition({ score: 72, regimeKey: 'shift' }).conflict, true);
+});
+
+test('reconcilePosition: 同向 / 低风险场景不误报冲突', () => {
+  assert.equal(reconcilePosition({ score: 88.5, regimeKey: 'climax' }).conflict, false, 'climax×climax 同向');
+  assert.equal(reconcilePosition({ score: 55, regimeKey: 'neutral' }).conflict, false, '中性×中性');
+  assert.equal(reconcilePosition({ score: 40, regimeKey: 'ebb' }).conflict, false, '低分防守遇 risk-off 帽不算冲突');
+  assert.equal(reconcilePosition({ score: 72, regimeKey: 'recover' }).conflict, false, '偏多遇 30~50 帽不算冲突');
+});
+
+test('reconcilePosition: 任一口径缺失 → null（显式化，不猜）', () => {
+  assert.equal(reconcilePosition({ score: null, regimeKey: 'shift' }), null);
+  assert.equal(reconcilePosition({ score: 88.5, regimeKey: 'bogus' }), null);
+  assert.equal(reconcilePosition({ score: 88.5, regimeKey: 'unknown' }), null);
+});
+
+test('positionNarrative: 冲突叙述含「假繁荣预警/强制降仓/只减仓不新建」', () => {
+  const r = reconcilePosition({ score: 88.5, regimeKey: 'shift' });
+  const t = positionNarrative(r, { regLabel: r.cap.label, divergence: true });
+  assert.match(t, /假繁荣预警/);
+  assert.match(t, /regime=shift 风控帽/);
+  assert.match(t, /强制降仓/);
+  assert.match(t, /只减仓不新建/);
+  assert.match(t, /最终执行仓位：0%~30%/);
+});
+
+test('positionNarrative: 同向叙述不过度告警', () => {
+  const r = reconcilePosition({ score: 55, regimeKey: 'neutral' });
+  const t = positionNarrative(r, { regLabel: r.cap.label });
+  assert.match(t, /最终执行仓位：30%~50%/);
+  assert.ok(!/强制降仓/.test(t));
+  assert.equal(positionNarrative(null), null);
+});
