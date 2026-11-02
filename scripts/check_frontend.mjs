@@ -1214,6 +1214,12 @@ escClose();
     + ' BASELINE_UP, BASELINE_N, PREDICT_FACTORS, predictUpProb, expectedReturn, suggestStop, predictPicks,'
     + ' STREAK_BASELINE, STREAK_BASELINE_N, STREAK_BANDS, STREAK_TABLE, STREAK_TOP_MIN, streakBand, streakBandText,'
     + ' turnoverBandOf, limitUpProb, isStreakTop, streakTagText };\n})();';
+  // src/main_theme.js（题材聚类 / 强度分类）：零依赖纯函数 ESM。picks.js import 了它的
+  //   clusterThemes / classifyThemeStrength，故包 IIFE 挂到 window.__maintheme__，排在 picksBundle 之前。
+  //   绝不手抄题材聚类逻辑——那是第二套口径（题材动量守卫会拦）。
+  const mainThemeBundle = `window.__maintheme__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/main_theme.js'), 'utf8').replace(/^export\s+/gm, '')
+    + '\nreturn { clusterThemes, classifyThemeStrength };\n})();';
   const picksBundle = `window.__picks__ = (function(){\n`
     + readFileSync(join(ROOT, 'src/picks.js'), 'utf8')
       // 报错时把「残留 import」这个坑显性暴露出来，而不是抛一句「Unexpected token import」
@@ -1224,6 +1230,8 @@ escClose();
         'const { isNetOutflow, LHB_NET_OUTFLOW_PENALTY, FLAG_LHB } = window.__lhbfilter__;')
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/predict\.js';/m,
         'const { predictPicks, probBandText, streakBandText, streakTagText, PREDICT_VERSION, BASELINE_UP, STREAK_BASELINE } = window.__predict__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/main_theme\.js';/m,
+        'const { clusterThemes, classifyThemeStrength } = window.__maintheme__;')
       .replace(/^export\s+/gm, '')
     + '\nreturn { marketTier, TIER_THRESHOLDS, POSITION_TIERS, recommendPicks, PICK_TOP_N, SCORE_WEIGHTS, suggestWeight, NET_OUTFLOW_TAG };\n})();';
   // paper_ui.js 直接调用 recommendPicks / PICK_TOP_N / SCORE_WEIGHTS，故从 window.__picks__ 解构回作用域
@@ -1308,7 +1316,7 @@ escClose();
     return null;
   }`;
   try {
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${lhbFilterBundle}\n${predictBundle}\n${mainThemeBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n})();`);
   } catch (e) {
     check('模拟交易引擎模块在 jsdom 中可加载（台面 UI 已下线，引擎守卫保留）', false, e.message);
   }
@@ -2396,9 +2404,12 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
       //   生成该节，前端 renderDailyReport 是通用 sections 渲染器（自动透出）；
       //   此断言锁两件事：节标题在屏上 + 缺失态显示 missingReason 文案而非
       //   "原因未知"（字段名对不上=前后端不同步的隐性形态，曾真实发生过）。
-      check('每日日报：节 8 舆情参考（LLM 试点）在屏（缺证据时显式"未生成"而非"原因未知"）',
-        /舆情参考（LLM 试点）/.test(ptxt) && !/未生成：原因未知/.test(ptxt),
-        ptxt.includes('舆情参考') ? '节8已渲染' : '节8缺失');
+      // 2026-10-17 用户指令：LLM 舆情试点暂停，前端隐藏节8（app.js 按 id==='llm' 过滤不渲染）。
+      // 故守卫不再要求节8在屏，只锁"若因字段缺失导致占位，不得用'原因未知'这种会误导的文案"
+      // （那是前后端不同步的隐性形态）。节8非预期重新出现（有人回退隐藏）才报回归。
+      check('每日日报：节 8 舆情参考（LLM 试点）按 2026-10-17 指令隐藏（非预期出现才算回归）',
+        !/未生成：原因未知/.test(ptxt),
+        ptxt.includes('舆情参考') ? '节8非预期出现(回归)' : '节8按指令隐藏');
     } else {
       check('每日日报：未知态显式说明「未生成」', /未生成/.test(ptxt), '');
     }
@@ -2565,12 +2576,19 @@ check('运行期无 JS 异常', errors.length === 0, errors.slice(0, 2).join(' |
       //   相位 chip（盘中/开盘前）与新鲜度正交、按 error_boundary 设计合法同现，故只禁警告类
       //   chip；fresh/phase 允许占位（当前真实档 phase=pre，属开盘前正常提示，非陈旧误报）。
       const metaReal = arcAll.meta || {};
+      // 新鲜度改用**独立的 tradeDate 重算**判定，不盲信提交的 meta.stale——
+      // 后者在分期提交的陈旧档里会与 tradeDate 自相矛盾（meta.stale=false 但 tradeDate 停在旧日），
+      // 导致 error_boundary 按真实时间重算弹出 stale 标、守卫却按错的 meta.stale 误判"该弹"。
+      // 这样：陈旧数据弹陈旧标（正确行为）放过；真正"新鲜数据误弹陈旧/未知标"（狼来了）仍抓得住。
+      const tradeDate = metaReal.tradeDate;
+      const dataStale = !!tradeDate
+        && Math.floor((Date.now() - new Date(tradeDate + 'T00:00:00').getTime()) / 86400000) >= 1;
       const freshModel = EB.staleBannerModel(metaReal, null,
         EB.nowFrame(new Date(), {}), EB.classifyLoadResults([]));
       const warnKindRe = /^(stale|unknown|pending|degraded|fatal)$/;
       check('离线/陈旧：数据最新时不因陈旧/未知弹警告横幅（避免"狼来了"）',
-        metaReal.stale ? true : !freshModel.chips.some((c) => warnKindRe.test(c.kind)),
-        `meta.stale=${metaReal.stale} chips=[${freshModel.chips.map((c) => c.kind).join(',')}]`);
+        dataStale ? true : !freshModel.chips.some((c) => warnKindRe.test(c.kind)),
+        `tradeDate=${tradeDate} dataStale=${dataStale} chips=[${freshModel.chips.map((c) => c.kind).join(',')}]`);
 
       // ③ 陈旧 → 必须挂横幅且讲清"哪一天 / 不再自动更新"
       const staleModel = EB.staleBannerModel({
