@@ -24,7 +24,10 @@ gate "pipeline(early)"       "node src/pipeline.js"
 # 3 亏钱效应（容错）
 step "fetch_pain";           node scripts/fetch_pain.mjs || true
 # 4 多维宽度（容错）
-step "fetch_breadth";        node scripts/fetch_breadth.mjs --shards 8 || true
+# 2026-11-03 修复：breadth 的"目标日"取自本地 kline 缓存各票最后一根 K 线的众数日期；
+#   缓存目录 data/.breadth_kline 是未提交的本地档，若不带 --force 则命中即跳过 → 缓存永远停在
+#   最后一次重建日（此前卡 10-26），breadth 面板随之冻结。必须 --force 每轮重建，否则必滞后。
+step "fetch_breadth";        node scripts/fetch_breadth.mjs --shards 8 --force || echo "⚠ 广度抓取失败（不阻断，下轮自愈）"
 # 4.5 双轨账本重放（须在主管道写 signals-latest 之前！否则 dualTrack 段读到旧文件 → null）
 step "dual_track";           node tools/backtest/paper_dual_track.mjs || true
 # 4.6 LLM 舆情因子（容错；须在主管道写 signals-latest 之前——write.js 的 llmFn 在 buildSignals

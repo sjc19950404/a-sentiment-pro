@@ -29,7 +29,9 @@ cd "$REPO_DIR" || { alert "pi_run: 仓库不存在 $REPO_DIR"; exit 1; }
 # 2026-10-30 加固：限制 Node 堆上限，防止 EOD 大档（archive 6.9MB + 241 天重算）被 OOM-killer 静默杀进程。
 # 树莓派物理内存有限（1~2GB），不设上限时 GC 目标超物理内存 → 进程被杀且无报错（脚本多 || true 吞错）。
 # 按 Pi 物理内存可上调到 1536（1.5G）；此处按 1G 设，覆盖绝大多数 Pi 场景。
-export NODE_OPTIONS="--max-old-space-size=1024"
+# Pi 默认走 IPv6 连东财(push2)会 socket 失败 → breadth/mcap 等面板静默滞后。
+#   强制 IPv4 解析优先（curl -4 验证东财源可达），修复这类面板刷新。
+export NODE_OPTIONS="--max-old-space-size=1024 --dns-result-order=ipv4first"
 
 # 单实例锁（与 pi_push.sh 同纪律）：并发调度撞车时（实例：14:00 盘中快照与候选池
 # 同时触发）后来者优雅跳过——否则两个实例抢 git index.lock，把 reset 打挂。
