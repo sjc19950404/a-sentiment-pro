@@ -102,6 +102,11 @@ export const MODULE_PROBES = [
     pick: (m) => (isDateStr(m?.curDate) ? m.curDate : null) },
   { key: 'board_rank', label: '板块排行', file: 'board_rank.json', field: '末位日期键',
     pick: boardRankTradeDate },
+  // ── route A 补齐（2026-11-03）：市值/今日选股/ETF防守 三档原不在探针表，门禁盲区 → 静默滞后。
+  //   mcap-latest / reco_picks_latest / etf_hedge_signal 顶层 date 即交易日锚，moduleTradeDate 通配命中。
+  { key: 'mcap', label: '市值', file: 'mcap-latest.json' },
+  { key: 'reco_picks', label: '今日选股', file: 'reco_picks_latest.json' },
+  { key: 'etf_hedge', label: 'ETF防守', file: 'etf_hedge_signal.json' },
 ];
 
 /**

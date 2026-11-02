@@ -55,6 +55,9 @@ step "backtest_strategies";  node scripts/backtest_strategies.mjs || true
 step "version_regression";   node scripts/version_regression.mjs || true
 # 12 模拟交易标的池
 step "fetch_universe";       node scripts/fetch_universe.mjs || true
+# 2026-11-03 补齐：市值档 data/mcap-latest.json 此前未进 EOD 管道（仅靠手动跑，长期停 09-30）。
+#   现并入 pipeline 定期刷新；失败不阻断（best-effort）。
+step "fetch_mcap";          node scripts/fetch_mcap.mjs || echo "⚠ 市值抓取失败（不阻断，下轮自愈）"
 # 13 recalc LHB daily
 step "recalc_lhb";           node scripts/recalc_lhb_daily.mjs || true
 # 14 龙虎榜口径守卫（GATE）

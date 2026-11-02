@@ -85,8 +85,8 @@ case "$MODE" in
     #   供 GitHub Pages 终端经 terminal.js 的 durl() + jsDelivr CDN 拉取（这些档刻意不入主仓 git）。
     #   数据仓未建/PAT 未授权时脚本内部静默跳过（exit 0），绝不影响 EOD 主流程。
     bash scripts/push_data_repo.sh || log "数据仓推送失败（best-effort，不影响 EOD）"
-    # data 同步 GitHub 失败不影响本地交易与复盘推送：pi_push.sh 已发企微友好通知并保留本地提交
-    bash scripts/pi_push.sh || log "data 同步 GitHub 失败（已发企微通知，详见 push.log），继续复盘推送"
+    # 修复（route A）：report_etf_hedge / report_reco_picks 产出 etf_hedge_signal.json /
+    #   reco_picks_latest.json，必须在 pi_push 之前生成，否则当轮不提交、下轮 reset 冲掉 → Pages 永远停旧版。
     # 2026-10-27 用户指令：EOD 盘前生成 ETF 防守反击避险信号（只读 dual_track + ETF k线，绝不交易）；
     #   写出 data/etf_hedge_signal.json，供下方 push_eod 经副报文整合进盘后企微推送。
     node scripts/report_etf_hedge.mjs 2>>"$LOG_FILE" || log "ETF 避险信号生成失败（best-effort，不影响 EOD 推送）"
@@ -94,6 +94,12 @@ case "$MODE" in
     #   买点预期标注 + 烂板弱转强偏好），落盘 data/reco_picks_latest.json，供终端展示「买点预期」。
     #   只读 dual_track + ztpool_history，绝不交易。
     node scripts/report_reco_picks.mjs 2>>"$LOG_FILE" || log "可交易性选股报告生成失败（best-effort，不影响 EOD 推送）"
+    # 数据已全部生成（含上面的 etf_hedge_signal / reco_picks_latest），一次性提交并推 GitHub/Pages。
+    # data 同步 GitHub 失败不影响本地交易与复盘推送：pi_push.sh 已发企微友好通知并保留本地提交。
+    bash scripts/pi_push.sh || log "data 同步 GitHub 失败（已发企微通知，详见 push.log），继续复盘推送"
+    # 数据新鲜度门禁（激活）：对比各离线模块档日期与档案锚日，落后/缺失即企微告警（不 exit 1，避免阻断推送）。
+    #   覆盖 宽度/主线/账本/亏钱效应/板块排行/市值/今日选股/ETF防守 —— 旧值不得静默顶替当日值（设计即"诚实红"）。
+    node scripts/freshness.mjs --require-fresh >>"$LOG_FILE" 2>&1 || { alert "数据新鲜度门禁：存在今日未刷新的离线模块（宽度/主线/账本/亏钱效应/板块排行/市值/今日选股/ETF防守），旧值可能顶替当日值——详见 run.log 的 freshness 门禁输出"; true; }
     # EOD 推送「优先级 + 时间错峰」引擎：月报 > 周报(+周盈利战报) > 盘后基础复盘 > AI盘后情报；
     #   多条错峰发送（默认 3s）。盘中紧急异动 / 盘前排雷与观察清单由各自独立 cron 模式推送，不受此 gate。
     node scripts/push_eod.mjs 2>/dev/null || true
