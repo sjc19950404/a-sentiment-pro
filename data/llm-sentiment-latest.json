@@ -2,66 +2,66 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-03",
- "generatedAt": "2026-11-03T18:34:44.353+08:00",
+ "generatedAt": "2026-11-03T21:02:59.120+08:00",
  "model": "glm-4-flash",
- "sentiment": 0.2,
+ "sentiment": 0,
  "confidence": 0.8,
- "reason": "市场情绪偏向中性，涨停家数与跌停家数较为接近，炸板率较高，显示市场情绪较为谨慎。",
+ "reason": "市场整体情绪中性，涨停与跌停家数接近，炸板率较高，亏钱效应多空拉锯。",
  "events": [
   {
    "type": "业绩预告",
    "target": "马矿股份",
    "tone": "positive",
-   "note": "三季报增长带动股价上涨"
+   "note": "三季报增长带动股价上涨。"
   },
   {
    "type": "行业催化",
    "target": "医疗服务",
    "tone": "positive",
-   "note": "新晋题材带动相关个股活跃"
+   "note": "医疗服务题材新晋，可能受到市场关注。"
   },
   {
    "type": "行业催化",
    "target": "卫星通信",
    "tone": "positive",
-   "note": "新晋题材带动相关个股活跃"
+   "note": "卫星通信题材新晋，可能受到市场关注。"
   },
   {
    "type": "行业催化",
    "target": "三季报扭亏",
    "tone": "positive",
-   "note": "多只个股三季报扭亏带动市场情绪"
+   "note": "三季报扭亏题材新晋，可能带动相关股票上涨。"
   },
   {
    "type": "行业催化",
    "target": "焊接机器人",
    "tone": "positive",
-   "note": "新晋题材带动相关个股活跃"
+   "note": "焊接机器人题材新晋，可能受到市场关注。"
   },
   {
    "type": "行业催化",
    "target": "商业航天",
    "tone": "positive",
-   "note": "新晋题材带动相关个股活跃"
+   "note": "商业航天题材新晋，可能受到市场关注。"
   },
   {
    "type": "行业催化",
    "target": "“羊”字辈",
    "tone": "positive",
-   "note": "延续题材带动相关个股活跃"
+   "note": "“羊”字辈题材延续，可能带动相关股票上涨。"
   },
   {
    "type": "行业催化",
    "target": "光通信",
    "tone": "positive",
-   "note": "延续题材带动相关个股活跃"
+   "note": "光通信题材延续，可能受到市场关注。"
   }
  ],
  "inputDigest": {
   "themes": 58,
   "hotListed": 15,
   "ztCount": 48,
-  "emotionValue": 47.3,
+  "emotionValue": 46.4,
   "painVerdict": "多空拉锯（昨涨停今日翻绿 49%、高位板晋级失败 73%，追高盈亏各半）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"

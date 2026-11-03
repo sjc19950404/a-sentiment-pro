@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-03",
- "generated_at": "2026-11-03T10:46:27.613Z",
+ "generated_at": "2026-11-03T13:14:02.108Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -97,8 +97,8 @@
    "confidence": "missing"
   },
   "backtest_deviation": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "derived",
+   "confidence": "measured"
   },
   "market_context": {
    "source": "archived",
@@ -128,7 +128,38 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "recover",
+   "label": "复苏/酝酿期",
+   "score": 46.34,
+   "cap": 0.5,
+   "position_range": "30%~50%",
+   "positionReconcile": {
+    "score": 46.3,
+    "base": {
+     "key": "base_defend",
+     "minPos": 0,
+     "maxPos": 0.3,
+     "label": "防守"
+    },
+    "baseRange": "0%~30%",
+    "cap": {
+     "key": "recover",
+     "minPos": 0.3,
+     "maxPos": 0.5,
+     "label": "复苏/酝酿期",
+     "advice": "中性震荡试仓，跟随确认再加",
+     "tone": "balanced"
+    },
+    "capRange": "30%~50%",
+    "force": false,
+    "conflict": false,
+    "finalRange": "30%~50%"
+   },
+   "clustering_bubble": false,
+   "sentiment_penalty": 0,
+   "score_adjusted": 46.34
+  },
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -160,19 +191,24 @@
   "max_drawdown_intraday": null,
   "grid_trigger_detail": null,
   "counter_trend_loss_ratio": null,
-  "backtest_deviation": null,
+  "backtest_deviation": {
+   "live_cum": -0.05943,
+   "backtest_v52": -0.0594,
+   "delta": -0.00003,
+   "note": "执行轨 vs 回测 v52 锚点（零偏差为设计约束）"
+  },
   "market_context": {
-   "emotion": 47.3,
+   "emotion": 46.4,
    "pct_rank": 11.9,
    "indexes": {
     "上证指数": -0.82,
     "深证成指": -1.21,
     "创业板指": -2.73
    },
-   "up_down": null,
+   "up_down": "2067/3065/161",
    "amount_yi": 17034.4,
    "zt_dt": "48/17",
-   "breadth": "站上20日线仅 15.9%",
+   "breadth": "站上20日线仅 16.0%",
    "pain": "多空拉锯",
    "seats": "游资/其他（营业部·分公司·自营）主导"
   },
