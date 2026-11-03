@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-03",
- "generated_at": "2026-11-03T01:00:03.744Z",
+ "generated_at": "2026-11-03T10:46:28.036Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "fresh",
+   "dual_track": "stale",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -81,12 +81,12 @@
    "confidence": "measured"
   },
   "prev_nav": {
-   "source": "derived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "positions": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "overnight_exposure": {
    "source": "archived",
@@ -122,7 +122,7 @@
   }
  },
  "payload": {
-  "date": "2026-11-02",
+  "date": "2026-11-03",
   "grid_triggers": null,
   "counter_trend_losses": null,
   "pnl_daily": 0,
@@ -132,39 +132,7 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": {
-   "key": "shift",
-   "label": "高潮分歧/状态切换期",
-   "score": 85.45,
-   "cap": 0.3,
-   "position_range": "0%~30%",
-   "positionReconcile": {
-    "score": 85.5,
-    "base": {
-     "key": "base_attack",
-     "minPos": 0.6,
-     "maxPos": 1,
-     "label": "进攻（情绪极高位）"
-    },
-    "baseRange": "60%~100%",
-    "cap": {
-     "key": "shift",
-     "minPos": 0,
-     "maxPos": 0.3,
-     "label": "高潮分歧/状态切换期",
-     "advice": "强制降仓：限制新开进攻仓，只留核心仓",
-     "tone": "defend",
-     "force": true
-    },
-    "capRange": "0%~30%",
-    "force": true,
-    "conflict": true,
-    "finalRange": "0%~30%"
-   },
-   "clustering_bubble": false,
-   "sentiment_penalty": 0,
-   "score_adjusted": 85.45
-  },
+  "regime": null,
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -175,10 +143,9 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": -0.0041270000000000005,
-    "state": "ok",
-    "stale": false,
-    "cacheNote": null
+    "chgPct": null,
+    "state": "night-open",
+    "nightOpen": true
    },
    {
     "key": "sox",
@@ -190,24 +157,15 @@
    }
   ],
   "externalStale": [
-   "外围「恒生指数」（外围未刷新到最新会话），已置空",
-   "外围「恒生科技」（外围未刷新到最新会话），已置空"
+   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空"
   ],
   "nav_realtime": 1000000,
-  "prev_nav": 0.9437203986276621,
-  "positions": {
-   "targetPos": {
-    "上证指数": 0.35,
-    "深证成指": 0.2,
-    "创业板指": 0.2
-   },
-   "poolPos": 0.25,
-   "executed": true
-  },
+  "prev_nav": null,
+  "positions": null,
   "overnight_exposure": {
-   "a50_chgPct": -0.0041270000000000005,
-   "a50NightOpen": false,
-   "posGap": 0.15,
+   "a50_chgPct": null,
+   "a50NightOpen": true,
+   "posGap": null,
    "us_close": {
     "dji": 0.0041270000000000005,
     "spx": -0.005102,
@@ -217,9 +175,9 @@
     "hxc": 0.022486000000000003,
     "fxi": 0.00393
    },
-   "cnh_chgPct": 0.002031,
-   "usReady": true,
-   "usReason": "美东 20:00 ET 已收盘（≥16:30 ET），可采信当日收盘"
+   "cnh_chgPct": 0.004017,
+   "usReady": false,
+   "usReason": "美东 05:42 ET 盘前（09:30 才开盘），此刻美股无收盘价"
   },
   "key_levels": null,
   "events_today": null,
@@ -231,79 +189,87 @@
     {
      "code": "001219",
      "name": "青岛食品",
-     "lb": 5,
-     "kept": true,
-     "chg": 9.98,
-     "appearances": 6
-    },
-    {
-     "code": "603131",
-     "name": "上海沪工",
-     "lb": 3,
+     "lb": 6,
      "kept": false,
-     "chg": -1.42,
-     "appearances": 5
+     "chg": 0.14,
+     "appearances": 6
     },
     {
      "code": "002172",
      "name": "澳洋健康",
-     "lb": 3,
-     "kept": true,
-     "chg": 9.98,
-     "appearances": 27
-    },
-    {
-     "code": "003032",
-     "name": "传智教育",
-     "lb": 2,
+     "lb": 4,
      "kept": false,
-     "chg": -3.92,
-     "appearances": 23
-    },
-    {
-     "code": "603703",
-     "name": "盛洋科技",
-     "lb": 2,
-     "kept": false,
-     "chg": -1.76,
-     "appearances": 7
-    },
-    {
-     "code": "605338",
-     "name": "巴比食品",
-     "lb": 2,
-     "kept": false,
-     "chg": 0.91,
-     "appearances": 2
-    },
-    {
-     "code": "002086",
-     "name": "东方海洋",
-     "lb": 2,
-     "kept": true,
-     "chg": 9.89,
-     "appearances": 5
+     "chg": 4.62,
+     "appearances": 28
     },
     {
      "code": "002275",
      "name": "桂林三金",
-     "lb": 2,
-     "kept": true,
-     "chg": 10.01,
+     "lb": 3,
+     "kept": false,
+     "chg": -4.13,
      "appearances": 3
+    },
+    {
+     "code": "002086",
+     "name": "东方海洋",
+     "lb": 3,
+     "kept": true,
+     "chg": 9.97,
+     "appearances": 6
     },
     {
      "code": "600261",
      "name": "阳光照明",
-     "lb": 2,
+     "lb": 3,
      "kept": true,
-     "chg": 10.02,
-     "appearances": 5
+     "chg": 10,
+     "appearances": 6
+    },
+    {
+     "code": "000417",
+     "name": "合百集团",
+     "lb": 2,
+     "kept": false,
+     "chg": -4.94,
+     "appearances": 11
+    },
+    {
+     "code": "600189",
+     "name": "泉阳泉",
+     "lb": 2,
+     "kept": false,
+     "chg": -3.29,
+     "appearances": 6
+    },
+    {
+     "code": "603587",
+     "name": "地素时尚",
+     "lb": 2,
+     "kept": false,
+     "chg": -2.04,
+     "appearances": 2
+    },
+    {
+     "code": "000410",
+     "name": "沈阳机床",
+     "lb": 2,
+     "kept": false,
+     "chg": -1.35,
+     "appearances": 3
+    },
+    {
+     "code": "000525",
+     "name": "红太阳",
+     "lb": 2,
+     "kept": false,
+     "chg": 1.62,
+     "appearances": 3
     }
    ],
    "overnight_sectors": null,
-   "max_lb": 5,
-   "broken_limit_ratio": 0.1830065359477124
+   "max_lb": 6,
+   "broken_limit_ratio": 0.4146341463414634
   },
   "simulation_stock": null,
   "ma20_degraded": false,

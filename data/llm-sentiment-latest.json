@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-11-02",
- "generatedAt": "2026-11-03T00:43:20.146+08:00",
+ "asOfDate": "2026-11-03",
+ "generatedAt": "2026-11-03T18:34:44.353+08:00",
  "model": "glm-4-flash",
- "sentiment": 0.9,
+ "sentiment": 0.2,
  "confidence": 0.8,
- "reason": "市场整体情绪积极，涨停家数远超跌停家数，强势股表现活跃，多只股票因业绩、科技、AI等利好消息上涨。",
+ "reason": "市场情绪偏向中性，涨停家数与跌停家数较为接近，炸板率较高，显示市场情绪较为谨慎。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "ST豆神",
+   "target": "马矿股份",
    "tone": "positive",
-   "note": "业绩预告显示扭亏为盈，带动股价上涨。"
-  },
-  {
-   "type": "投资合作",
-   "target": "七匹狼",
-   "tone": "positive",
-   "note": "投资科技和基金备案消息提振股价。"
-  },
-  {
-   "type": "三季报减亏",
-   "target": "*ST棒杰",
-   "tone": "positive",
-   "note": "三季报减亏消息带动股价上涨。"
+   "note": "三季报增长带动股价上涨"
   },
   {
    "type": "行业催化",
-   "target": "精密零组件",
+   "target": "医疗服务",
    "tone": "positive",
-   "note": "行业催化带动相关股票上涨。"
+   "note": "新晋题材带动相关个股活跃"
   },
   {
-   "type": "政策利好",
-   "target": "国企改革",
+   "type": "行业催化",
+   "target": "卫星通信",
    "tone": "positive",
-   "note": "国企改革政策利好相关股票。"
+   "note": "新晋题材带动相关个股活跃"
   },
   {
-   "type": "技术进步",
-   "target": "机器人布局",
+   "type": "行业催化",
+   "target": "三季报扭亏",
    "tone": "positive",
-   "note": "机器人布局技术进步带动相关股票上涨。"
+   "note": "多只个股三季报扭亏带动市场情绪"
   },
   {
-   "type": "市场热点",
+   "type": "行业催化",
+   "target": "焊接机器人",
+   "tone": "positive",
+   "note": "新晋题材带动相关个股活跃"
+  },
+  {
+   "type": "行业催化",
+   "target": "商业航天",
+   "tone": "positive",
+   "note": "新晋题材带动相关个股活跃"
+  },
+  {
+   "type": "行业催化",
+   "target": "“羊”字辈",
+   "tone": "positive",
+   "note": "延续题材带动相关个股活跃"
+  },
+  {
+   "type": "行业催化",
    "target": "光通信",
    "tone": "positive",
-   "note": "光通信市场热点带动相关股票上涨。"
-  },
-  {
-   "type": "AI概念",
-   "target": "AI短剧+政务AI+智算中心",
-   "tone": "positive",
-   "note": "AI概念持续发酵，相关股票表现活跃。"
+   "note": "延续题材带动相关个股活跃"
   }
  ],
  "inputDigest": {
-  "themes": 121,
+  "themes": 58,
   "hotListed": 15,
-  "ztCount": 125,
-  "emotionValue": 85.4,
-  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 34%、高位板晋级失败 44%，赚钱效应占优）"
+  "ztCount": 48,
+  "emotionValue": 47.3,
+  "painVerdict": "多空拉锯（昨涨停今日翻绿 49%、高位板晋级失败 73%，追高盈亏各半）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }
