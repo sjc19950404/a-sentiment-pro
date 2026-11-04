@@ -1,0 +1,98 @@
+{
+ "status": "done",
+ "startedAt": "2026-11-04T18:04:30.418Z",
+ "totalBatches": 8,
+ "batches": [
+  {
+   "idx": 1,
+   "since": "2025-11-12",
+   "until": "2025-12-23",
+   "days": 30,
+   "startedAt": "2026-11-04T18:04:30.419Z",
+   "filled": 30,
+   "failed": 0,
+   "finishedAt": "2026-11-04T18:12:36.003Z",
+   "result": "ok"
+  },
+  {
+   "idx": 2,
+   "since": "2025-12-24",
+   "until": "2026-02-05",
+   "days": 30,
+   "startedAt": "2026-11-04T18:12:40.407Z",
+   "filled": 30,
+   "failed": 0,
+   "finishedAt": "2026-11-04T18:22:46.700Z",
+   "result": "ok"
+  },
+  {
+   "idx": 3,
+   "since": "2026-02-06",
+   "until": "2026-03-27",
+   "days": 30,
+   "startedAt": "2026-11-04T18:22:51.525Z",
+   "filled": 30,
+   "failed": 0,
+   "finishedAt": "2026-11-04T18:30:57.852Z",
+   "result": "ok"
+  },
+  {
+   "idx": 4,
+   "since": "2026-03-30",
+   "until": "2026-05-14",
+   "days": 30,
+   "startedAt": "2026-11-04T18:31:02.995Z",
+   "filled": 30,
+   "failed": 0,
+   "finishedAt": "2026-11-04T18:40:15.515Z",
+   "result": "ok"
+  },
+  {
+   "idx": 5,
+   "since": "2026-05-15",
+   "until": "2026-06-26",
+   "days": 30,
+   "startedAt": "2026-11-04T18:40:21.784Z",
+   "filled": 30,
+   "failed": 0,
+   "finishedAt": "2026-11-04T18:52:11.246Z",
+   "result": "ok"
+  },
+  {
+   "idx": 6,
+   "since": "2026-06-29",
+   "until": "2026-08-07",
+   "days": 30,
+   "startedAt": "2026-11-04T18:52:17.348Z",
+   "filled": 30,
+   "failed": 0,
+   "finishedAt": "2026-11-04T19:03:29.530Z",
+   "result": "ok"
+  },
+  {
+   "idx": 7,
+   "since": "2026-08-10",
+   "until": "2026-09-18",
+   "days": 30,
+   "startedAt": "2026-11-04T19:03:34.901Z",
+   "filled": 30,
+   "failed": 0,
+   "finishedAt": "2026-11-04T19:11:13.763Z",
+   "result": "ok"
+  },
+  {
+   "idx": 8,
+   "since": "2026-09-21",
+   "until": "2026-09-24",
+   "days": 4,
+   "startedAt": "2026-11-04T19:11:19.712Z",
+   "filled": 4,
+   "failed": 0,
+   "finishedAt": "2026-11-04T19:12:24.840Z",
+   "result": "ok"
+  }
+ ],
+ "updatedAt": "2026-11-04T19:12:29.851Z",
+ "currentBatch": 8,
+ "finishedAt": "2026-11-04T19:12:29.851Z"
+}
