@@ -558,8 +558,24 @@ export function applyEmotionGates(picks, ctx = {}) {
 //   @returns { picks:Array(保留·弱转强优先重排), rejected:Array, weakToStrong:Array }
 export function applyTradabilityFilters(picks, ztpool) {
   const pool = Array.isArray(ztpool) ? ztpool : null;
-  if (!pool || !pool.length || !Array.isArray(picks)) {
-    return { picks: picks || [], rejected: [], weakToStrong: [] };
+  if (!Array.isArray(picks)) return { picks: [], rejected: [], weakToStrong: [] };
+  // 涨停池缺失/为空（EOD 涨停池采集断裂）→ 退化为「仅用候选自身换手率」兜底：
+  //   涨停且换手率<5%（一字/缩量硬板）实盘买不进，直接剔除，避免推荐无法成交的标的。
+  const MIN_BUYABLE_HS = 5;
+  if (!pool || !pool.length) {
+    const kept = [];
+    const rejected = [];
+    for (const p of picks) {
+      const zdp = finite(p.changePct) ? +p.changePct : null;
+      const tpHs = finite(p.turnoverPct) ? +p.turnoverPct : (finite(p.hs) ? +p.hs : null);
+      const isLimitUp = zdp != null && zdp >= 9.5;
+      if (isLimitUp && (tpHs == null || tpHs < MIN_BUYABLE_HS)) {
+        rejected.push({ code: p.code, name: p.name, reasons: [`⚠ 涨停但换手率${(tpHs == null ? '—' : tpHs.toFixed(1) + '%')}<${MIN_BUYABLE_HS}%（一字/缩量硬板）→ 实盘买不进，已剔除`] });
+        continue;
+      }
+      kept.push(p);
+    }
+    return { picks: kept, rejected, weakToStrong: [] };
   }
   const byCode = new Map();
   for (const s of pool) if (s && s.c != null) byCode.set(String(s.c), s);
