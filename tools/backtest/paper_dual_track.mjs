@@ -58,7 +58,7 @@ import { buildTrackNote, dualTrackBlock } from '../../src/dual_track.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..');
-const P2_START = null; // 模拟盘启动日（YYYY-MM-DD），启动后回填
+const P2_START = '2026-10-23'; // 模拟盘启动日：回填后启用 P2 基期账本（框架 §四门禁只认 P2 起证据）
 
 // ── 输入重建（与 experiment_dual_track.mjs 逐行同款） ──
 const arch = decodeArchive(JSON.parse(readFileSync(join(ROOT, 'data', 'archive.json'), 'utf8')));
@@ -177,6 +177,15 @@ for (let i = 1; i < n; i++) {
   activeDays++;
   if (i < t1Cut) for (const c of SHADOW) if (C[c].pos[i] < A.pos[i] - 1e-9) episodes[c]++;
 }
+// P2 实盘证据（仅计 P2_START 之后的 shift 生效日；框架 §四门禁只认 P2 起证据，历史重放不计入）
+const p2Shift = new Set();
+for (let i = 1; i < n; i++) {
+  if (regimeKeys[i - 1] !== 'shift') continue;
+  if (P2_START && dates[i] < P2_START) continue;
+  p2Shift.add(i);
+}
+const p2Episodes = { 0.3: 0, 0.4: 0, 0.5: 0 };
+for (const i of p2Shift) for (const c of SHADOW) if (C[c].pos[i] < A.pos[i] - 1e-9) p2Episodes[c]++;
 for (const c of [0.3, 0.4]) {
   // 锚点比对用截断窗绩效（total/maxDd 只由 strat 累乘得出，opens 不参与，截断重算安全）
   const perfT1 = t1Cut >= n ? C[c].perf : metrics(C[c].strat.slice(0, t1Cut), C[c].pos.slice(0, t1Cut), 0, 0);
@@ -287,6 +296,17 @@ for (let i = 0; i < n; i++) {
   });
 }
 
+// P2 基期第二套累计（premium/shadow 自 P2_START 起累加；框架 §四只认 P2 起证据）
+const p2Idx = P2_START ? dates.findIndex((d) => d >= P2_START) : -1;
+let premiumCumP2 = 0; const shadowCumP2 = { 0.3: 0, 0.4: 0, 0.5: 0 }; let p2ActiveDays = 0;
+if (p2Idx >= 0) {
+  for (let i = Math.max(1, p2Idx); i < n; i++) {
+    premiumCumP2 += A.strat[i] - Bdisc.strat[i];
+    if (regimeKeys[i - 1] === 'shift') p2ActiveDays++;
+    for (const c of SHADOW) shadowCumP2[c] += C[c].strat[i] - A.strat[i];
+  }
+}
+
 // ── 汇总统计 ──
 let posGap02 = 0, posGap03 = 0, posGapMax = 0, posGapMaxDate = null;
 for (let i = 0; i < n; i++) {
@@ -335,7 +355,7 @@ const outJson = {
   },
   sample: { from: dates[0], to: dates[n - 1], days: n },
   p2Start: P2_START,
-  p2StartNote: P2_START ? `账本以 ${P2_START} 为基期第二套累计见 ledgerP2` : '模拟盘启动日回填后启用 P2 基期账本；当前 ledger 为全样本重放（锚点验证 + 曲线）',
+  p2StartNote: P2_START ? `P2 基期 ${P2_START} 已启动：门禁只认该日之后的影子生效日（当前 ${p2Episodes[0.3]} 日 / 需 ≥10）；summary.ledgerP2End 为 P2 窗累计` : '模拟盘启动日回填后启用 P2 基期账本；当前 ledger 为全样本重放（锚点验证 + 曲线）',
   gates: {
     trackA_v52: { total: r(A.perf.total), maxDd: r(A.perf.maxDd), ref: 'data/backtest.json::v52' },
     trackB_v53: { total: r(Bref.perf.total), maxDd: r(Bref.perf.maxDd), ref: 'data/backtest.json::v53', note: '锚点口径 unknown→null；披露口径见 trackB' },
@@ -344,6 +364,8 @@ const outJson = {
       0.4: { total: r(C[0.4].perf.total), maxDd: r(C[0.4].perf.maxDd), episodes: episodes[0.4] },
     },
     disclosureDelta: { unknownDays: unknownIdx.length, dates: unknownIdx.map((i) => dates[i]), deltaTotal: r(discDelta) },
+    p2Episodes: { 0.3: p2Episodes[0.3], 0.4: p2Episodes[0.4], 0.5: p2Episodes[0.5] },
+    p2ShiftEpisodes: p2Shift.size,
   },
   summary: {
     trackA: { total: r(A.perf.total), maxDd: r(A.perf.maxDd), sharpe: r(A.perf.sharpe) },
@@ -357,6 +379,8 @@ const outJson = {
     divergence: { daysGt02: posGap02, daysGt03: posGap03, max: r(posGapMax, 4), maxDate: posGapMaxDate, thresholds: '0.02/0.03 为 P2 观察清单第一节 [待确认] 告警/暂停阈值' },
     regimeCensus: Object.fromEntries([...new Set(regimeKeys)].map((k) => [k, regimeKeys.filter((x) => x === k).length])),
     activeDays, shiftEpisodes: shiftEpisodes.length,
+    p2ShiftEpisodes: p2Shift.size, p2BitingEpisodes: p2Episodes[0.3],
+    ledgerP2End: { premiumCum: r(premiumCumP2), shadowCum: Object.fromEntries(SHADOW.map((c) => [String(c), r(shadowCumP2[c])])), activeDays: p2ActiveDays },
   },
   notes: NOTES,
   days: records,
@@ -463,7 +487,7 @@ md.push('## 晋升门禁进度（框架 §四）');
 md.push('');
 md.push('| 条件 | 门槛 | 当前（全样本重放） | 状态 |');
 md.push('|---|---|---|---|');
-md.push(`| 样本量 | P2 影子生效日 ≥ 10 | 历史重放 ${episodes[0.3]} 日（C0.3） | P2 基期启动后从 0 重计 |`);
+md.push(`| 样本量 | P2 影子生效日 ≥ 10 | P2 实盘 ${p2Episodes[0.3]} 日（C0.3）/ 全样本重放 ${episodes[0.3]} 日（不计入 P2 门禁） | P2 启动后从 0 重计 |`);
 const sameSign = Math.sign(shadowCum[0.3]) === Math.sign(shadowCum[0.4]) && Math.sign(shadowCum[0.3]) === Math.sign(shadowCum[0.5]);
 md.push(`| 方向一致性 | 三线累计增益同号 | ${SHADOW.map((c) => `${fmt(shadowCum[c] * 100, 2)}pp`).join(' / ')} | ${sameSign ? '同号' : '分裂'} |`);
 md.push(`| 结构占比 | 生效日贡献/净增益 ≥ 50% | 见 experiment_dual_track ⑧（结构 +2.70pp / 级联 -1.87pp） | 历史：约 59% |`);
