@@ -741,17 +741,25 @@ export function recommendPicks(day, ctx = {}) {
   // 高开/急拉过滤（2026-10-28·参数控制台）：当 ctx.openGapFilterPct 传入且 >0 时生效，
   //   剔除「快照涨幅已 ≥ 阈值」的候选（防追高/接飞刀）。仅按当日快照 changePct 代理——
   //   日线快照仅含收盘价与涨跌幅、无开盘价，故用 changePct 近似；未传该参数 → 零回归（与历史行为一致）。
+  //   ⚠ 涨停突破策略的候选本身即涨停股（changePct≈+10%），这道闸会把它自己选的涨停股全误杀、
+  //     等于永久关停交易；故对涨停股（isZt 或 changePct≥9.9）豁免，只对「非涨停的急拉股」生效——
+  //     这样在参数控制台重新开 openGapFilterPct 也不会再误杀交易（修复 2026-11-04 模拟盘 0 成交根因）。
   // ⚠ 不修改任何输入对象；仅对本次 picks 做过滤，不改归档。
   if (ctx.openGapFilterPct != null && +ctx.openGapFilterPct > 0) {
     const gapMax = +ctx.openGapFilterPct;
     const before = picks.length;
-    picks = picks.filter((p) => !(Number.isFinite(+p.changePct) && +p.changePct >= gapMax));
+    picks = picks.filter((p) => {
+      // 涨停股豁免：本策略候选即涨停突破股，不该被「防追高」闸误杀
+      const isLimitUp = p.isZt === true || (Number.isFinite(+p.changePct) && +p.changePct >= 9.9);
+      if (isLimitUp) return true;
+      return !(Number.isFinite(+p.changePct) && +p.changePct >= gapMax);
+    });
     const removed = before - picks.length;
     if (removed > 0) {
       clusterFilterNote = clusterFilterNote || { reason: 'open_gap_filter', count: 0, note: '' };
       clusterFilterNote.reason = 'open_gap_filter';
       clusterFilterNote.count = (clusterFilterNote.count || 0) + removed;
-      clusterFilterNote.note = `高开/急拉过滤：剔除快照涨幅≥${gapMax}% 的候选（防追高）`;
+      clusterFilterNote.note = `高开/急拉过滤：剔除非涨停且快照涨幅≥${gapMax}% 的候选（防追高；涨停股豁免）`;
     }
   }
 
