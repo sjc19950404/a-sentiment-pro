@@ -33,6 +33,14 @@ cd "$REPO_DIR" || { alert "pi_run: 仓库不存在 $REPO_DIR"; exit 1; }
 #   强制 IPv4 解析优先（curl -4 验证东财源可达），修复这类面板刷新。
 export NODE_OPTIONS="--max-old-space-size=1024 --dns-result-order=ipv4first"
 
+# 修复（2026-11-04）：~/.gitconfig 里 http.sslBackend=schannel（Windows 专用后端，疑 fastgithub
+#   加速器遗留）在本 Linux Pi 不受支持 → 所有 git HTTPS fetch/pull/push 立刻 aborted（被 pi_push
+#   误判为"网络波动"）。用 GIT_CONFIG_* 环境变量对本进程及子进程（pi_push.sh 等）的 git 强制
+#   gnutls（已实测可用）。不改任何 git 配置文件；即使 .gitconfig 再被改回 schannel 也免疫。
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0=http.sslBackend
+export GIT_CONFIG_VALUE_0=gnutls
+
 # 单实例锁（与 pi_push.sh 同纪律）：并发调度撞车时（实例：14:00 盘中快照与候选池
 # 同时触发）后来者优雅跳过——否则两个实例抢 git index.lock，把 reset 打挂。
 # （注：reset 失败现已软化，仅发极简提示不中断；历史上曾因硬 exit 误发「reset 失败」
