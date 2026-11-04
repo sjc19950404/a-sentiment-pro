@@ -2,7 +2,7 @@
   "kind": "crosscheck-latest",
   "version": 1,
   "asOfDate": "2026-11-04",
-  "fetchedAt": "2026-11-04T10:44:26.492Z",
+  "fetchedAt": "2026-11-04T13:16:04.358Z",
   "primaryCount": 90,
   "secondaryCount": 120,
   "rules": {
@@ -22,24 +22,11 @@
   "offset": 0.12,
   "offsetRaw": 0.12,
   "debiased": true,
-  "divergeCount": 2,
-  "conflictCount": 1,
-  "maxAbsDiff": 5.43,
+  "divergeCount": 3,
+  "conflictCount": 0,
+  "maxAbsDiff": 3.3,
   "medianAbsDiff": 0.33,
   "flagged": [
-    {
-      "industry": "综合",
-      "primaryRaw": "综合",
-      "primary": -1.11,
-      "secondary": 4.2,
-      "secondarySamples": 1,
-      "diff": -5.31,
-      "dev": -5.43,
-      "absDiff": 5.43,
-      "rel": 4.89,
-      "relMeasurable": true,
-      "level": "conflict"
-    },
     {
       "industry": "通信设备",
       "primaryRaw": "通信设备",
@@ -50,6 +37,19 @@
       "dev": -3.3,
       "absDiff": 3.3,
       "rel": 0.58,
+      "relMeasurable": true,
+      "level": "diverge"
+    },
+    {
+      "industry": "综合",
+      "primaryRaw": "综合",
+      "primary": 1.27,
+      "secondary": 4.2,
+      "secondarySamples": 1,
+      "diff": -2.93,
+      "dev": -3.05,
+      "absDiff": 3.05,
+      "rel": 2.4,
       "relMeasurable": true,
       "level": "diverge"
     },
@@ -576,6 +576,19 @@
       "level": "ok"
     },
     {
+      "industry": "综合",
+      "primaryRaw": "综合",
+      "primary": 1.27,
+      "secondary": 4.2,
+      "secondarySamples": 1,
+      "diff": -2.93,
+      "dev": -3.05,
+      "absDiff": 3.05,
+      "rel": 2.4,
+      "relMeasurable": true,
+      "level": "diverge"
+    },
+    {
       "industry": "电力",
       "primaryRaw": "电力",
       "primary": 1.26,
@@ -966,19 +979,6 @@
       "level": "ok"
     },
     {
-      "industry": "综合",
-      "primaryRaw": "综合",
-      "primary": -1.11,
-      "secondary": 4.2,
-      "secondarySamples": 1,
-      "diff": -5.31,
-      "dev": -5.43,
-      "absDiff": 5.43,
-      "rel": 4.89,
-      "relMeasurable": true,
-      "level": "conflict"
-    },
-    {
       "industry": "饮料制造",
       "primaryRaw": "饮料制造",
       "primary": -1.47,
@@ -992,6 +992,6 @@
       "level": "ok"
     }
   ],
-  "staleReason": "cross-source: 2 条超阈值差异（通信设备(5.73% vs 8.91%)、医疗服务(5.02% vs 7.83%)）",
+  "staleReason": "cross-source: 3 条超阈值差异（通信设备(5.73% vs 8.91%)、医疗服务(5.02% vs 7.83%)、综合(1.27% vs 4.2%)）",
   "note": "可比的 71 个行业中发现偏离常态关系的离群（覆盖率 78.9%；当日两源常态偏移 +0.12pp（已扣除））——需人工复核是否源侧失真"
 }

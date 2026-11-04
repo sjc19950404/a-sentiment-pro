@@ -2,66 +2,66 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-04",
- "generatedAt": "2026-11-04T18:34:44.600+08:00",
+ "generatedAt": "2026-11-04T21:08:11.419+08:00",
  "model": "glm-4-flash",
  "sentiment": 0,
- "confidence": 0.8,
- "reason": "市场整体情绪中性，涨停家数与跌停家数相对均衡，亏钱效应显著，但强势股表现活跃。",
+ "confidence": 0.5,
+ "reason": "市场整体情绪中性，涨停家数与跌停家数相对均衡，但炸板率较高，亏钱效应显著。",
  "events": [
   {
-   "type": "业绩预告",
-   "target": "博迁新材",
-   "tone": "positive",
-   "note": "三季报增长带动股价上涨"
-  },
-  {
-   "type": "高管变动",
-   "target": "兴森科技",
-   "tone": "positive",
-   "note": "超跌修复及行业相关业务增长"
-  },
-  {
    "type": "行业催化",
-   "target": "半导体",
-   "tone": "positive",
-   "note": "存储芯片、半导体设备等板块活跃"
-  },
-  {
-   "type": "政策",
    "target": "可控核聚变",
    "tone": "positive",
-   "note": "新晋题材带动相关股票上涨"
+   "note": "新晋题材带动市场情绪"
   },
   {
    "type": "行业催化",
-   "target": "医药",
+   "target": "海峡两岸",
    "tone": "positive",
-   "note": "医药板块延续涨势"
+   "note": "新晋题材带动市场情绪"
   },
   {
    "type": "行业催化",
-   "target": "新能源",
+   "target": "中期分红",
    "tone": "positive",
-   "note": "新能源板块延续涨势"
+   "note": "新晋题材带动市场情绪"
   },
   {
    "type": "行业催化",
-   "target": "机器人",
+   "target": "AI短剧",
    "tone": "positive",
-   "note": "机器人概念板块活跃"
+   "note": "新晋题材带动市场情绪"
   },
   {
    "type": "行业催化",
-   "target": "AI",
+   "target": "算力业务",
    "tone": "positive",
-   "note": "AI相关题材如AI短剧、AI服务器等表现良好"
+   "note": "新晋题材带动市场情绪"
+  },
+  {
+   "type": "业绩预告",
+   "target": "兴森科技",
+   "tone": "positive",
+   "note": "超跌修复带动股价上涨"
+  },
+  {
+   "type": "业绩预告",
+   "target": "飞龙股份",
+   "tone": "positive",
+   "note": "合作及订单增长带动股价上涨"
+  },
+  {
+   "type": "业绩预告",
+   "target": "春晖智控",
+   "tone": "positive",
+   "note": "商业航天及半导体设备带动股价上涨"
   }
  ],
  "inputDigest": {
   "themes": 108,
   "hotListed": 15,
   "ztCount": 118,
-  "emotionValue": 59.5,
+  "emotionValue": 68.5,
   "painVerdict": "亏钱效应显著（昨涨停今日翻绿 63%、高位板晋级失败 60%，追高者整体受损）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
