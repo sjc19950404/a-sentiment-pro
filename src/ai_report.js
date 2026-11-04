@@ -24,6 +24,7 @@ import { bjDate, bjTime, bjInstant } from './time.js';
 import { validateExternal } from './validate_snapshot.js';
 import { QUOTE_STATE } from './global.js';
 import { reconcilePosition } from './position_policy.js';
+import { reviewTrades } from './paper_review.js';
 // V5.3 核心引擎调优（2026-10-28）：极寒分化惩罚 / 主线降权过滤的共享纯函数。
 //   浏览器/Node 双端安全（零 IO、不 import fs/backtest/paper），供报告层与选股引擎共用。
 import { detectClusteringBubble, computeRedIndustryRatio, penaltyApplies } from './mainline_guard.js';
@@ -53,7 +54,7 @@ const BASE_MISSING_NOTES = [
 ];
 const LIVE_ONLY_NOTE = { field: 'max_drawdown_daily / fee_total / net_pnl / cost_ratio / slippage 实测', reason: '个人账本成交与日内 equity 仅存在于浏览器 localStorage（即时轨一等公民，决议 1）', ref: 'paper_ui.js __paperSnapshot' };
 const PRE_MARKET_MISSING_NOTE = { field: 'key_levels / events_today / atr / suggested_step', reason: '指标服务未提供 ATR 与关键价位；事件日历无数据源', ref: 'docs/ai_report_module_design.md#2.3' };
-const WEEKLY_WIN_RATE_NOTE = '口径 = 剧本命中次数 / 总剧本执行次数（决议 4，2026-10-06 拍板）；剧本绑定记录（airpt_sim_bindings_v1）缺席 → null，不降级为日收益口径';
+const WEEKLY_WIN_RATE_NOTE = '口径 = 模拟盘平仓胜率（reviewTrades，来自 data/paper/account.json 的 trades；P3 起绑定真实成交）；0 笔平仓 → null（样本不足，不降级为日收益口径）。原「剧本命中率」数据源 airpt_sim_bindings 仍缺席。';
 
 const CONCEPTS = {
   trend_switch: 'regime 状态机（src/regime.js）',
@@ -74,7 +75,7 @@ const SOURCE_REFS = {
   regime: 'data/paper/dual_track_latest.json::day.regime + signals.dailyReport（仓位区间）',
   slippage_avg: 'src/paper.js::DEFAULT_SLIP（归档轨假设常量）/ orders×trades 逐笔实测（即时轨）',
   cost_ratio: '即时轨当日 trades 费用合计 / 成交额合计；归档轨无成交明细 → null',
-  win_rate: WEEKLY_WIN_RATE_NOTE,
+  win_rate: WEEKLY_WIN_RATE_NOTE, // P3：改为模拟盘平仓胜率（reviewTrades）
 };
 
 // ── 工具 ───────────────────────────────────────────────────────────────
@@ -659,8 +660,10 @@ export function generateWeekly(input, opts = {}) {
     maxDd = Math.max(maxDd, (peak - v) / peak);
   }
   payload.max_drawdown_week = days.length ? maxDd : null;
-  payload.win_rate = null; // 决议 4：剧本口径；绑定记录缺席 → null
-  payload.win_rate_note = WEEKLY_WIN_RATE_NOTE;
+  const acct4wr = input.paperAccount;
+  const rt4wr = acct4wr && Array.isArray(acct4wr.trades) ? reviewTrades(acct4wr.trades, { initCash: acct4wr.initCash }) : null;
+  payload.win_rate = rt4wr && rt4wr.winRate != null ? rt4wr.winRate : null; // P3：模拟盘平仓胜率；0 笔→null
+  payload.win_rate_note = WEEKLY_WIN_RATE_NOTE + (rt4wr ? `（已平仓 ${rt4wr.judged} 笔）` : '（无 trades 字段）');
   const ups = navSeries.filter((d) => (d.day_return ?? 0) > 0).length;
   payload.profit_trade_ratio = navSeries.length ? ups / navSeries.length : null; // 辅助指标（日线口径；回合配对 S3）
   payload.cost_ratio_week = null;

@@ -1,0 +1,257 @@
+{
+  "schema": "research-monthly-report/1.0",
+  "generatedAt": "2026-11-04T13:34:30.592Z",
+  "reportMonth": "2026-11",
+  "period": {
+    "start": "2026-11-01",
+    "end": "2026-11-04",
+    "sinceSystemEnable": "2026-09-28",
+    "firstReport": true
+  },
+  "p2": {
+    "p2Start": "2026-10-23",
+    "p2StartNote": "P2 基期 2026-10-23 已启动：门禁只认该日之后的影子生效日（当前 0 日 / 需 ≥10）；summary.ledgerP2End 为 P2 窗累计",
+    "p2Episodes": {
+      "0.3": 0,
+      "0.4": 0,
+      "0.5": 0
+    },
+    "shiftEpisodesHistorical": 18,
+    "p2BitingEpisodes": 0,
+    "ledgerP2End": {
+      "premiumCum": -0.011065,
+      "shadowCum": {
+        "0.3": 0.000675,
+        "0.4": 0,
+        "0.5": 0.00126
+      },
+      "activeDays": 0
+    },
+    "gatesAnchor": {
+      "shadowC_t1": {
+        "0.3": {
+          "total": -0.041998,
+          "maxDd": 0.177939,
+          "episodes": 18
+        },
+        "0.4": {
+          "total": -0.035905,
+          "maxDd": 0.174489,
+          "episodes": 18
+        }
+      },
+      "trackA_v52": {
+        "total": -0.050589,
+        "maxDd": 0.176214,
+        "ref": "data/backtest.json::v52"
+      },
+      "trackB_v53": {
+        "total": -0.062651,
+        "maxDd": 0.120324,
+        "ref": "data/backtest.json::v53",
+        "note": "锚点口径 unknown→null；披露口径见 trackB"
+      }
+    },
+    "promoteThresholdNote": "晋升要求：≥10 个 P2 影子生效日 + 三条影子线同号 + 生效日贡献≥50% + 残差纪律合格（docs/dual_track_framework.md）。"
+  },
+  "paper": {
+    "startDate": "2026-10-23",
+    "initCash": 1000000,
+    "cash": 1000000,
+    "realized": 0,
+    "totalFee": 0,
+    "navPoints": 9,
+    "navLatest": 1000000,
+    "positions": 0,
+    "orders": 2,
+    "trades": 0,
+    "closedTrades": 0,
+    "winRate": null,
+    "note": "尚无平仓成交（win_rate 样本不足 → null）；P2 有效性结论须待 ≥30 笔平仓 + ≥10 个实盘 shift 生效日。"
+  },
+  "weeklyHealth": {
+    "total": 4,
+    "inMonth": 0,
+    "statusCounts": {
+      "degraded": 4
+    },
+    "topMissingNotes": [
+      [
+        "grid_triggers / grid_trigger_detail",
+        4
+      ],
+      [
+        "counter_trend_losses / counter_trend_loss_ratio",
+        4
+      ],
+      [
+        "max_drawdown_daily / fee_total / net_pnl / cost_ratio / slippage 实测",
+        2
+      ],
+      [
+        "simulation_stock.candidate_pool[].themes/fundamentals(八字段)/个股级主力资金",
+        2
+      ]
+    ],
+    "winRates": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "baselineFindings": {
+    "generatedAt": "2026-11-04T06:39:30",
+    "predictProper": [
+      {
+        "label": "涨停·首板&换手<10%",
+        "n": 516,
+        "t1Med": 0.97,
+        "upPct": 57.56,
+        "againPct": 18.41
+      },
+      {
+        "label": "涨停·3连板&换手<10%",
+        "n": 17,
+        "t1Med": 9.99,
+        "upPct": 64.71,
+        "againPct": 58.82
+      },
+      {
+        "label": "涨停·换手>=25%",
+        "n": 53,
+        "t1Med": -0.48,
+        "upPct": 47.17,
+        "againPct": 22.64
+      }
+    ],
+    "versionRegressionIC": {
+      "sample": {
+        "archiveDays": 257,
+        "mainDays": 257,
+        "withNextRet": 256,
+        "dateRange": [
+          "2025-10-09",
+          "2026-11-03"
+        ],
+        "partialDays": 0,
+        "noneDays": 0,
+        "breadthProxyDays": 6
+      },
+      "cautions": [
+        "主样本 256 个交易日（含次日收益），相关系数的 95% 置信区间约 ±0.12——足以暴露量级差异与方向性异常，但版本间小幅差异仍不足以判定优劣，需样本外证据佐证。",
+        "本样本中有 6/257 天缺少涨跌家数真值（up_count/down_count），s_pos 因子走 posRatio 代理——版本间差异会被代理值稀释，真实差异应大于本表所示。",
+        "版本差异可归因于「净买原料口径」（v4.5 全量 / v5.0 当日 / v5.2 当日剔新股）与「s_net 归一方式」（v5.3 分位映射 vs 其余 tanh5）两个维度；其余因子在各版本中完全相同。",
+        "v5.3-pro 的均分相对基线偏移 -3.94 分（64.3 → 60.4），这是**分位归一转 positive 作用的必然结果**：tanh(x/5) 把中位数交易日顶到 97 分以上，分位映射把中位数拉回 50 分——即\"削掉了虚高\"。⚠ 因此切换基线**必须同步重标定档位阈值（24/65/80）**，否则大量原本判\"满仓\"的日子会掉到\"半仓\"档，这是口径变更而非市场变化。",
+        "饱和改善：s_net ≥99.9 的天数 82/256 → 0/256（候选版 vs 基线）。这是 v5.3 存在的**唯一设计目标**，已达成；但它不能被解读为\"预测力更强\"——Pearson 差异在 n=256 下不显著。"
+      ],
+      "table": {
+        "v4.5": {
+          "scoreMean": 66.44,
+          "pearson": -0.01,
+          "spearman": -0.02,
+          "directionAcc": 48.44,
+          "hit": 124,
+          "total": 256
+        },
+        "v5.0": {
+          "scoreMean": 64.57,
+          "pearson": 0,
+          "spearman": -0.01,
+          "directionAcc": 48.44,
+          "hit": 124,
+          "total": 256
+        },
+        "v5.2-pro": {
+          "scoreMean": 64.33,
+          "pearson": 0.01,
+          "spearman": 0,
+          "directionAcc": 50,
+          "hit": 128,
+          "total": 256
+        },
+        "v5.3-pro": {
+          "scoreMean": 60.39,
+          "pearson": 0.01,
+          "spearman": -0.02,
+          "directionAcc": 47.66,
+          "hit": 122,
+          "total": 256
+        }
+      },
+      "interpretation": "情绪分与次日指数收益 Pearson ≈ 0、方向准确率 ≈ 50% ⇒ 对次日方向无统计显著预测力。"
+    },
+    "proven": [
+      "若干增强方案已证伪（M8 / 0.7 帽 / 尾部介入 T2·T3 / V5.3 全量 regime 帽）；",
+      "v5.3 分位归一确消除 s_net 饱和（但非预测力增强）；",
+      "主信号在下跌样本相对基准少跌约 8–9pp（相对抗跌，非正收益）；",
+      "257 天无偏重校准：低换手首板 T+1 中位 +0.9%、上涨 55.6%（方向成立、幅度温和）；高换手涨停无优势——predict.js 方向正确、需下调收益预期。"
+    ],
+    "reviewNeeded": [],
+    "paramsGovernance": {
+      "present": true,
+      "entries": [
+        {
+          "at": "2026-10-02T12:00:00+08:00",
+          "what": "v5.2-pro 基线冻结（TRAIN_PARAMS 与 LIVE_PARAMS 初始对齐）",
+          "validation": {
+            "type": "baseline",
+            "pass": true,
+            "oosDays": null,
+            "note": "初始基线，无 OOS 样本"
+          },
+          "liveAfter": true
+        },
+        {
+          "at": "2026-10-28",
+          "what": "params.live.stops 新增 sentimentPenalty / clusterRiseMax / openGapFilterPct",
+          "validation": {
+            "pass": true,
+            "note": "配置键新增，default 关闭，不影响既有逻辑"
+          },
+          "liveAfter": true
+        },
+        {
+          "at": "2026-10-28T17:55:11.982Z",
+          "what": "live.stops 新增 trailingStopPct = 0.03（移动止盈默认参数）",
+          "validation": {
+            "pass": true,
+            "note": "default 关闭，仅提供开关"
+          },
+          "liveAfter": true
+        },
+        {
+          "at": "2026-10-28T18:14:38.350Z",
+          "what": "移动止盈默认参数精修：激活阈值 +6%、回撤 2.5%、新增涨停豁免",
+          "validation": {
+            "pass": true,
+            "note": "default 关闭，仅提供开关"
+          },
+          "liveAfter": true
+        },
+        {
+          "at": "2026-10-29T23:50:09+08:00",
+          "what": "stops 块新增分级连板止损配置",
+          "validation": {
+            "type": "baseline",
+            "pass": true,
+            "oosDays": null,
+            "note": "基线配置扩展"
+          },
+          "liveAfter": true
+        }
+      ],
+      "note": "均为基线冻结 / 新增配置键 / 默认关闭开关；无完整 oos-20pct 权重晋升。"
+    }
+  },
+  "verdict": {
+    "oneLiner": "P2 框架已就位、门禁已诚实（实盘样本 0）；系统已证明能稳定运行/记录/诚实否掉坏方案，但策略有效性仍未被实盘证据证实。",
+    "proven": [
+      "若干增强方案已证伪（M8 / 0.7 帽 / 尾部介入 T2·T3 / V5.3 全量 regime 帽）；",
+      "v5.3 分位归一确消除 s_net 饱和（但非预测力增强）；",
+      "主信号在下跌样本相对基准少跌约 8–9pp（相对抗跌，非正收益）；",
+      "257 天无偏重校准：低换手首板 T+1 中位 +0.9%、上涨 55.6%（方向成立、幅度温和）；高换手涨停无优势——predict.js 方向正确、需下调收益预期。"
+    ],
+    "reviewNeeded": []
+  }
+}
