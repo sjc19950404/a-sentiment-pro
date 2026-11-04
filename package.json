@@ -19,6 +19,7 @@
     "kline:daily": "node ui/fetch_kline_all.mjs",
     "kline:init": "node ui/fetch_kline_all.mjs --init",
     "promote": "node scripts/promote_params.mjs",
+    "checkup": "node scripts/gate_checkup.mjs",
     "test": "node --test"
   },
   "license": "MIT",

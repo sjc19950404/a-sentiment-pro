@@ -124,3 +124,8 @@ data/intraday-antinuke-state.json
 
 # R2 同步增量清单（本地元数据，非源码）
 .r2_sync_manifest.json
+
+# 闸门体检日志（scripts/gate_checkup.mjs 只读回放产物，可一键重建；
+# 每次 paper_daily 后重跑内容基本不变，仅 generatedAt 变动，勿入库以免 git status 长期挂脏）
+data/reports/gate_checkup_latest.json
+data/reports/gate_checkup_*.json
