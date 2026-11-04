@@ -2,11 +2,11 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-03",
- "generatedAt": "2026-11-03T21:02:59.120+08:00",
+ "generatedAt": "2026-11-04T10:29:55.445+08:00",
  "model": "glm-4-flash",
  "sentiment": 0,
  "confidence": 0.8,
- "reason": "市场整体情绪中性，涨停与跌停家数接近，炸板率较高，亏钱效应多空拉锯。",
+ "reason": "市场整体情绪中性，涨停与跌停家数接近，炸板率较高，多空双方力量均衡。",
  "events": [
   {
    "type": "业绩预告",
@@ -30,7 +30,7 @@
    "type": "行业催化",
    "target": "三季报扭亏",
    "tone": "positive",
-   "note": "三季报扭亏题材新晋，可能带动相关股票上涨。"
+   "note": "三季报扭亏题材新晋，可能带动相关个股上涨。"
   },
   {
    "type": "行业催化",
@@ -46,15 +46,15 @@
   },
   {
    "type": "行业催化",
-   "target": "“羊”字辈",
-   "tone": "positive",
-   "note": "“羊”字辈题材延续，可能带动相关股票上涨。"
+   "target": "羊字辈",
+   "tone": "neutral",
+   "note": "羊字辈题材延续，市场关注度稳定。"
   },
   {
    "type": "行业催化",
    "target": "光通信",
-   "tone": "positive",
-   "note": "光通信题材延续，可能受到市场关注。"
+   "tone": "neutral",
+   "note": "光通信题材延续，市场关注度稳定。"
   }
  ],
  "inputDigest": {

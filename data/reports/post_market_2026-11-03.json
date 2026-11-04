@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-03",
- "generated_at": "2026-11-03T13:14:02.108Z",
+ "generated_at": "2026-11-04T02:39:41.015Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -15,7 +15,7 @@
    "global": "fresh",
    "backtest": "fresh",
    "ops_alerts": "fresh",
-   "intraday": "fresh",
+   "intraday": "stale",
    "paper_account": "live"
   }
  },
@@ -163,29 +163,28 @@
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
-   "risk_events": 0,
+   "risk_events": 2,
    "note": "即时轨：运行回撤 0.00%，距档位边界见 drawdown_vs_threshold；单笔止损/风控拦截当日 无"
   },
   "overseas": [
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": null,
-    "state": "night-open",
-    "nightOpen": true
+    "chgPct": -0.0007520000000000001,
+    "state": "ok",
+    "stale": false,
+    "cacheNote": null
    },
    {
     "key": "sox",
     "name": "费城半导体指数",
-    "chgPct": -0.033724,
+    "chgPct": 0.026341999999999997,
     "state": "ok",
     "stale": false,
     "cacheNote": null
    }
   ],
-  "externalStale": [
-   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空"
-  ],
+  "externalStale": [],
   "nav_realtime": 1000000,
   "close_drawdown": null,
   "max_drawdown_intraday": null,
