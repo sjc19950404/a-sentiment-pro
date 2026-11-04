@@ -513,16 +513,30 @@ test('openGap：未传该参数 → 零回归（与历史行为一致）', () =>
   assert.equal(r.picks.length, 2, '未传 openGapFilterPct 应保持原样选股');
 });
 
-test('openGap：传入 openGapFilterPct=8，快照涨幅≥8% 的候选被剔除并计入 rejected', () => {
-  // 显式让 lhb/hot 的 change_pct 一致为 10（候选 changePct 由 lhb 主导，须两者一致才真实）
+test('openGap：涨停股豁免——openGapFilterPct=8 也不误杀涨停突破候选（2026-11-04 修复）', () => {
+  // 涨停突破策略的候选本身即涨停股（changePct≈10 且 isZt），防追高闸必须豁免，否则等于永久关停交易。
   const d = day({
-    hot: [{ code: '600301', name: '高开票A', close: 10, change_pct: 10, huanshou: 22, reason: '固态电池+铝塑膜' }],
-    lhb: [lhbRow('600301', '高开票A', 60000, { change_pct: 10 }), lhbRow('600302', '高开票B', 3000, { change_pct: 10 })],
+    hot: [{ code: '600301', name: '涨停票A', close: 10, change_pct: 10, huanshou: 22, reason: '固态电池+铝塑膜' }],
+    lhb: [lhbRow('600301', '涨停票A', 60000, { change_pct: 10 }), lhbRow('600302', '涨停票B', 3000, { change_pct: 10 })],
     themes: { 固态电池: 4, 铝塑膜: 2 },
     summary: { main_theme: { name: '固态电池' }, zt_codes: ['600301', '600302'], zt_lb: { 600301: 3, 600302: 1 } },
   });
   const r = recommendPicks(d, { emotionScore: 70, openGapFilterPct: 8 });
-  assert.equal(r.picks.length, 0, '候选涨幅均≥阈值，应被过滤空');
+  assert.equal(r.picks.length, 2, '涨停突破候选应被豁免，不被防追高闸误杀');
+  assert.ok(!r.rejected.some((x) => x.reason === 'open_gap_filter'), '涨停股豁免时不应触发 open_gap_filter');
+});
+
+test('openGap：非涨停但快照涨幅≥阈值的急拉股仍被剔除并计入 rejected', () => {
+  // change_pct=9（≥8 但 <9.9）且不在 zt_codes → isZt=false，属「非涨停急拉」，防追高意图仍对它生效。
+  const d = day({
+    hot: [{ code: '600301', name: '急拉票A', close: 10, change_pct: 9, huanshou: 22, reason: '固态电池+铝塑膜' }],
+    // 两笔都给足净买额，避免被「仅小额外资金、无涨停」提前剔除（本用例只检验 openGap 一道闸）
+    lhb: [lhbRow('600301', '急拉票A', 60000, { change_pct: 9 }), lhbRow('600302', '急拉票B', 60000, { change_pct: 9 })],
+    themes: { 固态电池: 4, 铝塑膜: 2 },
+    summary: { main_theme: { name: '固态电池' }, zt_codes: [], zt_lb: {} },
+  });
+  const r = recommendPicks(d, { emotionScore: 70, openGapFilterPct: 8 });
+  assert.equal(r.picks.length, 0, '非涨停急拉候选涨幅均≥阈值，应被过滤空');
   const gap = r.rejected.filter((x) => x.reason === 'open_gap_filter');
   assert.equal(gap.length, 1, 'open_gap_filter 应聚合为一条台账');
   assert.equal(gap[0].count, 2, '应记录被剔除 2 只');

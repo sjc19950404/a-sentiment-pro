@@ -1,10 +1,12 @@
 // 场景三：GLM 附加过滤守卫（买前三合一闸门）。
 //
 // 把方向 A/B/C 三个 GLM 侧车档（军规#1：独立落盘、绝不改 emotion/regime 原始分数/状态机）
-// 汇成一道「自动建仓前的附加过滤条件」，由 paper_daily 的自动买路径采纳——命中即拒买。
-//   · 方向 A 排雷黑名单（data/llm_risk_blacklist.json）→ 确定性正向封禁（复用 src/risk_blacklist.js）；
-//   · 方向 C 妖股逻辑（data/llm-dragon-logic-latest.json）→ 纯情绪炒作 / 高连板情绪驱动，谨慎不追高；
-//   · 方向 B 板块情绪（data/macro-sector-sentiment-latest.json）→ 个股行业板块若属强利空板块，回避。
+// 汇成一道「自动建仓前的附加过滤条件」，由 paper_daily 的自动买路径采纳。
+//   · 方向 A 排雷黑名单（data/llm_risk_blacklist.json）→ 确定性正向封禁（复用 src/risk_blacklist.js）；硬拦
+//   · 方向 B 板块情绪（data/macro-sector-sentiment-latest.json）→ 个股行业板块若属强利空板块，回避；硬拦
+//   · 方向 C 妖股逻辑（data/llm-dragon-logic-latest.json）→ 纯情绪炒作 / 高连板情绪驱动；软警示不拦
+//     （2026-11-05 主理人拍板：涨停接力策略的核心标的本就是情绪驱动票，C 档硬拦会把策略
+//      目标画像全挡掉、模拟盘长期 0 成交。改为知情放行——warns 保留文案供 UI/报告标注，不进 pass。）
 //
 // 全部 fail-open：档缺失 / 空 / degraded / asOfDate 不符 → 该子闸不拦（绝不误伤正常候选）。
 // 纯读档、零 LLM 调用、不改任何分数或状态机。
@@ -89,28 +91,31 @@ function loadSector() {
 }
 
 /**
- * 买前 GLM 附加过滤（方向 A+B+C 三合一）。
+ * 买前 GLM 附加过滤（方向 A/B 硬拦 + 方向 C 软警示）。
  * @param {string} code 候选代码
  * @param {{hybk?:string, asOfDate?:string}} [opts]
  *        hybk     候选行业板块（来自 recommendPicks，用于方向 B 映射）
  *        asOfDate 当前交易日；若提供则与侧车档 asOfDate 比对，不符 → 该子闸跳过（防陈旧数据误杀）
- * @returns {{pass:boolean, reasons:string[], hits:{risk:boolean,dragon:boolean,sector:boolean}}}
+ * @returns {{pass:boolean, reasons:string[], warns:string[], hits:{risk:boolean,dragon:boolean,sector:boolean}}}
+ *        pass    = reasons.length===0（仅 A/B 硬拦计入；C 软警示不影响 pass）
+ *        warns   = 方向 C 纯情绪软警示文案（不拦截，供 UI/报告标注）
  */
 export function glmBuyGuard(code, opts = {}) {
   const { hybk, asOfDate } = opts;
-  const reasons = [];
+  const reasons = [];  // 硬拦（A 排雷 / B 板块利空）
+  const warns = [];    // 软警示（C 纯情绪，不拦）
   const hits = { risk: false, dragon: false, sector: false };
 
   // ── 方向 A：排雷黑名单（确定性正向封禁；持续有效，不按 asOfDate 过期——立案/ST/减持属真实风险）──
   const rb = riskBlacklistReason(code);
   if (rb) { reasons.push(`排雷黑名单(${rb})`); hits.risk = true; }
 
-  // ── 方向 C：妖股逻辑（纯情绪炒作 / 高连板情绪驱动 → 谨慎不自动追高）──
+  // ── 方向 C：妖股逻辑（纯情绪炒作 → 软警示，不进 reasons / 不影响 pass）──
   const dl = loadDragon();
   if (dl && dl.degraded !== true && (!asOfDate || dl.asOfDate === asOfDate)) {
     const d = (Array.isArray(dl.dragons) ? dl.dragons : []).find((x) => String(x.code) === String(code));
     if (d && d.is_pure_sentiment) {
-      reasons.push(`妖股逻辑·纯情绪炒作(${d.lb}板·${d.logic_type}${d.reason ? '·' + d.reason : ''})`);
+      warns.push(`妖股逻辑·纯情绪炒作(${d.lb}板·${d.logic_type}${d.reason ? '·' + d.reason : ''})`);
       hits.dragon = true;
     }
   }
@@ -133,5 +138,5 @@ export function glmBuyGuard(code, opts = {}) {
     }
   }
 
-  return { pass: reasons.length === 0, reasons, hits };
+  return { pass: reasons.length === 0, reasons, warns, hits };
 }

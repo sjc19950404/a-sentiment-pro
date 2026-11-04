@@ -191,6 +191,8 @@ if (broken.length) {
 }
 
 // ── 5. 自动建仓：情绪档位允许新建 且 未触发 regime 盖帽（--force-trade 可绕过双闸）──
+// 纯情绪软警示收集（方向 C 不再硬拦，但需落到复盘报告/委托记录，做到「知情放行」）。
+const glmWarns = [];
 step(`自动建仓（主线选股 top${TOP_N} @ ${Math.round(PER_POS_PCT * 100)}%）${FORCE_TRADE ? '  [强制测试模式]' : ''}`);
 // 注：regimeKey 已在「补丁一极寒分化」块提前读取（同口径 signals-latest.dailyReport.tag.key），此处直接复用。
 const tier = marketTier(emotionScore);
@@ -213,8 +215,14 @@ if (!tier) {
   const ztpool = loadZtpoolForDay(day.trade_date);
   console.log(`  可交易性过滤数据源：当日涨停池 ${ztpool ? ztpool.length + ' 只' : '缺失（no-op）'}`);
   const ICE_TRIAL_TOPN = 3;   // 冰点试错仓最多试错几只（极小仓位，控制总暴露）
+  // 幂等：已持仓 + 当日已提交的 pending 买单都不重复下单（委托 T+1 撮合，当日仅进 pending，
+  //   手工重跑/当晚 EOD 再处理同一交易日时若不排除 pending 会产生双份委托）。
+  const heldOrPending = new Set([
+    ...Object.keys(acct.positions || {}),
+    ...(acct.pending || []).filter((x) => x && x.side === 'buy').map((x) => String(x.code)),
+  ]);
   const rawPicks = (recommendPicks(day, { topN: TOP_N, emotionScore: effEmotionScore, ztpool, isClusteringBubble, mainLine, openGapFilterPct: config.backtest?.openGapFilterPct, seatsDetail: day.summary?.seats?.detail, hotmoney: config.params?.live?.hotmoney }).picks || [])
-    .filter((p) => p && p.code && quotes[String(p.code)] && !(acct.positions && acct.positions[String(p.code)])); // 有当日行情且未持仓（幂等：重跑/跨轮不重复开仓，避免 double-open；否则 batchSubmit 会 NO_QUOTE 拦截）
+    .filter((p) => p && p.code && quotes[String(p.code)] && !heldOrPending.has(String(p.code))); // 有当日行情且未持仓/未挂单；否则 batchSubmit 会 NO_QUOTE 拦截
   // 挂件一：冰点试错仓——只取「首板烂板弱转强」标的，数量上限 ICE_TRIAL_TOPN，总仓不超 iceTrialPos。
   const picks = iceTrialMode ? rawPicks.filter((p) => p.weakToStrong && (p.streak || 0) >= 1).slice(0, ICE_TRIAL_TOPN) : rawPicks;
   if (iceTrialMode) console.log(`  试错候选（首板烂板弱转强）${picks.length} 只：${picks.map((p) => p.code).join(',') || '无（冰点期无合格弱转强首板）'}`);
@@ -228,18 +236,33 @@ if (!tier) {
     reason: (iceTrialMode ? '【冰点试错仓·首板烂板弱转强】' : (bypassed ? '【压力测试·熔断绕过】' : '')) + `自动建仓（主线选股候选 ${p.name || p.code}）`,
   }));
   // 场景三 GLM 附加过滤守卫（买前三合一闸门）：方向 A 排雷黑名单 + 方向 C 妖股逻辑 + 方向 B 板块情绪。
-  //   三档均为独立落盘的 side-car（军规#1：绝不改 emotion/regime），此处由代码采纳——命中即拒买。
+  //   三档均为独立落盘的 side-car（军规#1：绝不改 emotion/regime），此处由代码采纳。
+  //   方向 A/B（排雷黑名单 / 板块情绪利空）为真实风险 → 硬拦；方向 C（纯情绪炒作）改为软警示不拦，带标注放行。
   //   全部 fail-open：档缺失/空/degraded/asOfDate 不符 → 不拦（绝不误伤正常候选）；
   //   即便 --force-trade 压力测试也不绕过（与 regime 熔断是两回事，属真实风险过滤）。
   const blocked = [];
+  const warned = [];
   const safeItems = [];
   for (const it of items) {
     const g = glmBuyGuard(it.code, { hybk: it.hybk, asOfDate: date });
-    if (!g.pass) blocked.push({ code: it.code, reasons: g.reasons });
-    else safeItems.push(it);
+    // 方向 A/B（排雷黑名单 / 板块情绪利空）为真实风险 → 硬拦；pass 只由这两者决定。
+    if (!g.pass) { blocked.push({ code: it.code, reasons: g.reasons }); continue; }
+    // 方向 C 妖股逻辑（纯情绪炒作）→ 软警示不拦：带「纯情绪」标注（UI/报告可见），
+    // 策略仍可交易其目标画像的涨停接力票（与手动路径分工一致：自动也知情放行）。
+    if (g.warns.length) {
+      it.glmWarn = g.warns.join('；');
+      // 标注写进委托 reason → 随 submitOrder 落到账户 orders/logs（模拟交易台可见）
+      it.reason = `⚠【纯情绪软警示·知情放行】${it.reason || ''}（${it.glmWarn}）`;
+      glmWarns.push({ code: it.code, warn: it.glmWarn });
+      warned.push({ code: it.code, reasons: g.warns });
+    }
+    safeItems.push(it);
   }
   if (blocked.length) {
     console.log(`  ⛔ GLM 附加过滤拦截 ${blocked.length} 只（不建仓）：${blocked.map((b) => `${b.code}(${b.reasons.join('/')})`).join('、')}`);
+  }
+  if (warned.length) {
+    console.log(`  ⚠ 纯情绪软警示(不拦截) ${warned.length} 只：${warned.map((w) => `${w.code}(${w.reasons.join('/')})`).join('、')}`);
   }
   if (!safeItems.length) {
     console.log('  无合格选股（候选均缺行情/不推荐或命中排雷黑名单）');
@@ -277,6 +300,8 @@ const out = {
   asOf: date,
   nav: r2(stats.total), cash: r2(stats.cash), marketValue: r2(stats.marketValue),
   positionCount: Object.keys(acct.positions || {}).length,
+  // 方向 C 纯情绪软警示（不拦截，仅知情标注）：本日被放行的纯情绪标的，供报告/前端展示
+  glmWarns,
   tradeReview: {
     closedCount: tr.closedCount ?? null,
     winRate: tr.winRate ?? null,

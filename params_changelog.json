@@ -408,6 +408,132 @@
           "doubleWeight": 2
         }
       }
+    },
+    {
+      "at": "2026-11-04T16:31:56.019Z",
+      "who": "engine-fix",
+      "what": "修复性参数变更：params.live.stops.openGapFilterPct（及 train/backtest 镜像）8 → 0，关闭「高开/急拉过滤」",
+      "why": "该闸用当日快照 changePct 代理追高，而涨停突破策略候选恒为涨停股（changePct≈10%），阈值 8 会把全部候选一锅端，导致自动建仓每日 0 只、模拟盘零成交（2026-11-04 根因）。日线快照无开盘价，本就无法真防追高，对涨停池不适用，故关闭。",
+      "validation": {
+        "type": "baseline",
+        "pass": true,
+        "oosDays": null,
+        "note": "隔离验证：同交易日 11-04 带 openGapFilterPct=8 时 recommendPicks 返回 0 只、设为 0 返回 3 只；关闭后生产路径恢复选股。另引擎已加涨停股豁免（isZt/changePct≥9.9），日后在参数控制台重开该闸也不会再误杀涨停候选（test/picks.test.mjs 锁定）。仅关闭一道缺陷过滤，不改权重/阈值/仓位，train 与 live 逐位一致、全量单测回归。属修复性补痕，非参数晋升（promote 因 train==live 无变更可晋升）。"
+      },
+      "liveAfter": {
+        "weights": {
+          "s_net20": 0.2,
+          "s_pos10": 0.1,
+          "s_brd20": 0.2,
+          "s_hot10": 0.1,
+          "s_zdt15": 0.15,
+          "s_zbl10": 0.1,
+          "s_amt15": 0.15
+        },
+        "thresholds": {
+          "panic": 24,
+          "hi": 44,
+          "lo": 65,
+          "overheat": 80
+        },
+        "stops": {
+          "maxPos": 1,
+          "stopLoss": -0.08,
+          "ddTrigger": -0.15,
+          "maxPosChg": 0.2,
+          "sentimentPenalty": 10,
+          "clusterRiseMax": 1500,
+          "openGapFilterPct": 0,
+          "trailingStopPct": 0.025,
+          "trailingTriggerPct": 0.06,
+          "clusterRedIndustryRatioMax": 0.1,
+          "iceTrialPos": 0.1,
+          "antiNuke": true,
+          "baseHardStopPct": -0.08,
+          "streakTier": false,
+          "tier": [
+            {
+              "streak": 1,
+              "stop": -0.08
+            },
+            {
+              "streak": 2,
+              "stop": -0.12
+            },
+            {
+              "streak": 3,
+              "stop": -0.15
+            }
+          ],
+          "t1Grace": true
+        },
+        "lookback": {
+          "rolling": {
+            "trainWindow": 20,
+            "testWindow": 6
+          },
+          "momentumRecent": 5,
+          "momentumPrev": 5,
+          "rankWindow": 60,
+          "rankMin": 20
+        },
+        "costModel": {
+          "comm": 0.0003,
+          "stamp": 0.0005,
+          "slip": 0.0002,
+          "priceLimit": {
+            "enabled": false
+          }
+        },
+        "regime": {
+          "levelLowAbs": 40,
+          "levelHighAbs": 65
+        },
+        "poolFilters": {
+          "intraday": {
+            "chg_min": 3,
+            "chg_max": 7,
+            "liangbi_min": 2,
+            "top": 10
+          },
+          "streak": {
+            "min_lb": 2,
+            "liangbi_min": 2,
+            "main_net_min": 0,
+            "top": 10
+          }
+        },
+        "hotmoney": {
+          "seatPatterns": [
+            "华鑫",
+            "拉萨",
+            "章建平",
+            "财通",
+            "国泰君安",
+            "东方财富",
+            "方新侠",
+            "赵老哥",
+            "作手新一",
+            "宁波",
+            "溧阳路",
+            "古北路",
+            "金田路",
+            "苏南帮",
+            "上塘路",
+            "佛山",
+            "成都",
+            "歌神",
+            "炒新一族",
+            "著名刺客",
+            "小鳄鱼",
+            "上海江苏路",
+            "桑田路",
+            "虹桥路",
+            "溧阳"
+          ],
+          "doubleWeight": 2
+        }
+      }
     }
   ]
 }
