@@ -1,6 +1,6 @@
 {
   "schema": "research-baseline-v1",
-  "generatedAt": "2026-11-04T06:01:10",
+  "generatedAt": "2026-11-04T06:07:48",
   "provenance": {
     "archiveDays": 257,
     "firstDay": "2025-10-09",
@@ -228,7 +228,7 @@
     "tradeDays": 257,
     "candidates": 28456,
     "withT1": 6041,
-    "note": "覆盖低于 streak_backtest（后者用外部前复权 K 线）；仅方向性校验预测分层是否仍成立。",
+    "note": "覆盖低于 streak_backtest（后者用外部前复权 K 线全样本）；且仅计入次日仍进入 hot/lhb 的票，存在「存活偏差」（仍被关注的票更可能已上涨），故 up% 偏高、不可与 33 天 streak 直接比较；本分组仅作方向性校验，正式重校准应重跑 backtest_limit_up_streak.mjs（依赖外部前复权 K 线）。",
     "groups": [
       {
         "label": "全部候选（有T+1数据）",
@@ -324,7 +324,7 @@
   },
   "dualTrackP2": {
     "p2Start": null,
-    "p2StartNote": null,
+    "p2StartNote": "模拟盘启动日回填后启用 P2 基期账本；当前 ledger 为全样本重放（锚点验证 + 曲线）",
     "activeTrack": "A",
     "gates": {
       "trackA_v52": {
@@ -429,18 +429,19 @@
       "activeDays": 18,
       "shiftEpisodes": 18
     },
-    "shiftEpisodesHistorical": 0,
+    "shiftEpisodesHistorical": 18,
     "shiftEpisodesSinceSystemEnabled": 0,
     "note": "p2Start 仍为 null ⇒ P2 账本为全样本重放，18 个 shift 生效日全部在系统启用前；启用后新增 0 个 ⇒ 晋升门槛（≥10 个实盘 shift 日）尚未开始积累。"
   },
   "paramsGovernance": {
+    "present": false,
     "entries": [],
-    "note": "5 条均为基线冻结 / 新增配置键 / 默认关闭开关；无完整 oos-20pct 权重晋升。"
+    "note": "文件当前缺失（未入库，疑于 git reset --hard 中丢失；此前观测到 5 条均为基线冻结/配置键，无 oos-20pct 权重晋升）。研究治理日志应入库以免丢失。"
   },
   "reportHealth": {
-    "total": 61,
+    "total": 62,
     "byKindStatus": {
-      "intraday|degraded": 19,
+      "intraday|degraded": 20,
       "post|degraded": 16,
       "pre|degraded": 22,
       "weekly|degraded": 4

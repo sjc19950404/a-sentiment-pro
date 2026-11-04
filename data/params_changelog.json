@@ -1,0 +1,44 @@
+{
+  "note": "参数变更治理日志。原文件未入库，于 2026-11-04 的 git reset --hard 中丢失；本版依据当日研究验证复盘中对各条目的实测输出恢复（recovered），细节字段（who/why/完整 note）已省略，仅保留可观测的 at/what/validation/liveAfter。后续任何参数改动都应入库，避免再次丢失。",
+  "schema": {
+    "at": "ISO 时间戳",
+    "who": "操作人",
+    "what": "改了什么",
+    "why": "原因",
+    "validation": { "type": "baseline|oos-20pct", "pass": true, "oosDays": null, "note": "验证说明" },
+    "liveAfter": "是否进入线上 LIVE_PARAMS"
+  },
+  "recovered": true,
+  "entries": [
+    {
+      "at": "2026-10-02T12:00:00+08:00",
+      "what": "v5.2-pro 基线冻结（TRAIN_PARAMS 与 LIVE_PARAMS 初始对齐）",
+      "validation": { "type": "baseline", "pass": true, "oosDays": null, "note": "初始基线，无 OOS 样本" },
+      "liveAfter": true
+    },
+    {
+      "at": "2026-10-28",
+      "what": "params.live.stops 新增 sentimentPenalty / clusterRiseMax / openGapFilterPct",
+      "validation": { "pass": true, "note": "配置键新增，default 关闭，不影响既有逻辑" },
+      "liveAfter": true
+    },
+    {
+      "at": "2026-10-28T17:55:11.982Z",
+      "what": "live.stops 新增 trailingStopPct = 0.03（移动止盈默认参数）",
+      "validation": { "pass": true, "note": "default 关闭，仅提供开关" },
+      "liveAfter": true
+    },
+    {
+      "at": "2026-10-28T18:14:38.350Z",
+      "what": "移动止盈默认参数精修：激活阈值 +6%、回撤 2.5%、新增涨停豁免",
+      "validation": { "pass": true, "note": "default 关闭，仅提供开关" },
+      "liveAfter": true
+    },
+    {
+      "at": "2026-10-29T23:50:09+08:00",
+      "what": "stops 块新增分级连板止损配置",
+      "validation": { "type": "baseline", "pass": true, "oosDays": null, "note": "基线配置扩展" },
+      "liveAfter": true
+    }
+  ]
+}
