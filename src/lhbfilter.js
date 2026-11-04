@@ -258,6 +258,14 @@ export function featuresOf(code, day) {
  * 故单独设常量并在此注明，不做跨模块复用（跨口径复用是 bug 温床）。
  *
  * 主线的净买若为负（主线在出货），强度直接为 0——「主线在卖」不构成强度。
+ *
+ * ⚠ 口径边界（2026-11-05 修复）：`pct = main_yi / tot_yi × 100`，当全榜净买 `tot_yi ≤ 0`
+ *   （全市场龙虎榜净卖出）时，「占比」的分母非正、数学上无定义：
+ *     · main>0 / tot<0（主线逆势吸筹、相对强势）→ pct 算成**负数**，旧逻辑 clamp 成 0 → **误拦**；
+ *     · main<0 / tot<0（主线也在卖）→ pct 反而算成**正数**，仅靠 main_yi≤0 那条挡住。
+ *   分母为负时 pct 的正负都不能当强度用。此处判「口径不可用 → 返回 null」，走规则⑦既有
+ *   `null → skipped` 的 fail-open（留痕跳过、不拦），把判断交回其余 6 条规则，而不是硬造
+ *   一个未经回测的新公式（那等于改策略而非修 bug）。0.5 阈值与其余情形逐位不变。
  */
 export const THEME_FULL_PCT = 20;   // 主线净买占全榜 ≥20% 记为满分 1.0
 
@@ -266,8 +274,11 @@ export function themeStrengthOf(day) {
   if (!mt || !mt.name) return null;
   const pct = finite(mt.pct) ? +mt.pct : null;
   const yi = finite(mt.main_yi) ? +mt.main_yi : null;
-  // 强度必须有「量」支撑：净买额为负或缺失 → 0
+  const tot = finite(mt.tot_yi) ? +mt.tot_yi : null;
+  // 强度必须有「量」支撑：净买额为负或缺失 → 0（主线在卖不构成强度，先判，不受分母口径影响）
   if (yi != null && yi <= 0) return 0;
+  // 全榜净买 ≤ 0 → 占比口径失真，强度不可用（fail-open：规则⑦留痕跳过，不拦）
+  if (tot != null && tot <= 0) return null;
   if (pct == null) return null;
   return r3(Math.max(0, Math.min(1, pct / THEME_FULL_PCT)));
 }

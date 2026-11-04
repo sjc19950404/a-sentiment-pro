@@ -193,6 +193,29 @@ test('主线题材强度：主线净买为负时强度为 0（主线在卖不构
   assert.equal(themeStrengthOf(makeDay({ mainTheme: null })), null);
 });
 
+test('主线题材强度口径修复：全榜净买 ≤ 0 时占比失真 → null（规则⑦留痕跳过，不误拦）', () => {
+  // ① main>0 / tot<0：主线逆势吸筹、相对强势；pct 被算成负数（-199%）。
+  //    旧逻辑 clamp(-199/20) → 0，会错误触发 THEME_TOO_WEAK；修复后应为 null（不拦）。
+  const d1 = makeDay({ mainTheme: { name: '逆势主线', main_yi: 1.79, tot_yi: -0.9, pct: -199 } });
+  assert.equal(themeStrengthOf(d1), null, '分母为负时占比无定义，强度应判不可用而非 0');
+  assert.ok(!filterOne('600000', d1).rejectedBy.some((x) => x.code === 'THEME_TOO_WEAK'), '不应误拦逆势主线日');
+  const sk = filterOne('600000', d1).skipped.find((x) => x.key === 'THEME_TOO_WEAK');
+  assert.ok(sk && sk.blocking === false, '规则⑦应留痕跳过（fail-open），不是静默放行');
+
+  // ② main<0 / tot<0：主线也在卖，pct 反而算成正数（+2.2%）。
+  //    必须仍由「main_yi≤0 → 0」正确拦住，不能被这次修复放松。
+  const d2 = makeDay({ mainTheme: { name: '出货线', main_yi: -0.49, tot_yi: -22.21, pct: 2.2 } });
+  assert.equal(themeStrengthOf(d2), 0, '主线净买为负必须仍判 0');
+  assert.ok(filterOne('600000', d2).rejectedBy.some((x) => x.code === 'THEME_TOO_WEAK'), '主线在卖仍应拦截');
+
+  // ③ tot>0 的正常情形逐位不变：5% → 0.25（拦），20% → 1.0（过）
+  assert.equal(themeStrengthOf(makeDay({ mainTheme: { name: '弱线', main_yi: 0.5, tot_yi: 10, pct: 5 } })), 0.25);
+  assert.equal(themeStrengthOf(makeDay({ mainTheme: { name: '强线', main_yi: 2, tot_yi: 10, pct: 20 } })), 1);
+
+  // ④ 老存档缺 tot_yi 字段 → 兼容：退回原有 pct 逻辑，不抛错、不改变历史行为
+  assert.equal(themeStrengthOf(makeDay({ mainTheme: { name: '老档', main_yi: 2, pct: 20 } })), 1);
+});
+
 test('数据不足的两条规则必须留痕跳过、绝不参与拦截', () => {
   const day = makeDay({
     lhb: [L('600000', '浦发银行', { net: 5000 })],
