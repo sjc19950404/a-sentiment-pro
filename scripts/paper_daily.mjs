@@ -214,7 +214,7 @@ if (!tier) {
   console.log(`  可交易性过滤数据源：当日涨停池 ${ztpool ? ztpool.length + ' 只' : '缺失（no-op）'}`);
   const ICE_TRIAL_TOPN = 3;   // 冰点试错仓最多试错几只（极小仓位，控制总暴露）
   const rawPicks = (recommendPicks(day, { topN: TOP_N, emotionScore: effEmotionScore, ztpool, isClusteringBubble, mainLine, openGapFilterPct: config.backtest?.openGapFilterPct, seatsDetail: day.summary?.seats?.detail, hotmoney: config.params?.live?.hotmoney }).picks || [])
-    .filter((p) => p && p.code && quotes[String(p.code)]); // 仅选有当日行情者（否则 batchSubmit 会 NO_QUOTE 拦截）
+    .filter((p) => p && p.code && quotes[String(p.code)] && !(acct.positions && acct.positions[String(p.code)])); // 有当日行情且未持仓（幂等：重跑/跨轮不重复开仓，避免 double-open；否则 batchSubmit 会 NO_QUOTE 拦截）
   // 挂件一：冰点试错仓——只取「首板烂板弱转强」标的，数量上限 ICE_TRIAL_TOPN，总仓不超 iceTrialPos。
   const picks = iceTrialMode ? rawPicks.filter((p) => p.weakToStrong && (p.streak || 0) >= 1).slice(0, ICE_TRIAL_TOPN) : rawPicks;
   if (iceTrialMode) console.log(`  试错候选（首板烂板弱转强）${picks.length} 只：${picks.map((p) => p.code).join(',') || '无（冰点期无合格弱转强首板）'}`);
