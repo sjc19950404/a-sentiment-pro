@@ -2,8 +2,8 @@
  "schema_version": "1.0",
  "reports": {
   "post_market": {
-   "date": "2026-11-03",
-   "file": "post_market_2026-11-03.json",
+   "date": "2026-11-04",
+   "file": "post_market_2026-11-04.json",
    "is_sample": true
   },
   "weekly": {
@@ -22,6 +22,6 @@
    "is_sample": true
   }
  },
- "generatedAt": "2026-11-04T06:05:05.244Z",
+ "generatedAt": "2026-11-04T10:47:20.513Z",
  "sampleNote": "首屏示例：首次打开页面时显示 2026-09-30 报告（docs/ai_report_module_design.md §3.4）"
 }

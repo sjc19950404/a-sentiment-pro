@@ -1,24 +1,52 @@
 {
-  "date": "2026-11-03",
-  "generated_at": "2026-11-04T02:40:16.613Z",
-  "emotionScore": 46.4,
+  "date": "2026-11-04",
+  "generated_at": "2026-11-04T10:47:23.856Z",
+  "emotionScore": 59.5,
   "ztpoolLoaded": true,
   "picks": [
     {
-      "code": "000995",
-      "name": "皇台酒业",
+      "code": "002827",
+      "name": "高争民爆",
       "buyPoint": null,
       "weakToStrong": false,
       "probText": "中等（历史同特征组上涨占比 57%~65%）",
       "streakText": "大概率连板 54.2%",
       "gateTags": null,
-      "suggestWeight": 0.2
+      "suggestWeight": 0.1667
+    },
+    {
+      "code": "600892",
+      "name": "大晟文化",
+      "buyPoint": null,
+      "weakToStrong": false,
+      "probText": "中等（历史同特征组上涨占比 57%~65%）",
+      "streakText": "大概率连板 54.2%",
+      "gateTags": null,
+      "suggestWeight": 0.1667
+    },
+    {
+      "code": "601599",
+      "name": "浙文影业",
+      "buyPoint": null,
+      "weakToStrong": false,
+      "probText": "中等（历史同特征组上涨占比 57%~65%）",
+      "streakText": "大概率连板 54.2%",
+      "gateTags": null,
+      "suggestWeight": 0.1667
     }
   ],
   "rejected": [
     {
-      "code": "600261",
-      "name": "阳光照明",
+      "code": "601123",
+      "name": "马矿股份",
+      "reasons": [
+        "换手过高",
+        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
+      ]
+    },
+    {
+      "code": "000530",
+      "name": "冰山冷热",
       "reasons": [
         "换手过高",
         "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
@@ -27,6 +55,6 @@
   ],
   "note": {
     "level": "ok",
-    "text": "当前市场档位「半仓」，建议总仓位 50%，按 1 只均分即每只约 20.0%（单只上限 20%）。其中 1 只 T+1 连板概率 ≥30%，已置顶并打标签。"
+    "text": "当前市场档位「半仓」，建议总仓位 50%，按 3 只均分即每只约 16.7%（单只上限 20%）。其中 3 只 T+1 连板概率 ≥30%，已置顶并打标签。"
   }
 }

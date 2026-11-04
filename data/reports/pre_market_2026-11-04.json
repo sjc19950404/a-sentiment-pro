@@ -4,18 +4,18 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-04",
- "generated_at": "2026-11-04T02:39:41.190Z",
+ "generated_at": "2026-11-04T10:47:20.513Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "fresh",
+   "dual_track": "stale",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
    "ops_alerts": "fresh",
-   "intraday": "stale",
+   "intraday": "fresh",
    "paper_account": "live"
   }
  },
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -81,12 +81,12 @@
    "confidence": "measured"
   },
   "prev_nav": {
-   "source": "derived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "positions": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "overnight_exposure": {
    "source": "archived",
@@ -122,48 +122,17 @@
   }
  },
  "payload": {
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "grid_triggers": null,
   "counter_trend_losses": null,
   "pnl_daily": 0,
   "pnl_cumulative": 0,
   "max_drawdown_daily": null,
-  "trend_switch_hits": 1,
+  "trend_switch_hits": 0,
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": {
-   "key": "recover",
-   "label": "复苏/酝酿期",
-   "score": 46.34,
-   "cap": 0.5,
-   "position_range": "30%~50%",
-   "positionReconcile": {
-    "score": 46.3,
-    "base": {
-     "key": "base_defend",
-     "minPos": 0,
-     "maxPos": 0.3,
-     "label": "防守"
-    },
-    "baseRange": "0%~30%",
-    "cap": {
-     "key": "recover",
-     "minPos": 0.3,
-     "maxPos": 0.5,
-     "label": "复苏/酝酿期",
-     "advice": "中性震荡试仓，跟随确认再加",
-     "tone": "balanced"
-    },
-    "capRange": "30%~50%",
-    "force": false,
-    "conflict": false,
-    "finalRange": "30%~50%"
-   },
-   "clustering_bubble": false,
-   "sentiment_penalty": 0,
-   "score_adjusted": 46.34
-  },
+  "regime": null,
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -174,10 +143,9 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": -0.0007520000000000001,
-    "state": "ok",
-    "stale": false,
-    "cacheNote": null
+    "chgPct": null,
+    "state": "night-open",
+    "nightOpen": true
    },
    {
     "key": "sox",
@@ -188,22 +156,16 @@
     "cacheNote": null
    }
   ],
-  "externalStale": [],
+  "externalStale": [
+   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空"
+  ],
   "nav_realtime": 1000000,
-  "prev_nav": 0.9470640179712287,
-  "positions": {
-   "targetPos": {
-    "上证指数": 0.55,
-    "深证成指": 0.4,
-    "创业板指": 0.4
-   },
-   "poolPos": 0.45,
-   "executed": true
-  },
+  "prev_nav": null,
+  "positions": null,
   "overnight_exposure": {
-   "a50_chgPct": -0.0007520000000000001,
-   "a50NightOpen": false,
-   "posGap": 0.15,
+   "a50_chgPct": null,
+   "a50NightOpen": true,
+   "posGap": null,
    "us_close": {
     "dji": -0.003795,
     "spx": 0.003649,
@@ -213,9 +175,9 @@
     "hxc": 0.0021460000000000003,
     "fxi": -0.000602
    },
-   "cnh_chgPct": 0.0016339999999999998,
-   "usReady": true,
-   "usReason": "美东 21:35 ET 已收盘（≥16:30 ET），可采信当日收盘"
+   "cnh_chgPct": 0.000525,
+   "usReady": false,
+   "usReason": "美东 05:43 ET 盘前（09:30 才开盘），此刻美股无收盘价"
   },
   "key_levels": null,
   "events_today": null,
@@ -225,89 +187,89 @@
    "basis": "pain.advance.detail 昨收口径连板梯队（封板质量以晋级结果+近期上榜频次代理，个股级封单额无档案）；不含操作建议",
    "ladder": [
     {
-     "code": "001219",
-     "name": "青岛食品",
-     "lb": 6,
-     "kept": false,
-     "chg": 0.14,
-     "appearances": 6
-    },
-    {
-     "code": "002172",
-     "name": "澳洋健康",
+     "code": "600261",
+     "name": "阳光照明",
      "lb": 4,
      "kept": false,
-     "chg": 4.62,
-     "appearances": 28
-    },
-    {
-     "code": "002275",
-     "name": "桂林三金",
-     "lb": 3,
-     "kept": false,
-     "chg": -4.13,
-     "appearances": 3
+     "chg": -9.9,
+     "appearances": 6
     },
     {
      "code": "002086",
      "name": "东方海洋",
+     "lb": 4,
+     "kept": false,
+     "chg": -4.09,
+     "appearances": 7
+    },
+    {
+     "code": "000995",
+     "name": "皇台酒业",
      "lb": 3,
-     "kept": true,
-     "chg": 9.97,
+     "kept": false,
+     "chg": -4.66,
+     "appearances": 17
+    },
+    {
+     "code": "002029",
+     "name": "七匹狼",
+     "lb": 2,
+     "kept": false,
+     "chg": -9.97,
      "appearances": 6
     },
     {
-     "code": "600261",
-     "name": "阳光照明",
-     "lb": 3,
-     "kept": true,
-     "chg": 10,
+     "code": "000599",
+     "name": "青岛双星",
+     "lb": 2,
+     "kept": false,
+     "chg": -7.56,
      "appearances": 6
     },
     {
-     "code": "000417",
-     "name": "合百集团",
+     "code": "603258",
+     "name": "电魂网络",
      "lb": 2,
      "kept": false,
-     "chg": -4.94,
-     "appearances": 11
+     "chg": -3.65,
+     "appearances": 5
     },
     {
-     "code": "600189",
-     "name": "泉阳泉",
+     "code": "002292",
+     "name": "奥飞娱乐",
      "lb": 2,
      "kept": false,
-     "chg": -3.29,
-     "appearances": 6
-    },
-    {
-     "code": "603587",
-     "name": "地素时尚",
-     "lb": 2,
-     "kept": false,
-     "chg": -2.04,
-     "appearances": 2
-    },
-    {
-     "code": "000410",
-     "name": "沈阳机床",
-     "lb": 2,
-     "kept": false,
-     "chg": -1.35,
+     "chg": -2.51,
      "appearances": 3
     },
     {
-     "code": "000525",
-     "name": "红太阳",
+     "code": "600293",
+     "name": "三峡新材",
      "lb": 2,
      "kept": false,
-     "chg": 1.62,
-     "appearances": 3
+     "chg": -1.75,
+     "appearances": 17
+    },
+    {
+     "code": "600715",
+     "name": "文投控股",
+     "lb": 2,
+     "kept": false,
+     "chg": 0.41,
+     "appearances": 10
+    },
+    {
+     "code": "601599",
+     "name": "浙文影业",
+     "lb": 2,
+     "kept": true,
+     "chg": 9.95,
+     "appearances": 6
     }
    ],
    "overnight_sectors": null,
-   "max_lb": 6,
-   "broken_limit_ratio": 0.4146341463414634
+   "max_lb": 4,
+   "broken_limit_ratio": 0.2185430463576159
   },
   "simulation_stock": null,
   "ma20_degraded": false,
