@@ -20,6 +20,8 @@
     "kline:init": "node ui/fetch_kline_all.mjs --init",
     "promote": "node scripts/promote_params.mjs",
     "checkup": "node scripts/gate_checkup.mjs",
+    "gate-check": "node scripts/gate_checkup.mjs",
+    "backfill:seats": "node scripts/backfill_seat_details.mjs",
     "test": "node --test"
   },
   "license": "MIT",
