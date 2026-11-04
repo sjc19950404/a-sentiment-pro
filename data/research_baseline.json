@@ -1,0 +1,465 @@
+{
+  "schema": "research-baseline-v1",
+  "generatedAt": "2026-11-04T06:01:10",
+  "provenance": {
+    "archiveDays": 257,
+    "firstDay": "2025-10-09",
+    "lastDay": "2026-11-03",
+    "klineRebuildDays": 223,
+    "excludedBackfillDays": 0,
+    "systemEnabled": "2026-09-28",
+    "liveTradingDaysSinceEnable": 19,
+    "paperAccountStart": "2026-10-23",
+    "paperTradingDays": 8,
+    "caveat": "主档回溯 ≠ 实盘观察；257 天里大量为 K 线重建口径（klineRebuildDays），结论仅用于管线自检与口径对比，不构成投资建议。"
+  },
+  "indexBacktest": {
+    "fullSample": {
+      "v52": {
+        "total": -5.94,
+        "annual": -5.83,
+        "sharpe": -0.33,
+        "maxDd": 17.62,
+        "winRate": 49.22
+      },
+      "v53": {
+        "total": -7.15,
+        "annual": -7.01,
+        "sharpe": -0.924,
+        "maxDd": 12.03
+      },
+      "hold": null
+    },
+    "metaNote": "样本仅 257 个交易日，年化/夏普等指标的统计意义有限，仅用于管线自检与参数对比，不构成投资建议。",
+    "series": {
+      "fullSample": {
+        "emotion": -38.54,
+        "navBase": -16.57,
+        "navV52": -5.94,
+        "navV53": -7.15,
+        "navHold": -14.76,
+        "posV52": null,
+        "posV53": null
+      },
+      "sinceSystemEnabled": {
+        "emotion": 44.55,
+        "navBase": -9.56,
+        "navV52": -4.44,
+        "navV53": -3.57,
+        "navHold": -11.36,
+        "posV52": 18.42,
+        "posV53": 30.43
+      },
+      "note": "区间收益 = 末值/起点值 − 1；hold 为同三大指数买入持有基准（未扣主动管理）。"
+    }
+  },
+  "versionRegressionIC": {
+    "sample": {
+      "archiveDays": 257,
+      "mainDays": 257,
+      "withNextRet": 256,
+      "dateRange": [
+        "2025-10-09",
+        "2026-11-03"
+      ],
+      "partialDays": 0,
+      "noneDays": 0,
+      "breadthProxyDays": 6
+    },
+    "cautions": [
+      "主样本 256 个交易日（含次日收益），相关系数的 95% 置信区间约 ±0.12——足以暴露量级差异与方向性异常，但版本间小幅差异仍不足以判定优劣，需样本外证据佐证。",
+      "本样本中有 6/257 天缺少涨跌家数真值（up_count/down_count），s_pos 因子走 posRatio 代理——版本间差异会被代理值稀释，真实差异应大于本表所示。",
+      "版本差异可归因于「净买原料口径」（v4.5 全量 / v5.0 当日 / v5.2 当日剔新股）与「s_net 归一方式」（v5.3 分位映射 vs 其余 tanh5）两个维度；其余因子在各版本中完全相同。",
+      "v5.3-pro 的均分相对基线偏移 -3.94 分（64.3 → 60.4），这是**分位归一转 positive 作用的必然结果**：tanh(x/5) 把中位数交易日顶到 97 分以上，分位映射把中位数拉回 50 分——即\"削掉了虚高\"。⚠ 因此切换基线**必须同步重标定档位阈值（24/65/80）**，否则大量原本判\"满仓\"的日子会掉到\"半仓\"档，这是口径变更而非市场变化。",
+      "饱和改善：s_net ≥99.9 的天数 82/256 → 0/256（候选版 vs 基线）。这是 v5.3 存在的**唯一设计目标**，已达成；但它不能被解读为\"预测力更强\"——Pearson 差异在 n=256 下不显著。"
+    ],
+    "table": {
+      "v4.5": {
+        "scoreMean": 66.44,
+        "pearson": -0.01,
+        "spearman": -0.02,
+        "directionAcc": 48.44,
+        "hit": 124,
+        "total": 256
+      },
+      "v5.0": {
+        "scoreMean": 64.57,
+        "pearson": 0,
+        "spearman": -0.01,
+        "directionAcc": 48.44,
+        "hit": 124,
+        "total": 256
+      },
+      "v5.2-pro": {
+        "scoreMean": 64.33,
+        "pearson": 0.01,
+        "spearman": 0,
+        "directionAcc": 50,
+        "hit": 128,
+        "total": 256
+      },
+      "v5.3-pro": {
+        "scoreMean": 60.39,
+        "pearson": 0.01,
+        "spearman": -0.02,
+        "directionAcc": 47.66,
+        "hit": 122,
+        "total": 256
+      }
+    },
+    "interpretation": "情绪分与次日指数收益 Pearson ≈ 0、方向准确率 ≈ 50% ⇒ 对次日方向无统计显著预测力。"
+  },
+  "strategyBacktests": {
+    "benchmark": {
+      "label": "沪深300 买入持有（同区间）",
+      "total": -14.12,
+      "annual": -13.86,
+      "maxDd": 21.23,
+      "sharpe": -0.83
+    },
+    "rows": [
+      {
+        "key": "0",
+        "label": "冰点反转（滚动 P15 买 / P85 避险，持有 3 日）",
+        "trades": 24,
+        "total": 0.65,
+        "annual": 0.64,
+        "maxDd": 7.79,
+        "sharpe": 0.11,
+        "winRate": 37.5,
+        "plRatio": 1.3353
+      },
+      {
+        "key": "1",
+        "label": "题材动量（top1 题材等权，持有 3 日）",
+        "trades": 10,
+        "total": 23.74,
+        "annual": 23.23,
+        "maxDd": 16.11,
+        "sharpe": 1.09,
+        "winRate": 60,
+        "plRatio": 1.5529
+      },
+      {
+        "key": "2",
+        "label": "梯队风险偏好（高度≥4且2板+≥8 买 / 高度≤2 断层卖，持有 3 日）",
+        "trades": 77,
+        "total": -13.76,
+        "annual": -13.51,
+        "maxDd": 19.78,
+        "sharpe": -0.85,
+        "winRate": 36.36,
+        "plRatio": 1.014
+      },
+      {
+        "key": "3",
+        "label": "冰点反转（滚动 P15 买 / P85 避险，持有 5 日）",
+        "trades": 20,
+        "total": 4.02,
+        "annual": 3.94,
+        "maxDd": 7.19,
+        "sharpe": 0.41,
+        "winRate": 45,
+        "plRatio": 1.1235
+      },
+      {
+        "key": "4",
+        "label": "题材动量（top1 题材等权，持有 5 日）",
+        "trades": 6,
+        "total": 10.97,
+        "annual": 10.74,
+        "maxDd": 20.39,
+        "sharpe": 0.54,
+        "winRate": 20,
+        "plRatio": 7.1189
+      },
+      {
+        "key": "5",
+        "label": "梯队风险偏好（高度≥4且2板+≥8 买 / 高度≤2 断层卖，持有 5 日）",
+        "trades": 47,
+        "total": -15.49,
+        "annual": -15.21,
+        "maxDd": 19.12,
+        "sharpe": -0.91,
+        "winRate": 42.55,
+        "plRatio": 0.807
+      },
+      {
+        "key": "6",
+        "label": "冰点反转（滚动 P15 买 / P85 避险，持有 10 日）",
+        "trades": 15,
+        "total": -5.58,
+        "annual": -5.48,
+        "maxDd": 15.27,
+        "sharpe": -0.43,
+        "winRate": 40,
+        "plRatio": 0.8441
+      },
+      {
+        "key": "7",
+        "label": "题材动量（top1 题材等权，持有 10 日）",
+        "trades": 4,
+        "total": -23.4,
+        "annual": -23,
+        "maxDd": 25.01,
+        "sharpe": -1.36,
+        "winRate": 0,
+        "plRatio": null
+      },
+      {
+        "key": "8",
+        "label": "梯队风险偏好（高度≥4且2板+≥8 买 / 高度≤2 断层卖，持有 10 日）",
+        "trades": 24,
+        "total": -15.56,
+        "annual": -15.29,
+        "maxDd": 18.73,
+        "sharpe": -0.92,
+        "winRate": 33.33,
+        "plRatio": 1.0564
+      }
+    ],
+    "sampleNote": "样本含六因子回填天（K 线重建池口径）。样本期情绪区间 17.9~92.4。",
+    "note": "持有期（3/5/10 日）一改符号翻转、样本量极小（4~24 笔）⇒ 更像多重选择结果，非稳定 alpha。"
+  },
+  "predictCalibration257d": {
+    "method": "archive-only next-day/3rd-day close lookup（离线、可复现）",
+    "dateFrom": "2025-10-09",
+    "dateTo": "2026-11-03",
+    "tradeDays": 257,
+    "candidates": 28456,
+    "withT1": 6041,
+    "note": "覆盖低于 streak_backtest（后者用外部前复权 K 线）；仅方向性校验预测分层是否仍成立。",
+    "groups": [
+      {
+        "label": "全部候选（有T+1数据）",
+        "n": 6041,
+        "t1Mean": 2.08,
+        "t1Med": 2.71,
+        "t3Med": 4.01,
+        "upPct": 58.75,
+        "againPct": 25.64
+      },
+      {
+        "label": "全部涨停股",
+        "n": 2399,
+        "t1Mean": 5.45,
+        "t1Med": 9.89,
+        "t3Med": 9.37,
+        "upPct": 76.2,
+        "againPct": 45.23
+      },
+      {
+        "label": "涨停·首板",
+        "n": 1575,
+        "t1Mean": 6.33,
+        "t1Med": 9.95,
+        "t3Med": 10.8,
+        "upPct": 80.89,
+        "againPct": 45.78
+      },
+      {
+        "label": "涨停·2连板",
+        "n": 432,
+        "t1Mean": 3.86,
+        "t1Med": 5.49,
+        "t3Med": 10.26,
+        "upPct": 65.97,
+        "againPct": 43.52
+      },
+      {
+        "label": "涨停·3连板及以上",
+        "n": 392,
+        "t1Mean": 3.67,
+        "t1Med": 6.83,
+        "t3Med": 6.27,
+        "upPct": 68.62,
+        "againPct": 44.9
+      },
+      {
+        "label": "涨停·首板&换手<10%",
+        "n": 650,
+        "t1Mean": 8.52,
+        "t1Med": 10,
+        "t3Med": 21.04,
+        "upPct": 90.46,
+        "againPct": 71.08
+      },
+      {
+        "label": "涨停·2连板&换手<10%",
+        "n": 186,
+        "t1Mean": 6.28,
+        "t1Med": 9.99,
+        "t3Med": 16.08,
+        "upPct": 79.03,
+        "againPct": 60.22
+      },
+      {
+        "label": "涨停·换手>=25%",
+        "n": 588,
+        "t1Mean": 1.73,
+        "t1Med": 1.83,
+        "t3Med": 3.27,
+        "upPct": 56.63,
+        "againPct": 18.54
+      },
+      {
+        "label": "涨停·龙虎净买>0",
+        "n": 1358,
+        "t1Mean": 5.62,
+        "t1Med": 7.77,
+        "t3Med": 8.05,
+        "upPct": 76.8,
+        "againPct": 36.6
+      },
+      {
+        "label": "涨停·龙虎净买>=2亿",
+        "n": 257,
+        "t1Mean": 5.72,
+        "t1Med": 6.8,
+        "t3Med": 6.16,
+        "upPct": 80.16,
+        "againPct": 31.52
+      }
+    ]
+  },
+  "dualTrackP2": {
+    "p2Start": null,
+    "p2StartNote": null,
+    "activeTrack": "A",
+    "gates": {
+      "trackA_v52": {
+        "total": -0.05943,
+        "maxDd": 0.176214,
+        "ref": "data/backtest.json::v52"
+      },
+      "trackB_v53": {
+        "total": -0.071487,
+        "maxDd": 0.120324,
+        "ref": "data/backtest.json::v53",
+        "note": "锚点口径 unknown→null；披露口径见 trackB"
+      },
+      "shadowC_t1": {
+        "0.3": {
+          "total": -0.050919,
+          "maxDd": 0.177939,
+          "episodes": 18
+        },
+        "0.4": {
+          "total": -0.044883,
+          "maxDd": 0.174489,
+          "episodes": 18
+        }
+      },
+      "disclosureDelta": {
+        "unknownDays": 2,
+        "dates": [
+          "2025-10-09",
+          "2025-10-10"
+        ],
+        "deltaTotal": 0.002217
+      }
+    },
+    "summary": {
+      "trackA": {
+        "total": -0.05943,
+        "maxDd": 0.176214,
+        "sharpe": -0.329866
+      },
+      "trackB": {
+        "total": -0.06927,
+        "maxDd": 0.120324,
+        "sharpe": -0.893601
+      },
+      "trackC": {
+        "0.3": {
+          "total": -0.050919,
+          "maxDd": 0.177939,
+          "sharpe": -0.293245,
+          "episodes": 18,
+          "shadowCumEnd": 0.008511
+        },
+        "0.4": {
+          "total": -0.044883,
+          "maxDd": 0.174489,
+          "sharpe": -0.243555,
+          "episodes": 18,
+          "shadowCumEnd": 0.014547
+        },
+        "0.5": {
+          "total": -0.035393,
+          "maxDd": 0.166959,
+          "sharpe": -0.172277,
+          "episodes": 18,
+          "shadowCumEnd": 0.023627
+        }
+      },
+      "ledgerEnd": {
+        "since": "2025-10-09",
+        "premiumCum": 0.00984,
+        "coverageCum": 0.05589,
+        "shadowCum": {
+          "0.3": 0.008511,
+          "0.4": 0.014547,
+          "0.5": 0.023627
+        },
+        "episodes": {
+          "0.3": 18,
+          "0.4": 18,
+          "0.5": 18
+        },
+        "activeDays": 18
+      },
+      "coverageMax": 0.05589,
+      "divergence": {
+        "daysGt02": 242,
+        "daysGt03": 242,
+        "max": 0.8,
+        "maxDate": "2026-04-14",
+        "thresholds": "0.02/0.03 为 P2 观察清单第一节 [待确认] 告警/暂停阈值"
+      },
+      "regimeCensus": {
+        "unknown": 2,
+        "ebb": 44,
+        "climax": 60,
+        "ice": 66,
+        "recover": 44,
+        "shift": 18,
+        "neutral": 23
+      },
+      "activeDays": 18,
+      "shiftEpisodes": 18
+    },
+    "shiftEpisodesHistorical": 0,
+    "shiftEpisodesSinceSystemEnabled": 0,
+    "note": "p2Start 仍为 null ⇒ P2 账本为全样本重放，18 个 shift 生效日全部在系统启用前；启用后新增 0 个 ⇒ 晋升门槛（≥10 个实盘 shift 日）尚未开始积累。"
+  },
+  "paramsGovernance": {
+    "entries": [],
+    "note": "5 条均为基线冻结 / 新增配置键 / 默认关闭开关；无完整 oos-20pct 权重晋升。"
+  },
+  "reportHealth": {
+    "total": 61,
+    "byKindStatus": {
+      "intraday|degraded": 19,
+      "post|degraded": 16,
+      "pre|degraded": 22,
+      "weekly|degraded": 4
+    },
+    "note": "周报 win_rate=null（剧本绑定缺席）；无月度报告；状态多为 degraded（字段缺失）。"
+  },
+  "verdict": {
+    "engineering": "工程可信（契约/单测/跨语言夹具/参数冻结/新鲜度门禁完备）。",
+    "strategy": "策略有效性未被证明：指数主信号绝对亏损、相对抗跌；隔离闸门后个股平仓胜率 ~9.5%；版本回归 IC≈0；模拟盘 8 天 0 成交。",
+    "proven": [
+      "若干增强方案已证伪（M8 / 0.7 帽 / 尾部介入 T2·T3 / V5.3 全量 regime 帽）；",
+      "v5.3 分位归一确消除 s_net 饱和（但非预测力增强）；",
+      "主信号在下跌样本相对基准少跌约 8–9pp（相对抗跌，非正收益）。"
+    ],
+    "unproven": [
+      "任何可交易的正向 alpha；实盘/模拟盘样本 8 天、0 成交；",
+      "预测分层基于 33 天旧校准（本基线已给出 257 天档案内重校准作方向校验）；",
+      "P2 未启动、无实盘影子样本。"
+    ],
+    "confidence": "中低——证据充分表明“工程稳、多项坏方案已否”，但“能否赚钱”仍缺样本外实盘证据。"
+  }
+}
