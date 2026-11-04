@@ -3012,14 +3012,27 @@
     (async () => {
       // API 起源：仅在 github.io 域名 + 配置了 apiOrigin（家里 Cloudflare 隧道）时，把 /api/* 改道隧道；
       //   Pi 本地 / 隧道同源仍走相对路径（零改动、向后兼容）。复用 durl() 同款 github.io 门控。
-      const apiBase = (() => {
-        const origin = (typeof window !== 'undefined' && window.ASENT_CONFIG && window.ASENT_CONFIG.apiOrigin) || '';
+      // API 起源解析（github.io 静态部署时改道隧道；Pi 本地/隧道同源走相对路径）：
+      //   1) 优先 ?api= 显式覆盖（隧道临时域名过期时免提交切换，耐久）；
+      //   2) 回退 window.ASENT_CONFIG.apiOrigin（config.json 异步加载后落地）。
+      const resolveApiBase = () => {
+        const q = new URLSearchParams(location.search).get('api');
+        const fromQuery = q ? q.replace(/\/+$/, '') : '';
+        const origin = fromQuery
+          || (typeof window !== 'undefined' && window.ASENT_CONFIG && window.ASENT_CONFIG.apiOrigin)
+          || '';
         if (!origin || !/(^|\.)github\.io$/.test(location.hostname)) return '';
-        return origin.replace(/\/+$/, '');
-      })();
-      // 取当前参数：优先 /api/config（本地/隧道服务端），回退 window.ASENT_CONFIG（静态部署只读）
+        return origin;
+      };
+      // 取当前参数：优先 /api/config（本地/隧道服务端），回退静态只读。
+      // 首屏 config.json 异步未落地时重试等待 apiOrigin 生效（默认路径）。
+      let apiBase = resolveApiBase();
       let cfg = null;
-      try { cfg = await fetch(apiBase + '/api/config').then((r) => (r.ok ? r.json() : null)); } catch { cfg = null; }
+      for (let attempt = 0; attempt < 16 && !cfg; attempt++) {
+        if (!apiBase) apiBase = resolveApiBase();
+        try { cfg = await fetch(apiBase + '/api/config').then((r) => (r.ok ? r.json() : null)); } catch { cfg = null; }
+        if (!cfg && attempt < 15) await new Promise((res) => setTimeout(res, 200));
+      }
       const stops = (cfg && cfg.params && cfg.params.live && cfg.params.live.stops)
         || (window.ASENT_CONFIG && window.ASENT_CONFIG.params && window.ASENT_CONFIG.params.live && window.ASENT_CONFIG.params.live.stops)
         || {};
