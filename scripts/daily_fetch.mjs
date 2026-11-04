@@ -51,7 +51,8 @@ async function assertZtpoolIngested() {
   try {
     hist = existsSync(ZT_PATH) ? JSON.parse(readFileSync(ZT_PATH, 'utf8')) : null;
   } catch { hist = null; }
-  const last = Array.isArray(hist) && hist.length ? normDate(hist[hist.length - 1]?.date) : '';
+  const lastEntry = Array.isArray(hist) && hist.length ? hist[hist.length - 1] : null;
+  const last = lastEntry ? normDate(lastEntry.date) : '';
   if (last !== normDate(today)) {
     console.error(`[daily_fetch] ✗ 收尾断言失败：今日（${today}）涨停池未入库——ztpool_history 末条为 ${last || '（空/不可读）'}`);
     await fail(1,
@@ -60,7 +61,17 @@ async function assertZtpoolIngested() {
       '[daily_fetch]   处置：交易日当天人工补跑本脚本；纪律见 docs/cron.md §6',
     );
   }
-  console.log(`[daily_fetch] ✓ 收尾断言：${today} 涨停池已入库（ztpool_history 共 ${hist.length} 天）`);
+  // 空池也判失败：日期对上但 pool 为空 = 静默丢失（sanitize 误剔 / 接口空返回），同样不可回补。
+  // 2026-10-30 fix(audit)#6 的 sanitizePool 曾把 fbt(HHMMSS) 误当秒校验，整池剔光写空，
+  // 仅靠"日期对上"的断言发现不了——加 pool 非空闸门后此类静默失败会直接告警。
+  if (!Array.isArray(lastEntry.pool) || lastEntry.pool.length === 0) {
+    console.error(`[daily_fetch] ✗ 收尾断言失败：今日（${today}）涨停池已入库但 pool 为空（${lastEntry.pool == null ? 'undefined' : lastEntry.pool.length + ' 只'}）——疑似 sanitize 误剔或接口空返回`);
+    await fail(1,
+      `[daily_fetch] ✗ 收尾断言失败：今日（${today}）涨停池已入库但 pool 为空——疑似 sanitize 误剔或接口空返回`,
+      '[daily_fetch]   该日涨停池不可回补；处置：检查 scripts/emotion_history.mjs sanitizePool 量程 / 重跑本脚本',
+    );
+  }
+  console.log(`[daily_fetch] ✓ 收尾断言：${today} 涨停池已入库（${lastEntry.pool.length} 只，ztpool_history 共 ${hist.length} 天）`);
 }
 
 // ── 失败出口：日志 + 企微告警 + 非零退出（2026-10-10 用户指令）───────────────

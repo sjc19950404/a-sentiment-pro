@@ -36,8 +36,11 @@ function sanitizePool(pool) {
     if (!it || it.c == null) { dropped++; continue; }        // 无 code → 剔除
     if (num(it.c) == null) { dropped++; continue; }          // code 非数字/字符串 → 剔除
     const fbt = num(it.fbt), zbc = num(it.zbc), fund = num(it.fund), lbc = num(it.lbc);
-    // 负值 / 量级异常（fbt>86400s、zbc>200、lbc>100 均不可能；fund 非有限数）→ 该条剔除
-    if ((fbt != null && (fbt < 0 || fbt > 86400))
+    // 负值 / 量级异常 → 该条剔除。
+    // ⚠ fbt/lbt 是 HHMMSS 格式（如 92500 = 09:25:00），不是秒；量程上限取 235959。
+    //   原代码误用 86400（一日秒数）做上限，导致涨停池 fbt 恒 ≥ 92500 被判"异常"整池剔光
+    //   （2026-10-30 fix(audit)#6 引入的脏数据清洗 bug，10-30 起 ztpool 断更为空池）。
+    if ((fbt != null && (fbt < 0 || fbt > 235959))
         || (zbc != null && (zbc < 0 || zbc > 200))
         || (fund != null && !Number.isFinite(fund))
         || (lbc != null && (lbc < 0 || lbc > 100))) {
