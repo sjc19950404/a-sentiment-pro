@@ -158,7 +158,7 @@ test/fixtures/sina_global_20260930.txt  外围解析夹具（2026-09-30 美股�
   `imputedRatioLatest` / `emotion.missing` / `dataQuality.*Ok`）的坏事实 → 结构化事件 →
   `data/ops-alerts-latest.json` 落盘 + 可选企微推送（CI 配 `OPS_WEBHOOK` secret 即生效；
   未配置零打扰；推送失败绝不炸主管道）。
-- 诚实披露：当前真实样本仅 33 天（OOS ≈ 6 天），门禁是**流程防线**（防「只看样本内调参」
+- 诚实披露：predict.js 连板校准原基于 **33 天**窗口（2026-08-14~09-30）；现已用外部前复权 K 线对 **257 天**重校准（data/streak_backtest.json + tools/research/reports/research_baseline.md），旧 33 天窗口已废弃；OOS ≈ 6 天（样本仍小，结论谨慎）。门禁是**流程防线**（防「只看样本内调参」
   这一行为模式），不是统计证明。
 
 ## UI 合并（merge/pro-into-ui · 2026-10-02）

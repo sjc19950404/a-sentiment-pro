@@ -137,6 +137,17 @@ case "$MODE" in
     node scripts/push_ai_report.mjs --latest intraday 2>/dev/null || true
     bash scripts/pi_push.sh
     ;;
+  research_monthly)
+    # 只读聚合研究验证月报（tools/research/monthly_report.mjs）：双轨 P2 / 模拟盘 / 统一基线 / 周报健康度。
+    # 先重算统一基线（只读、快速），再生成月报；产物 data/research_monthly_YYYY-MM.json + tools/research/reports/...md。
+    # 不重算回测、不写生产；best-effort，失败不阻断。
+    node tools/research/baseline.mjs 2>>"$LOG_FILE" || log "统一基线生成失败（best-effort）"
+    node tools/research/monthly_report.mjs 2>>"$LOG_FILE" || log "研究月报生成失败（best-effort）"
+    # pi_push 只提交 data/；月报 md 在 tools/，这里先暂存再交给 pi_push 一并提交（不碰禁止文件）。
+    git add data/research_baseline.json tools/research/reports/research_baseline.md data/research_monthly_*.json tools/research/reports/research_monthly_*.md 2>/dev/null || true
+    bash scripts/pi_push.sh
+    ;;
+
   *) log "未知 mode: $MODE"; exit 2;;
 esac
 
