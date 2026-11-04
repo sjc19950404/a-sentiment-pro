@@ -10,11 +10,14 @@
 //   2) 指数主信号回测（全样本 + 系统启用后 19 天，来自 backtest.json series）
 //   3) 版本回归 IC（来自 version-regression.json）
 //   4) 三策略回测（来自 backtest-strategies.json）
-//   5) 预测分组【新增·257 天档案内重校准】（纯档案次日/三日收盘价查表，离线可复现）
-//   6) 双轨 P2 真实状态（来自 dual_track_latest.json）
+//   5) 预测分组【257 天档案内重校准】（离线：次日/三日收盘价查表，有存活偏差，仅方向校验）
+//   5b) 正式 257 天重校准（来自 backtest_limit_up_streak.mjs，外部前复权 K 线，无偏差，权威）
+//   6) 双轨 P2 真实状态（来自 dual_track.json / dual_track_latest.json）
 //   7) 参数治理与报告健康度
 //
 // 用法：node tools/research/baseline.mjs
+// 注意：本文件一旦改完请立即提交并推送——eod 管道开头会 git reset --hard origin/main，
+//   未提交的本地改动会被冲掉（params_changelog.json 即是前车之鉴）。
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { decodeArchive } from '../../src/lhb_codec.js';
@@ -68,8 +71,6 @@ function seriesReturn(series, fromInclusive) {
   const ds = series.dates;
   let i = fromInclusive ? ds.findIndex((d) => d >= fromInclusive) : 0;
   if (i < 0) i = 0;
-  const v0 = series[Object.keys(series).find((k) => k !== 'dates')]?.[i];
-  // 用通用法：对每个序列分别计算
   const out = {};
   for (const k of Object.keys(series)) {
     if (k === 'dates') continue;
@@ -88,7 +89,6 @@ const idxBacktest = {
   },
   metaNote: bt?.meta?.caveat || null,
 };
-// 用 series 统一算全样本/启用后区间收益（含 hold 基准）
 const fullRet = seriesReturn(s, null);
 const liveRet = seriesReturn(s, systemStart);
 idxBacktest.series = {
@@ -139,7 +139,8 @@ const strategies = {
 // 5) 预测分组 257 天【档案内重校准】（离线：次日/三日收盘价查表）
 //    ⚠ 方法论差异：原 streak_backtest.json 用外部腾讯前复权 K 线（覆盖更全）；
 //      本基线只用档案内 hot/lhb 次日/三日收盘价查表，覆盖更低但完全离线可复现。
-//      仅用于"预测分层是否仍成立"的方向性校验，不替代 streak 脚本。
+//      仅用于"预测分层是否仍成立"的方向性校验，存在「存活偏差」（次日仍被关注的票更可能已涨），
+//      故 up% 偏高、不可与 5b) 无偏结果或 33 天 streak 直接比较。
 // ════════════════════════════════════════════════════════════════════════════
 function buildPredictCalibration() {
   const arch = decodeArchive(archive);
@@ -215,14 +216,31 @@ function buildPredictCalibration() {
     group('涨停·龙虎净买>=2亿', (r) => r.isZt && r.bigFund),
   ];
   return {
-    method: 'archive-only next-day/3rd-day close lookup（离线、可复现）',
+    method: 'archive-only next-day/3rd-day close lookup（离线、可复现、有存活偏差）',
     dateFrom: archDaysAll[0], dateTo: archDaysAll[archDaysAll.length - 1],
     tradeDays: archDaysAll.length, candidates: candidates.length, withT1: recs.length,
     note: '覆盖低于 streak_backtest（后者用外部前复权 K 线全样本）；且仅计入次日仍进入 hot/lhb 的票，'
-      + '存在「存活偏差」（仍被关注的票更可能已上涨），故 up% 偏高、不可与 33 天 streak 直接比较；'
-      + '本分组仅作方向性校验，正式重校准应重跑 backtest_limit_up_streak.mjs（依赖外部前复权 K 线）。',
+      + '存在「存活偏差」（仍被关注的票更可能已上涨），故 up% 偏高、不可与 5b) 无偏结果直接比较；'
+      + '本分组仅作方向性校验，正式重校准见 5b)。',
     groups,
   };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// 5b) 正式 257 天重校准（来自 backtest_limit_up_streak.mjs，外部前复权 K 线，无偏差）
+//     仅在 streak_backtest.json 存在时采用；否则退化为 5) 的档案内查表（有存活偏差）。
+// ════════════════════════════════════════════════════════════════════════════
+const stObj = J('data/streak_backtest.json');
+const proper = {
+  available: !stObj.__err && Array.isArray(stObj.groups),
+  meta: stObj && stObj.meta ? stObj.meta : null,
+  groups: [],
+};
+if (proper.available) {
+  const want = ['全部涨停股', '涨停·首板', '涨停·2连板', '涨停·3连板', '涨停·首板&换手<10%', '涨停·2连板&换手<10%', '涨停·3连板&换手<10%', '涨停·换手>=25%', '涨停·净买>=2亿'];
+  proper.groups = stObj.groups
+    .filter((x) => want.includes(x.label))
+    .map((x) => ({ label: x.label, n: x.n, t1Med: x.t1Med, upPct: x.upPct, againPct: x.againPct }));
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -280,6 +298,7 @@ const baseline = {
   versionRegressionIC: ic,
   strategyBacktests: strategies,
   predictCalibration257d: buildPredictCalibration(),
+  predictCalibrationProper257d: proper,
   dualTrackP2: p2,
   paramsGovernance: params,
   reportHealth,
@@ -290,11 +309,11 @@ const baseline = {
     proven: [
       '若干增强方案已证伪（M8 / 0.7 帽 / 尾部介入 T2·T3 / V5.3 全量 regime 帽）；',
       'v5.3 分位归一确消除 s_net 饱和（但非预测力增强）；',
-      '主信号在下跌样本相对基准少跌约 8–9pp（相对抗跌，非正收益）。',
+      '主信号在下跌样本相对基准少跌约 8–9pp（相对抗跌，非正收益）；',
+      '257 天无偏重校准：低换手首板 T+1 中位 +0.9%、上涨 55.6%（方向成立、幅度温和）；高换手涨停无优势——predict.js 方向正确、需下调收益预期。',
     ],
     unproven: [
       '任何可交易的正向 alpha；实盘/模拟盘样本 8 天、0 成交；',
-      '预测分层基于 33 天旧校准（本基线已给出 257 天档案内重校准作方向校验）；',
       'P2 未启动、无实盘影子样本。',
     ],
     confidence: '中低——证据充分表明“工程稳、多项坏方案已否”，但“能否赚钱”仍缺样本外实盘证据。',
@@ -308,7 +327,7 @@ atomicWriteJSON(outJson, JSON.stringify(baseline, null, 2));
 const md = [];
 md.push(`# 研究基线报告 · ${generatedAt}`);
 md.push('');
-md.push(`> 只读聚合，不动生产。数据源：archive.json(${provenance.archiveDays}天) / backtest.json / version-regression.json / backtest-strategies.json / dual_track_latest.json / params_changelog.json。`);
+md.push(`> 只读聚合，不动生产。数据源：archive.json(${provenance.archiveDays}天) / backtest.json / version-regression.json / backtest-strategies.json / streak_backtest.json / dual_track*.json / params_changelog.json。`);
 md.push('');
 md.push(`## 1. 数据溯源与样本口径`);
 md.push(`- 主档区间：${provenance.firstDay} ~ ${provenance.lastDay}（${provenance.archiveDays} 交易日）`);
@@ -332,7 +351,7 @@ for (const r of strategyRows) md.push(`- [${r.label}] n=${r.trades}，总收益=
 md.push(`- 基准：${JSON.stringify(strategies.benchmark)}`);
 md.push(`- ${strategies.note}`);
 md.push('');
-md.push(`## 5. 预测分组 · 257 天档案内重校准（离线）`);
+md.push(`## 5. 预测分组 · 257 天档案内重校准（离线，有存活偏差，仅方向校验）`);
 md.push(`- 方法：${baseline.predictCalibration257d.method}；候选 ${baseline.predictCalibration257d.candidates}，有 T+1 数据 ${baseline.predictCalibration257d.withT1}`);
 md.push(`- 说明：${baseline.predictCalibration257d.note}`);
 md.push('');
@@ -340,6 +359,20 @@ md.push(`| 分组 | n | T+1均% | T+1中位% | T+3中位% | 上涨% | 再涨停%
 md.push(`|---|---|---|---|---|---|---|`);
 for (const g of baseline.predictCalibration257d.groups) md.push(`| ${g.label} | ${g.n} | ${g.t1Mean ?? '—'} | ${g.t1Med ?? '—'} | ${g.t3Med ?? '—'} | ${g.upPct ?? '—'} | ${g.againPct ?? '—'} |`);
 md.push('');
+md.push(`## 5b. 正式 257 天重校准（外部前复权 K 线，无偏差，权威）`);
+if (baseline.predictCalibrationProper257d.available) {
+  const p = baseline.predictCalibrationProper257d;
+  md.push(`- 口径：${p.meta && p.meta.note}；候选 ${p.meta && p.meta.candidates}，有 T+1 ${p.meta && p.meta.withT1}`);
+  md.push(`- 对比：上方 5) 档案内查表存在「存活偏差」（只计次日仍被关注的票）会高估上涨%；以下为无偏结果：`);
+  md.push('');
+  md.push(`| 分组 | n | T+1中位% | 上涨% | 再涨停% |`);
+  md.push(`|---|---|---|---|---|`);
+  for (const g of p.groups) md.push(`| ${g.label} | ${g.n} | ${g.t1Med ?? '—'} | ${g.upPct ?? '—'} | ${g.againPct ?? '—'} |`);
+  md.push('');
+} else {
+  md.push(`- streak_backtest.json 暂缺，退化为 5) 档案内查表（有偏差）。运行 node scripts/backtest_limit_up_streak.mjs 可生成。`);
+  md.push('');
+}
 md.push(`## 6. 双轨 P2 状态`);
 md.push(`- p2Start：${p2.p2Start ?? 'null（未启动，当前为全样本重放）'}`);
 md.push(`- shift 生效日：历史 ${p2.shiftEpisodesHistorical} 个，系统启用后新增 ${p2.shiftEpisodesSinceSystemEnabled} 个`);

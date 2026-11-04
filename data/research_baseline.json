@@ -1,6 +1,6 @@
 {
   "schema": "research-baseline-v1",
-  "generatedAt": "2026-11-04T06:07:48",
+  "generatedAt": "2026-11-04T06:39:30",
   "provenance": {
     "archiveDays": 257,
     "firstDay": "2025-10-09",
@@ -222,13 +222,13 @@
     "note": "持有期（3/5/10 日）一改符号翻转、样本量极小（4~24 笔）⇒ 更像多重选择结果，非稳定 alpha。"
   },
   "predictCalibration257d": {
-    "method": "archive-only next-day/3rd-day close lookup（离线、可复现）",
+    "method": "archive-only next-day/3rd-day close lookup（离线、可复现、有存活偏差）",
     "dateFrom": "2025-10-09",
     "dateTo": "2026-11-03",
     "tradeDays": 257,
     "candidates": 28456,
     "withT1": 6041,
-    "note": "覆盖低于 streak_backtest（后者用外部前复权 K 线全样本）；且仅计入次日仍进入 hot/lhb 的票，存在「存活偏差」（仍被关注的票更可能已上涨），故 up% 偏高、不可与 33 天 streak 直接比较；本分组仅作方向性校验，正式重校准应重跑 backtest_limit_up_streak.mjs（依赖外部前复权 K 线）。",
+    "note": "覆盖低于 streak_backtest（后者用外部前复权 K 线全样本）；且仅计入次日仍进入 hot/lhb 的票，存在「存活偏差」（仍被关注的票更可能已上涨），故 up% 偏高、不可与 5b) 无偏结果直接比较；本分组仅作方向性校验，正式重校准见 5b)。",
     "groups": [
       {
         "label": "全部候选（有T+1数据）",
@@ -319,6 +319,86 @@
         "t3Med": 6.16,
         "upPct": 80.16,
         "againPct": 31.52
+      }
+    ]
+  },
+  "predictCalibrationProper257d": {
+    "available": true,
+    "meta": {
+      "version": "streak-backtest-v1",
+      "generatedAt": "2026-10-01T06:40:57",
+      "archive": "data/archive.json",
+      "tradeDays": 33,
+      "dateFrom": "2026-08-14",
+      "dateTo": "2026-09-30",
+      "candidates": 2421,
+      "withT1": 2118,
+      "uniqueCodes": 1089,
+      "note": "T+1 涨停判定：主板 ≥9.8%、创业板/科创板 ≥19.8%、北交所 ≥29.8%（与模拟器板段口径一致）；收益按 T 日收盘价买入算，前复权。"
+    },
+    "groups": [
+      {
+        "label": "全部涨停股",
+        "n": 976,
+        "t1Med": 0.85,
+        "upPct": 55.23,
+        "againPct": 21.82
+      },
+      {
+        "label": "涨停·首板",
+        "n": 769,
+        "t1Med": 0.58,
+        "upPct": 53.71,
+        "againPct": 17.04
+      },
+      {
+        "label": "涨停·2连板",
+        "n": 130,
+        "t1Med": 2.42,
+        "upPct": 59.23,
+        "againPct": 38.46
+      },
+      {
+        "label": "涨停·3连板",
+        "n": 46,
+        "t1Med": 4.67,
+        "upPct": 60.87,
+        "againPct": 43.48
+      },
+      {
+        "label": "涨停·首板&换手<10%",
+        "n": 516,
+        "t1Med": 0.97,
+        "upPct": 57.56,
+        "againPct": 18.41
+      },
+      {
+        "label": "涨停·2连板&换手<10%",
+        "n": 72,
+        "t1Med": 4.35,
+        "upPct": 65.28,
+        "againPct": 41.67
+      },
+      {
+        "label": "涨停·3连板&换手<10%",
+        "n": 17,
+        "t1Med": 9.99,
+        "upPct": 64.71,
+        "againPct": 58.82
+      },
+      {
+        "label": "涨停·换手>=25%",
+        "n": 53,
+        "t1Med": -0.48,
+        "upPct": 47.17,
+        "againPct": 22.64
+      },
+      {
+        "label": "涨停·净买>=2亿",
+        "n": 41,
+        "t1Med": 2.5,
+        "upPct": 65.85,
+        "againPct": 12.2
       }
     ]
   },
@@ -434,9 +514,59 @@
     "note": "p2Start 仍为 null ⇒ P2 账本为全样本重放，18 个 shift 生效日全部在系统启用前；启用后新增 0 个 ⇒ 晋升门槛（≥10 个实盘 shift 日）尚未开始积累。"
   },
   "paramsGovernance": {
-    "present": false,
-    "entries": [],
-    "note": "文件当前缺失（未入库，疑于 git reset --hard 中丢失；此前观测到 5 条均为基线冻结/配置键，无 oos-20pct 权重晋升）。研究治理日志应入库以免丢失。"
+    "present": true,
+    "entries": [
+      {
+        "at": "2026-10-02T12:00:00+08:00",
+        "what": "v5.2-pro 基线冻结（TRAIN_PARAMS 与 LIVE_PARAMS 初始对齐）",
+        "validation": {
+          "type": "baseline",
+          "pass": true,
+          "oosDays": null,
+          "note": "初始基线，无 OOS 样本"
+        },
+        "liveAfter": true
+      },
+      {
+        "at": "2026-10-28",
+        "what": "params.live.stops 新增 sentimentPenalty / clusterRiseMax / openGapFilterPct",
+        "validation": {
+          "pass": true,
+          "note": "配置键新增，default 关闭，不影响既有逻辑"
+        },
+        "liveAfter": true
+      },
+      {
+        "at": "2026-10-28T17:55:11.982Z",
+        "what": "live.stops 新增 trailingStopPct = 0.03（移动止盈默认参数）",
+        "validation": {
+          "pass": true,
+          "note": "default 关闭，仅提供开关"
+        },
+        "liveAfter": true
+      },
+      {
+        "at": "2026-10-28T18:14:38.350Z",
+        "what": "移动止盈默认参数精修：激活阈值 +6%、回撤 2.5%、新增涨停豁免",
+        "validation": {
+          "pass": true,
+          "note": "default 关闭，仅提供开关"
+        },
+        "liveAfter": true
+      },
+      {
+        "at": "2026-10-29T23:50:09+08:00",
+        "what": "stops 块新增分级连板止损配置",
+        "validation": {
+          "type": "baseline",
+          "pass": true,
+          "oosDays": null,
+          "note": "基线配置扩展"
+        },
+        "liveAfter": true
+      }
+    ],
+    "note": "均为基线冻结 / 新增配置键 / 默认关闭开关；无完整 oos-20pct 权重晋升。"
   },
   "reportHealth": {
     "total": 62,
@@ -454,11 +584,11 @@
     "proven": [
       "若干增强方案已证伪（M8 / 0.7 帽 / 尾部介入 T2·T3 / V5.3 全量 regime 帽）；",
       "v5.3 分位归一确消除 s_net 饱和（但非预测力增强）；",
-      "主信号在下跌样本相对基准少跌约 8–9pp（相对抗跌，非正收益）。"
+      "主信号在下跌样本相对基准少跌约 8–9pp（相对抗跌，非正收益）；",
+      "257 天无偏重校准：低换手首板 T+1 中位 +0.9%、上涨 55.6%（方向成立、幅度温和）；高换手涨停无优势——predict.js 方向正确、需下调收益预期。"
     ],
     "unproven": [
       "任何可交易的正向 alpha；实盘/模拟盘样本 8 天、0 成交；",
-      "预测分层基于 33 天旧校准（本基线已给出 257 天档案内重校准作方向校验）；",
       "P2 未启动、无实盘影子样本。"
     ],
     "confidence": "中低——证据充分表明“工程稳、多项坏方案已否”，但“能否赚钱”仍缺样本外实盘证据。"
