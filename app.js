@@ -1080,7 +1080,10 @@ function buildBrief(days, arc) {
   const regLabel = reg ? reg.label : (pctLvl === 'high' ? '历史高位' : pctLvl === 'low' ? '历史低位' : '中位震荡');
   const lvlCn = (l) => (l === 'high' ? '高' : l === 'low' ? '低' : '中');
   const divergeNote = rulerDiverge
-    ? `<span class="bf-warn">⚠ 水位判据分歧：历史分位（${pct}%）判「${lvlCn(pctLvl)}」而绝对情绪分（${num(v)}）判「${lvlCn(absLvl)}」；因情绪分分布高度压缩（实测 89% 天数落在 40-65），仓位以分位／风控帽为准</span>`
+    // 2026-11-05：原文案引用「实测 89% 天数落在 40-65」——该实测基于 clamp 窄带时代的
+    // 旧档案；席位/K线回填重算历史情绪分后分布已展宽（2026-11-05 实测 40-65 仅占 40.9%），
+    // 断言失实。裁决规则本身（分位优先）是既定设计，未经重拍板不动，文案改为中性披露。
+    ? `<span class="bf-warn">⚠ 水位判据分歧：历史分位（${pct}%）判「${lvlCn(pctLvl)}」而绝对情绪分（${num(v)}）判「${lvlCn(absLvl)}」；按既定裁决以分位／风控帽为准</span>`
     : '';
   const zone = v == null ? '' :
     v < 40 ? '冰点区' : v < 55 ? '偏冷区' : v < 70 ? '中性区' : v < 85 ? '偏热区' : '狂热区';
@@ -1114,10 +1117,14 @@ function buildBrief(days, arc) {
   let netVerdict = '';
   if (nets.length >= 2) {
     const cur = nets[nets.length - 1], pre = nets[nets.length - 2];
+    // 2026-11-05：原文案「净买连续为负」只验证了末 2 日，却与紧邻展示的 5 日序列
+    // （前 2 日为正）读起来矛盾——改为如实输出末尾连续为负的天数。
+    let negStreak = 0;
+    for (let i = nets.length - 1; i >= 0 && nets[i] < 0; i--) negStreak++;
     if (cur > 0 && pre <= 0) netVerdict = '净买 5 日来首次转正，游资回补信号';
     else if (cur < 0 && pre >= 0) netVerdict = '净买转负，短线资金撤退';
     else if (cur > 0) netVerdict = '净买连续为正，进攻意愿延续';
-    else netVerdict = '净买连续为负，观望/出货氛围';
+    else netVerdict = `净买连续 ${negStreak} 日为负，观望/出货氛围`;
   }
   const topBuy = (d.lhb_aggr || []).filter((l) => l.net_buy_wan > 0).slice(0, 3)
     .map((l) => `${l.name} +${num(l.net_buy_wan / 1e4, 2)}亿${isNewStock(l) ? '<span class="bf-warn">（独立新股，非主线）</span>' : ''}`);
@@ -1271,7 +1278,10 @@ function buildBrief(days, arc) {
     const base = zt >= 50 && dt <= 10 ? '赚钱效应强' : zt >= 30 && dt <= 20 ? '赚钱效应中等' : '赚钱效应偏弱';
     pnl = `涨停 ${zt} / 跌停 ${dt}，${base}`;
     // P1④：叠加 pain 接力亏钱效应，避免只按涨停/跌停家数高估短线赚钱效应（失真清单指控4）。
-    if (painRisk) pnl += `；但接力亏钱效应制约（${pnLabel || '多空拉锯'}：昨涨停翻绿 ${Math.round((pnLoss || 0) * 100)}%、高位连板晋级失败 ${Math.round((pnFail || 0) * 100)}%），追高盈亏各半`;
+    // 2026-11-05：pain 的 verdict（如「接力顺畅」，由翻绿率主导）与 painRisk（晋级失败率≥50%
+    // 触发）是两个不同层的信号，旧拼接把它们塞进同一括号会产出「亏钱效应制约（接力顺畅：…）」
+    // 的自相矛盾文案——改为分述首板/高标两层。
+    if (painRisk) pnl += `；但高位接力亏钱风险显现（首板层 ${pnLabel || '多空拉锯'}：昨涨停翻绿 ${Math.round((pnLoss || 0) * 100)}%；高标层走弱：连板晋级失败 ${Math.round((pnFail || 0) * 100)}%），追高盈亏各半`;
   }
   const sec3 = [
     pnl ? li(pnl + `（昨日 ${ps.zt_count ?? '—'}/${ps.dt_count ?? '—'}）`) : '',
@@ -1406,7 +1416,7 @@ function buildBrief(days, arc) {
   else if (ev.includes('情绪与分位双高')) verdict = '情绪与分位双高，兑现压力大于进攻价值，勿在新高追涨。';
   else if (ev.includes('情绪冰点')) verdict = ev.includes('龙虎榜资金进场') ? '冰点 + 资金试探进场，修复脉冲概率上升，轻仓试错、止损要快。' : '冰点区无资金承接，空仓等右侧，接飞刀是找死。';
   else if (ev.includes('情绪修复') && ev.includes('龙虎榜资金进场') && ev.includes('赚钱效应')) verdict = painRisk
-    ? `修复三要素齐（情绪回升＋资金进场＋涨停结构），但接力亏钱效应制约（${pnLabel || '多空拉锯'}：高位连板晋级失败 ${Math.round((pnFail || 0) * 100)}%、昨涨停翻绿 ${Math.round((pnLoss || 0) * 100)}%）——低位试错为主，勿追高位板。`
+    ? `修复三要素齐（情绪回升＋资金进场＋涨停结构），但高位接力亏钱风险显现（首板层 ${pnLabel || '多空拉锯'}：昨涨停翻绿 ${Math.round((pnLoss || 0) * 100)}%；高标层走弱：连板晋级失败 ${Math.round((pnFail || 0) * 100)}%）——低位试错为主，勿追高位板。`
     : `修复三要素齐（情绪回升＋资金进场＋赚钱效应），可逐步转进攻，${mainlineTxt}。`;
   else if (ev.includes('情绪走弱') && ev.includes('龙虎榜资金离场')) verdict = '情绪资金双弱，退潮期防守为主，新题材一律当反弹看。';
 
@@ -1449,10 +1459,23 @@ function buildBrief(days, arc) {
   const v52p = (BT && BT.params && BT.params.v52) || {};
   const pctOf = (x, d) => (x == null || !Number.isFinite(+x)) ? '—' : (Math.abs(+x) * 100).toFixed(d) + '%';
   const bpOf = (x, dflt) => Math.round((x == null ? dflt : +x) * 1e4 * 10) / 10; // 小数 → ‱（万分之一），抹掉浮点尾差
-  // P0① 仓位分位优先：绝对情绪分分布高度压缩（regime.js 实测 89% 天数落 40-65），绝对刻度
+  // P0① 仓位分位优先：绝对情绪分分布曾高度压缩（regime.js 241 天实测 89% 落 40-65——
+  //   ⚠ 2026-11-05 留痕：该实测基于 clamp 窄带旧档案，K线回填重算后分布已展宽至
+  //   40-65 仅占 40.9%，阈值标定依据失效待重议），绝对刻度
   //   与冷热脱节 → 仓位结论以历史分位/风控帽(BANDS←position_policy.js)为主，V5.2 绝对分档
   //   仅作交叉验证披露；两把尺子分歧时显式告警(divergeNote)。
-  const tierLine = li(`<b>仓位结论（分位优先 · 风控帽）</b>：市场状态 <b>${regLabel}</b>（历史分位 ${pct == null ? '—' : pct + '%'}）→ 推荐仓位区间 <b>${bandTxt}</b>。${divergeNote}`
+  // 2026-11-05 加：两档背离告警——V5.2 绝对分档与风控帽区间上限差 ≥40 个百分点时置顶
+  //   提示（如 72.8 → 档位「满仓 100%」vs 帽 0%~20%）。帽子语义＝风控上限、按设计优先生效，
+  //   告警目的是把「主信号被帽压制」这件事显式亮给读者，而不是埋在口径说明里。
+  const capWarn = (() => {
+    if (!tier || !band) return '';
+    const upper = (tier.key === 'hold' || tier.key === 'overheat') ? 100 : tier.key === 'half' ? 50 : 0;
+    const diff = Math.abs(upper - band[1]);
+    return diff >= 40
+      ? `<span class="bf-warn">⚠ 两档背离：V5.2 绝对分档判「${tier.label}／${tier.pos}」而风控帽为 ${bandTxt}（差 ${diff} 个百分点）。帽子语义＝风控上限、按设计优先生效，此差异非计算错误；若与你的判断不符请人工复核。</span>`
+      : '';
+  })();
+  const tierLine = li(`<b>仓位结论（分位优先 · 风控帽）</b>：市场状态 <b>${regLabel}</b>（历史分位 ${pct == null ? '—' : pct + '%'}）→ 推荐仓位区间 <b>${bandTxt}</b>。${capWarn}${divergeNote}`
     + (tier ? `<br><span class="muted">交叉验证（V5.2 绝对分信号档）：七因子情绪分 ${num(mainScoreV)} → ${tier.label}／${tier.pos}；分布压缩下该绝对分档仅作辅助，不单独作为仓位依据。阈值：≥${num(thr.overheat, 0)} 过热只减仓不新建 / ≥${num(thr.lo, 0)} 满仓 / ${num(thr.panic, 0)}~${num(thr.lo, 0)} 半仓 / ≤${num(thr.panic, 0)} 清仓（收盘打分、T+1 生效）</span>` : ''));
   const decompLine = total != null ? li(`因子分解（V5.0 五模块，仅供结构解释，不参与档位判定）: 情绪定位 ${scE} · 盈亏效应 ${scP} · 广度量能 ${scB} · 题材结构 ${scT} · 主线结构 ${scM} → 复合 ${total}。<span class="bf-warn">${riskHint}</span>`) : '';
   const riskLine = li(`V5.2 实盘约束：单笔止损 <b>-${pctOf(v52p.stopLoss ?? -0.08, 0)}</b>（优先于信号）｜回撤 ≥<b>${pctOf(v52p.ddTrigger ?? -0.15, 0)}</b> 动态降仓至 40%（0.6 倍阈值处降至 70%）｜单日仓位变动 ≤<b>${num(v52p.maxPosChg ?? 0.2, 2)}</b>｜换仓成本 佣金 ${bpOf(v52p.comm, 0.0003)}‱（双边）+ 印花税 ${bpOf(v52p.stamp, 0.0005)}‱（卖出）+ 滑点 ${bpOf(v52p.slip, 0.0002)}‱，按仓位变动幅度计提`);
@@ -1553,17 +1576,21 @@ function buildBrief(days, arc) {
   // 与节九/十同理定位为「参考」软信息：±5 修正不进交易信号（原分不动），
   // 读者须先看完七个量价/结构节再看这条软信息——试点定位，权重天然最低。
   // 数据侧 arc.llm（src/llm_sentiment.js 转换块）；与每日日报第八节同源。
-  const LLM = arc.llm || (arc.signals && arc.signals.llm) || null;
+  // 2026-11-05 断线修复：mergeArc(index, recent) 的产物里从来不含 llm/sectorSentiment/
+  // dragonLogic（recent.signals 只有 version/momentum 等少数字段），而这三者只落在
+  // signals-latest.json（loadHealth 已 fetch 存全局 SIGNALS）——原取数恒 null，八/九/十节
+  // 永远显示「未生成」。加 SIGNALS 兜底（信号档缺失时仍如实显示未生成，fail-open 不变）。
+  const LLM = arc.llm || (arc.signals && arc.signals.llm) || (SIGNALS && SIGNALS.llm) || null;
   const sec8 = renderLlmSection(LLM);
 
   // ── 九、板块情绪雷达（AI 题材翻译官 = 场景二板块情绪因子）──
   // 注意：write.js / split_archive 注入的 sectorSentiment / dragonLogic 在 signals 顶层
   //   （与 signals 子对象并列），不在 arc.signals 内；这里优先读顶层，并对「传内层」的调用兜底。
-  const SS = arc.sectorSentiment || (arc.signals && arc.signals.sectorSentiment) || null;
+  const SS = arc.sectorSentiment || (arc.signals && arc.signals.sectorSentiment) || (SIGNALS && SIGNALS.sectorSentiment) || null;
   const sec9 = renderSectorSentimentSection(SS);
 
   // ── 十、妖股逻辑推演（AI 妖股透视镜 = 方向 C）──
-  const DL = arc.dragonLogic || (arc.signals && arc.signals.dragonLogic) || null;
+  const DL = arc.dragonLogic || (arc.signals && arc.signals.dragonLogic) || (SIGNALS && SIGNALS.dragonLogic) || null;
   const sec10 = renderDragonLogicSection(DL);
 
   const S = [
