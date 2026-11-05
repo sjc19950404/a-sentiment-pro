@@ -208,7 +208,18 @@ export function buildAiBrief(report) {
       if (used + one.length > 150) break;
       items.push(one); used += one.length;
     }
-    if (items.length) blocks.push('🐉 妖股透视：' + items.join(''));
+    if (items.length) {
+      // 2026-11-06 口径尾注（外部审查发现推送 6 只 vs 日报天梯 28 只会误读为漏数据）：
+      // 妖股透视的候选池是**连续连板口径**（zt_lb，ge2 连板≥2 优先 + 首板/断板补足，
+      // LIMIT=40），纯情绪子集再被本函数 150 字预算截断——与日报连板天梯的近5日
+      // 涨停天数口径（zt_lbw）不同源。尾注保证读者不把推送前缀当成当日全量梯队；
+      // 预算不足时逐条丢弃详情腾位，口径尾注本身始终保留。
+      const total = `…纯情绪共 ${pure.length} 只（完整见页面）`;
+      while (items.length > 1 && used + total.length > 150) used -= items.pop().length;
+      let t = '🐉 妖股透视：' + items.join('');
+      if (used + total.length <= 150) t += total;
+      blocks.push(t);
+    }
   }
   if (!blocks.length) return null;
   const text = ['🤖 【AI 盘后情报】', ...blocks].join('\n');

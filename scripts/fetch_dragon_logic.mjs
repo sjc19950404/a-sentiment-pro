@@ -1,6 +1,13 @@
 #!/usr/bin/env node
 // 方向 C：妖股逻辑推演（场景二衍生）——把 GLM 当「连板妖股逻辑分析师」用：
 //   收盘后取连板梯队（archive.summary.zt_lb + ztpool 行业板块 hybk），复用场景二的板块情绪因子
+//
+//   ⚠ 口径（2026-11-06 外部审查后写清）：候选池 = **连续连板口径**（东财 zt_lb，「·连N」），
+//   ge2（连板≥2，按板数降序）优先、lb<2（首板/断板反包）补足，LIMIT=40 截断——
+//   与日报连板天梯的「近5日涨停天数」口径（zt_lbw，「N天M板」，含非连续）**不同源**：
+//   同一只票可能天梯 4 板（近5日 4 天涨停）而 zt_lb=1（今天非连续板），落在 eq1 补足段
+//   被 LIMIT 截掉（实证 2026-11-05：皇台酒业/东方海洋在天梯 4 板但不在本名单）。
+//   推送端（ai_report_push.buildAiBrief）再按 150 字预算截前缀。两个截断口径见各自文件。
 //   （data/macro-sector-sentiment-latest.json）做 grounding，让 GLM 逐只推断「为什么涨停」并判断
 //   是否纯情绪炒作，产出 data/llm-dragon-logic-latest.json。
 //
