@@ -180,16 +180,22 @@ test('常量：三类标签齐备且与 sources.classifySeat 的键一致', () =
 
 // ────────────────────────── 真实档案端到端 ──────────────────────────
 
-test('真实档案：席位序列与档案一致，且覆盖率如实偏低', async () => {
+test('真实档案：席位序列与档案逐日一致，覆盖率如实反映（回填后可全档覆盖）', async () => {
   const { readFileSync } = await import('node:fs');
   const a = JSON.parse(readFileSync('data/archive.json', 'utf8'));
   const series = buildSeatSeries(a.all_days);
   const sm = seatSeriesSummary(series, { totalDays: a.all_days.length });
-  // 席位明细接口只保留最近数日 → 覆盖率必然远低于 1。若这里是 1，
-  // 说明有人把"无数据的天"也塞进了序列（就失去了"数据稀缺"这个事实）。
-  assert.ok(sm.okRows > 0, '至少应有最近几天的席位数据');
-  assert.ok(sm.okRows < a.all_days.length, '席位数据不应覆盖全档');
-  assert.ok(sm.coverage < 0.5, `覆盖率应显著偏低，实际 ${sm.coverage}`);
+  assert.ok(sm.okRows > 0, '至少应有席位数据');
+  // 防假数据守卫（逐日对账，不依赖覆盖率高低）：okRows 必须恰好等于档案里
+  // 实际带 v2 双侧席位的交易日数——多了说明把无数据的天塞进了序列，
+  // 少了说明漏行。旧断言「覆盖率必然 < 1 / < 0.5」基于「接口只保留最近数日、
+  // 历史不可补」的前提，2026-11-05 席位回填（docs/gate_checkup.md 基线二）推翻：
+  // 258/258 全档覆盖是合法状态。若未来接口收紧、覆盖率回落，本守卫依然逐日对账。
+  const daysWithSeats = a.all_days.filter((d) => {
+    const det = d?.summary?.seats?.detail;
+    return det && Object.values(det).some((v) => v && !Array.isArray(v) && Array.isArray(v.s));
+  }).length;
+  assert.equal(sm.okRows, daysWithSeats, `序列 ok 行数 ${sm.okRows} 应与档案实际席位覆盖 ${daysWithSeats} 逐日一致`);
   // 每行都必须带 date，且 ok 行为 true
   for (const r of series) { assert.ok(r.date); assert.equal(r.ok, true); }
 });
