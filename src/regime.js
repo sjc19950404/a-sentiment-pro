@@ -50,6 +50,13 @@ export const REGIME_RULES = {
   //
   //   故 level 判定 = 以分位为主判据；分位缺失时才退化为绝对水位（并标低 confidence）。
   //   下面这两个绝对阈值**不作为主判据**，只用于 `levelCheck` 的交叉披露（2026-10-30 收拢到 config：#9）。
+  //
+  //   ⚠ 2026-11-05 分布失效留痕：上述 241 天核验与 DIR 阈值标定都基于当时"clamp 窄带"
+  //   分布（p25-p75 仅 8.6 分）。其后 K 线重建回填重算了历史情绪分，分布显著展宽
+  //   （2026-11-05 实测 259 天：p25=53.1 p50=66.2 p75=77.3，40-65 仅 40.9%）——
+  //   ① "绝对分界不起分类作用"的前提已不成立（≥65 占 51.7%）；② DIR ±6 在新分布下
+  //   只相当于约 1/4 分位距，显著性与当年不可同日而语。阈值与裁决规则的重标定属策略
+  //   层拍板事项，本文件不擅自改动；在此之前所有阈值继续按原值运行（口径可审计）。
   LEVEL_LOW_ABS: (config?.params?.live?.regime?.levelLowAbs != null) ? config.params.live.regime.levelLowAbs : 40,
   LEVEL_HIGH_ABS: (config?.params?.live?.regime?.levelHighAbs != null) ? config.params.live.regime.levelHighAbs : 65,
   // 方向判据：用「相对 N 日前的情绪分变化」而不是斜率回归——样本短、稳健优先
@@ -129,8 +136,14 @@ export function levelOf(score, pctRank, opts = {}) {
     return {
       level: byPct, byScore, byPct, primary: 'pct',
       agree: byScore === null ? null : (byScore === byPct),
+      // 2026-11-05 修正：note 原引用「实测 89% 天数落在 40-65」作裁决理由——该实测基于
+      // 2026-10-02 时点档案（241 天，历史情绪分尚带 clamp 窄带）；其后 K 线重建回填重算了
+      // 历史情绪分，分布已变（2026-11-05 实测 259 天：40-65 仅占 40.9%、≥65 占 51.7%），
+      // 该断言失实、不再进用户可见文案。裁决规则本身（primary=pct）是设计决定，未经重拍板
+      // 不动；但分布已变 → 绝对水位尺子恢复了分类能力、DIR ±6 阈值的标定依据也失效，
+      // 分歧频率若持续偏高，建议重议水位裁决与阈值标定（见 REGIME_RULES 注释留痕）。
       note: (byScore !== null && byScore !== byPct)
-        ? `历史分位判「${byPct}」（${p}%）而绝对水位判「${byScore}」（情绪分 ${v}）不一致；因情绪分分布高度压缩（实测 89% 天数落在 40-65），以分位为准`
+        ? `历史分位判「${byPct}」（${p}%）而绝对水位判「${byScore}」（情绪分 ${v}）不一致；按既定裁决以分位为准`
         : null,
     };
   }
