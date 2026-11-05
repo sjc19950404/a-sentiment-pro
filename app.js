@@ -52,6 +52,13 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const yiOf = (wan, d = 2) => (wan == null || !Number.isFinite(+wan)) ? '—' : (Math.round(wan / 1e4 * 10 ** d) / 10 ** d).toFixed(d);
 const sgnOf = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—' : `${v > 0 ? '+' : ''}${(+v).toFixed(d)}`;
+// Lightweight Charts 的 series 颜色不认 CSS 变量字符串：把 'var(--acc)' 或 '--acc' 解析为
+// 实际色值；解析失败（token 被删/异形值）回退 --acc 的默认蓝，保证曲线可见。
+function cssColor(name) {
+  const prop = String(name || '').replace(/^var\(\s*/, '').replace(/\s*\)$/, '').trim();
+  const v = getComputedStyle(document.documentElement).getPropertyValue(prop.startsWith('--') ? prop : `--${prop}`).trim();
+  return (v && (v.startsWith('#') || v.startsWith('rgb') || v.startsWith('hsl'))) ? v : '#58a6ff';
+}
 
 // 数据质量面板（#3 dirty）：两条全局 click 委托，renderDirty 重渲染不重复绑定。
 // ① 点 KPI 瓦片（干净天数 / 已剔除 / 需复核）展开对应明细，手风琴（再点收起，同时只开一个）。
@@ -612,20 +619,20 @@ function renderMomentum(mom) {
   chips(mom.continuing, 'contList');
 }
 
-function renderTrend(days) {
-  const svg = $('trendSvg');
-  // 保留原始索引 i，供「点数据点 → 当日盘面详情」定位到 all_days
-  const pts = days.map((d, i) => ({ i, v: d.emotion?.value ?? d.emotion?.score ?? null, date: d.trade_date }));
-  const win = pts.slice(-15).filter((x) => x.v != null);
-  const tip = $('trendTip');
-  if (!win.length) { svg.innerHTML = ''; if (tip) tip.textContent = '情绪序列不足，暂无法绘制'; return; }
+// ── 情绪分趋势图（2026-11-06 UI 升级）─────────────────────────────────────
+// 主路径：TradingView Lightweight Charts（vendor 本地，window.LightweightCharts）——
+//   面积图 + 引擎档位参考线 + 十字线 + 点击数据点打开当日盘面抽屉（原 SVG data-act="day"
+//   的交互用 subscribeClick 补回，dayDetail 索引语义不变：trade_date 在 days 数组中定位）。
+// 回退路径：库缺失（旧 SW 缓存未含 vendor 文件/加载失败）时走原 SVG 手绘——fail-open，
+//   图表库缺失不允许白屏或丢功能。
+let _trendChart = null;
+function renderTrendSvgFallback(host, win, tip) {
   const W = 300, H = 90, pad = 10;
   const vals = win.map((x) => x.v);
   const min = Math.max(0, Math.min(...vals) - 8), max = Math.min(100, Math.max(...vals) + 8);
   const x = (i) => pad + (i * (W - 2 * pad)) / (win.length - 1 || 1);
   const y = (v) => H - pad - ((v - min) / (max - min || 1)) * (H - 2 * pad);
   const line = win.map((p, i) => `${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
-  // 参考线：引擎阈值（过热/满仓/半仓/清仓），让走势与档位有对照
   const th = getThresholds();
   const guides = [th.overheat, th.lo, th.panic].map((g) => {
     const yy = y(g).toFixed(1);
@@ -634,12 +641,84 @@ function renderTrend(days) {
   const dots = win.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="2.6" `
     + `data-act="day" data-i="${p.i}" tabindex="0" style="cursor:pointer" `
     + `aria-label="${esc(p.date)} 情绪分 ${p.v}"><title>${esc(p.date)} 情绪 ${p.v}</title></circle>`).join('');
-  svg.innerHTML = guides + `<polyline points="${line}"></polyline>` + dots;
+  host.innerHTML = guides + `<polyline points="${line}"></polyline>` + dots;
   const lastP = win[win.length - 1];
   if (tip) {
     tip.innerHTML = `共 ${win.length} 个交易日 · 区间 ${vals.length ? Math.min(...vals).toFixed(1) : '—'}~${Math.max(...vals).toFixed(1)}`
       + ` · 参考线为引擎档位 ${th.overheat}/${th.lo}/${th.panic}（过热/满仓/半仓）`
       + ` · 最新 ${esc(lastP.date)} ${lastP.v}`;
+  }
+}
+
+function renderTrend(days) {
+  const host = $('trendSvg');
+  // 保留原始索引 i，供「点数据点 → 当日盘面详情」定位到 all_days。
+  // 2026-11-06 字段兼容修复：分层加载的首屏序列是 mergeArc 拼的——29 个曲线点带
+  // **顶层 value**（recent.days 形态）+ 1 个 emotion.value 完整日（recent.latest）。
+  // 原实现只读 d.emotion?.value，首屏 30 天里 29 个判 null → 趋势图只剩 1 个点
+  //（SVG 时代即如此，属既有接线 bug；3762 行注释的设计意图就是用曲线点画图）。
+  // 曲线点天点开详情较稀疏（涨跌家数等标"—"），与系统「缺失如实标注」口径一致。
+  const pts = days.map((d, i) => ({
+    i,
+    v: d.emotion?.value ?? d.emotion?.score ?? d.value ?? null,
+    date: d.trade_date,
+  }));
+  const win = pts.filter((x) => x.v != null);
+  const tip = $('trendTip');
+  if (!win.length) { host.innerHTML = ''; if (tip) tip.textContent = '情绪序列不足，暂无法绘制'; return; }
+  const LW = window.LightweightCharts;
+  if (!LW || typeof LW.createChart !== 'function') { renderTrendSvgFallback(host, win.slice(-15), tip); return; }
+
+  const th = getThresholds();
+  if (_trendChart) { try { _trendChart.remove(); } catch {} _trendChart = null; }
+  host.innerHTML = '';
+  const chart = LW.createChart(host, {
+    autoSize: true, height: 200,
+    layout: { background: { type: 'solid', color: 'transparent' }, textColor: cssColor('--muted'), fontSize: 11, fontFamily: 'inherit' },
+    grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(139,148,158,.10)' } },
+    rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.12, bottom: 0.12 } },
+    timeScale: { borderVisible: false, rightOffset: 2 },
+    crosshair: { mode: LW.CrosshairMode.Magnet },
+    handleScroll: { vertTouchDrag: false },
+  });
+  _trendChart = chart;
+  // 展示近 120 个交易日（约半年）：SVG 时代的 15 日窗口在手绘图里是妥协，交互图可以放开
+  const show = win.slice(-120);
+  const area = chart.addAreaSeries({
+    lineColor: cssColor('--acc'),
+    topColor: 'rgba(88,166,255,.22)', bottomColor: 'rgba(88,166,255,0)',
+    lineWidth: 2, priceLineVisible: false,
+    lastValueVisible: true,
+  });
+  area.setData(show.map((p) => ({ time: p.date, value: p.v })));
+  // 数据点少（首屏 30 天）时默认 barSpacing 6px 会让曲线挤在左半边，fitContent 铺满容器宽度
+  chart.timeScale().fitContent();
+  // 引擎档位参考线（与 SVG 时代同三条）：过热/满仓/半仓
+  const guideDefs = [
+    { g: th.overheat, t: '过热' }, { g: th.lo, t: '满仓' }, { g: th.panic, t: '半仓' },
+  ];
+  for (const { g, t } of guideDefs) {
+    if (!Number.isFinite(+g)) continue;
+    area.createPriceLine({
+      price: +g, color: 'rgba(210,153,34,.55)', lineWidth: 1,
+      lineStyle: LW.LineStyle.Dashed, axisLabelVisible: true, title: t,
+    });
+  }
+  // 交互：点击（或十字线选中后点击）任一数据点 → 当日盘面抽屉（与 btpt 同款语义）
+  chart.subscribeClick((param) => {
+    const pt = param && param.seriesData ? param.seriesData.get(area) : null;
+    const date = pt && typeof pt.time === 'string' ? pt.time : null;
+    if (!date) return;
+    const idx = days.findIndex((d) => d.trade_date === date);
+    const v = idx >= 0 ? dayDetail(idx) : null;
+    if (v) openDrawer(v);
+  });
+  if (tip) {
+    const lastP = show[show.length - 1];
+    const seg = show.map((x) => x.v);
+    tip.innerHTML = `近 ${show.length} 个交易日 · 区间 ${Math.min(...seg).toFixed(1)}~${Math.max(...seg).toFixed(1)}`
+      + ` · 参考线为引擎档位 ${th.overheat}/${th.lo}/${th.panic}（过热/满仓/半仓）`
+      + ` · 最新 ${esc(lastP.date)} ${lastP.v}（点击曲线上任一点看当日盘面）`;
   }
 }
 
@@ -2072,7 +2151,12 @@ function syncBriefToggleLabel() {
 const pctS = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—' : (+v * 100).toFixed(d) + '%';
 const numS = (v, d = 2) => (v == null || !Number.isFinite(+v)) ? '—' : (+v).toFixed(d);
 
-function drawNav(svg, series, dates = []) {
+// ── 回测净值对比图（2026-11-06 UI 升级）───────────────────────────────────
+// 主路径：Lightweight Charts 多线图（虚线样式保留基准/持有两条的语义区分）；
+// 交互（点击数据点 → 当日盘面抽屉，原 data-act="btpt"）用 subscribeClick 补回；
+// 库缺失时回退原 SVG 手绘——fail-open。
+let _navChart = null;
+function drawNavSvgFallback(svg, series, dates) {
   const W = 300, H = 100, pad = 8;
   const all = series.flatMap((s) => s.values).filter((v) => Number.isFinite(v));
   if (!all.length) { svg.innerHTML = ''; return; }
@@ -2097,6 +2181,60 @@ function drawNav(svg, series, dates = []) {
       + `<title>${esc(s.name)}｜${esc(dates[i] || `第 ${i + 1} 日`)}｜净值 ${(+v).toFixed(4)}（点击看当日盘面）</title></circle>`).join('');
   }
   svg.innerHTML = out + dots;
+}
+
+function drawNav(svg, series, dates = []) {
+  const all = series.flatMap((s) => s.values).filter((v) => Number.isFinite(v));
+  if (!all.length) { svg.innerHTML = ''; return; }
+  const LW = window.LightweightCharts;
+  if (!LW || typeof LW.createChart !== 'function') { drawNavSvgFallback(svg, series, dates); return; }
+
+  if (_navChart) { try { _navChart.remove(); } catch {} _navChart = null; }
+  svg.innerHTML = '';
+  const chart = LW.createChart(svg, {
+    autoSize: true, // 高度由 CSS（.lw-chart-nav）决定
+    layout: { background: { type: 'solid', color: 'transparent' }, textColor: cssColor('--muted'), fontSize: 11, fontFamily: 'inherit' },
+    grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(139,148,158,.10)' } },
+    rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.12 } },
+    timeScale: { borderVisible: false, rightOffset: 2 },
+    crosshair: { mode: LW.CrosshairMode.Normal },
+    handleScroll: { vertTouchDrag: false },
+    localization: {
+      priceFormatter: (p) => (Number.isFinite(p) ? p.toFixed(3) : ''),
+    },
+  });
+  _navChart = chart;
+  const lwSeries = [];
+  for (const s of series) {
+    if (!s.values.length) continue;
+    const line = chart.addLineSeries({
+      color: cssColor(s.color),
+      lineStyle: s.dash ? LW.LineStyle.Dashed : LW.LineStyle.Solid,
+      lineWidth: 2, priceLineVisible: false, lastValueVisible: false,
+      crosshairMarkerVisible: true,
+    });
+    // 空值用 whitespace（{time} 不带 value）占位保持各序列时间轴对齐
+    line.setData(s.values.map((v, i) => {
+      if (v == null || !Number.isFinite(v) || !dates[i]) return null;
+      return { time: dates[i], value: +v };
+    }).map((d, i) => d || { time: dates[i] }).filter((d) => d && d.time));
+    lwSeries.push(line);
+  }
+  chart.timeScale().fitContent();
+  // 点击任一曲线数据点 → 当日盘面抽屉（与原 btpt 完全同语义，含 sub 前缀）
+  chart.subscribeClick((param) => {
+    if (!param || !param.seriesData) return;
+    let date = null;
+    for (const ls of lwSeries) {
+      const pt = param.seriesData.get(ls);
+      if (pt && typeof pt.time === 'string') { date = pt.time; break; }
+    }
+    if (!date) return;
+    const days = displayDays(ARC);
+    const i = days.findIndex((x) => x.trade_date === date);
+    const v = i >= 0 ? dayDetail(i) : null;
+    if (v) openDrawer({ ...v, sub: `净值曲线数据点 · ${v.sub}` });
+  });
 }
 
 function renderBacktest(bt) {

@@ -27,6 +27,9 @@ const SHELL_ASSETS = [
   './index.html',
   './app.js',
   './style.css',
+  // 2026-11-06：TradingView Lightweight Charts（vendor 本地，图表库）——
+  // 新文件必须进预缓存：cache-first 的 SWR 后台刷新只覆盖已存在的 key。
+  './vendor/lightweight-charts.standalone.production.js',
   './src/report.js',
   './src/report_audit.js',
   './src/seats.js',

@@ -35,6 +35,8 @@ export const SHELL_ASSETS = Object.freeze([
   './index.html',
   './app.js',
   './style.css',
+  // 2026-11-06：TradingView Lightweight Charts（vendor 本地）——与 sw.js 内联副本同步（test/offline.test.mjs ⑤）
+  './vendor/lightweight-charts.standalone.production.js',
   './src/report.js',
   './src/report_audit.js',
   './src/seats.js',

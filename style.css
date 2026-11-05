@@ -1923,3 +1923,76 @@ body::before {
 /* 打字机光标 */
 .tw-cursor::after { content: '▋'; color: var(--warn); margin-left: 1px; animation: tw-blink 1s steps(2) infinite; }
 @keyframes tw-blink { 0% { opacity: 1; } 50% { opacity: 0; } }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   UI Polish 层（2026-11-06）——参考 TSP 深色量化面板风格的组件级化妆。
+   纪律：只做覆盖式增强，不改 ui/tokens.css 的设计 token 值（test/ui_tokens_consistency
+   守卫锁定）；不用 !important；全部改动可按本区块整体回滚。
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Lightweight Charts 容器 ──
+   SVG 时代的 300×90 viewBox 小图升级为真实像素高度的交互图表；
+   顶部留 4px 与卡片标题的呼吸间距。 */
+.lw-chart { position: relative; width: 100%; height: 200px; margin-top: 4px; }
+/* 趋势卡与右列题材卡（约 12 行 bar）等高平衡：趋势图加高到 260px，避免卡内下半留白 */
+#trendSvg.lw-chart { height: 260px; }
+.lw-chart-nav { height: 240px; }
+@media (max-width: 860px) { .lw-chart { height: 170px; } #trendSvg.lw-chart { height: 210px; } .lw-chart-nav { height: 210px; } }
+
+/* ── 2. 卡片质感（TSP 风格：深色面板 + 顶部 1px 高光内边 + hover 微浮）──
+   原扁平 1px 描边保留骨架，叠加三层：内侧顶缘高光、极淡的面上渐变、
+   hover 时边框微亮 + 轻投影——鼠标不在面板上时保持安静。 */
+.card {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .018), rgba(255, 255, 255, 0) 56px),
+    var(--card);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 246, 252, .04),
+    0 1px 2px rgba(0, 0, 0, .18);
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.card:hover {
+  border-color: #2d3640;
+  box-shadow:
+    inset 0 1px 0 rgba(240, 246, 252, .05),
+    0 6px 20px rgba(0, 0, 0, .28);
+}
+/* 顶部强调发丝线：与主题蓝同源、8% 透明度，给页面一条隐性的视觉导轨 */
+.card::before {
+  content: '';
+  position: absolute; inset: 0 12px auto 12px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(88, 166, 255, .16), transparent);
+  pointer-events: none;
+}
+/* 左缘强调卡的发丝线让位（盘中快照/AI 报告卡已有 3px 左边条，避免双信号） */
+.card.intraday::before, .card.ai-report::before { display: none; }
+
+/* ── 3. 卡片标题排版：小号大写间距标签感（量化面板惯例）── */
+.card h2 {
+  letter-spacing: .04em;
+  display: flex; align-items: center; gap: 8px;
+}
+.card h2::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--line), transparent);
+}
+
+/* ── 4. 页面背景氛围：极淡的顶部径向冷光（深色面板纵深感，不抢内容）── */
+body {
+  background:
+    radial-gradient(1100px 320px at 50% -120px, rgba(88, 166, 255, .05), transparent 70%),
+    var(--bg);
+}
+
+/* ── 5. 文本选择与滚动条（细节质感）── */
+::selection { background: rgba(88, 166, 255, .32); color: #fff; }
+* { scrollbar-width: thin; scrollbar-color: #2d3640 transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: #2d3640; border-radius: 6px; border: 2px solid var(--bg); }
+*::-webkit-scrollbar-thumb:hover { background: #3a4552; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* ── 6. 表格行悬停（数据密集区的可读性辅助）── */
+table tbody tr { transition: background-color .12s ease; }
+table tbody tr:hover { background: rgba(88, 166, 255, .045); }

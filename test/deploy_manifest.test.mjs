@@ -38,7 +38,7 @@ const cpFiles = new Set();
 for (const line of yml.matchAll(/^\s+cp\s+.*$/gm)) {
   const toks = line[0].trim().split(/\s+/).slice(1).filter((t) => t !== '-r');
   for (const t of toks) {
-    if (t === 'site/' || t === 'site/src/' || t === 'site/data/') continue;
+    if (t === 'site/' || t.startsWith('site/')) continue; // 目标端（site/**）不是清单文件，通用跳过
     if (t === 'data/.') { cpFiles.add('data/**'); continue; } // cp -r data/. site/data/ ⇔ paths 的 'data/**'
     if (t === 'src/.') { cpFiles.add('src/**'); continue; }   // cp -r src/. site/src/ ⇔ paths 的 'src/**'
     cpFiles.add(t);

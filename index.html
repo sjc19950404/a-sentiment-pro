@@ -963,8 +963,8 @@
         </section>
 
         <section class="card trend">
-          <h2>情绪趋势（近15日）<span class="bf-auto">点数据点看当日盘面</span></h2>
-          <svg id="trendSvg" viewBox="0 0 300 90" preserveAspectRatio="none" role="img" aria-label="近15日情绪分趋势"></svg>
+          <h2>情绪趋势<span class="bf-auto">点图上任一点看当日盘面</span></h2>
+          <div id="trendSvg" class="lw-chart" role="img" aria-label="情绪分趋势"></div>
           <div id="trendTip" class="trend-tip muted">共 -- 个交易日样本</div>
         </section>
 
@@ -1039,7 +1039,7 @@
         <section class="card bt">
           <h2>策略回测（V5.2）<span class="bf-auto">悬停净值曲线看日期</span></h2>
           <div id="btMetrics"></div>
-          <svg id="btNavSvg" viewBox="0 0 300 100" preserveAspectRatio="none" role="img" aria-label="净值曲线对比"></svg>
+          <div id="btNavSvg" class="lw-chart lw-chart-nav" role="img" aria-label="净值曲线对比"></div>
           <div class="bt-legend" id="btLegend"></div>
           <div id="btParams" class="bt-params muted"></div>
           <button id="btMore" class="mini" type="button" data-act="btmore" style="margin-top:8px">查看完整参数与口径</button>
@@ -1370,6 +1370,9 @@
     <div id="dwBody" class="dw-body"></div>
   </aside>
 
+  <!-- TradingView Lightweight Charts（vendor 本地，Apache-2.0；standalone UMD 暴露 window.LightweightCharts）。
+       同步加载于 app.js 之前；app.js 侧在库缺失（旧 SW 缓存/加载失败）时回退 SVG 手绘——fail-open。 -->
+  <script src="./vendor/lightweight-charts.standalone.production.js"></script>
   <script src="./app.js"></script>
   <!-- 报告导出引擎是 ESM（与 src/paper.js 同样的「纯函数、浏览器与 Node 共用」设计）。
        app.js 是经典脚本、不能用 import，故用一小段模块脚本把它挂到 window 上；
