@@ -29,8 +29,8 @@ EOD 跑完 `paper_daily` 后执行任一命令即可一键体检。**默认不�
 
 | 文件 | 说明 |
 |---|---|
-| `data/reports/gate_checkup_latest.json` | 最近一次结论（含三张表文本 + 结构化数据 + 逐日明细） |
-| `data/reports/gate_checkup_<交易日>.json` | 按交易日存档，同日重跑覆盖 |
+| `data/diagnostics/gate_checkup_latest.json` | 最近一次结论（含三张表文本 + 结构化数据 + 逐日明细） |
+| `data/diagnostics/gate_checkup_<交易日>.json` | 按交易日存档，同日重跑覆盖 |
 
 两者均为**可重建产物**，已入 `.gitignore`，不进仓库以免 `git status` 长期挂脏。
 脚本**不写**账户、配置、选股结果、归档主档等任何生产数据。

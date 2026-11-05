@@ -52,7 +52,10 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ARCHIVE = resolve(ROOT, 'data/archive.json');
 const ZTPOOL = resolve(ROOT, 'data/ztpool_history.json');
 const SIGNALS = resolve(ROOT, 'data/signals-latest.json');
-const REPORT_DIR = resolve(ROOT, 'data/reports');
+// 归档目录刻意不放 data/reports：那里是前端消费的报告信封（check_contract 按目录
+// 全量做 payload/notes/sources/disclaimer 契约校验），体检 JSON 结构非报告信封，
+// 放进去会被判「字段缺失」并让 EOD 管道中止（2026-11-05 实证）。
+const REPORT_DIR = resolve(ROOT, 'data/diagnostics');
 
 const argv = process.argv.slice(2);
 const NO_LOG = argv.includes('--no-log');
@@ -270,8 +273,8 @@ if (!NO_LOG) {
   const text = JSON.stringify(report, null, 1);
   writeFileSync(latest, text, 'utf8');
   writeFileSync(dated, text, 'utf8');
-  console.log(`[gate_checkup] 日志已归档 → data/reports/gate_checkup_latest.json`);
-  console.log(`[gate_checkup] 按交易日存档 → data/reports/gate_checkup_${asOf}.json`);
+  console.log(`[gate_checkup] 日志已归档 → data/diagnostics/gate_checkup_latest.json`);
+  console.log(`[gate_checkup] 按交易日存档 → data/diagnostics/gate_checkup_${asOf}.json`);
 } else {
   console.log('[gate_checkup] --no-log：未写任何文件');
 }
