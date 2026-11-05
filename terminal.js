@@ -48,7 +48,11 @@
   const fmtInt = (v) => (v == null || !Number.isFinite(+v)) ? '—' : Math.round(+v).toLocaleString('en-US');
   const pct = (v, d = 1) => (v == null || !Number.isFinite(+v)) ? '—' : `${(+v).toFixed(d)}%`;
   const sgn = (v, d = 1) => (v == null || !Number.isFinite(+v)) ? '—' : `${+v > 0 ? '+' : ''}${(+v).toFixed(d)}%`;
+  // 2026-11-06 单位修复：本文件字段单位有三套（亿/万/元），wan() 只认"万"——原三处调用
+  //   里两处传错（lhb_daily_net 是亿 → 曾显示"-4.57 万"差 1 万倍；initCash 是元 →
+  //   曾显示"1000000.00 万"）。yi() 用于亿口径字段，wan0()（下方模拟盘块内）用于元→万。
   const wan = (v) => (v == null || !Number.isFinite(+v)) ? '—' : `${(+v).toFixed(2)} 万`;
+  const yi = (v) => (v == null || !Number.isFinite(+v)) ? '—' : `${(+v).toFixed(2)} 亿`;
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   // ── 1. LINK 总线（选中态 + 订阅）────────────────────────────────────────
@@ -602,7 +606,7 @@
       stat('执行仓位', esc(pr.finalRange || '—'), `${pr.force ? '<b style="color:var(--t-alert)">风控帽强制降仓</b>' : `基础 ${esc(pr.baseRange || '—')}`}`, pr.force ? 'is-alert' : '') +
       stat('涨停 / 跌停', `<span class="is-up">${fmtInt(L.zt_count)}</span> <span style="color:var(--t-ink-3)">/</span> <span class="is-dn">${fmtInt(L.dt_count)}</span>`, `炸板 ${fmtInt(L.zb_count)}｜封板率 ${pct(L.seal_pct, 0)}`) +
       stat('涨 / 跌家数', `<span class="is-up">${fmtInt(L.up_count)}</span> <span style="color:var(--t-ink-3)">/</span> <span class="is-dn">${fmtInt(L.down_count)}</span>`, '沪深两市口径') +
-      stat('龙虎净买', wan(L.lhb_daily_net), `上榜 ${fmtInt(L.lhb_daily_stocks || L.lhb_stocks)} 只`, (L.lhb_daily_net || 0) >= 0 ? 'up' : 'dn');
+      stat('龙虎净买', yi(L.lhb_daily_net), `上榜 ${fmtInt(L.lhb_daily_stocks || L.lhb_stocks)} 只`, (L.lhb_daily_net || 0) >= 0 ? 'up' : 'dn');
     g.appendChild(panel('核心指标', L.trade_date, stats.outerHTML, 't-c12'));
 
     // ── 主图：情绪分折线（seriesCompact，零额外请求）──
@@ -643,7 +647,7 @@
     g.appendChild(panel('主线题材', '当日',
       mt ? `<div class="t-stats" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
         ${stat('主线', esc(mt.name || '—'), `占龙虎净买 <b>${pct(mt.pct, 0)}</b>`, 'is-acc')}
-        ${stat('主线净买', wan(mt.main_yi != null ? mt.main_yi * 10000 : null), `全榜 ${wan(mt.tot_yi != null ? mt.tot_yi * 10000 : null)}`, (mt.main_yi != null ? mt.main_yi : 0) >= 0 ? 'up' : 'dn')}
+        ${stat('主线净买', yi(mt.main_yi), `全榜 ${yi(mt.tot_yi)}`, (mt.main_yi != null ? mt.main_yi : 0) >= 0 ? 'up' : 'dn')}
       </div>` : '<div class="t-empty">当日无主线</div>', 't-c8'));
 
     // 近 N 日「涨停 vs 连板」柱状图归属「涨跌停」专题视图（viewZt），
@@ -1225,7 +1229,7 @@
       // 空态：画一条 100 万平坦红线 + 标注，看着像交易终端而非「报错」
       navBody = lineChart([{ date: '—', v: initCash }, { date: '初始化', v: initCash }, { date: '等待结算', v: initCash }],
         { w: 640, h: 210, vMin: initCash - 1, vMax: initCash + 1, lineColor: '#ff5a4d', noArea: true, n: '净值曲线' })
-        + `<div class="t-dnote is-ok">初始化等待首个交易日结算 · 基准 ${wan(initCash)}（红线）</div>`;
+        + `<div class="t-dnote is-ok">初始化等待首个交易日结算 · 基准 ${wan0(initCash)}（红线）</div>`;
     }
     const navPanel = panel('模拟盘净值', `account.nav 序列 · ${nav.length} 个交易日`, navBody, 't-c8');
     const pos = Object.values(a.positions || {}).filter((p) => p && p.qty > 0);
