@@ -174,9 +174,24 @@ export function directionOf(values, opts = {}) {
   if (delta >= R.DIR_UP) dir = 'up';
   else if (delta <= R.DIR_DOWN) dir = 'down';
   else dir = 'flat';
+  // 2026-11-06 弱信号披露（拍板前最低保障，敏感性回测 /tmp/dir_sensitivity.mjs 佐证）：
+  //   DIR±6 当年 ≈ 全四分位距（IQR 8.6，超过 p25-p75 全域）；情绪分经 K 线回填重算后
+  //   分布展宽（259 天 IQR≈24.2），±6 仅 ≈ 1/4 IQR——同一绝对变化的显著性衰减到当年
+  //   约 1/4。在 reason 里按**当前序列**动态披露阈值的相对显著性，防止弱信号被当
+  //   显著信号消费（方向进而误触发仓位帽）。样本不足以算 IQR（<8 天）时不披露。
+  let sig = '';
+  if (seq.length >= 8) {
+    const srt = [...seq].sort((a, b) => a - b);
+    const q = (p) => srt[Math.min(srt.length - 1, Math.floor(srt.length * p))];
+    const iqr = q(0.75) - q(0.25);
+    if (iqr > 0) {
+      const relPct = Math.round((Math.abs(R.DIR_UP) / iqr) * 100);
+      if (relPct < 40) sig = `（方向阈值 ±${Math.abs(R.DIR_UP)} 分仅约为当前分布四分位距的 ${relPct}%，属弱信号，不宜单独作为强证据）`;
+    }
+  }
   return {
     dir, delta, lookback: usedLookback,
-    reason: `较 ${usedLookback} 个交易日前 ${delta >= 0 ? '+' : ''}${delta} 分`,
+    reason: `较 ${usedLookback} 个交易日前 ${delta >= 0 ? '+' : ''}${delta} 分${sig}`,
   };
 }
 
