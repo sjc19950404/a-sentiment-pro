@@ -1,131 +1,131 @@
 {
- "date": "2026-11-03",
- "prevZtCount": 48,
+ "date": "2026-11-04",
+ "prevZtCount": 118,
  "perf": {
-  "n": 48,
-  "universe": 48,
+  "n": 118,
+  "universe": 118,
   "missing": 0,
   "reliable": true,
-  "avg": -0.32,
-  "median": -2.34,
-  "lossRatio": 0.63,
-  "worst": -10.03,
-  "best": 12.43,
-  "limitUpAgain": 13,
-  "limitDown": 5,
-  "bigLoss": 10,
+  "avg": 4.49,
+  "median": 4.26,
+  "lossRatio": 0.17,
+  "worst": -9.75,
+  "best": 19.98,
+  "limitUpAgain": 24,
+  "limitDown": 0,
+  "bigLoss": 1,
   "note": null
  },
  "advance": {
-  "n": 15,
-  "kept": 6,
-  "failed": 9,
-  "failRate": 0.6,
+  "n": 12,
+  "kept": 4,
+  "failed": 8,
+  "failRate": 0.67,
   "byTier": {
    "2": {
-    "n": 12,
-    "kept": 6,
-    "failed": 6,
-    "failRate": 0.5
+    "n": 6,
+    "kept": 2,
+    "failed": 4,
+    "failRate": 0.67
    },
    "3": {
-    "n": 1,
-    "kept": 0,
-    "failed": 1,
-    "failRate": 1
+    "n": 6,
+    "kept": 2,
+    "failed": 4,
+    "failRate": 0.67
    },
    "4+": {
-    "n": 2,
+    "n": 0,
     "kept": 0,
-    "failed": 2,
-    "failRate": 1
+    "failed": 0,
+    "failRate": null
    }
   },
   "reliable": true,
-  "maxLb": 4,
+  "maxLb": 3,
   "detail": [
    {
-    "code": "600261",
-    "lb": 4,
-    "chg": -9.9,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "002086",
-    "lb": 4,
-    "chg": -4.09,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "000995",
+    "code": "002058",
     "lb": 3,
-    "chg": -4.66,
+    "chg": -5.85,
     "kept": false,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
-    "code": "002029",
-    "lb": 2,
-    "chg": -9.97,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "000599",
-    "lb": 2,
-    "chg": -7.56,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "603258",
-    "lb": 2,
-    "chg": -3.65,
+    "code": "600892",
+    "lb": 3,
+    "chg": -2.84,
     "kept": false,
     "board": "shb",
     "boardLabel": "沪市主板"
    },
    {
-    "code": "002292",
-    "lb": 2,
-    "chg": -2.51,
+    "code": "002827",
+    "lb": 3,
+    "chg": -1.71,
     "kept": false,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
-    "code": "600293",
-    "lb": 2,
-    "chg": -1.75,
+    "code": "605577",
+    "lb": 3,
+    "chg": 6.8,
     "kept": false,
     "board": "shb",
     "boardLabel": "沪市主板"
    },
    {
-    "code": "600715",
-    "lb": 2,
-    "chg": 0.41,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
+    "code": "002578",
+    "lb": 3,
+    "chg": 9.9,
+    "kept": true,
+    "board": "szb",
+    "boardLabel": "深市主板"
    },
    {
     "code": "601599",
-    "lb": 2,
-    "chg": 9.95,
+    "lb": 3,
+    "chg": 10,
     "kept": true,
     "board": "shb",
     "boardLabel": "沪市主板"
    },
    {
-    "code": "600892",
+    "code": "000679",
+    "lb": 2,
+    "chg": -9.75,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002992",
+    "lb": 2,
+    "chg": -5.69,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "601123",
+    "lb": 2,
+    "chg": -3.98,
+    "kept": false,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "002652",
+    "lb": 2,
+    "chg": -3.92,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "603381",
     "lb": 2,
     "chg": 9.98,
     "kept": true,
@@ -133,33 +133,9 @@
     "boardLabel": "沪市主板"
    },
    {
-    "code": "002058",
+    "code": "002088",
     "lb": 2,
-    "chg": 9.99,
-    "kept": true,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "605577",
-    "lb": 2,
-    "chg": 10,
-    "kept": true,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "002827",
-    "lb": 2,
-    "chg": 10,
-    "kept": true,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "002578",
-    "lb": 2,
-    "chg": 10.11,
+    "chg": 10.04,
     "kept": true,
     "board": "szb",
     "boardLabel": "深市主板"
@@ -168,100 +144,31 @@
   "note": null
  },
  "bigLoss": {
-  "n": 10,
+  "n": 1,
   "list": [
    {
-    "code": "002696",
-    "name": "百洋股份",
-    "chg": -10.03
-   },
-   {
-    "code": "002029",
-    "name": "七 匹 狼",
-    "chg": -9.97
-   },
-   {
-    "code": "001318",
-    "name": "阳光乳业",
-    "chg": -9.97
-   },
-   {
-    "code": "600261",
-    "name": "阳光照明",
-    "chg": -9.9
-   },
-   {
-    "code": "605388",
-    "name": "均瑶健康",
-    "chg": -9.88
-   },
-   {
-    "code": "600558",
-    "name": "大西洋",
-    "chg": -9.46
-   },
-   {
-    "code": "002105",
-    "name": "信隆健康",
-    "chg": -8.09
-   },
-   {
-    "code": "000599",
-    "name": "青岛双星",
-    "chg": -7.56
-   },
-   {
-    "code": "600778",
-    "name": "友好集团",
-    "chg": -7.1
-   },
-   {
-    "code": "000608",
-    "name": "阳光股份",
-    "chg": -7.1
+    "code": "000679",
+    "name": "大连友谊",
+    "chg": -9.75
    }
   ]
  },
  "skyFloor": {
-  "n": 5,
+  "n": 1,
   "list": [
    {
-    "code": "002029",
-    "name": "七 匹 狼",
-    "chg": -9.97,
-    "amplitude": 19.9
-   },
-   {
-    "code": "000995",
-    "name": "皇台酒业",
-    "chg": -4.66,
-    "amplitude": 19
-   },
-   {
-    "code": "002086",
-    "name": "东方海洋",
-    "chg": -4.09,
-    "amplitude": 17.3
-   },
-   {
-    "code": "601566",
-    "name": "九牧王",
-    "chg": -5.19,
-    "amplitude": 16.4
-   },
-   {
-    "code": "603289",
-    "name": "泰瑞机器",
-    "chg": -3.86,
-    "amplitude": 16
+    "code": "002652",
+    "name": "扬子新材",
+    "chg": -3.92,
+    "amplitude": 15.7
    }
   ]
  },
- "scanned": 48,
+ "scanned": 118,
  "verdict": {
-  "level": "severe",
-  "label": "亏钱效应显著",
-  "reason": "昨涨停今日翻绿 63%、高位板晋级失败 60%，追高者整体受损"
+  "level": "strong",
+  "label": "接力顺畅",
+  "reason": "昨涨停今日翻绿仅 17%、高位板晋级失败 67%，赚钱效应占优"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -272,6 +179,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-11-04T13:00:33.736Z",
- "curDate": "2026-11-04"
+ "generatedAt": "2026-11-05T15:20:01.251Z",
+ "curDate": "2026-11-05"
 }

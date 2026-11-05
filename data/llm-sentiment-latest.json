@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-11-04",
- "generatedAt": "2026-11-04T21:08:11.419+08:00",
+ "asOfDate": "2026-11-05",
+ "generatedAt": "2026-11-05T23:27:49.791+08:00",
  "model": "glm-4-flash",
- "sentiment": 0,
- "confidence": 0.5,
- "reason": "市场整体情绪中性，涨停家数与跌停家数相对均衡，但炸板率较高，亏钱效应显著。",
+ "sentiment": 0.8,
+ "confidence": 0.95,
+ "reason": "市场整体情绪积极，涨停家数远超跌停，成交额放大，强势股多集中在新兴题材和业绩增长板块。",
  "events": [
   {
-   "type": "行业催化",
-   "target": "可控核聚变",
-   "tone": "positive",
-   "note": "新晋题材带动市场情绪"
-  },
-  {
-   "type": "行业催化",
-   "target": "海峡两岸",
-   "tone": "positive",
-   "note": "新晋题材带动市场情绪"
-  },
-  {
-   "type": "行业催化",
-   "target": "中期分红",
-   "tone": "positive",
-   "note": "新晋题材带动市场情绪"
-  },
-  {
-   "type": "行业催化",
-   "target": "AI短剧",
-   "tone": "positive",
-   "note": "新晋题材带动市场情绪"
-  },
-  {
-   "type": "行业催化",
-   "target": "算力业务",
-   "tone": "positive",
-   "note": "新晋题材带动市场情绪"
-  },
-  {
    "type": "业绩预告",
-   "target": "兴森科技",
+   "target": "百大集团",
    "tone": "positive",
-   "note": "超跌修复带动股价上涨"
+   "note": "净利润增长带动股价上涨"
   },
   {
-   "type": "业绩预告",
-   "target": "飞龙股份",
+   "type": "行业催化",
+   "target": "AI大模型",
    "tone": "positive",
-   "note": "合作及订单增长带动股价上涨"
+   "note": "AI大模型相关股票表现强劲"
   },
   {
-   "type": "业绩预告",
-   "target": "春晖智控",
+   "type": "行业催化",
+   "target": "新能源",
    "tone": "positive",
-   "note": "商业航天及半导体设备带动股价上涨"
+   "note": "新能源相关题材持续活跃"
+  },
+  {
+   "type": "行业催化",
+   "target": "数据中心液冷",
+   "tone": "positive",
+   "note": "数据中心液冷技术推动相关股票上涨"
+  },
+  {
+   "type": "行业催化",
+   "target": "医药",
+   "tone": "positive",
+   "note": "医药板块受AI医疗等题材推动"
+  },
+  {
+   "type": "行业催化",
+   "target": "回购注销",
+   "tone": "positive",
+   "note": "回购注销题材受到市场关注"
+  },
+  {
+   "type": "行业催化",
+   "target": "并购重组",
+   "tone": "positive",
+   "note": "并购重组题材持续活跃"
+  },
+  {
+   "type": "行业催化",
+   "target": "商业零售",
+   "tone": "positive",
+   "note": "商业零售板块受益于消费复苏"
   }
  ],
  "inputDigest": {
-  "themes": 108,
+  "themes": 102,
   "hotListed": 15,
-  "ztCount": 118,
-  "emotionValue": 68.5,
-  "painVerdict": "亏钱效应显著（昨涨停今日翻绿 63%、高位板晋级失败 60%，追高者整体受损）"
+  "ztCount": 84,
+  "emotionValue": 72.8,
+  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 17%、高位板晋级失败 67%，赚钱效应占优）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }
