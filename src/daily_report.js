@@ -493,7 +493,7 @@ function buildDragonSection(dl) {
     pts.push({ text: '样例：' + dl.dragons.slice(0, 6).map((d) => `${d.name}(${d.lb}板·${d.hybk})→${d.logic_type}`).join('、'), kind: 'info' });
   }
   pts.push({ text: `证据日期 ${dl.asOfDate}｜模型 ${dl.model || '未留痕'}${dl.scanned != null ? '｜扫描 ' + dl.scanned + ' 只' : ''}`, kind: 'info' });
-  pts.push({ text: '口径：纯参考，不修改 regime/emotion 分数；由下游（paper.js 等）决定采不采纳。', kind: 'info' });
+  pts.push({ text: '口径：候选池为连续连板口径（东财 zt_lb「·连N」，连板≥2 优先 + 首板补足、上限 40），与上方连板天梯的近5日涨停天数口径（zt_lbw「N天M板」）不同源——非连续板的高标（如 4 天 3 板、今日断板）不在此列，完整梯队以天梯为准。纯参考，不修改 regime/emotion 分数；由下游（paper.js 等）决定采不采纳。', kind: 'info' });
   return { id: 'dragonLogic', title: '十、妖股逻辑推演（方向C）', level: pure.length ? 'warn' : 'info', missing: false, points: pts };
 }
 
