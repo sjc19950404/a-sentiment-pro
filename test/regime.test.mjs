@@ -66,18 +66,24 @@ test('levelOf: 分位存在但情绪分缺失 → 仍能判（分位是自足的
 });
 
 // ── ② directionOf：方向（样本不足 → null，不默认 flat）────────────────────
-test('directionOf: 上升超过 DIR_UP 判 up', () => {
+test('directionOf: 上升超过 DIR_UP 判 up（2026-11-06 B1 拍板：阈值为滚动分位差 pp）', () => {
   const r = directionOf([50, 51, 52, 60]);
+  // 滚动分位：50→0%、60→75%（窗口内 3/4 更小）→ 分位差 +75pp
   assert.equal(r.dir, 'up');
-  assert.equal(r.delta, 10);
+  assert.equal(r.delta, 75);
+  assert.match(r.reason, /分位/);
 });
 test('directionOf: 下降超过 DIR_DOWN 判 down', () => {
-  const r = directionOf([60, 58, 56, 50]);
+  // 等价于今晚真实形态（85.4 峰值 → 72.8 回落未收复）：前缀窗口拉长让滚动分位稳定
+  // （短窗口粒度 1/n 太粗，且首元素分位恒 0），base（index4=30）分位 4/5=80%、
+  // cur（index7=8 创新低）分位 0% → -80pp
+  const r = directionOf([10, 20, 15, 25, 30, 28, 26, 8]);
   assert.equal(r.dir, 'down');
-  assert.equal(r.delta, -10);
+  assert.equal(r.delta, -80);
 });
 test('directionOf: 变化在阈值内判 flat（这是"确认平"，不是"没数据"）', () => {
-  const r = directionOf([50, 51, 52, 53]);
+  // 分位口径：等值序列分位恒 0 → 差 0pp → flat（"分位原地踏步"）
+  const r = directionOf([50, 50, 50, 50]);
   assert.equal(r.dir, 'flat');
 });
 test('directionOf: ★ 样本不足 MIN_HISTORY → dir=null（绝不默认 flat）', () => {
@@ -91,7 +97,7 @@ test('directionOf: 空序列 → null', () => {
 });
 test('directionOf: 序列中的伪值被剔除（不参与方向计算）', () => {
   const r = directionOf([50, [], null, '', 52, 60]);
-  // 有效值 [50, 52, 60] → 与 3 日前比（实际取首个）→ 上升 10
+  // 有效值 [50, 52, 60]：50→0%、60→75% → +75pp → up
   assert.equal(r.dir, 'up');
 });
 test('directionOf: lookback 超过序列长度时向前夹取（不越界）', () => {
@@ -99,15 +105,26 @@ test('directionOf: lookback 超过序列长度时向前夹取（不越界）', (
   assert.equal(r.lookback, 3);
   assert.equal(r.dir, 'up');
 });
-test('directionOf: 边界 DIR_UP 恰好等于阈值 → up', () => {
-  assert.equal(directionOf([50, 50, 50, 56]).dir, 'up');
-  assert.equal(directionOf([50, 50, 50, 55.9]).dir, 'flat');
+test('directionOf: 分位差跨阈值 → up；未跨 → flat', () => {
+  // 注：分位粒度由窗口大小决定（n 元素窗口粒度 1/n），短序列无法精确构造
+  // 「恰等于 ±15pp」的边界，故测跨阈/未跨阈两侧（等值序列=0pp 最稳）。
+  assert.equal(directionOf([50, 50, 50, 60]).dir, 'up');   // 0,0,0,75% → +75pp
+  assert.equal(directionOf([50, 50, 50, 50]).dir, 'flat'); // 恒 0 → 0pp
+});
+test('directionOf: 口径边界——持续创新低的阴跌，滚动分位恒 0、分位差钝化为 flat（特性留痕）', () => {
+  // 分位口径的已知特性：纯单调创新低序列的新值恒为窗口最小（分位 0），分位差判不出
+  // down。真实序列少有连续 4 天全创新低（噪声会让分位跳变），且该形态下"不触发
+  // down→ebb"的后果由观察触发线跟踪（2026-11-06 拍板留痕），不视为阻断缺陷。
+  const r = directionOf([80, 78, 76, 70]);
+  assert.equal(r.dir, 'flat');
 });
 
 // ── ③ classifyRegime：四态分类 ───────────────────────────────────────────
 const hist = (arr) => arr;
 test('classifyRegime: 高位 + 下行 → 退潮', () => {
-  const r = classifyRegime({ score: 70, pctRank: 90, history: hist([80, 78, 76, 70]) });
+  // 2026-11-06 B1：history 用峰值回落形态（等价今晚 85.4→72.8，长前缀保分位稳定）。
+  // 旧构造 [80,78,76,70] 纯递减创新低、分位恒 0 → flat（阴跌钝化特性，见口径边界用例）。
+  const r = classifyRegime({ score: 72.8, pctRank: 90, history: hist([10, 20, 15, 25, 30, 28, 26, 8]) });
   assert.equal(r.key, 'ebb');
   assert.equal(r.label, '退潮');
   assert.equal(r.level, 'high');
@@ -130,7 +147,7 @@ test('classifyRegime: 低位 + 横盘/下行 → 冰点', () => {
   assert.equal(b.key, 'ice', '低位即使在下行也是"冰点"（退潮需水位在高位）');
 });
 test('classifyRegime: 高位 + 下行 → 退潮（水位由分位定，不由绝对分定）', () => {
-  const r = classifyRegime({ score: 62.6, pctRank: 76.3, history: hist([70, 68, 65, 62.6]) });
+  const r = classifyRegime({ score: 62.6, pctRank: 76.3, history: hist([10, 20, 15, 25, 30, 28, 26, 8]) });
   assert.equal(r.key, 'ebb');
   assert.equal(r.level, 'high');
 });
@@ -141,11 +158,13 @@ test('classifyRegime: 中位 + 上行 → 回暖（mid 区拐点）', () => {
   assert.equal(r.confidence, 'mid');
 });
 test('classifyRegime: 中位 + 下行 → 退潮', () => {
-  const r = classifyRegime({ score: 50, pctRank: 45, history: hist([60, 58, 56, 50]) });
+  // 峰值回落形态（[60,58,56,50] 纯递减在分位口径下钝化 flat，见 directionOf 口径边界）
+  const r = classifyRegime({ score: 50, pctRank: 45, history: hist([10, 20, 15, 25, 30, 28, 26, 8]) });
   assert.equal(r.key, 'ebb');
 });
 test('classifyRegime: 中位 + 横盘 → 中性', () => {
-  const r = classifyRegime({ score: 55, pctRank: 50, history: hist([54, 55, 55, 55]) });
+  // 等值序列分位恒 0 → 分位差 0pp → flat（"分位原地踏步=确认平"）
+  const r = classifyRegime({ score: 55, pctRank: 50, history: hist([55, 55, 55, 55]) });
   assert.equal(r.key, 'neutral');
   assert.equal(r.label, '中性');
 });
