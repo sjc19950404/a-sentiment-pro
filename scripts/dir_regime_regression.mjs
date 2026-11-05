@@ -4,6 +4,9 @@
 //   ② 观察触发线复查工具（拍板留痕）：若 B1 方向翻转率仍 >60%（2026-11-06 实测 71.5%
 //   已触发第一条），且 ebb 触发日与「绝对分变化 >1×IQR」的共现率 <50%，再回来评估
 //   「连续 2 日同向才翻转」确认机制；在此之前只观察不动。
+// 阴跌钝化影响面（2026-11-06 复核共识）：钝化只发生在"分位已 0（历史极低水位）后继续
+//   阴跌"的阶段——此时水位层已把仓位压死，方向判不出对仓位帽影响很小，危害有限；
+//   真正会触发该特性的场景是"从 0 分位反弹后再阴跌"（分位差重新敏感），观察时留意。
 // 只读脚本，node scripts/dir_regime_regression.mjs
 import { directionOf, classifyRegime } from '../src/regime.js';
 import { decodeArchive } from '../src/lhb_codec.js';
@@ -20,10 +23,23 @@ const nets = days.map((d) => (d.summary?.lhb_daily_net != null ? Number(d.summar
 
 const RULES_A = { DIR_MODE: 'abs', DIR_UP: 6, DIR_DOWN: -6 };
 let diffs = [];
-const run = (rules) => days.map((_, i) => {
+// ⚠ 口径（2026-11-06 修正）：pctRank 必须传档案真实的 emotion.pct_rank（生产同源）——
+//   修正前误传 null，classifyRegime 退化到绝对水位（40/65）判定，导致"ebb 77/73 天"
+//   与敏感性回测（简化矩阵+分位水位，ebb 65/63 天）口径不一致、差 12/10 天。
+//   两套数的口径对照（复盘勿混用）：
+//   ① 敏感性回测（拍板依据，2026-11-06）：简化矩阵 + 现场滚动分位水位（<30/≥70）+
+//      low 域全部归入 thaw 近似 → 只用于"方案间相对比较"；
+//   ② 本回归（生产口径验收）：完整 classifyRegime 引擎 + 档案真实 pct_rank（primary:pct
+//      生效）+ 逐日滚动窗口 → 与生产 regime 输出同构，是**验收口径**。
+//   样本/分母：259 个交易日；方向判定从 i=3 起有效 → 判定日 256；方向翻转率分母 253
+//   （= 256 个判定日的相邻对数）。
+const run = (rules) => days.map((d, i) => {
   const r = directionOf(hist.slice(0, i + 1), rules ? { rules } : {});
-  const reg = classifyRegime({ score: hist[i], pctRank: null, history: hist.slice(0, i + 1), ...(rules ? { } : {}) }, rules ? { rules } : {});
-  return { dir: r.dir, key: reg.key };
+  const reg = classifyRegime(
+    { score: d.emotion.value, pctRank: d.emotion.pct_rank ?? null, history: hist.slice(0, i + 1) },
+    rules ? { rules } : {},
+  );
+  return { dir: r.dir, key: reg.key, shifted: !!reg.shifted };
 });
 const A = run(RULES_A);
 const B = run(null);
@@ -34,9 +50,15 @@ const cnt = { up: 0, flat: 0, down: 0 };
 const flips = (arr) => { let f = 0; for (let i = 4; i < arr.length; i++) if (arr[i].dir !== arr[i - 1].dir) f++; return f; };
 B.slice(3).forEach((x) => cnt[x.dir]++);
 const keyCnt = (arr) => arr.reduce((m, x) => (m[x.key] = (m[x.key] || 0) + 1, m), {});
-console.log(`样本 ${days.length} 天（${dates[0]} ~ ${dates[dates.length - 1]}）\n`);
-console.log(`A（绝对 ±6）：dir 翻转 ${flips(A)} 次｜regime: ${JSON.stringify(keyCnt(A.slice(3)))}`);
-console.log(`B1（分位 ±15pp）：dir 翻转 ${flips(B)} 次｜regime: ${JSON.stringify(keyCnt(B.slice(3)))}`);
+console.log(`样本 ${days.length} 天（${dates[0]} ~ ${dates[dates.length - 1]}）｜判定日 ${days.length - 3}｜翻转率分母 ${days.length - 6}（相邻对）\n`);
+console.log(`A（绝对 ±6，旧尺）：dir 翻转 ${flips(A)} 次`);
+const ka = keyCnt(A.slice(3));
+const shiftA = A.slice(3).filter((x) => x.shifted).length;
+console.log(`  regime 六类: ${JSON.stringify(ka)}｜合计 ${Object.values(ka).reduce((a, b) => a + b, 0)}｜其中切换期(shifted) ${shiftA}`);
+console.log(`B1（分位 ±15pp，生产默认）：dir 翻转 ${flips(B)} 次`);
+const kb = keyCnt(B.slice(3));
+const shiftB = B.slice(3).filter((x) => x.shifted).length;
+console.log(`  regime 六类: ${JSON.stringify(kb)}｜合计 ${Object.values(kb).reduce((a, b) => a + b, 0)}｜其中切换期(shifted) ${shiftB}`);
 console.log(`\ndir 不同的天数: ${diffs.length}/${days.length - 3}（${(diffs.length / (days.length - 3) * 100).toFixed(1)}%）`);
 // regime key 不同的天数（最终结论层差异）
 let keyDiffs = 0, keyDiffList = [];
