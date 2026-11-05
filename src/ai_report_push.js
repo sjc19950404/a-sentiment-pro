@@ -78,9 +78,9 @@ export function loadPushState(file) {
   } catch { return empty; }
 }
 
-export function savePushState(file, state) {
+export function savePushState(file, state, now = new Date()) {
   mkdirSync(dirname(file), { recursive: true });
-  atomicWriteJSON(file, JSON.stringify(pruneState(state), null, 1) + '\n');
+  atomicWriteJSON(file, JSON.stringify(pruneState(state, now), null, 1) + '\n');
   return state;
 }
 
@@ -445,7 +445,9 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
       }
     }
   }
-  if (stateFile) savePushState(stateFile, state);
+  // 传同一 now：内部 TTL 剪枝必须与本次推送的时钟一致，否则固定时钟造的数会被
+  // 真实时钟剪掉（2026-11-05 实证：跨过 30 天 TTL 后 fingerprint 去重失效、误判成功）。
+  if (stateFile) savePushState(stateFile, state, now);
   // 2026-10-25 修复：分母原为 list.length（**输入报告数**），而 pushed 计的是**发出的消息条数**
   //   （1 份 post_market 会展开成「主报文 + AI 副报文 + 异动告警」多条），两者量纲不同 →
   //   1 进 2 出时算出 skipped = 1 − 2 = **−1**，EOD 日志因此打出「推 2 / 跳 -1」。

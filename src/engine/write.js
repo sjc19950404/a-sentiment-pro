@@ -66,8 +66,12 @@ export function writeArchive(archive, filePath) {
   //   false → 本地跑 pipeline 只写主档、切片永不刷新 → 前端一直显示旧交易日。
   let shards = null;
   if (path.resolve(p) === path.join(DATA_DIR, 'archive.json')) {
+    // 切片是前端直接消费的明文档：席位名码表（sc-v1）只压主档，切片必须保持明文。
+    const shardPacked = Array.isArray(packed?.meta?.seatCodes) && packed.meta.seatCodes.length
+      ? encodeArchive(archive, codes, { deflate: true, seats: false })
+      : packed;
     try {
-      shards = writeShards(packed);
+      shards = writeShards(shardPacked);
     } catch (e) {
       // 切片失败不得让主档写入回滚（主档是权威源，切片是派生视图）
       console.error('[split] 切片生成失败（主档已写入，前端将回退全量档）:', e.message);

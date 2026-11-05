@@ -42,6 +42,86 @@ export function buildReasonCodes(days) {
   return [...set].sort();
 }
 
+// ── 席位名码表（sc-v1）──────────────────────────────────────────────────────
+// 2026-11-05 席位明细全历史回填后，summary.seats.detail 占主档 65%（明文 12.1MB），
+// 主档写盘态 11.6MB 越过 audit_lhb_caliber 的 10MB 体积纪律红线（EOD 守卫拦截）。
+// 根因与 reason 同构：detail 的 b/s 是 [[席位名, 金额万], ...]，**同一券商营业部全名
+// （如「华宝证券股份有限公司上海东大名路证券营业部」20+ 字）每天每票重复存**——
+// 全档 21.5 万行、7985 个唯一席位名，重复存储 9.67MB，去重后仅 0.47MB。
+// 故复用 reason 码表的同一思路：落盘时把席位名换成 meta.seatCodes 下标，读盘还原。
+// 与 rc-v1 的差别：这里动的是 summary.seats.detail（数组对的首元素），不涉及口径正则，
+// 但同样遵守「只在存储层压缩、内存里必须还原成原文」（UI 抽屉/审计都按名字展示）。
+// 幂等：首元素已是 number（下标）→ 视为已压缩，原样返回。兼容 v1（detail[code] 直接是
+// 买方数组）与 v2（{b,s} 对象）两种结构。
+
+/** 从全档收集唯一席位名，按下标建码表（排序保证稳定）。 */
+export function buildSeatCodes(days) {
+  const set = new Set();
+  const push = (arr) => {
+    for (const row of Array.isArray(arr) ? arr : []) {
+      const n = Array.isArray(row) ? row[0] : null;
+      if (typeof n === 'string' && n) set.add(n);
+    }
+  };
+  for (const d of Array.isArray(days) ? days : []) {
+    const det = d && d.summary && d.summary.seats && d.summary.seats.detail;
+    if (!det || typeof det !== 'object') continue;
+    for (const v of Object.values(det)) {
+      if (!v) continue;
+      if (Array.isArray(v)) push(v);            // v1：仅买方数组
+      else { push(v.b); push(v.s); }            // v2：买卖双侧
+    }
+  }
+  return [...set].sort();
+}
+
+/** 席位名 → 下标（写盘用）。幂等；码表外名字保留明文（不丢数据）。 */
+function encodeSeatNames(day, codes) {
+  const seats = day && day.summary && day.summary.seats;
+  const det = seats && seats.detail;
+  if (!det || typeof det !== 'object' || !Array.isArray(codes) || !codes.length) return day;
+  const idx = new Map(codes.map((c, i) => [c, i]));
+  const conv = (arr) => {
+    if (!Array.isArray(arr)) return arr;
+    return arr.map((row) => {
+      if (!Array.isArray(row)) return row;
+      const n = row[0];
+      if (typeof n !== 'string') return row;        // 已是下标 / 非法行
+      const i = idx.get(n);
+      return i == null ? row : [i, ...row.slice(1)];
+    });
+  };
+  const next = {};
+  for (const [code, v] of Object.entries(det)) {
+    if (!v) { next[code] = v; continue; }
+    next[code] = Array.isArray(v) ? conv(v) : { ...v, b: conv(v.b), s: conv(v.s) };
+  }
+  return { ...day, summary: { ...day.summary, seats: { ...seats, detail: next } } };
+}
+
+/** 下标 → 席位名（读盘用）。非下标行原样返回，兼容旧档。 */
+function decodeSeatNames(day, codes) {
+  const seats = day && day.summary && day.summary.seats;
+  const det = seats && seats.detail;
+  if (!det || typeof det !== 'object' || !Array.isArray(codes) || !codes.length) return day;
+  const conv = (arr) => {
+    if (!Array.isArray(arr)) return arr;
+    return arr.map((row) => {
+      if (!Array.isArray(row)) return row;
+      const i = row[0];
+      if (typeof i !== 'number') return row;        // 明文，原样
+      const name = codes[i];
+      return typeof name === 'string' ? [name, ...row.slice(1)] : row;
+    });
+  };
+  const next = {};
+  for (const [code, v] of Object.entries(det)) {
+    if (!v) { next[code] = v; continue; }
+    next[code] = Array.isArray(v) ? conv(v) : { ...v, b: conv(v.b), s: conv(v.s) };
+  }
+  return { ...day, summary: { ...day.summary, seats: { ...seats, detail: next } } };
+}
+
 /**
  * 压缩一天的 lhb 记录：reason/reasons → rc（下标数组）。
  * 幂等：已压缩（有 rc、无 reasons/reason 文本）的记录原样返回。
@@ -85,29 +165,43 @@ export function decodeDay(day, codes) {
  */
 export function encodeArchive(archive, codes, opts = {}) {
   const list = Array.isArray(archive?.all_days) ? archive.all_days : [];
-  const enc = (d) => encodeDay(d, codes);
+  // 席位名码表由内部自行收集（调用方无需感知）；无 detail 时不写码表。
+  // opts.seats === false：本次编码**不动席位明细**（供切片使用——切片是前端直接消费的
+  //   明文档，前端不解码 sc-v1；主档才需要压缩过 10MB 红线）。
+  const seatCodes = opts.seats === false ? [] : buildSeatCodes(list);
+  const enc = (d) => encodeSeatNames(encodeDay(d, codes), seatCodes);
   const out = {
     ...archive,
     all_days: opts.deflate ? list.map((d) => deflateDay(enc(d))) : list.map(enc),
   };
   out.meta = { ...(archive.meta || {}), reasonCodes: codes, reasonEncoding: 'rc-v1' };
+  if (seatCodes.length) {
+    out.meta.seatCodes = seatCodes;
+    out.meta.seatEncoding = 'sc-v1';
+  } else {
+    delete out.meta.seatCodes;
+    delete out.meta.seatEncoding;
+  }
   return out;
 }
 
 /**
- * 还原 rc → reasons，但先把「原子级」的粗字段还原回父对象。
+ * 还原 rc → reasons / 席位名下标 → 原文，但先把「原子级」的粗字段还原回父对象。
  * 序列化时用同一条「提子」规则，故两者天然互逆。
  */
 export function decodeArchive(archive) {
   const codes = archive?.meta?.reasonCodes;
   const hasCodes = Array.isArray(codes) && codes.length;
+  const seatCodes = archive?.meta?.seatCodes;
+  const hasSeatCodes = Array.isArray(seatCodes) && seatCodes.length;
   const list = Array.isArray(archive?.all_days) ? archive.all_days : [];
-  if (!hasCodes && !list.some((d) => Array.isArray(d?._sub))) return archive;
+  if (!hasCodes && !hasSeatCodes && !list.some((d) => Array.isArray(d?._sub))) return archive;
   return {
     ...archive,
     all_days: list.map((d) => {
       const inflated = inflateDay(d);
-      return hasCodes ? decodeDay(inflated, codes) : inflated;
+      const withReasons = hasCodes ? decodeDay(inflated, codes) : inflated;
+      return hasSeatCodes ? decodeSeatNames(withReasons, seatCodes) : withReasons;
     }),
   };
 }

@@ -386,7 +386,12 @@ function refreshMetaOnly(dataPath, now, attempt) {
   if (path.basename(dataPath) === 'archive.json') {
     // 切片入参用 packed（与 writeArchive 的 writeShards(packed) 同构）——同源生成，
     // 杜绝"主档提子态、切片明文态"的两套口径。
-    try { writeShards(packed); } catch (e) { console.error('[split] 切片刷新失败:', e.message); }
+    // 例外（2026-11-05）：席位名码表 sc-v1 只压主档；切片是前端直接消费的明文档，
+    //   前端不解码索引，故切片必须走 seats:false 保持席位名明文。
+    const shardPacked = Array.isArray(packed?.meta?.seatCodes) && packed.meta.seatCodes.length
+      ? encodeArchive(a, buildReasonCodes(a.all_days), { deflate: true, seats: false })
+      : packed;
+    try { writeShards(shardPacked); } catch (e) { console.error('[split] 切片刷新失败:', e.message); }
   }
   console.log('[freshness] meta 已刷新 |', f.state, '| stale =', a.meta.stale,
     a.meta.staleReason ? '| ' + a.meta.staleReason : '');

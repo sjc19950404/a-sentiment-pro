@@ -52,7 +52,9 @@ const codes = Array.isArray(raw?.meta?.reasonCodes) && raw.meta.reasonCodes.leng
 //   直接进了滚动窗，`latest.lhb` 变成内联——首屏体积白涨，且 --check 会报
 //   "滚动窗 latest.lhb 未提子"。三种写盘路径（主档 / 本脚本 / writeArchiveSafely）
 //   必须产出完全一致的形态，否则同源切片就成了"两种口径"。
-const packed = encodeArchive(arc, codes, { deflate: true });
+// 切片是前端直接 fetch 消费的明文档，前端不解码席位名码表（sc-v1）——
+// 故切片保持席位明细明文（seats:false），码表只用于主档压 10MB 体积红线。
+const packed = encodeArchive(arc, codes, { deflate: true, seats: false });
 const index = buildIndex(packed);
 const shards = buildShards(packed);
 // 注入 aggregateByCode：主档不再持久化 lhb_aggr（体积纪律），滚动窗「最新日」需现补。

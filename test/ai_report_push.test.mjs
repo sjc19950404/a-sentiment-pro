@@ -111,7 +111,9 @@ test('loadPushState/savePushState：roundtrip / 缺档空态 / 坏 JSON 空态�
     writeFileSync(f, '{bad json', 'utf8');
     assert.deepEqual(loadPushState(f), { schema_version: '1.0', pushed: [] }, '坏 JSON → 空态不 throw');
     const state = recordPushed(loadPushState(f), { fingerprint: 'fp1', type: 'post_market', date: '2026-09-30' }, new Date('2026-10-06T13:00:00Z'));
-    savePushState(f, state);
+    // 必须注入同一固定时钟：savePushState 内部要按 now 做 TTL 剪枝，
+    // 否则用真实时钟跑、固定时钟造数，跨过 30 天 TTL 后本条会被剪掉（2026-11-05 实证翻红）。
+    savePushState(f, state, new Date('2026-10-06T13:00:00Z'));
     assert.equal(loadPushState(f).pushed[0].fingerprint, 'fp1', 'save → load roundtrip');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
