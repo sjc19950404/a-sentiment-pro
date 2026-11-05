@@ -31,8 +31,12 @@ let diffs = [];
 //      low 域全部归入 thaw 近似 → 只用于"方案间相对比较"；
 //   ② 本回归（生产口径验收）：完整 classifyRegime 引擎 + 档案真实 pct_rank（primary:pct
 //      生效）+ 逐日滚动窗口 → 与生产 regime 输出同构，是**验收口径**。
-//   样本/分母：259 个交易日；方向判定从 i=3 起有效 → 判定日 256；方向翻转率分母 253
-//   （= 256 个判定日的相邻对数）。
+//   分类全集（REGIME_LABELS 六类）：ice 冰点 / recover 回暖 / climax 高潮 / ebb 退潮 /
+//   neutral 中性 / unknown 数据不足——敏感性回测临时称的"thaw"即 recover（回暖），
+//   复盘勿混用。unknown 在 i≥3 的判定日恒 0（level+dir 均可判），故六类合计=256。
+//   样本/分母：259 个交易日；方向判定从 i=3 起有效 → 判定日 256；方向翻转率分母
+//   **255**（= 256 个判定日的相邻对数；2026-11-06 修正：此前注释写 253 系笔误，
+//   flips 循环 i=4..258 实际覆盖 255 对）。翻转率 181/255=71.0%。
 const run = (rules) => days.map((d, i) => {
   const r = directionOf(hist.slice(0, i + 1), rules ? { rules } : {});
   const reg = classifyRegime(
@@ -49,8 +53,13 @@ for (let i = 3; i < days.length; i++) {
 const cnt = { up: 0, flat: 0, down: 0 };
 const flips = (arr) => { let f = 0; for (let i = 4; i < arr.length; i++) if (arr[i].dir !== arr[i - 1].dir) f++; return f; };
 B.slice(3).forEach((x) => cnt[x.dir]++);
-const keyCnt = (arr) => arr.reduce((m, x) => (m[x.key] = (m[x.key] || 0) + 1, m), {});
-console.log(`样本 ${days.length} 天（${dates[0]} ~ ${dates[dates.length - 1]}）｜判定日 ${days.length - 3}｜翻转率分母 ${days.length - 6}（相邻对）\n`);
+// 六类全集显式补全（unknown 恒 0 也列出来，免得复盘以为漏了一类）
+const KEYS = ['ebb', 'climax', 'ice', 'recover', 'neutral', 'unknown'];
+const keyCnt = (arr) => {
+  const m = arr.reduce((acc, x) => (acc[x.key] = (acc[x.key] || 0) + 1, acc), {});
+  return Object.fromEntries(KEYS.map((k) => [k, m[k] || 0]));
+};
+console.log(`样本 ${days.length} 天（${dates[0]} ~ ${dates[dates.length - 1]}）｜判定日 ${days.length - 3}｜翻转率分母 ${days.length - 4}（相邻对：判定日 256 - 1）\n`);
 console.log(`A（绝对 ±6，旧尺）：dir 翻转 ${flips(A)} 次`);
 const ka = keyCnt(A.slice(3));
 const shiftA = A.slice(3).filter((x) => x.shifted).length;
