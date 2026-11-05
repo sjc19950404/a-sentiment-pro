@@ -320,6 +320,7 @@
 /* 主图：情绪分折线 */
 .t-line { fill: none; stroke: var(--t-acc); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
 .t-line-2 { fill: none; stroke: var(--t-ai); stroke-width: 1.2; stroke-dasharray: 3 3; opacity: .85; }
+.t-line-ma { fill: none; stroke: var(--t-acc); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(34, 211, 238, .45)); }
 .t-area { fill: url(#tGradAcc); opacity: .5; }
 .t-band { opacity: .13; }
 .t-band-ice { fill: #4d5b68; }
@@ -369,14 +370,14 @@
 .t-gauge:hover { background: rgba(255, 255, 255, .03); }
 .t-gauge.is-on { background: var(--t-acc-dim); box-shadow: inset 0 0 0 1px rgba(34, 211, 238, .3); }
 .t-gauge svg { display: block; margin: 0 auto; }
-.t-gauge .t-g-num { font-size: 17px; font-weight: 700; fill: var(--t-ink); }
-.t-gauge .t-g-lbl { font-size: 10px; fill: var(--t-ink-3); }
+.t-gauge .t-g-num { font-size: 18px; font-weight: 700; fill: var(--t-ink); }
+.t-gauge .t-g-lbl { font-size: 11px; fill: var(--t-ink-2); }
 .t-gauge .t-g-track { fill: none; stroke: var(--t-line-hi); stroke-width: 5; stroke-linecap: round; }
 .t-gauge .t-g-arc { fill: none; stroke: var(--t-acc); stroke-width: 5; stroke-linecap: round; }
 .t-gauge .t-g-arc2 { fill: none; stroke: var(--t-ai); stroke-width: 2.4; stroke-linecap: round; opacity: .8; }
 .t-gauge-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .t-gauge-side { display: flex; flex-direction: column; gap: 10px; }
-.t-gauge .t-g-lbl-below { font-size: 10.5px; color: var(--t-ink-2); margin-top: 1px; }
+.t-gauge .t-g-lbl-below { font-size: 11.5px; color: var(--t-ink-2); margin-top: 2px; }
 
 /* ── 密排表（数据锐：1px 实线内框 + 等宽右对齐）─────────────────────────── */
 .t-tbl-wrap { max-height: 56vh; overflow: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: var(--t-line-hi) transparent; }
@@ -1678,10 +1679,11 @@
     s += `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22d3ee" stop-opacity=".26"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/></linearGradient></defs>`;
     // 四档参考线 + regime 色带：仅情绪分（usePct）模式有意义，真实域序列（净值等）跳过
     if (usePct) {
+      // 2026-11-06 优化 B：档位数字与名称合并到左轴一处（原数字在左、名称贴右缘，
+      //   与曲线末端当前值标注互相抢位）
       [[24, '清仓'], [65, '满仓'], [80, '过热']].forEach(([v, lb]) => {
         s += `<line class="t-gridln" x1="${P.l}" y1="${Y(v)}" x2="${W - P.r}" y2="${Y(v)}"/>`;
-        s += `<text class="t-tick" x="${P.l - 4}" y="${Y(v) + 3}" text-anchor="end">${v}</text>`;
-        if (lb) s += `<text class="t-tick" x="${W - P.r}" y="${Y(v) - 3}" text-anchor="end">${lb}</text>`;
+        s += `<text class="t-tick" x="${P.l - 4}" y="${Y(v) + 3}" text-anchor="end">${v} ${lb}</text>`;
       });
       // regime 色带（每格一天的底部细带）
       if (rows.some((r) => r.reg)) {
@@ -1712,7 +1714,20 @@
     rows.forEach((r, i) => { d += `${i ? 'L' : 'M'} ${X(i).toFixed(1)} ${Y(r.v).toFixed(1)} `; a += `L ${X(i).toFixed(1)} ${Y(r.v).toFixed(1)} `; });
     a += `L ${X(n - 1)} ${H - P.b} Z`;
     if (!opt.noArea) s += `<path class="t-area" d="${a}" fill="url(#${gid})"/>`;
-    s += `<path class="t-line" d="${d}"${opt.lineColor ? ` stroke="${opt.lineColor}"` : ''}/>`;
+    s += `<path class="t-line" d="${d}"${opt.lineColor ? ` stroke="${opt.lineColor}"` : ''}${opt.ma ? ' opacity=".5"' : ''}/>`;
+    // 2026-11-06 优化 A：opt.ma=N 期移动平均平滑线（情绪分 MA5）——原线淡化在上、
+    //   MA 加粗在上层；前 N-1 天用截至当日的部分窗口均值保持全长（趋势从第一天可见）。
+    if (opt.ma && opt.ma > 1 && n >= 3) {
+      const k = opt.ma;
+      let dm = '';
+      rows.forEach((r, i) => {
+        const seg = rows.slice(Math.max(0, i - k + 1), i + 1).map((x) => x.v).filter((x) => Number.isFinite(x));
+        if (!seg.length) return;
+        const avg = seg.reduce((acc, x) => acc + x, 0) / seg.length;
+        dm += `${dm ? 'L' : 'M'} ${X(i).toFixed(1)} ${Y(avg).toFixed(1)} `;
+      });
+      if (dm) s += `<path class="t-line-ma" d="${dm}"/>`;
+    }
     // 分位虚线
     if (rows.some((r) => r.pct != null)) {
       let d2 = '';
@@ -2129,9 +2144,9 @@
     const series = seriesAll.slice(-rng);
     const rows = series.map((r) => ({ date: String(r[0]).slice(5), v: +r[1], pct: r[2] == null ? null : +r[2], reg: r[3] }));
     const mainBody = rows.length > 1
-      ? lineChart(rows, { w: 760, h: 230 })
+      ? lineChart(rows, { w: 760, h: 230, ma: 5 })
       : '<div class="t-empty">情绪分序列不足</div>';
-    g.appendChild(panel('情绪分走势', `近 ${rows.length} 交易日 · 实线=情绪分 · 虚线=历史分位 · 底部色带=当日 regime`, mainBody, 't-c8'));
+    g.appendChild(panel('情绪分走势', `近 ${rows.length} 交易日 · 淡线=情绪分 · 亮线=MA5 · 虚线=历史分位 · 底部色带=当日 regime`, mainBody, 't-c8'));
 
     // ── 七因子仪表盘 ──
     const gp = el('div', 't-gauges');

@@ -303,6 +303,7 @@
 /* 主图：情绪分折线 */
 .t-line { fill: none; stroke: var(--t-acc); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
 .t-line-2 { fill: none; stroke: var(--t-ai); stroke-width: 1.2; stroke-dasharray: 3 3; opacity: .85; }
+.t-line-ma { fill: none; stroke: var(--t-acc); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(34, 211, 238, .45)); }
 .t-area { fill: url(#tGradAcc); opacity: .5; }
 .t-band { opacity: .13; }
 .t-band-ice { fill: #4d5b68; }
@@ -352,14 +353,14 @@
 .t-gauge:hover { background: rgba(255, 255, 255, .03); }
 .t-gauge.is-on { background: var(--t-acc-dim); box-shadow: inset 0 0 0 1px rgba(34, 211, 238, .3); }
 .t-gauge svg { display: block; margin: 0 auto; }
-.t-gauge .t-g-num { font-size: 17px; font-weight: 700; fill: var(--t-ink); }
-.t-gauge .t-g-lbl { font-size: 10px; fill: var(--t-ink-3); }
+.t-gauge .t-g-num { font-size: 18px; font-weight: 700; fill: var(--t-ink); }
+.t-gauge .t-g-lbl { font-size: 11px; fill: var(--t-ink-2); }
 .t-gauge .t-g-track { fill: none; stroke: var(--t-line-hi); stroke-width: 5; stroke-linecap: round; }
 .t-gauge .t-g-arc { fill: none; stroke: var(--t-acc); stroke-width: 5; stroke-linecap: round; }
 .t-gauge .t-g-arc2 { fill: none; stroke: var(--t-ai); stroke-width: 2.4; stroke-linecap: round; opacity: .8; }
 .t-gauge-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .t-gauge-side { display: flex; flex-direction: column; gap: 10px; }
-.t-gauge .t-g-lbl-below { font-size: 10.5px; color: var(--t-ink-2); margin-top: 1px; }
+.t-gauge .t-g-lbl-below { font-size: 11.5px; color: var(--t-ink-2); margin-top: 2px; }
 
 /* ── 密排表（数据锐：1px 实线内框 + 等宽右对齐）─────────────────────────── */
 .t-tbl-wrap { max-height: 56vh; overflow: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: var(--t-line-hi) transparent; }
