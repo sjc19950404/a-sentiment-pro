@@ -75,8 +75,9 @@ test('buildDailyReport: 高潮日 + 宽度窄 → ★ 切换期（V5.3 矛盾覆
 test('buildDailyReport: ★ V5.3 节一带仓位区间（neutral → 30%~50%），unknown 不给区间', () => {
   const S = fullSignals();
   // 无背离 + 无末段特征 → neutral 主标签（value 55 / pct 50 / 方向 flat）
+  // 2026-11-06 B1：分位差口径下 flat 需等值序列（[54,55,55,55] 的 +25pp 会判 up→recover）
   S.latest = { ...S.latest, value: 55, pct_rank: 50 };
-  S.regimeSeries = [{ value: 54 }, { value: 55 }, { value: 55 }, { value: 55 }];
+  S.regimeSeries = [{ value: 55 }, { value: 55 }, { value: 55 }, { value: 55 }];
   S.breadth = { verdict: { level: 'mid', label: '宽度中性' } };
   const R = buildDailyReport(S);
   assert.equal(R.tag.key, 'neutral');
