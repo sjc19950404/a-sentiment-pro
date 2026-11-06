@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-06",
- "generated_at": "2026-11-06T10:49:39.300Z",
+ "generated_at": "2026-11-06T13:18:34.871Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -162,7 +162,7 @@
   "counter_trend_loss_ratio": null,
   "backtest_deviation": null,
   "market_context": {
-   "emotion": 36.9,
+   "emotion": 34.6,
    "pct_rank": 6.8,
    "indexes": {
     "上证指数": -1.1,
@@ -170,7 +170,7 @@
     "创业板指": -3.96
    },
    "up_down": "725/4483/87",
-   "amount_yi": 16577.9,
+   "amount_yi": 13769.2,
    "zt_dt": "32/15",
    "breadth": "站上20日线仅 33.7%",
    "pain": "亏钱效应显著",

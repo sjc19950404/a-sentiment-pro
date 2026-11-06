@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-06",
- "generated_at": "2026-11-06T10:49:39.513Z",
+ "generated_at": "2026-11-06T13:18:35.098Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -220,7 +220,7 @@
      "date": "2026-11-06",
      "from": "退潮",
      "to": "冰点",
-     "value": 36.9
+     "value": 34.6
     }
    ],
    "shadow_note": null

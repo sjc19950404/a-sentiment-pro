@@ -2,7 +2,7 @@
   "kind": "crosscheck-latest",
   "version": 1,
   "asOfDate": "2026-11-06",
-  "fetchedAt": "2026-11-06T10:46:30.815Z",
+  "fetchedAt": "2026-11-06T13:15:23.298Z",
   "primaryCount": 85,
   "secondaryCount": 120,
   "rules": {
@@ -173,19 +173,6 @@
       "level": "ok"
     },
     {
-      "industry": "纺织制造",
-      "primaryRaw": "纺织制造",
-      "primary": -0.51,
-      "secondary": 0.17,
-      "secondarySamples": 1,
-      "diff": -0.68,
-      "dev": -0.3,
-      "absDiff": 0.3,
-      "rel": 1.76,
-      "relMeasurable": false,
-      "level": "ok"
-    },
-    {
       "industry": "光伏设备",
       "primaryRaw": "光伏设备",
       "primary": -0.51,
@@ -195,6 +182,19 @@
       "dev": 1.75,
       "absDiff": 1.75,
       "rel": 3.43,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
+      "industry": "纺织制造",
+      "primaryRaw": "纺织制造",
+      "primary": -0.51,
+      "secondary": 0.17,
+      "secondarySamples": 1,
+      "diff": -0.68,
+      "dev": -0.3,
+      "absDiff": 0.3,
+      "rel": 1.76,
       "relMeasurable": false,
       "level": "ok"
     },
@@ -576,19 +576,6 @@
       "level": "ok"
     },
     {
-      "industry": "房地产",
-      "primaryRaw": "房地产",
-      "primary": -1.62,
-      "secondary": -1.6,
-      "secondarySamples": 1,
-      "diff": -0.02,
-      "dev": 0.36,
-      "absDiff": 0.36,
-      "rel": 0.22,
-      "relMeasurable": true,
-      "level": "ok"
-    },
-    {
       "industry": "风电设备",
       "primaryRaw": "风电设备",
       "primary": -1.62,
@@ -598,6 +585,19 @@
       "dev": 0.44,
       "absDiff": 0.44,
       "rel": 0.27,
+      "relMeasurable": true,
+      "level": "ok"
+    },
+    {
+      "industry": "房地产",
+      "primaryRaw": "房地产",
+      "primary": -1.62,
+      "secondary": -1.6,
+      "secondarySamples": 1,
+      "diff": -0.02,
+      "dev": 0.36,
+      "absDiff": 0.36,
+      "rel": 0.22,
       "relMeasurable": true,
       "level": "ok"
     },
