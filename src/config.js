@@ -31,7 +31,13 @@
 // ⚠ 绝不能写死 `import ... from 'node:fs'`：浏览器会拦截 node: 内置模块，导致 config.js 及所有
 //   依赖它的模块（alerts.js 等）整条加载失败——表现就是「模拟交易面板所有按钮点了没反应」。
 //   故 node: 只在 isNode 分支内动态 import（浏览器永不触达这一分支）。
-const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
+// 2026-11-06 守卫加固：原判断 `typeof process !== 'undefined'` 会被浏览器环境里的
+//   process polyfill 骗过（外部注入的脚本若定义了带 versions.node 的 window.process，
+//   浏览器就会走进 Node 分支 → import('node:fs') 被浏览器拦下，报 4 条 CORS——
+//   2026-11-06 用户环境实证：node:url ×2 + node:path ×2）。补 `typeof window === 'undefined'`：
+//   浏览器永远有 window（注入也造不出"无 window"的页面环境），真实 Node 永远没有。
+const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node)
+  && typeof window === 'undefined';
 
 let cfg;
 if (isNode) {

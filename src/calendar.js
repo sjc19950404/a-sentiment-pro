@@ -23,7 +23,10 @@ import config from './config.js';
 
 // ⚠ 同 config.js：node: 内置模块不能写死 import（浏览器拦截 → 整图加载失败）。
 //   改为仅 isNode 分支内动态 import；浏览器侧 loadCalendar 走「种子 + 兜底」，不读盘（见 loadCalendar）。
-const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
+// 2026-11-06 守卫加固：与 config.js 同款——补 window 检查，防浏览器环境被注入的
+//   process polyfill 骗进 Node 分支（实证见 config.js 注释）。
+const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node)
+  && typeof window === 'undefined';
 let ROOT = '';
 let readFileSync = null, existsSync = null, path = null;
 if (isNode) {
