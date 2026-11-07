@@ -1174,11 +1174,13 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
     `${rawDisk.all_days.filter((d) => d.lhb != null).length} 天顶层带 lhb`);
   // ⚠ 修正常见误读：提子对**主档体积零收益**（只是改名 lhb → _sub.lhb，多 7 字节/天）。
   //   真正省体积的是码表这一级。此处锁住"提子不得让体积回涨"，防止将来把它当省钱手段。
-  // 阈值对齐（2026-10-09 f19a1fc）：原 <6MB 是码表上线时（档约 4.6MB）留的余量，数据
-  //   自然增长到 6.27MB 后成误报；红线统一 <7MB（与下方 B19 体积纪律同口径，不分叉）。
+  // 阈值对齐（2026-10-09 f19a1fc → 2026-11-07）：原 <6MB 是码表上线时留的余量，数据
+  //   增长后成误报；此处的 <7MB 与 B19 的 <7MB 曾与 audit 链的 <10MB 分叉（audit 注释
+  //   宣称"两处同阈值"与现实不符）——2026-11-07 随红线上调一并统一为 <15MB（依据见
+  //   audit_lhb_caliber.mjs 同名检查处的留痕：detail 占 58%、方案 A 作废、方案 C 排期）。
   const rawMb = Buffer.byteLength(readFileSync(ARCHIVE, 'utf8')) / 1048576;
-  check('切片：主档体积 < 7MB（与 B19 体积纪律同红线；码表是唯一有效手段，提子只是改名）',
-    rawMb < 7, `${rawMb.toFixed(2)}MB`);
+  check('切片：主档体积 < 15MB（与 B19 体积纪律同红线；码表是唯一有效手段，提子只是改名）',
+    rawMb < 15, `${rawMb.toFixed(2)}MB`);
   check('切片：主档 meta.reasonCodes 与记录引用一致（码表缺失会让解码整体回退成 undefined）',
     Array.isArray(arch.meta?.reasonCodes) && arch.meta.reasonEncoding === 'rc-v1'
     && origDays.every((d) => (d.lhb || []).every((r) => (r.rc || []).every((i) => i >= 0 && i < arch.meta.reasonCodes.length))),
@@ -2322,10 +2324,11 @@ function checkVolume() {
   // ② 存档里不得残留 lhb_aggr（除了本来就没有的历史天）
   const withAggr = days.filter((d) => d.lhb_aggr != null).length;
   check('体积纪律：主档不含 lhb_aggr（存量已清洗）', withAggr === 0, `仍有 ${withAggr} 天带 lhb_aggr`);
-  // ③ 主档体积上限（防再次悄悄翻倍；当前约 4.6MB，留 1.5 倍余量）
+  // ③ 主档体积上限（防再次悄悄翻倍）。2026-11-07：7→15MB 与 audit 链统一（依据留痕
+  //   见 audit_lhb_caliber.mjs 同名检查处；detail 占 58% 的现实下 7MB 早已名存实亡）
   const bytes = readFileSync(ARCHIVE, 'utf8').length;
-  check('体积纪律：主档 < 7MB（当前约 4.6MB，超限说明又混入了派生字段）',
-    bytes < 7 * 1024 * 1024, `实际 ${(bytes / 1024 / 1024).toFixed(2)}MB`);
+  check('体积纪律：主档 < 15MB（超限说明又混入了派生字段）',
+    bytes < 15 * 1024 * 1024, `实际 ${(bytes / 1024 / 1024).toFixed(2)}MB`);
   // ④ 派生字段仍可从 lhb 重建（口径唯一出处的证据）
   const LHB_SRC = readFileSync(path.join(ROOT, 'src', 'lhb.js'), 'utf8');
   check('体积纪律：caliberFromDay 缺 lhb_aggr 时回退 day.lhb 现算（故无需持久化）',

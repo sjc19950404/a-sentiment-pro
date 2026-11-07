@@ -1184,11 +1184,16 @@ summarize('题材动量留痕：momentum.prev_fresh 存在，存活率可同源�
   //   真正省体积的是码表这一级。此处锁住"提子不得让体积回涨"，防止将来把它当省钱手段。
   // 阈值对齐（2026-10-09）：原 <6MB 是码表上线时（档约 4.6MB）按当时体积留的余量，
   //   数据自然增长到 6.27MB 后成了误报——全档各字段（_sub/summary/industry…）均为
-  //   有效数据。红线以 B19 的 <10MB（体积纪律：防派生字段翻倍）为准，两处同阈值
-  //   同口径，不留"两个红线"的分叉空间。
+// 2026-11-07 体积红线 10→15MB（外部拍板）：2026-11-07 体检实证 detail（席位明细）
+  //   占主档 58%（5.69MB/9.80MB）、日增约 30KB，10MB 余量仅 200KB（约 6-7 个交易日
+  //   顶线，EOD 守卫将再次拦截）。方案 A（detail 滚动窗口）已评估【作废】：paper.js
+  //   全档回放逐日从 seats.detail 现算准入③④因子（lhbfilter.js:194），砍历史 detail
+  //   会改变回测结果、破坏门禁①（A↔v52 对账）。正解是方案 C（席位因子固化 + detail
+  //   移年份分片，一次性全档对账验证后才切换），实施前排期。15MB ≈ 5-6 个月缓冲
+  //   （日增 30KB × 120 交易日）。本文件历史分叉（曾 7MB 与 10MB 并存）一并统一。
   const rawMb = Buffer.byteLength(readFileSync(ARCHIVE, 'utf8')) / 1048576;
-  check('切片：主档体积 < 10MB（与 B19 体积纪律同红线；码表是唯一有效手段，提子只是改名）',
-    rawMb < 10, `${rawMb.toFixed(2)}MB`);
+  check('切片：主档体积 < 15MB（与 B19 体积纪律同红线；码表是唯一有效手段，提子只是改名）',
+    rawMb < 15, `${rawMb.toFixed(2)}MB`);
   check('切片：主档 meta.reasonCodes 与记录引用一致（码表缺失会让解码整体回退成 undefined）',
     Array.isArray(arch.meta?.reasonCodes) && arch.meta.reasonEncoding === 'rc-v1'
     && origDays.every((d) => (d.lhb || []).every((r) => (r.rc || []).every((i) => i >= 0 && i < arch.meta.reasonCodes.length))),
