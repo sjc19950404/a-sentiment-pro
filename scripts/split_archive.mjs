@@ -7,7 +7,7 @@
 // 用法：
 //   node scripts/split_archive.mjs            # 由 data/archive.json 生成切片
 //   node scripts/split_archive.mjs --check    # 只校验一致性，不写盘（CI 用）
-import { readFileSync, writeFileSync, existsSync, readdirSync, unlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, unlinkSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
 import { buildIndex, buildShards, shardName, buildRecent, buildSignals, RECENT_DAYS, RECENT_FILE, SIGNALS_FILE } from '../src/archive_split.js';
@@ -224,6 +224,12 @@ if (check) {
     if (!existsSync(p)) { problems.push(`缺少分片 ${shardName(y)}`); continue; }
     const sh = JSON.parse(readFileSync(p, 'utf8'));
     if (sh.year !== y) problems.push(`${shardName(y)} 的 year 字段=${sh.year}`);
+    // 2026-11-07 分片体积告警线（20MB）：分片此前**无任何监控**（主档有 15MB 红线、
+    //   分片没有——日增约 70KB，2026 分片已 14.71MB）。浏览器「回看更早交易日」
+    //   整拉单分片（gzip 后约 2.8MB），过线即回看体验劣化 + 弱网截断风险上行。
+    //   告警不拦截（拆分策略待与主档滚动窗一并设计，见任务备忘）；触发即提醒拆分。
+    const shardMb = statSync(p).size / 1048576;
+    if (shardMb > 20) problems.push(`${shardName(y)} 体积 ${shardMb.toFixed(2)}MB 超过 20MB 告警线（浏览器回看整拉此档；建议按季度拆分，方案见 split 留痕与任务备忘）`);
     shardDays += sh.all_days.length;
   }
   if (shardDays !== arc.all_days.length) {

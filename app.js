@@ -3784,9 +3784,15 @@ const lazyWanted = new Set();   // 本次会话已按需取过的惰性字段（
 // 滚动窗的请求去重槽位挂在 window 上（见下方 loadRecentArchiveShared），
 // 不在此处再开一个模块级变量——两个槽位就等于两次请求，正是要修的那件事。
 
-function loadJson(url) {
-  return fetch(url + '?_=' + Date.now(), { cache: 'no-store' })
-    .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))));
+function loadJson(url, timeoutMs) {
+  // 2026-11-07：加超时（默认 60s）——年分片 gzip 后约 2.8MB，正常网络秒级；
+  //   弱网/CDN 截断时无超时的 fetch 会挂到浏览器默认上限（数分钟），用户只看到
+  //   转圈。超时 → 走调用方 catch（回看路径自动重试一次后给出「载入失败，重试」）。
+  const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs || 60000) : null;
+  return fetch(url + '?_=' + Date.now(), { cache: 'no-store', signal: ctrl ? ctrl.signal : undefined })
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+    .finally(() => { if (timer) clearTimeout(timer); });
 }
 
 /**
@@ -3867,7 +3873,13 @@ function loadRecent() {
  */
 async function loadFull(arc, years) {
   const want = (years && years.length) ? years : (arc.years || []);
-  const parts = await Promise.all(want.map((y) => loadJson('./data/archive-' + y + '.json').catch(() => null)));
+  // 2026-11-07：单分片失败自动重试一次——大文件弱网/CDN 截断多为瞬态（实测同档
+  //   连续拉三次：截断/截断/完整），重试仍失败才交给调用方的「载入失败，重试」路径。
+  const parts = await Promise.all(want.map(async (y) => {
+    const url = './data/archive-' + y + '.json';
+    const first = await loadJson(url).catch(() => null);
+    return first !== null ? first : await loadJson(url).catch(() => null);
+  }));
   const days = [];
   for (const p of parts) if (p && Array.isArray(p.all_days)) days.push(...p.all_days);
   days.sort((a, b) => String(a.trade_date).localeCompare(String(b.trade_date)));
