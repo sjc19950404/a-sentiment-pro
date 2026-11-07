@@ -523,7 +523,7 @@
     const period = state.period || 'day';
     const opts = PERIODS.map((p) => `<option value="${p.k}"${p.k === period ? ' selected' : ''}>${p.n}</option>`).join('');
     host.innerHTML = `<div class="t-kbar"><label>周期
-      <select class="t-kperiod" aria-label="K线周期">${opts}</select></label></div>
+      <select class="t-kperiod" name="klinePeriod" aria-label="K线周期">${opts}</select></label></div>
       <div class="t-kbody"><div class="t-loading">加载日K…</div></div>`;
     const body = $('.t-kbody', host);
     const sel = $('.t-kperiod', host);
@@ -1170,7 +1170,7 @@
 
     const p1 = panel('个股 K 线', '输入 6 位代码，或从「选股 / 模拟盘」点任一票跳转',
       `<div class="t-kbar">
-        <label>代码 <input class="t-kcode" type="text" inputmode="numeric" maxlength="6"
+        <label>代码 <input class="t-kcode" name="klineCode" type="text" inputmode="numeric" maxlength="6"
           placeholder="如 600000" value="${esc(cur)}" aria-label="股票代码"></label>
         <button class="t-kgo" type="button">查询</button>
         <span class="t-khint">${esc(curName)}</span>

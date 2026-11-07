@@ -127,13 +127,13 @@ function openReviewModal(btn) {
         <label class="dq-radio"><input type="radio" name="mr-status" value="dirty"${cur === 'dirty' ? ' checked' : ''}> 已剔除（dirty，管线真正剔除该字段）</label>
       </div>
       <div class="dq-modal-row"><span class="dq-modal-label">调整原因</span>
-        <select id="mr-reason" class="dq-select">${reasonOpts}</select>
+        <select id="mr-reason" name="mrReason" class="dq-select" aria-label="调整原因">${reasonOpts}</select>
       </div>
       <div class="dq-modal-row" id="mr-custom-row"${!(existing && existing.reason === '其他') ? ' hidden' : ''}><span class="dq-modal-label">原因说明</span>
-        <textarea id="mr-custom" class="dq-textarea" placeholder="请填写具体调整原因（便于留档查看）">${existing && existing.reason === '其他' ? esc(existing.customReason || '') : ''}</textarea>
+        <textarea id="mr-custom" name="mrCustom" class="dq-textarea" aria-label="自定义调整原因" placeholder="请填写具体调整原因（便于留档查看）">${existing && existing.reason === '其他' ? esc(existing.customReason || '') : ''}</textarea>
       </div>
       <div class="dq-modal-row"><span class="dq-modal-label">审核人</span>
-        <input id="mr-reviewer" class="dq-input" value="${esc(reviewer)}"></div>
+        <input id="mr-reviewer" name="mrReviewer" class="dq-input" aria-label="审核人" value="${esc(reviewer)}"></div>
     </div>
     <div class="dq-modal-foot">
       <button class="dq-btn primary" type="button" data-act="save">保存</button>
