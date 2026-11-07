@@ -2347,8 +2347,8 @@ function checkVolume() {
   check('体积纪律：主档不含 lhb_aggr（存量已清洗）', withAggr === 0, `仍有 ${withAggr} 天带 lhb_aggr`);
   // ③ 主档体积上限（防派生字段悄悄翻倍；当前约 7.1MB，合法数据增长抬高至 10MB 留余量）
   const bytes = readFileSync(ARCHIVE, 'utf8').length;
-  check('体积纪律：主档 < 10MB（当前约 7.1MB，合法数据增长；非派生字段膨胀）',
-    bytes < 10 * 1024 * 1024, `实际 ${(bytes / 1024 / 1024).toFixed(2)}MB`);
+  check('体积纪律：主档 < 15MB（2026-11-07 与同文件切片检查处统一 15；本处 10MB 是 2026-11-07 统一时漏改的第二处——同文件两处红线曾再度分叉，扫描脚本已固化防复发）',
+    bytes < 15 * 1024 * 1024, `实际 ${(bytes / 1024 / 1024).toFixed(2)}MB`);
   // ④ 派生字段仍可从 lhb 重建（口径唯一出处的证据）
   const LHB_SRC = readFileSync(path.join(ROOT, 'src', 'lhb.js'), 'utf8');
   check('体积纪律：caliberFromDay 缺 lhb_aggr 时回退 day.lhb 现算（故无需持久化）',
