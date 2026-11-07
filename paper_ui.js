@@ -498,6 +498,66 @@ function loadUniverseStaged() {
   return { liteP };
 }
 
+// ── 系统引擎盘（只读对照，2026-11-07 联动）────────────────────────────────
+// 数据 = data/paper/account.json（EOD 引擎 paper_daily.mjs 的落盘账本），与本地
+// localStorage 手动账本完全独立。纪律：只展示落盘原值 + 最小算术（市值/当日盈亏），
+// 与手动区同款口径；引擎零持仓时如实显示"空仓等待"。加载失败 fail-open。
+let SYS = null;
+async function loadSysAccount() {
+  try {
+    const r = await fetch('./data/paper/account.json?_=' + Date.now(), { cache: 'no-store' });
+    SYS = r.ok ? await r.json() : null;
+  } catch { SYS = null; }
+  renderSysPanel();
+}
+function renderSysPanel() {
+  const el = document.getElementById('sysPanel');
+  if (!el) return;
+  if (!SYS || !Array.isArray(SYS.nav) || !SYS.nav.length) {
+    el.innerHTML = '<div class="dw-empty">引擎账本未就绪（服务器端 EOD 链尚未落盘，或线上档未部署）</div>';
+    return;
+  }
+  const nav = SYS.nav, last = nav[nav.length - 1], prev = nav[nav.length - 2];
+  const dayPnl = prev ? last.equity - prev.equity : null;
+  const dayPct = prev && prev.equity ? (dayPnl / prev.equity) * 100 : null;
+  const posRows = Object.entries(SYS.positions || {}).map(([code, p]) => {
+    const mv = (p.last ?? p.avgCost) * p.qty;
+    const pnl = mv - (p.cost || 0);
+    return { code, p, mv, pnl, pnlPct: p.cost ? (pnl / p.cost) * 100 : null };
+  }).sort((a, b) => b.mv - a.mv);
+  const trades = (SYS.trades || []).slice(-5).reverse();
+  const logs = (SYS.logs || []).slice(-3).reverse();
+  el.innerHTML = `
+    <div class="bf-foot" style="margin-bottom:8px">
+      总资产 <b>${num(last.equity / 10000, 2)} 万</b>
+      · 当日 <span class="${cls(dayPnl)}">${dayPnl == null ? '—' : `${dayPnl >= 0 ? '+' : ''}${num(dayPnl)}（${pct(dayPct)}）`}</span>
+      · 现金 ${num((last.cash ?? 0) / 10000, 2)} 万
+      · 最后结算 ${esc(last.date || SYS.lastSettle || '—')}
+      <span class="tag-mini">系统自动</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>代码</th><th>名称</th><th class="num">持仓</th><th class="num">成本</th><th class="num">现价</th><th class="num">市值</th><th class="num">浮动盈亏</th></tr></thead>
+        <tbody>
+        ${posRows.length ? posRows.map(({ code, p, mv, pnl, pnlPct }) => `<tr>
+          <td>${esc(code)}</td><td>${esc(p.name || (UNI?.[code]?.name) || '')}</td>
+          <td class="num">${p.qty}</td><td class="num">${num(p.avgCost, 3)}</td>
+          <td class="num">${num(p.last)}</td><td class="num">${num(mv)}</td>
+          <td class="num ${cls(pnl)}">${num(pnl)}<span class="psub">${pnlPct == null ? '' : pct(pnlPct)}</span></td>
+        </tr>`).join('') : '<tr class="empty-row"><td colspan="7" class="muted">引擎空仓等待——regime 风控盖帽期（ice/ebb/shift）不建仓；尝试被风控闸拦截的记录见下方日志</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+    ${trades.length ? `<div class="bf-foot" style="margin-top:8px">最近成交（系统自动）：</div>
+    <div class="table-wrap"><table><thead><tr><th>成交日</th><th>代码</th><th>名称</th><th>方向</th><th class="num">股数</th><th class="num">成交价</th><th class="num">净额</th></tr></thead><tbody>
+      ${trades.map((t) => `<tr><td>${esc(t.fillDate)}</td><td>${esc(t.code)}</td><td>${esc(t.name || '')}</td>
+      <td>${t.side === 'buy' ? '买入' : '卖出'}</td><td class="num">${t.qty}</td>
+      <td class="num">${num(t.price, 3)}</td><td class="num">${num(t.net)}</td></tr>`).join('')}
+    </tbody></table></div>` : ''}
+    ${logs.length ? `<div class="bf-foot" style="margin-top:8px">引擎日志（末 3 条）：</div>${logs.map((l) => `<div class="dw-note">${esc(l.date || '')} ${esc(l.text || '')}</div>`).join('')}` : ''}
+  `;
+}
+
 async function boot() {
   try {
     // 分层加载：精简标的池 + 滚动窗（近 30 日）。
@@ -567,6 +627,8 @@ async function boot() {
       document.documentElement?.setAttribute('data-paper-first-paint', String(Date.now()));
     }, 0);
 
+    // 系统引擎盘（只读对照）：独立请求引擎落盘账本，不参与手动区渲染链
+    loadSysAccount();
     // 实时行情放在首屏渲染之后：先把界面画出来，再异步补价，避免网络慢时白屏。
     // 首次抓「持仓 + 待成交」，让账户列表立刻有实时价；用户输入代码时再按需补抓。
     refreshAllLive().then(() => renderAllPaper());

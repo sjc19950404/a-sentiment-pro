@@ -1,0 +1,346 @@
+{
+  "version": "paper-v1",
+  "exportedAt": "2026-11-07T10:50:34.541Z",
+  "initCash": 1000000,
+  "cash": 1000000,
+  "freeze": 0,
+  "realized": 0,
+  "totalFee": 0,
+  "positions": {},
+  "pending": [],
+  "orders": [
+    {
+      "id": 1,
+      "submitDate": "2026-10-23",
+      "code": "003021",
+      "name": "兆威机电",
+      "side": "buy",
+      "qty": 1000,
+      "reason": "【压力测试·熔断绕过】自动建仓（主线选股候选 兆威机电）",
+      "submitPrice": 91.73,
+      "status": "expired",
+      "estPrice": 91.75,
+      "estFee": 28.45,
+      "estGross": 91750,
+      "need": 91778.45,
+      "slip": 0.0002,
+      "settleDate": "2026-10-26",
+      "reject": "当日无真实行情，无法预估资金占用",
+      "detail": "该交易日无真实行情"
+    },
+    {
+      "id": 2,
+      "submitDate": "2026-10-23",
+      "code": "003021",
+      "name": "兆威机电",
+      "side": "buy",
+      "qty": 1000,
+      "reason": "【压力测试·熔断绕过】自动建仓（主线选股候选 兆威机电）",
+      "submitPrice": 91.73,
+      "status": "rejected",
+      "reject": "该股已有待成交委托，请先撤单",
+      "detail": "已有 买入 1000 股待成交"
+    }
+  ],
+  "trades": [],
+  "logs": [
+    {
+      "ts": 1792788470525,
+      "date": "2026-10-23",
+      "code": "600838",
+      "name": "上海九百",
+      "side": "buy",
+      "qty": null,
+      "stage": "lhb",
+      "result": "rejected",
+      "reason": "备选观察池（禁止自动下单）",
+      "text": "降级（不阻断）：龙虎榜净买入 ≤ 0 —— 已扣综合分 10 分 / 上涨概率 8 个百分点，进入备选观察池（禁止自动下单）；⚠龙虎当日资金净流出，谨慎开仓，人工复核后方可下单。"
+    },
+    {
+      "ts": 1792788470526,
+      "date": "2026-10-23",
+      "code": "603028",
+      "name": "赛福天",
+      "side": "buy",
+      "qty": null,
+      "stage": "lhb",
+      "result": "rejected",
+      "reason": "备选观察池（禁止自动下单）",
+      "text": "通过强制剔除，但未满足准入条件（机构净买 >0 或 北向净买 >0），仅页面展示、禁止自动下单。"
+    },
+    {
+      "ts": 1792788470526,
+      "date": "2026-10-23",
+      "code": "003021",
+      "name": "兆威机电",
+      "side": "buy",
+      "qty": null,
+      "stage": "lhb",
+      "result": "pass",
+      "reason": null,
+      "text": "龙虎榜前置过滤通过：通过全部强制剔除与准入条件，进入主候选池（可自动下单）。"
+    },
+    {
+      "ts": 1792788470527,
+      "date": "2026-10-23",
+      "code": "003021",
+      "name": "兆威机电",
+      "side": "buy",
+      "qty": 1000,
+      "stage": "order",
+      "result": "submitted",
+      "reason": "【压力测试·熔断绕过】自动建仓（主线选股候选 兆威机电）",
+      "text": "委托提交成功：买入 1000 股 @预估 91.75 元，冻结 91778.45 元，T+1 次一交易日按真实收盘价撮合"
+    },
+    {
+      "ts": 1792788470527,
+      "date": "2026-10-23",
+      "code": null,
+      "name": null,
+      "side": "buy",
+      "qty": null,
+      "stage": "order",
+      "result": "info",
+      "reason": null,
+      "text": "批量买入委托完成：提交 1 笔 / 共 3 只，拦截 2 笔（其中龙虎过滤 2 笔、风控 0 笔）"
+    },
+    {
+      "ts": 1792788914017,
+      "date": "2026-10-23",
+      "code": "600838",
+      "name": "上海九百",
+      "side": "buy",
+      "qty": null,
+      "stage": "lhb",
+      "result": "rejected",
+      "reason": "备选观察池（禁止自动下单）",
+      "text": "降级（不阻断）：龙虎榜净买入 ≤ 0 —— 已扣综合分 10 分 / 上涨概率 8 个百分点，进入备选观察池（禁止自动下单）；⚠龙虎当日资金净流出，谨慎开仓，人工复核后方可下单。"
+    },
+    {
+      "ts": 1792788914018,
+      "date": "2026-10-23",
+      "code": "603028",
+      "name": "赛福天",
+      "side": "buy",
+      "qty": null,
+      "stage": "lhb",
+      "result": "rejected",
+      "reason": "备选观察池（禁止自动下单）",
+      "text": "通过强制剔除，但未满足准入条件（机构净买 >0 或 北向净买 >0），仅页面展示、禁止自动下单。"
+    },
+    {
+      "ts": 1792788914018,
+      "date": "2026-10-23",
+      "code": "003021",
+      "name": "兆威机电",
+      "side": "buy",
+      "qty": null,
+      "stage": "lhb",
+      "result": "pass",
+      "reason": null,
+      "text": "龙虎榜前置过滤通过：通过全部强制剔除与准入条件，进入主候选池（可自动下单）。"
+    },
+    {
+      "ts": 1792788914019,
+      "date": "2026-10-23",
+      "code": "003021",
+      "name": "兆威机电",
+      "side": "buy",
+      "qty": 1000,
+      "stage": "order",
+      "result": "rejected",
+      "reason": "该股已有待成交委托，请先撤单",
+      "text": "委托被拒：该股已有待成交委托，请先撤单（已有 买入 1000 股待成交）"
+    },
+    {
+      "ts": 1792788914019,
+      "date": "2026-10-23",
+      "code": null,
+      "name": null,
+      "side": "buy",
+      "qty": null,
+      "stage": "order",
+      "result": "info",
+      "reason": null,
+      "text": "批量买入委托完成：提交 0 笔 / 共 3 只，拦截 3 笔（其中龙虎过滤 2 笔、风控 0 笔）"
+    },
+    {
+      "ts": 1793011360770,
+      "date": "2026-10-26",
+      "code": "003021",
+      "name": "兆威机电",
+      "side": "buy",
+      "qty": 1000,
+      "stage": "settle",
+      "result": "expired",
+      "reason": "当日无真实行情，无法预估资金占用",
+      "text": "委托失效：当日无真实行情，无法预估资金占用（2026-10-26 无该股真实行情，委托失效并释放冻结）"
+    },
+    {
+      "ts": 1793809499231,
+      "date": "2026-11-04",
+      "code": "601599",
+      "name": "浙文影业",
+      "side": "buy",
+      "qty": null,
+      "stage": "lhb",
+      "result": "rejected",
+      "reason": "龙虎榜前置过滤未通过",
+      "text": "强制剔除：主线题材强度分 < 0.5。禁止生成买入委托。"
+    },
+    {
+      "ts": 1793809499231,
+      "date": "2026-11-04",
+      "code": null,
+      "name": null,
+      "side": "buy",
+      "qty": null,
+      "stage": "order",
+      "result": "info",
+      "reason": null,
+      "text": "批量买入委托完成：提交 0 笔 / 共 1 只，拦截 1 笔（其中龙虎过滤 1 笔、风控 0 笔）"
+    },
+    {
+      "ts": 1793809972724,
+      "date": "2026-11-04",
+      "code": "601599",
+      "name": "浙文影业",
+      "side": "buy",
+      "qty": null,
+      "stage": "lhb",
+      "result": "rejected",
+      "reason": "龙虎榜前置过滤未通过",
+      "text": "强制剔除：主线题材强度分 < 0.5。禁止生成买入委托。"
+    },
+    {
+      "ts": 1793809972724,
+      "date": "2026-11-04",
+      "code": null,
+      "name": null,
+      "side": "buy",
+      "qty": null,
+      "stage": "order",
+      "result": "info",
+      "reason": null,
+      "text": "批量买入委托完成：提交 0 笔 / 共 1 只，拦截 1 笔（其中龙虎过滤 1 笔、风控 0 笔）"
+    },
+    {
+      "ts": 1793809973039,
+      "date": "2026-11-04",
+      "code": "601599",
+      "name": "浙文影业",
+      "side": "buy",
+      "qty": null,
+      "stage": "lhb",
+      "result": "rejected",
+      "reason": "龙虎榜前置过滤未通过",
+      "text": "强制剔除：主线题材强度分 < 0.5。禁止生成买入委托。"
+    },
+    {
+      "ts": 1793809973040,
+      "date": "2026-11-04",
+      "code": null,
+      "name": null,
+      "side": "buy",
+      "qty": null,
+      "stage": "order",
+      "result": "info",
+      "reason": null,
+      "text": "批量买入委托完成：提交 0 笔 / 共 1 只，拦截 1 笔（其中龙虎过滤 1 笔、风控 0 笔）"
+    },
+    {
+      "ts": 1793811458820,
+      "date": "2026-11-04",
+      "code": "601599",
+      "name": "浙文影业",
+      "side": "buy",
+      "qty": null,
+      "stage": "lhb",
+      "result": "rejected",
+      "reason": "龙虎榜前置过滤未通过",
+      "text": "强制剔除：主线题材强度分 < 0.5。禁止生成买入委托。"
+    },
+    {
+      "ts": 1793811458820,
+      "date": "2026-11-04",
+      "code": null,
+      "name": null,
+      "side": "buy",
+      "qty": null,
+      "stage": "order",
+      "result": "info",
+      "reason": null,
+      "text": "批量买入委托完成：提交 0 笔 / 共 1 只，拦截 1 笔（其中龙虎过滤 1 笔、风控 0 笔）"
+    }
+  ],
+  "nav": [
+    {
+      "date": "2026-10-23",
+      "equity": 1000000,
+      "cash": 1000000,
+      "marketValue": 0
+    },
+    {
+      "date": "2026-10-26",
+      "equity": 1000000,
+      "cash": 1000000,
+      "marketValue": 0
+    },
+    {
+      "date": "2026-10-27",
+      "equity": 1000000,
+      "cash": 1000000,
+      "marketValue": 0
+    },
+    {
+      "date": "2026-10-28",
+      "equity": 1000000,
+      "cash": 1000000,
+      "marketValue": 0
+    },
+    {
+      "date": "2026-10-29",
+      "equity": 1000000,
+      "cash": 1000000,
+      "marketValue": 0
+    },
+    {
+      "date": "2026-10-30",
+      "equity": 1000000,
+      "cash": 1000000,
+      "marketValue": 0
+    },
+    {
+      "date": "2026-11-02",
+      "equity": 1000000,
+      "cash": 1000000,
+      "marketValue": 0
+    },
+    {
+      "date": "2026-11-03",
+      "equity": 1000000,
+      "cash": 1000000,
+      "marketValue": 0
+    },
+    {
+      "date": "2026-11-04",
+      "equity": 1000000,
+      "cash": 1000000,
+      "marketValue": 0
+    },
+    {
+      "date": "2026-11-05",
+      "equity": 1000000,
+      "cash": 1000000,
+      "marketValue": 0
+    },
+    {
+      "date": "2026-11-06",
+      "equity": 1000000,
+      "cash": 1000000,
+      "marketValue": 0
+    }
+  ],
+  "startDate": "2026-10-23",
+  "lastSettle": "2026-11-06"
+}

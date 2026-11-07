@@ -1289,7 +1289,7 @@
         </section>
 
         <section class="card paper-pos">
-          <h2>持仓 <span class="bf-auto">点行看成本构成与 T+1 可卖明细</span></h2>
+          <h2>持仓 · 手动 <span class="bf-auto">你自己下的单；系统引擎的单在下方「系统引擎盘」</span></h2>
           <div class="table-wrap">
             <table id="paperPosTable">
               <thead><tr><th>代码</th><th>名称</th><th class="num">持仓</th><th class="num">可卖</th><th class="num">成本</th><th class="num">现价</th><th class="num">浮动盈亏</th></tr></thead>
@@ -1298,6 +1298,15 @@
           </div>
           <div class="cardlist" id="paperPosCards" aria-label="持仓卡片列表"></div>
           <div id="paperPosNote" class="bf-foot"></div>
+        </section>
+
+        <!-- 2026-11-07 联动：系统引擎盘（只读对照）。数据 = data/paper/account.json
+             （EOD 引擎 paper_daily.mjs 每日收盘后自动结算/建仓的落盘账本），与上方
+             手动账本（localStorage）完全独立——这里只展示落盘原值，零新增计算。
+             两本账并存的目的：你的手感（✍ 手动） vs 系统的纪律（🤖 引擎），可对照。 -->
+        <section class="card paper-sys">
+          <h2>系统引擎盘 · 自动 <span class="bf-auto">EOD 引擎每日收盘后自动交易（只读对照，不可在此下单）</span></h2>
+          <div id="sysPanel"><div class="dw-empty">引擎账本加载中…</div></div>
         </section>
 
         <section class="card paper-pend">

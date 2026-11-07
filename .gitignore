@@ -63,7 +63,7 @@ data/battle_orders_intraday_state.json
 data/old_dragon_history.json
 
 # 纸面交易运行态（账户余额/复盘为运行时状态，勿入库；Pi 上需持久化，git reset 不丢）
-data/paper/account.json
+# data/paper/account.json  # 2026-11-07 放行入库：前端「系统引擎盘」对照面板直接 fetch（EOD 每日提交推送，不长期挂脏）
 data/paper/review-latest.json
 
 # Python 数据层（2026-10-10 迁移）
