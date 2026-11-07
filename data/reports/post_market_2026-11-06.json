@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-06",
- "generated_at": "2026-11-06T13:18:34.871Z",
+ "generated_at": "2026-11-07T10:50:43.153Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -146,7 +146,7 @@
    {
     "key": "sox",
     "name": "费城半导体指数",
-    "chgPct": -0.122462,
+    "chgPct": 0.042072000000000005,
     "state": "ok",
     "stale": false,
     "cacheNote": null

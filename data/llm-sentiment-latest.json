@@ -2,11 +2,11 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-06",
- "generatedAt": "2026-11-06T21:08:44.974+08:00",
+ "generatedAt": "2026-11-07T18:38:29.132+08:00",
  "model": "glm-4-flash",
- "sentiment": -0.6,
+ "sentiment": -0.5,
  "confidence": 0.8,
- "reason": "亏钱效应显著，涨停股数量低于跌停股，炸板率高，市场情绪偏向负面。",
+ "reason": "市场整体亏钱效应显著，涨停数量少于跌停，炸板率较高，强势股多为新晋题材和扭亏为盈个股，市场情绪偏负面。",
  "events": [
   {
    "type": "业绩预告",
@@ -16,45 +16,45 @@
   },
   {
    "type": "高管变动",
-   "target": "鲁阳节能",
-   "tone": "positive",
-   "note": "“羊”字辈概念股，带动相关板块"
+   "target": "无",
+   "tone": "neutral",
+   "note": "无特别影响市场的事件"
   },
   {
-   "type": "行业催化",
-   "target": "海峡两岸",
-   "tone": "positive",
-   "note": "延续性题材，市场关注度较高"
+   "type": "减持",
+   "target": "无",
+   "tone": "neutral",
+   "note": "无特别影响市场的事件"
   },
   {
    "type": "政策",
-   "target": "AI短剧",
+   "target": "无",
+   "tone": "neutral",
+   "note": "无特别影响市场的事件"
+  },
+  {
+   "type": "行业催化",
+   "target": "智算业务",
    "tone": "positive",
-   "note": "新晋题材，市场预期较好"
+   "note": "新晋题材智算业务带动市场关注"
   },
   {
-   "type": "并购重组",
-   "target": "华升股份",
+   "type": "行业催化",
+   "target": "IP运营",
    "tone": "positive",
-   "note": "重组推进，股价上涨"
+   "note": "新晋题材IP运营吸引资金流入"
   },
   {
-   "type": "退潮",
-   "target": "汽车物流",
-   "tone": "negative",
-   "note": "退潮题材，市场关注度下降"
+   "type": "行业催化",
+   "target": "AI语料",
+   "tone": "positive",
+   "note": "新晋题材AI语料受到市场追捧"
   },
   {
-   "type": "退潮",
-   "target": "机器人应用",
-   "tone": "negative",
-   "note": "退潮题材，市场关注度下降"
-  },
-  {
-   "type": "退潮",
-   "target": "机器人概念",
-   "tone": "negative",
-   "note": "退潮题材，市场关注度下降"
+   "type": "行业催化",
+   "target": "数据库",
+   "tone": "positive",
+   "note": "新晋题材数据库表现活跃"
   }
  ],
  "inputDigest": {
