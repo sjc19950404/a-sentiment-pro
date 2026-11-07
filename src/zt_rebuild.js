@@ -19,8 +19,17 @@
 // · 除权除息日：涨停价基准是除权参考价而非昨日收盘 → 该日涨停的除权股会被漏判（每日约 0~3 只）。
 // · ST 历史状态：名称取当前分片名，期间摘帽/戴帽的个股幅度判定会错（量级见验证报告）。
 // · 板块构成：行业广度按当前同花顺 881xxx 板块清单回溯，期间新增/更名板块不在其中。
-import { readFileSync, readdirSync } from 'node:fs';
-import path from 'node:path';
+// 2026-11-07 同构化：本模块被 sources.js（浏览器即时轨链）引用 isDiTianBan——静态
+//   node: import 曾让整条链在浏览器加载失败（node:url/node:path CORS 误报同源）。
+//   isDiTianBan/limitPctOf 等纯函数浏览器可用；rebuildPoolsByDate 读档仅 Node 端
+//   （浏览器侧调用返回 []——fail-open，与 ztpool_window.js 同语义）。
+const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node)
+  && typeof window === 'undefined';
+let readFileSync = null, readdirSync = null, path = null;
+if (isNode) {
+  ({ readFileSync, readdirSync } = await import('node:fs'));
+  path = await import('node:path');
+}
 
 const round2 = (v) => Math.round(v * 100) / 100;
 const num = (v) => (v == null || v === '' ? null : +v);
@@ -89,6 +98,7 @@ export function isDiTianBan(q, code, name) {
  *          up/down/flat 只数沪深（EM f104/f105 同口径）。
  */
 export function rebuildPoolsByDate(dir, dates) {
+  if (!isNode) return []; // 浏览器侧无文件系统，fail-open（同 ztpool_window.js）
   const res = new Map();
   for (const d of dates) {
     res.set(d, { zt: [], zb: [], dt: [], up: 0, down: 0, flat: 0 });
