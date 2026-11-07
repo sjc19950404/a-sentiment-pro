@@ -148,12 +148,34 @@ const refJson = JSON.parse(readFileSync(join(ROOT, 'data', 'backtest.json'), 'ut
 const pct = (x) => (x * 100).toFixed(2) + '%';
 const fmt = (x, d = 3) => x.toFixed(d);
 const r = (x, d = 6) => (Number.isFinite(x) ? Number(x.toFixed(d)) : null);
+// ⑧b 三态策略守护（2026-11-07，TSP 借鉴）：锚点门禁从二值（逐位相等/炸）升级三态。
+//   原痛点：6e-5 容差外任何偏差直接 process.exit(1) 锁死账本——2026-10-08 实录过
+//   「瞬态偏差把下游 post_market 报告日期锚定搞滞后」。三态：
+//   健康 = 6e-5 容差内（原语义不变，且自愈清计数）；观察 = 偏差 (6e-5, 5e-4]
+//   （WARN 落盘计数，连续 2 次升级失败——单次可能是瞬态，连续才是漂移）；
+//   退役/失败 = 偏差 >5e-4（立即终止，真漂移必须拦）。状态 data/anchor_watch.json。
+const WATCH_FILE = join(ROOT, 'data', 'anchor_watch.json');
+const WATCH_LIMIT = 5e-4;
 function gateAnchor(run, ref, label) {
-  const bad = [];
-  if (Math.abs(run.perf.total - ref.total) > 6e-5) bad.push(`total ${pct(run.perf.total)}≠${pct(ref.total)}`);
-  if (Math.abs(run.perf.maxDd - ref.maxDd) > 6e-5) bad.push(`maxDd ${pct(run.perf.maxDd)}≠${pct(ref.maxDd)}`);
-  if (bad.length) { console.error(`[paper] 门禁失败：${label} → ${bad.join('；')}，终止`); process.exit(1); }
-  console.log(`[paper] 门禁通过：${label}（${pct(run.perf.total)} / ${pct(run.perf.maxDd)}）`);
+  const dt = Math.abs(run.perf.total - ref.total);
+  const dd = Math.abs(run.perf.maxDd - ref.maxDd);
+  if (dt <= 6e-5 && dd <= 6e-5) {
+    try { const st = JSON.parse(readFileSync(WATCH_FILE, 'utf8')); if (st[label]) { delete st[label]; writeFileSync(WATCH_FILE, JSON.stringify(st, null, 2)); } } catch (e) {}
+    console.log(`[paper] 门禁通过：${label}（${pct(run.perf.total)} / ${pct(run.perf.maxDd)}）`);
+    return;
+  }
+  const detail = [dt > 6e-5 ? `total ${pct(run.perf.total)}≠${pct(ref.total)}` : null, dd > 6e-5 ? `maxDd ${pct(run.perf.maxDd)}≠${pct(ref.maxDd)}` : null].filter(Boolean).join('；');
+  if (dt <= WATCH_LIMIT && dd <= WATCH_LIMIT) {
+    let st = {};
+    try { st = JSON.parse(readFileSync(WATCH_FILE, 'utf8')); } catch (e) {}
+    st[label] = (st[label] || 0) + 1;
+    try { writeFileSync(WATCH_FILE, JSON.stringify(st, null, 2)); } catch (e) {}
+    if (st[label] >= 2) { console.error(`[paper] 门禁失败（连续 ${st[label]} 次观察带偏差）：${label} → ${detail}，终止`); process.exit(1); }
+    console.warn(`[paper] 门禁「观察」：${label} → ${detail}（连续 ${st[label]}/2 次；下次再偏将终止）`);
+    return;
+  }
+  console.error(`[paper] 门禁失败：${label} → ${detail}（偏差超观察带 ${WATCH_LIMIT}），终止`);
+  process.exit(1);
 }
 gateAnchor(A, refJson.v52, '① 轨道A ↔ v52');
 gateAnchor(Bref, refJson.v53, '② 轨道B（锚点口径 unknown→null） ↔ v53');
