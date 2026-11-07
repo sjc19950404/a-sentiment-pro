@@ -21,9 +21,19 @@ import { computeWindowBoards, loadZtpoolHistory, loadRecent } from './ztpool_win
 import { isDiTianBan } from './zt_rebuild.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// 2026-11-07 同构化：本模块被浏览器 ESM 链引用（index.html → intraday_sampler →
+//   quote.js → sources.js）——原静态 import node:url/node:path 让整条即时轨在浏览器
+//   静默加载失败（外部注入的 process polyfill 还会触发 CORS 误报）。浏览器只需纯函数
+//   （quoteSymbol 等），ROOT 仅 Node 端写盘流程使用 → 改 isNode 守卫 + 动态 import。
+//   守卫含 window 检查：防浏览器环境被注入的 process polyfill 骗进 Node 分支（同 config.js）。
+const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node)
+  && typeof window === 'undefined';
+let ROOT = '';
+if (isNode) {
+  const { fileURLToPath } = await import('node:url');
+  const path = await import('node:path');
+  ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+}
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const r2 = (v) => Math.round(v * 100) / 100;

@@ -17,13 +17,22 @@
 //   ③ data/ztpool_history.json 真实涨停池（archive-recent 旧档缺 zt_codes 时的兜底）。
 // 窗口脊 = archive-recent 的交易日序列。
 // 窗口内某日无任何来源 → 按「未涨停」计（保守方向：只可能少计，不会虚增）。
-import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+// 2026-11-07 同构化：读档函数仅 Node 端使用（浏览器侧调用返回 []——与「缺失/损坏
+//   返回 []」的 fail-open 语义一致）；静态 node: import 曾让本模块在浏览器 ESM 链
+//   （sources.js 静态依赖）中整链加载失败。守卫含 window 检查（同 config.js 注释）。
+const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node)
+  && typeof window === 'undefined';
+let readFileSync = null, existsSync = null, join = null;
+if (isNode) {
+  ({ readFileSync, existsSync } = await import('node:fs'));
+  join = (await import('node:path')).join;
+}
 
 export const WINDOW_DAYS = 5;
 
 /** 读 data/ztpool_history.json（[{date:'YYYYMMDD', pool:[{c,lbc,...}]}]）；缺失/损坏返回 [] */
 export function loadZtpoolHistory(root) {
+  if (!isNode) return []; // 浏览器侧无文件系统，直接空表（fail-open 语义）
   try {
     const p = join(root, 'data', 'ztpool_history.json');
     if (!existsSync(p)) return [];
@@ -38,6 +47,7 @@ export function loadZtpoolHistory(root) {
  */
 export function loadRecent(root) {
   const out = { spine: [], codesByDate: {} };
+  if (!isNode) return out; // 浏览器侧无文件系统，直接空结构（fail-open 语义）
   try {
     const p = join(root, 'data', 'archive-recent.json');
     if (!existsSync(p)) return out;
