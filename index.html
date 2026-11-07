@@ -1491,12 +1491,34 @@
           // 主动探测更新：浏览器默认只在导航或 24h 间隔时查 sw.js，这里强制查一次，
           // 让部署后的新外壳尽快被发现（sw.js 自身 HTTP 缓存最多再拖 ~10 分钟）。
           try { if (reg.update) reg.update(); } catch (e) {}
+          // 2026-11-07 ⑥号优化：切回页面/窗口聚焦时再查一次——用户部署后切回旧标签页
+          //   即刻发现新版本（此前要等下次整页刷新，用户连续三次反馈"怎么没变化"）。
+          document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') { try { reg.update(); } catch (e) {} }
+          });
+          // 2026-11-07 ⑥号优化：更新可见反馈——检测到新版本时顶部提示条告知"正在自动
+          //   更新"，数秒内 controllerchange 自动重载（自动链已有）；不再让用户对着
+          //   旧页面怀疑部署失败。样式克制：深色小条、无阻断。
+          function __swBanner(msg) {
+            var el = document.getElementById('swUpdateBanner');
+            if (!el) {
+              el = document.createElement('div');
+              el.id = 'swUpdateBanner';
+              el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;'
+                + 'background:#1c2733;color:#9ecbff;font:12px/1.6 -apple-system,system-ui,sans-serif;'
+                + 'text-align:center;padding:6px 12px;box-shadow:0 1px 6px rgba(0,0,0,.35);';
+              (document.body || document.documentElement).appendChild(el);
+            }
+            el.textContent = msg;
+          }
+          window.__swBanner = __swBanner;
           // 有新 SW 在等待 → 立刻接管（否则用户要刷两次才拿到新外壳）
           reg.addEventListener('updatefound', function () {
             var sw = reg.installing;
             if (!sw) return;
             sw.addEventListener('statechange', function () {
               if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+                try { window.__swBanner('检测到新版本，正在自动更新…'); } catch (e) {}
                 navigator.serviceWorker.controller.postMessage({ type: 'skip-waiting' });
               }
             });

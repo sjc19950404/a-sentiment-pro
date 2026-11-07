@@ -255,7 +255,7 @@ if (check) {
       problems.push('滚动窗 latest 丢了 summary.seats（首屏研判报告要用，不得作为惰性字段剥离）');
     }
   }
-  // 最轻档：必须存在、必须只含一天、体积必须 < 36KB（否则"最轻"名不副实）。
+  // 最轻档：必须存在、必须只含一天、体积必须 < 96KB（2026-11-07，演变史见下方断言处注释）。
   //   预算重估（P2-β 渲染接线，2026-10-06）：32→36KB。基底 31.6KB 早已贴顶（regime
   //   4.4 + dailyReport 6.0 + dirty 2.3 等持续累积），双轨披露块（瘦身后 ~1.1KB，
   //   框架 §三核心交付）一进来必超——一次性重估到位，避免每加一段就改一次上限。
@@ -267,7 +267,11 @@ if (check) {
   if (!existsSync(sp)) problems.push(`缺少最轻档 ${SIGNALS_FILE}`);
   else {
     const sb = Buffer.byteLength(readFileSync(sp, 'utf8'), 'utf8');
-    if (sb > 80 * 1024) problems.push(`${SIGNALS_FILE} 体积 ${(sb / 1024).toFixed(1)}KB 超过 80KB 上限（临时止血值；2026-10-24 两次上调：先 44→64 容纳 B/C 注入，再 64→80 因新闻量上行后板块数(top30)与事件(top30)占用增加，瘦身后再评估）`);
+    // 2026-11-07：80→96KB（外部拍板④，与主档红线 15MB 同日调线）。板块 top30 与事件
+    //   top30 均为前端全量消费（app.js:3261 板块排行全渲染 / terminal.js:883 全量排序），
+    //   瘦身=功能裁剪，不做；中文占比高（字符 60KB ≈ 字节 82KB），新闻量继续上行。
+    //   96KB ≈ 3 个月余量。历史：44→64（B/C 注入）→80（新闻上行）→96（本次）。
+    if (sb > 96 * 1024) problems.push(`${SIGNALS_FILE} 体积 ${(sb / 1024).toFixed(1)}KB 超过 96KB 上限（历史 44→64→80→96，见本注释）`);
     const sg = JSON.parse(readFileSync(sp, 'utf8'));
     if (sg.kind !== 'signals-latest') problems.push(`${SIGNALS_FILE}.kind=${sg.kind}`);
     if (sg.latest && sg.latest.trade_date !== arc.all_days[arc.all_days.length - 1].trade_date) {

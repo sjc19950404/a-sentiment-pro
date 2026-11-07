@@ -1,0 +1,15 @@
+#!/bin/bash
+# 2026-11-07 修改门禁（外部要求）：人工推送需确认密码（提示词：七个数字）。
+# 安装：cp scripts/git-hooks/pre-push .git/hooks/pre-push && chmod 700 .git/hooks/pre-push
+# 密码存本机 ~/.aquant-push-cred（chmod 600，不入库）。读取顺序：
+#   ① ASPRO_AUTO_PUSH=1 → 放行（cron 自动化链：pi_push.sh 等，无交互）
+#   ② /dev/tty 交互输入（人类终端）→ 比对
+#   ③ ASPRO_PUSH_KEY 环境变量（脚本化验证/受控通道）→ 比对
+# 防护边界：防误操作/未留意的推送，非强安全边界（密码在本机文件内）。
+if [ "${ASPRO_AUTO_PUSH}" = "1" ]; then exit 0; fi
+PW=$(cat "$HOME/.aquant-push-cred" 2>/dev/null)
+[ -z "$PW" ] && { echo "✗ 缺 ~/.aquant-push-cred，推送取消" >&2; exit 1; }
+if [ "${ASPRO_PUSH_KEY}" = "$PW" ]; then exit 0; fi
+if read -r ANS < /dev/tty 2>/dev/null && [ "${ANS}" = "$PW" ]; then exit 0; fi
+echo "✗ 推送需确认（七个数字）——终端交互输入，或设 ASPRO_PUSH_KEY/ASPRO_AUTO_PUSH" >&2
+exit 1
