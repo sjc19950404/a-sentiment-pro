@@ -364,6 +364,10 @@ export function classifyRegime(ctx = {}, opts = {}) {
     key: finalKey, label: finalMeta.label, level: shifted ? null : level, dir: shifted ? null : dir, confidence,
     evidence: outEvidence, caution, unknownReasons,
     shifted, shiftReasons: shifted ? shiftReasons : [],
+    // 2026-11-07：shifted 日 finalKey 被「切换期」覆盖后，底层模型标签丢失——
+    //   下游（daily_report ⑧a 结构尺交叉）需要知道底层是否 climax 才能判「高潮判定
+    //   + 结构偏冷」分歧。带出 modelKey，不影响任何既有消费方（新增字段向后兼容）。
+    modelKey: key,
     levelCheck: { byScore: levelInfo.byScore, byPct: levelInfo.byPct, agree: levelInfo.agree, primary: levelInfo.primary, note: levelInfo.note },
     detail: shifted
       ? `${buildDetail(meta, level, dir, dirInfo)}，但判据矛盾 → 覆盖为「切换期」（保守控仓，不预测拐点）`

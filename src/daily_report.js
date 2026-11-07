@@ -73,7 +73,28 @@ export function buildDailyReport(signals = {}) {
   const caveats = [];
 
   // ── 节 1：市场状态 ──────────────────────────────────────────────────────
-  sections.push(buildRegimeSection(regFull, div, posRec));
+  // ── 结构尺交叉披露（2026-11-07 ⑧a，TSP 借鉴）────────────────────────────
+  //   第二把尺：连板梯队结构（涨停数/封板率/炸板/晋级失败率）独立于情绪分水位×方向。
+  //   只做披露、不改判定（与系统「纯参考，下游决定采不采纳」哲学一致）。只在分歧时
+  //   出现——同向时沉默，避免每日报一条恒定噪音。规则透明两条：
+  //   结构偏热 = 涨停 ≥60 或（封板率 ≥75% 且 炸板 ≤10）；结构偏冷 = 涨停 ≤25 或 晋级失败率 ≥80%。
+  //   （最高连板字段 signals 未采集，暂不入规则；日后补采集可加「高标 ≥5 板」条件。）
+  let structNote = null;
+  {
+    const structHot = (latest.zt_count != null && latest.zt_count >= 60)
+      || (sealPct != null && latest.zb_count != null && sealPct >= 75 && latest.zb_count <= 10);
+    const adv = S.pain && S.pain.advance;
+    const structCold = (latest.zt_count != null && latest.zt_count <= 25)
+      || (adv && num(adv.failRate) >= 0.8 && num(adv.n) >= 5);
+    if (['ice', 'ebb'].includes(regFull.key) && structHot) {
+      const ev = [`涨停 ${latest.zt_count ?? '—'}`, sealPct != null ? `封板率 ${f1(sealPct)}%` : null].filter(Boolean).join('、');
+      structNote = `结构尺分歧提示：情绪分判定「${regFull.label}」，但梯队结构偏热（${ev}）——可能为低位修复初期，情绪分惯性滞后；次日重点看结构是否延续。纯参考，不改变上方判定与仓位区间。`;
+    } else if ((regFull.key === 'climax' || (regFull.shifted && regFull.modelKey === 'climax')) && structCold) {
+      const fr = adv ? num(adv.failRate) : null;
+      structNote = `结构尺分歧提示：情绪分判定「高潮」，但梯队结构偏冷（${latest.zt_count != null ? `涨停 ${latest.zt_count}` : '涨停 —'}${fr != null ? `、晋级失败率 ${f1(fr * 100)}%` : ''}）——高潮判定的持续性存疑，谨防一日游。纯参考，不改变上方判定与仓位区间。`;
+    }
+  }
+  sections.push(buildRegimeSection(regFull, div, posRec, structNote));
 
   // ── 节 2：情绪与分位 ────────────────────────────────────────────────────
   sections.push(buildSentimentSection(latest, regFull));
@@ -155,7 +176,7 @@ export function buildDailyReport(signals = {}) {
 
 // ── 节构造器 ──────────────────────────────────────────────────────────────
 
-function buildRegimeSection(reg, div, posRec) {
+function buildRegimeSection(reg, div, posRec, structNote) {
   const pts = [];
   if (reg.key === 'unknown') {
     return {
@@ -168,6 +189,9 @@ function buildRegimeSection(reg, div, posRec) {
   const pos = positionLine(reg.key);
   if (pos) pts.push({ text: pos.text, kind: 'main' });
   pts.push({ text: reg.detail, kind: 'main' });
+  // ⑧a 结构尺交叉披露：structNote 由 buildDailyReport 主函数算好传入（latest/sealPct 作用域在那里；
+  //    规则与口径注释同迁主函数——只在分歧时出现，同向沉默，纯披露不改判定）。
+  if (structNote) pts.push({ text: structNote, kind: 'caution' });
   (reg.evidence || []).forEach((e) => pts.push({ text: `${e.metric}：${e.reading}`, kind: 'evidence' }));
   if (reg.caution) pts.push({ text: `⚠ ${reg.caution}`, kind: 'caution' });
   // 展示层合并（2026-10-24）：把"情绪基础仓位 × regime 风控帽"显式摆出来，消除两套镜头冲突。

@@ -436,3 +436,34 @@ test('buildDailyReport: ★ 展示层合并 —— 无冲突（中性情绪 × n
   assert.ok(!/强制降仓/.test(R.headline), '无冲突 headline 不含强制降仓');
   assert.equal(R.positionReconcile.finalRange, '30%~50%');
 });
+
+// ── ⑧a 结构尺交叉披露（2026-11-07，TSP 借鉴）────────────────────────────────
+test('结构尺交叉：ice + 梯队偏热 → 分歧提示（纯披露不改判定）', () => {
+  const S = fullSignals();
+  S.latest.value = 22; S.latest.pct_rank = 3;          // 水位极低
+  S.regimeSeries = [{ value: 52 }, { value: 45 }, { value: 38 }, { value: 22 }]; // 下行方向 → ice
+  S.latest.zt_count = 65; S.latest.seal_pct = 78; S.latest.zb_count = 8; // 结构偏热
+  const R = buildDailyReport(S);
+  const reg = R.sections.find((s) => s.id === 'regime');
+  assert.equal(reg.tag, '冰点', '前置：fixture 确实判为 ice');
+  const hit = reg.points.find((p) => /结构尺分歧提示/.test(p.text));
+  assert.ok(hit, 'ice + 涨停 65 应触发偏热分歧');
+  assert.match(hit.text, /可能为低位修复初期/);
+  assert.match(hit.text, /不改变上方判定/, '纯披露口径必须写明');
+});
+test('结构尺交叉：climax + 梯队偏冷 → 分歧提示；同向日沉默', () => {
+  const S = fullSignals();
+  S.latest.value = 88; S.latest.pct_rank = 96;          // 水位极高
+  S.regimeSeries = [{ value: 60 }, { value: 70 }, { value: 80 }, { value: 88 }]; // 上行方向 → climax
+  S.latest.zt_count = 20;                                // 结构偏冷
+  const R = buildDailyReport(S);
+  const reg = R.sections.find((s) => s.id === 'regime');
+  assert.match(reg.tag, /高潮|切换期/, '前置：fixture 判为 climax（shifted 日展示为切换期）');
+  const hit = reg.points.find((p) => /结构尺分歧提示/.test(p.text));
+  assert.ok(hit, 'climax + 涨停 20 应触发偏冷分歧');
+  assert.match(hit.text, /持续性存疑/);
+  // 同向沉默：默认 fixture（52 涨停 / ice-climax 之间）不应出现提示
+  const R0 = buildDailyReport(fullSignals());
+  const reg0 = R0.sections.find((s) => s.id === 'regime');
+  assert.ok(!reg0.points.some((p) => /结构尺分歧提示/.test(p.text)), '同向日不应出现提示（避免恒定噪音）');
+});
