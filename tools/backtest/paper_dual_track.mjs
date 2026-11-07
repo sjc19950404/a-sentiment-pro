@@ -21,7 +21,7 @@
 // 三重门禁（全样本重放，任一失败即终止不写盘）：
 //   ① A ↔ data/backtest.json::v52（-1.50% / 13.79%）
 //   ② B_锚点口径 ↔ v53（-3.71% / 8.78%）
-//   ③ C0.3 ↔ 框架表 T1（-0.68% / 14.03% / 18 生效日；C0.4 ↔ +0.02% / 13.61%）
+//   ③ C0.3 ↔ 框架表 T1（2026-11-07 B1 口径重锚：-0.74% / 14.03% / 19 生效日；C0.4 ↔ -0.04% / 13.61%）
 //
 // 账本口径（本工具定义；JSON 的 notes 字段与报告重复声明，防读取端自造口径）：
 //   premiumCum  = navA − navB（净值差，B=披露口径，日更）。正 = 整份保险累计保费；
@@ -187,8 +187,15 @@ gateAnchor(Bref, refJson.v53, '② 轨道B（锚点口径 unknown→null） ↔ 
 // 窗不同；当天账本被锁死无法滚动 → 下游 post_market 报告日期锚定滞后）。
 // 锚点滚动需人工更新 T1REF/T1_END 并附 experiment 复跑证据。样本窗内行为与
 // 历史版本完全一致（窗口等于全样本时退化为此前的全样本比对）。
+// 2026-11-07 锚点重锚（B1 口径演进，外部拍板复跑）：B1 方向判据（2026-11-06 落地）
+//   改变 classifySeries 现场重放的 regime 序列 → 样本窗内影子线漂移 0.06pp（-0.74%
+//   vs 旧锚 -0.68%），maxDd 逐位不变——口径演进非实现漂移。复跑证据：
+//   tools/backtest/rerun_t1_anchor.mjs（experiment_dual_track 同款代码路径 + t1Cut 同窗
+//   截断，241 日，shift 19 生效日；C0.3 total=-0.007361/maxDd=0.140282、C0.4
+//   total=-0.000362/maxDd=0.13608）——复跑 C0.3 与影子线③实测逐位一致（克隆保真
+//   再次实证）。T1_END 维持 2026-09-30（同窗重锚，隔离口径演进影响）。
 const T1_END = '2026-09-30';
-const T1REF = { 0.3: { total: -0.0068, maxDd: 0.1403 }, 0.4: { total: 0.0002, maxDd: 0.1361 } };
+const T1REF = { 0.3: { total: -0.007361, maxDd: 0.140282 }, 0.4: { total: -0.000362, maxDd: 0.13608 } };
 // 锚点样本窗末日下标（不含）：首个 trade_date > T1_END 的位置，无则全样本
 const t1Cut = (() => { const idx = days.findIndex((d) => d.trade_date > T1_END); return idx === -1 ? n : idx; })();
 let episodes = { 0.3: 0, 0.4: 0, 0.5: 0 };
@@ -216,8 +223,9 @@ for (const c of [0.3, 0.4]) {
   if (Math.abs(perfT1.maxDd - T1REF[c].maxDd) > 2e-4) bad.push(`maxDd ${pct(perfT1.maxDd)}≠${pct(T1REF[c].maxDd)}`);
   if (bad.length) { console.error(`[paper] 门禁失败：③ 影子C${c} ↔ 实验T1（样本窗截至 ${T1_END}）→ ${bad.join('；')}，终止`); process.exit(1); }
 }
-if (episodes[0.3] !== 18) {
-  console.error(`[paper] 门禁失败：③ 影子C0.3 生效日 ${episodes[0.3]} ≠ 实验T1 的 18，终止`);
+if (episodes[0.3] !== 19) {
+  // 2026-11-07 随 T1REF 重锚同步：B1 口径下样本窗内 shift 日 18→19（复跑证据见上方重锚注释）
+  console.error(`[paper] 门禁失败：③ 影子C0.3 生效日 ${episodes[0.3]} ≠ 实验T1 的 19，终止`);
   process.exit(1);
 }
 console.log(`[paper] 门禁通过：③ 影子C0.3 ↔ 实验T1 样本窗 ${T1_END}（${pct(t1Cut >= n ? C[0.3].perf.total : metrics(C[0.3].strat.slice(0, t1Cut), C[0.3].pos.slice(0, t1Cut), 0, 0).total)} / ${episodes[0.3]} 生效日；全样本现为 ${pct(C[0.3].perf.total)} / ${pct(C[0.3].perf.maxDd)}）；C0.4 全样本 ${pct(C[0.4].perf.total)} / ${pct(C[0.4].perf.maxDd)}`);
