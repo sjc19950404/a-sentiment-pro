@@ -204,7 +204,11 @@ test('周报：win_rate 剧本口径缺席为 null / week_return 复利 / 周内
   assert.ok(Math.abs(r.payload.max_drawdown_week - 0.01049) < 1e-9, '周内单边回撤 = 最大日跌幅');
   assert.equal(r.payload.trend_switch_hits, 2);
   assert.equal(r.payload.win_rate, null, '剧本绑定缺席 → null 不降级');
-  assert.match(r.payload.win_rate_note, /剧本命中次数/);
+  // 2026-11-07 同步：P3 起 win_rate 口径升级为「模拟盘平仓胜率（reviewTrades）」，
+  //   note 常量 WEEKLY_WIN_RATE_NOTE（ai_report.js:57）——旧断言 /剧本命中次数/ 停留在
+  //   升级前文案，CI 恒红（既有债务③）。语义断言改为新口径关键词 + 不降级声明。
+  assert.match(r.payload.win_rate_note, /模拟盘平仓胜率/);
+  assert.match(r.payload.win_rate_note, /不降级/);
   assert.ok(Math.abs(r.payload.profit_trade_ratio - 2 / 3) < 1e-12, '辅助指标 = 日线盈利占比 2/3');
   assert.match(r.payload.trend_switch_effect.shadow_note, /trackC/);
   assert.equal(r.payload.param_suggestions[0].topic, 'posGap 阈值');

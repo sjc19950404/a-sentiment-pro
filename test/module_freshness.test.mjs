@@ -75,10 +75,14 @@ test('guardModule：对象级组合（读档对象 + 锚 → 同一结论）', (
   assert.equal(guardModule({}, '2026-10-08').reason, 'module-date-missing');
 });
 
-test('MODULE_PROBES：五模块探测表齐（宽度/主线/账本/亏钱效应/板块排行），file 落 data/ 相对路径', () => {
+test('MODULE_PROBES：八模块探测表齐（宽度/主线/账本/亏钱效应/板块排行/市值/今日选股/ETF防守），file 落 data/ 相对路径', () => {
   const keys = MODULE_PROBES.map((m) => m.key);
-  assert.deepEqual(keys, ['breadth', 'mainline', 'dual_track', 'pain', 'board_rank']);
-  assert.ok(MODULE_PROBES.every((m) => m.file && m.label && m.field));
+  // 2026-11-07 同步：11-03 route A 补齐 mcap/reco_picks/etf_hedge 后实为八模块，
+  //   本断言停在旧五模块 → CI 恒红（既有债务③）。与 src/module_freshness.js:90 全集一致。
+  assert.deepEqual(keys, ['breadth', 'mainline', 'dual_track', 'pain', 'board_rank', 'mcap', 'reco_picks', 'etf_hedge']);
+  // field 仅旧五档必填（新三档顶层 date 由 moduleTradeDate 通配命中）；file/label 全员必填
+  assert.ok(MODULE_PROBES.every((m) => m.file && m.label));
+  assert.ok(MODULE_PROBES.filter((m) => !['mcap', 'reco_picks', 'etf_hedge'].includes(m.key)).every((m) => m.field));
 });
 
 // ── 3. assessModulesFreshness：CI 门禁相位（复用主档三态，18:30 不误伤）──
