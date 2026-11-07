@@ -112,6 +112,9 @@ case "$MODE" in
     node scripts/freshness.mjs --require-fresh >>"$LOG_FILE" 2>&1 || { alert "数据新鲜度门禁：存在今日未刷新的离线模块（宽度/主线/账本/亏钱效应/板块排行/市值/今日选股/ETF防守），旧值可能顶替当日值——详见 run.log 的 freshness 门禁输出"; true; }
     # EOD 推送「优先级 + 时间错峰」引擎：月报 > 周报(+周盈利战报) > 盘后基础复盘 > AI盘后情报；
     #   多条错峰发送（默认 3s）。盘中紧急异动 / 盘前排雷与观察清单由各自独立 cron 模式推送，不受此 gate。
+    # ⑧c 妖股标记历史留存（2026-11-07）：GLM 标记每日被覆盖，先落账本再推送，
+    #    供 dragon_purity_validation.mjs 做 T+1 续板率验证（判断必须能被回测检验）。
+    node scripts/dragon_marks_history.mjs 2>/dev/null || log "妖股标记留存失败（best-effort，继续）"
     node scripts/push_eod.mjs 2>/dev/null || true
     # 2026-10-27 用户指令：EOD 结束后把本地 ui/kline + 聚合侧车档增量同步到 Cloudflare R2（S3 协议），
     #   供 Pages 终端经 terminal.js durl() 改道 R2 公共地址拉取（config.json dataOrigin 已切到 R2）。

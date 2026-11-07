@@ -1,0 +1,241 @@
+{
+  "meta": {
+    "created": "2026-11-07T13:53:17.263Z",
+    "note": "妖股纯情绪标记历史（每日 EOD 留存，同日覆盖幂等）；验证脚本 scripts/dragon_purity_validation.mjs（T+1 续板率对照）",
+    "source": "llm-dragon-logic-latest.json::dragons（连续连板口径 zt_lb）",
+    "updated": "2026-11-07T13:53:17.264Z",
+    "days": 1
+  },
+  "days": [
+    {
+      "date": "20261106",
+      "marks": [
+        {
+          "code": "601599",
+          "name": "浙文影业",
+          "lb": 5,
+          "is_pure": true,
+          "reason": "高位爆量分歧，纯情绪炒作，明日或跌停"
+        },
+        {
+          "code": "002578",
+          "name": "闽发铝业",
+          "lb": 5,
+          "is_pure": true,
+          "reason": "炸板频繁，筹码松动，预期大跌"
+        },
+        {
+          "code": "603381",
+          "name": "永臻股份",
+          "lb": 4,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪驱动，预期冲高"
+        },
+        {
+          "code": "002088",
+          "name": "鲁阳节能",
+          "lb": 4,
+          "is_pure": true,
+          "reason": "炸板6次，筹码松动，明日跌停"
+        },
+        {
+          "code": "301697",
+          "name": "贝特利",
+          "lb": 3,
+          "is_pure": true,
+          "reason": "炸板1次，情绪波动，预期冲高回落"
+        },
+        {
+          "code": "603657",
+          "name": "春光科技",
+          "lb": 3,
+          "is_pure": true,
+          "reason": "炸板1次，情绪波动，预期冲高回落"
+        },
+        {
+          "code": "002388",
+          "name": "新亚制程",
+          "lb": 3,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪驱动，预期冲高"
+        },
+        {
+          "code": "600261",
+          "name": "阳光照明",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板1次，筹码松动，预期大跌"
+        },
+        {
+          "code": "605339",
+          "name": "南侨食品",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪驱动，预期冲高"
+        },
+        {
+          "code": "002086",
+          "name": "东方海洋",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板2次，筹码松动，预期大跌"
+        },
+        {
+          "code": "002929",
+          "name": "润建股份",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板一次，筹码松动，明日或跌"
+        },
+        {
+          "code": "300237",
+          "name": "美晨科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板炸板，情绪不稳，谨慎追高"
+        },
+        {
+          "code": "300686",
+          "name": "智动力",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板炸板，情绪不稳，谨慎追高"
+        },
+        {
+          "code": "600156",
+          "name": "华升股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "炸板三次，筹码松动，明日或跌"
+        },
+        {
+          "code": "600207",
+          "name": "安彩高科",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "炸板一次，筹码松动，明日或跌"
+        },
+        {
+          "code": "600229",
+          "name": "城市传媒",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "无炸板，缩量一字板，情绪稳定，明日或涨"
+        },
+        {
+          "code": "600278",
+          "name": "东方创业",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "炸板三次，筹码松动，明日或跌"
+        },
+        {
+          "code": "600327",
+          "name": "大东方",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "炸板两次，筹码松动，明日或跌"
+        },
+        {
+          "code": "600371",
+          "name": "万向德农",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "炸板四次，筹码松动，明日或跌"
+        },
+        {
+          "code": "600540",
+          "name": "新赛股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "无炸板，缩量一字板，情绪稳定，明日或涨"
+        },
+        {
+          "code": "601188",
+          "name": "龙江交通",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "低位爆量分歧，明日或跌停"
+        },
+        {
+          "code": "601595",
+          "name": "上海电影",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "炸板一次，筹码松动，明日难续涨"
+        },
+        {
+          "code": "603366",
+          "name": "日出东方",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "无炸板，缩量板，明日或冲高回落"
+        },
+        {
+          "code": "000595",
+          "name": "新能股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "炸板一次，低位股，明日或调整"
+        },
+        {
+          "code": "001258",
+          "name": "立新能源",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "炸板一次，低位股，明日或调整"
+        },
+        {
+          "code": "002310",
+          "name": "东方新能",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "无炸板，缩量板，明日或冲高回落"
+        },
+        {
+          "code": "001316",
+          "name": "润贝航科",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "炸板两次，高位股，明日或跌停"
+        },
+        {
+          "code": "002889",
+          "name": "东方嘉盛",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "炸板一次，筹码松动，明日难续涨"
+        },
+        {
+          "code": "001308",
+          "name": "康冠科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "无炸板，缩量板，明日或冲高回落"
+        },
+        {
+          "code": "002712",
+          "name": "思美传媒",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "无炸板，缩量板，明日或冲高回落"
+        },
+        {
+          "code": "002973",
+          "name": "侨银股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "低位新题材，炸板多，筹码松动，明日难续板"
+        },
+        {
+          "code": "000525",
+          "name": "红太阳",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "高位无利好，缩量硬板，预期加速冲高"
+        }
+      ],
+      "savedAt": "2026-11-07T13:53:17.264Z"
+    }
+  ]
+}
