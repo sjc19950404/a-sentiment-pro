@@ -4,13 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>A股情绪系统 · PRO</title>
-  <!-- 2026-11-07 ⑨号加固：CSP 白名单（外部拍板）。页面资源 100% 本地（零 eval/worker/外部
-       引用盘点实证），唯一有意放行的外域 = https://qt.gtimg.cn（即时轨行情 JSONP，
-       src/intraday_sampler.js:50 动态 script 注入——白名单而非移除，功能优先）。
-       效果：浏览器层物理拦截任何其他外部脚本/资源注入（含注入器的 mermaid CDN、
-       node: scheme 请求）。'unsafe-inline' 为架构现实（SW 注册段 + 终端内联生成物）；
-       base-uri/form-action/frame-ancestors 三件套防嵌入与劫持。 -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://qt.gtimg.cn; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+  <!-- 2026-11-07 ⑨号加固：CSP 白名单（外部拍板）。页面脚本/样式 100% 本地（零 eval/worker）。
+       放行外域（均为系统功能通道，非注入——观察期第一轮误伤实证后收全，教训：静态盘点
+       代码不够，运行时数据通道（config.json 起源、fetch 路径）也要盘）：
+       - https://qt.gtimg.cn：即时行情（JSONP script-src + quote.js:136 fetch 的 connect-src 双路径）；
+       - https://finance.qq.com：quote.js 备用行情域；
+       - https://pub-5a2d9fd0ca4547c5b9e561c4c50f6448.r2.dev：数据起源（2026-10-27 方案B，
+         config.json 配置——重/私数据档的 jget 回退通道，拦截会打断终端图与模拟盘账本）。
+       'unsafe-inline' 为架构现实（SW 注册段 + 终端内联生成物）。frame-ancestors 已移除：
+       <meta> 无法承载该指令（浏览器强制忽略并刷警告），Pages 又不能自定义响应头——
+       防嵌入防护暂缺，如实记录。 -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://qt.gtimg.cn; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://qt.gtimg.cn https://finance.qq.com https://pub-5a2d9fd0ca4547c5b9e561c4c50f6448.r2.dev; font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
   <!-- 2026-11-07：data URI favicon——消除 /favicon.ico 404（控制台最后一条噪音）；
        红绿 K 线极简标（A股红涨配色）。SVG data URI 零网络请求。 -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='12'%20fill='%230d1117'/%3E%3Crect%20x='14'%20y='24'%20width='12'%20height='24'%20fill='%23f85149'/%3E%3Crect%20x='18'%20y='16'%20width='4'%20height='40'%20fill='%23f85149'/%3E%3Crect%20x='38'%20y='18'%20width='12'%20height='28'%20fill='%233fb950'/%3E%3Crect%20x='42'%20y='12'%20width='4'%20height='40'%20fill='%233fb950'/%3E%3C/svg%3E">
