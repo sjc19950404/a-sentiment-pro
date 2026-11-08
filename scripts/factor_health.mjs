@@ -154,6 +154,7 @@ const snapshot = {
   updatedAt: new Date().toISOString(),
   status: verdict.status,
   headline: verdict.headline,
+  attribution: verdict.attribution || null, // 2026-11-09 衰减归因标签（三分类+beta 辨析，纯标签不改判定）
   metrics: { alphaWinRate8: verdict.alphaWinRate8, negStreak: verdict.negStreak, ma4Pct: verdict.ma4Pct, sharpe8, seatAlarm: !!verdict.seatAlarm, divAlarm: !!verdict.divAlarm },
   regimeCheck: regimeBreakdown(weeks),
   weeks: weeksFull,
@@ -164,6 +165,7 @@ writeFileSync(HIST, JSON.stringify(snapshot, null, 2) + '\n');
 
 // ── 输出（仪表只报警，绝不改规则——见文件头纪律）──
 console.log(`[factor-health] ${verdict.headline}`);
+if (verdict.attribution) console.log(`  归因：${verdict.attribution.label} — ${verdict.attribution.note}`);
 console.log(`  覆盖：${weeks.length} 周（${weeks[0]?.week} ~ ${weeks[weeks.length - 1]?.week}）｜最新周（截至 ${weeks[weeks.length - 1]?.end}）`);
 const lw = weeks[weeks.length - 1];
 console.log(`  最新周：策略 ${(lw.strat * 100).toFixed(2)}% | 基准 ${(lw.mkt * 100).toFixed(2)}% | 超额 ${(lw.alpha * 100).toFixed(2)}% | 主导 regime=${lw.regime} | 平均仓位 ${(lw.exposure * 100).toFixed(0)}%`);

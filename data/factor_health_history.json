@@ -1,7 +1,12 @@
 {
-  "updatedAt": "2026-11-08T16:35:46.229Z",
+  "updatedAt": "2026-11-08T17:37:35.854Z",
   "status": "watch",
   "headline": "⚠️ 观察：单周超额转负",
+  "attribution": {
+    "type": "beta",
+    "label": "beta 下行（非因子衰减）",
+    "note": "最近 4 周市场基准均值 -1.94% 为负、策略超额均值仍为正（0.93%）——劣化主要是市场 beta 下行，非因子衰减（避险价值仍在工作）。"
+  },
   "metrics": {
     "alphaWinRate8": 0.75,
     "negStreak": 1,

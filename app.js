@@ -2516,6 +2516,7 @@ async function loadFactorHealth() {
   if (body) {
     body.innerHTML = `
       <div style="font-size:15px;margin-bottom:10px"><span style="color:${lamp[2]};font-weight:700">${lamp[0]} ${fh.headline ? fh.headline.replace(/^[\u2705\u26a0\ufe0f\u274c\u23f3]+\s*/, '') : lamp[1]}</span></div>
+      ${fh.attribution ? `<div class="bf-foot" style="margin:6px 0 10px">衰减归因：<b>${fh.attribution.label}</b> — ${fh.attribution.note}</div>` : ''}
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
         <div class="fh-cell"><div class="fh-k">① 最新周超额</div><div class="fh-v ${last.alpha >= 0 ? 'pos' : 'neg'}">${pct(last.alpha)}</div><div class="fh-sub">策略 ${pct(last.strat)} / 基准 ${pct(last.mkt)}</div></div>
         <div class="fh-cell"><div class="fh-k">② 8周超额胜率</div><div class="fh-v">${pct(m.alphaWinRate8)}</div><div class="fh-sub">健康 ≥52% / 告警 &lt;48%</div></div>

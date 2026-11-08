@@ -110,3 +110,52 @@ test('无 extra（向后兼容）：单参调用行为与 3 针时代一致', ()
   assert.equal(r.seatAlarm, false);
   assert.equal(r.divAlarm, false);
 });
+
+// ── 衰减归因（2026-11-09 外部拍板①）：三分类 + beta 辨析 ──
+const mkMkt = (alphas, mkts) => alphas.map((a, i) => ({
+  week: `2026-01-0${(i % 9) + 1}`, end: `2026-01-0${(i % 9) + 1}`,
+  strat: a, mkt: mkts ? mkts[i] : 0, alpha: a, regime: 'ice', exposure: 0.5, days: 5,
+}));
+
+test('归因-结构衰减：分歧频率告警伴生 alpha 劣化 → structural', () => {
+  const divs = Array(11).fill(0).map((_, i) => ({ week: `w${i}`, rate: i % 2 ? 0.2 : 0.1 }));
+  divs.push({ week: 'w11', rate: 0.7 }); // ≥P95 → divAlarm
+  const r = judge(mk(Array(12).fill(-0.005)), { divergWeeks: divs });
+  assert.equal(r.status, 'alarm');
+  assert.equal(r.attribution.type, 'structural');
+  assert.equal(r.attribution.label, '结构衰减');
+});
+
+test('归因-拥挤衰减：席位过滤失效告警（生态正常）→ crowding', () => {
+  const r = judge(mk(Array(12).fill(-0.005)), {
+    seatWeeks: [{ week: 'w1', seatAlpha: 0.01 }, { week: 'w2', seatAlpha: -0.06 }, { week: 'w3', seatAlpha: -0.07 }],
+  });
+  assert.equal(r.status, 'alarm');
+  assert.equal(r.attribution.type, 'crowding');
+});
+
+test('归因-beta 辨析：单周转负但 4 周基准为负且超额均值仍正 → 非因子衰减', () => {
+  const weeks = mkMkt([...Array(7).fill(0.01), -0.005], [...Array(4).fill(0), -0.01, -0.01, -0.01, -0.01]);
+  const r = judge(weeks);
+  assert.equal(r.status, 'watch');
+  assert.equal(r.attribution.type, 'beta');
+  assert.match(r.attribution.label, /beta 下行/);
+});
+
+test('归因-时代衰减：连续 6+ 周温和负超额且生态/席位正常 → era', () => {
+  const r = judge(mk(Array(10).fill(-0.002))); // negStreak=10，单周幅度小不触发拐头分位？仍 alarm（连续负）
+  assert.equal(r.status, 'alarm');
+  assert.equal(r.attribution.type, 'era');
+});
+
+test('归因-健康时为 null；warming 为 null', () => {
+  assert.equal(judge(mk(Array(8).fill(0.01))).attribution, null);
+  assert.equal(judge(mk([0.01, 0.01])).attribution, null);
+});
+
+test('归因-未归类：劣化但哨兵全正常且 negStreak<6 → unclassified', () => {
+  // 8 周达标；2 连负触发 alarm，negStreak=2，无哨兵，mkt=0（不满足 beta）→ 未归类
+  const r = judge(mk([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, -0.005, -0.005]));
+  assert.equal(r.status, 'alarm');
+  assert.equal(r.attribution.type, 'unclassified');
+});
