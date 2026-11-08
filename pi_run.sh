@@ -115,6 +115,12 @@ case "$MODE" in
     # ⑧c 妖股标记历史留存（2026-11-07）：GLM 标记每日被覆盖，先落账本再推送，
     #    供 dragon_purity_validation.mjs 做 T+1 续板率验证（判断必须能被回测检验）。
     node scripts/dragon_marks_history.mjs 2>/dev/null || log "妖股标记留存失败（best-effort，继续）"
+    # 因子健康度仪表（2026-11-09 外部拍板）：alpha 序列/胜率/基准差三表针 + 三态
+    #    预警（✅健康 ⚠️观察 ❌告警）+ 分 regime 基准校验；周粒度账本
+    #    data/factor_health_history.json（幂等同周覆盖）。纪律：仪表只读只报警，
+    #    系统禁止自动修改规则；告警仅供人工评估，独立风控闸口（各 gate/锚点门禁）
+    #    不受其影响。失败 best-effort 不拦 EOD。
+    node scripts/factor_health.mjs 2>/dev/null || log "因子健康度仪表失败（best-effort，继续）"
     node scripts/push_eod.mjs 2>/dev/null || true
     # 2026-10-27 用户指令：EOD 结束后把本地 ui/kline + 聚合侧车档增量同步到 Cloudflare R2（S3 协议），
     #   供 Pages 终端经 terminal.js durl() 改道 R2 公共地址拉取（config.json dataOrigin 已切到 R2）。

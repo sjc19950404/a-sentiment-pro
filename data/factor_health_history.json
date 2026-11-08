@@ -1,0 +1,623 @@
+{
+  "updatedAt": "2026-11-08T16:22:15.661Z",
+  "status": "watch",
+  "headline": "⚠️ 观察：单周超额转负",
+  "metrics": {
+    "alphaWinRate8": 0.75,
+    "negStreak": 1,
+    "ma4Pct": 0.9245283018867925
+  },
+  "regimeCheck": [
+    {
+      "regime": "ice",
+      "label": "ice",
+      "weeks": 24,
+      "avgAlpha": 0.002776,
+      "winRate": 0.542
+    },
+    {
+      "regime": "climax",
+      "label": "climax",
+      "weeks": 12,
+      "avgAlpha": -0.005265,
+      "winRate": 0.25
+    },
+    {
+      "regime": "ebb",
+      "label": "ebb",
+      "weeks": 9,
+      "avgAlpha": 0.001347,
+      "winRate": 0.556
+    },
+    {
+      "regime": "neutral",
+      "label": "neutral",
+      "weeks": 5,
+      "avgAlpha": 0.001188,
+      "winRate": 0.4
+    },
+    {
+      "regime": "recover",
+      "label": "recover",
+      "weeks": 4,
+      "avgAlpha": 0.005428,
+      "winRate": 0.5
+    },
+    {
+      "regime": "unknown",
+      "label": "unknown",
+      "weeks": 1,
+      "avgAlpha": 0.010327,
+      "winRate": 1
+    },
+    {
+      "regime": "shift",
+      "label": "shift",
+      "weeks": 1,
+      "avgAlpha": -0.001919,
+      "winRate": 0
+    }
+  ],
+  "weeks": [
+    {
+      "week": "2025-10-06",
+      "end": "2025-10-10",
+      "days": 2,
+      "strat": -0.00556,
+      "mkt": -0.015887,
+      "alpha": 0.010327,
+      "regime": "unknown",
+      "exposure": 0.1
+    },
+    {
+      "week": "2025-10-13",
+      "end": "2025-10-17",
+      "days": 5,
+      "strat": -0.022397,
+      "mkt": -0.04065,
+      "alpha": 0.018253,
+      "regime": "climax",
+      "exposure": 0.54
+    },
+    {
+      "week": "2025-10-20",
+      "end": "2025-10-24",
+      "days": 5,
+      "strat": 0.027897,
+      "mkt": 0.052046,
+      "alpha": -0.024149,
+      "regime": "climax",
+      "exposure": 0.66
+    },
+    {
+      "week": "2025-10-27",
+      "end": "2025-10-31",
+      "days": 5,
+      "strat": 0.00245,
+      "mkt": 0.004369,
+      "alpha": -0.001919,
+      "regime": "shift",
+      "exposure": 0.88
+    },
+    {
+      "week": "2025-11-03",
+      "end": "2025-11-07",
+      "days": 5,
+      "strat": -0.000478,
+      "mkt": 0.006453,
+      "alpha": -0.006931,
+      "regime": "neutral",
+      "exposure": 0.84
+    },
+    {
+      "week": "2025-11-10",
+      "end": "2025-11-14",
+      "days": 5,
+      "strat": -0.017382,
+      "mkt": -0.015288,
+      "alpha": -0.002093,
+      "regime": "neutral",
+      "exposure": 0.92
+    },
+    {
+      "week": "2025-11-17",
+      "end": "2025-11-21",
+      "days": 5,
+      "strat": -0.027659,
+      "mkt": -0.050609,
+      "alpha": 0.02295,
+      "regime": "ice",
+      "exposure": 0.58
+    },
+    {
+      "week": "2025-11-24",
+      "end": "2025-11-28",
+      "days": 5,
+      "strat": 0.019562,
+      "mkt": 0.031655,
+      "alpha": -0.012092,
+      "regime": "climax",
+      "exposure": 0.6133
+    },
+    {
+      "week": "2025-12-01",
+      "end": "2025-12-05",
+      "days": 5,
+      "strat": 0.003311,
+      "mkt": 0.011561,
+      "alpha": -0.008251,
+      "regime": "ice",
+      "exposure": 0.66
+    },
+    {
+      "week": "2025-12-08",
+      "end": "2025-12-12",
+      "days": 5,
+      "strat": 0.00763,
+      "mkt": 0.01072,
+      "alpha": -0.003089,
+      "regime": "ice",
+      "exposure": 0.66
+    },
+    {
+      "week": "2025-12-15",
+      "end": "2025-12-19",
+      "days": 5,
+      "strat": -0.008024,
+      "mkt": -0.01031,
+      "alpha": 0.002286,
+      "regime": "ice",
+      "exposure": 0.66
+    },
+    {
+      "week": "2025-12-22",
+      "end": "2025-12-26",
+      "days": 5,
+      "strat": 0.029146,
+      "mkt": 0.030992,
+      "alpha": -0.001846,
+      "regime": "climax",
+      "exposure": 0.96
+    },
+    {
+      "week": "2025-12-29",
+      "end": "2025-12-31",
+      "days": 3,
+      "strat": -0.004767,
+      "mkt": -0.005714,
+      "alpha": 0.000947,
+      "regime": "ebb",
+      "exposure": 0.9333
+    },
+    {
+      "week": "2026-01-05",
+      "end": "2026-01-09",
+      "days": 5,
+      "strat": 0.040266,
+      "mkt": 0.040368,
+      "alpha": -0.000102,
+      "regime": "climax",
+      "exposure": 1
+    },
+    {
+      "week": "2026-01-12",
+      "end": "2026-01-16",
+      "days": 5,
+      "strat": 0.004877,
+      "mkt": 0.005664,
+      "alpha": -0.000787,
+      "regime": "ice",
+      "exposure": 0.92
+    },
+    {
+      "week": "2026-01-19",
+      "end": "2026-01-23",
+      "days": 5,
+      "strat": 0.004098,
+      "mkt": 0.005363,
+      "alpha": -0.001265,
+      "regime": "climax",
+      "exposure": 0.76
+    },
+    {
+      "week": "2026-01-26",
+      "end": "2026-01-30",
+      "days": 5,
+      "strat": -0.007907,
+      "mkt": -0.007136,
+      "alpha": -0.000771,
+      "regime": "ice",
+      "exposure": 0.92
+    },
+    {
+      "week": "2026-02-02",
+      "end": "2026-02-06",
+      "days": 5,
+      "strat": -0.018281,
+      "mkt": -0.022221,
+      "alpha": 0.003939,
+      "regime": "ice",
+      "exposure": 0.66
+    },
+    {
+      "week": "2026-02-09",
+      "end": "2026-02-13",
+      "days": 5,
+      "strat": 0.007105,
+      "mkt": 0.010082,
+      "alpha": -0.002978,
+      "regime": "ice",
+      "exposure": 0.8
+    },
+    {
+      "week": "2026-02-23",
+      "end": "2026-02-27",
+      "days": 4,
+      "strat": 0.010305,
+      "mkt": 0.019462,
+      "alpha": -0.009157,
+      "regime": "recover",
+      "exposure": 0.775
+    },
+    {
+      "week": "2026-03-02",
+      "end": "2026-03-06",
+      "days": 5,
+      "strat": -0.017505,
+      "mkt": -0.018739,
+      "alpha": 0.001234,
+      "regime": "ice",
+      "exposure": 0.72
+    },
+    {
+      "week": "2026-03-09",
+      "end": "2026-03-13",
+      "days": 5,
+      "strat": 0.006576,
+      "mkt": 0.008605,
+      "alpha": -0.002029,
+      "regime": "ice",
+      "exposure": 0.74
+    },
+    {
+      "week": "2026-03-16",
+      "end": "2026-03-20",
+      "days": 5,
+      "strat": -0.011672,
+      "mkt": -0.016819,
+      "alpha": 0.005147,
+      "regime": "ice",
+      "exposure": 0.54
+    },
+    {
+      "week": "2026-03-23",
+      "end": "2026-03-27",
+      "days": 5,
+      "strat": -0.011295,
+      "mkt": -0.01188,
+      "alpha": 0.000586,
+      "regime": "ice",
+      "exposure": 0.5
+    },
+    {
+      "week": "2026-03-30",
+      "end": "2026-04-03",
+      "days": 5,
+      "strat": -0.026552,
+      "mkt": -0.02758,
+      "alpha": 0.001028,
+      "regime": "ice",
+      "exposure": 0.78
+    },
+    {
+      "week": "2026-04-06",
+      "end": "2026-04-10",
+      "days": 4,
+      "strat": 0.04247,
+      "mkt": 0.064538,
+      "alpha": -0.022068,
+      "regime": "climax",
+      "exposure": 0.7
+    },
+    {
+      "week": "2026-04-13",
+      "end": "2026-04-17",
+      "days": 5,
+      "strat": 0.040205,
+      "mkt": 0.040895,
+      "alpha": -0.00069,
+      "regime": "ebb",
+      "exposure": 0.98
+    },
+    {
+      "week": "2026-04-20",
+      "end": "2026-04-24",
+      "days": 5,
+      "strat": 0.004035,
+      "mkt": 0.0026,
+      "alpha": 0.001435,
+      "regime": "ebb",
+      "exposure": 0.96
+    },
+    {
+      "week": "2026-04-27",
+      "end": "2026-04-30",
+      "days": 4,
+      "strat": 0.001803,
+      "mkt": 0.00727,
+      "alpha": -0.005467,
+      "regime": "neutral",
+      "exposure": 0.7
+    },
+    {
+      "week": "2026-05-04",
+      "end": "2026-05-08",
+      "days": 3,
+      "strat": 0.026296,
+      "mkt": 0.026396,
+      "alpha": -0.000101,
+      "regime": "ebb",
+      "exposure": 1
+    },
+    {
+      "week": "2026-05-11",
+      "end": "2026-05-15",
+      "days": 5,
+      "strat": 0.001331,
+      "mkt": 0.007979,
+      "alpha": -0.006649,
+      "regime": "ebb",
+      "exposure": 0.88
+    },
+    {
+      "week": "2026-05-18",
+      "end": "2026-05-22",
+      "days": 5,
+      "strat": -0.000689,
+      "mkt": -0.000175,
+      "alpha": -0.000514,
+      "regime": "ice",
+      "exposure": 0.56
+    },
+    {
+      "week": "2026-05-25",
+      "end": "2026-05-29",
+      "days": 5,
+      "strat": 0.000783,
+      "mkt": 0.004295,
+      "alpha": -0.003511,
+      "regime": "recover",
+      "exposure": 0.7
+    },
+    {
+      "week": "2026-06-01",
+      "end": "2026-06-05",
+      "days": 5,
+      "strat": -0.004988,
+      "mkt": -0.015357,
+      "alpha": 0.010369,
+      "regime": "ebb",
+      "exposure": 0.54
+    },
+    {
+      "week": "2026-06-08",
+      "end": "2026-06-12",
+      "days": 5,
+      "strat": -0.018604,
+      "mkt": -0.018028,
+      "alpha": -0.000576,
+      "regime": "ice",
+      "exposure": 0.58
+    },
+    {
+      "week": "2026-06-15",
+      "end": "2026-06-18",
+      "days": 4,
+      "strat": 0.050694,
+      "mkt": 0.064829,
+      "alpha": -0.014135,
+      "regime": "ebb",
+      "exposure": 0.85
+    },
+    {
+      "week": "2026-06-22",
+      "end": "2026-06-26",
+      "days": 5,
+      "strat": -0.013129,
+      "mkt": -0.014796,
+      "alpha": 0.001667,
+      "regime": "ice",
+      "exposure": 0.6
+    },
+    {
+      "week": "2026-06-29",
+      "end": "2026-07-03",
+      "days": 5,
+      "strat": -0.024554,
+      "mkt": -0.016308,
+      "alpha": -0.008246,
+      "regime": "ice",
+      "exposure": 0.66
+    },
+    {
+      "week": "2026-07-06",
+      "end": "2026-07-10",
+      "days": 5,
+      "strat": -0.026937,
+      "mkt": -0.030333,
+      "alpha": 0.003395,
+      "regime": "ice",
+      "exposure": 0.64
+    },
+    {
+      "week": "2026-07-13",
+      "end": "2026-07-17",
+      "days": 5,
+      "strat": -0.047377,
+      "mkt": -0.084998,
+      "alpha": 0.03762,
+      "regime": "ice",
+      "exposure": 0.45
+    },
+    {
+      "week": "2026-07-20",
+      "end": "2026-07-24",
+      "days": 5,
+      "strat": -0.002979,
+      "mkt": 0.011481,
+      "alpha": -0.01446,
+      "regime": "ice",
+      "exposure": 0.38
+    },
+    {
+      "week": "2026-07-27",
+      "end": "2026-07-31",
+      "days": 5,
+      "strat": -0.012776,
+      "mkt": -0.015931,
+      "alpha": 0.003155,
+      "regime": "climax",
+      "exposure": 0.38
+    },
+    {
+      "week": "2026-08-03",
+      "end": "2026-08-07",
+      "days": 5,
+      "strat": 0.031056,
+      "mkt": 0.049306,
+      "alpha": -0.01825,
+      "regime": "climax",
+      "exposure": 0.6333
+    },
+    {
+      "week": "2026-08-10",
+      "end": "2026-08-14",
+      "days": 5,
+      "strat": -0.001492,
+      "mkt": 0.0058,
+      "alpha": -0.007292,
+      "regime": "climax",
+      "exposure": 0.62
+    },
+    {
+      "week": "2026-08-17",
+      "end": "2026-08-21",
+      "days": 5,
+      "strat": -0.01083,
+      "mkt": -0.015173,
+      "alpha": 0.004343,
+      "regime": "neutral",
+      "exposure": 0.6733
+    },
+    {
+      "week": "2026-08-24",
+      "end": "2026-08-28",
+      "days": 5,
+      "strat": -0.002412,
+      "mkt": -0.010828,
+      "alpha": 0.008416,
+      "regime": "climax",
+      "exposure": 0.66
+    },
+    {
+      "week": "2026-08-31",
+      "end": "2026-09-04",
+      "days": 5,
+      "strat": -0.009666,
+      "mkt": -0.025754,
+      "alpha": 0.016089,
+      "regime": "neutral",
+      "exposure": 0.5267
+    },
+    {
+      "week": "2026-09-07",
+      "end": "2026-09-11",
+      "days": 5,
+      "strat": -0.000082,
+      "mkt": -0.000996,
+      "alpha": 0.000915,
+      "regime": "ice",
+      "exposure": 0.56
+    },
+    {
+      "week": "2026-09-14",
+      "end": "2026-09-18",
+      "days": 5,
+      "strat": 0.005444,
+      "mkt": 0.011389,
+      "alpha": -0.005945,
+      "regime": "climax",
+      "exposure": 0.4933
+    },
+    {
+      "week": "2026-09-21",
+      "end": "2026-09-24",
+      "days": 4,
+      "strat": -0.006878,
+      "mkt": -0.018199,
+      "alpha": 0.011321,
+      "regime": "ebb",
+      "exposure": 0.65
+    },
+    {
+      "week": "2026-09-28",
+      "end": "2026-09-30",
+      "days": 3,
+      "strat": -0.009824,
+      "mkt": -0.030262,
+      "alpha": 0.020439,
+      "regime": "recover",
+      "exposure": 0.3944
+    },
+    {
+      "week": "2026-10-05",
+      "end": "2026-10-09",
+      "days": 2,
+      "strat": -0.004655,
+      "mkt": -0.018596,
+      "alpha": 0.013941,
+      "regime": "recover",
+      "exposure": 0.3
+    },
+    {
+      "week": "2026-10-12",
+      "end": "2026-10-16",
+      "days": 2,
+      "strat": -0.007429,
+      "mkt": -0.017785,
+      "alpha": 0.010356,
+      "regime": "ice",
+      "exposure": 0.4
+    },
+    {
+      "week": "2026-10-19",
+      "end": "2026-10-23",
+      "days": 5,
+      "strat": -0.006762,
+      "mkt": -0.016393,
+      "alpha": 0.00963,
+      "regime": "ebb",
+      "exposure": 0.38
+    },
+    {
+      "week": "2026-10-26",
+      "end": "2026-10-30",
+      "days": 5,
+      "strat": -0.023616,
+      "mkt": -0.066075,
+      "alpha": 0.042459,
+      "regime": "ice",
+      "exposure": 0.38
+    },
+    {
+      "week": "2026-11-02",
+      "end": "2026-11-06",
+      "days": 5,
+      "strat": -0.002714,
+      "mkt": 0.022537,
+      "alpha": -0.025251,
+      "regime": "ice",
+      "exposure": 0.3833
+    }
+  ]
+}
