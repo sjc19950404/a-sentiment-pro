@@ -682,6 +682,26 @@ export function generateWeekly(input, opts = {}) {
   payload.param_suggestions = div && Number.isFinite(div.daysGt02)
     ? [{ topic: 'posGap 阈值', fact: `分歧 >0.02 达 ${div.daysGt02}/${pick(input, 'dualTrack.sample.days') ?? '?'} 天，0.02/0.03 告警阈值仍是 [待确认] 状态`, action: '提议进入确认流程，非本模块职责' }]
     : [];
+  // 2026-11-09 因子健康度仪表并入周报（外部拍板：做完仪表后直接并入周报模板）
+  //   数据来自 data/factor_health_history.json（调用方读档注入 input.factorHealth）；
+  //   缺档时如实缺席（不补假数据）。仪表只读只报警——此处纯展示，无任何自动调参路径。
+  const fhIn = input.factorHealth;
+  if (fhIn && Array.isArray(fhIn.weeks) && fhIn.weeks.length) {
+    const lw = fhIn.weeks[fhIn.weeks.length - 1];
+    payload.factor_health = {
+      status: fhIn.status || null,
+      headline: fhIn.headline || null,
+      week_alpha: num(lw.alpha),
+      alpha_win_rate_8w: num(fhIn.metrics && fhIn.metrics.alphaWinRate8),
+      sharpe8_display: num(fhIn.metrics && fhIn.metrics.sharpe8),
+      seat_alpha: num(lw.seatAlpha),
+      diverg_rate: num(lw.divergRate),
+      regime_check: (Array.isArray(fhIn.regimeCheck) ? fhIn.regimeCheck : []).map((r) => ({
+        regime: r.regime, label: r.label, weeks: r.weeks, avg_alpha: r.avgAlpha, win_rate: r.winRate,
+      })),
+      discipline: '仪表只读只报警；系统禁止自动改规则，重大调整人工评估后上线（docs/factor_health_gauge.md）',
+    };
+  }
   const extra = [];
   if (missingDays) extra.push({ field: 'week_return / max_drawdown_week', reason: `本周 ${missingDays} 个交易日 dayReturns.A 缺失，按 0 跳过（缺失不补 0，但复利口径如实披露跳过日数）`, ref: 'data/paper/dual_track.json::days' });
   return envelope({

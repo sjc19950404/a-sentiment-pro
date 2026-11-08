@@ -316,6 +316,10 @@ export function themeStrengthOf(day) {
  * @param {boolean} [opts.requireAdmit=true] 买入前置是否要求「全部准入条件满足」才放行
  *        —— 规则规定：主候选池须**全部满足**准入；未全满足者进备选观察池，禁止自动下单。
  *        故 requireAdmit 恒为 true 时，返回 bucket='main' 才允许下单。
+ * @param {boolean} [opts.skipSeatRules=false] 跳过席位因子规则（③单票吸金>25% + ④游资独买
+ *        且集中度>80%）。**仅供因子健康度仪表的对照变体使用**（2026-11-09 外部拍板：
+ *        席位因子独立 Alpha 需「有/无席位准入」两组回测对照）——生产链路任何调用方
+ *        均不得传此开关（准入规则是风控闸口，跳过=撤闸）。
  */
 export function filterOne(code, day, opts = {}) {
   const f = featuresOf(code, day);
@@ -335,6 +339,7 @@ export function filterOne(code, day, opts = {}) {
   }
 
   const s = day?.summary || {};
+  const skipSeatRules = opts.skipSeatRules === true; // 对照变体专用开关（见 JSDoc 警告）
   const marketNetWan = finite(opts.marketNetWan) ? +opts.marketNetWan
     : (finite(s.lhb_daily_net) ? +s.lhb_daily_net * 1e4 : null);  // summary 里是「亿」，转万元
   const themeStrength = themeStrengthOf(day);
@@ -379,7 +384,7 @@ export function filterOne(code, day, opts = {}) {
 
   // ③ 个股龙虎净买占当日全市场龙虎总净额 > 25%（单票吸走全市场超四分之一资金，异常）
   let sharePct = null;
-  if (marketNetWan != null && marketNetWan > 0 && f.netWan != null) {
+  if (!skipSeatRules && marketNetWan != null && marketNetWan > 0 && f.netWan != null) {
     sharePct = f.netWan / marketNetWan;
     if (sharePct > MAX_SHARE_OF_MARKET) {
       push('SHARE_TOO_HIGH', REJECT_LHB.SHARE_TOO_HIGH, r3(sharePct * 100));
@@ -389,7 +394,7 @@ export function filterOne(code, day, opts = {}) {
   // ④ 买方只有游资（机构与北向均净卖出）且买方前三席位集中度 > 80%
   //    仅在有双侧席位明细时才能判定——无卖侧明细时机构/北向「净卖出」无从谈起，如实跳过判定。
   let hotOnlyConc = null;
-  if (f.hasSellDetail && f.instNetWan != null && f.northNetWan != null && f.hotNetWan != null) {
+  if (!skipSeatRules && f.hasSellDetail && f.instNetWan != null && f.northNetWan != null && f.hotNetWan != null) {
     const instOut = f.instNetWan <= 0;
     const northOut = f.northNetWan <= 0;
     const hotIn = f.hotNetWan > 0;

@@ -1996,3 +1996,11 @@ body {
 /* ── 6. 表格行悬停（数据密集区的可读性辅助）── */
 table tbody tr { transition: background-color .12s ease; }
 table tbody tr:hover { background: rgba(88, 166, 255, .045); }
+
+/* ── 因子健康度仪表卡（2026-11-09）── */
+.fh-cell { background: var(--bg-inset, rgba(110,118,129,.08)); border-radius: 8px; padding: 10px 12px; }
+.fh-cell .fh-k { font-size: 11px; color: var(--fg-dim, #8b949e); margin-bottom: 4px; }
+.fh-cell .fh-v { font-size: 18px; font-weight: 700; }
+.fh-cell .fh-v.pos { color: #3fb950; }
+.fh-cell .fh-v.neg { color: #f85149; }
+.fh-cell .fh-sub { font-size: 10px; color: var(--fg-dim, #8b949e); margin-top: 2px; }

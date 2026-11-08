@@ -38,6 +38,8 @@ import config from '../src/config.js';
 import { decodeArchive } from '../src/lhb_codec.js';
 import { classifySeries } from '../src/regime.js';
 import { BASE_PARAMS, scoreWith, positions, turnoverCost } from '../src/backtest.js';
+import { filterOne } from '../src/lhbfilter.js';
+import { seatFactorWeeks } from '../src/seat_factor_alpha.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const HIST = join(ROOT, 'data', 'factor_health_history.json');
@@ -106,14 +108,55 @@ const weeks = [...byWeek.entries()].sort((x, y) => (x[0] < y[0] ? -1 : 1)).map((
 // ── 判定引擎（纯函数在 src/factor_health.js，零 IO 零副作用，测试直接引用）──
 import { judge, regimeBreakdown, weekKey } from '../src/factor_health.js';
 
-const verdict = judge(weeks);
+// ── 5 针升级（2026-11-09 外部拍板）─────────────────────────────────────────
+// 针 4：席位因子增量 Alpha（对照变体：含席位准入③④ vs skipSeatRules，续板率差代理口径）
+const seatWeeks = seatFactorWeeks(days, { filterOne, weekKey });
+// 针 5：结构分歧尺（⑧a 规则的退化版——晋级失败率 pain.advance.failRate 历史 0 覆盖，
+//   该分支缺数据如实跳过；偏热=涨停≥60 或（封板率≥75% 且炸板≤10）、偏冷=涨停≤25）
+// 分歧日 = (ice/ebb & 偏热) | ((climax 或 shift) & 偏冷)。生态突变哨兵。
+const divWeeks = (() => {
+  const acc = new Map();
+  for (let i = 0; i < days.length; i++) {
+    const d = days[i], key = regimeKeys[i];
+    const isDiv = (['ice', 'ebb'].includes(key) && ((d.summary?.zt_count != null && d.summary.zt_count >= 60)
+      || (d.summary?.seal_pct != null && d.summary?.zb_count != null && d.summary.seal_pct >= 75 && d.summary.zb_count <= 10)))
+      || ((key === 'climax' || key === 'shift') && d.summary?.zt_count != null && d.summary.zt_count <= 25);
+    const wk = weekKey(d.trade_date);
+    const w = acc.get(wk) || { week: wk, end: d.trade_date, days: 0, div: 0 };
+    w.end = d.trade_date; w.days++; if (isDiv) w.div++;
+    acc.set(wk, w);
+  }
+  return [...acc.values()].sort((x, y) => (x.week < y.week ? -1 : 1)).map((w) => ({ ...w, rate: +(w.div / w.days).toFixed(3) }));
+})();
+// 针 3：原始滚动夏普（仅展示不告警）——最近 8 周策略日收益的年化夏普
+const sharpe8 = (() => {
+  if (weeks.length < 8) return null;
+  const weekKeys8 = new Set(weeks.slice(-8).map((w) => w.week));
+  const daily = [];
+  for (let i = 0; i < days.length; i++) if (weekKeys8.has(weekKey(days[i].trade_date))) daily.push(stratDaily[i]);
+  const mean = daily.reduce((x, y) => x + y, 0) / daily.length;
+  const sd = Math.sqrt(daily.reduce((s, v) => s + (v - mean) ** 2, 0) / daily.length);
+  return sd ? +(mean / sd * Math.sqrt(52)).toFixed(3) : null;
+})();
+// 周序列合并新字段（供账本/UI 消费）
+const weeksFull = weeks.map((w) => {
+  const sw = seatWeeks.find((x) => x.week === w.week);
+  const dv = divWeeks.find((x) => x.week === w.week);
+  return {
+    ...w,
+    seatAlpha: sw ? sw.seatAlpha : null,
+    seatPool: sw ? { passSeat: sw.passSeat, contSeat: sw.contSeat, passBase: sw.passBase, contBase: sw.contBase, rateSeat: sw.rateSeat, rateBase: sw.rateBase } : null,
+    divergRate: dv ? dv.rate : null,
+  };
+});
+const verdict = judge(weeks, { seatWeeks, divergWeeks: divWeeks, sharpe8 });
 const snapshot = {
   updatedAt: new Date().toISOString(),
   status: verdict.status,
   headline: verdict.headline,
-  metrics: { alphaWinRate8: verdict.alphaWinRate8, negStreak: verdict.negStreak, ma4Pct: verdict.ma4Pct },
+  metrics: { alphaWinRate8: verdict.alphaWinRate8, negStreak: verdict.negStreak, ma4Pct: verdict.ma4Pct, sharpe8, seatAlarm: !!verdict.seatAlarm, divAlarm: !!verdict.divAlarm },
   regimeCheck: regimeBreakdown(weeks),
-  weeks,
+  weeks: weeksFull,
 };
 
 // ── 落盘（账本累积 + 快照覆盖）──
@@ -124,6 +167,10 @@ console.log(`[factor-health] ${verdict.headline}`);
 console.log(`  覆盖：${weeks.length} 周（${weeks[0]?.week} ~ ${weeks[weeks.length - 1]?.week}）｜最新周（截至 ${weeks[weeks.length - 1]?.end}）`);
 const lw = weeks[weeks.length - 1];
 console.log(`  最新周：策略 ${(lw.strat * 100).toFixed(2)}% | 基准 ${(lw.mkt * 100).toFixed(2)}% | 超额 ${(lw.alpha * 100).toFixed(2)}% | 主导 regime=${lw.regime} | 平均仓位 ${(lw.exposure * 100).toFixed(0)}%`);
+const swLast = seatWeeks[seatWeeks.length - 1];
+console.log(`  ④ 席位增量Alpha（续板率差代理）：${swLast && swLast.seatAlpha != null ? (swLast.seatAlpha * 100).toFixed(1) + 'pp（池 席' + swLast.passSeat + '/基' + swLast.passBase + '）' : '本周无对照样本'}｜全史均值 ${(seatWeeks.filter((w) => w.seatAlpha != null).reduce((s2, w) => s2 + w.seatAlpha, 0) / Math.max(1, seatWeeks.filter((w) => w.seatAlpha != null).length) * 100).toFixed(1)}pp`);
+const dvLast = divWeeks[divWeeks.length - 1];
+console.log(`  ⑤ 周度分歧频率（生态哨兵）：${dvLast ? (dvLast.rate * 100).toFixed(0) + '%（' + dvLast.div + '/' + dvLast.days + ' 日）' : '—'}｜sharpe8（展示）: ${sharpe8 ?? '—'}`);
 console.log('  分 regime 校验（alpha 为正 = 策略在该环境下跑赢不择时基准）:');
 for (const r of snapshot.regimeCheck) {
   console.log(`    ${r.label.padEnd(3)} ${r.weeks} 周 | 平均超额 ${(r.avgAlpha * 100).toFixed(2)}% | 胜率 ${(r.winRate * 100).toFixed(0)}%`);

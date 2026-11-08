@@ -2490,6 +2490,59 @@ let DUALTRACK = null;
 //   让它与各面板共用**同一次 fetch 结果**，避免"导出时再现拉一次"造成两处不一致。
 let SIGNALS = null;
 
+// ── 因子健康度仪表卡（2026-11-09 外部拍板：5 针 + 三态预警）──────────────────
+// 数据 = data/factor_health_history.json（EOD factor_health.mjs 落盘；周粒度）。
+// 纪律：只读展示 + 只报警文案；不提供任何"自动调参"入口——规则调整必须人工评估
+// 后改 scripts/factor_health.mjs 的判定引擎（阈值改动须人工评审，见引擎头注释）。
+const FH_LAMP = { healthy: ['✅', '健康', '#3fb950'], watch: ['⚠️', '观察', '#d29922'], alarm: ['❌', '告警', '#f85149'], warming: ['⏳', '积累中', '#8b949e'] };
+async function loadFactorHealth() {
+  const card = document.getElementById('factorHealthCard');
+  if (!card) return;
+  let fh = null;
+  try {
+    const res = await fetch('./data/factor_health_history.json?_=' + Date.now(), { cache: 'no-store' });
+    if (res.ok) fh = await res.json();
+  } catch { fh = null; }
+  if (!fh || !fh.weeks || !fh.weeks.length) return; // 账本未就绪：卡片保持 hidden（不占位）
+  const lamp = FH_LAMP[fh.status] || FH_LAMP.warming;
+  const last = fh.weeks[fh.weeks.length - 1];
+  const m = fh.metrics || {};
+  const pct = (v) => (v == null ? '—' : (v * 100).toFixed(1) + '%');
+  const pp = (v) => (v == null ? '—' : (v * 100).toFixed(1) + 'pp');
+  card.hidden = false;
+  const up = document.getElementById('fhUpdated');
+  if (up) up.textContent = `每周 EOD 更新 · 截至 ${last.end} · ${fh.updatedAt ? '更新于 ' + fh.updatedAt.slice(5, 16).replace('T', ' ') : ''}`;
+  const body = document.getElementById('fhBody');
+  if (body) {
+    body.innerHTML = `
+      <div style="font-size:15px;margin-bottom:10px"><span style="color:${lamp[2]};font-weight:700">${lamp[0]} ${fh.headline ? fh.headline.replace(/^[\u2705\u26a0\ufe0f\u274c\u23f3]+\s*/, '') : lamp[1]}</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+        <div class="fh-cell"><div class="fh-k">① 最新周超额</div><div class="fh-v ${last.alpha >= 0 ? 'pos' : 'neg'}">${pct(last.alpha)}</div><div class="fh-sub">策略 ${pct(last.strat)} / 基准 ${pct(last.mkt)}</div></div>
+        <div class="fh-cell"><div class="fh-k">② 8周超额胜率</div><div class="fh-v">${pct(m.alphaWinRate8)}</div><div class="fh-sub">健康 ≥52% / 告警 &lt;48%</div></div>
+        <div class="fh-cell"><div class="fh-k">③ 滚动夏普(展示)</div><div class="fh-v">${m.sharpe8 == null ? '—' : m.sharpe8}</div><div class="fh-sub">最近 8 周策略年化</div></div>
+        <div class="fh-cell"><div class="fh-k">④ 席位增量Alpha</div><div class="fh-v">${last.seatAlpha == null ? '—' : pp(last.seatAlpha)}</div><div class="fh-sub">续板率差代理 · 全史均值见明细</div></div>
+        <div class="fh-cell"><div class="fh-k">⑤ 分歧频率</div><div class="fh-v">${last.divergRate == null ? '—' : pct(last.divergRate)}</div><div class="fh-sub">生态哨兵 · P90/P95 自标定</div></div>
+      </div>
+      ${m.seatAlarm || m.divAlarm ? '<div class="bf-warn" style="margin-top:8px">存在活跃预警（席位因子失效 / 博弈生态异动）——见上方告警文案，规则调整须人工评估</div>' : ''}`;
+  }
+  const det = document.getElementById('fhDetail');
+  const dBody = document.getElementById('fhDetailBody');
+  if (det && dBody) {
+    det.hidden = false;
+    const rc = fh.regimeCheck || [];
+    const wk8 = fh.weeks.slice(-8).reverse();
+    dBody.innerHTML = `
+      <div class="table-wrap" style="margin-top:8px"><table>
+        <thead><tr><th>regime</th><th class="num">周数</th><th class="num">平均超额</th><th class="num">超额胜率</th></tr></thead>
+        <tbody>${rc.map((r) => `<tr><td>${r.label}</td><td class="num">${r.weeks}</td><td class="num ${r.avgAlpha >= 0 ? 'pos' : 'neg'}">${pct(r.avgAlpha)}</td><td class="num">${pct(r.winRate)}</td></tr>`).join('')}</tbody>
+      </table></div>
+      <div class="table-wrap" style="margin-top:8px"><table>
+        <thead><tr><th>周(截至)</th><th class="num">超额</th><th class="num">席位增量</th><th class="num">分歧频率</th><th>主导 regime</th></tr></thead>
+        <tbody>${wk8.map((w) => `<tr><td>${w.end}</td><td class="num ${w.alpha >= 0 ? 'pos' : 'neg'}">${pct(w.alpha)}</td><td class="num ${w.seatAlpha != null && w.seatAlpha < 0 ? 'neg' : ''}">${pp(w.seatAlpha)}</td><td class="num">${w.divergRate == null ? '—' : pct(w.divergRate)}</td><td>${w.regime}</td></tr>`).join('')}</tbody>
+      </table></div>`;
+  }
+}
+
 async function loadHealth() {
   try {
     const res = await fetch('./data/signals-latest.json?_=' + Date.now(), { cache: 'no-store' });
@@ -4318,6 +4371,7 @@ function renderAll(arc) {
   loadBtStrategies(); // A/B/C 三策略 × 沪深300 基准（独立数据文件；缺失时卡内显示生成命令）
   loadVersionRegression(); // 公式版本对比（独立数据文件；缺失时卡内显示生成命令，不影响其他区块）
   loadHealth(); // 数据健康 + 资金属性 + 亏钱效应（同一份 signals-latest.json，一次 fetch）
+  loadFactorHealth(); // 因子健康度仪表（独立数据文件 factor_health_history.json；缺失时卡片保持隐藏）
   loadIntraday(meta); // 盘中快照（独立数据文件；仅盘中相位且有文件时显示）
   loadAiReportCard(meta); // S3-4 AI 盘中报告卡（归档基座 + live 相位实时替换）
 }

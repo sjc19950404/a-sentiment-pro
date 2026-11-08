@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-06",
- "generated_at": "2026-11-07T10:50:43.367Z",
+ "generated_at": "2026-11-08T16:43:47.183Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -116,6 +116,10 @@
    "source": "archived",
    "confidence": "measured"
   },
+  "factor_health": {
+   "source": "derived",
+   "confidence": "measured"
+  },
   "simulation_stock": {
    "source": "missing",
    "confidence": "missing"
@@ -136,7 +140,38 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "ice",
+   "label": "冰点",
+   "score": 34.63,
+   "cap": 0.2,
+   "position_range": "0%~20%",
+   "positionReconcile": {
+    "score": 34.6,
+    "base": {
+     "key": "base_defend",
+     "minPos": 0,
+     "maxPos": 0.3,
+     "label": "防守"
+    },
+    "baseRange": "0%~30%",
+    "cap": {
+     "key": "ice",
+     "minPos": 0,
+     "maxPos": 0.2,
+     "label": "冰点",
+     "advice": "优先空仓，仅极端错杀才值得试探",
+     "tone": "defend"
+    },
+    "capRange": "0%~20%",
+    "force": false,
+    "conflict": false,
+    "finalRange": "0%~20%"
+   },
+   "clustering_bubble": false,
+   "sentiment_penalty": 0,
+   "score_adjusted": 34.63
+  },
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -154,14 +189,21 @@
    {
     "key": "sox",
     "name": "费城半导体指数",
-    "chgPct": 0.042072000000000005,
-    "state": "ok",
+    "chgPct": null,
+    "state": "stale",
     "stale": false,
     "cacheNote": null
    }
   ],
   "externalStale": [
-   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空"
+   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空",
+   "外围「道琼斯」已陈旧 2 天（未刷新），已置空",
+   "外围「标普500」已陈旧 2 天（未刷新），已置空",
+   "外围「纳斯达克」已陈旧 2 天（未刷新），已置空",
+   "外围「纳斯达克100」已陈旧 2 天（未刷新），已置空",
+   "外围「费城半导体指数」已陈旧 2 天（未刷新），已置空",
+   "外围「纳斯达克中国金龙指数」已陈旧 2 天（未刷新），已置空",
+   "外围「富时中国ETF（FXI）」已陈旧 2 天（未刷新），已置空"
   ],
   "nav_realtime": 1000000,
   "nav_series": [
@@ -175,20 +217,32 @@
     "date": "2026-11-03",
     "day_return": -0.006857,
     "score": 46.34,
-    "regime": "recover"
+    "regime": "ice"
    },
    {
     "date": "2026-11-04",
     "day_return": 0.0094,
     "score": 68.47,
     "regime": "recover"
+   },
+   {
+    "date": "2026-11-05",
+    "day_return": 0.00283,
+    "score": 72.83,
+    "regime": "ebb"
+   },
+   {
+    "date": "2026-11-06",
+    "day_return": -0.01149,
+    "score": 34.63,
+    "regime": "ice"
    }
   ],
-  "week_return": 0.006030325682100601,
-  "max_drawdown_week": 0.006857000000000044,
+  "week_return": -0.002714609724597472,
+  "max_drawdown_week": 0.011490000000000002,
   "win_rate": null,
   "win_rate_note": "口径 = 模拟盘平仓胜率（reviewTrades，来自 data/paper/account.json 的 trades；P3 起绑定真实成交）；0 笔平仓 → null（样本不足，不降级为日收益口径）。原「剧本命中率」数据源 airpt_sim_bindings 仍缺席。（已平仓 0 笔）",
-  "profit_trade_ratio": 0.6666666666666666,
+  "profit_trade_ratio": 0.6,
   "cost_ratio_week": null,
   "trend_switch_effect": {
    "turns": [
@@ -223,9 +277,76 @@
      "value": 34.6
     }
    ],
-   "shadow_note": null
+   "shadow_note": "trackC 影子线（0.5 档）累计 -0.034817 vs 执行轨 -0.058842；episodes 19（晋升门禁 ≥10，仍须走 promote_params）"
   },
-  "param_suggestions": [],
+  "param_suggestions": [
+   {
+    "topic": "posGap 阈值",
+    "fact": "分歧 >0.02 达 247/260 天，0.02/0.03 告警阈值仍是 [待确认] 状态",
+    "action": "提议进入确认流程，非本模块职责"
+   }
+  ],
+  "factor_health": {
+   "status": "watch",
+   "headline": "⚠️ 观察：单周超额转负",
+   "week_alpha": -0.025251,
+   "alpha_win_rate_8w": 0.75,
+   "sharpe8_display": -2.275,
+   "seat_alpha": 0,
+   "diverg_rate": 0.2,
+   "regime_check": [
+    {
+     "regime": "ice",
+     "label": "ice",
+     "weeks": 24,
+     "avg_alpha": 0.002776,
+     "win_rate": 0.542
+    },
+    {
+     "regime": "climax",
+     "label": "climax",
+     "weeks": 12,
+     "avg_alpha": -0.005265,
+     "win_rate": 0.25
+    },
+    {
+     "regime": "ebb",
+     "label": "ebb",
+     "weeks": 9,
+     "avg_alpha": 0.001347,
+     "win_rate": 0.556
+    },
+    {
+     "regime": "neutral",
+     "label": "neutral",
+     "weeks": 5,
+     "avg_alpha": 0.001188,
+     "win_rate": 0.4
+    },
+    {
+     "regime": "recover",
+     "label": "recover",
+     "weeks": 4,
+     "avg_alpha": 0.005428,
+     "win_rate": 0.5
+    },
+    {
+     "regime": "unknown",
+     "label": "unknown",
+     "weeks": 1,
+     "avg_alpha": 0.010327,
+     "win_rate": 1
+    },
+    {
+     "regime": "shift",
+     "label": "shift",
+     "weeks": 1,
+     "avg_alpha": -0.001919,
+     "win_rate": 0
+    }
+   ],
+   "discipline": "仪表只读只报警；系统禁止自动改规则，重大调整人工评估后上线（docs/factor_health_gauge.md）"
+  },
   "simulation_stock": null,
   "ma20_degraded": false,
   "status": "degraded"

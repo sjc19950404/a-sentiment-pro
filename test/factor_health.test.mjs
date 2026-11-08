@@ -65,3 +65,48 @@ test('weekKey：周一为周起点，跨周日正确归周', () => {
   assert.equal(weekKey('2026-11-08'), '2026-11-02'); // 周日 → 上周一
   assert.equal(weekKey('2026-11-06'), '2026-11-02'); // 周五 → 本周一
 });
+
+// ── 5 针升级（2026-11-09）：席位因子失效预警 + 博弈生态异动预警 ──
+test('席位因子失效预警：连续 2 周 seatAlpha ≤ -5pp → alarm', () => {
+  const r = judge(mk(Array(10).fill(0.01)), {
+    seatWeeks: [
+      { week: 'w1', seatAlpha: 0.01 }, { week: 'w2', seatAlpha: -0.06 }, { week: 'w3', seatAlpha: -0.07 },
+    ],
+  });
+  assert.equal(r.status, 'alarm');
+  assert.match(r.headline, /席位因子失效预警/);
+  assert.equal(r.seatAlarm, true);
+});
+
+test('席位因子失效预警不误伤：单周 -6pp 但上一周为正 → 不告警', () => {
+  const r = judge(mk(Array(10).fill(0.01)), {
+    seatWeeks: [{ week: 'w1', seatAlpha: 0.02 }, { week: 'w2', seatAlpha: -0.06 }],
+  });
+  assert.notEqual(r.status, 'alarm');
+});
+
+test('博弈生态异动预警：分歧率 ≥P95 → alarm + divAlarm', () => {
+  // 12 周：前 11 周低分歧（0~0.3），最后 1 周 0.7（≥P95）
+  const divs = Array(11).fill(0).map((_, i) => ({ week: `w${i}`, rate: i % 2 ? 0.2 : 0.1 }));
+  divs.push({ week: 'w11', rate: 0.7 });
+  const r = judge(mk(Array(12).fill(0.01)), { divergWeeks: divs });
+  assert.equal(r.status, 'alarm');
+  assert.match(r.headline, /博弈生态异动预警/);
+  assert.equal(r.divAlarm, true);
+});
+
+test('分歧观察带：≥P90 但 <P95 且未 3× 中位 → watch 含生态观察', () => {
+  // 历史 14 周（含两个 0.6 抬 P95）+ cur=0.4：P95=0.6、P90=0.4 → cur 落在 [P90, P95) 观察带
+  //   且未触发 3×中位（脚本已验证索引边界——手数分位索引两次出错，fixture 以脚本验证为准）
+  const divs = [0.1, 0.2, 0.1, 0.2, 0.1, 0.2, 0.1, 0.2, 0.1, 0.2, 0.2, 0.2, 0.6, 0.6].map((rate, i) => ({ week: `w${i}`, rate }));
+  divs.push({ week: 'wN', rate: 0.4 });
+  const r = judge(mk(Array(15).fill(0.01)), { divergWeeks: divs });
+  assert.match(r.headline, /生态观察/);
+});
+
+test('无 extra（向后兼容）：单参调用行为与 3 针时代一致', () => {
+  const r = judge(mk(Array(8).fill(0.01)));
+  assert.equal(r.status, 'healthy');
+  assert.equal(r.seatAlarm, false);
+  assert.equal(r.divAlarm, false);
+});

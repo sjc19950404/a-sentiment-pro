@@ -82,6 +82,7 @@ const input = buildInput({
   intraday: read('data/intraday.json'),
   // 纸面交易账户（V5.3 P2 最后一公里：scripts/paper_daily.mjs 每日维护；缺档=null→复盘段显示占位）
   paperAccount: read('data/paper/account.json'),
+  factorHealth: read('data/factor_health_history.json'), // 2026-11-09 因子健康度仪表并入周报
 });
 
 // ── 调度闸门（S2 · 判据唯一出处 src/ai_report_push.js）：跳过即正常退出 ──

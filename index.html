@@ -1104,6 +1104,19 @@
           <h2>主线自动选股 <span class="bf-auto">逐日识别主线题材 → 当日标的清单（点标的看详情）</span></h2>
           <div id="mainLineBody"></div>
         </section>
+
+        <!-- ── 因子健康度仪表（2026-11-09 外部拍板：5 针 + 三态预警 + 分 regime 校验）──
+             数据 = data/factor_health_history.json（EOD 每日跑、周粒度聚合落盘）。
+             纪律：仪表只读只报警，系统禁止自动修改规则；告警仅供人工评估，
+             独立风控闸口（各 gate/锚点门禁）不受本卡影响。口径见 docs/factor_health_gauge.md -->
+        <section class="card factor-health" id="factorHealthCard" hidden>
+          <h2>因子健康度仪表 <span class="bf-auto" id="fhUpdated"></span></h2>
+          <div id="fhBody"></div>
+          <details id="fhDetail" hidden>
+            <summary>明细：分 regime 校验 · 最近周序列</summary>
+            <div id="fhDetailBody"></div>
+          </details>
+        </section>
       </div>
     </section>
 
