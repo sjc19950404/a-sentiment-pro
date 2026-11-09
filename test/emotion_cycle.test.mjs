@@ -44,11 +44,18 @@ test('指标计算：全缺失 hybk → theme_concentration/top 为 null，其�
   assert.equal(m.theme_top, null);
 });
 
-test('指标计算：lbc/zbc 非法值按保守缺省（1/0）处理', () => {
+test('指标计算：lbc 非法按保守缺省 1；zbc 缺失单列 unknown、不计硬板（2026-11-09 C7 用户拍板）', () => {
   const m = computeEmotionMetrics([st({ lbc: 'x', zbc: NaN }), st({ lbc: 2.7, zbc: 1.2 })]);
   assert.equal(m.continuous_count, 1);  // 'x'→1；2.7→trunc 2
   assert.equal(m.max_board, 2);
-  assert.equal(m.broken_rate, 0.5);     // NaN→0 不炸；1.2→1 炸
+  assert.equal(m.zbc_unknown, 1, 'NaN 的 zbc 计入未知档（不猜）');
+  assert.equal(m.broken_rate, 1, '分母=可判板数 1：唯一可判档为炸板 → 1');
+  assert.equal(m.hard_board_rate, 0, '缺失档不再被算成硬板');
+  // 无缺失时与旧口径数值完全一致（历史回归保护）
+  const m2 = computeEmotionMetrics([st({ lbc: 1, zbc: 0 }), st({ lbc: 2, zbc: 1 })]);
+  assert.equal(m2.zbc_unknown, 0);
+  assert.equal(m2.broken_rate, 0.5);
+  assert.equal(m2.hard_board_rate, 0.5);
 });
 
 test('状态判定：冰点（涨停<30 且炸板率>40%）', () => {
@@ -172,7 +179,7 @@ test('主入口 computeEmotion：组合输出 + no_data + date 透传', () => {
   assert.equal(out.date, '20260930');
   assert.equal(out.emotion, '高潮');
   assert.ok(Number.isInteger(out.score));
-  assert.equal(Object.keys(out.metrics).length, 7);
+  assert.equal(Object.keys(out.metrics).length, 8); // 2026-11-09 C7：新增 zbc_unknown（7→8）
   // 空/非数组 → no_data
   assert.deepEqual(computeEmotion([]), { date: null, emotion: 'no_data', score: null, metrics: null });
   assert.equal(computeEmotion(null).emotion, 'no_data');

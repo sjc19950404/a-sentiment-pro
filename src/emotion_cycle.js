@@ -54,14 +54,17 @@ const r4 = (v) => (Number.isFinite(v) ? Math.round(v * 10000) / 10000 : null);
 export function computeEmotionMetrics(pool) {
   if (!Array.isArray(pool) || !pool.length) return null;
   const n = pool.length;
-  let broken = 0, hard = 0, maxBoard = 0, continuous = 0;
+  let broken = 0, hard = 0, maxBoard = 0, continuous = 0, zbcUnknown = 0;
   const hybkCount = new Map();
   for (const s of pool) {
     const lbc = Number.isFinite(+s?.lbc) ? Math.trunc(+s.lbc) : 1;
     if (lbc >= 2) continuous++;
     if (lbc > maxBoard) maxBoard = lbc;
-    const zbc = Number.isFinite(+s?.zbc) ? Math.trunc(+s.zbc) : 0;
-    if (zbc > 0) broken++; else hard++;
+    // 2026-11-09 C7 修复（用户拍板）：炸板数缺失不再当 0 计入硬板——单列 unknown、
+    //   分母改用「可判板数」。zbc 完整时与旧口径数值完全一致（历史不受影响）。
+    if (!Number.isFinite(+s?.zbc)) { zbcUnknown++; }
+    else if (Math.trunc(+s.zbc) > 0) broken++;
+    else hard++;
     const bk = typeof s?.hybk === 'string' && s.hybk.trim() ? s.hybk.trim() : null;
     if (bk) hybkCount.set(bk, (hybkCount.get(bk) || 0) + 1);
   }
@@ -69,14 +72,16 @@ export function computeEmotionMetrics(pool) {
   for (const [k, c] of hybkCount) {
     if (!themeTop || c > hybkCount.get(themeTop)) { themeTop = k; themeConc = c / n; }
   }
+  const graded = n - zbcUnknown; // 可判板数（zbc 可知的样本）
   return {
     limit_up_count: n,
     continuous_count: continuous,
-    broken_rate: r4(broken / n),
+    broken_rate: graded ? r4(broken / graded) : null,
     max_board: maxBoard,
     theme_concentration: themeConc == null ? null : r4(themeConc),
     theme_top: themeTop,
-    hard_board_rate: r4(hard / n),
+    hard_board_rate: graded ? r4(hard / graded) : null,
+    zbc_unknown: zbcUnknown, // C7：炸板数缺失档数（>0 时 rates 分母已剔除此部分）
   };
 }
 
