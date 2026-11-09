@@ -646,12 +646,16 @@
 
     // ── regime 分布 ──
     const counts = (S.regime && S.regime.counts) || {};
-    const ck = Object.keys(counts);
+    // 2026-11-09：'数据不足' 是归档起点（2025-10-09/10 开档两日）的诚实标记——情绪分/封板率
+    //   都在（引擎绝对标尺连水位都判了），缺的只是**历史回看窗**（方向判不了）。
+    //   实测东财涨停池仅留 ~1 个月历史，起点之前数据不可回补 → 该档将长期存在。
+    //   展示处置：置底 + 灰显 + 说明文案，避免每次都被误读成"数据事故"。
+    const ck = Object.keys(counts).sort((a, b) => (a === '数据不足') - (b === '数据不足'));
     const cmax = Math.max(1, ...ck.map((k) => counts[k]));
     const dist = ck.length
-      ? `<div>${ck.map((k) => `<div class="t-dv-row" style="grid-template-columns:56px 1fr 34px">
-          <span class="t-dv-name">${esc(k)}</span>
-          <span class="t-dv-track"><span class="t-dv-fill ${REGIME_BAND[k] && k !== 'unknown' ? '' : ''}" style="width:${(counts[k] / cmax * 100).toFixed(1)}%;background:${REGIME_BAND[k] || '#2a3644'}"></span></span>
+      ? `<div>${ck.map((k) => `<div class="t-dv-row" style="grid-template-columns:56px 1fr 34px" ${k === '数据不足' ? 'title="归档起点（2025-10-09/10）缺历史回看窗：情绪分水位已判（绝对标尺），但方向不可判——按不猜纪律不给标签。历史数据源实测仅留约1个月，不可回补，该档将长期存在。"' : ''}>
+          <span class="t-dv-name" ${k === '数据不足' ? 'style="color:#4a5568"' : ''}>${esc(k)}</span>
+          <span class="t-dv-track"><span class="t-dv-fill ${REGIME_BAND[k] && k !== 'unknown' ? '' : ''}" style="width:${(counts[k] / cmax * 100).toFixed(1)}%;background:${REGIME_BAND[k] || '#2a3644'}${k === '数据不足' ? ';opacity:.5' : ''}"></span></span>
           <span class="t-dv-val">${counts[k]}</span></div>`).join('')}</div>`
       : '<div class="t-empty">无分布数据</div>';
     g.appendChild(panel('regime 分布', `共 ${(S.regime && S.regime.totalDays) || '—'} 日`, dist, 't-c4'));
