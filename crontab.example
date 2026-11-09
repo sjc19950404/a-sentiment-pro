@@ -13,8 +13,8 @@ LOG=/var/log/aquant/run.log
 30 10 * * *      /opt/a-sentiment-pro/pi_run.sh eod        >>$LOG 2>&1
 # 盘后补抓（北京 21:00 | UTC 13:00）
 0  13 * * 1-5  /opt/a-sentiment-pro/pi_run.sh supplement  >>$LOG 2>&1
-# 美股收盘档（北京次日 04:30 | UTC 20:30）
-30 20 * * 1-5  /opt/a-sentiment-pro/pi_run.sh us_close    >>$LOG 2>&1
+# 美股收盘档（北京 06:00 | UTC 22:00）——2026-11-09 冬令时修复：原04:30档在美东冬令时下=15:30ET盘中，抓不到收盘档（16:30ET才就绪）；06:00全年有效(EST17:00/EDT18:00)，不与05:20 A50档、09:00盘前档冲突。
+0 22 * * 1-5  /opt/a-sentiment-pro/pi_run.sh us_close    >>$LOG 2>&1
 # A50 夜盘收盘（北京 05:20 | UTC 21:20）
 20 21 * * 1-5  /opt/a-sentiment-pro/pi_run.sh a50         >>$LOG 2>&1
 # 盘前观察清单（北京 09:00 | UTC 01:00）
