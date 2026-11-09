@@ -145,6 +145,8 @@ case "$MODE" in
     #   供 Pages 终端经 terminal.js durl() 改道 R2 公共地址拉取（config.json dataOrigin 已切到 R2）。
     #   脚本内部容错：缺凭证 / SDK 未装 / 桶连不通 仅告警并 exit 0，绝不破坏 EOD 主流程。
     node scripts/sync_to_r2.mjs 2>>"$LOG_FILE" || log "R2 同步失败（best-effort，不影响 EOD）"
+    # 归档日快照（2026-11-09 B2）：archive 系列已移出 git（云端走 R2），本地留最近 7 天可回滚副本
+    node scripts/archive_snapshot.mjs 2>/dev/null || log "归档快照失败（best-effort，继续）"
     ;;
   us_close|a50)
     node scripts/fetch_global.mjs || log "外围抓取失败"

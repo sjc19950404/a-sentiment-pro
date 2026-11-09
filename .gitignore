@@ -128,3 +128,11 @@ data/anchor_watch.json
 
 # 人工盘感填写入口（未跟踪：pi_run 每 tick reset --hard 会还原跟踪文件，此文件不受影响）
 data/human_guesses.local.json
+
+# 2026-11-09 B2（用户拍板）：时序归档移出 git → R2 对象存储；本地留最近 7 天可回滚快照（.archive_snap/）
+data/archive.json
+data/archive-2025.json
+data/archive-2026.json
+data/archive-recent.json
+data/archive-index.json
+data/.archive_snap/

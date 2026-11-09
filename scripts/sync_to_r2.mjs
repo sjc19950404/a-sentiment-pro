@@ -61,6 +61,12 @@ const SRC_FILES = [
   'data/announcements-latest.json',
   'data/paper/account.json',
   'data/llm_risk_blacklist.json',
+  // 2026-11-09 B2（用户拍板）：时序归档移出 git，云端留存走 R2（约 25MB/日，增量按 size+mtime）
+  'data/archive.json',
+  'data/archive-2025.json',
+  'data/archive-2026.json',
+  'data/archive-recent.json',
+  'data/archive-index.json',
 ];
 
 function walk(dir, out = []) {
