@@ -1125,7 +1125,7 @@ export function buildIntradayPool(intraday, opts = {}) {
       ? Math.round((parts.reduce((s, [w, v]) => s + w * clamp01(v), 0) / wsum) * 100) / 100
       : null;
     return { ...c, score };
-  }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || b.mn - a.mn).slice(0, F.top);
+  }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || (b.mn ?? -Infinity) - (a.mn ?? -Infinity)).slice(0, F.top); // C8配套：mn 缺失排序兜底（防 NaN 比较）
   const pool = scored.map(({ r, chg, lb, mn, tags, score }) => {
     const bo = boardOf(String(r.code)); // 板块识别（含 创业板/科创板 标签）
     const pe = isValidNum(r.pe_ttm) ? +r.pe_ttm : null;
