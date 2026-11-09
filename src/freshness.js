@@ -20,7 +20,7 @@ import { bjDate, bjTime, bjInstant } from './time.js';
 
 export const MARKET_CLOSE = '15:00'; // 收盘时刻，用于判定「当日是否已收盘」
 export const MARKET_OPEN = '09:30';  // 连续竞价开始（集合竞价 09:15~09:25 不产生有效盘中快照）
-export const PUBLISH_HHMM = '19:30'; // 某交易日数据应已落库的兜底时刻（18:30 首抓 + 1h 余量）
+export const PUBLISH_HHMM = '19:30'; // 某交易日数据应已落库的兜底时刻（18:30 首抓 + 1h 余量）；21:00 补抓是补救不是主发布时刻（2026-11-09 审计复核：测试锁定此语义，勿改）
 
 // ── 盘中/盘后相位（与 freshness.state 正交，不可互相替代）──────────────────────
 //

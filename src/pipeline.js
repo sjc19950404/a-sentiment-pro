@@ -138,7 +138,15 @@ export async function runLive() {
     // 读回来必须 decode：主档是码表压缩态，reasons 被换成了下标数组。
     // 直接喂给 caliberFromDay 会让 isRangeBoard 拿不到中文原文而静默失配——
     // 表现就是「区间榜被当成当日榜」，区间累计值混进日度因子。
-    try { history = decodeArchive(JSON.parse(readFileSync(dataPath, 'utf8'))).all_days || []; } catch { history = []; }
+    // 2026-11-09 全层审计(#1)：主档解析失败不允许静默清空历史——先备份现场并告警，再回落种子档
+    let rawArchive = null;
+    try { rawArchive = readFileSync(dataPath, 'utf8'); history = decodeArchive(JSON.parse(rawArchive)).all_days || []; }
+    catch (e) {
+      const bak = dataPath + '.corrupt-' + Date.now();
+      try { writeFileSync(bak, rawArchive ?? ''); } catch { /* 备份失败仅告警 */ }
+      console.warn('[merge] ⚠ 主档解析失败（现场已备份 ' + path.basename(bak) + '）：' + e.message);
+      history = [];
+    }
   }
   if (!history.length) {
     history = runOffline(path.join(ROOT, 'snapshot.html')).all_days || [];

@@ -15,7 +15,7 @@
 
 1. 把本仓库推到你 GitHub（或 fork 后改名 `a-sentiment-pro`）。
 2. 仓库 **Settings → Pages → Build and deployment → Source: GitHub Actions**（2026-10-06 部署治理切换：由 branch 直托管切到 Actions 单通道）。**切换是一次性手工一击**——切换前原生分支构建照常触发（任何 push 都构建、慢、且与 Actions 通道互打）；切换后原生停摆，部署只走 `deploy-pages.yml`。
-3. **Actions** 默认开启，交易日多轮自动跑（北京 18:30 首抓 / 21:00 补抓 / 次日 04:30 美股收盘档；盘中每 30 分钟轻量快照不碰档案），`daily.yml` 更新 `data/*.json` 并提交回 main——数据提交命中 `deploy-pages.yml` 的 paths（`data/**`）自动触发页面刷新。
+3. **Actions** 默认开启，交易日多轮自动跑（北京 18:30 首抓 / 21:00 补抓 / 次日 06:00 美股收盘档（冬令 EST 17:00 ET）；盘中每 30 分钟轻量快照不碰档案），`daily.yml` 更新 `data/*.json` 并提交回 main——数据提交命中 `deploy-pages.yml` 的 paths（`data/**`）自动触发页面刷新。
    - **部署单通道**（`deploy-pages.yml`）：paths 正向白名单 = web 面（`index.html`/`app.js`/`style.css`/`sw.js` + SW 外壳资产 + `data/**`）——纯文档变更（`**.md`、`docs/`、scripts/test 等）**不触发任何部署**。
    - **并发防覆盖**：`concurrency group "pages" + cancel-in-progress`——连续 push 只保留最后一次部署，进行中的旧部署就地取消（旧形态两通道互相覆盖的实录与决策见该文件头注）。
    - 首次会看到 `data/archive.json`（已随仓库附带演示种子数据），之后由 live 模式覆盖为真实数据。

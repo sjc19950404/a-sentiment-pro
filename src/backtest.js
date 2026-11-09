@@ -142,6 +142,10 @@ export function turnoverCost(pos, p = BASE_PARAMS) {
 // ────────────────────────── 绩效指标 ──────────────────────────
 export function metrics(strat, pos, opens, rf = 0) {
   const n = strat.length;
+  if (!n) {
+    // 2026-11-09 审计(#14)：空样本返回零值，防止 nav[-1]=undefined → NaN 污染排序与帕累托
+    return { total: 0, annual: 0, maxDd: 0, sharpe: 0, winRate: 0, profitRatio: 999, heldDays: 0, emptyRatio: 1, opens: 0, calmar: 999, sortino: 999, maxConsecLoss: 0, nav: [] };
+  }
   const nav = [];
   let acc = 1;
   for (const s of strat) { acc *= 1 + s; nav.push(acc); }
