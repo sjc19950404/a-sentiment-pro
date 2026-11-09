@@ -104,7 +104,11 @@ export function tradeReturns(trades, klineOf) {
   });
 }
 
-/** 净值曲线：主K线区间 [k0,k1] 逐日合成（持仓日组合收益 / 空仓日 0）。 */
+/** 净值曲线：主K线区间 [k0,k1] 逐日合成（持仓日组合收益 / 空仓日 0）。
+ *  C6（2026-11-09 审计修复）：exitAtOpen=true（次日开盘离场）时，离场日只吃
+ *  「base→开盘」一段，**不再计入开盘→收盘涨幅**——原实现离场日仍按 close 计，
+ *  导致 nav 总收益/annual/maxDd 与逐笔 tradeReturns（止于开盘价）口径矛盾。
+ *  exitAtOpen=false（收盘离场）路径数值逐位不变（历史回测不受影响）。 */
 export function buildNav(trades, klineOf, k0, k1) {
   const main = klineOf(null);
   const nav = [];
@@ -112,17 +116,21 @@ export function buildNav(trades, klineOf, k0, k1) {
   for (let t = k0; t <= k1; t++) {
     const tr = trades.find((x) => t >= x.entryK && t <= x.exitK);
     if (tr) {
+      // 离场价：exitAtOpen 时离场日按开盘计（与逐笔口径一致），否则按收盘
+      const exitPx = (kl) => (tr.exitAtOpen && t === tr.exitK ? kl[t].open : kl[t].close);
       let dayRet = 0;
       if (!tr.members) {
         const base = t === tr.entryK ? main[t].open : main[t - 1].close;
-        if (base > 0) dayRet = main[t].close / base - 1;
+        const px = exitPx(main);
+        if (base > 0 && px > 0) dayRet = px / base - 1;
       } else {
         const rets = [];
         for (const sym of tr.members) {
           const kl = klineOf(sym);
           if (!kl || !kl[t]) continue;
           const base = t === tr.entryK ? kl[t].open : (kl[t - 1] ? kl[t - 1].close : kl[t].open);
-          if (base > 0 && kl[t].close > 0) rets.push(kl[t].close / base - 1);
+          const px = exitPx(kl);
+          if (base > 0 && px > 0) rets.push(px / base - 1);
         }
         if (rets.length) dayRet = rets.reduce((a, b) => a + b, 0) / rets.length;
       }

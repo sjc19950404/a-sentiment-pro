@@ -101,6 +101,23 @@ test('bt: 净值曲线 —— 持仓日吃指数收益、空仓日走平', () =>
   for (let t = 5; t <= 9; t++) assert.equal(nav[t], nav[4]);
 });
 
+// C6（2026-11-09 审计修复）：exitAtOpen=true 时净值离场日口径与逐笔对齐
+test('C6: 净值离场日只吃 base→开盘一段；nav 复合恒等式与逐笔口径自洽', () => {
+  const k = mkK(10);
+  // exitAtOpen=true：nav[exitK] 应停在开盘价口径，不再含开盘→收盘段
+  const trades = [{ signalDay: '2026-01-01', entryK: 1, exitK: 4, exitAtOpen: true, members: null }];
+  const nav = buildNav(trades, () => k, 0, 9);
+  // 黄金恒等式：多日复合 = 末离场价/首入场价（无成本路径分解恒等）
+  assert.ok(Math.abs(nav[4] - k[4].open / k[1].open) < 1e-12,
+    `nav[4]=${nav[4]} 应= k[4].open/k[1].open=${k[4].open / k[1].open}（逐笔 tradeReturns 同式）`);
+  // 离场日后走平
+  for (let t = 5; t <= 9; t++) assert.equal(nav[t], nav[4]);
+  // exitAtOpen=false（收盘离场）：路径不变（历史回测回归保护）
+  const trades2 = [{ signalDay: '2026-01-01', entryK: 1, exitK: 4, exitAtOpen: false, members: null }];
+  const nav2 = buildNav(trades2, () => k, 0, 9);
+  assert.ok(Math.abs(nav2[4] - k[4].close / k[1].open) < 1e-12, '收盘离场口径不变');
+});
+
 test('bt: metrics —— 合成 +1%/日序列的年化/回撤/胜率', () => {
   const nav = Array.from({ length: 253 }, (_, i) => Math.pow(1.01, i));
   const m = metrics(nav, [0.01, 0.01, -0.005]);
