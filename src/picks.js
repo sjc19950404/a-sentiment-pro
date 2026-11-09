@@ -1,4 +1,5 @@
 import { seatsOf } from './seats.js';
+import { isLimitUp as isLimitUpOf, LIMIT_CALIBER } from './limit_caliber.js'; // C12 新口径（v5.2-pro-fix-limit）
 
 // 挂件二（2026-10-30·进攻）：游资席位追踪默认清单（顶级游资营业部关键词；speculative——seats.js 明确点名归属不可核验，仅作增强信号，绝不污染核心打分）
 const DEFAULT_HOTMONEY_SEAT_PATTERNS = ['华鑫', '拉萨', '章建平', '财通', '国泰君安', '东方财富', '方新侠', '赵老哥', '作手新一', '宁波', '溧阳路', '古北路', '金田路', '苏南帮', '上塘路', '佛山', '成都', '歌神', '炒新一族', '著名刺客', '小鳄鱼', '上海江苏路', '桑田路', '虹桥路', '溧阳'];
@@ -766,7 +767,8 @@ export function recommendPicks(day, ctx = {}) {
     const before = picks.length;
     picks = picks.filter((p) => {
       // 涨停股豁免：本策略候选即涨停突破股，不该被「防追高」闸误杀
-      const isLimitUp = p.isZt === true || (Number.isFinite(+p.changePct) && +p.changePct >= 9.9);
+      // C12（2026-11-09）：豁免判定改新口径分板块阈值（原 >=9.9 会把 20cm 票的非涨停急拉当成涨停豁免）
+      const isLimitUp = p.isZt === true || isLimitUpOf(p.changePct, { code: p.code, name: p.name });
       if (isLimitUp) return true;
       return !(Number.isFinite(+p.changePct) && +p.changePct >= gapMax);
     });

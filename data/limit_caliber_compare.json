@@ -1,0 +1,37 @@
+{
+ "kind": "limit-caliber-compare",
+ "generatedAt": "2026-11-09",
+ "calibers": {
+  "old": "v5.2-pro-old-limit(9.5)",
+  "fix": "v5.2-pro-fix-limit(分板块)"
+ },
+ "summary": {
+  "days": 16,
+  "stocks": 815,
+  "oldZtCount": 815,
+  "newZtCount": 815,
+  "oldOnly": 0,
+  "newOnly": 0,
+  "rule": {
+   "shrinkBoard": {
+    "old": 296,
+    "fix": 296
+   },
+   "lockedSeal": {
+    "old": 27,
+    "fix": 27
+   }
+  },
+  "byBoard": {
+   "主板": 704,
+   "创业": 69,
+   "科创": 32,
+   "北证": 10
+  }
+ },
+ "samples": {
+  "oldOnly": [],
+  "newOnly": []
+ },
+ "note": "对照工具输出：历史结论仍按旧口径解读；新信号/新日报按 fix 口径。ST 判定依赖池内名称可用性。"
+}
