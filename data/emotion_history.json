@@ -1,14 +1,14 @@
 {
  "meta": {
-  "generatedAt": "2026-11-06T13:17:25.706Z",
-  "days": 260,
-  "exact_days": 12,
+  "generatedAt": "2026-11-09T10:48:59.329Z",
+  "days": 261,
+  "exact_days": 13,
   "approx_days": 248,
   "rules": "src/emotion_cycle.js（冰点>退潮>高潮>主升>复苏>震荡；score 六项加权 0-100）",
   "caliber_note": "approx=true 日子来自 archive.json 汇总字段：broken_rate/hard_board_rate 为触板口径（≠池内 zbc 口径）、theme_concentration 为 null（主升不触发）；精确数据自 ztpool_history.json 积累之日起覆盖（接口只能取最近交易日）",
   "emotion_dist": {
    "震荡": 160,
-   "复苏": 58,
+   "复苏": 59,
    "冰点": 2,
    "退潮": 9,
    "高潮": 31
@@ -3866,7 +3866,8 @@
     "max_board": 7,
     "theme_concentration": 0.0769,
     "theme_top": "化学制品",
-    "hard_board_rate": 0.6154
+    "hard_board_rate": 0.6154,
+    "zbc_unknown": 0
    }
   },
   {
@@ -3880,7 +3881,8 @@
     "max_board": 8,
     "theme_concentration": 0.186,
     "theme_top": "电池",
-    "hard_board_rate": 0.4419
+    "hard_board_rate": 0.4419,
+    "zbc_unknown": 0
    }
   },
   {
@@ -3894,7 +3896,8 @@
     "max_board": 9,
     "theme_concentration": 0.087,
     "theme_top": "电池",
-    "hard_board_rate": 0.6232
+    "hard_board_rate": 0.6232,
+    "zbc_unknown": 0
    }
   },
   {
@@ -3924,7 +3927,8 @@
     "max_board": 11,
     "theme_concentration": 0.2295,
     "theme_top": "汽车零部",
-    "hard_board_rate": 0.5082
+    "hard_board_rate": 0.5082,
+    "zbc_unknown": 0
    }
   },
   {
@@ -4002,7 +4006,8 @@
     "max_board": 6,
     "theme_concentration": 0.0976,
     "theme_top": "专用设备",
-    "hard_board_rate": 0.5244
+    "hard_board_rate": 0.5244,
+    "zbc_unknown": 0
    }
   },
   {
@@ -4016,7 +4021,8 @@
     "max_board": 4,
     "theme_concentration": 0.1091,
     "theme_top": "汽车零部",
-    "hard_board_rate": 0.4
+    "hard_board_rate": 0.4,
+    "zbc_unknown": 0
    }
   },
   {
@@ -4030,7 +4036,8 @@
     "max_board": 5,
     "theme_concentration": 0.1951,
     "theme_top": "汽车零部",
-    "hard_board_rate": 0.3171
+    "hard_board_rate": 0.3171,
+    "zbc_unknown": 0
    }
   },
   {
@@ -4044,7 +4051,8 @@
     "max_board": 5,
     "theme_concentration": 0.1528,
     "theme_top": "汽车零部",
-    "hard_board_rate": 0.4722
+    "hard_board_rate": 0.4722,
+    "zbc_unknown": 0
    }
   },
   {
@@ -4058,7 +4066,8 @@
     "max_board": 4,
     "theme_concentration": 0.1026,
     "theme_top": "通用设备",
-    "hard_board_rate": 0.3846
+    "hard_board_rate": 0.3846,
+    "zbc_unknown": 0
    }
   },
   {
@@ -4120,7 +4129,8 @@
     "max_board": 3,
     "theme_concentration": 0.161,
     "theme_top": "半导体",
-    "hard_board_rate": 0.4492
+    "hard_board_rate": 0.4492,
+    "zbc_unknown": 0
    }
   },
   {
@@ -4134,7 +4144,8 @@
     "max_board": 4,
     "theme_concentration": 0.131,
     "theme_top": "光伏设备",
-    "hard_board_rate": 0.5714
+    "hard_board_rate": 0.5714,
+    "zbc_unknown": 0
    }
   },
   {
@@ -4148,7 +4159,23 @@
     "max_board": 5,
     "theme_concentration": 0.0938,
     "theme_top": "光伏设备",
-    "hard_board_rate": 0.3125
+    "hard_board_rate": 0.3125,
+    "zbc_unknown": 0
+   }
+  },
+  {
+   "date": "20261109",
+   "emotion": "复苏",
+   "score": 38,
+   "metrics": {
+    "limit_up_count": 54,
+    "continuous_count": 9,
+    "broken_rate": 0.537,
+    "max_board": 6,
+    "theme_concentration": 0.0926,
+    "theme_top": "通用设备",
+    "hard_board_rate": 0.463,
+    "zbc_unknown": 0
    }
   }
  ]

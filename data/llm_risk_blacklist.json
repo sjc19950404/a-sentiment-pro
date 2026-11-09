@@ -1,32 +1,14 @@
 {
  "kind": "llm-risk-blacklist",
  "version": 1,
- "asOfDate": "2026-11-06",
- "generatedAt": "2026-11-07T18:50:33.443+08:00",
+ "asOfDate": "2026-11-09",
+ "generatedAt": "2026-11-09T18:49:47.925+08:00",
  "model": "glm-4-flash",
  "source": "announcements-latest.json",
- "scanned": 18,
+ "scanned": 10,
  "universe": "ladder",
  "limit": 40,
- "blacklist": [
-  {
-   "code": "601599",
-   "name": "浙文影业",
-   "riskLevel": "medium",
-   "reasons": [
-    "股票交易异常波动暨风险提示公告",
-    "监管工作函"
-   ],
-   "evidence": "浙文影业：股票交易异常波动暨风险提示公告；浙文影业：关于浙文影业集团股份有限公司有关股价波动事项的监管工作函；浙文影业：股票交易风险提示性公告；浙文影业：股票交易风险提示性公告"
-  },
-  {
-   "code": "300237",
-   "name": "美晨科技",
-   "riskLevel": "medium",
-   "reasons": [],
-   "evidence": "ST美晨：关于撤销其他风险警示暨股票停复牌的公告"
-  }
- ],
+ "blacklist": [],
  "degraded": false,
  "note": "正向封禁黑名单：paper.js 建仓前查此表，命中即拒绝买入；空表 = 不封禁（fail-open，未跑/无源绝不误伤正常交易）。风险等级 high/medium 入列。结构性 ST 强制 high。"
 }

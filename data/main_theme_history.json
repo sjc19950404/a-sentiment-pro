@@ -1,7 +1,7 @@
 {
  "meta": {
-  "generatedAt": "2026-11-06T13:17:26.040Z",
-  "days": 16,
+  "generatedAt": "2026-11-09T10:48:59.656Z",
+  "days": 17,
   "theme_days": 15,
   "strength_dist": {
    "强主线": 4,
@@ -362,6 +362,12 @@
      "is_continuous": false
     }
    ],
+   "rotation": false,
+   "prev_main_theme": "光伏设备"
+  },
+  {
+   "date": "20261109",
+   "main_themes": [],
    "rotation": false,
    "prev_main_theme": "光伏设备"
   }

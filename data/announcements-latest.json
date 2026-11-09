@@ -1,71 +1,46 @@
 {
- "date": "2026-11-06",
+ "date": "2026-11-09",
  "source": "sina-bulletin",
- "fetchedAt": "2026-11-07T18:50:11.111+08:00",
- "codes": 32,
- "count": 18,
+ "fetchedAt": "2026-11-09T18:49:32.896+08:00",
+ "codes": 40,
+ "count": 10,
  "announcements": {
-  "300237": "ST美晨：关于撤销其他风险警示暨股票停复牌的公告",
-  "300686": "智动力：股票交易异常波动公告",
-  "301697": "贝特利：关于股票交易异常波动的公告",
-  "600261": "阳光照明：股票交易异常波动的公告",
-  "600327": "大东方：2026年第一次临时股东会会议资料",
-  "600371": "万向德农：股票交易异常波动公告",
-  "601599": "浙文影业：股票交易异常波动暨风险提示公告；浙文影业：关于浙文影业集团股份有限公司有关股价波动事项的监管工作函；浙文影业：股票交易风险提示性公告；浙文影业：股票交易风险提示性公告",
-  "603366": "日出东方：关于召开2026年第三季度业绩说明会的公告",
-  "603381": "永臻股份：股票交易异常波动暨风险提示公告；永臻股份：股票交易异常波动公告",
-  "603657": "春光科技：股票交易异常波动公告；春光科技：2026年第二次临时股东会会议资料",
-  "605339": "南侨食品：关于子公司相关税务事项处理的公告；南侨食品：股票交易异常波动公告",
-  "002088": "鲁阳节能：股票交易异常波动暨风险提示公告",
-  "002578": "闽发铝业：股票交易异常波动公告",
-  "002388": "新亚制程：关于公司股票交易异常波动的公告；新亚制程：关于为子公司提供担保的公告；新亚制程：关于向银行申请综合授信并提供担保的公告",
-  "002086": "东方海洋：上市公司独立董事候选人声明与承诺-文钊；东方海洋：上市公司独立董事提名人声明与承诺-文钊；东方海洋：上市公司独立董事提名人声明与承诺-何华梁；东方海洋：上市公司独立董事候选人声明与承诺-何华梁；东方海洋：第八届董事会第三十二次会议决议公告；东方海洋：关于董事会同意股东提请召开临时股东会的公告；东方海洋：股票交易异常波动暨风险提示公告",
-  "002929": "润建股份：关于股票交易异常波动的公告；润建股份：关于为参股公司提供担保的进展公告",
-  "000595": "新能股份：关于灵武马家滩和盐池高沙窝储能电站项目并网运行的公告",
-  "002712": "思美传媒：关于为子公司提供担保的进展公告"
+  "301718": "通则康威：关于募集资金专户开立并签署三方监管协议的公告",
+  "600278": "东方创业：股票交易异常波动公告；东方创业：关于召开2026年半年度暨第三季度业绩说明会的公告",
+  "600327": "大东方：股票交易异常波动公告",
+  "600776": "东方通信：2026年第三次临时股东会会议资料",
+  "601188": "龙江交通：股票交易异常波动公告",
+  "603366": "日出东方：股票交易异常波动公告",
+  "603920": "世运电路：关于2026年第二期以集中竞价交易方式回购股份方案的公告；世运电路：第五届董事会第十九次会议决议公告",
+  "688585": "上纬新材：关于业务进展的公告",
+  "002889": "东方嘉盛：股票交易异常波动公告",
+  "001379": "腾达科技：关于变更保荐代表人的公告"
  },
  "details": [
   {
-   "code": "300237",
-   "name": "美晨科技",
+   "code": "301718",
+   "name": "通则康威",
    "announcements": [
     {
-     "title": "ST美晨：关于撤销其他风险警示暨股票停复牌的公告",
-     "date": "2026-11-05",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=300237&id=12692084"
+     "title": "通则康威：关于募集资金专户开立并签署三方监管协议的公告",
+     "date": "2026-11-10",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=301718&id=12697534"
     }
    ]
   },
   {
-   "code": "300686",
-   "name": "智动力",
+   "code": "600278",
+   "name": "东方创业",
    "announcements": [
     {
-     "title": "智动力：股票交易异常波动公告",
-     "date": "2026-11-06",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=300686&id=12695846"
-    }
-   ]
-  },
-  {
-   "code": "301697",
-   "name": "贝特利",
-   "announcements": [
+     "title": "东方创业：股票交易异常波动公告",
+     "date": "2026-11-10",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600278&id=12697219"
+    },
     {
-     "title": "贝特利：关于股票交易异常波动的公告",
-     "date": "2026-11-06",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=301697&id=12693265"
-    }
-   ]
-  },
-  {
-   "code": "600261",
-   "name": "阳光照明",
-   "announcements": [
-    {
-     "title": "阳光照明：股票交易异常波动的公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600261&id=12694595"
+     "title": "东方创业：关于召开2026年半年度暨第三季度业绩说明会的公告",
+     "date": "2026-11-10",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600278&id=12696569"
     }
    ]
   },
@@ -74,46 +49,31 @@
    "name": "大东方",
    "announcements": [
     {
-     "title": "大东方：2026年第一次临时股东会会议资料",
-     "date": "2026-11-06",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600327&id=12692462"
+     "title": "大东方：股票交易异常波动公告",
+     "date": "2026-11-10",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600327&id=12697571"
     }
    ]
   },
   {
-   "code": "600371",
-   "name": "万向德农",
+   "code": "600776",
+   "name": "东方通信",
    "announcements": [
     {
-     "title": "万向德农：股票交易异常波动公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600371&id=12695493"
+     "title": "东方通信：2026年第三次临时股东会会议资料",
+     "date": "2026-11-10",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600776&id=12696666"
     }
    ]
   },
   {
-   "code": "601599",
-   "name": "浙文影业",
+   "code": "601188",
+   "name": "龙江交通",
    "announcements": [
     {
-     "title": "浙文影业：股票交易异常波动暨风险提示公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=601599&id=12695826"
-    },
-    {
-     "title": "浙文影业：关于浙文影业集团股份有限公司有关股价波动事项的监管工作函",
-     "date": "2026-11-06",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=601599&id=12695905"
-    },
-    {
-     "title": "浙文影业：股票交易风险提示性公告",
-     "date": "2026-11-06",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=601599&id=12693115"
-    },
-    {
-     "title": "浙文影业：股票交易风险提示性公告",
-     "date": "2026-11-05",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=601599&id=12691332"
+     "title": "龙江交通：股票交易异常波动公告",
+     "date": "2026-11-10",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=601188&id=12697814"
     }
    ]
   },
@@ -122,179 +82,58 @@
    "name": "日出东方",
    "announcements": [
     {
-     "title": "日出东方：关于召开2026年第三季度业绩说明会的公告",
-     "date": "2026-11-06",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603366&id=12692528"
+     "title": "日出东方：股票交易异常波动公告",
+     "date": "2026-11-10",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603366&id=12697725"
     }
    ]
   },
   {
-   "code": "603381",
-   "name": "永臻股份",
+   "code": "603920",
+   "name": "世运电路",
    "announcements": [
     {
-     "title": "永臻股份：股票交易异常波动暨风险提示公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603381&id=12695838"
+     "title": "世运电路：关于2026年第二期以集中竞价交易方式回购股份方案的公告",
+     "date": "2026-11-09",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603920&id=12696331"
     },
     {
-     "title": "永臻股份：股票交易异常波动公告",
-     "date": "2026-11-05",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603381&id=12691427"
+     "title": "世运电路：第五届董事会第十九次会议决议公告",
+     "date": "2026-11-09",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603920&id=12696330"
     }
    ]
   },
   {
-   "code": "603657",
-   "name": "春光科技",
+   "code": "688585",
+   "name": "上纬新材",
    "announcements": [
     {
-     "title": "春光科技：股票交易异常波动公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603657&id=12694610"
-    },
-    {
-     "title": "春光科技：2026年第二次临时股东会会议资料",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603657&id=12694609"
+     "title": "上纬新材：关于业务进展的公告",
+     "date": "2026-11-09",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=688585&id=12696266"
     }
    ]
   },
   {
-   "code": "605339",
-   "name": "南侨食品",
+   "code": "002889",
+   "name": "东方嘉盛",
    "announcements": [
     {
-     "title": "南侨食品：关于子公司相关税务事项处理的公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605339&id=12695516"
-    },
-    {
-     "title": "南侨食品：股票交易异常波动公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605339&id=12695515"
+     "title": "东方嘉盛：股票交易异常波动公告",
+     "date": "2026-11-10",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002889&id=12697479"
     }
    ]
   },
   {
-   "code": "002088",
-   "name": "鲁阳节能",
+   "code": "001379",
+   "name": "腾达科技",
    "announcements": [
     {
-     "title": "鲁阳节能：股票交易异常波动暨风险提示公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002088&id=12695797"
-    }
-   ]
-  },
-  {
-   "code": "002578",
-   "name": "闽发铝业",
-   "announcements": [
-    {
-     "title": "闽发铝业：股票交易异常波动公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002578&id=12695906"
-    }
-   ]
-  },
-  {
-   "code": "002388",
-   "name": "新亚制程",
-   "announcements": [
-    {
-     "title": "新亚制程：关于公司股票交易异常波动的公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002388&id=12696169"
-    },
-    {
-     "title": "新亚制程：关于为子公司提供担保的公告",
-     "date": "2026-11-06",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002388&id=12693479"
-    },
-    {
-     "title": "新亚制程：关于向银行申请综合授信并提供担保的公告",
-     "date": "2026-11-06",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002388&id=12693478"
-    }
-   ]
-  },
-  {
-   "code": "002086",
-   "name": "东方海洋",
-   "announcements": [
-    {
-     "title": "东方海洋：上市公司独立董事候选人声明与承诺-文钊",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002086&id=12696057"
-    },
-    {
-     "title": "东方海洋：上市公司独立董事提名人声明与承诺-文钊",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002086&id=12696056"
-    },
-    {
-     "title": "东方海洋：上市公司独立董事提名人声明与承诺-何华梁",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002086&id=12696055"
-    },
-    {
-     "title": "东方海洋：上市公司独立董事候选人声明与承诺-何华梁",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002086&id=12696054"
-    },
-    {
-     "title": "东方海洋：第八届董事会第三十二次会议决议公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002086&id=12696053"
-    },
-    {
-     "title": "东方海洋：关于董事会同意股东提请召开临时股东会的公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002086&id=12696052"
-    },
-    {
-     "title": "东方海洋：股票交易异常波动暨风险提示公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002086&id=12696051"
-    }
-   ]
-  },
-  {
-   "code": "002929",
-   "name": "润建股份",
-   "announcements": [
-    {
-     "title": "润建股份：关于股票交易异常波动的公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002929&id=12696037"
-    },
-    {
-     "title": "润建股份：关于为参股公司提供担保的进展公告",
-     "date": "2026-11-05",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002929&id=12691880"
-    }
-   ]
-  },
-  {
-   "code": "000595",
-   "name": "新能股份",
-   "announcements": [
-    {
-     "title": "新能股份：关于灵武马家滩和盐池高沙窝储能电站项目并网运行的公告",
-     "date": "2026-11-05",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000595&id=12691844"
-    }
-   ]
-  },
-  {
-   "code": "002712",
-   "name": "思美传媒",
-   "announcements": [
-    {
-     "title": "思美传媒：关于为子公司提供担保的进展公告",
-     "date": "2026-11-07",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002712&id=12695844"
+     "title": "腾达科技：关于变更保荐代表人的公告",
+     "date": "2026-11-10",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=001379&id=12696822"
     }
    ]
   }
