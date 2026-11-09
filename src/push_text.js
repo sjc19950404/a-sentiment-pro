@@ -241,11 +241,15 @@ export function renderPushText(report) {
         const oe = p.overnight_exposure || {};
         // 仅当 usReady 显式为 false（快照判定美股未收盘）才改显「美股未收盘·不取盘中」；
         // 字段缺失（老档/旧 fixture）按原行为聚合展示，避免误报。
-        if (oe.usReady !== false) {
+        // C2（2026-11-09 审计）：盘前 usReady=false 但 prevSessionClose=true 时，
+        //   数值是**上一交易日收盘**（quote 层已保证 state=ok 才给值）——照常展示并标「昨收」，
+        //   不再一律改显「美股未收盘·不取盘中」（否则 A 股盘后报告的外围永远空白）。
+        if (oe.usReady !== false || oe.usPrevSessionClose) {
           const us = oe.us_close || {}, cn = oe.cn_overnight || {};
           if ([us.dji, us.spx, us.ixic, cn.hxc, cn.fxi, oe.cnh_chgPct].some((v) => v != null)) {
             lines.push(`外围收盘: 道 ${pct(us.dji)} · 标普 ${pct(us.spx)} · 纳指 ${pct(us.ixic)}`
-              + ` · 金龙 ${pct(cn.hxc)} · 中国大盘ETF ${pct(cn.fxi)} · 离岸人民币 ${pct(oe.cnh_chgPct)}`);
+              + ` · 金龙 ${pct(cn.hxc)} · 中国大盘ETF ${pct(cn.fxi)} · 离岸人民币 ${pct(oe.cnh_chgPct)}`
+              + (oe.usReady === false ? '（美股为上一交易日收盘·今日未收盘）' : ''));
           }
         } else {
           lines.push(`外围收盘: 美股未收盘·不取盘中${oe.usReason ? `（${oe.usReason}）` : ''}`);

@@ -319,6 +319,17 @@ test('★ 回归②：美东 16:30 起才就绪（收盘 16:00 + 30 分钟结算
   assert.equal(usSessionReadiness(new Date('2026-10-01T20:30:00Z')).ready, true);
 });
 
+// C2（2026-11-09 审计）：A 股 EOD（北京 18:30 = 美东 05:00 EST/06:00 EDT）恒在盘前，
+//   原文案「此刻美股无收盘价」与事实相反（源给的是上一交易日收盘，watch 层也已按 state=ok 使用）。
+test('C2：盘前标记 prevSessionClose（昨收可用）而 ready 语义不变；盘中/缓冲不标记', () => {
+  const pre = usSessionReadiness(new Date('2026-11-09T07:00:00Z')); // 北京 15:00 = 美东 02:00 盘前
+  assert.equal(pre.ready, false, 'ready 仍 false（今日收盘未就绪）');
+  assert.equal(pre.prevSessionClose, true, '标记：昨收可用');
+  assert.match(pre.reason, /上一交易日收盘/);
+  // 盘中（13:00 ET）不标记：盘中价确实不可当收盘用
+  assert.notEqual(usSessionReadiness(new Date('2026-11-09T18:00:00Z')).prevSessionClose, true);
+});
+
 test('★ 回归②：盘中（14:00 ET）也未就绪 —— 盘中价不是收盘价', () => {
   const r = usSessionReadiness(new Date('2026-10-01T18:00:00Z'));
   assert.equal(r.ready, false);

@@ -200,7 +200,16 @@ export function usSessionReadiness(date) {
   const mm = String(etMin % 60).padStart(2, '0');
   const etText = `${hh}:${mm} ET`;
   if (etMin < 9 * 60 + 30) {
-    return { ready: false, etMin, etText, reason: `美东 ${etText} 盘前（09:30 才开盘），此刻美股无收盘价` };
+    // 2026-11-09 C2（审计修复）：盘前不是「没有收盘价」——源给的是**上一交易日收盘**
+    //   （实测 state=ok、sessionDate=上一交易日），只是今日收盘要等 16:30 ET。
+    //   原文案让 A 股盘后报告（北京 18:30 = 美东 05:00 EST/06:00 EDT，恒在盘前）
+    //   把已可用的昨收说成「无收盘价」，与 watch 层实际已用这些数判定相矛盾。
+    //   ready 仍为 false（语义保持＝「今日收盘未就绪」）；10-01 占位平盘事故防线不动：
+    //   占位价在 quote 层以 state=preopen/no_trade 拦下，不进数值。
+    return {
+      ready: false, etMin, etText, prevSessionClose: true,
+      reason: `美东 ${etText} 盘前（09:30 才开盘）——源给的是上一交易日收盘，可作「上一交易日收盘」用；今日收盘需等 16:30 ET`,
+    };
   }
   if (etMin < US_CLOSE_ET_MIN) {
     return { ready: false, etMin, etText, reason: `美东 ${etText} 盘中（16:00 才收盘），此刻只是盘中价` };
@@ -450,6 +459,8 @@ export function buildGlobalSnapshot(o = {}) {
       // 美股抓取时机（可核验：et 时刻 + 是否已收盘 + 未就绪原因）
       usReadiness: {
         ready: readiness.ready,
+        // C2：盘前=true，表示「ready=false 的原因是今日收盘未到，但昨收可用」
+        prevSessionClose: !!readiness.prevSessionClose,
         etText: readiness.etText,
         reason: readiness.reason,
         readyAfterEt: '16:30 ET（收盘 + 30 分钟结算缓冲）= 北京次日 04:30（夏令时）/ 05:30（冬令时）',

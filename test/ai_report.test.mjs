@@ -154,6 +154,7 @@ test('盘前报告：prev_nav 派生 / 隔夜敞口 / ATR 系结构性 null', ()
     cnh_chgPct: null,
     usReady: false,                                     // fixture 无 usReadiness.ready → 守卫默认 false
     usReason: null,
+    usPrevSessionClose: false,                          // C2（2026-11-09）：盘前昨收可用标记，fixture 未提供→false
   });
   assert.equal(r.payload.positions.poolPos, 0.5);
   for (const k of ['key_levels', 'events_today', 'atr', 'suggested_step']) assert.equal(r.payload[k], null, `${k} 恒 null`);

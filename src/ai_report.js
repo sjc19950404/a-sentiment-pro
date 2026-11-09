@@ -478,6 +478,11 @@ export function generatePreMarket(input, opts = {}) {
       && input.global.meta.usReadiness.ready),
     usReason: (input && input.global && input.global.meta && input.global.meta.usReadiness
       && input.global.meta.usReadiness.reason) || null,
+    // C2（2026-11-09 审计）：盘前时段（usReady=false）若标记 prevSessionClose，
+    //   说明数值是「上一交易日收盘」而非盘中价——渲染端据此展示并标注，不再一律改显
+    //   「美股未收盘·不取盘中」（那会让 A 股盘后报告的外围恒为空白）。
+    usPrevSessionClose: !!(input && input.global && input.global.meta && input.global.meta.usReadiness
+      && input.global.meta.usReadiness.prevSessionClose),
   };
   payload.key_levels = null;
   payload.events_today = null;
