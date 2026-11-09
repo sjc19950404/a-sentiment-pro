@@ -49,15 +49,16 @@ import {
 import { reviewAccount } from '../src/paper_review.js';
 import { glmBuyGuard } from '../src/glm_guard.js';
 import { pushReports, buildSignalSyncReports } from '../src/ai_report_push.js';
-import config from '../src/config.js';
+import config, { resolveAutoSinglePct } from '../src/config.js';
 
 const ACCOUNT_FILE = new URL('../data/paper/account.json', import.meta.url);
 const REVIEW_FILE = new URL('../data/paper/review-latest.json', import.meta.url);
 const TOP_N = Math.max(1, Math.floor(Number(process.env.PAPER_AUTO_TOPN) || 3));
-// 单笔最大仓位：优先读控制台参数（config.backtest.maxPos），允许 PAPER_AUTO_PCT 环境变量覆盖；兜底 0.10
-const PER_POS_PCT = Number.isFinite(+process.env.PAPER_AUTO_PCT) && +process.env.PAPER_AUTO_PCT > 0
-  ? +process.env.PAPER_AUTO_PCT
-  : (config.backtest && Number.isFinite(+config.backtest.maxPos) ? +config.backtest.maxPos : 0.10);
+// 单票目标仓位（2026-11-09 修复）：原实现读 config.backtest.maxPos（=1，回测满仓语义），
+// 导致每笔按 ~100% 净值下单（实测 999,645.58 元 = 99.98%），全被 riskGuard 的
+// 「单日仓位变动 >20%」硬拒 → 决策层绿勾、执行层全 blocked、13 个交易日零成交。
+// 现走 resolveAutoSinglePct()：env PAPER_AUTO_PCT > config.paper.autoSinglePct > 0.10。
+const PER_POS_PCT = resolveAutoSinglePct();
 const RESPECT_REGIME = (process.env.PAPER_AUTO_RESPECT_REGIME ?? '1') !== '0';
 const RESTRICTIVE_REGIME = new Set(['shift', 'ebb', 'ice']);
 const FORCE_TRADE = process.argv.includes('--force-trade');

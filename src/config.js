@@ -183,6 +183,8 @@ const TRAIN = cfg.params.train;         // 实验区（可改；晋升须过样�
 // 锁定），故薄壳不会成为第二份口径——「导出 === config.json」在值层面依然成立。
 const out = { ...cfg };
 out.params = { live: LIVE, train: TRAIN, governance: cfg.params.governance };
+// 实盘执行配置（非策略参数，不进 params.live 冻结区/治理门禁）
+out.paper = cfg.paper || { autoSinglePct: 0.1 };
 out.weights = LIVE.weights;
 out.lookback = LIVE.lookback;
 out.backtest = {
@@ -206,5 +208,25 @@ out.mainLine = cfg.mainLine || {
   lookback_days: 60, sigma_multiplier: 1.0, min_sample_days: 20,
   fixedFallback: { up_count_threshold: 6, density_threshold: 0.1 },
 };
+
+/**
+ * 实盘自动建仓「单票目标仓位」解析（2026-11-09 修：引擎 13 个交易日零成交的根因）。
+ *
+ * 历史坑：scripts/paper_daily.mjs 曾直接读 `config.backtest.maxPos` 当单票比例，
+ *   但那是**回测满仓语义**（backtest_params.js：v1 单仓位 = 1）。结果每笔都按
+ *   100% 净值下单（实测 999,645.58 元 = 99.98%），立刻撞 riskGuard 的
+ *   「单日仓位变动 >20%」硬拒 → 决策层绿勾、执行层全 blocked、账户 13 个交易日
+ *   零持仓（备忘 29612818「风控闸看客化」的实证）。
+ *
+ * 正确优先级：env PAPER_AUTO_PCT > config.paper.autoSinglePct > 0.10。
+ * **禁止回读 backtest.maxPos**（语义不同），回归保护见 test/config.test.mjs。
+ */
+export function resolveAutoSinglePct(env = process.env, cfg = out) {
+  const e = +env.PAPER_AUTO_PCT;
+  if (Number.isFinite(e) && e > 0) return Math.min(e, 1);
+  const c = +(((cfg || {}).paper || {}).autoSinglePct);
+  if (Number.isFinite(c) && c > 0) return Math.min(c, 1);
+  return 0.10;
+}
 
 export default out;

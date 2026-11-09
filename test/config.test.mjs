@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import config from '../src/config.js';
+import config, { resolveAutoSinglePct } from '../src/config.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (f) => readFileSync(join(ROOT, f), 'utf8');
@@ -111,4 +111,21 @@ test('config: 前端手抄副本与 JSON 一致（降级路径允许存在，但
   assert.ok(hm, 'paper_ui.js 缺 HOLIDAYS（若已删除请同步更新本测试）');
   const hset = new Set(hm[1].split(',').map((s) => s.trim().replace(/['"]/g, '')).filter(Boolean));
   assert.deepEqual([...hset].sort(), [...config.manualHolidays].sort(), 'paper_ui.js HOLIDAYS 与 config.manualHolidays 漂移');
+});
+
+// 2026-11-09：实盘单票目标仓位解析（引擎 13 日零成交事故的回归保护）
+test('resolveAutoSinglePct：env > config.paper > 0.10 兜底；严禁回读 backtest.maxPos', () => {
+  // env 优先
+  assert.equal(resolveAutoSinglePct({ PAPER_AUTO_PCT: '0.2' }), 0.2);
+  // config.paper.autoSinglePct（默认配置=0.1）
+  assert.equal(resolveAutoSinglePct({}, { paper: { autoSinglePct: 0.15 } }), 0.15);
+  // 兜底
+  assert.equal(resolveAutoSinglePct({}, {}), 0.10);
+  assert.equal(resolveAutoSinglePct({}, null), 0.10);
+  // ★ 事故回归保护：即使 cfg 里 backtest.maxPos=1（回测满仓语义），也不得被当成单票比例
+  assert.equal(resolveAutoSinglePct({}, { backtest: { maxPos: 1 } }), 0.10,
+    'backtest.maxPos=1 曾致每笔 99.98% 被风控全拒、13 日零持仓——该参数与单票比例语义不同');
+  // 非法值不放大仓位
+  assert.equal(resolveAutoSinglePct({ PAPER_AUTO_PCT: '-1' }, { paper: { autoSinglePct: -2 } }), 0.10);
+  assert.equal(resolveAutoSinglePct({ PAPER_AUTO_PCT: '5' }), 1, '上限夹到 1');
 });
