@@ -2,6 +2,19 @@
  "schema_version": "1.0",
  "pushed": [
   {
+   "fingerprint": "e17bae6f0953cd23_8c0",
+   "type": "intraday",
+   "date": "2026-11-09",
+   "verified": {
+    "checked_at": "14:05",
+    "snapshot_at": "2026-11-09 14:05",
+    "removed": 0,
+    "degraded": false,
+    "skipped": true
+   },
+   "pushed_at": "2026-11-09T06:05:05.485Z"
+  },
+  {
    "fingerprint": "78850e7274646338_7fe",
    "type": "weekly",
    "date": "2026-11-06",
@@ -790,56 +803,6 @@
    "type": "pre_market",
    "date": "2026-10-08",
    "pushed_at": "2026-10-12T01:44:40.238Z"
-  },
-  {
-   "fingerprint": "775b7d5abd890877",
-   "type": "post_market",
-   "date": "2026-10-08",
-   "pushed_at": "2026-10-09T23:29:11.020Z"
-  },
-  {
-   "fingerprint": "3e8fba4c2de4cdef",
-   "type": "intraday",
-   "date": "2026-10-09",
-   "verified": {
-    "checked_at": "03:38",
-    "snapshot_at": "2026-10-09 14:53",
-    "removed": 0,
-    "degraded": false,
-    "skipped": false
-   },
-   "pushed_at": "2026-10-09T19:38:51.000Z"
-  },
-  {
-   "fingerprint": "0b4345b2204f78ba",
-   "type": "intraday",
-   "date": "2026-10-09",
-   "verified": {
-    "checked_at": "01:23",
-    "snapshot_at": "2026-10-09 14:53",
-    "removed": 10,
-    "degraded": false,
-    "skipped": true
-   },
-   "pushed_at": "2026-10-09T17:23:59.490Z"
-  },
-  {
-   "fingerprint": "04ee43751d0eb207",
-   "type": "pre_market",
-   "date": "2026-10-08",
-   "pushed_at": "2026-10-09T07:18:41.013Z"
-  },
-  {
-   "fingerprint": "27fbf9d0de22a7fe",
-   "type": "intraday",
-   "date": "2026-10-09",
-   "pushed_at": "2026-10-09T07:18:35.779Z"
-  },
-  {
-   "fingerprint": "c89b014999d17309",
-   "type": "intraday",
-   "date": "2026-10-09",
-   "pushed_at": "2026-10-09T05:14:43.499Z"
   }
  ]
 }
