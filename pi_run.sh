@@ -22,6 +22,13 @@ LOG_FILE="${LOG_DIR}/run.log"
 log() { local m="$(date '+%F %T %Z') [pi_run:$1] $*"; [ -t 1 ] && echo "$m"; printf '%s\n' "$m" >> "$LOG_FILE"; }
 alert() { [ -z "${OPS_WEBHOOK:-}" ] && return 0; curl -s -X POST -H 'Content-Type: application/json' -d "{\"msgtype\":\"text\",\"text\":{\"content\":\"[Pi][$(hostname)] $1\"}}" "$OPS_WEBHOOK" >/dev/null 2>&1 || true; }
 
+# 2026-11-09 修复：pre-push 推送确认闸（2026-11-07 装）注释明确 cron 自动化链
+#    走 ASPRO_AUTO_PUSH=1 免交互通道，但 crontab 与本脚本均未设置 → 11-07 起自动推送
+#    全部被闸拦截（11-09 04:30 企微告警的病根）。在此统一补上：本脚本只承载机器
+#    自动链，人工终端推送仍走 /dev/tty 交互确认，闸的防护边界不变。
+#    ⚠ 本文件为 git 跟踪文件且 pi_run 每次运行 reset --hard origin/main——
+#    对本文件的任何修改必须立即 commit+push，否则下个 tick 会被静默还原。
+export ASPRO_AUTO_PUSH=1
 MODE="${1:-eod}"
 cd "$REPO_DIR" || { alert "pi_run: 仓库不存在 $REPO_DIR"; exit 1; }
 [ -f .env ] && { set -a; . ./.env; set +a; }   # 仅取 OPS_WEBHOOK（企微 key，非 repo 凭据）
@@ -121,6 +128,14 @@ case "$MODE" in
     #    系统禁止自动修改规则；告警仅供人工评估，独立风控闸口（各 gate/锚点门禁）
     #    不受其影响。失败 best-effort 不拦 EOD。
     node scripts/factor_health.mjs 2>/dev/null || log "因子健康度仪表失败（best-effort，继续）"
+    # 回场研究采集管道（2026-11-09 建）：成交额250日分位+20日波动分位+指数位置分位，
+    #    自包含东财指数日K全量重建（幂等），供回场触发日直接使用完整历史；
+    #    只读只留存不产生信号，回场触发判定仍为人工/事件信号。
+    node scripts/market_context_history.mjs 2>/dev/null || log "市场背景采集失败（best-effort，继续）"
+    # ⑧c 人机对照基线（2026-11-09 建）：同 GLM 标记批改口径攒"人的盘感"样本，
+    #    人工每天在 data/human_baseline.json 给 guess 填 cont/break（约30秒），
+    #    快照+T+1自动批改全自动；与 GLM 命中率双份对照。
+    node scripts/dragon_human_baseline.mjs 2>/dev/null || log "人机基线侧车失败（best-effort，继续）"
     node scripts/push_eod.mjs 2>/dev/null || true
     # 2026-10-27 用户指令：EOD 结束后把本地 ui/kline + 聚合侧车档增量同步到 Cloudflare R2（S3 协议），
     #   供 Pages 终端经 terminal.js durl() 改道 R2 公共地址拉取（config.json dataOrigin 已切到 R2）。
@@ -140,7 +155,7 @@ case "$MODE" in
   candidates)
     node scripts/fetch_global.mjs 2>>"$LOG_FILE" || log "外围抓取失败（best-effort，继续）"
     # 2026-10-28 紧急修复：推送前强制刷新实时盘中快照（涨跌家数/涨停池），争取推送那一刻最新；
-    #   即便失败也不阻断推送——freshIntradayMarket 闸门会让陈旧值“暂不可用”而非糊弄老板。
+    #   即便失败也不阻断推送——freshIntradayMarket 闸门会让陈旧值"暂不可用"而非糊弄老板。
     node scripts/snapshot_intraday.mjs 2>>"$LOG_FILE" || log "盘中实时快照失败（best-effort，按滞后处理）"
     node scripts/build_ai_report.mjs --type intraday 2>/dev/null || true
     node scripts/push_ai_report.mjs --latest intraday 2>/dev/null || true
