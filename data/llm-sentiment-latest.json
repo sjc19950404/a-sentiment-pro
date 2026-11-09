@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-11-06",
- "generatedAt": "2026-11-07T18:38:29.132+08:00",
+ "asOfDate": "2026-11-09",
+ "generatedAt": "2026-11-09T18:38:03.649+08:00",
  "model": "glm-4-flash",
- "sentiment": -0.5,
+ "sentiment": 0.5,
  "confidence": 0.8,
- "reason": "市场整体亏钱效应显著，涨停数量少于跌停，炸板率较高，强势股多为新晋题材和扭亏为盈个股，市场情绪偏负面。",
+ "reason": "市场整体情绪偏向中性，涨停数量较多，炸板率较高，题材动量新晋与延续并存，强势股表现活跃。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "新赛股份",
+   "target": "云煤能源",
    "tone": "positive",
-   "note": "三季报扭亏，带动市场情绪"
-  },
-  {
-   "type": "高管变动",
-   "target": "无",
-   "tone": "neutral",
-   "note": "无特别影响市场的事件"
-  },
-  {
-   "type": "减持",
-   "target": "无",
-   "tone": "neutral",
-   "note": "无特别影响市场的事件"
+   "note": "业绩增长带动股价上涨"
   },
   {
    "type": "政策",
-   "target": "无",
-   "tone": "neutral",
-   "note": "无特别影响市场的事件"
+   "target": "算力服务",
+   "tone": "positive",
+   "note": "政策支持算力服务发展"
+  },
+  {
+   "type": "高管变动",
+   "target": "上海九百",
+   "tone": "positive",
+   "note": "公司高管变动可能带来新的发展机遇"
   },
   {
    "type": "行业催化",
-   "target": "智算业务",
+   "target": "锂电池",
    "tone": "positive",
-   "note": "新晋题材智算业务带动市场关注"
+   "note": "锂电池行业持续受到关注"
+  },
+  {
+   "type": "减持",
+   "target": "红太阳",
+   "tone": "negative",
+   "note": "减持可能引发市场担忧"
   },
   {
    "type": "行业催化",
-   "target": "IP运营",
+   "target": "AI算力",
    "tone": "positive",
-   "note": "新晋题材IP运营吸引资金流入"
+   "note": "AI算力行业持续受到关注"
+  },
+  {
+   "type": "退潮",
+   "target": "精密零组件",
+   "tone": "negative",
+   "note": "精密零组件行业可能面临退潮"
   },
   {
    "type": "行业催化",
-   "target": "AI语料",
+   "target": "冰雪经济",
    "tone": "positive",
-   "note": "新晋题材AI语料受到市场追捧"
-  },
-  {
-   "type": "行业催化",
-   "target": "数据库",
-   "tone": "positive",
-   "note": "新晋题材数据库表现活跃"
+   "note": "冰雪经济成为市场热点"
   }
  ],
  "inputDigest": {
-  "themes": 50,
+  "themes": 69,
   "hotListed": 15,
-  "ztCount": 32,
-  "emotionValue": 34.6,
-  "painVerdict": "亏钱效应显著（昨涨停今日翻绿 64%、高位板晋级失败 67%，追高者整体受损）"
+  "ztCount": 54,
+  "emotionValue": 68.3,
+  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 34%、高位板晋级失败 82%，赚钱效应占优）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }
