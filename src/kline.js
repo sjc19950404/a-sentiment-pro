@@ -39,11 +39,47 @@ async function fetchSinaRows(sym) {
   return arr.map((r) => [r.day, r.open, r.close]);
 }
 
-export async function getKline(sym, minLen = 20, cacheDir = KLINE_DIR) {
+const DAY_MS = 86400000;
+
+/**
+ * K 线缓存是否陈旧（C10，2026-11-09 审计修复）。
+ * 原实现「缓存命中即返回」，从不校验时效——实测 1190 个缓存里 1147 个最后日期
+ * 停在 2026-10-30，回测会静默用 10 天前的数据，把最新信号日整段丢掉。
+ * 判定用北京日历日差（不用时钟时刻），maxAgeDays 默认 10 天以覆盖春节等长假。
+ * 非数组/空/日期不可解析 → 一律视为陈旧（宁可重抓，不用不可信数据）。
+ */
+export function isStaleKlineCache(k, nowMs = Date.now(), maxAgeDays = 10) {
+  if (!Array.isArray(k) || !k.length) return true;
+  const last = String((k[k.length - 1] && k[k.length - 1].date) || '');
+  const lastMs = Date.parse(last + 'T00:00:00+08:00');
+  if (!Number.isFinite(lastMs)) return true;
+  const bjDay = (ms) => Math.floor((ms + 8 * 3600000) / DAY_MS);
+  return bjDay(nowMs) - bjDay(lastMs) > maxAgeDays;
+}
+
+/**
+ * @param {object} [opts]
+ * @param {number} [opts.maxCacheAgeDays=10] 缓存允许的最大陈旧天数
+ * @param {boolean} [opts.refreshStale=true] 陈旧时是否尝试重抓（false=离线只读旧缓存）
+ * @param {number} [opts.staleAttempts=1] 陈旧刷新只试 1 次——缓存批量陈旧（实测 1147 个）
+ *   时若按 3 轮重试会打满数据源，宁快速回落旧缓存也不刷屏抓取
+ */
+export async function getKline(sym, minLen = 20, cacheDir = KLINE_DIR, opts = {}) {
+  const { maxCacheAgeDays = 10, refreshStale = true, staleAttempts = 1 } = opts || {};
   const cache = path.join(cacheDir, sym + '.json');
-  if (existsSync(cache)) return JSON.parse(readFileSync(cache, 'utf8'));
+  let staleFallback = null;
+  if (existsSync(cache)) {
+    let cached = null;
+    try { cached = JSON.parse(readFileSync(cache, 'utf8')); } catch { cached = null; }
+    if (Array.isArray(cached) && cached.length >= minLen) {
+      if (!isStaleKlineCache(cached, Date.now(), maxCacheAgeDays)) return cached; // 新鲜 → 原路径零变化
+      staleFallback = cached;
+      if (!refreshStale) return cached; // 离线只读模式
+    }
+  }
+  const attempts = staleFallback ? staleAttempts : 3;
   let lastErr;
-  for (let att = 0; att < 3; att++) {
+  for (let att = 0; att < attempts; att++) {
     try {
       let rows;
       try { rows = await fetchGtimgRows(sym); }
@@ -59,9 +95,14 @@ export async function getKline(sym, minLen = 20, cacheDir = KLINE_DIR) {
       return k;
     } catch (e) {
       lastErr = e;
-      if (att === 2) throw new Error(`${sym} 日K获取失败: ${e.message}`);
+      if (att === attempts - 1) break;
       await sleep(800 * (att + 1));
     }
   }
-  throw lastErr || new Error(`${sym} 日K获取失败`);
+  if (staleFallback) {
+    // fail-open：刷新失败回落旧缓存，并明示陈旧（不让调用方误以为是最新数据）
+    console.warn(`[kline] ⚠ ${sym} 缓存陈旧且刷新失败（${lastErr && lastErr.message}），回落旧缓存（末根 ${staleFallback[staleFallback.length - 1].date}）`);
+    return staleFallback;
+  }
+  throw new Error(`${sym} 日K获取失败: ${lastErr ? lastErr.message : 'unknown'}`);
 }
