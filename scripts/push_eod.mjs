@@ -70,7 +70,7 @@ async function main() {
   }
   if (!reports.length) { console.log('[eod] 组合后无待推报告，结束'); return; }
 
-  const { results, pushed, skipped } = await pushReports(reports, { stateFile: STATE_FILE, delayMs: DELAY_MS, suppressAiBrief: plan.suppressAiBrief });
+  const { results, pushed, skipped } = await pushReports(reports, { stateFile: STATE_FILE, delayMs: DELAY_MS, suppressAiBrief: plan.suppressAiBrief || process.env.ASPRO_SUPPRESS_AI_BRIEF === '1' });
   for (const r of results) console.log(`[eod] ${r.type} ${r.date}: ${r.pushed ? '已推送' : '未推送'}（${r.reason}）`);
   console.log(`[eod] 完成：推 ${pushed} / 跳 ${skipped} · 错峰 ${DELAY_MS}ms · 通道 ${PUSH_CONSTS.WEBHOOK_ENV}${process.env[PUSH_CONSTS.WEBHOOK_ENV] ? '' : '（未配置 → 仅落盘）'}`);
 }

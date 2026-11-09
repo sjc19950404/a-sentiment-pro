@@ -328,7 +328,7 @@ export function buildSignalSyncReports({ date, buys = [], sells = [], stopLabel 
       payload: { text: [
         `🚀【实盘跟单·买入】${date}`,
         `标的：${b.code} ${b.name || b.code}`,
-        `买价：≈${b.price}（含滑点）`,
+        `买价：${(b.price != null && b.price > 0) ? ('≈' + b.price + '（含滑点）') : '预估未取到（T+1 按真实收盘价撮合）'}`,
         `仓位：总资金${Math.round((b.pct ?? 0.1) * 100)}%`,
         `止损：${stopLabel}无条件`,
       ].join('\n') },

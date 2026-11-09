@@ -285,7 +285,10 @@ if (!tier) {
       const buyPct = new Map(safeItems.map((it) => [String(it.code), it.pct]));
       for (const o of res.submitted) {
         if (o.side !== 'buy') continue;
-        signalBuys.push({ code: String(o.code), name: o.name || o.code, price: r2((o.submitPrice || 0) * (1 + BUY_SLIP)), pct: buyPct.get(String(o.code)) || PER_POS_PCT });
+        // 2026-11-09 修：result row 上没有 submitPrice（在 o.order.submitPrice，paper.js:789），
+        // 原写法恒 0 → 跟单推送显示「买价：≈0」。价格缺失时置 null 由渲染层兜底。
+        const _sp = (o.order && Number.isFinite(+o.order.submitPrice)) ? +o.order.submitPrice : null;
+        signalBuys.push({ code: String(o.code), name: o.name || o.code, price: _sp != null ? r2(_sp * (1 + BUY_SLIP)) : null, pct: buyPct.get(String(o.code)) || PER_POS_PCT });
       }
     }
   }

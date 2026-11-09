@@ -140,7 +140,10 @@ case "$MODE" in
     #    旧 freshness 门禁不覆盖这些新侧车，静默失败无人知晓（⑧c 三个月采样会无声停摆）。
     #    停滞 → 自行发企微告警（OPS_WEBHOOK）；全新鲜 → 静默 exit 0。
     node scripts/sidecar_freshness.mjs 2>/dev/null || log "侧车新鲜度告警（已发企微，详见检查输出）"
-    node scripts/push_eod.mjs 2>/dev/null || true
+    # 2026-11-09：supplement（21:00 补抓档）与 eod 共用本分支，重跑推送时抑制 AI 副报文——
+    #   AI 情报每次 GLM 现场生成、内容指纹必不同 → 每天双份 AI（实测 40 只/36 只各一份）。
+    #   主报文照常重推：数据更全时内容更新（指纹不同会发），未变则被指纹去重拦截。
+    if [ "$MODE" = "supplement" ]; then ASPRO_SUPPRESS_AI_BRIEF=1 node scripts/push_eod.mjs 2>/dev/null || true; else node scripts/push_eod.mjs 2>/dev/null || true; fi
     # 2026-10-27 用户指令：EOD 结束后把本地 ui/kline + 聚合侧车档增量同步到 Cloudflare R2（S3 协议），
     #   供 Pages 终端经 terminal.js durl() 改道 R2 公共地址拉取（config.json dataOrigin 已切到 R2）。
     #   脚本内部容错：缺凭证 / SDK 未装 / 桶连不通 仅告警并 exit 0，绝不破坏 EOD 主流程。
