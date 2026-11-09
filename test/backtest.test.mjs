@@ -133,6 +133,18 @@ test('打分键校验：权重键与因子键完全错配时报错（防静默�
   assert.deepEqual(scoreWith(factors, { s_net: 0.5, s_pos: 0.5 }), [70]);
 });
 
+// C5（2026-11-09 用户拍板）：部分权重键命中 → 按权重和重归一（旧实现压缩分数后仍比绝对阈值）
+test('C5 scoreWith：子集命中按权重和重归一；满权重路径数值不变', () => {
+  const f = [{ s_net: 80, s_pos: 60 }];
+  const near = (a, b) => Math.abs(a - b) < 1e-9;
+  // 只有 s_net 命中（s_xxx 不在因子键）：0.3*80 / 0.3 = 80（旧实现得 24，被绝对阈值误判为「低分防守」）
+  assert.ok(near(scoreWith(f, { s_net: 0.3, s_xxx: 0.3 })[0], 80), '单键命中归一到该因子分');
+  // 两键全命中但权重和 0.6：(0.3*80+0.3*60)/0.6 = 70（旧实现得 42）
+  assert.ok(near(scoreWith(f, { s_net: 0.3, s_pos: 0.3 })[0], 70), '权重和≠1 时重归一');
+  // 满权重（和=1）与旧实现完全一致
+  assert.ok(near(scoreWith(f, { s_net: 0.5, s_pos: 0.5 })[0], 70), '满权重路径零变化');
+});
+
 test('网格寻优：结果非退化（回归：曾因权重键错配导致全部结果为 0）', () => {
   const days = 40;
   const factors = Array.from({ length: days }, (_, i) => ({

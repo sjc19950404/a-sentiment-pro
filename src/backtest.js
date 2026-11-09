@@ -245,10 +245,14 @@ export function scoreWith(factorsByDay, w) {
     throw new Error(`scoreWith: 权重键与因子键不匹配（权重键 ${wKeys.join(',')} / 因子键 ${fKeys.join(',')}）`);
   }
   const use = hit.length ? hit : wKeys;
+  // 2026-11-09 C5 修复（用户拍板）：子集命中时按权重和重归一——原实现权重和<1 会让分数
+  //   系统性压缩，再与 24/65/80 绝对阈值比较导致网格/rolling 结果失真。
+  //   满权重（wsum=1）时数值与旧实现完全一致（历史回测不受影响）。
+  const wsum = use.reduce((s, k) => s + (Number.isFinite(+w[k]) ? +w[k] : 0), 0);
   return factorsByDay.map((f) => {
     let s = 0;
     for (const k of use) s += (f[k] ?? 0) * w[k];
-    return s;
+    return wsum > 0 && wsum !== 1 ? s / wsum : s;
   });
 }
 
