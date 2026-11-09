@@ -136,6 +136,10 @@ case "$MODE" in
     #    人工每天在 data/human_baseline.json 给 guess 填 cont/break（约30秒），
     #    快照+T+1自动批改全自动；与 GLM 命中率双份对照。
     node scripts/dragon_human_baseline.mjs 2>/dev/null || log "人机基线侧车失败（best-effort，继续）"
+    # 侧车新鲜度哨兵（2026-11-09 全系统审计）：⑧c账本/人机基线/回场管道/仪表账本是否仍在长。
+    #    旧 freshness 门禁不覆盖这些新侧车，静默失败无人知晓（⑧c 三个月采样会无声停摆）。
+    #    停滞 → 自行发企微告警（OPS_WEBHOOK）；全新鲜 → 静默 exit 0。
+    node scripts/sidecar_freshness.mjs 2>/dev/null || log "侧车新鲜度告警（已发企微，详见检查输出）"
     node scripts/push_eod.mjs 2>/dev/null || true
     # 2026-10-27 用户指令：EOD 结束后把本地 ui/kline + 聚合侧车档增量同步到 Cloudflare R2（S3 协议），
     #   供 Pages 终端经 terminal.js durl() 改道 R2 公共地址拉取（config.json dataOrigin 已切到 R2）。

@@ -85,6 +85,7 @@ while [ "$try" -lt "$MAX_TRY" ]; do
 
   if PUSHOUT=$(git push origin main 2>&1); then
     log "推送成功：$MSG"
+    rm -f /var/log/aquant/.sync_alert_stamp  # 恢复成功 → 清除告警去重戳（下次故障立即告警）
     exit 0
   else
     reason=$(classify "$PUSHOUT")
@@ -97,5 +98,12 @@ done
 # ── 重试用尽仍失败：保留本地提交（数据不丢，下个 tick 还会带这份提交重试），发企微友好通知 ──
 git rebase --abort >/dev/null 2>&1 || true
 log "同步 GitHub 失败（${reason}），本地提交已保留（未 push），下个 tick 自动重试"
-notify "⚠【系统通知】今日数据已生成成功，但同步至 GitHub 失败（${reason}），不影响本地模拟交易与复盘推送。请有空在终端运行 git pull --rebase 修复。"
+# 2026-11-09 降噪：同类告警 2 小时内只发一条（此前推送闸故障导致一上午 13 条轰炸）
+STAMP=/var/log/aquant/.sync_alert_stamp
+if [ -f "$STAMP" ] && [ $(( $(date +%s) - $(stat -c %Y "$STAMP" 2>/dev/null || echo 0) )) -lt 7200 ]; then
+  log "同步告警 2 小时内已发送过一次，本次静默（恢复后自动重置）"
+else
+  notify "⚠【系统通知】今日数据已生成成功，但同步至 GitHub 失败（${reason}），不影响本地模拟交易与复盘推送。请有空在终端运行 git pull --rebase 修复。"
+  touch "$STAMP"
+fi
 exit 1

@@ -125,3 +125,6 @@ data/intraday-antinuke-state.json
 # 每次 paper_daily 后重跑内容基本不变，仅 generatedAt 变动，勿入库以免 git status 长期挂脏）
 data/diagnostics/
 data/anchor_watch.json
+
+# 人工盘感填写入口（未跟踪：pi_run 每 tick reset --hard 会还原跟踪文件，此文件不受影响）
+data/human_guesses.local.json

@@ -1,7 +1,7 @@
 {
  "kind": "dragon-human-baseline",
  "version": 1,
- "updatedAt": "2026-11-08",
+ "updatedAt": "2026-11-09",
  "rows": [
   {
    "date": "20261106",
@@ -326,7 +326,7 @@
  ],
  "meta": {
   "批改口径": "T+1 连板口径（同 dragon_purity_validation.mjs）：lbc+1 且未炸板=continue，否则 blast",
-  "玩法": "每天在 rows 给当日标的的 guess 填 cont/break（可留空跳过），次日 EOD 自动批改",
+  "玩法": "编辑 data/human_guesses.local.json（未入 git，reset 不会还原）：{\"日期:代码\":\"cont|break\"}；每日 EOD 自动合并进本账本并批改。漏填自动跳过。",
   "门槛": "样本 ≥30 个标记日前，命中率数字仅供参考"
  }
 }

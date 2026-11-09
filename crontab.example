@@ -1,25 +1,31 @@
 # 树莓派 crontab（新架构：pi_run.sh 总调度；GitHub=仓库+Pages 展示）
 # 安装：crontab -e 后粘贴本文件内容；或 crontab /path/to/crontab.example
 # 前提：Pi 时区 Asia/Shanghai（sudo timedatectl set-timezone Asia/Shanghai）。
-#      若 Pi 保持 UTC，请按每行尾部「UTC:」注释替换 时:分。
+#   2026-11-09 与线上 crontab 逐行对齐（此前模板按 UTC 书写且与线上漂移：
+#   eod 每天 vs 工作日、pre_open 09:00 vs 08:55、candidates 时刻不一致、缺 research_monthly）。
+#   本文件按**北京时间**书写，括号内为 UTC 对照（Pi 若保持 UTC，替换为括号内 时:分）。
 PATH=/usr/local/bin:/usr/bin:/bin
 LOG=/var/log/aquant/run.log
 
-# 盘前六源冒烟（北京 08:30 | UTC 00:30）
-30  0  * * 1-5  /opt/a-sentiment-pro/pi_run.sh smoke       >>$LOG 2>&1
-# 盘中轻量快照（北京 09:30~15:00 每30分 | UTC 01:00~07:30）
-0,30 1-7 * * 1-5  /opt/a-sentiment-pro/pi_run.sh intraday  >>$LOG 2>&1
-# 盘后首抓（北京 18:30 | UTC 10:30）
-30 10 * * *      /opt/a-sentiment-pro/pi_run.sh eod        >>$LOG 2>&1
-# 盘后补抓（北京 21:00 | UTC 13:00）
-0  13 * * 1-5  /opt/a-sentiment-pro/pi_run.sh supplement  >>$LOG 2>&1
-# 美股收盘档（北京 06:00 | UTC 22:00）——2026-11-09 冬令时修复：原04:30档在美东冬令时下=15:30ET盘中，抓不到收盘档（16:30ET才就绪）；06:00全年有效(EST17:00/EDT18:00)，不与05:20 A50档、09:00盘前档冲突。
-0 22 * * 1-5  /opt/a-sentiment-pro/pi_run.sh us_close    >>$LOG 2>&1
-# A50 夜盘收盘（北京 05:20 | UTC 21:20）
-20 21 * * 1-5  /opt/a-sentiment-pro/pi_run.sh a50         >>$LOG 2>&1
-# 盘前观察清单（北京 09:00 | UTC 01:00）
-0   1 * * 1-5  /opt/a-sentiment-pro/pi_run.sh pre_open    >>$LOG 2>&1
-# 盘中候选池（北京 09:35/10:30/14:00 | UTC 01:35/02:30/06:00）
-35  1 * * 1-5  /opt/a-sentiment-pro/pi_run.sh candidates  >>$LOG 2>&1
-30  2 * * 1-5  /opt/a-sentiment-pro/pi_run.sh candidates  >>$LOG 2>&1
-0   6 * * 1-5  /opt/a-sentiment-pro/pi_run.sh candidates  >>$LOG 2>&1
+# 盘前六源冒烟（北京 08:30 | UTC 00:30，工作日）
+30 8 * * 1-5 /opt/a-sentiment-pro/pi_run.sh smoke >>$LOG 2>&1
+# 盘中轻量快照（北京 09:30~15:30 每30分 | UTC 01:30~07:30，工作日）
+0,30 9-15 * * 1-5 /opt/a-sentiment-pro/pi_run.sh intraday >>$LOG 2>&1
+# 盘后首抓（北京 18:30 | UTC 10:30，工作日）
+30 18 * * 1-5 /opt/a-sentiment-pro/pi_run.sh eod >>$LOG 2>&1
+# 盘后补抓（北京 21:00 | UTC 13:00，工作日）
+0 21 * * 1-5 /opt/a-sentiment-pro/pi_run.sh supplement >>$LOG 2>&1
+# 美股收盘档（北京 06:00 | UTC 22:00，工作日）——2026-11-09 冬令时修复：原 04:30 档
+#   =美东 15:30 盘中，抓不到 16:30 ET 就绪的美股收盘；06:00 全年有效（EST 17:00 / EDT 18:00，
+#   且不与 05:20 A50 档、08:55 盘前档冲突）。
+0 6 * * 1-5 /opt/a-sentiment-pro/pi_run.sh us_close >>$LOG 2>&1
+# A50 夜盘收盘（北京 05:20 | UTC 21:20，工作日）
+20 5 * * 1-5 /opt/a-sentiment-pro/pi_run.sh a50 >>$LOG 2>&1
+# 盘前观察清单（北京 08:55 | UTC 00:55，工作日）
+55 8 * * 1-5 /opt/a-sentiment-pro/pi_run.sh pre_open >>$LOG 2>&1
+# 盘中候选池（北京 09:35/10:35/14:05 | UTC 01:35/02:35/06:05，工作日）
+35 9 * * 1-5 /opt/a-sentiment-pro/pi_run.sh candidates >>$LOG 2>&1
+35 10 * * 1-5 /opt/a-sentiment-pro/pi_run.sh candidates >>$LOG 2>&1
+5 14 * * 1-5 /opt/a-sentiment-pro/pi_run.sh candidates >>$LOG 2>&1
+# 月度研究基线（北京每月1日 19:00 | UTC 11:00）
+0 19 1 * * /opt/a-sentiment-pro/pi_run.sh research_monthly >>$LOG 2>&1
