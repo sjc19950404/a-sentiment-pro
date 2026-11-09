@@ -726,12 +726,19 @@ test('pushReports：post_market 展开 AI 副报文；skipped 按消息条数计
   const fetchOk = async () => ({ ok: true });
   const now = new Date('2026-10-26T10:00:00Z');
   const mkDir = () => mkdtempSync(join(tmpdir(), 'airpt-expand-'));
+  // C16（2026-11-09）：AI 副报文原隐式读真实 data/signals-latest.json——盘中 tick 把
+  //   三侧车置空时本测试偶发失败（实测复现）。改 fixture 注入，与生产磁盘解耦。
+  const AI_FIXTURE = {
+    llm: { sentimentRaw: 0.72, degraded: false },
+    sectorSentiment: { macro: { label: '题材轮动' }, blackTalk: '', degraded: false },
+    dragonLogic: { pureSentiment: [{ name: '测试妖股', lb: 3, reason: '纯情绪博弈' }], degraded: false },
+  };
 
   // 1) 不抑制副报文 → 主报文 + AI 盘后情报 = 2 条
   const d1 = mkDir();
   try {
     const sf = join(d1, 's.json');
-    const full = await pushReports([r], { env, fetchImpl: fetchOk, stateFile: sf, now });
+    const full = await pushReports([r], { env, fetchImpl: fetchOk, stateFile: sf, now, signalsOverride: AI_FIXTURE });
     assert.equal(full.pushed, 2, '1 份 post_market → 2 条（主报文 + AI 副报文）');
     assert.ok(full.results.some((x) => x.type === 'post_market'), '主报文在场');
     assert.ok(full.results.some((x) => x.type === 'post_market_ai'), 'AI 副报文在场');
@@ -754,7 +761,7 @@ test('pushReports：post_market 展开 AI 副报文；skipped 按消息条数计
   const d3 = mkDir();
   try {
     const sf = join(d3, 's.json');
-    const bad = await pushReports([r], { env, fetchImpl: async () => ({ ok: false, status: 500 }), stateFile: sf, now });
+    const bad = await pushReports([r], { env, fetchImpl: async () => ({ ok: false, status: 500 }), stateFile: sf, now, signalsOverride: AI_FIXTURE });
     assert.equal(bad.pushed, 0, '两条都未发出');
     assert.equal(bad.skipped, 2, 'skipped = 2（两条都未发出）');
     assert.equal(loadPushState(sf).pushed.length, 0, '失败不记指纹 → 下拍自愈');
