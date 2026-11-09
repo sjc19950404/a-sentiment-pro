@@ -1,9 +1,9 @@
 {
  "date": "2026-11-09",
  "source": "sina-bulletin",
- "fetchedAt": "2026-11-09T18:49:32.896+08:00",
+ "fetchedAt": "2026-11-09T21:18:01.242+08:00",
  "codes": 40,
- "count": 10,
+ "count": 12,
  "announcements": {
   "301718": "通则康威：关于募集资金专户开立并签署三方监管协议的公告",
   "600278": "东方创业：股票交易异常波动公告；东方创业：关于召开2026年半年度暨第三季度业绩说明会的公告",
@@ -12,7 +12,9 @@
   "601188": "龙江交通：股票交易异常波动公告",
   "603366": "日出东方：股票交易异常波动公告",
   "603920": "世运电路：关于2026年第二期以集中竞价交易方式回购股份方案的公告；世运电路：第五届董事会第十九次会议决议公告",
-  "688585": "上纬新材：关于业务进展的公告",
+  "688585": "上纬新材：股票交易风险提示公告；上纬新材：2026年第二次临时股东会会议资料；上纬新材：关于召开2026年第三季度业绩说明会的公告；上纬新材：关于业务进展的公告",
+  "001316": "润贝航科：关于股票交易异常波动的公告",
+  "000525": "红太阳：关于股票交易异常波动暨风险提示的公告",
   "002889": "东方嘉盛：股票交易异常波动公告",
   "001379": "腾达科技：关于变更保荐代表人的公告"
  },
@@ -109,9 +111,46 @@
    "name": "上纬新材",
    "announcements": [
     {
+     "title": "上纬新材：股票交易风险提示公告",
+     "date": "2026-11-10",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=688585&id=12698393"
+    },
+    {
+     "title": "上纬新材：2026年第二次临时股东会会议资料",
+     "date": "2026-11-10",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=688585&id=12698392"
+    },
+    {
+     "title": "上纬新材：关于召开2026年第三季度业绩说明会的公告",
+     "date": "2026-11-10",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=688585&id=12698391"
+    },
+    {
      "title": "上纬新材：关于业务进展的公告",
      "date": "2026-11-09",
      "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=688585&id=12696266"
+    }
+   ]
+  },
+  {
+   "code": "001316",
+   "name": "润贝航科",
+   "announcements": [
+    {
+     "title": "润贝航科：关于股票交易异常波动的公告",
+     "date": "2026-11-10",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=001316&id=12698108"
+    }
+   ]
+  },
+  {
+   "code": "000525",
+   "name": "红太阳",
+   "announcements": [
+    {
+     "title": "红太阳：关于股票交易异常波动暨风险提示的公告",
+     "date": "2026-11-10",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000525&id=12698099"
     }
    ]
   },
