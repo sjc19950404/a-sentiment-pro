@@ -3927,10 +3927,18 @@ function loadRecent() {
  */
 async function loadFull(arc, years) {
   const want = (years && years.length) ? years : (arc.years || []);
+  // B2 配套（2026-11-09 晚）：主档/年分片已移出 git（R2 云端留存）→ Pages 上
+  //   ./data/archive-YYYY.json 恒 404，「回看更早交易日」抽屉会挂。照 terminal.js
+  //   durl() 同款模式改道：仅 github.io 域 + window.ASENT_CONFIG.dataOrigin 配置时
+  //   走 R2 公共源；Pi 本地同源仍走相对路径（本地 data/ 文件在）。两小档
+  //   （archive-index/recent）保持同源入库，不走此改道。
+  const origin = (window.ASENT_CONFIG && window.ASENT_CONFIG.dataOrigin) || null;
+  const onPages = /(^|\.)github\.io$/.test(location.hostname) && !!origin;
+  const arcUrl = (p) => (onPages ? origin.replace(/\/+$/, '') + '/' + String(p).replace(/^\.?\//, '') : p);
   // 2026-11-07：单分片失败自动重试一次——大文件弱网/CDN 截断多为瞬态（实测同档
   //   连续拉三次：截断/截断/完整），重试仍失败才交给调用方的「载入失败，重试」路径。
   const parts = await Promise.all(want.map(async (y) => {
-    const url = './data/archive-' + y + '.json';
+    const url = arcUrl('./data/archive-' + y + '.json');
     const first = await loadJson(url).catch(() => null);
     return first !== null ? first : await loadJson(url).catch(() => null);
   }));

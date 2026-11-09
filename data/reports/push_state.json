@@ -2,6 +2,19 @@
  "schema_version": "1.0",
  "pushed": [
   {
+   "fingerprint": "e24571e6cfd155d2_934",
+   "type": "post_market",
+   "date": "2026-11-09",
+   "pushed_at": "2026-11-09T10:51:12.894Z"
+  },
+  {
+   "fingerprint": "e76c8409a1c86927_153",
+   "type": "post_market_ai",
+   "date": "2026-11-09",
+   "cfp": "84a800c8b99fe6b0_df",
+   "pushed_at": "2026-11-09T10:51:12.894Z"
+  },
+  {
    "fingerprint": "e17bae6f0953cd23_8c0",
    "type": "intraday",
    "date": "2026-11-09",
