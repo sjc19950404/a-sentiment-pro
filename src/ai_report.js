@@ -1003,7 +1003,10 @@ export function buildIntradayPool(intraday, opts = {}) {
     ? opts.nowBJ
     : (typeof intraday?.capturedAtBJ === 'string' ? (intraday.capturedAtBJ.split(' ')[1] ?? null) : null);
   const minsToClose = minutesToCloseBJ(nowBJ);
-  const tomorrowWatch = minsToClose != null && minsToClose > 0 && minsToClose < 30;
+  // 2026-11-09 C9 修复（用户拍板）：降级条件补上「已收盘」（minsToClose ≤ 0）——
+  //   原判定 >0 把盘后（负数）漏在 'trend' 档，盘后仍按「当日趋势池」输出可买清单，
+  //   直接误导盘后观察。收盘后与收盘前 30 分钟内一律降级为「明日观察池」（观察语义）。
+  const tomorrowWatch = minsToClose != null && minsToClose < 30;
   // 扫描宇宙（任务二）：全市场筛选榜优先（screener——主力净流入降序前 100，带齐
   //   量比/PE/PB/行业），缺席才回落 hot 强势榜（≈涨停集中营，3-7% 启动带几乎恒空，
   //   仅作降级底座）。两个宇宙字段名同构，筛选/得分代码共用。
@@ -1161,7 +1164,11 @@ export function buildIntradayPool(intraday, opts = {}) {
     + (prevZtCodes ? ` · 已滤昨日涨停 ${prevZtCodes.size} 只黑名单` : ' · ⚠ 昨日涨停黑名单缺席（旧快照无 prev_zt_codes）——断板股可能漏进趋势池')
     + `；扫 ${universe.length} 只，剔除——带外 ${rejected.chg_band} / 量比不足 ${rejected.liangbi} / 已涨停 ${rejected.zt} / 跌停 ${rejected.dt} / 昨日涨停 ${rejected.prev_zt} / 净流出或无源 ${rejected.main_net} / 字段缺失 ${rejected.unverifiable}；`
     + `得分=涨幅位置0.3+量比0.3+主力0.2+板块热度0.2（缺席重归一）`
-    + (tomorrowWatch ? `；距收盘 ${minsToClose} 分钟（<30）→ 趋势池自动降级为「明日观察池」（观察语义，不作当日买入依据——2026-10-10 用户指令）` : '');
+    + (tomorrowWatch
+      ? (minsToClose > 0
+        ? `；距收盘 ${minsToClose} 分钟（<30）→ 趋势池自动降级为「明日观察池」（观察语义，不作当日买入依据——2026-10-10 用户指令）`
+        : `；已收盘（${Math.abs(minsToClose)} 分钟前）→ 趋势池自动降级为「明日观察池」（盘后仅复盘，不输出可买清单——2026-11-09 C9 修复）`)
+      : '');
   // ── 连板池装配（2026-10-10 双池拆分；P0 梯队评分）─────────────────────────────
   //   梯队评分（用户指令「连板池使用连板梯队/晋级率评分逻辑」——与趋势池的量价/资金流
   //   评分物理独立）：连板高度 0.6（lbc/池内最高——梯队归一）+ 主力净流入 0.4（池内

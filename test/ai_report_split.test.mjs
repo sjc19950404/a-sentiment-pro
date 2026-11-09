@@ -243,6 +243,23 @@ test('buildIntradayPool 降级：nowBJ/capturedAtBJ 距收盘<30分钟 → trend
   assert.equal(noT.minutes_to_close, null);
 });
 
+// ── C9（2026-11-09 用户拍板）：已收盘同样降级——盘后不得输出可买清单 ────────────
+test('C9 buildIntradayPool：minsToClose ≤ 0（收盘/盘后）→ tomorrow_watch + basis 明示「盘后仅复盘，不输出可买清单」', () => {
+  const rows = [row({ code: '600701' })];
+  // ① 收盘时刻 15:00 = 0 → 降级（原判定 >0 会漏掉这一档）
+  const atClose = buildIntradayPool(snap(rows), { nowBJ: '15:00' });
+  assert.equal(atClose.trend_pool_mode, 'tomorrow_watch', '收盘时刻降级');
+  assert.ok(atClose.basis.includes('已收盘（0 分钟前）→ 趋势池自动降级为「明日观察池」（盘后仅复盘，不输出可买清单'), 'basis 明示盘后语义');
+  // ② 盘后 EOD 推送场景 18:30 → -210 → 降级
+  const afterHours = buildIntradayPool(snap(rows), { nowBJ: '18:30' });
+  assert.equal(afterHours.trend_pool_mode, 'tomorrow_watch', '盘后 EOD 报告降级');
+  assert.equal(afterHours.minutes_to_close, -210);
+  assert.ok(afterHours.basis.includes('已收盘（210 分钟前）'), '盘后 basis 报已收盘');
+  // ③ 早盘 09:35（325 分）不受影响 → 正常趋势池
+  const morning = buildIntradayPool(snap(rows), { nowBJ: '09:35' });
+  assert.equal(morning.trend_pool_mode, 'trend', '早盘正常趋势池');
+});
+
 // ── P0 双池物理拆分（2026-10-10 实盘事故）：黑名单/白名单/独立评分 ──────────────
 test('P0 buildIntradayPool：昨日涨停断板股混进 3-7% 带 → prev_zt_codes 黑名单剔除', () => {
   // 10-09 事故形态：雪龙 4 连板今日 -9.98% 是带外；更隐蔽的是断板后回落到 +5% 的股——
