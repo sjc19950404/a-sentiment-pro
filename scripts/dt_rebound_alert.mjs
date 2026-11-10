@@ -22,12 +22,14 @@ const today = () => bjNow().toISOString().slice(0, 10);
 const bjHm = () => { const d = bjNow(); return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`; };
 const secid = (c) => (/^(6|9)/.test(c) ? '1.' : '0.') + c;
 
+// DT_ALERT_DRY=1 干跑：跳过门禁+不推企微——开盘前自检全链用（2026-11-11 体检加）
+const DRY = process.env.DT_ALERT_DRY === '1';
 const d0 = bjNow(); const tmin = d0.getUTCHours() * 60 + d0.getUTCMinutes();
 const inSession = (tmin >= 565 && tmin <= 695) || (tmin >= 775 && tmin <= 905);
 const isTrading = (() => {
   try { return isTradingDay(today(), loadCalendar()); } catch { return d0.getUTCDay() >= 1 && d0.getUTCDay() <= 5; }
 })();
-if (!inSession || !isTrading) process.exit(0);
+if (!DRY && (!inSession || !isTrading)) process.exit(0);
 
 let prevState = { date: today(), notified: 0, stocks: {} };
 try {
@@ -68,6 +70,13 @@ try {
     });
   }
   const { events, state } = detectEvents(prevState, snaps);
+  if (DRY) {
+    console.log(`[dt-alert][DRY] 昨日跌停池=${dts.length} snaps=${snaps.length} 事件=${events.length}`);
+    const msg0 = buildAlertText(events, { bj: bjHm() });
+    if (events.length) console.log('[dt-alert][DRY] 报文预览:\n' + (msg0 ? msg0.text : '(null)'));
+    else console.log('[dt-alert][DRY] 无事件——全链 IO（跌停池/行情/状态机）正常');
+    process.exit(0);
+  }
   const msg = buildAlertText(events, { bj: bjHm() });
   if (msg && process.env.OPS_WEBHOOK) {
     const res = await fetch(process.env.OPS_WEBHOOK, {

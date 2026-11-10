@@ -22,12 +22,14 @@ const bjHm = () => { const d = bjNow(); return `${String(d.getUTCHours()).padSta
 const secid = (c) => (/^(6|9)/.test(c) ? '1.' : '0.') + c;
 
 // 交易时段硬门禁（9:25-11:35 / 12:55-15:05 + 交易日）：盘外跑是纯浪费还可能拿旧价
+// FB_ALERT_DRY=1 干跑：跳过门禁+不推企微，打印事件明细——开盘前自检盘中全链用（2026-11-11 体检加）
+const DRY = process.env.FB_ALERT_DRY === '1';
 const d0 = bjNow(); const tmin = d0.getUTCHours() * 60 + d0.getUTCMinutes();
 const inSession = (tmin >= 565 && tmin <= 695) || (tmin >= 775 && tmin <= 905);
 const isTrading = (() => {
   try { return isTradingDay(today(), loadCalendar()); } catch { return d0.getUTCDay() >= 1 && d0.getUTCDay() <= 5; }
 })();
-if (!inSession || !isTrading) process.exit(0);
+if (!DRY && (!inSession || !isTrading)) process.exit(0);
 
 let prevState = { date: today(), notified: 0, stocks: {} };
 try {
@@ -97,6 +99,12 @@ try {
     baseRate = early && Number.isFinite(early.rate) ? early.rate : (st && st.total && st.total.rate) || null;
   } catch { /* 缺席不阻塞 */ }
   const msg = buildAlertText(events, { bj: bjHm(), baseRate });
+  if (DRY) {
+    console.log(`[fb-alert][DRY] snaps=${snaps.length} dtRebound=${snaps.filter((s) => s.dtRebound).length} 事件=${events.length}`);
+    if (events.length) console.log('[fb-alert][DRY] 报文预览:\n' + (msg ? msg.text : '(null)'));
+    else console.log('[fb-alert][DRY] 无事件——全链 IO（行情/板块/主线/状态机）正常');
+    process.exit(0);   // 干跑不落 state
+  }
   if (msg && process.env.OPS_WEBHOOK) {
     const res = await fetch(process.env.OPS_WEBHOOK, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },

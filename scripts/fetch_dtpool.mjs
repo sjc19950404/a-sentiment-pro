@@ -14,8 +14,11 @@ const OUT = join(ROOT, 'data/dtpool_history.json');
 
 function bjDate() { return new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10); }
 
+// --date=YYYYMMDD 回填历史档（接口历史深度有限，开档初日把最近可查日补齐——2026-11-11 体检加）
+const argDate = (process.argv.find((a) => a.startsWith('--date=')) || '').split('=')[1] || null;
+
 try {
-  const dateStr = bjDate().replace(/-/g, '');
+  const dateStr = argDate || bjDate().replace(/-/g, '');
   const url = 'https://push2ex.eastmoney.com/getTopicDTPool?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=500&sort=fund%3Aasc&date=' + dateStr;
   const j = await (await fetch(url, { headers: { Referer: 'https://quote.eastmoney.com/' } })).json();
   const pool = (j.data && j.data.pool) || [];
@@ -27,7 +30,7 @@ try {
   }));
   const hist = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : [];
   const list = Array.isArray(hist) ? hist : [];
-  const rec = { date: bjDate(), generatedAt: new Date().toISOString(), pool: items };
+  const rec = { date: dateStr.slice(0,4)+"-"+dateStr.slice(4,6)+"-"+dateStr.slice(6,8), generatedAt: new Date().toISOString(), pool: items };
   const idx = list.findIndex((d) => d.date === rec.date);
   if (idx >= 0) list[idx] = rec; else list.push(rec);
   list.sort((a, b) => String(a.date).localeCompare(String(b.date)));
