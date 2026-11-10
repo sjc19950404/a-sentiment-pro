@@ -19,6 +19,10 @@ LOG=/var/log/aquant/run.log
 #   261天→8004席位→5簇实测1.1s；标签独立档 data/seat_labels.json，盘中只查表——2026-11-10 #2）
 30 2 * * 2-6 cd /opt/a-sentiment-pro && node scripts/seat_cluster.mjs >>$LOG 2>&1
 
+# 里程碑提醒（北京 08:50 工作日）：竞价满5日→拍板打分口径+UI、预算预演满5日→拍板接闸；
+#   到点且数据就绪才推企微（OPS_WEBHOOK），同一事项最多提醒3次；只提醒不改代码——2026-11-10
+50 8 * * 1-5 cd /opt/a-sentiment-pro && node scripts/milestone_reminder.mjs >>$LOG 2>&1
+
 # 盘后首抓（北京 18:30 | UTC 10:30，工作日）
 30 18 * * 1-5 /opt/a-sentiment-pro/pi_run.sh eod >>$LOG 2>&1
 # 盘后补抓（北京 21:00 | UTC 13:00，工作日）
