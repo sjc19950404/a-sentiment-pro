@@ -244,6 +244,35 @@ export function buildReversalAlert(report, now) {
   return { text, synthetic: { report_type: 'post_market_reversal', date: report.date, trigger: 'event:reversal', status: 'ok', generated_at: report.generated_at || (now && now.toISOString()) || new Date().toISOString(), payload: { text }, missing_notes: null } };
 }
 
+/**
+ * 副报文：首板晋级观察（2026-11-11 用户拍板 A：纯信息段——基率非预测，不产生委托）。
+ * 读 data/first_board_watch.json（first_board_watch.mjs EOD 产出）末条候选；
+ * 缺档/无候选 → null 不推（fail-open）。受 suppressAiBrief 控制（supplement 档不重推，
+ * 与 AI 情报同款——现场生成内容指纹必不同，防每日双推）。
+ */
+export function buildFirstBoardBrief(report, now, watchOverride) {
+  // C16 同款：watchOverride !== undefined 用注入（测试隔离）；生产不传走磁盘。
+  const watch = watchOverride !== undefined ? watchOverride : readJsonSafe('first_board_watch.json');
+  const list = Array.isArray(watch) ? watch : [];
+  const last = list.length ? list[list.length - 1] : null;
+  if (!last || !Array.isArray(last.candidates) || !last.candidates.length) return null;
+  const base = last.stats && last.stats.total;
+  const items = [];
+  let used = '🚀 首板晋级观察：'.length;
+  for (const c of last.candidates) {
+    const hhmm = `${String(Math.floor(c.fbt / 10000)).padStart(2, '0')}:${String(Math.floor((c.fbt % 10000) / 100)).padStart(2, '0')}`;
+    const one = `${c.name}（${hhmm}封·封单${(c.fundPct * 100).toFixed(1)}%·层基率${c.baseRate != null ? c.baseRate + '%' : '样本不足'}）${c.fallback ? '[降档]' : ''}；`;
+    if (used + one.length > 150) break;
+    items.push(one); used += one.length;
+  }
+  if (!items.length) return null;
+  const text = [
+    `🚀 首板晋级观察：${items.join('')}`,
+    `全池基率 ${base ? base.rate + '%' : '—'}（${last.stats ? last.stats.windowDays : '—'}日窗口）· 基率非预测 · 明日自动对账（观察档，不下单）`,
+  ].join('\n');
+  return { text, synthetic: { report_type: 'post_market_first_board', date: report.date, trigger: report.trigger, status: report.status, generated_at: report.generated_at || (now && now.toISOString()) || new Date().toISOString(), payload: { text }, missing_notes: null } };
+}
+
 // ── 副报文：ETF 防守反击避险行（2026-10-27 用户指令）────────────────────────────
 //   只读 data/etf_hedge_signal.json（scripts/report_etf_hedge.mjs 产出，零交易、零账户改动）；
 //   铁律：本函数绝不调用任何买卖接口、绝不修改模拟盘账户。signalOverride 用于单测注入；
@@ -366,7 +395,7 @@ export function buildSignalSyncReports({ date, buys = [], sells = [], stopLabel 
  *   永不 reject（告警纪律：推送失败不炸数据管线，错误进 results[].reason）。
  */
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-export async function pushReports(reports, { env = process.env, fetchImpl, stateFile = null, now = new Date(), delayMs = 0, suppressAiBrief = false, signalsOverride = undefined } = {}) {
+export async function pushReports(reports, { env = process.env, fetchImpl, stateFile = null, now = new Date(), delayMs = 0, suppressAiBrief = false, signalsOverride = undefined, firstBoardOverride = undefined } = {}) {
   const list = (Array.isArray(reports) ? reports : [reports]).filter(Boolean);
   const rawWebhook = env?.[PUSH_CONSTS.WEBHOOK_ENV];
   // secret 值清洗（对齐 Worker push_proxy，2026-10-10 BOM 踩坑根治）：
@@ -396,7 +425,12 @@ export async function pushReports(reports, { env = process.env, fetchImpl, state
     try {
       if (report.report_type === 'pre_market') { const m = buildMineAlert(report); if (m) messages.push(m); }
       if (report.report_type === 'post_market') {
-        if (!suppressAiBrief) { const m = buildAiBrief(report, signalsOverride); if (m) messages.push(m); }
+        if (!suppressAiBrief) {
+          const m = buildAiBrief(report, signalsOverride); if (m) messages.push(m);
+          // 首板晋级观察（2026-11-11 拍板 A）：与 AI 情报同受 supplement 抑制——
+          //   候选每日重新生成、内容指纹必不同，重跑必双推；纯信息段随 EOD 主档推一次即可。
+          const fb = buildFirstBoardBrief(report, now, firstBoardOverride); if (fb) messages.push(fb);
+        }
         const rev = buildReversalAlert(report, now); if (rev) messages.push(rev);
         // 2026-10-27 用户指令：ETF 防守反击避险行（只读 data/etf_hedge_signal.json，绝不交易）
         const etf = buildEtfHedgeLine(report); if (etf) messages.push(etf);

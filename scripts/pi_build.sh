@@ -106,6 +106,10 @@ step "terminal_inline";       node scripts/build_terminal_inline.mjs || echo "�
 #   仅供人工对照——**决策链不读取本档**；预算表经拍板+预演期后才接 riskGuard 单一闸口。
 #   sidecar fail-open：失败不阻断。
 step "budget_preview";        node scripts/risk_budget_preview.mjs || echo "⚠ 预算预演失败（fail-open，继续）"
+# 20.74f 首板晋级观察档（2026-11-11 用户拍板 A+B1）：分层晋级率基率+今日候选+昨日对账，
+#   落独立档 data/first_board_watch.json；**只记账不下单**——不生成委托/不进建仓（B2 接闸须拍板）；
+#   推送观察段（buildFirstBoardBrief）读本档，纯信息「基率非预测」。sidecar fail-open。
+step "first_board_watch";     node scripts/first_board_watch.mjs || echo "⚠ 首板观察档失败（fail-open，继续）"
 # 20.75 晚间公告排雷（V5.3 P2）：自动建仓前先扫描连板梯队/标的池公告，让 GLM 判定重大利空，
 #   产出 data/llm_risk_blacklist.json；paper_daily 建仓前据此拒买（正向封禁，空表=fail-open）。
 #   fail-open：缺 LLM 配置 → 退出非 0 不落档（本次不封禁）；已配置但无公告源/调用失败 → 空表。

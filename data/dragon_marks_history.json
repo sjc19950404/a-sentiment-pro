@@ -3,8 +3,8 @@
     "created": "2026-11-07T13:53:17.263Z",
     "note": "妖股纯情绪标记历史（每日 EOD 留存，同日覆盖幂等）；验证脚本 scripts/dragon_purity_validation.mjs（T+1 续板率对照）",
     "source": "llm-dragon-logic-latest.json::dragons（连续连板口径 zt_lb）",
-    "updated": "2026-11-09T13:18:42.962Z",
-    "days": 2
+    "updated": "2026-11-10T13:20:26.638Z",
+    "days": 3
   },
   "days": [
     {
@@ -522,6 +522,292 @@
         }
       ],
       "savedAt": "2026-11-09T13:18:42.948Z"
+    },
+    {
+      "date": "20261110",
+      "marks": [
+        {
+          "code": "002578",
+          "name": "闽发铝业",
+          "lb": 7,
+          "is_pure": false,
+          "reason": "高位硬板，无利好，情绪稳定"
+        },
+        {
+          "code": "600327",
+          "name": "大东方",
+          "lb": 3,
+          "is_pure": false,
+          "reason": "缩量板，无炸板，游资活跃"
+        },
+        {
+          "code": "601188",
+          "name": "龙江交通",
+          "lb": 3,
+          "is_pure": true,
+          "reason": "炸板多，利好板块，情绪化"
+        },
+        {
+          "code": "603366",
+          "name": "日出东方",
+          "lb": 3,
+          "is_pure": false,
+          "reason": "缩量板，无炸板，游资接力"
+        },
+        {
+          "code": "002310",
+          "name": "东方新能",
+          "lb": 3,
+          "is_pure": false,
+          "reason": "缩量板，无炸板，游资接力"
+        },
+        {
+          "code": "600408",
+          "name": "安泰集团",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板多，焦炭板块，情绪化"
+        },
+        {
+          "code": "600609",
+          "name": "金杯汽车",
+          "lb": 2,
+          "is_pure": false,
+          "reason": "无炸板，汽车板块，游资活跃"
+        },
+        {
+          "code": "600715",
+          "name": "文投控股",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "无炸板，游戏板块，情绪化"
+        },
+        {
+          "code": "600892",
+          "name": "大晟文化",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "无炸板，游戏板块，情绪化"
+        },
+        {
+          "code": "603121",
+          "name": "华培动力",
+          "lb": 2,
+          "is_pure": false,
+          "reason": "无炸板，汽车板块，游资活跃"
+        },
+        {
+          "code": "603286",
+          "name": "日盈电子",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板多，筹码松动，情绪化明显"
+        },
+        {
+          "code": "603703",
+          "name": "盛洋科技",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板频繁，筹码不稳，情绪化严重"
+        },
+        {
+          "code": "603706",
+          "name": "东方环宇",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板多，筹码松动，情绪化明显"
+        },
+        {
+          "code": "002623",
+          "name": "亚玛顿",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "一字独食，无换手，通道党游戏"
+        },
+        {
+          "code": "002347",
+          "name": "泰尔股份",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "无炸板，缩量硬板，预期加速"
+        },
+        {
+          "code": "002708",
+          "name": "光洋股份",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "无炸板，缩量硬板，预期加速"
+        },
+        {
+          "code": "000530",
+          "name": "冰山冷热",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板多，筹码松动，情绪化严重"
+        },
+        {
+          "code": "002931",
+          "name": "锋龙股份",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "无炸板，缩量硬板，预期加速"
+        },
+        {
+          "code": "001226",
+          "name": "拓山重工",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板，筹码松动，情绪化明显"
+        },
+        {
+          "code": "001379",
+          "name": "腾达科技",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "无炸板，缩量硬板，预期加速"
+        },
+        {
+          "code": "300052",
+          "name": "中青宝",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板爆量，情绪化炒作，明日或冲高回落"
+        },
+        {
+          "code": "300264",
+          "name": "佳创视讯",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无分歧，预期加速"
+        },
+        {
+          "code": "300426",
+          "name": "华智数媒",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板缩量板，情绪稳定，明日看涨"
+        },
+        {
+          "code": "300556",
+          "name": "丝路视觉",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无分歧，情绪稳定，明日看涨"
+        },
+        {
+          "code": "300613",
+          "name": "富瀚微",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板缩量板，情绪稳定，明日看涨"
+        },
+        {
+          "code": "301255",
+          "name": "通力科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板缩量板，情绪稳定，明日看涨"
+        },
+        {
+          "code": "301314",
+          "name": "科瑞思",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板缩量板，情绪稳定，明日看涨"
+        },
+        {
+          "code": "600261",
+          "name": "阳光照明",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板缩量板，情绪稳定，明日看涨"
+        },
+        {
+          "code": "600281",
+          "name": "华阳新材",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板炸板，情绪不稳定，明日谨慎"
+        },
+        {
+          "code": "600510",
+          "name": "黑牡丹",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板炸板，情绪不稳定，明日谨慎"
+        },
+        {
+          "code": "600778",
+          "name": "友好集团",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "高位爆量分歧，明日核按钮"
+        },
+        {
+          "code": "600793",
+          "name": "宜宾纸业",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "缩量硬板，预期加速"
+        },
+        {
+          "code": "600829",
+          "name": "人民同泰",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "无炸板，机构锁仓"
+        },
+        {
+          "code": "601595",
+          "name": "上海电影",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "无炸板，机构锁仓"
+        },
+        {
+          "code": "603037",
+          "name": "凯众股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "炸板1次，谨慎"
+        },
+        {
+          "code": "603058",
+          "name": "永吉股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "炸板2次，筹码松动"
+        },
+        {
+          "code": "603215",
+          "name": "比依股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "炸板3次，风险高"
+        },
+        {
+          "code": "603278",
+          "name": "大业股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "无炸板，机构锁仓"
+        },
+        {
+          "code": "603283",
+          "name": "赛腾股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "无炸板，机构锁仓"
+        },
+        {
+          "code": "603381",
+          "name": "永臻股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "炸板4次，谨慎"
+        }
+      ],
+      "savedAt": "2026-11-10T13:20:26.624Z"
     }
   ]
 }

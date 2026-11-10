@@ -738,7 +738,7 @@ test('pushReports：post_market 展开 AI 副报文；skipped 按消息条数计
   const d1 = mkDir();
   try {
     const sf = join(d1, 's.json');
-    const full = await pushReports([r], { env, fetchImpl: fetchOk, stateFile: sf, now, signalsOverride: AI_FIXTURE });
+    const full = await pushReports([r], { env, fetchImpl: fetchOk, stateFile: sf, now, signalsOverride: AI_FIXTURE, firstBoardOverride: null });
     assert.equal(full.pushed, 2, '1 份 post_market → 2 条（主报文 + AI 副报文）');
     assert.ok(full.results.some((x) => x.type === 'post_market'), '主报文在场');
     assert.ok(full.results.some((x) => x.type === 'post_market_ai'), 'AI 副报文在场');
@@ -761,7 +761,7 @@ test('pushReports：post_market 展开 AI 副报文；skipped 按消息条数计
   const d3 = mkDir();
   try {
     const sf = join(d3, 's.json');
-    const bad = await pushReports([r], { env, fetchImpl: async () => ({ ok: false, status: 500 }), stateFile: sf, now, signalsOverride: AI_FIXTURE });
+    const bad = await pushReports([r], { env, fetchImpl: async () => ({ ok: false, status: 500 }), stateFile: sf, now, signalsOverride: AI_FIXTURE, firstBoardOverride: null });
     assert.equal(bad.pushed, 0, '两条都未发出');
     assert.equal(bad.skipped, 2, 'skipped = 2（两条都未发出）');
     assert.equal(loadPushState(sf).pushed.length, 0, '失败不记指纹 → 下拍自愈');
