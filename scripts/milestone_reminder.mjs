@@ -56,6 +56,13 @@ const MILESTONES = [
     ready: () => daysOf('data/risk_budget_preview.json') >= 5,
     readyText: () => `预算预演已 ${daysOf('data/risk_budget_preview.json')} 天`,
   },
+  {
+    id: 'pi-push-trial',
+    due: '2026-11-13',
+    title: 'pi_push */5 试点回看（11-11 起）：盘中是否真在刷页面？Pages 部署有无排队延迟？→ 保持 */5 或退 */10（回看人自己定，无数据判据）',
+    ready: () => true,   // 回看型提醒：无数据判据，到点即提
+    readyText: () => '试点已满 2 个交易日',
+  },
 ];
 
 function loadState() {
