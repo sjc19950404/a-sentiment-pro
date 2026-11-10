@@ -1,109 +1,19 @@
 {
- "at": "2026-11-10T16:42:12.090Z",
- "bj": "00:42",
+ "at": "2026-11-10T17:31:31.612Z",
+ "bj": "01:31",
  "session": "offhours",
  "dataDate": "2026-11-10",
  "prevDate": "20261110",
- "pool": 73,
+ "pool": 64,
  "counts": {
   "sealed": 0,
   "broken": 0,
   "approaching": 0,
   "idle": 0,
-  "pending": 73
+  "pending": 64
  },
  "approachPct": 5,
  "rows": [
-  {
-   "code": "300264",
-   "name": "佳创视讯",
-   "chg": 20.07,
-   "last": 6.58,
-   "high": 6.58,
-   "limitPrice": 6.58,
-   "status": "pending",
-   "qDate": "2026-11-10"
-  },
-  {
-   "code": "688611",
-   "name": "杭州柯林",
-   "chg": 20.01,
-   "last": 79.06,
-   "high": 79.06,
-   "limitPrice": 79.06,
-   "status": "pending",
-   "qDate": "2026-11-10"
-  },
-  {
-   "code": "300613",
-   "name": "富瀚微",
-   "chg": 20.01,
-   "last": 80.02,
-   "high": 80.02,
-   "limitPrice": 80.02,
-   "status": "pending",
-   "qDate": "2026-11-10"
-  },
-  {
-   "code": "300556",
-   "name": "丝路视觉",
-   "chg": 20.01,
-   "last": 22.25,
-   "high": 22.25,
-   "limitPrice": 22.25,
-   "status": "pending",
-   "qDate": "2026-11-10"
-  },
-  {
-   "code": "688781",
-   "name": "视涯科技-UW",
-   "chg": 20,
-   "last": 56.16,
-   "high": 56.16,
-   "limitPrice": 56.16,
-   "status": "pending",
-   "qDate": "2026-11-10"
-  },
-  {
-   "code": "301314",
-   "name": "科瑞思",
-   "chg": 20,
-   "last": 50.7,
-   "high": 50.7,
-   "limitPrice": 50.7,
-   "status": "pending",
-   "qDate": "2026-11-10"
-  },
-  {
-   "code": "300052",
-   "name": "中青宝",
-   "chg": 20,
-   "last": 11.82,
-   "high": 11.82,
-   "limitPrice": 11.82,
-   "status": "pending",
-   "qDate": "2026-11-10"
-  },
-  {
-   "code": "301255",
-   "name": "通力科技",
-   "chg": 19.99,
-   "last": 21.97,
-   "high": 21.97,
-   "limitPrice": 21.97,
-   "status": "pending",
-   "qDate": "2026-11-10"
-  },
-  {
-   "code": "300426",
-   "name": "华智数媒",
-   "chg": 19.98,
-   "last": 11.47,
-   "high": 11.47,
-   "limitPrice": 11.47,
-   "status": "pending",
-   "qDate": "2026-11-10"
-  },
   {
    "code": "002021",
    "name": "中捷资源",
