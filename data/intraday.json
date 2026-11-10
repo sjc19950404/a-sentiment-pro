@@ -2,8 +2,8 @@
   "version": 4,
   "kind": "intraday",
   "tradeDate": "2026-11-10",
-  "capturedAt": "2026-11-10T03:30:04.358Z",
-  "capturedAtBJ": "2026-11-10 11:30",
+  "capturedAt": "2026-11-10T04:00:04.898Z",
+  "capturedAtBJ": "2026-11-10 12:00",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
@@ -86,7 +86,7 @@
         "pb": 5.06,
         "liangbi": 3.07,
         "avg_price": null,
-        "main_net": 119725736
+        "main_net": 119730081
       },
       {
         "code": "300133",
@@ -346,7 +346,7 @@
         "pb": 2.85,
         "liangbi": 1.5,
         "avg_price": null,
-        "main_net": 175051446
+        "main_net": 175108737
       },
       {
         "code": "600793",
@@ -437,7 +437,7 @@
         "pb": 1.42,
         "liangbi": 3.95,
         "avg_price": null,
-        "main_net": 227221047
+        "main_net": 227225223
       },
       {
         "code": "603602",
@@ -554,7 +554,7 @@
         "pb": 3.76,
         "liangbi": 1.96,
         "avg_price": null,
-        "main_net": 209463666
+        "main_net": 209502146
       },
       {
         "code": "605598",
@@ -580,7 +580,7 @@
         "pb": 7.6,
         "liangbi": 1.06,
         "avg_price": null,
-        "main_net": 242000000
+        "main_net": 242097408
       },
       {
         "code": "603955",
@@ -658,7 +658,7 @@
         "pb": 37.15,
         "liangbi": 3.41,
         "avg_price": null,
-        "main_net": 93560626
+        "main_net": 93617914
       },
       {
         "code": "002432",
@@ -710,7 +710,7 @@
         "pb": 11.39,
         "liangbi": 1.04,
         "avg_price": null,
-        "main_net": 330067214
+        "main_net": 330071070
       },
       {
         "code": "603533",
@@ -723,7 +723,7 @@
         "pb": 6.37,
         "liangbi": 1.54,
         "avg_price": null,
-        "main_net": 634309565
+        "main_net": 634332525
       },
       {
         "code": "603666",
@@ -788,7 +788,7 @@
         "pb": 4.35,
         "liangbi": 2.06,
         "avg_price": null,
-        "main_net": 286217445
+        "main_net": 286280309
       },
       {
         "code": "002209",
@@ -814,7 +814,7 @@
         "pb": 2.32,
         "liangbi": 0.7,
         "avg_price": null,
-        "main_net": 275217541
+        "main_net": 275247957
       },
       {
         "code": "002376",
@@ -827,7 +827,7 @@
         "pb": 1.68,
         "liangbi": 1.53,
         "avg_price": null,
-        "main_net": 93422417
+        "main_net": 93423963
       },
       {
         "code": "002614",
@@ -866,7 +866,7 @@
         "pb": 3.37,
         "liangbi": 3.07,
         "avg_price": null,
-        "main_net": 89284010
+        "main_net": 89289485
       },
       {
         "code": "600530",
@@ -931,7 +931,7 @@
         "pb": 4.23,
         "liangbi": 2.77,
         "avg_price": null,
-        "main_net": 206015530
+        "main_net": 205733642
       },
       {
         "code": "301536",
@@ -944,7 +944,7 @@
         "pb": 9.14,
         "liangbi": 1.59,
         "avg_price": null,
-        "main_net": 74704042
+        "main_net": 74401642
       },
       {
         "code": "300291",
@@ -1243,7 +1243,7 @@
         "pb": 1.84,
         "liangbi": 2.13,
         "avg_price": null,
-        "main_net": 97068864
+        "main_net": 97058688
       },
       {
         "code": "605058",
@@ -2012,7 +2012,7 @@
         "liangbi": 1.24,
         "pe_ttm": 17.8,
         "pb": 9.28,
-        "main_net": 1288520080,
+        "main_net": 1288222464,
         "industry": "通信设备"
       },
       {
@@ -2024,7 +2024,7 @@
         "liangbi": 1,
         "pe_ttm": 21.57,
         "pb": 5.92,
-        "main_net": 1130524688,
+        "main_net": 1130145200,
         "industry": "通信设备"
       },
       {
@@ -2036,7 +2036,7 @@
         "liangbi": 1.54,
         "pe_ttm": -510.42,
         "pb": 6.37,
-        "main_net": 634309565,
+        "main_net": 634332525,
         "industry": "数字媒体"
       },
       {
@@ -2132,7 +2132,7 @@
         "liangbi": 2.48,
         "pe_ttm": 38.22,
         "pb": 4.53,
-        "main_net": 368875392,
+        "main_net": 368864800,
         "industry": "家电零部件Ⅱ"
       },
       {
@@ -2144,7 +2144,7 @@
         "liangbi": 1.98,
         "pe_ttm": -74.29,
         "pb": 119.84,
-        "main_net": 337211824,
+        "main_net": 337309760,
         "industry": "数字媒体"
       },
       {
@@ -2156,7 +2156,7 @@
         "liangbi": 1.04,
         "pe_ttm": -182.74,
         "pb": 11.39,
-        "main_net": 330067214,
+        "main_net": 330071070,
         "industry": "汽车零部件"
       },
       {
@@ -2168,7 +2168,7 @@
         "liangbi": 1.65,
         "pe_ttm": 59.09,
         "pb": 17.16,
-        "main_net": 328968464,
+        "main_net": 328612752,
         "industry": "半导体"
       },
       {
@@ -2204,7 +2204,7 @@
         "liangbi": 2.06,
         "pe_ttm": -3333.21,
         "pb": 4.35,
-        "main_net": 286217445,
+        "main_net": 286280309,
         "industry": "数字媒体"
       },
       {
@@ -2216,7 +2216,7 @@
         "liangbi": 1,
         "pe_ttm": 53.05,
         "pb": 21.25,
-        "main_net": 284002096,
+        "main_net": 284014896,
         "industry": "通信设备"
       },
       {
@@ -2228,7 +2228,7 @@
         "liangbi": 1.11,
         "pe_ttm": 14.89,
         "pb": 2.25,
-        "main_net": 283355824,
+        "main_net": 283282016,
         "industry": "半导体"
       },
       {
@@ -2252,7 +2252,7 @@
         "liangbi": 0.7,
         "pe_ttm": 87.43,
         "pb": 2.32,
-        "main_net": 275217541,
+        "main_net": 275247957,
         "industry": "照明设备Ⅱ"
       },
       {
@@ -2288,7 +2288,7 @@
         "liangbi": 1.06,
         "pe_ttm": 249.96,
         "pb": 7.6,
-        "main_net": 242000000,
+        "main_net": 242097408,
         "industry": "塑料"
       },
       {
@@ -2312,7 +2312,7 @@
         "liangbi": 3.95,
         "pe_ttm": 13.37,
         "pb": 1.42,
-        "main_net": 227221047,
+        "main_net": 227225223,
         "industry": "汽车零部件"
       },
       {
@@ -2348,7 +2348,7 @@
         "liangbi": 1.96,
         "pe_ttm": 177.57,
         "pb": 3.76,
-        "main_net": 209463666,
+        "main_net": 209502146,
         "industry": "专用设备"
       },
       {
@@ -2360,7 +2360,7 @@
         "liangbi": 2.77,
         "pe_ttm": 69.59,
         "pb": 4.23,
-        "main_net": 206015530,
+        "main_net": 205733642,
         "industry": "元件"
       },
       {
@@ -2372,7 +2372,7 @@
         "liangbi": 1.24,
         "pe_ttm": 61.46,
         "pb": 7.37,
-        "main_net": 196302384,
+        "main_net": 196282128,
         "industry": "半导体"
       },
       {
@@ -2408,20 +2408,8 @@
         "liangbi": 1.5,
         "pe_ttm": 50.64,
         "pb": 2.85,
-        "main_net": 175051446,
+        "main_net": 175108737,
         "industry": "饮料乳品"
-      },
-      {
-        "code": "688702",
-        "name": "盛科通信-U",
-        "close": 196.25,
-        "change_pct": 6.84,
-        "huanshou": 3.43,
-        "liangbi": 1.56,
-        "pe_ttm": -446.37,
-        "pb": 35.5,
-        "main_net": 172401525,
-        "industry": "半导体"
       },
       {
         "code": "688017",
@@ -2432,8 +2420,20 @@
         "liangbi": 1.63,
         "pe_ttm": 368.7,
         "pb": 15.57,
-        "main_net": 171803408,
+        "main_net": 171844576,
         "industry": "自动化设备"
+      },
+      {
+        "code": "688702",
+        "name": "盛科通信-U",
+        "close": 196.25,
+        "change_pct": 6.84,
+        "huanshou": 3.43,
+        "liangbi": 1.56,
+        "pe_ttm": -446.37,
+        "pb": 35.5,
+        "main_net": 171672665,
+        "industry": "半导体"
       },
       {
         "code": "002354",
@@ -2456,7 +2456,7 @@
         "liangbi": 0.79,
         "pe_ttm": -4242.8,
         "pb": 18.03,
-        "main_net": 168117681,
+        "main_net": 168065185,
         "industry": "半导体"
       },
       {
@@ -2468,7 +2468,7 @@
         "liangbi": 1.39,
         "pe_ttm": 15.9,
         "pb": 3.14,
-        "main_net": 155988308,
+        "main_net": 155980772,
         "industry": "小金属"
       },
       {
@@ -2552,7 +2552,7 @@
         "liangbi": 1.94,
         "pe_ttm": -58.04,
         "pb": 3.91,
-        "main_net": 135019136,
+        "main_net": 134722640,
         "industry": "数字媒体"
       },
       {
@@ -2564,7 +2564,7 @@
         "liangbi": 1.26,
         "pe_ttm": 17.26,
         "pb": 4.72,
-        "main_net": 132823104,
+        "main_net": 132823088,
         "industry": "医疗服务"
       },
       {
@@ -2636,7 +2636,7 @@
         "liangbi": 3.07,
         "pe_ttm": 84.2,
         "pb": 5.06,
-        "main_net": 119725736,
+        "main_net": 119730081,
         "industry": "塑料"
       },
       {
@@ -2684,7 +2684,7 @@
         "liangbi": 1.05,
         "pe_ttm": 53.84,
         "pb": 3.98,
-        "main_net": 113000165,
+        "main_net": 112960789,
         "industry": "IT服务Ⅱ"
       },
       {
@@ -2780,7 +2780,7 @@
         "liangbi": 1.32,
         "pe_ttm": 662.26,
         "pb": 4.97,
-        "main_net": 100556499,
+        "main_net": 100602787,
         "industry": "消费电子"
       },
       {
@@ -2794,18 +2794,6 @@
         "pb": 10.48,
         "main_net": 99995063,
         "industry": "半导体"
-      },
-      {
-        "code": "300058",
-        "name": "蓝色光标",
-        "close": 13.31,
-        "change_pct": 2.38,
-        "huanshou": 5.33,
-        "liangbi": 1.28,
-        "pe_ttm": 142.25,
-        "pb": 5.96,
-        "main_net": 99118704,
-        "industry": "广告营销"
       },
       {
         "code": "600418",
@@ -2832,6 +2820,18 @@
         "industry": "半导体"
       },
       {
+        "code": "300058",
+        "name": "蓝色光标",
+        "close": 13.31,
+        "change_pct": 2.38,
+        "huanshou": 5.33,
+        "liangbi": 1.28,
+        "pe_ttm": 142.25,
+        "pb": 5.96,
+        "main_net": 98719392,
+        "industry": "广告营销"
+      },
+      {
         "code": "605577",
         "name": "龙版传媒",
         "close": 16.96,
@@ -2840,7 +2840,7 @@
         "liangbi": 2.13,
         "pe_ttm": 38.61,
         "pb": 1.84,
-        "main_net": 97068864,
+        "main_net": 97058688,
         "industry": "出版"
       },
       {
@@ -2852,7 +2852,7 @@
         "liangbi": 1.76,
         "pe_ttm": 43.67,
         "pb": 7.65,
-        "main_net": 96005036,
+        "main_net": 95973961,
         "industry": "半导体"
       },
       {
@@ -2876,7 +2876,7 @@
         "liangbi": 3.41,
         "pe_ttm": -22.34,
         "pb": 37.15,
-        "main_net": 93560626,
+        "main_net": 93617914,
         "industry": "通信设备"
       },
       {
@@ -2900,7 +2900,7 @@
         "liangbi": 1.53,
         "pe_ttm": 66.73,
         "pb": 1.68,
-        "main_net": 93422417,
+        "main_net": 93423963,
         "industry": "计算机设备"
       },
       {
@@ -2936,7 +2936,7 @@
         "liangbi": 3.07,
         "pe_ttm": -13.9,
         "pb": 3.37,
-        "main_net": 89284010,
+        "main_net": 89289485,
         "industry": "焦炭Ⅱ"
       },
       {
@@ -2948,7 +2948,7 @@
         "liangbi": 1.66,
         "pe_ttm": 22.9,
         "pb": 3.57,
-        "main_net": 86539896,
+        "main_net": 86683704,
         "industry": "自动化设备"
       },
       {
@@ -2960,7 +2960,7 @@
         "liangbi": 1.48,
         "pe_ttm": 142.35,
         "pb": 10.12,
-        "main_net": 86436290,
+        "main_net": 86475922,
         "industry": "自动化设备"
       },
       {
@@ -3068,7 +3068,7 @@
         "liangbi": 4.06,
         "pe_ttm": 179.24,
         "pb": 7.28,
-        "main_net": 78651681,
+        "main_net": 78377822,
         "industry": "一般零售"
       },
       {
@@ -3164,20 +3164,8 @@
         "liangbi": 0.62,
         "pe_ttm": 21.62,
         "pb": 3.29,
-        "main_net": 75035516,
+        "main_net": 75045644,
         "industry": "消费电子"
-      },
-      {
-        "code": "301536",
-        "name": "星宸科技",
-        "close": 94.5,
-        "change_pct": 8.97,
-        "huanshou": 7.05,
-        "liangbi": 1.59,
-        "pe_ttm": 23.9,
-        "pb": 9.14,
-        "main_net": 74704042,
-        "industry": "半导体"
       },
       {
         "code": "300489",
@@ -3188,8 +3176,20 @@
         "liangbi": 1.17,
         "pe_ttm": 470.63,
         "pb": 36.3,
-        "main_net": 74584480,
+        "main_net": 74604784,
         "industry": "光学光电子"
+      },
+      {
+        "code": "301536",
+        "name": "星宸科技",
+        "close": 94.5,
+        "change_pct": 8.97,
+        "huanshou": 7.05,
+        "liangbi": 1.59,
+        "pe_ttm": 23.9,
+        "pb": 9.14,
+        "main_net": 74401642,
+        "industry": "半导体"
       },
       {
         "code": "300570",
@@ -3206,9 +3206,9 @@
     ]
   },
   "breadth": {
-    "up": 3676,
-    "down": 1390,
-    "flat": 229
+    "up": 3675,
+    "down": 1389,
+    "flat": 231
   },
   "breadthCross": null,
   "ztDerived": null,
@@ -3219,15 +3219,15 @@
     "degradations": []
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-11-10 11:00",
+  "prevCapturedAtBJ": "2026-11-10 11:30",
   "prevPools": {
-    "zt": 55,
-    "zb": 16,
-    "seal_pct": 77.5
+    "zt": 51,
+    "zb": 21,
+    "seal_pct": 70.8
   },
   "rolling": {
-    "generatedAtBJ": "2026-11-10 11:30",
-    "minutes_to_close": 210,
+    "generatedAtBJ": "2026-11-10 12:00",
+    "minutes_to_close": 180,
     "trend_pool_mode": "trend",
     "streak_pool": [
       {
@@ -3257,7 +3257,7 @@
           "level": "full",
           "missing": []
         },
-        "fund_flow_note": "主力净流入 +8928 万（东财 push2 盘中实时）",
+        "fund_flow_note": "主力净流入 +8929 万（东财 push2 盘中实时）",
         "scripts": [
           {
             "name": "A",
@@ -3437,7 +3437,7 @@
           "level": "full",
           "missing": []
         },
-        "fund_flow_note": "主力净流入 +36888 万（东财 push2 盘中实时）",
+        "fund_flow_note": "主力净流入 +36886 万（东财 push2 盘中实时）",
         "scripts": [
           {
             "name": "A",
