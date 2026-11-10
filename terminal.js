@@ -671,6 +671,33 @@
     // 近 N 日「涨停 vs 连板」柱状图归属「涨跌停」专题视图（viewZt），
     // 总览不再重复陈列，避免与涨跌停视图图面重合/冗余。
 
+    // ── 题材共现图谱（2026-11-10 #3 接线，用户拍板）：sidecar 独立档直 fetch，
+    //   照市场宽度卡同款异步 fail-open 模式；主线结论仍以「主线题材」卡为准（唯一出处），
+    //   本卡只补「题材间关联」维度：活跃题材天数 + 同日共现 Jaccard 边。
+    const tgPanel = panel('题材关联', '共现→Jaccard 边 · sidecar', '<div class="t-loading">加载…</div>', 't-c8');
+    g.appendChild(tgPanel);
+    jget('data/theme_graph.json').then((tg) => {
+      if (!tgPanel.isConnected) return;
+      const host = tgPanel.lastElementChild;
+      if (!host) return;
+      if (!tg || !Array.isArray(tg.themes) || !tg.themes.length) {
+        host.outerHTML = '<div class="t-empty">图谱档缺失/无数据 → 不显示（fail-open）</div>';
+        return;
+      }
+      const tmax = Math.max(1, ...tg.themes.slice(0, 8).map((t) => t.days));
+      const themeRows = tg.themes.slice(0, 8).map((t) => `<div class="t-dv-row" style="grid-template-columns:110px 1fr 34px">
+          <span class="t-dv-name">${esc(t.tag)}</span>
+          <span class="t-dv-track"><span class="t-dv-fill" style="width:${(t.days / tmax * 100).toFixed(1)}%;background:#3b5bdb"></span></span>
+          <span class="t-dv-val">${t.days}</span></div>`).join('');
+      const edgeTags = tg.edges.slice(0, 6).map((e) =>
+        `<span title="共现 ${e.co} 天 / Jaccard ${e.jaccard}" style="font-size:11px;border:1px solid #2a3a55;border-radius:3px;padding:1px 5px;margin:0 4px 4px 0;display:inline-block">${esc(e.a)} ↔ ${esc(e.b)} <b style="color:#7aa2f7">${e.jaccard.toFixed(2)}</b></span>`).join('');
+      host.outerHTML = `<div class="t-stats" style="grid-template-columns:1fr 1fr">
+          <div>${themeRows}</div>
+          <div><div style="font-size:11px;color:var(--t-ink-3);margin-bottom:6px">最强关联边（同日共同活跃）</div>${edgeTags || '<span class="t-empty">暂无边</span>'}</div>
+        </div>
+        <div class="t-dnote">${esc(tg.generatedNote || '')} · 关联≠因果，共现窗口有限，仅供观察</div>`;
+    });
+
 
 
     // ── 市场宽度（全市场健康度核心）：站上均线占比 / 新高新低 / 涨跌比 ──
