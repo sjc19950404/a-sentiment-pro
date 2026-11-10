@@ -42,6 +42,9 @@ LOG=/var/log/aquant/run.log
 #   pi_push 幂等（无变化秒退）+单实例锁+守卫全内置，与 intraday/EOD 调用并发安全；11-13 回看评估
 */5 9-15 * * 1-5 cd /opt/a-sentiment-pro && bash scripts/pi_push.sh >>$LOG 2>&1
 
+# 每日全系统自检（北京 18:00 工作日，EOD 前暴露问题）：七类检查（盘中链产出/推送通道/
+#   git同步/磁盘内存/日志异常/cron完整性/EOD档新鲜度）；有问题推企微，没问题静默——2026-11-11 拍板
+0 18 * * 1-5 cd /opt/a-sentiment-pro && { set -a; . ./.env; set +a; } && node scripts/daily_selfcheck.mjs >>$LOG 2>&1
 # 盘后首抓（北京 18:30 | UTC 10:30，工作日）
 30 18 * * 1-5 /opt/a-sentiment-pro/pi_run.sh eod >>$LOG 2>&1
 # 盘后补抓（北京 21:00 | UTC 13:00，工作日）
