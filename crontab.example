@@ -32,6 +32,9 @@ LOG=/var/log/aquant/run.log
 #   频控 seal2/break3/touch1/approach1 每票每日、日总额60条；只推事件不下单——2026-11-11 拍板「行动用」
 * 9-15 * * 1-5 cd /opt/a-sentiment-pro && node scripts/first_board_alert.mjs >>$LOG 2>&1
 
+# 跌停反包盯盘·行动版（北京每分钟，脚本内交易时段+交易日门禁）：昨日跌停池→反包状态机
+#   （脱离跌停/翻红/反包封板地天/地天炸板）→企微；无板块过滤（反包=独立行情信号）——2026-11-11 拍板 B
+* 9-15 * * 1-5 cd /opt/a-sentiment-pro && node scripts/dt_rebound_alert.mjs >>$LOG 2>&1
 # 首板晋级盯盘（北京 9:30-15:30 每30分钟）：昨日首板池→今日进程（已晋级/触板炸板/逼近），
 #   快照变化才提交推送，Pages 约1分钟后可见；行情日期非今日则 pending（绝不用昨日收盘冒充）——2026-11-11
 */30 9-15 * * 1-5 cd /opt/a-sentiment-pro && node scripts/first_board_live.mjs >>$LOG 2>&1; cd /opt/a-sentiment-pro && git diff --quiet data/first_board_live.json || (git add data/first_board_live.json && git commit -q -m "data: 首板盯盘快照" && git pull --rebase -q origin main 2>/dev/null; git push -q origin main 2>/dev/null)

@@ -78,12 +78,15 @@ export function detectEvents(prevState, snaps, opts = {}) {
     const prev = stocks[code] || { pos: null, counts: {}, brokeToday: 0 };
     const counts = { seal: 0, break: 0, touch: 0, approach: 0, ...(prev.counts || {}) };
     const emit = (kind, label) => {
-      if (!shouldPush(s.sector)) return;                 // 板块过滤：不计 counts（板块转强后新转移可推）
+      // 地天豁免（2026-11-11 拍板）：曾触跌停+强势修复的票是**逆板块独立行情**——
+      //   板块白名单恰恰会拦掉它（板块在跌→不满足强板块口径），故豁免板块过滤。
+      if (!shouldPush(s.sector) && !s.dtRebound) return;
       if (counts[kind] >= caps[kind]) return;            // per-code 频控
       if (total >= th.totalCap) return;                  // 日总额控
       counts[kind]++;
       total++;
-      events.push({ code, name: s.name || code, kind, label, chg: s.quote.chg, sector: s.sector || null });
+      const dtTag = s.dtRebound ? '〔地天形态·曾触跌停逆板块修复〕' : '';
+      events.push({ code, name: s.name || code, kind, label: label + dtTag, chg: s.quote.chg, sector: s.sector || null, dtRebound: !!s.dtRebound });
     };
     if (cur === 'sealed') {
       if (prev.pos !== 'sealed') {

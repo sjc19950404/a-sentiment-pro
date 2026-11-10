@@ -47,7 +47,7 @@ try {
   for (let i = 0; i < codes.length; i += 100) {
     const url = 'https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&secids=' +
       codes.slice(i, i + 100).map(secid).join(',') +
-      '&fields=f2,f3,f12,f14,f15,f18,f124&ut=fa5fd1943c7b386f172d6893dbfba10b';
+      '&fields=f2,f3,f12,f14,f15,f16,f18,f124&ut=fa5fd1943c7b386f172d6893dbfba10b';
     const j = await (await fetch(url, { headers: { Referer: 'https://quote.eastmoney.com/' } })).json();
     for (const q of (j.data && j.data.diff) || []) quotes.set(String(q.f12), q);
   }
@@ -58,9 +58,14 @@ try {
     if (!q || !Number.isFinite(+q.f124) || new Date(+q.f124 * 1000 + 8 * 3600000).toISOString().slice(0, 10) !== today()) continue;
     if (!Number.isFinite(+q.f2) || !Number.isFinite(+q.f18)) continue;
     const pct = limitUpPct({ code: String(p.c), name: p.n || '' });
+    // 地天识别（2026-11-11 拍板 A）：跌停幅与涨停幅同构（±10/±20/±5/±30），本地算跌停价；
+    //   今日最低曾触及跌停价 + 现涨幅 ≥5% = 地天形态（豁免板块白名单）
+    const downPrice = Math.round(+q.f18 * (1 - pct / 100) * 100) / 100;
+    const didTouchDown = Number.isFinite(+q.f16) && +q.f16 <= downPrice + 0.005;
+    const dtRebound = didTouchDown && Number.isFinite(+q.f3) && +q.f3 >= 5;
     snaps.push({
       code: String(p.c), name: q.f14 || p.n || String(p.c),
-      sector: p.hybk || null,
+      sector: p.hybk || null, dtRebound,
       quote: { last: +q.f2, high: Number.isFinite(+q.f15) ? +q.f15 : null, chg: Number.isFinite(+q.f3) ? +q.f3 : null },
       limitPrice: Math.round(+q.f18 * (1 + pct / 100) * 100) / 100,
     });

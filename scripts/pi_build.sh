@@ -109,6 +109,9 @@ step "budget_preview";        node scripts/risk_budget_preview.mjs || echo "⚠ 
 # 20.74f 首板晋级观察档（2026-11-11 用户拍板 A+B1）：分层晋级率基率+今日候选+昨日对账，
 #   落独立档 data/first_board_watch.json；**只记账不下单**——不生成委托/不进建仓（B2 接闸须拍板）；
 #   推送观察段（buildFirstBoardBrief）读本档，纯信息「基率非预测」。sidecar fail-open。
+# 20.74g 跌停池采集（2026-11-11 拍板 B：跌停反包监控的数据底座）——getTopicDTPool 按日幂等落档，
+#   历史深度有限逐日攒；dt_rebound_alert.mjs（盘中每分钟）读本档昨日跌停池跑反包状态机。
+step "fetch_dtpool";          node scripts/fetch_dtpool.mjs || echo "⚠ 跌停池采集失败（fail-open，继续）"
 step "first_board_watch";     node scripts/first_board_watch.mjs || echo "⚠ 首板观察档失败（fail-open，继续）"
 # 20.75 晚间公告排雷（V5.3 P2）：自动建仓前先扫描连板梯队/标的池公告，让 GLM 判定重大利空，
 #   产出 data/llm_risk_blacklist.json；paper_daily 建仓前据此拒买（正向封禁，空表=fail-open）。
