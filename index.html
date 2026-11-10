@@ -2221,12 +2221,16 @@
 
     // ── regime 分布 ──
     const counts = (S.regime && S.regime.counts) || {};
-    const ck = Object.keys(counts);
+    // 2026-11-09：'数据不足' 是归档起点（2025-10-09/10 开档两日）的诚实标记——情绪分/封板率
+    //   都在（引擎绝对标尺连水位都判了），缺的只是**历史回看窗**（方向判不了）。
+    //   实测东财涨停池仅留 ~1 个月历史，起点之前数据不可回补 → 该档将长期存在。
+    //   展示处置：置底 + 灰显 + 说明文案，避免每次都被误读成"数据事故"。
+    const ck = Object.keys(counts).sort((a, b) => (a === '数据不足') - (b === '数据不足'));
     const cmax = Math.max(1, ...ck.map((k) => counts[k]));
     const dist = ck.length
-      ? `<div>${ck.map((k) => `<div class="t-dv-row" style="grid-template-columns:56px 1fr 34px">
-          <span class="t-dv-name">${esc(k)}</span>
-          <span class="t-dv-track"><span class="t-dv-fill ${REGIME_BAND[k] && k !== 'unknown' ? '' : ''}" style="width:${(counts[k] / cmax * 100).toFixed(1)}%;background:${REGIME_BAND[k] || '#2a3644'}"></span></span>
+      ? `<div>${ck.map((k) => `<div class="t-dv-row" style="grid-template-columns:56px 1fr 34px" ${k === '数据不足' ? 'title="归档起点（2025-10-09/10）缺历史回看窗：情绪分水位已判（绝对标尺），但方向不可判——按不猜纪律不给标签。历史数据源实测仅留约1个月，不可回补，该档将长期存在。"' : ''}>
+          <span class="t-dv-name" ${k === '数据不足' ? 'style="color:#4a5568"' : ''}>${esc(k)}</span>
+          <span class="t-dv-track"><span class="t-dv-fill ${REGIME_BAND[k] && k !== 'unknown' ? '' : ''}" style="width:${(counts[k] / cmax * 100).toFixed(1)}%;background:${REGIME_BAND[k] || '#2a3644'}${k === '数据不足' ? ';opacity:.5' : ''}"></span></span>
           <span class="t-dv-val">${counts[k]}</span></div>`).join('')}</div>`
       : '<div class="t-empty">无分布数据</div>';
     g.appendChild(panel('regime 分布', `共 ${(S.regime && S.regime.totalDays) || '—'} 日`, dist, 't-c4'));
@@ -2241,6 +2245,33 @@
 
     // 近 N 日「涨停 vs 连板」柱状图归属「涨跌停」专题视图（viewZt），
     // 总览不再重复陈列，避免与涨跌停视图图面重合/冗余。
+
+    // ── 题材共现图谱（2026-11-10 #3 接线，用户拍板）：sidecar 独立档直 fetch，
+    //   照市场宽度卡同款异步 fail-open 模式；主线结论仍以「主线题材」卡为准（唯一出处），
+    //   本卡只补「题材间关联」维度：活跃题材天数 + 同日共现 Jaccard 边。
+    const tgPanel = panel('题材关联', '共现→Jaccard 边 · sidecar', '<div class="t-loading">加载…</div>', 't-c8');
+    g.appendChild(tgPanel);
+    jget('data/theme_graph.json').then((tg) => {
+      if (!tgPanel.isConnected) return;
+      const host = tgPanel.lastElementChild;
+      if (!host) return;
+      if (!tg || !Array.isArray(tg.themes) || !tg.themes.length) {
+        host.outerHTML = '<div class="t-empty">图谱档缺失/无数据 → 不显示（fail-open）</div>';
+        return;
+      }
+      const tmax = Math.max(1, ...tg.themes.slice(0, 8).map((t) => t.days));
+      const themeRows = tg.themes.slice(0, 8).map((t) => `<div class="t-dv-row" style="grid-template-columns:110px 1fr 34px">
+          <span class="t-dv-name">${esc(t.tag)}</span>
+          <span class="t-dv-track"><span class="t-dv-fill" style="width:${(t.days / tmax * 100).toFixed(1)}%;background:#3b5bdb"></span></span>
+          <span class="t-dv-val">${t.days}</span></div>`).join('');
+      const edgeTags = tg.edges.slice(0, 6).map((e) =>
+        `<span title="共现 ${e.co} 天 / Jaccard ${e.jaccard}" style="font-size:11px;border:1px solid #2a3a55;border-radius:3px;padding:1px 5px;margin:0 4px 4px 0;display:inline-block">${esc(e.a)} ↔ ${esc(e.b)} <b style="color:#7aa2f7">${e.jaccard.toFixed(2)}</b></span>`).join('');
+      host.outerHTML = `<div class="t-stats" style="grid-template-columns:1fr 1fr">
+          <div>${themeRows}</div>
+          <div><div style="font-size:11px;color:var(--t-ink-3);margin-bottom:6px">最强关联边（同日共同活跃）</div>${edgeTags || '<span class="t-empty">暂无边</span>'}</div>
+        </div>
+        <div class="t-dnote">${esc(tg.generatedNote || '')} · 关联≠因果，共现窗口有限，仅供观察</div>`;
+    });
 
 
 
