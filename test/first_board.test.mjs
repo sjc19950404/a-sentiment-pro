@@ -87,3 +87,34 @@ test('first_board_push: 无候选/缺档 → null 不推（fail-open）', () => 
   assert.equal(buildFirstBoardBrief({ date: 'x' }, new Date(), [{ date: 'x', candidates: [] }]), null);
   assert.equal(buildFirstBoardBrief({ date: 'x' }, new Date(), []), null);
 });
+
+// ── 2026-11-11 用户追问拍板：一字排除 + 科创创业排除 ──
+import { isMainBoardCode } from '../src/first_board.js';
+
+test('first_board: isMainBoardCode——科创(688/689)创业(300/301)排除，主板/北证保留', () => {
+  assert.equal(isMainBoardCode('688001'), false);
+  assert.equal(isMainBoardCode('689009'), false);
+  assert.equal(isMainBoardCode('300750'), false);
+  assert.equal(isMainBoardCode('301236'), false);
+  assert.equal(isMainBoardCode('600609'), true);
+  assert.equal(isMainBoardCode('000520'), true);
+  assert.equal(isMainBoardCode('002623'), true);
+  assert.equal(isMainBoardCode('832000'), true, '北证保留');
+  assert.equal(isMainBoardCode(''), false, '空码从严');
+});
+
+test('first_board: 候选排除一字/开盘秒板(fbt<93000)与科创创业——买不进的票无参与价值', () => {
+  const pool = [
+    { c: '600001', n: '甲', lbc: 1, fbt: 92500, fund: 5e7, ltsz: 1e9, zbc: 0 },  // 竞价一字 → 排除
+    { c: '300001', n: '创甲', lbc: 1, fbt: 93500, fund: 5e7, ltsz: 1e9, zbc: 0 }, // 创业 → 排除
+    { c: '688001', n: '科甲', lbc: 1, fbt: 93500, fund: 5e7, ltsz: 1e9, zbc: 0 }, // 科创 → 排除
+    { c: '600002', n: '乙', lbc: 1, fbt: 93100, fund: 5e7, ltsz: 1e9, zbc: 0 },   // 9:31 早板主板 → 进
+    { c: '600003', n: '丙', lbc: 1, fbt: 92500, fund: 5e7, ltsz: 1e9, zbc: 0 },   // 一字（降档也不进）
+  ];
+  const cs = pickAdvanceCandidates(pool, null);
+  assert.deepEqual(cs.map((c) => c.code), ['600002']);
+  // 降档回退同样排除一字
+  const cs2 = pickAdvanceCandidates([{ c: '600003', n: '丙', lbc: 1, fbt: 92500, fund: 2e7, ltsz: 1e9, zbc: 0 }], null);
+  assert.deepEqual(cs2, [], '一字票连降档回退也不进');
+  assert.equal(FB_DEFAULTS.fbtMin, 93000);
+});

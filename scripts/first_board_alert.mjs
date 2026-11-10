@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 import { detectEvents, buildAlertText, strongSectors, ALERT_DEFAULTS } from '../src/first_board_alert.js';
+import { isMainBoardCode } from '../src/first_board.js';
 import { loadCalendar, isTradingDay } from '../src/calendar.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -38,7 +39,8 @@ try {
   const zt = JSON.parse(readFileSync(join(ROOT, 'data/ztpool_history.json'), 'utf8'));
   const days = (Array.isArray(zt) ? zt : []).filter((x) => x && Array.isArray(x.pool));
   const prev = days[days.length - 1];
-  const firsts = (prev.pool || []).filter((p) => p && p.lbc === 1 && p.c);
+  const firsts = (prev.pool || []).filter((p) => p && p.lbc === 1 && p.c)
+    .filter((p) => isMainBoardCode(p.c));   // 2026-11-11 拍板：科创创业不进盯盘/推送
   if (!firsts.length) process.exit(0);
 
   // 实时报价（f124 校验行情日期=今日，昨日价绝不进状态机）

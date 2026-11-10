@@ -18,6 +18,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
+import { isMainBoardCode } from '../src/first_board.js';
 import { limitUpPct } from '../src/limit_caliber.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -43,7 +44,8 @@ try {
   const days = (Array.isArray(zt) ? zt : []).filter((d) => d && Array.isArray(d.pool));
   if (!days.length) { console.error('[fb-live] 涨停池档为空'); process.exit(2); }
   const prev = days[days.length - 1];            // 末条 = 昨日（今日池要等 EOD 才落）
-  const firsts = (prev.pool || []).filter((p) => p && p.lbc === 1 && p.c);
+  const firsts = (prev.pool || []).filter((p) => p && p.lbc === 1 && p.c)
+    .filter((p) => isMainBoardCode(p.c));   // 2026-11-11 拍板：科创创业不进盯盘卡
   if (!firsts.length) { console.error('[fb-live] 昨日无首板'); process.exit(0); }
 
   const codes = firsts.map((p) => String(p.c));

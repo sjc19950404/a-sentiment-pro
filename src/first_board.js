@@ -77,13 +77,26 @@ export function advanceStats(days) {
 }
 
 /** 候选筛选阈值（2026-11-11 拍板 v1：早板+封单≥3%+零炸板；可经 opts 覆盖）。 */
-export const FB_DEFAULTS = { fbtMax: 100000, fundPctMin: 0.03, zbcMax: 0, cap: 3 };
+export const FB_DEFAULTS = { fbtMin: 93000, fbtMax: 100000, fundPctMin: 0.03, zbcMax: 0, cap: 3 };
+
+/**
+ * 主板口径（2026-11-11 用户拍板：晋级首板/地天反包**排除科创创业**——
+ *   688/689 科创、300/301 创业不进盯盘池/候选/推送；北证与主板保留）。
+ * 基率统计（advanceStats）保持全池口径（"全池基率"语义不变，仅运行层排除）。
+ */
+export function isMainBoardCode(code) {
+  const c = String(code || '');
+  if (!/^\d{6}$/.test(c)) return false;   // 空/非法码从严：宁可不盯
+  return !/^(688|689|300|301)/.test(c);
+}
 
 /**
  * 今日首板晋级候选（观察用，禁止表述为买入建议）。
+ * 2026-11-11 用户追问补两条排除：①**一字/开盘秒板**（fbt<fbtMin，默认 93000：9:25 竞价
+ *   即封死的票买不进，无参与价值）；②科创创业（isMainBoardCode）。
  * @param {Array} pool 今日涨停池
  * @param {object} stats advanceStats 输出（取候选所属分层的基率）
- * @param {object} [opts] { fbtMax, fundPctMin, zbcMax, cap }
+ * @param {object} [opts] { fbtMin, fbtMax, fundPctMin, zbcMax, cap }
  */
 export function pickAdvanceCandidates(pool, stats, opts = {}) {
   const th = { ...FB_DEFAULTS, ...opts };
@@ -91,7 +104,9 @@ export function pickAdvanceCandidates(pool, stats, opts = {}) {
   const rows = [];
   for (const p of pool) {
     if (!p || p.lbc !== 1) continue;
-    if (!Number.isFinite(+p.fbt) || +p.fbt <= 0 || +p.fbt >= th.fbtMax) continue;   // 非早板不进
+    if (!isMainBoardCode(p.c)) continue;                                              // 科创创业不进
+    if (!Number.isFinite(+p.fbt) || +p.fbt <= 0 || +p.fbt < th.fbtMin) continue;      // 一字/秒板买不进，不进
+    if (!Number.isFinite(+p.fbt) || +p.fbt >= th.fbtMax) continue;                    // 非早板不进
     if (!Number.isFinite(+p.fund) || +p.fund <= 0 || !Number.isFinite(+p.ltsz) || +p.ltsz <= 0) continue;
     const fundPct = +p.fund / +p.ltsz;
     if (fundPct < th.fundPctMin) continue;
@@ -113,7 +128,9 @@ export function pickAdvanceCandidates(pool, stats, opts = {}) {
   const fallback = [];
   for (const p of pool) {
     if (!p || p.lbc !== 1) continue;
-    if (!Number.isFinite(+p.fbt) || +p.fbt <= 0 || +p.fbt >= th.fbtMax) continue;
+    if (!isMainBoardCode(p.c)) continue;                                              // 科创创业不进
+    if (!Number.isFinite(+p.fbt) || +p.fbt <= 0 || +p.fbt < th.fbtMin) continue;      // 一字/秒板不进
+    if (!Number.isFinite(+p.fbt) || +p.fbt >= th.fbtMax) continue;
     if (!Number.isFinite(+p.fund) || +p.fund <= 0 || !Number.isFinite(+p.ltsz) || +p.ltsz <= 0) continue;
     const fundPct = +p.fund / +p.ltsz;
     if (fundPct < 0.01 || fundPct >= th.fundPctMin) continue;

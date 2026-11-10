@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 import { detectEvents, buildAlertText } from '../src/dt_rebound.js';
+import { isMainBoardCode } from '../src/first_board.js';
 import { limitUpPct } from '../src/limit_caliber.js';
 import { loadCalendar, isTradingDay } from '../src/calendar.js';
 
@@ -40,7 +41,8 @@ try {
   // 昨日跌停池 = 今日之前最近一条（今日跌停池要等 EOD）
   const prevDays = days.filter((x) => x.date < today());
   const prev = prevDays.length ? prevDays[prevDays.length - 1] : null;
-  const dts = prev ? (prev.pool || []).filter((p) => p && p.c) : [];
+  const dts = prev ? (prev.pool || []).filter((p) => p && p.c)
+    .filter((p) => isMainBoardCode(p.c)) : [];   // 2026-11-11 拍板：科创创业不进反包盯盘/推送
   if (!dts.length) process.exit(0);   // 昨日无跌停票 / 档未开（11-11 首采）——静默
 
   const quotes = new Map();
