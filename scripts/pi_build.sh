@@ -90,6 +90,10 @@ step "split_archive (切片重建)"; node scripts/split_archive.mjs || echo "⚠
 # 20.74 真实公告爬虫（V5.3 P2）：为排雷机提供真实公告源（东方财富官方公告接口，连板梯队 topN）。
 #   fail-open：host 不可达/返回空 → 公告源为空 → 排雷机扫不到票 → 空黑名单（不误伤正常交易）。
 step "fetch_announcements";  node scripts/fetch_announcements.mjs || echo "⚠ 公告爬虫未落档（网络限制/失败），本次排雷不封禁（fail-open）"
+# 20.74b 公告关键词避雷扫描（2026-11-10 #6，用户拍板）：零成本兜底层——纯标题词库匹配
+#   （high红线/mid观察/澄清豁免），落独立档 data/ann_risk_scan.json；与下方 LLM 排雷互补
+#   （LLM 判语境可失效，词库扫描永远在）。sidecar fail-open：失败不阻断、不封禁。
+step "ann_risk_scan";         node scripts/scan_announcements.mjs || echo "⚠ 关键词避雷扫描失败（fail-open，不影响排雷主链）"
 # 20.75 晚间公告排雷（V5.3 P2）：自动建仓前先扫描连板梯队/标的池公告，让 GLM 判定重大利空，
 #   产出 data/llm_risk_blacklist.json；paper_daily 建仓前据此拒买（正向封禁，空表=fail-open）。
 #   fail-open：缺 LLM 配置 → 退出非 0 不落档（本次不封禁）；已配置但无公告源/调用失败 → 空表。
