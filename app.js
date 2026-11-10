@@ -4694,14 +4694,17 @@ let __sidecarReady = false;
       window.__SEAT_LABEL_MAP = m;
     }
     const annJ = pick(ann);
-    if (annJ && Array.isArray(annJ.flagged)) {
+    // 档形态：按日期的数组 [{date, flagged:[...]}]（scan_announcements.mjs 幂等覆盖，末条=最新）
+    const annList = Array.isArray(annJ) ? annJ : (annJ && Array.isArray(annJ.flagged) ? [annJ] : []);
+    const annLatest = annList.length ? annList[annList.length - 1] : null;
+    if (annLatest && Array.isArray(annLatest.flagged)) {
       const m = new Map(); // code → 该票最高级别命中（high>mid>low）
       const rank = { high: 0, mid: 1, low: 2 };
-      for (const f of annJ.flagged) {
+      for (const f of annLatest.flagged) {
         if (!f || !f.code) continue;
         const prev = m.get(String(f.code));
         if (!prev || rank[f.level] < rank[prev.level]) {
-          m.set(String(f.code), { level: f.level, words: f.words || [], date: annJ.date || null });
+          m.set(String(f.code), { level: f.level, words: f.words || [], date: annLatest.date || null });
         }
       }
       window.__ANN_RISK_MAP = m;
