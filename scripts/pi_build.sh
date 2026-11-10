@@ -98,6 +98,10 @@ step "ann_risk_scan";         node scripts/scan_announcements.mjs || echo "⚠ �
 #   落独立档 data/theme_graph.json；主线判定唯一出处仍是 main_theme_history（本模块只补关联维度）。
 #   sidecar fail-open：失败不阻断。
 step "theme_graph";           node scripts/theme_graph.mjs || echo "⚠ 题材图谱生成失败（fail-open，继续）"
+# 20.74e 终端内联防呆（2026-11-10，实测教训）：index.html 里的研究工作台是 terminal.js 的
+#   **生成副本**——只改源不重生成 = 页面永远不生效（当日题材关联卡踩过一次）。
+#   每次 build 自动重生成，杜绝「改源忘生成」；生成失败不影响主链（fail-open）。
+step "terminal_inline";       node scripts/build_terminal_inline.mjs || echo "⚠ 终端内联重生成失败（fail-open，页面维持上一版）"
 # 20.74d 风险预算只读预演（2026-11-10 #5，用户拍板）：预算分配计算落 data/risk_budget_preview.json
 #   仅供人工对照——**决策链不读取本档**；预算表经拍板+预演期后才接 riskGuard 单一闸口。
 #   sidecar fail-open：失败不阻断。
