@@ -74,3 +74,42 @@ test('fb_alert: 报文——分级排序(炸板最先)+基率声明；无事件 
   assert.equal(buildAlertText([], { bj: 'x' }), null);
   assert.equal(ALERT_DEFAULTS.caps.break, 3);
 });
+
+// ── 板块过滤（2026-11-11 拍板：A 涨幅≥2% + 普涨度>70%，白名单=实时强板块∪昨日主线）──
+import { strongSectors } from '../src/first_board_alert.js';
+
+test('fb_alert: strongSectors——涨幅≥2%且普涨度>70%；缺数据跳过', () => {
+  const rows = [
+    { sector: '影视院线', chg: 7.0, up: 12, down: 3 },   // 强
+    { sector: '光伏设备', chg: 2.5, up: 8, down: 4 },    // 强（2.5≥2, 0.67? 8/12=0.667 ≤0.7 → 弱！）
+    { sector: '游戏Ⅱ', chg: 2.5, up: 9, down: 3 },      // 强（0.75>0.7）
+    { sector: '白酒', chg: 2.5, up: 4, down: 6 },        // 弱：普涨度 0.4
+    { sector: '银行', chg: 1.5, up: 30, down: 12 },      // 弱：涨幅不够
+  ];
+  const s = strongSectors(rows);
+  assert.ok(s.has('影视院线'));
+  assert.ok(!s.has('光伏设备'), '8/12=0.667 未过 0.7 普涨度');
+  assert.ok(s.has('游戏Ⅱ'));
+  assert.ok(!s.has('白酒'));
+  assert.ok(!s.has('银行'));
+  assert.equal(s.get('影视院线').breadth, 0.8);
+});
+
+test('fb_alert: pushFilter——弱板块事件不推不计数、板块转强后新转移可推', () => {
+  const weak = (sector) => sector === '光伏设备';   // 白名单只含光伏设备（模拟 shouldPush）
+  const S = (sector, last, high, chg) => ({ code: '600001', name: '甲', sector, quote: { last, high, chg }, limitPrice: 10 });
+  // 弱板块票封板：不产生事件（不推），但状态推进
+  let r = detectEvents(null, [S('白酒', 10.0, 10.0, 9.98)], { pushFilter: weak });
+  assert.equal(r.events.length, 0, '白名单外事件不产生');
+  assert.equal(r.state.stocks['600001'].pos, 'sealed', '状态照常推进不丢');
+  // 弱板块持续封板 → 无新事件
+  r = detectEvents(r.state, [S('白酒', 10.0, 10.0, 9.98)], { pushFilter: weak });
+  assert.equal(r.events.length, 0);
+  // 白名单内票正常推
+  const r2 = detectEvents(null, [S('光伏设备', 10.0, 10.0, 9.98)], { pushFilter: weak });
+  assert.equal(r2.events.length, 1);
+  assert.equal(r2.events[0].sector, '光伏设备');
+  // 无 pushFilter（默认放行）——板块排行失败的降级路径
+  const r3 = detectEvents(null, [S(null, 10.0, 10.0, 9.98)]);
+  assert.equal(r3.events.length, 1, '无过滤钩子时全放行（fail-open）');
+});

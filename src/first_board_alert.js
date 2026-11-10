@@ -22,6 +22,27 @@ export const ALERT_DEFAULTS = {
   totalCap: 60,
 };
 
+/**
+ * 实时强板块判定（2026-11-11 拍板：A 涨幅≥2% + 普涨度>70%，过滤个股拉板的假强信号）。
+ * @param {Array<{sector:string,chg:number,up:number,down:number}>} boardRows 实时板块排行
+ * @returns {Map<string,{chg:number,breadth:number}>} 板块名 → 强度明细
+ */
+export const SECTOR_DEFAULTS = { minChg: 2, minBreadth: 0.7 };
+export function strongSectors(boardRows, opts = {}) {
+  const th = { ...SECTOR_DEFAULTS, ...opts };
+  const out = new Map();
+  for (const b of boardRows || []) {
+    if (!b || !b.sector) continue;
+    const chg = Number.isFinite(+b.chg) ? +b.chg : null;
+    const up = Number.isFinite(+b.up) ? +b.up : null;
+    const down = Number.isFinite(+b.down) ? +b.down : null;
+    if (chg == null || up == null || down == null || up + down <= 0) continue;
+    const breadth = up / (up + down);
+    if (chg >= th.minChg && breadth > th.minBreadth) out.set(b.sector, { chg, breadth: +breadth.toFixed(2) });
+  }
+  return out;
+}
+
 /** 单票快照态。quote: {last, high, chg}（缺失字段从严：缺 high 视为不可判 touched）。 */
 export function posOf(quote, limitPrice, approachPct = ALERT_DEFAULTS.approachPct) {
   const { last, high, chg } = quote;
@@ -42,6 +63,10 @@ export function posOf(quote, limitPrice, approachPct = ALERT_DEFAULTS.approachPc
 export function detectEvents(prevState, snaps, opts = {}) {
   const th = { ...ALERT_DEFAULTS, ...opts };
   const caps = { ...ALERT_DEFAULTS.caps, ...(th.caps || {}) };
+  // 板块推送过滤（2026-11-11 拍板：实时强板块∪昨日主线才推企微）：
+  //   状态机全池跑、pos 照常推进（不丢状态）；被过滤的事件不计数——板块后来变强，
+  //   同票的**下一次转移**仍可推（挂起的旧事件不补推，实时语义）。
+  const shouldPush = typeof th.pushFilter === 'function' ? th.pushFilter : () => true;
   const stocks = (prevState && prevState.stocks) || {};
   const events = [];
   const next = { stocks: {} };
@@ -53,11 +78,12 @@ export function detectEvents(prevState, snaps, opts = {}) {
     const prev = stocks[code] || { pos: null, counts: {}, brokeToday: 0 };
     const counts = { seal: 0, break: 0, touch: 0, approach: 0, ...(prev.counts || {}) };
     const emit = (kind, label) => {
+      if (!shouldPush(s.sector)) return;                 // 板块过滤：不计 counts（板块转强后新转移可推）
       if (counts[kind] >= caps[kind]) return;            // per-code 频控
       if (total >= th.totalCap) return;                  // 日总额控
       counts[kind]++;
       total++;
-      events.push({ code, name: s.name || code, kind, label, chg: s.quote.chg });
+      events.push({ code, name: s.name || code, kind, label, chg: s.quote.chg, sector: s.sector || null });
     };
     if (cur === 'sealed') {
       if (prev.pos !== 'sealed') {

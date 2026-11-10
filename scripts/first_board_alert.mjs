@@ -9,7 +9,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
-import { detectEvents, buildAlertText, ALERT_DEFAULTS } from '../src/first_board_alert.js';
+import { detectEvents, buildAlertText, strongSectors, ALERT_DEFAULTS } from '../src/first_board_alert.js';
 import { loadCalendar, isTradingDay } from '../src/calendar.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -60,11 +60,27 @@ try {
     const pct = limitUpPct({ code: String(p.c), name: p.n || '' });
     snaps.push({
       code: String(p.c), name: q.f14 || p.n || String(p.c),
+      sector: p.hybk || null,
       quote: { last: +q.f2, high: Number.isFinite(+q.f15) ? +q.f15 : null, chg: Number.isFinite(+q.f3) ? +q.f3 : null },
       limitPrice: Math.round(+q.f18 * (1 + pct / 100) * 100) / 100,
     });
   }
-  const { events, state } = detectEvents(prevState, snaps);
+  // 实时强板块（2026-11-11 拍板：A 涨幅≥2% + 普涨度>70%）∪ 昨日主线板块 = 推送白名单
+  let allowSectors = new Set();
+  try {
+    const bUrl = 'https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=520&po=1&np=1&fltt=2&fid=f3&fs=m:90+t:2&fields=f3,f12,f14,f104,f105&ut=fa5fd1943c7b386f172d6893dbfba10b';
+    const bj = await (await fetch(bUrl, { headers: { Referer: 'https://quote.eastmoney.com/' } })).json();
+    const rows = ((bj.data && bj.data.diff) || []).map((b) => ({ sector: b.f14, chg: +b.f3, up: +b.f104, down: +b.f105 }));
+    allowSectors = strongSectors(rows);
+  } catch { /* 板块排行失败 → 白名单退化为仅昨日主线（fail-open） */ }
+  try {
+    const mt = JSON.parse(readFileSync(join(ROOT, 'data/main_theme_history.json'), 'utf8'));
+    const lastMt = Array.isArray(mt.days) && mt.days.length ? mt.days[mt.days.length - 1] : null;
+    for (const t of (lastMt && lastMt.main_themes) || []) if (t && t.name) allowSectors.add(t.name);
+  } catch { /* 主线档缺席不阻塞 */ }
+  const { events, state } = detectEvents(prevState, snaps, {
+    pushFilter: (sector) => !!sector && allowSectors.has(sector),
+  });
   // 基率参考（读取观察档的分层统计，缺失不阻塞）
   let baseRate = null;
   try {
@@ -91,6 +107,11 @@ try {
     if (events.length) console.error('[fb-alert] 有事件但未配置 OPS_WEBHOOK——仅落 state 不推');
     state.date = today();
     writeFileSync(STATE, JSON.stringify(state, null, 1) + '\n');
+  }
+  // 白名单可观测性：被板块过滤掉的 tick 留痕（弱板块池外事件不推是设计行为，但要能从日志看出）
+  const suppressed = snaps.length && state.stocks && Object.values(state.stocks).length;
+  if (events.length === 0 && suppressed && process.env.FB_ALERT_DEBUG === '1') {
+    console.log(`[fb-alert] ${bjHm()} 白名单 ${allowSectors.size} 板块（实时强∪昨日主线）——本 tick 无白名单事件`);
   }
 } catch (e) {
   console.error('[fb-alert] 异常（fail-open）:', e && e.message);
