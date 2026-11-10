@@ -15,6 +15,10 @@ LOG=/var/log/aquant/run.log
 # 2026-11-10 #1：独立 sidecar 档 data/auction_history.json；窗口外拒绝落库（防盘中量冒充竞价量）；
 #   历史不可回查（实测异动接口无竞价字段）→ 每日 9:26 一枪，晚开一天少一天。
 26 9 * * 1-5 cd /opt/a-sentiment-pro && node scripts/fetch_auction.mjs >>$LOG 2>&1
+# 席位聚类批处理（北京 02:30 周二~周六凌晨=收盘后数据落定后；离线批量确定性k-means，
+#   261天→8004席位→5簇实测1.1s；标签独立档 data/seat_labels.json，盘中只查表——2026-11-10 #2）
+30 2 * * 2-6 cd /opt/a-sentiment-pro && node scripts/seat_cluster.mjs >>$LOG 2>&1
+
 # 盘后首抓（北京 18:30 | UTC 10:30，工作日）
 30 18 * * 1-5 /opt/a-sentiment-pro/pi_run.sh eod >>$LOG 2>&1
 # 盘后补抓（北京 21:00 | UTC 13:00，工作日）
