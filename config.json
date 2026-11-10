@@ -368,6 +368,11 @@
  ],
  "paper": {
   "autoSinglePct": 0.1,
-  "_note": "实盘自动建仓单票目标仓位（2026-11-09 新增）：paper_daily 曾误读 backtest.maxPos(=1 满仓语义) 导致每笔 99.98% 被风控全拒、13 日零持仓；env PAPER_AUTO_PCT 可覆盖。不属 params.live 冻结区。"
+  "_note": "实盘自动建仓单票目标仓位（2026-11-09 新增）：paper_daily 曾误读 backtest.maxPos(=1 满仓语义) 导致每笔 99.98% 被风控全拒、13 日零持仓；env PAPER_AUTO_PCT 可覆盖。不属 params.live 冻结区。",
+  "auctionScore": {
+   "chgThreshold": 0.03,
+   "yiziRatioMax": 0.02,
+   "_note": "竞价打分v1阈值（2026-11-10 用户拍板定稿，参数项独立可调）：chgThreshold=涨跌幅标记阈值(严格大于)；yiziRatioMax=一字缩量判据(竞价额/昨日全天额 < 该值)。敏感性对照: scripts/auction_sensitivity.mjs。v1不合成单一分数。"
+  }
  }
 }
