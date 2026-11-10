@@ -698,6 +698,48 @@
         <div class="t-dnote">${esc(tg.generatedNote || '')} · 关联≠因果，共现窗口有限，仅供观察</div>`;
     });
 
+    // ── 首板晋级观察（2026-11-11 接线，用户拍板）：sidecar 独立档直 fetch，
+    //   照题材关联卡同款异步 fail-open 模式。上半=分层晋级率基率（封板时间/封单强度），
+    //   下半=今日候选 + 滚动对账战绩（候选命中率 vs 全池基率——观察档只记账不下单）。
+    const fbPanel = panel('首板晋级', '分层基率 + 观察台账 · sidecar', '<div class="t-loading">加载…</div>', 't-c8');
+    g.appendChild(fbPanel);
+    jget('data/first_board_watch.json').then((fb) => {
+      if (!fbPanel.isConnected) return;
+      const host = fbPanel.lastElementChild;
+      if (!host) return;
+      if (!fb || !Array.isArray(fb) || !fb.length || !fb[fb.length - 1].stats) {
+        host.outerHTML = '<div class="t-empty">观察档缺失 → 不显示（fail-open）</div>';
+        return;
+      }
+      const last = fb[fb.length - 1];
+      const st = last.stats;
+      const rateRow = (label, t, color) => `<div class="t-dv-row" style="grid-template-columns:96px 1fr 58px">
+          <span class="t-dv-name">${esc(label)}</span>
+          <span class="t-dv-track"><span class="t-dv-fill" style="width:${t && t.rate != null ? Math.min(100, t.rate * 3).toFixed(1) : '0'}%;background:${color}"></span></span>
+          <span class="t-dv-val">${t && t.rate != null ? t.rate + '%(' + t.n + ')' : '样本不足'}</span></div>`;
+      const baseRows = Object.entries(st.byFbt || {}).map(([k, v]) => rateRow(k.replace(/\(.*\)/, ''), v, '#3b5bdb')).join('')
+        + Object.entries(st.byFund || {}).map(([k, v]) => rateRow('封单' + k, v, '#2f9e77')).join('');
+      // 滚动对账战绩：全部已对账候选的命中率 vs 全池基率
+      let cN = 0, cAdv = 0;
+      for (const d of fb) {
+        for (const r of (d.settled && d.settled.results) || []) { cN++; if (r.advanced) cAdv++; }
+      }
+      const base = st.total || {};
+      const track = cN
+        ? `<div class="t-dnote ${cAdv / cN > (base.rate || 0) / 100 ? 'is-ok' : ''}">观察战绩：候选 ${cN} 只 / 晋级 ${cAdv} 只 = <b>${(cAdv / cN * 100).toFixed(1)}%</b> vs 全池基率 ${base.rate != null ? base.rate + '%' : '—'}（${cN >= 10 ? '样本已可用' : '样本 <10，继续攒'}）</div>`
+        : `<div class="t-dnote">观察战绩：尚无对账样本（候选次日起逐日累计，10 日后可对照拍板）</div>`;
+      const cands = (last.candidates || []).map((c) => {
+        const hhmm = c.fbt ? `${String(Math.floor(c.fbt / 10000)).padStart(2, '0')}:${String(Math.floor((c.fbt % 10000) / 100)).padStart(2, '0')}` : '—';
+        return `<span title="封单/流通 ${(c.fundPct * 100).toFixed(2)}% · 零炸板 · ${c.fallback ? '降档层' : '主层'}" style="font-size:11px;border:1px solid #2a3a55;border-radius:3px;padding:1px 5px;margin:0 4px 4px 0;display:inline-block">${esc(c.name)} ${hhmm}封·${(c.fundPct * 100).toFixed(1)}%${c.baseRate != null ? '·基率' + c.baseRate + '%' : ''}${c.fallback ? ' [降档]' : ''}</span>`;
+      }).join('');
+      host.outerHTML = `<div class="t-stats" style="grid-template-columns:1fr 1fr">
+          <div>${baseRows}</div>
+          <div><div style="font-size:11px;color:var(--t-ink-3);margin-bottom:6px">今日候选（早板+强封单+零炸板，${last.date || '—'}）</div>${cands || '<span class="t-empty">今日无符合特征首板（宁缺毋滥）</span>'}</div>
+        </div>
+        ${track}
+        <div class="t-dnote">全池基率 ${base.rate != null ? base.rate + '%' : '—'}（${st.windowDays || '—'} 日窗口）· 基率非预测 · 观察档不下单</div>`;
+    });
+
 
 
     // ── 市场宽度（全市场健康度核心）：站上均线占比 / 新高新低 / 涨跌比 ──
