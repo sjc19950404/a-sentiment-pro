@@ -27,6 +27,9 @@ LOG=/var/log/aquant/run.log
 #   不合成单一分数、不注入情绪引擎；阈值参数 config.paper.auctionScore，敏感性入口 auction_sensitivity.mjs——2026-11-10 拍板 v1
 27 9 * * 1-5 cd /opt/a-sentiment-pro && node scripts/auction_score.mjs >>$LOG 2>&1
 
+# 首板晋级盯盘（北京 9:30-15:30 每30分钟）：昨日首板池→今日进程（已晋级/触板炸板/逼近），
+#   快照变化才提交推送，Pages 约1分钟后可见；行情日期非今日则 pending（绝不用昨日收盘冒充）——2026-11-11
+*/30 9-15 * * 1-5 cd /opt/a-sentiment-pro && node scripts/first_board_live.mjs >>$LOG 2>&1; cd /opt/a-sentiment-pro && git diff --quiet data/first_board_live.json || (git add data/first_board_live.json && git commit -q -m "data: 首板盯盘快照" && git pull --rebase -q origin main 2>/dev/null; git push -q origin main 2>/dev/null)
 # 盘后首抓（北京 18:30 | UTC 10:30，工作日）
 30 18 * * 1-5 /opt/a-sentiment-pro/pi_run.sh eod >>$LOG 2>&1
 # 盘后补抓（北京 21:00 | UTC 13:00，工作日）

@@ -1,0 +1,749 @@
+{
+ "at": "2026-11-10T16:42:12.090Z",
+ "bj": "00:42",
+ "session": "offhours",
+ "dataDate": "2026-11-10",
+ "prevDate": "20261110",
+ "pool": 73,
+ "counts": {
+  "sealed": 0,
+  "broken": 0,
+  "approaching": 0,
+  "idle": 0,
+  "pending": 73
+ },
+ "approachPct": 5,
+ "rows": [
+  {
+   "code": "300264",
+   "name": "佳创视讯",
+   "chg": 20.07,
+   "last": 6.58,
+   "high": 6.58,
+   "limitPrice": 6.58,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "688611",
+   "name": "杭州柯林",
+   "chg": 20.01,
+   "last": 79.06,
+   "high": 79.06,
+   "limitPrice": 79.06,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "300613",
+   "name": "富瀚微",
+   "chg": 20.01,
+   "last": 80.02,
+   "high": 80.02,
+   "limitPrice": 80.02,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "300556",
+   "name": "丝路视觉",
+   "chg": 20.01,
+   "last": 22.25,
+   "high": 22.25,
+   "limitPrice": 22.25,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "688781",
+   "name": "视涯科技-UW",
+   "chg": 20,
+   "last": 56.16,
+   "high": 56.16,
+   "limitPrice": 56.16,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "301314",
+   "name": "科瑞思",
+   "chg": 20,
+   "last": 50.7,
+   "high": 50.7,
+   "limitPrice": 50.7,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "300052",
+   "name": "中青宝",
+   "chg": 20,
+   "last": 11.82,
+   "high": 11.82,
+   "limitPrice": 11.82,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "301255",
+   "name": "通力科技",
+   "chg": 19.99,
+   "last": 21.97,
+   "high": 21.97,
+   "limitPrice": 21.97,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "300426",
+   "name": "华智数媒",
+   "chg": 19.98,
+   "last": 11.47,
+   "high": 11.47,
+   "limitPrice": 11.47,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002021",
+   "name": "中捷资源",
+   "chg": 10.23,
+   "last": 2.37,
+   "high": 2.37,
+   "limitPrice": 2.37,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002535",
+   "name": "林州重机",
+   "chg": 10.16,
+   "last": 2.82,
+   "high": 2.82,
+   "limitPrice": 2.82,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002425",
+   "name": "凯撒文化",
+   "chg": 10.13,
+   "last": 3.48,
+   "high": 3.48,
+   "limitPrice": 3.48,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002036",
+   "name": "联创电子",
+   "chg": 10.08,
+   "last": 5.68,
+   "high": 5.68,
+   "limitPrice": 5.68,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002631",
+   "name": "德尔未来",
+   "chg": 10.06,
+   "last": 9.74,
+   "high": 9.74,
+   "limitPrice": 9.74,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603058",
+   "name": "永吉股份",
+   "chg": 10.05,
+   "last": 8.54,
+   "high": 8.54,
+   "limitPrice": 8.54,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "001318",
+   "name": "阳光乳业",
+   "chg": 10.04,
+   "last": 14.69,
+   "high": 14.69,
+   "limitPrice": 14.69,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "600793",
+   "name": "宜宾纸业",
+   "chg": 10.04,
+   "last": 15.35,
+   "high": 15.35,
+   "limitPrice": 15.35,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603037",
+   "name": "凯众股份",
+   "chg": 10.03,
+   "last": 14.37,
+   "high": 14.37,
+   "limitPrice": 14.37,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "000593",
+   "name": "德龙汇能",
+   "chg": 10.03,
+   "last": 19.31,
+   "high": 19.31,
+   "limitPrice": 19.31,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002045",
+   "name": "国光电器",
+   "chg": 10.03,
+   "last": 11.41,
+   "high": 11.41,
+   "limitPrice": 11.41,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002343",
+   "name": "慈文传媒",
+   "chg": 10.02,
+   "last": 9.33,
+   "high": 9.33,
+   "limitPrice": 9.33,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "600778",
+   "name": "友好集团",
+   "chg": 10.02,
+   "last": 5.82,
+   "high": 5.82,
+   "limitPrice": 5.82,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "600829",
+   "name": "人民同泰",
+   "chg": 10.02,
+   "last": 9.77,
+   "high": 9.77,
+   "limitPrice": 9.77,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603809",
+   "name": "豪能股份",
+   "chg": 10.02,
+   "last": 9.55,
+   "high": 9.55,
+   "limitPrice": 9.55,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002048",
+   "name": "宁波华翔",
+   "chg": 10.02,
+   "last": 20.86,
+   "high": 20.86,
+   "limitPrice": 20.86,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603602",
+   "name": "纵横通信",
+   "chg": 10.02,
+   "last": 12.41,
+   "high": 12.41,
+   "limitPrice": 12.41,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002905",
+   "name": "金逸影视",
+   "chg": 10.01,
+   "last": 9.34,
+   "high": 9.34,
+   "limitPrice": 9.34,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002009",
+   "name": "天奇股份",
+   "chg": 10.01,
+   "last": 19.24,
+   "high": 19.24,
+   "limitPrice": 19.24,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "605258",
+   "name": "协和电子",
+   "chg": 10.01,
+   "last": 39.56,
+   "high": 39.56,
+   "limitPrice": 39.56,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603283",
+   "name": "赛腾股份",
+   "chg": 10.01,
+   "last": 40.23,
+   "high": 40.23,
+   "limitPrice": 40.23,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603215",
+   "name": "比依股份",
+   "chg": 10.01,
+   "last": 16.38,
+   "high": 16.38,
+   "limitPrice": 16.38,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "001314",
+   "name": "亿道信息",
+   "chg": 10.01,
+   "last": 42.55,
+   "high": 42.55,
+   "limitPrice": 42.55,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002865",
+   "name": "钧达股份",
+   "chg": 10.01,
+   "last": 48.9,
+   "high": 48.9,
+   "limitPrice": 48.9,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603536",
+   "name": "惠发食品",
+   "chg": 10.01,
+   "last": 10.77,
+   "high": 10.77,
+   "limitPrice": 10.77,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "605398",
+   "name": "新炬网络",
+   "chg": 10,
+   "last": 25.75,
+   "high": 25.75,
+   "limitPrice": 25.75,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "605488",
+   "name": "福莱新材",
+   "chg": 10,
+   "last": 57.3,
+   "high": 57.3,
+   "limitPrice": 57.3,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "605598",
+   "name": "上海港湾",
+   "chg": 10,
+   "last": 28.15,
+   "high": 28.15,
+   "limitPrice": 28.15,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603955",
+   "name": "大千生态",
+   "chg": 10,
+   "last": 37.62,
+   "high": 37.62,
+   "limitPrice": 37.62,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002313",
+   "name": "日海智能",
+   "chg": 10,
+   "last": 9.24,
+   "high": 9.24,
+   "limitPrice": 9.24,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002870",
+   "name": "香山股份",
+   "chg": 10,
+   "last": 39.83,
+   "high": 39.83,
+   "limitPrice": 39.83,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002432",
+   "name": "九安医疗",
+   "chg": 10,
+   "last": 57.65,
+   "high": 57.65,
+   "limitPrice": 57.65,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "601595",
+   "name": "上海电影",
+   "chg": 10,
+   "last": 42.57,
+   "high": 42.57,
+   "limitPrice": 42.57,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "605255",
+   "name": "天普股份",
+   "chg": 10,
+   "last": 55.46,
+   "high": 55.46,
+   "limitPrice": 55.46,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002981",
+   "name": "朝阳科技",
+   "chg": 10,
+   "last": 24.2,
+   "high": 24.2,
+   "limitPrice": 24.2,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "001308",
+   "name": "康冠科技",
+   "chg": 10,
+   "last": 24.19,
+   "high": 24.19,
+   "limitPrice": 24.19,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603381",
+   "name": "永臻股份",
+   "chg": 10,
+   "last": 21.89,
+   "high": 21.89,
+   "limitPrice": 21.89,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002995",
+   "name": "天地在线",
+   "chg": 10,
+   "last": 20.68,
+   "high": 20.68,
+   "limitPrice": 20.68,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603893",
+   "name": "瑞芯微",
+   "chg": 10,
+   "last": 233.2,
+   "high": 233.2,
+   "limitPrice": 233.2,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "001232",
+   "name": "嘉立创",
+   "chg": 10,
+   "last": 174.78,
+   "high": 174.78,
+   "limitPrice": 174.78,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002303",
+   "name": "美盈森",
+   "chg": 10,
+   "last": 4.73,
+   "high": 4.73,
+   "limitPrice": 4.73,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603666",
+   "name": "亿嘉和",
+   "chg": 9.99,
+   "last": 28.51,
+   "high": 28.51,
+   "limitPrice": 28.51,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603533",
+   "name": "掌阅科技",
+   "chg": 9.99,
+   "last": 32.8,
+   "high": 32.8,
+   "limitPrice": 32.8,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "000678",
+   "name": "襄阳轴承",
+   "chg": 9.99,
+   "last": 19.26,
+   "high": 19.26,
+   "limitPrice": 19.26,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "605577",
+   "name": "龙版传媒",
+   "chg": 9.99,
+   "last": 17.28,
+   "high": 17.28,
+   "limitPrice": 17.28,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "001339",
+   "name": "智微智能",
+   "chg": 9.99,
+   "last": 63.39,
+   "high": 63.39,
+   "limitPrice": 63.39,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002876",
+   "name": "三利谱",
+   "chg": 9.99,
+   "last": 30.72,
+   "high": 30.72,
+   "limitPrice": 30.72,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "000782",
+   "name": "恒申新材",
+   "chg": 9.99,
+   "last": 7.93,
+   "high": 7.93,
+   "limitPrice": 7.93,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002664",
+   "name": "信质集团",
+   "chg": 9.99,
+   "last": 15.2,
+   "high": 15.2,
+   "limitPrice": 15.2,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603679",
+   "name": "华体科技",
+   "chg": 9.98,
+   "last": 18.41,
+   "high": 18.41,
+   "limitPrice": 18.41,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603598",
+   "name": "引力传媒",
+   "chg": 9.98,
+   "last": 23.69,
+   "high": 23.69,
+   "limitPrice": 23.69,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603278",
+   "name": "大业股份",
+   "chg": 9.98,
+   "last": 15.1,
+   "high": 15.1,
+   "limitPrice": 15.1,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002209",
+   "name": "达 意 隆",
+   "chg": 9.97,
+   "last": 12.69,
+   "high": 12.69,
+   "limitPrice": 12.69,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "600510",
+   "name": "黑牡丹",
+   "chg": 9.97,
+   "last": 8.16,
+   "high": 8.16,
+   "limitPrice": 8.16,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "603466",
+   "name": "风语筑",
+   "chg": 9.97,
+   "last": 15.33,
+   "high": 15.33,
+   "limitPrice": 15.33,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002861",
+   "name": "瀛通通讯",
+   "chg": 9.97,
+   "last": 13.02,
+   "high": 13.02,
+   "limitPrice": 13.02,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "600261",
+   "name": "阳光照明",
+   "chg": 9.96,
+   "last": 5.85,
+   "high": 5.85,
+   "limitPrice": 5.85,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002614",
+   "name": "奥佳华",
+   "chg": 9.96,
+   "last": 7.62,
+   "high": 7.62,
+   "limitPrice": 7.62,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002376",
+   "name": "新北洋",
+   "chg": 9.96,
+   "last": 7.73,
+   "high": 7.73,
+   "limitPrice": 7.73,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "000810",
+   "name": "创维数字",
+   "chg": 9.96,
+   "last": 12.14,
+   "high": 12.14,
+   "limitPrice": 12.14,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002324",
+   "name": "普利特",
+   "chg": 9.95,
+   "last": 9.06,
+   "high": 9.06,
+   "limitPrice": 9.06,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002238",
+   "name": "天威视讯",
+   "chg": 9.94,
+   "last": 7.41,
+   "high": 7.41,
+   "limitPrice": 7.41,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "600281",
+   "name": "华阳新材",
+   "chg": 9.92,
+   "last": 5.54,
+   "high": 5.54,
+   "limitPrice": 5.54,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  },
+  {
+   "code": "002160",
+   "name": "常铝股份",
+   "chg": 9.89,
+   "last": 4,
+   "high": 4,
+   "limitPrice": 4,
+   "status": "pending",
+   "qDate": "2026-11-10"
+  }
+ ],
+ "note": "今日尚未开盘（行情日期非今日）——昨日首板今日进程待开盘后更新"
+}

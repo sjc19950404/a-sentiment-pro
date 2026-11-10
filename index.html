@@ -2278,41 +2278,66 @@
     //   下半=今日候选 + 滚动对账战绩（候选命中率 vs 全池基率——观察档只记账不下单）。
     const fbPanel = panel('首板晋级', '分层基率 + 观察台账 · sidecar', '<div class="t-loading">加载…</div>', 't-c8');
     g.appendChild(fbPanel);
-    jget('data/first_board_watch.json').then((fb) => {
+    Promise.all([jget('data/first_board_watch.json'), jget('data/first_board_live.json')]).then(([fb, live]) => {
       if (!fbPanel.isConnected) return;
       const host = fbPanel.lastElementChild;
       if (!host) return;
-      if (!fb || !Array.isArray(fb) || !fb.length || !fb[fb.length - 1].stats) {
+      const fbOk = !!(fb && Array.isArray(fb) && fb.length && fb[fb.length - 1].stats);
+      const liveOk = !!(live && live.counts && Array.isArray(live.rows));
+      if (!fbOk && !liveOk) {
         host.outerHTML = '<div class="t-empty">观察档缺失 → 不显示（fail-open）</div>';
         return;
       }
-      const last = fb[fb.length - 1];
-      const st = last.stats;
-      const rateRow = (label, t, color) => `<div class="t-dv-row" style="grid-template-columns:96px 1fr 58px">
+      // ① 昨日首板 · 今日进程（2026-11-11 用户指正：要的是「还没晋级、今天可能晋级的首板」）
+      //   pending=今日未开盘（行情日期非今日，绝不用昨日收盘冒充今日）；broken/approaching 是盯盘重点。
+      let liveBlock = '';
+      if (liveOk) {
+        const c = live.counts;
+        const pendingMode = (c.pending || 0) > 0 && !(c.sealed || c.broken || c.approaching || c.idle);
+        const chip = (r) => {
+          const col = r.status === 'broken' ? '#e0a030' : r.status === 'approaching' ? '#4a90d9' : r.status === 'sealed' ? '#2f9e77' : '#4a5568';
+          const tag = r.status === 'broken' ? '触板炸板' : r.status === 'approaching' ? '逼近' : r.status === 'sealed' ? '已封板' : '未启动';
+          return `<span title="现价 ${r.last} / 涨停价 ${r.limitPrice} / 涨幅 ${r.chg != null ? r.chg + '%' : '—'}" style="font-size:11px;border:1px solid ${col}55;border-radius:3px;padding:1px 5px;margin:0 4px 4px 0;display:inline-block;color:${col}">${esc(r.name)} ${r.chg != null ? (r.chg > 0 ? '+' : '') + r.chg + '%' : '—'} <span style="opacity:.75">${tag}</span></span>`;
+        };
+        const watchRows = (live.rows || []).filter((r) => r.status === 'broken' || r.status === 'approaching').slice(0, 8);
+        liveBlock = `<div style="margin-bottom:8px">
+          <div style="font-size:11px;color:var(--t-ink-3);margin-bottom:5px">昨日首板（${esc(live.prevDate || '—')}）${live.pool} 只 · 今日进程 <span style="opacity:.7">快照 ${esc(live.bj || '—')}</span></div>
+          ${pendingMode
+            ? '<div class="t-empty" style="font-size:11px">今日尚未开盘——开盘后此处显示谁在冲板（已晋级 / 触板炸板 / 逼近）</div>'
+            : `<div style="font-size:12px;margin-bottom:6px">已晋级 <b style="color:#2f9e77">${c.sealed || 0}</b> · 触板炸板 <b style="color:#e0a030">${c.broken || 0}</b> · 逼近 <b style="color:#4a90d9">${c.approaching || 0}</b> · 未启动 <span style="color:var(--t-ink-3)">${c.idle || 0}</span></div>
+            ${watchRows.length ? `<div>${watchRows.map(chip).join('')}</div>` : '<div class="t-empty" style="font-size:11px">暂无摸底/逼近的票</div>'}`}
+        </div>`;
+      }
+      // ② 分层基率 + 今日候选 + 对账战绩（盘后观察档）
+      let statBlock = '', trackBlock = '', footBlock = '';
+      if (fbOk) {
+        const last = fb[fb.length - 1];
+        const st = last.stats;
+        const rateRow = (label, t, color) => `<div class="t-dv-row" style="grid-template-columns:96px 1fr 58px">
           <span class="t-dv-name">${esc(label)}</span>
           <span class="t-dv-track"><span class="t-dv-fill" style="width:${t && t.rate != null ? Math.min(100, t.rate * 3).toFixed(1) : '0'}%;background:${color}"></span></span>
           <span class="t-dv-val">${t && t.rate != null ? t.rate + '%(' + t.n + ')' : '样本不足'}</span></div>`;
-      const baseRows = Object.entries(st.byFbt || {}).map(([k, v]) => rateRow(k.replace(/\(.*\)/, ''), v, '#3b5bdb')).join('')
-        + Object.entries(st.byFund || {}).map(([k, v]) => rateRow('封单' + k, v, '#2f9e77')).join('');
-      // 滚动对账战绩：全部已对账候选的命中率 vs 全池基率
-      let cN = 0, cAdv = 0;
-      for (const d of fb) {
-        for (const r of (d.settled && d.settled.results) || []) { cN++; if (r.advanced) cAdv++; }
+        const baseRows = Object.entries(st.byFbt || {}).map(([k, v]) => rateRow(k.replace(/\(.*\)/, ''), v, '#3b5bdb')).join('')
+          + Object.entries(st.byFund || {}).map(([k, v]) => rateRow('封单' + k, v, '#2f9e77')).join('');
+        let cN = 0, cAdv = 0;
+        for (const d of fb) {
+          for (const r of (d.settled && d.settled.results) || []) { cN++; if (r.advanced) cAdv++; }
+        }
+        const base = st.total || {};
+        trackBlock = cN
+          ? `<div class="t-dnote ${cAdv / cN > (base.rate || 0) / 100 ? 'is-ok' : ''}">观察战绩：候选 ${cN} 只 / 晋级 ${cAdv} 只 = <b>${(cAdv / cN * 100).toFixed(1)}%</b> vs 全池基率 ${base.rate != null ? base.rate + '%' : '—'}（${cN >= 10 ? '样本已可用' : '样本 <10，继续攒'}）</div>`
+          : `<div class="t-dnote">观察战绩：尚无对账样本（候选次日起逐日累计，10 日后可对照拍板）</div>`;
+        const cands = (last.candidates || []).map((c) => {
+          const hhmm = c.fbt ? `${String(Math.floor(c.fbt / 10000)).padStart(2, '0')}:${String(Math.floor((c.fbt % 10000) / 100)).padStart(2, '0')}` : '—';
+          return `<span title="封单/流通 ${(c.fundPct * 100).toFixed(2)}% · 零炸板 · ${c.fallback ? '降档层' : '主层'}" style="font-size:11px;border:1px solid #2a3a55;border-radius:3px;padding:1px 5px;margin:0 4px 4px 0;display:inline-block">${esc(c.name)} ${hhmm}封·${(c.fundPct * 100).toFixed(1)}%${c.baseRate != null ? '·基率' + c.baseRate + '%' : ''}${c.fallback ? ' [降档]' : ''}</span>`;
+        }).join('');
+        statBlock = `<div class="t-stats" style="grid-template-columns:1fr 1fr">
+            <div>${baseRows}</div>
+            <div><div style="font-size:11px;color:var(--t-ink-3);margin-bottom:6px">${esc(last.date || '—')} 首板候选（早板+强封单+零炸板→次日预期）</div>${cands || '<span class="t-empty">当日无符合特征首板（宁缺毋滥）</span>'}</div>
+          </div>`;
+        footBlock = `<div class="t-dnote">全池基率 ${base.rate != null ? base.rate + '%' : '—'}（${st.windowDays || '—'} 日窗口）· 基率非预测 · 观察档不下单</div>`;
       }
-      const base = st.total || {};
-      const track = cN
-        ? `<div class="t-dnote ${cAdv / cN > (base.rate || 0) / 100 ? 'is-ok' : ''}">观察战绩：候选 ${cN} 只 / 晋级 ${cAdv} 只 = <b>${(cAdv / cN * 100).toFixed(1)}%</b> vs 全池基率 ${base.rate != null ? base.rate + '%' : '—'}（${cN >= 10 ? '样本已可用' : '样本 <10，继续攒'}）</div>`
-        : `<div class="t-dnote">观察战绩：尚无对账样本（候选次日起逐日累计，10 日后可对照拍板）</div>`;
-      const cands = (last.candidates || []).map((c) => {
-        const hhmm = c.fbt ? `${String(Math.floor(c.fbt / 10000)).padStart(2, '0')}:${String(Math.floor((c.fbt % 10000) / 100)).padStart(2, '0')}` : '—';
-        return `<span title="封单/流通 ${(c.fundPct * 100).toFixed(2)}% · 零炸板 · ${c.fallback ? '降档层' : '主层'}" style="font-size:11px;border:1px solid #2a3a55;border-radius:3px;padding:1px 5px;margin:0 4px 4px 0;display:inline-block">${esc(c.name)} ${hhmm}封·${(c.fundPct * 100).toFixed(1)}%${c.baseRate != null ? '·基率' + c.baseRate + '%' : ''}${c.fallback ? ' [降档]' : ''}</span>`;
-      }).join('');
-      host.outerHTML = `<div class="t-stats" style="grid-template-columns:1fr 1fr">
-          <div>${baseRows}</div>
-          <div><div style="font-size:11px;color:var(--t-ink-3);margin-bottom:6px">今日候选（早板+强封单+零炸板，${last.date || '—'}）</div>${cands || '<span class="t-empty">今日无符合特征首板（宁缺毋滥）</span>'}</div>
-        </div>
-        ${track}
-        <div class="t-dnote">全池基率 ${base.rate != null ? base.rate + '%' : '—'}（${st.windowDays || '—'} 日窗口）· 基率非预测 · 观察档不下单</div>`;
+      host.outerHTML = liveBlock + statBlock + trackBlock + footBlock;
     });
 
 
