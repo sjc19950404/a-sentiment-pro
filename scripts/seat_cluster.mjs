@@ -31,5 +31,21 @@ const rec = {
   labels,
 };
 writeFileSync(OUT, JSON.stringify(rec, null, 1) + '\n');
+// UI 通道瘦身桶档（2026-11-10 接线拍板：#2 席位标签进前端）——全量 1.6MB 前端拉不动；
+//   只导 activeDays>=10（1355 席位 → label→seats 桶 ≈31KB），前端反查建 seat→label Map。
+//   同 git/Pages 通道（独立文件拉取，照 archive-index 先例）；本档缺失前端静默降级。
+const MIN_ACTIVE = 10;
+const buckets = {};
+for (const [name, v] of Object.entries(labels)) {
+  if ((v.activeDays ?? 0) >= MIN_ACTIVE) (buckets[v.label] = buckets[v.label] || []).push(name);
+}
+const compactOut = {
+  generatedAt: rec.generatedAt,
+  days: days.length,
+  minActiveDays: MIN_ACTIVE,
+  note: 'label→席位名桶（activeDays>=10）；标签语义见 data/seat_labels.json 的 clusters',
+  buckets,
+};
+writeFileSync(join(ROOT, 'data/seat_labels_compact.json'), JSON.stringify(compactOut) + '\n');
 console.log(`[seat-cluster] ${days.length} 天 → ${rows.length} 席位 → ${clusters.length} 簇（耗时 ${((Date.now() - t0) / 1000).toFixed(1)}s）`);
 console.log(clusters.map((c) => `  簇${c.id} ${c.label} ×${c.size}（均上榜天数 ${c.centroid.activeDays}）`).join('\n'));

@@ -767,7 +767,7 @@ function chgCell(r) {
 const HOT_COLS = {
   hot: [
     { key: 'code', t: '代码' },
-    { key: 'name', t: '名称', cell: (r) => esc(nf(r.name)) + boardBadge(r.code) + (window.__glm ? window.__glm.tagSpan(r) : ''), raw: (r) => r.name },
+    { key: 'name', t: '名称', cell: (r) => esc(nf(r.name)) + boardBadge(r.code) + (window.__glm ? window.__glm.tagSpan(r) : '') + annRiskBadgeHtml(r.code), raw: (r) => r.name },
     { key: 'change_pct', t: '涨幅', num: true, hint: '当日涨跌幅（新股无涨跌幅限制，涨幅不具可比性）',
       cell: chgCell,
       raw: (r) => r.change_pct },
@@ -779,7 +779,7 @@ const HOT_COLS = {
   ],
   lhb: [
     { key: 'code', t: '代码' },
-    { key: 'name', t: '名称', cell: (r) => esc(nf(r.name)) + boardBadge(r.code) + (window.__glm ? window.__glm.tagSpan(r) : ''), raw: (r) => r.name },
+    { key: 'name', t: '名称', cell: (r) => esc(nf(r.name)) + boardBadge(r.code) + (window.__glm ? window.__glm.tagSpan(r) : '') + annRiskBadgeHtml(r.code), raw: (r) => r.name },
     { key: 'change_pct', t: '涨幅', num: true, hint: '当日涨跌幅（新股无涨跌幅限制，涨幅不具可比性）',
       cell: chgCell,
       raw: (r) => r.change_pct },
@@ -899,7 +899,10 @@ function renderHotTable() {
     tr.dataset.act = 'stock';
     tr.dataset.code = r.code;
     tr.tabIndex = 0;
-    tr.title = `点击查看 ${r.name || r.code} 的席位与资金详情`;
+    // 2026-11-10 #6 接线：公告避雷红旗（sidecar 覆盖层）——行 title 附风险提示 + 名称列前旗标
+    const ar = annRiskOf(r.code);
+    tr.title = `点击查看 ${r.name || r.code} 的席位与资金详情`
+      + (ar ? `｜⚠ 公告避雷：${ar.words.join('/')}（${ar.date || ''}，详见当日公告）` : '');
     tr.innerHTML = cols.map((c) => {
       const cls = `${c.num ? 'num' : ''}${c.wide ? ' muted' : ''}`.trim();
       const v = c.cell ? c.cell(r) : esc(nf(rawOf(c, r)));
@@ -4669,14 +4672,74 @@ function closeDrawer() {
 // 「卖方席位能不能点」，所以买方卖方一视同仁，两侧行都挂同一个动作，只是侧别不同。
 const SEAT_SIDE_LABEL = { b: '买方', s: '卖方' };
 
+// ── sidecar 覆盖层（2026-11-10 接线拍板 #2/#6）：独立小档直 fetch，渐进增强 ──
+// 原则：**加载失败/缺失一律静默降级**——页面主体零依赖，sidecar 档只是锦上添花；
+//   底层采集/聚类/扫描脚本不因前端异常受任何影响（sidecar 纪律）。
+// 通道：git 内 data 档（Pages 同源相对路径），照 archive-index 先例；
+//   seat_labels_compact.json（label→席位名桶，88KB）与 ann_risk_scan.json（4KB）。
+let __sidecarReady = false;
+(async function loadSidecarOverlays() {
+  const pick = (j) => (j && typeof j === 'object') ? j : null;
+  try {
+    const [lab, ann] = await Promise.all([
+      fetch('./data/seat_labels_compact.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch('./data/ann_risk_scan.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]);
+    const labJ = pick(lab);
+    if (labJ && labJ.buckets) {
+      const m = new Map();
+      for (const [label, names] of Object.entries(labJ.buckets)) {
+        for (const n of Array.isArray(names) ? names : []) m.set(n, label);
+      }
+      window.__SEAT_LABEL_MAP = m;
+    }
+    const annJ = pick(ann);
+    if (annJ && Array.isArray(annJ.flagged)) {
+      const m = new Map(); // code → 该票最高级别命中（high>mid>low）
+      const rank = { high: 0, mid: 1, low: 2 };
+      for (const f of annJ.flagged) {
+        if (!f || !f.code) continue;
+        const prev = m.get(String(f.code));
+        if (!prev || rank[f.level] < rank[prev.level]) {
+          m.set(String(f.code), { level: f.level, words: f.words || [], date: annJ.date || null });
+        }
+      }
+      window.__ANN_RISK_MAP = m;
+    }
+    __sidecarReady = true;
+    // 数据后到 → 触发一次热股表重渲染（若表已就绪），让红旗/徽章补显
+    if (typeof renderHotTable === 'function' && $('hotBody')) { try { renderHotTable(); } catch { /* 不因覆盖层阻断 */ } }
+  } catch { __sidecarReady = false; }
+})();
+
+const ANN_RISK_ICON = { high: '🚨', mid: '⚠️', low: '🔵' };
+/** 个股公告避雷标记（sidecar 覆盖层，无数据 → null 不渲染）。 */
+function annRiskOf(code) {
+  return (window.__ANN_RISK_MAP && window.__ANN_RISK_MAP.get(String(code))) || null;
+}
+/** 名称列旗标（boardBadge 同款内联样式；无数据 → 空串零侵入）。 */
+function annRiskBadgeHtml(code) {
+  const ar = annRiskOf(code);
+  if (!ar || ar.level === 'low') return '';
+  const tip = `${ar.level === 'high' ? '高危' : '观察'}词命中：${ar.words.join('/')}`;
+  return ` <span title="公告避雷（${ar.date || ''}）：${esc(tip)}">${ANN_RISK_ICON[ar.level] || ''}</span>`;
+}
+/** 席位资金主体标签（sidecar 覆盖层，无数据 → null 不渲染）。 */
+function seatLabelOf(name) {
+  return (window.__SEAT_LABEL_MAP && window.__SEAT_LABEL_MAP.get(String(name))) || null;
+}
+
 function seatRowsHtml(pairs, sum, side, code) {
   if (!pairs.length) return `<tr><td colspan="4" class="muted">无${SEAT_SIDE_LABEL[side]}席位明细</td></tr>`;
   return pairs.map(([nm, v], i) => {
     const pct = sum ? ((+v || 0) / sum * 100) : null;
     // 排序号 + 金额条形（一眼看出头部集中度），整行可点下钻
+    // 2026-11-10 #2 接线：席位名后追加「资金主体标签」徽章（sidecar 覆盖层，缺失静默降级）
+    const tag = seatLabelOf(nm);
+    const tagHtml = tag ? ` <span class="seat-clu" title="席位聚类标签（离线批量：${tag}）" style="font-size:10px;color:#7aa2f7;border:1px solid #2a3a55;border-radius:3px;padding:0 3px;margin-left:4px;white-space:nowrap">${esc(tag)}</span>` : '';
     return `<tr class="clickable" data-act="seat" data-code="${esc(code)}" data-side="${side}" data-i="${i}" tabindex="0"`
       + ` title="点击查看该席位身份信息">`
-      + `<td class="seat-nm"><span class="seat-badge ${side}">${i + 1}</span>${esc(nm)}</td>`
+      + `<td class="seat-nm"><span class="seat-badge ${side}">${i + 1}</span>${esc(nm)}${tagHtml}</td>`
       + `<td class="num">${(+v || 0).toFixed(0)}</td>`
       + `<td class="num">${pct == null ? '—' : pct.toFixed(1) + '%'}</td>`
       + `<td class="seat-bar"><i class="${side}" style="width:${pct == null ? 0 : Math.min(100, pct * 2).toFixed(1)}%"></i></td>`
