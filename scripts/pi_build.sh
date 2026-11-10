@@ -94,6 +94,10 @@ step "fetch_announcements";  node scripts/fetch_announcements.mjs || echo "⚠ �
 #   （high红线/mid观察/澄清豁免），落独立档 data/ann_risk_scan.json；与下方 LLM 排雷互补
 #   （LLM 判语境可失效，词库扫描永远在）。sidecar fail-open：失败不阻断、不封禁。
 step "ann_risk_scan";         node scripts/scan_announcements.mjs || echo "⚠ 关键词避雷扫描失败（fail-open，不影响排雷主链）"
+# 20.74c 题材共现图谱（2026-11-10 #3，用户拍板）：轻量共现统计（同日活跃题材对→Jaccard 边），
+#   落独立档 data/theme_graph.json；主线判定唯一出处仍是 main_theme_history（本模块只补关联维度）。
+#   sidecar fail-open：失败不阻断。
+step "theme_graph";           node scripts/theme_graph.mjs || echo "⚠ 题材图谱生成失败（fail-open，继续）"
 # 20.75 晚间公告排雷（V5.3 P2）：自动建仓前先扫描连板梯队/标的池公告，让 GLM 判定重大利空，
 #   产出 data/llm_risk_blacklist.json；paper_daily 建仓前据此拒买（正向封禁，空表=fail-open）。
 #   fail-open：缺 LLM 配置 → 退出非 0 不落档（本次不封禁）；已配置但无公告源/调用失败 → 空表。
