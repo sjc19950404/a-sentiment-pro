@@ -1,38 +1,13 @@
 {
   "version": "paper-v1",
-  "exportedAt": "2026-11-09T13:18:17.657Z",
+  "exportedAt": "2026-11-10T10:48:17.342Z",
   "initCash": 1000000,
-  "cash": 900155.06,
-  "freeze": 99844.94,
+  "cash": 1000000,
+  "freeze": 0,
   "realized": 0,
   "totalFee": 0,
   "positions": {},
-  "pending": [
-    {
-      "id": 3,
-      "submitDate": "2026-11-09",
-      "code": "600609",
-      "name": "金杯汽车",
-      "side": "buy",
-      "qty": 28600,
-      "reason": "⚠【纯情绪软警示·知情放行】自动建仓（主线选股候选 金杯汽车）（妖股逻辑·纯情绪炒作(1板·情绪驱动·炸板，筹码松动，明日谨慎)）",
-      "tag": "zt",
-      "escape": null,
-      "iceTrial": null,
-      "antiNuke": null,
-      "streak": null,
-      "submitPrice": 3.48,
-      "status": "pending",
-      "estPrice": 3.49,
-      "estFee": 30.94,
-      "estGross": 99814,
-      "need": 99844.94,
-      "slip": 0.0002,
-      "slipBase": null,
-      "slipImpact": 0,
-      "sector": null
-    }
-  ],
+  "pending": [],
   "orders": [
     {
       "id": 1,
@@ -80,7 +55,7 @@
       "antiNuke": null,
       "streak": null,
       "submitPrice": 3.48,
-      "status": "pending",
+      "status": "expired",
       "estPrice": 3.49,
       "estFee": 30.94,
       "estGross": 99814,
@@ -88,7 +63,10 @@
       "slip": 0.0002,
       "slipBase": null,
       "slipImpact": 0,
-      "sector": null
+      "sector": null,
+      "settleDate": "2026-11-10",
+      "reject": "涨停价无法买入",
+      "detail": "2026-11-10 触及涨停，无卖盘"
     }
   ],
   "trades": [],
@@ -440,6 +418,42 @@
       "result": "info",
       "reason": null,
       "text": "批量买入委托完成：提交 1 笔 / 共 3 只，拦截 2 笔（其中龙虎过滤 2 笔、风控 0 笔）"
+    },
+    {
+      "ts": 1794307697294,
+      "date": "2026-11-10",
+      "code": "600609",
+      "name": "金杯汽车",
+      "side": "buy",
+      "qty": 28600,
+      "stage": "settle",
+      "result": "expired",
+      "reason": "涨停价无法买入",
+      "text": "委托失效：涨停价无法买入（2026-11-10 10.06% 一字/触板涨停，无卖盘，委托失效）"
+    },
+    {
+      "ts": 1794307697341,
+      "date": "2026-11-10",
+      "code": "600327",
+      "name": "大东方",
+      "side": "buy",
+      "qty": null,
+      "stage": "lhb",
+      "result": "rejected",
+      "reason": "备选观察池（禁止自动下单）",
+      "text": "降级（不阻断）：龙虎榜净买入 ≤ 0 —— 已扣综合分 10 分 / 上涨概率 8 个百分点，进入备选观察池（禁止自动下单）；⚠龙虎当日资金净流出，谨慎开仓，人工复核后方可下单。"
+    },
+    {
+      "ts": 1794307697341,
+      "date": "2026-11-10",
+      "code": null,
+      "name": null,
+      "side": "buy",
+      "qty": null,
+      "stage": "order",
+      "result": "info",
+      "reason": null,
+      "text": "批量买入委托完成：提交 0 笔 / 共 1 只，拦截 1 笔（其中龙虎过滤 1 笔、风控 0 笔）"
     }
   ],
   "nav": [
@@ -514,8 +528,14 @@
       "equity": 1000000,
       "cash": 1000000,
       "marketValue": 0
+    },
+    {
+      "date": "2026-11-10",
+      "equity": 1000000,
+      "cash": 1000000,
+      "marketValue": 0
     }
   ],
   "startDate": "2026-10-23",
-  "lastSettle": "2026-11-09"
+  "lastSettle": "2026-11-10"
 }

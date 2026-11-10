@@ -1,11 +1,11 @@
 {
  "meta": {
-  "generatedAt": "2026-11-09T13:17:28.255Z",
-  "days": 17,
-  "theme_days": 15,
+  "generatedAt": "2026-11-10T10:47:13.874Z",
+  "days": 18,
+  "theme_days": 17,
   "strength_dist": {
    "强主线": 4,
-   "弱主线": 9,
+   "弱主线": 11,
    "绝对主线": 2
   },
   "rotation_days": 5,
@@ -370,6 +370,41 @@
    "main_themes": [],
    "rotation": false,
    "prev_main_theme": "光伏设备"
+  },
+  {
+   "date": "20261110",
+   "main_themes": [
+    {
+     "name": "光伏设备",
+     "zt_count": 3,
+     "lb_count": 1,
+     "avg_fund": 114246225,
+     "stocks": [
+      "002623",
+      "603381",
+      "002865"
+     ],
+     "strength": "弱主线",
+     "consecutive_days": 1,
+     "is_continuous": false
+    },
+    {
+     "name": "游戏Ⅱ",
+     "zt_count": 3,
+     "lb_count": 2,
+     "avg_fund": 82513204,
+     "stocks": [
+      "600715",
+      "002425",
+      "600892"
+     ],
+     "strength": "弱主线",
+     "consecutive_days": 1,
+     "is_continuous": false
+    }
+   ],
+   "rotation": false,
+   "prev_main_theme": null
   }
  ]
 }

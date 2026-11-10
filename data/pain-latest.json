@@ -1,133 +1,117 @@
 {
- "date": "2026-11-06",
- "prevZtCount": 32,
+ "date": "2026-11-09",
+ "prevZtCount": 54,
  "perf": {
-  "n": 32,
-  "universe": 32,
+  "n": 54,
+  "universe": 54,
   "missing": 0,
   "reliable": true,
-  "avg": 4.16,
-  "median": 5.17,
-  "lossRatio": 0.34,
-  "worst": -6.51,
-  "best": 10.08,
-  "limitUpAgain": 10,
+  "avg": 4.91,
+  "median": 4.43,
+  "lossRatio": 0.11,
+  "worst": -4.74,
+  "best": 10.2,
+  "limitUpAgain": 19,
   "limitDown": 0,
   "bigLoss": 0,
   "note": null
  },
  "advance": {
-  "n": 11,
-  "kept": 2,
-  "failed": 9,
-  "failRate": 0.82,
+  "n": 9,
+  "kept": 5,
+  "failed": 4,
+  "failRate": 0.44,
   "byTier": {
    "2": {
-    "n": 4,
-    "kept": 1,
-    "failed": 3,
-    "failRate": 0.75
+    "n": 8,
+    "kept": 4,
+    "failed": 4,
+    "failRate": 0.5
    },
    "3": {
-    "n": 3,
+    "n": 0,
     "kept": 0,
-    "failed": 3,
-    "failRate": 1
+    "failed": 0,
+    "failRate": null
    },
    "4+": {
-    "n": 4,
+    "n": 1,
     "kept": 1,
-    "failed": 3,
-    "failRate": 0.75
+    "failed": 0,
+    "failRate": 0
    }
   },
   "reliable": true,
-  "maxLb": 5,
+  "maxLb": 6,
   "detail": [
    {
-    "code": "601599",
-    "lb": 5,
-    "chg": 5.91,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
     "code": "002578",
-    "lb": 5,
+    "lb": 6,
     "chg": 9.98,
     "kept": true,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
-    "code": "603381",
-    "lb": 4,
-    "chg": -4.05,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "002088",
-    "lb": 4,
-    "chg": -0.09,
+    "code": "001316",
+    "lb": 2,
+    "chg": -2.94,
     "kept": false,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
-    "code": "301697",
-    "lb": 3,
-    "chg": -4.26,
-    "kept": false,
-    "board": "gem",
-    "boardLabel": "创业板"
-   },
-   {
-    "code": "603657",
-    "lb": 3,
-    "chg": -0.89,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "002388",
-    "lb": 3,
-    "chg": 2.25,
+    "code": "000525",
+    "lb": 2,
+    "chg": -1.09,
     "kept": false,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
-    "code": "002929",
+    "code": "002889",
     "lb": 2,
-    "chg": -6.51,
+    "chg": 2.8,
     "kept": false,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
-    "code": "605339",
+    "code": "600278",
     "lb": 2,
-    "chg": -6.46,
+    "chg": 4.6,
     "kept": false,
     "board": "shb",
     "boardLabel": "沪市主板"
    },
    {
-    "code": "600261",
+    "code": "600327",
     "lb": 2,
-    "chg": -1.48,
-    "kept": false,
+    "chg": 10,
+    "kept": true,
     "board": "shb",
     "boardLabel": "沪市主板"
    },
    {
-    "code": "002086",
+    "code": "603366",
     "lb": 2,
-    "chg": 10.08,
+    "chg": 10.01,
+    "kept": true,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "601188",
+    "lb": 2,
+    "chg": 10.02,
+    "kept": true,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "002310",
+    "lb": 2,
+    "chg": 10.2,
     "kept": true,
     "board": "szb",
     "boardLabel": "深市主板"
@@ -140,27 +124,14 @@
   "list": []
  },
  "skyFloor": {
-  "n": 2,
-  "list": [
-   {
-    "code": "002088",
-    "name": "鲁阳节能",
-    "chg": -0.09,
-    "amplitude": 17.3
-   },
-   {
-    "code": "600261",
-    "name": "阳光照明",
-    "chg": -1.48,
-    "amplitude": 15
-   }
-  ]
+  "n": 0,
+  "list": []
  },
- "scanned": 32,
+ "scanned": 54,
  "verdict": {
   "level": "strong",
   "label": "接力顺畅",
-  "reason": "昨涨停今日翻绿仅 34%、高位板晋级失败 82%，赚钱效应占优"
+  "reason": "昨涨停今日翻绿仅 11%、高位板晋级失败 44%，赚钱效应占优"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -171,6 +142,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-11-09T13:00:31.525Z",
- "curDate": "2026-11-09"
+ "generatedAt": "2026-11-10T10:30:30.172Z",
+ "curDate": "2026-11-10"
 }

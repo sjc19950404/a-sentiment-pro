@@ -1,6 +1,6 @@
 {
-  "updatedAt": "2026-11-09T13:13:54.805Z",
-  "count": 2,
+  "updatedAt": "2026-11-10T10:43:38.462Z",
+  "count": 3,
   "events": [
     {
       "at": "2026-11-04T02:27:12.844Z",
@@ -15,6 +15,13 @@
       "kind": "fetch-failed",
       "source": "pipeline",
       "detail": "本跑抓取失败，写入回退档：行业日K 成功过少: 9/90（页面数据非最新，见 meta.lastAttempt）"
+    },
+    {
+      "at": "2026-11-10T10:30:28.722Z",
+      "severity": "info",
+      "kind": "factors-missing",
+      "source": "sentiment",
+      "detail": "最新交易日（2026-11-10）缺失因子：s_amt15（已按缺失策略处理并留痕）"
     }
   ]
 }

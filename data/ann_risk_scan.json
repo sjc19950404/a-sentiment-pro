@@ -8,5 +8,28 @@
   "mid": 0,
   "low": 0,
   "flagged": []
+ },
+ {
+  "date": "2026-11-10",
+  "scannedAt": "2026-11-10T10:47:47.570Z",
+  "scanned": 13,
+  "ok": 12,
+  "high": 0,
+  "mid": 1,
+  "low": 0,
+  "flagged": [
+   {
+    "code": "300052",
+    "name": "中青宝",
+    "level": "mid",
+    "words": [
+     "诉讼",
+     "仲裁"
+    ],
+    "title": "中青宝：关于累计诉讼、仲裁情况的公告",
+    "date": "2026-11-09",
+    "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=300052&id=12697969"
+   }
+  ]
  }
 ]
