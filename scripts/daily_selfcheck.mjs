@@ -163,6 +163,43 @@ try {
   } catch { warnings.push('东财接口探测失败（本机网络？）'); }
 } catch (e) { bad('系统层检查自身异常', e && e.message); }
 
+// ── D. UI 层（2026-11-11 拍板：UI 纳入体检）——全自动提取，新卡片/新档引用自动纳入，无需注册 ──
+try {
+  const src = existsSync(join(ROOT, 'terminal.js')) ? readFileSync(join(ROOT, 'terminal.js'), 'utf8') : '';
+  const html = existsSync(join(ROOT, 'index.html')) ? readFileSync(join(ROOT, 'index.html'), 'utf8') : '';
+  if (!src || !html) bad('UI 源文件缺失', 'terminal.js 或 index.html 不存在');
+  else {
+    // D1 卡片标题：从 terminal.js 的 panel('X') 调用自动提取全部卡片 → 逐个查内联副本在场。
+    //   新卡片只要照规矩用 panel() 接线，自动进入本检查（改源忘重生成立即可见）。
+    const cards = [...new Set([...src.matchAll(/panel\('([^']+)'/g)].map((m) => m[1]))];
+    const missingCards = cards.filter((c) => !html.includes(c));
+    if (missingCards.length) bad(`工作台 ${cards.length} 卡中 ${missingCards.length} 张不在内联副本`, missingCards.slice(0, 6).join('、'));
+    else ok('工作台卡片完整', `${cards.length} 张全部在内联副本`);
+    // D2 档位引用：terminal.js 引用的 data/*.json 自动提取 → 本地存在性全查（新卡引用新档自动纳入）
+    const refs = [...new Set([...src.matchAll(/data\/[\w/.-]+\.json/g)].map((m) => m[0]))];
+    const missingFiles = refs.filter((f) => !existsSync(join(ROOT, f)));
+    if (missingFiles.length) bad(`UI 引用 ${refs.length} 档中 ${missingFiles.length} 个本地缺失`, missingFiles.join('、'));
+    else ok('UI 数据档引用', `${refs.length} 个全部本地在场`);
+    // D3 内联漂移：terminal.js 改过（mtime）但 index.html 没跟着重生成 → 源比产物新 >60s 即报。
+    //   git pull 时两文件 mtime 几乎相同（<2s），阈值 60s 防误报。
+    const mt = (f) => statSync(join(ROOT, f)).mtimeMs;
+    const drift = (mt('terminal.js') - mt('index.html')) / 1000;
+    if (drift > 60) bad('终端内联漂移', `terminal.js 比 index.html 新 ${Math.round(drift)}s——改源后未跑 build_terminal_inline.mjs`);
+    else ok('内联无漂移');
+    // D4 远端可达抽查（正式时点才做；外部抖动归 warning 不推）
+    if (!offHours) {
+      const probes = ['data/signals-latest.json', 'data/first_board_live.json', 'data/theme_graph.json'];
+      for (const f of probes) {
+        try {
+          const code = execSync(`curl -s -o /dev/null -w '%{http_code}' -m 10 'https://sjc19950404.github.io/a-sentiment-pro/${f}?t=${Date.now()}'`, { encoding: 'utf8' }).trim();
+          if (code !== '200') warnings.push(`Pages 上 ${f} 返回 ${code}（用户页面会缺数据）`);
+        } catch { warnings.push(`Pages ${f} 探测超时（本机网络？）`); }
+      }
+      if (!warnings.some((w) => w.includes('Pages'))) ok('Pages 数据档抽查', `${probes.length} 个远端 200`);
+    }
+  }
+} catch (e) { bad('UI 层检查自身异常', e && e.message); }
+
 // ── 汇总 ──
 const head = (problems.length
   ? `🔔【每日系统体检】${today} ${bjHm()} —— ${problems.length} 项问题${warnings.length ? `（另有 ${warnings.length} 项 warning 不推送，见日志）` : ''}：\n${problems.join('\n')}`
