@@ -2,66 +2,66 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-10",
- "generatedAt": "2026-11-10T18:38:09.894+08:00",
+ "generatedAt": "2026-11-10T21:08:07.117+08:00",
  "model": "glm-4-flash",
- "sentiment": 0.9,
- "confidence": 0.8,
- "reason": "市场整体情绪积极，涨停家数远多于跌停，强势股多与业绩增长、行业催化和政策支持相关。",
+ "sentiment": 0.8,
+ "confidence": 0.9,
+ "reason": "市场整体情绪积极，涨停家数远超跌停，成交额放大，强势股多与新兴题材和业绩增长相关。",
  "events": [
   {
    "type": "业绩预告",
    "target": "大晟文化",
    "tone": "positive",
-   "note": "三季报减亏，股价上涨"
+   "note": "三季报减亏带动股价上涨"
   },
   {
    "type": "行业催化",
    "target": "半导体",
    "tone": "positive",
-   "note": "半导体及零部件题材活跃，推动相关个股上涨"
+   "note": "半导体板块新晋题材，带动相关个股上涨"
   },
   {
-   "type": "政策",
-   "target": "商业航天",
+   "type": "高管变动",
+   "target": "华智数媒",
    "tone": "positive",
-   "note": "商业航天题材持续受到关注，相关个股表现强势"
+   "note": "浙江国资背景助力股价上涨"
   },
   {
    "type": "回购",
    "target": "惠发食品",
    "tone": "positive",
-   "note": "股份回购提升投资者信心，股价上涨"
+   "note": "股份回购提升市场信心"
+  },
+  {
+   "type": "行业催化",
+   "target": "商业航天",
+   "tone": "positive",
+   "note": "商业航天题材延续，推动相关个股上涨"
   },
   {
    "type": "增持",
    "target": "美盈森",
    "tone": "positive",
-   "note": "增持行为显示公司未来发展潜力，股价上涨"
+   "note": "增持行为显示公司价值被看好"
   },
   {
    "type": "三季报",
    "target": "丝路视觉",
    "tone": "positive",
-   "note": "三季报扭亏为盈，股价大幅上涨"
+   "note": "三季报扭亏为股价上涨提供动力"
   },
   {
    "type": "三季报",
    "target": "中青宝",
    "tone": "positive",
-   "note": "三季报扭亏为盈，股价大幅上涨"
-  },
-  {
-   "type": "控制权变更",
-   "target": "常铝股份",
-   "tone": "positive",
-   "note": "控制权变更可能带来公司治理结构优化，股价上涨"
+   "note": "元宇宙和游戏题材带动股价上涨"
   }
  ],
  "inputDigest": {
   "themes": 97,
   "hotListed": 15,
   "ztCount": 93,
-  "emotionValue": 78.4,
+  "emotionValue": 77.3,
   "painVerdict": "接力顺畅（昨涨停今日翻绿仅 11%、高位板晋级失败 44%，赚钱效应占优）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"

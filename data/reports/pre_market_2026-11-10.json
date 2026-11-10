@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-10",
- "generated_at": "2026-11-10T10:48:26.096Z",
+ "generated_at": "2026-11-10T13:20:20.161Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -81,12 +81,12 @@
    "confidence": "measured"
   },
   "prev_nav": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "derived",
+   "confidence": "measured"
   },
   "positions": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "overnight_exposure": {
    "source": "archived",
@@ -132,7 +132,38 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "climax",
+   "label": "主升行情",
+   "score": 77.26,
+   "cap": 1,
+   "position_range": "60%~100%",
+   "positionReconcile": {
+    "score": 77.3,
+    "base": {
+     "key": "base_bull",
+     "minPos": 0.3,
+     "maxPos": 0.6,
+     "label": "偏多"
+    },
+    "baseRange": "30%~60%",
+    "cap": {
+     "key": "climax",
+     "minPos": 0.6,
+     "maxPos": 1,
+     "label": "主升行情",
+     "advice": "顺势持有为主，追高需留给止损纪律",
+     "tone": "attack"
+    },
+    "capRange": "60%~100%",
+    "force": false,
+    "conflict": false,
+    "finalRange": "60%~100%"
+   },
+   "clustering_bubble": false,
+   "sentiment_penalty": 0,
+   "score_adjusted": 77.26
+  },
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -160,12 +191,20 @@
    "外围「富时中国A50期货」（外围未刷新到最新会话），已置空"
   ],
   "nav_realtime": 1000000,
-  "prev_nav": null,
-  "positions": null,
+  "prev_nav": 0.9411835069797486,
+  "positions": {
+   "targetPos": {
+    "上证指数": 0.7,
+    "深证成指": 0.4,
+    "创业板指": 0.4
+   },
+   "poolPos": 0.5,
+   "executed": true
+  },
   "overnight_exposure": {
    "a50_chgPct": null,
    "a50NightOpen": true,
-   "posGap": null,
+   "posGap": 0.2,
    "us_close": {
     "dji": 0.021526999999999998,
     "spx": 0.023462999999999998,
@@ -175,9 +214,9 @@
     "hxc": -0.013185,
     "fxi": 0
    },
-   "cnh_chgPct": -0.000165,
+   "cnh_chgPct": -0.00006,
    "usReady": false,
-   "usReason": "美东 05:43 ET 盘前（09:30 才开盘）——源给的是上一交易日收盘，可作「上一交易日收盘」用；今日收盘需等 16:30 ET",
+   "usReason": "美东 08:15 ET 盘前（09:30 才开盘）——源给的是上一交易日收盘，可作「上一交易日收盘」用；今日收盘需等 16:30 ET",
    "usPrevSessionClose": true
   },
   "key_levels": null,

@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-10",
- "generated_at": "2026-11-10T10:48:25.635Z",
+ "generated_at": "2026-11-10T13:20:19.750Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -97,8 +97,8 @@
    "confidence": "missing"
   },
   "backtest_deviation": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "derived",
+   "confidence": "measured"
   },
   "market_context": {
    "source": "archived",
@@ -128,7 +128,38 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "climax",
+   "label": "主升行情",
+   "score": 77.26,
+   "cap": 1,
+   "position_range": "60%~100%",
+   "positionReconcile": {
+    "score": 77.3,
+    "base": {
+     "key": "base_bull",
+     "minPos": 0.3,
+     "maxPos": 0.6,
+     "label": "偏多"
+    },
+    "baseRange": "30%~60%",
+    "cap": {
+     "key": "climax",
+     "minPos": 0.6,
+     "maxPos": 1,
+     "label": "主升行情",
+     "advice": "顺势持有为主，追高需留给止损纪律",
+     "tone": "attack"
+    },
+    "capRange": "60%~100%",
+    "force": false,
+    "conflict": false,
+    "finalRange": "60%~100%"
+   },
+   "clustering_bubble": false,
+   "sentiment_penalty": 0,
+   "score_adjusted": 77.26
+  },
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -160,17 +191,22 @@
   "max_drawdown_intraday": null,
   "grid_trigger_detail": null,
   "counter_trend_loss_ratio": null,
-  "backtest_deviation": null,
+  "backtest_deviation": {
+   "live_cum": -0.055816,
+   "backtest_v52": -0.0558,
+   "delta": -0.000016,
+   "note": "执行轨 vs 回测 v52 锚点（零偏差为设计约束）"
+  },
   "market_context": {
-   "emotion": 76.7,
-   "pct_rank": 78,
+   "emotion": 77.3,
+   "pct_rank": 79.7,
    "indexes": {
     "上证指数": 0.08,
     "深证成指": 0.86,
     "创业板指": 1.46
    },
    "up_down": "4035/1101/159",
-   "amount_yi": 14347.4,
+   "amount_yi": 15048.1,
    "zt_dt": "93/0",
    "breadth": "站上20日线 46.9%",
    "pain": "接力顺畅",
