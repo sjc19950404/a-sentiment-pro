@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-11",
- "generated_at": "2026-11-11T12:08:35.503Z",
+ "generated_at": "2026-11-11T13:15:09.146Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -135,11 +135,11 @@
   "regime": {
    "key": "climax",
    "label": "主升行情",
-   "score": 83.55,
+   "score": 83.51,
    "cap": 1,
    "position_range": "60%~100%",
    "positionReconcile": {
-    "score": 83.6,
+    "score": 83.5,
     "base": {
      "key": "base_attack",
      "minPos": 0.6,
@@ -162,7 +162,7 @@
    },
    "clustering_bubble": false,
    "sentiment_penalty": 0,
-   "score_adjusted": 83.55
+   "score_adjusted": 83.51
   },
   "circuit_breaker": {
    "dd_tier": 0,
@@ -214,9 +214,9 @@
     "hxc": -0.012062,
     "fxi": -0.007213000000000001
    },
-   "cnh_chgPct": -0.001168,
+   "cnh_chgPct": -0.001183,
    "usReady": false,
-   "usReason": "美东 07:03 ET 盘前（09:30 才开盘）——源给的是上一交易日收盘，可作「上一交易日收盘」用；今日收盘需等 16:30 ET",
+   "usReason": "美东 08:10 ET 盘前（09:30 才开盘）——源给的是上一交易日收盘，可作「上一交易日收盘」用；今日收盘需等 16:30 ET",
    "usPrevSessionClose": true
   },
   "key_levels": null,

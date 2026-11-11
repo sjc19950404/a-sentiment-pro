@@ -2,11 +2,11 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-11",
- "generatedAt": "2026-11-11T19:58:24.692+08:00",
+ "generatedAt": "2026-11-11T21:04:48.275+08:00",
  "model": "glm-4-flash",
- "sentiment": 0.8,
- "confidence": 0.9,
- "reason": "市场整体情绪积极，涨停家数远多于跌停，成交额放大，强势股表现活跃，且多与业绩增长、新技术应用相关。",
+ "sentiment": 0.9,
+ "confidence": 0.8,
+ "reason": "市场涨停家数较多，强势股表现活跃，且亏钱效应较低，市场情绪偏向积极。",
  "events": [
   {
    "type": "业绩预告",
@@ -18,43 +18,43 @@
    "type": "行业催化",
    "target": "光芯片",
    "tone": "positive",
-   "note": "光芯片+CPO+数据中心题材活跃"
+   "note": "源杰科技光芯片+CPO+数据中心概念推动股价上涨"
   },
   {
    "type": "行业催化",
    "target": "光模块",
    "tone": "positive",
-   "note": "光模块+CPO+三季报增长题材受追捧"
+   "note": "光迅科技、景旺电子光模块+CPO概念带动股价上涨"
   },
   {
    "type": "行业催化",
    "target": "机器人",
    "tone": "positive",
-   "note": "人形机器人+智能割草机器人题材持续升温"
+   "note": "沃特股份、中坚科技人形机器人概念推动股价上涨"
   },
   {
    "type": "行业催化",
    "target": "AI",
    "tone": "positive",
-   "note": "AI短剧+AI视频题材表现强劲"
+   "note": "果麦文化AI短剧+AI视频概念带动股价上涨"
   },
   {
    "type": "行业催化",
    "target": "商业航天",
    "tone": "positive",
-   "note": "商业航天题材受益于卫星互联网发展"
+   "note": "东方通信商业航天概念推动股价上涨"
+  },
+  {
+   "type": "行业催化",
+   "target": "数据中心",
+   "tone": "positive",
+   "note": "同飞股份数据中心液冷概念推动股价上涨"
   },
   {
    "type": "行业催化",
    "target": "定增落地",
    "tone": "positive",
-   "note": "定增落地题材助力股价上涨"
-  },
-  {
-   "type": "行业催化",
-   "target": "三季报增长",
-   "tone": "positive",
-   "note": "多家公司三季报增长推动市场情绪"
+   "note": "同飞股份定增落地推动股价上涨"
   }
  ],
  "inputDigest": {

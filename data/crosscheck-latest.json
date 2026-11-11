@@ -2,8 +2,8 @@
   "kind": "crosscheck-latest",
   "version": 1,
   "asOfDate": "2026-11-11",
-  "fetchedAt": "2026-11-11T12:05:08.442Z",
-  "primaryCount": 89,
+  "fetchedAt": "2026-11-11T13:11:48.320Z",
+  "primaryCount": 90,
   "secondaryCount": 120,
   "rules": {
     "ABS_DIVERGE": 2.5,
@@ -18,7 +18,7 @@
   "primaryName": "同花顺行业(881xxx)",
   "secondaryName": "申万二级(腾讯)",
   "comparable": 70,
-  "coverage": 0.7865,
+  "coverage": 0.7778,
   "offset": 0.42,
   "offsetRaw": 0.42,
   "debiased": true,
@@ -108,19 +108,6 @@
       "level": "ok"
     },
     {
-      "industry": "汽车零部件",
-      "primaryRaw": "汽车零部件",
-      "primary": 1.95,
-      "secondary": 1.86,
-      "secondarySamples": 1,
-      "diff": 0.09,
-      "dev": -0.33,
-      "absDiff": 0.33,
-      "rel": 0.18,
-      "relMeasurable": true,
-      "level": "ok"
-    },
-    {
       "industry": "电机",
       "primaryRaw": "电机",
       "primary": 1.85,
@@ -131,6 +118,19 @@
       "absDiff": 0.45,
       "rel": 0.46,
       "relMeasurable": false,
+      "level": "ok"
+    },
+    {
+      "industry": "汽车零部件",
+      "primaryRaw": "汽车零部件",
+      "primary": 1.85,
+      "secondary": 1.86,
+      "secondarySamples": 1,
+      "diff": -0.01,
+      "dev": -0.43,
+      "absDiff": 0.43,
+      "rel": 0.23,
+      "relMeasurable": true,
       "level": "ok"
     },
     {
@@ -420,19 +420,6 @@
       "level": "ok"
     },
     {
-      "industry": "能源金属",
-      "primaryRaw": "能源金属",
-      "primary": 0.75,
-      "secondary": 0.72,
-      "secondarySamples": 1,
-      "diff": 0.03,
-      "dev": -0.39,
-      "absDiff": 0.39,
-      "rel": 0.54,
-      "relMeasurable": false,
-      "level": "ok"
-    },
-    {
       "industry": "农化制品",
       "primaryRaw": "农化制品",
       "primary": 0.75,
@@ -442,6 +429,19 @@
       "dev": 0.27,
       "absDiff": 0.27,
       "rel": 4.5,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
+      "industry": "能源金属",
+      "primaryRaw": "能源金属",
+      "primary": 0.75,
+      "secondary": 0.72,
+      "secondarySamples": 1,
+      "diff": 0.03,
+      "dev": -0.39,
+      "absDiff": 0.39,
+      "rel": 0.54,
       "relMeasurable": false,
       "level": "ok"
     },
@@ -954,5 +954,5 @@
     }
   ],
   "staleReason": "cross-source: 1 条超阈值差异（通信设备(4.91% vs 9.99%)）",
-  "note": "可比的 70 个行业中发现偏离常态关系的离群（覆盖率 78.6%；当日两源常态偏移 +0.42pp（已扣除））——需人工复核是否源侧失真"
+  "note": "可比的 70 个行业中发现偏离常态关系的离群（覆盖率 77.8%；当日两源常态偏移 +0.42pp（已扣除））——需人工复核是否源侧失真"
 }

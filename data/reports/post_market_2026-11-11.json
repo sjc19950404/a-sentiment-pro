@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-11",
- "generated_at": "2026-11-11T12:08:35.321Z",
+ "generated_at": "2026-11-11T13:15:08.715Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -131,11 +131,11 @@
   "regime": {
    "key": "climax",
    "label": "主升行情",
-   "score": 83.55,
+   "score": 83.51,
    "cap": 1,
    "position_range": "60%~100%",
    "positionReconcile": {
-    "score": 83.6,
+    "score": 83.5,
     "base": {
      "key": "base_attack",
      "minPos": 0.6,
@@ -158,7 +158,7 @@
    },
    "clustering_bubble": false,
    "sentiment_penalty": 0,
-   "score_adjusted": 83.55
+   "score_adjusted": 83.51
   },
   "circuit_breaker": {
    "dd_tier": 0,
