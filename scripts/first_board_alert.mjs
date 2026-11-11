@@ -87,13 +87,21 @@ try {
     const cfg = (JSON.parse(readFileSync(join(ROOT, 'config.json'), 'utf8')).paper || {}).regimeThreshold || {};
     let stateLabel = null;
     try {
+      // 5 分钟缓存（2026-11-11 风控降频）：范式对时效要求 5 分钟级，池请求降为 1/5
+      const regCache = join(ROOT, 'data/em_regime_cache.json');
+      const regFresh = (() => { try { const st = statSync(regCache); if (Date.now() - st.mtimeMs < 300000) return JSON.parse(readFileSync(regCache, 'utf8')); } catch { } return null; })();
+      let pool = [];
+      if (regFresh && regFresh.state) { stateLabel = regFresh.state; }
+      else {
       const ztUrl = `https://push2ex.eastmoney.com/getTopicZTPool?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=500&sort=fbt%3Aasc&date=${today().replace(/-/g, '')}&_=${Date.now()}`;
       const zt = await (await fetch(ztUrl, { headers: { Referer: 'https://quote.eastmoney.com/' } })).json();
-      const pool = (zt.data && zt.data.pool) || [];
+      pool = (zt.data && zt.data.pool) || [];
       if (pool.length) {
         let prevMetrics = null;
         try { const eh = JSON.parse(readFileSync(join(ROOT, 'data/emotion_history.json'), 'utf8')); const h = (eh && eh.history) || []; prevMetrics = h.length ? h[h.length - 1].metrics : null; } catch { /* 缺席不阻塞 */ }
         stateLabel = computeEmotion(pool, prevMetrics, today().replace(/-/g, '')).emotion;
+        if (stateLabel) { try { writeFileSync(regCache, JSON.stringify({ ts: Date.now(), state: stateLabel })); } catch { } }
+      }
       }
     } catch { /* 池失败 → stateLabel null → 基准 */ }
     const a1 = adjustThreshold('approachPct', ALERT_DEFAULTS.approachPct, stateLabel, cfg);
@@ -109,9 +117,16 @@ try {
   // 实时强板块（2026-11-11 拍板：A 涨幅≥2% + 普涨度>70%）∪ 昨日主线板块 = 推送白名单
   let allowSectors = new Set();
   try {
-    const bUrl = 'https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=520&po=1&np=1&fltt=2&fid=f3&fs=m:90+t:2&fields=f3,f12,f14,f104,f105&ut=fa5fd1943c7b386f172d6893dbfba10b';
-    const bj = await (await fetch(bUrl, { headers: { Referer: 'https://quote.eastmoney.com/' } })).json();
-    const rows = ((bj.data && bj.data.diff) || []).map((b) => ({ sector: b.f14, chg: +b.f3, up: +b.f104, down: +b.f105 }));
+    // 5 分钟缓存（2026-11-11 风控降频）：pz=520 是最大请求，白名单变化慢 → 降为 1/5
+    const secCache = join(ROOT, 'data/sector_rank_cache.json');
+    const secFresh = (() => { try { const st = statSync(secCache); if (Date.now() - st.mtimeMs < 300000) return JSON.parse(readFileSync(secCache, 'utf8')); } catch { } return null; })();
+    let rows = secFresh && Array.isArray(secFresh.rows) ? secFresh.rows : null;
+    if (!rows) {
+      const bUrl = 'https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=520&po=1&np=1&fltt=2&fid=f3&fs=m:90+t:2&fields=f3,f12,f14,f104,f105&ut=fa5fd1943c7b386f172d6893dbfba10b';
+      const bj = await (await fetch(bUrl, { headers: { Referer: 'https://quote.eastmoney.com/' } })).json();
+      rows = ((bj.data && bj.data.diff) || []).map((b) => ({ sector: b.f14, chg: +b.f3, up: +b.f104, down: +b.f105 }));
+      try { writeFileSync(secCache, JSON.stringify({ ts: Date.now(), rows })); } catch { }
+    }
     allowSectors = strongSectors(rows, dynSectorChg != null ? { minChg: dynSectorChg } : {});
   } catch { /* 板块排行失败 → 白名单退化为仅昨日主线（fail-open） */ }
   try {
