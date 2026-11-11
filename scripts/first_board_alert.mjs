@@ -6,7 +6,7 @@
  * 状态持久化 data/first_board_alert_state.json（每日重置）；频控 seal2/break3/touch1/approach1、日 cap60。
  * 纪律：只推事件提醒，不下单、不改仓位；非交易时段/节假日直接退出。
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 import { detectEvents, buildAlertText, strongSectors, ALERT_DEFAULTS } from '../src/first_board_alert.js';
