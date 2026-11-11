@@ -699,7 +699,6 @@ export async function fetchSeats(date, aggr) {
     // 不剔除会让游资买入虚增、并稀释全市场买方集中度（详见 isAggregateSeatRow 注释）。
     const cleanBuy = (buyRows || []).filter((r) => !isAggregateSeatRow(r.OPERATEDEPT_NAME));
     const cleanSell = (sellRows || []).filter((r) => !isAggregateSeatRow(r.OPERATEDEPT_NAME));
-    got++;
     for (const r of cleanBuy) {
       agg[classifySeat(r.OPERATEDEPT_NAME) + '_buy'] += (r.BUY || 0) / 1e8;
       const nm = String(r.OPERATEDEPT_NAME || ''), buy = r.BUY || 0;
@@ -719,7 +718,9 @@ export async function fetchSeats(date, aggr) {
       .filter(([nm, v]) => nm && v > 0)
       .sort((x, y) => y[1] - x[1]);
     const b = toPairs(cleanBuy, 'BUY'), s2 = toPairs(cleanSell, 'SELL');
-    if (b.length || s2.length) agg.detail[a.code] = { b, s: s2 };
+    // universe_n 计数移到净化后（2026-11-11 EOD 守卫拦住的口径 bug）：API 返回了行但
+    //   全被聚合行/零金额净化掉的票，不落 detail 就不该计数——保证 universe_n ≡ detail 键数。
+    if (b.length || s2.length) { agg.detail[a.code] = { b, s: s2 }; got++; }
     await sleep(120);
   }
   agg.cover = aggr.length ? r2((got / aggr.length) * 100) : 0;

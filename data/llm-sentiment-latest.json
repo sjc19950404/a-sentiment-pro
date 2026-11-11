@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-11-10",
- "generatedAt": "2026-11-10T21:08:07.117+08:00",
+ "asOfDate": "2026-11-11",
+ "generatedAt": "2026-11-11T19:35:56.187+08:00",
  "model": "glm-4-flash",
  "sentiment": 0.8,
  "confidence": 0.9,
- "reason": "市场整体情绪积极，涨停家数远超跌停，成交额放大，强势股多与新兴题材和业绩增长相关。",
+ "reason": "市场涨停家数较多，成交额放大，亏钱效应较低，赚钱效应占优，强势股多来自新晋和延续题材，整体市场情绪积极。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "大晟文化",
+   "target": "博杰股份",
    "tone": "positive",
-   "note": "三季报减亏带动股价上涨"
+   "note": "三季报增长带动股价上涨"
   },
   {
    "type": "行业催化",
-   "target": "半导体",
+   "target": "光芯片",
    "tone": "positive",
-   "note": "半导体板块新晋题材，带动相关个股上涨"
+   "note": "光芯片+CPO+数据中心题材活跃"
   },
   {
-   "type": "高管变动",
-   "target": "华智数媒",
+   "type": "行业催化",
+   "target": "机器人",
    "tone": "positive",
-   "note": "浙江国资背景助力股价上涨"
+   "note": "人形机器人测试题材持续升温"
   },
   {
-   "type": "回购",
-   "target": "惠发食品",
+   "type": "行业催化",
+   "target": "光模块",
    "tone": "positive",
-   "note": "股份回购提升市场信心"
+   "note": "光模块+CPO+数据中心题材活跃"
+  },
+  {
+   "type": "行业催化",
+   "target": "AI",
+   "tone": "positive",
+   "note": "AI短剧+AI视频题材带动相关股票上涨"
   },
   {
    "type": "行业催化",
    "target": "商业航天",
    "tone": "positive",
-   "note": "商业航天题材延续，推动相关个股上涨"
+   "note": "商业航天题材持续受到关注"
   },
   {
-   "type": "增持",
-   "target": "美盈森",
+   "type": "行业催化",
+   "target": "定增落地",
    "tone": "positive",
-   "note": "增持行为显示公司价值被看好"
+   "note": "定增落地题材活跃，如同飞股份"
   },
   {
-   "type": "三季报",
-   "target": "丝路视觉",
+   "type": "行业催化",
+   "target": "三季报增长",
    "tone": "positive",
-   "note": "三季报扭亏为股价上涨提供动力"
-  },
-  {
-   "type": "三季报",
-   "target": "中青宝",
-   "tone": "positive",
-   "note": "元宇宙和游戏题材带动股价上涨"
+   "note": "多只股票因三季报增长表现强势"
   }
  ],
  "inputDigest": {
-  "themes": 97,
+  "themes": 99,
   "hotListed": 15,
-  "ztCount": 93,
-  "emotionValue": 77.3,
-  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 11%、高位板晋级失败 44%，赚钱效应占优）"
+  "ztCount": 85,
+  "emotionValue": 83.5,
+  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 30%、高位板晋级失败 65%，赚钱效应占优）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }

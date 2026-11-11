@@ -64,6 +64,12 @@ flock -n 9 || { log "已有 pi_run 实例在跑，跳过本次（$MODE）"; exit
 #   问题 exit 1。网络不行就不拉取远端，直接用本地现有最新版代码跑 build_ai_report
 #   （降级启动原则）；若本地存在未解决冲突（严重污染）也先清理到 HEAD 再继续。
 git fetch origin main 2>>"$LOG_FILE" || log "git fetch 失败：远端不可达，将使用本地代码继续"
+# 防数据丢失（2026-11-11 实测事故）：reset --hard 会吃掉本地未推送提交——pi_push 失败时
+#   「保留本地提交」的数据（盘中档变更）会被本轮 reset 静默回滚。reset 前先推走堆积。
+if [ -n "" ]; then
+  log "本地存在未推送提交，reset 前先跑一次 pi_push 保数据"
+  bash scripts/pi_push.sh >>"" 2>&1 || log "reset 前 pi_push 失败（继续 reset，堆积提交已尽告知义务）"
+fi
 if ! git reset --hard origin/main >>"$LOG_FILE" 2>&1; then
   if git diff --name-only --diff-filter=U | grep -q .; then
     log "reset 远端失败且本地存在未解决冲突，git reset --hard HEAD 清理后继续"

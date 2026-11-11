@@ -1,9 +1,9 @@
 {
  "meta": {
-  "generatedAt": "2026-11-10T13:15:29.305Z",
+  "generatedAt": "2026-11-11T11:43:42.696Z",
   "formulaVersion": "v5.2-pro",
-  "tradeDate": "2026-11-10",
-  "days": 262,
+  "tradeDate": "2026-11-11",
+  "days": 263,
   "assets": [
    "上证指数",
    "深证成指",
@@ -11,17 +11,17 @@
   ],
   "signal": "七因子加权情绪分（权重取 src/config.js weights，与页面 emotion.value 同口径）",
   "costNote": "佣金 0.0003（双边）· 印花税 0.0005（卖出）· 滑点 0.0002；按仓位变动幅度计提",
-  "caveat": "样本仅 262 个交易日，年化/夏普等指标的统计意义有限，仅用于管线自检与参数对比，不构成投资建议。",
+  "caveat": "样本仅 263 个交易日，年化/夏普等指标的统计意义有限，仅用于管线自检与参数对比，不构成投资建议。",
   "sampleNote": {
-   "archiveDays": 262,
-   "backtestDays": 262,
+   "archiveDays": 263,
+   "backtestDays": 263,
    "excludedBackfillDays": 0,
    "klineRebuildDays": 223
   },
   "weightDrift": 0.075,
   "indexCoverage": {
-   "coveredDays": 262,
-   "totalDays": 262,
+   "coveredDays": 263,
+   "totalDays": 263,
    "ratio": 1
   }
  },
@@ -346,7 +346,8 @@
    "2026-11-05",
    "2026-11-06",
    "2026-11-09",
-   "2026-11-10"
+   "2026-11-10",
+   "2026-11-11"
   ],
   "emotion": [
    75.5,
@@ -610,7 +611,8 @@
    72.8,
    34.6,
    68.3,
-   77.3
+   77.3,
+   83.5
   ],
   "navBase": [
    1,
@@ -874,7 +876,8 @@
    0.8582,
    0.8364,
    0.8361,
-   0.8427
+   0.8427,
+   0.8565
   ],
   "navV52": [
    1,
@@ -1138,7 +1141,8 @@
    0.9521,
    0.9412,
    0.9412,
-   0.9442
+   0.9442,
+   0.9508
   ],
   "navV53": [
    1,
@@ -1402,7 +1406,8 @@
    0.9298,
    0.925,
    0.9248,
-   0.927
+   0.927,
+   0.9335
   ],
   "navHold": [
    1.0117,
@@ -1666,7 +1671,8 @@
    0.9056,
    0.8826,
    0.8819,
-   0.889
+   0.889,
+   0.9035
   ],
   "posV52": [
    0,
@@ -1930,6 +1936,7 @@
    0.45,
    0.52,
    0.32,
+   0.5,
    0.5
   ],
   "posV53": [
@@ -2194,7 +2201,8 @@
    0.3,
    0.2,
    0.1,
-   0.3
+   0.3,
+   0.47
   ]
  },
  "base": {
@@ -2207,15 +2215,15 @@
    "s_zbl": 0.1,
    "s_amt": 0.15
   },
-  "sharpe": -0.776,
+  "sharpe": -0.689,
   "maxDd": 0.2679,
-  "calmar": -0.566,
-  "annual": -0.1517,
-  "total": -0.1573,
-  "winRate": 0.4805,
-  "profitRatio": 0.874,
-  "sortino": -1.058,
-  "emptyRatio": 0.0229
+  "calmar": -0.515,
+  "annual": -0.138,
+  "total": -0.1435,
+  "winRate": 0.4825,
+  "profitRatio": 0.888,
+  "sortino": -0.941,
+  "emptyRatio": 0.0228
  },
  "v52": {
   "w": {
@@ -2227,14 +2235,14 @@
    "s_zbl": 0.1,
    "s_amt": 0.15
   },
-  "sharpe": -0.299,
+  "sharpe": -0.253,
   "maxDd": 0.1762,
-  "calmar": -0.305,
-  "annual": -0.0537,
-  "total": -0.0558,
-  "winRate": 0.4981,
-  "profitRatio": 0.952,
-  "sortino": -0.449,
+  "calmar": -0.268,
+  "annual": -0.0472,
+  "total": -0.0492,
+  "winRate": 0.5,
+  "profitRatio": 0.959,
+  "sortino": -0.379,
   "emptyRatio": 0.0038
  },
  "v53": {
@@ -2247,22 +2255,22 @@
    "s_zbl": 0.1,
    "s_amt": 0.15
   },
-  "sharpe": -0.922,
+  "sharpe": -0.828,
   "maxDd": 0.1208,
-  "calmar": -0.582,
-  "annual": -0.0704,
-  "total": -0.073,
-  "winRate": 0.4633,
-  "profitRatio": 0.847,
-  "sortino": -1.202,
-  "emptyRatio": 0.0115,
+  "calmar": -0.528,
+  "annual": -0.0638,
+  "total": -0.0665,
+  "winRate": 0.4654,
+  "profitRatio": 0.862,
+  "sortino": -1.082,
+  "emptyRatio": 0.0114,
   "params": {
    "confirmDays": 1,
    "maxPosByDaySource": "src/position_policy.js（regime 档位区间上限）"
   },
   "regimeCounts": {
    "unknown": 2,
-   "climax": 61,
+   "climax": 62,
    "neutral": 30,
    "ice": 72,
    "recover": 37,
@@ -2282,15 +2290,15 @@
    "s_zbl": 0.1,
    "s_amt": 0.15
   },
-  "sharpe": -0.967,
+  "sharpe": -0.871,
   "maxDd": 0.1219,
-  "calmar": -0.594,
-  "annual": -0.0725,
-  "total": -0.0752,
-  "winRate": 0.4672,
-  "profitRatio": 0.839,
-  "sortino": -1.242,
-  "emptyRatio": 0.0115,
+  "calmar": -0.541,
+  "annual": -0.066,
+  "total": -0.0687,
+  "winRate": 0.4692,
+  "profitRatio": 0.854,
+  "sortino": -1.122,
+  "emptyRatio": 0.0114,
   "params": {
    "mode": "partial",
    "ladder": [
@@ -2318,15 +2326,15 @@
    "s_zbl": 0.1,
    "s_amt": 0.15
   },
-  "sharpe": -0.871,
+  "sharpe": -0.777,
   "maxDd": 0.117,
-  "calmar": -0.568,
-  "annual": -0.0665,
-  "total": -0.069,
-  "winRate": 0.4633,
-  "profitRatio": 0.854,
-  "sortino": -1.135,
-  "emptyRatio": 0.0115,
+  "calmar": -0.512,
+  "annual": -0.0599,
+  "total": -0.0625,
+  "winRate": 0.4654,
+  "profitRatio": 0.869,
+  "sortino": -1.014,
+  "emptyRatio": 0.0114,
   "params": {
    "mode": "trailing",
    "trail": 0.3,
@@ -2346,21 +2354,21 @@
    "s_zbl": 0.0714,
    "s_amt": 0.1786
   },
-  "sharpe": -0.124,
+  "sharpe": -0.078,
   "maxDd": 0.1677,
-  "calmar": -0.165,
-  "annual": -0.0277,
-  "total": -0.0288,
-  "winRate": 0.4981,
-  "profitRatio": 0.98,
-  "sortino": -0.19,
+  "calmar": -0.127,
+  "annual": -0.0212,
+  "total": -0.0221,
+  "winRate": 0.5,
+  "profitRatio": 0.987,
+  "sortino": -0.119,
   "emptyRatio": 0.0038
  },
  "pareto": {
-  "count": 21,
+  "count": 20,
   "uniqueCount": 10420,
   "scanned": 78125,
-  "note": "扫描 78125 组、去重后 10420 个不同结果，非支配解 21 个",
+  "note": "扫描 78125 组、去重后 10420 个不同结果，非支配解 20 个",
   "rows": [
    {
     "w": {
@@ -2372,14 +2380,14 @@
      "s_zbl": 0.1304,
      "s_amt": 0.163
     },
-    "sharpe": 0.004,
+    "sharpe": 0.05,
     "maxDd": 0.1839,
-    "calmar": -0.06,
-    "annual": -0.011,
-    "total": -0.0115,
-    "winRate": 0.4981,
-    "profitRatio": 1.001,
-    "sortino": 0.006,
+    "calmar": -0.022,
+    "annual": -0.0041,
+    "total": -0.0043,
+    "winRate": 0.5,
+    "profitRatio": 1.008,
+    "sortino": 0.076,
     "emptyRatio": 0.0038,
     "np": true
    },
@@ -2393,14 +2401,14 @@
      "s_zbl": 0.12,
      "s_amt": 0.18
     },
-    "sharpe": -0.02,
+    "sharpe": 0.026,
     "maxDd": 0.1839,
-    "calmar": -0.079,
-    "annual": -0.0146,
-    "total": -0.0151,
-    "winRate": 0.4981,
-    "profitRatio": 0.997,
-    "sortino": -0.03,
+    "calmar": -0.042,
+    "annual": -0.0076,
+    "total": -0.008,
+    "winRate": 0.5,
+    "profitRatio": 1.004,
+    "sortino": 0.04,
     "emptyRatio": 0.0038,
     "np": true
    },
@@ -2414,14 +2422,14 @@
      "s_zbl": 0.1429,
      "s_amt": 0.1786
     },
-    "sharpe": -0.039,
+    "sharpe": 0.005,
     "maxDd": 0.1835,
-    "calmar": -0.096,
-    "annual": -0.0177,
-    "total": -0.0184,
-    "winRate": 0.4943,
-    "profitRatio": 0.994,
-    "sortino": -0.059,
+    "calmar": -0.06,
+    "annual": -0.011,
+    "total": -0.0115,
+    "winRate": 0.4962,
+    "profitRatio": 1.001,
+    "sortino": 0.008,
     "emptyRatio": 0.0038,
     "np": true
    },
@@ -2435,35 +2443,14 @@
      "s_zbl": 0.0741,
      "s_amt": 0.2222
     },
-    "sharpe": -0.041,
+    "sharpe": 0.004,
     "maxDd": 0.1788,
-    "calmar": -0.1,
-    "annual": -0.0179,
-    "total": -0.0186,
-    "winRate": 0.4943,
-    "profitRatio": 0.993,
-    "sortino": -0.063,
-    "emptyRatio": 0.0038,
-    "np": true
-   },
-   {
-    "w": {
-     "s_net": 0.2198,
-     "s_pos": 0.0659,
-     "s_brd": 0.1319,
-     "s_hot": 0.0879,
-     "s_zdt": 0.1319,
-     "s_zbl": 0.1319,
-     "s_amt": 0.2308
-    },
-    "sharpe": -0.042,
-    "maxDd": 0.1783,
-    "calmar": -0.102,
-    "annual": -0.0183,
-    "total": -0.019,
-    "winRate": 0.4943,
-    "profitRatio": 0.993,
-    "sortino": -0.065,
+    "calmar": -0.061,
+    "annual": -0.011,
+    "total": -0.0115,
+    "winRate": 0.4962,
+    "profitRatio": 1.001,
+    "sortino": 0.006,
     "emptyRatio": 0.0038,
     "np": true
    },
@@ -2477,14 +2464,14 @@
      "s_zbl": 0.0889,
      "s_amt": 0.2
     },
-    "sharpe": -0.042,
+    "sharpe": 0.003,
     "maxDd": 0.178,
-    "calmar": -0.1,
-    "annual": -0.0178,
-    "total": -0.0185,
-    "winRate": 0.4943,
-    "profitRatio": 0.993,
-    "sortino": -0.064,
+    "calmar": -0.061,
+    "annual": -0.0109,
+    "total": -0.0114,
+    "winRate": 0.4962,
+    "profitRatio": 1.001,
+    "sortino": 0.005,
     "emptyRatio": 0.0038,
     "np": true
    },
@@ -2498,14 +2485,14 @@
      "s_zbl": 0.1224,
      "s_amt": 0.2143
     },
-    "sharpe": -0.058,
+    "sharpe": -0.012,
     "maxDd": 0.1748,
-    "calmar": -0.105,
-    "annual": -0.0184,
-    "total": -0.0191,
-    "winRate": 0.4981,
-    "profitRatio": 0.99,
-    "sortino": -0.09,
+    "calmar": -0.068,
+    "annual": -0.0118,
+    "total": -0.0123,
+    "winRate": 0.5,
+    "profitRatio": 0.998,
+    "sortino": -0.019,
     "emptyRatio": 0.0038,
     "np": true
    },
@@ -2519,14 +2506,14 @@
      "s_zbl": 0.1628,
      "s_amt": 0.2442
     },
-    "sharpe": -0.06,
+    "sharpe": -0.014,
     "maxDd": 0.1684,
-    "calmar": -0.113,
-    "annual": -0.019,
-    "total": -0.0198,
-    "winRate": 0.5019,
-    "profitRatio": 0.99,
-    "sortino": -0.092,
+    "calmar": -0.074,
+    "annual": -0.0125,
+    "total": -0.013,
+    "winRate": 0.5038,
+    "profitRatio": 0.998,
+    "sortino": -0.022,
     "emptyRatio": 0.0038,
     "np": true
    },
@@ -2540,14 +2527,14 @@
      "s_zbl": 0.1489,
      "s_amt": 0.2234
     },
-    "sharpe": -0.062,
+    "sharpe": -0.016,
     "maxDd": 0.168,
-    "calmar": -0.113,
-    "annual": -0.019,
-    "total": -0.0198,
-    "winRate": 0.5019,
-    "profitRatio": 0.99,
-    "sortino": -0.095,
+    "calmar": -0.074,
+    "annual": -0.0125,
+    "total": -0.013,
+    "winRate": 0.5038,
+    "profitRatio": 0.997,
+    "sortino": -0.024,
     "emptyRatio": 0.0038,
     "np": true
    },
@@ -2561,14 +2548,14 @@
      "s_zbl": 0.1395,
      "s_amt": 0.2442
     },
-    "sharpe": -0.081,
+    "sharpe": -0.035,
     "maxDd": 0.168,
-    "calmar": -0.13,
-    "annual": -0.0218,
-    "total": -0.0226,
-    "winRate": 0.5019,
-    "profitRatio": 0.987,
-    "sortino": -0.123,
+    "calmar": -0.091,
+    "annual": -0.0153,
+    "total": -0.0159,
+    "winRate": 0.5038,
+    "profitRatio": 0.994,
+    "sortino": -0.053,
     "emptyRatio": 0.0038,
     "np": true
    },
@@ -2582,14 +2569,14 @@
      "s_zbl": 0.0811,
      "s_amt": 0.2838
     },
-    "sharpe": -0.087,
+    "sharpe": -0.042,
     "maxDd": 0.1678,
-    "calmar": -0.132,
-    "annual": -0.0222,
-    "total": -0.0231,
-    "winRate": 0.5019,
-    "profitRatio": 0.986,
-    "sortino": -0.134,
+    "calmar": -0.095,
+    "annual": -0.0159,
+    "total": -0.0166,
+    "winRate": 0.5038,
+    "profitRatio": 0.993,
+    "sortino": -0.064,
     "emptyRatio": 0.0038,
     "np": true
    },
@@ -2603,14 +2590,14 @@
      "s_zbl": 0.0714,
      "s_amt": 0.1786
     },
-    "sharpe": -0.124,
+    "sharpe": -0.078,
     "maxDd": 0.1677,
-    "calmar": -0.165,
-    "annual": -0.0277,
-    "total": -0.0288,
-    "winRate": 0.4981,
-    "profitRatio": 0.98,
-    "sortino": -0.19,
+    "calmar": -0.127,
+    "annual": -0.0212,
+    "total": -0.0221,
+    "winRate": 0.5,
+    "profitRatio": 0.987,
+    "sortino": -0.119,
     "emptyRatio": 0.0038,
     "np": true
    },
@@ -2624,14 +2611,14 @@
      "s_zbl": 0.1064,
      "s_amt": 0.1596
     },
-    "sharpe": -0.009,
+    "sharpe": 0.037,
     "maxDd": 0.1839,
-    "calmar": -0.07,
-    "annual": -0.0129,
-    "total": -0.0134,
-    "winRate": 0.4981,
-    "profitRatio": 0.999,
-    "sortino": -0.013,
+    "calmar": -0.033,
+    "annual": -0.006,
+    "total": -0.0063,
+    "winRate": 0.5,
+    "profitRatio": 1.006,
+    "sortino": 0.056,
     "emptyRatio": 0.0038,
     "np": false
    },
@@ -2645,14 +2632,14 @@
      "s_zbl": 0.0976,
      "s_amt": 0.1829
     },
-    "sharpe": -0.016,
+    "sharpe": 0.029,
     "maxDd": 0.1851,
-    "calmar": -0.077,
-    "annual": -0.0142,
-    "total": -0.0148,
-    "winRate": 0.4981,
-    "profitRatio": 0.997,
-    "sortino": -0.024,
+    "calmar": -0.04,
+    "annual": -0.0073,
+    "total": -0.0077,
+    "winRate": 0.5,
+    "profitRatio": 1.005,
+    "sortino": 0.043,
     "emptyRatio": 0.0038,
     "np": false
    },
@@ -2666,14 +2653,35 @@
      "s_zbl": 0.1373,
      "s_amt": 0.1765
     },
-    "sharpe": -0.02,
+    "sharpe": 0.026,
     "maxDd": 0.1839,
-    "calmar": -0.079,
-    "annual": -0.0146,
-    "total": -0.0152,
-    "winRate": 0.4981,
-    "profitRatio": 0.997,
-    "sortino": -0.03,
+    "calmar": -0.042,
+    "annual": -0.0077,
+    "total": -0.008,
+    "winRate": 0.5,
+    "profitRatio": 1.004,
+    "sortino": 0.039,
+    "emptyRatio": 0.0038,
+    "np": false
+   },
+   {
+    "w": {
+     "s_net": 0.2947,
+     "s_pos": 0.0842,
+     "s_brd": 0.1684,
+     "s_hot": 0.0632,
+     "s_zdt": 0.1263,
+     "s_zbl": 0.1053,
+     "s_amt": 0.1579
+    },
+    "sharpe": 0.006,
+    "maxDd": 0.1847,
+    "calmar": -0.059,
+    "annual": -0.0109,
+    "total": -0.0114,
+    "winRate": 0.5,
+    "profitRatio": 1.001,
+    "sortino": 0.008,
     "emptyRatio": 0.0038,
     "np": false
    }
@@ -4137,48 +4145,48 @@
   }
  },
  "mainLine": {
-  "tradeDate": "2026-11-10",
+  "tradeDate": "2026-11-11",
   "mains": [],
   "topIndustries": [
    {
-    "name": "影视院线",
-    "change_pct": 7.05
+    "name": "元件",
+    "change_pct": 5.01
+   },
+   {
+    "name": "通信设备",
+    "change_pct": 4.91
+   },
+   {
+    "name": "自动化设备",
+    "change_pct": 3.14
    },
    {
     "name": "游戏",
-    "change_pct": 4.81
+    "change_pct": 3.03
    },
    {
-    "name": "消费电子",
-    "change_pct": 4.35
-   },
-   {
-    "name": "黑色家电",
-    "change_pct": 4.32
-   },
-   {
-    "name": "文化传媒",
-    "change_pct": 4.07
+    "name": "电子化学品",
+    "change_pct": 2.99
    }
   ],
   "threshold": {
-   "up_count_threshold": 15.285458975785975,
-   "density_threshold": 0.12683781021046597,
+   "up_count_threshold": 15.615797082567651,
+   "density_threshold": 0.1276716058291843,
    "mode": "dynamic",
    "samples": 60,
    "window": {
-    "up_mean": 11.233333333333333,
-    "up_std": 8.104251284905283,
-    "dn_mean": 0.10033310698991962,
-    "dn_std": 0.05300940644109271
+    "up_mean": 11.583333333333334,
+    "up_std": 8.064927498468634,
+    "dn_mean": 0.10201038229284816,
+    "dn_std": 0.0513224470726723
    }
   },
   "gating": {
-   "market_state": "normal",
+   "market_state": "strong",
    "sentiment_state": "stable",
    "max_output": 2,
-   "base_up_count_threshold": 15.285458975785975,
-   "base_density_threshold": 0.12683781021046597
+   "base_up_count_threshold": 15.615797082567651,
+   "base_density_threshold": 0.1276716058291843
   }
  }
 }
