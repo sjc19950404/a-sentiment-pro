@@ -10,6 +10,8 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 import { detectEvents, buildAlertText, strongSectors, ALERT_DEFAULTS } from '../src/first_board_alert.js';
+import { adjustThreshold } from '../src/regime_threshold.js';
+import { computeEmotion } from '../src/emotion_cycle.js';
 import { isMainBoardCode } from '../src/first_board.js';
 import { loadCalendar, isTradingDay } from '../src/calendar.js';
 
@@ -74,13 +76,43 @@ try {
       limitPrice: Math.round(+q.f18 * (1 + pct / 100) * 100) / 100,
     });
   }
+  // ── 范式驱动动态阈值 v1（2026-11-11 拍板两步方案第一步）──
+  //   约定①：全局开关 ENABLE_REGIME_THRESHOLD 默认 false → shadow 模式（计算照跑/日志照打/阈值用基准）；
+  //   约定③：当日池拉取失败/状态缺失/中性 → 全回基准，绝不报错；
+  //   约定④：v1 仅 approachPct（逼近线）/ sectorMinChg（板块强门槛）两个核心阈值。
+  let thresholdAdjust = { enabled: false, state: null, items: [] };
+  let dynApproach = null, dynSectorChg = null;
+  try {
+    const ENABLE = process.env.ENABLE_REGIME_THRESHOLD === '1';
+    const cfg = (JSON.parse(readFileSync(join(ROOT, 'config.json'), 'utf8')).paper || {}).regimeThreshold || {};
+    let stateLabel = null;
+    try {
+      const ztUrl = `https://push2ex.eastmoney.com/getTopicZTPool?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=500&sort=fbt%3Aasc&date=${today().replace(/-/g, '')}&_=${Date.now()}`;
+      const zt = await (await fetch(ztUrl, { headers: { Referer: 'https://quote.eastmoney.com/' } })).json();
+      const pool = (zt.data && zt.data.pool) || [];
+      if (pool.length) {
+        let prevMetrics = null;
+        try { const eh = JSON.parse(readFileSync(join(ROOT, 'data/emotion_history.json'), 'utf8')); const h = (eh && eh.history) || []; prevMetrics = h.length ? h[h.length - 1].metrics : null; } catch { /* 缺席不阻塞 */ }
+        stateLabel = computeEmotion(pool, prevMetrics, today().replace(/-/g, '')).emotion;
+      }
+    } catch { /* 池失败 → stateLabel null → 基准 */ }
+    const a1 = adjustThreshold('approachPct', ALERT_DEFAULTS.approachPct, stateLabel, cfg);
+    const a2 = adjustThreshold('sectorMinChg', 2, stateLabel, cfg);   // 2 = SECTOR_DEFAULTS.minChg 基准
+    thresholdAdjust = { enabled: ENABLE, state: stateLabel, items: [a1, a2] };
+    if (ENABLE && a1.adjusted) dynApproach = a1.final;
+    if (ENABLE && a2.adjusted) dynSectorChg = a2.final;
+    if (a1.adjusted || a2.adjusted) {
+      console.log(`[fb-alert][${ENABLE ? 'REGIME' : 'shadow'}] ${bjHm()} 范式=${stateLabel} 逼近线${a1.final}%（×${a1.multiplier}）板块门槛${a2.final}%（×${a2.multiplier}）${ENABLE ? '' : '——shadow 不生效'}`);
+    }
+  } catch { /* 动态阈值自身异常 → 全基准（约定③） */ }
+
   // 实时强板块（2026-11-11 拍板：A 涨幅≥2% + 普涨度>70%）∪ 昨日主线板块 = 推送白名单
   let allowSectors = new Set();
   try {
     const bUrl = 'https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=520&po=1&np=1&fltt=2&fid=f3&fs=m:90+t:2&fields=f3,f12,f14,f104,f105&ut=fa5fd1943c7b386f172d6893dbfba10b';
     const bj = await (await fetch(bUrl, { headers: { Referer: 'https://quote.eastmoney.com/' } })).json();
     const rows = ((bj.data && bj.data.diff) || []).map((b) => ({ sector: b.f14, chg: +b.f3, up: +b.f104, down: +b.f105 }));
-    allowSectors = strongSectors(rows);
+    allowSectors = strongSectors(rows, dynSectorChg != null ? { minChg: dynSectorChg } : {});
   } catch { /* 板块排行失败 → 白名单退化为仅昨日主线（fail-open） */ }
   try {
     const mt = JSON.parse(readFileSync(join(ROOT, 'data/main_theme_history.json'), 'utf8'));
@@ -89,7 +121,9 @@ try {
   } catch { /* 主线档缺席不阻塞 */ }
   const { events, state } = detectEvents(prevState, snaps, {
     pushFilter: (sector) => !!sector && allowSectors.has(sector),
+    ...(dynApproach != null ? { approachPct: dynApproach } : {}),   // 条件展开：undefined 会覆盖默认值
   });
+  state.threshold_adjust = thresholdAdjust;   // 约定②：审计字段完整落档（key/base/regime/multiplier/final）
   // 基率参考（读取观察档的分层统计，缺失不阻塞）
   let baseRate = null;
   try {
@@ -99,6 +133,11 @@ try {
     baseRate = early && Number.isFinite(early.rate) ? early.rate : (st && st.total && st.total.rate) || null;
   } catch { /* 缺席不阻塞 */ }
   const msg = buildAlertText(events, { bj: bjHm(), baseRate });
+  // 报文标注（约定②配套）：仅开关开启且阈值真的变了时加一行，读者知道当时的判定线不是默认值
+  if (msg && thresholdAdjust.enabled) {
+    const adj = thresholdAdjust.items.filter((a) => a.adjusted);
+    if (adj.length) msg.text += `\n〔阈值随范式（${thresholdAdjust.state}）调整：${adj.map((a) => a.key + '=' + a.final + '（×' + a.multiplier + '）').join('、')}〕`;
+  }
   if (DRY) {
     console.log(`[fb-alert][DRY] snaps=${snaps.length} dtRebound=${snaps.filter((s) => s.dtRebound).length} 事件=${events.length}`);
     if (events.length) console.log('[fb-alert][DRY] 报文预览:\n' + (msg ? msg.text : '(null)'));
