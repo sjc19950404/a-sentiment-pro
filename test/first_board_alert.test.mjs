@@ -118,7 +118,7 @@ test('fb_alert: pushFilter——弱板块事件不推不计数、板块转强后
 
 // ── 加速预警（2026-11-11 拍板 C：1分钟涨速差分）──
 test('fb_alert: 加速事件——两tick差分≥accelPct 触发,每票每日限1次,sealed/touched不触发', () => {
-  const mk = (chg) => ({ code: '600003', name: '丙', sector: '半导体', dtRebound: false, quote: { chg, lastPrice: 10, limitPrice: 11 } });
+  const mk = (chg) => ({ code: '600003', name: '丙', sector: '半导体', dtRebound: false, quote: { chg, last: 10, high: 10 }, limitPrice: 11 });
   const r1 = detectEvents(null, [mk(4.0)], { pushFilter: () => true });
   assert.equal(r1.events.filter((e) => e.kind === 'accel').length, 0, '首tick无prev.chg → 无差分不触发');
   const r2 = detectEvents(r1.state, [mk(6.8)], { pushFilter: () => true });
@@ -127,9 +127,9 @@ test('fb_alert: 加速事件——两tick差分≥accelPct 触发,每票每日�
   assert.ok(acc[0].label.includes('2.8'), '文案含涨速');
   assert.equal(detectEvents(r2.state, [mk(9.7)], { pushFilter: () => true }).events.filter((e) => e.kind === 'accel').length, 0, '同票第二次不推（限1次）');
   // sealed 不触发
-  const sealed = { code: '600004', name: '丁', sector: 's', dtRebound: false, quote: { chg: 4, lastPrice: 10, limitPrice: 11 } };
+  const sealed = { code: '600004', name: '丁', sector: 's', dtRebound: false, quote: { chg: 4, last: 10, high: 10 }, limitPrice: 11 };
   const s1 = detectEvents(null, [sealed], { pushFilter: () => true });
-  const s2 = detectEvents(s1.state, [{ ...sealed, quote: { chg: 10.02, lastPrice: 11, limitPrice: 11 } }], { pushFilter: () => true });
+  const s2 = detectEvents(s1.state, [{ ...sealed, quote: { chg: 10.02, last: 11, high: 11 }, limitPrice: 11 }], { pushFilter: () => true });
   assert.ok(s2.events.some((e) => e.kind === 'seal'), 'state记录seal');
   assert.equal(s2.events.filter((e) => e.kind === 'accel').length, 0, 'sealed 状态不触发加速');
   assert.ok(s2.state.stocks['600004'].chg === 10.02, 'state存chg供下tick差分');
