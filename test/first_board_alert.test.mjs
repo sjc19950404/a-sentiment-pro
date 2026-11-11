@@ -69,7 +69,9 @@ test('fb_alert: 报文——分级排序(炸板最先)+基率声明；无事件 
     { code: '600002', name: '乙', kind: 'break', label: '炸板！昨封今摸板后回落，现涨幅 +5.0%', chg: 5.0 },
   ], { bj: '10:01', baseRate: 16.5 });
   assert.ok(t.text.startsWith('🚨【首板晋级盯盘】10:01'));
-  assert.ok(t.text.indexOf('乙') < t.text.indexOf('甲'), '炸板排在封板前');
+    assert.ok(!t.text.includes('甲'), 'seal 不再进报文（拍板 C：封板确认是事后信息，App 预警承担秒级）');
+  assert.ok(t.text.includes('乙'), 'break 仍在报文');
+  assert.equal(buildAlertText([{ code: 'x', name: '甲', kind: 'seal', label: '封板晋级' }], { bj: 'x' }), null, '纯 seal 事件 → null 不推');
   assert.ok(t.text.includes('基率非预测'));
   assert.equal(buildAlertText([], { bj: 'x' }), null);
   assert.equal(ALERT_DEFAULTS.caps.break, 3);
@@ -112,4 +114,23 @@ test('fb_alert: pushFilter——弱板块事件不推不计数、板块转强后
   // 无 pushFilter（默认放行）——板块排行失败的降级路径
   const r3 = detectEvents(null, [S(null, 10.0, 10.0, 9.98)]);
   assert.equal(r3.events.length, 1, '无过滤钩子时全放行（fail-open）');
+});
+
+// ── 加速预警（2026-11-11 拍板 C：1分钟涨速差分）──
+test('fb_alert: 加速事件——两tick差分≥accelPct 触发,每票每日限1次,sealed/touched不触发', () => {
+  const mk = (chg) => ({ code: '600003', name: '丙', sector: '半导体', dtRebound: false, quote: { chg, lastPrice: 10, limitPrice: 11 } });
+  const r1 = detectEvents(null, [mk(4.0)], { pushFilter: () => true });
+  assert.equal(r1.events.filter((e) => e.kind === 'accel').length, 0, '首tick无prev.chg → 无差分不触发');
+  const r2 = detectEvents(r1.state, [mk(6.8)], { pushFilter: () => true });
+  const acc = r2.events.filter((e) => e.kind === 'accel');
+  assert.equal(acc.length, 1, '涨2.8个点≥2.5 → 加速');
+  assert.ok(acc[0].label.includes('2.8'), '文案含涨速');
+  assert.equal(detectEvents(r2.state, [mk(9.7)], { pushFilter: () => true }).events.filter((e) => e.kind === 'accel').length, 0, '同票第二次不推（限1次）');
+  // sealed 不触发
+  const sealed = { code: '600004', name: '丁', sector: 's', dtRebound: false, quote: { chg: 4, lastPrice: 10, limitPrice: 11 } };
+  const s1 = detectEvents(null, [sealed], { pushFilter: () => true });
+  const s2 = detectEvents(s1.state, [{ ...sealed, quote: { chg: 10.02, lastPrice: 11, limitPrice: 11 } }], { pushFilter: () => true });
+  assert.ok(s2.events.some((e) => e.kind === 'seal'), 'state记录seal');
+  assert.equal(s2.events.filter((e) => e.kind === 'accel').length, 0, 'sealed 状态不触发加速');
+  assert.ok(s2.state.stocks['600004'].chg === 10.02, 'state存chg供下tick差分');
 });

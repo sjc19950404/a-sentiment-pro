@@ -18,7 +18,8 @@
 
 export const ALERT_DEFAULTS = {
   approachPct: 7,
-  caps: { seal: 2, break: 3, touch: 1, approach: 1 },
+  caps: { seal: 2, break: 3, touch: 1, approach: 1, accel: 1 },
+  accelPct: 2.5,   // 1分钟涨速≥2.5个点=加速（2026-11-11 拍板 C：推送改性）
   totalCap: 60,
 };
 
@@ -76,7 +77,7 @@ export function detectEvents(prevState, snaps, opts = {}) {
     if (cur == null) continue;
     const code = String(s.code);
     const prev = stocks[code] || { pos: null, counts: {}, brokeToday: 0 };
-    const counts = { seal: 0, break: 0, touch: 0, approach: 0, ...(prev.counts || {}) };
+    const counts = { seal: 0, break: 0, touch: 0, approach: 0, accel: 0, ...(prev.counts || {}) };
     const emit = (kind, label) => {
       // 地天豁免（2026-11-11 拍板）：曾触跌停+强势修复的票是**逆板块独立行情**——
       //   板块白名单恰恰会拦掉它（板块在跌→不满足强板块口径），故豁免板块过滤。
@@ -101,8 +102,12 @@ export function detectEvents(prevState, snaps, opts = {}) {
       emit('touch', `触板未封（最高摸涨停，现 ${fmtChg(s.quote.chg)}）`);
     } else if (cur === 'approaching' && (prev.pos == null || prev.pos === 'none')) {
       emit('approach', `逼近涨停（现 ${fmtChg(s.quote.chg)}，未触板）`);
+    } else if (th.accelPct != null && prev.chg != null && cur !== 'sealed' && cur !== 'touched') {
+      // 加速预警（2026-11-11 拍板 C）：1 分钟涨速差分——比逼近更早的「正在发生」信号
+      const diff = +s.quote.chg - +prev.chg;
+      if (diff >= th.accelPct) emit('accel', `加速中：1分钟拉了 ${diff.toFixed(1)} 个点（现 ${fmtChg(s.quote.chg)}，未触板）`);
     }
-    next.stocks[code] = { pos: cur, counts, brokeToday: prev.brokeToday || 0 };
+    next.stocks[code] = { pos: cur, counts, brokeToday: prev.brokeToday || 0, chg: s.quote.chg };
   }
   next.notified = total;
   return { events, state: next };
@@ -113,9 +118,13 @@ const fmtChg = (c) => (Number.isFinite(+c) ? (c > 0 ? '+' : '') + (+c).toFixed(1
 /** 事件合并为一条企微 text（分级别排序：break > seal > touch > approach；不超长）。 */
 export function buildAlertText(events, meta = {}) {
   if (!events || !events.length) return null;
-  const order = { break: 0, seal: 1, touch: 2, approach: 3 };
-  const icon = { break: '💥', seal: '🔒', touch: '👆', approach: '👁' };
-  const sorted = [...events].sort((a, b) => order[a.kind] - order[b.kind]);
+  const order = { break: 0, accel: 1, touch: 2, approach: 3 };
+  const icon = { break: '💥', accel: '⚡', touch: '👆', approach: '👁' };
+  // seal 不再推（2026-11-11 拍板 C）：封板确认是事后信息，秒级提醒由用户手机 App 到价预警承担；
+  //   state 仍完整记录封板进程（复盘/对账用）。每条推送都有行动含义。
+  const pushable = events.filter((ev) => ev.kind !== 'seal');
+  if (!pushable.length) return null;
+  const sorted = [...pushable].sort((a, b) => order[a.kind] - order[b.kind]);
   const lines = [`🚨【首板晋级盯盘】${meta.bj || ''}`.trim()];
   let used = lines[0].length;
   for (const e of sorted) {
