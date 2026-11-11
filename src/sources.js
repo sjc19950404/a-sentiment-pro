@@ -720,10 +720,11 @@ export async function fetchSeats(date, aggr) {
     const b = toPairs(cleanBuy, 'BUY'), s2 = toPairs(cleanSell, 'SELL');
     // universe_n 计数移到净化后（2026-11-11 EOD 守卫拦住的口径 bug）：API 返回了行但
     //   全被聚合行/零金额净化掉的票，不落 detail 就不该计数——保证 universe_n ≡ detail 键数。
-    if (b.length || s2.length) { agg.detail[a.code] = { b, s: s2 }; got++; }
+    if (b.length || s2.length) { agg.detail[a.code] = { b, s: s2 }; }
     await sleep(120);
   }
-  agg.cover = aggr.length ? r2((got / aggr.length) * 100) : 0;
+  const detailN = Object.keys(agg.detail).length;   // 去重后真实样本数（区间榜+当日榜同票重复计一个）
+  agg.cover = aggr.length ? r2((detailN / aggr.length) * 100) : 0;
   agg.conc_top = concAll.sort((x, y) => y[1] - x[1]).slice(0, 5);
   if (buyAll > 0) {
     const tops = Object.entries(seatBuy).sort((x, y) => y[1] - x[1]).slice(0, 3);
@@ -733,7 +734,7 @@ export async function fetchSeats(date, aggr) {
   // 样本口径留痕：aggr 传进来的是「全部上榜个股」（含区间累计榜个股），故分项之和 ≠ 当日榜净买。
   // 报告端必须把这两个数摆明白，否则读者会拿分项之和去对当日榜净买，误判为数据错误。
   agg.universe = 'all_listed';       // 口径标记：全部上榜个股（含区间累计榜）
-  agg.universe_n = got;              // 实际取到明细的个股数
+  agg.universe_n = detailN;              // 实际取到明细的个股数
   agg.universe_total = aggr.length;  // 请求的个股数
   return agg;
 }
