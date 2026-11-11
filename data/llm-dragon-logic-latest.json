@@ -2,7 +2,7 @@
  "kind": "llm-dragon-logic",
  "version": 1,
  "asOfDate": "2026-11-11",
- "generatedAt": "2026-11-11T19:41:04.321+08:00",
+ "generatedAt": "2026-11-11T20:03:28.668+08:00",
  "model": "glm-4-flash",
  "source": "ztpool+macro-sector-sentiment",
  "scanned": 40,
@@ -46,7 +46,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "三板炸板多，筹码松动，情绪分歧"
+   "reason": "三板多炸板，筹码松动，预期分歧"
   },
   {
    "code": "002623",
@@ -96,7 +96,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "二板炸板，筹码松动，情绪分歧"
+   "reason": "二板炸板，筹码松动，预期分歧"
   },
   {
    "code": "603536",
@@ -126,7 +126,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.6,
-   "reason": "炸板多，筹码松动，谨慎"
+   "reason": "炸板两次，筹码松动，谨慎"
   },
   {
    "code": "002160",
@@ -136,7 +136,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.7,
-   "reason": "无炸板，缩量封板，情绪尚可"
+   "reason": "无炸板，缩量板，情绪稳定"
   },
   {
    "code": "002209",
@@ -146,7 +146,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "炸板，但缩量，情绪一般"
+   "reason": "炸板一次，筹码松动，谨慎"
   },
   {
    "code": "002861",
@@ -156,7 +156,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "无炸板，缩量封板，情绪稳定"
+   "reason": "无炸板，缩量板，情绪稳定"
   },
   {
    "code": "002313",
@@ -165,8 +165,8 @@
    "hybk": "通信设备",
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.4,
-   "reason": "炸板多，筹码松动，风险大"
+   "confidence": 0.3,
+   "reason": "炸板六次，筹码松动，风险高"
   },
   {
    "code": "002425",
@@ -175,8 +175,8 @@
    "hybk": "游戏Ⅱ",
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.5,
-   "reason": "炸板，但缩量，情绪一般"
+   "confidence": 0.6,
+   "reason": "炸板一次，筹码松动，谨慎"
   },
   {
    "code": "001339",
@@ -185,8 +185,8 @@
    "hybk": "计算机设",
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.9,
-   "reason": "无炸板，缩量封板，情绪稳定"
+   "confidence": 0.8,
+   "reason": "无炸板，缩量板，情绪稳定"
   },
   {
    "code": "000678",
@@ -195,16 +195,16 @@
    "hybk": "汽车零部",
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.9,
-   "reason": "无炸板，缩量封板，情绪稳定"
+   "confidence": 0.8,
+   "reason": "无炸板，缩量板，情绪稳定"
   },
   {
    "code": "300473",
-   "name": "300473",
+   "name": "德尔股份",
    "lb": 1,
    "hybk": "",
    "logic_type": "未知",
-   "is_pure_sentiment": true,
+   "is_pure_sentiment": false,
    "confidence": 0.3,
    "reason": "信息不足，无法判断"
   },
@@ -213,100 +213,100 @@
    "name": "同飞股份",
    "lb": 1,
    "hybk": "",
-   "logic_type": "情绪驱动",
+   "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "新面孔，无题材，纯情绪炒作，风险高"
   },
   {
    "code": "301052",
    "name": "果麦文化",
    "lb": 1,
    "hybk": "",
-   "logic_type": "情绪驱动",
+   "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "一字独食无换手，通道党游戏，散户别凑热闹"
+   "reason": "新题材，无利好，情绪驱动，谨慎参与"
   },
   {
    "code": "301486",
    "name": "致尚科技",
    "lb": 1,
    "hybk": "",
-   "logic_type": "情绪驱动",
+   "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "新概念，无板块利好，情绪炒作，风险大"
   },
   {
    "code": "301596",
    "name": "瑞迪智驱",
    "lb": 1,
    "hybk": "",
-   "logic_type": "情绪驱动",
+   "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "新行业，无利好，情绪驱动，风险高"
   },
   {
    "code": "301636",
    "name": "泽润新能",
    "lb": 1,
    "hybk": "",
-   "logic_type": "情绪驱动",
+   "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "新能题材，无板块利好，情绪炒作，风险大"
   },
   {
    "code": "600076",
    "name": "康欣新材",
    "lb": 1,
    "hybk": "",
-   "logic_type": "情绪驱动",
+   "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "老题材新炒，无利好，情绪驱动，风险高"
   },
   {
    "code": "600103",
    "name": "青山纸业",
    "lb": 1,
    "hybk": "",
-   "logic_type": "情绪驱动",
+   "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "老题材新炒，无利好，情绪驱动，风险高"
   },
   {
    "code": "600162",
    "name": "香江控股",
    "lb": 1,
    "hybk": "",
-   "logic_type": "情绪驱动",
+   "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "老题材新炒，无利好，情绪驱动，风险高"
   },
   {
    "code": "600228",
    "name": "返利科技",
    "lb": 1,
    "hybk": "",
-   "logic_type": "情绪驱动",
+   "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "老题材新炒，无利好，情绪驱动，风险高"
   },
   {
    "code": "600293",
    "name": "三峡新材",
    "lb": 1,
    "hybk": "",
-   "logic_type": "情绪驱动",
+   "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "老题材新炒，无利好，情绪驱动，风险高"
   },
   {
    "code": "600629",
@@ -336,7 +336,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "行业无利好，缩量加速，风险较大"
+   "reason": "新题材无发酵，缩量加速，风险较大"
   },
   {
    "code": "601869",
@@ -346,7 +346,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "无题材支撑，高位分歧，谨慎参与"
+   "reason": "行业无利好，高位放量，警惕炸板"
   },
   {
    "code": "603028",
@@ -356,7 +356,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无题材，情绪博弈，冲高需谨慎"
+   "reason": "新板无亮点，情绪炒作，谨慎参与"
   },
   {
    "code": "603040",
@@ -366,7 +366,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "行业无利好，高位换手，风险较大"
+   "reason": "无题材支撑，高位分歧，小心踩雷"
   },
   {
    "code": "603042",
@@ -376,7 +376,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "无题材支撑，缩量加速，风险较大"
+   "reason": "新题材无发酵，缩量加速，风险较大"
   },
   {
    "code": "603083",
@@ -386,7 +386,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无题材，情绪博弈，冲高需谨慎"
+   "reason": "行业无利好，高位放量，警惕炸板"
   },
   {
    "code": "603135",
@@ -396,7 +396,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "行业无利好，高位分歧，谨慎参与"
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
   },
   {
    "code": "603228",
@@ -406,7 +406,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "无题材支撑，缩量加速，风险较大"
+   "reason": "无题材支撑，高位分歧，小心踩雷"
   }
  ],
  "degraded": false,

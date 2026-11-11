@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-11",
- "generated_at": "2026-11-11T00:55:04.195Z",
+ "generated_at": "2026-11-11T12:08:35.503Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -122,31 +122,31 @@
   }
  },
  "payload": {
-  "date": "2026-11-10",
+  "date": "2026-11-11",
   "grid_triggers": null,
   "counter_trend_losses": null,
   "pnl_daily": 0,
   "pnl_cumulative": 0,
   "max_drawdown_daily": null,
-  "trend_switch_hits": 1,
+  "trend_switch_hits": 0,
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
   "regime": {
    "key": "climax",
    "label": "主升行情",
-   "score": 77.26,
+   "score": 83.55,
    "cap": 1,
    "position_range": "60%~100%",
    "positionReconcile": {
-    "score": 77.3,
+    "score": 83.6,
     "base": {
-     "key": "base_bull",
-     "minPos": 0.3,
-     "maxPos": 0.6,
-     "label": "偏多"
+     "key": "base_attack",
+     "minPos": 0.6,
+     "maxPos": 1,
+     "label": "进攻（情绪极高位）"
     },
-    "baseRange": "30%~60%",
+    "baseRange": "60%~100%",
     "cap": {
      "key": "climax",
      "minPos": 0.6,
@@ -162,7 +162,7 @@
    },
    "clustering_bubble": false,
    "sentiment_penalty": 0,
-   "score_adjusted": 77.26
+   "score_adjusted": 83.55
   },
   "circuit_breaker": {
    "dd_tier": 0,
@@ -174,10 +174,9 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": -0.002684,
-    "state": "ok",
-    "stale": false,
-    "cacheNote": null
+    "chgPct": null,
+    "state": "night-open",
+    "nightOpen": true
    },
    {
     "key": "sox",
@@ -189,11 +188,10 @@
    }
   ],
   "externalStale": [
-   "外围「恒生指数」（外围未刷新到最新会话），已置空",
-   "外围「恒生科技」（外围未刷新到最新会话），已置空"
+   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空"
   ],
   "nav_realtime": 1000000,
-  "prev_nav": 0.9411835069797486,
+  "prev_nav": 0.9441845915509742,
   "positions": {
    "targetPos": {
     "上证指数": 0.7,
@@ -204,9 +202,9 @@
    "executed": true
   },
   "overnight_exposure": {
-   "a50_chgPct": -0.002684,
-   "a50NightOpen": false,
-   "posGap": 0.2,
+   "a50_chgPct": null,
+   "a50NightOpen": true,
+   "posGap": 0.0333,
    "us_close": {
     "dji": -0.003013,
     "spx": -0.003842,
@@ -216,10 +214,10 @@
     "hxc": -0.012062,
     "fxi": -0.007213000000000001
    },
-   "cnh_chgPct": -0.00006,
-   "usReady": true,
-   "usReason": "美东 19:55 ET 已收盘（≥16:30 ET），可采信当日收盘",
-   "usPrevSessionClose": false
+   "cnh_chgPct": -0.001168,
+   "usReady": false,
+   "usReason": "美东 07:03 ET 盘前（09:30 才开盘）——源给的是上一交易日收盘，可作「上一交易日收盘」用；今日收盘需等 16:30 ET",
+   "usPrevSessionClose": true
   },
   "key_levels": null,
   "events_today": null,
@@ -231,79 +229,87 @@
     {
      "code": "002578",
      "name": "闽发铝业",
-     "lb": 6,
-     "kept": true,
-     "chg": 9.98,
+     "lb": 7,
+     "kept": false,
+     "chg": 0.33,
      "appearances": 13
-    },
-    {
-     "code": "001316",
-     "name": "润贝航科",
-     "lb": 2,
-     "kept": false,
-     "chg": -2.94,
-     "appearances": 6
-    },
-    {
-     "code": "000525",
-     "name": "红太阳",
-     "lb": 2,
-     "kept": false,
-     "chg": -1.09,
-     "appearances": 6
-    },
-    {
-     "code": "002889",
-     "name": "东方嘉盛",
-     "lb": 2,
-     "kept": false,
-     "chg": 2.8,
-     "appearances": 7
-    },
-    {
-     "code": "600278",
-     "name": "东方创业",
-     "lb": 2,
-     "kept": false,
-     "chg": 4.6,
-     "appearances": 2
-    },
-    {
-     "code": "600327",
-     "name": "大东方",
-     "lb": 2,
-     "kept": true,
-     "chg": 10,
-     "appearances": 9
-    },
-    {
-     "code": "603366",
-     "name": "日出东方",
-     "lb": 2,
-     "kept": true,
-     "chg": 10.01,
-     "appearances": 10
     },
     {
      "code": "601188",
      "name": "龙江交通",
-     "lb": 2,
-     "kept": true,
-     "chg": 10.02,
-     "appearances": 5
+     "lb": 3,
+     "kept": false,
+     "chg": -6.94,
+     "appearances": 6
     },
     {
      "code": "002310",
      "name": "东方新能",
-     "lb": 2,
-     "kept": true,
-     "chg": 10.2,
+     "lb": 3,
+     "kept": false,
+     "chg": 4.98,
      "appearances": 12
+    },
+    {
+     "code": "600327",
+     "name": "大东方",
+     "lb": 3,
+     "kept": true,
+     "chg": 9.93,
+     "appearances": 10
+    },
+    {
+     "code": "603366",
+     "name": "日出东方",
+     "lb": 3,
+     "kept": true,
+     "chg": 10.02,
+     "appearances": 11
+    },
+    {
+     "code": "001379",
+     "name": "腾达科技",
+     "lb": 2,
+     "kept": false,
+     "chg": -4.53,
+     "appearances": 6
+    },
+    {
+     "code": "002347",
+     "name": "泰尔股份",
+     "lb": 2,
+     "kept": false,
+     "chg": -4.42,
+     "appearances": 11
+    },
+    {
+     "code": "603703",
+     "name": "盛洋科技",
+     "lb": 2,
+     "kept": false,
+     "chg": -2.78,
+     "appearances": 9
+    },
+    {
+     "code": "600408",
+     "name": "安泰集团",
+     "lb": 2,
+     "kept": false,
+     "chg": 0,
+     "appearances": 32
+    },
+    {
+     "code": "603121",
+     "name": "华培动力",
+     "lb": 2,
+     "kept": false,
+     "chg": 0.3,
+     "appearances": 8
     }
    ],
    "overnight_sectors": null,
-   "max_lb": 6,
-   "broken_limit_ratio": 0.16964285714285715
+   "max_lb": 7,
+   "broken_limit_ratio": 0.18269230769230768
   },
   "simulation_stock": null,
   "ma20_degraded": false,

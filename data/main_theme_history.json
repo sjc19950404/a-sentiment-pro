@@ -1,11 +1,11 @@
 {
  "meta": {
-  "generatedAt": "2026-11-10T13:18:58.739Z",
-  "days": 18,
-  "theme_days": 17,
+  "generatedAt": "2026-11-11T12:07:10.222Z",
+  "days": 19,
+  "theme_days": 20,
   "strength_dist": {
-   "强主线": 4,
-   "弱主线": 11,
+   "强主线": 6,
+   "弱主线": 12,
    "绝对主线": 2
   },
   "rotation_days": 5,
@@ -405,6 +405,63 @@
    ],
    "rotation": false,
    "prev_main_theme": null
+  },
+  {
+   "date": "20261111",
+   "main_themes": [
+    {
+     "name": "专用设备",
+     "zt_count": 7,
+     "lb_count": 1,
+     "avg_fund": 122103755,
+     "stocks": [
+      "002209",
+      "603135",
+      "002529",
+      "002278",
+      "603289",
+      "002779",
+      "002837"
+     ],
+     "strength": "强主线",
+     "consecutive_days": 1,
+     "is_continuous": false
+    },
+    {
+     "name": "通信设备",
+     "zt_count": 7,
+     "lb_count": 1,
+     "avg_fund": 142505155,
+     "stocks": [
+      "002313",
+      "603083",
+      "603042",
+      "920157",
+      "002281",
+      "601869",
+      "600776"
+     ],
+     "strength": "强主线",
+     "consecutive_days": 1,
+     "is_continuous": false
+    },
+    {
+     "name": "光伏设备",
+     "zt_count": 3,
+     "lb_count": 1,
+     "avg_fund": 139601293,
+     "stocks": [
+      "002623",
+      "603396",
+      "301636"
+     ],
+     "strength": "弱主线",
+     "consecutive_days": 2,
+     "is_continuous": false
+    }
+   ],
+   "rotation": false,
+   "prev_main_theme": "光伏设备"
   }
  ]
 }
