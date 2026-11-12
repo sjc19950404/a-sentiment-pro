@@ -1,0 +1,18 @@
+#!/bin/sh
+# 测试门闸（2026-11-13 豆包评审指正：grep 吞退出码三次后装的硬闸）——npm test 非 0 退出即拒绝提交
+cd /opt/a-sentiment-pro
+npm test > /tmp/precommit_test.log 2>&1
+EXIT=$?
+if [ $EXIT -ne 0 ]; then
+  echo "✗ pre-commit: npm test 退出码 $EXIT ≠ 0，提交被拒（详见 /tmp/precommit_test.log）"
+  grep -E "^# (pass|fail)|not ok" /tmp/precommit_test.log | head -8
+  exit 1
+fi
+FAILS=$(grep -oE "^# fail [0-9]+" /tmp/precommit_test.log | grep -oE "[0-9]+")
+if [ -n "$FAILS" ] && [ "$FAILS" -gt 0 ]; then
+  echo "✗ pre-commit: $FAILS 个测试失败，提交被拒"
+  grep "not ok" /tmp/precommit_test.log | head -8
+  exit 1
+fi
+echo "✓ pre-commit: 测试全过，放行"
+exit 0
