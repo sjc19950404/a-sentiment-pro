@@ -30,6 +30,7 @@ jobs:
     steps:
       - id: t
         name: 当班时段闸门
+        shell: bash            # 显式声明：set -euo pipefail 与 ERR trap 只在 bash 生效（豆包第十轮）
         run: |
           set -euo pipefail
           trap 'echo "## gate 异常终止：reason=gate_error（脚本崩溃，未执行任何体检）" >> "$GITHUB_STEP_SUMMARY"; echo "run=false" >> "$GITHUB_OUTPUT"' ERR
