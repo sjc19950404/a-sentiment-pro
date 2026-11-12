@@ -64,20 +64,12 @@ flock -n 9 || { log "已有 pi_run 实例在跑，跳过本次（$MODE）"; exit
 #   问题 exit 1。网络不行就不拉取远端，直接用本地现有最新版代码跑 build_ai_report
 #   （降级启动原则）；若本地存在未解决冲突（严重污染）也先清理到 HEAD 再继续。
 git fetch origin main 2>>"$LOG_FILE" || log "git fetch 失败：远端不可达，将使用本地代码继续"
-# 防数据丢失（2026-11-11 实测事故）：reset --hard 会吃掉本地未推送提交——pi_push 失败时
-#   「保留本地提交」的数据（盘中档变更）会被本轮 reset 静默回滚。reset 前先推走堆积。
-if [ -n "" ]; then
-  log "本地存在未推送提交，reset 前先跑一次 pi_push 保数据"
-  bash scripts/pi_push.sh >>"" 2>&1 || log "reset 前 pi_push 失败（继续 reset，堆积提交已尽告知义务）"
-fi
-if ! git reset --hard origin/main >>"$LOG_FILE" 2>&1; then
-  if git diff --name-only --diff-filter=U | grep -q .; then
-    log "reset 远端失败且本地存在未解决冲突，git reset --hard HEAD 清理后继续"
-    git reset --hard HEAD >>"$LOG_FILE" 2>&1 || true
-  fi
-  log "git reset --hard origin/main 失败：使用本地现有最新代码继续（未拉取远端）"
-  alert "[提示] $(date +%H:%M) 代码同步网络抖动，已使用本地代码继续（未拉取远端）"
-fi
+# 干净起点 v2（2026-11-12 根治）：reset 仅限代码路径——data/ 永不被重置、堆积提交
+#   不因 reset 丢分支指针（pathspec 版 reset 不动 HEAD）。此前的「reset 前先推」防护
+#   因 heredoc 展开事故实为死代码（if [ -n "" ]），且 pi_push 失败时仍会吃数据——根治于此。
+# 代码路径重置到远端（git restore：不动 HEAD 分支指针、不碰 data/，堆积提交安全）
+git restore --source=origin/main --worktree --staged -- src scripts test pi_run.sh crontab.example config.json package.json terminal.js index.html >>"$LOG_FILE" 2>&1 \
+  || log "git restore 代码路径失败：使用本地现有代码继续（未拉取远端代码）"
 # 执行位自愈：reset --hard 按 git 模式落盘，历史上出现过仓库内脚本执行位丢失
 # （100644）→ cron 直接调用 pi_run.sh 全部 Permission denied → 调度全线停摆的事故。
 # 这里在每次重置后显式补执行位，不依赖仓库里模式是否正确。

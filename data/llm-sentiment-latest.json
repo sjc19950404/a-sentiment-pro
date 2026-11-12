@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-11-11",
- "generatedAt": "2026-11-11T21:04:48.275+08:00",
+ "asOfDate": "2026-11-12",
+ "generatedAt": "2026-11-12T21:03:18.181+08:00",
  "model": "glm-4-flash",
- "sentiment": 0.9,
+ "sentiment": -0.5,
  "confidence": 0.8,
- "reason": "市场涨停家数较多，强势股表现活跃，且亏钱效应较低，市场情绪偏向积极。",
+ "reason": "亏钱效应显著，涨停股数量与跌停股数量差距不大，炸板率较高，市场情绪偏弱。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "博杰股份",
+   "target": "双成药业",
    "tone": "positive",
-   "note": "三季报增长带动股价上涨"
+   "note": "GMP检查通过，多肽药发展，药品出海，三季报扭亏，业绩向好。"
   },
   {
-   "type": "行业催化",
-   "target": "光芯片",
+   "type": "高管变动",
+   "target": "皇台酒业",
    "tone": "positive",
-   "note": "源杰科技光芯片+CPO+数据中心概念推动股价上涨"
-  },
-  {
-   "type": "行业催化",
-   "target": "光模块",
-   "tone": "positive",
-   "note": "光迅科技、景旺电子光模块+CPO概念带动股价上涨"
+   "note": "董事会换届可能带来公司战略调整，利好股价。"
   },
   {
    "type": "行业催化",
    "target": "机器人",
    "tone": "positive",
-   "note": "沃特股份、中坚科技人形机器人概念推动股价上涨"
+   "note": "机器人概念股表现活跃，人形机器人、工业缝纫机等细分领域受关注。"
+  },
+  {
+   "type": "政策",
+   "target": "天然气",
+   "tone": "positive",
+   "note": "寒潮供暖需求增加，天然气相关股票受益。"
   },
   {
    "type": "行业催化",
-   "target": "AI",
+   "target": "AI算力",
    "tone": "positive",
-   "note": "果麦文化AI短剧+AI视频概念带动股价上涨"
+   "note": "AI算力概念股持续活跃，行业前景被看好。"
   },
   {
    "type": "行业催化",
-   "target": "商业航天",
+   "target": "预制菜",
    "tone": "positive",
-   "note": "东方通信商业航天概念推动股价上涨"
+   "note": "预制菜概念股表现强劲，消费升级趋势明显。"
   },
   {
    "type": "行业催化",
-   "target": "数据中心",
+   "target": "海峡两岸",
    "tone": "positive",
-   "note": "同飞股份数据中心液冷概念推动股价上涨"
+   "note": "海峡两岸概念股受益于两岸关系改善。"
   },
   {
    "type": "行业催化",
-   "target": "定增落地",
+   "target": "苹果产业链",
    "tone": "positive",
-   "note": "同飞股份定增落地推动股价上涨"
+   "note": "苹果产业链相关股票受益于苹果公司产品更新周期。"
   }
  ],
  "inputDigest": {
-  "themes": 99,
+  "themes": 54,
   "hotListed": 15,
-  "ztCount": 85,
-  "emotionValue": 83.5,
-  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 30%、高位板晋级失败 65%，赚钱效应占优）"
+  "ztCount": 37,
+  "emotionValue": 43.3,
+  "painVerdict": "亏钱效应显著（昨涨停今日翻绿 62%、高位板晋级失败 68%，追高者整体受损）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }

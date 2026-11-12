@@ -1,171 +1,187 @@
 {
- "date": "2026-11-10",
- "prevZtCount": 93,
+ "date": "2026-11-11",
+ "prevZtCount": 85,
  "perf": {
-  "n": 93,
-  "universe": 93,
+  "n": 85,
+  "universe": 85,
   "missing": 0,
   "reliable": true,
-  "avg": 2.93,
-  "median": 2.79,
-  "lossRatio": 0.3,
-  "worst": -6.94,
-  "best": 10.18,
-  "limitUpAgain": 20,
-  "limitDown": 0,
-  "bigLoss": 0,
+  "avg": -0.87,
+  "median": -2.05,
+  "lossRatio": 0.62,
+  "worst": -10.38,
+  "best": 10.11,
+  "limitUpAgain": 11,
+  "limitDown": 5,
+  "bigLoss": 13,
   "note": null
  },
  "advance": {
-  "n": 20,
-  "kept": 7,
+  "n": 19,
+  "kept": 6,
   "failed": 13,
-  "failRate": 0.65,
+  "failRate": 0.68,
   "byTier": {
    "2": {
-    "n": 15,
-    "kept": 5,
+    "n": 12,
+    "kept": 2,
     "failed": 10,
-    "failRate": 0.67
+    "failRate": 0.83
    },
    "3": {
-    "n": 4,
+    "n": 5,
     "kept": 2,
-    "failed": 2,
-    "failRate": 0.5
+    "failed": 3,
+    "failRate": 0.6
    },
    "4+": {
-    "n": 1,
-    "kept": 0,
-    "failed": 1,
-    "failRate": 1
+    "n": 2,
+    "kept": 2,
+    "failed": 0,
+    "failRate": 0
    }
   },
   "reliable": true,
-  "maxLb": 7,
+  "maxLb": 4,
   "detail": [
    {
-    "code": "002578",
-    "lb": 7,
-    "chg": 0.33,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "601188",
-    "lb": 3,
-    "chg": -6.94,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "002310",
-    "lb": 3,
-    "chg": 4.98,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
     "code": "600327",
-    "lb": 3,
-    "chg": 9.93,
+    "lb": 4,
+    "chg": 9.95,
     "kept": true,
     "board": "shb",
     "boardLabel": "沪市主板"
    },
    {
     "code": "603366",
-    "lb": 3,
-    "chg": 10.02,
+    "lb": 4,
+    "chg": 10.03,
     "kept": true,
     "board": "shb",
     "boardLabel": "沪市主板"
    },
    {
-    "code": "001379",
-    "lb": 2,
-    "chg": -4.53,
+    "code": "002708",
+    "lb": 3,
+    "chg": -5.6,
     "kept": false,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
-    "code": "002347",
-    "lb": 2,
-    "chg": -4.42,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "603703",
-    "lb": 2,
-    "chg": -2.78,
+    "code": "600715",
+    "lb": 3,
+    "chg": -1.59,
     "kept": false,
     "board": "shb",
     "boardLabel": "沪市主板"
    },
    {
-    "code": "600408",
-    "lb": 2,
-    "chg": 0,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "603121",
-    "lb": 2,
-    "chg": 0.3,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "603286",
-    "lb": 2,
-    "chg": 2.64,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "600892",
-    "lb": 2,
-    "chg": 3.75,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "600609",
-    "lb": 2,
-    "chg": 4.18,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "001226",
-    "lb": 2,
-    "chg": 7.03,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "000530",
-    "lb": 2,
-    "chg": 7.12,
+    "code": "002931",
+    "lb": 3,
+    "chg": 6.63,
     "kept": false,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
     "code": "603706",
+    "lb": 3,
+    "chg": 9.99,
+    "kept": true,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "002623",
+    "lb": 3,
+    "chg": 9.99,
+    "kept": true,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "605488",
+    "lb": 2,
+    "chg": -10,
+    "kept": false,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "601595",
+    "lb": 2,
+    "chg": -9.99,
+    "kept": false,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "002160",
+    "lb": 2,
+    "chg": -9.77,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "001339",
+    "lb": 2,
+    "chg": -9.19,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002861",
+    "lb": 2,
+    "chg": -8.59,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002425",
+    "lb": 2,
+    "chg": -6.01,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002313",
+    "lb": 2,
+    "chg": -5.41,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "603466",
+    "lb": 2,
+    "chg": -4.92,
+    "kept": false,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "002209",
+    "lb": 2,
+    "chg": -3.51,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "000678",
+    "lb": 2,
+    "chg": 3.54,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "605255",
     "lb": 2,
     "chg": 10,
     "kept": true,
@@ -173,33 +189,9 @@
     "boardLabel": "沪市主板"
    },
    {
-    "code": "002623",
+    "code": "603536",
     "lb": 2,
-    "chg": 10,
-    "kept": true,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "002708",
-    "lb": 2,
-    "chg": 10.01,
-    "kept": true,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "002931",
-    "lb": 2,
-    "chg": 10.01,
-    "kept": true,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "600715",
-    "lb": 2,
-    "chg": 10.18,
+    "chg": 10.04,
     "kept": true,
     "board": "shb",
     "boardLabel": "沪市主板"
@@ -208,18 +200,88 @@
   "note": null
  },
  "bigLoss": {
-  "n": 0,
-  "list": []
+  "n": 13,
+  "list": [
+   {
+    "code": "301052",
+    "name": "果麦文化",
+    "chg": -10.38
+   },
+   {
+    "code": "301596",
+    "name": "瑞迪智驱",
+    "chg": -10
+   },
+   {
+    "code": "605488",
+    "name": "福莱新材",
+    "chg": -10
+   },
+   {
+    "code": "002779",
+    "name": "中坚科技",
+    "chg": -10
+   },
+   {
+    "code": "601595",
+    "name": "上海电影",
+    "chg": -9.99
+   },
+   {
+    "code": "002160",
+    "name": "常铝股份",
+    "chg": -9.77
+   },
+   {
+    "code": "001339",
+    "name": "智微智能",
+    "chg": -9.19
+   },
+   {
+    "code": "603730",
+    "name": "岱美股份",
+    "chg": -8.85
+   },
+   {
+    "code": "002861",
+    "name": "瀛通通讯",
+    "chg": -8.59
+   },
+   {
+    "code": "301636",
+    "name": "泽润新能",
+    "chg": -8.58
+   }
+  ]
  },
  "skyFloor": {
-  "n": 0,
-  "list": []
+  "n": 3,
+  "list": [
+   {
+    "code": "002425",
+    "name": "凯撒文化",
+    "chg": -6.01,
+    "amplitude": 16.4
+   },
+   {
+    "code": "002313",
+    "name": "日海智能",
+    "chg": -5.41,
+    "amplitude": 16.1
+   },
+   {
+    "code": "301596",
+    "name": "瑞迪智驱",
+    "chg": -10,
+    "amplitude": 15.8
+   }
+  ]
  },
- "scanned": 93,
+ "scanned": 85,
  "verdict": {
-  "level": "strong",
-  "label": "接力顺畅",
-  "reason": "昨涨停今日翻绿仅 30%、高位板晋级失败 65%，赚钱效应占优"
+  "level": "severe",
+  "label": "亏钱效应显著",
+  "reason": "昨涨停今日翻绿 62%、高位板晋级失败 68%，追高者整体受损"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -230,6 +292,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-11-11T13:02:48.109Z",
- "curDate": "2026-11-11"
+ "generatedAt": "2026-11-12T13:01:15.213Z",
+ "curDate": "2026-11-12"
 }

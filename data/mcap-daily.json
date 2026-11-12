@@ -95,6 +95,18 @@
    },
    "n": 84,
    "misses": 1
+  },
+  {
+   "date": "2026-11-12",
+   "stats": {
+    "circMvMedianYi": 44.18,
+    "circMvP25Yi": 35.8,
+    "circMvP75Yi": 61.62,
+    "smallCapPct": 59.5,
+    "bigCapPct": 0
+   },
+   "n": 37,
+   "misses": 0
   }
  ]
 }
