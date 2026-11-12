@@ -1,0 +1,27 @@
+// 断言基线审计（2026-11-13 豆包第五轮：同源动态期望=循环论证，需打标）
+// 用法：node scripts/audit_assert_baseline.mjs [--fix-list]
+// 输出：test/*.mjs 全部断言按期望值来源分类——
+//   HARD  独立基准（字面量/独立常量）→ 可信
+//   DYN   同源动态（期望值来自被测同档数据的变量）→ 循环论证，逐条复核：
+//         要么补一条独立基准断言，要么显式降级为冒烟测试（标题标注 [smoke]）
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+
+const dir = 'test';
+const files = readdirSync(dir).filter((f) => /\.mjs$/.test(f));
+let hardN = 0, dynN = 0;
+const dynList = [];
+for (const f of files) {
+  const lines = readFileSync(join(dir, f), 'utf8').split('\n');
+  lines.forEach((l, i) => {
+    const m = l.match(/assert\.(ok|equal|deepEqual|match)\(/);
+    if (!m) return;
+    // 同源特征：期望值位置引用从被测档读出的变量（bw./bm./nh./ud./d./a.等常见前缀，或模板串内含 ${} 引用变量）
+    const rest = l.slice(l.indexOf('('));
+    const isDyn = /\b(bw|bm|nh|nl|ud|d|a|s|c|w|h)\.\w/.test(rest) || rest.includes('${');
+    if (isDyn) { dynN++; dynList.push(`${f}:${i + 1}  ${l.trim().slice(0, 110)}`); }
+    else hardN++;
+  });
+}
+console.log(`断言总数: ${hardN + dynN} | HARD(独立基准): ${hardN} | DYN(同源动态,需打标): ${dynN}`);
+if (process.argv.includes('--fix-list')) console.log(dynList.join('\n'));

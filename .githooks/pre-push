@@ -1,0 +1,12 @@
+#!/bin/sh
+# pre-push 全量兜底（豆包第五轮：--no-verify 绕过 pre-commit 的提交，推送前最后一道）
+cd /opt/a-sentiment-pro
+npm test > /tmp/prepush_test.log 2>&1
+EXIT=$?
+if [ $EXIT -ne 0 ] || grep -qE "^# fail [1-9]" /tmp/prepush_test.log; then
+  echo "✗ pre-push: 测试未全过（exit=$EXIT），推送被拒"
+  grep -E "^# (pass|fail)|not ok" /tmp/prepush_test.log | head -6
+  exit 1
+fi
+echo "✓ pre-push: 全量测试过"
+exit 0

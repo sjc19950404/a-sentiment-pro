@@ -1,18 +1,26 @@
 #!/bin/sh
-# 测试门闸（2026-11-13 豆包评审指正：grep 吞退出码三次后装的硬闸）——npm test 非 0 退出即拒绝提交
-cd /opt/a-sentiment-pro
+# 分层闸（2026-11-13 豆包第五轮）：①data-only 豁免（速度漏口：盘中 pi_push 不因提交等测试）
+# ②node --check 语法快检前置（<2s，抓「跑必崩」类——注释插参数这种错 2 秒内报，不劳全量测试）
+# ③代码提交跑全量 npm test。pre-push 另有全量兜底（防 --no-verify 提交被推）。
+CHANGED=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$CHANGED" ] && exit 0
+if ! echo "$CHANGED" | grep -qvE '^(data/|.*\.log$)'; then
+  exit 0
+fi
+FAIL=0
+for f in $(echo "$CHANGED" | grep -E '\.(js|mjs)$'); do
+  [ -f "$f" ] || continue
+  if ! node --check "$f" 2>/tmp/hook_syntax.err; then
+    echo "✗ pre-commit: 语法错 $f"; cat /tmp/hook_syntax.err; FAIL=1
+  fi
+done
+[ $FAIL -eq 1 ] && exit 1
 npm test > /tmp/precommit_test.log 2>&1
 EXIT=$?
-if [ $EXIT -ne 0 ]; then
-  echo "✗ pre-commit: npm test 退出码 $EXIT ≠ 0，提交被拒（详见 /tmp/precommit_test.log）"
-  grep -E "^# (pass|fail)|not ok" /tmp/precommit_test.log | head -8
+if [ $EXIT -ne 0 ] || grep -qE "^# fail [1-9]" /tmp/precommit_test.log; then
+  echo "✗ pre-commit: npm test 失败（exit=$EXIT），提交被拒"
+  grep -E "^# (pass|fail)|not ok" /tmp/precommit_test.log | head -6
   exit 1
 fi
-FAILS=$(grep -oE "^# fail [0-9]+" /tmp/precommit_test.log | grep -oE "[0-9]+")
-if [ -n "$FAILS" ] && [ "$FAILS" -gt 0 ]; then
-  echo "✗ pre-commit: $FAILS 个测试失败，提交被拒"
-  grep "not ok" /tmp/precommit_test.log | head -8
-  exit 1
-fi
-echo "✓ pre-commit: 测试全过，放行"
+echo "✓ pre-commit: 语法+全量测试过，放行"
 exit 0
