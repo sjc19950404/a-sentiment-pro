@@ -319,7 +319,7 @@ runTest('terminal：时间窗切换 20/30/60/90（全局生效，序列图按窗
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
-runTest('terminal：视图结构 —— 7 视图无占位，研报由顶部切换开关承载', async () => {
+runTest('terminal：视图结构 —— 8 视图无占位，研报由顶部切换开关承载', async () => {
   const { w, errors } = makeDom();
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
   await new Promise((r) => setTimeout(r, 260));
@@ -327,7 +327,7 @@ runTest('terminal：视图结构 —— 7 视图无占位，研报由顶部切�
   const root = w.document.getElementById('tRoot');
   const navs = [...root.querySelectorAll('.t-nav button')];
   const keys = navs.map((b) => b.dataset.v);
-  assert.deepEqual(keys, ['overview', 'zt', 'fund', 'sector', 'picks', 'paper', 'kline'], '七视图且无 soon 占位');
+  assert.deepEqual(keys, ['overview', 'zt', 'fund', 'sector', 'picks', 'paper', 'kline', 'settings'], '八视图且无 soon 占位');
   assert.ok(!keys.includes('soon'), '不再有「建设中」占位');
   assert.ok(!keys.includes('report'), '研报不作为终端内视图（由顶部返回按钮直达）');
   // 顶部仅保留「📄 研报」返回按钮（冗余的 ⚡终端 自切换钮已移除）
@@ -621,7 +621,8 @@ runTest('terminal：总览「市场宽度」面板（engine 原值：站上均�
 
   const bw = readJsonSafe('data/breadth-latest.json') || {};
   const bm = bw.aboveMa || {}, nh = bw.newHigh || {}, nl = bw.newLow || {}, ud = bw.updown || {};
-  assert.ok(root.textContent.includes(String(bm.n)), `站上20日线家数取引擎原值 aboveMa.n=${bm.n}`);
+  // fmtInt 千分位（2026-11-13 修：1555 渲染为 1,555）
+  assert.ok(root.textContent.includes((+bm.n).toLocaleString('en-US')), `站上20日线家数取引擎原值 aboveMa.n=${bm.n}`);
   assert.ok(root.textContent.includes(`${ud.up.toLocaleString('en-US')}:${ud.down.toLocaleString('en-US')}`), `涨跌比取引擎原值 ${ud.up}:${ud.down}（千分位）`);
   assert.ok(root.textContent.includes(String(nh.n)), `历史新高家数取引擎原值 newHigh.n=${nh.n}`);
   assert.match(root.textContent, /宽度判语/, '含宽度判语（engine verdict）');
