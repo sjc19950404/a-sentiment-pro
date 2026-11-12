@@ -9,5 +9,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: npm ci
+      # 本项目既有决策：package-lock.json 不入库（.gitignore，依赖版本由 package.json 表达）
+      # → CI 不能用需要 lock 的 npm ci（2026-11-13 首跑 6 秒即挂即此因），改用 npm install。
+      - run: npm install --no-audit --no-fund
       - run: npm test
