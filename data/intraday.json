@@ -2,8 +2,8 @@
   "version": 4,
   "kind": "intraday",
   "tradeDate": "2026-11-12",
-  "capturedAt": "2026-11-12T03:30:03.823Z",
-  "capturedAtBJ": "2026-11-12 11:30",
+  "capturedAt": "2026-11-12T04:00:04.005Z",
+  "capturedAtBJ": "2026-11-12 12:00",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
@@ -34,7 +34,7 @@
         "pb": 6.79,
         "liangbi": 4,
         "avg_price": null,
-        "main_net": 2180808560
+        "main_net": 2180852560
       },
       {
         "code": "688026",
@@ -203,7 +203,7 @@
         "pb": 2.2,
         "liangbi": 2.59,
         "avg_price": null,
-        "main_net": 342864067
+        "main_net": 343023123
       },
       {
         "code": "000573",
@@ -268,7 +268,7 @@
         "pb": 1.99,
         "liangbi": 1.01,
         "avg_price": null,
-        "main_net": 117253594
+        "main_net": 117255399
       },
       {
         "code": "002520",
@@ -359,7 +359,7 @@
         "pb": 1.35,
         "liangbi": 2.14,
         "avg_price": null,
-        "main_net": 149667778
+        "main_net": 149671554
       },
       {
         "code": "002838",
@@ -450,7 +450,7 @@
         "pb": 3,
         "liangbi": 1.67,
         "avg_price": null,
-        "main_net": 97512811
+        "main_net": 97514361
       },
       {
         "code": "000678",
@@ -463,7 +463,7 @@
         "pb": 13.78,
         "liangbi": 1.25,
         "avg_price": null,
-        "main_net": 422732192
+        "main_net": 422734528
       },
       {
         "code": "002931",
@@ -645,7 +645,7 @@
         "pb": 3.21,
         "liangbi": 4.06,
         "avg_price": null,
-        "main_net": 106616702
+        "main_net": 106627282
       },
       {
         "code": "002628",
@@ -671,7 +671,7 @@
         "pb": 3.88,
         "liangbi": 1.23,
         "avg_price": null,
-        "main_net": 95127780
+        "main_net": 95139360
       },
       {
         "code": "600857",
@@ -710,7 +710,7 @@
         "pb": 2.25,
         "liangbi": 2.28,
         "avg_price": null,
-        "main_net": 205625482
+        "main_net": 205631434
       },
       {
         "code": "002693",
@@ -723,7 +723,7 @@
         "pb": 8.32,
         "liangbi": 5.97,
         "avg_price": null,
-        "main_net": 68038874
+        "main_net": 68044985
       },
       {
         "code": "600853",
@@ -788,7 +788,7 @@
         "pb": 41.1,
         "liangbi": 2.61,
         "avg_price": null,
-        "main_net": 1401443328
+        "main_net": 1402197504
       },
       {
         "code": "603083",
@@ -801,7 +801,7 @@
         "pb": 5.08,
         "liangbi": 2.28,
         "avg_price": null,
-        "main_net": 215352144
+        "main_net": 215557376
       },
       {
         "code": "688729",
@@ -996,7 +996,7 @@
         "pb": 16.21,
         "liangbi": 2.07,
         "avg_price": null,
-        "main_net": 181768880
+        "main_net": 181817424
       },
       {
         "code": "002148",
@@ -1191,7 +1191,7 @@
         "pb": 0.93,
         "liangbi": 2.27,
         "avg_price": null,
-        "main_net": 360897259
+        "main_net": 360846171
       },
       {
         "code": "688203",
@@ -1983,7 +1983,7 @@
         "liangbi": 4,
         "pe_ttm": 162.13,
         "pb": 6.79,
-        "main_net": 2180808560,
+        "main_net": 2180852560,
         "industry": "广告营销"
       },
       {
@@ -1995,7 +1995,7 @@
         "liangbi": 2.61,
         "pe_ttm": 149.1,
         "pb": 41.1,
-        "main_net": 1401443328,
+        "main_net": 1402197504,
         "industry": "半导体"
       },
       {
@@ -2007,7 +2007,7 @@
         "liangbi": 2.14,
         "pe_ttm": 89.56,
         "pb": 28.36,
-        "main_net": 949292096,
+        "main_net": 949132560,
         "industry": "半导体"
       },
       {
@@ -2019,7 +2019,7 @@
         "liangbi": 3.36,
         "pe_ttm": 22.74,
         "pb": 3.49,
-        "main_net": 864535120,
+        "main_net": 864632656,
         "industry": "半导体"
       },
       {
@@ -2067,7 +2067,7 @@
         "liangbi": 1.25,
         "pe_ttm": -221.17,
         "pb": 13.78,
-        "main_net": 422732192,
+        "main_net": 422734528,
         "industry": "汽车零部件"
       },
       {
@@ -2103,7 +2103,7 @@
         "liangbi": 1.52,
         "pe_ttm": 258.91,
         "pb": 7.29,
-        "main_net": 380646944,
+        "main_net": 380741168,
         "industry": "半导体"
       },
       {
@@ -2115,7 +2115,7 @@
         "liangbi": 2.27,
         "pe_ttm": 32.75,
         "pb": 0.93,
-        "main_net": 360897259,
+        "main_net": 360846171,
         "industry": "装修装饰Ⅱ"
       },
       {
@@ -2127,7 +2127,7 @@
         "liangbi": 2.59,
         "pe_ttm": -22.33,
         "pb": 2.2,
-        "main_net": 342864067,
+        "main_net": 343023123,
         "industry": "电视广播Ⅱ"
       },
       {
@@ -2199,7 +2199,7 @@
         "liangbi": 2.05,
         "pe_ttm": 132.19,
         "pb": 5.56,
-        "main_net": 274116976,
+        "main_net": 274036368,
         "industry": "半导体"
       },
       {
@@ -2211,7 +2211,7 @@
         "liangbi": 1.48,
         "pe_ttm": 54.61,
         "pb": 11.07,
-        "main_net": 271925952,
+        "main_net": 272135664,
         "industry": "半导体"
       },
       {
@@ -2223,7 +2223,7 @@
         "liangbi": 1.47,
         "pe_ttm": -274.85,
         "pb": 10.77,
-        "main_net": 230551255,
+        "main_net": 230529287,
         "industry": "农产品加工"
       },
       {
@@ -2235,7 +2235,7 @@
         "liangbi": 2.28,
         "pe_ttm": 64.88,
         "pb": 5.08,
-        "main_net": 215352144,
+        "main_net": 215557376,
         "industry": "通信设备"
       },
       {
@@ -2259,7 +2259,7 @@
         "liangbi": 2.28,
         "pe_ttm": 29.01,
         "pb": 2.25,
-        "main_net": 205625482,
+        "main_net": 205631434,
         "industry": "通用设备"
       },
       {
@@ -2295,7 +2295,7 @@
         "liangbi": 2.19,
         "pe_ttm": 24.08,
         "pb": 3.98,
-        "main_net": 187640976,
+        "main_net": 187738720,
         "industry": "IT服务Ⅱ"
       },
       {
@@ -2307,7 +2307,7 @@
         "liangbi": 2.07,
         "pe_ttm": 1158.03,
         "pb": 16.21,
-        "main_net": 181768880,
+        "main_net": 181817424,
         "industry": "半导体"
       },
       {
@@ -2319,7 +2319,7 @@
         "liangbi": 1.33,
         "pe_ttm": 48.65,
         "pb": 7.8,
-        "main_net": 173770800,
+        "main_net": 174029312,
         "industry": "半导体"
       },
       {
@@ -2331,7 +2331,7 @@
         "liangbi": 1.71,
         "pe_ttm": 62.74,
         "pb": 27.03,
-        "main_net": 168648096,
+        "main_net": 169020464,
         "industry": "通用设备"
       },
       {
@@ -2391,7 +2391,7 @@
         "liangbi": 2.01,
         "pe_ttm": 77.8,
         "pb": 9.08,
-        "main_net": 153903683,
+        "main_net": 153935363,
         "industry": "电池"
       },
       {
@@ -2403,7 +2403,7 @@
         "liangbi": 2.14,
         "pe_ttm": 41.61,
         "pb": 1.35,
-        "main_net": 149667778,
+        "main_net": 149671554,
         "industry": "铁路公路"
       },
       {
@@ -2415,7 +2415,7 @@
         "liangbi": 2.16,
         "pe_ttm": 58.77,
         "pb": 5.82,
-        "main_net": 149039264,
+        "main_net": 149404240,
         "industry": "通信设备"
       },
       {
@@ -2487,7 +2487,7 @@
         "liangbi": 1.67,
         "pe_ttm": 58.31,
         "pb": 16.66,
-        "main_net": 131071376,
+        "main_net": 131165168,
         "industry": "通信设备"
       },
       {
@@ -2511,7 +2511,7 @@
         "liangbi": 2.34,
         "pe_ttm": 7.14,
         "pb": 4.88,
-        "main_net": 126160576,
+        "main_net": 126247264,
         "industry": "半导体"
       },
       {
@@ -2559,7 +2559,7 @@
         "liangbi": 2.16,
         "pe_ttm": 29.36,
         "pb": 3.53,
-        "main_net": 118879566,
+        "main_net": 118879567,
         "industry": "汽车零部件"
       },
       {
@@ -2571,7 +2571,7 @@
         "liangbi": 1.01,
         "pe_ttm": 144.46,
         "pb": 1.99,
-        "main_net": 117253594,
+        "main_net": 117255399,
         "industry": "造纸"
       },
       {
@@ -2583,7 +2583,7 @@
         "liangbi": 1.74,
         "pe_ttm": 16.04,
         "pb": 2.43,
-        "main_net": 117025344,
+        "main_net": 116919344,
         "industry": "半导体"
       },
       {
@@ -2643,7 +2643,7 @@
         "liangbi": 1.98,
         "pe_ttm": 236.38,
         "pb": 5.89,
-        "main_net": 110034784,
+        "main_net": 110156384,
         "industry": "广告营销"
       },
       {
@@ -2667,7 +2667,7 @@
         "liangbi": 4.06,
         "pe_ttm": 59.25,
         "pb": 3.21,
-        "main_net": 106616702,
+        "main_net": 106627282,
         "industry": "工程机械"
       },
       {
@@ -2715,7 +2715,7 @@
         "liangbi": 1.67,
         "pe_ttm": 53.43,
         "pb": 3,
-        "main_net": 97512811,
+        "main_net": 97514361,
         "industry": "饮料乳品"
       },
       {
@@ -2775,7 +2775,7 @@
         "liangbi": 1.23,
         "pe_ttm": -20.7,
         "pb": 3.88,
-        "main_net": 95127780,
+        "main_net": 95139360,
         "industry": "塑料"
       },
       {
@@ -2871,7 +2871,7 @@
         "liangbi": 2.01,
         "pe_ttm": 35.72,
         "pb": 12.38,
-        "main_net": 90568768,
+        "main_net": 90066128,
         "industry": "通信设备"
       },
       {
@@ -2931,7 +2931,7 @@
         "liangbi": 1.52,
         "pe_ttm": -59.08,
         "pb": 22.5,
-        "main_net": 86298384,
+        "main_net": 86211424,
         "industry": "半导体"
       },
       {
@@ -3015,7 +3015,7 @@
         "liangbi": 2.14,
         "pe_ttm": 17.34,
         "pb": 3.31,
-        "main_net": 76945952,
+        "main_net": 76854112,
         "industry": "计算机设备"
       },
       {
@@ -3135,7 +3135,7 @@
         "liangbi": 1.9,
         "pe_ttm": 8.42,
         "pb": 5.29,
-        "main_net": 68805161,
+        "main_net": 68864521,
         "industry": "其他电子Ⅱ"
       },
       {
@@ -3147,7 +3147,7 @@
         "liangbi": 0.89,
         "pe_ttm": 7.98,
         "pb": 0.78,
-        "main_net": 68309504,
+        "main_net": 68304336,
         "industry": "银行Ⅱ"
       },
       {
@@ -3159,7 +3159,7 @@
         "liangbi": 5.97,
         "pe_ttm": 82.25,
         "pb": 8.32,
-        "main_net": 68038874,
+        "main_net": 68044985,
         "industry": "化学制药"
       },
       {
@@ -3177,9 +3177,9 @@
     ]
   },
   "breadth": {
-    "up": 2237,
-    "down": 2818,
-    "flat": 240
+    "up": 2239,
+    "down": 2825,
+    "flat": 231
   },
   "breadthCross": null,
   "ztDerived": null,
@@ -3190,15 +3190,15 @@
     "degradations": []
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-11-12 11:00",
+  "prevCapturedAtBJ": "2026-11-12 11:30",
   "prevPools": {
-    "zt": 41,
-    "zb": 18,
-    "seal_pct": 69.5
+    "zt": 46,
+    "zb": 19,
+    "seal_pct": 70.8
   },
   "rolling": {
-    "generatedAtBJ": "2026-11-12 11:30",
-    "minutes_to_close": 210,
+    "generatedAtBJ": "2026-11-12 12:00",
+    "minutes_to_close": 180,
     "trend_pool_mode": "trend",
     "streak_pool": [],
     "trend_pool": [
@@ -3227,7 +3227,7 @@
           "level": "full",
           "missing": []
         },
-        "fund_flow_note": "主力净流入 +86454 万（东财 push2 盘中实时）",
+        "fund_flow_note": "主力净流入 +86463 万（东财 push2 盘中实时）",
         "scripts": [
           {
             "name": "A",
@@ -3463,7 +3463,7 @@
           "level": "full",
           "missing": []
         },
-        "fund_flow_note": "主力净流入 +12616 万（东财 push2 盘中实时）",
+        "fund_flow_note": "主力净流入 +12625 万（东财 push2 盘中实时）",
         "scripts": [
           {
             "name": "A",
