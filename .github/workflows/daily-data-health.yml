@@ -31,19 +31,22 @@ jobs:
       - id: t
         name: 当班时段闸门
         run: |
+          set -euo pipefail
+          trap 'echo "## gate 异常终止：reason=gate_error（脚本崩溃，未执行任何体检）" >> "$GITHUB_STEP_SUMMARY"; echo "run=false" >> "$GITHUB_OUTPUT"' ERR
           H=$(TZ=Asia/Shanghai date +%H%M)
           if [ "$H" -ge 1600 ] && [ "$H" -le 1700 ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "reason=on_hours（当班，check job 将真跑体检）" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "## 本次未执行体检（非当班时段）" >> "$GITHUB_STEP_SUMMARY"
-            echo "北京时间 $(TZ=Asia/Shanghai date +'%F %H:%M')：当日生产未产出或已过时，check job 整段 skipped（灰，不是绿，未执行任何检查）。当班窗口 16:00-17:00。" >> "$GITHUB_STEP_SUMMARY"
+            echo "## 本次未执行体检：reason=off_hours" >> "$GITHUB_STEP_SUMMARY"
+            echo "北京时间 $(TZ=Asia/Shanghai date +'%F %H:%M')：check job 整段 skipped（灰，不是绿，未执行任何检查）。当班窗口 16:00-17:00。" >> "$GITHUB_STEP_SUMMARY"
           fi
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: gate
-    if: needs.gate.outputs.run == 'true'
+    if: needs.gate.result == 'success' && needs.gate.outputs.run == 'true'
     steps:
       - uses: actions/checkout@v4
 

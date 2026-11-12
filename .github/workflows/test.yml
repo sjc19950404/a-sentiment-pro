@@ -2,6 +2,10 @@ name: test-gate
 on:
   push:
   pull_request:
+  # 静止期兜底（豆包第九轮）：无 push 时也有体检。UTC 08:10 = 北京 16:10（工作日），
+  # 在本机 16:00 主 fetch 之后；本 workflow 的干净环境无档路径已处理（11 skip + 1 排除），定时跑不会红。
+  schedule:
+    - cron: '10 8 * * 1-5'
 jobs:
   test:
     runs-on: ubuntu-latest
