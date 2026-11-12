@@ -2,7 +2,7 @@
  "kind": "llm-dragon-logic",
  "version": 1,
  "asOfDate": "2026-11-12",
- "generatedAt": "2026-11-12T21:37:25.565+08:00",
+ "generatedAt": "2026-11-12T21:52:02.166+08:00",
  "model": "glm-4-flash",
  "source": "ztpool+macro-sector-sentiment",
  "scanned": 37,
@@ -16,7 +16,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "高位爆量分歧，明日核按钮"
+   "reason": "高位爆量分歧，筹码松动，明日或跌"
   },
   {
    "code": "603366",
@@ -26,7 +26,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.9,
-   "reason": "缩量硬板，预期加速"
+   "reason": "缩量硬板，预期加速，明日或续涨"
   },
   {
    "code": "603706",
@@ -36,7 +36,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.7,
-   "reason": "炸板多，筹码松动，谨慎"
+   "reason": "炸板频繁，筹码松动，明日或跌"
   },
   {
    "code": "002623",
@@ -46,7 +46,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.9,
-   "reason": "一字独食，通道党游戏"
+   "reason": "一字独食无换手，明日或续涨"
   },
   {
    "code": "603536",
@@ -56,7 +56,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "缩量板，预期稳定"
+   "reason": "缩量加速，明日或续涨"
   },
   {
    "code": "605255",
@@ -66,7 +66,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.7,
-   "reason": "炸板一次，谨慎"
+   "reason": "炸板一次，筹码松动，明日或跌"
   },
   {
    "code": "603135",
@@ -75,8 +75,8 @@
    "hybk": "专用设备",
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.6,
-   "reason": "炸板一次，谨慎"
+   "confidence": 0.8,
+   "reason": "炸板一次，筹码松动，明日或跌"
   },
   {
    "code": "603396",
@@ -86,7 +86,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.9,
-   "reason": "缩量板，预期稳定"
+   "reason": "缩量硬板，预期加速，明日或续涨"
   },
   {
    "code": "603725",
@@ -96,7 +96,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.7,
-   "reason": "炸板一次，谨慎"
+   "reason": "炸板一次，筹码松动，明日或跌"
   },
   {
    "code": "002148",
@@ -106,7 +106,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.9,
-   "reason": "缩量板，预期稳定"
+   "reason": "缩量硬板，预期加速，明日或续涨"
   },
   {
    "code": "002593",
@@ -116,7 +116,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "高位爆量分歧，明日核按钮"
+   "reason": "高位爆量分歧，明日核按钮无疑"
   },
   {
    "code": "600467",
@@ -126,7 +126,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一字独食无换手，散户别凑热闹"
+   "reason": "一板无题材，纯情绪炒作，小心"
   },
   {
    "code": "600558",
@@ -136,7 +136,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一字独食无换手，散户别凑热闹"
+   "reason": "一板无题材，纯情绪炒作，小心"
   },
   {
    "code": "600569",
@@ -146,7 +146,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一字独食无换手，散户别凑热闹"
+   "reason": "一板无题材，纯情绪炒作，小心"
   },
   {
    "code": "600802",
@@ -156,7 +156,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一字独食无换手，散户别凑热闹"
+   "reason": "一板无题材，纯情绪炒作，小心"
   },
   {
    "code": "600853",
@@ -166,7 +166,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一字独食无换手，散户别凑热闹"
+   "reason": "一板无题材，纯情绪炒作，小心"
   },
   {
    "code": "600857",
@@ -176,7 +176,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一字独食无换手，散户别凑热闹"
+   "reason": "一板无题材，纯情绪炒作，小心"
   },
   {
    "code": "601091",
@@ -186,7 +186,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一字独食无换手，散户别凑热闹"
+   "reason": "一板无题材，纯情绪炒作，小心"
   },
   {
    "code": "601188",
@@ -196,7 +196,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一字独食无换手，散户别凑热闹"
+   "reason": "一板无题材，纯情绪炒作，小心"
   },
   {
    "code": "601566",
@@ -206,7 +206,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一字独食无换手，散户别凑热闹"
+   "reason": "一板无题材，纯情绪炒作，小心"
   },
   {
    "code": "601606",
@@ -316,7 +316,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
   },
   {
    "code": "002205",
@@ -326,7 +326,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
   },
   {
    "code": "002187",
@@ -336,7 +336,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
   },
   {
    "code": "001358",
@@ -346,7 +346,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
   },
   {
    "code": "002693",
@@ -356,7 +356,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
   },
   {
    "code": "002021",
@@ -366,7 +366,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
   },
   {
    "code": "000995",
@@ -376,7 +376,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
   }
  ],
  "degraded": false,

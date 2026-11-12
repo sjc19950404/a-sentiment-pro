@@ -80,7 +80,7 @@
           "required": ["posGap", "note"],
           "properties": {
             "posGap": { "type": "number" },
-            "note": { "type": "string" }
+            "note": { "type": ["string", "null"] }
           }
         },
         "trackC": {
