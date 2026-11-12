@@ -13,15 +13,21 @@ let hardN = 0, dynN = 0;
 const dynList = [];
 for (const f of files) {
   const lines = readFileSync(join(dir, f), 'utf8').split('\n');
+  // 启发式：测试体内 readJsonSafe/import 读的档数 ≥2 → 同源动态断言多为「对照」（跨源一致性），
+  // 单源 → 多为「自证」（A 显示成 A 的循环论证）。人工复核以此清单为起点，不做最终裁决。
+  const srcs = new Set(
+    [...lines.join('\n').matchAll(/readJsonSafe\('([^']+)'\)|readFileSync\(join\([^,]+,\s*'([^']+)'\)/g)]
+      .map((m) => m[1] || m[2]),
+  );
+  const kind = srcs.size >= 2 ? '对照候选[cross-check?]' : '自证嫌疑[真循环论证?]';
   lines.forEach((l, i) => {
     const m = l.match(/assert\.(ok|equal|deepEqual|match)\(/);
     if (!m) return;
-    // 同源特征：期望值位置引用从被测档读出的变量（bw./bm./nh./ud./d./a.等常见前缀，或模板串内含 ${} 引用变量）
     const rest = l.slice(l.indexOf('('));
     const isDyn = /\b(bw|bm|nh|nl|ud|d|a|s|c|w|h)\.\w/.test(rest) || rest.includes('${');
-    if (isDyn) { dynN++; dynList.push(`${f}:${i + 1}  ${l.trim().slice(0, 110)}`); }
+    if (isDyn) { dynN++; dynList.push(`${f}:${i + 1} ${kind}  ${l.trim().slice(0, 100)}`); }
     else hardN++;
   });
 }
-console.log(`断言总数: ${hardN + dynN} | HARD(独立基准): ${hardN} | DYN(同源动态,需打标): ${dynN}`);
+console.log(`断言总数: ${hardN + dynN} | HARD(独立基准): ${hardN} | DYN(需分类): ${dynN}`);
 if (process.argv.includes('--fix-list')) console.log(dynList.join('\n'));

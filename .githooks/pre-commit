@@ -1,10 +1,21 @@
 #!/bin/sh
 # 分层闸（2026-11-13 豆包第五轮）：①data-only 豁免（速度漏口：盘中 pi_push 不因提交等测试）
-# ②node --check 语法快检前置（<2s，抓「跑必崩」类——注释插参数这种错 2 秒内报，不劳全量测试）
+# ②node --check 语法快检前置（临时补位：只查语法不查语义——未定义变量/拼错函数名/死代码抓不到，待装 eslint 后替换。豆包第六轮：别把「语法检查」误当成「lint 层已建」）（<2s，抓「跑必崩」类——注释插参数这种错 2 秒内报，不劳全量测试）
 # ③代码提交跑全量 npm test。pre-push 另有全量兜底（防 --no-verify 提交被推）。
 CHANGED=$(git diff --cached --name-only --diff-filter=ACMR)
 [ -z "$CHANGED" ] && exit 0
 if ! echo "$CHANGED" | grep -qvE '^(data/|.*\.log$)'; then
+  # data-only：豁免全量测试（对），但跑轻量校验（豆包第六轮纠偏：豁免一切=把最可能
+  # 的失败源——schema漂移/JSON语法坏——从闸里放行。check_contract 实测 0.14s/90档）
+  for f in $(echo "$CHANGED" | grep -E '\.json$'); do
+    [ -f "$f" ] || continue
+    node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$f" 2>/dev/null \
+      || { echo "✗ pre-commit: JSON 语法坏 $f，提交被拒"; exit 1; }
+  done
+  if ! node scripts/check_contract.mjs > /tmp/hook_cc.log 2>&1; then
+    echo "✗ pre-commit: 数据契约校验失败，提交被拒"; tail -5 /tmp/hook_cc.log; exit 1
+  fi
+  echo "✓ pre-commit: data 轻量校验过（JSON 语法+90 档契约），放行"
   exit 0
 fi
 FAIL=0
