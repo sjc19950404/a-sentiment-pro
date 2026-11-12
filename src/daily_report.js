@@ -349,6 +349,7 @@ function buildThemeSection(latest, relative) {
     // 四象限方向矩阵（豆包二次评审补齐：负/正格此前是裸文案）：
     //   正/正=聚焦健康（不注解）｜正/负=题材逆势流入（signFlip）｜
     //   负/正=题材拖累全榜（逆势流出，需显式说明）｜负/负=贡献净流出（退潮典型）
+    const signFlip = num(mt.main_yi) > 0 && num(mt.pct) < 0;   // 原 2026-11-05 分支保留
     const pctNeg = num(mt.pct) < 0;
     const directionNote = (num(mt.main_yi) < 0 && num(mt.pct) > 0)
       ? `占当日龙虎榜**净流出**的 ${f1(mt.pct)}%（方向为流出——题材最热资金最跑，退潮期典型特征，非「资金聚焦」）`
