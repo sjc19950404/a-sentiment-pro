@@ -2,7 +2,7 @@
  "kind": "llm-dragon-logic",
  "version": 1,
  "asOfDate": "2026-11-12",
- "generatedAt": "2026-11-12T21:52:02.166+08:00",
+ "generatedAt": "2026-11-12T22:13:24.177+08:00",
  "model": "glm-4-flash",
  "source": "ztpool+macro-sector-sentiment",
  "scanned": 37,
@@ -16,7 +16,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "高位爆量分歧，筹码松动，明日或跌"
+   "reason": "高位爆量分歧，筹码松动，明日或跌停"
   },
   {
    "code": "603366",
@@ -26,7 +26,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.9,
-   "reason": "缩量硬板，预期加速，明日或续涨"
+   "reason": "缩量硬板，预期一字加速"
   },
   {
    "code": "603706",
@@ -35,7 +35,7 @@
    "hybk": "燃气Ⅱ",
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.7,
+   "confidence": 0.6,
    "reason": "炸板频繁，筹码松动，明日或跌"
   },
   {
@@ -46,7 +46,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.9,
-   "reason": "一字独食无换手，明日或续涨"
+   "reason": "一字独食无换手，散户勿入"
   },
   {
    "code": "603536",
@@ -55,8 +55,8 @@
    "hybk": "食品加工",
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.8,
-   "reason": "缩量加速，明日或续涨"
+   "confidence": 0.7,
+   "reason": "缩量加速，明日或冲高回落"
   },
   {
    "code": "605255",
@@ -66,7 +66,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.7,
-   "reason": "炸板一次，筹码松动，明日或跌"
+   "reason": "炸板一次，明日或震荡"
   },
   {
    "code": "603135",
@@ -75,8 +75,8 @@
    "hybk": "专用设备",
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.8,
-   "reason": "炸板一次，筹码松动，明日或跌"
+   "confidence": 0.7,
+   "reason": "炸板一次，明日或震荡"
   },
   {
    "code": "603396",
@@ -86,7 +86,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.9,
-   "reason": "缩量硬板，预期加速，明日或续涨"
+   "reason": "缩量硬板，预期一字加速"
   },
   {
    "code": "603725",
@@ -96,7 +96,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.7,
-   "reason": "炸板一次，筹码松动，明日或跌"
+   "reason": "炸板一次，明日或震荡"
   },
   {
    "code": "002148",
@@ -106,7 +106,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.9,
-   "reason": "缩量硬板，预期加速，明日或续涨"
+   "reason": "缩量硬板，预期一字加速"
   },
   {
    "code": "002593",
@@ -126,7 +126,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一板无题材，纯情绪炒作，小心"
+   "reason": "一字独食无换手，散户勿入"
   },
   {
    "code": "600558",
@@ -136,7 +136,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一板无题材，纯情绪炒作，小心"
+   "reason": "无题材支撑，情绪炒作"
   },
   {
    "code": "600569",
@@ -146,7 +146,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一板无题材，纯情绪炒作，小心"
+   "reason": "无题材支撑，情绪炒作"
   },
   {
    "code": "600802",
@@ -156,7 +156,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一板无题材，纯情绪炒作，小心"
+   "reason": "无题材支撑，情绪炒作"
   },
   {
    "code": "600853",
@@ -166,7 +166,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一板无题材，纯情绪炒作，小心"
+   "reason": "无题材支撑，情绪炒作"
   },
   {
    "code": "600857",
@@ -176,7 +176,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一板无题材，纯情绪炒作，小心"
+   "reason": "无题材支撑，情绪炒作"
   },
   {
    "code": "601091",
@@ -186,7 +186,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一板无题材，纯情绪炒作，小心"
+   "reason": "无题材支撑，情绪炒作"
   },
   {
    "code": "601188",
@@ -196,7 +196,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一板无题材，纯情绪炒作，小心"
+   "reason": "无题材支撑，情绪炒作"
   },
   {
    "code": "601566",
@@ -206,7 +206,7 @@
    "logic_type": "未知",
    "is_pure_sentiment": true,
    "confidence": 0.5,
-   "reason": "一板无题材，纯情绪炒作，小心"
+   "reason": "无题材支撑，情绪炒作"
   },
   {
    "code": "601606",
@@ -216,7 +216,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无利好，情绪炒作，风险高"
+   "reason": "新板无利好，纯情绪炒作，风险高"
   },
   {
    "code": "601929",
@@ -226,7 +226,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无利好，情绪炒作，风险高"
+   "reason": "新板无利好，纯情绪炒作，风险高"
   },
   {
    "code": "603175",
@@ -236,7 +236,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无利好，情绪炒作，风险高"
+   "reason": "新板无利好，纯情绪炒作，风险高"
   },
   {
    "code": "603958",
@@ -246,7 +246,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无利好，情绪炒作，风险高"
+   "reason": "新板无利好，纯情绪炒作，风险高"
   },
   {
    "code": "605169",
@@ -256,7 +256,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无利好，情绪炒作，风险高"
+   "reason": "新板无利好，纯情绪炒作，风险高"
   },
   {
    "code": "605222",
@@ -266,7 +266,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无利好，情绪炒作，风险高"
+   "reason": "新板无利好，纯情绪炒作，风险高"
   },
   {
    "code": "000573",
@@ -276,7 +276,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无利好，情绪炒作，风险高"
+   "reason": "新板无利好，纯情绪炒作，风险高"
   },
   {
    "code": "002086",
@@ -286,7 +286,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无利好，情绪炒作，风险高"
+   "reason": "新板无利好，纯情绪炒作，风险高"
   },
   {
    "code": "002696",
@@ -296,7 +296,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无利好，情绪炒作，风险高"
+   "reason": "新板无利好，纯情绪炒作，风险高"
   },
   {
    "code": "002628",
@@ -306,7 +306,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无利好，情绪炒作，风险高"
+   "reason": "新板无利好，纯情绪炒作，风险高"
   },
   {
    "code": "002172",

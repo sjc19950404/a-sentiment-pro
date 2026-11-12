@@ -36,5 +36,24 @@
   "gated": [],
   "usedPct": 0,
   "remainingPct": 0.2
+ },
+ {
+  "date": "2026-11-12",
+  "generatedAt": "2026-11-12T14:19:53.429Z",
+  "note": "预演档：仅供人工对照，决策链不读取本档；预算表见 config.paper.budgetSlots",
+  "equity": 0,
+  "slots": [
+   {
+    "id": "mainline",
+    "pct": 1,
+    "priority": 10
+   }
+  ],
+  "signalsIn": 0,
+  "allocations": [],
+  "conflicts": [],
+  "gated": [],
+  "usedPct": 0,
+  "remainingPct": 0.2
  }
 ]
