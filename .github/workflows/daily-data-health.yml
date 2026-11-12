@@ -36,7 +36,18 @@ jobs:
         with:
           node-version: '22'
 
+      - name: 当班时段闸门（非时段跳过全部本地档依赖检查）
+        id: gate
+        run: |
+          H=$(TZ=Asia/Shanghai date +%H%M)
+          if [ "$H" -lt 1600 ]; then
+            echo "非当班时段（北京时间 $(TZ=Asia/Shanghai date +'%F %H:%M')）：当日生产未产出，跳过本 job 的本地档依赖检查"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: 鍓嶅悗绔帴鍙ｅ绾﹀畧鍗紙鏁版嵁妗?vs schemas/锛?
+        if: steps.gate.outputs.skip != 'true'
         run: node scripts/check_contract.mjs
 
       # 鍙緭鍑恒€?*涓嶈闂?*锛?026-10-10 瀹炴祴瀹氱瓥锛屾敼鍓嶅厛璇昏繖娈碉級锛?
@@ -48,24 +59,21 @@ jobs:
       #   鐪熸粸鍚庨棬绂佺殑**鍞竴鍑哄**鏄?daily.yml 21:00 鐝閭ｄ釜 step锛堢敓浜т箣鍚庤窇锛屽垽瀹?
       #   鎵嶆垚绔嬶級锛涙湰 job 涓嶉噸澶嶈闂糕€斺€旈噸澶嶅彧浼氬埗閫犳瘡澶╀竴娆＄殑鍥哄畾鍋囩孩锛屾妸鐪熷憡璀︽饭娌°€?
       - name: 鏁版嵁鏂伴矞搴﹀垽瀹氾紙杈撳嚭鍙缁撹锛屼笉璁鹃椄锛?
+        if: steps.gate.outputs.skip != 'true'
         # 时段条件（2026-11-13 豆包第七轮）：非当班时段（北京时间 16:00 生产班次之前/
         #   次日凌晨）手动触发时，数据档尚未产出 → freshness 的红是时序误判而非真滞后。
         #   用时间条件区分「预期红/真红」，不用 continue-on-error 把两种红合成一种颜色。
-        run: |
-          H=$(TZ=Asia/Shanghai date +%H%M)
-          if [ "$H" -lt 1600 ]; then
-            echo "非当班时段（北京时间 $(TZ=Asia/Shanghai date +'%F %H:%M')）：当日生产未产出，跳过新鲜度判定（避免时序误判的红）"
-            exit 0
-          fi
-          node scripts/freshness.mjs
+        run: node scripts/freshness.mjs
 
       - name: 褰掓。鍒囩墖涓€鑷存€э紙--check 鍙锛?
+        if: steps.gate.outputs.skip != 'true'
         run: node scripts/split_archive.mjs --check
 
       # --out 鐢辫剼鏈嚜琛岃惤鐩橈紙UTF-8 鎭掑畾锛夛紝涓嶉潬 shell 閲嶅畾鍚戯紙缂栫爜闅忓涓昏€屽彉锛?
       #   PS 榛樿 UTF-16 / 閮ㄥ垎鐜 UTF-8 BOM锛岄兘浼氳涓嬫父 JSON.parse 澶辫触锛夈€?
       #   閫€鍑虹爜鍗冲璁＄粨璁衡€斺€旇繚渚嬫椂 job 鐓ф棫绾紙瀹佺孩涓嶅亣锛夈€?
       - name: 璺ㄦ。鍙ｅ緞瀹¤
+        if: steps.gate.outputs.skip != 'true'
         id: caliber
         run: node scripts/audit_data_caliber.mjs --json --out data/caliber-latest.json
 
@@ -95,6 +103,7 @@ jobs:
       #   days 鍙 closed锛屽繀椤昏嚜宸辩畻锛夛紱**涓婄晫鍙栨槰澶?*鈥斺€斾粖澶╂病閲囦笉绠楃己澶憋紝
       #   鍚﹀垯澶╁ぉ璇姤锛岃鎶ヤ細璁╀汉涔犳儻鎬у拷鐣ュ憡璀︼紝绛変簬娌℃湁鍛婅銆?
       - name: 妗ｆ缂轰氦鏄撴棩妫€娴?
+        if: steps.gate.outputs.skip != 'true'
         id: gapdays
         run: node scripts/audit_archive_gaps.mjs --json --out data/gap-days-latest.json
 
