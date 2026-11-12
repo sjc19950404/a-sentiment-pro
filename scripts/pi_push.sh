@@ -76,7 +76,12 @@ while [ "$try" -lt "$MAX_TRY" ]; do
   # 上一次若留下半截 rebase，先干净退回（保留本地提交，不丢数据）
   git rebase --abort >/dev/null 2>&1 || true
 
-  if ! PULLOUT=$(git pull --rebase --autostash origin main 2>&1); then
+  # pull 拆显式两步（2026-11-12 根治「无法变基到多个分支」二次爆发）：
+  #   git pull --rebase 的 rebase 目标解析存在歧义场景；fetch+rebase origin/main 显式
+  #   upstream 永远单分支。autostash 照旧。失败时抓 merge 配置与分叉现场入日志。
+  if ! PULLOUT=$( { git fetch origin main && git rebase --autostash origin/main; } 2>&1); then
+    git config --get-all branch.main.merge 2>&1 | while read -r v; do log "诊断 branch.main.merge=$v"; done
+    log "诊断 分叉现状: $(git rev-list --left-right --count main...origin/main 2>&1)"
     reason=$(classify "$PULLOUT")
     log "pull/rebase 第 ${try}/${MAX_TRY} 次失败（${reason}）：$(printf '%s' "$PULLOUT" | tail -1)"
     [ "$try" -lt "$MAX_TRY" ] && { sleep 10; continue; }
