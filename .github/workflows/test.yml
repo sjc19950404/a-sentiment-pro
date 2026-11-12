@@ -12,4 +12,12 @@ jobs:
       # 本项目既有决策：package-lock.json 不入库（.gitignore，依赖版本由 package.json 表达）
       # → CI 不能用需要 lock 的 npm ci（2026-11-13 首跑 6 秒即挂即此因），改用 npm install。
       - run: npm install --no-audit --no-fund
-      - run: npm test
+      # CI 边界显式化（豆包：差额必须列明，skip 不得静默）：
+      #   data/archive.json 与 ui/kline/ 分片按 .gitignore 决策不入库 → 干净 checkout 无档。
+      #   依赖它们的 11 个测试带原因 skip（名字见下），merge_ui.test.mjs 顶层即读档、整文件排除；
+      #   本地 pre-commit/pre-push 有档，这 12 个全部照跑（1963 全量）。
+      - name: test（CI 逻辑套件 + skip 清单）
+        run: |
+          echo "CI 边界：merge_ui.test.mjs 需本地 archive.json（未入库）→ 本轮排除；本地 hook 全量覆盖"
+          node --test $(find test -name '*.mjs' ! -name 'merge_ui.test.mjs') > /tmp/ci.tap 2>&1 || { tail -30 /tmp/ci.tap; exit 1; }
+          grep -E "^# (tests|pass|fail|skipped)|# SKIP" /tmp/ci.tap | head -30

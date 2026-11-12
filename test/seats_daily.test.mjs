@@ -1,3 +1,5 @@
+import { existsSync as _existsArchive } from 'node:fs';
+const SKIP_ARCHIVE = _existsArchive('data/archive.json') ? false : '需本地 data/archive.json（.gitignore 决策不入库，CI 无档；本地 hook 有档照跑）';
 // 席位/资金属性逐日累积测试（#1）
 //
 // 重点同样是语义纪律（而非算术）：
@@ -180,7 +182,7 @@ test('常量：三类标签齐备且与 sources.classifySeat 的键一致', () =
 
 // ────────────────────────── 真实档案端到端 ──────────────────────────
 
-test('真实档案：席位序列与档案逐日一致，覆盖率如实反映（回填后可全档覆盖）', async () => {
+test('真实档案：席位序列与档案逐日一致，覆盖率如实反映（回填后可全档覆盖）', { skip: SKIP_ARCHIVE }, async () => {
   const { readFileSync } = await import('node:fs');
   const a = JSON.parse(readFileSync('data/archive.json', 'utf8'));
   const series = buildSeatSeries(a.all_days);
@@ -200,7 +202,7 @@ test('真实档案：席位序列与档案逐日一致，覆盖率如实反映�
   for (const r of series) { assert.ok(r.date); assert.equal(r.ok, true); }
 });
 
-test('真实档案：确定性（同档两次构建深等）', async () => {
+test('真实档案：确定性（同档两次构建深等）', { skip: SKIP_ARCHIVE }, async () => {
   const { readFileSync } = await import('node:fs');
   const a = JSON.parse(readFileSync('data/archive.json', 'utf8'));
   assert.deepEqual(buildSeatSeries(a.all_days), buildSeatSeries(a.all_days));

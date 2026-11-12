@@ -1,3 +1,5 @@
+import { existsSync as _existsArchive } from 'node:fs';
+const SKIP_ARCHIVE = _existsArchive('data/archive.json') ? false : '需本地 data/archive.json（.gitignore 决策不入库，CI 无档；本地 hook 有档照跑）';
 // 测试：数据新鲜度三态判定（src/freshness.js）
 //
 // 背景：旧口径把 meta.stale 当作「上一次尝试是否失败」的标记——只在回退路径置 true，
@@ -137,7 +139,7 @@ test('lastClosedSession：盘中退回上一交易日、收盘后取当日、休
   assert.equal(lastClosedSession(bj('2026-10-11T12:00'), HOL), '2026-10-09');
 });
 
-test('回归：真实存档 meta 结构自洽（stale 必须等价于 state===behind）', () => {
+test('回归：真实存档 meta 结构自洽（stale 必须等价于 state===behind）', { skip: SKIP_ARCHIVE }, () => {
   const arc = JSON.parse(readFileSync(new URL('../data/archive.json', import.meta.url), 'utf8'));
   assert.ok(arc.meta && arc.meta.tradeDate, '存档应有 meta.tradeDate');
   if (arc.meta.freshness) {

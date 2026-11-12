@@ -1,3 +1,5 @@
+import { existsSync as _existsArchive } from 'node:fs';
+const SKIP_ARCHIVE = _existsArchive('data/archive.json') ? false : '需本地 data/archive.json（.gitignore 决策不入库，CI 无档；本地 hook 有档照跑）';
 // 封板率口径回归测试（seal_pct / zb_pct / seal_den）
 // 背景：历史 bug——字段 zbl_pct 存的是封板率 zt/(zt+zb)，报告却按炸板率渲染并取补，
 // 2026-09-30 把 81.3% 的封板率显示成「炸板率 18.8%」。本文件锁死口径，防回归。
@@ -40,7 +42,7 @@ test('封板率不等于涨停占跌停比（不能拿 limitUp/(limitUp+limitDow
   assert.notEqual(sealOf(52, 12), Math.round((52 / (52 + 9)) * 1000) / 10);
 });
 
-test('存档回填：18 天有涨停池数据的日子 seal_pct 自洽且与 zt/(zt+zb) 一致', () => {
+test('存档回填：18 天有涨停池数据的日子 seal_pct 自洽且与 zt/(zt+zb) 一致', { skip: SKIP_ARCHIVE }, () => {
   const a = JSON.parse(readFileSync(new URL('../data/archive.json', import.meta.url), 'utf8'));
   let checked = 0;
   for (const d of a.all_days) {
@@ -55,7 +57,7 @@ test('存档回填：18 天有涨停池数据的日子 seal_pct 自洽且与 zt/
   assert.ok(checked >= 18, `应至少有 18 天可校验，实际 ${checked}`);
 });
 
-test('存档 2026-09-30 具体核对：封板率 81.3%（不是被错标的 18.8%）', () => {
+test('存档 2026-09-30 具体核对：封板率 81.3%（不是被错标的 18.8%）', { skip: SKIP_ARCHIVE }, () => {
   const a = JSON.parse(readFileSync(new URL('../data/archive.json', import.meta.url), 'utf8'));
   const d = a.all_days.find((x) => x.trade_date === '2026-09-30');
   assert.ok(d, '找不到 2026-09-30');

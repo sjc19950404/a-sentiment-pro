@@ -1,3 +1,5 @@
+import { readdirSync as _readKline } from 'node:fs';
+const SKIP_KLINE = (() => { try { return _readKline('ui/kline').some(x => x.endsWith('.json')) ? false : '需本地 ui/kline/ 分片（缓存不入库，CI 无档）'; } catch { return '需本地 ui/kline/ 分片（缓存不入库，CI 无档）'; } })();
 // ═══ 终端视图（terminal.js）功能冒烟（jsdom + mock fetch 喂真实数据）══════════
 //
 // 目的：验证「磨砂黑研究工作台」能正确渲染，且**绝不影响研报视图**。
@@ -249,7 +251,7 @@ runTest('terminal：选股视图渲染（连板天梯 40 只 + 高度分布 + �
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
-runTest('terminal：K线多周期下拉（日/周/月/季/半年/年，根数递减且聚合符合标准 OHLCV）', async () => {
+runTest('terminal：K线多周期下拉（日/周/月/季/半年/年，根数递减且聚合符合标准 OHLCV）', { skip: SKIP_KLINE }, async () => {
   const { w, errors } = makeDom();
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
   await new Promise((r) => setTimeout(r, 260));
@@ -379,7 +381,7 @@ runTest('terminal：总览「妖股纯情绪 N 只」可点 → 跳选股视图�
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
-runTest('terminal：点个股看详情 —— 抽屉含 盘口快照/AI判词(紫)/排雷/持仓 四块 + K线', async () => {
+runTest('terminal：点个股看详情 —— 抽屉含 盘口快照/AI判词(紫)/排雷/持仓 四块 + K线', { skip: SKIP_KLINE }, async () => {
   const { w, errors } = makeDom();
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
   await new Promise((r) => setTimeout(r, 300));
@@ -683,7 +685,7 @@ runTest('terminal：键盘快捷键 1–7 切视图（输入框聚焦时拦截 /
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
-runTest('terminal：K线视图 ←/→ 切周期（与下拉同语义：只重绘不重抓）', async () => {
+runTest('terminal：K线视图 ←/→ 切周期（与下拉同语义：只重绘不重抓）', { skip: SKIP_KLINE }, async () => {
   const { w, errors } = makeDom();
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
   await new Promise((r) => setTimeout(r, 120));

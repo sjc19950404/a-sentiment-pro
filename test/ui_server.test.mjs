@@ -1,3 +1,5 @@
+import { existsSync as _existsArchive } from 'node:fs';
+const SKIP_ARCHIVE = _existsArchive('data/archive.json') ? false : '需本地 data/archive.json（.gitignore 决策不入库，CI 无档；本地 hook 有档照跑）';
 // 参数控制台后端测试：锁死「配置校验 / 合并 / 沙盒推演」三条纪律。
 // 这些纯函数（validateConfigPatch / applyConfigPatch / computeDryRun）是前端控制台与
 // /api/update-config、/api/dry-run 的安全底座——越界参数绝不能写盘，沙盒绝不能污染 config.json。
@@ -75,7 +77,7 @@ test('applyConfigPatch：未提供的键保持原值（不抹除既有配置）'
 
 // ────────────────────── 三、沙盒推演：纯内存、绝不写盘、绝不污染归档 ──────────────────────
 
-test('computeDryRun：返回旧/新结果 + 差异结构，且 note 声明不写盘', () => {
+test('computeDryRun：返回旧/新结果 + 差异结构，且 note 声明不写盘', { skip: SKIP_ARCHIVE }, () => {
   const diff = computeDryRun({ stops: { sentimentPenalty: 30, openGapFilterPct: 5 } });
   assert.ok(diff && diff.old && diff.new, '必须含 old/new');
   assert.ok(Array.isArray(diff.old.codes) && Array.isArray(diff.new.codes));
@@ -83,7 +85,7 @@ test('computeDryRun：返回旧/新结果 + 差异结构，且 note 声明不写
   assert.ok(/写盘/.test(diff.note), diff.note);
 });
 
-test('computeDryRun：绝不变更 config.json（mtime 与内容稳定）', () => {
+test('computeDryRun：绝不变更 config.json（mtime 与内容稳定）', { skip: SKIP_ARCHIVE }, () => {
   const p = resolve('config.json');
   const before = { mtime: statSync(p).mtimeMs, text: readFileSync(p, 'utf8') };
   // 跑两次，确保幂等且零副作用
@@ -94,7 +96,7 @@ test('computeDryRun：绝不变更 config.json（mtime 与内容稳定）', () =
   assert.equal(after.mtime, before.mtime, 'config.json 不应被触碰（mtime 不变）');
 });
 
-test('computeDryRun：改变 clusterRiseMax 会改变气泡判定输入（参数确实参与推演）', () => {
+test('computeDryRun：改变 clusterRiseMax 会改变气泡判定输入（参数确实参与推演）', { skip: SKIP_ARCHIVE }, () => {
   // clusterRiseMax 调极高 → 极寒分化判定不再触发（除非 redRatio 仍越界）；
   // 至少保证 dry-run 在该参数下返回合法结构（不抛错、情绪分已按新参数计算）。
   const diff = computeDryRun({ stops: { clusterRiseMax: 5000, sentimentPenalty: 50 } });
