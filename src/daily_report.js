@@ -347,7 +347,7 @@ function buildThemeSection(latest, relative) {
     // 2026-11-05：分母（当日龙虎榜整体净买）为负时，正净买题材的占比符号与常规相反
     // （如题材 +1.27 亿 / 全榜 -4.57 亿 = -27.8%），不加说明会被读成"题材在净卖出"。
     const signFlip = num(mt.main_yi) > 0 && num(mt.pct) < 0;
-    pts.push({ text: `主力题材「${mt.name}」净买 ${f2(mt.main_yi)} 亿，占当日龙虎榜净买 ${f1(mt.pct)}%${signFlip ? '（当日龙虎榜整体净卖出、分母为负，占比符号与常规相反——题材实为净流入）' : ''}`, kind: 'main' });
+    pts.push({ text: `主力题材「${mt.name}」净买 ${f2(mt.main_yi)} 亿，${num(mt.main_yi) < 0 && num(mt.pct) > 0 ? `占当日龙虎榜**净流出**的 ${f1(mt.pct)}%（方向为流出——题材最热资金最跑，退潮期典型特征，非「资金聚焦」）` : `占当日龙虎榜净买 ${f1(mt.pct)}%`}${signFlip ? '（当日龙虎榜整体净卖出、分母为负，占比符号与常规相反——题材实为净流入）' : ''}`, kind: 'main' });
   }
   const rel = latest.industry_relative || relative;
   if (rel) {
