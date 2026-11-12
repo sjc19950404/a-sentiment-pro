@@ -91,7 +91,7 @@ runTest('terminal：总览视图完整渲染（状态栏/指标/折线/七仪表
   assert.match(gauges[0].innerHTML, /t-g-arc/, '仪表含圆弧');
 
   // regime 分布 + AI 条
-  assert.ok([...root.querySelectorAll('.t-panel-h .t-pt')].some((n) => /regime 分布/.runTest(n.textContent)), 'regime 分布面板');
+  assert.ok([...root.querySelectorAll('.t-panel-h .t-pt')].some((n) => /regime 分布/.test(n.textContent)), 'regime 分布面板');
   const ai = root.querySelector('.t-ai-strip');
   assert.ok(ai, 'AI 信息条（紫色语义）');
 
@@ -165,7 +165,7 @@ runTest('terminal：不破坏研报视图 —— #briefBody 不被终端触碰',
   assert.ok(!root.contains(sec), '终端不包含研报节点');
   assert.ok(!sec.closest('#tRoot'), '研报节点不在终端内');
   // 入口按钮存在（可手动进入）
-  assert.ok([...w.document.querySelectorAll('button')].some((b) => /终端/.runTest(b.textContent)), '有终端入口按钮');
+  assert.ok([...w.document.querySelectorAll('button')].some((b) => /终端/.test(b.textContent)), '有终端入口按钮');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
@@ -189,12 +189,12 @@ runTest('terminal：涨跌停视图渲染（今日快照 + 涨停/连板 30 日�
   // 两张柱状图都在（涨停/连板、最高板）
   const charts = [...root.querySelectorAll('svg.t-chart')];
   assert.ok(charts.length >= 2, `应有涨停/连板与最高板两张图，实际 ${charts.length}`);
-  assert.ok(!/无涨跌停历史/.runTest(root.textContent), '不得落到「无涨跌停历史」空态');
+  assert.ok(!/无涨跌停历史/.test(root.textContent), '不得落到「无涨跌停历史」空态');
   // 封板质量明细表
   const tbl = root.querySelector('table.t-tbl');
   assert.ok(tbl, '封板质量明细表');
   assert.ok(tbl.querySelectorAll('tbody tr').length >= 1, '表内至少 1 行');
-  assert.ok(/硬板率/.runTest(tbl.textContent) && /炸板率/.runTest(tbl.textContent), '表头含硬板率/炸板率');
+  assert.ok(/硬板率/.test(tbl.textContent) && /炸板率/.test(tbl.textContent), '表头含硬板率/炸板率');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
@@ -303,7 +303,7 @@ runTest('terminal：时间窗切换 20/30/60/90（全局生效，序列图按窗
   assert.deepEqual(btns.map((b) => +b.dataset.r), [20, 30, 60, 90], '四档时间窗');
 
   const mainKey = () => {
-    const p = [...root.querySelectorAll('.t-panel')].find((x) => /情绪分走势/.runTest(x.textContent));
+    const p = [...root.querySelectorAll('.t-panel')].find((x) => /情绪分走势/.test(x.textContent));
     return p ? p.querySelector('.t-pk').textContent : '';
   };
   // 默认 60
@@ -411,20 +411,20 @@ runTest('terminal：点个股看详情 —— 抽屉含 盘口快照/AI判词(�
   assert.match(aiSec.textContent, /asOf/, '判词带 asOfDate 防伪戳');
 
   // 异步三块（盘口 / 黑名单 / 账户）已回填，不再是「读取中…」
-  assert.ok(!/读取中/.runTest(ddet.textContent), '盘口/排雷/持仓三块已异步回填');
+  assert.ok(!/读取中/.test(ddet.textContent), '盘口/排雷/持仓三块已异步回填');
   const sig = readJsonSafe('data/signals-latest.json') || {};
   const dg = ((sig.dragonLogic || {}).dragons || []).find((x) => String(x.code) === code) || {};
   assert.ok(aiSec.textContent.includes(String(dg.hybk || '—')), '行业取自侧车原值');
 
   // 日终快照：取自该股 K线分片最后一根（与 K线 同源）；无分片 → 暂无该股日终快照
   const _cc = String(code).replace(/^(sh|sz|bj)/, '');
-  const _prefix = /^(6|9)/.runTest(_cc) ? 'sh' : /^(4|8)/.runTest(_cc) ? 'bj' : 'sz';
+  const _prefix = /^(6|9)/.test(_cc) ? 'sh' : /^(4|8)/.test(_cc) ? 'bj' : 'sz';
   const kshard = readJsonSafe(`ui/kline/${_prefix}${_cc}.json`);
   const snap = ddet.querySelector('.t-dsec.is-snap');
   if (kshard && Array.isArray(kshard.bars) && kshard.bars.length) {
     assert.ok(snap.querySelector('.t-dkv'), '日终快照显示 收盘价/涨跌/最高/最低/昨收');
     assert.ok(snap.textContent.includes('数据基准'), '日终快照标注数据基准日期（已定稿收盘价）');
-    assert.ok(!/样本/.runTest(snap.textContent), '日终快照不展示任何脱敏占位 name');
+    assert.ok(!/样本/.test(snap.textContent), '日终快照不展示任何脱敏占位 name');
   } else {
     assert.match(snap.textContent, /暂无该股日终快照/, '无 K线分片 → 如实空态（暂无该股日终快照）');
   }
@@ -478,7 +478,7 @@ runTest('terminal：模拟盘视图增强 —— 账户概览/待成交委托/�
   for (const k of ['总资产（净值）', '持仓市值', '可用现金', '冻结资金', '期初资金', '累计收益率', '已实现盈亏', '累计费用']) {
     assert.ok(stats.textContent.includes(k), `账户概览含：${k}`);
   }
-  assert.ok(!/NaN/.runTest(stats.textContent), '账户概览不得出现 NaN（原值缺失应显示 —）');
+  assert.ok(!/NaN/.test(stats.textContent), '账户概览不得出现 NaN（原值缺失应显示 —）');
 
   // ② 持仓 / ③ 待成交委托 / ④ 决策日志 三张表
   const titles = [...root.querySelectorAll('.t-panel-h .t-pt')].map((n) => n.textContent);
@@ -496,7 +496,7 @@ runTest('terminal：模拟盘视图增强 —— 账户概览/待成交委托/�
   const logRows = logTbl.querySelectorAll('tbody tr');
   assert.equal(logRows.length, 3, '决策日志 3 条');
   assert.match(logRows[0].textContent, /自动建仓委托已报送/, '日志按时间倒序（最新在上）');
-  const glmRow = [...logRows].find((r) => /GLM 三合一守卫/.runTest(r.textContent));
+  const glmRow = [...logRows].find((r) => /GLM 三合一守卫/.test(r.textContent));
   assert.ok(glmRow, '含 GLM 守卫留痕行');
   assert.ok(glmRow.querySelector('.t-tag-ai'), 'glm 环节用紫色 AI 标（看到紫 = AI 说的）');
   assert.ok(logTbl.querySelector('.t-res.is-no'), '拒绝结论有红色徽标');
@@ -616,8 +616,8 @@ runTest('terminal：总览「市场宽度」面板（engine 原值：站上均�
   await new Promise((r) => setTimeout(r, 600));   // 宽度档异步回填，等足
 
   const root = w.document.getElementById('tRoot');
-  assert.ok(/市场宽度/.runTest(root.textContent), '总览含市场宽度面板');
-  assert.ok(!/宽度档读取失败/.runTest(root.textContent), '宽度档不得落到失败态');
+  assert.ok(/市场宽度/.test(root.textContent), '总览含市场宽度面板');
+  assert.ok(!/宽度档读取失败/.test(root.textContent), '宽度档不得落到失败态');
 
   const bw = readJsonSafe('data/breadth-latest.json') || {};
   const bm = bw.aboveMa || {}, nh = bw.newHigh || {}, nl = bw.newLow || {}, ud = bw.updown || {};
@@ -634,15 +634,15 @@ runTest('terminal：总览「主线题材脉络」面板（main_theme_history �
   await new Promise((r) => setTimeout(r, 500));   // 主线历史档异步回填，等足
 
   const root = w.document.getElementById('tRoot');
-  assert.ok(/主线题材脉络/.runTest(root.textContent), '总览含主线题材脉络面板');
-  assert.ok(!/主线历史档读取失败/.runTest(root.textContent), '主线历史档不得落到失败态');
+  assert.ok(/主线题材脉络/.test(root.textContent), '总览含主线题材脉络面板');
+  assert.ok(!/主线历史档读取失败/.test(root.textContent), '主线历史档不得落到失败态');
 
   const mh = readJsonSafe('data/main_theme_history.json') || {};
   const days = mh.days || [];
   const last = days[days.length - 1] || {};
   const names = (last.main_themes || []).map((t) => t.name).filter(Boolean);
   if (names.length) assert.ok(root.textContent.includes(String(names[0])), `末日主线名取引擎原值：${names[0]}`);
-  if (last.rotation) assert.ok(/↻ 轮动/.runTest(root.textContent), '轮动标记渲染');
+  if (last.rotation) assert.ok(/↻ 轮动/.test(root.textContent), '轮动标记渲染');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
@@ -652,7 +652,7 @@ runTest('terminal：键盘快捷键 1–7 切视图（输入框聚焦时拦截 /
   await new Promise((r) => setTimeout(r, 120));
   const root = w.document.getElementById('tRoot');
   // 默认 makeDom 不进终端（root.hidden=true）；快捷键仅在终端可见时响应 → 先点入口进入
-  const entryBtn = [...w.document.body.querySelectorAll('button')].find((b) => /终端/.runTest(b.textContent));
+  const entryBtn = [...w.document.body.querySelectorAll('button')].find((b) => /终端/.test(b.textContent));
   assert.ok(entryBtn, '存在「⚡ 图表终端」入口按钮');
   entryBtn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 60));
@@ -687,7 +687,7 @@ runTest('terminal：K线视图 ←/→ 切周期（与下拉同语义：只重�
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
   await new Promise((r) => setTimeout(r, 120));
   const root = w.document.getElementById('tRoot');
-  const entryBtn = [...w.document.body.querySelectorAll('button')].find((b) => /终端/.runTest(b.textContent));
+  const entryBtn = [...w.document.body.querySelectorAll('button')].find((b) => /终端/.test(b.textContent));
   entryBtn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 40));
   w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: '7', bubbles: true }));   // 切到 K线视图
@@ -701,7 +701,7 @@ runTest('terminal：K线视图 ←/→ 切周期（与下拉同语义：只重�
   assert.ok(sel, '存在周期下拉');
   const km0 = root.querySelector('.t-kmeta');
   assert.ok(km0, 'K线已加载（含 kmeta 单位）');
-  assert.ok(/日/.runTest(km0.textContent), '初始周期为日');
+  assert.ok(/日/.test(km0.textContent), '初始周期为日');
 
   const unit = () => {
     const km = root.querySelector('.t-kmeta');
@@ -709,13 +709,13 @@ runTest('terminal：K线视图 ←/→ 切周期（与下拉同语义：只重�
   };
   w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
   await new Promise((r) => setTimeout(r, 80));
-  assert.ok(/周/.runTest(unit()), '按 → 后 K线单位变「周」（周期切换生效）');
+  assert.ok(/周/.test(unit()), '按 → 后 K线单位变「周」（周期切换生效）');
   w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
   await new Promise((r) => setTimeout(r, 80));
-  assert.ok(/月/.runTest(unit()), '再按 → 变「月」');
+  assert.ok(/月/.test(unit()), '再按 → 变「月」');
   w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
   await new Promise((r) => setTimeout(r, 80));
-  assert.ok(/周/.runTest(unit()), '按 ← 回「周」');
+  assert.ok(/周/.test(unit()), '按 ← 回「周」');
   assert.ok(root.querySelector('svg.t-chart polyline'), 'K线含 MA5/10/20 均线 polyline（纯展示叠加）');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
@@ -735,7 +735,7 @@ runTest('terminal：总览「辅助面板」可折叠 + 公告流/外围汇率�
   const d0 = (a.details || [])[0];
   if (d0 && d0.name) assert.ok(aux.textContent.includes(String(d0.name)), `公告流含引擎原值公告名：${d0.name}`);
   assert.ok(aux.textContent.includes('美元离岸'), '外围面板含离岸美元');
-  assert.ok(/A50|富时中国A50/.runTest(aux.textContent), '外围含 A50 锚');
+  assert.ok(/A50|富时中国A50/.test(aux.textContent), '外围含 A50 锚');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
@@ -799,14 +799,14 @@ runTest('terminal：总览 —— 资金正向红色 + 顶栏 regime 徽章', as
   const root = w.document.getElementById('tRoot');
 
   // Bug3：龙虎净买为正 → 标红(up)；绝不青色/白
-  const lhb = [...root.querySelectorAll('.t-stat')].find((s) => /龙虎净买/.runTest(s.textContent));
+  const lhb = [...root.querySelectorAll('.t-stat')].find((s) => /龙虎净买/.test(s.textContent));
   assert.ok(lhb, '总览含龙虎净买指标');
   assert.ok(lhb.querySelector('.t-v.up'), '龙虎净买为正 → 标红(up)，非青色/白');
 
   // 顶栏 regime 徽章（带高光边框 + 半透明底）
   const badge = root.querySelector('#tRegime');
   assert.ok(badge, '顶栏 regime 徽章存在');
-  assert.ok(/regime/.runTest(badge.textContent), '徽章含 regime 标识');
+  assert.ok(/regime/.test(badge.textContent), '徽章含 regime 标识');
   const rl = (((readJsonSafe('data/signals-latest.json') || {}).regime || {}).latest || {}).label || '';
   if (rl) assert.ok(badge.textContent.includes(rl), `徽章显示 regime 原文：${rl}`);
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
@@ -822,7 +822,7 @@ runTest('terminal：涨跌停视图 —— 历史图从 emotion_history 画出�
   // 涨停vs连板 + 最高连板 → 应各有一个 barChart（共 2 个），封板质量表不计入
   const charts = root.querySelectorAll('svg.t-chart');
   assert.ok(charts.length >= 2, `涨跌停历史图应画出 barChart（实际 ${charts.length}，不应为「无历史」）`);
-  assert.ok(!/无历史/.runTest(root.textContent), '不应显示「无历史」（数据档 emotion_history.json 含 250 条）');
+  assert.ok(!/无历史/.test(root.textContent), '不应显示「无历史」（数据档 emotion_history.json 含 250 条）');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
@@ -861,13 +861,13 @@ runTest('terminal：每个视图顶部有 sticky 视图标题（滚动时固定�
   const root = w.document.getElementById('tRoot');
   const head = root.querySelector('.t-viewhead');
   assert.ok(head, '存在视图标题条 .t-viewhead');
-  assert.ok(/总览/.runTest(head.textContent), `标题含当前视图名「总览」（实际：${head.textContent}）`);
-  assert.ok(/px$/.runTest(head.style.top || ''), `标题 sticky top 已按顶栏高度设置（实际：${head.style.top}）`);
+  assert.ok(/总览/.test(head.textContent), `标题含当前视图名「总览」（实际：${head.textContent}）`);
+  assert.ok(/px$/.test(head.style.top || ''), `标题 sticky top 已按顶栏高度设置（实际：${head.style.top}）`);
   // 切到涨跌停，标题应更新
   [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'zt').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 300));
   const head2 = root.querySelector('.t-viewhead');
-  assert.ok(/涨跌停/.runTest(head2.textContent), `切换后标题更新为「涨跌停」（实际：${head2.textContent}）`);
+  assert.ok(/涨跌停/.test(head2.textContent), `切换后标题更新为「涨跌停」（实际：${head2.textContent}）`);
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
@@ -877,7 +877,7 @@ runTest('terminal：终端视图整体可竖向滚动（body 不被 overflow:hid
   await new Promise((r) => setTimeout(r, 260));
   const root = w.document.getElementById('tRoot');
   // 通过老页面入口按钮进入终端（switchTo('terminal') 会解锁 body 滚动）
-  const entryBtn = [...w.document.body.querySelectorAll('button')].find((b) => /图表终端/.runTest(b.textContent));
+  const entryBtn = [...w.document.body.querySelectorAll('button')].find((b) => /图表终端/.test(b.textContent));
   assert.ok(entryBtn, '存在「⚡ 图表终端」入口按钮');
   entryBtn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 200));
@@ -893,7 +893,7 @@ runTest('terminal：总览不再重复陈列「涨跌停分布」图（归涨跌
   const root = w.document.getElementById('tRoot');
   [...root.querySelectorAll('.t-nav button')].find((b) => b.dataset.v === 'overview').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 400));
-  assert.ok(!/涨跌停分布/.runTest(root.textContent), '总览不应再出现「涨跌停分布」面板（已归涨跌停视图，避免与涨跌停视图图面重合）');
+  assert.ok(!/涨跌停分布/.test(root.textContent), '总览不应再出现「涨跌停分布」面板（已归涨跌停视图，避免与涨跌停视图图面重合）');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
 
@@ -902,7 +902,7 @@ runTest('terminal：ETF 防守反击卡（待命态，读取真实 etf_hedge_sig
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
   await new Promise((r) => setTimeout(r, 600)); // 等 ETF 异步回填
   const root = w.document.getElementById('tRoot');
-  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /ETF 防守反击避险/.runTest(p.textContent));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /ETF 防守反击避险/.test(p.textContent));
   assert.ok(panel, '总览含 ETF 防守反击避险面板');
   assert.ok(panel.querySelector('.t-etf-ring'), '含圆环主视觉');
   assert.match(panel.textContent, /待命/, '常态 → 圆环中心大字「待命」');
@@ -934,7 +934,7 @@ runTest('terminal：ETF 卡（触发态，注入合成信号）', async () => {
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
   await new Promise((r) => setTimeout(r, 600));
   const root = w.document.getElementById('tRoot');
-  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /ETF 防守反击避险/.runTest(p.textContent));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /ETF 防守反击避险/.test(p.textContent));
   assert.ok(panel, '触发态：ETF 面板存在');
   assert.ok(panel.querySelector('.t-etf-ring.is-active'), '触发态：圆环变 .is-active（荧光警戒色）');
   assert.match(panel.textContent, /买入 510880/, '触发态：中心大字「买入 510880」');
@@ -960,7 +960,7 @@ runTest('terminal：ETF 卡容错（无 etf_hedge_signal.json → 隐藏整卡�
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
   await new Promise((r) => setTimeout(r, 600));
   const root = w.document.getElementById('tRoot');
-  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /ETF 防守反击避险/.runTest(p.textContent));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /ETF 防守反击避险/.test(p.textContent));
   assert.ok(!panel || panel.style.display === 'none', '读不到信号 → ETF 卡被隐藏（display:none），严禁白屏');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
@@ -987,7 +987,7 @@ runTest('terminal：选股买点预期面板（注入合成 reco，含弱转强+
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
   await new Promise((r) => setTimeout(r, 400));
   const root = w.document.getElementById('tRoot');
-  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /今日选股/.runTest(p.textContent));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /今日选股/.test(p.textContent));
   assert.ok(panel, '总览含「今日选股 · 买点预期」面板');
   assert.ok(panel.querySelector('.t-reco-row'), '含推荐票行');
   assert.match(panel.textContent, /爆量烂板A/);
@@ -1009,7 +1009,7 @@ runTest('terminal：选股买点预期面板容错（无 reco 文件 → 隐藏�
   w.eval(readFileSync(join(ROOT, 'terminal.js'), 'utf8'));
   await new Promise((r) => setTimeout(r, 400));
   const root = w.document.getElementById('tRoot');
-  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /今日选股/.runTest(p.textContent));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /今日选股/.test(p.textContent));
   assert.ok(!panel || panel.style.display === 'none', '读不到信号 → 面板隐藏（display:none），严禁白屏');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
@@ -1051,7 +1051,7 @@ runTest('terminal：板块相对强弱-单一名值绑定（修复张冠李戴�
   assert.ok(btn, '有「板块」视图按钮');
   btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 240));
-  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /板块相对强弱/.runTest(p.textContent));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /板块相对强弱/.test(p.textContent));
   assert.ok(panel, '存在「板块相对强弱」面板');
   // 核心断言：每行只能有 1 个板块名（旧实现每行 2 名 = 跨侧配对 = 张冠李戴）
   const rows = panel.querySelectorAll('.t-dv-row');
@@ -1096,7 +1096,7 @@ runTest('terminal：AI 板块情绪榜-跨板块头条去重（修复满屏复�
   assert.ok(btn, '有「板块」视图按钮');
   btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 240));
-  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /AI 板块情绪榜/.runTest(p.textContent));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /AI 板块情绪榜/.test(p.textContent));
   assert.ok(panel, '存在「AI 板块情绪榜」面板');
   // 重复摘要 dup 只能出现 1 次（首个基建保留，AI 被去重丢弃）
   const dupCount = [...panel.querySelectorAll('.t-sec-hl')].filter((e) => e.textContent.includes('乙二醇')).length;
@@ -1138,7 +1138,7 @@ runTest('terminal：连板高度分布-X轴固定枚举（修复断层，缺3板
   assert.ok(btn, '有「选股」视图按钮');
   btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 240));
-  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /连板高度分布/.runTest(p.textContent));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /连板高度分布/.test(p.textContent));
   assert.ok(panel, '存在「连板高度分布」面板');
   const svg = panel.querySelector('svg.t-chart');
   assert.ok(svg, '含柱状图 SVG');
@@ -1184,7 +1184,7 @@ runTest('terminal：AI 板块情绪榜-模板化警示（同头条≥3板块→�
   assert.ok(btn, '有「板块」视图按钮');
   btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 240));
-  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /AI 板块情绪榜/.runTest(p.textContent));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /AI 板块情绪榜/.test(p.textContent));
   assert.ok(panel, '存在「AI 板块情绪榜」面板');
   const warn = panel.querySelector('.t-sec-warn');
   assert.ok(warn, '模板化时显示置信度警示');
@@ -1230,31 +1230,31 @@ runTest('terminal：板块相对强弱-双基准切换真实刷新绿条红条',
   assert.ok(btn, '有「板块」视图按钮');
   btn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 240));
-  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /板块相对强弱/.runTest(p.textContent));
+  const panel = [...root.querySelectorAll('.t-panel')].find((p) => /板块相对强弱/.test(p.textContent));
   assert.ok(panel, '存在「板块相对强弱」面板');
   // 默认（上证指数）基准：应显示 银行/煤炭，按钮高亮 上证指数
   assert.match(panel.textContent, /银行/, '指数基准含 银行（攻）');
   assert.match(panel.textContent, /煤炭/, '指数基准含 煤炭（守）');
-  const idxBtn = [...panel.querySelectorAll('.t-seg button')].find((b) => /上证/.runTest(b.textContent));
-  const medBtn = [...panel.querySelectorAll('.t-seg button')].find((b) => /中位数/.runTest(b.textContent));
+  const idxBtn = [...panel.querySelectorAll('.t-seg button')].find((b) => /上证/.test(b.textContent));
+  const medBtn = [...panel.querySelectorAll('.t-seg button')].find((b) => /中位数/.test(b.textContent));
   assert.ok(idxBtn && medBtn, '两个基准按钮都在');
   assert.ok(idxBtn.classList.contains('is-on'), '默认高亮 上证指数');
   // 点击 行业中位数 → 绿条红条必须换成 白酒/钢铁（刷新，不是空）
   medBtn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 240));
-  const panel2 = [...root.querySelectorAll('.t-panel')].find((p) => /板块相对强弱/.runTest(p.textContent));
+  const panel2 = [...root.querySelectorAll('.t-panel')].find((p) => /板块相对强弱/.test(p.textContent));
   assert.match(panel2.textContent, /白酒/, '切换中位数后显示 白酒（攻）');
   assert.match(panel2.textContent, /钢铁/, '切换中位数后显示 钢铁（守）');
-  assert.ok(!/银行/.runTest(panel2.textContent), '切换后不再显示 银行（旧基准数据已刷新掉）');
-  const medBtn2 = [...panel2.querySelectorAll('.t-seg button')].find((b) => /中位数/.runTest(b.textContent));
+  assert.ok(!/银行/.test(panel2.textContent), '切换后不再显示 银行（旧基准数据已刷新掉）');
+  const medBtn2 = [...panel2.querySelectorAll('.t-seg button')].find((b) => /中位数/.test(b.textContent));
   assert.ok(medBtn2.classList.contains('is-on'), '切换后高亮 行业中位数');
   // 点回 上证指数 → 还原
-  const idxBtn2 = [...panel2.querySelectorAll('.t-seg button')].find((b) => /上证/.runTest(b.textContent));
+  const idxBtn2 = [...panel2.querySelectorAll('.t-seg button')].find((b) => /上证/.test(b.textContent));
   idxBtn2.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await new Promise((r) => setTimeout(r, 240));
-  const panel3 = [...root.querySelectorAll('.t-panel')].find((p) => /板块相对强弱/.runTest(p.textContent));
+  const panel3 = [...root.querySelectorAll('.t-panel')].find((p) => /板块相对强弱/.test(p.textContent));
   assert.match(panel3.textContent, /银行/, '切回上证指数后还原显示 银行');
-  const idxBtn3 = [...panel3.querySelectorAll('.t-seg button')].find((b) => /上证/.runTest(b.textContent));
+  const idxBtn3 = [...panel3.querySelectorAll('.t-seg button')].find((b) => /上证/.test(b.textContent));
   assert.ok(idxBtn3.classList.contains('is-on'), '切回后高亮 上证指数');
   assert.deepEqual(errors, [], `不应有 JS 错误：${errors.join(' | ')}`);
 });
