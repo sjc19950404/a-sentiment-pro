@@ -162,7 +162,7 @@
             "level": { "type": "string", "enum": ["ok", "warn", "fail", "unknown"] },
             "label": { "type": "string" },
             "summary": { "type": "string" },
-            "note": { "type": "string" },
+            "note": { "type": ["string", "null"], "description": "数据不足/未生成时为 null（664 行先例同款语义）" },
             "items": {
               "type": "array",
               "items": {
@@ -687,7 +687,7 @@
                   "required": ["posGap", "note"],
                   "properties": {
                     "posGap": { "type": "number" },
-                    "note": { "type": "string" }
+                    "note": { "type": ["string", "null"] }
                   }
                 },
                 "trackC": {

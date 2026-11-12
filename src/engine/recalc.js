@@ -134,8 +134,9 @@ export function recalcAll(days, opts = {}) {
       s.lhb_count = c.total_records;
       // 重复披露留痕：raw_records 为东财原始条数，merged_away 为被合并掉的同票同值重复条数。
       // 存量老数据还没这两个字段 → 只在现算能给出时写入，避免把历史天伪造出 0。
-      if (c.raw_records != null) s.lhb_raw_count = c.raw_records;
-      if (c.merged_away != null) s.lhb_merged_away = c.merged_away;
+      // raw_count/merged_away 只能由 fresh applyLhb 写（东财原始计数）；重算从合并后明细
+      // 无法复原 raw（2026-11-12 实测：全档重算把 11-11 的 123/46 重写成 77/0，与 skip 天
+      // 指纹分歧 → scope 一致性测试拦截）——重算路径保留档案原值。
       s.lhb_stocks = c.all_stocks;
       s.lhb_all_net = c.all_net_yi;
       s.net_pos = c.all_pos;
