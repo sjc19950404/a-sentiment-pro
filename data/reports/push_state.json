@@ -2,6 +2,12 @@
  "schema_version": "1.0",
  "pushed": [
   {
+   "fingerprint": "aa121658ad751246_d62",
+   "type": "pre_market",
+   "date": "2026-11-12",
+   "pushed_at": "2026-11-12T00:55:04.560Z"
+  },
+  {
    "fingerprint": "c4022a5de4a74f51_880",
    "type": "post_market",
    "date": "2026-11-11",
@@ -848,18 +854,6 @@
    "type": "pre_market",
    "date": "2026-10-12",
    "pushed_at": "2026-10-13T01:13:18.791Z"
-  },
-  {
-   "fingerprint": "7fe777d1b837fe0b_8bc",
-   "type": "pre_market",
-   "date": "2026-10-12",
-   "pushed_at": "2026-10-12T15:11:51.468Z"
-  },
-  {
-   "fingerprint": "0f8a6562d8967d78_a84",
-   "type": "post_market",
-   "date": "2026-10-12",
-   "pushed_at": "2026-10-12T15:11:51.468Z"
   }
  ]
 }
