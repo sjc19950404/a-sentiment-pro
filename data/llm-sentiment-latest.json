@@ -2,59 +2,59 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-12",
- "generatedAt": "2026-11-12T21:03:18.181+08:00",
+ "generatedAt": "2026-11-12T21:32:42.504+08:00",
  "model": "glm-4-flash",
- "sentiment": -0.5,
+ "sentiment": -0.6,
  "confidence": 0.8,
- "reason": "亏钱效应显著，涨停股数量与跌停股数量差距不大，炸板率较高，市场情绪偏弱。",
+ "reason": "亏钱效应显著，涨停股数量低于跌停股，炸板率高，市场情绪偏向负面。",
  "events": [
   {
    "type": "业绩预告",
    "target": "双成药业",
    "tone": "positive",
-   "note": "GMP检查通过，多肽药发展，药品出海，三季报扭亏，业绩向好。"
+   "note": "GMP检查通过，多肽药和药品出海预期提升公司业绩"
   },
   {
    "type": "高管变动",
    "target": "皇台酒业",
    "tone": "positive",
-   "note": "董事会换届可能带来公司战略调整，利好股价。"
+   "note": "董事会换届可能带来公司战略调整"
   },
   {
    "type": "行业催化",
    "target": "机器人",
    "tone": "positive",
-   "note": "机器人概念股表现活跃，人形机器人、工业缝纫机等细分领域受关注。"
-  },
-  {
-   "type": "政策",
-   "target": "天然气",
-   "tone": "positive",
-   "note": "寒潮供暖需求增加，天然气相关股票受益。"
+   "note": "机器人概念股表现强劲，市场对机器人行业前景看好"
   },
   {
    "type": "行业催化",
-   "target": "AI算力",
+   "target": "光伏玻璃",
    "tone": "positive",
-   "note": "AI算力概念股持续活跃，行业前景被看好。"
+   "note": "光伏玻璃概念股新晋活跃，行业政策支持"
+  },
+  {
+   "type": "行业催化",
+   "target": "电子皮肤",
+   "tone": "positive",
+   "note": "电子皮肤概念股新晋活跃，技术发展前景广阔"
   },
   {
    "type": "行业催化",
    "target": "预制菜",
    "tone": "positive",
-   "note": "预制菜概念股表现强劲，消费升级趋势明显。"
+   "note": "预制菜概念股表现活跃，消费升级趋势明显"
   },
   {
    "type": "行业催化",
-   "target": "海峡两岸",
+   "target": "白酒",
    "tone": "positive",
-   "note": "海峡两岸概念股受益于两岸关系改善。"
+   "note": "白酒概念股表现良好，行业基本面稳定"
   },
   {
    "type": "行业催化",
-   "target": "苹果产业链",
+   "target": "水泥",
    "tone": "positive",
-   "note": "苹果产业链相关股票受益于苹果公司产品更新周期。"
+   "note": "水泥行业受益于重点工程，股价表现强劲"
   }
  ],
  "inputDigest": {

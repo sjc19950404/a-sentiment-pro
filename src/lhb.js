@@ -263,6 +263,18 @@ export function summarizeCalibers(records) {
 export function caliberFromDay(day) {
   // ① 明细优先：lhb_daily_aggr 已是「当日榜 + 去重」的行（新数据都有）。
   //    直接喂 splitNewStockNet，不再二次 aggregateByCode —— 它是聚合产物，不是原始记录。
+  // Sanity 守卫（2026-11-12 实测）：decode 往返可能丢失全口径 lhb_aggr（11-11 decode 后
+  //   aggr=48 仅当日部分 → 本分支 total=48+48=96、range=0 的垃圾值写破 summary，audit
+  //   恒等式拦截）。明细里实际存在区间行而本分支会算出 range<=0 时，退回明细重算路径。
+  {
+    const _detailRange = (Array.isArray(day?.lhb) ? day.lhb : []).filter((l) => l.is_range != null ? l.is_range : isRangeBoard(l.reason)).length;
+    const _aggrLen = Array.isArray(day?.lhb_aggr) ? day.lhb_aggr.length : 0;
+    const _rowsLen = Array.isArray(day?.lhb_daily_aggr) ? day.lhb_daily_aggr.length : 0;
+    if (_detailRange > 0 && _rowsLen > 0 && _aggrLen - _rowsLen <= 0) {
+      const _rows = (day.lhb || []).map((l) => ({ ...l, is_range: l.is_range != null ? l.is_range : isRangeBoard(l.reason) }));
+      return summarizeCalibers(_rows);
+    }
+  }
   if (Array.isArray(day?.lhb_daily_aggr) && day.lhb_daily_aggr.length) {
     const rows = day.lhb_daily_aggr;
     const aggr = Array.isArray(day?.lhb_aggr) ? day.lhb_aggr : rows;
