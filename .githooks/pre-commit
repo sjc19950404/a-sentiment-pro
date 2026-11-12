@@ -19,7 +19,10 @@ if ! echo "$CHANGED" | grep -qvE '^(data/|.*\.log$)'; then
   exit 0
 fi
 FAIL=0
-for f in $(echo "$CHANGED" | grep -E '\.(js|mjs)$'); do
+# 语法检查覆盖「工作区全部 modified（含未 staged）」而非只看 staged（豆包第七轮实证：
+#   前两次插入错在编辑后直接跑全量测试才现形，未 staged 窗口不在钩内）。.mjs 一直在范围内。
+DIRTY=$(git status --porcelain | awk '{print $NF}' | grep -E '\.(js|mjs)$' | sort -u)
+for f in $DIRTY; do
   [ -f "$f" ] || continue
   if ! node --check "$f" 2>/tmp/hook_syntax.err; then
     echo "✗ pre-commit: 语法错 $f"; cat /tmp/hook_syntax.err; FAIL=1

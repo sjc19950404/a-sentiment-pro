@@ -26,9 +26,9 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1157.0"
+    "@aws-sdk/client-s3": "3.1157.0"
   },
   "devDependencies": {
-    "jsdom": "^31.0.0"
+    "jsdom": "31.0.0"
   }
 }

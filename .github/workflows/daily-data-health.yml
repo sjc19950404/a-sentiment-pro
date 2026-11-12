@@ -48,7 +48,16 @@ jobs:
       #   鐪熸粸鍚庨棬绂佺殑**鍞竴鍑哄**鏄?daily.yml 21:00 鐝閭ｄ釜 step锛堢敓浜т箣鍚庤窇锛屽垽瀹?
       #   鎵嶆垚绔嬶級锛涙湰 job 涓嶉噸澶嶈闂糕€斺€旈噸澶嶅彧浼氬埗閫犳瘡澶╀竴娆＄殑鍥哄畾鍋囩孩锛屾妸鐪熷憡璀︽饭娌°€?
       - name: 鏁版嵁鏂伴矞搴﹀垽瀹氾紙杈撳嚭鍙缁撹锛屼笉璁鹃椄锛?
-        run: node scripts/freshness.mjs
+        # 时段条件（2026-11-13 豆包第七轮）：非当班时段（北京时间 16:00 生产班次之前/
+        #   次日凌晨）手动触发时，数据档尚未产出 → freshness 的红是时序误判而非真滞后。
+        #   用时间条件区分「预期红/真红」，不用 continue-on-error 把两种红合成一种颜色。
+        run: |
+          H=$(TZ=Asia/Shanghai date +%H%M)
+          if [ "$H" -lt 1600 ]; then
+            echo "非当班时段（北京时间 $(TZ=Asia/Shanghai date +'%F %H:%M')）：当日生产未产出，跳过新鲜度判定（避免时序误判的红）"
+            exit 0
+          fi
+          node scripts/freshness.mjs
 
       - name: 褰掓。鍒囩墖涓€鑷存€э紙--check 鍙锛?
         run: node scripts/split_archive.mjs --check

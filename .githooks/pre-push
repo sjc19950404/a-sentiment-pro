@@ -9,4 +9,16 @@ if [ $EXIT -ne 0 ] || grep -qE "^# fail [1-9]" /tmp/prepush_test.log; then
   exit 1
 fi
 echo "✓ pre-push: 全量测试过"
+# CI 不可见的 12 处补位（豆包第七轮：CI 显式排除/skip 只由本地兜底，需单独复跑并点名）：
+#   merge_ui.test.mjs 整文件排除 + 11 个依赖 archive.json / ui/kline 分片的带原因 skip 测试。
+#   本地有本地独有档 → 这些测试在此处全量执行（CI 里它们永远不跑）。
+LOCAL_FILES="test/merge_ui.test.mjs test/freshness.test.mjs test/seal.test.mjs test/seats_daily.test.mjs test/ui_server.test.mjs test/terminal.test.mjs"
+echo "pre-push 补位：CI 不可见的 12 处（merge_ui 整文件 + 11 个依赖本地档的测试），本地单独复跑 →"
+if ! node --test $LOCAL_FILES > /tmp/prepush_local.log 2>&1; then
+  echo "✗ pre-push: 本地独有档测试失败，推送被拒"
+  grep -E "not ok|^# fail" /tmp/prepush_local.log | head -8
+  exit 1
+fi
+grep -E "^# (pass|fail|skipped)" /tmp/prepush_local.log | head -3
+echo "✓ pre-push: 12 处本地复跑过"
 exit 0
