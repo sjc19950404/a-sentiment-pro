@@ -200,6 +200,24 @@ try {
   }
 } catch (e) { bad('UI 层检查自身异常', e && e.message); }
 
+// ── 告警器自证（2026-11-13 豆包复审质疑②）：daily_ci_gate 自己停摆了谁来报？──
+//   它每个工作日 16:25 写 data/ci_gate_last_run.json；本体检 18:00 读它，
+//   按交易日数判定（排除周末/长假），超过 3 个交易日无更新 = 静止期 CI 告警已失效。
+try {
+  const hb = read('data/ci_gate_last_run.json');
+  const hbDay = hb && hb.day ? hb.day : null;
+  if (!hbDay) {
+    warn('CI 体检告警器', '无心跳档（data/ci_gate_last_run.json）——脚本可能从未运行或被回滚');
+  } else {
+    let trading = 0;
+    for (let d = Date.parse(hbDay + 'T12:00:00Z') + 86400000; d <= Date.parse(today + 'T12:00:00Z'); d += 86400000) {
+      if (isTradingDay(new Date(d).toISOString().slice(0, 10))) trading++;
+    }
+    if (trading > 3) bad('CI 体检告警器停摆', `心跳停在 ${hbDay}（已过 ${trading} 个交易日），静止期 CI 告警失效`);
+    else ok('CI 体检告警器心跳', `最后 ${hbDay}，间隔 ${trading} 个交易日`);
+  }
+} catch (e) { warn('CI 体检告警器自证异常', e && e.message); }
+
 // ── 汇总 ──
 const head = (problems.length
   ? `🔔【每日系统体检】${today} ${bjHm()} —— ${problems.length} 项问题${warnings.length ? `（另有 ${warnings.length} 项 warning 不推送，见日志）` : ''}：\n${problems.join('\n')}`
