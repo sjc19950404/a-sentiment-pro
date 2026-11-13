@@ -24,6 +24,7 @@
 //   node scripts/fetch_calendar.mjs [--years 2025,2026,2027] [--out data/calendar.json]
 //   node scripts/fetch_calendar.mjs --offline   # 只重算种子，不联网（CI 兜底/本地调试）
 
+import { safeJson } from '../src/safe_json.mjs';
 import { writeFileSync } from 'node:fs';
 import { atomicWriteJSON } from '../src/fsutil.js';
 import config from '../src/config.js';
@@ -52,7 +53,7 @@ async function fetchSessions(from, to, retries = 3) {
     headers: { 'User-Agent': UA },
     timeout: 20000,
     read: async (r) => {
-      const j = await r.json();
+      const j = await safeJson(r);
       const day = j?.data?.sh000001?.day;
       if (!Array.isArray(day)) throw new Error('返回结构异常：缺少 data.sh000001.day');
       return day.map((row) => row[0]).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d));

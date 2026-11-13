@@ -9,6 +9,7 @@
 //
 // 数据源：腾讯前复权日K（web.ifzq.gtimg.cn），单只查询（多只分号拼接会 param error）。
 // 用法：node scripts/backtest_limit_up_streak.mjs [--archive data/archive.json] [--out data/streak_backtest.json]
+import { safeJson } from '../src/safe_json.mjs';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { atomicWriteJSON } from '../src/fsutil.js';
 import { dirname } from 'node:path';
@@ -61,7 +62,7 @@ async function kline(code) {
   for (let i = 0; i < 3; i++) {
     try {
       const res = await fetch(url, { headers: { Referer: 'https://finance.qq.com', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36' } });
-      const j = await res.json();
+      const j = await safeJson(res);
       const node = j?.data?.[sym] || {};
       const rows = node.qfqday || node.day || [];
       const out = rows.map((r) => ({ d: r[0], c: +r[2] })).filter((r) => r.d && Number.isFinite(r.c));

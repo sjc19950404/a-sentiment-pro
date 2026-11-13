@@ -1,5 +1,6 @@
 // 数据源连通性探针：诊断各上游接口可达性（尤其 IPv4/IPv6 路由差异）
 // 用法: node scripts/probe_sources.mjs
+import { safeJson } from '../src/safe_json.mjs';
 import dns from 'node:dns';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154.0.0.0 Safari/537.36';
@@ -56,7 +57,7 @@ async function fetchOnce(t) {
     const buf = Buffer.from(await r.arrayBuffer());
     return t.check(new TextDecoder('gbk').decode(buf));
   }
-  const j = await r.json();
+  const j = await safeJson(r);
   return t.check(j);
 }
 

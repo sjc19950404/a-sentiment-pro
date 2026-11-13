@@ -8,6 +8,7 @@
 //
 // 纪律（用户铁律）：**只读** account/archive，绝不写回账户、绝不干预引擎交易；
 //   复用 OPS_WEBHOOK + pushReports 指纹去重；全程 fail-open。
+import { safeJson } from '../src/safe_json.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname, resolve } from 'node:path';
@@ -47,7 +48,7 @@ async function callGLMText(system, user, { maxTokens = 300 } = {}) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${API_KEY}` },
       body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
     });
-    const j = await res.json();
+    const j = await safeJson(res);
     const txt = j?.choices?.[0]?.message?.content;
     return typeof txt === 'string' && txt.trim() ? txt.trim() : null;
   } catch (e) { console.error(`[battle] GLM 调用失败（fail-open）: ${e?.message || e}`); return null; }

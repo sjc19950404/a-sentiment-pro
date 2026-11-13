@@ -5,6 +5,7 @@
  * 历史深度有限（同涨停池 ~1 个月量级，实测 11-06 可查、更早待测）→ 每日 EOD 一枪逐日攒。
  * 挂 pi_build EOD（fail-open）。反包监控（dt_rebound_alert.mjs）读本档的"昨日跌停池"。
  */
+import { safeJson } from '../src/safe_json.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
@@ -20,7 +21,7 @@ const argDate = (process.argv.find((a) => a.startsWith('--date=')) || '').split(
 try {
   const dateStr = argDate || bjDate().replace(/-/g, '');
   const url = 'https://push2ex.eastmoney.com/getTopicDTPool?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=500&sort=fund%3Aasc&date=' + dateStr;
-  const j = await (await fetch(url, { headers: { Referer: 'https://quote.eastmoney.com/' } })).json();
+  const j = await safeJson(await fetch(url, { headers: { Referer: 'https://quote.eastmoney.com/' } }));
   const pool = (j.data && j.data.pool) || [];
   const items = pool.map((p) => ({
     c: String(p.c), n: p.n || p.c, m: p.m || null,

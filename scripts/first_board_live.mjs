@@ -15,6 +15,7 @@
  * 输出 data/first_board_live.json（单档覆盖，带 at/session）；非交易时段标注 offhours。
  * fail-open：任何异常只记日志，不落半档。
  */
+import { safeJson } from '../src/safe_json.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
@@ -55,7 +56,7 @@ try {
     const url = 'https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&secids=' +
       batch.map(secid).join(',') + '&fields=f2,f3,f12,f14,f15,f16,f17,f18,f124&ut=fa5fd1943c7b386f172d6893dbfba10b';
     const res = await fetch(url, { headers: { Referer: 'https://quote.eastmoney.com/' } });
-    const j = await res.json();
+    const j = await safeJson(res);
     for (const d of (j.data && j.data.diff) || []) quotes.set(String(d.f12), d);
   }
   if (!quotes.size) { console.error('[fb-live] 报价为空（接口失败）——不落档'); process.exit(2); }

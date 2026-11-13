@@ -10,6 +10,7 @@
 //
 // 用法：
 //   node scripts/fetch_intraday_news.mjs [--mock]
+import { safeJson } from '../src/safe_json.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { atomicWriteJSON } from '../src/fsutil.js';
@@ -102,7 +103,7 @@ async function callGLM(items, cfg, date) {
     timeout: 60000,
     read: async (r) => {
       if (!r.ok) throw new Error('HTTP ' + r.status);
-      const j = await r.json();
+      const j = await safeJson(r);
       const t = j?.choices?.[0]?.message?.content;
       if (typeof t !== 'string' || !t.trim()) throw new Error('返回无 content');
       return t;

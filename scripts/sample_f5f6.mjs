@@ -1,3 +1,4 @@
+import { safeJson } from '../src/safe_json.mjs';
 // 临时采样脚本（Phase 2 验数用，非生产链路，勿提交/勿挂 CI）
 //
 // 目的：在 9:35 / 10:00 / 14:55 三个时点，抓取指定股票的东财 clist 原始 f5（成交量）、
@@ -41,7 +42,7 @@ async function fetchByCodes(codes) {
         const url = `https://${host}${EM_PATH}?pn=1&pz=${codes.length}&po=1&np=1&fltt=2&invt=2&fid=f3&fs=${fs}&fields=${FIELDS}`;
         const r = await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://quote.eastmoney.com/' } });
         if (!r.ok) throw new Error('HTTP ' + r.status);
-        const j = await r.json();
+        const j = await safeJson(r);
         const diff = j && j.data && Array.isArray(j.data.diff) ? j.data.diff : null;
         if (!diff) throw new Error('clist 无 diff: ' + JSON.stringify(j).slice(0, 120));
         return diff;
@@ -76,7 +77,7 @@ async function fetchTrends(code) {
         const url = `https://${host}/api/qt/stock/trends2/get?secid=${secid}&fields1=f1,f2,f3,f4,f5,f6,f7&fields2=${fields2}&iscr=0&ndays=1`;
         const r = await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://quote.eastmoney.com/' } });
         if (!r.ok) throw new Error('HTTP ' + r.status);
-        const j = await r.json();
+        const j = await safeJson(r);
         const trends = j && j.data && Array.isArray(j.data.trends) ? j.data.trends : null;
         if (!trends) throw new Error('trends2 无 trends: ' + JSON.stringify(j).slice(0, 120));
         return trends;

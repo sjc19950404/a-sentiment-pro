@@ -19,6 +19,7 @@
 //
 // 用法：node scripts/fetch_mcap.mjs [--archive data/archive.json] [--date 20260930]
 //   --date 不传则取档案最新交易日。盘中运行拿的是**实时**市值（约等于当日收盘值）。
+import { safeJson } from '../src/safe_json.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { atomicWriteJSON } from '../src/fsutil.js';
@@ -74,7 +75,7 @@ for (let i = 0; i < ztCodes.length; i += BATCH) {
     headers: { 'User-Agent': UA, Referer: 'https://quote.eastmoney.com/' },
     timeout: 15000,
     read: async (r) => {
-      const j = await r.json();
+      const j = await safeJson(r);
       const d = j?.data?.diff;
       if (!Array.isArray(d) || !d.length) throw new Error('返回结构异常：缺少 data.diff');
       return d;

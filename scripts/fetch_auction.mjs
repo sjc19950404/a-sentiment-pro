@@ -19,6 +19,7 @@
  *
  * 用法：node scripts/fetch_auction.mjs [--force]
  */
+import { safeJson } from '../src/safe_json.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
@@ -71,7 +72,7 @@ async function fetchQuoteSnapshot(codes) {
     for (const host of HOSTS) {
       try {
         const url = `https://${host}/api/qt/ulist.np/get?fltt=2&invt=2&fields=f12,f14,f2,f5,f6,f17,f18&secids=` + chunk;
-        const j = await (await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://quote.eastmoney.com/' } })).json();
+        const j = await safeJson(await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://quote.eastmoney.com/' } }));
         const diff = j && j.data && Array.isArray(j.data.diff) ? j.data.diff : null;
         if (!diff) continue;
         for (const d of diff) {

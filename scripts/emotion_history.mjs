@@ -15,6 +15,7 @@
 // 用法：
 //   node scripts/emotion_history.mjs                 # 只计算，输出 data/emotion_history.json
 //   node scripts/emotion_history.mjs --fetch-latest  # 先抓最近交易日涨停池入库再计算（每日定时跑）
+import { safeJson } from '../src/safe_json.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { computeEmotion, computeEmotionMetrics, classifyEmotion, computeEmotionScore } from '../src/emotion_cycle.js';
 import { atomicWriteJSON } from '../src/fsutil.js';
@@ -63,7 +64,7 @@ async function fetchLatestPool() {
     },
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const j = await res.json();
+  const j = await safeJson(res);
   const pool = j?.data?.pool;
   if (!Array.isArray(pool) || !pool.length) return null; // 非交易日/未生成
   return { date: String(j.data.qdate), pool };           // qdate = 服务端实际交易日

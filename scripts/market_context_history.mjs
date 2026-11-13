@@ -16,6 +16,7 @@
  *
  * 纪律：fail-open，失败不影响 EOD 主流程；同日重跑覆盖（幂等）。
  */
+import { safeJson } from '../src/safe_json.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,7 +41,7 @@ async function fetchKline(secid) {
     signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) throw new Error(`EM ${secid} HTTP ${res.status}`);
-  const j = await res.json();
+  const j = await safeJson(res);
   const kl = j?.data?.klines;
   if (!Array.isArray(kl) || kl.length < WINDOW + VOL_N) {
     throw new Error(`EM ${secid} 数据不足：${kl?.length ?? 0} 根（需 ≥${WINDOW + VOL_N}）`);

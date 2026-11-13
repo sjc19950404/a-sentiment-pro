@@ -26,6 +26,7 @@
 //                                 [--archive data/archive.json] [--macro data/macro-sector-sentiment-latest.json]
 //                                 [--out data/llm-dragon-logic-latest.json]
 // 环境变量（真实模式）：LLM_API_URL / LLM_API_KEY / LLM_MODEL
+import { safeJson } from '../src/safe_json.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { atomicWriteJSON } from '../src/fsutil.js';
@@ -164,7 +165,7 @@ async function callGLM(stocksBatch, mood, tradeDate) {
     timeout: 90000,
     read: async (r) => {
       if (!r.ok) throw new Error('HTTP ' + r.status);
-      const j = await r.json();
+      const j = await safeJson(r);
       const text = j?.choices?.[0]?.message?.content;
       if (typeof text !== 'string' || !text.trim()) throw new Error('返回无 content');
       return text;

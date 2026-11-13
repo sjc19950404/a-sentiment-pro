@@ -20,6 +20,7 @@
 //
 // 环境变量（真实模式）：LLM_API_URL / LLM_API_KEY / LLM_MODEL
 //   （glm-* 模型自动走 https://open.bigmodel.cn/api/paas/v4 网关，与 fetch_llm_sentiment 同款）
+import { safeJson } from '../src/safe_json.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { atomicWriteJSON } from '../src/fsutil.js';
@@ -178,7 +179,7 @@ async function callGLM(stocksBatch, annMap, tradeDate) {
     timeout: 60000,
     read: async (r) => {
       if (!r.ok) throw new Error('HTTP ' + r.status);
-      const j = await r.json();
+      const j = await safeJson(r);
       const text = j?.choices?.[0]?.message?.content;
       if (typeof text !== 'string' || !text.trim()) throw new Error('返回无 content');
       return text;

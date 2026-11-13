@@ -1,3 +1,4 @@
+import { safeJson } from '../src/safe_json.mjs';
 import { fetchWithRetry } from '../src/util.js';
 // 全市场 K 线扫描 → 多维宽度（#3）
 //
@@ -100,7 +101,7 @@ async function fetchEastmoneyList() {
     for (let pn = 1; pn <= 60; pn++) {
       const url = `https://push2.eastmoney.com/api/qt/clist/get?pn=${pn}&pz=100&po=1&np=1&fltt=2&invt=2&fid=f3&fs=${fs}&fields=f12,f14,f23`;
       const r = await fetchWithRetry(url, { headers: { Referer: 'https://quote.eastmoney.com/', 'User-Agent': 'Mozilla/5.0 Chrome/120' } });
-      const j = await r.json();
+      const j = await safeJson(r);
       const diff = j && j.data && Array.isArray(j.data.diff) ? j.data.diff : null;
       if (!diff || !diff.length) break;
       for (const d of diff) {
@@ -135,7 +136,7 @@ async function kline(code) {
   for (let i = 0; i < 3; i++) {
     try {
       const res = await fetchWithRetry(url, { headers: { Referer: 'https://finance.qq.com', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120' } });
-      const j = await res.json();
+      const j = await safeJson(res);
       const node = (j && j.data && j.data[sym]) || {};
       const rows = node.qfqday || node.day || [];
       const out = rows.map((r) => ({ d: r[0], c: +r[2] })).filter((x) => x.d && Number.isFinite(x.c) && x.c > 0);

@@ -22,6 +22,7 @@
 //
 // 纪律（与 push_ai_report 同源）：未配置 OPS_WEBHOOK → 仅打印预览、不推送；
 //   推送失败不抛非零（不炸数据管线）。
+import { safeJson } from '../src/safe_json.mjs';
 import { readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -79,7 +80,7 @@ async function fetchRemoteKline(code) {
         const url = `https://${host}/api/qt/stock/kline/get?fields1=f1,f2,f3&fields2=f51,f52,f53,f54,f55,f56&klt=101&lmt=60&end=20500101&secid=${secid}`;
         const r = await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://quote.eastmoney.com/' } });
         if (!r.ok) throw new Error('HTTP ' + r.status);
-        const j = await r.json();
+        const j = await safeJson(r);
         const kl = j?.data?.klines;
         if (!Array.isArray(kl) || !kl.length) throw new Error('空 kline');
         const bars = kl.map((s) => {

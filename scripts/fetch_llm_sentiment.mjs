@@ -20,6 +20,7 @@
 // 用法：node scripts/fetch_llm_sentiment.mjs [--archive data/archive.json]
 //   环境变量：LLM_API_URL（如 https://api.deepseek.com/v1）
 //             LLM_API_KEY、LLM_MODEL（如 deepseek-chat）
+import { safeJson } from '../src/safe_json.mjs';
 import { readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { atomicWriteJSON } from '../src/fsutil.js';
@@ -127,7 +128,7 @@ try {
     timeout: 60000,
     read: async (r) => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const j = await r.json();
+      const j = await safeJson(r);
       const text = j?.choices?.[0]?.message?.content;
       if (typeof text !== 'string' || !text.trim()) throw new Error('返回无 content');
       return text;
