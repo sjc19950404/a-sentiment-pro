@@ -3169,28 +3169,29 @@
   "ztDerived": null,
   "dataHealth": {
     "snapshotSource": "node-gtimg-backup",
-    "snapshotRows": 5576,
+    "snapshotRows": 0,
     "errors": [
-      "universe(hot/quotes)[em]: universe 全主机失败: push2.eastmoney.com#0: fetch failed | push2.eastmoney.com#1: fetch failed | 1.push2.eastmoney.com#0: fetch failed | 1.push2.eastmoney.com#1: fetch failed | 2.push2.eastmoney.com#0: fetch failed | 2.push2.eastmoney.com#1: fetch failed | 7.push2.eastmoney.com#0: fetch failed | 7.push2.eastmoney.com#1: fetch failed | 82.push2.eastmoney.com#0: fetch failed | 82.push2.eastmoney.com#1: fetch failed | 84.push2.eastmoney.com#0: fetch failed | 84.push2.eastmoney.com#1: fetch failed | push2delay.eastmoney.com#0: fetch failed | push2delay.eastmoney.com#1: fetch failed | hqdigi2.eastmoney.com#0: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON | hqdigi2.eastmoney.com#1: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON"
+      "universe(hot/quotes)[em]: universe 全主机失败: push2.eastmoney.com#0: fetch failed | push2.eastmoney.com#1: fetch failed | 1.push2.eastmoney.com#0: fetch failed | 1.push2.eastmoney.com#1: fetch failed | 2.push2.eastmoney.com#0: fetch failed | 2.push2.eastmoney.com#1: fetch failed | 7.push2.eastmoney.com#0: fetch failed | 7.push2.eastmoney.com#1: fetch failed | 82.push2.eastmoney.com#0: fetch failed | 82.push2.eastmoney.com#1: fetch failed | 84.push2.eastmoney.com#0: fetch failed | 84.push2.eastmoney.com#1: fetch failed | push2delay.eastmoney.com#0: fetch failed | push2delay.eastmoney.com#1: fetch failed | hqdigi2.eastmoney.com#0: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON | hqdigi2.eastmoney.com#1: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON",
+      "universe(hot/quotes)[gtimg]: 返回空"
     ],
-    "degradations": [
-      {
-        "chain": "universe: node-eastmoney → node-gtimg-backup（腾讯兜底）"
-      }
+    "degradations": [],
+    "fallbackUsed": [
+      "hot"
     ]
   },
   "sourcesFailed": [
-    "universe(hot/quotes)[em]: universe 全主机失败: push2.eastmoney.com#0: fetch failed | push2.eastmoney.com#1: fetch failed | 1.push2.eastmoney.com#0: fetch failed | 1.push2.eastmoney.com#1: fetch failed | 2.push2.eastmoney.com#0: fetch failed | 2.push2.eastmoney.com#1: fetch failed | 7.push2.eastmoney.com#0: fetch failed | 7.push2.eastmoney.com#1: fetch failed | 82.push2.eastmoney.com#0: fetch failed | 82.push2.eastmoney.com#1: fetch failed | 84.push2.eastmoney.com#0: fetch failed | 84.push2.eastmoney.com#1: fetch failed | push2delay.eastmoney.com#0: fetch failed | push2delay.eastmoney.com#1: fetch failed | hqdigi2.eastmoney.com#0: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON | hqdigi2.eastmoney.com#1: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON"
+    "universe(hot/quotes)[em]: universe 全主机失败: push2.eastmoney.com#0: fetch failed | push2.eastmoney.com#1: fetch failed | 1.push2.eastmoney.com#0: fetch failed | 1.push2.eastmoney.com#1: fetch failed | 2.push2.eastmoney.com#0: fetch failed | 2.push2.eastmoney.com#1: fetch failed | 7.push2.eastmoney.com#0: fetch failed | 7.push2.eastmoney.com#1: fetch failed | 82.push2.eastmoney.com#0: fetch failed | 82.push2.eastmoney.com#1: fetch failed | 84.push2.eastmoney.com#0: fetch failed | 84.push2.eastmoney.com#1: fetch failed | push2delay.eastmoney.com#0: fetch failed | push2delay.eastmoney.com#1: fetch failed | hqdigi2.eastmoney.com#0: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON | hqdigi2.eastmoney.com#1: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON",
+    "universe(hot/quotes)[gtimg]: 返回空"
   ],
-  "prevCapturedAtBJ": "2026-11-13 11:30",
+  "prevCapturedAtBJ": "2026-11-13 12:00",
   "prevPools": {
     "zt": 41,
     "zb": 11,
     "seal_pct": 78.8
   },
   "rolling": {
-    "generatedAtBJ": "2026-11-13 12:00",
-    "minutes_to_close": 180,
+    "generatedAtBJ": "2026-11-13 12:30",
+    "minutes_to_close": 150,
     "trend_pool_mode": "trend",
     "streak_pool": [],
     "trend_pool": [],
