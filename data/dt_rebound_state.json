@@ -1,10 +1,10 @@
 {
  "stocks": {
   "601595": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
-    "red": 0,
+    "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
@@ -46,6 +46,6 @@
    }
   }
  },
- "notified": 0,
+ "notified": 1,
  "date": "2026-11-13"
 }
