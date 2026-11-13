@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlink
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { atomicWriteJSON } from '../fsutil.js';
+import { assertSignalsContract } from '../report_guard.mjs';
 import { validateArchive } from '../validate.js';
 import { resolveHolidays } from '../calendar.js';
 import { assessFreshness } from '../freshness.js';
@@ -272,7 +273,8 @@ export function writeShards(archive, dir = DATA_DIR) {
     // 每日日报（#4）：纯渲染，输入是上面各段已算好的素材 → 同源同形态。
     reportFn: (payload) => buildDailyReport(payload),
   });
-  if (signals) atomicWriteJSON(path.join(dir, SIGNALS_FILE), JSON.stringify(signals));
+  // 产出闸门②（2026-11-13）：写盘前完整契约校验，违例抛错、拒绝覆盖上一份好档。
+  if (signals) atomicWriteJSON(path.join(dir, SIGNALS_FILE), JSON.stringify(assertSignalsContract(signals)));
   // 清理被淘汰的年份分片（年份集合会变），避免前端拉到过期数据
   try {
     const keep = new Set([...years.map((y) => shardName(y)), RECENT_FILE, SIGNALS_FILE]);

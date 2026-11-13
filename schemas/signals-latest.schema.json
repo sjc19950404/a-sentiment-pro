@@ -555,7 +555,7 @@
                           "required": ["text", "kind"],
                           "properties": {
                             "text": { "type": "string" },
-                            "kind": { "type": "string", "enum": ["main", "evidence", "caution", "unknown", "info"] }
+                            "kind": { "type": "string", "enum": ["main", "evidence", "caution", "unknown", "info", "ok", "quote", "warn"], "$comment": "ok/quote/warn 为 src/daily_report.js 既有语义（校验通过/游资黑话/兜底告警），2026-11-13 补齐；与 src/report_guard.mjs POINT_KINDS 同源" }
                           }
                         }
                       }

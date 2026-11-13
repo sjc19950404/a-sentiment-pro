@@ -20,6 +20,7 @@
 
 import { classifyRegime, detectDivergence, num } from './regime.js';
 import { positionLine, positionNarrative, reconcilePosition, DISCLAIMER as POSITION_DISCLAIMER } from './position_policy.js';
+import { assertDailyReport } from './report_guard.mjs';
 
 // 显示层舍入（唯一出处；不改动源数据）
 export const DISPLAY = { pct1: 1, score1: 1 };
@@ -142,6 +143,9 @@ export function buildDailyReport(signals = {}) {
     .forEach((r) => caveats.push(`判据缺口：${r}`));
 
   const missingCount = sections.filter((s) => s.missing).length;
+
+  // 产出闸门①（2026-11-13）：渲染出口自检，漏 kind 立刻抛错——不再等落盘后的契约扫描。
+  assertDailyReport({ sections });
 
   return {
     date,

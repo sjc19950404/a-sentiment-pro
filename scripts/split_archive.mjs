@@ -23,6 +23,7 @@ import { buildBreadthSeries, breadthSeriesSummary } from '../src/breadth.js';
 import { stalePainReason } from '../src/pain.js';
 import { aggregateByCode } from '../src/lhb.js';
 import { atomicWriteJSON } from '../src/fsutil.js';
+import { assertSignalsContract } from '../src/report_guard.mjs';
 import { classifySeries, classifyRegime, detectDivergence, buildRegimeBlock, buildDivergenceBlock } from '../src/regime.js';
 import { buildDailyReport } from '../src/daily_report.js';
 import { llmSentimentBlock } from '../src/llm_sentiment.js';
@@ -317,7 +318,7 @@ for (const y of years) {
 atomicWriteJSON(join(DATA, RECENT_FILE), JSON.stringify(recent));
 console.log(`[split] 写出 ${RECENT_FILE} ${kb(recent)}KB · 曲线 ${recent.days.length} 点 + 最新日 ${recent.latest ? recent.latest.trade_date : '—'}`);
 if (signals) {
-  atomicWriteJSON(join(DATA, SIGNALS_FILE), JSON.stringify(signals));
+  atomicWriteJSON(join(DATA, SIGNALS_FILE), JSON.stringify(assertSignalsContract(signals)));
   console.log(`[split] 写出 ${SIGNALS_FILE} ${kb(signals)}KB · 最新日 + 动量 + 大盘告警 ${signals.marketAlerts ? signals.marketAlerts.length : 0} 条`);
 }
 const total = [index, recent, signals, ...years.map((y) => shards[y])]

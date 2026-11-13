@@ -42,6 +42,12 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, appendFileSync, writeFileSync } from 'node:fs';
 import { verifySchedule } from '../src/ci_verify.mjs';
 import { classifyWorkflows, classifyApiResponse } from '../src/ci_workflow_state.mjs';
+import { checkRuntime, RUNTIME_CODE } from '../src/runtime_preflight.mjs';
+
+// ── 0. 运行时环境自检（2026-11-13：cron 曾无 PATH 跑系统 node20，jsdom 加载失败
+//     → 47 个 DOM 测试静默 skip，短报却显示「0 fail」全绿）。声明 engines 必须被执行时刻验证。
+//    不匹配时下面 npm test 的 0 fail 不能算绿：把 skip 当成 pass 就是这个循环的另一种形态。
+const runtime = checkRuntime();
 
 const ROOT = '/opt/a-sentiment-pro';
 // 以下 3 个注入点仅用于机器化验证（本地 mock 限流/去重，不碰真实 API、不推真实企微）；生产不设。
@@ -72,13 +78,22 @@ function tradingDaysBetween(fromDay, toDay) {
   return n;
 }
 
+// 状态快照要在本机测试前读：skip 判据用「相对上次的变化」，不用硬编码绝对阈值
+//   （绝对阈值会在合法新增一个 skip 时天天误报，与此前被否掉的时钟阈值同类）。
+let prev = {};
+try { prev = JSON.parse(readFileSync(STATE_FILE, 'utf8')); } catch { }
+
 // ── 1. 本机全量测试（静止期无 push 时的唯一完整检测）──
 const t = spawnSync('npm', ['test'], { cwd: ROOT, encoding: 'utf8', timeout: 240000 });
 const tap = (t.stdout || '') + (t.stderr || '');
 const pass = +(tap.match(/^# pass (\d+)/m)?.[1] || 0);
 const fail = +(tap.match(/^# fail (\d+)/m)?.[1] || 0);
 const skipped = +(tap.match(/^# skipped (\d+)/m)?.[1] || 0);
-const localOk = t.status === 0 && fail === 0;
+// 环境不匹配时，测试结果的 0 fail 无意义（依赖没加载 → 批量 skip）→ 不算绿、不算验收通过。
+// 只在「相对上次快照显著增加」时报：首次运行无基线不报，合法新增 1 个 skip 也不会天天报。
+const prevSkipped = typeof prev.skipped === 'number' ? prev.skipped : null;
+const skipSurge = prevSkipped !== null && skipped > prevSkipped + 1;
+const localOk = t.status === 0 && fail === 0 && runtime.ok && !skipSurge;
 
 // ── 2. GitHub API：全量 state 一次取 + test-gate runs 一次取（共 2 次调用）──
 let ci = {
@@ -144,8 +159,7 @@ try {
 if (ci.apiCode !== 'ok') ci.verify = { result: 'UNKNOWN', code: ci.apiCode };
 
 // ── 3. 状态变化检测（每日短报只放变化，不放永久静态项）──
-let prev = {};
-try { prev = JSON.parse(readFileSync(STATE_FILE, 'utf8')); } catch { }
+// prev 已在第 1 节前读入（skip 基线需要它）
 const changes = [];
 // 全量 state：非 active 且不在白名单 → 带 name + 实际 state 报警
 for (const u of ci.unexpected) changes.push(`⛔ workflow ${u.name} state=${u.state}（非 active、非白名单）→ 定时检查可能已停用`);
@@ -155,7 +169,9 @@ if (ci.state !== 'active' && ci.state !== '未知' && !ci.unexpected.some((u) =>
 }
 if (prev.state && prev.state !== ci.state) changes.push(`test-gate state 变化：${prev.state} → ${ci.state}`);
 if (typeof ci.failed24h === 'number' && typeof prev.failed24h === 'number' && ci.failed24h > prev.failed24h) changes.push(`近 24h 新增失败 ${ci.failed24h - prev.failed24h} 次`);
-if (!localOk) changes.push(`✗ 本机 npm test 红：${fail} fail`);
+if (!localOk) changes.push(`✗ 本机 npm test 红：${fail} fail（runtime=${runtime.code}, skipped=${skipped}）`);
+if (!runtime.ok) changes.push(`⛔ 运行时不匹配 ${RUNTIME_CODE.MISMATCH}：${runtime.reason} → 本机测试结论不可用`);
+if (skipSurge) changes.push(`⛔ skip 数 ${skipped} 较上次 ${prevSkipped} 激增（原因码 ${RUNTIME_CODE.MISMATCH}）：依赖可能未加载，0 fail 不代表通过`);
 if (ci.verify?.result === 'PASS' && prev.verifyCode !== 'ok') changes.push(`✅ 验收 PASS（原因码 ok）`);
 if (ci.verify?.result === 'FAIL') changes.push(`❌ 验收 FAIL：原因码 ${ci.verify.code}`);
 if (ci.absence) changes.push(`ℹ ${ci.absence}`);
@@ -186,7 +202,7 @@ if (!DRY) {
   try { writeFileSync(HEARTBEAT, JSON.stringify({ ts: Date.now(), day: todayBj(), state: ci.state, apiUnavailable: ci.apiCode === 'api_unavailable' })); } catch { }
   // 状态快照：只在 API 正常时更新（限流时不能把「未知」写成下次比较的基线）
   if (ci.apiCode === 'ok') {
-    try { writeFileSync(STATE_FILE, JSON.stringify({ state: ci.state, failed24h: ci.failed24h, verifyCode: ci.verify?.code })); } catch { }
+    try { writeFileSync(STATE_FILE, JSON.stringify({ state: ci.state, failed24h: ci.failed24h, verifyCode: ci.verify?.code, skipped, runtime: runtime.code })); } catch { }
   }
   const infoLine = infoDue ? `\nℹ api_unavailable：GitHub 匿名 API 配额耗尽（403 + remaining 0），本次未做 CI 判定、未更新状态快照；非故障，配额重置后自动恢复。每日仅提示一次。` : '';
   if (changes.length || infoDue) {
@@ -201,4 +217,5 @@ if (!DRY) {
 }
 
 // 验收失败 → exit 非 0；api_unavailable / UNKNOWN 不误报红
-if (ci.verify?.result === 'FAIL') process.exitCode = 1;
+// 运行时不匹配也算硬失败：否则「0 fail + 48 skip」会以一个绿勾蒙混过去。
+if (ci.verify?.result === 'FAIL' || !runtime.ok || skipSurge || fail > 0) process.exitCode = 1;
