@@ -5,7 +5,7 @@ const SKIP_ARCHIVE = _existsArchive('data/archive.json') ? false : '需本地 da
 // /api/update-config、/api/dry-run 的安全底座——越界参数绝不能写盘，沙盒绝不能污染 config.json。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, statSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   validateConfigPatch, applyConfigPatch, computeDryRun, readConfigJson, startServer,
@@ -123,5 +123,33 @@ test('HTTP 层：CORS 头 + OPTIONS 预检（github.io → 隧道跨域放行）
     assert.equal(same.status, 200);
   } finally {
     srv.close();
+  }
+});
+
+// ────────────────────── HTTP 层：/api/review（2026-11-14 断死链回归） ──────────────────────
+// 前端 manual_review 保存此前 POST ./api/review 无处接收（ui_server 与 Cloudflare Worker 均无此路由）→ 永远 404。
+// 本测试锁死：POST 写入 + GET 读回 + 非法参数 400，且写入后必须能从 GET 读回，防止路由回归。
+test('HTTP 层：/api/review POST 写入 + GET 读回（断 /api/review 死链回归）', async () => {
+  const REVIEW_PATH = resolve('data/manual_review.json');
+  const bak = (() => { try { return readFileSync(REVIEW_PATH, 'utf8'); } catch { return null; } })();
+  const srv = startServer(0, '127.0.0.1');
+  await new Promise((r) => (srv.listening ? r() : srv.once('listening', r)));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    // 非法参数（entry 非对象）→ 400
+    const bad = await fetch(`${base}/api/review`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ entry: 123 }) });
+    assert.equal(bad.status, 400, 'entry 非对象必须 400');
+    // 合法写入
+    const entry = { date: '2026-11-14', issue: 'T_REVIEW_UT', newStatus: 'dirty', reason: 'unit' };
+    const post = await fetch(`${base}/api/review`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ entry }) });
+    assert.equal(post.status, 200);
+    assert.deepEqual(await post.json(), { ok: true });
+    // GET 读回，且返回 {entries:[...]} 结构（前端 j.entries 读取逻辑依赖）
+    const j = await (await fetch(`${base}/api/review`)).json();
+    assert.ok(Array.isArray(j.entries), 'GET 必须返回 {entries:[...]}');
+    assert.ok(j.entries.some((e) => e.issue === 'T_REVIEW_UT' && e.newStatus === 'dirty'), '写入的 entry 必须能被 GET 读回');
+  } finally {
+    srv.close();
+    if (bak !== null) writeFileSync(REVIEW_PATH, bak); // 还原生产档，避免污染
   }
 });

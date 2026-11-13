@@ -18,6 +18,7 @@
 // ════════════════════════════════════════════════════════════════════════════════
 import http from 'node:http';
 import { readFileSync, writeFileSync, existsSync, copyFileSync, statSync } from 'node:fs';
+import fs from 'node:fs/promises';
 import { join, normalize, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodeArchive } from '../src/lhb_codec.js';
@@ -30,6 +31,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = resolve(__dirname, '..');                 // 项目根
 const CONFIG_PATH = join(ROOT, 'config.json');          // 唯一可写配置文件
 const CONFIG_BAK = join(ROOT, 'config.json.bak');
+const REVIEW_PATH = join(ROOT, 'data/manual_review.json');   // 人工审核改判台账（2026-11-14 新增 /api/review 读写）
 
 // CORS（2026-10-30 收窄，#4）：默认只允许本项目 github.io 前端 + 本机 127.0.0.1/localhost 跨域，
 //   防止经隧道暴露后被任意第三方网页跨域改写 config。仍可用环境变量 UI_CORS_ORIGIN 覆盖（逗号分隔白名单）。
@@ -202,6 +204,32 @@ function readBody(req) {
   });
 }
 
+// ── /api/review：人工审核改判台账读写（2026-11-14 新增，断 /api/review 死链）──
+//   与现有 data/manual_review.json 结构（{kind,version,note,entries:[...]}）及前端 j.entries 读取逻辑统一。
+//   先不带自动 git commit（用户决议）：保证基础可用，后续如需云端同步再加。
+async function readReview() {
+  try {
+    const data = JSON.parse(await fs.readFile(REVIEW_PATH, 'utf8'));
+    if (Array.isArray(data)) return { entries: data };
+    return data && Array.isArray(data.entries) ? data : { entries: [] };
+  } catch { return { entries: [] }; }
+}
+
+async function appendReview(entry) {
+  try {
+    let data = {};
+    try { data = JSON.parse(await fs.readFile(REVIEW_PATH, 'utf8')); } catch { data = {}; }
+    const entries = Array.isArray(data) ? data : (data.entries || []);
+    entries.push({ ...entry, ts: Date.now(), date: new Date().toISOString() });
+    const out = { kind: data.kind || 'manual-review', version: data.version || 1, note: data.note || '', entries };
+    await fs.writeFile(REVIEW_PATH, JSON.stringify(out, null, 2));
+    return true;
+  } catch (e) {
+    console.error('[review save]', e);
+    return false;
+  }
+}
+
 function serveStatic(req, res, pathname) {
   // 仅允许项目根内的文件，杜绝路径穿越
   let rel = decodeURIComponent(pathname);
@@ -249,6 +277,18 @@ export function startServer(port = 8791, host = '127.0.0.1') {
         } catch (e) {
           return sendJson(res, e.status || 500, { ok: false, error: e.message, errors: e.errors || null });
         }
+      }
+      if (req.method === 'GET' && p === '/api/review') {
+        return sendJson(res, 200, await readReview());
+      }
+      if (req.method === 'POST' && p === '/api/review') {
+        const body = await readBody(req);
+        const entry = body && body.entry;
+        if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+          return sendJson(res, 400, { ok: false, msg: '参数非法' });
+        }
+        const ok = await appendReview(entry);
+        return sendJson(res, ok ? 200 : 500, ok ? { ok: true } : { ok: false, msg: '写入失败' });
       }
       if (req.method === 'GET') return serveStatic(req, res, p);
       res.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8' });

@@ -179,7 +179,7 @@ function saveReview() {
     .then((r) => r.json().then((j) => ({ ok: r.ok && j && j.ok, j })))
     .then(({ ok, j }) => {
       if (!ok) throw new Error((j && j.error) || '保存被服务端拒绝');
-      return fetch('./data/manual_review.json?_=' + Date.now(), { cache: 'no-store' }).then((r2) => (r2.ok ? r2.json() : null));
+      return fetch('./api/review?_=' + Date.now(), { cache: 'no-store' }).then((r2) => (r2.ok ? r2.json() : null));
     })
     .then((j) => { MANUAL_REVIEW = (j && Array.isArray(j.entries)) ? j : MANUAL_REVIEW; renderDirty(DIRTY); closeReviewModal(); })
     .catch((err) => {
@@ -536,7 +536,7 @@ function renderEmotion(latest) {
     const row = document.createElement('div');
     row.className = 'factor';
     row.title = `${label}（${hints[k] || ''}）：原始因子分 ${v}／100，越高越强`;
-    row.innerHTML = `<span class="label">${label}</span><span class="bar"><i style="width:${v}%"></i></span><span class="val">${v}</span>`;
+    row.innerHTML = `<span class="label">${esc(label)}</span><span class="bar"><i style="width:${v}%"></i></span><span class="val">${esc(v)}</span>`;
     wrap.appendChild(row);
   }
 }
@@ -2627,7 +2627,7 @@ async function loadHealth() {
     renderDirty(DIRTY);
     // 人工审核改判台账（#3 dirty 新交互）：本机可改、云端只读。best-effort 拉取，
     // 不影响主流程；拉到后重渲 dirty 面板以显示「已人工审核」标记与原因。
-    fetch('./data/manual_review.json?_=' + Date.now(), { cache: 'no-store' })
+    fetch('./api/review?_=' + Date.now(), { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => { MANUAL_REVIEW = (j && Array.isArray(j.entries)) ? j : null; renderDirty(DIRTY); })
       .catch(() => {});
