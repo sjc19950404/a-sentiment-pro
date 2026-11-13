@@ -136,3 +136,8 @@ data/archive.json
 data/archive-2025.json
 data/archive-2026.json
 data/.archive_snap/
+
+# CI 体检运行时状态档（每工作日重写，仅本机日报链读取，不入库——避免 pi_push 的 git add data/ 每日制造无意义 diff）
+data/ci_gate_last_run.json
+data/ci_gate_state.json
+data/ci_gate_api_notice.json

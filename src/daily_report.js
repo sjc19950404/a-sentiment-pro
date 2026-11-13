@@ -356,7 +356,7 @@ function buildThemeSection(latest, relative) {
       : (pctNeg && num(mt.main_yi) < 0)
         ? `占比为负（题材逆势净流出、全榜净流入——主线拖累全榜）`
         : (signFlip ? '（当日龙虎榜整体净卖出、分母为负，占比符号反转，题材实为逆势净流入）' : '');
-    pts.push({ text: `主力题材「${mt.name}」净买 ${f2(mt.main_yi)} 亿，占当日龙虎榜净买 ${f1(mt.pct)}%${directionNote}` });
+    pts.push({ text: `主力题材「${mt.name}」净买 ${f2(mt.main_yi)} 亿，占当日龙虎榜净买 ${f1(mt.pct)}%${directionNote}`, kind: 'main' });
   }
   const rel = latest.industry_relative || relative;
   if (rel) {

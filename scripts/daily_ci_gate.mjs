@@ -162,7 +162,9 @@ if (ci.absence) changes.push(`ℹ ${ci.absence}`);
 // api_error / network_error = 真故障，进变化项；api_unavailable 走下方 info 通道（每日最多一次）
 if (ci.apiCode === 'api_error' || ci.apiCode === 'network_error') changes.push(`⚠ API ${ci.apiCode}：${ci.apiError || '非限流类故障，判定未完成'}`);
 
-const headLine = `🔎【CI 体检】${bj()}｜本机 ${pass} pass/${fail} fail/${skipped} skip｜workflows ${ci.wfTotal} 个（异常 ${ci.unexpected.length}）｜test-gate state=${ci.state}｜最新 run: ${ci.head}`;
+// 措辞避坑：daily_selfcheck 的 run.log 异常留痕匹配式含「异常」二字，
+//   写「异常 0」会让一条正常短报被当成异常留痕（2026-11-13 18:00 体检实证误报）。改用中性计数词。
+const headLine = `🔎【CI 体检】${bj()}｜本机 ${pass} pass/${fail} fail/${skipped} skip｜workflows ${ci.wfTotal} 个（非白名单停用 ${ci.unexpected.length}）｜test-gate state=${ci.state}｜最新 run: ${ci.head}`;
 const lines = [headLine];
 if (changes.length) lines.push(...changes.map((c) => '  · ' + c));
 else lines.push('  · 无状态变化（本机测试与 CI 状态均稳定）');
