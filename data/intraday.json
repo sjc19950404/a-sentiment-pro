@@ -1417,7 +1417,7 @@
         "zbc": 5,
         "hybk": "一般零售",
         "fbt": "092500",
-        "fund": 61688682
+        "fund": 68809931
       },
       {
         "c": "002685",
@@ -1426,7 +1426,7 @@
         "zbc": 1,
         "hybk": "工程机械",
         "fbt": "092500",
-        "fund": 231685448
+        "fund": 228058964
       },
       {
         "c": "600467",
@@ -1435,7 +1435,7 @@
         "zbc": 5,
         "hybk": "渔业",
         "fbt": "092502",
-        "fund": 84164262
+        "fund": 73776612
       },
       {
         "c": "002148",
@@ -1444,7 +1444,7 @@
         "zbc": 0,
         "hybk": "通信服务",
         "fbt": "093000",
-        "fund": 463271073
+        "fund": 451589343
       },
       {
         "c": "002819",
@@ -1453,7 +1453,7 @@
         "zbc": 0,
         "hybk": "通用设备",
         "fbt": "093018",
-        "fund": 130301990
+        "fund": 129147550
       },
       {
         "c": "605255",
@@ -1462,7 +1462,7 @@
         "zbc": 2,
         "hybk": "汽车零部",
         "fbt": "093034",
-        "fund": 28184476
+        "fund": 28147566
       },
       {
         "c": "603687",
@@ -1471,7 +1471,7 @@
         "zbc": 0,
         "hybk": "包装印刷",
         "fbt": "093036",
-        "fund": 257065422
+        "fund": 257297192
       },
       {
         "c": "600715",
@@ -1480,7 +1480,7 @@
         "zbc": 0,
         "hybk": "游戏Ⅱ",
         "fbt": "093040",
-        "fund": 689646323
+        "fund": 674977703
       },
       {
         "c": "603396",
@@ -1489,7 +1489,7 @@
         "zbc": 1,
         "hybk": "光伏设备",
         "fbt": "093044",
-        "fund": 69432126
+        "fund": 66415798
       },
       {
         "c": "002905",
@@ -1498,7 +1498,7 @@
         "zbc": 0,
         "hybk": "影视院线",
         "fbt": "093212",
-        "fund": 156836592
+        "fund": 155564442
       },
       {
         "c": "603103",
@@ -1507,7 +1507,7 @@
         "zbc": 0,
         "hybk": "影视院线",
         "fbt": "093305",
-        "fund": 214995126
+        "fund": 214802026
       },
       {
         "c": "603928",
@@ -1516,7 +1516,7 @@
         "zbc": 1,
         "hybk": "塑料",
         "fbt": "093352",
-        "fund": 109008822
+        "fund": 106957323
       },
       {
         "c": "002425",
@@ -1525,7 +1525,7 @@
         "zbc": 0,
         "hybk": "游戏Ⅱ",
         "fbt": "093509",
-        "fund": 274542444
+        "fund": 272808756
       },
       {
         "c": "000665",
@@ -1534,7 +1534,7 @@
         "zbc": 0,
         "hybk": "电视广播",
         "fbt": "093618",
-        "fund": 95213807
+        "fund": 93893851
       },
       {
         "c": "002205",
@@ -1543,7 +1543,7 @@
         "zbc": 2,
         "hybk": "水泥",
         "fbt": "093654",
-        "fund": 30596259
+        "fund": 31390161
       },
       {
         "c": "000802",
@@ -1552,7 +1552,7 @@
         "zbc": 2,
         "hybk": "影视院线",
         "fbt": "093833",
-        "fund": 140933040
+        "fund": 132594090
       },
       {
         "c": "603767",
@@ -1561,7 +1561,7 @@
         "zbc": 1,
         "hybk": "汽车零部",
         "fbt": "094137",
-        "fund": 228654408
+        "fund": 227971418
       },
       {
         "c": "000766",
@@ -1570,7 +1570,7 @@
         "zbc": 3,
         "hybk": "化学制药",
         "fbt": "094324",
-        "fund": 116230950
+        "fund": 113394600
       },
       {
         "c": "600410",
@@ -1579,7 +1579,7 @@
         "zbc": 1,
         "hybk": "IT服务Ⅱ",
         "fbt": "095006",
-        "fund": 1025452971
+        "fund": 941850881
       },
       {
         "c": "300324",
@@ -1588,7 +1588,7 @@
         "zbc": 1,
         "hybk": "计算机设",
         "fbt": "095130",
-        "fund": 624851179
+        "fund": 586378152
       },
       {
         "c": "603353",
@@ -1597,7 +1597,7 @@
         "zbc": 0,
         "hybk": "炼化及贸",
         "fbt": "095333",
-        "fund": 142432560
+        "fund": 142312569
       },
       {
         "c": "002042",
@@ -1606,7 +1606,7 @@
         "zbc": 1,
         "hybk": "纺织制造",
         "fbt": "095627",
-        "fund": 107155258
+        "fund": 91510704
       },
       {
         "c": "002548",
@@ -1615,7 +1615,7 @@
         "zbc": 1,
         "hybk": "饲料",
         "fbt": "101754",
-        "fund": 95236626
+        "fund": 87165284
       }
     ],
     "prev_zt_codes": [
@@ -2865,28 +2865,38 @@
     ]
   },
   "breadth": {
-    "up": 1931,
-    "down": 3087,
-    "flat": 275
+    "up": 2006,
+    "down": 3022,
+    "flat": 265
   },
   "breadthCross": null,
   "ztDerived": null,
   "dataHealth": {
-    "snapshotSource": "node-eastmoney",
-    "snapshotRows": 100,
-    "errors": [],
-    "degradations": []
+    "snapshotSource": "node-gtimg-backup",
+    "snapshotRows": 0,
+    "errors": [
+      "universe(hot/quotes)[em]: universe 全主机失败: push2.eastmoney.com#0: fetch failed | push2.eastmoney.com#1: fetch failed | 1.push2.eastmoney.com#0: fetch failed | 1.push2.eastmoney.com#1: fetch failed | 2.push2.eastmoney.com#0: fetch failed | 2.push2.eastmoney.com#1: fetch failed | 7.push2.eastmoney.com#0: fetch failed | 7.push2.eastmoney.com#1: fetch failed | 82.push2.eastmoney.com#0: fetch failed | 82.push2.eastmoney.com#1: fetch failed | 84.push2.eastmoney.com#0: fetch failed | 84.push2.eastmoney.com#1: fetch failed | push2delay.eastmoney.com#0: fetch failed | push2delay.eastmoney.com#1: fetch failed | hqdigi2.eastmoney.com#0: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON | hqdigi2.eastmoney.com#1: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON",
+      "universe(hot/quotes)[gtimg]: 返回空"
+    ],
+    "degradations": [],
+    "fallbackUsed": [
+      "hot",
+      "screener"
+    ]
   },
-  "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-11-13 10:00",
+  "sourcesFailed": [
+    "universe(hot/quotes)[em]: universe 全主机失败: push2.eastmoney.com#0: fetch failed | push2.eastmoney.com#1: fetch failed | 1.push2.eastmoney.com#0: fetch failed | 1.push2.eastmoney.com#1: fetch failed | 2.push2.eastmoney.com#0: fetch failed | 2.push2.eastmoney.com#1: fetch failed | 7.push2.eastmoney.com#0: fetch failed | 7.push2.eastmoney.com#1: fetch failed | 82.push2.eastmoney.com#0: fetch failed | 82.push2.eastmoney.com#1: fetch failed | 84.push2.eastmoney.com#0: fetch failed | 84.push2.eastmoney.com#1: fetch failed | push2delay.eastmoney.com#0: fetch failed | push2delay.eastmoney.com#1: fetch failed | hqdigi2.eastmoney.com#0: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON | hqdigi2.eastmoney.com#1: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON",
+    "universe(hot/quotes)[gtimg]: 返回空"
+  ],
+  "prevCapturedAtBJ": "2026-11-13 10:30",
   "prevPools": {
-    "zt": 23,
-    "zb": 8,
-    "seal_pct": 74.2
+    "zt": 24,
+    "zb": 13,
+    "seal_pct": 64.9
   },
   "rolling": {
-    "generatedAtBJ": "2026-11-13 10:30",
-    "minutes_to_close": 270,
+    "generatedAtBJ": "2026-11-13 10:35",
+    "minutes_to_close": 265,
     "trend_pool_mode": "trend",
     "streak_pool": [
       {
@@ -2896,7 +2906,7 @@
         "boardLabel": "沪市主板",
         "score": null,
         "streak_score": 1,
-        "seal_amount": 69432126,
+        "seal_amount": 66415798,
         "themes": [
           "光伏设备"
         ],
@@ -2958,7 +2968,7 @@
         "boardLabel": "深市主板",
         "score": null,
         "streak_score": 0.91,
-        "seal_amount": 463271073,
+        "seal_amount": 451589343,
         "themes": [
           "通信服务"
         ],
