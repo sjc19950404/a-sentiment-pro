@@ -1,22 +1,22 @@
 # 研究验证月报 · 2026-11（首份）
 
-- 报告期：2026-11-01 ~ 2026-11-04（自然月；系统启用累计起点 2026-09-28）
-- 生成时间：2026-11-04T14:13:18.585Z
-- 口径：只读聚合双轨 P2 状态 / 模拟盘账户 / 统一研究基线(2026-11-04T14:13:18) / 周报健康度；不重算任何回测。
+- 报告期：2026-11-01 ~ 2026-11-14（自然月；系统启用累计起点 2026-09-28）
+- 生成时间：2026-11-14T03:11:55.215Z
+- 口径：只读聚合双轨 P2 状态 / 模拟盘账户 / 统一研究基线(2026-11-14T03:11:54) / 周报健康度；不重算任何回测。
 
 > **一句话结论**：P2 框架已就位、门禁已诚实（实盘样本 0）；系统已证明能稳定运行/记录/诚实否掉坏方案，但策略有效性仍未被实盘证据证实。
 
 ## 1. 双轨 P2 实盘状态（框架已启动）
 - p2Start：2026-10-23 —— P2 基期 2026-10-23 已启动：门禁只认该日之后的影子生效日（当前 0 日 / 需 ≥10）；summary.ledgerP2End 为 P2 窗累计
 - P2 实盘影子生效日（仅计 p2Start 之后）：{"0.3":0,"0.4":0,"0.5":0} ；当前 biting（C0.3）= **0**
-- 历史全样本 shift 生效日：18（**不计入** P2 门禁）
-- P2 窗累计（ledgerP2End）：premium -0.0111，shadow {"0.3":0.000675,"0.4":0,"0.5":0.00126}，activeDays 0
-- 三重锚点门禁（全样本）：trackA_v52={"total":-0.050589,"maxDd":0.176214,"ref":"data/backtest.json::v52"} / trackB_v53={"total":-0.062651,"maxDd":0.120324,"ref":"data/backtest.json::v53","note":"锚点口径 unknown→null；披露口径见 trackB"} / shadowC_t1={"0.3":{"total":-0.041998,"maxDd":0.177939,"episodes":18},"0.4":{"total":-0.035905,"maxDd":0.174489,"episodes":18}}
+- 历史全样本 shift 生效日：19（**不计入** P2 门禁）
+- P2 窗累计（ledgerP2End）：premium -0.0038，shadow {"0.3":0.000675,"0.4":-0.000873,"0.5":0.000148}，activeDays 0
+- 三重锚点门禁（全样本）：trackA_v52={"total":-0.060431,"maxDd":0.177091,"ref":"data/backtest.json::v52"} / trackB_v53={"total":-0.081048,"maxDd":0.125766,"ref":"data/backtest.json::v53","note":"锚点口径 unknown→null；披露口径见 trackB"} / shadowC_t1={"0.3":{"total":-0.05249,"maxDd":0.178814,"episodes":19},"0.4":{"total":-0.047301,"maxDd":0.176092,"episodes":19}}
 - 晋升要求：≥10 个 P2 影子生效日 + 三条影子线同号 + 生效日贡献≥50% + 残差纪律合格（docs/dual_track_framework.md）。
 
 ## 2. 模拟盘账户（真实验证证据）
-- 起始 2026-10-23｜本金 1000000｜净值点数 9｜最新权益 1000000
-- 持仓 0｜委托 2｜成交 0（平仓 0）｜已实现 0｜费用 0
+- 起始 2026-10-23｜本金 1000000｜净值点数 16｜最新权益 1000000
+- 持仓 0｜委托 3｜成交 0（平仓 0）｜已实现 0｜费用 0
 - **真实平仓胜率**：null（样本不足）（0/0）
 - 尚无平仓成交（win_rate 样本不足 → null）；P2 有效性结论须待 ≥30 笔平仓 + ≥10 个实盘 shift 生效日。
 
@@ -27,14 +27,14 @@
 - 方向成立、幅度温和：低换手首板 T+1 中位 +0.9%、上涨 55.6%；高换手涨停无优势。predict.js 方向正确，收益预期需下调。
 
 ## 4. 版本回归 IC / 指数回测
-- 版本回归（257 日有次日收益）：v4.5: Pearson -0.02、方向准确率 48.05%；v5.0: Pearson -0.01、方向准确率 48.44%；v5.2-pro: Pearson -0.01、方向准确率 49.61%；v5.3-pro: Pearson 0.01、方向准确率 47.84%
+- 版本回归（264 日有次日收益）：v4.5: Pearson -0.02、方向准确率 48.11%；v5.0: Pearson -0.01、方向准确率 48.86%；v5.2-pro: Pearson -0.01、方向准确率 49.62%；v5.3-pro: Pearson 0、方向准确率 47.35%
 - 结论：情绪分与次日指数收益 Pearson ≈ 0、方向准确率 ≈ 50% ⇒ 对次日方向无统计显著预测力。
-- 主信号全样本 V5.2 累计 -5.06%（年化 -4.94、Sharpe -0.267、最大回撤 17.62%）；同期持有未计算(null)。
+- 主信号全样本 V5.2 累计 -6.04%（年化 -5.76、Sharpe -0.328、最大回撤 17.71%）；同期持有未计算(null)。
 
 ## 5. 周报健康度
-- 周报总数 4（本自然月 0）；状态分布：{"degraded":4}
-- 高频缺失字段（top）：grid_triggers / grid_trigger_detail×4；counter_trend_losses / counter_trend_loss_ratio×4；max_drawdown_daily / fee_total / net_pnl / cost_ratio / slippage 实测×2；simulation_stock.candidate_pool[].themes/fundamentals(八字段)/个股级主力资金×2
-- win_rate 取值分布：[null,null,null,null]（当前恒 null：0 笔平仓 → 样本不足；P3 已把口径改为模拟盘平仓胜率，成交后自动填充）
+- 周报总数 6（本自然月 2）；状态分布：{"degraded":6}
+- 高频缺失字段（top）：grid_triggers / grid_trigger_detail×6；counter_trend_losses / counter_trend_loss_ratio×6；max_drawdown_daily / fee_total / net_pnl / cost_ratio / slippage 实测×2；simulation_stock.candidate_pool[].themes/fundamentals(八字段)/个股级主力资金×2
+- win_rate 取值分布：[null,null,null,null,null,null]（当前恒 null：0 笔平仓 → 样本不足；P3 已把口径改为模拟盘平仓胜率，成交后自动填充）
 
 ## 6. 已证伪 / 待验证
 - ✅ 若干增强方案已证伪（M8 / 0.7 帽 / 尾部介入 T2·T3 / V5.3 全量 regime 帽）；

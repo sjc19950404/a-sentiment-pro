@@ -1,10 +1,10 @@
 {
   "schema": "research-monthly-report/1.0",
-  "generatedAt": "2026-11-04T14:13:18.585Z",
+  "generatedAt": "2026-11-14T03:11:55.215Z",
   "reportMonth": "2026-11",
   "period": {
     "start": "2026-11-01",
-    "end": "2026-11-04",
+    "end": "2026-11-14",
     "sinceSystemEnable": "2026-09-28",
     "firstReport": true
   },
@@ -16,38 +16,38 @@
       "0.4": 0,
       "0.5": 0
     },
-    "shiftEpisodesHistorical": 18,
+    "shiftEpisodesHistorical": 19,
     "p2BitingEpisodes": 0,
     "ledgerP2End": {
-      "premiumCum": -0.011065,
+      "premiumCum": -0.003758,
       "shadowCum": {
         "0.3": 0.000675,
-        "0.4": 0,
-        "0.5": 0.00126
+        "0.4": -0.000873,
+        "0.5": 0.000148
       },
       "activeDays": 0
     },
     "gatesAnchor": {
       "shadowC_t1": {
         "0.3": {
-          "total": -0.041998,
-          "maxDd": 0.177939,
-          "episodes": 18
+          "total": -0.05249,
+          "maxDd": 0.178814,
+          "episodes": 19
         },
         "0.4": {
-          "total": -0.035905,
-          "maxDd": 0.174489,
-          "episodes": 18
+          "total": -0.047301,
+          "maxDd": 0.176092,
+          "episodes": 19
         }
       },
       "trackA_v52": {
-        "total": -0.050589,
-        "maxDd": 0.176214,
+        "total": -0.060431,
+        "maxDd": 0.177091,
         "ref": "data/backtest.json::v52"
       },
       "trackB_v53": {
-        "total": -0.062651,
-        "maxDd": 0.120324,
+        "total": -0.081048,
+        "maxDd": 0.125766,
         "ref": "data/backtest.json::v53",
         "note": "锚点口径 unknown→null；披露口径见 trackB"
       }
@@ -60,29 +60,29 @@
     "cash": 1000000,
     "realized": 0,
     "totalFee": 0,
-    "navPoints": 9,
+    "navPoints": 16,
     "navLatest": 1000000,
     "positions": 0,
-    "orders": 2,
+    "orders": 3,
     "trades": 0,
     "closedTrades": 0,
     "winRate": null,
     "note": "尚无平仓成交（win_rate 样本不足 → null）；P2 有效性结论须待 ≥30 笔平仓 + ≥10 个实盘 shift 生效日。"
   },
   "weeklyHealth": {
-    "total": 4,
-    "inMonth": 0,
+    "total": 6,
+    "inMonth": 2,
     "statusCounts": {
-      "degraded": 4
+      "degraded": 6
     },
     "topMissingNotes": [
       [
         "grid_triggers / grid_trigger_detail",
-        4
+        6
       ],
       [
         "counter_trend_losses / counter_trend_loss_ratio",
-        4
+        6
       ],
       [
         "max_drawdown_daily / fee_total / net_pnl / cost_ratio / slippage 实测",
@@ -97,11 +97,13 @@
       null,
       null,
       null,
+      null,
+      null,
       null
     ]
   },
   "baselineFindings": {
-    "generatedAt": "2026-11-04T14:13:18",
+    "generatedAt": "2026-11-14T03:11:54",
     "predictProper": [
       {
         "label": "涨停·首板&换手<10%",
@@ -127,56 +129,56 @@
     ],
     "versionRegressionIC": {
       "sample": {
-        "archiveDays": 258,
-        "mainDays": 258,
-        "withNextRet": 257,
+        "archiveDays": 265,
+        "mainDays": 265,
+        "withNextRet": 264,
         "dateRange": [
           "2025-10-09",
-          "2026-11-04"
+          "2026-11-13"
         ],
         "partialDays": 0,
         "noneDays": 0,
         "breadthProxyDays": 6
       },
       "cautions": [
-        "主样本 257 个交易日（含次日收益），相关系数的 95% 置信区间约 ±0.12——足以暴露量级差异与方向性异常，但版本间小幅差异仍不足以判定优劣，需样本外证据佐证。",
-        "本样本中有 6/258 天缺少涨跌家数真值（up_count/down_count），s_pos 因子走 posRatio 代理——版本间差异会被代理值稀释，真实差异应大于本表所示。",
+        "主样本 264 个交易日（含次日收益），相关系数的 95% 置信区间约 ±0.12——足以暴露量级差异与方向性异常，但版本间小幅差异仍不足以判定优劣，需样本外证据佐证。",
+        "本样本中有 6/265 天缺少涨跌家数真值（up_count/down_count），s_pos 因子走 posRatio 代理——版本间差异会被代理值稀释，真实差异应大于本表所示。",
         "版本差异可归因于「净买原料口径」（v4.5 全量 / v5.0 当日 / v5.2 当日剔新股）与「s_net 归一方式」（v5.3 分位映射 vs 其余 tanh5）两个维度；其余因子在各版本中完全相同。",
-        "v5.3-pro 的均分相对基线偏移 -3.89 分（64.3 → 60.4），这是**分位归一转 positive 作用的必然结果**：tanh(x/5) 把中位数交易日顶到 97 分以上，分位映射把中位数拉回 50 分——即\"削掉了虚高\"。⚠ 因此切换基线**必须同步重标定档位阈值（24/65/80）**，否则大量原本判\"满仓\"的日子会掉到\"半仓\"档，这是口径变更而非市场变化。",
-        "饱和改善：s_net ≥99.9 的天数 82/257 → 0/257（候选版 vs 基线）。这是 v5.3 存在的**唯一设计目标**，已达成；但它不能被解读为\"预测力更强\"——Pearson 差异在 n=257 下不显著。"
+        "v5.3-pro 的均分相对基线偏移 -3.72 分（64.3 → 60.5），这是**分位归一转 positive 作用的必然结果**：tanh(x/5) 把中位数交易日顶到 97 分以上，分位映射把中位数拉回 50 分——即\"削掉了虚高\"。⚠ 因此切换基线**必须同步重标定档位阈值（24/65/80）**，否则大量原本判\"满仓\"的日子会掉到\"半仓\"档，这是口径变更而非市场变化。",
+        "饱和改善：s_net ≥99.9 的天数 82/264 → 0/264（候选版 vs 基线）。这是 v5.3 存在的**唯一设计目标**，已达成；但它不能被解读为\"预测力更强\"——Pearson 差异在 n=264 下不显著。"
       ],
       "table": {
         "v4.5": {
-          "scoreMean": 66.36,
+          "scoreMean": 66.37,
           "pearson": -0.02,
           "spearman": -0.03,
-          "directionAcc": 48.05,
-          "hit": 123,
-          "total": 256
+          "directionAcc": 48.11,
+          "hit": 127,
+          "total": 264
         },
         "v5.0": {
-          "scoreMean": 64.5,
+          "scoreMean": 64.49,
           "pearson": -0.01,
           "spearman": -0.02,
-          "directionAcc": 48.44,
-          "hit": 124,
-          "total": 256
+          "directionAcc": 48.86,
+          "hit": 129,
+          "total": 264
         },
         "v5.2-pro": {
-          "scoreMean": 64.26,
+          "scoreMean": 64.25,
           "pearson": -0.01,
           "spearman": -0.01,
-          "directionAcc": 49.61,
-          "hit": 126,
-          "total": 254
+          "directionAcc": 49.62,
+          "hit": 131,
+          "total": 264
         },
         "v5.3-pro": {
-          "scoreMean": 60.37,
-          "pearson": 0.01,
-          "spearman": -0.02,
-          "directionAcc": 47.84,
-          "hit": 122,
-          "total": 255
+          "scoreMean": 60.53,
+          "pearson": 0,
+          "spearman": -0.03,
+          "directionAcc": 47.35,
+          "hit": 125,
+          "total": 264
         }
       },
       "interpretation": "情绪分与次日指数收益 Pearson ≈ 0、方向准确率 ≈ 50% ⇒ 对次日方向无统计显著预测力。"

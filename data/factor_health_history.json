@@ -1,17 +1,13 @@
 {
-  "updatedAt": "2026-11-12T14:20:28.374Z",
-  "status": "alarm",
-  "headline": "❌ 告警：连续 2 周负超额",
-  "attribution": {
-    "type": "beta",
-    "label": "beta 下行（非因子衰减）",
-    "note": "最近 4 周市场基准均值 -1.31% 为负、策略超额均值仍为正（0.56%）——劣化主要是市场 beta 下行，非因子衰减（避险价值仍在工作）。"
-  },
+  "updatedAt": "2026-11-14T03:03:52.674Z",
+  "status": "healthy",
+  "headline": "✅ 健康：超额正向、胜率 88% ≥52%、无连续负超额",
+  "attribution": null,
   "metrics": {
-    "alphaWinRate8": 0.75,
-    "negStreak": 2,
-    "ma4Pct": 0.8333333333333334,
-    "sharpe8": -2.456,
+    "alphaWinRate8": 0.875,
+    "negStreak": 0,
+    "ma4Pct": 0.9259259259259259,
+    "sharpe8": -2.603,
     "seatAlarm": false,
     "divAlarm": false
   },
@@ -27,8 +23,8 @@
       "regime": "climax",
       "label": "climax",
       "weeks": 13,
-      "avgAlpha": -0.005187,
-      "winRate": 0.231
+      "avgAlpha": -0.004015,
+      "winRate": 0.308
     },
     {
       "regime": "ebb",
@@ -1189,13 +1185,13 @@
     },
     {
       "week": "2026-11-09",
-      "end": "2026-11-12",
-      "days": 4,
-      "strat": 0.003089,
-      "mkt": 0.007334,
-      "alpha": -0.004246,
+      "end": "2026-11-13",
+      "days": 5,
+      "strat": -0.001689,
+      "mkt": -0.012678,
+      "alpha": 0.010989,
       "regime": "climax",
-      "exposure": 0.4542,
+      "exposure": 0.4233,
       "seatAlpha": 0.3,
       "seatPool": {
         "passSeat": 5,
