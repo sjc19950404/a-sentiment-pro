@@ -67,11 +67,12 @@ test('CLS②: 容器内每个面板与 topbar / alerts 都有稳定高度', () =
   const alertsRules = [...css.matchAll(/^#alerts\s*\{([^}]*)\}/gm)].map((m) => m[1]).join(' ');
   assert.match(alertsRules, /height:\s*\d+rem/, '#alerts 必须固定高度（renderAlerts 实测撑高 ~135px）');
   const bt = ruleOf('.btstrat-panel');
+  assert.match(bt, /height:\s*\d+rem/, 'btStrategyPanel 必须有固定高度（撑满稳定容器；移动端由媒体查询设 26rem）');
   assert.match(bt, /overflow-y:\s*auto/, 'btStrategyPanel 盒内滚动（不裁切大表格）');
-  assert.doesNotMatch(bt, /height:\s*26rem/, '固定 26rem 已实测使 CLS 变差，不得回退采用');
-  // btStrategyPanel 不再单独固定 18rem：稳定性改由上层 #preMainPanels 容器（尺寸恒定）
-  // 承载，它撑满容器、由容器统一滚动，消除「框中框」双重滚动。故这里只锁「不得回退成
-  // 26rem」与「盒内滚动」，不再锁具体高度。
+  assert.doesNotMatch(bt, /height:\s*26rem/, '全局规则不得写 26rem（26rem 仅允许出现在窄屏媒体查询内，否则桌面 CLS 变差）；固定 26rem 曾实测 CLS 0.802→0.890');
+  // 教训：曾试过彻底去掉 btStrategyPanel 高度上限（commit 52c40870），本地桌面看似
+  // 降到 0.06，但线上限流尤其移动端骨架→表格撑高推下方兄弟，mobile CLS 0.247→0.393，
+  // 已回退。故这里强制它仍有固定高度。
 });
 
 test('CLS③: 首屏 .grid > .card 固定高度（异步填充/图表 canvas 不撑开外部）', () => {

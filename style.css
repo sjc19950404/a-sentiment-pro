@@ -1337,6 +1337,7 @@ header.topbar { height: 64px; min-height: 64px; box-sizing: border-box; overflow
 @media (max-width: 860px) {
   /* 窄屏单列：卡片更高、面板区给更多余量，避免盒内滚动条过早出现 */
   .pre-main-panels { height: 26rem; min-height: 26rem; max-height: 26rem; }
+  .btstrat-panel { height: 26rem; min-height: 26rem; max-height: 26rem; }
   #zone-overview .grid > .card { height: 24rem; max-height: 24rem; }
   /* topbar 在窄屏允许 flex-wrap 换行，固定 64px 会裁切换行内容，故放开高度
      （仍不影响 CLS：下方 #preMainPanels/#alerts 已是尺寸恒定容器，topbar 高度变化
@@ -1344,14 +1345,14 @@ header.topbar { height: 64px; min-height: 64px; box-sizing: border-box; overflow
   header.topbar { height: auto; min-height: 0; }
 }
 
-/* 2026-11-14 CLS：btStrategyPanel 不再单独固定 18rem。
-   原因：它常是容器内唯一可见的主面板，回测大表格（数百行）被卡在 18rem 的「框中框」
-   里既要自己滚、又要被 22rem 容器滚，双重滚动且可视高度只有 288px，难读。
-   改法：解掉自身高度上限，让它撑满稳定容器（容器 22rem 桌面 / 26rem 移动），
-   由容器这一道滚动边界统一承载 → 消除嵌套滚动、可视高度 +64px，且 CLS 不回退
-   （容器尺寸恒定，btStrategyPanel 骨架→表格的盒内替换在容器顶部发生、不推 <main>）。
+/* 2026-11-14 CLS：btStrategyPanel 固定高度，但让它**撑满稳定容器**（桌面 22rem /
+   移动 26rem，与 .pre-main-panels 同高、margin 归零），消除「框中框」双重滚动的间隙、
+   可视高度比旧 18rem 多 +64px；同时高度恒定 → 不撑开下方兄弟，CLS 稳。
+   教训：曾试过彻底去掉高度上限（commit 52c40870），本地桌面看似降到 0.06，但线上
+   限流环境（尤其移动端）骨架→表格撑高把下方兄弟推了一下，mobile CLS 反而 0.247→0.393，
+   已回退。固定高度对移动端 CLS 是必要保护，不得再去掉。
    注意：不得改回固定 26rem（第二轮实测 CLS 0.802→0.890，净效果为负）。 */
-.btstrat-panel { margin: 8px 0; box-sizing: border-box; overflow-y: auto; display: flex; flex-direction: column; }
+.btstrat-panel { margin: 0; box-sizing: border-box; height: 22rem; min-height: 22rem; max-height: 22rem; overflow-y: auto; display: flex; flex-direction: column; }
 .btstrat-panel[hidden] { display: none; }
 .bs-skeleton { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--muted, #888); font-size: .9em; }
 .btstrat-panel.bs-unknown { justify-content: center; }
