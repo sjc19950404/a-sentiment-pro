@@ -1323,7 +1323,11 @@ tr.empty-row td { color: var(--muted); padding: 8px 8px; }
 }
 .pre-main-panels > div[hidden] { display: none !important; }
 #alerts { height: 3rem; min-height: 0; max-height: 3rem; box-sizing: border-box; overflow-y: auto; }
-header.topbar { height: 64px; min-height: 64px; max-height: 64px; box-sizing: border-box; overflow: hidden; }
+/* topbar 锁 64px 是为了吸收 meta 区（tradeDate/sourceTag/genTime）异步填充带来的
+   ~15px 位移，避免推 <main>；但绝不能 overflow:hidden —— 导出下拉菜单 #expMenu 是
+   position:absolute 向下展开的，会被裁掉导致导出功能失效。故用 overflow:visible。
+   窄屏 .topbar 允许 flex-wrap 换行，固定 64px 会裁切换行内容，故放开高度。 */
+header.topbar { height: 64px; min-height: 64px; box-sizing: border-box; overflow: visible; }
 #zone-overview .grid > .card {
   height: 20rem; min-height: 0; max-height: 20rem; box-sizing: border-box;
   overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
@@ -1332,6 +1336,10 @@ header.topbar { height: 64px; min-height: 64px; max-height: 64px; box-sizing: bo
   /* 窄屏单列：卡片更高、面板区给更多余量，避免盒内滚动条过早出现 */
   .pre-main-panels { height: 26rem; min-height: 26rem; max-height: 26rem; }
   #zone-overview .grid > .card { height: 22rem; max-height: 22rem; }
+  /* topbar 在窄屏允许 flex-wrap 换行，固定 64px 会裁切换行内容，故放开高度
+     （仍不影响 CLS：下方 #preMainPanels/#alerts 已是尺寸恒定容器，topbar 高度变化
+     只影响它自己这一行，不推 <main>）。 */
+  header.topbar { height: auto; min-height: 0; }
 }
 
 /* 2026-11-14 CLS：btStrategyPanel 固定 18rem（配合上方稳定容器）。
