@@ -1296,14 +1296,48 @@ tr.empty-row td { color: var(--muted); padding: 8px 8px; }
 .dt-chip { font-size: 11px; padding: 4px 8px; border-radius: 99px; border: 1px solid var(--line); }
 
 /* A/B/C 三策略回测面板（data/backtest-strategies.json；范式同 dualtrack-panel） */
-/* 2026-11-14 CLS：回到首轮 18rem 骨架基线（撤销第二轮回归）。
-   第二轮改成固定 height:26rem + 容器内滚动后，Lighthouse 复测 CLS 从 0.802 涨到
-   **0.890**：固定高度确实消除了 main 的偏移（main 0.499 消失），但元素本身变高，
-   被 <main> 之前那 12 个 hidden→异步显示的面板依次撑开往下推时 impact fraction
-   更大，btStrategyPanel 自身 0.751→0.890，净效果为负。
-   故回退到已知基线（min-height:18rem 骨架，CLS 0.802）。根治需处理那 12 个面板的
-   布局预留/移出首屏流，属产品布局决策，须先实测再动，不在此轮擅自改。 */
-.btstrat-panel { margin: 8px 0; min-height: 18rem; display: flex; flex-direction: column; }
+/* 2026-11-14 CLS 治理（第四轮，树莓派本地 Lighthouse A/B 29 组实证）。
+   基线：桌面 CLS 1.281 / 移动 1.391，归因 body > main 0.730+0.551。
+   证伪的假设（都要留档，避免以后再绕回去）：
+     · 「12 个面板依次撑开」只对一半：逐个给面板 min-height → CLS 1.281 逐位不变
+       （hidden 时 display:none，显示瞬间仍是 0→N 的跳变）
+     · 关 scroll-behavior:smooth → 1.281 不变；关 overflow-anchor → 0.388 不变；
+       main 加 contain → 0.388 不变；给 main 固定高度 → 1.187（几乎无效）
+     · 给 btStrategyPanel 单独固定 26rem（第二轮）→ 实测 CLS 反而 0.802→0.890
+   真正有效的三层（全部同时做，本地实测 1.281 → 0.174）：
+     ① #preMainPanels 把 13 个状态/告警面板 + #alerts 包成**尺寸恒定**的容器，
+        内部盒内滚动，内容不裁剪不丢失；容器高度不受内部面板显隐影响。
+     ② 容器内每个面板各自固定高度（含 [hidden] 仍 display:none），消除彼此推挤；
+        btStrategyPanel 单独 18rem。header.topbar 固定 64px（meta 异步填充实测
+        会撑高 ~15px），#alerts 固定 3rem（renderAlerts 实测撑高 ~135px）。
+     ③ 首屏 .grid > .card 固定高度 + 盒内滚动：初始 "--" 占位，异步填充因子条、
+        题材 chips、lightweight-charts canvas 都会撑开（.lw-chart 原生 200px）。
+   残余 0.174 中 0.128 来自 btStrategyPanel 骨架→真实表格的盒内替换、0.046 来自
+   mom-group，属内容替换本身，继续压需要改渲染结构，本轮不做。 */
+.pre-main-panels {
+  height: 22rem; min-height: 22rem; max-height: 22rem; box-sizing: border-box;
+  overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
+}
+.pre-main-panels > div:not(#btStrategyPanel) {
+  height: 3rem; min-height: 0; max-height: 3rem; box-sizing: border-box; overflow: hidden;
+}
+.pre-main-panels > div[hidden] { display: none !important; }
+#alerts { height: 3rem; min-height: 0; max-height: 3rem; box-sizing: border-box; overflow-y: auto; }
+header.topbar { height: 64px; min-height: 64px; max-height: 64px; box-sizing: border-box; overflow: hidden; }
+#zone-overview .grid > .card {
+  height: 20rem; min-height: 0; max-height: 20rem; box-sizing: border-box;
+  overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
+}
+@media (max-width: 860px) {
+  /* 窄屏单列：卡片更高、面板区给更多余量，避免盒内滚动条过早出现 */
+  .pre-main-panels { height: 26rem; min-height: 26rem; max-height: 26rem; }
+  #zone-overview .grid > .card { height: 22rem; max-height: 22rem; }
+}
+
+/* 2026-11-14 CLS：btStrategyPanel 固定 18rem（配合上方稳定容器）。
+   第二轮曾单独改成固定 26rem，实测 CLS 0.802→0.890（元素变高、被上方面板推挤
+   时 impact fraction 更大），已撤销；本轮在稳定容器内用 18rem，实测有效。 */
+.btstrat-panel { margin: 8px 0; height: 18rem; min-height: 18rem; max-height: 18rem; box-sizing: border-box; overflow-y: auto; display: flex; flex-direction: column; }
 .btstrat-panel[hidden] { display: none; }
 .bs-skeleton { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--muted, #888); font-size: .9em; }
 .btstrat-panel.bs-unknown { justify-content: center; }

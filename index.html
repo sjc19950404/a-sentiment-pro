@@ -863,6 +863,18 @@
   </nav>
   </div>
 
+  <!-- 2026-11-14 CLS：状态/告警面板区的**稳定容器**。
+       Lighthouse 实测（本地 A/B 23 组）CLS 1.281 的主因不是「某一个面板」，
+       而是 <main> 之前这 13 个 hidden→异步显示面板依次从 0 撑到 N，
+       把 <main> 一路往下推；逐个给面板固定高度无效（hidden 时 display:none，
+       显示瞬间仍 0→N），平滑滚动/滚动锚定/contain 也全部无效。
+       包一层固定高度 + 内部滚动的容器后，容器尺寸恒定 → 外部布局零位移，
+       内容完整保留（盒内滚动，不裁剪不丢失）。
+       刻意不含 .top-sticky / #alerts：前者含 sticky 顶栏、后者由错误边界独立控制。 -->
+  <div id="preMainPanels" class="pre-main-panels">
+  <!-- #alerts 刻意放进稳定容器：renderAlerts(meta) 在数据到达后填入告警横幅（实测撑高
+       ~135px），若放在容器之前会把整段往下推；放进盒内则只影响盒内滚动、外部零位移。
+       错误边界仍不清空它（app.js:430 的语义不变）。 -->
   <div id="alerts"></div>
 
   <!-- 轨道回滚横幅（P1/P2-β）：执行面已切 A_fallback（V5.2 冻结快照）时的常驻警示。
@@ -956,6 +968,7 @@
        连"这儿本该有东西、只是加载失败"这层信息都没有。 -->
   <div id="fatalHolder" class="fatal-holder" hidden></div>
 
+  </div><!-- /#preMainPanels -->
   <main>
     <!-- ── 区一：概览 ── -->
     <section class="zone" id="zone-overview">
