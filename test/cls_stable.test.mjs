@@ -67,9 +67,11 @@ test('CLS②: 容器内每个面板与 topbar / alerts 都有稳定高度', () =
   const alertsRules = [...css.matchAll(/^#alerts\s*\{([^}]*)\}/gm)].map((m) => m[1]).join(' ');
   assert.match(alertsRules, /height:\s*\d+rem/, '#alerts 必须固定高度（renderAlerts 实测撑高 ~135px）');
   const bt = ruleOf('.btstrat-panel');
-  assert.match(bt, /height:\s*18rem/, 'btStrategyPanel 固定 18rem');
-  assert.match(bt, /overflow-y:\s*auto/, 'btStrategyPanel 盒内滚动');
+  assert.match(bt, /overflow-y:\s*auto/, 'btStrategyPanel 盒内滚动（不裁切大表格）');
   assert.doesNotMatch(bt, /height:\s*26rem/, '固定 26rem 已实测使 CLS 变差，不得回退采用');
+  // btStrategyPanel 不再单独固定 18rem：稳定性改由上层 #preMainPanels 容器（尺寸恒定）
+  // 承载，它撑满容器、由容器统一滚动，消除「框中框」双重滚动。故这里只锁「不得回退成
+  // 26rem」与「盒内滚动」，不再锁具体高度。
 });
 
 test('CLS③: 首屏 .grid > .card 固定高度（异步填充/图表 canvas 不撑开外部）', () => {

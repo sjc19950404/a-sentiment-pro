@@ -1308,8 +1308,10 @@ tr.empty-row td { color: var(--muted); padding: 8px 8px; }
      ① #preMainPanels 把 13 个状态/告警面板 + #alerts 包成**尺寸恒定**的容器，
         内部盒内滚动，内容不裁剪不丢失；容器高度不受内部面板显隐影响。
      ② 容器内每个面板各自固定高度（含 [hidden] 仍 display:none），消除彼此推挤；
-        btStrategyPanel 单独 18rem。header.topbar 固定 64px（meta 异步填充实测
-        会撑高 ~15px），#alerts 固定 3rem（renderAlerts 实测撑高 ~135px）。
+        btStrategyPanel 改用容器承载（解高度上限、撑满容器、由容器统一滚动，
+        消除框中框双重滚动，可视高度 +64px 且 CLS 不回退）。header.topbar 固定
+        64px（meta 异步填充实测会撑高 ~15px），#alerts 固定 3rem（renderAlerts
+        实测撑高 ~135px）。
      ③ 首屏 .grid > .card 固定高度 + 盒内滚动：初始 "--" 占位，异步填充因子条、
         题材 chips、lightweight-charts canvas 都会撑开（.lw-chart 原生 200px）。
    残余 0.174 中 0.128 来自 btStrategyPanel 骨架→真实表格的盒内替换、0.046 来自
@@ -1319,7 +1321,7 @@ tr.empty-row td { color: var(--muted); padding: 8px 8px; }
   overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
 }
 .pre-main-panels > div:not(#btStrategyPanel) {
-  height: 3rem; min-height: 0; max-height: 3rem; box-sizing: border-box; overflow: hidden;
+  height: 3rem; min-height: 0; max-height: 3rem; box-sizing: border-box; overflow-y: auto;
 }
 .pre-main-panels > div[hidden] { display: none !important; }
 #alerts { height: 3rem; min-height: 0; max-height: 3rem; box-sizing: border-box; overflow-y: auto; }
@@ -1329,23 +1331,27 @@ tr.empty-row td { color: var(--muted); padding: 8px 8px; }
    窄屏 .topbar 允许 flex-wrap 换行，固定 64px 会裁切换行内容，故放开高度。 */
 header.topbar { height: 64px; min-height: 64px; box-sizing: border-box; overflow: visible; }
 #zone-overview .grid > .card {
-  height: 20rem; min-height: 0; max-height: 20rem; box-sizing: border-box;
+  height: 22rem; min-height: 0; max-height: 22rem; box-sizing: border-box;
   overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
 }
 @media (max-width: 860px) {
   /* 窄屏单列：卡片更高、面板区给更多余量，避免盒内滚动条过早出现 */
   .pre-main-panels { height: 26rem; min-height: 26rem; max-height: 26rem; }
-  #zone-overview .grid > .card { height: 22rem; max-height: 22rem; }
+  #zone-overview .grid > .card { height: 24rem; max-height: 24rem; }
   /* topbar 在窄屏允许 flex-wrap 换行，固定 64px 会裁切换行内容，故放开高度
      （仍不影响 CLS：下方 #preMainPanels/#alerts 已是尺寸恒定容器，topbar 高度变化
      只影响它自己这一行，不推 <main>）。 */
   header.topbar { height: auto; min-height: 0; }
 }
 
-/* 2026-11-14 CLS：btStrategyPanel 固定 18rem（配合上方稳定容器）。
-   第二轮曾单独改成固定 26rem，实测 CLS 0.802→0.890（元素变高、被上方面板推挤
-   时 impact fraction 更大），已撤销；本轮在稳定容器内用 18rem，实测有效。 */
-.btstrat-panel { margin: 8px 0; height: 18rem; min-height: 18rem; max-height: 18rem; box-sizing: border-box; overflow-y: auto; display: flex; flex-direction: column; }
+/* 2026-11-14 CLS：btStrategyPanel 不再单独固定 18rem。
+   原因：它常是容器内唯一可见的主面板，回测大表格（数百行）被卡在 18rem 的「框中框」
+   里既要自己滚、又要被 22rem 容器滚，双重滚动且可视高度只有 288px，难读。
+   改法：解掉自身高度上限，让它撑满稳定容器（容器 22rem 桌面 / 26rem 移动），
+   由容器这一道滚动边界统一承载 → 消除嵌套滚动、可视高度 +64px，且 CLS 不回退
+   （容器尺寸恒定，btStrategyPanel 骨架→表格的盒内替换在容器顶部发生、不推 <main>）。
+   注意：不得改回固定 26rem（第二轮实测 CLS 0.802→0.890，净效果为负）。 */
+.btstrat-panel { margin: 8px 0; box-sizing: border-box; overflow-y: auto; display: flex; flex-direction: column; }
 .btstrat-panel[hidden] { display: none; }
 .bs-skeleton { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--muted, #888); font-size: .9em; }
 .btstrat-panel.bs-unknown { justify-content: center; }
