@@ -102,12 +102,20 @@ const PROBE = `(() => {
       display: getComputedStyle(entry).display,
       zIndex: getComputedStyle(entry).zIndex
     } : null,
-    fatal: !!document.querySelector('[data-fatal], #fatalHolder'),
+    // #fatalHolder 是 index.html 静态 [hidden] + display:none 的空占位，恒存在；
+    // 只看「是否显示且有内容」，否则 fatal 恒 true，4 个用例无条件假红。
+    fatal: [...document.querySelectorAll('[data-fatal], #fatalHolder')].some(e =>
+      !e.hasAttribute('hidden') && getComputedStyle(e).display !== 'none' &&
+      (e.textContent || '').trim().length > 0),
+    // 关闭态抽屉 #drawer[aria-hidden="true"] 是 translateX 离屏定位，其内部
+    // dw-head / dwTitle / dwBody 等 right 超出视口属正常，不计入页面横向溢出。
     overflow: [...document.querySelectorAll('body *')].filter(e => {
+      if (e.closest('#drawer[aria-hidden="true"], [hidden]')) return false;
       const r = e.getBoundingClientRect();
       return r.width > 0 && r.right > window.innerWidth + 2 &&
         getComputedStyle(e).position !== 'fixed' && e.scrollWidth <= e.clientWidth + 2;
-    }).length
+    }).length,
+    docScrollWidth: document.documentElement.scrollWidth
   };
 })()`;
 
@@ -172,6 +180,12 @@ async function checkLinks(base, stage) {
       rows.push(ok(c.label + ' 主视图 = ' + c.expect, got === c.expect, { got, activeRoots: s.activeRoots }));
       rows.push(ok(c.label + ' 活跃主根唯一', s.activeRoots.length <= 1, { activeRoots: s.activeRoots }));
       rows.push(ok(c.label + ' 无致命兜底 / 横向溢出', !s.fatal && s.overflow === 0, { fatal: s.fatal, overflow: s.overflow }));
+      if (c.expect === 'workbench') {
+        // R2 补漏：activeRoots 只统计 tRoot/sRoot，研报 <main> 漏检。
+        // 工作台视图必须同时让研报主根不可见，否则只是「研报页 + 底部一块面板」。
+        rows.push(ok(c.label + ' 研报主根已隐藏', s.mainVisible === false,
+          { mainVisible: s.mainVisible, docScrollWidth: s.docScrollWidth }));
+      }
       if (c.expect === 'workbench' && s.fixedEntry) {
         rows.push(ok(c.label + ' 入口按钮已隐藏', s.fixedEntry.display === 'none', s.fixedEntry));
       }

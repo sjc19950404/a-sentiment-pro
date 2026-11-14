@@ -2069,3 +2069,10 @@ table tbody tr:hover { background: rgba(88, 166, 255, .045); }
    z-index:9998 会压住工作台浮层（抽屉 910 / tooltip 950），故挂载工作台时隐藏。
    阶段 0（research view，body 无 data-view="workbench"）规则 inert，按钮照常可见。 */
 body[data-view="workbench"] #t-entry { display: none; }
+
+/* 【A 方案 P0-1】工作台激活时收起研报整页：隐藏 <main> 与 <main> 之外的告警浮层 #preMainPanels。
+   用专用视图 CSS 双保险（s-root.js 同时设 main.hidden=true），**不碰 aria-hidden**——
+   aria-hidden 是本站立 fatal 兜底信号（style.css:1457 / app.js:445 set、app.js:453 remove），
+   数据加载后会被 app.js 清空，复用它会让工作台视图下研报整页重新漏出（真 P0 缺陷）。 */
+body[data-view="workbench"] > main,
+body[data-view="workbench"] > #preMainPanels { display: none; }

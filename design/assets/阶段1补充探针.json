@@ -1,0 +1,434 @@
+{
+  "time": "2026-11-14T19:30:08.073Z",
+  "base": "https://sjc19950404.github.io/a-sentiment-pro/",
+  "cases": [
+    {
+      "label": "默认 /",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/",
+      "state": {
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/",
+        "bodyView": "",
+        "main": {
+          "ariaHidden": null,
+          "display": "block",
+          "visible": true,
+          "offsetHeight": 7566,
+          "rects": 1
+        },
+        "sRoot": {
+          "hidden": true,
+          "visible": false,
+          "children": 0,
+          "textLen": 0,
+          "offsetHeight": 0,
+          "cls": "s-scope"
+        },
+        "tRoot": {
+          "hidden": true,
+          "visible": false,
+          "children": 4
+        },
+        "preMainPanels": {
+          "visible": true,
+          "offsetHeight": 352
+        },
+        "fatal": [
+          {
+            "tag": "DIV",
+            "id": "fatalHolder",
+            "hidden": true,
+            "display": "none",
+            "text": ""
+          }
+        ],
+        "overflowCount": 6,
+        "overflow": [
+          {
+            "tag": "HEADER",
+            "id": "",
+            "cls": "dw-head",
+            "right": 1941,
+            "width": 519,
+            "parentId": "drawer",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "cls": "dw-titles",
+            "right": 1887,
+            "width": 449,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "dwTitle",
+            "cls": "dw-title",
+            "right": 1887,
+            "width": 449,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "dwSub",
+            "cls": "dw-sub",
+            "right": 1887,
+            "width": 449,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "BUTTON",
+            "id": "dwClose",
+            "cls": "dw-close",
+            "right": 1925,
+            "width": 26,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "dwBody",
+            "cls": "dw-body",
+            "right": 1941,
+            "width": 519,
+            "parentId": "drawer",
+            "pos": "static",
+            "overflowX": "auto"
+          }
+        ],
+        "docScrollWidth": 1416,
+        "innerWidth": 1416,
+        "bodyScrollHeight": 8098
+      }
+    },
+    {
+      "label": "?view=terminal",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/?view=terminal",
+      "state": {
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=terminal",
+        "bodyView": "",
+        "main": {
+          "ariaHidden": null,
+          "display": "block",
+          "visible": true,
+          "offsetHeight": 9008,
+          "rects": 1
+        },
+        "sRoot": {
+          "hidden": true,
+          "visible": false,
+          "children": 0,
+          "textLen": 0,
+          "offsetHeight": 0,
+          "cls": "s-scope"
+        },
+        "tRoot": {
+          "hidden": false,
+          "visible": true,
+          "children": 4
+        },
+        "preMainPanels": {
+          "visible": true,
+          "offsetHeight": 352
+        },
+        "fatal": [
+          {
+            "tag": "DIV",
+            "id": "fatalHolder",
+            "hidden": true,
+            "display": "none",
+            "text": ""
+          }
+        ],
+        "overflowCount": 6,
+        "overflow": [
+          {
+            "tag": "HEADER",
+            "id": "",
+            "cls": "dw-head",
+            "right": 1941,
+            "width": 519,
+            "parentId": "drawer",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "cls": "dw-titles",
+            "right": 1887,
+            "width": 449,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "dwTitle",
+            "cls": "dw-title",
+            "right": 1887,
+            "width": 449,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "dwSub",
+            "cls": "dw-sub",
+            "right": 1887,
+            "width": 449,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "BUTTON",
+            "id": "dwClose",
+            "cls": "dw-close",
+            "right": 1925,
+            "width": 26,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "dwBody",
+            "cls": "dw-body",
+            "right": 1941,
+            "width": 519,
+            "parentId": "drawer",
+            "pos": "static",
+            "overflowX": "auto"
+          }
+        ],
+        "docScrollWidth": 1416,
+        "innerWidth": 1416,
+        "bodyScrollHeight": 9539
+      }
+    },
+    {
+      "label": "?view=workbench",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench",
+      "state": {
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench",
+        "bodyView": "workbench",
+        "main": {
+          "ariaHidden": null,
+          "display": "block",
+          "visible": true,
+          "offsetHeight": 9008,
+          "rects": 1
+        },
+        "sRoot": {
+          "hidden": false,
+          "visible": true,
+          "children": 2,
+          "textLen": 258,
+          "offsetHeight": 874,
+          "cls": "s-scope"
+        },
+        "tRoot": {
+          "hidden": true,
+          "visible": false,
+          "children": 4
+        },
+        "preMainPanels": {
+          "visible": true,
+          "offsetHeight": 352
+        },
+        "fatal": [
+          {
+            "tag": "DIV",
+            "id": "fatalHolder",
+            "hidden": true,
+            "display": "none",
+            "text": ""
+          }
+        ],
+        "overflowCount": 6,
+        "overflow": [
+          {
+            "tag": "HEADER",
+            "id": "",
+            "cls": "dw-head",
+            "right": 1941,
+            "width": 519,
+            "parentId": "drawer",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "cls": "dw-titles",
+            "right": 1887,
+            "width": 449,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "dwTitle",
+            "cls": "dw-title",
+            "right": 1887,
+            "width": 449,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "dwSub",
+            "cls": "dw-sub",
+            "right": 1887,
+            "width": 449,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "BUTTON",
+            "id": "dwClose",
+            "cls": "dw-close",
+            "right": 1925,
+            "width": 26,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "dwBody",
+            "cls": "dw-body",
+            "right": 1941,
+            "width": 519,
+            "parentId": "drawer",
+            "pos": "static",
+            "overflowX": "auto"
+          }
+        ],
+        "docScrollWidth": 1416,
+        "innerWidth": 1416,
+        "bodyScrollHeight": 10413
+      }
+    },
+    {
+      "label": "#workbench",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/#workbench",
+      "state": {
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/#workbench",
+        "bodyView": "workbench",
+        "main": {
+          "ariaHidden": null,
+          "display": "block",
+          "visible": true,
+          "offsetHeight": 9008,
+          "rects": 1
+        },
+        "sRoot": {
+          "hidden": false,
+          "visible": true,
+          "children": 2,
+          "textLen": 258,
+          "offsetHeight": 874,
+          "cls": "s-scope"
+        },
+        "tRoot": {
+          "hidden": true,
+          "visible": false,
+          "children": 4
+        },
+        "preMainPanels": {
+          "visible": true,
+          "offsetHeight": 352
+        },
+        "fatal": [
+          {
+            "tag": "DIV",
+            "id": "fatalHolder",
+            "hidden": true,
+            "display": "none",
+            "text": ""
+          }
+        ],
+        "overflowCount": 6,
+        "overflow": [
+          {
+            "tag": "HEADER",
+            "id": "",
+            "cls": "dw-head",
+            "right": 1941,
+            "width": 519,
+            "parentId": "drawer",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "cls": "dw-titles",
+            "right": 1887,
+            "width": 449,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "dwTitle",
+            "cls": "dw-title",
+            "right": 1887,
+            "width": 449,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "dwSub",
+            "cls": "dw-sub",
+            "right": 1887,
+            "width": 449,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "BUTTON",
+            "id": "dwClose",
+            "cls": "dw-close",
+            "right": 1925,
+            "width": 26,
+            "parentId": "",
+            "pos": "static",
+            "overflowX": "visible"
+          },
+          {
+            "tag": "DIV",
+            "id": "dwBody",
+            "cls": "dw-body",
+            "right": 1941,
+            "width": 519,
+            "parentId": "drawer",
+            "pos": "static",
+            "overflowX": "auto"
+          }
+        ],
+        "docScrollWidth": 1416,
+        "innerWidth": 1416,
+        "bodyScrollHeight": 10413
+      }
+    }
+  ]
+}

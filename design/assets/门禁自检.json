@@ -1,0 +1,261 @@
+{
+  "time": "2026-11-14T19:31:41.237Z",
+  "mode": "links",
+  "results": [
+    {
+      "mode": "links",
+      "stage": 1,
+      "base": "https://sjc19950404.github.io/a-sentiment-pro/",
+      "rows": [
+        {
+          "name": "默认 / 主视图 = report",
+          "pass": true,
+          "detail": {
+            "got": "report",
+            "activeRoots": []
+          }
+        },
+        {
+          "name": "默认 / 活跃主根唯一",
+          "pass": true,
+          "detail": {
+            "activeRoots": []
+          }
+        },
+        {
+          "name": "默认 / 无致命兜底 / 横向溢出",
+          "pass": true,
+          "detail": {
+            "fatal": false,
+            "overflow": 0
+          }
+        },
+        {
+          "name": "?view=terminal 主视图 = terminal",
+          "pass": true,
+          "detail": {
+            "got": "terminal",
+            "activeRoots": [
+              "terminal"
+            ]
+          }
+        },
+        {
+          "name": "?view=terminal 活跃主根唯一",
+          "pass": true,
+          "detail": {
+            "activeRoots": [
+              "terminal"
+            ]
+          }
+        },
+        {
+          "name": "?view=terminal 无致命兜底 / 横向溢出",
+          "pass": true,
+          "detail": {
+            "fatal": false,
+            "overflow": 0
+          }
+        },
+        {
+          "name": "?view=workbench 主视图 = workbench",
+          "pass": true,
+          "detail": {
+            "got": "workbench",
+            "activeRoots": [
+              "workbench"
+            ]
+          }
+        },
+        {
+          "name": "?view=workbench 活跃主根唯一",
+          "pass": true,
+          "detail": {
+            "activeRoots": [
+              "workbench"
+            ]
+          }
+        },
+        {
+          "name": "?view=workbench 无致命兜底 / 横向溢出",
+          "pass": true,
+          "detail": {
+            "fatal": false,
+            "overflow": 0
+          }
+        },
+        {
+          "name": "?view=workbench 研报主根已隐藏",
+          "pass": false,
+          "detail": {
+            "mainVisible": true,
+            "docScrollWidth": 1416
+          }
+        },
+        {
+          "name": "?view=workbench 入口按钮已隐藏",
+          "pass": true,
+          "detail": {
+            "id": "t-entry",
+            "cls": "",
+            "display": "none",
+            "zIndex": "9998"
+          }
+        },
+        {
+          "name": "#workbench 主视图 = workbench",
+          "pass": true,
+          "detail": {
+            "got": "workbench",
+            "activeRoots": [
+              "workbench"
+            ]
+          }
+        },
+        {
+          "name": "#workbench 活跃主根唯一",
+          "pass": true,
+          "detail": {
+            "activeRoots": [
+              "workbench"
+            ]
+          }
+        },
+        {
+          "name": "#workbench 无致命兜底 / 横向溢出",
+          "pass": true,
+          "detail": {
+            "fatal": false,
+            "overflow": 0
+          }
+        },
+        {
+          "name": "#workbench 研报主根已隐藏",
+          "pass": false,
+          "detail": {
+            "mainVisible": true,
+            "docScrollWidth": 1416
+          }
+        },
+        {
+          "name": "#workbench 入口按钮已隐藏",
+          "pass": true,
+          "detail": {
+            "id": "t-entry",
+            "cls": "",
+            "display": "none",
+            "zIndex": "9998"
+          }
+        },
+        {
+          "name": "二次进入幂等（无叠加 / 无残留）",
+          "pass": true,
+          "detail": {
+            "activeRoots": [
+              "workbench"
+            ],
+            "mainAriaHidden": false
+          }
+        }
+      ],
+      "samples": [
+        {
+          "label": "默认 /",
+          "state": {
+            "href": "https://sjc19950404.github.io/a-sentiment-pro/",
+            "mainVisible": true,
+            "mainAriaHidden": false,
+            "tRootVisible": false,
+            "sRootVisible": false,
+            "sRootChildren": 0,
+            "activeRoots": [],
+            "fixedEntry": {
+              "id": "t-entry",
+              "cls": "",
+              "display": "block",
+              "zIndex": "9998"
+            },
+            "fatal": false,
+            "overflow": 0,
+            "docScrollWidth": 1416
+          }
+        },
+        {
+          "label": "?view=terminal",
+          "state": {
+            "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=terminal",
+            "mainVisible": true,
+            "mainAriaHidden": false,
+            "tRootVisible": true,
+            "sRootVisible": false,
+            "sRootChildren": 0,
+            "activeRoots": [
+              "terminal"
+            ],
+            "fixedEntry": {
+              "id": "t-entry",
+              "cls": "",
+              "display": "block",
+              "zIndex": "9998"
+            },
+            "fatal": false,
+            "overflow": 0,
+            "docScrollWidth": 1416
+          }
+        },
+        {
+          "label": "?view=workbench",
+          "state": {
+            "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench",
+            "mainVisible": true,
+            "mainAriaHidden": false,
+            "tRootVisible": false,
+            "sRootVisible": true,
+            "sRootChildren": 2,
+            "activeRoots": [
+              "workbench"
+            ],
+            "fixedEntry": {
+              "id": "t-entry",
+              "cls": "",
+              "display": "none",
+              "zIndex": "9998"
+            },
+            "fatal": false,
+            "overflow": 0,
+            "docScrollWidth": 1416
+          }
+        },
+        {
+          "label": "#workbench",
+          "state": {
+            "href": "https://sjc19950404.github.io/a-sentiment-pro/#workbench",
+            "mainVisible": true,
+            "mainAriaHidden": false,
+            "tRootVisible": false,
+            "sRootVisible": true,
+            "sRootChildren": 2,
+            "activeRoots": [
+              "workbench"
+            ],
+            "fixedEntry": {
+              "id": "t-entry",
+              "cls": "",
+              "display": "none",
+              "zIndex": "9998"
+            },
+            "fatal": false,
+            "overflow": 0,
+            "docScrollWidth": 1416
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total": 17,
+    "passed": 15,
+    "failed": 2,
+    "pass": false
+  }
+}
