@@ -1,0 +1,176 @@
+{
+  "url": "https://sjc19950404.github.io/a-sentiment-pro/",
+  "stamp": "2026-11-14T18:00:02.145Z",
+  "checks": {
+    "mount": "{\"htmlFlag\":\"0\",\"injected\":[\"s-tokens.css\",\"s-components.css\",\"s-bridge.css\",\"s-selfcheck.js\"],\"styleCssBeforeNew\":true,\"sScopeCount\":0,\"tScopeCount\":1,\"SType\":\"object\",\"SKeys\":[\"runSelfTest\"],\"runSelfTest\":\"function\",\"collectCls\":\"undefined\",\"docHeight\":9521,\"horizontalOverflowPx\":0,\"preMainPanels\":true,\"reportPanel\":true,\"hasKpi384\":true}",
+    "cssHitSurface": "[{\"file\":\"s-tokens.css\",\"total\":0,\"matched\":0,\"samples\":[]},{\"file\":\"s-components.css\",\"total\":0,\"matched\":0,\"samples\":[]},{\"file\":\"s-bridge.css\",\"total\":0,\"matched\":0,\"samples\":[]}]",
+    "cssZeroImpact": "{\"sampled\":520,\"disabledLinks\":3,\"diffCount\":12,\"diffs\":[{\"idx\":0,\"el\":\"SCRIPT#asent-config\",\"sampleKeys\":[\"color\",\"r\"]},{\"idx\":1,\"el\":\"INPUT#lsToggle\",\"sampleKeys\":[\"color\",\"r\"]},{\"idx\":45,\"el\":\"A#tv-attr-logo\",\"sampleKeys\":[\"color\",\"r\"]},{\"idx\":46,\"el\":\"clipPath#a\",\"sampleKeys\":[\"color\",\"r\"]},{\"idx\":68,\"el\":\"A#tv-attr-logo\",\"sampleKeys\":[\"color\",\"r\"]},{\"idx\":69,\"el\":\"clipPath#a\",\"sampleKeys\":[\"color\",\"r\"]},{\"idx\":131,\"el\":\"INPUT#execProfile\",\"sampleKeys\":[\"color\",\"r\"]},{\"idx\":132,\"el\":\"INPUT#execLimitFill\",\"sampleKeys\":[\"color\",\"r\"]}]}",
+    "collectClsCall": {
+      "ok": false,
+      "error": "window.S.collectCls is not a function"
+    },
+    "runSelfTest": {
+      "stamp": "2026-11-14T18:00:27.957Z",
+      "viewport": {
+        "w": 1440,
+        "h": 1000,
+        "dpr": 1
+      },
+      "horizontalOverflow": {
+        "count": 0,
+        "items": []
+      },
+      "innerScrollContainers": {
+        "count": 0,
+        "whitelisted": 0,
+        "violations": []
+      },
+      "cls": {
+        "value": 0.112,
+        "sessions": 1,
+        "target": 0.1,
+        "baseline": 0.174,
+        "pass": false,
+        "degraded": false
+      },
+      "touchTargets": {
+        "checked": 401,
+        "min": 44,
+        "violations": 376,
+        "items": [
+          {
+            "path": "html > body > label.ls-switch",
+            "w": 96,
+            "h": 35
+          },
+          {
+            "path": "body > div.top-sticky > nav#zoneNav.zonenav > a.zn.on",
+            "w": 46,
+            "h": 26
+          },
+          {
+            "path": "body > div.top-sticky > nav#zoneNav.zonenav > a.zn",
+            "w": 82,
+            "h": 26
+          },
+          {
+            "path": "body > div.top-sticky > nav#zoneNav.zonenav > a.zn",
+            "w": 99,
+            "h": 26
+          },
+          {
+            "path": "body > div.top-sticky > nav#zoneNav.zonenav > a.zn",
+            "w": 70,
+            "h": 26
+          },
+          {
+            "path": "body > div.top-sticky > nav#zoneNav.zonenav > a.zn",
+            "w": 70,
+            "h": 26
+          },
+          {
+            "path": "body > div.top-sticky > nav#zoneNav.zonenav > a.zn",
+            "w": 70,
+            "h": 26
+          },
+          {
+            "path": "div#preMainPanels.pre-main-panels > div#regimePanel.regime-panel.rg-cold > details.rg-fold > summary",
+            "w": 1412,
+            "h": 41
+          },
+          {
+            "path": "div#preMainPanels.pre-main-panels > div#divergePanel.diverge-panel.dv-ok > details.dv-fold > summary",
+            "w": 1436,
+            "h": 41
+          },
+          {
+            "path": "div#preMainPanels.pre-main-panels > div#reportPanel.report-panel.rp-cold > details.rp-fold > summary",
+            "w": 1436,
+            "h": 41
+          },
+          {
+            "path": "div.rp-sec > div.rp-sec-body > details.bf-caliber > summary",
+            "w": 1384,
+            "h": 27
+          },
+          {
+            "path": "div.rp-sec > div.rp-sec-body > details.bf-caliber > summary",
+            "w": 1384,
+            "h": 27
+          },
+          {
+            "path": "div#preMainPanels.pre-main-panels > div#dualTrackPanel.dualtrack-panel.dt-a > details.dt-fold > summary",
+            "w": 1438,
+            "h": 41
+          },
+          {
+            "path": "div#preMainPanels.pre-main-panels > div#btStrategyPanel.btstrat-panel > details.bs-fold > summary",
+            "w": 1438,
+            "h": 41
+          },
+          {
+            "path": "section.card.emotion > div#relBlock.rel-block > details.rel-fold > summary",
+            "w": 659,
+            "h": 16
+          },
+          {
+            "path": "section.card.momentum > div.mom-group > div#freshList.chips > span.chip.click",
+            "w": 68,
+            "h": 26
+          },
+          {
+            "path": "section.card.momentum > div.mom-group > div#freshList.chips > span.chip.click",
+            "w": 56,
+            "h": 26
+          },
+          {
+            "path": "section.card.momentum > div.mom-group > div#freshList.chips > span.chip.click",
+            "w": 66,
+            "h": 26
+          },
+          {
+            "path": "section.card.momentum > div.mom-group > div#freshList.chips > span.chip.click",
+            "w": 80,
+            "h": 26
+          },
+          {
+            "path": "section.card.momentum > div.mom-group > div#freshList.chips > span.chip.click",
+            "w": 36,
+            "h": 26
+          }
+        ]
+      },
+      "contrast": {
+        "checked": 0,
+        "minRatio": 99,
+        "violations": 0,
+        "items": []
+      },
+      "drawerFocusTrap": {
+        "ok": false,
+        "steps": [
+          "drawer missing"
+        ]
+      },
+      "emptyStates": {
+        "count": 0,
+        "missingTitle": 0,
+        "oversized": 0,
+        "items": []
+      },
+      "skeletonSwap": {
+        "skeletonH": 0,
+        "realH": 134,
+        "duringInsert": 134,
+        "afterReplace": 0,
+        "maxShift": 134,
+        "pass": false
+      },
+      "pass": false
+    },
+    "terminalSmoke": "{\"tRoot\":true,\"navButtons\":8,\"tScope\":1,\"sScope\":0,\"fixedEntry\":{\"text\":\"⚡ 图表终端\",\"id\":\"\",\"fixed\":\"fixed\"},\"docHeight\":9521,\"bodyTextHead\":\"A股情绪系统 PRO\\n2026-11-13\\nLIVE\\n更新 2026-11-13 21:13\\n⚡ 分层加载：已载入最近\\n30\\n/ 265 个交易日\\n载入完整档\\n⇩ 导出数据 ▾\\n↻ 刷新\\n概览\\n个股与题材\\n策略回测 V5.2\\n研判报告\\n外围预案\\n模拟交易\\n表格行 / 题材标签 / 图上数据点 / 权重行 均可点击查看详\"}"
+  },
+  "errors": [],
+  "failedRequests": [],
+  "browser": "Edg/157.0.4341.46"
+}

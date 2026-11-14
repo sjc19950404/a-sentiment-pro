@@ -149,6 +149,12 @@ data/ci_gate_api_notice.json
 # 设计交付物（重型、非仓库运行所需；真实源在 design.rar，按需解压，勿随仓库入库以免撑大体积/误部署）
 design/UI设计方案.html
 design/UI设计方案.pdf
-design/assets/
 # 设计原型首页（高保真原型，非运行时路径；部署白名单不含 design/，但避免误提交）
 design/prototype/index.html
+# design/assets/ 仅忽略重型图像（核验 JSON 证据允许入库）
+design/assets/*.png
+design/assets/*.jpg
+design/assets/*.jpeg
+design/assets/*.gif
+design/assets/*.webp
+design/assets/*.svg

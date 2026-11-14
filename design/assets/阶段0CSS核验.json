@@ -1,0 +1,7 @@
+{
+  "stylesheets": "[{\"href\":\"style.css\",\"rules\":1194,\"disabled\":false},{\"href\":\"inline\",\"rules\":347,\"disabled\":false},{\"href\":\"s-tokens.css\",\"rules\":15,\"disabled\":false},{\"href\":\"s-components.css\",\"rules\":205,\"disabled\":false},{\"href\":\"s-bridge.css\",\"rules\":3,\"disabled\":false},{\"href\":\"inline\",\"rules\":2,\"disabled\":false},{\"href\":\"inline\",\"rules\":2,\"disabled\":false}]",
+  "bridgeRules": "[{\"sel\":\".s-scope\",\"decl\":\"isolation: isolate; contain: layout style;\"},{\"sel\":\".t-scope\",\"decl\":\"isolation: isolate;\"},{\"sel\":\"html[data-s-bridge=\\\"0\\\"] .s-scope, html[data-s-bridge=\\\"0\\\"] .s-scope *\",\"decl\":\"display: revert;\"}]",
+  "tScopeImpact": "{\"present\":true,\"tag\":\"DIV\",\"id\":\"tRoot\",\"isolation\":\"isolate\",\"contain\":\"none\",\"fixedEntryInsideTScope\":false,\"fixedEntryParent\":\"BODY#\"}",
+  "bridgeOff": "{\"disabled\":true,\"isolationAfter\":\"auto\"}",
+  "selectorListBug": "{\"sScopeCount\":0,\"asWrittenHits\":577,\"properlyScopedHits\":0,\"note\":\"05 册 checkTouchTargets/checkContrast 的逗号列表只有第一项带 .s-scope 前缀\"}"
+}
