@@ -1337,7 +1337,6 @@ header.topbar { height: 64px; min-height: 64px; box-sizing: border-box; overflow
 @media (max-width: 860px) {
   /* 窄屏单列：卡片更高、面板区给更多余量，避免盒内滚动条过早出现 */
   .pre-main-panels { height: 26rem; min-height: 26rem; max-height: 26rem; }
-  .btstrat-panel { height: 26rem; min-height: 26rem; max-height: 26rem; }
   #zone-overview .grid > .card { height: 24rem; max-height: 24rem; }
   /* topbar 在窄屏允许 flex-wrap 换行，固定 64px 会裁切换行内容，故放开高度
      （仍不影响 CLS：下方 #preMainPanels/#alerts 已是尺寸恒定容器，topbar 高度变化
@@ -1345,14 +1344,17 @@ header.topbar { height: 64px; min-height: 64px; box-sizing: border-box; overflow
   header.topbar { height: auto; min-height: 0; }
 }
 
-/* 2026-11-14 CLS：btStrategyPanel 固定高度，但让它**撑满稳定容器**（桌面 22rem /
-   移动 26rem，与 .pre-main-panels 同高、margin 归零），消除「框中框」双重滚动的间隙、
-   可视高度比旧 18rem 多 +64px；同时高度恒定 → 不撑开下方兄弟，CLS 稳。
-   教训：曾试过彻底去掉高度上限（commit 52c40870），本地桌面看似降到 0.06，但线上
-   限流环境（尤其移动端）骨架→表格撑高把下方兄弟推了一下，mobile CLS 反而 0.247→0.393，
-   已回退。固定高度对移动端 CLS 是必要保护，不得再去掉。
-   注意：不得改回固定 26rem（第二轮实测 CLS 0.802→0.890，净效果为负）。 */
-.btstrat-panel { margin: 0; box-sizing: border-box; height: 22rem; min-height: 22rem; max-height: 22rem; overflow-y: auto; display: flex; flex-direction: column; }
+/* 2026-11-14 CLS：btStrategyPanel 固定 18rem（基线实测值）。
+   为什么是 18rem 而不是更大/去掉：
+     · 曾试 26rem（第二轮）→ CLS 0.802→0.890，净效果为负，已撤销；
+     · 曾试去掉高度上限（52c40870）→ 本地桌面看似 0.06，但线上限流尤其移动端
+       骨架→表格撑高推下方兄弟，mobile CLS 0.247→0.393，已回退；
+     · 试 22rem 撑满容器（2fc3897c）→ 线上 mobile CLS 0.247→0.295，掉进「差」(>0.25)
+       区间（盒子越高、表格可见行越多、位移影响面越大）。
+   故 18rem 是线上实测的 CLS 最优固定高度，不得再调大或去掉。
+   回测大表格在小框里难读是真实问题，但靠高度微调解决不了（数百行必然要滚），
+   正解是改渲染结构（分页/可折叠/虚拟化），属单独任务，不在此轮。 */
+.btstrat-panel { margin: 8px 0; height: 18rem; min-height: 18rem; max-height: 18rem; box-sizing: border-box; overflow-y: auto; display: flex; flex-direction: column; }
 .btstrat-panel[hidden] { display: none; }
 .bs-skeleton { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--muted, #888); font-size: .9em; }
 .btstrat-panel.bs-unknown { justify-content: center; }
