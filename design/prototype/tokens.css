@@ -1,0 +1,359 @@
+/* ============================================================
+ * tokens.css
+ * A股情绪系统 PRO · 研究工作台设计语言
+ * 作用：只定义设计令牌（--s-*）与基础重置，不含任何组件样式。
+ * 依赖：无。可独立加载，配合 components.css 使用。
+ *
+ * 断点契约（CSS 自定义属性不可用于 @media，此处仅作注释）：
+ *   xs  < 640px          手机      栅格 1 列 / tabs 4 列 / 抽屉全屏 sheet
+ *   sm  640px - 1023px   平板      栅格 6 列
+ *   md  1024px - 1439px  小桌面    栅格 12 列
+ *   lg  >= 1440px        桌面      栅格 12 列 + 加宽间距
+ *
+ * 设计纪律（继承 BRIEF 第 1.C 节，不要另造第三套）：
+ *   chrome 柔、数据锐；辉光只允许三处；动画只做 opacity/transform；
+ *   尊重 prefers-reduced-motion；不使用毛玻璃（backdrop）类滤镜（树莓派掉帧）；
+ *   深色磨砂黑 + 青色主色；红涨绿跌（中国 A 股约定）。
+ *
+ * 变量总数：88（A 色 33 / B 阴影 2 / C 字 18 / D 间距 7
+ *            / E 圆角 4 / F 尺寸 15 / G 层级 5 / H 动效 4 / I 安全区 4）
+ * 局部令牌（不在此定义，由使用方提供，均带 fallback）：
+ *   --s-col-w        表格每列宽度，由 <th style="--s-col-w: 14%"> 行内提供
+ *   --s-sticky-offset 表头吸顶偏移，由 components.css 的 .s-scope 定义
+ * ============================================================ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---- A. 颜色 · 底色与表面（深色磨砂黑） ---- */
+  --s-bg-0: #0b0e11;                 /* 页面最底层 */
+  --s-bg-1: #0f1318;                 /* topbar / ticker / 输入底 */
+  --s-surface-1: #151b22;            /* 卡片默认面 */
+  --s-surface-2: #1a222b;            /* 卡片头 / 表头 / 悬浮面 */
+  --s-surface-3: #202a35;            /* 轨道 / 三级面 / tooltip */
+
+  /* ---- A. 颜色 · 描边 ---- */
+  --s-border-1: #232d38;             /* 常规 1px 分隔 */
+  --s-border-2: #2e3b49;             /* 强调边框 / 控件描边 */
+
+  /* ---- A. 颜色 · 文本（三档层级，解决"全站字号一档"） ---- */
+  --s-text-1: #e8eef5;               /* 结论 / 数值 */
+  --s-text-2: #a8b6c5;               /* 正文 / 标签 */
+  --s-text-3: #728298;               /* 口径 / 脚注 / 占位 */
+
+  /* ---- A. 颜色 · 主色（青） ---- */
+  --s-accent: #35d6d0;
+  --s-accent-soft: #123b40;          /* 选中态底色 */
+  --s-accent-contrast: #04161a;      /* 主色上的文字 */
+
+  /* ---- A. 颜色 · 语义：红涨绿跌（A 股约定） ---- */
+  --s-up: #ff5b5b;                   /* 涨 / 危险 / 超买 */
+  --s-up-soft: #3a1c20;
+  --s-down: #2fd39a;                 /* 跌 / 安全 / 超卖 */
+  --s-down-soft: #12332b;
+  --s-warn: #f5b544;
+  --s-warn-soft: #3a2c14;
+  --s-danger: #ff4d4f;
+  --s-danger-soft: #3d1a1d;
+  --s-info: #5aa9ff;
+  --s-info-soft: #172c45;
+  --s-muted: #8493a5;
+
+  /* ---- A. 颜色 · 叠层 / 骨架 / 焦点 / 辉光 / 打印 ---- */
+  --s-overlay: rgba(4, 8, 12, 0.66);          /* 抽屉遮罩，透明叠层 */
+  --s-skeleton-1: #1b242e;
+  --s-skeleton-2: #26323e;
+  --s-focus-ring: #35d6d0;
+  --s-glow-soft: rgba(53, 214, 208, 0.18);    /* 仅选中细边光 */
+  --s-print-bg: #ffffff;
+  --s-print-text: #111111;
+  --s-print-border: #cccccc;
+
+  /* ---- B. 阴影：禁止大 blur（树莓派性能） ---- */
+  --s-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.40);
+  --s-shadow-2: 0 4px 12px rgba(0, 0, 0, 0.45);
+
+  /* ---- C. 字族 ---- */
+  --s-font-sans: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --s-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --s-font-num: var(--s-font-mono);
+
+  /* ---- C. 字级（数值越大层级越高） ---- */
+  --s-font-xs: 11px;                 /* 脚注 / 口径 */
+  --s-font-sm: 12px;                 /* 表格 / 控件 */
+  --s-font-md: 13px;                 /* 卡片标题 */
+  --s-font-base: 14px;               /* 正文基准 */
+  --s-font-lg: 16px;                 /* 区块标题 */
+  --s-font-xl: 20px;                 /* 小屏 KPI / 结论 */
+  --s-font-kpi: 40px;                /* 桌面核心指标大字 38.4 */
+
+  /* ---- C. 行高 / 字重 ---- */
+  --s-line-tight: 1.2;
+  --s-line-normal: 1.55;
+  --s-line-loose: 1.75;              /* 研报长文阅读页 */
+  --s-weight-medium: 500;
+  --s-weight-semibold: 600;
+  --s-weight-bold: 700;
+
+  /* ---- D. 间距（4px 基准，去掉冗余档位） ---- */
+  --s-space-1: 4px;
+  --s-space-2: 8px;
+  --s-space-3: 12px;
+  --s-space-4: 16px;
+  --s-space-6: 24px;
+  --s-space-7: 32px;
+  --s-space-10: 64px;
+
+  /* ---- E. 圆角 ---- */
+  --s-radius-sm: 5px;
+  --s-radius-md: 8px;
+  --s-radius-lg: 12px;
+  --s-radius-pill: 999px;
+
+  /* ---- F. 尺寸契约（与骨架屏等高，解决 CLS） ---- */
+  --s-topbar-h: 56px;
+  --s-nav-h: 44px;
+  --s-ticker-h: 32px;
+  --s-container-max: 1600px;
+  --s-grid-gap: 16px;
+  --s-touch-min: 44px;               /* 触控目标下限 */
+  --s-table-row-h: 36px;
+  --s-table-head-h: 38px;
+  --s-drawer-w-sm: 420px;            /* 档 1：键值详情 */
+  --s-drawer-w-md: 640px;            /* 档 2：组合 / 席位明细 */
+  --s-drawer-w-lg: 960px;            /* 档 3：回测数百行明细 */
+  --s-chart-ratio: 16 / 9;
+  --s-skel-kpi-h: 134px;             /* 实测真实 KPI 卡 133.1px；骨架与真实共用，替换零位移 */
+  --s-skel-chart-h: 280px;           /* 图表懒挂载前占位 */
+
+  /* ---- G. 层级 ---- */
+  --s-z-sticky: 100;
+  --s-z-ticker: 110;
+  --s-z-drawer-mask: 900;
+  --s-z-drawer: 910;
+  --s-z-tooltip: 950;
+
+  /* ---- H. 动效 ---- */
+  --s-dur-fast: 120ms;
+  --s-dur-base: 200ms;
+  --s-dur-skeleton: 1200ms;
+  --s-ease: cubic-bezier(0.2, 0, 0.2, 1);
+
+  /* ---- I. 安全区（刘海屏 / 手势条） ---- */
+  --s-safe-top: env(safe-area-inset-top, 0px);
+  --s-safe-right: env(safe-area-inset-right, 0px);
+  --s-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --s-safe-left: env(safe-area-inset-left, 0px);
+}
+
+/* ============================================================
+ * 浅色主题：只覆盖颜色令牌，尺寸 / 字级 / 层级 / 动效全部复用
+ * 挂载方式：<div class="s-scope" data-theme="light">
+ * ============================================================ */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --s-bg-0: #f4f6f8;
+  --s-bg-1: #ffffff;
+  --s-surface-1: #ffffff;
+  --s-surface-2: #f0f3f6;
+  --s-surface-3: #e5eaef;
+
+  --s-border-1: #dde3e9;
+  --s-border-2: #c3ccd6;
+
+  --s-text-1: #14202b;
+  --s-text-2: #4a5a6a;
+  --s-text-3: #7a8896;
+
+  --s-accent: #0e8b88;
+  --s-accent-soft: #d8f2f0;
+  --s-accent-contrast: #ffffff;
+
+  --s-up: #d0342c;
+  --s-up-soft: #fbe4e2;
+  --s-down: #0e8a5f;
+  --s-down-soft: #dcf3e9;
+  --s-warn: #79500a;                 /* 浅色底加深，徽章对比度 ≥5.8:1 */
+  --s-warn-soft: #fff3d9;
+  --s-danger: #c62f31;
+  --s-danger-soft: #fbe2e2;
+  --s-info: #1c68bd;
+  --s-info-soft: #e0ecfa;
+  --s-muted: #6b7885;
+
+  --s-overlay: rgba(20, 32, 43, 0.42);
+  --s-skeleton-1: #e6ebef;
+  --s-skeleton-2: #f2f5f7;
+  --s-focus-ring: #0e8b88;
+  --s-glow-soft: rgba(14, 139, 136, 0.16);
+  --s-print-bg: #ffffff;
+  --s-print-text: #111111;
+  --s-print-border: #cccccc;
+
+  --s-shadow-1: 0 1px 2px rgba(20, 32, 43, 0.10);
+  --s-shadow-2: 0 4px 12px rgba(20, 32, 43, 0.14);
+}
+
+/* ============================================================
+ * 基础重置：严格限定在 .s-scope 内
+ * 目的：与研报视图 style.css / 终端视图 .t-scope 共存时零污染
+ * ============================================================ */
+.s-scope,
+.s-scope *,
+.s-scope *::before,
+.s-scope *::after {
+  box-sizing: border-box;
+}
+
+.s-scope {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--s-bg-0);
+  color: var(--s-text-1);
+  font-family: var(--s-font-sans);
+  font-size: var(--s-font-base);
+  line-height: var(--s-line-normal);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* 数字类容器统一等宽数字，避免数值刷新时抖动 */
+.s-scope .s-num,
+.s-scope .s-kpi__value,
+.s-scope .s-table,
+.s-scope .s-ticker {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* [hidden] 优先级高于组件 display，抽屉 / 遮罩靠它做真隐藏 */
+.s-scope [hidden] {
+  display: none !important;
+}
+
+/* 键盘可达性：只用 outline，不用 box-shadow 大辉光 */
+.s-scope :focus {
+  outline: none;
+}
+.s-scope :focus-visible {
+  outline: 2px solid var(--s-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--s-radius-sm);
+}
+
+/* 细滚动条（白名单容器才滚动，见 components.css） */
+.s-scope * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--s-border-2) transparent;
+}
+.s-scope *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.s-scope *::-webkit-scrollbar-thumb {
+  background: var(--s-border-2);
+  border-radius: var(--s-radius-pill);
+}
+.s-scope *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ============================================================
+ * 动效降级：尊重系统偏好
+ * 令牌清零 + 全局 animation/transition 收敛，组件侧再做一次兜底
+ * ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --s-dur-fast: 0.01ms;
+    --s-dur-base: 0.01ms;
+    --s-dur-skeleton: 0.01ms;
+  }
+  .s-scope,
+  .s-scope *,
+  .s-scope *::before,
+  .s-scope *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+ * 语义别名层（Phase 1 视觉册 ↔ Phase 3 运行时 的统一契约）
+ * 视觉册中的语义命名在此全部可用；多数指向运行时主令牌，随主题自动切换。
+ * 同名不同值的令牌以本文件 :root 为权威（见 02 文档第 8 节对齐说明）。
+ * ============================================================ */
+:root {
+  --s-accent-bg: var(--s-accent-soft);
+  --s-accent-border: rgba(53,214,208,.42);
+  --s-accent-glow: var(--s-glow-soft);
+  --s-accent-muted: #1C8B99;
+  --s-accent-strong: #55D6E4;
+  --s-border: var(--s-border-1);
+  --s-border-strong: var(--s-border-2);
+  --s-card-pad: var(--s-space-4);
+  --s-chart-area: rgba(53,214,208,.18);
+  --s-chart-crosshair: rgba(168,182,197,.45);
+  --s-chart-ma10: #6FA8F5;
+  --s-chart-ma20: #B07BE0;
+  --s-chart-ma5: #E0B054;
+  --s-content-max: var(--s-container-max);
+  --s-content-read: 72ch;
+  --s-control-border: #607282;
+  --s-danger-bg: var(--s-danger-soft);
+  --s-divider: var(--s-border-1);
+  --s-down-bg: var(--s-down-soft);
+  --s-drawer-w: var(--s-drawer-w-sm);
+  --s-dur-breathe: 2400ms;
+  --s-dur-instant: var(--s-dur-fast);
+  --s-dur-slow: 320ms;
+  --s-ease-in-out: cubic-bezier(.4,0,.2,1);
+  --s-ease-out: cubic-bezier(0,0,.2,1);
+  --s-flat: var(--s-muted);
+  --s-font-body: .875rem;
+  --s-font-caption: .75rem;
+  --s-font-display: 3.5rem;
+  --s-font-family-mono: var(--s-font-mono);
+  --s-font-family-sans: var(--s-font-sans);
+  --s-font-h1: 1.75rem;
+  --s-font-h2: 1.25rem;
+  --s-font-h3: .9375rem;
+  --s-font-micro: .6875rem;
+  --s-font-mono-num: .875rem;
+  --s-gutter: var(--s-grid-gap);
+  --s-leading-body: var(--s-line-loose);
+  --s-leading-display: 1.05;
+  --s-leading-snug: 1.35;
+  --s-leading-tight: var(--s-line-tight);
+  --s-on-accent: var(--s-accent-contrast);
+  --s-radius: var(--s-radius-md);
+  --s-radius-xs: 2px;
+  --s-scrim: var(--s-overlay);
+  --s-section-gap: var(--s-space-6);
+  --s-shadow-3: var(--s-shadow-2);
+  --s-shadow-alert: 0 0 0 1px rgba(245,181,68,.45), 0 0 10px rgba(245,181,68,.22);
+  --s-shadow-focus: 0 0 0 2px var(--s-surface-1), 0 0 0 4px var(--s-accent);
+  --s-shadow-glow: 0 0 0 1px var(--s-accent-border), 0 0 12px var(--s-glow-soft);
+  --s-shadow-value: 0 0 8px 2px var(--s-glow-soft);
+  --s-space-12: 48px;
+  --s-space-16: 64px;
+  --s-space-5: 20px;
+  --s-space-8: var(--s-space-7);
+  --s-surface-hover: rgba(255,255,255,.045);
+  --s-surface-inset: var(--s-bg-1);
+  --s-surface-selected: var(--s-accent-soft);
+  --s-text-disabled: #4C5862;
+  --s-up-bg: var(--s-up-soft);
+  --s-warn-bg: var(--s-warn-soft);
+  --s-weight-regular: 400;
+}
+
+[data-theme="light"] {
+  --s-text-disabled: #9aa7b3;
+  --s-control-border: #6c7a88;
+  --s-surface-hover: rgba(20,32,43,.045);
+}

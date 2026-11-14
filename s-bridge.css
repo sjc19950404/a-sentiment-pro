@@ -1,0 +1,28 @@
+/* ============================================================
+ * s-bridge.css — 作用域复位层（A 方案分阶段迁移用）
+ * 依赖：s-tokens.css / s-components.css（均严格限定在 .s-scope 内）
+ *
+ * 职责：在 .s-scope（新研究工作台）与 .t-scope / 研报视图并存时，
+ *       保证两套设计语言互不污染；并以 data-s-bridge 开关支持脚本化摘除。
+ *
+ * 阶段 0：.s-scope 尚未挂载，本文件**没有任何可见效果**（所有规则都
+ *       以 .s-scope / .t-scope 为作用对象，而它们此时都不存在于页面）。
+ * ============================================================ */
+
+/* 1. 新工作台自带隔离层：阻止 .s-* 自定义属性与层叠外溢到 .t-* / 研报节点 */
+.s-scope {
+  isolation: isolate;
+  contain: layout style;
+}
+
+/* 2. 反向隔离：研报视图 / 终端视图也不应继承 .s-* 语义别名 */
+.t-scope {
+  isolation: isolate;
+}
+
+/* 3. 开关：data-s-bridge="0"（阶段 0 默认）时，即便误挂 .s-scope 也整体退出。
+ *    该规则以 .s-scope 为对象，阶段 0 下 .s-scope 不存在，故惰性。 */
+html[data-s-bridge="0"] .s-scope,
+html[data-s-bridge="0"] .s-scope * {
+  display: revert;
+}

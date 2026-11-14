@@ -53,6 +53,11 @@ const SHELL_ASSETS = [
   './src/dual_track.js',
   './src/error_boundary.js',
   './src/validate_snapshot.js',
+  // 2026-11-15：A 方案阶段 0 新增令牌/组件/桥/自检脚本（纯新增，.s-scope 未挂载前惰性；随外壳预缓存）
+  './s-tokens.css',
+  './s-components.css',
+  './s-bridge.css',
+  './s-selfcheck.js',
 ];
 
 const DATA_PREFETCH = [
