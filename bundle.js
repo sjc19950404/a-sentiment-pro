@@ -2792,7 +2792,7 @@ if (isNode) {
     if (fromWindow) {
       cfg = fromWindow;
     } else {
-      const res = await fetch(new URL("../config.json", import.meta.url));
+      const res = await fetch(new URL("config.json", document.baseURI));
       if (!res.ok) throw new Error("HTTP " + res.status);
       cfg = await res.json();
     }
