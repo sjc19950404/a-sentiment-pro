@@ -2627,7 +2627,10 @@ async function loadHealth() {
     renderDirty(DIRTY);
     // 人工审核改判台账（#3 dirty 新交互）：本机可改、云端只读。best-effort 拉取，
     // 不影响主流程；拉到后重渲 dirty 面板以显示「已人工审核」标记与原因。
-    fetch('./api/review?_=' + Date.now(), { cache: 'no-store' })
+    // 人工审核改判台账：本机（Pi，有后端）走 ./api/review；云端（GitHub Pages 纯静态、无后端）
+    //   走静态 data/manual_review.json（只读）。否则 Pages 每次轮询都 404、刷屏控制台。
+    const _reviewSrc = /(^|\.)github\.io$/.test(location.hostname) ? './data/manual_review.json' : './api/review';
+    fetch(_reviewSrc + '?_=' + Date.now(), { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => { MANUAL_REVIEW = (j && Array.isArray(j.entries)) ? j : null; renderDirty(DIRTY); })
       .catch(() => {});
