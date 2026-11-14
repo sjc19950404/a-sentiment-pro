@@ -4,7 +4,7 @@
  * 注意：本文件只定义函数、不自动调用，故阶段 0（.s-scope 未挂载）下无任何行为/视觉副作用；
  * 调用方式（CDP / 控制台）：S.runSelfTest() 或 S.collectCls()。
  */
-(function () {
+(function (S) {
   "use strict";
 
   // 把逗号分隔的选择器逐项加 .s-scope 前缀，避免「只有首项带前缀」导致的全文档误匹配
