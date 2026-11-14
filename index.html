@@ -38,6 +38,11 @@
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="stylesheet" href="./style.css" />
   <!-- 终端视图（磨砂黑研究工作台）：与研报视图完全隔离，所有选择器 .t- 前缀 -->
+
+  <link rel="stylesheet" href="s-tokens.css">
+  <link rel="stylesheet" href="s-bridge.css">
+  <link rel="stylesheet" href="s-components.css">
+  <script src="s-selftest.js" defer></script>
 <!-- ══ 终端视图内联块（生成物，勿手改）· CSS ══
      源：terminal.css · 由 scripts/build_terminal_inline.mjs 生成 -->
   <style>
@@ -824,10 +829,6 @@
 .t-tag { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-left: 6px;
   background: rgba(139,92,246,.18); color: var(--glm, #8b5cf6); border: 1px solid var(--glm, #8b5cf6); }
   </style>
-  <link rel="stylesheet" href="s-tokens.css">
-  <link rel="stylesheet" href="s-bridge.css">
-  <link rel="stylesheet" href="s-components.css">
-  <script src="s-selftest.js" defer></script>
 </head>
 <body>
   <!-- 横屏/竖屏 手动切换（纯 CSS checkbox hack + :has()，不依赖自动 orientation 响应）
@@ -3387,6 +3388,7 @@
 
     // 入口按钮（挂在研报页顶部，点击 → 整屏覆盖层切到终端；关闭由终端顶栏「📄 研报」负责）
     const entry = el('button', '', '⚡ 图表终端');
+    entry.id = 't-entry'; // 【A 方案 R3】稳定锚点：阶段 1 工作台视图下由 body[data-view="workbench"] #t-entry{display:none} 隐藏，避免 z-index:9998 压住工作台浮层
     entry.style.cssText = 'position:fixed;top:8px;right:12px;z-index:9998;font:inherit;font-size:12px;'
       + 'padding:8px 13px;border-radius:8px;cursor:pointer;color:#22d3ee;background:rgba(11,15,22,.92);'
       + 'border:1px solid rgba(34,211,238,.45);box-shadow:0 0 14px rgba(34,211,238,.22)';

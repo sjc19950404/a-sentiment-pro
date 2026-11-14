@@ -1851,6 +1851,7 @@
 
     // 入口按钮（挂在研报页顶部，点击 → 整屏覆盖层切到终端；关闭由终端顶栏「📄 研报」负责）
     const entry = el('button', '', '⚡ 图表终端');
+    entry.id = 't-entry'; // 【A 方案 R3】稳定锚点：阶段 1 工作台视图下由 body[data-view="workbench"] #t-entry{display:none} 隐藏，避免 z-index:9998 压住工作台浮层
     entry.style.cssText = 'position:fixed;top:8px;right:12px;z-index:9998;font:inherit;font-size:12px;'
       + 'padding:8px 13px;border-radius:8px;cursor:pointer;color:#22d3ee;background:rgba(11,15,22,.92);'
       + 'border:1px solid rgba(34,211,238,.45);box-shadow:0 0 14px rgba(34,211,238,.22)';

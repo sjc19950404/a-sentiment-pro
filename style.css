@@ -2064,3 +2064,8 @@ table tbody tr:hover { background: rgba(88, 166, 255, .045); }
 .fh-cell .fh-v.pos { color: #3fb950; }
 .fh-cell .fh-v.neg { color: #f85149; }
 .fh-cell .fh-sub { font-size: 10px; color: var(--fg-dim, #8b949e); margin-top: 2px; }
+
+/* 【A 方案 R3】阶段 1 工作台视图（body[data-view="workbench"]）下隐藏旧终端入口按钮；
+   z-index:9998 会压住工作台浮层（抽屉 910 / tooltip 950），故挂载工作台时隐藏。
+   阶段 0（research view，body 无 data-view="workbench"）规则 inert，按钮照常可见。 */
+body[data-view="workbench"] #t-entry { display: none; }
