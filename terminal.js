@@ -78,7 +78,8 @@
   let sectorBase = 'index';   // 板块视图的对比基准：'index'=对比指数 | 'median'=对比行业中位数
 
   // ── 2. 常量与数据加载 ──────────────────────────────────────────────────
-  const jget = async (url) => { try { const r = await fetch(url, { cache: 'no-cache' }); return r.ok ? await r.json() : null; } catch { return null; } };
+  // 仅 data/* 走 durl() 改道 R2（github.io 上绕开慢链）；api/review、ui/kline（已自行 durl）不处理
+  const jget = async (url) => { const u = (typeof url === 'string' && /^(\.\/)?data\//.test(url)) ? durl(url) : url; try { const r = await fetch(u, { cache: 'no-cache' }); return r.ok ? await r.json() : null; } catch { return null; } };
 
   // ── 数据起源（2026-10-27 · 方案B：jsDelivr + 独立数据仓，绕开 Cloudflare）──────────
   //   背景：个股K线（ui/kline，163MB/5554 分片）与聚合侧车档（emotion_history /

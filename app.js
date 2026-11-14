@@ -2,6 +2,15 @@
 // （纯 vanilla，无构建步骤）。完整档 data/archive.json 仅由脚本/审计/回测读取，前端不拉。
 // 分层规则与切片生成见 src/archive_split.js（唯一出处）；惰性字段见 src/lhb_codec.js。
 const $ = (id) => document.getElementById(id);
+// 数据档起源感知改道：仅 github.io 域名 + 配置了 dataOrigin 时，把 data/* 改道到 R2 快 CDN
+//   （绕开国内直连 github.io 慢链），Pi 本机/localhost 返回原相对路径。api/review 等不走此道。
+const durl = (p) => {
+  const origin = (window.ASENT_CONFIG && window.ASENT_CONFIG.dataOrigin) || '';
+  if (!origin || !/(^|\.)github\.io$/.test(location.hostname)) return p;
+  return origin.replace(/\/+$/, '') + '/' + String(p).replace(/^\.?\//, '');
+};
+// dget：数据档取数，自动经 durl() 改道 R2；默认 no-store（每次向服务端校验最新）
+const dget = (p, opts) => fetch(durl(p), opts || { cache: 'no-store' });
 // 人工审核模式：仅本机（localhost / 127.0.0.1）或显式 ?review=1 可改；云端 Pages 只读。
 const REVIEW_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || /[?&]review=1\b/.test(location.search);
 // 人工改判覆盖查询（与 src/manual_review.js 同主键逻辑；app.js 经典脚本内联，避免 import）。
@@ -2420,7 +2429,7 @@ function renderBacktest(bt) {
 
 async function loadBacktest() {
   try {
-    const res = await fetch('./data/backtest.json?_=' + Date.now(), { cache: 'no-store' });
+    const res = await dget('./data/backtest.json?_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     BT = await res.json();
     noteLoad('backtest', true);
@@ -2509,7 +2518,7 @@ async function loadFactorHealth() {
   if (!card) return;
   let fh = null;
   try {
-    const res = await fetch('./data/factor_health_history.json?_=' + Date.now(), { cache: 'no-store' });
+    const res = await dget('./data/factor_health_history.json?_=' + Date.now(), { cache: 'no-store' });
     if (res.ok) fh = await res.json();
   } catch { fh = null; }
   if (!fh || !fh.weeks || !fh.weeks.length) return; // 账本未就绪：卡片保持 hidden（不占位）
@@ -2555,7 +2564,7 @@ async function loadFactorHealth() {
 
 async function loadHealth() {
   try {
-    const res = await fetch('./data/signals-latest.json?_=' + Date.now(), { cache: 'no-store' });
+    const res = await dget('./data/signals-latest.json?_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const s = await res.json();
     SIGNALS = s || null;
@@ -2637,7 +2646,7 @@ async function loadHealth() {
     // AI 深度情报·排雷黑名单（方向 A）：盘后由 scripts/llm_risk_scan.mjs 落盘
     //   data/llm_risk-blacklist.json，前端拉取供「选股池/详情抽屉打标 + 模拟交易台下单预检拦截」。
     //   fail-open：档缺失/解析失败 → window.__glmBlacklist=null（不打标、不拦截，绝不误伤）。
-    fetch('./data/llm_risk_blacklist.json?_=' + Date.now(), { cache: 'no-store' })
+    dget('./data/llm_risk_blacklist.json?_=' + Date.now(), { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => { window.__glmBlacklist = (j && Array.isArray(j.blacklist)) ? j : null; })
       .catch(() => { window.__glmBlacklist = null; });
@@ -2694,7 +2703,7 @@ let BTSTRAT = null;
 
 async function loadBtStrategies() {
   try {
-    const res = await fetch('./data/backtest-strategies.json?_=' + Date.now(), { cache: 'no-store' });
+    const res = await dget('./data/backtest-strategies.json?_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     BTSTRAT = await res.json();
     noteLoad('backtest-strategies', true);
@@ -3747,7 +3756,7 @@ function renderTrackBanner(sig) {
 
 async function loadVersionRegression() {  const foot = $('verCaution');
   try {
-    const res = await fetch('./data/version-regression.json?_=' + Date.now(), { cache: 'no-store' });
+    const res = await dget('./data/version-regression.json?_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     VREG = await res.json();
     noteLoad('version-regression', true);
@@ -3890,7 +3899,7 @@ function loadRecentArchiveShared() {
   if (stale && window.__recentPromiseAt != null && Date.now() - window.__recentPromiseAt > RECENT_PROMISE_TTL_MS) {
     const staleAt = window.__recentPromiseAt;
     window.__recentPromiseAt = null;
-    window.__recentPromise = fetch('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
+    window.__recentPromise = dget('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
       .then((d) => { window.__recentPromiseAt = Date.now(); return d; })
       .catch((e) => {
@@ -3904,7 +3913,7 @@ function loadRecentArchiveShared() {
     return window.__recentPromise;
   }
   if (!window.__recentPromise) {
-    window.__recentPromise = fetch('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
+    window.__recentPromise = dget('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
       .then((d) => { window.__recentPromiseAt = Date.now(); return d; })
       .catch((e) => {
@@ -4073,7 +4082,7 @@ let INDEX_CACHE = null;
 let GLOB = null;
 
 function loadGlobal() {
-  return fetch('./data/global.json?_=' + Date.now(), { cache: 'no-store' })
+  return dget('./data/global.json?_=' + Date.now(), { cache: 'no-store' })
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
     .then((g) => { GLOB_REF = g; noteLoad('global', true); renderGlobal(g); })
     .catch((e) => {
@@ -4412,7 +4421,7 @@ async function loadIntraday(meta) {
   if (phase !== 'live') { card.hidden = true; return; }
   let snap = null;
   try {
-    const res = await fetch('./data/intraday.json?_=' + Date.now(), { cache: 'no-store' });
+    const res = await dget('./data/intraday.json?_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) { card.hidden = true; return; }
     snap = await res.json();
   } catch { card.hidden = true; return; }
@@ -4691,8 +4700,8 @@ let __sidecarReady = false;
   const pick = (j) => (j && typeof j === 'object') ? j : null;
   try {
     const [lab, ann] = await Promise.all([
-      fetch('./data/seat_labels_compact.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
-      fetch('./data/ann_risk_scan.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      dget('./data/seat_labels_compact.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      dget('./data/ann_risk_scan.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ]);
     const labJ = pick(lab);
     if (labJ && labJ.buckets) {
