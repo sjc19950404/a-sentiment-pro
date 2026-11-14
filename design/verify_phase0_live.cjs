@@ -106,8 +106,7 @@ async function main() {
   R.checks.cssHitSurface = await js(`JSON.stringify((function(){
     function walk(rules, bucket){
       Array.prototype.forEach.call(rules, function(r){
-        if (r.cssRules) { walk(r.cssRules, bucket); return; }
-        if (!r.selectorText) return;
+        if (!r.selectorText) { if (r.cssRules) walk(r.cssRules, bucket); return; }
         r.selectorText.split(',').forEach(function(sel){
           bucket.total++;
           try {
@@ -189,9 +188,35 @@ async function main() {
     };
   })())`);
 
+  // ---- 7. 收口判定（阶段 0 预期：report.pass=false，但作用域/接口/零变化必须成立） ----
+  try {
+    const m = JSON.parse(R.checks.mount || '{}');
+    const st = R.checks.runSelfTest || {};
+    const surf = JSON.parse(R.checks.cssHitSurface || '[]');
+    const zero = JSON.parse(R.checks.cssZeroImpact || '{}');
+    const bridge = surf.filter(x => /bridge/.test(x.file))[0] || {};
+    const onlyNonLayout = (zero.diffs || []).every(d => (d.sampleKeys || []).every(k => k === 'color' || k === 'r'));
+    R.verdict = {
+      collectClsCallable: m.collectCls === 'function',
+      scopedFixEffective: !!(st.touchTargets && st.touchTargets.checked === 0 && st.contrast && st.contrast.checked === 0),
+      newCssRulesHittingLegacyDOM: surf.reduce((n, x) => n + (x.matched || 0), 0),
+      bridgeMatchedSelectors: bridge.samples || [],
+      computedStyleDiffCount: zero.diffCount || 0,
+      diffsAreNonLayoutOnly: onlyNonLayout,
+      zeroVisualChange: m.docHeight === 9521 && m.horizontalOverflowPx === 0 && onlyNonLayout,
+      clsDualThreshold: !!(st.cls && st.cls.target === 0.10 && st.cls.baseline === 0.174),
+      clsMeasured: st.cls ? st.cls.value : null,
+      runSelfTestPass: st.pass,
+      runSelfTestPassExpectedPhase0: false,
+      consoleErrors: R.errors.length,
+      failedRequests: R.failedRequests.length
+    };
+  } catch (e) { R.verdict = { error: String(e) }; }
+
   R.errors = R.errors.slice(0, 25);
   R.failedRequests = R.failedRequests.slice(0, 25);
-  fs.writeFileSync(path.join(OUT, 'design/assets/阶段0线上核验.json'), JSON.stringify(R, null, 2));
+  // 修复后报告单独落盘；同名无后缀的 阶段0线上核验.json 是 80278efc 的 before 证据（仓库已入库），勿覆盖。
+  fs.writeFileSync(path.join(OUT, 'design/assets/阶段0线上核验_修复后.json'), JSON.stringify(R, null, 2));
   console.log(JSON.stringify(R, null, 2));
   ws.close();
 }

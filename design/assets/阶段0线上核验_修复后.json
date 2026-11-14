@@ -1,0 +1,91 @@
+{
+  "url": "https://sjc19950404.github.io/a-sentiment-pro/",
+  "stamp": "2026-11-14T18:47:22.222Z",
+  "checks": {
+    "mount": "{\"htmlFlag\":\"0\",\"injected\":[\"s-tokens.css\",\"s-bridge.css\",\"s-components.css\",\"s-selftest.js\"],\"styleCssBeforeNew\":true,\"sScopeCount\":0,\"tScopeCount\":1,\"SType\":\"object\",\"SKeys\":[\"runSelfTest\",\"collectCls\"],\"runSelfTest\":\"function\",\"collectCls\":\"function\",\"docHeight\":9521,\"horizontalOverflowPx\":0,\"preMainPanels\":true,\"reportPanel\":true,\"hasKpi384\":true}",
+    "cssHitSurface": "[{\"file\":\"s-tokens.css\",\"total\":25,\"matched\":3,\"samples\":[{\"sel\":\":root\",\"n\":1},{\"sel\":\":root\",\"n\":1},{\"sel\":\":root\",\"n\":1}]},{\"file\":\"s-bridge.css\",\"total\":15,\"matched\":0,\"samples\":[]},{\"file\":\"s-components.css\",\"total\":296,\"matched\":0,\"samples\":[]}]",
+    "cssZeroImpact": "{\"sampled\":520,\"disabledLinks\":3,\"diffCount\":12,\"diffs\":[{\"idx\":0,\"el\":\"SCRIPT#asent-config\",\"sampleKeys\":[\"color\",\"r\"]},{\"idx\":1,\"el\":\"INPUT#lsToggle\",\"sampleKeys\":[\"color\",\"r\"]},{\"idx\":45,\"el\":\"A#tv-attr-logo\",\"sampleKeys\":[\"color\",\"r\"]},{\"idx\":46,\"el\":\"clipPath#a\",\"sampleKeys\":[\"color\",\"r\"]},{\"idx\":68,\"el\":\"A#tv-attr-logo\",\"sampleKeys\":[\"color\",\"r\"]},{\"idx\":69,\"el\":\"clipPath#a\",\"sampleKeys\":[\"color\",\"r\"]},{\"idx\":131,\"el\":\"INPUT#execProfile\",\"sampleKeys\":[\"color\",\"r\"]},{\"idx\":132,\"el\":\"INPUT#execLimitFill\",\"sampleKeys\":[\"color\",\"r\"]}]}",
+    "collectClsCall": {
+      "ok": true,
+      "type": "object",
+      "then": "function"
+    },
+    "runSelfTest": {
+      "stamp": "2026-11-14T18:47:48.224Z",
+      "viewport": {
+        "w": 1440,
+        "h": 1000,
+        "dpr": 1
+      },
+      "horizontalOverflow": {
+        "count": 0,
+        "items": []
+      },
+      "innerScrollContainers": {
+        "count": 0,
+        "whitelisted": 0,
+        "violations": []
+      },
+      "cls": {
+        "value": 0.1593,
+        "sessions": 1,
+        "target": 0.1,
+        "baseline": 0.174,
+        "pass": false,
+        "degraded": false
+      },
+      "touchTargets": {
+        "checked": 0,
+        "min": 44,
+        "violations": 0,
+        "items": []
+      },
+      "contrast": {
+        "checked": 0,
+        "minRatio": 99,
+        "violations": 0,
+        "items": []
+      },
+      "drawerFocusTrap": {
+        "ok": false,
+        "steps": [
+          "drawer missing"
+        ]
+      },
+      "emptyStates": {
+        "count": 0,
+        "missingTitle": 0,
+        "oversized": 0,
+        "items": []
+      },
+      "skeletonSwap": {
+        "skeletonH": 0,
+        "realH": 134,
+        "duringInsert": 134,
+        "afterReplace": 0,
+        "maxShift": 134,
+        "pass": false
+      },
+      "pass": false
+    },
+    "terminalSmoke": "{\"tRoot\":true,\"navButtons\":8,\"tScope\":1,\"sScope\":0,\"fixedEntry\":{\"text\":\"⚡ 图表终端\",\"id\":\"\",\"fixed\":\"fixed\"},\"docHeight\":9521,\"bodyTextHead\":\"A股情绪系统 PRO\\n2026-11-13\\nLIVE\\n更新 2026-11-13 21:13\\n⚡ 分层加载：已载入最近\\n30\\n/ 265 个交易日\\n载入完整档\\n⇩ 导出数据 ▾\\n↻ 刷新\\n概览\\n个股与题材\\n策略回测 V5.2\\n研判报告\\n外围预案\\n模拟交易\\n表格行 / 题材标签 / 图上数据点 / 权重行 均可点击查看详\"}"
+  },
+  "errors": [],
+  "failedRequests": [],
+  "browser": "Edg/157.0.4341.46",
+  "verdict": {
+    "collectClsCallable": true,
+    "scopedFixEffective": true,
+    "newCssRulesHittingLegacyDOM": 3,
+    "bridgeMatchedSelectors": [],
+    "computedStyleDiffCount": 12,
+    "diffsAreNonLayoutOnly": true,
+    "zeroVisualChange": true,
+    "clsDualThreshold": true,
+    "clsMeasured": 0.1593,
+    "runSelfTestPass": false,
+    "runSelfTestPassExpectedPhase0": false,
+    "consoleErrors": 0,
+    "failedRequests": 0
+  }
+}

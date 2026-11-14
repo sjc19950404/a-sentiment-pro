@@ -8,7 +8,7 @@
 /* 作用域边界：隔离新层堆叠上下文与布局/样式包含；阶段 0 无 .s-scope 元素 → 惰性 */
 .s-scope {
   isolation: isolate;
-  contain: layout style;
+  contain: style;
 }
 
 /* 裸标签复位（覆盖全局 style.css 对 header/footer/main 等的裸标签样式，仅作用于 .s-scope 内部） */

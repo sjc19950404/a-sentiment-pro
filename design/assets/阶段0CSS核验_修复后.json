@@ -1,0 +1,27 @@
+{
+  "stylesheets": "[{\"href\":\"style.css\",\"rules\":1194,\"disabled\":false},{\"href\":\"inline\",\"rules\":347,\"disabled\":false},{\"href\":\"s-tokens.css\",\"rules\":15,\"disabled\":false},{\"href\":\"s-bridge.css\",\"rules\":6,\"disabled\":false},{\"href\":\"s-components.css\",\"rules\":205,\"disabled\":false},{\"href\":\"inline\",\"rules\":2,\"disabled\":false},{\"href\":\"inline\",\"rules\":2,\"disabled\":false}]",
+  "bridgeRules": "[{\"sel\":\".s-scope\",\"decl\":\"isolation: isolate; contain: layout style;\"},{\"sel\":\".s-scope header, .s-scope footer, .s-scope main, .s-scope nav, .s-scope section, .s-scope article, .s-scope aside\",\"decl\":\"margin: 0px; padding: 0px; border: 0px; background: transparent; color: inherit; font: inherit; display: block; position: static;\"},{\"sel\":\".s-scope table\",\"decl\":\"border-collapse: collapse; border-spacing: 0px; font: inherit; color: inherit;\"},{\"sel\":\".s-scope details, .s-scope summary\",\"decl\":\"font: inherit; color: inherit;\"},{\"sel\":\".s-scope a\",\"decl\":\"color: inherit; text-decoration: none;\"},{\"sel\":\".s-scope button, .s-scope input, .s-scope select\",\"decl\":\"font: inherit; color: inherit; margin: 0px;\"}]",
+  "tScopeImpact": "{\"present\":true,\"tag\":\"DIV\",\"id\":\"tRoot\",\"isolation\":\"auto\",\"contain\":\"none\",\"fixedEntryInsideTScope\":false,\"fixedEntryParent\":\"BODY#\"}",
+  "bridgeOff": "{\"disabled\":true,\"isolationAfter\":\"auto\"}",
+  "selectorListBug": "{\"sScopeCount\":0,\"asWrittenHits\":577,\"properlyScopedHits\":0,\"note\":\"05 册 checkTouchTargets/checkContrast 的逗号列表只有第一项带 .s-scope 前缀\"}",
+  "selftestSource": "{\"bytes\":12399,\"iifeParamS\":true,\"hasCollectClsExport\":true,\"scopedQueryCalls\":2,\"asyncDrawer\":true,\"clsWindow5000\":true,\"clsTarget010\":true,\"clsBaseline0174\":true}",
+  "verdict": {
+    "bridgeRuleCount": 6,
+    "bridgeHasTScope": false,
+    "bridgeHasDisplayRevert": false,
+    "bridgeHasBareTagReset": true,
+    "tScopeIsolation": "auto",
+    "isolationUnchangedAfterBridgeOff": true,
+    "selftestSourceChecks": {
+      "bytes": 12399,
+      "iifeParamS": true,
+      "hasCollectClsExport": true,
+      "scopedQueryCalls": 2,
+      "asyncDrawer": true,
+      "clsWindow5000": true,
+      "clsTarget010": true,
+      "clsBaseline0174": true
+    },
+    "note": "selectorListBug 复现的是 05 册旧写法，不是线上脚本；线上是否修好以 S.runSelfTest().touchTargets.checked===0 为准"
+  }
+}

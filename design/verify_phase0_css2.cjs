@@ -94,7 +94,41 @@ async function main() {
     };
   })())`);
 
-  fs.writeFileSync(path.join(OUT, 'design/assets/阶段0CSS核验.json'), JSON.stringify(R, null, 2));
+  // 线上实现文件源码特征（同源 fetch，确认修复确实在部署产物里）
+  R.selftestSource = await js(`(function(){
+    return fetch('./s-selftest.js').then(function(r){return r.text();}).then(function(t){
+      return JSON.stringify({
+        bytes: t.length,
+        iifeParamS: /\\(function \\(S\\)/.test(t),
+        hasCollectClsExport: /S\\.collectCls\\s*=\\s*collectCls/.test(t),
+        scopedQueryCalls: (t.match(/querySelectorAll\\(scoped\\(/g)||[]).length,
+        asyncDrawer: /async function checkDrawerFocusTrap/.test(t),
+        clsWindow5000: /\\}, 5000\\)/.test(t),
+        clsTarget010: /target: 0\\.10/.test(t),
+        clsBaseline0174: /baseline: 0\\.174/.test(t)
+      });
+    });
+  })()`);
+
+  try {
+    const t = JSON.parse(R.tScopeImpact || '{}');
+    const off = JSON.parse(R.bridgeOff || '{}');
+    const rules = JSON.parse(R.bridgeRules || '[]');
+    const src = JSON.parse(R.selftestSource || '{}');
+    R.verdict = {
+      bridgeRuleCount: rules.length,
+      bridgeHasTScope: rules.some(r => /\.t-scope/.test(r.sel || '')),
+      bridgeHasDisplayRevert: rules.some(r => /display:\s*revert/.test(r.decl || '')),
+      bridgeHasBareTagReset: rules.some(r => /\.s-scope header/.test(r.sel || '')),
+      tScopeIsolation: t.isolation,
+      isolationUnchangedAfterBridgeOff: off.isolationAfter === t.isolation,
+      selftestSourceChecks: src,
+      note: 'selectorListBug 复现的是 05 册旧写法，不是线上脚本；线上是否修好以 S.runSelfTest().touchTargets.checked===0 为准'
+    };
+  } catch (e) { R.verdict = { error: String(e) }; }
+
+  // 修复后报告单独落盘；同名无后缀的 阶段0CSS核验.json 是 80278efc 的 before 证据（仓库已入库），勿覆盖。
+  fs.writeFileSync(path.join(OUT, 'design/assets/阶段0CSS核验_修复后.json'), JSON.stringify(R, null, 2));
   console.log(JSON.stringify(R, null, 2));
   ws.close();
 }
