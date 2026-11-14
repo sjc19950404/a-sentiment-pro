@@ -1,35 +1,14 @@
 {
  "kind": "llm-risk-blacklist",
  "version": 1,
- "asOfDate": "2026-11-12",
- "generatedAt": "2026-11-12T22:20:14.280+08:00",
+ "asOfDate": "2026-11-13",
+ "generatedAt": "2026-11-14T11:02:21.196+08:00",
  "model": "glm-4-flash",
  "source": "announcements-latest.json",
- "scanned": 20,
+ "scanned": 12,
  "universe": "ladder",
  "limit": 40,
- "blacklist": [
-  {
-   "code": "600327",
-   "name": "大东方",
-   "riskLevel": "medium",
-   "reasons": [
-    "股票交易风险提示公告",
-    "监管工作函"
-   ],
-   "evidence": "大东方：股票交易风险提示公告；大东方：关于无锡商业大厦大东方股份有限公司有关股价波动事项的监管工作函；大东方：股票交易异常波动暨风险提示公告；大东方：股票交易风险提示公告"
-  },
-  {
-   "code": "603366",
-   "name": "日出东方",
-   "riskLevel": "medium",
-   "reasons": [
-    "股票交易风险提示性公告",
-    "监管工作函"
-   ],
-   "evidence": "日出东方：关于股票交易风险提示性公告；日出东方：关于日出东方控股股份有限公司股价波动事项的监管工作函；日出东方：股票交易异常波动的公告；日出东方：关于股票交易异常波动提示性公告"
-  }
- ],
+ "blacklist": [],
  "degraded": false,
  "note": "正向封禁黑名单：paper.js 建仓前查此表，命中即拒绝买入；空表 = 不封禁（fail-open，未跑/无源绝不误伤正常交易）。风险等级 high/medium 入列。结构性 ST 强制 high。"
 }

@@ -1,6 +1,6 @@
 {
- "date": "2026-11-12",
- "generatedAt": "2026-11-12T21:09:27.427+08:00",
+ "date": "2026-11-13",
+ "generatedAt": "2026-11-14T10:58:47.350+08:00",
  "source": "push2.eastmoney.com/api/qt/ulist.np（f20 总市值/f21 流通市值，元→亿）",
  "universe": {
   "kind": "涨停池（pools.zt_codes）",
@@ -9,271 +9,271 @@
   "misses": []
  },
  "stats": {
-  "circMvMedianYi": 44.18,
-  "circMvP25Yi": 35.8,
-  "circMvP75Yi": 61.62,
-  "smallCapPct": 59.5,
+  "circMvMedianYi": 54.31,
+  "circMvP25Yi": 39.89,
+  "circMvP75Yi": 76.1,
+  "smallCapPct": 43.2,
   "bigCapPct": 0
  },
  "stocks": [
   {
-   "code": "000573",
-   "name": "粤宏远Ａ",
-   "circMvYi": 27.52,
-   "totalMvYi": 27.77,
-   "lb": 1
-  },
-  {
-   "code": "002086",
-   "name": "东方海洋",
-   "circMvYi": 81.58,
-   "totalMvYi": 101.08,
-   "lb": 1
-  },
-  {
-   "code": "002148",
-   "name": "北纬科技",
-   "circMvYi": 32.61,
-   "totalMvYi": 40.4,
+   "code": "001358",
+   "name": "兴欣新材",
+   "circMvYi": 13.58,
+   "totalMvYi": 32.82,
    "lb": 2
-  },
-  {
-   "code": "002623",
-   "name": "亚玛顿",
-   "circMvYi": 49.43,
-   "totalMvYi": 49.54,
-   "lb": 4
-  },
-  {
-   "code": "603725",
-   "name": "天安新材",
-   "circMvYi": 40.12,
-   "totalMvYi": 40.12,
-   "lb": 2
-  },
-  {
-   "code": "603396",
-   "name": "金辰股份",
-   "circMvYi": 44.48,
-   "totalMvYi": 44.48,
-   "lb": 2
-  },
-  {
-   "code": "603536",
-   "name": "惠发食品",
-   "circMvYi": 31.37,
-   "totalMvYi": 31.37,
-   "lb": 3
-  },
-  {
-   "code": "603366",
-   "name": "日出东方",
-   "circMvYi": 107.08,
-   "totalMvYi": 107.08,
-   "lb": 5
-  },
-  {
-   "code": "002593",
-   "name": "日上集团",
-   "circMvYi": 29.31,
-   "totalMvYi": 42.04,
-   "lb": 2
-  },
-  {
-   "code": "002696",
-   "name": "百洋股份",
-   "circMvYi": 39.04,
-   "totalMvYi": 40.38,
-   "lb": 1
-  },
-  {
-   "code": "600558",
-   "name": "大西洋",
-   "circMvYi": 53.5,
-   "totalMvYi": 53.5,
-   "lb": 1
-  },
-  {
-   "code": "002628",
-   "name": "成都路桥",
-   "circMvYi": 35.8,
-   "totalMvYi": 35.89,
-   "lb": 1
-  },
-  {
-   "code": "603175",
-   "name": "超颖电子",
-   "circMvYi": 60.47,
-   "totalMvYi": 435.02,
-   "lb": 1
-  },
-  {
-   "code": "605255",
-   "name": "天普股份",
-   "circMvYi": 89.98,
-   "totalMvYi": 89.98,
-   "lb": 3
-  },
-  {
-   "code": "002172",
-   "name": "澳洋健康",
-   "circMvYi": 50.96,
-   "totalMvYi": 51,
-   "lb": 1
-  },
-  {
-   "code": "002205",
-   "name": "国统股份",
-   "circMvYi": 21.84,
-   "totalMvYi": 21.84,
-   "lb": 1
-  },
-  {
-   "code": "605169",
-   "name": "洪通燃气",
-   "circMvYi": 38.23,
-   "totalMvYi": 39.72,
-   "lb": 1
-  },
-  {
-   "code": "600853",
-   "name": "龙建股份",
-   "circMvYi": 42.68,
-   "totalMvYi": 42.68,
-   "lb": 1
   },
   {
    "code": "002187",
    "name": "广百股份",
-   "circMvYi": 44.44,
-   "totalMvYi": 44.44,
-   "lb": 1
-  },
-  {
-   "code": "001358",
-   "name": "兴欣新材",
-   "circMvYi": 12.35,
-   "totalMvYi": 29.84,
-   "lb": 1
-  },
-  {
-   "code": "600569",
-   "name": "安阳钢铁",
-   "circMvYi": 57.45,
-   "totalMvYi": 57.45,
-   "lb": 1
-  },
-  {
-   "code": "600857",
-   "name": "宁波中百",
-   "circMvYi": 33.65,
-   "totalMvYi": 33.65,
-   "lb": 1
-  },
-  {
-   "code": "601929",
-   "name": "吉视传媒",
-   "circMvYi": 98.06,
-   "totalMvYi": 98.06,
-   "lb": 1
-  },
-  {
-   "code": "601188",
-   "name": "龙江交通",
-   "circMvYi": 61.62,
-   "totalMvYi": 61.62,
-   "lb": 1
-  },
-  {
-   "code": "002693",
-   "name": "双成药业",
-   "circMvYi": 35.88,
-   "totalMvYi": 36.2,
-   "lb": 1
-  },
-  {
-   "code": "603958",
-   "name": "哈森股份",
-   "circMvYi": 40.32,
-   "totalMvYi": 40.32,
-   "lb": 1
-  },
-  {
-   "code": "603706",
-   "name": "东方环宇",
-   "circMvYi": 50.89,
-   "totalMvYi": 50.89,
-   "lb": 4
-  },
-  {
-   "code": "002021",
-   "name": "中捷资源",
-   "circMvYi": 31.44,
-   "totalMvYi": 31.44,
-   "lb": 1
-  },
-  {
-   "code": "603135",
-   "name": "中重科技",
-   "circMvYi": 64.09,
-   "totalMvYi": 64.71,
+   "circMvYi": 48.85,
+   "totalMvYi": 48.85,
    "lb": 2
   },
   {
-   "code": "605222",
-   "name": "起帆电缆",
-   "circMvYi": 84.85,
-   "totalMvYi": 84.85,
+   "code": "002685",
+   "name": "华东重机",
+   "circMvYi": 55.82,
+   "totalMvYi": 55.83,
    "lb": 1
   },
   {
    "code": "600467",
    "name": "好当家",
-   "circMvYi": 36.23,
-   "totalMvYi": 36.23,
+   "circMvYi": 39.89,
+   "totalMvYi": 39.89,
+   "lb": 2
+  },
+  {
+   "code": "002148",
+   "name": "北纬科技",
+   "circMvYi": 35.86,
+   "totalMvYi": 44.42,
+   "lb": 3
+  },
+  {
+   "code": "002819",
+   "name": "东方中科",
+   "circMvYi": 51.26,
+   "totalMvYi": 64.68,
    "lb": 1
   },
   {
-   "code": "600802",
-   "name": "福建水泥",
-   "circMvYi": 39.36,
-   "totalMvYi": 39.36,
+   "code": "605255",
+   "name": "天普股份",
+   "circMvYi": 98.98,
+   "totalMvYi": 98.98,
+   "lb": 4
+  },
+  {
+   "code": "600715",
+   "name": "文投控股",
+   "circMvYi": 97.32,
+   "totalMvYi": 138.04,
    "lb": 1
   },
   {
-   "code": "000995",
-   "name": "皇台酒业",
-   "circMvYi": 32.5,
-   "totalMvYi": 32.5,
+   "code": "603396",
+   "name": "金辰股份",
+   "circMvYi": 48.93,
+   "totalMvYi": 48.93,
+   "lb": 3
+  },
+  {
+   "code": "002905",
+   "name": "金逸影视",
+   "circMvYi": 34.59,
+   "totalMvYi": 37.26,
    "lb": 1
   },
   {
-   "code": "601091",
-   "name": "沈鼓集团",
-   "circMvYi": 44.18,
-   "totalMvYi": 650.61,
+   "code": "603103",
+   "name": "横店影视",
+   "circMvYi": 122.46,
+   "totalMvYi": 122.46,
    "lb": 1
   },
   {
-   "code": "601606",
-   "name": "长城军工",
-   "circMvYi": 236.24,
-   "totalMvYi": 236.24,
+   "code": "603928",
+   "name": "兴业股份",
+   "circMvYi": 40.75,
+   "totalMvYi": 40.75,
    "lb": 1
   },
   {
-   "code": "601566",
-   "name": "九牧王",
-   "circMvYi": 71.66,
-   "totalMvYi": 71.66,
+   "code": "002425",
+   "name": "凯撒文化",
+   "circMvYi": 36.44,
+   "totalMvYi": 37.88,
    "lb": 1
   },
   {
-   "code": "600327",
-   "name": "大东方",
-   "circMvYi": 63.53,
-   "totalMvYi": 63.53,
-   "lb": 5
+   "code": "000665",
+   "name": "湖北广电",
+   "circMvYi": 52.08,
+   "totalMvYi": 52.08,
+   "lb": 1
+  },
+  {
+   "code": "002205",
+   "name": "国统股份",
+   "circMvYi": 24.03,
+   "totalMvYi": 24.03,
+   "lb": 2
+  },
+  {
+   "code": "603767",
+   "name": "中马传动",
+   "circMvYi": 54.75,
+   "totalMvYi": 54.75,
+   "lb": 1
+  },
+  {
+   "code": "000766",
+   "name": "通化金马",
+   "circMvYi": 159.33,
+   "totalMvYi": 159.47,
+   "lb": 1
+  },
+  {
+   "code": "600410",
+   "name": "华胜天成",
+   "circMvYi": 156.8,
+   "totalMvYi": 156.8,
+   "lb": 1
+  },
+  {
+   "code": "002853",
+   "name": "皮阿诺",
+   "circMvYi": 28.02,
+   "totalMvYi": 39.82,
+   "lb": 1
+  },
+  {
+   "code": "002042",
+   "name": "华孚时尚",
+   "circMvYi": 61.56,
+   "totalMvYi": 61.56,
+   "lb": 1
+  },
+  {
+   "code": "600977",
+   "name": "中国电影",
+   "circMvYi": 318.32,
+   "totalMvYi": 318.32,
+   "lb": 1
+  },
+  {
+   "code": "300528",
+   "name": "幸福蓝海",
+   "circMvYi": 67.03,
+   "totalMvYi": 67.03,
+   "lb": 1
+  },
+  {
+   "code": "002548",
+   "name": "金新农",
+   "circMvYi": 30.81,
+   "totalMvYi": 31.72,
+   "lb": 1
+  },
+  {
+   "code": "002124",
+   "name": "天邦食品",
+   "circMvYi": 45.56,
+   "totalMvYi": 51.33,
+   "lb": 1
+  },
+  {
+   "code": "300237",
+   "name": "美晨科技",
+   "circMvYi": 47.01,
+   "totalMvYi": 47.01,
+   "lb": 1
+  },
+  {
+   "code": "002739",
+   "name": "儒意电影",
+   "circMvYi": 211.04,
+   "totalMvYi": 212.23,
+   "lb": 1
+  },
+  {
+   "code": "600651",
+   "name": "飞乐音响",
+   "circMvYi": 129.86,
+   "totalMvYi": 129.86,
+   "lb": 1
+  },
+  {
+   "code": "603166",
+   "name": "福达股份",
+   "circMvYi": 76.1,
+   "totalMvYi": 76.36,
+   "lb": 1
+  },
+  {
+   "code": "002748",
+   "name": "世龙实业",
+   "circMvYi": 29.74,
+   "totalMvYi": 29.74,
+   "lb": 1
+  },
+  {
+   "code": "603686",
+   "name": "福龙马",
+   "circMvYi": 56.5,
+   "totalMvYi": 56.5,
+   "lb": 1
+  },
+  {
+   "code": "001393",
+   "name": "维通利",
+   "circMvYi": 20.72,
+   "totalMvYi": 107.56,
+   "lb": 1
+  },
+  {
+   "code": "605318",
+   "name": "法狮龙",
+   "circMvYi": 105.94,
+   "totalMvYi": 105.94,
+   "lb": 1
+  },
+  {
+   "code": "000595",
+   "name": "新能股份",
+   "circMvYi": 62.97,
+   "totalMvYi": 62.97,
+   "lb": 1
+  },
+  {
+   "code": "002520",
+   "name": "日发精机",
+   "circMvYi": 54.31,
+   "totalMvYi": 57.77,
+   "lb": 1
+  },
+  {
+   "code": "603286",
+   "name": "日盈电子",
+   "circMvYi": 75.87,
+   "totalMvYi": 76.59,
+   "lb": 1
+  },
+  {
+   "code": "603636",
+   "name": "南威软件",
+   "circMvYi": 55.13,
+   "totalMvYi": 55.13,
+   "lb": 1
+  },
+  {
+   "code": "000819",
+   "name": "岳阳兴长",
+   "circMvYi": 46.92,
+   "totalMvYi": 46.92,
+   "lb": 1
   }
  ],
  "note": "市值分布是 V5.3 市场状态识别的第五输入；快照从 2026-10 起累积，历史无回填，判据在样本足够前一律输出 null（缺失显式化，不拿中位数猜）。"

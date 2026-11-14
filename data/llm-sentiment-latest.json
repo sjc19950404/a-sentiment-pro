@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-11-12",
- "generatedAt": "2026-11-12T22:09:14.563+08:00",
+ "asOfDate": "2026-11-13",
+ "generatedAt": "2026-11-14T10:53:26.882+08:00",
  "model": "glm-4-flash",
  "sentiment": -0.5,
  "confidence": 0.8,
- "reason": "亏钱效应显著，多数涨停股今日翻绿，强势股涨幅虽高但整体市场情绪偏弱。",
+ "reason": "市场亏钱效应显著，涨停股数量少于跌停股，炸板率较高，表明市场情绪较为谨慎。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "双成药业",
+   "target": "世龙实业",
    "tone": "positive",
-   "note": "GMP检查通过，多肽药和药品出海业务有望提升业绩"
+   "note": "业绩增长带动股价上涨。"
   },
   {
    "type": "高管变动",
-   "target": "皇台酒业",
+   "target": "岳阳兴长",
    "tone": "positive",
-   "note": "董事会换届可能带来新战略方向"
+   "note": "国企改革预期推动股价上涨。"
+  },
+  {
+   "type": "政策",
+   "target": "冰雪经济",
+   "tone": "positive",
+   "note": "新晋题材带动相关板块活跃。"
   },
   {
    "type": "行业催化",
-   "target": "机器人",
+   "target": "AI算力",
    "tone": "positive",
-   "note": "机器人概念股表现强劲，人形机器人等细分领域受关注"
+   "note": "AI算力题材持续活跃。"
   },
   {
    "type": "行业催化",
-   "target": "光伏玻璃",
+   "target": "人形机器人",
    "tone": "positive",
-   "note": "光伏玻璃概念股新晋活跃，行业需求增长"
+   "note": "人形机器人题材持续活跃。"
   },
   {
    "type": "行业催化",
-   "target": "电子皮肤",
+   "target": "储能并网",
    "tone": "positive",
-   "note": "电子皮肤概念股新晋活跃，技术发展前景被看好"
+   "note": "储能并网题材持续活跃。"
   },
   {
    "type": "行业催化",
-   "target": "预制菜",
+   "target": "新能源环卫装备",
    "tone": "positive",
-   "note": "预制菜概念股活跃，消费升级趋势明显"
+   "note": "新能源环卫装备题材持续活跃。"
   },
   {
    "type": "行业催化",
-   "target": "海峡两岸",
+   "target": "MOFs材料",
    "tone": "positive",
-   "note": "海峡两岸概念股活跃，政策预期带来投资机会"
-  },
-  {
-   "type": "行业催化",
-   "target": "天然气",
-   "tone": "positive",
-   "note": "天然气概念股活跃，寒潮供暖需求增加"
+   "note": "MOFs材料题材持续活跃。"
   }
  ],
  "inputDigest": {
-  "themes": 54,
+  "themes": 49,
   "hotListed": 15,
   "ztCount": 37,
-  "emotionValue": 43.3,
-  "painVerdict": "亏钱效应显著（昨涨停今日翻绿 62%、高位板晋级失败 68%，追高者整体受损）"
+  "emotionValue": 38.4,
+  "painVerdict": "亏钱效应显著（昨涨停今日翻绿 62%、高位板晋级失败 73%，追高者整体受损）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }

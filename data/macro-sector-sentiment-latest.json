@@ -1,250 +1,128 @@
 {
  "kind": "macro-sector-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-11-12",
- "newsDate": "2026-11-12",
- "generatedAt": "2026-11-12T22:12:06.603+08:00",
+ "asOfDate": "2026-11-13",
+ "newsDate": "2026-11-14",
+ "generatedAt": "2026-11-14T10:56:59.246+08:00",
  "model": "glm-4-flash",
  "macro": {
-  "sentiment": 0.06,
-  "score100": 53,
+  "sentiment": -0.09,
+  "score100": 46,
   "label": "中性",
-  "confidence": 0.47,
-  "reason": "利好板块：芯片(+0.7)、光模块(+0.7)、PCB(+0.7)、石油(+0.7)、军工(+0.63)；利空板块：纺织服装(-0.3)"
+  "confidence": 0.48,
+  "reason": "利好板块：家电(+0.5)；利空板块：航空(-0.5)、航运(-0.5)、旅游(-0.5)、物流(-0.5)、快递(-0.5)"
  },
  "sectors": [
   {
-   "sector": "芯片",
-   "score": 0.7,
-   "score100": 85,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "中科曙光与中国建设银行签署战略合作协议"
-   ]
-  },
-  {
-   "sector": "光模块",
-   "score": 0.7,
-   "score100": 85,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "中科曙光与中国建设银行签署战略合作协议"
-   ]
-  },
-  {
-   "sector": "PCB",
-   "score": 0.7,
-   "score100": 85,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "中科曙光与中国建设银行签署战略合作协议"
-   ]
-  },
-  {
-   "sector": "石油",
-   "score": 0.7,
-   "score100": 85,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "普京称外国军队驻扎乌克兰绝对不可接受"
-   ]
-  },
-  {
-   "sector": "军工",
-   "score": 0.63,
-   "score100": 82,
+   "sector": "航空",
+   "score": -0.5,
+   "score100": 25,
    "newsCount": 3,
-   "bullish": 3,
-   "bearish": 0,
+   "bullish": 0,
+   "bearish": 3,
    "neutral": 0,
    "headlines": [
-    "特朗普：我们不需要和伊朗达成协议",
-    "美国将在中东集结三艘航母，对伊朗动武军事准备如何？",
-    "普京称外国军队驻扎乌克兰绝对不可接受"
-   ]
-  },
-  {
-   "sector": "数据中心",
-   "score": 0.57,
-   "score100": 78,
-   "newsCount": 3,
-   "bullish": 3,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "中科曙光与中国建设银行签署战略合作协议",
-    "中科曙光与中国建设银行签署战略合作协议",
-    "中科曙光与中国建设银行签署战略合作协议"
-   ]
-  },
-  {
-   "sector": "服务器",
-   "score": 0.57,
-   "score100": 78,
-   "newsCount": 3,
-   "bullish": 3,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "中科曙光与中国建设银行签署战略合作协议",
-    "中科曙光与中国建设银行签署战略合作协议",
-    "中科曙光与中国建设银行签署战略合作协议"
-   ]
-  },
-  {
-   "sector": "券商",
-   "score": 0.53,
-   "score100": 76,
-   "newsCount": 4,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "中科曙光与中国建设银行签署战略合作协议",
-    "中科曙光与中国建设银行签署战略合作协议",
-    "中科曙光与中国建设银行签署战略合作协议",
-    "最高5亿元回购，全部注销！A股公司，密集公告"
-   ]
-  },
-  {
-   "sector": "机器人",
-   "score": 0.5,
-   "score100": 75,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "智元是怎么在海外卖机器人的？"
-   ]
-  },
-  {
-   "sector": "储能",
-   "score": 0.5,
-   "score100": 75,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "协鑫能科携手宁德时代骐骥换电落地“风光换储充”示范站"
-   ]
-  },
-  {
-   "sector": "光伏",
-   "score": 0.5,
-   "score100": 75,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "协鑫能科携手宁德时代骐骥换电落地“风光换储充”示范站"
-   ]
-  },
-  {
-   "sector": "风电",
-   "score": 0.5,
-   "score100": 75,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "协鑫能科携手宁德时代骐骥换电落地“风光换储充”示范站"
+    "“911”以来第二次全美停飞！已有超1.3万架次航班延误或取消",
+    "周五全美航班停飞，74国断邮，毛病出在哪里？",
+    "美国联邦航空管理局下令全国停飞，国土安全部长：不是又一次9·11"
    ]
   },
   {
    "sector": "航运",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 4,
-   "bullish": 3,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "贝壳宣布启用新Logo 贝壳找房APP更名为“贝壳”",
-    "普京称外国军队驻扎乌克兰绝对不可接受",
-    "国际原油期货短线拉升 美油布油均涨超1%",
-    "布伦特原油突破94美元/桶，日内涨1.35%"
-   ]
-  },
-  {
-   "sector": "航空",
-   "score": 0.4,
-   "score100": 70,
+   "score": -0.5,
+   "score100": 25,
    "newsCount": 3,
-   "bullish": 2,
-   "bearish": 0,
-   "neutral": 1,
+   "bullish": 0,
+   "bearish": 3,
+   "neutral": 0,
    "headlines": [
-    "贝壳宣布启用新Logo 贝壳找房APP更名为“贝壳”",
-    "国际原油期货短线拉升 美油布油均涨超1%",
-    "布伦特原油突破94美元/桶，日内涨1.35%"
+    "“911”以来第二次全美停飞！已有超1.3万架次航班延误或取消",
+    "周五全美航班停飞，74国断邮，毛病出在哪里？",
+    "美国联邦航空管理局下令全国停飞，国土安全部长：不是又一次9·11"
    ]
   },
   {
-   "sector": "水泥",
-   "score": 0.4,
-   "score100": 70,
+   "sector": "旅游",
+   "score": -0.5,
+   "score100": 25,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 3,
+   "neutral": 0,
+   "headlines": [
+    "“911”以来第二次全美停飞！已有超1.3万架次航班延误或取消",
+    "周五全美航班停飞，74国断邮，毛病出在哪里？",
+    "美国联邦航空管理局下令全国停飞，国土安全部长：不是又一次9·11"
+   ]
+  },
+  {
+   "sector": "物流",
+   "score": -0.5,
+   "score100": 25,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 3,
+   "neutral": 0,
+   "headlines": [
+    "“911”以来第二次全美停飞！已有超1.3万架次航班延误或取消",
+    "周五全美航班停飞，74国断邮，毛病出在哪里？",
+    "美国联邦航空管理局下令全国停飞，国土安全部长：不是又一次9·11"
+   ]
+  },
+  {
+   "sector": "快递",
+   "score": -0.5,
+   "score100": 25,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 3,
+   "neutral": 0,
+   "headlines": [
+    "“911”以来第二次全美停飞！已有超1.3万架次航班延误或取消",
+    "周五全美航班停飞，74国断邮，毛病出在哪里？",
+    "美国联邦航空管理局下令全国停飞，国土安全部长：不是又一次9·11"
+   ]
+  },
+  {
+   "sector": "港口",
+   "score": -0.5,
+   "score100": 25,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 3,
+   "neutral": 0,
+   "headlines": [
+    "“911”以来第二次全美停飞！已有超1.3万架次航班延误或取消",
+    "周五全美航班停飞，74国断邮，毛病出在哪里？",
+    "美国联邦航空管理局下令全国停飞，国土安全部长：不是又一次9·11"
+   ]
+  },
+  {
+   "sector": "家电",
+   "score": 0.5,
+   "score100": 75,
    "newsCount": 1,
    "bullish": 1,
    "bearish": 0,
    "neutral": 0,
    "headlines": [
-    "惠城环保：20万吨/年混合废塑料项目拟年底启动改造，预计需3-4个月"
+    "中国彩电“双雄”前三季业绩逆势增长"
    ]
   },
   {
-   "sector": "工程机械",
-   "score": 0.4,
-   "score100": 70,
+   "sector": "商业航天",
+   "score": -0.4,
+   "score100": 30,
    "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
+   "bullish": 0,
+   "bearish": 1,
    "neutral": 0,
    "headlines": [
-    "惠城环保：20万吨/年混合废塑料项目拟年底启动改造，预计需3-4个月"
+    "星舰挑战“双回收”，首战失利"
    ]
   },
   {
-   "sector": "地产",
-   "score": 0.4,
-   "score100": 70,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "最高5亿元回购，全部注销！A股公司，密集公告"
-   ]
-  },
-  {
-   "sector": "基建",
-   "score": 0.4,
-   "score100": 70,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "最高5亿元回购，全部注销！A股公司，密集公告"
-   ]
-  },
-  {
-   "sector": "纺织服装",
+   "sector": "新能源汽车",
    "score": -0.3,
    "score100": 35,
    "newsCount": 1,
@@ -252,180 +130,88 @@
    "bearish": 1,
    "neutral": 0,
    "headlines": [
-    "日本无印良品百万条客户信用卡数据恐泄露"
+    "爱玛科技营收净利双降，负债率超六成仍持续分红"
    ]
   },
   {
-   "sector": "通信",
-   "score": 0.25,
-   "score100": 63,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
+   "sector": "网络安全",
+   "score": -0.3,
+   "score100": 35,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 1,
+   "neutral": 0,
    "headlines": [
-    "中国银联与蚂蚁集团首发全功能融合创新终端，兼容支付宝“碰一下”、银联Pay、扫码付",
-    "通信冲高跳水为哪般？A股后市关注三大信号→"
+    "Uber回应用户信息外泄：第三方数据泄露所致"
    ]
   },
   {
-   "sector": "运营商",
-   "score": 0.25,
-   "score100": 63,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "中国银联与蚂蚁集团首发全功能融合创新终端，兼容支付宝“碰一下”、银联Pay、扫码付",
-    "通信冲高跳水为哪般？A股后市关注三大信号→"
-   ]
-  },
-  {
-   "sector": "家电",
-   "score": -0.15,
-   "score100": 43,
+   "sector": "卫星互联网",
+   "score": -0.2,
+   "score100": 40,
    "newsCount": 2,
    "bullish": 0,
    "bearish": 1,
    "neutral": 1,
    "headlines": [
-    "日本无印良品百万条客户信用卡数据恐泄露",
-    "卡夫亨氏的复兴计划：芝士拉面、高蛋白吉露果冻"
+    "星舰挑战“双回收”，首战失利",
+    "美国民主党：马斯克应该保存乌克兰星链等记录"
    ]
   },
   {
    "sector": "AI",
-   "score": -0.12,
-   "score100": 44,
-   "newsCount": 6,
-   "bullish": 0,
-   "bearish": 1,
-   "neutral": 5,
-   "headlines": [
-    "英伟达新CEO现年58岁科莱特・克雷斯简历",
-    "全文|英伟达官宣黄仁勋辞职，称贡献极其深远，CFO临时接任",
-    "英伟达宣布CEO黄仁勋辞职 CFO科莱特·克雷斯出任临时CEO",
-    "英伟达：黄仁勋辞去总裁、首席执行官和董事会成员职务，即刻生效"
-   ]
-  },
-  {
-   "sector": "算力",
-   "score": -0.12,
-   "score100": 44,
-   "newsCount": 6,
-   "bullish": 0,
-   "bearish": 1,
-   "neutral": 5,
-   "headlines": [
-    "英伟达新CEO现年58岁科莱特・克雷斯简历",
-    "全文|英伟达官宣黄仁勋辞职，称贡献极其深远，CFO临时接任",
-    "英伟达宣布CEO黄仁勋辞职 CFO科莱特·克雷斯出任临时CEO",
-    "英伟达：黄仁勋辞去总裁、首席执行官和董事会成员职务，即刻生效"
-   ]
-  },
-  {
-   "sector": "消费电子",
-   "score": -0.12,
-   "score100": 44,
-   "newsCount": 6,
-   "bullish": 0,
-   "bearish": 1,
-   "neutral": 5,
-   "headlines": [
-    "英伟达新CEO现年58岁科莱特・克雷斯简历",
-    "全文|英伟达官宣黄仁勋辞职，称贡献极其深远，CFO临时接任",
-    "英伟达宣布CEO黄仁勋辞职 CFO科莱特·克雷斯出任临时CEO",
-    "英伟达：黄仁勋辞去总裁、首席执行官和董事会成员职务，即刻生效"
-   ]
-  },
-  {
-   "sector": "零售",
-   "score": -0.1,
-   "score100": 45,
+   "score": -0.07,
+   "score100": 47,
    "newsCount": 3,
-   "bullish": 0,
-   "bearish": 1,
-   "neutral": 2,
-   "headlines": [
-    "日本无印良品百万条客户信用卡数据恐泄露",
-    "钟薛高“复活”后重新开卖：11.5元的价格，与一个不再属于它的时代",
-    "贝壳宣布启用新Logo 贝壳找房APP更名为“贝壳”"
-   ]
-  },
-  {
-   "sector": "化工",
-   "score": 0.05,
-   "score100": 53,
-   "newsCount": 2,
    "bullish": 1,
    "bearish": 1,
-   "neutral": 0,
+   "neutral": 1,
    "headlines": [
-    "Mega安汇:能源成本传导影响贵金属",
-    "惠城环保：20万吨/年混合废塑料项目拟年底启动改造，预计需3-4个月"
+    "白宫呼吁放宽责任追究 鼓励AI企业上报安全事件",
+    "风投人士：黄仁勋离任给AI创企融资留下巨大缺口",
+    "英伟达淡化CEO继任者传闻：尚未正式接触任何潜在人选，称一切猜测“为时过早”"
    ]
   },
   {
-   "sector": "黄金",
-   "score": -0.03,
-   "score100": 49,
-   "newsCount": 11,
+   "sector": "券商",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
    "bullish": 0,
-   "bearish": 1,
-   "neutral": 10,
+   "bearish": 0,
+   "neutral": 3,
    "headlines": [
-    "AXPM Prime:黄金区间等待新线索",
-    "CBCX:黄金支撑位仍待数据验证",
-    "CPT Markets:多指标观察金价承接",
-    "EasyMarkets易信:金价韧性来自多重需求"
+    "主力调仓进行时！69亿撤离“易中天”，超8亿资金悄悄盯上600410",
+    "安佑数据速览——10月社融数据",
+    "美联储副主席杰斐逊表态：通胀已成利率最重要的参考指标"
    ]
   },
   {
-   "sector": "银行",
-   "score": 0.03,
-   "score100": 52,
-   "newsCount": 10,
-   "bullish": 4,
-   "bearish": 6,
-   "neutral": 0,
+   "sector": "医药",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
    "headlines": [
-    "青海河南农村商业银行被罚36万元：违反金融统计、支付结算管理规定",
-    "青海西宁农村商业银行被罚116.5万元：违反金融统计、支付结算、金融科技、货币金银、反洗钱管理规定",
-    "光大银行眉山分行被罚28.25万元：违反金融统计管理规定等",
-    "中国银行巴中分行被罚126.42万元：违反金融统计管理规定等"
+    "麻疹疫情历史性反弹、数千人感染，美国失去“麻疹消除认证”"
    ]
   },
   {
    "sector": "半导体",
    "score": 0,
    "score100": 50,
-   "newsCount": 6,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 4,
-   "headlines": [
-    "英伟达新CEO现年58岁科莱特・克雷斯简历",
-    "全文|英伟达官宣黄仁勋辞职，称贡献极其深远，CFO临时接任",
-    "英伟达宣布CEO黄仁勋辞职 CFO科莱特·克雷斯出任临时CEO",
-    "英伟达：黄仁勋辞去总裁、首席执行官和董事会成员职务，即刻生效"
-   ]
-  },
-  {
-   "sector": "食品饮料",
-   "score": 0,
-   "score100": 50,
-   "newsCount": 2,
+   "newsCount": 1,
    "bullish": 0,
    "bearish": 0,
-   "neutral": 2,
+   "neutral": 1,
    "headlines": [
-    "卡夫亨氏的复兴计划：芝士拉面、高蛋白吉露果冻",
-    "钟薛高“复活”后重新开卖：11.5元的价格，与一个不再属于它的时代"
+    "英伟达淡化CEO继任者传闻：尚未正式接触任何潜在人选，称一切猜测“为时过早”"
    ]
   },
   {
-   "sector": "6G",
+   "sector": "芯片",
    "score": 0,
    "score100": 50,
    "newsCount": 1,
@@ -433,11 +219,11 @@
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "通信冲高跳水为哪般？A股后市关注三大信号→"
+    "英伟达淡化CEO继任者传闻：尚未正式接触任何潜在人选，称一切猜测“为时过早”"
    ]
   },
   {
-   "sector": "白酒",
+   "sector": "算力",
    "score": 0,
    "score100": 50,
    "newsCount": 1,
@@ -445,11 +231,11 @@
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "卡夫亨氏的复兴计划：芝士拉面、高蛋白吉露果冻"
+    "英伟达淡化CEO继任者传闻：尚未正式接触任何潜在人选，称一切猜测“为时过早”"
    ]
   },
   {
-   "sector": "物流",
+   "sector": "光模块",
    "score": 0,
    "score100": 50,
    "newsCount": 1,
@@ -457,11 +243,11 @@
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "贝壳宣布启用新Logo 贝壳找房APP更名为“贝壳”"
+    "英伟达淡化CEO继任者传闻：尚未正式接触任何潜在人选，称一切猜测“为时过早”"
    ]
   },
   {
-   "sector": "快递",
+   "sector": "PCB",
    "score": 0,
    "score100": 50,
    "newsCount": 1,
@@ -469,11 +255,11 @@
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "贝壳宣布启用新Logo 贝壳找房APP更名为“贝壳”"
+    "英伟达淡化CEO继任者传闻：尚未正式接触任何潜在人选，称一切猜测“为时过早”"
    ]
   },
   {
-   "sector": "港口",
+   "sector": "地产",
    "score": 0,
    "score100": 50,
    "newsCount": 1,
@@ -481,11 +267,11 @@
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "贝壳宣布启用新Logo 贝壳找房APP更名为“贝壳”"
+    "美联储副主席杰斐逊表态：通胀已成利率最重要的参考指标"
    ]
   },
   {
-   "sector": "旅游",
+   "sector": "基建",
    "score": 0,
    "score100": 50,
    "newsCount": 1,
@@ -493,11 +279,11 @@
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "贝壳宣布启用新Logo 贝壳找房APP更名为“贝壳”"
+    "美联储副主席杰斐逊表态：通胀已成利率最重要的参考指标"
    ]
   },
   {
-   "sector": "免税",
+   "sector": "银行",
    "score": 0,
    "score100": 50,
    "newsCount": 1,
@@ -505,11 +291,11 @@
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "贝壳宣布启用新Logo 贝壳找房APP更名为“贝壳”"
+    "美联储副主席杰斐逊表态：通胀已成利率最重要的参考指标"
    ]
   },
   {
-   "sector": "美容护理",
+   "sector": "保险",
    "score": 0,
    "score100": 50,
    "newsCount": 1,
@@ -517,11 +303,11 @@
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "贝壳宣布启用新Logo 贝壳找房APP更名为“贝壳”"
+    "美联储副主席杰斐逊表态：通胀已成利率最重要的参考指标"
    ]
   },
   {
-   "sector": "苹果产业链",
+   "sector": "通信",
    "score": 0,
    "score100": 50,
    "newsCount": 1,
@@ -529,556 +315,244 @@
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "视频 | Anthropic“史上最严”封号政策生效，为何选在上市前？"
+    "美国民主党：马斯克应该保存乌克兰星链等记录"
+   ]
+  },
+  {
+   "sector": "军工",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "美国民主党：马斯克应该保存乌克兰星链等记录"
    ]
   }
  ],
  "events": [
   {
-   "headline": "英伟达新CEO现年58岁科莱特・克雷斯简历",
-   "date": "2026-11-12",
+   "headline": "主力调仓进行时！69亿撤离“易中天”，超8亿资金悄悄盯上600410",
+   "date": "2026-11-14",
    "sectors": [
-    "AI",
-    "算力",
-    "半导体",
-    "消费电子"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "新CEO信息对相关板块影响有限"
-  },
-  {
-   "headline": "AXPM Prime:黄金区间等待新线索",
-   "date": "2026-11-12",
-   "sectors": [
-    "黄金"
+    "券商"
    ],
    "direction": "neutral",
    "intensity": 0.2,
-   "reason": "金价区间波动对黄金板块影响有限"
+   "reason": "资金流向变化，对券商板块影响有限"
   },
   {
-   "headline": "CBCX:黄金支撑位仍待数据验证",
-   "date": "2026-11-12",
+   "headline": "中国彩电“双雄”前三季业绩逆势增长",
+   "date": "2026-11-14",
    "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "黄金支撑位验证对黄金板块影响有限"
-  },
-  {
-   "headline": "CPT Markets:多指标观察金价承接",
-   "date": "2026-11-12",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "金价承接指标观察对黄金板块影响有限"
-  },
-  {
-   "headline": "全文|英伟达官宣黄仁勋辞职，称贡献极其深远，CFO临时接任",
-   "date": "2026-11-12",
-   "sectors": [
-    "AI",
-    "算力",
-    "半导体",
-    "消费电子"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "CEO辞职对相关板块影响有限"
-  },
-  {
-   "headline": "EasyMarkets易信:金价韧性来自多重需求",
-   "date": "2026-11-12",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "金价韧性分析对黄金板块影响有限"
-  },
-  {
-   "headline": "FPG财盛国际:金银比提示需求差异",
-   "date": "2026-11-12",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "金银比分析对黄金板块影响有限"
-  },
-  {
-   "headline": "英伟达宣布CEO黄仁勋辞职 CFO科莱特·克雷斯出任临时CEO",
-   "date": "2026-11-12",
-   "sectors": [
-    "AI",
-    "算力",
-    "半导体",
-    "消费电子"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "CEO辞职对相关板块影响有限"
-  },
-  {
-   "headline": "工会助力民主党在 2026年大选大胜，如今他们要求兑现政策",
-   "date": "2026-11-12",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.1,
-   "reason": "政治新闻对A股影响有限"
-  },
-  {
-   "headline": "GTC泽汇资本:金价守住关键支撑位",
-   "date": "2026-11-12",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "金价支撑位分析对黄金板块影响有限"
-  },
-  {
-   "headline": "英伟达：黄仁勋辞去总裁、首席执行官和董事会成员职务，即刻生效",
-   "date": "2026-11-12",
-   "sectors": [
-    "AI",
-    "算力",
-    "半导体",
-    "消费电子"
-   ],
-   "direction": "negative",
-   "intensity": 0.7,
-   "reason": "英伟达高层变动，短期对相关产业链产生负面影响"
-  },
-  {
-   "headline": "M4Markets:黄金资金流形成缓冲",
-   "date": "2026-11-12",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "黄金资金流形成缓冲，对金价影响尚不确定"
-  },
-  {
-   "headline": "青海河南农村商业银行被罚36万元：违反金融统计、支付结算管理规定",
-   "date": "2026-11-12",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "negative",
-   "intensity": 0.2,
-   "reason": "银行违规被罚，对行业整体影响有限"
-  },
-  {
-   "headline": "中国银联与蚂蚁集团首发全功能融合创新终端，兼容支付宝“碰一下”、银联Pay、扫码付",
-   "date": "2026-11-12",
-   "sectors": [
-    "通信",
-    "运营商"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "金融科技合作，推动行业创新"
-  },
-  {
-   "headline": "青海西宁农村商业银行被罚116.5万元：违反金融统计、支付结算、金融科技、货币金银、反洗钱管理规定",
-   "date": "2026-11-12",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "negative",
-   "intensity": 0.2,
-   "reason": "银行违规被罚，对行业整体影响有限"
-  },
-  {
-   "headline": "离婚七年后遭前妻追索近8亿，晋商大佬第一大股东地位不保？",
-   "date": "2026-11-12",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.1,
-   "reason": "个人事件，对A股无直接影响"
-  },
-  {
-   "headline": "Mega安汇:能源成本传导影响贵金属",
-   "date": "2026-11-12",
-   "sectors": [
-    "黄金",
-    "化工"
-   ],
-   "direction": "negative",
-   "intensity": 0.3,
-   "reason": "能源成本上升，对贵金属价格产生压力"
-  },
-  {
-   "headline": "MHMarkets迈汇:通胀扰动后的金价修复",
-   "date": "2026-11-12",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "通胀扰动后金价修复，影响尚不确定"
-  },
-  {
-   "headline": "光大银行眉山分行被罚28.25万元：违反金融统计管理规定等",
-   "date": "2026-11-12",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "negative",
-   "intensity": 0.2,
-   "reason": "银行违规被罚，对行业整体影响有限"
-  },
-  {
-   "headline": "Moneta Markets外汇:白银需求结构待观察",
-   "date": "2026-11-12",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "白银需求结构待观察，对价格影响尚不确定"
-  },
-  {
-   "headline": "中国银行巴中分行被罚126.42万元：违反金融统计管理规定等",
-   "date": "2026-11-12",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "negative",
-   "intensity": 0.4,
-   "reason": "银行违规受罚，影响行业形象"
-  },
-  {
-   "headline": "OEXN:利率预期牵动黄金波动",
-   "date": "2026-11-12",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "利率预期影响黄金价格，但尚不确定具体方向"
-  },
-  {
-   "headline": "湖北枣阳农村商业银行被罚35.2万元：违反金融统计管理规定等",
-   "date": "2026-11-12",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "negative",
-   "intensity": 0.4,
-   "reason": "银行违规受罚，影响行业形象"
-  },
-  {
-   "headline": "金利宝环球:白银工业变量受重视",
-   "date": "2026-11-12",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "白银工业变量影响黄金价格，但尚不确定具体方向"
-  },
-  {
-   "headline": "沙特原油产量回升至战前水平附近",
-   "date": "2026-11-12",
-   "sectors": [],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "原油产量增加，可能导致油价下跌，影响相关板块"
-  },
-  {
-   "headline": "美国上周首次申领失业救济人数增加9,000人至20万人 预估为19.4万人",
-   "date": "2026-11-12",
-   "sectors": [],
-   "direction": "negative",
-   "intensity": 0.4,
-   "reason": "失业救济人数增加，经济前景不明朗，影响相关板块"
-  },
-  {
-   "headline": "徽商期货在安徽省阜阳市颍上县开展 乡村振兴活动",
-   "date": "2026-11-12",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "乡村振兴活动，对相关板块影响有限"
-  },
-  {
-   "headline": "盘前：纳指期货跌0.76%，英伟达跌7%，6位美联储官员讲话",
-   "date": "2026-11-12",
-   "sectors": [],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "美股科技股下跌，影响相关板块"
-  },
-  {
-   "headline": "油价上涨、美债下跌 特朗普称无需与伊朗达成协议",
-   "date": "2026-11-12",
-   "sectors": [],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "油价上涨，利好石油石化板块"
-  },
-  {
-   "headline": "徽商期货联合合肥工业大学申报方案入选广期所气温指数应用场景代表性方案",
-   "date": "2026-11-12",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "气温指数应用场景方案入选，对相关板块影响有限"
-  },
-  {
-   "headline": "智元是怎么在海外卖机器人的？",
-   "date": "2026-11-12",
-   "sectors": [
-    "机器人"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "机器人出口增长利好相关板块"
-  },
-  {
-   "headline": "曾掌舵厦门银行13年，吴世群主动投案被查",
-   "date": "2026-11-12",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "negative",
-   "intensity": 0.4,
-   "reason": "银行高管问题利空银行板块"
-  },
-  {
-   "headline": "日本无印良品百万条客户信用卡数据恐泄露",
-   "date": "2026-11-12",
-   "sectors": [
-    "零售",
-    "家电",
-    "纺织服装"
-   ],
-   "direction": "negative",
-   "intensity": 0.3,
-   "reason": "数据泄露事件影响相关行业"
-  },
-  {
-   "headline": "特朗普：我们不需要和伊朗达成协议",
-   "date": "2026-11-12",
-   "sectors": [
-    "军工"
-   ],
-   "direction": "positive",
-   "intensity": 0.6,
-   "reason": "地缘政治紧张利好石油军工"
-  },
-  {
-   "headline": "通信冲高跳水为哪般？A股后市关注三大信号→",
-   "date": "2026-11-12",
-   "sectors": [
-    "通信",
-    "运营商",
-    "6G"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "通信行业波动性较大，影响尚不确定"
-  },
-  {
-   "headline": "卡夫亨氏的复兴计划：芝士拉面、高蛋白吉露果冻",
-   "date": "2026-11-12",
-   "sectors": [
-    "食品饮料",
-    "白酒",
     "家电"
    ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "食品饮料行业动态，影响有限"
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "彩电行业业绩增长，利好家电板块"
   },
   {
-   "headline": "钟薛高“复活”后重新开卖：11.5元的价格，与一个不再属于它的时代",
-   "date": "2026-11-12",
+   "headline": "以色列风投：英伟达风波给竞品带来机遇",
+   "date": "2026-11-14",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "英伟达竞品受益，相关板块利好"
+  },
+  {
+   "headline": "安佑数据速览——10月社融数据",
+   "date": "2026-11-14",
    "sectors": [
-    "食品饮料",
-    "零售"
+    "券商"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "社融数据对券商板块有一定参考价值"
+  },
+  {
+   "headline": "SpaceX星舰第15次试飞 助推器未能按计划返回发射场",
+   "date": "2026-11-14",
+   "sectors": [],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "试飞失败，对航天板块短期利空"
+  },
+  {
+   "headline": "特斯拉：开始面向个人销售Cybercab",
+   "date": "2026-11-14",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "特斯拉新产品销售，利好相关板块"
+  },
+  {
+   "headline": "Anthropic摩根大通总部路演 对算力支出表态谨慎",
+   "date": "2026-11-14",
+   "sectors": [],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "算力支出谨慎，对相关板块短期利空"
+  },
+  {
+   "headline": "一觉醒来，美国发生了一件不该发生的事",
+   "date": "2026-11-14",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.1,
+   "reason": "新闻内容不明确，对A股影响不确定"
+  },
+  {
+   "headline": "白宫呼吁放宽责任追究 鼓励AI企业上报安全事件",
+   "date": "2026-11-14",
+   "sectors": [
+    "AI"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "政策支持，利好AI板块"
+  },
+  {
+   "headline": "风投人士：黄仁勋离任给AI创企融资留下巨大缺口",
+   "date": "2026-11-14",
+   "sectors": [
+    "AI"
+   ],
+   "direction": "negative",
+   "intensity": 0.6,
+   "reason": "AI创企融资困难，对AI板块利空"
+  },
+  {
+   "headline": "麻疹疫情历史性反弹、数千人感染，美国失去“麻疹消除认证”",
+   "date": "2026-11-14",
+   "sectors": [
+    "医药"
    ],
    "direction": "neutral",
    "intensity": 0.2,
-   "reason": "食品饮料行业动态，影响有限"
+   "reason": "疫情反弹对医药行业影响有限，疫苗板块影响尚不确定"
   },
   {
-   "headline": "中科曙光与中国建设银行签署战略合作协议",
-   "date": "2026-11-12",
+   "headline": "英伟达淡化CEO继任者传闻：尚未正式接触任何潜在人选，称一切猜测“为时过早”",
+   "date": "2026-11-14",
    "sectors": [
-    "券商",
-    "银行",
     "半导体",
     "芯片",
-    "数据中心",
-    "服务器",
+    "AI",
+    "算力",
     "光模块",
     "PCB"
    ],
-   "direction": "positive",
-   "intensity": 0.7,
-   "reason": "战略合作利好相关板块"
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "CEO继任传闻对英伟达短期影响有限，相关板块影响中性"
   },
   {
-   "headline": "美国将在中东集结三艘航母，对伊朗动武军事准备如何？",
-   "date": "2026-11-12",
+   "headline": "“911”以来第二次全美停飞！已有超1.3万架次航班延误或取消",
+   "date": "2026-11-14",
    "sectors": [
-    "军工"
-   ],
-   "direction": "positive",
-   "intensity": 0.6,
-   "reason": "地缘政治紧张利好石油军工"
-  },
-  {
-   "headline": "贝壳宣布启用新Logo 贝壳找房APP更名为“贝壳”",
-   "date": "2026-11-12",
-   "sectors": [
-    "物流",
-    "快递",
-    "港口",
     "航空",
     "航运",
     "旅游",
-    "免税",
-    "零售",
-    "美容护理"
+    "物流",
+    "快递",
+    "港口"
    ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "公司品牌更新，影响有限"
-  },
-  {
-   "headline": "中科曙光与中国建设银行签署战略合作协议",
-   "date": "2026-11-12",
-   "sectors": [
-    "券商",
-    "银行",
-    "数据中心",
-    "服务器"
-   ],
-   "direction": "positive",
+   "direction": "negative",
    "intensity": 0.5,
-   "reason": "合作可能带来业务增长和投资机会"
+   "reason": "航班延误取消对航空、航运等相关板块造成负面影响"
   },
   {
-   "headline": "中科曙光与中国建设银行签署战略合作协议",
-   "date": "2026-11-12",
+   "headline": "星舰挑战“双回收”，首战失利",
+   "date": "2026-11-14",
    "sectors": [
-    "券商",
-    "银行",
-    "数据中心",
-    "服务器"
+    "商业航天",
+    "卫星互联网"
    ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "合作可能带来业务增长和投资机会"
-  },
-  {
-   "headline": "视频 | Anthropic“史上最严”封号政策生效，为何选在上市前？",
-   "date": "2026-11-12",
-   "sectors": [
-    "AI",
-    "算力",
-    "消费电子",
-    "苹果产业链"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "封号政策影响尚不确定"
-  },
-  {
-   "headline": "惠城环保：20万吨/年混合废塑料项目拟年底启动改造，预计需3-4个月",
-   "date": "2026-11-12",
-   "sectors": [
-    "化工",
-    "水泥",
-    "工程机械"
-   ],
-   "direction": "positive",
+   "direction": "negative",
    "intensity": 0.4,
-   "reason": "项目启动可能带动相关产业链发展"
+   "reason": "星舰首战失利对商业航天板块造成短期负面影响"
   },
   {
-   "headline": "协鑫能科携手宁德时代骐骥换电落地“风光换储充”示范站",
-   "date": "2026-11-12",
+   "headline": "周五全美航班停飞，74国断邮，毛病出在哪里？",
+   "date": "2026-11-14",
    "sectors": [
-    "储能",
-    "光伏",
-    "风电"
+    "航空",
+    "航运",
+    "旅游",
+    "物流",
+    "快递",
+    "港口"
    ],
-   "direction": "positive",
+   "direction": "negative",
    "intensity": 0.5,
-   "reason": "合作推动新能源产业发展"
+   "reason": "航班停飞和邮递中断对航空、航运等相关板块造成负面影响"
   },
   {
-   "headline": "最高5亿元回购，全部注销！A股公司，密集公告",
-   "date": "2026-11-12",
+   "headline": "美联储副主席杰斐逊表态：通胀已成利率最重要的参考指标",
+   "date": "2026-11-14",
    "sectors": [
     "券商",
-    "银行",
     "地产",
-    "基建"
-   ],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "回购可能提升市场信心"
-  },
-  {
-   "headline": "普京称外国军队驻扎乌克兰绝对不可接受",
-   "date": "2026-11-12",
-   "sectors": [
-    "军工",
-    "石油",
-    "航运"
-   ],
-   "direction": "positive",
-   "intensity": 0.7,
-   "reason": "地缘政治紧张可能提升军工需求"
-  },
-  {
-   "headline": "国际原油期货短线拉升 美油布油均涨超1%",
-   "date": "2026-11-12",
-   "sectors": [
-    "航运",
-    "航空"
-   ],
-   "direction": "positive",
-   "intensity": 0.6,
-   "reason": "油价上涨利好相关行业"
-  },
-  {
-   "headline": "布伦特原油突破94美元/桶，日内涨1.35%",
-   "date": "2026-11-12",
-   "sectors": [
-    "航运",
-    "航空"
-   ],
-   "direction": "positive",
-   "intensity": 0.6,
-   "reason": "油价上涨利好相关行业"
-  },
-  {
-   "headline": "Nebius美股盘前跌超15%，此前一度涨超5%",
-   "date": "2026-11-12",
-   "sectors": [
-    "AI",
-    "算力",
-    "半导体",
-    "消费电子"
+    "基建",
+    "银行",
+    "保险"
    ],
    "direction": "neutral",
+   "intensity": 0.4,
+   "reason": "通胀对利率影响较大，但对A股板块影响尚不确定"
+  },
+  {
+   "headline": "爱玛科技营收净利双降，负债率超六成仍持续分红",
+   "date": "2026-11-14",
+   "sectors": [
+    "新能源汽车"
+   ],
+   "direction": "negative",
    "intensity": 0.3,
-   "reason": "美股波动对A股影响尚不确定"
+   "reason": "爱玛科技业绩下滑对新能源汽车板块造成负面影响"
+  },
+  {
+   "headline": "美国联邦航空管理局下令全国停飞，国土安全部长：不是又一次9·11",
+   "date": "2026-11-14",
+   "sectors": [
+    "航空",
+    "航运",
+    "旅游",
+    "物流",
+    "快递",
+    "港口"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "全国停飞对航空、航运等相关板块造成重大负面影响"
+  },
+  {
+   "headline": "Uber回应用户信息外泄：第三方数据泄露所致",
+   "date": "2026-11-14",
+   "sectors": [
+    "网络安全"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "用户信息外泄对互联网、网络安全等相关板块造成负面影响"
+  },
+  {
+   "headline": "美国民主党：马斯克应该保存乌克兰星链等记录",
+   "date": "2026-11-14",
+   "sectors": [
+    "通信",
+    "卫星互联网",
+    "军工"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "政治声明对相关板块影响有限，尚不确定具体影响"
   }
  ],
  "scanned": 60,
  "source": "sina-roll",
  "degraded": false,
- "blackTalk": "今儿多头热闹，但纺织服装这股风别追，小心高潮次日分歧，稳点好嘞~",
+ "blackTalk": "今儿多头家电硬气，但航空、航运这些老伙计都蔫了，别光顾着嗨，仓位要稳啊，别上头！",
  "note": "板块情绪因子：新闻→GLM 映射板块/方向/强度→聚合。消费端按 signals.sectorSentiment 注入；score∈[-1,1]，score100∈[0,100]，仅作参考，不独立生成买卖信号。"
 }

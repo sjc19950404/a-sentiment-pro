@@ -75,5 +75,38 @@
     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603536&id=12698712"
    }
   ]
+ },
+ {
+  "date": "2026-11-13",
+  "scannedAt": "2026-11-14T03:01:59.772Z",
+  "scanned": 16,
+  "ok": 14,
+  "high": 1,
+  "mid": 1,
+  "low": 0,
+  "flagged": [
+   {
+    "code": "002819",
+    "name": "东方中科",
+    "level": "high",
+    "words": [
+     "司法冻结"
+    ],
+    "title": "东方中科：关于业绩承诺补偿事项仲裁进展暨强制执行已完成、司法冻结股份解除冻结的公告",
+    "date": "2026-11-13",
+    "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002819&id=12703789"
+   },
+   {
+    "code": "603636",
+    "name": "南威软件",
+    "level": "mid",
+    "words": [
+     "质押"
+    ],
+    "title": "南威软件：关于控股股东部分股份质押延期购回的公告",
+    "date": "2026-11-13",
+    "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603636&id=12703688"
+   }
+  ]
  }
 ]
