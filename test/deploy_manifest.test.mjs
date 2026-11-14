@@ -60,11 +60,13 @@ assert.ok(paths.has('src/**'), 'paths 必须含 src/**（整目录部署后，sr
 const pageModules = [...pageRefs].filter((p) => p.startsWith('./src/'));
 
 test('★ 部署面解析自检（防止守卫本身静默失效）', () => {
-  // 解析器对已知事实的最小验证：页面引用面、外壳面、部署面都非空且形态正确
-  assert.ok(pageModules.length >= 5, `index.html 的 src 模块引用应 ≥5 个，实得 ${pageModules.length}`);
+  // 新架构（2026-11-14）：页面引用 ./bundle.js（esbuild 打包产物，替代原先各自 import 的
+  // src/*.js 模块瀑布）；离线外壳须预缓存它。解析器对已知事实的最小验证：
+  assert.ok(pageRefs.has('./bundle.js'), `index.html 应引用打包产物 ./bundle.js（替代 src/*.js 模块瀑布），实得 pageRefs=${[...pageRefs].sort().join(', ')}`);
+  assert.ok(shellAssets.has('./bundle.js'), 'sw.js SHELL_ASSETS 应含 ./bundle.js（离线外壳须预缓存打包产物）');
   assert.ok([...shellAssets].every((p) => p.startsWith('./')), 'SHELL_ASSETS 应为 ./ 相对路径');
-  assert.ok(isDeployed('app.js') && isDeployed('index.html') && isDeployed('src/lhb.js'),
-    'cp 清单应含根外壳文件与 src/lhb.js（app.js 动态 import 的对象）');
+  assert.ok(isDeployed('app.js') && isDeployed('index.html') && isDeployed('src/lhb.js') && isDeployed('bundle.js'),
+    'cp 清单应含根外壳文件、src/lhb.js（app.js 动态 import 对象）与 bundle.js');
 });
 
 test('★ 页面引用的每个文件必须被部署（漏一个 = 线上 404 / 模块树崩溃）', () => {

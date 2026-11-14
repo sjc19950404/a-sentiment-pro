@@ -42,6 +42,8 @@ on:
       - 'paper_ui.js'
       - 'manifest.webmanifest'
       - 'config.json'
+      - 'bundle.js'
+      - 'scripts/build_bundle.mjs'
       - 'src/report.js'
       - 'src/report_audit.js'
       - 'src/seats.js'
@@ -102,6 +104,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
+      - name: 构建浏览器 bundle（esbuild 打包 ESM 模块树，消除 github.io 模块瀑布）
+        # continue-on-error：CI 构建偶发失败（如 npm 拉取 esbuild 抖动）不阻断部署，
+        # 回退到已 commit 的 bundle.js（scripts/build_bundle.mjs 的本地产物）。
+        continue-on-error: true
+        run: |
+          set -eu
+          npm install
+          npm run build:bundle
       - name: 组装 web 面产物（根 web 面 → site/；清单与 paths 白名单同源）
         run: |
           set -eu
@@ -109,7 +119,7 @@ jobs:
           # 页面外壳（index.html 引用 + SW SHELL_ASSETS 离线外壳）
           # config.json 是前端桥（index.html 动态 import('./config.json') 挂 window.ASENT_CONFIG，
           # config.js 浏览器分支 fetch('../config.json') 同源读取）——必须落到站点根，否则云端 404。
-          cp index.html app.js style.css sw.js paper_ui.js manifest.webmanifest config.json site/
+          cp index.html app.js style.css sw.js paper_ui.js manifest.webmanifest config.json bundle.js site/
           mkdir -p site/vendor
           cp vendor/lightweight-charts.standalone.production.js site/vendor/
           # 整目录递归拷贝 src/：浏览器 ESM 图会按需 import 任意子模块（含 engine/），

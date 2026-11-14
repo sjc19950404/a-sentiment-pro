@@ -16,6 +16,7 @@
     "recalc:lhb": "node scripts/recalc_lhb_daily.mjs",
     "check:frontend": "node scripts/check_frontend.mjs",
     "build:ui": "node scripts/build_ui.mjs",
+    "build:bundle": "node scripts/build_bundle.mjs",
     "kline:daily": "node ui/fetch_kline_all.mjs",
     "kline:init": "node ui/fetch_kline_all.mjs --init",
     "promote": "node scripts/promote_params.mjs",
@@ -29,6 +30,7 @@
     "@aws-sdk/client-s3": "3.1157.0"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "jsdom": "31.0.0"
   }
 }

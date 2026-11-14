@@ -27,6 +27,9 @@ const SHELL_ASSETS = [
   './index.html',
   './app.js',
   './style.css',
+  // 2026-11-14：ESM 模块统一打包产物（scripts/build_bundle.mjs，esbuild）——替代原先各自
+  // import 的 src/*.js 模块瀑布，一次请求拉完；与 src/offline.js 内联副本同步改。
+  './bundle.js',
   // 2026-11-06：TradingView Lightweight Charts（vendor 本地，图表库）——
   // 新文件必须进预缓存：cache-first 的 SWR 后台刷新只覆盖已存在的 key。
   './vendor/lightweight-charts.standalone.production.js',

@@ -933,7 +933,10 @@
          对比也空白，反之亦然。
        ⚠ null = "未生成"（≠ 策略无效）；数字只展示不重算（唯一出处 = JSON 档）；
          历史回测 ≠ 未来收益，meta.disclaimer 原样展示，不构成投资建议。 -->
-  <div id="btStrategyPanel" class="btstrat-panel" hidden></div>
+  <!-- 2026-11-14 CLS 修复：原先 hidden（display:none），异步数据到达后 hidden=false 撑开高度
+       推挤下方布局（Lighthouse 抓到 0.836）。改为首屏即占住预留高度的骨架占位，数据到达只
+       替换内容、不位移；空状态垂直居中，像有意保留的卡片而非 bug。 -->
+  <div id="btStrategyPanel" class="btstrat-panel"><div class="bs-skeleton" aria-hidden="true">策略回测加载中…</div></div>
 
   <!-- 致命错误替代区：首屏必需档（archive-index）拿不到时填入。
        刻意放在 <main> **之外** —— fatal 时会给 main 加 aria-hidden（视觉上收起），
@@ -1414,89 +1417,15 @@
        同步加载于 app.js 之前；app.js 侧在库缺失（旧 SW 缓存/加载失败）时回退 SVG 手绘——fail-open。 -->
   <script src="./vendor/lightweight-charts.standalone.production.js"></script>
   <script src="./app.js"></script>
-  <!-- 报告导出引擎是 ESM（与 src/paper.js 同样的「纯函数、浏览器与 Node 共用」设计）。
-       app.js 是经典脚本、不能用 import，故用一小段模块脚本把它挂到 window 上；
-       挂载完成前导出按钮不可用（下面用事件兜底，不会点到未就绪的引擎）。 -->
-  <script type="module">
-    import * as Report from './src/report.js';
-    window.ReportExport = Report;
-    window.dispatchEvent(new Event('report-export-ready'));
-  </script>
-  <!-- 报告「出厂质检」引擎：同样是 ESM 纯函数，挂到 window 供 app.js 在渲染前调用。
-       闸门语义——审计不通过就不把报告写入 #briefBody（宁可不出报告，也不显示坏报告）。
-       必须在 report.js 之后挂载（它审计的三形态产物由 ReportExport 生成）。 -->
-  <script type="module">
-    import * as ReportAudit from './src/report_audit.js';
-    window.ReportAudit = ReportAudit;
-    window.dispatchEvent(new Event('report-audit-ready'));
-  </script>
-  <!-- 席位口径唯一来源（券商主体/席位类型/买卖双侧读取）同样是 ESM 纯函数，app.js 不能 import，
-       故与 report.js 一样挂到 window。个股抽屉里的「席位身份」下钻与表格渲染都走它，
-       保证屏幕上的解析结果与 Node 侧测试/报告完全同源。 -->
-  <script type="module">
-    import * as Seats from './src/seats.js';
-    window.Seats = Seats;
-    window.dispatchEvent(new Event('seats-ready'));
-  </script>
-  <!-- config.json 桥（唯一事实源的前端入口）。
-       原先由 paper_ui.js 兼任；模拟交易台面下线后 paper_ui.js 不再被页面加载，
-       改由这段独立模块脚本承担：动态 import + 静默降级——拿到就挂 window.ASENT_CONFIG，
-       拿不到就走各处兜底默认值（app.js 的 TH_DEFAULT 等）。app.js 是经典脚本无法 import，
-       运行时从 window 取——module 总在经典脚本之后、DOMContentLoaded 前执行完毕，
-       而 app.js 的阈值消费点（getThresholds 等）都在用户交互/数据加载时才调用，时序安全。 -->
+  <!-- 前端桥：原先 10 段 <script type="module"> 各自 import 一个 src/*.js（整棵依赖树在
+       github.io 上逐个请求 → 慢链瀑布，首屏 37s）。现统一打包为单文件 bundle.js
+       （scripts/build_bundle.mjs，esbuild），一次请求拉完；config.json 仍由下方独立桥负责。 -->
+  <script type="module" src="./bundle.js"></script>
+  <!-- config.json 桥（唯一事实源的前端入口，保留独立脚本）。 -->
   <script type="module">
     import('./config.json', { with: { type: 'json' } })
       .then((m) => { window.ASENT_CONFIG = m.default; })
       .catch(() => { /* 旧浏览器/异常路径：静默降级，走兜底默认值 */ });
-  </script>
-  <!-- 模拟交易复盘引擎（src/paper_review.js）：ESM 纯函数，挂到 window；app.js 据此在报告第⑦段拼复盘。paper_ui.js 每次账户变更后发布 window.__paperSnapshot 并经 'paper-snapshot' 事件触发报告重渲染。 -->
-  <script type="module">
-    import * as PaperReview from './src/paper_review.js';
-    window.PaperReview = PaperReview;
-    window.dispatchEvent(new Event('paper-review-ready'));
-  </script>
-  <!-- 模拟交易台面（纸上交易台）：有状态交互前端，规则委托 src/paper.js，持久化 localStorage。2026-10-03 曾整体摘除、引擎保留；2026-10-17 复活。 -->
-  <script type="module" src="./paper_ui.js"></script>
-  <!-- S3-1 即时轨采样器（src/intraday_sampler.js）：拉估值锚 + 腾讯指数实时涨幅，
-       60 秒采样当日权益序列（localStorage 当日键），发布 window.__intradayLive
-      （accountStats 形态的 live 账本，S3-4 报告卡片 input.live 的数据源）。
-       静态 import 依赖 quote.js / intraday_live.js / paper.js（ESM 纯函数链，
-       浏览器与 Node 同源）。加载失败静默——桥缺席 = 即时轨待命，归档面不受影响。 -->
-  <script type="module">
-    import('./src/intraday_sampler.js').catch(() => { /* 静默：即时轨待命 */ });
-  </script>
-  <!-- S3-4 报告卡实时装配引擎（src/report_card_live.js）：ESM 纯装配层，
-       import 链 = ai_report → paper → lhbfilter → lhb/seats（全纯函数，浏览器与
-       Node 同源）。app.js 是经典脚本不能 import，故与 report.js 等同款挂 window。
-       挂载失败静默——卡片自动停留在归档基座（loadAiReportCard 的降级分支）。 -->
-  <script type="module">
-    import * as ReportCardLive from './src/report_card_live.js';
-    window.ReportCardLive = ReportCardLive;
-    window.dispatchEvent(new Event('report-card-live-ready'));
-  </script>
-  <!-- 数据导出引擎（src/dataset.js）：同样是 ESM 纯函数、浏览器与 Node 共用。
-       app.js 是经典脚本不能 import，故挂到 window。
-       ⚠ 导出件与屏幕同源这件事，就靠"两边都调同一个 buildDataset"来保证——
-         前端**一行取数逻辑都不写**（连"这个字段就在 ARC 里，直接 map 一下"也不行）。 -->
-  <script type="module">
-    import * as DatasetExport from './src/dataset.js';
-    window.DatasetExport = DatasetExport;
-    window.dispatchEvent(new Event('dataset-export-ready'));
-  </script>
-  <!-- 错误边界 / 离线横幅模型（src/error_boundary.js）：同上，挂 window 供 app.js 调用。 -->
-  <script type="module">
-    import * as ErrorBoundary from './src/error_boundary.js';
-    window.ErrorBoundary = ErrorBoundary;
-    window.dispatchEvent(new Event('error-boundary-ready'));
-  </script>
-  <!-- 外围采集兜底（src/validate_snapshot.js）：ESM 纯函数（仅依赖 time.js 叶子模块，
-       浏览器安全），挂 window 供 app.js 在渲染外围行情表时复用与推送端同源的
-       "陈旧置空 / 历史缓存标注"规则（2026-10-12 全系统审计 Fix 2：消除公开页与推送端分叉）。
-       挂载失败静默——缺它页面退回直读 global.json，不冒充。 -->
-  <script type="module">
-    import * as ValidateExternal from './src/validate_snapshot.js';
-    window.ValidateExternal = ValidateExternal;
-    window.dispatchEvent(new Event('validate-external-ready'));
   </script>
   <!-- 离线看盘：注册 Service Worker。刻意放在最后——注册本身要下载 sw.js 并触发
        预缓存（外壳 9 个文件 + 3 个轻量数据档），不该和首屏渲染抢带宽。

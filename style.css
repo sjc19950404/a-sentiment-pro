@@ -1296,8 +1296,11 @@ tr.empty-row td { color: var(--muted); padding: 8px 8px; }
 .dt-chip { font-size: 11px; padding: 4px 8px; border-radius: 99px; border: 1px solid var(--line); }
 
 /* A/B/C 三策略回测面板（data/backtest-strategies.json；范式同 dualtrack-panel） */
-.btstrat-panel { margin: 8px 0; }
+/* 2026-11-14 CLS 修复：预留高度（首屏骨架占位即占住），避免异步数据到达后撑开推挤下方布局 */
+.btstrat-panel { margin: 8px 0; min-height: 18rem; display: flex; flex-direction: column; }
 .btstrat-panel[hidden] { display: none; }
+.bs-skeleton { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--muted, #888); font-size: .9em; }
+.btstrat-panel.bs-unknown { justify-content: center; }
 .bs-fold { border: 1px solid var(--line); border-radius: 8px; background: var(--card); overflow: hidden; }
 .bs-fold > summary { cursor: pointer; padding: 8px 12px; display: flex; gap: 10px;
   align-items: center; flex-wrap: wrap; list-style: none; }
