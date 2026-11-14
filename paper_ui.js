@@ -50,6 +50,10 @@ import { appendSignals, summarizeLog, summarizeText, LOG_CAP } from './src/alert
 // paper_ui.js 是 module，两者没有共享状态。挂一个带版本号的快照是最小的耦合面。
 import { REVIEW_VERSION } from './src/paper_review.js';
 // 标的池的 reason 走码表压缩，前端解回明文（见 boot 内注释）
+// 数据档 URL 改道（与 app.js / terminal.js 同一 durl 口径）：云端 github.io 域名时
+// 把 data/* 改道到 R2 快 CDN；本地 Pi / localhost 返回原相对路径。原先此处是裸
+// 裸 fetch 相对路径，2026-11-14 Lighthouse 实测首屏最重的几个档仍落 github.io 慢链。
+import { dget } from './src/data_url.js';
 import { decodeStrField } from './src/lhb_codec.js';
 
 // ── config.json 桥（唯一事实源的前端入口）──
@@ -424,7 +428,7 @@ function loadRecentArchive() {
   }
   if (typeof window !== 'undefined') {
     if (!window.__recentPromise) {
-      window.__recentPromise = fetch('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
+      window.__recentPromise = dget('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
         .then((res) => (res.ok ? res.json() : Promise.reject(new Error('HTTP ' + res.status))))
         // H-2：成功时刻记入共享时间戳（与 app.js 同一槽位）——TTL 过期判定
         // 统一由 app.js 的读取端负责，本兜底只保证写入的档不比正常路径活得"更久"。
@@ -433,7 +437,7 @@ function loadRecentArchive() {
     }
     return window.__recentPromise;
   }
-  return fetch('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
+  return dget('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
     .then((res) => (res.ok ? res.json() : Promise.reject(new Error('HTTP ' + res.status))));
 }
 
@@ -492,7 +496,7 @@ function fullUniverse(uni) {
  */
 function loadUniverseStaged() {
   const bust = '?_=' + Date.now();
-  const liteP = fetch(UNI_LITE_FILE + bust, { cache: 'no-store' })
+  const liteP = dget(UNI_LITE_FILE + bust, { cache: 'no-store' })
     .then((res) => (res.ok ? res.json() : null))
     .catch(() => null);
   return { liteP };
@@ -505,7 +509,7 @@ function loadUniverseStaged() {
 let SYS = null;
 async function loadSysAccount() {
   try {
-    const r = await fetch('./data/paper/account.json?_=' + Date.now(), { cache: 'no-store' });
+    const r = await dget('./data/paper/account.json?_=' + Date.now(), { cache: 'no-store' });
     SYS = r.ok ? await r.json() : null;
   } catch { SYS = null; }
   renderSysPanel();
@@ -584,7 +588,7 @@ async function boot() {
       }
     } else {
       // 精简池不可用：退回完整池（老部署 / 精简池生成失败），此时首屏就是旧行为
-      const res = await fetch(UNI_FULL_FILE + '?_=' + Date.now(), { cache: 'no-store' });
+      const res = await dget(UNI_FULL_FILE + '?_=' + Date.now(), { cache: 'no-store' });
       if (!res.ok) throw new Error('标的池 HTTP ' + res.status);
       const uni = await res.json();
       UNI = fullUniverse(uni);
@@ -600,7 +604,7 @@ async function boot() {
     QMAP = quotesFromDay(last);
     // 情绪闸门所需的涨停池（板块聚类/强度分级），与 ARC_DAYS 同源的当日收盘档（缺失不阻断，闸门自动跳过）
     try {
-      const ztRes = await fetch('./data/ztpool_history.json?_=' + Date.now(), { cache: 'no-store' });
+      const ztRes = await dget('./data/ztpool_history.json?_=' + Date.now(), { cache: 'no-store' });
       if (ztRes.ok) {
         const ztArr = await ztRes.json();
         const norm = (s) => String(s == null ? '' : s).replace(/\D/g, '');
@@ -666,7 +670,7 @@ function scheduleIdleUniverse() {
 function loadFullUniverse() {
   if (UNI_FULL_READY) return Promise.resolve(UNI);
   if (!window.__uniFullPromise) {
-    window.__uniFullPromise = fetch(UNI_FULL_FILE + '?_=' + Date.now(), { cache: 'no-store' })
+    window.__uniFullPromise = dget(UNI_FULL_FILE + '?_=' + Date.now(), { cache: 'no-store' })
       .then((res) => {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.json();

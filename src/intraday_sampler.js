@@ -17,6 +17,8 @@ import {
   intradayEquity, buildLiveAccount, liveAccountStats, dailyDrawdown, riskTierDistance,
   seriesKey, appendSample, deserializeSeries,
 } from './intraday_live.js';
+// 估值锚档改道（与 app.js / paper_ui.js 同一 durl 口径），见 src/data_url.js
+import { dget } from './data_url.js';
 import { bjDate } from './time.js';
 
 const TICK_MS = 60 * 1000; // 采样节拍（用户拍板：盘中每 1 分钟）
@@ -119,7 +121,7 @@ async function tick() {
 
 async function loadAnchor() {
   try {
-    const res = await fetch('./data/paper/dual_track_latest.json', { cache: 'no-store' });
+    const res = await dget('./data/paper/dual_track_latest.json', { cache: 'no-store' });
     if (!res.ok) return;
     const doc = await res.json();
     const v = doc && doc.intraday_valuation;

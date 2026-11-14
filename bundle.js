@@ -7401,6 +7401,14 @@ function normalizeCodes(codes) {
   return [...new Set((codes || []).map((c) => String(c || "").trim()).filter((c) => /^\d{6}$/.test(c)))];
 }
 
+// src/data_url.js
+var durl = (p) => {
+  const origin = typeof window !== "undefined" && window.ASENT_CONFIG && window.ASENT_CONFIG.dataOrigin || "";
+  if (!origin || typeof location === "undefined" || !/(^|\.)github\.io$/.test(location.hostname)) return p;
+  return origin.replace(/\/+$/, "") + "/" + String(p).replace(/^\.?\//, "");
+};
+var dget = (p, opts) => fetch(durl(p), opts || { cache: "no-store" });
+
 // src/lhb_codec.js
 function decodeStrField(rows, table, field) {
   if (!Array.isArray(table) || !table.length) return rows;
@@ -7677,7 +7685,7 @@ function loadRecentArchive() {
   }
   if (typeof window !== "undefined") {
     if (!window.__recentPromise) {
-      window.__recentPromise = fetch("./data/archive-recent.json?_=" + Date.now(), { cache: "no-store" }).then((res) => res.ok ? res.json() : Promise.reject(new Error("HTTP " + res.status))).then((d) => {
+      window.__recentPromise = dget("./data/archive-recent.json?_=" + Date.now(), { cache: "no-store" }).then((res) => res.ok ? res.json() : Promise.reject(new Error("HTTP " + res.status))).then((d) => {
         window.__recentPromiseAt = Date.now();
         return d;
       }).catch((e) => {
@@ -7688,7 +7696,7 @@ function loadRecentArchive() {
     }
     return window.__recentPromise;
   }
-  return fetch("./data/archive-recent.json?_=" + Date.now(), { cache: "no-store" }).then((res) => res.ok ? res.json() : Promise.reject(new Error("HTTP " + res.status)));
+  return dget("./data/archive-recent.json?_=" + Date.now(), { cache: "no-store" }).then((res) => res.ok ? res.json() : Promise.reject(new Error("HTTP " + res.status)));
 }
 function recentDays(arc) {
   return (arc && arc.kind === "archive-recent" ? [...arc.days || [], ...arc.latest ? [arc.latest] : []] : arc && arc.all_days || []).map(liftSeats).sort((a, b) => String(a.trade_date).localeCompare(String(b.trade_date)));
@@ -7712,13 +7720,13 @@ function fullUniverse(uni) {
 }
 function loadUniverseStaged() {
   const bust = "?_=" + Date.now();
-  const liteP = fetch(UNI_LITE_FILE + bust, { cache: "no-store" }).then((res) => res.ok ? res.json() : null).catch(() => null);
+  const liteP = dget(UNI_LITE_FILE + bust, { cache: "no-store" }).then((res) => res.ok ? res.json() : null).catch(() => null);
   return { liteP };
 }
 var SYS = null;
 async function loadSysAccount() {
   try {
-    const r = await fetch("./data/paper/account.json?_=" + Date.now(), { cache: "no-store" });
+    const r = await dget("./data/paper/account.json?_=" + Date.now(), { cache: "no-store" });
     SYS = r.ok ? await r.json() : null;
   } catch {
     SYS = null;
@@ -7787,7 +7795,7 @@ async function boot() {
         }
       }
     } else {
-      const res = await fetch(UNI_FULL_FILE + "?_=" + Date.now(), { cache: "no-store" });
+      const res = await dget(UNI_FULL_FILE + "?_=" + Date.now(), { cache: "no-store" });
       if (!res.ok) throw new Error("\u6807\u7684\u6C60 HTTP " + res.status);
       const uni = await res.json();
       UNI = fullUniverse(uni);
@@ -7801,7 +7809,7 @@ async function boot() {
     LAST_DATE = last.trade_date || null;
     QMAP = quotesFromDay(last);
     try {
-      const ztRes = await fetch("./data/ztpool_history.json?_=" + Date.now(), { cache: "no-store" });
+      const ztRes = await dget("./data/ztpool_history.json?_=" + Date.now(), { cache: "no-store" });
       if (ztRes.ok) {
         const ztArr = await ztRes.json();
         const norm = (s) => String(s == null ? "" : s).replace(/\D/g, "");
@@ -7837,7 +7845,7 @@ function scheduleIdleUniverse() {
 function loadFullUniverse() {
   if (UNI_FULL_READY) return Promise.resolve(UNI);
   if (!window.__uniFullPromise) {
-    window.__uniFullPromise = fetch(UNI_FULL_FILE + "?_=" + Date.now(), { cache: "no-store" }).then((res) => {
+    window.__uniFullPromise = dget(UNI_FULL_FILE + "?_=" + Date.now(), { cache: "no-store" }).then((res) => {
       if (!res.ok) throw new Error("HTTP " + res.status);
       return res.json();
     }).then((uni) => {
@@ -10119,7 +10127,7 @@ async function tick() {
 }
 async function loadAnchor() {
   try {
-    const res = await fetch("./data/paper/dual_track_latest.json", { cache: "no-store" });
+    const res = await dget("./data/paper/dual_track_latest.json", { cache: "no-store" });
     if (!res.ok) return;
     const doc = await res.json();
     const v = doc && doc.intraday_valuation;
