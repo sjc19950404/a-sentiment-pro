@@ -11,12 +11,19 @@
 //   3. 容错：单文件失败仅记录并继续；缺凭证 / SDK 未装 / 桶连不通 都只告警并 exit 0，
 //      绝不抛出 → 不破坏 pi_run.sh 的 EOD 流程。
 //   4. 删除本地已不存在的对象需显式开启 R2_DELETE_STALE=true（默认关，避免误删）。
+//   5. gzip 预压缩（2026-11-14）：github.io 会自动 gzip，R2 不会——Lighthouse 实测同一档
+//      archive-recent 264KB / version-regression 195KB / seat_labels 89KB 在 R2 是 github.io
+//      的 5.7~10.8 倍，改道后总网络负载 916→1470 KiB、关键路径 29.2→34.4s、性能 65→46。
+//      故上传时把文本档预压缩成 gzip 对象 + ContentEncoding:'gzip'；浏览器带
+//      Accept-Encoding:gzip 时 R2 返回 84B 压缩体（fetch 自动解压），不带/identity 时
+//      R2 自动返回明文（实测 20027B 且无 CE 头）——向后兼容，旧客户端不会拿到乱码。
 //
 // 用法：node scripts/sync_to_r2.mjs [--force]   （仓库根执行；读 .env 的 R2_* 变量）
 
 import { readFileSync, writeFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
 import { pushOpsAlerts } from '../src/opsalerts.js';   // 复用项目统一企微告警通道（#7/#15）
 
 const __filename = fileURLToPath(import.meta.url);
@@ -53,6 +60,19 @@ const CT = {
 };
 const contentType = (p) => CT[extname(p).toLowerCase()] || 'application/octet-stream';
 
+// 仅对 CT 里的文本档压缩（二进制/已压缩格式不碰）；太小（<1KB）压缩无收益，跳过以免
+// gzip 头开销反而变大。R2 会按 Accept-Encoding 协商：带 gzip 返回压缩体，不带返回明文。
+const GZIP_MIN_BYTES = 1024;
+const ENC_VERSION = 'gzip-1';   // manifest 编码版本：变更时强制全量重传（避免存量对象编码不一致）
+const shouldGzip = (p, size) => size >= GZIP_MIN_BYTES && Object.hasOwn(CT, extname(p).toLowerCase());
+const encodeBody = (p, buf) => {
+  if (!shouldGzip(p, buf.length)) return { Body: buf, ContentEncoding: undefined };
+  const gz = gzipSync(buf, { level: 9 });
+  // 极端情况（已是高熵数据）压缩反而更大：回退原样，不写 CE 头
+  if (gz.length >= buf.length) return { Body: buf, ContentEncoding: undefined };
+  return { Body: gz, ContentEncoding: 'gzip' };
+};
+
 // 待同步源（相对仓库根）——与 push_data_repo.sh 推送清单一致
 const SRC_DIRS = ['ui/kline'];
 const SRC_FILES = [
@@ -61,6 +81,12 @@ const SRC_FILES = [
   'data/announcements-latest.json',
   'data/paper/account.json',
   'data/llm_risk_blacklist.json',
+  // 2026-11-14 补漏：durl() 改道全面生效后，这三档在 R2 上 404（返回 text/html 错误页），
+  //   Lighthouse 控制台抓到 3 条 404 → 最佳做法 100→96，且标的池/双轨账本前端缺数据。
+  //   本地都有文件，但漏在清单外；test/r2_sync.test.mjs 已加守卫防再次漏档。
+  'data/paper_universe.json',
+  'data/paper_universe-lite.json',
+  'data/paper/dual_track_latest.json',
   // 2026-11-14：前端研究工作台首屏/各面板实际会拉的全部 data/*（含重档），统一改道 R2 以绕开 github.io 慢链。
   //   首屏真正加载的（app.js 376KB 缓存后次要）多为小档，但 market_context_history/board_rank/ztpool_history 等
   //   也可能经动态路径加载，全部同步进 R2 可保证 durl() 改道后零 404。
@@ -164,7 +190,9 @@ async function main() {
     const st = statSync(join(ROOT, rp));
     const prev = manifest[rp];
     const mtime = Math.floor(st.mtimeMs);
-    if (!FORCE && prev && prev.size === st.size && prev.mtimeMs === mtime) skipped++;
+    // enc 不匹配也必须重传：存量对象是未压缩的（ENC_VERSION 之前），若不强制刷新则
+    // size+mtime 一致会被跳过，R2 上永远留着未压缩的大档，压缩改动形同没做。
+    if (!FORCE && prev && prev.size === st.size && prev.mtimeMs === mtime && prev.enc === ENC_VERSION) skipped++;
     else toUpload.push({ rp, size: st.size, mtimeMs: mtime });
   }
 
@@ -177,12 +205,14 @@ async function main() {
       const item = toUpload[idx++];
       try {
         const body = readFileSync(join(ROOT, item.rp));
+        const { Body, ContentEncoding } = encodeBody(item.rp, body);
         await s3.send(new PutObjectCommand({
-          Bucket: BUCKET, Key: item.rp, Body: body,
+          Bucket: BUCKET, Key: item.rp, Body,
           ContentType: contentType(item.rp), CacheControl: 'public, max-age=300',
+          ...(ContentEncoding ? { ContentEncoding } : {}),
         }));
-        manifest[item.rp] = { size: item.size, mtimeMs: item.mtimeMs };
-        ok++; bytes += item.size;
+        manifest[item.rp] = { size: item.size, mtimeMs: item.mtimeMs, enc: ENC_VERSION };
+        ok++; bytes += Body.length;
         if (toUpload.length < 50 || ok % 200 === 0) console.log(`[r2] 进度 ${ok}/${toUpload.length} · 失败 ${fail}`);
       } catch (e) {
         fail++;
@@ -208,7 +238,8 @@ async function main() {
   for (const k of stale) delete manifest[k];
 
   saveManifest(manifest);
-  console.log(`[r2] 完成 · 上传 ${ok} · 跳过(未变) ${skipped} · 失败 ${fail} · 字节 ${(bytes / 1e6).toFixed(1)}MB · 本地共 ${sources.length}`);
+  // bytes 是压缩后实际上传字节（encodeBody 之后的 Body.length），不是本地源文件体积。
+  console.log(`[r2] 完成 · 上传 ${ok} · 跳过(未变) ${skipped} · 失败 ${fail} · 上传字节(gzip后) ${(bytes / 1e6).toFixed(1)}MB · 本地共 ${sources.length}`);
   if (failed.length) console.warn(`[r2] 失败明细(前20):\n  ` + failed.slice(0, 20).join('\n  '));
   if (PUBLIC_URL && toUpload.length) console.log(`[r2] 公共地址示例：${PUBLIC_URL}/${encodeURI(toUpload[0].rp)}`);
   // #7/#15：同步不完整 → 非静默 exit(0)。发企微告警 + 非零退出（pi_run.sh 已用 || log 容错，不阻断 EOD）。

@@ -1296,17 +1296,17 @@ tr.empty-row td { color: var(--muted); padding: 8px 8px; }
 .dt-chip { font-size: 11px; padding: 4px 8px; border-radius: 99px; border: 1px solid var(--line); }
 
 /* A/B/C 三策略回测面板（data/backtest-strategies.json；范式同 dualtrack-panel） */
-/* 2026-11-14 CLS 修复（第二轮，Lighthouse 复测后修正）：
-   首轮用 min-height: 18rem 只设了**下限**——真实内容（details open + 5 行表格 + 5 条 note）
-   约 360~450px，数据到达后容器仍从 288px 撑高，把下方 <main> 推走（复测报告：
-   btStrategyPanel 0.751 + main 0.499）。故改为**固定高度 + 容器内滚动**：容器尺寸
-   恒定，骨架与真实内容只是同一盒子里的替换，外部布局零位移；内容超高在盒内滚动，
-   不裁剪、不丢失。26rem ≈ 416px，按真实内容（表头 40 + 5 行 ~180 + 5 note ~110 +
-   padding ~30 ≈ 360px）留出余量。 */
-.btstrat-panel { margin: 8px 0; height: 26rem; box-sizing: border-box; overflow-y: auto; }
+/* 2026-11-14 CLS：回到首轮 18rem 骨架基线（撤销第二轮回归）。
+   第二轮改成固定 height:26rem + 容器内滚动后，Lighthouse 复测 CLS 从 0.802 涨到
+   **0.890**：固定高度确实消除了 main 的偏移（main 0.499 消失），但元素本身变高，
+   被 <main> 之前那 12 个 hidden→异步显示的面板依次撑开往下推时 impact fraction
+   更大，btStrategyPanel 自身 0.751→0.890，净效果为负。
+   故回退到已知基线（min-height:18rem 骨架，CLS 0.802）。根治需处理那 12 个面板的
+   布局预留/移出首屏流，属产品布局决策，须先实测再动，不在此轮擅自改。 */
+.btstrat-panel { margin: 8px 0; min-height: 18rem; display: flex; flex-direction: column; }
 .btstrat-panel[hidden] { display: none; }
-.bs-skeleton { height: 100%; display: flex; align-items: center; justify-content: center; color: var(--muted, #888); font-size: .9em; }
-.btstrat-panel.bs-unknown { display: flex; align-items: center; justify-content: center; }
+.bs-skeleton { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--muted, #888); font-size: .9em; }
+.btstrat-panel.bs-unknown { justify-content: center; }
 .bs-fold { border: 1px solid var(--line); border-radius: 8px; background: var(--card); overflow: hidden; }
 .bs-fold > summary { cursor: pointer; padding: 8px 12px; display: flex; gap: 10px;
   align-items: center; flex-wrap: wrap; list-style: none; }
