@@ -52,6 +52,9 @@ data/bt_kline_fetch.err.log
 .dev.vars
 .wrangler/
 
+# Lighthouse 自测产物（scripts/lighthouse_selfcheck.mjs）：完整 JSON 报告 + 基线，本机对比用，不入库
+.lighthouse/
+
 # H-4 原子写（2026-10-07）：极端场景（进程在写 tmp 后、清理前被 SIGKILL）的残留临时档
 *.tmp
 

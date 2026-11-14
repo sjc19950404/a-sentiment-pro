@@ -17,6 +17,7 @@
     "check:frontend": "node scripts/check_frontend.mjs",
     "build:ui": "node scripts/build_ui.mjs",
     "build:bundle": "node scripts/build_bundle.mjs",
+    "lh": "node scripts/lighthouse_selfcheck.mjs",
     "kline:daily": "node ui/fetch_kline_all.mjs",
     "kline:init": "node ui/fetch_kline_all.mjs --init",
     "promote": "node scripts/promote_params.mjs",
