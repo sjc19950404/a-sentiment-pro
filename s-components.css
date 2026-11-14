@@ -1341,3 +1341,32 @@
   .s-topbar__meta { display: none; }
   .s-verdict__text { font-size: var(--s-font-base); }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * 工作台骨架（阶段 1 路由占位 · s-root.js 注入）
+ * 仅 .s-scope 作用域；真值由 s-adapter.js 重搬研报视图后接管。
+ * ══════════════════════════════════════════════════════════════════════════ */
+.s-scope .s-topbar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,.08);
+  background: #0b0f16; color: #e8eef5;
+}
+.s-scope .s-brand { font-weight: 600; font-size: 15px; }
+.s-scope .s-dot { width: 8px; height: 8px; border-radius: 50%; background: #3fb950; }
+.s-scope .s-sub { font-size: 12px; color: #8b98a8; }
+.s-scope .s-nav { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+.s-scope .s-nav button {
+  font: inherit; font-size: 12px; padding: 5px 10px; border-radius: 7px;
+  border: 1px solid rgba(255,255,255,.12); background: #10161f; color: #c4cdd9;
+  cursor: not-allowed; opacity: .7;
+}
+.s-scope .s-main { padding: 20px 16px; color: #c4cdd9; max-width: 920px; }
+.s-scope .s-welcome h2 { color: #e8eef5; font-size: 18px; margin: 0 0 8px; }
+.s-scope .s-welcome p { line-height: 1.7; margin: 6px 0; }
+.s-scope .s-welcome code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 4px; color: #7ee787;
+}
+.s-scope .s-hint { font-size: 12px; color: #8b98a8; }
+.s-scope .s-sparkwrap { margin-top: 16px; color: #22d3ee; max-width: 420px; }
+.s-scope .s-spark { width: 100%; height: 80px; display: block; }
