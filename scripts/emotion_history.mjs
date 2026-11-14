@@ -54,9 +54,11 @@ function sanitizePool(pool) {
 }
 
 // ── 精确轨数据源：东财涨停池（与 src/sources.js fetchPools 同端点同参数口径）──
-async function fetchLatestPool() {
-  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const url = `https://push2ex.eastmoney.com/getTopicZTPool?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=500&sort=fbt%3Aasc&date=${today}&_=${Date.now()}`;
+async function fetchLatestPool(targetDate) {
+  // targetDate: 'YYYYMMDD' 可选；缺省用北京当日。注意：东财该接口历史 date 可能被服务端忽略回退
+  //   （见模块头注释），故 --date 仅用于「最近交易日」对齐测试，无法补更早历史日（东财只回最近交易日快照）。
+  const date = (targetDate || new Date().toISOString().slice(0, 10)).replace(/-/g, '');
+  const url = `https://push2ex.eastmoney.com/getTopicZTPool?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=500&sort=fbt%3Aasc&date=${date}&_=${Date.now()}`;
   const res = await fetchWithRetry(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -89,6 +91,8 @@ function approxMetrics(day) {
 
 // ── main ──
 const fetchLatest = process.argv.includes('--fetch-latest');
+const dateArgIdx = process.argv.indexOf('--date');
+const dateArg = dateArgIdx >= 0 ? process.argv[dateArgIdx + 1] : null;
 
 // 1. 精确轨数据（--fetch-latest 时先抓当天）
 let hist = [];
@@ -96,7 +100,7 @@ if (existsSync(data('ztpool_history.json'))) {
   try { hist = JSON.parse(readFileSync(data('ztpool_history.json'), 'utf8')); } catch { hist = []; }
 }
 if (fetchLatest) {
-  const got = await fetchLatestPool();
+  const got = await fetchLatestPool(dateArg);
   if (got) {
     const san = sanitizePool(got.pool);              // #6 入库前逐条清洗
     if (san.dropped) console.warn(`[dirty] ${got.date} 涨停池剔除脏条目 ${san.dropped} 条`);

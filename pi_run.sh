@@ -100,6 +100,11 @@ case "$MODE" in
     #   供 GitHub Pages 终端经 terminal.js 的 durl() + jsDelivr CDN 拉取（这些档刻意不入主仓 git）。
     #   数据仓未建/PAT 未授权时脚本内部静默跳过（exit 0），绝不影响 EOD 主流程。
     bash scripts/push_data_repo.sh || log "数据仓推送失败（best-effort，不影响 EOD）"
+    # 涨停池历史入库（2026-11-14 修复：ztpool_history 此前停滞在 11-04——其唯一写入入口
+    #   emotion_history.mjs --fetch-latest 从未被任何定时任务调度，只靠人工触发）。每日盘后抓当日
+    #   涨停池入库 data/ztpool_history.json（东财接口只回最近交易日，故补历史需逐日积累、不可回填更早日）。
+    #   非交易日东财返回空 → 自然跳过；best-effort 不阻断 EOD（已生成的 emotion_history 也在此步刷新）。
+    node scripts/emotion_history.mjs --fetch-latest 2>/dev/null || log "涨停池入库失败（best-effort，继续）"
     # 修复（route A）：report_etf_hedge / report_reco_picks 产出 etf_hedge_signal.json /
     #   reco_picks_latest.json，必须在 pi_push 之前生成，否则当轮不提交、下轮 reset 冲掉 → Pages 永远停旧版。
     # 2026-10-27 用户指令：EOD 盘前生成 ETF 防守反击避险信号（只读 dual_track + ETF k线，绝不交易）；
