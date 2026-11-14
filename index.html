@@ -942,9 +942,11 @@
          对比也空白，反之亦然。
        ⚠ null = "未生成"（≠ 策略无效）；数字只展示不重算（唯一出处 = JSON 档）；
          历史回测 ≠ 未来收益，meta.disclaimer 原样展示，不构成投资建议。 -->
-  <!-- 2026-11-14 CLS 修复：原先 hidden（display:none），异步数据到达后 hidden=false 撑开高度
-       推挤下方布局（Lighthouse 抓到 0.836）。改为首屏即占住预留高度的骨架占位，数据到达只
-       替换内容、不位移；空状态垂直居中，像有意保留的卡片而非 bug。 -->
+  <!-- 2026-11-14 CLS 修复（复测后第二轮）：原先 hidden（display:none），异步数据到达后
+       hidden=false 撑开高度推挤下方布局（Lighthouse 抓到 0.836）。首轮改成骨架 + min-height
+       只设了下限，真实内容仍撑高（复测 btStrategyPanel 0.751 未改善、并新增 main 0.499）。
+       现由 style.css 给容器**固定 height + 容器内滚动**：尺寸恒定，骨架与真实内容只是
+       同一盒子里的替换，外部布局零位移；内容超高在盒内滚动，不裁剪不丢失。 -->
   <div id="btStrategyPanel" class="btstrat-panel"><div class="bs-skeleton" aria-hidden="true">策略回测加载中…</div></div>
 
   <!-- 致命错误替代区：首屏必需档（archive-index）拿不到时填入。
