@@ -3,7 +3,8 @@ node_modules/
 .DS_Store
 snapshot.html
 
-# 合并版 UI 构建产物（dist/ 部署走 Pages artifact，不入库；源在 ui/ + scripts/build_ui.mjs）
+# 前端站点源即仓库根（index.html/app.js/style.css/...）；Pages 部署由 .github/workflows/deploy-pages.yml
+# checkout main 后按固定白名单 cp 组装 site/ → upload-pages-artifact → deploy-pages。dist/ 非实际产物，保留忽略位以防误用。
 dist/
 
 # backtest 产物
@@ -144,3 +145,10 @@ data/.archive_snap/
 data/ci_gate_last_run.json
 data/ci_gate_state.json
 data/ci_gate_api_notice.json
+
+# 设计交付物（重型、非仓库运行所需；真实源在 design.rar，按需解压，勿随仓库入库以免撑大体积/误部署）
+design/UI设计方案.html
+design/UI设计方案.pdf
+design/assets/
+# 设计原型首页（高保真原型，非运行时路径；部署白名单不含 design/，但避免误提交）
+design/prototype/index.html

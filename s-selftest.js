@@ -1,11 +1,16 @@
 /*
- * s-selfcheck.js — A 方案阶段 0 自检脚本（设计 05 册 5.2.1 节）
+ * s-selftest.js — A 方案阶段 0 自检脚本（设计 05 册 5.2.1 节）
  * 挂载到 window.S：S.runSelfTest() / S.collectCls()。
  * 注意：本文件只定义函数、不自动调用，故阶段 0（.s-scope 未挂载）下无任何行为/视觉副作用；
  * 调用方式（CDP / 控制台）：S.runSelfTest() 或 S.collectCls()。
  */
 (function () {
   "use strict";
+
+  // 把逗号分隔的选择器逐项加 .s-scope 前缀，避免「只有首项带前缀」导致的全文档误匹配
+  function scoped(sel) {
+    return sel.split(",").map(function (s) { return ".s-scope " + s.trim(); }).join(", ");
+  }
 
   function wait(ms) {
     return new Promise(function (resolve) { setTimeout(resolve, ms); });
@@ -138,7 +143,7 @@
     var sel = "button, a[href], input, select, textarea, summary, [role='tab'], [role='button'], [tabindex='0']";
     var bad = [];
     var checked = 0;
-    Array.prototype.forEach.call(document.querySelectorAll(".s-scope " + sel), function (el) {
+    Array.prototype.forEach.call(document.querySelectorAll(scoped(sel)), function (el) {
       if (!visible(el)) { return; }
       if (el.closest(".s-prose__toc")) { return; }
       checked += 1;
@@ -155,7 +160,7 @@
     var bad = [];
     var checked = 0;
     var minRatio = 99;
-    Array.prototype.forEach.call(document.querySelectorAll(".s-scope " + sel), function (el) {
+    Array.prototype.forEach.call(document.querySelectorAll(scoped(sel)), function (el) {
       if (!visible(el)) { return; }
       var fg = rgb(getComputedStyle(el).color);
       if (!fg) { return; }
@@ -310,4 +315,7 @@
     console.log("[S.selfTest] PASS =", report.pass, report);
     return report;
   };
+
+  // 导出 collectCls（05 册 5.2.1 的 8 项表引用它，但原稿未挂载到 S；阶段 1+ 的 CLS 门禁依赖 S.collectCls）
+  S.collectCls = collectCls;
 }(window.S = window.S || {}));
