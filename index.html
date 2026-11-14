@@ -18,6 +18,15 @@
        <meta> 无法承载该指令（浏览器强制忽略并刷警告），Pages 又不能自定义响应头——
        防嵌入防护暂缺，如实记录。 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://qt.gtimg.cn; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://qt.gtimg.cn https://finance.qq.com https://pub-5a2d9fd0ca4547c5b9e561c4c50f6448.r2.dev https://*.trycloudflare.com; font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+  <!-- config.json 同步注入哨兵（构建期由 scripts/inject_config.mjs 用仓库根 config.json 填充）。
+       刻意放在 CSP meta **之后**：否则浏览器解析到 <script> 就执行，CSP 尚未生效。
+       为什么必须同步内联：dataOrigin 存在 config.json 里，而 durl() 要靠它把 data/* 改道 R2；
+       若走异步 module 桥，app.js（经典脚本、同步执行）首屏立即发出的 dget() 时 ASENT_CONFIG
+       还没就绪 → 全部落回 github.io 慢链（2026-11-14 Lighthouse 实测：关键路径 29s、
+       网络树里 data/*.json 仍在 github.io，只有 1 个 late 请求走了 r2.dev）。
+       源文件哨兵值为 null：本地 Pi / localhost 走下方异步桥 + 相对路径，零回归。
+       部署时 node scripts/inject_config.mjs site/index.html 把 null 换成真实配置。 -->
+  <script id="asent-config">window.ASENT_CONFIG = null;</script>
   <!-- 2026-11-07：data URI favicon——消除 /favicon.ico 404（控制台最后一条噪音）；
        红绿 K 线极简标（A股红涨配色）。SVG data URI 零网络请求。 -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='12'%20fill='%230d1117'/%3E%3Crect%20x='14'%20y='24'%20width='12'%20height='24'%20fill='%23f85149'/%3E%3Crect%20x='18'%20y='16'%20width='4'%20height='40'%20fill='%23f85149'/%3E%3Crect%20x='38'%20y='18'%20width='12'%20height='28'%20fill='%233fb950'/%3E%3Crect%20x='42'%20y='12'%20width='4'%20height='40'%20fill='%233fb950'/%3E%3C/svg%3E">
@@ -1421,11 +1430,15 @@
        github.io 上逐个请求 → 慢链瀑布，首屏 37s）。现统一打包为单文件 bundle.js
        （scripts/build_bundle.mjs，esbuild），一次请求拉完；config.json 仍由下方独立桥负责。 -->
   <script type="module" src="./bundle.js"></script>
-  <!-- config.json 桥（唯一事实源的前端入口，保留独立脚本）。 -->
+  <!-- config.json 桥：仅作 fallback。正常路径下 <head> 的 #asent-config 哨兵已在构建期
+       同步注入 window.ASENT_CONFIG，这里直接跳过、不再产生慢链请求；只有本地打开源文件
+       （哨兵为 null）或注入失败时才异步补拉，保证本地零回归、云端零浪费。 -->
   <script type="module">
-    import('./config.json', { with: { type: 'json' } })
-      .then((m) => { window.ASENT_CONFIG = m.default; })
-      .catch(() => { /* 旧浏览器/异常路径：静默降级，走兜底默认值 */ });
+    if (!window.ASENT_CONFIG) {
+      import('./config.json', { with: { type: 'json' } })
+        .then((m) => { window.ASENT_CONFIG = m.default; })
+        .catch(() => { /* 旧浏览器/异常路径：静默降级，走兜底默认值 */ });
+    }
   </script>
   <!-- 离线看盘：注册 Service Worker。刻意放在最后——注册本身要下载 sw.js 并触发
        预缓存（外壳 9 个文件 + 3 个轻量数据档），不该和首屏渲染抢带宽。

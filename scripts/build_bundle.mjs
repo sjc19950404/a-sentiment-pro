@@ -53,8 +53,9 @@ const configJsonLive = {
   setup(b) {
     b.onResolve({ filter: /(^|\/)config\.json$/ }, (a) => ({ path: a.path, namespace: 'config-json' }));
     b.onLoad({ filter: /.*/, namespace: 'config-json' }, () => ({
-      // 按文档根（index.html 所在）取线上最新 config.json，与 bundle 文件位置无关
-      contents: "export default (await fetch(new URL('config.json', document.baseURI)).then(r => r.json()));",
+      // 云端：<head> 哨兵已同步注入 window.ASENT_CONFIG，直接复用、零请求；
+      // 本地（哨兵为 null）：按文档根 fetch 兜底，与 bundle 文件位置无关。
+      contents: "export default (window.ASENT_CONFIG || (await fetch(new URL('config.json', document.baseURI)).then(r => r.json())));",
       loader: 'js',
     }));
   },

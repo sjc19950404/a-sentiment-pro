@@ -111,7 +111,7 @@ __export(config_exports, {
 var config_default2;
 var init_config = __esm({
   async "config-json:./config.json"() {
-    config_default2 = await fetch(new URL("config.json", document.baseURI)).then((r) => r.json());
+    config_default2 = window.ASENT_CONFIG || await fetch(new URL("config.json", document.baseURI)).then((r) => r.json());
   }
 });
 
