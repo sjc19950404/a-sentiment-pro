@@ -3,8 +3,8 @@
     "created": "2026-11-07T13:53:17.263Z",
     "note": "妖股纯情绪标记历史（每日 EOD 留存，同日覆盖幂等）；验证脚本 scripts/dragon_purity_validation.mjs（T+1 续板率对照）",
     "source": "llm-dragon-logic-latest.json::dragons（连续连板口径 zt_lb）",
-    "updated": "2026-11-14T03:03:51.523Z",
-    "days": 6
+    "updated": "2026-11-16T10:50:01.042Z",
+    "days": 7
   },
   "days": [
     {
@@ -1624,6 +1624,236 @@
         }
       ],
       "savedAt": "2026-11-14T03:03:51.510Z"
+    },
+    {
+      "date": "20261116",
+      "marks": [
+        {
+          "code": "002148",
+          "name": "北纬科技",
+          "lb": 4,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪稳定"
+        },
+        {
+          "code": "002187",
+          "name": "广百股份",
+          "lb": 3,
+          "is_pure": true,
+          "reason": "炸板多，筹码松动，明日或跌"
+        },
+        {
+          "code": "002205",
+          "name": "国统股份",
+          "lb": 3,
+          "is_pure": true,
+          "reason": "炸板频繁，高位分歧，风险大"
+        },
+        {
+          "code": "600715",
+          "name": "文投控股",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "无炸板，情绪稳定，可关注"
+        },
+        {
+          "code": "000819",
+          "name": "岳阳兴长",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "无炸板，情绪稳定，可关注"
+        },
+        {
+          "code": "002905",
+          "name": "金逸影视",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "无炸板，情绪稳定，可关注"
+        },
+        {
+          "code": "002425",
+          "name": "凯撒文化",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "无炸板，情绪稳定，可关注"
+        },
+        {
+          "code": "002548",
+          "name": "金新农",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板少，情绪稳定，可关注"
+        },
+        {
+          "code": "002685",
+          "name": "华东重机",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板多，筹码松动，明日或跌"
+        },
+        {
+          "code": "002748",
+          "name": "世龙实业",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板少，情绪稳定，可关注"
+        },
+        {
+          "code": "000595",
+          "name": "新能股份",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪加速，小心冲高回落"
+        },
+        {
+          "code": "300530",
+          "name": "领湃科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，游资试水，谨慎跟风"
+        },
+        {
+          "code": "300824",
+          "name": "300824",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，游资试水，谨慎跟风"
+        },
+        {
+          "code": "600386",
+          "name": "北巴传媒",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，游资试水，谨慎跟风"
+        },
+        {
+          "code": "600822",
+          "name": "上海物贸",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，游资试水，谨慎跟风"
+        },
+        {
+          "code": "600936",
+          "name": "北投科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，游资试水，谨慎跟风"
+        },
+        {
+          "code": "601188",
+          "name": "龙江交通",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，游资试水，谨慎跟风"
+        },
+        {
+          "code": "601929",
+          "name": "吉视传媒",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，游资试水，谨慎跟风"
+        },
+        {
+          "code": "603118",
+          "name": "共进股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，游资试水，谨慎跟风"
+        },
+        {
+          "code": "603983",
+          "name": "丸美生物",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，游资试水，谨慎跟风"
+        },
+        {
+          "code": "605378",
+          "name": "野马电池",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "002419",
+          "name": "天虹股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "002356",
+          "name": "鹏飞绿能",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "000521",
+          "name": "亿利达",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "002035",
+          "name": "华帝股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "001318",
+          "name": "阳光乳业",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "002058",
+          "name": "紫竹高科",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "002959",
+          "name": "中农立华",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "000156",
+          "name": "华数传媒",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "000533",
+          "name": "顺钠股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "000628",
+          "name": "高新发展的",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪炒作，风险高"
+        },
+        {
+          "code": "002861",
+          "name": "瀛通通讯的",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪炒作，风险高"
+        }
+      ],
+      "savedAt": "2026-11-16T10:50:01.029Z"
     }
   ]
 }

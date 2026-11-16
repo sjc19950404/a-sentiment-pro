@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generatedAt": "2026-11-16T10:44:03.414Z",
+  "generatedAt": "2026-11-16T13:11:34.327Z",
   "formulaVersion": "v5.2-pro",
   "tradeDate": "2026-11-16",
   "days": 266,
@@ -618,7 +618,7 @@
    83.5,
    43.3,
    38.4,
-   46.2
+   46.3
   ],
   "navBase": [
    1,
@@ -4217,16 +4217,16 @@
     "change_pct": 1.76
    },
    {
+    "name": "保险",
+    "change_pct": 1.5
+   },
+   {
     "name": "公路铁路运输",
     "change_pct": 1.26
    },
    {
     "name": "煤炭开采加工",
     "change_pct": 1.2
-   },
-   {
-    "name": "白酒",
-    "change_pct": 0.91
    }
   ],
   "threshold": {

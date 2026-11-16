@@ -2,7 +2,7 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-16",
- "generatedAt": "2026-11-16T18:34:40.624+08:00",
+ "generatedAt": "2026-11-16T21:04:48.611+08:00",
  "model": "glm-4-flash",
  "sentiment": -0.5,
  "confidence": 0.8,
@@ -12,49 +12,49 @@
    "type": "业绩预告",
    "target": "ST交昂",
    "tone": "positive",
-   "note": "股东增持带动股价上涨。"
-  },
-  {
-   "type": "高管变动",
-   "target": "瀛通通讯",
-   "tone": "positive",
-   "note": "AI眼镜概念助力股价上涨。"
+   "note": "ST交昂因保健品、宠物经济和股东增持等因素涨停，但市场整体情绪不佳。"
   },
   {
    "type": "行业催化",
    "target": "游戏",
    "tone": "neutral",
-   "note": "游戏板块延续涨势。"
+   "note": "游戏板块延续涨势，但市场整体情绪不佳。"
   },
   {
    "type": "行业催化",
    "target": "并购重组",
    "tone": "neutral",
-   "note": "并购重组板块延续涨势。"
+   "note": "并购重组板块延续涨势，但市场整体情绪不佳。"
   },
   {
    "type": "行业催化",
    "target": "三季报减亏",
    "tone": "neutral",
-   "note": "三季报减亏板块延续涨势。"
+   "note": "三季报减亏板块延续涨势，但市场整体情绪不佳。"
   },
   {
    "type": "行业催化",
    "target": "AI漫剧",
    "tone": "neutral",
-   "note": "AI漫剧概念助力股价上涨。"
+   "note": "AI漫剧板块延续涨势，但市场整体情绪不佳。"
   },
   {
    "type": "行业催化",
    "target": "机器人",
    "tone": "neutral",
-   "note": "机器人板块延续涨势。"
+   "note": "机器人板块延续涨势，但市场整体情绪不佳。"
+  },
+  {
+   "type": "行业催化",
+   "target": "大消费",
+   "tone": "negative",
+   "note": "大消费板块退潮，市场情绪受影响。"
   },
   {
    "type": "行业催化",
    "target": "锂电池",
    "tone": "negative",
-   "note": "锂电池板块退潮，股价下跌。"
+   "note": "锂电池板块退潮，市场情绪受影响。"
   }
  ],
  "inputDigest": {
