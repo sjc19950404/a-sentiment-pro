@@ -131,17 +131,31 @@
     const top = el('header', 's-ph-topbar',
       '<span class="s-ph-brand">A股情绪 · 工作台</span>'
       + '<span class="s-ph-dot" aria-hidden="true"></span>'
-      + '<span class="s-ph-sub">A 方案 · 阶段 1 骨架（深链路由 + 空 panel）</span>'
-      + `<span class="s-ph-nav" role="group" aria-label="视图">${nav}</span>`);
+      + '<span class="s-ph-sub">研究工作台 · PRO</span>'
+      /* 【25 册 P1-4】视觉稿 topbar meta 排：徽章/数据日/源健康/regime 口径/刷新状态。
+       * 数值全部运行时填充（s-page-overview-evidence.js fillTopbar），禁止硬编码日期。 */
+      + '<span class="s-ph-meta" role="group" aria-label="数据状态">'
+      +   '<span class="s-badge s-badge--muted" id="sPhSession">—</span>'
+      +   '<span class="s-ph-meta-item">数据日 <b id="sPhTradeDate">—</b></span>'
+      +   '<span class="s-ph-meta-item">源健康 <b id="sPhHealth">—</b></span>'
+      +   '<span class="s-ph-meta-item">regime 序列 90 日</span>'
+      +   '<span class="s-ph-meta-item" id="sPhFresh">—</span>'
+      + '</span>'
+      /* 时间窗 chip 组：对齐原型 L44-49（20/30/60/90，60 默认 pressed）。
+       * 点击接线由 s-page-overview-evidence.js 的文档级委托处理（切走势图数据窗）。 */
+      + '<span class="s-tagrow s-ph-range" role="group" aria-label="时间窗">'
+      +   [20, 30, 60, 90].map((n) => `<button type="button" class="s-chip" data-ev-range="${n}" aria-pressed="${n === 60}">${n}</button>`).join('')
+      + '</span>'
+      + `<span class="s-ph-nav" role="group" aria-label="视图">${nav}</span>`
+      + '<span class="s-ph-actions">'
+      +   '<button type="button" class="s-btn s-btn--ghost" id="sPhRefresh">刷新</button>'
+      +   '<button type="button" class="s-btn s-btn--ghost" id="sPhExport">导出</button>'
+      + '</span>');
 
     const body = el('div', 's-ph-main');
     body.appendChild(el('div', 's-ph-panel',
-      '<h2 class="s-ph-title">工作台骨架已就位</h2>'
-      + '<p class="s-ph-desc">这是 A 方案阶段 1 的工作台根（<code>#sRoot.s-scope.s-app</code>）。'
-      + '当前为深链路由骨架：8 个可路由 tab + 空 panel。真正的视图内容按 05 册 L123 在'
-      + '阶段 2（<code>s-page-overview.js</code> 幂等重搬旧 render 产出节点）接入。</p>'
-      + '<p class="s-ph-hint">深链 <code>?view=workbench</code> / <code>#workbench</code> 可幂等直达；'
-      + '默认仍为研报视图。门禁自检 <code>S.runSelfTest()</code> 在新根下可运行。</p>'));
+      '<h2 class="s-ph-title">视图加载中</h2>'
+      + '<p class="s-ph-desc">该视图内容将在数据到达后渲染。深链 <code>?view=workbench</code> / <code>#workbench</code> 可幂等直达；默认仍为研报视图。</p>'));
 
     const spark = '<svg class="s-ph-spark" viewBox="0 0 320 80" preserveAspectRatio="none" role="img" aria-label="示例走势">'
       + '<polyline points="0,64 32,52 64,58 96,38 128,44 160,26 192,32 224,18 256,24 288,12 320,18" '
@@ -150,6 +164,16 @@
 
     root.appendChild(top);
     root.appendChild(body);
+    /* 【25 册 P2-6】页脚：数据口径声明 + 免责，对齐视觉稿 */
+    root.appendChild(el('footer', 's-ph-footer',
+      '<span>数据口径：收盘后研判 · 情绪分 / 宽度 / 席位为当日快照</span>'
+      + '<span>数据仅供参考，非投资建议</span>'));
+
+    /* 【25 册 P1-4】顶栏操作按钮：刷新 / 导出（导出接阶段 4b 的 report.html 导出页） */
+    const btnRefresh = top.querySelector('#sPhRefresh');
+    const btnExport = top.querySelector('#sPhExport');
+    if (btnRefresh) btnRefresh.addEventListener('click', () => location.reload());
+    if (btnExport) btnExport.addEventListener('click', () => window.open('report.html', '_blank'));
 
     // 8 tab 路由：切换高亮 + 切换 panel（注册页优先渲染，否则占位）
     const tabs = top.querySelectorAll('.s-ph-tab');

@@ -31,9 +31,16 @@
   };
 
   let CACHE = null;      // { history:[], day:{}, signals:{} }
-  let range = 60;        // 走势图时间窗（20/60/90/120）
+  let range = 60;        // 走势图时间窗（顶栏 chips 20/30/60/90）
   let observer = null;
   let built = false;
+
+  /* 【25 册 P1-5】个股明细表结构常量：空态时 viewport 整体替换为 s-empty，有数据时重建 */
+  const HOT_TABLE =
+    '<table class="s-table" id="sEvHotTable">'
+    + '<thead><tr><th data-priority="1">代码 / 名称</th><th data-priority="1">现价</th><th data-priority="1">涨跌幅</th>'
+    + '<th data-priority="2">连板</th><th data-priority="3">所属题材</th></tr></thead>'
+    + '<tbody id="sEvHotBody"></tbody></table>';
 
   function enabled() { return S.getFlag('overview', true) !== false; }
 
@@ -93,18 +100,35 @@
   }
 
   /* ---------- 七因子贡献（数据来自当日 metrics，无值标 — 不编造） ---------- */
+  function numFromText(id) {
+    const t = (document.getElementById(id) || {}).textContent || '';
+    const mm = t.match(/[−-]?\d+(?:\.\d+)?/);
+    if (!mm) return null;
+    const v = parseFloat(mm[0].replace('−', '-'));
+    return isFinite(v) ? v : null;
+  }
   function drawFactors() {
     const host = $('#sEvFactorHost'); if (!host || !CACHE) return;
     const m = CACHE.day.metrics || {};
     const sig = CACHE.signals || {};
+    /* 强度归一化到 0~1（对齐原型 0.82/0.64 的量级），数据取真实值不造假：
+     * 涨停/100、连板/8、炸板率本身 0~1、宽度差/(up+dn)、龙虎/5亿、pain 晋级失败率、题材 1-集中度 */
+    const bwTxt = ((document.getElementById('sKpiBreadth') || {}).textContent || '').match(/([\d,]+)\s*\/\s*([\d,]+)/);
+    let bwStrength = null, bwSign = '−';
+    if (bwTxt) {
+      const u = +bwTxt[1].replace(/,/g, ''), dn = +bwTxt[2].replace(/,/g, '');
+      if (u + dn > 0) { bwStrength = Math.min(1, Math.abs(dn - u) / (u + dn)); bwSign = dn > u ? '−' : '+'; }
+    }
+    const lhb = numFromText('sKpiLhb');
+    const failRate = sig.pain && sig.pain.advance && sig.pain.advance.failRate;
     const rows = [
-      ['涨停家数', m.limit_up_count, '+'],
-      ['连板高度', m.max_board, '+'],
-      ['炸板率', m.broken_rate != null ? (1 - m.broken_rate) : null, '+'],
-      ['涨跌家数', sig.breadth && sig.breadth.snapshot && sig.breadth.snapshot.updownCn ? 1 - Math.min(1, sig.breadth.snapshot.updownCn.down / Math.max(1, sig.breadth.snapshot.updownCn.up + sig.breadth.snapshot.updownCn.down)) : null, '−'],
-      ['龙虎净买', (sig.emotion && sig.emotion.lhb_daily_net != null) ? Math.min(1, Math.abs(sig.emotion.lhb_daily_net) / 5) : null, '−'],
-      // 【视觉稿逐字对齐】原型 L468 第 6 项是「亏钱效应」(pain 指标)，不是封板质量
-      ['亏钱效应', (sig.pain != null ? sig.pain : (sig.emotion && sig.emotion.pain)), '−'],
+      ['涨停家数', m.limit_up_count != null ? Math.min(1, m.limit_up_count / 100) : null, '+'],
+      ['连板高度', m.max_board != null ? Math.min(1, m.max_board / 8) : null, '+'],
+      ['炸板率', m.broken_rate, '−'],
+      ['涨跌家数', bwStrength, bwSign],
+      ['龙虎净买', lhb != null ? Math.min(1, Math.abs(lhb) / 5) : null, lhb != null && lhb < 0 ? '−' : '+'],
+      // 【视觉稿逐字对齐】原型 L468 第 6 项是「亏钱效应」(pain 指标)，取晋级失败率真值
+      ['亏钱效应', failRate != null ? failRate : null, '−'],
       ['题材扩散', m.theme_concentration != null ? (1 - m.theme_concentration) : null, '+'],
     ];
     host.innerHTML = rows.map(([name, v, sign]) => {
@@ -132,9 +156,7 @@
       + '<div class="s-card__tools"><span class="s-badge s-badge--muted">日频 · 收盘口径</span></div></div>'
       + '<div class="s-card__body"><div class="s-chart s-chart--wide" id="sEvTrendHost" role="img" aria-label="情绪分走势曲线，含 MA5 与历史分位虚线，底部为 regime 色带">'
       + '<svg id="sEvTrendSvg" viewBox="0 0 800 280" preserveAspectRatio="none" aria-hidden="true"></svg></div>'
-      + '<div class="s-tagrow" style="margin-top:var(--s-space-2)">'
-      + [20, 30, 60, 90].map((n) => '<button class="s-chip" data-ev-range="' + n + '" aria-pressed="' + (n === 60) + '">' + n + '</button>').join('')
-      + '</div>'
+      /* 【25 册 P1-4】时间窗 chips 移至顶栏（对齐原型 L44-49），卡内不再重复 */
       + '<div class="s-legend"><span class="s-legend__item"><i class="s-legend__swatch"></i>情绪分</span>'
       + '<span class="s-legend__item"><i class="s-legend__swatch" style="background:var(--s-chart-ma5)"></i>MA5</span>'
       + '<span class="s-legend__item"><i class="s-legend__swatch" style="background:var(--s-text-3)"></i>历史分位</span>'
@@ -163,10 +185,8 @@
       + '<div class="s-col-12"><div class="s-card">'
       + '<div class="s-card__head"><h3 class="s-card__title">个股明细 · <span id="sEvHotCount">—</span> 行</h3>'
       + '<div class="s-card__tools"><span class="s-badge s-badge--muted">运行时行数 · 分页 50/页</span></div></div>'
-      + '<div class="s-card__body s-card__body--flush"><div class="s-table-wrap"><div class="s-table__viewport"><table class="s-table" id="sEvHotTable">'
-      + '<thead><tr><th data-priority="1">代码 / 名称</th><th data-priority="1">现价</th><th data-priority="1">涨跌幅</th>'
-      + '<th data-priority="2">连板</th><th data-priority="3">所属题材</th></tr></thead><tbody id="sEvHotBody"></tbody>'
-      + '</table></div></div><div class="s-table__pager" id="sEvPager"></div></div></div></div>'
+      + '<div class="s-card__body s-card__body--flush"><div class="s-table-wrap"><div class="s-table__viewport" id="sEvHotView">' + HOT_TABLE
+      + '</div></div><div class="s-table__pager" id="sEvPager"></div></div></div></div>'
       + '</div></div>';
     host.appendChild(sec);
     buildOps(host);
@@ -201,9 +221,81 @@
 
   /* ---------- 填充真实数据到三卡 / 明细表 / 操作层 ---------- */
   let hotRows = [], hotPage = 0;
+  /* 【25 册 P1-4】顶栏 meta 排运行时填充：数据日/源健康/刷新状态全部来自真实 signals，
+   * 禁止硬编码日期。会话徽章按「数据日 vs 本地今日」+ stale 判定，不写死。 */
+  function fillTopbar(sig) {
+    const m = (sig && sig.meta) || {}, h = (sig && sig.health) || {};
+    const td = document.getElementById('sPhTradeDate');
+    if (td && m.tradeDate) td.textContent = m.tradeDate;
+    const ses = document.getElementById('sPhSession');
+    if (ses) {
+      let today = '';
+      try { today = new Date().toISOString().slice(0, 10); } catch (_) {}
+      ses.textContent = m.stale ? '数据滞后' : (m.tradeDate === today ? '今日已更新' : '已收盘');
+    }
+    const hl = document.getElementById('sPhHealth');
+    if (hl) {
+      const items = Array.isArray(h.items) ? h.items : [];
+      hl.textContent = items.length
+        ? items.filter((x) => x && x.level === 'ok').length + '/' + items.length
+        : (h.label || '—');
+    }
+    const fr = document.getElementById('sPhFresh');
+    if (fr && m.generatedAt) {
+      try {
+        const d = new Date(m.generatedAt);
+        fr.textContent = '更新 ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+      } catch (_) { fr.textContent = '—'; }
+    }
+  }
   function fillData() {
     if (!CACHE) return;
     const d = CACHE.day, sig = CACHE.signals;
+    fillTopbar(sig);
+    /* 【25 册追加·数据真实性】KPI 的 delta/note 与折叠门文字全部改运行时真值。
+     * 之前是视觉稿写死的示意值（炸板率 28.6%/最高板 5 板/宽度 −3,717），与真实
+     * 数据自相矛盾——真假混杂比全假更糟，违反本项目「不造假」底线。 */
+    const m = d.metrics || {};
+    function setKN(id, delta, note) {
+      const kpi = document.getElementById(id) && document.getElementById(id).closest('.s-kpi');
+      if (!kpi) return;
+      const de = kpi.querySelector('.s-kpi__delta'), ne = kpi.querySelector('.s-kpi__note');
+      if (de && delta != null) de.textContent = delta;
+      if (ne && note != null) ne.textContent = note;
+    }
+    if (m.broken_rate != null) {
+      setKN('sKpiLimit', '炸板率 ' + (m.broken_rate * 100).toFixed(1) + '%',
+        '最高板 ' + (m.max_board != null ? m.max_board : '—') + ' 板');
+    }
+    const bwTxt = ((document.getElementById('sKpiBreadth') || {}).textContent || '').match(/([\d,]+)\s*\/\s*([\d,]+)/);
+    let bwU = null, bwD = null;
+    if (bwTxt) {
+      bwU = +bwTxt[1].replace(/,/g, ''); bwD = +bwTxt[2].replace(/,/g, '');
+      setKN('sKpiBreadth', '宽度 ' + (bwD > bwU ? '−' : '+') + Math.abs(bwD - bwU).toLocaleString(), '沪深两市口径');
+      const wEl = document.getElementById('sAlWidth');
+      if (wEl) wEl.innerHTML = '<b>宽度背离</b>：涨跌家数 ' + bwU.toLocaleString() + ' / ' + bwD.toLocaleString()
+        + '，宽度' + (bwD > bwU ? '负' : '正') + ' ' + Math.abs(bwD - bwU).toLocaleString();
+    }
+    const scores = CACHE.history.slice(-60).map((x) => x.score).filter((v) => v != null);
+    if (scores.length) setKN('sKpiScore', null, '近 60 日最低 ' + Math.min.apply(null, scores));
+    let streak = 1;
+    for (let i = CACHE.history.length - 1; i > 0; i--) {
+      if (CACHE.history[i].emotion === CACHE.history[i - 1].emotion) streak++; else break;
+    }
+    setKN('sKpiRegime', 'regime 连续 ' + streak + ' 日',
+      /冰点|退潮|偏冷/.test(d.emotion || '') ? '防御口径生效中' : '常规口径');
+    setKN('sKpiPos', '分位优先 · 风控帽', null);
+    setKN('sKpiLhb', '当日净买', '当日榜口径');
+    const pEl = document.getElementById('sAlPain');
+    if (pEl && sig.pain && sig.pain.verdict) {
+      pEl.innerHTML = '<b>亏钱效应</b>：' + esc(sig.pain.verdict.label || '—')
+        + (sig.pain.verdict.reason ? '（' + esc(sig.pain.verdict.reason) + '）' : '');
+    }
+    const hEl = document.getElementById('sAlHealth');
+    const hItems = (sig.health && Array.isArray(sig.health.items)) ? sig.health.items : [];
+    if (hEl && hItems.length) {
+      hEl.innerHTML = '<b>数据健康</b>：' + hItems.filter((x) => x && x.level === 'ok').length + '/' + hItems.length + ' 源可靠，无陈旧数据';
+    }
     // 主题
     const tb = $('#sEvThemeBody');
     if (tb) {
@@ -247,15 +339,22 @@
       }).catch(() => {});
   }
   function renderHot() {
-    const body = $('#sEvHotBody'), cnt = $('#sEvHotCount'), pager = $('#sEvPager');
-    if (!body) return;
+    const view = $('#sEvHotView'), cnt = $('#sEvHotCount'), pager = $('#sEvPager');
+    if (!view) return;
     const total = hotRows.length;
     if (cnt) cnt.textContent = total;
     if (!total) {
-      body.innerHTML = '<tr><td colspan="5"><div class="s-empty"><div class="s-empty__title">当日个股明细暂无数据</div></div></td></tr>';
-      if (pager) pager.innerHTML = '<span>真实数据为空，不编造行</span>';
+      /* 【25 册 P1-5】空态不渲染表格：viewport 整体替换为独立 s-empty（原型结构），表头不沉底 */
+      view.innerHTML = '<div class="s-empty">'
+        + '<div style="font-size:24px;color:var(--s-text-3)">◇</div>'
+        + '<div class="s-empty__title">当日个股明细暂无数据</div>'
+        + '<div class="s-empty__hint">数据为空是真实状态，不编造行</div></div>';
+      if (pager) pager.innerHTML = '<span>共 0 行</span>';
       return;
     }
+    if (!document.getElementById('sEvHotTable')) view.innerHTML = HOT_TABLE; // 空态恢复后重建表
+    const body = $('#sEvHotBody');
+    if (!body) return;
     const size = 50, pages = Math.ceil(total / size);
     const rows = hotRows.slice(hotPage * size, (hotPage + 1) * size);
     body.innerHTML = rows.map((r) => '<tr tabindex="0"><td>' + esc(r.code || r.c || '') + ' ' + esc(r.name || r.n || '') + '</td>'
@@ -273,7 +372,21 @@
     if (!enabled() || document.body.dataset.view !== 'workbench') return;
     const host = $('.s-page-overview'); if (!host) return;
     buildEvidence();
-    load().then(() => { drawTrend(); drawFactors(); fillData(); });
+    // fillData 先跑（填 KPI 真值），drawFactors 依赖 KPI DOM（宽度/龙虎），顺序不能反。
+    // KPI 数值由 s-page-overview.js 的 sync() 异步填（MutationObserver），首跑时可能还是占位，
+    // 故 1.2s/2.8s 各幂等重试一次（全部为 textContent/innerHTML 重设，无副作用）。
+    load().then(() => {
+      drawTrend(); fillData(); drawFactors();
+      // KPI 真值依赖 sync() + signals 到达（时序不定），轮询到宽度真值出现（或 10s 超时）
+      let tries = 0;
+      const timer = setInterval(() => {
+        const t = (document.getElementById('sKpiBreadth') || {}).textContent || '';
+        const lhb = (document.getElementById('sKpiLhb') || {}).textContent || '';
+        if (/[\d,]+\s*\/\s*[\d,]+/.test(t) || /亿|—/.test(lhb) || ++tries > 20) {
+          clearInterval(timer); fillData(); drawFactors();
+        }
+      }, 500);
+    });
   }
   function arm() {
     if (observer) return;
@@ -287,7 +400,13 @@
 
   document.addEventListener('click', (e) => {
     const r = e.target && e.target.closest ? e.target.closest('[data-ev-range]') : null;
-    if (r) { range = +r.dataset.evRange; drawTrend(); return; }
+    if (r) {
+      range = +r.dataset.evRange;
+      /* 【25 册 P1-4】aria-pressed 状态切换（对齐原型 L496-498） */
+      document.querySelectorAll('[data-ev-range]').forEach((x) => x.setAttribute('aria-pressed', x === r ? 'true' : 'false'));
+      drawTrend();
+      return;
+    }
     const pg = e.target && e.target.closest ? e.target.closest('[data-ev-page]') : null;
     if (pg) { hotPage = Math.max(0, hotPage + (+pg.dataset.evPage)); renderHot(); return; }
     const tab = e.target && e.target.closest ? e.target.closest('[data-ev-tab]') : null;

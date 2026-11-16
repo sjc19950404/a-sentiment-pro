@@ -97,11 +97,12 @@
       + `</div>`;
   }
   /* 【视觉稿逐字对齐】原型 L90-125 的 KPI 卡：s-card > s-card__body > label/value/delta/note 四行。
-   * 内层 .s-kpi 仅用于兼容 sync() 的 closest('.s-kpi') 锚点，视觉上由 s-card__body 承载。 */
-  function kpiCard2(label, id, delta, note, down) {
+   * 内层 .s-kpi 仅用于兼容 sync() 的 closest('.s-kpi') 锚点，视觉上由 s-card__body 承载。
+   * 【25 册 P1-3】全站唯一 display 级大字：仅情绪分卡用 --s-font-kpi(40px)，其余 --s-font-xl。 */
+  function kpiCard2(label, id, delta, note, down, size) {
     return `<div class="s-card"><div class="s-card__body"><div class="s-kpi">`
       + `<div class="s-kpi__label">${label}</div>`
-      + `<div class="s-kpi__value${down ? ' s-kpi__value--down' : ''}" id="${id}" style="font-size:var(--s-font-xl)">—</div>`
+      + `<div class="s-kpi__value${down ? ' s-kpi__value--down' : ''}" id="${id}" style="font-size:${size || 'var(--s-font-xl)'}">—</div>`
       + `<div class="s-kpi__delta">${delta}</div>`
       + `<div class="s-kpi__note">${note}</div>`
       + `</div></div></div>`;
@@ -137,7 +138,7 @@
         + `<span class="s-verdict__text" id="sVerdictText">市场处于冰点区间，宽度背离与亏钱效应同时触发，执行仓位建议压到 0–20%，不宜追高。</span>`
         + `<span class="s-verdict__sub" id="sVerdictSub">依据 6 项核心指标 · 2 项告警 · 数据日 —</span></div>`
         + `<div class="s-grid s-grid--kpi s-grid--kpi-tall" id="sKpiRow" style="margin-top:var(--s-space-3)">`
-        + kpiCard2('情绪分', 'sKpiScore', '历史分位 —', '近 60 日最低 12%', true)
+        + kpiCard2('情绪分', 'sKpiScore', '历史分位 —', '近 60 日最低 12%', true, 'var(--s-font-kpi)')
         + kpiCard2('市场状态', 'sKpiRegime', 'regime 连续 4 日', '防御口径生效中')
         + kpiCard2('执行仓位', 'sKpiPos', '较上日 −10pt', 'risk_budget 约束')
         + kpiCard2('涨停 / 跌停', 'sKpiLimit', '炸板率 28.6%', '最高板 5 板')
@@ -149,9 +150,9 @@
         + `<span style="color:var(--s-warn)">2 项需关注</span>`
         + `<span style="color:var(--s-text-3)">· 其余 11 项正常，不再逐条占位</span></summary>`
         + `<div class="s-alertstrip__body">`
-        + `<div class="s-alertstrip__item"><span class="s-badge s-badge--warn">关注</span><span><b>宽度背离</b>：涨跌家数 −3,717，与情绪分背离 2 日</span></div>`
-        + `<div class="s-alertstrip__item"><span class="s-badge s-badge--warn">关注</span><span><b>亏钱效应</b>：pain 指标 0.71，连板晋级率下降</span></div>`
-        + `<div class="s-alertstrip__item"><span class="s-badge s-badge--muted">正常</span><span><b>数据健康</b>：4/4 源可靠，无陈旧数据</span></div>`
+        + `<div class="s-alertstrip__item"><span class="s-badge s-badge--warn">关注</span><span id="sAlWidth"><b>宽度背离</b>：加载中…</span></div>`
+        + `<div class="s-alertstrip__item"><span class="s-badge s-badge--warn">关注</span><span id="sAlPain"><b>亏钱效应</b>：加载中…</span></div>`
+        + `<div class="s-alertstrip__item"><span class="s-badge s-badge--muted">正常</span><span id="sAlHealth"><b>数据健康</b>：加载中…</span></div>`
         + `<div class="s-alertstrip__item"><span class="s-badge s-badge--muted">正常</span><span><b>交叉校验</b>：席位 / 涨跌停 / 宽度三源一致</span></div>`
         + `<div class="s-alertstrip__item"><span class="s-badge s-badge--muted">正常</span><span><b>双轨一致</b>：执行面 = 回退快照，无回滚</span></div>`
         + `<div class="s-alertstrip__item"><span class="s-badge s-badge--muted">正常</span><span><b>脏数据</b>：0 条，口径校验通过</span></div>`
@@ -188,6 +189,12 @@
     const vsub = document.getElementById('sVerdictSub');
     if (vsub) vsub.textContent =
       `情绪分 ${k.score ?? '—'}，历史分位 ${k.pct ?? '—'}%，市场状态 ${k.regime}` + (k.pos ? `，执行仓位 ${k.pos}` : '');
+    /* 【25 册追加】结论文本运行时生成，禁止写死视觉稿示例值（曾写死「冰点区间」，
+     * regime 变化后会与真实数据矛盾）。数据未就绪（加载中…）时不改写。 */
+    const vt = document.getElementById('sVerdictText');
+    if (vt && k.regime && k.regime !== LOADING && k.score !== LOADING) {
+      vt.textContent = `市场处于${k.regime}区间，执行仓位建议 ${k.pos || '—'}，不宜追高。`;
+    }
   }
 
   /* ④ 幂等重搬：监听旧 #zone-overview 的 innerHTML 覆盖，重复 render 后重新同步
