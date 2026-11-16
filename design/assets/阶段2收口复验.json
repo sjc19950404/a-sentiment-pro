@@ -1,0 +1,257 @@
+{
+  "time": "2026-11-16T07:27:12.612Z",
+  "base": "https://sjc19950404.github.io/a-sentiment-pro/",
+  "skeleton": {
+    "asWritten": {
+      "skelComputedHeight": "134px",
+      "skelComputedDisplay": "block",
+      "skelComputedMinHeight": "0px",
+      "skelVar": "134px",
+      "realComputedMinHeight": "",
+      "rootVar": "134px",
+      "wrapContain": "layout",
+      "wrapVisibility": "hidden",
+      "t0": 166,
+      "t1": 300,
+      "t2": 166,
+      "d1": 134,
+      "d2": 0,
+      "skelH_inDom": 134,
+      "skelH_asWritten": 0,
+      "skelConnectedAtMeasure": false,
+      "realH": 134,
+      "maxShift": 134,
+      "pass": false
+    },
+    "fixed": {
+      "t0": 166,
+      "t1": 166,
+      "shift": 0,
+      "skelH": 134,
+      "realH": 134,
+      "skelConnectedAtMeasure": false,
+      "pass": true
+    }
+  },
+  "selftest": {
+    "pass": false,
+    "skeletonSwap": {
+      "skeletonH": 0,
+      "realH": 134,
+      "duringInsert": 134,
+      "afterReplace": 0,
+      "maxShift": 134,
+      "pass": false
+    },
+    "drawerFocusTrap": {
+      "ok": false,
+      "steps": [
+        "drawer missing"
+      ]
+    },
+    "horizontalOverflow": {
+      "count": 0,
+      "items": []
+    },
+    "cls": {
+      "value": 0.0035,
+      "sessions": 1,
+      "target": 0.1,
+      "baseline": 0.174,
+      "pass": true,
+      "degraded": false
+    }
+  },
+  "flagSteps": [
+    {
+      "label": "① 初始（总览 KPI 已渲染）",
+      "state": {
+        "flagOverview": true,
+        "sKeys": [
+          "runSelfTest",
+          "collectCls",
+          "setFlag",
+          "getFlag",
+          "registerPage",
+          "showPage",
+          "routeWorkbench",
+          "registerPageOverview"
+        ],
+        "hasOverviewHost": true,
+        "sKpiScore": "38.4",
+        "sKpiRegime": "冰点",
+        "sKpiBreadth": "744 / 4415",
+        "oldEmScore": "38.4",
+        "panelTitle": null,
+        "panelText": "情绪分 38.4，历史分位 8.5%，市场状态 冰点，执行仓位 半仓核心指标情绪分38.4历史分位 8.5%市场状态冰点regime 序列执行仓位半仓分位优先 · 风控帽涨停 / 跌停37 / 33封板率涨 / 跌家数744 / 4415沪深两市口径龙虎净买-0.77 亿当日榜口",
+        "panelChildren": 1,
+        "activeTab": null,
+        "storageFlagKeys": [],
+        "urlHasFlag": false
+      }
+    },
+    {
+      "label": "② setFlag(overview,false)",
+      "state": {
+        "flagOverview": false,
+        "sKeys": [
+          "runSelfTest",
+          "collectCls",
+          "setFlag",
+          "getFlag",
+          "registerPage",
+          "showPage",
+          "routeWorkbench",
+          "registerPageOverview"
+        ],
+        "hasOverviewHost": true,
+        "sKpiScore": "38.4",
+        "sKpiRegime": "冰点",
+        "sKpiBreadth": "744 / 4415",
+        "oldEmScore": "38.4",
+        "panelTitle": null,
+        "panelText": "情绪分 38.4，历史分位 8.5%，市场状态 冰点，执行仓位 半仓核心指标情绪分38.4历史分位 8.5%市场状态冰点regime 序列执行仓位半仓分位优先 · 风控帽涨停 / 跌停37 / 33封板率涨 / 跌家数744 / 4415沪深两市口径龙虎净买-0.77 亿当日榜口",
+        "panelChildren": 1,
+        "activeTab": null,
+        "storageFlagKeys": [],
+        "urlHasFlag": false
+      }
+    },
+    {
+      "label": "③ 改 #emScore=SENTINEL-99（测 sync 短路）",
+      "state": {
+        "flagOverview": false,
+        "sKeys": [
+          "runSelfTest",
+          "collectCls",
+          "setFlag",
+          "getFlag",
+          "registerPage",
+          "showPage",
+          "routeWorkbench",
+          "registerPageOverview"
+        ],
+        "hasOverviewHost": true,
+        "sKpiScore": "38.4",
+        "sKpiRegime": "冰点",
+        "sKpiBreadth": "744 / 4415",
+        "oldEmScore": "SENTINEL-99",
+        "panelTitle": null,
+        "panelText": "情绪分 38.4，历史分位 8.5%，市场状态 冰点，执行仓位 半仓核心指标情绪分38.4历史分位 8.5%市场状态冰点regime 序列执行仓位半仓分位优先 · 风控帽涨停 / 跌停37 / 33封板率涨 / 跌家数744 / 4415沪深两市口径龙虎净买-0.77 亿当日榜口",
+        "panelChildren": 1,
+        "activeTab": null,
+        "storageFlagKeys": [],
+        "urlHasFlag": false
+      }
+    },
+    {
+      "label": "④ showPage(资金)",
+      "state": {
+        "flagOverview": false,
+        "sKeys": [
+          "runSelfTest",
+          "collectCls",
+          "setFlag",
+          "getFlag",
+          "registerPage",
+          "showPage",
+          "routeWorkbench",
+          "registerPageOverview"
+        ],
+        "hasOverviewHost": false,
+        "sKpiScore": null,
+        "sKpiRegime": null,
+        "sKpiBreadth": null,
+        "oldEmScore": "SENTINEL-99",
+        "panelTitle": "工作台 · 资金",
+        "panelText": "工作台 · 资金资金 视图：阶段 2+ 逐页接入（幂等重搬旧 render 产出节点）。",
+        "panelChildren": 2,
+        "activeTab": null,
+        "storageFlagKeys": [],
+        "urlHasFlag": false
+      }
+    },
+    {
+      "label": "⑤ showPage(总览)（关键：是否回落「总览」占位）",
+      "state": {
+        "flagOverview": false,
+        "sKeys": [
+          "runSelfTest",
+          "collectCls",
+          "setFlag",
+          "getFlag",
+          "registerPage",
+          "showPage",
+          "routeWorkbench",
+          "registerPageOverview"
+        ],
+        "hasOverviewHost": false,
+        "sKpiScore": null,
+        "sKpiRegime": null,
+        "sKpiBreadth": null,
+        "oldEmScore": "SENTINEL-99",
+        "panelTitle": "工作台 · 资金",
+        "panelText": "工作台 · 资金资金 视图：阶段 2+ 逐页接入（幂等重搬旧 render 产出节点）。",
+        "panelChildren": 2,
+        "activeTab": null,
+        "storageFlagKeys": [],
+        "urlHasFlag": false
+      }
+    },
+    {
+      "label": "⑥ 还原旧节点 + setFlag(overview,true) + showPage(总览)",
+      "state": {
+        "flagOverview": true,
+        "sKeys": [
+          "runSelfTest",
+          "collectCls",
+          "setFlag",
+          "getFlag",
+          "registerPage",
+          "showPage",
+          "routeWorkbench",
+          "registerPageOverview"
+        ],
+        "hasOverviewHost": true,
+        "sKpiScore": "38.4",
+        "sKpiRegime": "冰点",
+        "sKpiBreadth": "744 / 4415",
+        "oldEmScore": "38.4",
+        "panelTitle": null,
+        "panelText": "情绪分 38.4，历史分位 8.5%，市场状态 冰点，执行仓位 半仓核心指标情绪分38.4历史分位 8.5%市场状态冰点regime 序列执行仓位半仓分位优先 · 风控帽涨停 / 跌停37 / 33封板率涨 / 跌家数744 / 4415沪深两市口径龙虎净买-0.77 亿当日榜口",
+        "panelChildren": 1,
+        "activeTab": null,
+        "storageFlagKeys": [],
+        "urlHasFlag": false
+      }
+    }
+  ],
+  "verdict": {
+    "skeleton_asWritten_pass": false,
+    "skeleton_asWritten_skelH": 0,
+    "skeleton_skelH_when_in_dom": 134,
+    "skeleton_skel_disconnected_at_measure": true,
+    "skeleton_root_var_defined": true,
+    "skeleton_css_heights_equal_in_dom": true,
+    "skeleton_wrap_contain_is_layout": true,
+    "skeleton_wrap_visibility_hidden": true,
+    "skeleton_probe_d1_from_double_insert": true,
+    "skeleton_fixed_pass": true,
+    "skeleton_fixed_shift": 0,
+    "skeleton_live_selftest_pass": false,
+    "flag_initial_kpi_present": true,
+    "flag_sync_shortcircuited": true,
+    "flag_tab_roundtrip_no_kpi": true,
+    "flag_falls_back_to_overview_placeholder": false,
+    "flag_tab_roundtrip_stale_title": true,
+    "flag_recovers_on_re_enable": true,
+    "flag_persisted_to_storage": false,
+    "flag_url_entry_available": false,
+    "console_exceptions": 0
+  },
+  "errors": [],
+  "warmupReadyMs": 1442,
+  "readyMs": 6849,
+  "dataMs": 1795,
+  "signalsMs": 1790
+}

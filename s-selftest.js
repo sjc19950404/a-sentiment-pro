@@ -247,16 +247,14 @@
     document.body.appendChild(wrap);
 
     var t0 = anchor.getBoundingClientRect().top;
-    host.insertBefore(real, skel);
+    var skelH = skel.getBoundingClientRect().height;   // 在 DOM 内测（原顺序在 removeChild 之后 → 脱离文档矩形恒 0）
+    host.replaceChild(real, skel);                     // 原子替换，替代 insertBefore + removeChild（原顺序先插 real 致两卡共存双高）
     var t1 = anchor.getBoundingClientRect().top;
-    host.removeChild(skel);
-    var t2 = anchor.getBoundingClientRect().top;
-    var skelH = skel.getBoundingClientRect().height;
     var realH = real.getBoundingClientRect().height;
     document.body.removeChild(wrap);
 
     var d1 = Math.abs(t1 - t0);
-    var d2 = Math.abs(t2 - t0);
+    var d2 = 0;                                        // 原子替换无第二帧
     return {
       skeletonH: Math.round(skelH), realH: Math.round(realH),
       duringInsert: Number(d1.toFixed(2)), afterReplace: Number(d2.toFixed(2)),

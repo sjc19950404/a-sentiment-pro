@@ -102,7 +102,14 @@
   function overviewEnabled() { return S.getFlag('overview', true) !== false; }
 
   function render(panel) {
-    if (!panel || !overviewEnabled()) return;
+    if (!panel) return;
+    // 【12 册 §4 P2-A】flag 关闭时自己写「总览」占位：s-root.js 的 showPage 只看 pages[name]
+    // 是否存在（「总览」已注册），短路 render 不会切到占位分支，若不写这里会残留上一 tab 的标题。
+    if (!overviewEnabled()) {
+      panel.innerHTML = '<h2 class="s-ph-title">工作台 · 总览</h2>'
+        + '<p class="s-ph-desc">总览视图已回退（flag overview=false）。</p>';
+      return;
+    }
     let host = panel.querySelector('.s-page-overview');
     if (!host) {
       host = document.createElement('div');

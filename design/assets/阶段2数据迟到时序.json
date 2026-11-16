@@ -1,11 +1,11 @@
 {
-  "time": "2026-11-16T05:16:54.504Z",
+  "time": "2026-11-16T07:22:17.606Z",
   "base": "https://sjc19950404.github.io/a-sentiment-pro/",
   "samples": [
     {
       "markMs": 0,
       "state": {
-        "tMs": 9630,
+        "tMs": 8987,
         "ready": "interactive",
         "arc": true,
         "signals": false,
@@ -13,10 +13,10 @@
         "overview": true,
         "kpi": {
           "score": "38.4",
-          "regime": "未生成",
+          "regime": "加载中…",
           "pos": "半仓",
           "limit": "37 / 33",
-          "breadth": "755 / 4472",
+          "breadth": "加载中…",
           "lhb": "-0.77 亿"
         },
         "old": {
@@ -32,7 +32,7 @@
     {
       "markMs": 300,
       "state": {
-        "tMs": 9945,
+        "tMs": 9296,
         "ready": "interactive",
         "arc": true,
         "signals": false,
@@ -40,10 +40,10 @@
         "overview": true,
         "kpi": {
           "score": "38.4",
-          "regime": "未生成",
+          "regime": "加载中…",
           "pos": "半仓",
           "limit": "37 / 33",
-          "breadth": "755 / 4472",
+          "breadth": "加载中…",
           "lhb": "-0.77 亿"
         },
         "old": {
@@ -59,7 +59,7 @@
     {
       "markMs": 800,
       "state": {
-        "tMs": 10446,
+        "tMs": 9809,
         "ready": "interactive",
         "arc": true,
         "signals": false,
@@ -67,10 +67,10 @@
         "overview": true,
         "kpi": {
           "score": "38.4",
-          "regime": "未生成",
+          "regime": "加载中…",
           "pos": "半仓",
           "limit": "37 / 33",
-          "breadth": "755 / 4472",
+          "breadth": "加载中…",
           "lhb": "-0.77 亿"
         },
         "old": {
@@ -86,7 +86,7 @@
     {
       "markMs": 1500,
       "state": {
-        "tMs": 11157,
+        "tMs": 10524,
         "ready": "interactive",
         "arc": true,
         "signals": true,
@@ -94,10 +94,10 @@
         "overview": true,
         "kpi": {
           "score": "38.4",
-          "regime": "未生成",
+          "regime": "冰点",
           "pos": "半仓",
           "limit": "37 / 33",
-          "breadth": "755 / 4472",
+          "breadth": "744 / 4415",
           "lhb": "-0.77 亿"
         },
         "old": {
@@ -116,8 +116,8 @@
     {
       "markMs": 2500,
       "state": {
-        "tMs": 12158,
-        "ready": "complete",
+        "tMs": 11529,
+        "ready": "interactive",
         "arc": true,
         "signals": true,
         "regimeKey": "ice",
@@ -146,7 +146,7 @@
     {
       "markMs": 4000,
       "state": {
-        "tMs": 13673,
+        "tMs": 13034,
         "ready": "complete",
         "arc": true,
         "signals": true,
@@ -176,7 +176,7 @@
     {
       "markMs": 6000,
       "state": {
-        "tMs": 15685,
+        "tMs": 15049,
         "ready": "complete",
         "arc": true,
         "signals": true,
@@ -206,7 +206,7 @@
     {
       "markMs": 9000,
       "state": {
-        "tMs": 18691,
+        "tMs": 18061,
         "ready": "complete",
         "arc": true,
         "signals": true,
@@ -236,7 +236,7 @@
     {
       "markMs": 13000,
       "state": {
-        "tMs": 22698,
+        "tMs": 22074,
         "ready": "complete",
         "arc": true,
         "signals": true,
@@ -266,7 +266,7 @@
     {
       "markMs": 18000,
       "state": {
-        "tMs": 27700,
+        "tMs": 27089,
         "ready": "complete",
         "arc": true,
         "signals": true,
@@ -295,23 +295,26 @@
     }
   ],
   "verdict": {
-    "warmup_ready_ms": 4307,
-    "arc_arrival_ms": 9345,
+    "warmup_ready_ms": 3608,
+    "arc_arrival_ms": 8628,
     "signals_arrived": true,
     "signals_arrived_at_arc_plus_ms": 1500,
     "breadth_dom_arrived": true,
-    "regime_at_arc_arrival": "未生成",
-    "regime_initial": "未生成",
+    "regime_initial": "加载中…",
     "regime_final": "冰点",
+    "regime_uses_loading_placeholder": true,
+    "regime_no_unknown_label": true,
     "regime_auto_corrected": true,
-    "regime_stuck_unknown": false,
-    "breadth_initial": "755 / 4472",
+    "regime_stuck_placeholder": false,
+    "breadth_initial": "加载中…",
     "breadth_final": "744 / 4415",
     "breadth_changed": true,
-    "score_matches_old_all_samples": true,
+    "breadth_no_wrong_caliber": true,
+    "breadth_placeholder_first": true,
+    "score_matches_old_when_ready": true,
     "console_exceptions": 0
   },
   "errors": [],
-  "warmupReadyMs": 4307,
-  "arcArrivalMs": 9345
+  "warmupReadyMs": 3608,
+  "arcArrivalMs": 8628
 }
