@@ -70,6 +70,7 @@ export const SHELL_ASSETS = Object.freeze([
   './s-drawer.js',
   './s-table.js',
   './s-page-overview.js',
+  './s-page-overview-evidence.js',
   './s-page-backtest.js',
   './s-page-zt.js',
   './report.html',
