@@ -1373,15 +1373,8 @@
 .s-scope .s-ph-nav .s-ph-tab.is-active {
   border-color: #22d3ee; color: #22d3ee; background: #0d1b22;
 }
-/* 【25 册 P0-2】对齐原型 .s-main：放开 920px 限宽（1440 下 KPI 折行/右侧 500px 空暗底根因） */
-.s-scope .s-ph-main { padding: 24px 32px; color: #c4cdd9; max-width: none; }
-@media (max-width: 639px) { .s-scope .s-ph-main { padding: 16px; } }
-/* 【25 册 P1-4】顶栏 meta 排 / 时间窗 / 操作按钮 */
-.s-scope .s-ph-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12px; color: #8b98a9; }
-.s-scope .s-ph-meta b { color: #e8eef5; font-weight: 600; }
-.s-scope .s-ph-range .s-chip[aria-pressed="true"] { border-color: var(--s-accent, #22d3ee); color: var(--s-accent, #22d3ee); }
-.s-scope .s-ph-actions { display: flex; gap: 8px; margin-left: auto; }
-/* 【25 册 P2-6】页脚 */
+/* 【25B/原型对齐】外壳已改用原型语义类（.s-topbar/.s-nav/.s-main/.s-page，样式库自带），
+ * 自造 s-ph-main/s-ph-meta/s-ph-actions 规则全部移除；仅保留页脚（原型无 footer 组件）。 */
 .s-scope .s-ph-footer { display: flex; justify-content: space-between; gap: 12px; padding: 16px 32px; color: #8b98a9; font-size: 12px; border-top: 1px solid rgba(255,255,255,.08); }
 @media (max-width: 639px) { .s-scope .s-ph-footer { flex-direction: column; padding: 12px 16px; } }
 .s-scope .s-ph-panel .s-ph-title { color: #e8eef5; font-size: 18px; margin: 0 0 8px; }

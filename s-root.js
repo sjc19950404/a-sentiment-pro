@@ -92,8 +92,8 @@
     if (rec && typeof rec.render === 'function') {
       try { rec.render(panel); } catch (e) { try { console.error('[s-root] 页面渲染失败', name, e); } catch (_) {} }
     } else {
-      panel.innerHTML = `<h2 class="s-ph-title">工作台 · ${name}</h2>`
-        + `<p class="s-ph-desc"><code>${name}</code> 视图：阶段 2+ 逐页接入（幂等重搬旧 render 产出节点）。</p>`;
+      panel.innerHTML = `<h2 class="s-ph-title">${name}</h2>`
+        + `<p class="s-ph-desc">该视图正在建设中，敬请期待。</p>`;
     }
   }
   S.showPage = (name) => showPage(name);
@@ -124,65 +124,75 @@
     if (!root || shellBuilt) return;
     shellBuilt = true;
 
+    /* 【25B/原型对齐】外壳改用原型语义类名（.s-topbar/.s-nav/.s-main/.s-page），
+     * 样式库 components.css 里本就完整存在——此前自造 s-ph-* 壳是"结构对、观感不对"的根因。
+     * 删除了尾部悬空 sparkline 装饰假图（s-ph-sparkwrap，25B 点名移除）。
+     * 主导航独立成行（原型 L59-69），不再挤在顶栏里。 */
+
+    // 主导航：独立一行，8 tab（06 册阶段 1 裁定；原型 9 含「系统设置」待阶段 5+）
     const nav = TABS.map((n, i) =>
-      `<button type="button" data-page="${i}" class="s-ph-tab${i === 0 ? ' is-active' : ''}">${n}</button>`
+      '<a class="s-nav__link' + (i === 0 ? ' is-active' : '') + '" href="#workbench" data-page="' + i + '"'
+      + (i === 0 ? ' aria-current="page"' : '') + '>' + n + '</a>'
     ).join('');
 
-    const top = el('header', 's-ph-topbar',
-      '<span class="s-ph-brand">A股情绪 · 工作台</span>'
-      + '<span class="s-ph-dot" aria-hidden="true"></span>'
-      + '<span class="s-ph-sub">研究工作台 · PRO</span>'
-      /* 【25 册 P1-4】视觉稿 topbar meta 排：徽章/数据日/源健康/regime 口径/刷新状态。
-       * 数值全部运行时填充（s-page-overview-evidence.js fillTopbar），禁止硬编码日期。 */
-      + '<span class="s-ph-meta" role="group" aria-label="数据状态">'
+    const top = el('header', 's-topbar',
+      /* brand：◆ 图标 + 完整品牌名 + PRO 徽章（原型 L31-35） */
+      '<div class="s-topbar__brand">'
+      +   '<span style="color:var(--s-accent);font-size:18px;line-height:1">◆</span>'
+      +   '<span>A股情绪 · 研究工作台</span>'
+      +   '<span class="s-proto-flag hide-sm">PRO / v1</span>'
+      + '</div>'
+      /* meta 排（原型 L36-42）：数值由 s-page-overview-evidence.js fillTopbar 运行时填充 */
+      + '<div class="s-topbar__meta hide-sm">'
       +   '<span class="s-badge s-badge--muted" id="sPhSession">—</span>'
-      +   '<span class="s-ph-meta-item">数据日 <b id="sPhTradeDate">—</b></span>'
-      +   '<span class="s-ph-meta-item">源健康 <b id="sPhHealth">—</b></span>'
-      +   '<span class="s-ph-meta-item">regime 序列 90 日</span>'
-      +   '<span class="s-ph-meta-item" id="sPhFresh">—</span>'
-      + '</span>'
-      /* 时间窗 chip 组：对齐原型 L44-49（20/30/60/90，60 默认 pressed）。
-       * 点击接线由 s-page-overview-evidence.js 的文档级委托处理（切走势图数据窗）。 */
-      + '<span class="s-tagrow s-ph-range" role="group" aria-label="时间窗">'
-      +   [20, 30, 60, 90].map((n) => `<button type="button" class="s-chip" data-ev-range="${n}" aria-pressed="${n === 60}">${n}</button>`).join('')
-      + '</span>'
-      + `<span class="s-ph-nav" role="group" aria-label="视图">${nav}</span>`
-      + '<span class="s-ph-actions">'
+      +   '<span>数据日 <b class="s-num" id="sPhTradeDate" style="color:var(--s-text-2)">—</b></span>'
+      +   '<span>源健康 <b class="s-num" id="sPhHealth" style="color:var(--s-down)">—</b></span>'
+      +   '<span>regime 序列 90 日</span>'
+      +   '<span id="sPhFresh" aria-live="polite">—</span>'
+      + '</div>'
+      /* actions（原型 L43-55）：时间窗 chips + 刷新/导出；骨架态/浅色是原型演示开关，产品不带 */
+      + '<div class="s-topbar__actions">'
+      +   '<div class="s-tagrow hide-sm" role="group" aria-label="时间窗">'
+      +     [20, 30, 60, 90].map((n) => '<button type="button" class="s-chip" data-ev-range="' + n + '" aria-pressed="' + (n === 60) + '">' + n + '</button>').join('')
+      +   '</div>'
       +   '<button type="button" class="s-btn s-btn--ghost" id="sPhRefresh">刷新</button>'
-      +   '<button type="button" class="s-btn s-btn--ghost" id="sPhExport">导出</button>'
-      + '</span>');
+      +   '<button type="button" class="s-btn s-btn--ghost hide-sm" id="sPhExport">导出</button>'
+      + '</div>');
 
-    const body = el('div', 's-ph-main');
-    body.appendChild(el('div', 's-ph-panel',
+    const navEl = el('nav', 's-nav', nav);
+    navEl.setAttribute('aria-label', '主视图导航');
+
+    const body = el('main', 's-main');
+    /* panel 同时挂 .s-page（原型页面容器：max-width + padding，替代自造的 s-ph-main 24/32 padding） */
+    const panel = el('div', 's-page s-ph-panel');
+    panel.appendChild(el('div', 's-ph-placeholder',
       '<h2 class="s-ph-title">视图加载中</h2>'
       + '<p class="s-ph-desc">该视图内容将在数据到达后渲染。深链 <code>?view=workbench</code> / <code>#workbench</code> 可幂等直达；默认仍为研报视图。</p>'));
-
-    const spark = '<svg class="s-ph-spark" viewBox="0 0 320 80" preserveAspectRatio="none" role="img" aria-label="示例走势">'
-      + '<polyline points="0,64 32,52 64,58 96,38 128,44 160,26 192,32 224,18 256,24 288,12 320,18" '
-      + 'fill="none" stroke="currentColor" stroke-width="2"/></svg>';
-    body.appendChild(el('div', 's-ph-sparkwrap', spark));
+    body.appendChild(panel);
 
     root.appendChild(top);
+    root.appendChild(navEl);
     root.appendChild(body);
-    /* 【25 册 P2-6】页脚：数据口径声明 + 免责，对齐视觉稿 */
-    root.appendChild(el('footer', 's-ph-footer',
+    /* 【25 册 P2-6】页脚：数据口径声明 + 免责（类名同时带 s-ph-foot 兼容 25B 验收断言） */
+    root.appendChild(el('footer', 's-ph-footer s-ph-foot',
       '<span>数据口径：收盘后研判 · 情绪分 / 宽度 / 席位为当日快照</span>'
       + '<span>数据仅供参考，非投资建议</span>'));
 
-    /* 【25 册 P1-4】顶栏操作按钮：刷新 / 导出（导出接阶段 4b 的 report.html 导出页） */
+    /* 顶栏操作按钮：刷新 / 导出（导出接阶段 4b 的 report.html 导出页） */
     const btnRefresh = top.querySelector('#sPhRefresh');
     const btnExport = top.querySelector('#sPhExport');
     if (btnRefresh) btnRefresh.addEventListener('click', () => location.reload());
     if (btnExport) btnExport.addEventListener('click', () => window.open('report.html', '_blank'));
 
-    // 8 tab 路由：切换高亮 + 切换 panel（注册页优先渲染，否则占位）
-    const tabs = top.querySelectorAll('.s-ph-tab');
-    const panel = body.querySelector('.s-ph-panel');
-    tabs.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        tabs.forEach((b) => b.classList.remove('is-active'));
-        btn.classList.add('is-active');
-        showPage(TABS[+btn.dataset.page], panel);
+    // 8 tab 路由：切换 s-nav__link 高亮 + 切换 panel（注册页优先渲染，否则占位）
+    const links = navEl.querySelectorAll('.s-nav__link');
+    links.forEach((a) => {
+      a.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        links.forEach((b) => { b.classList.remove('is-active'); b.removeAttribute('aria-current'); });
+        a.classList.add('is-active');
+        a.setAttribute('aria-current', 'page');
+        showPage(TABS[+a.dataset.page], panel);
       });
     });
   }

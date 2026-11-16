@@ -96,16 +96,16 @@
       + (delta ? `<span class="s-kpi__delta">${delta}</span>` : '')
       + `</div>`;
   }
-  /* 【视觉稿逐字对齐】原型 L90-125 的 KPI 卡：s-card > s-card__body > label/value/delta/note 四行。
-   * 内层 .s-kpi 仅用于兼容 sync() 的 closest('.s-kpi') 锚点，视觉上由 s-card__body 承载。
-   * 【25 册 P1-3】全站唯一 display 级大字：仅情绪分卡用 --s-font-kpi(40px)，其余 --s-font-xl。 */
+  /* 【25B 原型逐字对齐】原型 L90-125：s-card > s-card__body > label/value/delta/note
+   * **无内层 .s-kpi**（该层是遗留样式，多一层会改变 flex 间距）。选择器统一改 closest('.s-card')。
+   * 【25 册 P1-3】仅情绪分卡用 --s-font-kpi(40px)，其余 --s-font-xl。 */
   function kpiCard2(label, id, delta, note, down, size) {
-    return `<div class="s-card"><div class="s-card__body"><div class="s-kpi">`
+    return `<div class="s-card"><div class="s-card__body">`
       + `<div class="s-kpi__label">${label}</div>`
       + `<div class="s-kpi__value${down ? ' s-kpi__value--down' : ''}" id="${id}" style="font-size:${size || 'var(--s-font-xl)'}">—</div>`
       + `<div class="s-kpi__delta">${delta}</div>`
       + `<div class="s-kpi__note">${note}</div>`
-      + `</div></div></div>`;
+      + `</div></div>`;
   }
 
   /* 【11 册 §7.2 / 05 册 L126】overview 回退开关：flag 关闭时本页不执行任何搬迁/渲染，
@@ -174,17 +174,29 @@
     if (down != null) n.classList.toggle('s-kpi__value--down', !!down);
   }
 
+  /* 【25B 原型对齐】涨/跌双色：原型 L110/L116 用 <span class="s-num--up">37</span> / <span class="s-num--down">33</span> */
+  function setPair(id, v) {
+    const n = document.getElementById(id);
+    if (!n || v == null) return;
+    const m = String(v).match(/^([\d,]+)\s*\/\s*([\d,]+)$/);
+    if (!m) { if (n.textContent !== String(v)) n.textContent = String(v); return; }
+    const html = '<span class="s-num--up">' + m[1] + '</span>'
+      + ' <span style="color:var(--s-text-3);font-size:var(--s-font-md)">/</span> '
+      + '<span class="s-num--down">' + m[2] + '</span>';
+    if (n.innerHTML !== html) n.innerHTML = html;
+  }
+
   function sync() {
     if (!overviewEnabled()) return;
     const k = readKpis();
-    setVal('sKpiScore', k.score);
+    setVal('sKpiScore', k.score, true);
     setVal('sKpiRegime', k.regime, !!REGIME_DOWN[k.regimeKey]);
     setVal('sKpiPos', k.pos, /冰点|清仓|0~20/.test(k.pos || ''));
-    setVal('sKpiLimit', k.limit);
-    setVal('sKpiBreadth', k.breadth);
+    setPair('sKpiLimit', k.limit);
+    setPair('sKpiBreadth', k.breadth);
     setVal('sKpiLhb', (k.lhb || '').replace(/^当日龙虎净买\s*/, '').replace(/\s*亿$/, ' 亿') || k.lhb, /^-/.test(k.lhb || '') || /-\d/.test(k.lhb || ''));
     // delta：历史分位挂到情绪分卡
-    const dScore = document.querySelector('#sKpiScore')?.closest('.s-kpi')?.querySelector('.s-kpi__delta');
+    const dScore = document.querySelector('#sKpiScore')?.closest('.s-card')?.querySelector('.s-kpi__delta');
     if (dScore && k.pct != null) dScore.textContent = `历史分位 ${k.pct}%`;
     const vsub = document.getElementById('sVerdictSub');
     if (vsub) vsub.textContent =

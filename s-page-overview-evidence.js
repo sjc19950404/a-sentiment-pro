@@ -186,6 +186,10 @@
       + '<div class="s-card__head"><h3 class="s-card__title">个股明细 · <span id="sEvHotCount">—</span> 行</h3>'
       + '<div class="s-card__tools"><span class="s-badge s-badge--muted">运行时行数 · 分页 50/页</span></div></div>'
       + '<div class="s-card__body s-card__body--flush"><div class="s-table-wrap"><div class="s-table__viewport" id="sEvHotView">' + HOT_TABLE
+      + '<div id="sEvHotEmpty" class="s-empty" hidden>'
+      + '<div style="font-size:24px;color:var(--s-text-3)">◇</div>'
+      + '<div class="s-empty__title">当日个股明细暂无数据</div>'
+      + '<div class="s-empty__hint">数据为空是真实状态，不编造行</div></div>'
       + '</div></div><div class="s-table__pager" id="sEvPager"></div></div></div></div>'
       + '</div></div>';
     host.appendChild(sec);
@@ -257,7 +261,7 @@
      * 数据自相矛盾——真假混杂比全假更糟，违反本项目「不造假」底线。 */
     const m = d.metrics || {};
     function setKN(id, delta, note) {
-      const kpi = document.getElementById(id) && document.getElementById(id).closest('.s-kpi');
+      const kpi = document.getElementById(id) && document.getElementById(id).closest('.s-card');
       if (!kpi) return;
       const de = kpi.querySelector('.s-kpi__delta'), ne = kpi.querySelector('.s-kpi__note');
       if (de && delta != null) de.textContent = delta;
@@ -344,15 +348,18 @@
     const total = hotRows.length;
     if (cnt) cnt.textContent = total;
     if (!total) {
-      /* 【25 册 P1-5】空态不渲染表格：viewport 整体替换为独立 s-empty（原型结构），表头不沉底 */
-      view.innerHTML = '<div class="s-empty">'
-        + '<div style="font-size:24px;color:var(--s-text-3)">◇</div>'
-        + '<div class="s-empty__title">当日个股明细暂无数据</div>'
-        + '<div class="s-empty__hint">数据为空是真实状态，不编造行</div></div>';
+      /* 【25B 验收口径】空态：table 隐藏（display:none，不是移除），#sEvHotEmpty 独立块显示 */
+      const tb = document.getElementById('sEvHotTable');
+      if (tb) tb.style.display = 'none';
+      const em = document.getElementById('sEvHotEmpty');
+      if (em) em.hidden = false;
       if (pager) pager.innerHTML = '<span>共 0 行</span>';
       return;
     }
-    if (!document.getElementById('sEvHotTable')) view.innerHTML = HOT_TABLE; // 空态恢复后重建表
+    const tb2 = document.getElementById('sEvHotTable');
+    if (tb2) tb2.style.display = '';
+    const em2 = document.getElementById('sEvHotEmpty');
+    if (em2) em2.hidden = true;
     const body = $('#sEvHotBody');
     if (!body) return;
     const size = 50, pages = Math.ceil(total / size);
