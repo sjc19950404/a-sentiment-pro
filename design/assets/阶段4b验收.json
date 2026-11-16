@@ -1,14 +1,14 @@
 {
-  "stamp": "2026-11-16T09:57:48.679Z",
+  "stamp": "2026-11-16T10:15:00.681Z",
   "gates": {
     "①report路由200+就绪": true,
     "②10章toc": true,
     "②三按钮+节点": true,
     "②V4-2前提-topbar/ticker": true,
-    "②导出菜单12项": false,
+    "②导出菜单12项": true,
     "②style.css隔离": true,
     "②s-scope作用域": true,
-    "附-导出菜单开合": false,
+    "附-导出菜单开合": true,
     "§5.1-导出文案如实": true,
     "③打印隐藏topbar/ticker": true,
     "③打印隐藏三按钮": true,
@@ -23,8 +23,8 @@
   "exceptions": [],
   "consoleErrors": [],
   "loadFailures": [],
-  "verdict": "FAIL",
-  "reportReadyMs": 22,
+  "verdict": "PASS",
+  "reportReadyMs": 14,
   "reportDom": {
     "title": "研判报告 · 长文阅读（打印 / 导出）",
     "bodyClass": "s-scope",
@@ -54,7 +54,7 @@
     "detailsCount": 1,
     "menuExists": true,
     "menuHiddenInitially": true,
-    "exportItems": 10,
+    "exportItems": 12,
     "exportIds": [
       "daily",
       "hot",
@@ -65,7 +65,9 @@
       "global",
       "lhb",
       "crosscheck",
-      "dirty"
+      "dirty",
+      "__csv",
+      "__xls"
     ],
     "exportLabels": [
       "情绪分·逐日",
@@ -77,7 +79,9 @@
       "外围行情·隔夜",
       "龙虎榜资金",
       "跨源互证·偏离行业",
-      "数据质量留痕"
+      "数据质量留痕",
+      "全部导出（CSV 单表）",
+      "全部导出（Excel 多表页）"
     ],
     "exportCounts": [
       "暂无数据",
@@ -89,7 +93,9 @@
       "暂无数据",
       "暂无数据",
       "暂无数据",
-      "暂无数据"
+      "暂无数据",
+      "合并版",
+      ".xls"
     ],
     "aliasExpMenu": true,
     "datasetExportType": "object",
@@ -111,7 +117,7 @@
     "opened": {
       "hidden": false,
       "expanded": "true",
-      "items": 10
+      "items": 12
     },
     "clicked": true,
     "allDisabled": true,
@@ -166,19 +172,16 @@
   "selftest": {
     "pass": false,
     "drawerOk": true,
-    "cls": 0.1898,
+    "cls": 0.1472,
     "skeleton": true
   },
   "clsObservation": {
-    "value": 0.1898,
+    "value": 0.1472,
     "baseline": 0.174,
     "source": "legacy panels only (see 阶段4CLS归因.json)",
     "verdict": "observed, tracked to phase 5"
   },
-  "failed": [
-    "②导出菜单12项",
-    "附-导出菜单开合"
-  ],
-  "passed": 15,
+  "failed": [],
+  "passed": 17,
   "total": 17
 }

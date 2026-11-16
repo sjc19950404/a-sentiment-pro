@@ -25,10 +25,47 @@
 
   S = S || (window.S = window.S || {});
 
-  /* ---------- 阶段 1+ 回退开关 ---------- */
+  /* ---------- 阶段 1+ 回退开关（21 册 §2.2 兼容性升级） ----------
+   * 保留线上 S.getFlag(name,dflt) 签名与各调用点默认语义（overview/tableV2/drawerV2/reportV2
+   * 默认 true，defaultWorkbench 默认 false=默认研报铁律），只叠加 URL/localStorage 解析层。
+   * 严禁照搬 05 册字面契约（全 flag 默认 false + 无 getFlag 方法）——那会让阶段 2/3/4 崩。
+   * URL 入口 ?sflag-overview=0 / ?sflag-defaultWorkbench=0 对齐 05 册 L60 回滚示例。
+   * 不改变默认视图：route() 的 wantBench=view==='workbench' 不读 flag，阶段 5 才改默认路由。 */
+  let params;
+  try { params = new URLSearchParams(location.search); }
+  catch (e) { params = new URLSearchParams(); }
+  let stored = {};
+  try { stored = JSON.parse(localStorage.getItem('sFlags') || '{}') || {}; }
+  catch (e) { stored = {}; }
+  function readFlag(name, dflt) {
+    const key = 'sflag-' + name;
+    if (params.has(key)) return params.get(key) === '1';
+    if (Object.prototype.hasOwnProperty.call(stored, name)) return Boolean(stored[name]);
+    return dflt; // 关键：保留调用方默认，overview 仍默认 true
+  }
+  S.flags = {
+    mount: readFlag('mount', false),
+    overview: readFlag('overview', true),
+    tableV2: readFlag('tableV2', true),
+    drawerV2: readFlag('drawerV2', true),
+    reportV2: readFlag('reportV2', true),
+    defaultWorkbench: readFlag('defaultWorkbench', false)
+  };
   const flags = Object.create(null);
-  S.setFlag = (name, val) => { flags[name] = val; return val; };
-  S.getFlag = (name, dflt) => (name in flags ? flags[name] : dflt);
+  S.setFlag = function (name, val) {
+    flags[name] = Boolean(val);
+    S.flags[name] = Boolean(val);
+    try {
+      const merged = Object.assign({}, stored, S.flags);
+      localStorage.setItem('sFlags', JSON.stringify(merged));
+    } catch (e) { /* storage disabled: flag applies to this page load only */ }
+    return val;
+  };
+  S.getFlag = function (name, dflt) {
+    if (name in flags) return flags[name];                              // 运行时 setFlag 优先
+    if (Object.prototype.hasOwnProperty.call(S.flags, name)) return S.flags[name]; // URL/storage 覆盖
+    return dflt;                                                        // 兜底调用方默认
+  };
 
   /* ---------- 页路由（阶段 2+ 逐页接入；注册页优先，否则占位） ---------- */
   const TABS = ['总览', '涨跌停', '资金', '板块', '选股', '回测', '模拟盘', '研报'];
