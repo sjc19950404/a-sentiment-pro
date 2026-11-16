@@ -1,0 +1,317 @@
+{
+  "time": "2026-11-16T05:16:54.504Z",
+  "base": "https://sjc19950404.github.io/a-sentiment-pro/",
+  "samples": [
+    {
+      "markMs": 0,
+      "state": {
+        "tMs": 9630,
+        "ready": "interactive",
+        "arc": true,
+        "signals": false,
+        "regimeKey": null,
+        "overview": true,
+        "kpi": {
+          "score": "38.4",
+          "regime": "未生成",
+          "pos": "半仓",
+          "limit": "37 / 33",
+          "breadth": "755 / 4472",
+          "lhb": "-0.77 亿"
+        },
+        "old": {
+          "emScore": "38.4",
+          "emPct": "8.5",
+          "emTier": "档位 半仓",
+          "emNet": "当日龙虎净买 -0.77 亿"
+        },
+        "breadthDom": [],
+        "bodyView": "workbench"
+      }
+    },
+    {
+      "markMs": 300,
+      "state": {
+        "tMs": 9945,
+        "ready": "interactive",
+        "arc": true,
+        "signals": false,
+        "regimeKey": null,
+        "overview": true,
+        "kpi": {
+          "score": "38.4",
+          "regime": "未生成",
+          "pos": "半仓",
+          "limit": "37 / 33",
+          "breadth": "755 / 4472",
+          "lhb": "-0.77 亿"
+        },
+        "old": {
+          "emScore": "38.4",
+          "emPct": "8.5",
+          "emTier": "档位 半仓",
+          "emNet": "当日龙虎净买 -0.77 亿"
+        },
+        "breadthDom": [],
+        "bodyView": "workbench"
+      }
+    },
+    {
+      "markMs": 800,
+      "state": {
+        "tMs": 10446,
+        "ready": "interactive",
+        "arc": true,
+        "signals": false,
+        "regimeKey": null,
+        "overview": true,
+        "kpi": {
+          "score": "38.4",
+          "regime": "未生成",
+          "pos": "半仓",
+          "limit": "37 / 33",
+          "breadth": "755 / 4472",
+          "lhb": "-0.77 亿"
+        },
+        "old": {
+          "emScore": "38.4",
+          "emPct": "8.5",
+          "emTier": "档位 半仓",
+          "emNet": "当日龙虎净买 -0.77 亿"
+        },
+        "breadthDom": [],
+        "bodyView": "workbench"
+      }
+    },
+    {
+      "markMs": 1500,
+      "state": {
+        "tMs": 11157,
+        "ready": "interactive",
+        "arc": true,
+        "signals": true,
+        "regimeKey": "ice",
+        "overview": true,
+        "kpi": {
+          "score": "38.4",
+          "regime": "未生成",
+          "pos": "半仓",
+          "limit": "37 / 33",
+          "breadth": "755 / 4472",
+          "lhb": "-0.77 亿"
+        },
+        "old": {
+          "emScore": "38.4",
+          "emPct": "8.5",
+          "emTier": "档位 半仓",
+          "emNet": "当日龙虎净买 -0.77 亿"
+        },
+        "breadthDom": [
+          "沪深上涨744n=沪深两市·不含北交所",
+          "沪深下跌4415n=沪深两市·不含北交所"
+        ],
+        "bodyView": "workbench"
+      }
+    },
+    {
+      "markMs": 2500,
+      "state": {
+        "tMs": 12158,
+        "ready": "complete",
+        "arc": true,
+        "signals": true,
+        "regimeKey": "ice",
+        "overview": true,
+        "kpi": {
+          "score": "38.4",
+          "regime": "冰点",
+          "pos": "半仓",
+          "limit": "37 / 33",
+          "breadth": "744 / 4415",
+          "lhb": "-0.77 亿"
+        },
+        "old": {
+          "emScore": "38.4",
+          "emPct": "8.5",
+          "emTier": "档位 半仓",
+          "emNet": "当日龙虎净买 -0.77 亿"
+        },
+        "breadthDom": [
+          "沪深上涨744n=沪深两市·不含北交所",
+          "沪深下跌4415n=沪深两市·不含北交所"
+        ],
+        "bodyView": "workbench"
+      }
+    },
+    {
+      "markMs": 4000,
+      "state": {
+        "tMs": 13673,
+        "ready": "complete",
+        "arc": true,
+        "signals": true,
+        "regimeKey": "ice",
+        "overview": true,
+        "kpi": {
+          "score": "38.4",
+          "regime": "冰点",
+          "pos": "半仓",
+          "limit": "37 / 33",
+          "breadth": "744 / 4415",
+          "lhb": "-0.77 亿"
+        },
+        "old": {
+          "emScore": "38.4",
+          "emPct": "8.5",
+          "emTier": "档位 半仓",
+          "emNet": "当日龙虎净买 -0.77 亿"
+        },
+        "breadthDom": [
+          "沪深上涨744n=沪深两市·不含北交所",
+          "沪深下跌4415n=沪深两市·不含北交所"
+        ],
+        "bodyView": "workbench"
+      }
+    },
+    {
+      "markMs": 6000,
+      "state": {
+        "tMs": 15685,
+        "ready": "complete",
+        "arc": true,
+        "signals": true,
+        "regimeKey": "ice",
+        "overview": true,
+        "kpi": {
+          "score": "38.4",
+          "regime": "冰点",
+          "pos": "半仓",
+          "limit": "37 / 33",
+          "breadth": "744 / 4415",
+          "lhb": "-0.77 亿"
+        },
+        "old": {
+          "emScore": "38.4",
+          "emPct": "8.5",
+          "emTier": "档位 半仓",
+          "emNet": "当日龙虎净买 -0.77 亿"
+        },
+        "breadthDom": [
+          "沪深上涨744n=沪深两市·不含北交所",
+          "沪深下跌4415n=沪深两市·不含北交所"
+        ],
+        "bodyView": "workbench"
+      }
+    },
+    {
+      "markMs": 9000,
+      "state": {
+        "tMs": 18691,
+        "ready": "complete",
+        "arc": true,
+        "signals": true,
+        "regimeKey": "ice",
+        "overview": true,
+        "kpi": {
+          "score": "38.4",
+          "regime": "冰点",
+          "pos": "半仓",
+          "limit": "37 / 33",
+          "breadth": "744 / 4415",
+          "lhb": "-0.77 亿"
+        },
+        "old": {
+          "emScore": "38.4",
+          "emPct": "8.5",
+          "emTier": "档位 半仓",
+          "emNet": "当日龙虎净买 -0.77 亿"
+        },
+        "breadthDom": [
+          "沪深上涨744n=沪深两市·不含北交所",
+          "沪深下跌4415n=沪深两市·不含北交所"
+        ],
+        "bodyView": "workbench"
+      }
+    },
+    {
+      "markMs": 13000,
+      "state": {
+        "tMs": 22698,
+        "ready": "complete",
+        "arc": true,
+        "signals": true,
+        "regimeKey": "ice",
+        "overview": true,
+        "kpi": {
+          "score": "38.4",
+          "regime": "冰点",
+          "pos": "半仓",
+          "limit": "37 / 33",
+          "breadth": "744 / 4415",
+          "lhb": "-0.77 亿"
+        },
+        "old": {
+          "emScore": "38.4",
+          "emPct": "8.5",
+          "emTier": "档位 半仓",
+          "emNet": "当日龙虎净买 -0.77 亿"
+        },
+        "breadthDom": [
+          "沪深上涨744n=沪深两市·不含北交所",
+          "沪深下跌4415n=沪深两市·不含北交所"
+        ],
+        "bodyView": "workbench"
+      }
+    },
+    {
+      "markMs": 18000,
+      "state": {
+        "tMs": 27700,
+        "ready": "complete",
+        "arc": true,
+        "signals": true,
+        "regimeKey": "ice",
+        "overview": true,
+        "kpi": {
+          "score": "38.4",
+          "regime": "冰点",
+          "pos": "半仓",
+          "limit": "37 / 33",
+          "breadth": "744 / 4415",
+          "lhb": "-0.77 亿"
+        },
+        "old": {
+          "emScore": "38.4",
+          "emPct": "8.5",
+          "emTier": "档位 半仓",
+          "emNet": "当日龙虎净买 -0.77 亿"
+        },
+        "breadthDom": [
+          "沪深上涨744n=沪深两市·不含北交所",
+          "沪深下跌4415n=沪深两市·不含北交所"
+        ],
+        "bodyView": "workbench"
+      }
+    }
+  ],
+  "verdict": {
+    "warmup_ready_ms": 4307,
+    "arc_arrival_ms": 9345,
+    "signals_arrived": true,
+    "signals_arrived_at_arc_plus_ms": 1500,
+    "breadth_dom_arrived": true,
+    "regime_at_arc_arrival": "未生成",
+    "regime_initial": "未生成",
+    "regime_final": "冰点",
+    "regime_auto_corrected": true,
+    "regime_stuck_unknown": false,
+    "breadth_initial": "755 / 4472",
+    "breadth_final": "744 / 4415",
+    "breadth_changed": true,
+    "score_matches_old_all_samples": true,
+    "console_exceptions": 0
+  },
+  "errors": [],
+  "warmupReadyMs": 4307,
+  "arcArrivalMs": 9345
+}

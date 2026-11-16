@@ -42,16 +42,22 @@
     return days[days.length - 1] || null;
   }
 
-  /* ---------- 6 KPI 取值（旧渲染节点优先，数据兜底） ---------- */
+  /* ---------- 6 KPI 取值（旧渲染节点优先，数据兜底） ----------
+   * 【11 册 §4 / 7.1】首帧口径纪律：DOM 未就绪时一律显示「加载中…」占位，
+   * 绝不用**不同口径**的数据兜底。曾有的 bug：breadth 在 #breadthPanel 未渲染时
+   * 用 __lastArc.summary（全市场 755/4472），DOM 到齐后跳到「沪深两市」744/4415，
+   * 首帧 2.5 秒口径错；regime 在 __signals 未到时显示「未生成」违反 L125 首帧语义。 */
+  const LOADING = '加载中…';
   function readKpis() {
     const day = lastDay() || {};
     const em = day.emotion || {};
     const sm = day.summary || {};
     const sig = window.__signals || {};
     const reg = (sig.regime && sig.regime.latest) || {};
-    const regLabel = REGIME_LABEL[reg.key] || (reg.key || '未生成');
+    const sigReady = !!(sig.regime && sig.regime.latest); // signals 到位才算 regime 可信
 
-    // 涨/跌家数：优先读旧 #breadthPanel 渲染值（沪深两市口径），数据兜底用 latest.summary
+    // 涨/跌家数：只认旧 #breadthPanel 渲染值（沪深两市·不含北交所口径）；
+    // 未渲染时占位，不拿 summary.up_count 兜底——那是全市场口径，会跳变（11 册 §4）。
     let breadth = null;
     const bwUp = Array.from(document.querySelectorAll('#breadthPanel .bw-kpi'))
       .find((el) => /沪深上涨/.test(el.textContent || ''));
@@ -59,21 +65,24 @@
       .find((el) => /沪深下跌/.test(el.textContent || ''));
     if (bwUp && bwDn) {
       const u = $('.bw-v', bwUp), d = $('.bw-v', bwDn);
-      if (u && d) breadth = `${u.textContent.trim()} / ${d.textContent.trim()}`;
+      if (u && d && !/未评估|—/.test(u.textContent + d.textContent)) {
+        breadth = `${u.textContent.trim()} / ${d.textContent.trim()}`;
+      }
     }
-    if (!breadth && sm.up_count != null && sm.down_count != null) {
-      breadth = `${sm.up_count} / ${sm.down_count}`;
-    }
+    if (!breadth) breadth = LOADING;
+
+    // 市场状态：signals 未到位时占位，不显示「未生成」（后者是"该日无判据"的结论，非"还没加载"）
+    const regLabel = sigReady ? (REGIME_LABEL[reg.key] || reg.key || LOADING) : LOADING;
 
     return {
-      score:   txt('#emScore') ?? num(em.value ?? em.score),                 // 情绪分
+      score:   txt('#emScore') && txt('#emScore') !== '--' ? txt('#emScore') : (num(em.value ?? em.score) ?? LOADING), // 情绪分（V2-1 逐字对齐）
       pct:     txt('#emPct') ?? (em.pct_rank != null ? String(em.pct_rank) : null), // 历史分位 %
       regime:  regLabel,                                                     // 市场状态
-      regimeKey: reg.key,
-      pos:     (txt('#emTier') || '').replace(/^档位\s*/, '') || null,        // 执行仓位（V5.2 档位）
-      limit:   (sm.zt_count != null && sm.dt_count != null) ? `${sm.zt_count} / ${sm.dt_count}` : null, // 涨停/跌停
+      regimeKey: sigReady ? reg.key : null,
+      pos:     (txt('#emTier') || '').replace(/^档位\s*/, '') || LOADING,      // 执行仓位（V5.2 档位）
+      limit:   (sm.zt_count != null && sm.dt_count != null) ? `${sm.zt_count} / ${sm.dt_count}` : LOADING, // 涨停/跌停（唯一数源=summary，无异口径风险）
       breadth,                                                               // 涨/跌家数
-      lhb:     txt('#emNet') ?? (em.lhb_daily_net != null ? `当日龙虎净买 ${em.lhb_daily_net} 亿` : null), // 龙虎净买
+      lhb:     txt('#emNet') ?? (em.lhb_daily_net != null ? `当日龙虎净买 ${em.lhb_daily_net} 亿` : LOADING), // 龙虎净买
     };
   }
 
@@ -88,8 +97,12 @@
       + `</div>`;
   }
 
+  /* 【11 册 §7.2 / 05 册 L126】overview 回退开关：flag 关闭时本页不执行任何搬迁/渲染，
+   * 由 s-root.js 的 showPage 回落占位。每次 render/sync 都查，支持运行时 S.setFlag 动态关闭。 */
+  function overviewEnabled() { return S.getFlag('overview', true) !== false; }
+
   function render(panel) {
-    if (!panel) return;
+    if (!panel || !overviewEnabled()) return;
     let host = panel.querySelector('.s-page-overview');
     if (!host) {
       host = document.createElement('div');
@@ -111,6 +124,7 @@
     }
     sync();
     armObserver();
+    armSignalPoll(); // 每次渲染总览页都确保 signals 到位轮询在跑（覆盖 hashchange/popstate 后进入的场景）
   }
 
   function setVal(id, v, down) {
@@ -122,6 +136,7 @@
   }
 
   function sync() {
+    if (!overviewEnabled()) return;
     const k = readKpis();
     setVal('sKpiScore', k.score);
     setVal('sKpiRegime', k.regime, !!REGIME_DOWN[k.regimeKey]);
@@ -137,27 +152,54 @@
       `情绪分 ${k.score ?? '—'}，历史分位 ${k.pct ?? '—'}%，市场状态 ${k.regime}` + (k.pos ? `，执行仓位 ${k.pos}` : '');
   }
 
-  /* ④ 幂等重搬：监听旧 #zone-overview 的 innerHTML 覆盖，重复 render 后重新同步 */
+  /* ④ 幂等重搬：监听旧 #zone-overview 的 innerHTML 覆盖，重复 render 后重新同步
+   * 【11 册 §4 / 7.1】额外监听 #breadthPanel（在 #preMainPanels，不在 observer 原范围），
+   * 让涨跌家数渲染到位后立刻同步、消除首帧口径跳变。 */
   function armObserver() {
     if (observer) return;
-    const src = document.getElementById('zone-overview');
-    if (!src || typeof MutationObserver !== 'function') return;
+    if (typeof MutationObserver !== 'function') return;
     observer = new MutationObserver(() => {
       // 仅在工作台激活态同步；旧视图照旧渲染（本文件不改旧节点）
       if (document.body.dataset.view === 'workbench' && built) sync();
     });
-    observer.observe(src, { childList: true, subtree: true, characterData: true });
+    const src = document.getElementById('zone-overview');
+    if (src) observer.observe(src, { childList: true, subtree: true, characterData: true });
+    const bp = document.getElementById('breadthPanel');
+    if (bp) observer.observe(bp, { childList: true, subtree: true, characterData: true });
+  }
+
+  /* 【11 册 §4】显式等 signals 到位：不再依赖其他 render 的 DOM 副作用偶然触发。
+   * __signals 是普通属性赋值（app.js:2573），无法可靠 setter 拦截（赋值可能早于本脚本）；
+   * 用轻量轮询（到位即停），只在工作台激活且仍有占位 KPI 时运行。 */
+  let signalTimer = null;
+  function armSignalPoll() {
+    if (signalTimer) return;
+    let tries = 0;
+    signalTimer = setInterval(() => {
+      if (!built || document.body.dataset.view !== 'workbench') return;
+      const sig = window.__signals;
+      const ready = !!(sig && sig.regime && sig.regime.latest);
+      if (ready || ++tries > 120) { // 最多 12s（100ms×120），到位或超时即停
+        clearInterval(signalTimer); signalTimer = null;
+        if (ready) sync();
+      }
+    }, 100);
   }
 
   /* ---------- 注册到 s-root.js 的页路由（总览 = 第 0 tab） ---------- */
   S.registerPageOverview = () => {
-    if (typeof S.registerPage === 'function') S.registerPage('总览', render);
+    // 【7.2】flag 关闭时不注册 → s-root.js showPage 回落占位
+    if (overviewEnabled() && typeof S.registerPage === 'function') S.registerPage('总览', render);
   };
   S.registerPageOverview();
 
   // 显式触发源：工作台激活且当前停在总览 tab 时主动渲染一次（④）
   const boot = () => {
-    if (document.body.dataset.view === 'workbench' && typeof S.showPage === 'function') S.showPage('总览');
+    if (!overviewEnabled()) return;
+    if (document.body.dataset.view === 'workbench' && typeof S.showPage === 'function') {
+      S.showPage('总览');
+      armSignalPoll(); // 【7.1】启动 signals 到位轮询（首帧占位 → 到位即同步）
+    }
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

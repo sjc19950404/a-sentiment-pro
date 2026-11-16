@@ -1,0 +1,571 @@
+{
+  "time": "2026-11-16T05:18:35.536Z",
+  "base": "https://sjc19950404.github.io/a-sentiment-pro/",
+  "cases": [
+    {
+      "label": "?view=workbench",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench&_cb=1794806316027",
+      "readyMs": 12582,
+      "dataMs": 0,
+      "attempts": 2,
+      "state": {
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench&_cb=1794806316027&_retry=1794806337964",
+        "bodyView": "workbench",
+        "innerHeight": 908,
+        "innerWidth": 1416,
+        "sKeys": [
+          "runSelfTest",
+          "collectCls",
+          "setFlag",
+          "getFlag",
+          "registerPage",
+          "showPage",
+          "routeWorkbench",
+          "registerPageOverview"
+        ],
+        "overviewExists": true,
+        "overviewChildren": 2,
+        "overviewInPanel": true,
+        "kpiAnchors": {
+          "sKpiScore": true,
+          "sKpiRegime": true,
+          "sKpiPos": true,
+          "sKpiLimit": true,
+          "sKpiBreadth": true,
+          "sKpiLhb": true
+        },
+        "kpis": {
+          "sKpiScore": "38.4",
+          "sKpiRegime": "冰点",
+          "sKpiPos": "半仓",
+          "sKpiLimit": "37 / 33",
+          "sKpiBreadth": "744 / 4415",
+          "sKpiLhb": "-0.77 亿"
+        },
+        "docL113_oldNodeInNewRoot": false,
+        "old": {
+          "emScore": "38.4",
+          "emPct": "8.5",
+          "emTier": "档位 半仓",
+          "emNet": "当日龙虎净买 -0.77 亿",
+          "zoneOverviewExists": true,
+          "emScoreInZone": true,
+          "breadthPanelExists": true,
+          "breadthInZone": false,
+          "breadthKpis": [
+            "站上20日线28.4%n=5213",
+            "创新高0.6%n=5129",
+            "创新低6.3%n=5129",
+            "破净率11.1%n=5213",
+            "沪深上涨744n=沪深两市·不含北交所",
+            "沪深下跌4415n=沪深两市·不含北交所",
+            "全市场↑含北交744n=全市场·含北交所",
+            "全市场↓含北交4415n=全市场·含北交所"
+          ]
+        },
+        "mainHidden": true,
+        "mainDisplay": "none",
+        "dataSrc": {
+          "hasLastArc": true,
+          "arcDays": 30,
+          "hasDay": true,
+          "daySummary": {
+            "zt_count": 37,
+            "dt_count": 33,
+            "up_count": 755,
+            "down_count": 4472
+          },
+          "dayEmotion": {
+            "value": 38.4,
+            "pct_rank": 8.5,
+            "lhb_daily_net": -0.77
+          },
+          "hasSignals": true,
+          "regimeKey": "ice"
+        },
+        "sRoot": {
+          "cls": "s-scope s-app",
+          "hidden": false,
+          "display": "flex",
+          "offsetHeight": 908,
+          "rectTop": 0
+        },
+        "bodyScrollHeight": 908,
+        "docScrollWidth": 1416,
+        "tabs": [
+          {
+            "text": "总览",
+            "active": true,
+            "disabled": false
+          },
+          {
+            "text": "涨跌停",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "资金",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "板块",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "选股",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "回测",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "模拟盘",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "研报",
+            "active": false,
+            "disabled": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "同页 popstate 回默认",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/?popstate=1",
+      "state": {
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/?popstate=1",
+        "bodyView": "",
+        "innerHeight": 908,
+        "innerWidth": 1416,
+        "sKeys": [
+          "runSelfTest",
+          "collectCls",
+          "setFlag",
+          "getFlag",
+          "registerPage",
+          "showPage",
+          "routeWorkbench",
+          "registerPageOverview"
+        ],
+        "overviewExists": true,
+        "overviewChildren": 2,
+        "overviewInPanel": true,
+        "kpiAnchors": {
+          "sKpiScore": true,
+          "sKpiRegime": true,
+          "sKpiPos": true,
+          "sKpiLimit": true,
+          "sKpiBreadth": true,
+          "sKpiLhb": true
+        },
+        "kpis": {
+          "sKpiScore": "38.4",
+          "sKpiRegime": "冰点",
+          "sKpiPos": "半仓",
+          "sKpiLimit": "37 / 33",
+          "sKpiBreadth": "744 / 4415",
+          "sKpiLhb": "-0.77 亿"
+        },
+        "docL113_oldNodeInNewRoot": false,
+        "old": {
+          "emScore": "38.4",
+          "emPct": "8.5",
+          "emTier": "档位 半仓",
+          "emNet": "当日龙虎净买 -0.77 亿",
+          "zoneOverviewExists": true,
+          "emScoreInZone": true,
+          "breadthPanelExists": true,
+          "breadthInZone": false,
+          "breadthKpis": [
+            "站上20日线28.4%n=5213",
+            "创新高0.6%n=5129",
+            "创新低6.3%n=5129",
+            "破净率11.1%n=5213",
+            "沪深上涨744n=沪深两市·不含北交所",
+            "沪深下跌4415n=沪深两市·不含北交所",
+            "全市场↑含北交744n=全市场·含北交所",
+            "全市场↓含北交4415n=全市场·含北交所"
+          ]
+        },
+        "mainHidden": false,
+        "mainDisplay": "block",
+        "dataSrc": {
+          "hasLastArc": true,
+          "arcDays": 30,
+          "hasDay": true,
+          "daySummary": {
+            "zt_count": 37,
+            "dt_count": 33,
+            "up_count": 755,
+            "down_count": 4472
+          },
+          "dayEmotion": {
+            "value": 38.4,
+            "pct_rank": 8.5,
+            "lhb_daily_net": -0.77
+          },
+          "hasSignals": true,
+          "regimeKey": "ice"
+        },
+        "sRoot": {
+          "cls": "s-scope s-app",
+          "hidden": true,
+          "display": "none",
+          "offsetHeight": 0,
+          "rectTop": 0
+        },
+        "bodyScrollHeight": 9173,
+        "docScrollWidth": 1416,
+        "tabs": [
+          {
+            "text": "总览",
+            "active": true,
+            "disabled": false
+          },
+          {
+            "text": "涨跌停",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "资金",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "板块",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "选股",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "回测",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "模拟盘",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "研报",
+            "active": false,
+            "disabled": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "默认 /（整页）",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/?_cb=1794806316027",
+      "readyMs": 430,
+      "dataMs": 5276,
+      "attempts": 1,
+      "state": {
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/?_cb=1794806316027",
+        "bodyView": "",
+        "innerHeight": 908,
+        "innerWidth": 1416,
+        "sKeys": [
+          "runSelfTest",
+          "collectCls",
+          "setFlag",
+          "getFlag",
+          "registerPage",
+          "showPage",
+          "routeWorkbench",
+          "registerPageOverview"
+        ],
+        "overviewExists": false,
+        "overviewChildren": 0,
+        "overviewInPanel": false,
+        "kpiAnchors": {
+          "sKpiScore": false,
+          "sKpiRegime": false,
+          "sKpiPos": false,
+          "sKpiLimit": false,
+          "sKpiBreadth": false,
+          "sKpiLhb": false
+        },
+        "kpis": {
+          "sKpiScore": null,
+          "sKpiRegime": null,
+          "sKpiPos": null,
+          "sKpiLimit": null,
+          "sKpiBreadth": null,
+          "sKpiLhb": null
+        },
+        "docL113_oldNodeInNewRoot": false,
+        "old": {
+          "emScore": "38.4",
+          "emPct": "8.5",
+          "emTier": "档位 半仓",
+          "emNet": "当日龙虎净买 -0.77 亿",
+          "zoneOverviewExists": true,
+          "emScoreInZone": true,
+          "breadthPanelExists": true,
+          "breadthInZone": false,
+          "breadthKpis": [
+            "站上20日线28.4%n=5213",
+            "创新高0.6%n=5129",
+            "创新低6.3%n=5129",
+            "破净率11.1%n=5213",
+            "沪深上涨744n=沪深两市·不含北交所",
+            "沪深下跌4415n=沪深两市·不含北交所",
+            "全市场↑含北交744n=全市场·含北交所",
+            "全市场↓含北交4415n=全市场·含北交所"
+          ]
+        },
+        "mainHidden": false,
+        "mainDisplay": "block",
+        "dataSrc": {
+          "hasLastArc": true,
+          "arcDays": 30,
+          "hasDay": true,
+          "daySummary": {
+            "zt_count": 37,
+            "dt_count": 33,
+            "up_count": 755,
+            "down_count": 4472
+          },
+          "dayEmotion": {
+            "value": 38.4,
+            "pct_rank": 8.5,
+            "lhb_daily_net": -0.77
+          },
+          "hasSignals": true,
+          "regimeKey": "ice"
+        },
+        "sRoot": {
+          "cls": "s-scope s-app",
+          "hidden": true,
+          "display": "none",
+          "offsetHeight": 0,
+          "rectTop": 0
+        },
+        "bodyScrollHeight": 9173,
+        "docScrollWidth": 1416,
+        "tabs": []
+      }
+    }
+  ],
+  "verdict": {
+    "v21_score_equal_old": true,
+    "v21_score_not_placeholder": true,
+    "six_kpi_anchors_present": true,
+    "six_kpi_all_filled": true,
+    "overview_in_panel": true,
+    "old_nodes_untouched": true,
+    "default_kpi_unchanged_vs_popstate": true,
+    "default_sRoot_truly_hidden": true,
+    "idempotent_char_sync": true,
+    "idempotent_child_survived": true,
+    "idempotent_restored": true,
+    "cls_available": true,
+    "cls_not_degraded": true,
+    "cls_pass_010": true,
+    "tabs_count_8": true,
+    "overview_tab_registered": true,
+    "other_tabs_placeholder": true,
+    "overview_rebuilt_on_return": true,
+    "phase1_layout_intact": true,
+    "data_source_ready": true,
+    "signals_arrived_later": true,
+    "regime_at_first_paint": "冰点",
+    "regime_pending_at_first_paint": false,
+    "page_router_present": true,
+    "console_exceptions": 0,
+    "load_failures": 0,
+    "doc_l113_assertion_false_by_contract": true
+  },
+  "errors": [],
+  "loadFailures": [],
+  "idempotency": {
+    "skipped": false,
+    "before": "38.4",
+    "afterChar": "SENTINEL-77",
+    "afterChild": "SENTINEL-77",
+    "afterRestore": "38.4",
+    "finalOld": "38.4",
+    "charSynced": true,
+    "childSurvived": true,
+    "restored": true,
+    "hostStillInPanel": true
+  },
+  "tabs": {
+    "skipped": false,
+    "initial": {
+      "title": null,
+      "overview": true,
+      "kpiScore": "38.4"
+    },
+    "afterFund": {
+      "title": "工作台 · 资金",
+      "overview": false,
+      "kpiScore": null
+    },
+    "backOverview": {
+      "title": null,
+      "overview": true,
+      "kpiScore": "38.4"
+    },
+    "fundIsPlaceholder": true,
+    "overviewRebuilt": true
+  },
+  "cls": {
+    "value": 0.0265,
+    "sessions": 1,
+    "target": 0.1,
+    "baseline": 0.174,
+    "pass": true,
+    "degraded": false
+  },
+  "selfTest": {
+    "stamp": "2026-11-16T05:19:22.114Z",
+    "viewport": {
+      "w": 1416,
+      "h": 908,
+      "dpr": 1
+    },
+    "horizontalOverflow": {
+      "count": 0,
+      "items": []
+    },
+    "innerScrollContainers": {
+      "count": 0,
+      "whitelisted": 0,
+      "violations": []
+    },
+    "cls": {
+      "value": 0.0265,
+      "sessions": 1,
+      "target": 0.1,
+      "baseline": 0.174,
+      "pass": true,
+      "degraded": false
+    },
+    "touchTargets": {
+      "checked": 8,
+      "min": 44,
+      "violations": 8,
+      "items": [
+        {
+          "path": "div#sRoot.s-scope.s-app > header.s-ph-topbar > span.s-ph-nav > button.s-ph-tab.is-active",
+          "w": 46,
+          "h": 31
+        },
+        {
+          "path": "div#sRoot.s-scope.s-app > header.s-ph-topbar > span.s-ph-nav > button.s-ph-tab",
+          "w": 58,
+          "h": 31
+        },
+        {
+          "path": "div#sRoot.s-scope.s-app > header.s-ph-topbar > span.s-ph-nav > button.s-ph-tab",
+          "w": 46,
+          "h": 31
+        },
+        {
+          "path": "div#sRoot.s-scope.s-app > header.s-ph-topbar > span.s-ph-nav > button.s-ph-tab",
+          "w": 46,
+          "h": 31
+        },
+        {
+          "path": "div#sRoot.s-scope.s-app > header.s-ph-topbar > span.s-ph-nav > button.s-ph-tab",
+          "w": 46,
+          "h": 31
+        },
+        {
+          "path": "div#sRoot.s-scope.s-app > header.s-ph-topbar > span.s-ph-nav > button.s-ph-tab",
+          "w": 46,
+          "h": 31
+        },
+        {
+          "path": "div#sRoot.s-scope.s-app > header.s-ph-topbar > span.s-ph-nav > button.s-ph-tab",
+          "w": 58,
+          "h": 31
+        },
+        {
+          "path": "div#sRoot.s-scope.s-app > header.s-ph-topbar > span.s-ph-nav > button.s-ph-tab",
+          "w": 46,
+          "h": 31
+        }
+      ]
+    },
+    "contrast": {
+      "checked": 13,
+      "minRatio": 4.42,
+      "violations": 6,
+      "items": [
+        {
+          "path": "div.s-section > div#sKpiRow.s-grid.s-grid--kpi > div.s-kpi > span.s-kpi__label",
+          "ratio": 4.42,
+          "need": 4.5,
+          "color": "rgb(114, 130, 152)"
+        },
+        {
+          "path": "div.s-section > div#sKpiRow.s-grid.s-grid--kpi > div.s-kpi > span.s-kpi__label",
+          "ratio": 4.42,
+          "need": 4.5,
+          "color": "rgb(114, 130, 152)"
+        },
+        {
+          "path": "div.s-section > div#sKpiRow.s-grid.s-grid--kpi > div.s-kpi > span.s-kpi__label",
+          "ratio": 4.42,
+          "need": 4.5,
+          "color": "rgb(114, 130, 152)"
+        },
+        {
+          "path": "div.s-section > div#sKpiRow.s-grid.s-grid--kpi > div.s-kpi > span.s-kpi__label",
+          "ratio": 4.42,
+          "need": 4.5,
+          "color": "rgb(114, 130, 152)"
+        },
+        {
+          "path": "div.s-section > div#sKpiRow.s-grid.s-grid--kpi > div.s-kpi > span.s-kpi__label",
+          "ratio": 4.42,
+          "need": 4.5,
+          "color": "rgb(114, 130, 152)"
+        },
+        {
+          "path": "div.s-section > div#sKpiRow.s-grid.s-grid--kpi > div.s-kpi > span.s-kpi__label",
+          "ratio": 4.42,
+          "need": 4.5,
+          "color": "rgb(114, 130, 152)"
+        }
+      ]
+    },
+    "drawerFocusTrap": {
+      "ok": false,
+      "steps": [
+        "drawer missing"
+      ]
+    },
+    "emptyStates": {
+      "count": 0,
+      "missingTitle": 0,
+      "oversized": 0,
+      "items": []
+    },
+    "skeletonSwap": {
+      "skeletonH": 0,
+      "realH": 134,
+      "duringInsert": 134,
+      "afterReplace": 0,
+      "maxShift": 134,
+      "pass": false
+    },
+    "pass": false
+  }
+}
