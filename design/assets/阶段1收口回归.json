@@ -1,12 +1,12 @@
 {
-  "time": "2026-11-16T03:06:34.023Z",
+  "time": "2026-11-16T03:43:29.564Z",
   "base": "https://sjc19950404.github.io/a-sentiment-pro/",
   "cases": [
     {
       "label": "?view=workbench",
-      "url": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench&_cb=1794800610147",
       "state": {
-        "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench",
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench&_cb=1794800610147",
         "bodyView": "workbench",
         "innerWidth": 1416,
         "innerHeight": 874,
@@ -20,7 +20,7 @@
             "minHeight": "874px",
             "visibility": "visible"
           },
-          "rectTop": 180
+          "rectTop": 0
         },
         "main": {
           "hidden": true,
@@ -36,10 +36,10 @@
           "hidden": true,
           "offsetHeight": 0
         },
-        "bodyScrollHeight": 1054,
+        "bodyScrollHeight": 874,
         "contribution": {
-          "before": 1054,
-          "afterForceHidden": 180,
+          "before": 874,
+          "afterForceHidden": 0,
           "delta": 874
         },
         "tabs": [
@@ -87,66 +87,12 @@
         "panelTitle": "工作台骨架已就位",
         "bodyChildren": [
           {
-            "tag": "LABEL",
-            "id": "",
-            "cls": "ls-switch",
-            "display": "flex",
-            "h": 35,
-            "top": 825,
-            "hidden": false
-          },
-          {
-            "tag": "DIV",
-            "id": "",
-            "cls": "top-sticky",
-            "display": "block",
-            "h": 107,
-            "top": 0,
-            "hidden": false
-          },
-          {
-            "tag": "FOOTER",
-            "id": "",
-            "cls": "foot muted",
-            "display": "block",
-            "h": 73,
-            "top": 107,
-            "hidden": false
-          },
-          {
-            "tag": "BUTTON",
-            "id": "toTop",
-            "cls": "totop",
-            "display": "block",
-            "h": 34,
-            "top": 822,
-            "hidden": false
-          },
-          {
-            "tag": "DIV",
-            "id": "drawerMask",
-            "cls": "drawer-mask",
-            "display": "block",
-            "h": 874,
-            "top": 0,
-            "hidden": false
-          },
-          {
-            "tag": "ASIDE",
-            "id": "drawer",
-            "cls": "drawer",
-            "display": "flex",
-            "h": 874,
-            "top": 0,
-            "hidden": false
-          },
-          {
             "tag": "DIV",
             "id": "sRoot",
             "cls": "s-scope s-app",
             "display": "flex",
             "h": 874,
-            "top": 180,
+            "top": 0,
             "hidden": false
           }
         ]
@@ -164,13 +110,13 @@
           "cls": "s-scope s-app",
           "hidden": true,
           "children": 2,
-          "offsetHeight": 874,
+          "offsetHeight": 0,
           "computed": {
-            "display": "flex",
+            "display": "none",
             "minHeight": "874px",
             "visibility": "visible"
           },
-          "rectTop": 9539
+          "rectTop": 0
         },
         "main": {
           "hidden": false,
@@ -186,11 +132,11 @@
           "hidden": false,
           "offsetHeight": 352
         },
-        "bodyScrollHeight": 10413,
+        "bodyScrollHeight": 9539,
         "contribution": {
-          "before": 10413,
+          "before": 9539,
           "afterForceHidden": 9539,
-          "delta": 874
+          "delta": 0
         },
         "tabs": [
           {
@@ -309,15 +255,6 @@
             "hidden": false
           },
           {
-            "tag": "DIV",
-            "id": "sRoot",
-            "cls": "s-scope s-app",
-            "display": "flex",
-            "h": 874,
-            "top": 9539,
-            "hidden": true
-          },
-          {
             "tag": "BUTTON",
             "id": "t-entry",
             "cls": "",
@@ -331,9 +268,9 @@
     },
     {
       "label": "默认 /（整页）",
-      "url": "https://sjc19950404.github.io/a-sentiment-pro/",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/?_cb=1794800610147",
       "state": {
-        "href": "https://sjc19950404.github.io/a-sentiment-pro/",
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/?_cb=1794800610147",
         "bodyView": "",
         "innerWidth": 1416,
         "innerHeight": 874,
@@ -341,13 +278,13 @@
           "cls": "s-scope s-app",
           "hidden": true,
           "children": 0,
-          "offsetHeight": 874,
+          "offsetHeight": 0,
           "computed": {
-            "display": "flex",
+            "display": "none",
             "minHeight": "874px",
             "visibility": "visible"
           },
-          "rectTop": 9539
+          "rectTop": 0
         },
         "main": {
           "hidden": false,
@@ -363,11 +300,11 @@
           "hidden": false,
           "offsetHeight": 352
         },
-        "bodyScrollHeight": 10413,
+        "bodyScrollHeight": 9539,
         "contribution": {
-          "before": 10413,
+          "before": 9539,
           "afterForceHidden": 9539,
-          "delta": 874
+          "delta": 0
         },
         "tabs": [],
         "panelTitle": "",
@@ -445,15 +382,6 @@
             "hidden": false
           },
           {
-            "tag": "DIV",
-            "id": "sRoot",
-            "cls": "s-scope s-app",
-            "display": "flex",
-            "h": 874,
-            "top": 9539,
-            "hidden": true
-          },
-          {
             "tag": "BUTTON",
             "id": "t-entry",
             "cls": "",
@@ -467,9 +395,9 @@
     },
     {
       "label": "?view=terminal",
-      "url": "https://sjc19950404.github.io/a-sentiment-pro/?view=terminal",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/?view=terminal&_cb=1794800610147",
       "state": {
-        "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=terminal",
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=terminal&_cb=1794800610147",
         "bodyView": "",
         "innerWidth": 1416,
         "innerHeight": 874,
@@ -477,13 +405,13 @@
           "cls": "s-scope s-app",
           "hidden": true,
           "children": 0,
-          "offsetHeight": 874,
+          "offsetHeight": 0,
           "computed": {
-            "display": "flex",
+            "display": "none",
             "minHeight": "874px",
             "visibility": "visible"
           },
-          "rectTop": 9539
+          "rectTop": 0
         },
         "main": {
           "hidden": false,
@@ -499,11 +427,11 @@
           "hidden": false,
           "offsetHeight": 352
         },
-        "bodyScrollHeight": 10413,
+        "bodyScrollHeight": 9539,
         "contribution": {
-          "before": 10413,
+          "before": 9539,
           "afterForceHidden": 9539,
-          "delta": 874
+          "delta": 0
         },
         "tabs": [],
         "panelTitle": "",
@@ -590,15 +518,6 @@
             "hidden": false
           },
           {
-            "tag": "DIV",
-            "id": "sRoot",
-            "cls": "s-scope s-app",
-            "display": "flex",
-            "h": 874,
-            "top": 9539,
-            "hidden": true
-          },
-          {
             "tag": "BUTTON",
             "id": "t-entry",
             "cls": "",
@@ -612,9 +531,9 @@
     },
     {
       "label": "?view=workbench + 点第3个tab",
-      "url": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench&_cb=1794800610147",
       "state": {
-        "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench",
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench&_cb=1794800610147",
         "bodyView": "workbench",
         "innerWidth": 1416,
         "innerHeight": 874,
@@ -628,7 +547,7 @@
             "minHeight": "874px",
             "visibility": "visible"
           },
-          "rectTop": 180
+          "rectTop": 0
         },
         "main": {
           "hidden": true,
@@ -644,10 +563,10 @@
           "hidden": true,
           "offsetHeight": 0
         },
-        "bodyScrollHeight": 1054,
+        "bodyScrollHeight": 874,
         "contribution": {
-          "before": 1054,
-          "afterForceHidden": 180,
+          "before": 874,
+          "afterForceHidden": 0,
           "delta": 874
         },
         "tabs": [
@@ -695,66 +614,12 @@
         "panelTitle": "工作台 · 资金",
         "bodyChildren": [
           {
-            "tag": "LABEL",
-            "id": "",
-            "cls": "ls-switch",
-            "display": "flex",
-            "h": 35,
-            "top": 825,
-            "hidden": false
-          },
-          {
-            "tag": "DIV",
-            "id": "",
-            "cls": "top-sticky",
-            "display": "block",
-            "h": 107,
-            "top": 0,
-            "hidden": false
-          },
-          {
-            "tag": "FOOTER",
-            "id": "",
-            "cls": "foot muted",
-            "display": "block",
-            "h": 73,
-            "top": 107,
-            "hidden": false
-          },
-          {
-            "tag": "BUTTON",
-            "id": "toTop",
-            "cls": "totop",
-            "display": "block",
-            "h": 34,
-            "top": 822,
-            "hidden": false
-          },
-          {
-            "tag": "DIV",
-            "id": "drawerMask",
-            "cls": "drawer-mask",
-            "display": "block",
-            "h": 874,
-            "top": 0,
-            "hidden": false
-          },
-          {
-            "tag": "ASIDE",
-            "id": "drawer",
-            "cls": "drawer",
-            "display": "flex",
-            "h": 874,
-            "top": 0,
-            "hidden": false
-          },
-          {
             "tag": "DIV",
             "id": "sRoot",
             "cls": "s-scope s-app",
             "display": "flex",
             "h": 874,
-            "top": 180,
+            "top": 0,
             "hidden": false
           }
         ]
@@ -766,12 +631,14 @@
     "workbench_preHidden": true,
     "workbench_noOldPageStack": true,
     "workbench_fullHeightRoot": true,
-    "hidden_attr_effective_in_default": false,
-    "hidden_attr_effective_in_terminal": false,
-    "sRoot_contribution_default": 874,
-    "sRoot_contribution_terminal": 874,
+    "workbench_rootAtTop": true,
+    "workbench_noOldUi": true,
+    "hidden_attr_effective_in_default": true,
+    "hidden_attr_effective_in_terminal": true,
+    "sRoot_contribution_default": 0,
+    "sRoot_contribution_terminal": 0,
     "popstate_restores_main": true,
-    "popstate_hides_sRoot": false,
+    "popstate_hides_sRoot": true,
     "tabs_count": 8,
     "tabs_all_enabled": true,
     "tab_click_changes_panel": true,

@@ -116,13 +116,21 @@ const PROBE = `(() => {
       return r.result && r.result.value;
     };
     await cmd('Page.enable'); await cmd('Runtime.enable');
+    // 与门禁脚本同口径：禁用 HTTP 缓存 + 每个用例唯一 query，避免 SW/HTTP 缓存
+    // 让首次导航拿到部署前的外壳，造成假绿或假红。
+    try { await cmd('Network.enable'); await cmd('Network.setCacheDisabled', { cacheDisabled: true }); } catch (e) {}
+    const CB = '_cb=' + Date.now();
+    // 与门禁同口径预热：丢弃首次导航（旧外壳），保证 5 个取样用例都在本次部署资源上跑。
+    await cmd('Page.navigate', { url: BASE + '?_warmup=' + Date.now() });
+    await sleep(2600);
 
     const nav = async (url, label, extra) => {
-      await cmd('Page.navigate', { url: BASE + url });
+      const full = url ? (url.indexOf('?') >= 0 ? url + '&' + CB : url + '?' + CB) : '?' + CB;
+      await cmd('Page.navigate', { url: BASE + full });
       await sleep(2800);
       if (extra) await evaluate(extra);
       const s = await evaluate(PROBE);
-      report.cases.push({ label, url: BASE + url, state: s || null });
+      report.cases.push({ label, url: BASE + full, state: s || null });
       console.log('\n--- ' + label + ' ---');
       console.log(JSON.stringify(s, null, 2));
       return s;
@@ -155,6 +163,10 @@ const PROBE = `(() => {
       workbench_preHidden: !!(wb && wb.pre && wb.pre.hidden === true && wb.pre.offsetHeight === 0),
       workbench_noOldPageStack: !!(wb && wb.bodyScrollHeight < (wb.innerHeight || 1000) + 200),
       workbench_fullHeightRoot: !!(wb && wb.sRoot && wb.sRoot.offsetHeight >= (wb.innerHeight || 1000) - 40),
+      // P0-B：工作台根必须贴顶，且 body 直接子级里不再有可见的旧 UI 浮层
+      workbench_rootAtTop: !!(wb && wb.sRoot && wb.sRoot.rectTop === 0),
+      workbench_noOldUi: !!(wb && wb.bodyChildren && !wb.bodyChildren.some(x =>
+        /top-sticky|\bfoot\b|ls-switch|totop|drawer/i.test(((x.cls || '') + ' ' + (x.id || ''))))),
       hidden_attr_effective_in_default: !!(def && def.sRoot && def.sRoot.hidden === true && def.sRoot.offsetHeight === 0),
       hidden_attr_effective_in_terminal: !!(term && term.sRoot && term.sRoot.hidden === true && term.sRoot.offsetHeight === 0),
       sRoot_contribution_default: def && def.contribution ? def.contribution.delta : null,

@@ -122,7 +122,23 @@ const PROBE = `(() => {
     sRootOffsetHeight: sRoot ? sRoot.offsetHeight : 0,
     sRootRectTop: sRoot ? Math.round(sRoot.getBoundingClientRect().top) : 0,
     bodyScrollHeight: document.body.scrollHeight,
-    innerHeight: window.innerHeight
+    innerHeight: window.innerHeight,
+    // 资源新鲜度：确认本次导航加载的 CSS 真的是含两条补丁的部署产物。
+    // SW 外壳 cache-first + cacheKeyOf 剥 query → 单纯加 _cb 绕过不了 SW 缓存；
+    // 若这两条规则不在 CSSOM 里，说明拿到的是旧外壳，此时布局断言属缓存假红而非代码缺陷。
+    cssRulesPresent: (() => {
+      const found = { hiddenRule: false, oldUiRule: false };
+      for (const ss of document.styleSheets) {
+        let rules; try { rules = ss.cssRules; } catch (e) { continue; }
+        for (const r of rules) {
+          const t = r.selectorText || '';
+          if (t.indexOf('.s-app[hidden]') >= 0) found.hiddenRule = true;
+          if (t.indexOf('data-view="workbench"') >= 0 && t.indexOf('.top-sticky') >= 0) found.oldUiRule = true;
+        }
+      }
+      return found;
+    })(),
+    swController: !!(navigator.serviceWorker && navigator.serviceWorker.controller)
   };
 })()`;
 
@@ -169,12 +185,23 @@ async function checkLinks(base, stage) {
       setTimeout(() => { if (pend.has(id)) { pend.delete(id); rej(new Error(method + ' 超时')); } }, 20000);
     });
     await cmd('Page.enable'); await cmd('Runtime.enable');
+    // SW 外壳缓存优先（sw.js CACHE_VERSION 由部署时注入的 data 提交 SHA 决定），
+    // 纯代码提交后首次导航可能拿到旧外壳 → 断言假红/假绿。禁用 HTTP 缓存并给每个
+    // 用例加唯一 query，保证拿到当次部署的真实资源；fragment 用例把 query 放在 # 前。
+    try { await cmd('Network.enable'); await cmd('Network.setCacheDisabled', { cacheDisabled: true }); } catch (e) {}
+    const CB = '_cb=' + Date.now();
+    // 预热导航（丢弃取样）：实测 headless 首次整页导航仍会命中旧外壳
+    // （SW cache-first 从 CacheStorage 读，不受 Network.setCacheDisabled 影响；
+    //  cacheKeyOf 又剥掉 query，_cb 对 SW 缓存键无效）。第 2 次导航起才是本次部署资源。
+    // 不预热会把「资源陈旧」误判成「补丁没生效」。真实用户侧对应「老标签页需刷新一次」。
+    await cmd('Page.navigate', { url: base + '?_warmup=' + Date.now() });
+    await sleep(2600);
 
     const cases = [
-      { url: '', label: '默认 /', expect: 'report' },
-      { url: '?view=terminal', label: '?view=terminal', expect: stage >= 5 ? 'workbench' : 'terminal' },
-      { url: '?view=workbench', label: '?view=workbench', expect: 'workbench' },
-      { url: '#workbench', label: '#workbench', expect: 'workbench' },
+      { url: '?' + CB, label: '默认 /', expect: 'report' },
+      { url: '?view=terminal&' + CB, label: '?view=terminal', expect: stage >= 5 ? 'workbench' : 'terminal' },
+      { url: '?view=workbench&' + CB, label: '?view=workbench', expect: 'workbench' },
+      { url: '?' + CB + '#workbench', label: '#workbench', expect: 'workbench' },
     ];
     for (const c of cases) {
       await cmd('Page.navigate', { url: base + c.url });
@@ -191,7 +218,7 @@ async function checkLinks(base, stage) {
         // 非工作台视图下影子根必须真隐藏（不占布局高度），否则默认研报页被撑长一屏。
         rows.push(ok(c.label + ' 影子根真隐藏（不占布局）', s.sRootOffsetHeight === 0,
           { sRootOffsetHeight: s.sRootOffsetHeight, sRootDisplay: s.sRootComputedDisplay,
-            bodyScrollHeight: s.bodyScrollHeight }));
+            bodyScrollHeight: s.bodyScrollHeight, cssRules: s.cssRulesPresent }));
       }
       if (c.expect === 'workbench') {
         // R2 补漏：activeRoots 只统计 tRoot/sRoot，研报 <main> 漏检。
@@ -202,7 +229,7 @@ async function checkLinks(base, stage) {
         rows.push(ok(c.label + ' 工作台贴顶且无旧 UI 占位',
           s.sRootRectTop === 0 && s.bodyScrollHeight <= s.innerHeight + 2,
           { sRootRectTop: s.sRootRectTop, bodyScrollHeight: s.bodyScrollHeight,
-            innerHeight: s.innerHeight }));
+            innerHeight: s.innerHeight, cssRules: s.cssRulesPresent }));
       }
       if (c.expect === 'workbench' && s.fixedEntry) {
         rows.push(ok(c.label + ' 入口按钮已隐藏', s.fixedEntry.display === 'none', s.fixedEntry));

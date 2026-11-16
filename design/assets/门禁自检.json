@@ -1,5 +1,5 @@
 {
-  "time": "2026-11-16T03:08:32.408Z",
+  "time": "2026-11-16T03:43:20.293Z",
   "mode": "links",
   "results": [
     {
@@ -32,11 +32,15 @@
         },
         {
           "name": "默认 / 影子根真隐藏（不占布局）",
-          "pass": false,
+          "pass": true,
           "detail": {
-            "sRootOffsetHeight": 874,
-            "sRootDisplay": "flex",
-            "bodyScrollHeight": 10413
+            "sRootOffsetHeight": 0,
+            "sRootDisplay": "none",
+            "bodyScrollHeight": 9173,
+            "cssRules": {
+              "hiddenRule": true,
+              "oldUiRule": true
+            }
           }
         },
         {
@@ -68,11 +72,15 @@
         },
         {
           "name": "?view=terminal 影子根真隐藏（不占布局）",
-          "pass": false,
+          "pass": true,
           "detail": {
-            "sRootOffsetHeight": 874,
-            "sRootDisplay": "flex",
-            "bodyScrollHeight": 10413
+            "sRootOffsetHeight": 0,
+            "sRootDisplay": "none",
+            "bodyScrollHeight": 5859,
+            "cssRules": {
+              "hiddenRule": true,
+              "oldUiRule": true
+            }
           }
         },
         {
@@ -112,11 +120,15 @@
         },
         {
           "name": "?view=workbench 工作台贴顶且无旧 UI 占位",
-          "pass": false,
+          "pass": true,
           "detail": {
-            "sRootRectTop": 180,
-            "bodyScrollHeight": 1054,
-            "innerHeight": 874
+            "sRootRectTop": 0,
+            "bodyScrollHeight": 874,
+            "innerHeight": 874,
+            "cssRules": {
+              "hiddenRule": true,
+              "oldUiRule": true
+            }
           }
         },
         {
@@ -166,11 +178,15 @@
         },
         {
           "name": "#workbench 工作台贴顶且无旧 UI 占位",
-          "pass": false,
+          "pass": true,
           "detail": {
-            "sRootRectTop": 180,
-            "bodyScrollHeight": 1054,
-            "innerHeight": 874
+            "sRootRectTop": 0,
+            "bodyScrollHeight": 874,
+            "innerHeight": 874,
+            "cssRules": {
+              "hiddenRule": true,
+              "oldUiRule": true
+            }
           }
         },
         {
@@ -198,7 +214,7 @@
         {
           "label": "默认 /",
           "state": {
-            "href": "https://sjc19950404.github.io/a-sentiment-pro/",
+            "href": "https://sjc19950404.github.io/a-sentiment-pro/?_cb=1794800600878",
             "mainVisible": true,
             "mainAriaHidden": false,
             "tRootVisible": false,
@@ -214,17 +230,22 @@
             "fatal": false,
             "overflow": 0,
             "docScrollWidth": 1416,
-            "sRootComputedDisplay": "flex",
-            "sRootOffsetHeight": 874,
-            "sRootRectTop": 9539,
-            "bodyScrollHeight": 10413,
-            "innerHeight": 874
+            "sRootComputedDisplay": "none",
+            "sRootOffsetHeight": 0,
+            "sRootRectTop": 0,
+            "bodyScrollHeight": 9173,
+            "innerHeight": 874,
+            "cssRulesPresent": {
+              "hiddenRule": true,
+              "oldUiRule": true
+            },
+            "swController": true
           }
         },
         {
           "label": "?view=terminal",
           "state": {
-            "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=terminal",
+            "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=terminal&_cb=1794800600878",
             "mainVisible": true,
             "mainAriaHidden": false,
             "tRootVisible": true,
@@ -242,17 +263,22 @@
             "fatal": false,
             "overflow": 0,
             "docScrollWidth": 1416,
-            "sRootComputedDisplay": "flex",
-            "sRootOffsetHeight": 874,
-            "sRootRectTop": 9539,
-            "bodyScrollHeight": 10413,
-            "innerHeight": 874
+            "sRootComputedDisplay": "none",
+            "sRootOffsetHeight": 0,
+            "sRootRectTop": 0,
+            "bodyScrollHeight": 5859,
+            "innerHeight": 874,
+            "cssRulesPresent": {
+              "hiddenRule": true,
+              "oldUiRule": true
+            },
+            "swController": true
           }
         },
         {
           "label": "?view=workbench",
           "state": {
-            "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench",
+            "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench&_cb=1794800600878",
             "mainVisible": false,
             "mainAriaHidden": false,
             "tRootVisible": false,
@@ -272,15 +298,20 @@
             "docScrollWidth": 1416,
             "sRootComputedDisplay": "flex",
             "sRootOffsetHeight": 874,
-            "sRootRectTop": 180,
-            "bodyScrollHeight": 1054,
-            "innerHeight": 874
+            "sRootRectTop": 0,
+            "bodyScrollHeight": 874,
+            "innerHeight": 874,
+            "cssRulesPresent": {
+              "hiddenRule": true,
+              "oldUiRule": true
+            },
+            "swController": true
           }
         },
         {
           "label": "#workbench",
           "state": {
-            "href": "https://sjc19950404.github.io/a-sentiment-pro/#workbench",
+            "href": "https://sjc19950404.github.io/a-sentiment-pro/?_cb=1794800600878#workbench",
             "mainVisible": false,
             "mainAriaHidden": false,
             "tRootVisible": false,
@@ -300,9 +331,14 @@
             "docScrollWidth": 1416,
             "sRootComputedDisplay": "flex",
             "sRootOffsetHeight": 874,
-            "sRootRectTop": 180,
-            "bodyScrollHeight": 1054,
-            "innerHeight": 874
+            "sRootRectTop": 0,
+            "bodyScrollHeight": 874,
+            "innerHeight": 874,
+            "cssRulesPresent": {
+              "hiddenRule": true,
+              "oldUiRule": true
+            },
+            "swController": true
           }
         }
       ]
@@ -310,8 +346,8 @@
   ],
   "summary": {
     "total": 21,
-    "passed": 17,
-    "failed": 4,
-    "pass": false
+    "passed": 21,
+    "failed": 0,
+    "pass": true
   }
 }

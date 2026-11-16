@@ -1,0 +1,317 @@
+{
+  "time": "2026-11-16T03:38:52.862Z",
+  "mode": "links",
+  "results": [
+    {
+      "mode": "links",
+      "stage": 1,
+      "base": "https://sjc19950404.github.io/a-sentiment-pro/",
+      "rows": [
+        {
+          "name": "默认 / 主视图 = report",
+          "pass": true,
+          "detail": {
+            "got": "report",
+            "activeRoots": []
+          }
+        },
+        {
+          "name": "默认 / 活跃主根唯一",
+          "pass": true,
+          "detail": {
+            "activeRoots": []
+          }
+        },
+        {
+          "name": "默认 / 无致命兜底 / 横向溢出",
+          "pass": true,
+          "detail": {
+            "fatal": false,
+            "overflow": 0
+          }
+        },
+        {
+          "name": "默认 / 影子根真隐藏（不占布局）",
+          "pass": false,
+          "detail": {
+            "sRootOffsetHeight": 874,
+            "sRootDisplay": "flex",
+            "bodyScrollHeight": 10413
+          }
+        },
+        {
+          "name": "?view=terminal 主视图 = terminal",
+          "pass": true,
+          "detail": {
+            "got": "terminal",
+            "activeRoots": [
+              "terminal"
+            ]
+          }
+        },
+        {
+          "name": "?view=terminal 活跃主根唯一",
+          "pass": true,
+          "detail": {
+            "activeRoots": [
+              "terminal"
+            ]
+          }
+        },
+        {
+          "name": "?view=terminal 无致命兜底 / 横向溢出",
+          "pass": true,
+          "detail": {
+            "fatal": false,
+            "overflow": 0
+          }
+        },
+        {
+          "name": "?view=terminal 影子根真隐藏（不占布局）",
+          "pass": true,
+          "detail": {
+            "sRootOffsetHeight": 0,
+            "sRootDisplay": "none",
+            "bodyScrollHeight": 5859
+          }
+        },
+        {
+          "name": "?view=workbench 主视图 = workbench",
+          "pass": true,
+          "detail": {
+            "got": "workbench",
+            "activeRoots": [
+              "workbench"
+            ]
+          }
+        },
+        {
+          "name": "?view=workbench 活跃主根唯一",
+          "pass": true,
+          "detail": {
+            "activeRoots": [
+              "workbench"
+            ]
+          }
+        },
+        {
+          "name": "?view=workbench 无致命兜底 / 横向溢出",
+          "pass": true,
+          "detail": {
+            "fatal": false,
+            "overflow": 0
+          }
+        },
+        {
+          "name": "?view=workbench 研报主根已隐藏",
+          "pass": true,
+          "detail": {
+            "mainVisible": false,
+            "docScrollWidth": 1416
+          }
+        },
+        {
+          "name": "?view=workbench 工作台贴顶且无旧 UI 占位",
+          "pass": true,
+          "detail": {
+            "sRootRectTop": 0,
+            "bodyScrollHeight": 874,
+            "innerHeight": 874
+          }
+        },
+        {
+          "name": "?view=workbench 入口按钮已隐藏",
+          "pass": true,
+          "detail": {
+            "id": "t-entry",
+            "cls": "",
+            "display": "none",
+            "zIndex": "9998"
+          }
+        },
+        {
+          "name": "#workbench 主视图 = workbench",
+          "pass": true,
+          "detail": {
+            "got": "workbench",
+            "activeRoots": [
+              "workbench"
+            ]
+          }
+        },
+        {
+          "name": "#workbench 活跃主根唯一",
+          "pass": true,
+          "detail": {
+            "activeRoots": [
+              "workbench"
+            ]
+          }
+        },
+        {
+          "name": "#workbench 无致命兜底 / 横向溢出",
+          "pass": true,
+          "detail": {
+            "fatal": false,
+            "overflow": 0
+          }
+        },
+        {
+          "name": "#workbench 研报主根已隐藏",
+          "pass": true,
+          "detail": {
+            "mainVisible": false,
+            "docScrollWidth": 1416
+          }
+        },
+        {
+          "name": "#workbench 工作台贴顶且无旧 UI 占位",
+          "pass": true,
+          "detail": {
+            "sRootRectTop": 0,
+            "bodyScrollHeight": 874,
+            "innerHeight": 874
+          }
+        },
+        {
+          "name": "#workbench 入口按钮已隐藏",
+          "pass": true,
+          "detail": {
+            "id": "t-entry",
+            "cls": "",
+            "display": "none",
+            "zIndex": "9998"
+          }
+        },
+        {
+          "name": "二次进入幂等（无叠加 / 无残留）",
+          "pass": true,
+          "detail": {
+            "activeRoots": [
+              "workbench"
+            ],
+            "mainAriaHidden": false
+          }
+        }
+      ],
+      "samples": [
+        {
+          "label": "默认 /",
+          "state": {
+            "href": "https://sjc19950404.github.io/a-sentiment-pro/?_cb=1794800333586",
+            "mainVisible": true,
+            "mainAriaHidden": false,
+            "tRootVisible": false,
+            "sRootVisible": false,
+            "sRootChildren": 0,
+            "activeRoots": [],
+            "fixedEntry": {
+              "id": "t-entry",
+              "cls": "",
+              "display": "block",
+              "zIndex": "9998"
+            },
+            "fatal": false,
+            "overflow": 0,
+            "docScrollWidth": 1416,
+            "sRootComputedDisplay": "flex",
+            "sRootOffsetHeight": 874,
+            "sRootRectTop": 9539,
+            "bodyScrollHeight": 10413,
+            "innerHeight": 874
+          }
+        },
+        {
+          "label": "?view=terminal",
+          "state": {
+            "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=terminal&_cb=1794800333586",
+            "mainVisible": true,
+            "mainAriaHidden": false,
+            "tRootVisible": true,
+            "sRootVisible": false,
+            "sRootChildren": 0,
+            "activeRoots": [
+              "terminal"
+            ],
+            "fixedEntry": {
+              "id": "t-entry",
+              "cls": "",
+              "display": "block",
+              "zIndex": "9998"
+            },
+            "fatal": false,
+            "overflow": 0,
+            "docScrollWidth": 1416,
+            "sRootComputedDisplay": "none",
+            "sRootOffsetHeight": 0,
+            "sRootRectTop": 0,
+            "bodyScrollHeight": 5859,
+            "innerHeight": 874
+          }
+        },
+        {
+          "label": "?view=workbench",
+          "state": {
+            "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench&_cb=1794800333586",
+            "mainVisible": false,
+            "mainAriaHidden": false,
+            "tRootVisible": false,
+            "sRootVisible": true,
+            "sRootChildren": 2,
+            "activeRoots": [
+              "workbench"
+            ],
+            "fixedEntry": {
+              "id": "t-entry",
+              "cls": "",
+              "display": "none",
+              "zIndex": "9998"
+            },
+            "fatal": false,
+            "overflow": 0,
+            "docScrollWidth": 1416,
+            "sRootComputedDisplay": "flex",
+            "sRootOffsetHeight": 874,
+            "sRootRectTop": 0,
+            "bodyScrollHeight": 874,
+            "innerHeight": 874
+          }
+        },
+        {
+          "label": "#workbench",
+          "state": {
+            "href": "https://sjc19950404.github.io/a-sentiment-pro/?_cb=1794800333586#workbench",
+            "mainVisible": false,
+            "mainAriaHidden": false,
+            "tRootVisible": false,
+            "sRootVisible": true,
+            "sRootChildren": 2,
+            "activeRoots": [
+              "workbench"
+            ],
+            "fixedEntry": {
+              "id": "t-entry",
+              "cls": "",
+              "display": "none",
+              "zIndex": "9998"
+            },
+            "fatal": false,
+            "overflow": 0,
+            "docScrollWidth": 1416,
+            "sRootComputedDisplay": "flex",
+            "sRootOffsetHeight": 874,
+            "sRootRectTop": 0,
+            "bodyScrollHeight": 874,
+            "innerHeight": 874
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total": 21,
+    "passed": 20,
+    "failed": 1,
+    "pass": false
+  }
+}
