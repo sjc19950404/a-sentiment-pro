@@ -103,7 +103,8 @@
       ['炸板率', m.broken_rate != null ? (1 - m.broken_rate) : null, '+'],
       ['涨跌家数', sig.breadth && sig.breadth.snapshot && sig.breadth.snapshot.updownCn ? 1 - Math.min(1, sig.breadth.snapshot.updownCn.down / Math.max(1, sig.breadth.snapshot.updownCn.up + sig.breadth.snapshot.updownCn.down)) : null, '−'],
       ['龙虎净买', (sig.emotion && sig.emotion.lhb_daily_net != null) ? Math.min(1, Math.abs(sig.emotion.lhb_daily_net) / 5) : null, '−'],
-      ['封板质量', m.hard_board_rate, '+'],
+      // 【视觉稿逐字对齐】原型 L468 第 6 项是「亏钱效应」(pain 指标)，不是封板质量
+      ['亏钱效应', (sig.pain != null ? sig.pain : (sig.emotion && sig.emotion.pain)), '−'],
       ['题材扩散', m.theme_concentration != null ? (1 - m.theme_concentration) : null, '+'],
     ];
     host.innerHTML = rows.map(([name, v, sign]) => {
@@ -132,7 +133,7 @@
       + '<div class="s-card__body"><div class="s-chart s-chart--wide" id="sEvTrendHost" role="img" aria-label="情绪分走势曲线，含 MA5 与历史分位虚线，底部为 regime 色带">'
       + '<svg id="sEvTrendSvg" viewBox="0 0 800 280" preserveAspectRatio="none" aria-hidden="true"></svg></div>'
       + '<div class="s-tagrow" style="margin-top:var(--s-space-2)">'
-      + [20, 60, 90, 120].map((n) => '<button class="s-btn s-btn--ghost" data-ev-range="' + n + '">' + n + '日</button>').join('')
+      + [20, 30, 60, 90].map((n) => '<button class="s-chip" data-ev-range="' + n + '" aria-pressed="' + (n === 60) + '">' + n + '</button>').join('')
       + '</div>'
       + '<div class="s-legend"><span class="s-legend__item"><i class="s-legend__swatch"></i>情绪分</span>'
       + '<span class="s-legend__item"><i class="s-legend__swatch" style="background:var(--s-chart-ma5)"></i>MA5</span>'

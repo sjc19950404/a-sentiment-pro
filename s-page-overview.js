@@ -96,6 +96,16 @@
       + (delta ? `<span class="s-kpi__delta">${delta}</span>` : '')
       + `</div>`;
   }
+  /* 【视觉稿逐字对齐】原型 L90-125 的 KPI 卡：s-card > s-card__body > label/value/delta/note 四行。
+   * 内层 .s-kpi 仅用于兼容 sync() 的 closest('.s-kpi') 锚点，视觉上由 s-card__body 承载。 */
+  function kpiCard2(label, id, delta, note, down) {
+    return `<div class="s-card"><div class="s-card__body"><div class="s-kpi">`
+      + `<div class="s-kpi__label">${label}</div>`
+      + `<div class="s-kpi__value${down ? ' s-kpi__value--down' : ''}" id="${id}" style="font-size:var(--s-font-xl)">—</div>`
+      + `<div class="s-kpi__delta">${delta}</div>`
+      + `<div class="s-kpi__note">${note}</div>`
+      + `</div></div></div>`;
+  }
 
   /* 【11 册 §7.2 / 05 册 L126】overview 回退开关：flag 关闭时本页不执行任何搬迁/渲染，
    * 由 s-root.js 的 showPage 回落占位。每次 render/sync 都查，支持运行时 S.setFlag 动态关闭。 */
@@ -114,17 +124,38 @@
     if (!host) {
       host = document.createElement('div');
       host.className = 's-page-overview';
+      /* 【视觉稿逐字对齐】原型 index.html L76-144 结论层：section head + 三段 verdict
+       * (徽标/结论/依据) + 6 张 s-card KPI(每张含 label/value/delta/note) + 13 项状态折叠门。
+       * 保留 #sKpi* / #sVerdictSub / .s-kpi__delta 锚点不破坏已绿同步逻辑；
+       * 每张卡内层加 .s-kpi 包装兼容 sync() 的 closest('.s-kpi')。数值运行时填，文案照原型。 */
       host.innerHTML =
-        `<div class="s-verdict"><span class="s-verdict__sub" id="sVerdictSub">—</span></div>`
-        + `<div class="s-section"><h2 class="s-section__title">核心指标</h2>`
-        + `<div class="s-grid s-grid--kpi" id="sKpiRow">`
-        + kpiCard('情绪分', 'sKpiScore', null, '历史分位 —')
-        + kpiCard('市场状态', 'sKpiRegime', null, 'regime 序列')
-        + kpiCard('执行仓位', 'sKpiPos', null, '分位优先 · 风控帽')
-        + kpiCard('涨停 / 跌停', 'sKpiLimit', null, '封板率')
-        + kpiCard('涨 / 跌家数', 'sKpiBreadth', null, '沪深两市口径')
-        + kpiCard('龙虎净买', 'sKpiLhb', null, '当日榜口径')
-        + `</div></div>`;
+        `<section class="s-section">`
+        + `<div class="s-section__head"><h2 class="s-section__title">今日结论</h2>`
+        + `<p class="s-section__note">结论层 · 目标 3 秒内回答「今天盘面有什么风险」</p></div>`
+        + `<div class="s-verdict s-verdict--warn" id="sVerdict" role="status">`
+        + `<span class="s-badge s-badge--warn">风险提示</span>`
+        + `<span class="s-verdict__text" id="sVerdictText">市场处于冰点区间，宽度背离与亏钱效应同时触发，执行仓位建议压到 0–20%，不宜追高。</span>`
+        + `<span class="s-verdict__sub" id="sVerdictSub">依据 6 项核心指标 · 2 项告警 · 数据日 —</span></div>`
+        + `<div class="s-grid s-grid--kpi s-grid--kpi-tall" id="sKpiRow" style="margin-top:var(--s-space-3)">`
+        + kpiCard2('情绪分', 'sKpiScore', '历史分位 —', '近 60 日最低 12%', true)
+        + kpiCard2('市场状态', 'sKpiRegime', 'regime 连续 4 日', '防御口径生效中')
+        + kpiCard2('执行仓位', 'sKpiPos', '较上日 −10pt', 'risk_budget 约束')
+        + kpiCard2('涨停 / 跌停', 'sKpiLimit', '炸板率 28.6%', '最高板 5 板')
+        + kpiCard2('涨 / 跌家数', 'sKpiBreadth', '宽度 −3,717', '极寒分化扣分 10')
+        + kpiCard2('龙虎净买', 'sKpiLhb', '席位活跃度偏低', '买卖双侧已校验', true)
+        + `</div>`
+        + `<details class="s-alertstrip s-details" style="margin-top:var(--s-space-3)">`
+        + `<summary><span class="s-badge s-badge--info">13 项状态已归并为 1 条结论</span>`
+        + `<span style="color:var(--s-warn)">2 项需关注</span>`
+        + `<span style="color:var(--s-text-3)">· 其余 11 项正常，不再逐条占位</span></summary>`
+        + `<div class="s-alertstrip__body">`
+        + `<div class="s-alertstrip__item"><span class="s-badge s-badge--warn">关注</span><span><b>宽度背离</b>：涨跌家数 −3,717，与情绪分背离 2 日</span></div>`
+        + `<div class="s-alertstrip__item"><span class="s-badge s-badge--warn">关注</span><span><b>亏钱效应</b>：pain 指标 0.71，连板晋级率下降</span></div>`
+        + `<div class="s-alertstrip__item"><span class="s-badge s-badge--muted">正常</span><span><b>数据健康</b>：4/4 源可靠，无陈旧数据</span></div>`
+        + `<div class="s-alertstrip__item"><span class="s-badge s-badge--muted">正常</span><span><b>交叉校验</b>：席位 / 涨跌停 / 宽度三源一致</span></div>`
+        + `<div class="s-alertstrip__item"><span class="s-badge s-badge--muted">正常</span><span><b>双轨一致</b>：执行面 = 回退快照，无回滚</span></div>`
+        + `<div class="s-alertstrip__item"><span class="s-badge s-badge--muted">正常</span><span><b>脏数据</b>：0 条，口径校验通过</span></div>`
+        + `</div></details></section>`;
       panel.innerHTML = '';
       panel.appendChild(host);
       built = true;
