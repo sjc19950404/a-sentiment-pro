@@ -1,32 +1,32 @@
 {
- "date": "2026-11-12",
+ "date": "2026-11-13",
  "prevZtCount": 37,
  "perf": {
   "n": 37,
   "universe": 37,
   "missing": 0,
   "reliable": true,
-  "avg": -1.54,
-  "median": -4.27,
-  "lossRatio": 0.62,
-  "worst": -10.06,
-  "best": 10.08,
-  "limitUpAgain": 7,
-  "limitDown": 7,
-  "bigLoss": 11,
+  "avg": 0.97,
+  "median": -1.17,
+  "lossRatio": 0.51,
+  "worst": -10,
+  "best": 10.1,
+  "limitUpAgain": 11,
+  "limitDown": 2,
+  "bigLoss": 5,
   "note": null
  },
  "advance": {
-  "n": 11,
+  "n": 7,
   "kept": 3,
-  "failed": 8,
-  "failRate": 0.73,
+  "failed": 4,
+  "failRate": 0.57,
   "byTier": {
    "2": {
-    "n": 5,
+    "n": 4,
     "kept": 2,
-    "failed": 3,
-    "failRate": 0.6
+    "failed": 2,
+    "failRate": 0.5
    },
    "3": {
     "n": 2,
@@ -35,189 +35,113 @@
     "failRate": 0.5
    },
    "4+": {
-    "n": 4,
+    "n": 1,
     "kept": 0,
-    "failed": 4,
+    "failed": 1,
     "failRate": 1
    }
   },
   "reliable": true,
-  "maxLb": 5,
+  "maxLb": 4,
   "detail": [
    {
-    "code": "600327",
-    "lb": 5,
-    "chg": -10.03,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "603366",
-    "lb": 5,
-    "chg": 5.54,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "002623",
-    "lb": 4,
-    "chg": 2.3,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "603706",
-    "lb": 4,
-    "chg": 3.28,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "603536",
-    "lb": 3,
-    "chg": -9.97,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
     "code": "605255",
+    "lb": 4,
+    "chg": 0,
+    "kept": false,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "603396",
     "lb": 3,
-    "chg": 10,
-    "kept": true,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "603135",
-    "lb": 2,
-    "chg": -10.02,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "002593",
-    "lb": 2,
-    "chg": -9.18,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "603725",
-    "lb": 2,
-    "chg": -5.93,
+    "chg": -9.99,
     "kept": false,
     "board": "shb",
     "boardLabel": "沪市主板"
    },
    {
     "code": "002148",
-    "lb": 2,
-    "chg": 9.96,
+    "lb": 3,
+    "chg": 10.06,
     "kept": true,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
-    "code": "603396",
+    "code": "600467",
     "lb": 2,
-    "chg": 10,
-    "kept": true,
+    "chg": -8.42,
+    "kept": false,
     "board": "shb",
     "boardLabel": "沪市主板"
+   },
+   {
+    "code": "001358",
+    "lb": 2,
+    "chg": 1.39,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002205",
+    "lb": 2,
+    "chg": 9.98,
+    "kept": true,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002187",
+    "lb": 2,
+    "chg": 10.04,
+    "kept": true,
+    "board": "szb",
+    "boardLabel": "深市主板"
    }
   ],
   "note": null
  },
  "bigLoss": {
-  "n": 11,
+  "n": 5,
   "list": [
    {
-    "code": "002172",
-    "name": "澳洋健康",
-    "chg": -10.06
+    "code": "000766",
+    "name": "通化金马",
+    "chg": -10
    },
    {
-    "code": "600327",
-    "name": "大东方",
-    "chg": -10.03
+    "code": "603396",
+    "name": "金辰股份",
+    "chg": -9.99
    },
    {
-    "code": "603135",
-    "name": "中重科技",
-    "chg": -10.02
+    "code": "002819",
+    "name": "东方中科",
+    "chg": -9.31
    },
    {
-    "code": "002696",
-    "name": "百洋股份",
-    "chg": -10.02
+    "code": "600467",
+    "name": "好当家",
+    "chg": -8.42
    },
    {
-    "code": "600802",
-    "name": "福建水泥",
-    "chg": -10.01
-   },
-   {
-    "code": "603536",
-    "name": "惠发食品",
-    "chg": -9.97
-   },
-   {
-    "code": "000573",
-    "name": "粤宏远Ａ",
-    "chg": -9.89
-   },
-   {
-    "code": "600558",
-    "name": "大西洋",
-    "chg": -9.73
-   },
-   {
-    "code": "002593",
-    "name": "日上集团",
-    "chg": -9.18
-   },
-   {
-    "code": "601188",
-    "name": "龙江交通",
-    "chg": -8.9
+    "code": "603286",
+    "name": "日盈电子",
+    "chg": -8.24
    }
   ]
  },
  "skyFloor": {
-  "n": 3,
-  "list": [
-   {
-    "code": "000573",
-    "name": "粤宏远Ａ",
-    "chg": -9.89,
-    "amplitude": 17.2
-   },
-   {
-    "code": "603725",
-    "name": "天安新材",
-    "chg": -5.93,
-    "amplitude": 16.6
-   },
-   {
-    "code": "002593",
-    "name": "日上集团",
-    "chg": -9.18,
-    "amplitude": 15.1
-   }
-  ]
+  "n": 0,
+  "list": []
  },
  "scanned": 37,
  "verdict": {
-  "level": "severe",
-  "label": "亏钱效应显著",
-  "reason": "昨涨停今日翻绿 62%、高位板晋级失败 73%，追高者整体受损"
+  "level": "normal",
+  "label": "多空拉锯",
+  "reason": "昨涨停今日翻绿 51%、高位板晋级失败 57%，追高盈亏各半"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -228,6 +152,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-11-13T13:00:30.393Z",
- "curDate": "2026-11-13"
+ "generatedAt": "2026-11-16T10:32:39.612Z",
+ "curDate": "2026-11-16"
 }

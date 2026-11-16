@@ -1,143 +1,35 @@
 {
- "date": "2026-11-13",
+ "date": "2026-11-16",
  "source": "sina-bulletin",
- "fetchedAt": "2026-11-14T11:01:59.685+08:00",
- "codes": 37,
- "count": 12,
+ "fetchedAt": "2026-11-16T18:48:25.307+08:00",
+ "codes": 32,
+ "count": 5,
  "announcements": {
-  "600467": "好当家：关于股票交易异常波动的公告",
-  "600715": "文投控股：股票交易异常波动公告；文投控股：关于召开2026年第二次临时股东会的通知；文投控股：十一届董事会第二十一次会议决议公告；文投控股：股票交易风险提示公告",
-  "600977": "中国电影：2026年第二次临时股东会法律意见书；中国电影：2026年第二次临时股东会决议公告",
-  "603396": "金辰股份：股票交易异常波动公告",
-  "603636": "南威软件：2026年第一次临时股东会的法律意见书；南威软件：2026年第一次临时股东会决议公告；南威软件：关于控股股东部分股份质押延期购回的公告",
-  "605255": "天普股份：关于停牌核查的公告；天普股份：关于股票交易异常波动暨风险提示公告；天普股份：关于股票交易风险提示性公告；天普股份：关于股票交易异常波动暨风险提示公告",
-  "001358": "兴欣新材：股票交易异常波动的公告",
+  "601188": "龙江交通：北京市康达律师事务所关于黑龙江交通发展股份有限公司2026年第四次临时股东会的法律意见书；龙江交通：关于召开2026年三季度业绩暨现金分红说明会的公告；龙江交通：2026年第四次临时股东会决议公告",
   "002148": "北纬科技：股票交易异常波动公告",
-  "002205": "国统股份：关于股票交易异常波动的公告",
-  "002819": "东方中科：简式权益变动报告书-万里锦程；东方中科：关于持股5%以上股东权益变动触及1%及5%整数倍的公告(万里锦程)；东方中科：关于业绩承诺补偿事项仲裁进展暨强制执行已完成、司法冻结股份解除冻结的公告",
-  "002748": "世龙实业：关于全资子公司变更法定代表人、总经理暨完成工商变更登记的公告",
-  "001393": "维通利：中泰证券股份有限公司关于北京维通利电气股份有限公司首次公开发行网下配售限售股上市流通的核查意见；维通利：关于首次公开发行网下配售限售股上市流通的提示性公告"
+  "002187": "广百股份：股票交易异常波动公告",
+  "000595": "新能股份：关于股票交易异常波动公告",
+  "002685": "华东重机：股票交易异常波动公告"
  },
  "details": [
   {
-   "code": "600467",
-   "name": "好当家",
+   "code": "601188",
+   "name": "龙江交通",
    "announcements": [
     {
-     "title": "好当家：关于股票交易异常波动的公告",
-     "date": "2026-11-14",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600467&id=12705627"
-    }
-   ]
-  },
-  {
-   "code": "600715",
-   "name": "文投控股",
-   "announcements": [
-    {
-     "title": "文投控股：股票交易异常波动公告",
-     "date": "2026-11-14",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600715&id=12706260"
+     "title": "龙江交通：北京市康达律师事务所关于黑龙江交通发展股份有限公司2026年第四次临时股东会的法律意见书",
+     "date": "2026-11-17",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=601188&id=12707880"
     },
     {
-     "title": "文投控股：关于召开2026年第二次临时股东会的通知",
-     "date": "2026-11-12",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600715&id=12701529"
+     "title": "龙江交通：关于召开2026年三季度业绩暨现金分红说明会的公告",
+     "date": "2026-11-17",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=601188&id=12707879"
     },
     {
-     "title": "文投控股：十一届董事会第二十一次会议决议公告",
-     "date": "2026-11-12",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600715&id=12701528"
-    },
-    {
-     "title": "文投控股：股票交易风险提示公告",
-     "date": "2026-11-12",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600715&id=12701527"
-    }
-   ]
-  },
-  {
-   "code": "600977",
-   "name": "中国电影",
-   "announcements": [
-    {
-     "title": "中国电影：2026年第二次临时股东会法律意见书",
-     "date": "2026-11-14",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600977&id=12706385"
-    },
-    {
-     "title": "中国电影：2026年第二次临时股东会决议公告",
-     "date": "2026-11-14",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600977&id=12706384"
-    }
-   ]
-  },
-  {
-   "code": "603396",
-   "name": "金辰股份",
-   "announcements": [
-    {
-     "title": "金辰股份：股票交易异常波动公告",
-     "date": "2026-11-13",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603396&id=12704010"
-    }
-   ]
-  },
-  {
-   "code": "603636",
-   "name": "南威软件",
-   "announcements": [
-    {
-     "title": "南威软件：2026年第一次临时股东会的法律意见书",
-     "date": "2026-11-14",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603636&id=12706281"
-    },
-    {
-     "title": "南威软件：2026年第一次临时股东会决议公告",
-     "date": "2026-11-14",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603636&id=12706280"
-    },
-    {
-     "title": "南威软件：关于控股股东部分股份质押延期购回的公告",
-     "date": "2026-11-13",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603636&id=12703688"
-    }
-   ]
-  },
-  {
-   "code": "605255",
-   "name": "天普股份",
-   "announcements": [
-    {
-     "title": "天普股份：关于停牌核查的公告",
-     "date": "2026-11-14",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605255&id=12706667"
-    },
-    {
-     "title": "天普股份：关于股票交易异常波动暨风险提示公告",
-     "date": "2026-11-14",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605255&id=12706666"
-    },
-    {
-     "title": "天普股份：关于股票交易风险提示性公告",
-     "date": "2026-11-13",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605255&id=12703410"
-    },
-    {
-     "title": "天普股份：关于股票交易异常波动暨风险提示公告",
-     "date": "2026-11-12",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605255&id=12701777"
-    }
-   ]
-  },
-  {
-   "code": "001358",
-   "name": "兴欣新材",
-   "announcements": [
-    {
-     "title": "兴欣新材：股票交易异常波动的公告",
-     "date": "2026-11-14",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=001358&id=12705687"
+     "title": "龙江交通：2026年第四次临时股东会决议公告",
+     "date": "2026-11-17",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=601188&id=12707878"
     }
    ]
   },
@@ -147,67 +39,41 @@
    "announcements": [
     {
      "title": "北纬科技：股票交易异常波动公告",
-     "date": "2026-11-13",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002148&id=12703566"
+     "date": "2026-11-17",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002148&id=12708340"
     }
    ]
   },
   {
-   "code": "002205",
-   "name": "国统股份",
+   "code": "002187",
+   "name": "广百股份",
    "announcements": [
     {
-     "title": "国统股份：关于股票交易异常波动的公告",
-     "date": "2026-11-14",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002205&id=12706886"
+     "title": "广百股份：股票交易异常波动公告",
+     "date": "2026-11-16",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002187&id=12707041"
     }
    ]
   },
   {
-   "code": "002819",
-   "name": "东方中科",
+   "code": "000595",
+   "name": "新能股份",
    "announcements": [
     {
-     "title": "东方中科：简式权益变动报告书-万里锦程",
-     "date": "2026-11-14",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002819&id=12706135"
-    },
-    {
-     "title": "东方中科：关于持股5%以上股东权益变动触及1%及5%整数倍的公告(万里锦程)",
-     "date": "2026-11-14",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002819&id=12706095"
-    },
-    {
-     "title": "东方中科：关于业绩承诺补偿事项仲裁进展暨强制执行已完成、司法冻结股份解除冻结的公告",
-     "date": "2026-11-13",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002819&id=12703789"
+     "title": "新能股份：关于股票交易异常波动公告",
+     "date": "2026-11-17",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000595&id=12708414"
     }
    ]
   },
   {
-   "code": "002748",
-   "name": "世龙实业",
+   "code": "002685",
+   "name": "华东重机",
    "announcements": [
     {
-     "title": "世龙实业：关于全资子公司变更法定代表人、总经理暨完成工商变更登记的公告",
-     "date": "2026-11-14",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002748&id=12705118"
-    }
-   ]
-  },
-  {
-   "code": "001393",
-   "name": "维通利",
-   "announcements": [
-    {
-     "title": "维通利：中泰证券股份有限公司关于北京维通利电气股份有限公司首次公开发行网下配售限售股上市流通的核查意见",
-     "date": "2026-11-12",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=001393&id=12702151"
-    },
-    {
-     "title": "维通利：关于首次公开发行网下配售限售股上市流通的提示性公告",
-     "date": "2026-11-12",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=001393&id=12702150"
+     "title": "华东重机：股票交易异常波动公告",
+     "date": "2026-11-17",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002685&id=12707996"
     }
    ]
   }

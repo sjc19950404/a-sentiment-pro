@@ -1,11 +1,11 @@
 {
  "meta": {
-  "generatedAt": "2026-11-14T03:10:09.786Z",
-  "days": 21,
-  "theme_days": 20,
+  "generatedAt": "2026-11-16T10:47:53.355Z",
+  "days": 22,
+  "theme_days": 21,
   "strength_dist": {
    "强主线": 6,
-   "弱主线": 12,
+   "弱主线": 13,
    "绝对主线": 2
   },
   "rotation_days": 5,
@@ -472,6 +472,27 @@
   {
    "date": "20261113",
    "main_themes": [],
+   "rotation": false,
+   "prev_main_theme": null
+  },
+  {
+   "date": "20261116",
+   "main_themes": [
+    {
+     "name": "一般零售",
+     "zt_count": 3,
+     "lb_count": 1,
+     "avg_fund": 91957108,
+     "stocks": [
+      "002187",
+      "002419",
+      "002356"
+     ],
+     "strength": "弱主线",
+     "consecutive_days": 1,
+     "is_continuous": false
+    }
+   ],
    "rotation": false,
    "prev_main_theme": null
   }
