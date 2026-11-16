@@ -1,15 +1,6 @@
 {
  "stocks": {
-  "601595": {
-   "pos": "lifted",
-   "counts": {
-    "lift": 0,
-    "red": 1,
-    "seal": 0,
-    "dtBreak": 0
-   }
-  },
-  "603303": {
+  "600127": {
    "pos": "lifted",
    "counts": {
     "lift": 0,
@@ -18,7 +9,169 @@
     "dtBreak": 0
    }
   },
-  "605488": {
+  "600261": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "600327": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "600721": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "600802": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "600825": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "601086": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603122": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603135": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603228": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603278": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603381": {
+   "pos": "dt",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603536": {
+   "pos": "dt",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603880": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603950": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "001318": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "000525": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002889": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002209": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002277": {
    "pos": "lifted",
    "counts": {
     "lift": 0,
@@ -28,24 +181,123 @@
    }
   },
   "002695": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
-    "lift": 1,
+    "lift": 0,
     "red": 0,
     "seal": 0,
     "dtBreak": 0
    }
   },
-  "002779": {
-   "pos": "lifted",
+  "002275": {
+   "pos": "red",
    "counts": {
     "lift": 0,
     "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
+  },
+  "002088": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002172": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "000011": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "000710": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002310": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002811": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "000678": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "001219": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "001233": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002578": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002696": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
   }
  },
- "notified": 3,
- "date": "2026-11-13"
+ "notified": 4,
+ "date": "2026-11-16"
 }
