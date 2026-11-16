@@ -145,10 +145,10 @@
    }
   },
   "000525": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
-    "red": 0,
+    "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
@@ -235,10 +235,10 @@
    }
   },
   "002310": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
-    "red": 0,
+    "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
@@ -298,6 +298,6 @@
    }
   }
  },
- "notified": 11,
+ "notified": 13,
  "date": "2026-11-16"
 }
