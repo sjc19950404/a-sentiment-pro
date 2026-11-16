@@ -35,6 +35,10 @@
   max-width: 100%;
   overflow-x: clip;
 }
+/* 【P0-A】[hidden] 原生 display:none 被本类 .s-app{display:flex}（作者样式 0,1,0）覆盖，
+   影子根 hidden 时仍渲染为空白块（研报页底部多一屏空白）。补权重更高的 .s-app[hidden](0,2,0) 兜底。
+   不用全局 [hidden]{display:none!important}，会牵动研报视图十几处面板。 */
+.s-app[hidden] { display: none; }
 
 .s-skip {
   position: fixed;

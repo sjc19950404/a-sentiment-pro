@@ -1,0 +1,781 @@
+{
+  "time": "2026-11-16T03:06:34.023Z",
+  "base": "https://sjc19950404.github.io/a-sentiment-pro/",
+  "cases": [
+    {
+      "label": "?view=workbench",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench",
+      "state": {
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench",
+        "bodyView": "workbench",
+        "innerWidth": 1416,
+        "innerHeight": 874,
+        "sRoot": {
+          "cls": "s-scope s-app",
+          "hidden": false,
+          "children": 2,
+          "offsetHeight": 874,
+          "computed": {
+            "display": "flex",
+            "minHeight": "874px",
+            "visibility": "visible"
+          },
+          "rectTop": 180
+        },
+        "main": {
+          "hidden": true,
+          "ariaHidden": null,
+          "offsetHeight": 0,
+          "computed": {
+            "display": "none",
+            "minHeight": "0px",
+            "visibility": "visible"
+          }
+        },
+        "pre": {
+          "hidden": true,
+          "offsetHeight": 0
+        },
+        "bodyScrollHeight": 1054,
+        "contribution": {
+          "before": 1054,
+          "afterForceHidden": 180,
+          "delta": 874
+        },
+        "tabs": [
+          {
+            "text": "总览",
+            "active": true,
+            "disabled": false
+          },
+          {
+            "text": "涨跌停",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "资金",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "板块",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "选股",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "回测",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "模拟盘",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "研报",
+            "active": false,
+            "disabled": false
+          }
+        ],
+        "panelTitle": "工作台骨架已就位",
+        "bodyChildren": [
+          {
+            "tag": "LABEL",
+            "id": "",
+            "cls": "ls-switch",
+            "display": "flex",
+            "h": 35,
+            "top": 825,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "cls": "top-sticky",
+            "display": "block",
+            "h": 107,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "FOOTER",
+            "id": "",
+            "cls": "foot muted",
+            "display": "block",
+            "h": 73,
+            "top": 107,
+            "hidden": false
+          },
+          {
+            "tag": "BUTTON",
+            "id": "toTop",
+            "cls": "totop",
+            "display": "block",
+            "h": 34,
+            "top": 822,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "drawerMask",
+            "cls": "drawer-mask",
+            "display": "block",
+            "h": 874,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "ASIDE",
+            "id": "drawer",
+            "cls": "drawer",
+            "display": "flex",
+            "h": 874,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "sRoot",
+            "cls": "s-scope s-app",
+            "display": "flex",
+            "h": 874,
+            "top": 180,
+            "hidden": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "同页 popstate 回默认",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/",
+      "state": {
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/",
+        "bodyView": "",
+        "innerWidth": 1416,
+        "innerHeight": 874,
+        "sRoot": {
+          "cls": "s-scope s-app",
+          "hidden": true,
+          "children": 2,
+          "offsetHeight": 874,
+          "computed": {
+            "display": "flex",
+            "minHeight": "874px",
+            "visibility": "visible"
+          },
+          "rectTop": 9539
+        },
+        "main": {
+          "hidden": false,
+          "ariaHidden": null,
+          "offsetHeight": 9008,
+          "computed": {
+            "display": "block",
+            "minHeight": "0px",
+            "visibility": "visible"
+          }
+        },
+        "pre": {
+          "hidden": false,
+          "offsetHeight": 352
+        },
+        "bodyScrollHeight": 10413,
+        "contribution": {
+          "before": 10413,
+          "afterForceHidden": 9539,
+          "delta": 874
+        },
+        "tabs": [
+          {
+            "text": "总览",
+            "active": true,
+            "disabled": false
+          },
+          {
+            "text": "涨跌停",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "资金",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "板块",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "选股",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "回测",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "模拟盘",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "研报",
+            "active": false,
+            "disabled": false
+          }
+        ],
+        "panelTitle": "工作台骨架已就位",
+        "bodyChildren": [
+          {
+            "tag": "LABEL",
+            "id": "",
+            "cls": "ls-switch",
+            "display": "flex",
+            "h": 35,
+            "top": 825,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "cls": "top-sticky",
+            "display": "block",
+            "h": 107,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "preMainPanels",
+            "cls": "pre-main-panels",
+            "display": "block",
+            "h": 352,
+            "top": 107,
+            "hidden": false
+          },
+          {
+            "tag": "MAIN",
+            "id": "",
+            "cls": "",
+            "display": "block",
+            "h": 9008,
+            "top": 459,
+            "hidden": false
+          },
+          {
+            "tag": "FOOTER",
+            "id": "",
+            "cls": "foot muted",
+            "display": "block",
+            "h": 73,
+            "top": 9467,
+            "hidden": false
+          },
+          {
+            "tag": "BUTTON",
+            "id": "toTop",
+            "cls": "totop",
+            "display": "block",
+            "h": 34,
+            "top": 822,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "drawerMask",
+            "cls": "drawer-mask",
+            "display": "block",
+            "h": 874,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "ASIDE",
+            "id": "drawer",
+            "cls": "drawer",
+            "display": "flex",
+            "h": 874,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "sRoot",
+            "cls": "s-scope s-app",
+            "display": "flex",
+            "h": 874,
+            "top": 9539,
+            "hidden": true
+          },
+          {
+            "tag": "BUTTON",
+            "id": "t-entry",
+            "cls": "",
+            "display": "block",
+            "h": 34,
+            "top": 8,
+            "hidden": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "默认 /（整页）",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/",
+      "state": {
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/",
+        "bodyView": "",
+        "innerWidth": 1416,
+        "innerHeight": 874,
+        "sRoot": {
+          "cls": "s-scope s-app",
+          "hidden": true,
+          "children": 0,
+          "offsetHeight": 874,
+          "computed": {
+            "display": "flex",
+            "minHeight": "874px",
+            "visibility": "visible"
+          },
+          "rectTop": 9539
+        },
+        "main": {
+          "hidden": false,
+          "ariaHidden": null,
+          "offsetHeight": 9008,
+          "computed": {
+            "display": "block",
+            "minHeight": "0px",
+            "visibility": "visible"
+          }
+        },
+        "pre": {
+          "hidden": false,
+          "offsetHeight": 352
+        },
+        "bodyScrollHeight": 10413,
+        "contribution": {
+          "before": 10413,
+          "afterForceHidden": 9539,
+          "delta": 874
+        },
+        "tabs": [],
+        "panelTitle": "",
+        "bodyChildren": [
+          {
+            "tag": "LABEL",
+            "id": "",
+            "cls": "ls-switch",
+            "display": "flex",
+            "h": 35,
+            "top": 825,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "cls": "top-sticky",
+            "display": "block",
+            "h": 107,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "preMainPanels",
+            "cls": "pre-main-panels",
+            "display": "block",
+            "h": 352,
+            "top": 107,
+            "hidden": false
+          },
+          {
+            "tag": "MAIN",
+            "id": "",
+            "cls": "",
+            "display": "block",
+            "h": 9008,
+            "top": 459,
+            "hidden": false
+          },
+          {
+            "tag": "FOOTER",
+            "id": "",
+            "cls": "foot muted",
+            "display": "block",
+            "h": 73,
+            "top": 9467,
+            "hidden": false
+          },
+          {
+            "tag": "BUTTON",
+            "id": "toTop",
+            "cls": "totop",
+            "display": "block",
+            "h": 34,
+            "top": 822,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "drawerMask",
+            "cls": "drawer-mask",
+            "display": "block",
+            "h": 874,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "ASIDE",
+            "id": "drawer",
+            "cls": "drawer",
+            "display": "flex",
+            "h": 874,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "sRoot",
+            "cls": "s-scope s-app",
+            "display": "flex",
+            "h": 874,
+            "top": 9539,
+            "hidden": true
+          },
+          {
+            "tag": "BUTTON",
+            "id": "t-entry",
+            "cls": "",
+            "display": "block",
+            "h": 34,
+            "top": 8,
+            "hidden": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "?view=terminal",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/?view=terminal",
+      "state": {
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=terminal",
+        "bodyView": "",
+        "innerWidth": 1416,
+        "innerHeight": 874,
+        "sRoot": {
+          "cls": "s-scope s-app",
+          "hidden": true,
+          "children": 0,
+          "offsetHeight": 874,
+          "computed": {
+            "display": "flex",
+            "minHeight": "874px",
+            "visibility": "visible"
+          },
+          "rectTop": 9539
+        },
+        "main": {
+          "hidden": false,
+          "ariaHidden": null,
+          "offsetHeight": 9008,
+          "computed": {
+            "display": "block",
+            "minHeight": "0px",
+            "visibility": "visible"
+          }
+        },
+        "pre": {
+          "hidden": false,
+          "offsetHeight": 352
+        },
+        "bodyScrollHeight": 10413,
+        "contribution": {
+          "before": 10413,
+          "afterForceHidden": 9539,
+          "delta": 874
+        },
+        "tabs": [],
+        "panelTitle": "",
+        "bodyChildren": [
+          {
+            "tag": "LABEL",
+            "id": "",
+            "cls": "ls-switch",
+            "display": "flex",
+            "h": 35,
+            "top": 825,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "cls": "top-sticky",
+            "display": "block",
+            "h": 107,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "preMainPanels",
+            "cls": "pre-main-panels",
+            "display": "block",
+            "h": 352,
+            "top": 107,
+            "hidden": false
+          },
+          {
+            "tag": "MAIN",
+            "id": "",
+            "cls": "",
+            "display": "block",
+            "h": 9008,
+            "top": 459,
+            "hidden": false
+          },
+          {
+            "tag": "FOOTER",
+            "id": "",
+            "cls": "foot muted",
+            "display": "block",
+            "h": 73,
+            "top": 9467,
+            "hidden": false
+          },
+          {
+            "tag": "BUTTON",
+            "id": "toTop",
+            "cls": "totop",
+            "display": "block",
+            "h": 34,
+            "top": 822,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "drawerMask",
+            "cls": "drawer-mask",
+            "display": "block",
+            "h": 874,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "ASIDE",
+            "id": "drawer",
+            "cls": "drawer",
+            "display": "flex",
+            "h": 874,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "tRoot",
+            "cls": "t-scope",
+            "display": "block",
+            "h": 874,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "sRoot",
+            "cls": "s-scope s-app",
+            "display": "flex",
+            "h": 874,
+            "top": 9539,
+            "hidden": true
+          },
+          {
+            "tag": "BUTTON",
+            "id": "t-entry",
+            "cls": "",
+            "display": "block",
+            "h": 34,
+            "top": 8,
+            "hidden": false
+          }
+        ]
+      }
+    },
+    {
+      "label": "?view=workbench + 点第3个tab",
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench",
+      "state": {
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench",
+        "bodyView": "workbench",
+        "innerWidth": 1416,
+        "innerHeight": 874,
+        "sRoot": {
+          "cls": "s-scope s-app",
+          "hidden": false,
+          "children": 2,
+          "offsetHeight": 874,
+          "computed": {
+            "display": "flex",
+            "minHeight": "874px",
+            "visibility": "visible"
+          },
+          "rectTop": 180
+        },
+        "main": {
+          "hidden": true,
+          "ariaHidden": null,
+          "offsetHeight": 0,
+          "computed": {
+            "display": "none",
+            "minHeight": "0px",
+            "visibility": "visible"
+          }
+        },
+        "pre": {
+          "hidden": true,
+          "offsetHeight": 0
+        },
+        "bodyScrollHeight": 1054,
+        "contribution": {
+          "before": 1054,
+          "afterForceHidden": 180,
+          "delta": 874
+        },
+        "tabs": [
+          {
+            "text": "总览",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "涨跌停",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "资金",
+            "active": true,
+            "disabled": false
+          },
+          {
+            "text": "板块",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "选股",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "回测",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "模拟盘",
+            "active": false,
+            "disabled": false
+          },
+          {
+            "text": "研报",
+            "active": false,
+            "disabled": false
+          }
+        ],
+        "panelTitle": "工作台 · 资金",
+        "bodyChildren": [
+          {
+            "tag": "LABEL",
+            "id": "",
+            "cls": "ls-switch",
+            "display": "flex",
+            "h": 35,
+            "top": 825,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "cls": "top-sticky",
+            "display": "block",
+            "h": 107,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "FOOTER",
+            "id": "",
+            "cls": "foot muted",
+            "display": "block",
+            "h": 73,
+            "top": 107,
+            "hidden": false
+          },
+          {
+            "tag": "BUTTON",
+            "id": "toTop",
+            "cls": "totop",
+            "display": "block",
+            "h": 34,
+            "top": 822,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "drawerMask",
+            "cls": "drawer-mask",
+            "display": "block",
+            "h": 874,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "ASIDE",
+            "id": "drawer",
+            "cls": "drawer",
+            "display": "flex",
+            "h": 874,
+            "top": 0,
+            "hidden": false
+          },
+          {
+            "tag": "DIV",
+            "id": "sRoot",
+            "cls": "s-scope s-app",
+            "display": "flex",
+            "h": 874,
+            "top": 180,
+            "hidden": false
+          }
+        ]
+      }
+    }
+  ],
+  "verdict": {
+    "workbench_mainHidden": true,
+    "workbench_preHidden": true,
+    "workbench_noOldPageStack": true,
+    "workbench_fullHeightRoot": true,
+    "hidden_attr_effective_in_default": false,
+    "hidden_attr_effective_in_terminal": false,
+    "sRoot_contribution_default": 874,
+    "sRoot_contribution_terminal": 874,
+    "popstate_restores_main": true,
+    "popstate_hides_sRoot": false,
+    "tabs_count": 8,
+    "tabs_all_enabled": true,
+    "tab_click_changes_panel": true,
+    "console_exceptions": 0
+  },
+  "errors": []
+}

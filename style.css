@@ -2076,3 +2076,14 @@ body[data-view="workbench"] #t-entry { display: none; }
    数据加载后会被 app.js 清空，复用它会让工作台视图下研报整页重新漏出（真 P0 缺陷）。 */
 body[data-view="workbench"] > main,
 body[data-view="workbench"] > #preMainPanels { display: none; }
+
+/* 【A 方案 P0-B】工作台贴顶：workbench 下收起 body 直接子级里的旧 UI 浮层
+   （.top-sticky 顶栏 107px + footer.foot 73px 会把 #sRoot 推到 rectTop:180、多滚一屏；
+   另 ls-switch / #toTop / #drawer / #drawerMask 全屏浮层一并收起）。带 body[data-view] 前缀，
+   默认/终端视图完全不受影响。 */
+body[data-view="workbench"] > .top-sticky,
+body[data-view="workbench"] > footer,
+body[data-view="workbench"] > .ls-switch,
+body[data-view="workbench"] > #toTop,
+body[data-view="workbench"] > #drawer,
+body[data-view="workbench"] > #drawerMask { display: none; }

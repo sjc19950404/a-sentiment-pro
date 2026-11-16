@@ -115,7 +115,14 @@ const PROBE = `(() => {
       return r.width > 0 && r.right > window.innerWidth + 2 &&
         getComputedStyle(e).position !== 'fixed' && e.scrollWidth <= e.clientWidth + 2;
     }).length,
-    docScrollWidth: document.documentElement.scrollWidth
+    docScrollWidth: document.documentElement.scrollWidth,
+    // 影子根「真隐藏」：hidden 属性可能被作者样式 .s-app{display:flex} 覆盖，
+    // 只看属性会假绿。必须查 computedStyle 与实际占位高度。
+    sRootComputedDisplay: sRoot ? getComputedStyle(sRoot).display : null,
+    sRootOffsetHeight: sRoot ? sRoot.offsetHeight : 0,
+    sRootRectTop: sRoot ? Math.round(sRoot.getBoundingClientRect().top) : 0,
+    bodyScrollHeight: document.body.scrollHeight,
+    innerHeight: window.innerHeight
   };
 })()`;
 
@@ -180,11 +187,22 @@ async function checkLinks(base, stage) {
       rows.push(ok(c.label + ' 主视图 = ' + c.expect, got === c.expect, { got, activeRoots: s.activeRoots }));
       rows.push(ok(c.label + ' 活跃主根唯一', s.activeRoots.length <= 1, { activeRoots: s.activeRoots }));
       rows.push(ok(c.label + ' 无致命兜底 / 横向溢出', !s.fatal && s.overflow === 0, { fatal: s.fatal, overflow: s.overflow }));
+      if (c.expect !== 'workbench') {
+        // 非工作台视图下影子根必须真隐藏（不占布局高度），否则默认研报页被撑长一屏。
+        rows.push(ok(c.label + ' 影子根真隐藏（不占布局）', s.sRootOffsetHeight === 0,
+          { sRootOffsetHeight: s.sRootOffsetHeight, sRootDisplay: s.sRootComputedDisplay,
+            bodyScrollHeight: s.bodyScrollHeight }));
+      }
       if (c.expect === 'workbench') {
         // R2 补漏：activeRoots 只统计 tRoot/sRoot，研报 <main> 漏检。
         // 工作台视图必须同时让研报主根不可见，否则只是「研报页 + 底部一块面板」。
         rows.push(ok(c.label + ' 研报主根已隐藏', s.mainVisible === false,
           { mainVisible: s.mainVisible, docScrollWidth: s.docScrollWidth }));
+        // 工作台根必须贴顶、且不残留旧 UI 占位（top-sticky / footer 等）
+        rows.push(ok(c.label + ' 工作台贴顶且无旧 UI 占位',
+          s.sRootRectTop === 0 && s.bodyScrollHeight <= s.innerHeight + 2,
+          { sRootRectTop: s.sRootRectTop, bodyScrollHeight: s.bodyScrollHeight,
+            innerHeight: s.innerHeight }));
       }
       if (c.expect === 'workbench' && s.fixedEntry) {
         rows.push(ok(c.label + ' 入口按钮已隐藏', s.fixedEntry.display === 'none', s.fixedEntry));

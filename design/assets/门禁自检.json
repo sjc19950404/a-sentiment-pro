@@ -1,5 +1,5 @@
 {
-  "time": "2026-11-14T19:31:41.237Z",
+  "time": "2026-11-16T03:08:32.408Z",
   "mode": "links",
   "results": [
     {
@@ -31,6 +31,15 @@
           }
         },
         {
+          "name": "默认 / 影子根真隐藏（不占布局）",
+          "pass": false,
+          "detail": {
+            "sRootOffsetHeight": 874,
+            "sRootDisplay": "flex",
+            "bodyScrollHeight": 10413
+          }
+        },
+        {
           "name": "?view=terminal 主视图 = terminal",
           "pass": true,
           "detail": {
@@ -55,6 +64,15 @@
           "detail": {
             "fatal": false,
             "overflow": 0
+          }
+        },
+        {
+          "name": "?view=terminal 影子根真隐藏（不占布局）",
+          "pass": false,
+          "detail": {
+            "sRootOffsetHeight": 874,
+            "sRootDisplay": "flex",
+            "bodyScrollHeight": 10413
           }
         },
         {
@@ -86,10 +104,19 @@
         },
         {
           "name": "?view=workbench 研报主根已隐藏",
+          "pass": true,
+          "detail": {
+            "mainVisible": false,
+            "docScrollWidth": 1416
+          }
+        },
+        {
+          "name": "?view=workbench 工作台贴顶且无旧 UI 占位",
           "pass": false,
           "detail": {
-            "mainVisible": true,
-            "docScrollWidth": 1416
+            "sRootRectTop": 180,
+            "bodyScrollHeight": 1054,
+            "innerHeight": 874
           }
         },
         {
@@ -131,10 +158,19 @@
         },
         {
           "name": "#workbench 研报主根已隐藏",
+          "pass": true,
+          "detail": {
+            "mainVisible": false,
+            "docScrollWidth": 1416
+          }
+        },
+        {
+          "name": "#workbench 工作台贴顶且无旧 UI 占位",
           "pass": false,
           "detail": {
-            "mainVisible": true,
-            "docScrollWidth": 1416
+            "sRootRectTop": 180,
+            "bodyScrollHeight": 1054,
+            "innerHeight": 874
           }
         },
         {
@@ -177,7 +213,12 @@
             },
             "fatal": false,
             "overflow": 0,
-            "docScrollWidth": 1416
+            "docScrollWidth": 1416,
+            "sRootComputedDisplay": "flex",
+            "sRootOffsetHeight": 874,
+            "sRootRectTop": 9539,
+            "bodyScrollHeight": 10413,
+            "innerHeight": 874
           }
         },
         {
@@ -200,14 +241,19 @@
             },
             "fatal": false,
             "overflow": 0,
-            "docScrollWidth": 1416
+            "docScrollWidth": 1416,
+            "sRootComputedDisplay": "flex",
+            "sRootOffsetHeight": 874,
+            "sRootRectTop": 9539,
+            "bodyScrollHeight": 10413,
+            "innerHeight": 874
           }
         },
         {
           "label": "?view=workbench",
           "state": {
             "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench",
-            "mainVisible": true,
+            "mainVisible": false,
             "mainAriaHidden": false,
             "tRootVisible": false,
             "sRootVisible": true,
@@ -223,14 +269,19 @@
             },
             "fatal": false,
             "overflow": 0,
-            "docScrollWidth": 1416
+            "docScrollWidth": 1416,
+            "sRootComputedDisplay": "flex",
+            "sRootOffsetHeight": 874,
+            "sRootRectTop": 180,
+            "bodyScrollHeight": 1054,
+            "innerHeight": 874
           }
         },
         {
           "label": "#workbench",
           "state": {
             "href": "https://sjc19950404.github.io/a-sentiment-pro/#workbench",
-            "mainVisible": true,
+            "mainVisible": false,
             "mainAriaHidden": false,
             "tRootVisible": false,
             "sRootVisible": true,
@@ -246,16 +297,21 @@
             },
             "fatal": false,
             "overflow": 0,
-            "docScrollWidth": 1416
+            "docScrollWidth": 1416,
+            "sRootComputedDisplay": "flex",
+            "sRootOffsetHeight": 874,
+            "sRootRectTop": 180,
+            "bodyScrollHeight": 1054,
+            "innerHeight": 874
           }
         }
       ]
     }
   ],
   "summary": {
-    "total": 17,
-    "passed": 15,
-    "failed": 2,
+    "total": 21,
+    "passed": 17,
+    "failed": 4,
     "pass": false
   }
 }
