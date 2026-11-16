@@ -1,15 +1,15 @@
 {
-  "time": "2026-11-16T07:25:30.561Z",
+  "time": "2026-11-16T07:52:36.233Z",
   "base": "https://sjc19950404.github.io/a-sentiment-pro/",
   "cases": [
     {
       "label": "?view=workbench",
-      "url": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench&_cb=1794813931260",
-      "readyMs": 428,
-      "dataMs": 8930,
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench&_cb=1794815556735",
+      "readyMs": 419,
+      "dataMs": 10543,
       "attempts": 1,
       "state": {
-        "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench&_cb=1794813931260",
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/?view=workbench&_cb=1794815556735",
         "bodyView": "workbench",
         "innerHeight": 908,
         "innerWidth": 1416,
@@ -36,10 +36,10 @@
         },
         "kpis": {
           "sKpiScore": "38.4",
-          "sKpiRegime": "未生成",
+          "sKpiRegime": "冰点",
           "sKpiPos": "半仓",
           "sKpiLimit": "37 / 33",
-          "sKpiBreadth": "755 / 4472",
+          "sKpiBreadth": "744 / 4415",
           "sKpiLhb": "-0.77 亿"
         },
         "docL113_oldNodeInNewRoot": false,
@@ -52,7 +52,16 @@
           "emScoreInZone": true,
           "breadthPanelExists": true,
           "breadthInZone": false,
-          "breadthKpis": []
+          "breadthKpis": [
+            "站上20日线28.4%n=5213",
+            "创新高0.6%n=5129",
+            "创新低6.3%n=5129",
+            "破净率11.1%n=5213",
+            "沪深上涨744n=沪深两市·不含北交所",
+            "沪深下跌4415n=沪深两市·不含北交所",
+            "全市场↑含北交744n=全市场·含北交所",
+            "全市场↓含北交4415n=全市场·含北交所"
+          ]
         },
         "mainHidden": true,
         "mainDisplay": "none",
@@ -71,8 +80,8 @@
             "pct_rank": 8.5,
             "lhb_daily_net": -0.77
           },
-          "hasSignals": false,
-          "regimeKey": null
+          "hasSignals": true,
+          "regimeKey": "ice"
         },
         "sRoot": {
           "cls": "s-scope s-app",
@@ -260,12 +269,12 @@
     },
     {
       "label": "默认 /（整页）",
-      "url": "https://sjc19950404.github.io/a-sentiment-pro/?_cb=1794813931260",
-      "readyMs": 440,
-      "dataMs": 4056,
+      "url": "https://sjc19950404.github.io/a-sentiment-pro/?_cb=1794815556735",
+      "readyMs": 425,
+      "dataMs": 13383,
       "attempts": 1,
       "state": {
-        "href": "https://sjc19950404.github.io/a-sentiment-pro/?_cb=1794813931260",
+        "href": "https://sjc19950404.github.io/a-sentiment-pro/?_cb=1794815556735",
         "bodyView": "",
         "innerHeight": 908,
         "innerWidth": 1416,
@@ -308,16 +317,7 @@
           "emScoreInZone": true,
           "breadthPanelExists": true,
           "breadthInZone": false,
-          "breadthKpis": [
-            "站上20日线28.4%n=5213",
-            "创新高0.6%n=5129",
-            "创新低6.3%n=5129",
-            "破净率11.1%n=5213",
-            "沪深上涨744n=沪深两市·不含北交所",
-            "沪深下跌4415n=沪深两市·不含北交所",
-            "全市场↑含北交744n=全市场·含北交所",
-            "全市场↓含北交4415n=全市场·含北交所"
-          ]
+          "breadthKpis": []
         },
         "mainHidden": false,
         "mainDisplay": "block",
@@ -336,8 +336,8 @@
             "pct_rank": 8.5,
             "lhb_daily_net": -0.77
           },
-          "hasSignals": true,
-          "regimeKey": "ice"
+          "hasSignals": false,
+          "regimeKey": null
         },
         "sRoot": {
           "cls": "s-scope s-app",
@@ -346,7 +346,7 @@
           "offsetHeight": 0,
           "rectTop": 0
         },
-        "bodyScrollHeight": 9089,
+        "bodyScrollHeight": 8866,
         "docScrollWidth": 1416,
         "tabs": []
       }
@@ -374,8 +374,8 @@
     "phase1_layout_intact": true,
     "data_source_ready": true,
     "signals_arrived_later": true,
-    "regime_at_first_paint": "未生成",
-    "regime_pending_at_first_paint": true,
+    "regime_at_first_paint": "冰点",
+    "regime_pending_at_first_paint": false,
     "page_router_present": true,
     "console_exceptions": 0,
     "load_failures": 0,
@@ -416,7 +416,7 @@
     "overviewRebuilt": true
   },
   "cls": {
-    "value": 0.0233,
+    "value": 0.0223,
     "sessions": 1,
     "target": 0.1,
     "baseline": 0.174,
@@ -424,7 +424,7 @@
     "degraded": false
   },
   "selfTest": {
-    "stamp": "2026-11-16T07:25:53.630Z",
+    "stamp": "2026-11-16T07:53:00.699Z",
     "viewport": {
       "w": 1416,
       "h": 908,
@@ -440,7 +440,7 @@
       "violations": []
     },
     "cls": {
-      "value": 0.0233,
+      "value": 0.0223,
       "sessions": 1,
       "target": 0.1,
       "baseline": 0.174,

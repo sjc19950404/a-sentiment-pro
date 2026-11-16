@@ -32,14 +32,26 @@
 
   /* ---------- 页路由（阶段 2+ 逐页接入；注册页优先，否则占位） ---------- */
   const TABS = ['总览', '涨跌停', '资金', '板块', '选股', '回测', '模拟盘', '研报'];
-  const pages = Object.create(null);
-  S.registerPage = (name, fn) => { pages[name] = fn; };
+  const pages = Object.create(null);       // name → { render, teardown }
+  let currentPage = null;
+  S.registerPage = (name, fn, teardown) => { pages[name] = { render: fn, teardown: teardown || null }; };
+  function teardownCurrent() {
+    if (!currentPage) return;
+    const rec = pages[currentPage];
+    if (rec && typeof rec.teardown === 'function') {
+      try { rec.teardown(); } catch (e) { try { console.error('[s-root] 页面清理失败', currentPage, e); } catch (_) {} }
+    }
+    currentPage = null;
+  }
   function showPage(name, panel) {
     panel = panel || document.querySelector('#sRoot .s-ph-panel');
     if (!panel) return;
-    const render = pages[name];
-    if (render) { try { render(panel); } catch (e) { try { console.error('[s-root] 页面渲染失败', name, e); } catch (_) {} } }
-    else {
+    if (currentPage !== name) teardownCurrent(); // 【14 册门禁⑧】离开旧页先清理 chart/tooltip
+    currentPage = name;
+    const rec = pages[name];
+    if (rec && typeof rec.render === 'function') {
+      try { rec.render(panel); } catch (e) { try { console.error('[s-root] 页面渲染失败', name, e); } catch (_) {} }
+    } else {
       panel.innerHTML = `<h2 class="s-ph-title">工作台 · ${name}</h2>`
         + `<p class="s-ph-desc"><code>${name}</code> 视图：阶段 2+ 逐页接入（幂等重搬旧 render 产出节点）。</p>`;
     }
@@ -127,6 +139,7 @@
       if (pre) pre.hidden = true;              // <main> 之外的告警浮层一并收起
       // 隐藏规则由 style.css 的 body[data-view="workbench"] > main / > #preMainPanels 双保险
     } else {
+      teardownCurrent(); // 【14 册门禁⑧】离开工作台 → 清理当前页 chart/tooltip，避免隐藏后残留
       delete document.body.dataset.view;
       if (sRoot) sRoot.hidden = true;
       if (main) main.hidden = false;

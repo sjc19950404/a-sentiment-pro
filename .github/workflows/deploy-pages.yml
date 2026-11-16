@@ -81,7 +81,10 @@ on:
       - 's-bridge.css'
       - 's-selftest.js'
       - 's-root.js'
+      - 's-table.js'
       - 's-page-overview.js'
+      - 's-page-backtest.js'
+      - 's-page-zt.js'
   # 自动部署（根因修复 2026-10-13）：daily-sentiment 跑完即触发。
   # bot 用默认 GITHUB_TOKEN 的 push 不会触发本工作流的 on:push（GitHub 防循环规则），
   # 致历史数据提交从不自动部署、前端停在旧档（10-12 数据已落 main 却从未上线即此因）。
@@ -126,7 +129,7 @@ jobs:
           # 页面外壳（index.html 引用 + SW SHELL_ASSETS 离线外壳）
           # config.json 是前端桥（index.html 动态 import('./config.json') 挂 window.ASENT_CONFIG，
           # config.js 浏览器分支 fetch('../config.json') 同源读取）——必须落到站点根，否则云端 404。
-          cp index.html app.js style.css sw.js paper_ui.js manifest.webmanifest config.json bundle.js s-tokens.css s-bridge.css s-components.css s-selftest.js s-root.js s-page-overview.js site/
+          cp index.html app.js style.css sw.js paper_ui.js manifest.webmanifest config.json bundle.js s-tokens.css s-bridge.css s-components.css s-selftest.js s-root.js s-table.js s-page-overview.js s-page-backtest.js s-page-zt.js site/
           # 同步内联 config.json（消除 dataOrigin 引导悖论）：必须在 cp 之后，只改产物 site/index.html，
           # 仓库源 index.html 的哨兵保持 null（本地零回归）。注入失败 → set -eu 直接红，不留半吊子部署。
           node scripts/inject_config.mjs site/index.html
