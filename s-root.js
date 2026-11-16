@@ -30,6 +30,22 @@
   S.setFlag = (name, val) => { flags[name] = val; return val; };
   S.getFlag = (name, dflt) => (name in flags ? flags[name] : dflt);
 
+  /* ---------- 页路由（阶段 2+ 逐页接入；注册页优先，否则占位） ---------- */
+  const TABS = ['总览', '涨跌停', '资金', '板块', '选股', '回测', '模拟盘', '研报'];
+  const pages = Object.create(null);
+  S.registerPage = (name, fn) => { pages[name] = fn; };
+  function showPage(name, panel) {
+    panel = panel || document.querySelector('#sRoot .s-ph-panel');
+    if (!panel) return;
+    const render = pages[name];
+    if (render) { try { render(panel); } catch (e) { try { console.error('[s-root] 页面渲染失败', name, e); } catch (_) {} } }
+    else {
+      panel.innerHTML = `<h2 class="s-ph-title">工作台 · ${name}</h2>`
+        + `<p class="s-ph-desc"><code>${name}</code> 视图：阶段 2+ 逐页接入（幂等重搬旧 render 产出节点）。</p>`;
+    }
+  }
+  S.showPage = (name) => showPage(name);
+
   /* ---------- DOM 助手 ---------- */
   const $ = (id) => document.getElementById(id);
   function el(tag, cls, html) {
@@ -56,7 +72,6 @@
     if (!root || shellBuilt) return;
     shellBuilt = true;
 
-    const TABS = ['总览', '涨跌停', '资金', '板块', '选股', '回测', '模拟盘', '研报'];
     const nav = TABS.map((n, i) =>
       `<button type="button" data-page="${i}" class="s-ph-tab${i === 0 ? ' is-active' : ''}">${n}</button>`
     ).join('');
@@ -84,18 +99,14 @@
     root.appendChild(top);
     root.appendChild(body);
 
-    // 8 tab 路由：切换高亮 + 切换空 panel（阶段 1 只证明路由，不接真组件）
+    // 8 tab 路由：切换高亮 + 切换 panel（注册页优先渲染，否则占位）
     const tabs = top.querySelectorAll('.s-ph-tab');
     const panel = body.querySelector('.s-ph-panel');
-    const NAMES = TABS;
     tabs.forEach((btn) => {
       btn.addEventListener('click', () => {
         tabs.forEach((b) => b.classList.remove('is-active'));
         btn.classList.add('is-active');
-        const p = +btn.dataset.page;
-        panel.querySelector('.s-ph-title').textContent = `工作台 · ${NAMES[p]}`;
-        panel.querySelector('.s-ph-desc').innerHTML =
-          `<code>${NAMES[p]}</code> 视图：阶段 2 由 <code>s-page-overview.js</code> 接入（幂等重搬旧 render 产出节点）。`;
+        showPage(TABS[+btn.dataset.page], panel);
       });
     });
   }
@@ -110,7 +121,7 @@
 
     if (wantBench) {
       document.body.dataset.view = 'workbench';
-      if (sRoot) { buildShell(); sRoot.hidden = false; }
+      if (sRoot) { buildShell(); sRoot.hidden = false; showPage(TABS[0]); }
       if (tRoot && !tRoot.hidden) { tRoot.hidden = true; hidTRoot = true; }
       if (main) main.hidden = true;            // 不用 aria-hidden（fatal 兜底信号，会被 app.js 清空）
       if (pre) pre.hidden = true;              // <main> 之外的告警浮层一并收起

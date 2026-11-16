@@ -59,6 +59,7 @@ const SHELL_ASSETS = [
   './s-bridge.css',
   './s-selftest.js',
   './s-root.js',
+  './s-page-overview.js',
 ];
 
 const DATA_PREFETCH = [
