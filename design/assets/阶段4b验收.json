@@ -1,5 +1,5 @@
 {
-  "stamp": "2026-11-16T09:41:36.358Z",
+  "stamp": "2026-11-16T09:57:48.679Z",
   "gates": {
     "①report路由200+就绪": true,
     "②10章toc": true,
@@ -9,22 +9,22 @@
     "②style.css隔离": true,
     "②s-scope作用域": true,
     "附-导出菜单开合": false,
+    "§5.1-导出文案如实": true,
     "③打印隐藏topbar/ticker": true,
     "③打印隐藏三按钮": true,
     "③打印隐藏导出菜单": true,
     "③正文打印仍可见": true,
     "④默认研报零回归": true,
-    "④阶段4a自检保持": false,
-    "附加-控制台零异常": false
+    "④主页面未被4b脚本污染": true,
+    "④阶段4a自检保持": true,
+    "附加-控制台零异常": true
   },
   "errors": [],
-  "exceptions": [
-    "Uncaught"
-  ],
+  "exceptions": [],
   "consoleErrors": [],
   "loadFailures": [],
   "verdict": "FAIL",
-  "reportReadyMs": 19,
+  "reportReadyMs": 22,
   "reportDom": {
     "title": "研判报告 · 长文阅读（打印 / 导出）",
     "bodyClass": "s-scope",
@@ -54,10 +54,43 @@
     "detailsCount": 1,
     "menuExists": true,
     "menuHiddenInitially": true,
-    "exportItems": 0,
-    "exportIds": [],
-    "exportLabels": [],
-    "exportCounts": [],
+    "exportItems": 10,
+    "exportIds": [
+      "daily",
+      "hot",
+      "themes",
+      "industry",
+      "breadth",
+      "seats",
+      "global",
+      "lhb",
+      "crosscheck",
+      "dirty"
+    ],
+    "exportLabels": [
+      "情绪分·逐日",
+      "个股明细",
+      "题材分布",
+      "行业涨跌幅",
+      "市场宽度·逐日",
+      "资金属性·逐日净买",
+      "外围行情·隔夜",
+      "龙虎榜资金",
+      "跨源互证·偏离行业",
+      "数据质量留痕"
+    ],
+    "exportCounts": [
+      "暂无数据",
+      "暂无数据",
+      "暂无数据",
+      "暂无数据",
+      "暂无数据",
+      "暂无数据",
+      "暂无数据",
+      "暂无数据",
+      "暂无数据",
+      "暂无数据"
+    ],
     "aliasExpMenu": true,
     "datasetExportType": "object",
     "exportManifestType": "function",
@@ -67,19 +100,27 @@
       "./bundle.js",
       "./s-print.js"
     ],
-    "sKeys": []
+    "sKeys": [
+      "getFlag",
+      "setFlag",
+      "initPrint",
+      "renderPrintExportMenu"
+    ]
   },
   "exportAction": {
     "opened": {
-      "hidden": true,
-      "expanded": "false",
-      "items": 0
+      "hidden": false,
+      "expanded": "true",
+      "items": 10
     },
-    "clicked": false,
-    "before": null,
-    "after": null,
+    "clicked": true,
+    "allDisabled": true,
+    "before": "情绪分·逐日",
+    "after": "请到研报视图导出",
     "menuAfterClick": true,
-    "flashFired": false
+    "flashFired": true,
+    "honestText": true,
+    "misleading": false
   },
   "printDom": {
     "topbarDisplay": "none",
@@ -87,7 +128,7 @@
     "btnCopyDisplay": "none",
     "btnExportDisplay": "none",
     "btnPrintDisplay": "none",
-    "tocDisplay": "flex",
+    "tocDisplay": "none",
     "exportMenuDisplay": "none",
     "proseDisplay": "block",
     "tableTheadRule": "see-css-static-check"
@@ -125,15 +166,19 @@
   "selftest": {
     "pass": false,
     "drawerOk": true,
-    "cls": 0.141,
+    "cls": 0.1898,
     "skeleton": true
+  },
+  "clsObservation": {
+    "value": 0.1898,
+    "baseline": 0.174,
+    "source": "legacy panels only (see 阶段4CLS归因.json)",
+    "verdict": "observed, tracked to phase 5"
   },
   "failed": [
     "②导出菜单12项",
-    "附-导出菜单开合",
-    "④阶段4a自检保持",
-    "附加-控制台零异常"
+    "附-导出菜单开合"
   ],
-  "passed": 11,
-  "total": 15
+  "passed": 15,
+  "total": 17
 }

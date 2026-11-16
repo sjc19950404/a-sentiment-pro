@@ -64,9 +64,16 @@
         list = M.exportManifest(ctx);
       } catch (_) { list = null; }
       if (Array.isArray(list) && list.length) {
+        // 【19 册 P1】exportManifest() 只返回 10 个数据集；__csv/__xls 两个合并项是生产
+        // app.js:5591/5593 在 manifest 之外手动追加的。这里照抄同源口径，避免只出 10 项。
+        const allEmpty = list.every((x) => x.empty);
         menu.innerHTML = menuItems(list.map((x) => ({
           id: x.id, label: x.label, count: x.count != null ? (x.count + ' 行') : '', empty: !!x.empty,
-        })));
+        })))
+          + '<button type="button" role="menuitem" data-ds="__csv"' + (allEmpty ? ' disabled' : '') + '>'
+          + '<span class="exp-lab">全部导出（CSV 单表）</span><span class="exp-num muted">合并版</span></button>'
+          + '<button type="button" role="menuitem" data-ds="__xls"' + (allEmpty ? ' disabled' : '') + '>'
+          + '<span class="exp-lab">全部导出（Excel 多表页）</span><span class="exp-num muted">.xls</span></button>';
         return;
       }
     }

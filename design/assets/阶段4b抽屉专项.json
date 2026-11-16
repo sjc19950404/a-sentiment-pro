@@ -1,0 +1,79 @@
+{
+  "stamp": "2026-11-16T09:55:54.413Z",
+  "rounds": [
+    {
+      "round": 1,
+      "ok": true,
+      "steps": [
+        "hidden after open = false",
+        "aria-modal = true",
+        "focus inside = true",
+        "closed by ESC = true",
+        "focus restored = true"
+      ],
+      "hasOpen": true
+    },
+    {
+      "round": 2,
+      "ok": true,
+      "steps": [
+        "hidden after open = false",
+        "aria-modal = true",
+        "focus inside = true",
+        "closed by ESC = true",
+        "focus restored = true"
+      ],
+      "hasOpen": true
+    },
+    {
+      "round": 3,
+      "ok": true,
+      "steps": [
+        "hidden after open = false",
+        "aria-modal = true",
+        "focus inside = true",
+        "closed by ESC = true",
+        "focus restored = true"
+      ],
+      "hasOpen": true
+    },
+    {
+      "round": 4,
+      "ok": true,
+      "steps": [
+        "hidden after open = false",
+        "aria-modal = true",
+        "focus inside = true",
+        "closed by ESC = true",
+        "focus restored = true"
+      ],
+      "hasOpen": true
+    },
+    {
+      "round": 5,
+      "ok": true,
+      "steps": [
+        "hidden after open = false",
+        "aria-modal = true",
+        "focus inside = true",
+        "closed by ESC = true",
+        "focus restored = true"
+      ],
+      "hasOpen": true
+    },
+    {
+      "round": 6,
+      "ok": true,
+      "steps": [
+        "hidden after open = false",
+        "aria-modal = true",
+        "focus inside = true",
+        "closed by ESC = true",
+        "focus restored = true"
+      ],
+      "hasOpen": true
+    }
+  ],
+  "exceptions": [],
+  "verdict": "STABLE_PASS"
+}
