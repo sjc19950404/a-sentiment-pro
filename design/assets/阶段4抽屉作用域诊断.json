@@ -1,0 +1,41 @@
+{
+  "stamp": "2026-11-16T08:54:04.067Z",
+  "result": {
+    "bareBody": {
+      "tag": "bare-body",
+      "inScope": false,
+      "maskHiddenAttr": true,
+      "maskComputedDisplay": "none",
+      "drawerHiddenAttr": true,
+      "drawerComputedDisplay": "none",
+      "elementAtCenter": "html",
+      "centerBlockedByMask": false
+    },
+    "scopeWrapped": {
+      "tag": "scope-wrapped",
+      "inScope": true,
+      "maskHiddenAttr": true,
+      "maskComputedDisplay": "none",
+      "drawerHiddenAttr": true,
+      "drawerComputedDisplay": "none",
+      "elementAtCenter": "sDrawerLayer",
+      "centerBlockedByMask": false
+    },
+    "bareBodyWithFix": {
+      "tag": "bare-body + targeted hidden rule",
+      "inScope": false,
+      "maskHiddenAttr": true,
+      "maskComputedDisplay": "none",
+      "drawerHiddenAttr": true,
+      "drawerComputedDisplay": "none",
+      "elementAtCenter": "html",
+      "centerBlockedByMask": false
+    },
+    "openState": {
+      "hiddenAttr": false,
+      "computedDisplay": "flex",
+      "focusableChildCount": 1
+    }
+  },
+  "errors": []
+}

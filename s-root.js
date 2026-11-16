@@ -46,7 +46,10 @@
   function showPage(name, panel) {
     panel = panel || document.querySelector('#sRoot .s-ph-panel');
     if (!panel) return;
-    if (currentPage !== name) teardownCurrent(); // 【14 册门禁⑧】离开旧页先清理 chart/tooltip
+    if (currentPage !== name) {
+      teardownCurrent(); // 【14 册门禁⑧】离开旧页先清理 chart/tooltip
+      if (typeof S.onTabChange === 'function') { try { S.onTabChange(); } catch (_) {} } // 【16 册门禁⑤】切 tab 关抽屉
+    }
     currentPage = name;
     const rec = pages[name];
     if (rec && typeof rec.render === 'function') {

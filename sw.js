@@ -59,6 +59,7 @@ const SHELL_ASSETS = [
   './s-bridge.css',
   './s-selftest.js',
   './s-root.js',
+  './s-drawer.js',
   './s-table.js',
   './s-page-overview.js',
   './s-page-backtest.js',

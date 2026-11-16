@@ -704,6 +704,11 @@
  * 9. drawer：三档宽度 + 遮罩 + 移动端全屏 sheet
  *    唯一允许的盒内滚动：.s-drawer__body
  * ------------------------------------------------------------ */
+/* 【16 册裁定硬前置②】裸 body 注入（s-drawer.js）时 .s-drawer{display:flex} 是作者样式，
+   会盖过 UA [hidden]{display:none} → hidden=true 仍计算为 flex（非真隐藏、假绿）。
+   定向兜底只作用于抽屉与遮罩两个节点，不碰研报面板（不同于全局 [hidden] 规则）。 */
+.s-drawer[hidden], .s-drawer__mask[hidden] { display: none !important; }
+
 .s-drawer__mask {
   position: fixed;
   inset: 0;
