@@ -1,0 +1,218 @@
+{
+  "stamp": "2026-11-16T09:15:40.583Z",
+  "gates": {
+    "①作用域真隐藏": true,
+    "⑨默认研报零变化": true,
+    "②动态路径": true,
+    "⑧自检八项不退化": true,
+    "③打开态": true,
+    "④关闭态": true,
+    "④关闭态-多轮稳定": true,
+    "⑤四种关闭路径": true,
+    "⑦焦点陷阱": true,
+    "⑥三档宽度-桌面": true,
+    "⑥移动端全屏sheet": true,
+    "⑩白名单可达": true,
+    "附加-控制台零异常": true
+  },
+  "timingRounds": [
+    {
+      "round": 2,
+      "closeOk": true,
+      "elapsedMs": 311,
+      "hidden": true,
+      "focusRestored": true
+    },
+    {
+      "round": 3,
+      "closeOk": true,
+      "elapsedMs": 301,
+      "hidden": true,
+      "focusRestored": true
+    },
+    {
+      "round": 4,
+      "closeOk": true,
+      "elapsedMs": 302,
+      "hidden": true,
+      "focusRestored": true
+    },
+    {
+      "round": 5,
+      "closeOk": true,
+      "elapsedMs": 315,
+      "hidden": true,
+      "focusRestored": true
+    },
+    {
+      "round": 6,
+      "closeOk": true,
+      "elapsedMs": 301,
+      "hidden": true,
+      "focusRestored": true
+    }
+  ],
+  "consoleErrors": [],
+  "exceptions": [],
+  "loadFailures": [],
+  "verdict": "PASS",
+  "readyMs": 225,
+  "warmReadyMs": 225,
+  "scope": {
+    "sKeys": [
+      "runSelfTest",
+      "collectCls",
+      "setFlag",
+      "getFlag",
+      "registerPage",
+      "showPage",
+      "routeWorkbench",
+      "openDrawer",
+      "closeDrawer",
+      "setDrawerSize",
+      "onTabChange",
+      "initDrawer",
+      "Table",
+      "registerPageOverview",
+      "registerPageBacktest",
+      "teardownBacktest",
+      "registerPageZt",
+      "teardownZt"
+    ],
+    "openDrawerType": "function",
+    "closeDrawerType": "function",
+    "onTabChangeType": "function",
+    "drawerExists": true,
+    "maskExists": true,
+    "tooltipExists": true,
+    "drawerParent": "BODY",
+    "drawerInSRoot": false,
+    "drawerInScope": false,
+    "drawerHidden": true,
+    "drawerDisplay": "none",
+    "maskHidden": true,
+    "maskDisplay": "none",
+    "drawerRole": "dialog",
+    "drawerAriaModal": "true",
+    "drawerAriaHidden": "true",
+    "oldDrawerExists": true,
+    "sRootHidden": true,
+    "sRootDisplay": "none",
+    "mainExists": true,
+    "mainHidden": false,
+    "mainDisplay": "block",
+    "mainRectTop": 459,
+    "fatalText": "",
+    "fatalVisible": false,
+    "docScrollHeight": 4418,
+    "innerHeight": 774
+  },
+  "selftest": {
+    "pass": true,
+    "drawerOk": true,
+    "drawerSteps": [
+      "hidden after open = false",
+      "aria-modal = true",
+      "focus inside = true",
+      "closed by ESC = true",
+      "focus restored = true"
+    ],
+    "horizontalCount": 0,
+    "innerScrollViolations": 0,
+    "clsPass": true,
+    "clsValue": 0.0018,
+    "touchViolations": 0,
+    "contrastViolations": 0,
+    "emptyMissingTitle": 0,
+    "emptyOversized": 0,
+    "skeletonPass": true,
+    "skeletonMaxShift": 0
+  },
+  "openClose": {
+    "beforeId": "__p4Trigger",
+    "open": {
+      "hidden": false,
+      "display": "flex",
+      "isOpen": true,
+      "maskIsOpen": true,
+      "ariaHidden": "false",
+      "ariaModal": "true",
+      "role": "dialog",
+      "focusInside": true,
+      "focusId": "sDrawerClose",
+      "bodyOverflow": "hidden",
+      "htmlOverflow": "hidden",
+      "titleText": "验收",
+      "bodyText": "验收内容"
+    },
+    "closed": {
+      "hidden": true,
+      "display": "none",
+      "isOpen": false,
+      "maskIsOpen": false,
+      "ariaHidden": "true",
+      "focusRestored": true,
+      "focusId": "__p4Trigger",
+      "bodyOverflow": "",
+      "htmlOverflow": "",
+      "elapsedMs": 301
+    }
+  },
+  "closePaths": {
+    "closeButton": {
+      "openedBefore": true,
+      "hiddenAfter": true,
+      "pass": true
+    },
+    "doneButton": {
+      "openedBefore": true,
+      "hiddenAfter": true,
+      "pass": true
+    },
+    "maskClick": {
+      "openedBefore": true,
+      "hiddenAfter": true,
+      "pass": true
+    },
+    "escape": {
+      "openedBefore": true,
+      "hiddenAfter": true,
+      "pass": true
+    }
+  },
+  "trap": {
+    "atFirst": true,
+    "firstId": "sDrawerClose",
+    "lastId": "sDrawerDone",
+    "afterShiftTab": "sDrawerDone",
+    "afterTab": "sDrawerClose",
+    "shiftWrappedToLast": true,
+    "tabBackToFirst": true,
+    "neverEscaped": true
+  },
+  "sizes": {
+    "sm": {
+      "width": 420,
+      "height": 774
+    },
+    "md": {
+      "width": 640,
+      "height": 774
+    },
+    "lg": {
+      "width": 960,
+      "height": 774
+    }
+  },
+  "mobile": {
+    "viewportW": 390,
+    "viewportH": 844,
+    "drawerW": 390,
+    "drawerH": 844,
+    "grabDisplay": "block",
+    "horizontalOverflow": 0
+  },
+  "failed": [],
+  "passed": 13,
+  "total": 13
+}

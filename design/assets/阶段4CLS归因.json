@@ -1,0 +1,85 @@
+{
+  "stamp": "2026-11-16T09:12:00.064Z",
+  "rounds": [
+    {
+      "round": 1,
+      "value": 0.1961,
+      "sessions": 1,
+      "pass": false,
+      "degraded": true,
+      "topEntries": [
+        {
+          "t": 3248,
+          "v": 0.1471,
+          "n": 1,
+          "src": [
+            "div#btStrategyPanel.btstrat-panel"
+          ]
+        },
+        {
+          "t": 2323,
+          "v": 0.0489,
+          "n": 5,
+          "src": [
+            "div.mom-group",
+            "div.meta",
+            "div#emScore.score.low",
+            "div.mom-group"
+          ]
+        }
+      ],
+      "entryCount": 2
+    },
+    {
+      "round": 2,
+      "value": 0,
+      "sessions": 0,
+      "pass": true,
+      "degraded": false,
+      "topEntries": [],
+      "entryCount": 0
+    },
+    {
+      "round": 3,
+      "value": 0,
+      "sessions": 0,
+      "pass": true,
+      "degraded": false,
+      "topEntries": [],
+      "entryCount": 0
+    },
+    {
+      "round": 4,
+      "value": 0,
+      "sessions": 0,
+      "pass": true,
+      "degraded": false,
+      "topEntries": [],
+      "entryCount": 0
+    },
+    {
+      "round": 5,
+      "value": 0,
+      "sessions": 0,
+      "pass": true,
+      "degraded": false,
+      "topEntries": [],
+      "entryCount": 0
+    }
+  ],
+  "verdict": "VOLATILE",
+  "summary": {
+    "values": [
+      0,
+      0,
+      0,
+      0,
+      0.1961
+    ],
+    "median": 0,
+    "worst": 0.1961,
+    "best": 0,
+    "allWithinBaseline": false,
+    "medianWithinBaseline": true
+  }
+}

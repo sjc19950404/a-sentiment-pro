@@ -64,6 +64,8 @@ const SHELL_ASSETS = [
   './s-page-overview.js',
   './s-page-backtest.js',
   './s-page-zt.js',
+  './report.html',
+  './s-print.js',
 ];
 
 const DATA_PREFETCH = [

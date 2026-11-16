@@ -1,0 +1,103 @@
+<!doctype html>
+<!-- 阶段 4b：研报长文页（打印 / 存 PDF / 全文复制 / 长文阅读）。
+     权威：04 册 1.5 节 L586-657（节点结构 id/class/aria 一字不改）；
+     05 册阶段 4（只引 s-tokens.css + s-components.css，不引 style.css）；
+     16 册 §6（独立路由、四处白名单）。reportV2=false 时 s-print.js 摘入口。 -->
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>研判报告 · 长文阅读（打印 / 导出）</title>
+  <link rel="stylesheet" href="./s-tokens.css">
+  <link rel="stylesheet" href="./s-components.css">
+</head>
+<body class="s-scope">
+  <a class="s-skip" href="#page-report">跳到正文</a>
+
+  <!-- 最小 topbar / ticker：供 V4-2「@media print 隐藏」断言；@media print 规则在 components.css L1068-1085 -->
+  <header class="s-topbar" aria-label="打印页顶栏">
+    <span class="s-topbar__brand">研判报告</span>
+    <span class="s-topbar__meta" id="rptMeta">打印 / 导出 / 长文阅读</span>
+  </header>
+  <div class="s-ticker" id="rptTicker" aria-hidden="true"></div>
+
+  <main class="s-main">
+    <section class="s-page" id="page-report" role="region" aria-label="研报长文" tabindex="0" data-page="report">
+
+      <div class="s-section s-section__head">
+        <div>
+          <h2 class="s-section__title">研判报告 · 长文阅读页</h2>
+          <p class="s-section__note">原研报视图降级为此页：仅承担打印 / 存 PDF / 全文复制 / 长文阅读，不再作为默认主视图</p>
+        </div>
+        <div class="s-card__tools">
+          <button class="s-btn s-btn--ghost" type="button" id="rptCopy">复制全文</button>
+          <button class="s-btn s-btn--ghost" type="button" id="rptExport" aria-haspopup="true" aria-expanded="false" aria-controls="sExportMenu">导出文档</button>
+          <button class="s-btn s-btn--primary" type="button" id="rptPrint">打印 / 存 PDF</button>
+        </div>
+      </div>
+
+      <!-- 导出菜单：12 项（DATASETS 10 + 全部 CSV/Excel 2），由 s-print.js 复用 window.DatasetExport.exportManifest 渲染；
+           节点 id 同时兼容 V4-3 的 #sExportMenu / #expMenu 两种查法 -->
+      <div class="exp-menu" id="sExportMenu" role="menu" aria-label="导出数据集" hidden></div>
+      <div id="expMenu" hidden></div>
+
+      <nav class="s-prose__toc" aria-label="研报章节导航">
+        <a href="#ch1">一、情绪定位</a><a href="#ch2">二、资金面</a><a href="#ch3">三、盈亏效应</a>
+        <a href="#ch4">四、广度与量能</a><a href="#ch5">五、题材结构</a><a href="#ch6">六、综合研判</a>
+        <a href="#ch7">七、模拟交易复盘</a><a href="#ch8">八、舆情参考</a>
+        <a href="#ch9">九、板块情绪雷达</a><a href="#ch10">十、妖股逻辑推演</a>
+      </nav>
+
+      <article class="s-card">
+        <div class="s-card__body">
+          <div class="s-prose" id="briefBody">
+            <p class="s-prose__meta">数据日 2026-11-13 · 情绪分 38.4 · regime 冰点 · 生成时间见页脚 · 口径默认收起（下方数值为快照示意，运行时以当日数据为准）</p>
+
+            <h2 id="ch1">一、情绪定位</h2>
+            <p>情绪分 38.4，处于历史分位 9%，市场状态判定为冰点，方向向下，置信度 high。执行仓位建议 0%~20%，基础档 0%~30%。</p>
+            <details class="s-details"><summary>展开查看口径</summary><div>情绪分由七因子加权合成：龙虎净额 20%、板块涨比 20%、涨跌停比 15%、量能 15%、涨跌家数 10%、涨停强度 10%、封板质量 10%。</div></details>
+
+            <h2 id="ch2">二、资金面</h2>
+            <p>龙虎净买 -0.77 亿，上榜 55 只。买方席位与卖方席位双侧明细在详情抽屉中呈现，席位名不截断。</p>
+
+            <h2 id="ch3">三、盈亏效应</h2>
+            <p>涨停 37 只，跌停 33 只，炸板 21 只，封板率 64%。连板梯队最高 4 板，纯情绪炒作 29 只，占比 78.4%。</p>
+
+            <h2 id="ch4">四、广度与量能</h2>
+            <p>上涨 755 家，下跌 4,472 家，沪深两市口径。市场宽度逐日明细由 breadth-latest.json 供给。</p>
+
+            <h2 id="ch5">五、题材结构</h2>
+            <p>最新日题材已去噪，主线为 AI微短剧、影视院线、江苏国资。新晋、退潮、持续三清单由 renderThemes 原位输出。</p>
+
+            <h2 id="ch6">六、综合研判</h2>
+            <p>结论：冰点环境下的防御档位，禁止追高标；ETF 对冲卡处于待命态，未触发强制空仓条件。</p>
+
+            <h2 id="ch7">七、模拟交易复盘</h2>
+            <p>账户当前空仓，成交与委托记录为空态。空态卡片使用紧凑高度，不占满整卡。</p>
+
+            <h2 id="ch8">八、舆情参考</h2>
+            <p>舆情读数 -0.50，置信度 80%。AI 盘中报告归档四类，盘中实时、盘后归档，入口收进详情抽屉。</p>
+
+            <h2 id="ch9">九、板块情绪雷达</h2>
+            <p>板块情绪雷达与行业涨跌幅 90 行明细通过导出菜单获取，正文只保留结论。</p>
+
+            <h2 id="ch10">十、妖股逻辑推演</h2>
+            <p>妖股纯情绪 29 只，GLM 逻辑推演仅作参考，不修改引擎情绪分与 regime 判定。</p>
+          </div>
+        </div>
+        <footer class="s-card__foot">本页为打印 / 导出专用；@media print 隐藏 topbar / nav / tabs / ticker / 抽屉 / 按钮，表格表头跨页重复</footer>
+      </article>
+
+      <div class="s-section">
+        <details class="s-details" id="rptAudit"><summary>独立口径附录与审计留痕</summary><div id="rptAuditBody">公式版本、参数变更、数据质量留痕 7 行，逐项由 renderAuditPanel 输出。</div></details>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- dataset.js 导出引擎（bundle.js ESM 暴露 window.DatasetExport）+ s-print.js 页面交互 -->
+  <script type="module" src="./bundle.js"></script>
+  <script src="./s-print.js" defer></script>
+</body>
+</html>
