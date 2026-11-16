@@ -1,0 +1,195 @@
+{
+  "time": "2026-11-16T08:35:54.812Z",
+  "base": "https://sjc19950404.github.io/a-sentiment-pro/",
+  "commit": "8c6a9a00",
+  "cases": [
+    {
+      "label": "默认 /（整页）",
+      "state": {
+        "bodyView": "",
+        "sRootExists": true,
+        "sRootHidden": true,
+        "sRootDisplay": "none",
+        "sRootOffsetHeight": 0,
+        "mainExists": true,
+        "mainHidden": false,
+        "mainDisplay": "block",
+        "mainRectTop": 459,
+        "docScrollHeight": 4418,
+        "innerHeight": 874,
+        "oldTableExists": true,
+        "oldTableInSRoot": false,
+        "oldTableChildren": 1,
+        "sKeys": [
+          "runSelfTest",
+          "collectCls",
+          "setFlag",
+          "getFlag",
+          "registerPage",
+          "showPage",
+          "routeWorkbench",
+          "Table",
+          "registerPageOverview",
+          "registerPageBacktest",
+          "teardownBacktest",
+          "registerPageZt",
+          "teardownZt"
+        ]
+      }
+    },
+    {
+      "label": "回测 tab",
+      "canvasWaitMs": 4864,
+      "state": {
+        "chartExists": true,
+        "dataState": "ready",
+        "canvasExists": true,
+        "canvasW": 840,
+        "canvasH": 350,
+        "canvasClientW": 840,
+        "canvasClientH": 350,
+        "svgInHost": 1,
+        "rowCountText": "共 265 行",
+        "modeText": "分页",
+        "dataTotalRows": "265",
+        "dataMode": "pager",
+        "dataPageSize": "50",
+        "tbodyRows": 50,
+        "pagerInfo": "第 1 / 6 页 · 共 265 行",
+        "legendText": "V5 基准（无成本/无风控）V5.2 增强（成本+平滑+风控）V5.3 动态仓位等权指数买入持有样本 265 个交易日",
+        "kpis": [
+          "-8.10%",
+          "-1.01",
+          "12.58%",
+          "46%"
+        ],
+        "formsInPage": 0,
+        "writeNodesInPage": 0
+      }
+    },
+    {
+      "label": "回测页 390px 溢出",
+      "state": {
+        "clientWidth": 390,
+        "overflowCount": 0,
+        "samples": []
+      }
+    },
+    {
+      "label": "涨跌停 tab",
+      "ztWaitMs": 1218,
+      "state": {
+        "ztExists": true,
+        "verdict": "涨停 37 / 炸板 80",
+        "sub": "最新数据日 2026-11-13 · 封板率 32%",
+        "kpis": [
+          "37",
+          "80",
+          "封板率 32%",
+          "4 板",
+          "21"
+        ],
+        "rowCountText": "共 37 行",
+        "modeText": "分页",
+        "dataTotalRows": "37",
+        "dataMode": "pager",
+        "tbodyRows": 37,
+        "pagerInfo": "第 1 / 1 页 · 共 37 行",
+        "formsInPage": 0,
+        "writeNodesInPage": 0
+      }
+    },
+    {
+      "label": "涨跌停页 390px 溢出",
+      "state": {
+        "clientWidth": 390,
+        "overflowCount": 0,
+        "samples": []
+      }
+    },
+    {
+      "label": "切走 tab 后残留",
+      "state": {
+        "tooltipsVisible": 0,
+        "canvasesInSRoot": 0,
+        "panelTitle": "工作台 · 资金",
+        "backtestStillMounted": false,
+        "ztStillMounted": false
+      }
+    },
+    {
+      "label": "tableV2=false 回退",
+      "state": {
+        "title": "工作台 · 回测",
+        "desc": "回测视图已回退（flag tableV2=false）。",
+        "chartGone": true,
+        "canvasGone": true,
+        "oldTableExists": true,
+        "oldTableInSRoot": false
+      }
+    },
+    {
+      "label": "backtest 拦截失败态",
+      "state": {
+        "dataState": "error",
+        "errorVisible": true,
+        "retryBtn": true,
+        "pendingVisible": false
+      }
+    }
+  ],
+  "verdict": {
+    "g1_chart_ready": true,
+    "g1_canvas_nonzero": true,
+    "g1_no_svg_fallback": true,
+    "g2_bt_total_from_data": true,
+    "g2_bt_pages_math": true,
+    "g2_bt_page_le_50": true,
+    "g2_bt_mode_pager": true,
+    "g2_bt_no_hardcoded_265_288": true,
+    "g2_zt_total_from_data": true,
+    "g2_zt_pages_math": true,
+    "g2_zt_page_le_50": true,
+    "g3_bt_no_overflow": true,
+    "g3_zt_no_overflow": true,
+    "g4_fallback_placeholder": true,
+    "g4_old_table_not_destroyed": true,
+    "g5_fail_reaches_terminal": true,
+    "g5_fail_retry_available": true,
+    "g5_fail_not_stuck_pending": true,
+    "g6_cls_available": true,
+    "g6_cls_not_degraded": true,
+    "g7_bt_no_form": true,
+    "g7_zt_no_form": true,
+    "g8_no_visible_tooltip": true,
+    "g8_no_canvas_after_switch": true,
+    "g9_sroot_truly_hidden": true,
+    "g9_main_visible": true,
+    "g9_main_scrollable": true,
+    "g9_old_table_untouched": true,
+    "g10_new_files_live": true,
+    "console_exceptions": 0,
+    "load_failures": 2
+  },
+  "errors": [],
+  "loadFailures": [
+    " type=Fetch",
+    " type=Fetch"
+  ],
+  "canvasWaitMs": 4864,
+  "ztWaitMs": 1218,
+  "cls": {
+    "value": 0.031,
+    "sessions": 1,
+    "target": 0.1,
+    "baseline": 0.174,
+    "pass": true,
+    "degraded": false
+  },
+  "failState": {
+    "dataState": "error",
+    "errorVisible": true,
+    "retryBtn": true,
+    "pendingVisible": false
+  }
+}
