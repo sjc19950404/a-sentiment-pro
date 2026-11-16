@@ -19,7 +19,7 @@
    }
   },
   "600327": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -46,7 +46,7 @@
    }
   },
   "600825": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -109,9 +109,9 @@
    }
   },
   "603536": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
-    "lift": 0,
+    "lift": 1,
     "red": 0,
     "seal": 0,
     "dtBreak": 0
@@ -163,10 +163,10 @@
    }
   },
   "002209": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
-    "red": 0,
+    "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
@@ -190,7 +190,7 @@
    }
   },
   "002275": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -217,7 +217,7 @@
    }
   },
   "000011": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -244,10 +244,10 @@
    }
   },
   "002811": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
-    "red": 0,
+    "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
@@ -262,7 +262,7 @@
    }
   },
   "001219": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -280,7 +280,7 @@
    }
   },
   "002578": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -289,7 +289,7 @@
    }
   },
   "002696": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -298,6 +298,6 @@
    }
   }
  },
- "notified": 4,
+ "notified": 7,
  "date": "2026-11-16"
 }

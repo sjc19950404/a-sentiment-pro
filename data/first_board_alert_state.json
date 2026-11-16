@@ -10,7 +10,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -0.98
+   "chg": 3.78
   },
   "600651": {
    "pos": "none",
@@ -22,10 +22,10 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -0.77
+   "chg": -2.9
   },
   "600715": {
-   "pos": "approaching",
+   "pos": "touched",
    "counts": {
     "seal": 0,
     "break": 0,
@@ -34,7 +34,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 7.35
+   "chg": 3.82
   },
   "600977": {
    "pos": "none",
@@ -46,7 +46,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 0
+   "chg": -2.58
   },
   "603103": {
    "pos": "none",
@@ -58,7 +58,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 4.56
+   "chg": 1.19
   },
   "603166": {
    "pos": "none",
@@ -70,7 +70,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 0.17
+   "chg": -4.65
   },
   "603286": {
    "pos": "none",
@@ -82,7 +82,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.6
+   "chg": -10
   },
   "603636": {
    "pos": "none",
@@ -94,7 +94,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -2.63
+   "chg": -2.74
   },
   "603686": {
    "pos": "none",
@@ -106,7 +106,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 1.32
+   "chg": 2.28
   },
   "603767": {
    "pos": "none",
@@ -118,7 +118,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.93
+   "chg": -4.62
   },
   "603928": {
    "pos": "none",
@@ -130,7 +130,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.76
+   "chg": -5.35
   },
   "605318": {
    "pos": "none",
@@ -142,10 +142,10 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -0.99
+   "chg": -3.09
   },
   "002685": {
-   "pos": "none",
+   "pos": "sealed",
    "counts": {
     "seal": 0,
     "break": 0,
@@ -154,7 +154,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.89
+   "chg": 9.93
   },
   "002819": {
    "pos": "none",
@@ -166,7 +166,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.59
+   "chg": -3.64
   },
   "002905": {
    "pos": "sealed",
@@ -202,7 +202,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -0.44
+   "chg": -6.55
   },
   "000766": {
    "pos": "none",
@@ -214,7 +214,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.91
+   "chg": -6.18
   },
   "002853": {
    "pos": "none",
@@ -226,7 +226,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 0
+   "chg": -1.98
   },
   "002042": {
    "pos": "none",
@@ -238,10 +238,10 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -2.21
+   "chg": -3.31
   },
   "002548": {
-   "pos": "approaching",
+   "pos": "sealed",
    "counts": {
     "seal": 0,
     "break": 0,
@@ -250,7 +250,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 8.36
+   "chg": 9.92
   },
   "002124": {
    "pos": "none",
@@ -262,7 +262,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 0
+   "chg": -3.03
   },
   "002739": {
    "pos": "none",
@@ -274,10 +274,10 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 0.6
+   "chg": -0.2
   },
   "002748": {
-   "pos": "none",
+   "pos": "touched",
    "counts": {
     "seal": 0,
     "break": 0,
@@ -286,7 +286,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 6.62
+   "chg": 5.33
   },
   "001393": {
    "pos": "none",
@@ -298,7 +298,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.57
+   "chg": 0.88
   },
   "000595": {
    "pos": "none",
@@ -310,7 +310,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 4.52
+   "chg": -1.99
   },
   "002520": {
    "pos": "none",
@@ -322,10 +322,10 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 1.82
+   "chg": -2.08
   },
   "000819": {
-   "pos": "sealed",
+   "pos": "touched",
    "counts": {
     "seal": 0,
     "break": 0,
@@ -333,32 +333,32 @@
     "approach": 0,
     "accel": 0
    },
-   "brokeToday": 0,
-   "chg": 9.98
+   "brokeToday": 1,
+   "chg": 7.96
   }
  },
  "notified": 0,
  "threshold_adjust": {
   "enabled": false,
-  "state": "震荡",
+  "state": "冰点",
   "items": [
    {
     "key": "approachPct",
     "base": 7,
-    "regime": "震荡",
-    "tier": "neutral",
-    "multiplier": 1,
-    "final": 7,
-    "adjusted": false
+    "regime": "冰点",
+    "tier": "cold",
+    "multiplier": 0.85,
+    "final": 5.95,
+    "adjusted": true
    },
    {
     "key": "sectorMinChg",
     "base": 2,
-    "regime": "震荡",
-    "tier": "neutral",
-    "multiplier": 1,
-    "final": 2,
-    "adjusted": false
+    "regime": "冰点",
+    "tier": "cold",
+    "multiplier": 0.75,
+    "final": 1.5,
+    "adjusted": true
    }
   ]
  },
