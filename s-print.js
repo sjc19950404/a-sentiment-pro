@@ -17,6 +17,15 @@
 (function (S) {
   'use strict';
   S = S || (window.S = window.S || {});
+  // 【18 册 P0】report.html 独立页不引 s-root.js，S.getFlag 可能不存在；本地兜底，语义与 s-root.js L31 一致。
+  // 4a 的 s-drawer.js 跑在 index.html（有 s-root.js）故无此问题，本页宿主不同不可照搬假设。
+  if (typeof S.getFlag !== 'function') {
+    var __printFlags = Object.create(null);
+    S.getFlag = function (name, dflt) { return name in __printFlags ? __printFlags[name] : dflt; };
+  }
+  if (typeof S.setFlag !== 'function') {
+    S.setFlag = function (name, v) { /* 独立页无需切换，保留接口 */ };
+  }
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -84,25 +93,14 @@
     if (btn) btn.setAttribute('aria-expanded', 'false');
   }
 
-  /* ---------- 菜单项点击：导出引擎就绪则执行真实导出，否则给「未就绪」提示 ---------- */
+  /* ---------- 菜单项点击：独立页如实告知「预览页不支持下载」（18 册 §5.1） ----------
+   * 本页没有 window.__exportCtx（由 app.js 侧提供），exportManifest({}) 拿空 ctx，
+   * 不会真下载 CSV。绝不 flash「导出请求已提交」这类误导文案——完整导出在研报视图的
+   * #expMenu（app.js 的 renderExportMenu / 导出处理器），符合「前端不写取数逻辑」纪律。 */
   function onMenuClick(e) {
     const item = e.target && e.target.closest ? e.target.closest('[data-ds]') : null;
     if (!item || item.disabled) return;
-    const id = item.dataset.ds;
-    const M = window.DatasetExport;
-    if (M && typeof M.exportAsCsv === 'function' && typeof M.buildDataset === 'function') {
-      try {
-        const ctx = window.__exportCtx || {};
-        if (id === '__csv' && typeof M.exportAsCsv === 'function') {
-          // 合并全表由 app 侧的导出处理器负责；独立页退化为按首项提示（不重写取数）
-          flash(item, '请在研报视图使用全部导出');
-        } else {
-          flash(item, '导出请求已提交');
-        }
-      } catch (_) { flash(item, '导出引擎未就绪'); }
-    } else {
-      flash(item, '导出引擎未就绪');
-    }
+    flash(item, '请到研报视图导出');
     closeMenu();
   }
   function flash(btn, text) {

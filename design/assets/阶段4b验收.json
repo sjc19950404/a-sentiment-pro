@@ -1,0 +1,139 @@
+{
+  "stamp": "2026-11-16T09:41:36.358Z",
+  "gates": {
+    "①report路由200+就绪": true,
+    "②10章toc": true,
+    "②三按钮+节点": true,
+    "②V4-2前提-topbar/ticker": true,
+    "②导出菜单12项": false,
+    "②style.css隔离": true,
+    "②s-scope作用域": true,
+    "附-导出菜单开合": false,
+    "③打印隐藏topbar/ticker": true,
+    "③打印隐藏三按钮": true,
+    "③打印隐藏导出菜单": true,
+    "③正文打印仍可见": true,
+    "④默认研报零回归": true,
+    "④阶段4a自检保持": false,
+    "附加-控制台零异常": false
+  },
+  "errors": [],
+  "exceptions": [
+    "Uncaught"
+  ],
+  "consoleErrors": [],
+  "loadFailures": [],
+  "verdict": "FAIL",
+  "reportReadyMs": 19,
+  "reportDom": {
+    "title": "研判报告 · 长文阅读（打印 / 导出）",
+    "bodyClass": "s-scope",
+    "sScopeCount": 1,
+    "pageReport": true,
+    "briefBody": true,
+    "rptAudit": true,
+    "topbar": true,
+    "ticker": true,
+    "btnCopy": true,
+    "btnExport": true,
+    "btnPrint": true,
+    "tocLinks": 10,
+    "chapters": 10,
+    "chapterIds": [
+      "ch1",
+      "ch2",
+      "ch3",
+      "ch4",
+      "ch5",
+      "ch6",
+      "ch7",
+      "ch8",
+      "ch9",
+      "ch10"
+    ],
+    "detailsCount": 1,
+    "menuExists": true,
+    "menuHiddenInitially": true,
+    "exportItems": 0,
+    "exportIds": [],
+    "exportLabels": [],
+    "exportCounts": [],
+    "aliasExpMenu": true,
+    "datasetExportType": "object",
+    "exportManifestType": "function",
+    "hasExportCtx": false,
+    "styleCssLinked": false,
+    "scriptOrder": [
+      "./bundle.js",
+      "./s-print.js"
+    ],
+    "sKeys": []
+  },
+  "exportAction": {
+    "opened": {
+      "hidden": true,
+      "expanded": "false",
+      "items": 0
+    },
+    "clicked": false,
+    "before": null,
+    "after": null,
+    "menuAfterClick": true,
+    "flashFired": false
+  },
+  "printDom": {
+    "topbarDisplay": "none",
+    "tickerDisplay": "none",
+    "btnCopyDisplay": "none",
+    "btnExportDisplay": "none",
+    "btnPrintDisplay": "none",
+    "tocDisplay": "flex",
+    "exportMenuDisplay": "none",
+    "proseDisplay": "block",
+    "tableTheadRule": "see-css-static-check"
+  },
+  "mainDom": {
+    "mainExists": true,
+    "mainHidden": false,
+    "mainDisplay": "block",
+    "mainRectTop": 459,
+    "sRootHidden": true,
+    "sRootDisplay": "none",
+    "sKeys": [
+      "runSelfTest",
+      "collectCls",
+      "setFlag",
+      "getFlag",
+      "registerPage",
+      "showPage",
+      "routeWorkbench",
+      "openDrawer",
+      "closeDrawer",
+      "setDrawerSize",
+      "onTabChange",
+      "initDrawer",
+      "Table",
+      "registerPageOverview",
+      "registerPageBacktest",
+      "teardownBacktest",
+      "registerPageZt",
+      "teardownZt"
+    ],
+    "drawerExists": true,
+    "drawerDisplay": "none"
+  },
+  "selftest": {
+    "pass": false,
+    "drawerOk": true,
+    "cls": 0.141,
+    "skeleton": true
+  },
+  "failed": [
+    "②导出菜单12项",
+    "附-导出菜单开合",
+    "④阶段4a自检保持",
+    "附加-控制台零异常"
+  ],
+  "passed": 11,
+  "total": 15
+}

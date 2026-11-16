@@ -1080,7 +1080,8 @@
   .s-bar,
   .s-spark,
   .s-chart__pending,
-  .s-chart__dot {
+  .s-chart__dot,
+  .s-prose__toc {
     display: none !important;
   }
   .s-main { display: block; overflow: visible; }
