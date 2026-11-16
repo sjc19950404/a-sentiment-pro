@@ -1,0 +1,404 @@
+{
+  "stamp": "2026-11-16T11:03:00.965Z",
+  "contract": {
+    "source": "05册L722 / 07册§7.4 / 08册L238 / 06册L186",
+    "tiers": "03册2.1 四档断点",
+    "runsPerTier": 3,
+    "windowMs": 5000,
+    "collectFn": "S.collectCls()（线上 s-selftest.js 同口径）",
+    "passRule": "每档 中位数<=0.10 且 最差值<=0.10；layout-shift unsupported 记未测",
+    "target": 0.1,
+    "baseline": 0.174
+  },
+  "tiers": [
+    {
+      "id": "XS",
+      "label": "XS <640",
+      "viewport": "390x844",
+      "runs": [
+        {
+          "i": 1,
+          "value": 0.3188,
+          "sessions": 1,
+          "pass": false,
+          "degraded": true,
+          "note": null,
+          "topSources": [
+            {
+              "src": "div#btStrategyPanel.btstrat-panel",
+              "value": 0.2205
+            },
+            {
+              "src": "div#preMainPanels.pre-main-panels",
+              "value": 0.0984
+            },
+            {
+              "src": "main",
+              "value": 0.0984
+            },
+            {
+              "src": "nav#zoneNav.zonenav",
+              "value": 0.0984
+            },
+            {
+              "src": "div.exp-wrap",
+              "value": 0.0984
+            }
+          ]
+        },
+        {
+          "i": 2,
+          "value": 0.3183,
+          "sessions": 1,
+          "pass": false,
+          "degraded": true,
+          "note": null,
+          "topSources": [
+            {
+              "src": "div#btStrategyPanel.btstrat-panel",
+              "value": 0.2205
+            },
+            {
+              "src": "div#preMainPanels.pre-main-panels",
+              "value": 0.1746
+            },
+            {
+              "src": "main",
+              "value": 0.1746
+            },
+            {
+              "src": "nav#zoneNav.zonenav",
+              "value": 0.1746
+            },
+            {
+              "src": "span#loadScope.scope",
+              "value": 0.0979
+            }
+          ]
+        },
+        {
+          "i": 3,
+          "value": 0.2205,
+          "sessions": 1,
+          "pass": false,
+          "degraded": true,
+          "note": null,
+          "topSources": [
+            {
+              "src": "div#btStrategyPanel.btstrat-panel",
+              "value": 0.2205
+            },
+            {
+              "src": "div#preMainPanels.pre-main-panels",
+              "value": 0.1746
+            },
+            {
+              "src": "main",
+              "value": 0.1746
+            },
+            {
+              "src": "nav#zoneNav.zonenav",
+              "value": 0.1746
+            },
+            {
+              "src": "span#loadScope.scope",
+              "value": 0.0979
+            }
+          ]
+        }
+      ],
+      "median": 0.3183,
+      "worst": 0.3188,
+      "best": 0.2205,
+      "variance": 0.002136,
+      "verdict": "FAIL",
+      "measured": 3
+    },
+    {
+      "id": "SM",
+      "label": "SM 640-1023",
+      "viewport": "800x900",
+      "runs": [
+        {
+          "i": 1,
+          "value": 0.9528,
+          "sessions": 1,
+          "pass": false,
+          "degraded": true,
+          "note": null,
+          "topSources": [
+            {
+              "src": "div#preMainPanels.pre-main-panels",
+              "value": 0.9901
+            },
+            {
+              "src": "main",
+              "value": 0.9901
+            },
+            {
+              "src": "nav#zoneNav.zonenav",
+              "value": 0.9901
+            },
+            {
+              "src": "div.meta",
+              "value": 0.9901
+            },
+            {
+              "src": "div#btStrategyPanel.btstrat-panel",
+              "value": 0.1966
+            }
+          ]
+        },
+        {
+          "i": 2,
+          "value": 0.1966,
+          "sessions": 1,
+          "pass": false,
+          "degraded": true,
+          "note": null,
+          "topSources": [
+            {
+              "src": "div#preMainPanels.pre-main-panels",
+              "value": 0.9901
+            },
+            {
+              "src": "main",
+              "value": 0.9901
+            },
+            {
+              "src": "nav#zoneNav.zonenav",
+              "value": 0.9901
+            },
+            {
+              "src": "div.meta",
+              "value": 0.9901
+            },
+            {
+              "src": "div#btStrategyPanel.btstrat-panel",
+              "value": 0.1966
+            }
+          ]
+        },
+        {
+          "i": 3,
+          "value": 0.2339,
+          "sessions": 1,
+          "pass": false,
+          "degraded": true,
+          "note": null,
+          "topSources": [
+            {
+              "src": "div#preMainPanels.pre-main-panels",
+              "value": 0.2339
+            },
+            {
+              "src": "main",
+              "value": 0.2339
+            },
+            {
+              "src": "nav#zoneNav.zonenav",
+              "value": 0.2339
+            },
+            {
+              "src": "div.meta",
+              "value": 0.2339
+            }
+          ]
+        }
+      ],
+      "median": 0.2339,
+      "worst": 0.9528,
+      "best": 0.1966,
+      "variance": 0.121116,
+      "verdict": "FAIL",
+      "measured": 3
+    },
+    {
+      "id": "MD",
+      "label": "MD 1024-1439",
+      "viewport": "1280x800",
+      "runs": [
+        {
+          "i": 1,
+          "value": 0.0329,
+          "sessions": 1,
+          "pass": true,
+          "degraded": false,
+          "note": null,
+          "topSources": [
+            {
+              "src": "div.meta",
+              "value": 0.0351
+            },
+            {
+              "src": "div.mom-group",
+              "value": 0.0329
+            },
+            {
+              "src": "div#emScore.score.mid",
+              "value": 0.0329
+            },
+            {
+              "src": "div.pct",
+              "value": 0.0329
+            }
+          ]
+        },
+        {
+          "i": 2,
+          "value": 0.0329,
+          "sessions": 1,
+          "pass": true,
+          "degraded": false,
+          "note": null,
+          "topSources": [
+            {
+              "src": "div.meta",
+              "value": 0.0351
+            },
+            {
+              "src": "div.mom-group",
+              "value": 0.0329
+            },
+            {
+              "src": "div#emScore.score.mid",
+              "value": 0.0329
+            },
+            {
+              "src": "div.pct",
+              "value": 0.0329
+            }
+          ]
+        },
+        {
+          "i": 3,
+          "value": 0.0022,
+          "sessions": 1,
+          "pass": true,
+          "degraded": false,
+          "note": null,
+          "topSources": [
+            {
+              "src": "div.meta",
+              "value": 0.0022
+            }
+          ]
+        }
+      ],
+      "median": 0.0329,
+      "worst": 0.0329,
+      "best": 0.0022,
+      "variance": 0.000209,
+      "verdict": "PASS",
+      "measured": 3
+    },
+    {
+      "id": "LG",
+      "label": "LG >=1440",
+      "viewport": "1440x900",
+      "runs": [
+        {
+          "i": 1,
+          "value": 0.1244,
+          "sessions": 1,
+          "pass": false,
+          "degraded": false,
+          "note": null,
+          "topSources": [
+            {
+              "src": "div#btStrategyPanel.btstrat-panel",
+              "value": 0.1244
+            },
+            {
+              "src": "div.mom-group",
+              "value": 0.1152
+            },
+            {
+              "src": "div.meta",
+              "value": 0.0576
+            },
+            {
+              "src": "div#emScore.score.mid",
+              "value": 0.0576
+            }
+          ]
+        },
+        {
+          "i": 2,
+          "value": 0.1821,
+          "sessions": 1,
+          "pass": false,
+          "degraded": true,
+          "note": null,
+          "topSources": [
+            {
+              "src": "div#btStrategyPanel.btstrat-panel",
+              "value": 0.1244
+            },
+            {
+              "src": "div.mom-group",
+              "value": 0.1152
+            },
+            {
+              "src": "div.meta",
+              "value": 0.0576
+            },
+            {
+              "src": "div#emScore.score.mid",
+              "value": 0.0576
+            }
+          ]
+        },
+        {
+          "i": 3,
+          "value": 0.1609,
+          "sessions": 1,
+          "pass": false,
+          "degraded": false,
+          "note": null,
+          "topSources": [
+            {
+              "src": "div#btStrategyPanel.btstrat-panel",
+              "value": 0.1244
+            },
+            {
+              "src": "div.mom-group",
+              "value": 0.07
+            },
+            {
+              "src": "div.meta",
+              "value": 0.0365
+            },
+            {
+              "src": "div#emScore.score.mid",
+              "value": 0.035
+            }
+          ]
+        }
+      ],
+      "median": 0.1609,
+      "worst": 0.1821,
+      "best": 0.1244,
+      "variance": 0.000568,
+      "verdict": "FAIL",
+      "measured": 3
+    }
+  ],
+  "verdict": "FAIL",
+  "summary": {
+    "tiersPassed": 1,
+    "tiersTotal": 4,
+    "medians": [
+      "XS:0.3183",
+      "SM:0.2339",
+      "MD:0.0329",
+      "LG:0.1609"
+    ],
+    "worsts": [
+      "XS:0.3188",
+      "SM:0.9528",
+      "MD:0.0329",
+      "LG:0.1821"
+    ]
+  }
+}
