@@ -69,6 +69,8 @@ const SHELL_ASSETS = [
   './s-page-fund.js',
   './s-page-sector.js',
   './s-page-picks.js',
+  './s-page-kline.js',
+  './s-page-settings.js',
   './report.html',
   './s-print.js',
 ];

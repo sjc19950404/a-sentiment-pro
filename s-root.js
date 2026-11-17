@@ -70,7 +70,9 @@
   };
 
   /* ---------- 页路由（阶段 2+ 逐页接入；注册页优先，否则占位） ---------- */
-  const TABS = ['总览', '涨跌停', '资金', '板块', '选股', '回测', '模拟盘', '研报'];
+  /* 10 tab：原 8 tab + K线 / 系统设置（旧终端 render 完整，用户 2026-11-18 要求继续收编）。
+   * 研报保持最后一项（特殊：点击跳回原研报视图 ?view=research）。 */
+  const TABS = ['总览', '涨跌停', '资金', '板块', '选股', '回测', '模拟盘', 'K线', '系统设置', '研报'];
   const pages = Object.create(null);       // name → { render, teardown }
   let currentPage = null;
   S.registerPage = (name, fn, teardown) => { pages[name] = { render: fn, teardown: teardown || null }; };

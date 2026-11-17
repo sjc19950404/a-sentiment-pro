@@ -1877,7 +1877,9 @@
 
   /* 【工作台收编 2026-11-18】只暴露两个现成 render，不改旧视图任何行为：
    * 新工作台「板块/选股」页直接复用这些 render 输出（01 册「数据层零改动·复用现有 render」）。 */
-  window.__TERMINAL_VIEWS__ = { sector: viewSector, picks: viewPicks };
+  window.__TERMINAL_VIEWS__ = {
+    sector: viewSector, picks: viewPicks, kline: viewKline, settings: viewSettings,
+  };
 
   // signals-latest 载入后再挂载（读一次，缓存）；失败也挂载（空态降级）
   jget('data/signals-latest.json').then((S) => { window.__SIGNALS__ = S || {}; SAFE(mount, 'mount'); })
