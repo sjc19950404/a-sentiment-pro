@@ -10,7 +10,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -8.14
+   "chg": -8.4
   },
   "600822": {
    "pos": "none",
@@ -22,7 +22,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3.81
+   "chg": -3.6
   },
   "600936": {
    "pos": "sealed",
@@ -46,7 +46,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 1.06
+   "chg": 0.85
   },
   "601929": {
    "pos": "none",
@@ -58,7 +58,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -6.08
+   "chg": -7.77
   },
   "603118": {
    "pos": "none",
@@ -70,7 +70,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 0.14
+   "chg": 0.2
   },
   "603983": {
    "pos": "none",
@@ -82,7 +82,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.69
+   "chg": 2.62
   },
   "605378": {
    "pos": "none",
@@ -94,7 +94,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.93
+   "chg": 4.19
   },
   "002419": {
    "pos": "touched",
@@ -106,7 +106,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 0
+   "chg": -0.74
   },
   "002356": {
    "pos": "none",
@@ -118,7 +118,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -0.79
+   "chg": -2.78
   },
   "000521": {
    "pos": "sealed",
@@ -142,7 +142,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.14
+   "chg": 1.92
   },
   "001318": {
    "pos": "none",
@@ -166,7 +166,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.88
+   "chg": 3.93
   },
   "002959": {
    "pos": "sealed",
@@ -214,7 +214,7 @@
     "accel": 0
    },
    "brokeToday": 2,
-   "chg": 5.69
+   "chg": 4.73
   },
   "002861": {
    "pos": "sealed",
@@ -232,25 +232,25 @@
  "notified": 1,
  "threshold_adjust": {
   "enabled": false,
-  "state": "复苏",
+  "state": "退潮",
   "items": [
    {
     "key": "approachPct",
     "base": 7,
-    "regime": "复苏",
-    "tier": "neutral",
-    "multiplier": 1,
-    "final": 7,
-    "adjusted": false
+    "regime": "退潮",
+    "tier": "cold",
+    "multiplier": 0.85,
+    "final": 5.95,
+    "adjusted": true
    },
    {
     "key": "sectorMinChg",
     "base": 2,
-    "regime": "复苏",
-    "tier": "neutral",
-    "multiplier": 1,
-    "final": 2,
-    "adjusted": false
+    "regime": "退潮",
+    "tier": "cold",
+    "multiplier": 0.75,
+    "final": 1.5,
+    "adjusted": true
    }
   ]
  },
