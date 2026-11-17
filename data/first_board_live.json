@@ -1,7 +1,7 @@
 {
- "at": "2026-11-17T03:30:01.673Z",
- "bj": "11:30",
- "session": "trading",
+ "at": "2026-11-17T04:00:01.333Z",
+ "bj": "12:00",
+ "session": "offhours",
  "dataDate": "2026-11-17",
  "prevDate": "20261116",
  "pool": 19,
@@ -117,8 +117,8 @@
   {
    "code": "601188",
    "name": "龙江交通",
-   "chg": 3.17,
-   "last": 4.88,
+   "chg": 3.38,
+   "last": 4.89,
    "high": 5.15,
    "limitPrice": 5.2,
    "status": "idle",
