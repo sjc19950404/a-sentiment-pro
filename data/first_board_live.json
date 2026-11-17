@@ -1,13 +1,13 @@
 {
- "at": "2026-11-17T06:30:01.557Z",
- "bj": "14:30",
+ "at": "2026-11-17T07:00:01.739Z",
+ "bj": "15:00",
  "session": "trading",
  "dataDate": "2026-11-17",
  "prevDate": "20261116",
  "pool": 19,
  "counts": {
-  "sealed": 4,
-  "broken": 3,
+  "sealed": 5,
+  "broken": 2,
   "approaching": 0,
   "idle": 12,
   "pending": 0
@@ -15,20 +15,10 @@
  "approachPct": 5,
  "rows": [
   {
-   "code": "000533",
-   "name": "顺钠股份",
-   "chg": 7.94,
-   "last": 10.6,
-   "high": 10.8,
-   "limitPrice": 10.8,
-   "status": "broken",
-   "qDate": "2026-11-17"
-  },
-  {
    "code": "000628",
    "name": "高新发展",
-   "chg": 2.47,
-   "last": 47.7,
+   "chg": 4.77,
+   "last": 48.77,
    "high": 51.21,
    "limitPrice": 51.21,
    "status": "broken",
@@ -37,8 +27,8 @@
   {
    "code": "002419",
    "name": "天虹股份",
-   "chg": 0.37,
-   "last": 5.42,
+   "chg": -1.11,
+   "last": 5.34,
    "high": 5.94,
    "limitPrice": 5.94,
    "status": "broken",
@@ -75,6 +65,16 @@
    "qDate": "2026-11-17"
   },
   {
+   "code": "000533",
+   "name": "顺钠股份",
+   "chg": 9.98,
+   "last": 10.8,
+   "high": 10.8,
+   "limitPrice": 10.8,
+   "status": "sealed",
+   "qDate": "2026-11-17"
+  },
+  {
    "code": "600936",
    "name": "北投科技",
    "chg": 9.95,
@@ -85,40 +85,30 @@
    "qDate": "2026-11-17"
   },
   {
-   "code": "002058",
-   "name": "紫竹高科",
-   "chg": 3.57,
-   "last": 23.2,
-   "high": 23.63,
-   "limitPrice": 24.64,
-   "status": "idle",
-   "qDate": "2026-11-17"
-  },
-  {
-   "code": "601188",
-   "name": "龙江交通",
-   "chg": 3.17,
-   "last": 4.88,
-   "high": 5.15,
-   "limitPrice": 5.2,
-   "status": "idle",
-   "qDate": "2026-11-17"
-  },
-  {
    "code": "605378",
    "name": "野马电池",
-   "chg": 3.16,
-   "last": 16.01,
+   "chg": 4.7,
+   "last": 16.25,
    "high": 17.06,
    "limitPrice": 17.07,
    "status": "idle",
    "qDate": "2026-11-17"
   },
   {
+   "code": "002058",
+   "name": "紫竹高科",
+   "chg": 4.24,
+   "last": 23.35,
+   "high": 23.63,
+   "limitPrice": 24.64,
+   "status": "idle",
+   "qDate": "2026-11-17"
+  },
+  {
    "code": "002035",
    "name": "华帝股份",
-   "chg": 2.56,
-   "last": 4.8,
+   "chg": 2.78,
+   "last": 4.81,
    "high": 5,
    "limitPrice": 5.15,
    "status": "idle",
@@ -127,18 +117,28 @@
   {
    "code": "603983",
    "name": "丸美生物",
-   "chg": 2.36,
-   "last": 27.36,
+   "chg": 2.58,
+   "last": 27.42,
    "high": 29.38,
    "limitPrice": 29.4,
    "status": "idle",
    "qDate": "2026-11-17"
   },
   {
+   "code": "601188",
+   "name": "龙江交通",
+   "chg": 0.85,
+   "last": 4.77,
+   "high": 5.15,
+   "limitPrice": 5.2,
+   "status": "idle",
+   "qDate": "2026-11-17"
+  },
+  {
    "code": "603118",
    "name": "共进股份",
-   "chg": 1.56,
-   "last": 14.94,
+   "chg": 0.54,
+   "last": 14.79,
    "high": 15.25,
    "limitPrice": 16.18,
    "status": "idle",
@@ -147,8 +147,8 @@
   {
    "code": "002356",
    "name": "鹏飞绿能",
-   "chg": 1.19,
-   "last": 2.55,
+   "chg": -1.98,
+   "last": 2.47,
    "high": 2.69,
    "limitPrice": 2.77,
    "status": "idle",
@@ -157,8 +157,8 @@
   {
    "code": "001318",
    "name": "阳光乳业",
-   "chg": -2.6,
-   "last": 14.24,
+   "chg": -3.15,
+   "last": 14.16,
    "high": 15.86,
    "limitPrice": 16.08,
    "status": "idle",
@@ -167,8 +167,8 @@
   {
    "code": "600822",
    "name": "上海物贸",
-   "chg": -4.02,
-   "last": 9.07,
+   "chg": -3.92,
+   "last": 9.08,
    "high": 9.48,
    "limitPrice": 10.4,
    "status": "idle",
@@ -177,8 +177,8 @@
   {
    "code": "601929",
    "name": "吉视传媒",
-   "chg": -6.08,
-   "last": 2.78,
+   "chg": -6.76,
+   "last": 2.76,
    "high": 3.1,
    "limitPrice": 3.26,
    "status": "idle",
@@ -187,8 +187,8 @@
   {
    "code": "600386",
    "name": "北巴传媒",
-   "chg": -8.4,
-   "last": 3.49,
+   "chg": -6.82,
+   "last": 3.55,
    "high": 3.81,
    "limitPrice": 4.19,
    "status": "idle",
