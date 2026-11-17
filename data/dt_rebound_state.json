@@ -4,7 +4,7 @@
    "pos": "lifted",
    "counts": {
     "lift": 0,
-    "red": 0,
+    "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
@@ -19,9 +19,9 @@
    }
   },
   "600259": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
-    "lift": 0,
+    "lift": 1,
     "red": 0,
     "seal": 0,
     "dtBreak": 0
@@ -163,9 +163,9 @@
    }
   },
   "603381": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
-    "lift": 0,
+    "lift": 1,
     "red": 0,
     "seal": 0,
     "dtBreak": 0
@@ -208,10 +208,10 @@
    }
   },
   "603637": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
-    "red": 0,
+    "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
@@ -373,7 +373,7 @@
    "pos": "lifted",
    "counts": {
     "lift": 0,
-    "red": 0,
+    "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
@@ -532,6 +532,6 @@
    }
   }
  },
- "notified": 25,
+ "notified": 30,
  "date": "2026-11-17"
 }
