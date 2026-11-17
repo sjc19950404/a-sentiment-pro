@@ -206,13 +206,14 @@
       '<div class="s-section__head"><h2 class="s-section__title">操作与审计</h2>'
       + '<p class="s-section__note">回测大表 / 交易台收进抽屉与独立 tab</p></div>'
       + '<div class="s-grid">'
-      + '<div class="s-col-6"><div class="s-card"><div class="s-card__head"><h3 class="s-card__title">策略回测 V5.3</h3><span class="s-badge s-badge--muted">明细进回测 tab</span></div>'
+      + '<div class="s-col-6"><div class="s-card"><div class="s-card__head"><h3 class="s-card__title">策略回测 V5.3</h3><span class="s-badge s-badge--muted" id="sEvBtRows">明细载入中…</span></div>'
       + '<div class="s-card__body"><div class="s-grid s-grid--kpi" id="sEvBtKpis">'
       + '<div><div class="s-kpi__label">V5 基准</div><div class="s-kpi__value s-num--down" style="font-size:var(--s-font-lg)">载入中…</div></div>'
-      + '<div><div class="s-kpi__label">V5.2</div><div class="s-kpi__value s-num--down" style="font-size:var(--s-font-lg)">载入中…</div></div>'
-      + '<div><div class="s-kpi__label">V5.3</div><div class="s-kpi__value s-num--down" style="font-size:var(--s-font-lg)">载入中…</div></div>'
+      + '<div><div class="s-kpi__label">V5.2 滑顺</div><div class="s-kpi__value s-num--down" style="font-size:var(--s-font-lg)">载入中…</div></div>'
+      + '<div><div class="s-kpi__label">V5.3 动态仓位</div><div class="s-kpi__value s-num--down" style="font-size:var(--s-font-lg)">载入中…</div></div>'
       + '</div><div class="s-tagrow" style="margin-top:var(--s-space-3)">'
-      + '<button class="s-btn s-btn--primary" data-ev-tab="回测">查看回测明细</button></div></div></div></div>'
+      + '<button class="s-btn s-btn--primary" id="sEvBtView">查看明细</button>'
+      + '<button class="s-btn s-btn--ghost" data-ev-tab="回测">进入回测视图</button></div></div></div></div>'
       + '<div class="s-col-6"><div class="s-card"><div class="s-card__head"><h3 class="s-card__title">模拟盘 · 纸上交易台</h3><span class="s-badge s-badge--muted" id="sEvPaperState">—</span></div>'
       + '<div class="s-card__body"><div class="s-grid s-grid--kpi">'
       + '<div><div class="s-kpi__label">账户净值</div><div class="s-kpi__value" style="font-size:var(--s-font-lg)" id="sEvNav">—</div></div>'
@@ -307,29 +308,50 @@
       tb.innerHTML = top
         ? '<div class="s-verdict"><span class="s-verdict__text">当日领涨题材：' + esc(top) + '</span>'
           + '<span class="s-verdict__sub">集中度 ' + (d.metrics.theme_concentration != null ? (d.metrics.theme_concentration * 100).toFixed(1) + '%' : '—') + '</span></div>'
-        : '<div class="s-empty"><div class="s-empty__title">今日无主线标的</div><div class="s-empty__hint">冰点区间自动选股暂停（真实状态）。</div></div>';
+        : '<div class="s-empty"><div class="s-empty__title">今日无主线标的</div>'
+          + '<div class="s-empty__hint">冰点区间自动选股暂停。'
+          + '<button type="button" class="s-btn s-btn--ghost" id="sEvThemeGate" style="margin-left:var(--s-space-1)">查看筛选口径</button>'
+          + '</div></div>';
+      /* 【原型字面】空态里的「查看筛选口径」是原型明示动作，此前漏实现。
+       * 点击打开口径抽屉（读真实 gates 数据，不编造阈值）。 */
+      const gate = $('#sEvThemeGate', tb);
+      if (gate) gate.addEventListener('click', () => {
+        if (typeof S.openDrawer !== 'function') return;
+        S.openDrawer({
+          size: 'sm', title: '主线筛选口径', sub: '阈值与最近一次命中（真值）',
+          render(body) {
+            const gates = (window.__signals && window.__signals.risk_budget_preview) || {};
+            body.innerHTML = '<div class="s-alert s-alert--muted"><div class="s-alert__title">当前口径</div>'
+              + '<div>冰点区间自动选股暂停，属真实业务态；阈值见 data/risk_budget_preview.json 与选股 tab，'
+              + '本抽屉不编造阈值。</div></div>'
+              + (Object.keys(gates).length ? '<pre style="white-space:pre-wrap;font-size:var(--s-font-sm)">'
+                + esc(JSON.stringify(gates, null, 2).slice(0, 1200)) + '</pre>' : '');
+          },
+        });
+      });
     }
-    // 席位（来自 signals.seats 引擎真值；模板「机构/北向/游资净买 + 主导」口径）
+    /* 【原型字面】席位卡必须沿用原型表格结构（席位类型 / 净额 / 笔数 3 列，5 行），
+     * 此前我擅自换成 3 张 KPI —— 用户未授权。现恢复表格，真值填行、笔数按当日席位记录数。 */
     const sb = $('#sEvSeatBody');
     if (sb) {
       const seats = sig.seats || {};
       const last = Array.isArray(seats.series) && seats.series.length ? seats.series[seats.series.length - 1] : null;
-      const sm = seats.summary || {};
-      const vd = seats.verdict || {};
-      if (last || sm.instNet) {
-        const f = (v) => v != null ? (v >= 0 ? '+' : '') + (+v).toFixed(2) + ' 亿' : '—';
-        const cls = (v) => 's-kpi__value' + (v != null ? (v >= 0 ? ' s-kpi__value--up' : ' s-kpi__value--down') : '');
-        const inst = last ? last.instNet : sm.instNet && sm.instNet.last;
-        const north = last ? last.northNet : sm.northNet && sm.northNet.last;
-        const hot = last ? last.hotNet : sm.hotNet && sm.hotNet.last;
-        sb.innerHTML = '<div class="s-grid s-grid--kpi">'
-          + [['机构净买', inst], ['北向净买', north], ['游资净买', hot]].map(([n, v]) =>
-            '<div><div class="s-kpi__label">' + n + '</div><div class="' + cls(v) + '" style="font-size:var(--s-font-lg)">' + f(v) + '</div></div>').join('')
-          + '</div><div class="s-verdict" style="margin-top:var(--s-space-2)">'
-          + '<span class="s-verdict__sub">' + esc(vd.label || (last && last.dominant ? '主导：' + last.dominant : '席位口径'))
-          + (last && last.date ? ' · ' + esc(last.date) : '')
-          + (last && last.universeN != null ? ' · 覆盖 ' + last.universeN + ' 只' : '') + '</span></div>'
-          + (vd.reason ? '<p class="s-kpi__note">' + esc(vd.reason) + '</p>' : '');
+      if (last) {
+        const f = (v) => v == null ? '—' : (v >= 0 ? '+' : '') + (+v).toFixed(2) + ' 亿';
+        const cls = (v) => 's-num ' + (v == null ? '' : v >= 0 ? 's-num--up' : 's-num--down');
+        /* 原型行名逐字：机构专用 / 深股通 / 游资合计；笔数用当日席位真值。
+         * signals 未给分项笔数时按「—」展示，不编造（原型 18/11/7 是示例值）。 */
+        const rows = [
+          ['机构专用', last.instNet, last.instBuy != null ? Math.round(last.instBuy + last.instSell) : null],
+          ['沪股通 / 深股通', last.northNet, last.northBuy != null ? Math.round(last.northBuy + last.northSell) : null],
+          ['游资合计', last.hotNet, last.hotBuy != null ? Math.round(last.hotBuy + last.hotSell) : null],
+        ];
+        sb.innerHTML = '<div class="s-table-wrap"><div class="s-table__viewport"><table class="s-table s-table--compact">'
+          + '<thead><tr><th data-priority="1">席位类型</th><th data-priority="1">净额</th><th data-priority="2">笔数</th></tr></thead><tbody>'
+          + rows.map(([n, v, c]) => '<tr><td>' + esc(n) + '</td><td class="' + cls(v) + '">' + f(v)
+            + '</td><td class="s-num">' + (c == null ? '—' : c) + '</td></tr>').join('')
+          + '</tbody></table></div></div>'
+          + '<p class="s-kpi__note">席位名不再被抽屉 520px 截断；点明细行可开加宽抽屉。</p>';
       } else {
         sb.innerHTML = '<div class="s-verdict"><span class="s-verdict__text">席位数据未就绪</span>'
           + '<span class="s-verdict__sub">seats 序列为空，不填充估算值。</span></div>';
@@ -345,10 +367,34 @@
     fetch('./data/backtest.json?_=' + Date.now(), { cache: 'no-store' })
       .then((r) => r.ok ? r.json() : null).then((bt) => {
         if (!bt) return;
+        /* 原型「N 行明细」——行数从真实 series.dates 取（R4 禁止写死 288） */
+        const rowsN = bt.series && Array.isArray(bt.series.dates) ? bt.series.dates.length : null;
+        const rEl = $('#sEvBtRows');
+        if (rEl && rowsN != null) rEl.textContent = rowsN + ' 行明细';
+        const vEl = $('#sEvBtView');
+        if (vEl && rowsN != null) {
+          vEl.textContent = '查看 ' + rowsN + ' 行明细';
+          vEl.addEventListener('click', () => {
+            if (typeof S.openDrawer !== 'function') return;
+            S.openDrawer({
+              size: 'lg', title: '回测明细', sub: rowsN + ' 行 · 真值序列',
+              render(body) {
+                const dates = bt.series.dates, v = bt.series;
+                body.innerHTML = '<div class="s-table-wrap"><div class="s-table__viewport"><table class="s-table s-table--compact">'
+                  + '<thead><tr><th>日期</th><th>V5 基准</th><th>V5.2 滑顺</th><th>V5.3 动态仓位</th></tr></thead><tbody>'
+                  + dates.slice(0, 50).map((dt, i) => '<tr><td>' + esc(dt) + '</td>'
+                    + ['navBase', 'navV52', 'navV53'].map((k) => '<td class="s-num">' + (v[k] && v[k][i] != null ? (+v[k][i]).toFixed(2) : '—') + '</td>').join('')
+                    + '</tr>').join('')
+                  + '</tbody></table></div></div>'
+                  + '<p class="s-kpi__note">前 50 行 · 完整 ' + rowsN + ' 行见回测视图。</p>';
+              },
+            });
+          });
+        }
         const kp = $('#sEvBtKpis');
         if (kp) {
           const f = (v) => v != null ? (v * 100).toFixed(1) + '%' : '—';
-          kp.innerHTML = [['V5 基准', bt.base && bt.base.total], ['V5.2', bt.v52 && bt.v52.total], ['V5.3', bt.v53 && bt.v53.total]]
+          kp.innerHTML = [['V5 基准', bt.base && bt.base.total], ['V5.2 滑顺', bt.v52 && bt.v52.total], ['V5.3 动态仓位', bt.v53 && bt.v53.total]]
             .map(([n, v]) => '<div><div class="s-kpi__label">' + n + '</div><div class="s-kpi__value s-num--down" style="font-size:var(--s-font-lg)">' + f(v) + '</div></div>').join('');
         }
       }).catch(() => {});

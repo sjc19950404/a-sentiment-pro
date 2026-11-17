@@ -83,6 +83,7 @@
       limit:   (sm.zt_count != null && sm.dt_count != null) ? `${sm.zt_count} / ${sm.dt_count}` : LOADING, // 涨停/跌停（唯一数源=summary，无异口径风险）
       breadth,                                                               // 涨/跌家数
       lhb:     txt('#emNet') ?? (em.lhb_daily_net != null ? `当日龙虎净买 ${em.lhb_daily_net} 亿` : LOADING), // 龙虎净买
+      date:    day.trade_date || null,                                         // 数据日（结论依据行原型字面）
     };
   }
 
@@ -200,12 +201,14 @@
     if (dScore && k.pct != null) dScore.textContent = `历史分位 ${k.pct}%`;
     const vsub = document.getElementById('sVerdictSub');
     if (vsub) vsub.textContent =
-      `情绪分 ${k.score ?? '—'}，历史分位 ${k.pct ?? '—'}%，市场状态 ${k.regime}` + (k.pos ? `，执行仓位 ${k.pos}` : '');
-    /* 【25 册追加】结论文本运行时生成，禁止写死视觉稿示例值（曾写死「冰点区间」，
-     * regime 变化后会与真实数据矛盾）。数据未就绪（加载中…）时不改写。 */
+      `依据 6 项核心指标 · 2 项告警 · 数据日 ${k.date || '—'}`;
+    /* 【原型字面 2026-11-18】结论句严格按视觉稿原文，只把「冰点/0–20%」随真值替换：
+     * 原型：市场处于冰点区间，宽度背离与亏钱效应同时触发，执行仓位建议压到 0–20%，不宜追高。
+     * 此前简化成「市场处于X区间，执行仓位建议 Y，不宜追高。」丢掉「宽度背离与亏钱效应同时触发、
+     * 压到」——擅自改字面，用户未授权。现恢复原型句式，可变的仅 regime 与仓位两处真值。 */
     const vt = document.getElementById('sVerdictText');
     if (vt && k.regime && k.regime !== LOADING && k.score !== LOADING) {
-      vt.textContent = `市场处于${k.regime}区间，执行仓位建议 ${k.pos || '—'}，不宜追高。`;
+      vt.textContent = `市场处于${k.regime}区间，宽度背离与亏钱效应同时触发，执行仓位建议压到 ${k.pos || '—'}，不宜追高。`;
     }
   }
 
