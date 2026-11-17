@@ -49,7 +49,9 @@
     tableV2: readFlag('tableV2', true),
     drawerV2: readFlag('drawerV2', true),
     reportV2: readFlag('reportV2', true),
-    defaultWorkbench: readFlag('defaultWorkbench', false)
+    /* 【用户拍板 2026-11-17】默认视图切工作台（原 false=默认研报）。
+     * 回退：?sflag-defaultWorkbench=0 或 ?view=research。 */
+    defaultWorkbench: readFlag('defaultWorkbench', true)
   };
   const flags = Object.create(null);
   S.setFlag = function (name, val) {
@@ -108,12 +110,19 @@
   }
 
   /* ---------- 视图判断 ---------- */
+  /* 【用户拍板 2026-11-17】跳过观测期直接翻默认视图：
+   * - 无参数（默认）→ 读 defaultWorkbench flag（现默认 true = 工作台）
+   * - ?view=research / #research → 明确回原研报（工作台「研报」tab 也跳这里）
+   * - ?view=workbench / #workbench → 工作台
+   * - ?view=terminal / #terminal → 原终端视图语义不变（老收藏链接不破）
+   * 回退开关：?sflag-defaultWorkbench=0 恢复默认研报（21 册 flag 契约） */
   function parseView() {
     try {
       const h = location.hash || '';
-      if (h === '#workbench' || h === '#terminal') return h.slice(1);
       const v = new URLSearchParams(location.search).get('view');
-      if (v === 'workbench' || v === 'terminal') return v;
+      const pick = (x) => (x === 'workbench' || x === 'terminal' || x === 'research') ? x : null;
+      const got = pick(v) || pick(h.replace('#', ''));
+      if (got) return got;
     } catch (_) { /* file:// 或非标准 URL */ }
     return null;
   }
@@ -185,10 +194,15 @@
     if (btnExport) btnExport.addEventListener('click', () => window.open('report.html', '_blank'));
 
     // 8 tab 路由：切换 s-nav__link 高亮 + 切换 panel（注册页优先渲染，否则占位）
+    // 「研报」tab 特殊：跳回原研报视图（?view=research），保留完整研报能力
     const links = navEl.querySelectorAll('.s-nav__link');
     links.forEach((a) => {
       a.addEventListener('click', (ev) => {
         ev.preventDefault();
+        if (TABS[+a.dataset.page] === '研报') {
+          location.href = location.pathname + '?view=research';
+          return;
+        }
         links.forEach((b) => { b.classList.remove('is-active'); b.removeAttribute('aria-current'); });
         a.classList.add('is-active');
         a.setAttribute('aria-current', 'page');
@@ -203,7 +217,10 @@
     const tRoot = $('tRoot');
     const main = document.querySelector('main');
     const pre = $('preMainPanels');
-    const wantBench = view === 'workbench';
+    /* 【用户拍板 2026-11-17】默认视图由 defaultWorkbench flag 决定（现默认 true=工作台）。
+     * ?view=research 明确回研报；?view=terminal 语义不变；?sflag-defaultWorkbench=0 一键回退。 */
+    const wantBench = view === 'workbench'
+      || (view == null && S.getFlag('defaultWorkbench', false));
 
     if (wantBench) {
       document.body.dataset.view = 'workbench';
@@ -232,7 +249,7 @@
       document.body.appendChild(r);
     }
     const v = parseView();
-    if (v === 'workbench') route('workbench');
+    route(v); // 任何值都路由：null→读 defaultWorkbench flag；research→研报；terminal→终端语义
   }
 
   if (document.readyState === 'loading') {
@@ -240,13 +257,10 @@
   } else {
     init();
   }
-  // 深链变化（hash 或 history 回退前进）幂等重路由
-  window.addEventListener('hashchange', () => {
-    route(parseView() === 'workbench' ? 'workbench' : 'report');
-  });
-  window.addEventListener('popstate', () => {
-    route(parseView() === 'workbench' ? 'workbench' : 'report');
-  });
+  // 深链变化（hash 或 history 回退前进）幂等重路由：透传 parseView 结果，
+  // null 时由 route() 按 defaultWorkbench flag 决定（与 init 语义一致）
+  window.addEventListener('hashchange', () => { route(parseView()); });
+  window.addEventListener('popstate', () => { route(parseView()); });
 
   S.routeWorkbench = route;
 })(window.S = window.S || {});
