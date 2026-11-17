@@ -387,9 +387,10 @@
       // KPI 真值依赖 sync() + signals 到达（时序不定），轮询到宽度真值出现（或 10s 超时）
       let tries = 0;
       const timer = setInterval(() => {
+        /* 只等「涨/跌家数」真值（如 "500 / 2954"）出现再补依赖项，20s 超时兜底。
+         * 曾用 /亿|—/ 作附加条件，占位符号「—」会立即命中导致早退，宽度 delta 保留写死值。 */
         const t = (document.getElementById('sKpiBreadth') || {}).textContent || '';
-        const lhb = (document.getElementById('sKpiLhb') || {}).textContent || '';
-        if (/[\d,]+\s*\/\s*[\d,]+/.test(t) || /亿|—/.test(lhb) || ++tries > 20) {
+        if (/[\d,]+\s*\/\s*[\d,]+/.test(t) || ++tries > 40) {
           clearInterval(timer); fillData(); drawFactors();
         }
       }, 500);

@@ -11,14 +11,20 @@
   contain: style;
 }
 
-/* 裸标签复位（覆盖全局 style.css 对 header/footer/main 等的裸标签样式，仅作用于 .s-scope 内部） */
-.s-scope header,
-.s-scope footer,
-.s-scope main,
-.s-scope nav,
-.s-scope section,
-.s-scope article,
-.s-scope aside {
+/* 裸标签复位（覆盖全局 style.css 对 header/footer/main 等的裸标签样式，仅作用于 .s-scope 内部）。
+ * 【26 册修复】加 :not([class]) 只复位「真正裸标签」：
+ * 原规则 .s-scope header 特异性 (0,1,1) 会压过 components.css 的 .s-topbar (0,1,0)，
+ * 导致工作台的 header.s-topbar / nav.s-nav / main.s-main / footer.s-ph-footer 被复位成
+ * display:block / position:static / padding:0 / background:transparent —— 顶栏挤成 3 行、
+ * nav 失去 sticky 与背景、footer 无边框。原型未引 s-bridge.css 故从未暴露。
+ * 带 class 的元素由 components.css 负责视觉，不应被裸标签复位压制。 */
+.s-scope header:not([class]),
+.s-scope footer:not([class]),
+.s-scope main:not([class]),
+.s-scope nav:not([class]),
+.s-scope section:not([class]),
+.s-scope article:not([class]),
+.s-scope aside:not([class]) {
   margin: 0;
   padding: 0;
   border: 0;
