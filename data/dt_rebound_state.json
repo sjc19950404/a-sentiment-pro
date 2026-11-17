@@ -91,7 +91,7 @@
    }
   },
   "603061": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -118,7 +118,7 @@
    }
   },
   "603228": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -172,7 +172,7 @@
    }
   },
   "603389": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -415,7 +415,7 @@
    }
   },
   "002724": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 1,
     "red": 0,
@@ -514,7 +514,7 @@
    }
   },
   "002086": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 1,
     "red": 1,
