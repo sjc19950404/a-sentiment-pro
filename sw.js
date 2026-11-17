@@ -65,6 +65,7 @@ const SHELL_ASSETS = [
   './s-page-overview-evidence.js',
   './s-page-backtest.js',
   './s-page-zt.js',
+  './s-page-paper.js',
   './report.html',
   './s-print.js',
 ];

@@ -94,8 +94,22 @@
     if (rec && typeof rec.render === 'function') {
       try { rec.render(panel); } catch (e) { try { console.error('[s-root] 页面渲染失败', name, e); } catch (_) {} }
     } else {
-      panel.innerHTML = `<h2 class="s-ph-title">${name}</h2>`
-        + `<p class="s-ph-desc">该视图正在建设中，敬请期待。</p>`;
+      /* 【原型 L345-355 generic 对齐】未实现 tab 显示结构契约说明（原型原样），
+       * 不放假图表（不造假原则——原型的示例 svg 是设计示意，生产不伪造数据面板）。 */
+      panel.innerHTML =
+        `<section class="s-section">`
+        + `<div class="s-section__head"><h2 class="s-section__title">${name}</h2>`
+        + `<p class="s-section__note">沿用同一顶栏 / 栅格 / 卡片 / 抽屉契约</p></div>`
+        + `<div class="s-demo"><b>建设中：</b>该视图的数据面板尚未接入。已实现视图：总览 / 涨跌停 / 回测 / 模拟盘；「研报」点击跳回完整研报。数据层零改动，接入后自动复用同一组件契约。</div>`
+        + `<div class="s-struct" style="margin-top:var(--s-space-3)">`
+        + `<div class="s-struct__cell"><b>结论指标条</b><span>4–6 个 KPI，单行进入首屏折叠线</span></div>`
+        + `<div class="s-struct__cell"><b>主图区</b><span>12 列栅格 8/4，aspect-ratio 锁尺寸</span></div>`
+        + `<div class="s-struct__cell"><b>明细表</b><span>data-priority 列分级，窄屏零溢出</span></div>`
+        + `<div class="s-struct__cell"><b>下钻门</b><span>点行开抽屉，重内容不占主页面</span></div>`
+        + `</div>`
+        + `<div class="s-alert s-alert--muted" style="margin-top:var(--s-space-3)"><div class="s-alert__title">数据源正常</div>`
+        + `<div>该视图数据未产出时不伪造，展示克制空状态。</div></div>`
+        + `</section>`;
     }
   }
   S.showPage = (name) => showPage(name);
