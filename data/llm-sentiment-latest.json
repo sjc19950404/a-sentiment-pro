@@ -2,11 +2,11 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-17",
- "generatedAt": "2026-11-17T18:38:11.442+08:00",
+ "generatedAt": "2026-11-17T21:08:09.823+08:00",
  "model": "glm-4-flash",
  "sentiment": -0.5,
  "confidence": 0.7,
- "reason": "市场涨停家数远少于跌停家数，炸板率较高，亏钱效应明显，市场情绪偏负面。",
+ "reason": "市场涨停家数远低于跌停家数，炸板率较高，亏钱效应明显，整体市场情绪偏负面。",
  "events": [
   {
    "type": "业绩预告",
@@ -21,40 +21,40 @@
    "note": "资产注入和央企背景，股价上涨10.1%"
   },
   {
-   "type": "行业催化",
-   "target": "AI算力",
-   "tone": "positive",
-   "note": "AI算力相关股票如卡莱特、全筑股份等表现强势"
-  },
-  {
-   "type": "行业催化",
-   "target": "光刻机",
-   "tone": "positive",
-   "note": "光刻机相关股票如永新光学、东方嘉盛等表现强势"
-  },
-  {
-   "type": "行业催化",
-   "target": "半导体",
-   "tone": "positive",
-   "note": "半导体相关股票如格林达、江化微等表现强势"
-  },
-  {
-   "type": "行业催化",
-   "target": "商业航天",
-   "tone": "positive",
-   "note": "商业航天相关股票如阳光照明等表现强势"
-  },
-  {
-   "type": "行业催化",
-   "target": "金属镍",
-   "tone": "positive",
-   "note": "金属镍相关股票如清研环境等表现强势"
-  },
-  {
-   "type": "其他",
-   "target": "市场整体",
+   "type": "减持",
+   "target": "无具体目标",
    "tone": "negative",
-   "note": "涨停家数少，跌停家数多，炸板率高，市场情绪偏负面"
+   "note": "市场整体跌停家数较多，可能存在减持行为"
+  },
+  {
+   "type": "政策",
+   "target": "无具体目标",
+   "tone": "neutral",
+   "note": "题材梯队缺失，政策影响不明确"
+  },
+  {
+   "type": "行业催化",
+   "target": "全筑股份",
+   "tone": "positive",
+   "note": "边缘AI算力+智慧建筑+建筑装饰，股价上涨10.23%"
+  },
+  {
+   "type": "行业催化",
+   "target": "卡莱特",
+   "tone": "positive",
+   "note": "华为昇腾+AI算力调度+股份回购，股价上涨20%"
+  },
+  {
+   "type": "行业催化",
+   "target": "东方嘉盛",
+   "tone": "positive",
+   "note": "光刻机保税维修+半导体供应链+智慧仓，股价上涨9.98%"
+  },
+  {
+   "type": "行业催化",
+   "target": "小熊电器",
+   "tone": "positive",
+   "note": "小家电+跨境电商+母婴产品，股价上涨10.01%"
   }
  ],
  "inputDigest": {

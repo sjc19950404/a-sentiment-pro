@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generatedAt": "2026-11-17T10:44:08.554Z",
+  "generatedAt": "2026-11-17T13:13:58.455Z",
   "formulaVersion": "v5.2-pro",
   "tradeDate": "2026-11-17",
   "days": 267,
@@ -620,7 +620,7 @@
    43.3,
    38.4,
    46.3,
-   44.3
+   45.2
   ],
   "navBase": [
    1,
@@ -4229,16 +4229,16 @@
     "change_pct": 1.07
    },
    {
-    "name": "半导体",
-    "change_pct": 0.23
-   },
-   {
     "name": "银行",
     "change_pct": 0.14
+   },
+   {
+    "name": "保险",
+    "change_pct": 0.1
    }
   ],
   "threshold": {
-   "up_count_threshold": 15.982387073381789,
+   "up_count_threshold": 17.982387073381787,
    "density_threshold": 0.12913039760793926,
    "mode": "dynamic",
    "samples": 60,
@@ -4250,9 +4250,9 @@
    }
   },
   "gating": {
-   "market_state": "normal",
+   "market_state": "weak",
    "sentiment_state": "stable",
-   "max_output": 2,
+   "max_output": 1,
    "base_up_count_threshold": 15.982387073381789,
    "base_density_threshold": 0.12913039760793926
   }
