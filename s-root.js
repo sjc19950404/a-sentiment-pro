@@ -177,13 +177,20 @@
       +   '<span>regime 序列 90 日</span>'
       +   '<span id="sPhFresh" aria-live="polite">—</span>'
       + '</div>'
-      /* actions（原型 L43-55）：时间窗 chips + 刷新/导出；骨架态/浅色是原型演示开关，产品不带 */
+      /* actions（原型 L43-55）：时间窗 + 骨架态/浅色/刷新/导出/更多，逐字对齐原型。
+       * 【2026-11-18 修正】此前注释「骨架态/浅色是演示开关产品不带」是我擅自裁定，
+       * 用户未授权——现按原型一字不差补齐四个按钮及其交互。 */
       + '<div class="s-topbar__actions">'
       +   '<div class="s-tagrow hide-sm" role="group" aria-label="时间窗">'
       +     [20, 30, 60, 90].map((n) => '<button type="button" class="s-chip" data-ev-range="' + n + '" aria-pressed="' + (n === 60) + '">' + n + '</button>').join('')
       +   '</div>'
+      +   '<button type="button" class="s-btn s-btn--ghost hide-sm" id="sPhSkeleton">骨架态</button>'
+      +   '<button type="button" class="s-btn s-btn--ghost hide-sm" id="sPhTheme">浅色</button>'
       +   '<button type="button" class="s-btn s-btn--ghost" id="sPhRefresh">刷新</button>'
       +   '<button type="button" class="s-btn s-btn--ghost hide-sm" id="sPhExport">导出</button>'
+      +   '<button type="button" class="s-btn s-btn--primary only-sm" id="sPhMore">更多</button>'
+      /* 【原型 / 聚焦搜索】工作台搜索入口（不在原型静态 DOM，但原型脚本 L570 明确引用 #hotSearch） */
+      +   '<input id="sPhSearch" class="s-input hide-sm" type="search" placeholder="搜索代码 / 名称 / 诱因…" aria-label="搜索个股" style="width:180px">'
       + '</div>');
 
     const navEl = el('nav', 's-nav', nav);
@@ -203,13 +210,86 @@
     /* 【25 册 P2-6】页脚：数据口径声明 + 免责（类名同时带 s-ph-foot 兼容 25B 验收断言） */
     root.appendChild(el('footer', 's-ph-footer s-ph-foot',
       '<span>数据口径：收盘后研判 · 情绪分 / 宽度 / 席位为当日快照</span>'
-      + '<span>数据仅供参考，非投资建议</span>'));
+      + '<span>数据仅供参考，非投资建议</span>'
+      /* 【原型 L372】页脚提示逐字补齐：此前偷懒未做 */
+      + '<span class="hide-sm">点表格行可下钻 · 按 / 聚焦搜索 · 1-9 切视图</span>'));
+    /* 【原型 L371-378】移动端底栏：◆总览/▥涨跌停/◎选股/▤回测/⋯更多（CSS 已在 components.css） */
+    const mbar = el('nav', 's-mobilebar');
+    mbar.setAttribute('aria-label', '移动端主导航');
+    mbar.innerHTML = [
+      ['◆', '总览', 'overview'], ['▥', '涨跌停', 'zt'],
+      ['◎', '选股', 'picks'], ['▤', '回测', 'backtest'],
+    ].map(([icon, label, tab], i) =>
+      '<button type="button" class="s-mobilebar__item" data-tab="' + tab + '"'
+      + (i === 0 ? ' aria-current="page"' : '') + '><span class="s-mobilebar__icon">' + icon + '</span>' + label + '</button>'
+    ).join('') + '<button type="button" class="s-mobilebar__item" id="sPhMoreMobile"><span class="s-mobilebar__icon">⋯</span>更多</button>';
+    root.appendChild(mbar);
+    mbar.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => {
+      const link = [...navEl.querySelectorAll('.s-nav__link')].find((a) => a.dataset.page != null
+        && TABS[+a.dataset.page] === b.dataset.tab);
+      if (link) link.click();
+    }));
+    mbar.querySelector('#sPhMoreMobile').addEventListener('click', () => {
+      if (typeof S.openMoreDrawer === 'function') S.openMoreDrawer();
+    });
 
     /* 顶栏操作按钮：刷新 / 导出（导出接阶段 4b 的 report.html 导出页） */
     const btnRefresh = top.querySelector('#sPhRefresh');
     const btnExport = top.querySelector('#sPhExport');
-    if (btnRefresh) btnRefresh.addEventListener('click', () => location.reload());
-    if (btnExport) btnExport.addEventListener('click', () => window.open('report.html', '_blank'));
+    if (btnRefresh) btnRefresh.addEventListener('click', () => {
+      /* 原型 L578：点击→刷新状态变「刚刚 · 已是最新」+ 按钮「已刷新」；生产动作更实（真 reload） */
+      const fresh = top.querySelector('#sPhFresh');
+      if (fresh) fresh.textContent = '刚刚 · 已是最新';
+      btnRefresh.textContent = '已刷新';
+      setTimeout(() => { btnRefresh.textContent = '刷新'; location.reload(); }, 600);
+    });
+    if (btnExport) btnExport.addEventListener('click', () => {
+      btnExport.textContent = '导出 12 项';
+      setTimeout(() => { btnExport.textContent = '导出'; }, 1600);
+      window.open('report.html', '_blank');
+    });
+    /* 【原型 L576】骨架态：KPI 行临时换 6 张骨架卡 1.8s */
+    const btnSkel = top.querySelector('#sPhSkeleton');
+    if (btnSkel) btnSkel.addEventListener('click', () => {
+      const grid = document.getElementById('sKpiRow');
+      if (!grid || grid.dataset.skel === '1') return;
+      const real = grid.innerHTML;
+      grid.dataset.skel = '1';
+      grid.innerHTML = Array.from({ length: 6 }, () =>
+        '<div class="s-card"><div class="s-card__body">'
+        + '<div class="s-skeleton s-skeleton--line" style="height:12px;width:45%"></div>'
+        + '<div class="s-skeleton s-skeleton--kpi" style="height:40px;margin-top:10px"></div>'
+        + '<div class="s-skeleton s-skeleton--line-sm" style="height:10px;width:65%;margin-top:10px"></div>'
+        + '</div></div>').join('');
+      setTimeout(() => { grid.innerHTML = real; delete grid.dataset.skel; }, 1800);
+    });
+    /* 【原型 L575】浅色：#sRoot data-theme 切换 + 按钮文案「浅色/深色」 */
+    const btnTheme = top.querySelector('#sPhTheme');
+    if (btnTheme) btnTheme.addEventListener('click', () => {
+      const root = document.getElementById('sRoot');
+      if (!root) return;
+      const light = root.getAttribute('data-theme') === 'light';
+      root.setAttribute('data-theme', light ? 'dark' : 'light');
+      btnTheme.textContent = light ? '浅色' : '深色';
+    });
+    /* 【原型 L566/L582】更多：顶部与移动端都打开「更多」抽屉 */
+    const btnMore = top.querySelector('#sPhMore');
+    if (btnMore) btnMore.addEventListener('click', () => openMoreDrawer());
+    function openMoreDrawer() {
+      if (typeof S.openDrawer !== 'function') return;
+      S.openDrawer({
+        size: 'lg', title: '更多', sub: '导出 / 打印 / 视图出口',
+        render(body) {
+          body.innerHTML = '<div class="s-tagrow">'
+            + '<a class="s-btn s-btn--ghost" href="report.html" target="_blank">研报长文</a>'
+            + '<a class="s-btn s-btn--ghost" href="report.html?print=1" target="_blank">打印 / 导出 12 项</a>'
+            + '<button type="button" class="s-btn s-btn--ghost" data-ev-tab="回测">策略回测明细</button>'
+            + '<button type="button" class="s-btn s-btn--ghost" data-ev-tab="模拟盘">模拟盘交易台</button>'
+            + '</div><p class="s-kpi__note">12 项导出菜单进入研报长文页；数据口径不变。</p>';
+        },
+      });
+    }
+    S.openMoreDrawer = openMoreDrawer;
 
     // 8 tab 路由：切换 s-nav__link 高亮 + 切换 panel（注册页优先渲染，否则占位）
     // 「研报」tab 特殊：跳回原研报视图（?view=research），保留完整研报能力
@@ -279,6 +359,29 @@
   // null 时由 route() 按 defaultWorkbench flag 决定（与 init 语义一致）
   window.addEventListener('hashchange', () => { route(parseView()); });
   window.addEventListener('popstate', () => { route(parseView()); });
+  /* 【原型 L568-571】快捷键：Escape 关抽屉；/ 聚焦搜索（输入框内不劫持）；
+   * 1-9 切 9 个视图（BRIEF 3.6 语义，方案 2.4 明确保留，<1024 亦然）。 */
+  document.addEventListener('keydown', (e) => {
+    if (document.body.dataset.view !== 'workbench') return;
+    const tag = (e.target && e.target.tagName || '').toLowerCase();
+    const typing = tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable);
+    if (e.key === 'Escape') {
+      if (typeof S.closeDrawer === 'function') S.closeDrawer();
+      const sf = $('#sPhSearch'); if (sf) sf.blur();
+      return;
+    }
+    if (typing) return;
+    if (e.key === '/') {
+      const sf = $('#sPhSearch');
+      if (sf) { e.preventDefault(); sf.focus(); }
+      return;
+    }
+    if (/^[1-9]$/.test(e.key)) {
+      const i = +e.key - 1;
+      const link = document.querySelectorAll('nav.s-nav .s-nav__link')[i];
+      if (link) { e.preventDefault(); link.click(); }
+    }
+  });
 
   S.routeWorkbench = route;
 })(window.S = window.S || {});

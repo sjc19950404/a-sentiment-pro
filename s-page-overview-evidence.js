@@ -341,10 +341,14 @@
         const cls = (v) => 's-num ' + (v == null ? '' : v >= 0 ? 's-num--up' : 's-num--down');
         /* 原型行名逐字：机构专用 / 深股通 / 游资合计；笔数用当日席位真值。
          * signals 未给分项笔数时按「—」展示，不编造（原型 18/11/7 是示例值）。 */
+        /* 笔数：真实数据源无「分席位上榜笔数」字段（seats.series 只有净额/买卖额/universeN）。
+         * 此前我用 instBuy+instSell 当笔数 → 73/103/224 是亿元金额之和，冒充笔数，是错的。
+         * 现统一用当日上榜只数 universeN（唯一真实笔数口径），不足则「—」，不编造分项。 */
+        const n = last.universeN != null ? last.universeN : null;
         const rows = [
-          ['机构专用', last.instNet, last.instBuy != null ? Math.round(last.instBuy + last.instSell) : null],
-          ['沪股通 / 深股通', last.northNet, last.northBuy != null ? Math.round(last.northBuy + last.northSell) : null],
-          ['游资合计', last.hotNet, last.hotBuy != null ? Math.round(last.hotBuy + last.hotSell) : null],
+          ['机构专用', last.instNet, n],
+          ['沪股通 / 深股通', last.northNet, n],
+          ['游资合计', last.hotNet, n],
         ];
         sb.innerHTML = '<div class="s-table-wrap"><div class="s-table__viewport"><table class="s-table s-table--compact">'
           + '<thead><tr><th data-priority="1">席位类型</th><th data-priority="1">净额</th><th data-priority="2">笔数</th></tr></thead><tbody>'
@@ -352,6 +356,27 @@
             + '</td><td class="s-num">' + (c == null ? '—' : c) + '</td></tr>').join('')
           + '</tbody></table></div></div>'
           + '<p class="s-kpi__note">席位名不再被抽屉 520px 截断；点明细行可开加宽抽屉。</p>';
+        /* 【原型脚注】点席位行开加宽抽屉（买入/卖出/净额真值，无则—） */
+        Array.from(sb.querySelectorAll('tbody tr')).forEach((tr, i) => {
+          const [name, v, count] = rows[i];
+          const open = () => {
+            if (typeof S.openDrawer !== 'function') return;
+            S.openDrawer({
+              size: 'lg', title: name, sub: '席位当日口径 · ' + esc(last.date || ''),
+              render(dbody) {
+                dbody.innerHTML = '<div class="s-grid s-grid--kpi">'
+                  + [['净额', f(v)], ['上榜只数', count == null ? '—' : count],
+                    ['买入额', last[['instBuy', 'northBuy', 'hotBuy'][i]] != null ? f(last[['instBuy', 'northBuy', 'hotBuy'][i]]) + '（元口径）' : '—'],
+                    ['卖出额', last[['instSell', 'northSell', 'hotSell'][i]] != null ? f(last[['instSell', 'northSell', 'hotSell'][i]]) + '（元口径）' : '—']]
+                    .map(([n, val]) => '<div><div class="s-kpi__label">' + n + '</div><div class="s-kpi__value" style="font-size:var(--s-font-lg)">' + esc(val) + '</div></div>').join('')
+                  + '</div><p class="s-kpi__note">买入/卖出为席位金额口径（亿元）；净额为交易所当日榜。</p>';
+              },
+            });
+          };
+          tr.tabIndex = 0;
+          tr.addEventListener('click', open);
+          tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+        });
       } else {
         sb.innerHTML = '<div class="s-verdict"><span class="s-verdict__text">席位数据未就绪</span>'
           + '<span class="s-verdict__sub">seats 序列为空，不填充估算值。</span></div>';
@@ -446,6 +471,28 @@
       + '<td class="s-num">' + esc(r.pct || r.zdp || '—') + '</td>'
       + '<td data-priority="2">' + esc(r.lbc || '—') + '</td>'
       + '<td data-priority="3">' + esc(r.hybk || r.theme || '—') + '</td></tr>').join('');
+    /* 【原型 L560】点任意明细行（或回车/空格）开小抽屉看详情——此前偷懒没接事件 */
+    Array.from(body.querySelectorAll('tr')).forEach((tr, i) => {
+      const row = rows[i];
+      if (!row) return;
+      const open = () => {
+        if (typeof S.openDrawer !== 'function') return;
+        S.openDrawer({
+          size: 'sm', title: '个股详情', sub: String(row.code || row.c || ''),
+          render(dbody) {
+            dbody.innerHTML = '<div class="s-grid s-grid--kpi">'
+              + [['现价', row.price || row.p], ['涨跌幅', row.pct || row.zdp],
+                ['连板', row.lbc], ['题材', row.hybk || row.theme]].map(([n, v]) =>
+                '<div><div class="s-kpi__label">' + n + '</div><div class="s-kpi__value" style="font-size:var(--s-font-lg)">' + esc(v || '—') + '</div></div>').join('')
+              + '</div><p class="s-kpi__note">行下钻为当日快照，数据与明细表同源；不做跨源拼装。</p>';
+          },
+        });
+      };
+      tr.addEventListener('click', open);
+      tr.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+      });
+    });
     if (pager) pager.innerHTML = '<span>显示 ' + (hotPage * size + 1) + '–' + Math.min((hotPage + 1) * size, total) + ' / ' + total + ' 行</span>'
       + '<span>' + (hotPage > 0 ? '<button class="s-btn s-btn--ghost" data-ev-page="-1">上一页</button> ' : '')
       + (hotPage < pages - 1 ? '<button class="s-btn s-btn--ghost" data-ev-page="1">下一页</button>' : '') + '</span>';
