@@ -62,19 +62,19 @@ jobs:
         id: smoke
         run: |
           if node scripts/smoke_sources.mjs; then exit 0; fi
-          echo "鈿?绗竴娆″啋鐑熷け璐モ€斺€旂枒浼肩灛鏃剁綉缁滄姈鍔紝閫€閬?60 绉掑悗閲嶈瘯涓€娆?
+          echo "WARN: smoke failed once, likely transient network jitter, retry in 60s"
           sleep 60
           if ! node scripts/smoke_sources.mjs; then
-            echo "鉁?閲嶈瘯鍚庝粛澶辫触鈥斺€斿垽瀹氫负鐪熷疄婧愭晠闅滐紝纭け璐ョ収鏃ф嫤涓嬩富璺?
+            echo "FAIL: retry still failed, real source outage, hard fail"
             exit 1
           fi
-          echo "鉁?閲嶈瘯閫氳繃鈥斺€旂涓€娆″け璐ヤ负鐬椂鎶栧姩鑷剤锛岄潪婧愭晠闅?
+          echo "OK: retry passed, first failure was transient"
       - name: 鍐掔儫鎶ュ憡钀界洏鐣欐。锛坉ata/smoke-latest.json锛岄殢浠撳簱鍙锛?
         if: always()
         run: |
           if [ -f data/smoke-latest.json ]; then
-            echo "鍐掔儫鎽樿锛?
-            node -e "const r=require('./data/smoke-latest.json'); console.log(r.allOk?'鍏ㄩ儴閫氳繃':'纭け璐? '+r.hardFail.join(','), '@', r.tradeDateAnchored)"
+            echo "smoke summary:"
+            node -e "const r=require('./data/smoke-latest.json'); console.log(r.allOk?'all pass':'hard fail: '+r.hardFail.join(','), '@', r.tradeDateAnchored)"
           fi
       # 鈽?2026-10-19 淇锛堟柟妗圓锛夛細鍐掔儫妗ｅ啓鍏ュ悗鐢辨湰 smoke job 鑷鎻愪氦钀藉簱銆?
       #   鏍瑰洜锛氭鍓?smoke 鍙啓涓嶆彁浜わ紝build 铏藉湪 git add 娓呭崟鍒椾簡 smoke-latest.json
@@ -95,11 +95,11 @@ jobs:
           if git diff --cached --quiet; then
             echo "鍐掔儫妗ｅ唴瀹规湭鍙橈紝璺宠繃鎻愪氦"
           else
-            git commit -m "chore: 鍐掔儫妗?$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git commit -m "chore: snapshot update $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             retry=0
             until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
               retry=$((retry+1))
-              if [ "$retry" -ge 3 ]; then echo "push 杩炵画 3 娆¤鎷掞紙骞跺彂绔炴€佹湭瑙ｏ級锛屾斁寮?; exit 1; fi
+              if [ "$retry" -ge 3 ]; then echo "push rejected 3 times (concurrency), giving up"; exit 1; fi
               echo "push 琚嫆锛堝悓杞?job 骞跺彂绔炴€侊級锛岄噸璇?$retry/3 ..."
               git rebase --abort 2>/dev/null || true
               sleep 5
@@ -360,9 +360,9 @@ jobs:
           git add data/archive.json data/archive-index.json data/archive-recent.json data/archive-20*.json data/signals-latest.json data/backtest.json data/backtest-strategies.json data/global.json data/paper_universe.json data/paper_universe-lite.json data/calendar.json data/version-regression.json data/pain-latest.json data/breadth-latest.json data/breadth-daily.json data/crosscheck-latest.json data/ops-alerts-latest.json data/industry_outlier_review.json data/board_rank.json data/shadow-book.json data/paper data/reports ui/kline
           # git add data/llm-sentiment-latest.json 2>/dev/null || true  # 2026-10-17 鏆傚仠锛歀LM 璇曠偣鍋滄洿锛屼笉鍐嶅叆搴擄紙浠ｇ爜淇濈暀褰掓。锛?
           if git diff --cached --quiet; then
-            echo "鏃犲彉鍖栵紝璺宠繃鎻愪氦"
+            echo "no changes, skip commit"
           else
-            git commit -m "chore: 鏇存柊鎯呯华鏁版嵁 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git commit -m "chore: update sentiment data $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             # bot push 绔炴€佸姞鍥猴紙2026-10-09 瀹炲綍锛氭墜鍔?dispatch 鍏?job 骞惰窇锛寀s-close
             # 鍏堟帹澶栧洿蹇収锛宐uild 鏁版嵁鎻愪氦鍚庡埌琚?non-fast-forward 鎷掆€斺€旂敓浜ф帓鏈熷悇 job
             # 鏃堕棿甯﹂敊寮€涓嶇浉閬囷紝鎵嬪姩楠屾敹蹇呮挒锛夈€俽ebase 鍚屽垎鏀繙绔柊鎻愪氦鍐嶆帹锛坢ain 鍓湰
@@ -377,7 +377,7 @@ jobs:
             retry=0
             until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
               retry=$((retry+1))
-              if [ "$retry" -ge 3 ]; then echo "push 杩炵画 3 娆¤鎷掞紙骞跺彂绔炴€佹湭瑙ｏ級锛屾斁寮?; exit 1; fi
+              if [ "$retry" -ge 3 ]; then echo "push rejected 3 times (concurrency), giving up"; exit 1; fi
               echo "push 琚嫆锛堝悓杞?job 骞跺彂绔炴€侊級锛岄噸璇?$retry/3 ..."
               git rebase --abort 2>/dev/null || true
               sleep 5
@@ -501,9 +501,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/intraday.json data/source-health.json data/crosscheck-history.json data/reports data/review
           if git diff --cached --quiet; then
-            echo "鏃犲彉鍖栵紙闈炵洏涓垨蹇収鐩稿悓锛夛紝璺宠繃鎻愪氦"
+            echo "no changes, skip commit"
           else
-            git commit -m "chore: 鐩樹腑蹇収+AI鎶ュ憡 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git commit -m "chore: snapshot update $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             # bot push 绔炴€佸姞鍥猴紙2026-10-09 瀹炲綍锛氭墜鍔?dispatch 鍏?job 骞惰窇锛寀s-close
             # 鍏堟帹澶栧洿蹇収锛宐uild 鏁版嵁鎻愪氦鍚庡埌琚?non-fast-forward 鎷掆€斺€旂敓浜ф帓鏈熷悇 job
             # 鏃堕棿甯﹂敊寮€涓嶇浉閬囷紝鎵嬪姩楠屾敹蹇呮挒锛夈€俽ebase 鍚屽垎鏀繙绔柊鎻愪氦鍐嶆帹锛坢ain 鍓湰
@@ -518,7 +518,7 @@ jobs:
             retry=0
             until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
               retry=$((retry+1))
-              if [ "$retry" -ge 3 ]; then echo "push 杩炵画 3 娆¤鎷掞紙骞跺彂绔炴€佹湭瑙ｏ級锛屾斁寮?; exit 1; fi
+              if [ "$retry" -ge 3 ]; then echo "push rejected 3 times (concurrency), giving up"; exit 1; fi
               echo "push 琚嫆锛堝悓杞?job 骞跺彂绔炴€侊級锛岄噸璇?$retry/3 ..."
               git rebase --abort 2>/dev/null || true
               sleep 5
@@ -553,9 +553,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/reports
           if git diff --cached --quiet; then
-            echo "鏃犲彉鍖栵紙闈炰氦鏄撴棩锛夛紝璺宠繃鎻愪氦"
+            echo "no changes, skip commit"
           else
-            git commit -m "chore: 鐩樺墠AI鎶ュ憡 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git commit -m "chore: premarket AI report $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             # bot push 绔炴€佸姞鍥猴紙2026-10-09 瀹炲綍锛氭墜鍔?dispatch 鍏?job 骞惰窇锛寀s-close
             # 鍏堟帹澶栧洿蹇収锛宐uild 鏁版嵁鎻愪氦鍚庡埌琚?non-fast-forward 鎷掆€斺€旂敓浜ф帓鏈熷悇 job
             # 鏃堕棿甯﹂敊寮€涓嶇浉閬囷紝鎵嬪姩楠屾敹蹇呮挒锛夈€俽ebase 鍚屽垎鏀繙绔柊鎻愪氦鍐嶆帹锛坢ain 鍓湰
@@ -570,7 +570,7 @@ jobs:
             retry=0
             until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
               retry=$((retry+1))
-              if [ "$retry" -ge 3 ]; then echo "push 杩炵画 3 娆¤鎷掞紙骞跺彂绔炴€佹湭瑙ｏ級锛屾斁寮?; exit 1; fi
+              if [ "$retry" -ge 3 ]; then echo "push rejected 3 times (concurrency), giving up"; exit 1; fi
               echo "push 琚嫆锛堝悓杞?job 骞跺彂绔炴€侊級锛岄噸璇?$retry/3 ..."
               git rebase --abort 2>/dev/null || true
               sleep 5
@@ -606,9 +606,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/global.json
           if git diff --cached --quiet; then
-            echo "鏃犲彉鍖栵紝璺宠繃鎻愪氦"
+            echo "no changes, skip commit"
           else
-            git commit -m "chore: 澶栧洿(缇庤偂鏀剁洏妗? $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git commit -m "chore: snapshot update $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             # bot push 绔炴€佸姞鍥猴紙2026-10-09 瀹炲綍锛氭墜鍔?dispatch 鍏?job 骞惰窇锛寀s-close
             # 鍏堟帹澶栧洿蹇収锛宐uild 鏁版嵁鎻愪氦鍚庡埌琚?non-fast-forward 鎷掆€斺€旂敓浜ф帓鏈熷悇 job
             # 鏃堕棿甯﹂敊寮€涓嶇浉閬囷紝鎵嬪姩楠屾敹蹇呮挒锛夈€俽ebase 鍚屽垎鏀繙绔柊鎻愪氦鍐嶆帹锛坢ain 鍓湰
@@ -623,7 +623,7 @@ jobs:
             retry=0
             until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
               retry=$((retry+1))
-              if [ "$retry" -ge 3 ]; then echo "push 杩炵画 3 娆¤鎷掞紙骞跺彂绔炴€佹湭瑙ｏ級锛屾斁寮?; exit 1; fi
+              if [ "$retry" -ge 3 ]; then echo "push rejected 3 times (concurrency), giving up"; exit 1; fi
               echo "push 琚嫆锛堝悓杞?job 骞跺彂绔炴€侊級锛岄噸璇?$retry/3 ..."
               git rebase --abort 2>/dev/null || true
               sleep 5
@@ -652,9 +652,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/global.json
           if git diff --cached --quiet; then
-            echo "鏃犲彉鍖栵紝璺宠繃鎻愪氦"
+            echo "no changes, skip commit"
           else
-            git commit -m "chore: 澶栧洿(A50澶滅洏鏀剁洏妗? $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git commit -m "chore: snapshot update $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             # push 閲嶈瘯锛?026-10-13 run#194 瀹炲綍锛氭墜鍔?dispatch 鍏?job 骞惰窇锛屼笁 job 鍚岀鎺紝
             # a50-close 鍏堣惤 c80e9be0锛屽叾浣欎袱涓甫鐫€ pull 鏃跺彇鍒扮殑鏃?ref 棰勬湡锛坒bc84e7e锛?
             # 琚€宑annot lock ref銆嶆嫆鎺ㄢ€斺€攑ull --rebase 鍙槻"pull 鍓嶈繙绔凡鍔?锛岄槻涓嶄綇
@@ -662,7 +662,7 @@ jobs:
             retry=0
             until git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push; do
               retry=$((retry+1))
-              if [ "$retry" -ge 3 ]; then echo "push 杩炵画 3 娆¤鎷掞紙骞跺彂绔炴€佹湭瑙ｏ級锛屾斁寮?; exit 1; fi
+              if [ "$retry" -ge 3 ]; then echo "push rejected 3 times (concurrency), giving up"; exit 1; fi
               echo "push 琚嫆锛堝悓杞?job 骞跺彂绔炴€侊級锛岄噸璇?$retry/3 ..."
               git rebase --abort 2>/dev/null || true
               sleep 5
