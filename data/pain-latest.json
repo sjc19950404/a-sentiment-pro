@@ -1,38 +1,38 @@
 {
- "date": "2026-11-13",
- "prevZtCount": 37,
+ "date": "2026-11-16",
+ "prevZtCount": 32,
  "perf": {
-  "n": 37,
-  "universe": 37,
+  "n": 32,
+  "universe": 32,
   "missing": 0,
   "reliable": true,
-  "avg": 0.97,
-  "median": -1.17,
-  "lossRatio": 0.51,
-  "worst": -10,
-  "best": 10.1,
-  "limitUpAgain": 11,
-  "limitDown": 2,
-  "bigLoss": 5,
+  "avg": 0.23,
+  "median": -0.45,
+  "lossRatio": 0.5,
+  "worst": -10.03,
+  "best": 16.05,
+  "limitUpAgain": 7,
+  "limitDown": 5,
+  "bigLoss": 6,
   "note": null
  },
  "advance": {
-  "n": 7,
-  "kept": 3,
-  "failed": 4,
-  "failRate": 0.57,
+  "n": 11,
+  "kept": 1,
+  "failed": 10,
+  "failRate": 0.91,
   "byTier": {
    "2": {
-    "n": 4,
-    "kept": 2,
-    "failed": 2,
-    "failRate": 0.5
+    "n": 8,
+    "kept": 1,
+    "failed": 7,
+    "failRate": 0.88
    },
    "3": {
     "n": 2,
-    "kept": 1,
-    "failed": 1,
-    "failRate": 0.5
+    "kept": 0,
+    "failed": 2,
+    "failRate": 1
    },
    "4+": {
     "n": 1,
@@ -45,57 +45,89 @@
   "maxLb": 4,
   "detail": [
    {
-    "code": "605255",
-    "lb": 4,
-    "chg": 0,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "603396",
-    "lb": 3,
-    "chg": -9.99,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
     "code": "002148",
-    "lb": 3,
-    "chg": 10.06,
-    "kept": true,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "600467",
-    "lb": 2,
-    "chg": -8.42,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "001358",
-    "lb": 2,
-    "chg": 1.39,
+    "lb": 4,
+    "chg": -7.31,
     "kept": false,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
     "code": "002205",
-    "lb": 2,
-    "chg": 9.98,
-    "kept": true,
+    "lb": 3,
+    "chg": -9.99,
+    "kept": false,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
     "code": "002187",
+    "lb": 3,
+    "chg": 5.61,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "000595",
     "lb": 2,
-    "chg": 10.04,
+    "chg": -10.03,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "000819",
+    "lb": 2,
+    "chg": -10,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "600715",
+    "lb": 2,
+    "chg": -9.89,
+    "kept": false,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "002548",
+    "lb": 2,
+    "chg": -6.89,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002905",
+    "lb": 2,
+    "chg": -5.88,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002748",
+    "lb": 2,
+    "chg": -4.18,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002425",
+    "lb": 2,
+    "chg": 6.65,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002685",
+    "lb": 2,
+    "chg": 10.02,
     "kept": true,
     "board": "szb",
     "boardLabel": "深市主板"
@@ -104,44 +136,56 @@
   "note": null
  },
  "bigLoss": {
-  "n": 5,
+  "n": 6,
   "list": [
    {
-    "code": "000766",
-    "name": "通化金马",
+    "code": "000595",
+    "name": "新能股份",
+    "chg": -10.03
+   },
+   {
+    "code": "000819",
+    "name": "岳阳兴长",
     "chg": -10
    },
    {
-    "code": "603396",
-    "name": "金辰股份",
+    "code": "002205",
+    "name": "国统股份",
     "chg": -9.99
    },
    {
-    "code": "002819",
-    "name": "东方中科",
-    "chg": -9.31
+    "code": "000156",
+    "name": "华数传媒",
+    "chg": -9.95
    },
    {
-    "code": "600467",
-    "name": "好当家",
-    "chg": -8.42
+    "code": "600715",
+    "name": "文投控股",
+    "chg": -9.89
    },
    {
-    "code": "603286",
-    "name": "日盈电子",
-    "chg": -8.24
+    "code": "002148",
+    "name": "北纬科技",
+    "chg": -7.31
    }
   ]
  },
  "skyFloor": {
-  "n": 0,
-  "list": []
+  "n": 1,
+  "list": [
+   {
+    "code": "002905",
+    "name": "金逸影视",
+    "chg": -5.88,
+    "amplitude": 20
+   }
+  ]
  },
- "scanned": 37,
+ "scanned": 32,
  "verdict": {
   "level": "normal",
   "label": "多空拉锯",
-  "reason": "昨涨停今日翻绿 51%、高位板晋级失败 57%，追高盈亏各半"
+  "reason": "昨涨停今日翻绿 50%、高位板晋级失败 91%，追高盈亏各半"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -152,6 +196,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-11-16T13:02:38.978Z",
- "curDate": "2026-11-16"
+ "generatedAt": "2026-11-17T10:30:28.932Z",
+ "curDate": "2026-11-17"
 }

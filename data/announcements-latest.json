@@ -1,118 +1,61 @@
 {
- "date": "2026-11-16",
+ "date": "2026-11-17",
  "source": "sina-bulletin",
- "fetchedAt": "2026-11-16T21:15:54.563+08:00",
- "codes": 32,
- "count": 11,
+ "fetchedAt": "2026-11-17T18:48:21.939+08:00",
+ "codes": 37,
+ "count": 8,
  "announcements": {
-  "600715": "文投控股：股票交易风险提示公告",
-  "601188": "龙江交通：北京市康达律师事务所关于黑龙江交通发展股份有限公司2026年第四次临时股东会的法律意见书；龙江交通：关于召开2026年三季度业绩暨现金分红说明会的公告；龙江交通：2026年第四次临时股东会决议公告",
-  "002148": "北纬科技：股票交易异常波动公告",
-  "000819": "岳阳兴长：关于股票交易异常波动的公告",
-  "002905": "金逸影视：股票交易异常波动公告",
-  "002187": "广百股份：股票交易异常波动公告",
-  "002748": "世龙实业：股票交易异常波动公告",
-  "002425": "凯撒文化：关于股票异常波动的公告",
+  "301288": "清研环境：关于股票交易异常波动的公告",
+  "600881": "亚泰集团：关于与重整投资人签署《重整投资协议》暨预重整进展的公告",
+  "603324": "盛剑科技：投资者关系活动记录表(2026年第三季度业绩说明会)",
+  "002959": "小熊电器：股票交易异常波动公告",
   "002685": "华东重机：股票交易异常波动公告",
-  "000595": "新能股份：关于股票交易异常波动公告",
-  "002548": "金新农：股票交易异常波动公告"
+  "000533": "顺钠股份：股票交易异常波动公告；顺钠股份：第一期员工持股计划(草案)；顺钠股份：第一期员工持股计划管理办法；顺钠股份：董事会关于第一期员工持股计划(草案)的合规性说明；顺钠股份：关于回购公司股份方案的公告；顺钠股份：第一期员工持股计划(草案)摘要；顺钠股份：第十一届董事会第十八次临时会议决议公告；顺钠股份：董事会薪酬与考核委员会关于第一期员工持股计划相关事项的核查意见；顺钠股份：关于召开2026年第二次临时股东会的通知",
+  "002451": "摩恩电气：关于公司对外担保的进展公告",
+  "002242": "九阳股份：股票交易异常波动暨风险提示公告"
  },
  "details": [
   {
-   "code": "600715",
-   "name": "文投控股",
+   "code": "301288",
+   "name": "清研环境",
    "announcements": [
     {
-     "title": "文投控股：股票交易风险提示公告",
+     "title": "清研环境：关于股票交易异常波动的公告",
      "date": "2026-11-17",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600715&id=12709402"
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=301288&id=12710851"
     }
    ]
   },
   {
-   "code": "601188",
-   "name": "龙江交通",
+   "code": "600881",
+   "name": "亚泰集团",
    "announcements": [
     {
-     "title": "龙江交通：北京市康达律师事务所关于黑龙江交通发展股份有限公司2026年第四次临时股东会的法律意见书",
+     "title": "亚泰集团：关于与重整投资人签署《重整投资协议》暨预重整进展的公告",
      "date": "2026-11-17",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=601188&id=12707880"
-    },
-    {
-     "title": "龙江交通：关于召开2026年三季度业绩暨现金分红说明会的公告",
-     "date": "2026-11-17",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=601188&id=12707879"
-    },
-    {
-     "title": "龙江交通：2026年第四次临时股东会决议公告",
-     "date": "2026-11-17",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=601188&id=12707878"
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600881&id=12709526"
     }
    ]
   },
   {
-   "code": "002148",
-   "name": "北纬科技",
+   "code": "603324",
+   "name": "盛剑科技",
    "announcements": [
     {
-     "title": "北纬科技：股票交易异常波动公告",
+     "title": "盛剑科技：投资者关系活动记录表(2026年第三季度业绩说明会)",
      "date": "2026-11-17",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002148&id=12708340"
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603324&id=12710529"
     }
    ]
   },
   {
-   "code": "000819",
-   "name": "岳阳兴长",
+   "code": "002959",
+   "name": "小熊电器",
    "announcements": [
     {
-     "title": "岳阳兴长：关于股票交易异常波动的公告",
-     "date": "2026-11-17",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000819&id=12709030"
-    }
-   ]
-  },
-  {
-   "code": "002905",
-   "name": "金逸影视",
-   "announcements": [
-    {
-     "title": "金逸影视：股票交易异常波动公告",
-     "date": "2026-11-17",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002905&id=12709070"
-    }
-   ]
-  },
-  {
-   "code": "002187",
-   "name": "广百股份",
-   "announcements": [
-    {
-     "title": "广百股份：股票交易异常波动公告",
-     "date": "2026-11-16",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002187&id=12707041"
-    }
-   ]
-  },
-  {
-   "code": "002748",
-   "name": "世龙实业",
-   "announcements": [
-    {
-     "title": "世龙实业：股票交易异常波动公告",
-     "date": "2026-11-17",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002748&id=12709221"
-    }
-   ]
-  },
-  {
-   "code": "002425",
-   "name": "凯撒文化",
-   "announcements": [
-    {
-     "title": "凯撒文化：关于股票异常波动的公告",
-     "date": "2026-11-17",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002425&id=12709023"
+     "title": "小熊电器：股票交易异常波动公告",
+     "date": "2026-11-18",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002959&id=12710149"
     }
    ]
   },
@@ -128,24 +71,75 @@
    ]
   },
   {
-   "code": "000595",
-   "name": "新能股份",
+   "code": "000533",
+   "name": "顺钠股份",
    "announcements": [
     {
-     "title": "新能股份：关于股票交易异常波动公告",
+     "title": "顺钠股份：股票交易异常波动公告",
+     "date": "2026-11-18",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000533&id=12710505"
+    },
+    {
+     "title": "顺钠股份：第一期员工持股计划(草案)",
      "date": "2026-11-17",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000595&id=12708414"
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000533&id=12709541"
+    },
+    {
+     "title": "顺钠股份：第一期员工持股计划管理办法",
+     "date": "2026-11-17",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000533&id=12709540"
+    },
+    {
+     "title": "顺钠股份：董事会关于第一期员工持股计划(草案)的合规性说明",
+     "date": "2026-11-17",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000533&id=12709539"
+    },
+    {
+     "title": "顺钠股份：关于回购公司股份方案的公告",
+     "date": "2026-11-17",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000533&id=12709538"
+    },
+    {
+     "title": "顺钠股份：第一期员工持股计划(草案)摘要",
+     "date": "2026-11-17",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000533&id=12709537"
+    },
+    {
+     "title": "顺钠股份：第十一届董事会第十八次临时会议决议公告",
+     "date": "2026-11-17",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000533&id=12709536"
+    },
+    {
+     "title": "顺钠股份：董事会薪酬与考核委员会关于第一期员工持股计划相关事项的核查意见",
+     "date": "2026-11-17",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000533&id=12709535"
+    },
+    {
+     "title": "顺钠股份：关于召开2026年第二次临时股东会的通知",
+     "date": "2026-11-17",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000533&id=12709533"
     }
    ]
   },
   {
-   "code": "002548",
-   "name": "金新农",
+   "code": "002451",
+   "name": "摩恩电气",
    "announcements": [
     {
-     "title": "金新农：股票交易异常波动公告",
-     "date": "2026-11-17",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002548&id=12709075"
+     "title": "摩恩电气：关于公司对外担保的进展公告",
+     "date": "2026-11-18",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002451&id=12710611"
+    }
+   ]
+  },
+  {
+   "code": "002242",
+   "name": "九阳股份",
+   "announcements": [
+    {
+     "title": "九阳股份：股票交易异常波动暨风险提示公告",
+     "date": "2026-11-18",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002242&id=12710460"
     }
    ]
   }

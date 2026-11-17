@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-11-16",
- "generatedAt": "2026-11-16T21:04:48.611+08:00",
+ "asOfDate": "2026-11-17",
+ "generatedAt": "2026-11-17T18:38:11.442+08:00",
  "model": "glm-4-flash",
  "sentiment": -0.5,
- "confidence": 0.8,
- "reason": "市场涨停家数远低于跌停家数，炸板率较高，亏钱效应明显，市场情绪偏负面。",
+ "confidence": 0.7,
+ "reason": "市场涨停家数远少于跌停家数，炸板率较高，亏钱效应明显，市场情绪偏负面。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "ST交昂",
+   "target": "扬子新材",
    "tone": "positive",
-   "note": "ST交昂因保健品、宠物经济和股东增持等因素涨停，但市场整体情绪不佳。"
+   "note": "三季报减亏，股价上涨10%"
+  },
+  {
+   "type": "高管变动",
+   "target": "江南化工",
+   "tone": "positive",
+   "note": "资产注入和央企背景，股价上涨10.1%"
   },
   {
    "type": "行业催化",
-   "target": "游戏",
-   "tone": "neutral",
-   "note": "游戏板块延续涨势，但市场整体情绪不佳。"
+   "target": "AI算力",
+   "tone": "positive",
+   "note": "AI算力相关股票如卡莱特、全筑股份等表现强势"
   },
   {
    "type": "行业催化",
-   "target": "并购重组",
-   "tone": "neutral",
-   "note": "并购重组板块延续涨势，但市场整体情绪不佳。"
+   "target": "光刻机",
+   "tone": "positive",
+   "note": "光刻机相关股票如永新光学、东方嘉盛等表现强势"
   },
   {
    "type": "行业催化",
-   "target": "三季报减亏",
-   "tone": "neutral",
-   "note": "三季报减亏板块延续涨势，但市场整体情绪不佳。"
+   "target": "半导体",
+   "tone": "positive",
+   "note": "半导体相关股票如格林达、江化微等表现强势"
   },
   {
    "type": "行业催化",
-   "target": "AI漫剧",
-   "tone": "neutral",
-   "note": "AI漫剧板块延续涨势，但市场整体情绪不佳。"
+   "target": "商业航天",
+   "tone": "positive",
+   "note": "商业航天相关股票如阳光照明等表现强势"
   },
   {
    "type": "行业催化",
-   "target": "机器人",
-   "tone": "neutral",
-   "note": "机器人板块延续涨势，但市场整体情绪不佳。"
+   "target": "金属镍",
+   "tone": "positive",
+   "note": "金属镍相关股票如清研环境等表现强势"
   },
   {
-   "type": "行业催化",
-   "target": "大消费",
+   "type": "其他",
+   "target": "市场整体",
    "tone": "negative",
-   "note": "大消费板块退潮，市场情绪受影响。"
-  },
-  {
-   "type": "行业催化",
-   "target": "锂电池",
-   "tone": "negative",
-   "note": "锂电池板块退潮，市场情绪受影响。"
+   "note": "涨停家数少，跌停家数多，炸板率高，市场情绪偏负面"
   }
  ],
  "inputDigest": {
-  "themes": 42,
+  "themes": 51,
   "hotListed": 15,
-  "ztCount": 32,
-  "emotionValue": 46.7,
-  "painVerdict": "多空拉锯（昨涨停今日翻绿 51%、高位板晋级失败 57%，追高盈亏各半）"
+  "ztCount": 37,
+  "emotionValue": 43.9,
+  "painVerdict": "多空拉锯（昨涨停今日翻绿 50%、高位板晋级失败 91%，追高盈亏各半）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }
