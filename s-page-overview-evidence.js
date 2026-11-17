@@ -309,19 +309,30 @@
           + '<span class="s-verdict__sub">集中度 ' + (d.metrics.theme_concentration != null ? (d.metrics.theme_concentration * 100).toFixed(1) + '%' : '—') + '</span></div>'
         : '<div class="s-empty"><div class="s-empty__title">今日无主线标的</div><div class="s-empty__hint">冰点区间自动选股暂停（真实状态）。</div></div>';
     }
-    // 席位（来自 signals 的 lhb 汇总，无值如实空）
+    // 席位（来自 signals.seats 引擎真值；模板「机构/北向/游资净买 + 主导」口径）
     const sb = $('#sEvSeatBody');
     if (sb) {
-      const lhb = sig.lhb || (sig.emotion && sig.emotion.lhb_list);
-      if (Array.isArray(lhb) && lhb.length) {
-        sb.innerHTML = '<div class="s-table-wrap"><div class="s-table__viewport"><table class="s-table s-table--compact">'
-          + '<thead><tr><th data-priority="1">席位类型</th><th data-priority="1">净额</th></tr></thead><tbody>'
-          + lhb.slice(0, 6).map((x) => '<tr><td>' + esc(x.name || x.seat || '—') + '</td><td class="s-num">' + esc(x.net || x.amount || '—') + '</td></tr>').join('')
-          + '</tbody></table></div></div>';
+      const seats = sig.seats || {};
+      const last = Array.isArray(seats.series) && seats.series.length ? seats.series[seats.series.length - 1] : null;
+      const sm = seats.summary || {};
+      const vd = seats.verdict || {};
+      if (last || sm.instNet) {
+        const f = (v) => v != null ? (v >= 0 ? '+' : '') + (+v).toFixed(2) + ' 亿' : '—';
+        const cls = (v) => 's-kpi__value' + (v != null ? (v >= 0 ? ' s-kpi__value--up' : ' s-kpi__value--down') : '');
+        const inst = last ? last.instNet : sm.instNet && sm.instNet.last;
+        const north = last ? last.northNet : sm.northNet && sm.northNet.last;
+        const hot = last ? last.hotNet : sm.hotNet && sm.hotNet.last;
+        sb.innerHTML = '<div class="s-grid s-grid--kpi">'
+          + [['机构净买', inst], ['北向净买', north], ['游资净买', hot]].map(([n, v]) =>
+            '<div><div class="s-kpi__label">' + n + '</div><div class="' + cls(v) + '" style="font-size:var(--s-font-lg)">' + f(v) + '</div></div>').join('')
+          + '</div><div class="s-verdict" style="margin-top:var(--s-space-2)">'
+          + '<span class="s-verdict__sub">' + esc(vd.label || (last && last.dominant ? '主导：' + last.dominant : '席位口径'))
+          + (last && last.date ? ' · ' + esc(last.date) : '')
+          + (last && last.universeN != null ? ' · 覆盖 ' + last.universeN + ' 只' : '') + '</span></div>'
+          + (vd.reason ? '<p class="s-kpi__note">' + esc(vd.reason) + '</p>' : '');
       } else {
-        const net = sig.emotion && sig.emotion.lhb_daily_net;
-        sb.innerHTML = '<div class="s-verdict"><span class="s-verdict__text">龙虎当日净买：' + (net != null ? esc(net) + ' 亿' : '—') + '</span>'
-          + '<span class="s-verdict__sub">席位明细见研报抽屉（真实口径）</span></div>';
+        sb.innerHTML = '<div class="s-verdict"><span class="s-verdict__text">席位数据未就绪</span>'
+          + '<span class="s-verdict__sub">seats 序列为空，不填充估算值。</span></div>';
       }
     }
     // 个股明细：从 signals 的 hot 列表（无则空状态，不编造 38 行）
@@ -340,6 +351,26 @@
           kp.innerHTML = [['V5 基准', bt.base && bt.base.total], ['V5.2', bt.v52 && bt.v52.total], ['V5.3', bt.v53 && bt.v53.total]]
             .map(([n, v]) => '<div><div class="s-kpi__label">' + n + '</div><div class="s-kpi__value s-num--down" style="font-size:var(--s-font-lg)">' + f(v) + '</div></div>').join('');
         }
+      }).catch(() => {});
+    /* 模拟盘摘要（模板「账户净值 / 持仓·委托 / 今日盈亏」）——接真实 account.json，
+     * 不再留「—」。当日盈亏按 nav 末两点差值，无净值序列则按 realized 真值。 */
+    fetch('./data/paper/account.json?_=' + Date.now(), { cache: 'no-store' })
+      .then((r) => r.ok ? r.json() : null).then((acc) => {
+        if (!acc) return;
+        const set = (id, v) => { const n = $('#' + id); if (n) n.textContent = v; };
+        const wanY = (v) => v == null ? '—' : (Math.abs(v) >= 10000 ? (v / 10000).toFixed(2) + ' 万' : (+v).toLocaleString());
+        set('sEvNav', wanY(acc.cash != null ? acc.cash : acc.equity));
+        const posN = acc.positions && typeof acc.positions === 'object' ? Object.keys(acc.positions).length : 0;
+        set('sEvPos', posN + ' 只 / ' + (Array.isArray(acc.orders) ? acc.orders.length : 0) + ' 笔');
+        const nav = Array.isArray(acc.nav) ? acc.nav : [];
+        let pnl = acc.realized;
+        if (nav.length >= 2) {
+          const a = nav[nav.length - 2].equity, b = nav[nav.length - 1].equity;
+          if (a != null && b != null) pnl = b - a;
+        }
+        set('sEvPnl', pnl == null ? '—' : (pnl >= 0 ? '+' : '') + wanY(pnl));
+        const st = $('#sEvPaperState');
+        if (st) st.textContent = posN ? posN + ' 只持仓' : '空仓';
       }).catch(() => {});
   }
   function renderHot() {
