@@ -10,7 +10,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -6.56
+   "chg": -6.04
   },
   "600822": {
    "pos": "none",
@@ -22,10 +22,10 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3.6
+   "chg": -3.17
   },
   "600936": {
-   "pos": "touched",
+   "pos": "sealed",
    "counts": {
     "seal": 0,
     "break": 0,
@@ -34,7 +34,7 @@
     "accel": 0
    },
    "brokeToday": 3,
-   "chg": 9.45
+   "chg": 9.95
   },
   "601188": {
    "pos": "none",
@@ -46,7 +46,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.17
+   "chg": 3.38
   },
   "601929": {
    "pos": "none",
@@ -58,7 +58,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -4.39
+   "chg": -3.04
   },
   "603118": {
    "pos": "none",
@@ -70,7 +70,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3.26
+   "chg": -3.47
   },
   "603983": {
    "pos": "approaching",
@@ -82,7 +82,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 9.2
+   "chg": 8.87
   },
   "605378": {
    "pos": "none",
@@ -94,7 +94,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 5.03
+   "chg": 5.67
   },
   "002419": {
    "pos": "touched",
@@ -106,7 +106,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 5
+   "chg": 4.44
   },
   "002356": {
    "pos": "none",
@@ -118,7 +118,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.16
+   "chg": -4.76
   },
   "000521": {
    "pos": "sealed",
@@ -142,7 +142,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.85
+   "chg": 4.27
   },
   "001318": {
    "pos": "none",
@@ -154,7 +154,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.01
+   "chg": 1.98
   },
   "002058": {
    "pos": "none",
@@ -166,7 +166,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.5
+   "chg": 3.21
   },
   "002959": {
    "pos": "sealed",
@@ -190,7 +190,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -9.95
+   "chg": -9.72
   },
   "000533": {
    "pos": "sealed",
@@ -214,7 +214,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 4.79
+   "chg": 5.59
   },
   "002861": {
    "pos": "sealed",
@@ -232,25 +232,25 @@
  "notified": 1,
  "threshold_adjust": {
   "enabled": false,
-  "state": "退潮",
+  "state": "复苏",
   "items": [
    {
     "key": "approachPct",
     "base": 7,
-    "regime": "退潮",
-    "tier": "cold",
-    "multiplier": 0.85,
-    "final": 5.95,
-    "adjusted": true
+    "regime": "复苏",
+    "tier": "neutral",
+    "multiplier": 1,
+    "final": 7,
+    "adjusted": false
    },
    {
     "key": "sectorMinChg",
     "base": 2,
-    "regime": "退潮",
-    "tier": "cold",
-    "multiplier": 0.75,
-    "final": 1.5,
-    "adjusted": true
+    "regime": "复苏",
+    "tier": "neutral",
+    "multiplier": 1,
+    "final": 2,
+    "adjusted": false
    }
   ]
  },
