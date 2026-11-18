@@ -1,14 +1,14 @@
 {
  "meta": {
-  "generatedAt": "2026-11-17T13:18:35.079Z",
-  "days": 267,
-  "exact_days": 19,
+  "generatedAt": "2026-11-18T10:49:35.666Z",
+  "days": 268,
+  "exact_days": 20,
   "approx_days": 248,
   "rules": "src/emotion_cycle.js（冰点>退潮>高潮>主升>复苏>震荡；score 六项加权 0-100）",
   "caliber_note": "approx=true 日子来自 archive.json 汇总字段：broken_rate/hard_board_rate 为触板口径（≠池内 zbc 口径）、theme_concentration 为 null（主升不触发）；精确数据自 ztpool_history.json 积累之日起覆盖（接口只能取最近交易日）",
   "emotion_dist": {
    "震荡": 162,
-   "复苏": 60,
+   "复苏": 61,
    "冰点": 2,
    "退潮": 12,
    "高潮": 31
@@ -4265,6 +4265,21 @@
     "theme_concentration": 0.0811,
     "theme_top": "IT服务Ⅱ",
     "hard_board_rate": 0.4324,
+    "zbc_unknown": 0
+   }
+  },
+  {
+   "date": "20261118",
+   "emotion": "复苏",
+   "score": 36,
+   "metrics": {
+    "limit_up_count": 41,
+    "continuous_count": 8,
+    "broken_rate": 0.4634,
+    "max_board": 4,
+    "theme_concentration": 0.1707,
+    "theme_top": "IT服务Ⅱ",
+    "hard_board_rate": 0.5366,
     "zbc_unknown": 0
    }
   }

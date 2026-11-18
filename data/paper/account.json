@@ -1,6 +1,6 @@
 {
   "version": "paper-v1",
-  "exportedAt": "2026-11-17T13:18:25.483Z",
+  "exportedAt": "2026-11-18T10:49:27.697Z",
   "initCash": 1000000,
   "cash": 1000000,
   "freeze": 0,
@@ -588,8 +588,14 @@
       "equity": 1000000,
       "cash": 1000000,
       "marketValue": 0
+    },
+    {
+      "date": "2026-11-18",
+      "equity": 1000000,
+      "cash": 1000000,
+      "marketValue": 0
     }
   ],
   "startDate": "2026-10-23",
-  "lastSettle": "2026-11-17"
+  "lastSettle": "2026-11-18"
 }

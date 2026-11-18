@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-18",
- "generated_at": "2026-11-18T00:55:03.440Z",
+ "generated_at": "2026-11-18T10:49:35.006Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "fresh",
+   "dual_track": "stale",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -81,12 +81,12 @@
    "confidence": "measured"
   },
   "prev_nav": {
-   "source": "derived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "positions": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "overnight_exposure": {
    "source": "archived",
@@ -122,7 +122,7 @@
   }
  },
  "payload": {
-  "date": "2026-11-17",
+  "date": "2026-11-18",
   "grid_triggers": null,
   "counter_trend_losses": null,
   "pnl_daily": 0,
@@ -132,38 +132,7 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": {
-   "key": "ice",
-   "label": "冰点",
-   "score": 43.9,
-   "cap": 0.2,
-   "position_range": "0%~20%",
-   "positionReconcile": {
-    "score": 43.9,
-    "base": {
-     "key": "base_defend",
-     "minPos": 0,
-     "maxPos": 0.3,
-     "label": "防守"
-    },
-    "baseRange": "0%~30%",
-    "cap": {
-     "key": "ice",
-     "minPos": 0,
-     "maxPos": 0.2,
-     "label": "冰点",
-     "advice": "优先空仓，仅极端错杀才值得试探",
-     "tone": "defend"
-    },
-    "capRange": "0%~20%",
-    "force": false,
-    "conflict": false,
-    "finalRange": "0%~20%"
-   },
-   "clustering_bubble": false,
-   "sentiment_penalty": 0,
-   "score_adjusted": 43.9
-  },
+  "regime": null,
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -174,10 +143,9 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": -0.0005920000000000001,
-    "state": "ok",
-    "stale": false,
-    "cacheNote": null
+    "chgPct": null,
+    "state": "night-open",
+    "nightOpen": true
    },
    {
     "key": "sox",
@@ -189,24 +157,15 @@
    }
   ],
   "externalStale": [
-   "外围「恒生指数」（外围未刷新到最新会话），已置空",
-   "外围「恒生科技」（外围未刷新到最新会话），已置空"
+   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空"
   ],
   "nav_realtime": 1000000,
-  "prev_nav": 0.9342455599074417,
-  "positions": {
-   "targetPos": {
-    "上证指数": 0.35,
-    "深证成指": 0.2,
-    "创业板指": 0.2
-   },
-   "poolPos": 0.25,
-   "executed": true
-  },
+  "prev_nav": null,
+  "positions": null,
   "overnight_exposure": {
-   "a50_chgPct": -0.0005920000000000001,
-   "a50NightOpen": false,
-   "posGap": 0.15,
+   "a50_chgPct": null,
+   "a50NightOpen": true,
+   "posGap": null,
    "us_close": {
     "dji": -0.016446000000000002,
     "spx": -0.010255,
@@ -216,10 +175,10 @@
     "hxc": -0.018897999999999998,
     "fxi": -0.013205
    },
-   "cnh_chgPct": 0.0003,
-   "usReady": true,
-   "usReason": "美东 19:55 ET 已收盘（≥16:30 ET），可采信当日收盘",
-   "usPrevSessionClose": false
+   "cnh_chgPct": -0.00003,
+   "usReady": false,
+   "usReason": "美东 05:44 ET 盘前（09:30 才开盘）——源给的是上一交易日收盘，可作「上一交易日收盘」用；今日收盘需等 16:30 ET",
+   "usPrevSessionClose": true
   },
   "key_levels": null,
   "events_today": null,
@@ -229,89 +188,57 @@
    "basis": "pain.advance.detail 昨收口径连板梯队（封板质量以晋级结果+近期上榜频次代理，个股级封单额无档案）；不含操作建议",
    "ladder": [
     {
-     "code": "002148",
-     "name": "北纬科技",
-     "lb": 4,
-     "kept": false,
-     "chg": -7.31,
-     "appearances": 5
-    },
-    {
-     "code": "002205",
-     "name": "国统股份",
+     "code": "002685",
+     "name": "华东重机",
      "lb": 3,
-     "kept": false,
-     "chg": -9.99,
-     "appearances": 6
-    },
-    {
-     "code": "002187",
-     "name": "广百股份",
-     "lb": 3,
-     "kept": false,
-     "chg": 5.61,
-     "appearances": 9
-    },
-    {
-     "code": "000595",
-     "name": "新能股份",
-     "lb": 2,
-     "kept": false,
-     "chg": -10.03,
-     "appearances": 8
-    },
-    {
-     "code": "000819",
-     "name": "岳阳兴长",
-     "lb": 2,
-     "kept": false,
-     "chg": -10,
+     "kept": true,
+     "chg": 10,
      "appearances": 4
     },
     {
-     "code": "600715",
-     "name": "文投控股",
+     "code": "002861",
+     "name": "瀛通通讯",
      "lb": 2,
      "kept": false,
-     "chg": -9.89,
-     "appearances": 18
+     "chg": -7.49,
+     "appearances": 5
     },
     {
-     "code": "002548",
-     "name": "金新农",
+     "code": "600936",
+     "name": "北投科技",
      "lb": 2,
      "kept": false,
-     "chg": -6.89,
+     "chg": -5.43,
+     "appearances": 13
+    },
+    {
+     "code": "000533",
+     "name": "顺钠股份",
+     "lb": 2,
+     "kept": false,
+     "chg": -1.39,
+     "appearances": 25
+    },
+    {
+     "code": "000521",
+     "name": "长虹美菱",
+     "lb": 2,
+     "kept": false,
+     "chg": -0.63,
      "appearances": 2
     },
     {
-     "code": "002905",
-     "name": "金逸影视",
+     "code": "002959",
+     "name": "小熊电器",
      "lb": 2,
      "kept": false,
-     "chg": -5.88,
-     "appearances": 7
-    },
-    {
-     "code": "002748",
-     "name": "世龙实业",
-     "lb": 2,
-     "kept": false,
-     "chg": -4.18,
-     "appearances": 6
-    },
-    {
-     "code": "002425",
-     "name": "凯撒文化",
-     "lb": 2,
-     "kept": false,
-     "chg": 6.65,
-     "appearances": 10
+     "chg": 4.06,
+     "appearances": 2
     }
    ],
    "overnight_sectors": null,
-   "max_lb": 4,
-   "broken_limit_ratio": 0.3508771929824561
+   "max_lb": 3,
+   "broken_limit_ratio": 0.36923076923076925
   },
   "simulation_stock": null,
   "ma20_degraded": false,

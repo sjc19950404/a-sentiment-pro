@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-11-17",
- "generatedAt": "2026-11-17T21:08:09.823+08:00",
+ "asOfDate": "2026-11-18",
+ "generatedAt": "2026-11-18T18:38:28.963+08:00",
  "model": "glm-4-flash",
- "sentiment": -0.5,
- "confidence": 0.7,
- "reason": "市场涨停家数远低于跌停家数，炸板率较高，亏钱效应明显，整体市场情绪偏负面。",
+ "sentiment": 0,
+ "confidence": 0.8,
+ "reason": "市场情绪多空拉锯，涨停与跌停数量接近，强势股多为算力租赁和AI相关概念，市场整体情绪中性偏正面。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "扬子新材",
+   "target": "宏景科技",
    "tone": "positive",
-   "note": "三季报减亏，股价上涨10%"
+   "note": "三季报增长带动股价上涨"
   },
   {
    "type": "高管变动",
-   "target": "江南化工",
+   "target": "ST椰岛",
    "tone": "positive",
-   "note": "资产注入和央企背景，股价上涨10.1%"
+   "note": "保健酒业务和东鹏代工合作提升市场预期"
   },
   {
    "type": "减持",
-   "target": "无具体目标",
-   "tone": "negative",
-   "note": "市场整体跌停家数较多，可能存在减持行为"
+   "target": "无",
+   "tone": "neutral",
+   "note": "市场整体减持情况未对市场情绪产生明显影响"
   },
   {
    "type": "政策",
-   "target": "无具体目标",
+   "target": "无",
    "tone": "neutral",
-   "note": "题材梯队缺失，政策影响不明确"
+   "note": "当日未出现重大政策变动"
   },
   {
    "type": "行业催化",
-   "target": "全筑股份",
+   "target": "半导体检测",
    "tone": "positive",
-   "note": "边缘AI算力+智慧建筑+建筑装饰，股价上涨10.23%"
+   "note": "胜科纳米半导体检测业务增长带动股价上涨"
   },
   {
    "type": "行业催化",
-   "target": "卡莱特",
+   "target": "算力租赁",
    "tone": "positive",
-   "note": "华为昇腾+AI算力调度+股份回购，股价上涨20%"
+   "note": "算力租赁概念股普遍上涨，推动市场情绪"
   },
   {
    "type": "行业催化",
-   "target": "东方嘉盛",
+   "target": "AI算力",
    "tone": "positive",
-   "note": "光刻机保税维修+半导体供应链+智慧仓，股价上涨9.98%"
+   "note": "AI算力相关概念股表现强劲，提升市场情绪"
   },
   {
    "type": "行业催化",
-   "target": "小熊电器",
+   "target": "股份回购",
    "tone": "positive",
-   "note": "小家电+跨境电商+母婴产品，股价上涨10.01%"
+   "note": "沪电股份回购增持动作提振市场信心"
   }
  ],
  "inputDigest": {
-  "themes": 51,
+  "themes": 50,
   "hotListed": 15,
-  "ztCount": 37,
-  "emotionValue": 43.9,
-  "painVerdict": "多空拉锯（昨涨停今日翻绿 50%、高位板晋级失败 91%，追高盈亏各半）"
+  "ztCount": 41,
+  "emotionValue": 47.8,
+  "painVerdict": "多空拉锯（昨涨停今日翻绿 49%、高位板晋级失败 83%，追高盈亏各半）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }

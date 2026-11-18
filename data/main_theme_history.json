@@ -1,10 +1,10 @@
 {
  "meta": {
-  "generatedAt": "2026-11-17T13:17:39.029Z",
-  "days": 23,
-  "theme_days": 22,
+  "generatedAt": "2026-11-18T10:48:23.253Z",
+  "days": 24,
+  "theme_days": 23,
   "strength_dist": {
-   "强主线": 6,
+   "强主线": 7,
    "弱主线": 14,
    "绝对主线": 2
   },
@@ -516,6 +516,31 @@
    ],
    "rotation": true,
    "prev_main_theme": "一般零售"
+  },
+  {
+   "date": "20261118",
+   "main_themes": [
+    {
+     "name": "IT服务Ⅱ",
+     "zt_count": 7,
+     "lb_count": 2,
+     "avg_fund": 127525167,
+     "stocks": [
+      "002771",
+      "600410",
+      "000158",
+      "000815",
+      "603887",
+      "688316",
+      "301396"
+     ],
+     "strength": "强主线",
+     "consecutive_days": 2,
+     "is_continuous": false
+    }
+   ],
+   "rotation": false,
+   "prev_main_theme": "IT服务Ⅱ"
   }
  ]
 }
