@@ -10,10 +10,10 @@
     "accel": 0
    },
    "brokeToday": 1,
-   "chg": 0.36
+   "chg": 0.18
   },
   "600206": {
-   "pos": "approaching",
+   "pos": "none",
    "counts": {
     "seal": 0,
     "break": 0,
@@ -22,7 +22,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 7.32
+   "chg": 6
   },
   "600261": {
    "pos": "none",
@@ -58,7 +58,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -2.18
+   "chg": -2.91
   },
   "600619": {
    "pos": "none",
@@ -70,7 +70,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.89
+   "chg": 4.27
   },
   "600881": {
    "pos": "touched",
@@ -82,7 +82,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.89
+   "chg": 3.47
   },
   "603030": {
    "pos": "sealed",
@@ -106,10 +106,10 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 1.02
+   "chg": -0.12
   },
   "603206": {
-   "pos": "approaching",
+   "pos": "none",
    "counts": {
     "seal": 0,
     "break": 0,
@@ -118,7 +118,7 @@
     "accel": 1
    },
    "brokeToday": 0,
-   "chg": 7.16
+   "chg": 6.28
   },
   "603297": {
    "pos": "none",
@@ -130,7 +130,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -8.69
+   "chg": -9.33
   },
   "603324": {
    "pos": "sealed",
@@ -154,7 +154,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3.54
+   "chg": -4.47
   },
   "002451": {
    "pos": "touched",
@@ -166,7 +166,7 @@
     "accel": 0
    },
    "brokeToday": 1,
-   "chg": -0.56
+   "chg": -0.98
   },
   "002535": {
    "pos": "none",
@@ -226,7 +226,7 @@
     "accel": 0
    },
    "brokeToday": 1,
-   "chg": 2.4
+   "chg": 1.77
   },
   "002983": {
    "pos": "none",
@@ -238,7 +238,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 1.84
+   "chg": 1.04
   },
   "002912": {
    "pos": "none",
@@ -262,7 +262,7 @@
     "accel": 0
    },
    "brokeToday": 1,
-   "chg": -7.39
+   "chg": -8.06
   },
   "002889": {
    "pos": "none",
@@ -274,7 +274,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -0.2
+   "chg": -1.18
   },
   "002652": {
    "pos": "none",
@@ -286,7 +286,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -2.27
+   "chg": -2.73
   },
   "002855": {
    "pos": "none",
@@ -298,7 +298,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3.72
+   "chg": -3.99
   },
   "002226": {
    "pos": "none",
@@ -310,7 +310,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 0
+   "chg": -0.37
   }
  },
  "notified": 3,
