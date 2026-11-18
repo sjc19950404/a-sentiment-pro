@@ -1330,6 +1330,45 @@
 }
 .s-mobilebar__item[aria-current="page"] { color: var(--s-accent); border-top-color: var(--s-accent); }
 .s-mobilebar__icon { font-size: 15px; line-height: 1; }
+
+/* ── 【方案 03 册 §1.1/1.2】导航三档响应式：≥1440 平铺 / 1024–1439 平铺+末端⋯ / <1024 底部 bar ── */
+.s-nav__more { display: none; }               /* 默认隐藏，仅 1024–1439 出现 */
+.s-nav__overflow { display: none; }
+.s-nav__overflow[aria-hidden="false"] { display: flex; }
+@media (max-width: 1023px) {
+  .s-nav { display: none; }                    /* <1024 顶栏导航收起，底栏接管 */
+  .s-mobilebar {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    position: fixed; left: 0; right: 0; bottom: 0;
+    z-index: var(--s-z-sticky);
+    border-top: 1px solid var(--s-border-1);
+    background: var(--s-bg-1);
+  }
+}
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .s-nav { flex-wrap: nowrap; overflow: visible; }
+  .s-nav__link[data-overflow="1"] { display: none; }
+  .s-nav__more {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 44px; min-height: var(--s-touch-min);
+    margin-left: auto; border: 1px solid var(--s-border-1);
+    border-radius: var(--s-radius-sm); background: var(--s-bg-2);
+    color: var(--s-text-2); font-size: 18px; cursor: pointer;
+  }
+  .s-nav__overflow {
+    position: absolute; top: 100%; right: var(--s-space-4);
+    z-index: var(--s-z-sticky); min-width: 160px;
+    flex-direction: column; padding: var(--s-space-1);
+    border: 1px solid var(--s-border-1); border-radius: var(--s-radius-sm);
+    background: var(--s-bg-2); box-shadow: var(--s-shadow-md, 0 8px 24px rgba(0,0,0,.35));
+  }
+  .s-nav__overflow .s-nav__link { width: 100%; }
+}
+/* hide-sm：640–1023 收进溢出菜单；<640 Micro 11px；≥1440 常驻 */
+@media (max-width: 1023px) { .hide-sm { display: none !important; } }
+@media (max-width: 639px) { .only-sm { display: inline-flex !important; } }
+@media (min-width: 640px) { .only-sm { display: none !important; } }
 @media (max-width: 639px) {
   .s-nav { display: none; }
   .s-ticker { display: none; }

@@ -21,7 +21,13 @@ const read = (f) => readFileSync(join(ROOT, f), 'utf8');
 
 let html = read('index.html');
 const css = read('terminal.css');
-const js = read('terminal.js');
+const jsSrc = read('terminal.js');
+/* 【方案阶段5】生产内联块不挂载旧终端覆盖层：剔除两处 SAFE(mount, 'mount') 调用，
+ * 但保留全部 render / 数据加载 / 窗口导出（工作台四页仍在用 __TERMINAL_VIEWS__）。
+ * 源文件 terminal.js 不动——jsdom 守卫（test/terminal.test.mjs）直接 eval 源文件仍全绿。 */
+const js = jsSrc.replace(/^\s*SAFE\(mount, 'mount'\);\s*$/gm,
+  "    /* 生产内联：覆盖层 mount 已下线（老深链由 s-root.js 幂等重定向） */");
+if (js === jsSrc) throw new Error('生产内联未剔除 SAFE(mount) —— 检查 terminal.js 的 mount 调用格式');
 
 // 防呆：内联内容不得含闭合标签（否则提前截断 HTML 解析）
 for (const [name, body] of [['terminal.css', css], ['terminal.js', js]]) {
@@ -60,15 +66,19 @@ const jsBlock = '<!-- ══ 终端视图内联块（生成物，勿手改）· 
 // 两处都先**吃掉既有空行**再插入——否则「剥离残留的换行 + 本次插入的换行」会逐次
 // 累积，每次运行凭空多 2 字节（反复执行会把文件撑大）。
 if (!html.includes('</head>')) throw new Error('index.html 无 </head>');
+const renderHostTag = '<div id="legacyRenderHost" hidden></div>';
 const tRootTag = '<div id="tRoot" hidden></div>';
-if (!html.includes(tRootTag)) throw new Error('index.html 无 #tRoot 容器');
+if (!html.includes(renderHostTag) && !html.includes(tRootTag)) {
+  throw new Error('index.html 无 #legacyRenderHost / #tRoot 插入点');
+}
 // ⚠ 两处都必须用**函数式替换**（() => …），绝不能用字符串替换：
 //   替换串里的 $1/$2/$3 会被 String.replace 当作捕获组引用！terminal.js 源码中
-//   含 '$1-$2-$3'（loadHist 的日期正则 replace），若用字符串替换会被替换成
-//   <div id="tRoot" hidden></div>，内联进去的 loadHist 直接是坏的。
-//   函数返回值不做 $ 解析，可原样内联。
+//   含 '$1-$2-$3'（loadHist 的日期正则 replace），若用字符串替换会被替换成坏码。
 html = html.replace(/\n*<\/head>/, () => '\n' + cssBlock + '\n</head>');
-html = html.replace(/(<div id="tRoot" hidden><\/div>)\n*/, () => `${tRootTag}\n${jsBlock}\n`);
+/* 【方案阶段5】终端覆盖层下线：生产用 #legacyRenderHost（只承载四页 render 脚本），
+ * 兼容首次迁移前的 #tRoot 插入点（幂等：再跑一次替换仍落到 legacyRenderHost）。 */
+html = html.replace(/(<div id="tRoot" hidden><\/div>|<div id="legacyRenderHost" hidden><\/div>)\n*/,
+  () => `${renderHostTag}\n${jsBlock}\n`);
 
 writeFileSync(IDX, html);
 console.log(`已内联：index.html ${(read('index.html').length / 1024).toFixed(1)} KB（源：terminal.css + terminal.js）`);

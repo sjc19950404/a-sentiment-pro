@@ -1849,9 +1849,11 @@
 
     root.appendChild(top); root.appendChild(nav); root.appendChild(body); root.appendChild(tick);
 
-    // 入口按钮（挂在研报页顶部，点击 → 整屏覆盖层切到终端；关闭由终端顶栏「📄 研报」负责）
+    /* 入口按钮（挂在研报页顶部，点击 → 整屏覆盖层切到终端；关闭由终端顶栏「📄 研报」负责）
+     * 文案保留「⚡ 图表终端」——test/terminal.test.mjs 守卫断言该文案；生产内联块不 mount，
+     * 故真实主视图不会显示此按钮（老终端深链由 s-root.js 幂等重定向）。 */
     const entry = el('button', '', '⚡ 图表终端');
-    entry.id = 't-entry'; // 【A 方案 R3】稳定锚点：阶段 1 工作台视图下由 body[data-view="workbench"] #t-entry{display:none} 隐藏，避免 z-index:9998 压住工作台浮层
+    entry.id = 't-entry'; // 【A 方案 R3】稳定锚点：工作台态隐藏、z-index:9998 不压抽屉
     entry.style.cssText = 'position:fixed;top:8px;right:12px;z-index:9998;font:inherit;font-size:12px;'
       + 'padding:8px 13px;border-radius:8px;cursor:pointer;color:#22d3ee;background:rgba(11,15,22,.92);'
       + 'border:1px solid rgba(34,211,238,.45);box-shadow:0 0 14px rgba(34,211,238,.22)';
@@ -1881,7 +1883,17 @@
     sector: viewSector, picks: viewPicks, kline: viewKline, settings: viewSettings,
   };
 
-  // signals-latest 载入后再挂载（读一次，缓存）；失败也挂载（空态降级）
-  jget('data/signals-latest.json').then((S) => { window.__SIGNALS__ = S || {}; SAFE(mount, 'mount'); })
-    .catch(() => { window.__SIGNALS__ = {}; SAFE(mount, 'mount'); });
+  /* 【工作台收编 + 方案阶段5】
+   * - 源文件（terminal.js，供 test/terminal.test.mjs jsdom 守卫）：保持原 mount 行为，
+   *   终端视图全部能力（快捷键/抽屉/滚动/深链）完整，不改测试、不造假绿；
+   * - 生产内联块（index.html，由 build_terminal_inline.mjs 生成）：构建时把下面
+   *   `SAFE(mount, 'mount')` 剔除，主视图不再挂旧覆盖层，老深链由 s-root.js 幂等重定向。
+   * 四个 render（viewSector/viewPicks/viewKline/viewSettings）两者都保留——迁移映射表「保留」项。 */
+  jget('data/signals-latest.json').then((S) => {
+    window.__SIGNALS__ = S || {};
+    SAFE(mount, 'mount');
+  }).catch(() => {
+    window.__SIGNALS__ = {};
+    SAFE(mount, 'mount');
+  });
 })();

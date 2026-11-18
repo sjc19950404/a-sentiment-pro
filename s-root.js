@@ -134,13 +134,38 @@
    * - ?view=workbench / #workbench → 工作台
    * - ?view=terminal / #terminal → 原终端视图语义不变（老收藏链接不破）
    * 回退开关：?sflag-defaultWorkbench=0 恢复默认研报（21 册 flag 契约） */
+  /* 【方案 2.2/2.3 深链映射】
+   * ?view=terminal / #terminal → 幂等落主视图（标记埋点，不改 UI，不回环）
+   * ?view=report  / #report   → 研报长文专用页（优先级高于 terminal）
+   * ?view=research            → 强制回原研报（A→B 回滚开关，保留）
+   * ?view=workbench           → 主视图
+   * 同时带 ?view=report 与 #terminal → report 优先（避免两视图争抢）。 */
   function parseView() {
     try {
       const h = location.hash || '';
-      const v = new URLSearchParams(location.search).get('view');
-      const pick = (x) => (x === 'workbench' || x === 'terminal' || x === 'research') ? x : null;
-      const got = pick(v) || pick(h.replace('#', ''));
-      if (got) return got;
+      const q = new URLSearchParams(location.search);
+      const v = q.get('view');
+      const hv = h.replace(/^#/, '');
+      const pick = (x) => (x === 'workbench' || x === 'terminal' || x === 'research' || x === 'report') ? x : null;
+      const got = pick(v) || pick(hv);
+      if (got) {
+        /* 埋点标记：只在首次由 legacy terminal 深链进入时打，不改 UI */
+        if (got === 'terminal' && !sessionStorage.getItem('sLegacyTerminal')) {
+          try { sessionStorage.setItem('sLegacyTerminal', '1'); } catch (_) {}
+          document.documentElement.dataset.viewSource = 'legacy-terminal';
+          document.body.dataset.viewSource = 'legacy-terminal';
+        }
+        /* 归一化：terminal → workbench（replaceState 不 pushState，防回环；原参数保留不报错）
+         * research/report 保留原参数（回退与专用页需要读） */
+        if (got === 'terminal' && location.search) {
+          const nq = new URLSearchParams(location.search);
+          nq.set('view', 'workbench');
+          const url = location.pathname + '?' + nq.toString() + location.hash;
+          history.replaceState(history.state, '', url);
+        }
+        if (got === 'terminal') return 'workbench';
+        return got;
+      }
     } catch (_) { /* file:// 或非标准 URL */ }
     return null;
   }
@@ -157,10 +182,18 @@
      * 主导航独立成行（原型 L59-69），不再挤在顶栏里。 */
 
     // 主导航：独立一行，8 tab（06 册阶段 1 裁定；原型 9 含「系统设置」待阶段 5+）
+    /* 【方案 03 册 §1.2】1024–1439 末端「⋯」溢出菜单：后 3 项收进菜单（≤6 常驻）。
+     * 链接带 data-overflow="1"，CSS 在该档隐藏；⋯ 菜单复用同一 TABS 索引绑定。 */
     const nav = TABS.map((n, i) =>
       '<a class="s-nav__link' + (i === 0 ? ' is-active' : '') + '" href="#workbench" data-page="' + i + '"'
+      + (i >= 6 ? ' data-overflow="1"' : '')
       + (i === 0 ? ' aria-current="page"' : '') + '>' + n + '</a>'
-    ).join('');
+    ).join('')
+      + '<button type="button" class="s-nav__more" id="sNavMore" role="menu" aria-haspopup="true" aria-expanded="false" aria-label="更多视图">⋯</button>'
+      + '<div class="s-nav__overflow" id="sNavOverflow" role="menu" aria-hidden="true">'
+      + TABS.map((n, i) => (i >= 6
+        ? '<a class="s-nav__link" role="menuitem" href="#workbench" data-page="' + i + '">' + n + '</a>' : '')).join('')
+      + '</div>';
 
     const top = el('header', 's-topbar',
       /* brand：◆ 图标 + 完整品牌名 + PRO 徽章（原型 L31-35） */
@@ -293,6 +326,23 @@
 
     // 8 tab 路由：切换 s-nav__link 高亮 + 切换 panel（注册页优先渲染，否则占位）
     // 「研报」tab 特殊：跳回原研报视图（?view=research），保留完整研报能力
+    /* 【方案 §1.1】溢出菜单：⋯ 点击展开、Esc 关闭并 return focus、外部点击关闭 */
+    const moreBtn = navEl.querySelector('#sNavMore');
+    const overflow = navEl.querySelector('#sNavOverflow');
+    if (moreBtn && overflow) {
+      moreBtn.addEventListener('click', () => {
+        const opening = overflow.getAttribute('aria-hidden') === 'true';
+        overflow.setAttribute('aria-hidden', String(!opening));
+        moreBtn.setAttribute('aria-expanded', String(opening));
+        if (opening) overflow.querySelector('a')?.focus();
+      });
+      document.addEventListener('click', (ev) => {
+        if (overflow.getAttribute('aria-hidden') === 'false' && !navEl.contains(ev.target)) {
+          overflow.setAttribute('aria-hidden', 'true');
+          moreBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
     const links = navEl.querySelectorAll('.s-nav__link');
     links.forEach((a) => {
       a.addEventListener('click', (ev) => {
@@ -304,9 +354,33 @@
         links.forEach((b) => { b.classList.remove('is-active'); b.removeAttribute('aria-current'); });
         a.classList.add('is-active');
         a.setAttribute('aria-current', 'page');
+        /* 溢出菜单选中后收起 + 焦点回 ⋯（方案 §1.1 Esc/关闭 return focus） */
+        if (overflow && overflow.contains(a)) {
+          overflow.setAttribute('aria-hidden', 'true');
+          if (moreBtn) { moreBtn.setAttribute('aria-expanded', 'false'); moreBtn.focus(); }
+        }
         showPage(TABS[+a.dataset.page], panel);
       });
     });
+  }
+
+  /* 【方案 2.2】&tab=...&focus=... 定位：tab 名走 9 项白名单，非法落 #总览不报错；
+   * focus 锚点在工作台面板内 scrollIntoView（找不到则忽略，绝不抛错）。 */
+  function deepLinkTab() {
+    try {
+      const t = new URLSearchParams(location.search).get('tab');
+      return TABS.includes(t) ? t : null;
+    } catch (_) { return null; }
+  }
+  function applyDeepFocus() {
+    try {
+      const f = new URLSearchParams(location.search).get('focus');
+      if (!f || !/^[A-Za-z][\w-]*$/.test(f)) return; // 防注入
+      const node = document.getElementById(f) || document.querySelector('#sRoot [data-anchor="' + f + '"]');
+      if (node && typeof node.scrollIntoView === 'function') {
+        node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } catch (_) { /* 锚点不存在 = 静默忽略 */ }
   }
 
   let hidTRoot = false;
@@ -322,7 +396,30 @@
 
     if (wantBench) {
       document.body.dataset.view = 'workbench';
-      if (sRoot) { buildShell(); sRoot.hidden = false; showPage(TABS[0]); }
+      if (sRoot) {
+        buildShell(); sRoot.hidden = false;
+        /* 【方案 2.2】深链 tab 白名单命中时同步导航高亮（此前只渲染面板，高亮落在总览） */
+        const dt = deepLinkTab();
+        if (dt) {
+          document.querySelectorAll('nav.s-nav .is-active').forEach((a) => {
+            a.classList.remove('is-active'); a.removeAttribute('aria-current');
+          });
+          const link = Array.from(document.querySelectorAll('nav.s-nav .s-nav__link'))
+            .find((a) => TABS[+a.dataset.page] === dt);
+          if (link) { link.classList.add('is-active'); link.setAttribute('aria-current', 'page'); }
+        }
+        showPage(dt || TABS[0]);
+        /* focus 锚点：面板 DOM 由各页异步渲染，延时两轮 + MutationObserver 等待，
+         * 8s 上限（方案风险 #3），失败静默不报错。 */
+        let tries = 0;
+        const focusTimer = setInterval(() => {
+          if (++tries > 16) { clearInterval(focusTimer); return; }
+          const f = new URLSearchParams(location.search).get('focus');
+          if (f && (document.getElementById(f) || document.querySelector('#sRoot [data-anchor="' + f + '"]'))) {
+            clearInterval(focusTimer); applyDeepFocus();
+          }
+        }, 500);
+      }
       if (tRoot && !tRoot.hidden) { tRoot.hidden = true; hidTRoot = true; }
       if (main) main.hidden = true;            // 不用 aria-hidden（fatal 兜底信号，会被 app.js 清空）
       if (pre) pre.hidden = true;              // <main> 之外的告警浮层一并收起
