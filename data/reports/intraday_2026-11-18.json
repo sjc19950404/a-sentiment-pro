@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-18",
- "generated_at": "2026-11-18T02:35:04.171Z",
+ "generated_at": "2026-11-18T06:05:03.951Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -154,7 +154,7 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": 0.002022,
+    "chgPct": 0.00522,
     "state": "ok",
     "stale": false,
     "cacheNote": null
@@ -178,9 +178,9 @@
     "深证成指": -0.49,
     "创业板指": -1.2
    },
-   "up_down": "1001/4162/131",
+   "up_down": "1514/3610/170",
    "amount_yi": null,
-   "zt_dt": "32/20",
+   "zt_dt": "42/29",
    "breadth": "站上20日线仅 18.0%",
    "pain": "多空拉锯",
    "seats": "游资/其他（营业部·分公司·自营）主导",
@@ -240,8 +240,8 @@
  },
  "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
  "push_verification": {
-  "checkedAtBJ": "10:35",
-  "snapshotAtBJ": "2026-11-18 10:35",
+  "checkedAtBJ": "14:05",
+  "snapshotAtBJ": "2026-11-18 14:05",
   "tradeDate": "2026-11-18",
   "trend_pool_mode": "trend",
   "minutes_to_close": null,
