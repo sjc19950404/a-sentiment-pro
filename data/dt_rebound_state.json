@@ -10,12 +10,12 @@
    }
   },
   "600228": {
-   "pos": "sealed",
+   "pos": "red",
    "counts": {
     "lift": 0,
     "red": 1,
     "seal": 1,
-    "dtBreak": 0
+    "dtBreak": 1
    }
   },
   "600259": {
@@ -514,7 +514,7 @@
    }
   },
   "002623": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -595,6 +595,6 @@
    }
   }
  },
- "notified": 39,
+ "notified": 40,
  "date": "2026-11-18"
 }
