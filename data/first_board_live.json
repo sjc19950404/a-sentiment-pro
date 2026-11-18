@@ -1,15 +1,15 @@
 {
- "at": "2026-11-18T04:30:01.831Z",
- "bj": "12:30",
- "session": "offhours",
+ "at": "2026-11-18T05:00:02.135Z",
+ "bj": "13:00",
+ "session": "trading",
  "dataDate": "2026-11-18",
  "prevDate": "20261117",
  "pool": 27,
  "counts": {
   "sealed": 5,
   "broken": 5,
-  "approaching": 0,
-  "idle": 16,
+  "approaching": 1,
+  "idle": 15,
   "pending": 0
  },
  "approachPct": 5,
@@ -17,8 +17,8 @@
   {
    "code": "002242",
    "name": "九阳股份",
-   "chg": 4.73,
-   "last": 33.01,
+   "chg": 4.6,
+   "last": 32.97,
    "high": 34.67,
    "limitPrice": 34.67,
    "status": "broken",
@@ -47,8 +47,8 @@
   {
    "code": "600202",
    "name": "哈空调",
-   "chg": 2.33,
-   "last": 5.72,
+   "chg": 3.22,
+   "last": 5.77,
    "high": 6.15,
    "limitPrice": 6.15,
    "status": "broken",
@@ -57,11 +57,21 @@
   {
    "code": "002584",
    "name": "西陇科学",
-   "chg": 1.77,
-   "last": 8.05,
+   "chg": 2.15,
+   "last": 8.08,
    "high": 8.7,
    "limitPrice": 8.7,
    "status": "broken",
+   "qDate": "2026-11-18"
+  },
+  {
+   "code": "603206",
+   "name": "嘉环科技",
+   "chg": 5.05,
+   "last": 15.4,
+   "high": 15.5,
+   "limitPrice": 16.13,
+   "status": "approaching",
    "qDate": "2026-11-18"
   },
   {
@@ -115,20 +125,10 @@
    "qDate": "2026-11-18"
   },
   {
-   "code": "603206",
-   "name": "嘉环科技",
-   "chg": 4.84,
-   "last": 15.37,
-   "high": 15.4,
-   "limitPrice": 16.13,
-   "status": "idle",
-   "qDate": "2026-11-18"
-  },
-  {
    "code": "600206",
    "name": "有研新材",
-   "chg": 2.62,
-   "last": 40.36,
+   "chg": 2.52,
+   "last": 40.32,
    "high": 41.1,
    "limitPrice": 43.26,
    "status": "idle",
@@ -155,10 +155,20 @@
    "qDate": "2026-11-18"
   },
   {
+   "code": "002843",
+   "name": "泰嘉股份",
+   "chg": 0.82,
+   "last": 15.89,
+   "high": 16.85,
+   "limitPrice": 17.34,
+   "status": "idle",
+   "qDate": "2026-11-18"
+  },
+  {
    "code": "600467",
    "name": "好当家",
-   "chg": -0.36,
-   "last": 2.74,
+   "chg": 0,
+   "last": 2.75,
    "high": 2.99,
    "limitPrice": 3.03,
    "status": "idle",
@@ -175,22 +185,22 @@
    "qDate": "2026-11-18"
   },
   {
-   "code": "002843",
-   "name": "泰嘉股份",
-   "chg": -1.52,
-   "last": 15.52,
-   "high": 16.85,
-   "limitPrice": 17.34,
-   "status": "idle",
-   "qDate": "2026-11-18"
-  },
-  {
    "code": "603078",
    "name": "江化微",
    "chg": -1.79,
    "last": 24.1,
    "high": 25.99,
    "limitPrice": 26.99,
+   "status": "idle",
+   "qDate": "2026-11-18"
+  },
+  {
+   "code": "002652",
+   "name": "扬子新材",
+   "chg": -1.82,
+   "last": 4.32,
+   "high": 4.55,
+   "limitPrice": 4.84,
    "status": "idle",
    "qDate": "2026-11-18"
   },
@@ -205,20 +215,10 @@
    "qDate": "2026-11-18"
   },
   {
-   "code": "002652",
-   "name": "扬子新材",
-   "chg": -2.27,
-   "last": 4.3,
-   "high": 4.55,
-   "limitPrice": 4.84,
-   "status": "idle",
-   "qDate": "2026-11-18"
-  },
-  {
    "code": "002983",
    "name": "芯瑞达",
-   "chg": -3.13,
-   "last": 23.2,
+   "chg": -2.92,
+   "last": 23.25,
    "high": 24.98,
    "limitPrice": 26.35,
    "status": "idle",
@@ -227,8 +227,8 @@
   {
    "code": "002855",
    "name": "捷荣技术",
-   "chg": -3.72,
-   "last": 10.87,
+   "chg": -3.63,
+   "last": 10.88,
    "high": 11.88,
    "limitPrice": 12.42,
    "status": "idle",
@@ -237,8 +237,8 @@
   {
    "code": "603931",
    "name": "格林达",
-   "chg": -5.18,
-   "last": 26.52,
+   "chg": -5.15,
+   "last": 26.53,
    "high": 29.2,
    "limitPrice": 30.77,
    "status": "idle",
@@ -247,10 +247,20 @@
   {
    "code": "603297",
    "name": "永新光学",
-   "chg": -8.99,
-   "last": 105.51,
+   "chg": -8.63,
+   "last": 105.93,
    "high": 118,
    "limitPrice": 127.52,
+   "status": "idle",
+   "qDate": "2026-11-18"
+  },
+  {
+   "code": "600261",
+   "name": "阳光照明",
+   "chg": -9.82,
+   "last": 5.14,
+   "high": 5.45,
+   "limitPrice": 6.27,
    "status": "idle",
    "qDate": "2026-11-18"
   },
@@ -261,16 +271,6 @@
    "last": 21.9,
    "high": 24,
    "limitPrice": 26.76,
-   "status": "idle",
-   "qDate": "2026-11-18"
-  },
-  {
-   "code": "600261",
-   "name": "阳光照明",
-   "chg": -10,
-   "last": 5.13,
-   "high": 5.45,
-   "limitPrice": 6.27,
    "status": "idle",
    "qDate": "2026-11-18"
   }
