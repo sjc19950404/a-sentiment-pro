@@ -28,9 +28,9 @@
    }
   },
   "600327": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
-    "lift": 0,
+    "lift": 1,
     "red": 0,
     "seal": 0,
     "dtBreak": 0
@@ -91,7 +91,7 @@
    }
   },
   "600831": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -100,9 +100,9 @@
    }
   },
   "600838": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
-    "lift": 0,
+    "lift": 1,
     "red": 0,
     "seal": 0,
     "dtBreak": 0
@@ -127,7 +127,7 @@
    }
   },
   "600892": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 1,
     "red": 0,
@@ -226,7 +226,7 @@
    }
   },
   "603337": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -289,7 +289,7 @@
    }
   },
   "603721": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -316,7 +316,7 @@
    }
   },
   "605488": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -364,7 +364,7 @@
    "pos": "lifted",
    "counts": {
     "lift": 0,
-    "red": 0,
+    "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
@@ -433,7 +433,7 @@
    }
   },
   "002712": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -523,7 +523,7 @@
    }
   },
   "002310": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -568,7 +568,7 @@
    }
   },
   "002696": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
     "lift": 1,
     "red": 0,
@@ -577,7 +577,7 @@
    }
   },
   "002931": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -595,6 +595,6 @@
    }
   }
  },
- "notified": 30,
+ "notified": 33,
  "date": "2026-11-18"
 }
