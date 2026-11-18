@@ -2,8 +2,8 @@
   "kind": "crosscheck-latest",
   "version": 1,
   "asOfDate": "2026-11-18",
-  "fetchedAt": "2026-11-18T10:46:22.004Z",
-  "primaryCount": 68,
+  "fetchedAt": "2026-11-18T13:13:40.860Z",
+  "primaryCount": 89,
   "secondaryCount": 120,
   "rules": {
     "ABS_DIVERGE": 2.5,
@@ -17,16 +17,29 @@
   "status": "diverge",
   "primaryName": "同花顺行业(881xxx)",
   "secondaryName": "申万二级(腾讯)",
-  "comparable": 52,
-  "coverage": 0.7647,
+  "comparable": 69,
+  "coverage": 0.7753,
   "offset": -0.51,
   "offsetRaw": -0.51,
   "debiased": true,
-  "divergeCount": 1,
+  "divergeCount": 2,
   "conflictCount": 0,
-  "maxAbsDiff": 2.26,
-  "medianAbsDiff": 0.33,
+  "maxAbsDiff": 2.3,
+  "medianAbsDiff": 0.36,
   "flagged": [
+    {
+      "industry": "工业金属",
+      "primaryRaw": "工业金属",
+      "primary": -1.77,
+      "secondary": -3.33,
+      "secondarySamples": 1,
+      "diff": 1.56,
+      "dev": 2.07,
+      "absDiff": 2.07,
+      "rel": 1.17,
+      "relMeasurable": true,
+      "level": "diverge"
+    },
     {
       "industry": "光伏设备",
       "primaryRaw": "光伏设备",
@@ -53,6 +66,19 @@
       "absDiff": 0.44,
       "rel": 0.42,
       "relMeasurable": true,
+      "level": "ok"
+    },
+    {
+      "industry": "通信设备",
+      "primaryRaw": "通信设备",
+      "primary": 0.81,
+      "secondary": 1.24,
+      "secondarySamples": 1,
+      "diff": -0.43,
+      "dev": 0.08,
+      "absDiff": 0.08,
+      "rel": 0.1,
+      "relMeasurable": false,
       "level": "ok"
     },
     {
@@ -212,6 +238,19 @@
       "level": "ok"
     },
     {
+      "industry": "小家电",
+      "primaryRaw": "小家电",
+      "primary": -0.43,
+      "secondary": -2.22,
+      "secondarySamples": 1,
+      "diff": 1.79,
+      "dev": 2.3,
+      "absDiff": 2.3,
+      "rel": 5.35,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
       "industry": "计算机设备",
       "primaryRaw": "计算机设备",
       "primary": -0.48,
@@ -238,6 +277,19 @@
       "level": "ok"
     },
     {
+      "industry": "多元金融",
+      "primaryRaw": "多元金融",
+      "primary": -0.58,
+      "secondary": -0.39,
+      "secondarySamples": 1,
+      "diff": -0.19,
+      "dev": 0.32,
+      "absDiff": 0.32,
+      "rel": 0.82,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
       "industry": "教育",
       "primaryRaw": "教育",
       "primary": -0.59,
@@ -260,6 +312,19 @@
       "dev": -0.09,
       "absDiff": 0.09,
       "rel": 0.86,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
+      "industry": "其他社会服务",
+      "primaryRaw": "其他社会服务",
+      "primary": -0.73,
+      "secondary": 0.29,
+      "secondarySamples": 1,
+      "diff": -1.02,
+      "dev": -0.51,
+      "absDiff": 0.51,
+      "rel": 1.76,
       "relMeasurable": false,
       "level": "ok"
     },
@@ -394,6 +459,19 @@
       "level": "ok"
     },
     {
+      "industry": "物流",
+      "primaryRaw": "物流",
+      "primary": -1.04,
+      "secondary": -0.23,
+      "secondarySamples": 1,
+      "diff": -0.81,
+      "dev": -0.3,
+      "absDiff": 0.3,
+      "rel": 1.3,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
       "industry": "电网设备",
       "primaryRaw": "电网设备",
       "primary": -1.1,
@@ -472,6 +550,19 @@
       "level": "ok"
     },
     {
+      "industry": "造纸",
+      "primaryRaw": "造纸",
+      "primary": -1.32,
+      "secondary": -1.04,
+      "secondarySamples": 1,
+      "diff": -0.28,
+      "dev": 0.23,
+      "absDiff": 0.23,
+      "rel": 0.22,
+      "relMeasurable": true,
+      "level": "ok"
+    },
+    {
       "industry": "养殖业",
       "primaryRaw": "养殖业",
       "primary": -1.38,
@@ -481,6 +572,32 @@
       "dev": 0.1,
       "absDiff": 0.1,
       "rel": 0.1,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
+      "industry": "燃气",
+      "primaryRaw": "燃气",
+      "primary": -1.41,
+      "secondary": -0.96,
+      "secondarySamples": 1,
+      "diff": -0.45,
+      "dev": 0.06,
+      "absDiff": 0.06,
+      "rel": 0.06,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
+      "industry": "石油加工贸易",
+      "primaryRaw": "石油加工贸易",
+      "primary": -1.45,
+      "secondary": 0.01,
+      "secondarySamples": 1,
+      "diff": -1.46,
+      "dev": -0.95,
+      "absDiff": 0.95,
+      "rel": 95,
       "relMeasurable": false,
       "level": "ok"
     },
@@ -524,6 +641,19 @@
       "level": "ok"
     },
     {
+      "industry": "食品加工制造",
+      "primaryRaw": "食品加工制造",
+      "primary": -1.53,
+      "secondary": -0.42,
+      "secondarySamples": 3,
+      "diff": -1.11,
+      "dev": -0.6,
+      "absDiff": 0.6,
+      "rel": 1.43,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
       "industry": "化学制药",
       "primaryRaw": "化学制药",
       "primary": -1.76,
@@ -533,6 +663,32 @@
       "dev": -0.13,
       "absDiff": 0.13,
       "rel": 0.12,
+      "relMeasurable": true,
+      "level": "ok"
+    },
+    {
+      "industry": "工业金属",
+      "primaryRaw": "工业金属",
+      "primary": -1.77,
+      "secondary": -3.33,
+      "secondarySamples": 1,
+      "diff": 1.56,
+      "dev": 2.07,
+      "absDiff": 2.07,
+      "rel": 1.17,
+      "relMeasurable": true,
+      "level": "diverge"
+    },
+    {
+      "industry": "家居用品",
+      "primaryRaw": "家居用品",
+      "primary": -1.81,
+      "secondary": -1.98,
+      "secondarySamples": 1,
+      "diff": 0.17,
+      "dev": 0.68,
+      "absDiff": 0.68,
+      "rel": 0.38,
       "relMeasurable": true,
       "level": "ok"
     },
@@ -654,6 +810,19 @@
       "level": "ok"
     },
     {
+      "industry": "化学纤维",
+      "primaryRaw": "化学纤维",
+      "primary": -2.02,
+      "secondary": -2.19,
+      "secondarySamples": 1,
+      "diff": 0.17,
+      "dev": 0.68,
+      "absDiff": 0.68,
+      "rel": 0.34,
+      "relMeasurable": true,
+      "level": "ok"
+    },
+    {
       "industry": "贸易",
       "primaryRaw": "贸易",
       "primary": -2.14,
@@ -664,6 +833,45 @@
       "absDiff": 0.01,
       "rel": 0.01,
       "relMeasurable": true,
+      "level": "ok"
+    },
+    {
+      "industry": "小金属",
+      "primaryRaw": "小金属",
+      "primary": -2.14,
+      "secondary": -1.64,
+      "secondarySamples": 1,
+      "diff": -0.5,
+      "dev": 0.01,
+      "absDiff": 0.01,
+      "rel": 0.01,
+      "relMeasurable": true,
+      "level": "ok"
+    },
+    {
+      "industry": "白酒",
+      "primaryRaw": "白酒",
+      "primary": -2.2,
+      "secondary": -1.11,
+      "secondarySamples": 1,
+      "diff": -1.09,
+      "dev": -0.58,
+      "absDiff": 0.58,
+      "rel": 0.52,
+      "relMeasurable": true,
+      "level": "ok"
+    },
+    {
+      "industry": "饮料制造",
+      "primaryRaw": "饮料制造",
+      "primary": -2.45,
+      "secondary": -0.88,
+      "secondarySamples": 2,
+      "diff": -1.57,
+      "dev": -1.06,
+      "absDiff": 1.06,
+      "rel": 1.2,
+      "relMeasurable": false,
       "level": "ok"
     },
     {
@@ -717,8 +925,34 @@
       "rel": 0.57,
       "relMeasurable": true,
       "level": "ok"
+    },
+    {
+      "industry": "医疗服务",
+      "primaryRaw": "医疗服务",
+      "primary": -3.17,
+      "secondary": -2.3,
+      "secondarySamples": 1,
+      "diff": -0.87,
+      "dev": -0.36,
+      "absDiff": 0.36,
+      "rel": 0.16,
+      "relMeasurable": true,
+      "level": "ok"
+    },
+    {
+      "industry": "游戏",
+      "primaryRaw": "游戏",
+      "primary": -3.51,
+      "secondary": -2.3,
+      "secondarySamples": 1,
+      "diff": -1.21,
+      "dev": -0.7,
+      "absDiff": 0.7,
+      "rel": 0.3,
+      "relMeasurable": true,
+      "level": "ok"
     }
   ],
-  "staleReason": "cross-source: 1 条超阈值差异（光伏设备(-2.57% vs -1.1%)）",
-  "note": "可比的 52 个行业中发现偏离常态关系的离群（覆盖率 76.5%；当日两源常态偏移 -0.51pp（已扣除））——需人工复核是否源侧失真"
+  "staleReason": "cross-source: 2 条超阈值差异（工业金属(-1.77% vs -3.33%)、光伏设备(-2.57% vs -1.1%)）",
+  "note": "可比的 69 个行业中发现偏离常态关系的离群（覆盖率 77.5%；当日两源常态偏移 -0.51pp（已扣除））——需人工复核是否源侧失真"
 }

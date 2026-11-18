@@ -1,7 +1,7 @@
 {
  "kind": "dragon-human-baseline",
  "version": 1,
- "updatedAt": "2026-11-17",
+ "updatedAt": "2026-11-18",
  "rows": [
   {
    "date": "20261106",
@@ -2949,6 +2949,406 @@
    "name": "江南化工",
    "is_pure": true,
    "reason": "首板无题材，纯情绪炒作，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "002685",
+   "name": "华东重机",
+   "is_pure": true,
+   "reason": "缩量硬板，情绪稳定，预期加速",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "301391",
+   "name": "卡莱特",
+   "is_pure": true,
+   "reason": "缩量硬板，情绪稳定，预期加速",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "600410",
+   "name": "华胜天成",
+   "is_pure": true,
+   "reason": "炸板一次，情绪分歧，预期震荡",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "603030",
+   "name": "全筑股份",
+   "is_pure": true,
+   "reason": "炸板两次，情绪松动，预期回调",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "603324",
+   "name": "盛剑科技",
+   "is_pure": true,
+   "reason": "缩量硬板，情绪稳定，预期加速",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "002771",
+   "name": "真视通",
+   "is_pure": true,
+   "reason": "缩量硬板，情绪稳定，预期加速",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "000707",
+   "name": "双环科技",
+   "is_pure": true,
+   "reason": "炸板一次，情绪分歧，预期震荡",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "002843",
+   "name": "泰嘉股份",
+   "is_pure": true,
+   "reason": "炸板两次，情绪松动，预期回调",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "300324",
+   "name": "旋极信息",
+   "is_pure": true,
+   "reason": "一板新题材，需观察",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "300991",
+   "name": "300991",
+   "is_pure": true,
+   "reason": "一板新题材，需观察",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "301396",
+   "name": "宏景科技",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "600156",
+   "name": "华升股份",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "600162",
+   "name": "香江控股",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "600186",
+   "name": "莲花控股",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "600336",
+   "name": "600336",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "600405",
+   "name": "600405",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "600839",
+   "name": "四川长虹",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "603220",
+   "name": "603220",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "603629",
+   "name": "利通电子",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "603657",
+   "name": "春光科技",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "603887",
+   "name": "城地香江",
+   "is_pure": true,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "603985",
+   "name": "603985",
+   "is_pure": true,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "688316",
+   "name": "青云科技",
+   "is_pure": true,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "688757",
+   "name": "胜科纳米",
+   "is_pure": true,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "920924",
+   "name": "920924",
+   "is_pure": true,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "002194",
+   "name": "武汉凡谷",
+   "is_pure": true,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "002148",
+   "name": "北纬科技",
+   "is_pure": true,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "002403",
+   "name": "爱仕达",
+   "is_pure": true,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "000889",
+   "name": "中嘉博创",
+   "is_pure": true,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "000980",
+   "name": "众泰汽车",
+   "is_pure": true,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "000410",
+   "name": "沈阳机床",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "000711",
+   "name": "ST京蓝",
+   "is_pure": true,
+   "reason": "ST股风险大，首板无题材，情绪炒作，谨慎参与",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "000158",
+   "name": "常山北明",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，注意风险",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "000815",
+   "name": "美利云",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "002197",
+   "name": "证通电子",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，注意风险",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "002929",
+   "name": "润建股份",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，谨慎参与",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "002042",
+   "name": "华孚时尚",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，小心冲高回落",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "002955",
+   "name": "鸿合科技",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，注意风险",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "002916",
+   "name": "深南电路",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，谨慎参与",
+   "guess": null,
+   "actual": null,
+   "gradedAt": null
+  },
+  {
+   "date": "20261118",
+   "code": "002463",
+   "name": "沪电股份",
+   "is_pure": true,
+   "reason": "首板无题材，纯情绪博弈，小心冲高回落",
    "guess": null,
    "actual": null,
    "gradedAt": null

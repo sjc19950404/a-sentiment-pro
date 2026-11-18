@@ -2,66 +2,66 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-18",
- "generatedAt": "2026-11-18T18:38:28.963+08:00",
+ "generatedAt": "2026-11-18T21:02:37.834+08:00",
  "model": "glm-4-flash",
  "sentiment": 0,
  "confidence": 0.8,
- "reason": "市场情绪多空拉锯，涨停与跌停数量接近，强势股多为算力租赁和AI相关概念，市场整体情绪中性偏正面。",
+ "reason": "市场情绪中性，多空拉锯，涨停与跌停家数相近，炸板率较高，强势股多与算力租赁、AI相关。",
  "events": [
   {
    "type": "业绩预告",
    "target": "宏景科技",
    "tone": "positive",
-   "note": "三季报增长带动股价上涨"
-  },
-  {
-   "type": "高管变动",
-   "target": "ST椰岛",
-   "tone": "positive",
-   "note": "保健酒业务和东鹏代工合作提升市场预期"
-  },
-  {
-   "type": "减持",
-   "target": "无",
-   "tone": "neutral",
-   "note": "市场整体减持情况未对市场情绪产生明显影响"
-  },
-  {
-   "type": "政策",
-   "target": "无",
-   "tone": "neutral",
-   "note": "当日未出现重大政策变动"
-  },
-  {
-   "type": "行业催化",
-   "target": "半导体检测",
-   "tone": "positive",
-   "note": "胜科纳米半导体检测业务增长带动股价上涨"
+   "note": "三季报增长推动股价上涨"
   },
   {
    "type": "行业催化",
    "target": "算力租赁",
    "tone": "positive",
-   "note": "算力租赁概念股普遍上涨，推动市场情绪"
+   "note": "算力租赁概念股表现强劲"
   },
   {
    "type": "行业催化",
    "target": "AI算力",
    "tone": "positive",
-   "note": "AI算力相关概念股表现强劲，提升市场情绪"
+   "note": "AI算力相关股票活跃"
+  },
+  {
+   "type": "行业催化",
+   "target": "半导体检测",
+   "tone": "positive",
+   "note": "半导体检测概念股表现突出"
+  },
+  {
+   "type": "行业催化",
+   "target": "6G",
+   "tone": "positive",
+   "note": "6G概念股表现活跃"
+  },
+  {
+   "type": "高管变动",
+   "target": "ST椰岛",
+   "tone": "positive",
+   "note": "保健酒+东鹏代工+海口国资合作提升股价"
   },
   {
    "type": "行业催化",
    "target": "股份回购",
    "tone": "positive",
-   "note": "沪电股份回购增持动作提振市场信心"
+   "note": "股份回购政策推动股价上涨"
+  },
+  {
+   "type": "行业催化",
+   "target": "国企改革",
+   "tone": "positive",
+   "note": "国企改革概念股表现活跃"
   }
  ],
  "inputDigest": {
   "themes": 50,
   "hotListed": 15,
   "ztCount": 41,
-  "emotionValue": 47.8,
+  "emotionValue": 47.5,
   "painVerdict": "多空拉锯（昨涨停今日翻绿 49%、高位板晋级失败 83%，追高盈亏各半）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"

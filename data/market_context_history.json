@@ -1,7 +1,7 @@
 {
  "kind": "market-context-history",
  "version": 1,
- "updatedAt": "2026-11-17",
+ "updatedAt": "2026-11-18",
  "meta": {
   "source": "eastmoney push2his klt=101 fqt=1",
   "window": 250,
@@ -73944,6 +73944,16 @@
    "vol20": 0.97,
    "vol20Pct": 72,
    "rangePosPct": 0
+  },
+  {
+   "date": "2026-11-18",
+   "shAmount": 650231688071.3,
+   "szAmount": 719470535391.36,
+   "totalAmount": 1369702223462.6602,
+   "amountPct": 0.4,
+   "vol20": 0.96,
+   "vol20Pct": 70.8,
+   "rangePosPct": 0.49
   }
  ]
 }

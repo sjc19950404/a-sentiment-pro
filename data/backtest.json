@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generatedAt": "2026-11-18T10:44:42.265Z",
+  "generatedAt": "2026-11-18T13:11:59.538Z",
   "formulaVersion": "v5.2-pro",
   "tradeDate": "2026-11-18",
   "days": 268,
@@ -622,7 +622,7 @@
    38.4,
    46.3,
    43.6,
-   48
+   47.8
   ],
   "navBase": [
    1,
@@ -4225,6 +4225,10 @@
   "mains": [],
   "topIndustries": [
    {
+    "name": "通信服务",
+    "change_pct": 4.08
+   },
+   {
     "name": "元件",
     "change_pct": 2.65
    },
@@ -4237,12 +4241,8 @@
     "change_pct": 0.84
    },
    {
-    "name": "汽车整车",
-    "change_pct": 0.6
-   },
-   {
-    "name": "白色家电",
-    "change_pct": 0.46
+    "name": "通信设备",
+    "change_pct": 0.81
    }
   ],
   "threshold": {
