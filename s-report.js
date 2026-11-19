@@ -68,6 +68,11 @@
       + '<span class="s-report__sep" aria-hidden="true">/</span>'
       + '<span class="s-report__cur" aria-current="page">研报</span>'
       + '<span class="s-report__spacer"></span>'
+      /* 【重构前功能补回】原研报研报工具条全套：刷新/复制全文/导出三格式/打印/12项数据集。
+       * 不重写逻辑——转发 click 到隐藏 main 里的原按钮（事件委托挂 document，仍然有效）。 */
+      + '<button type="button" class="s-report__print" id="sReportRefresh" title="只重建研判报告，保留阅读位置">↻ 刷新</button>'
+      + '<button type="button" class="s-report__print" id="sReportCopy" title="复制报告全文（纯文本）">复制全文</button>'
+      + '<button type="button" class="s-report__print" id="sReportFmt" title="导出 HTML / Markdown / 纯文本">导出文档 ▾</button>'
       + '<button type="button" class="s-report__print" id="sReportPrint">打印 / 导出</button>';
     root.appendChild(crumb);
 
@@ -83,6 +88,38 @@
 
     document.body.appendChild(root);
     crumb.querySelector('#sReportBack').addEventListener('click', backToWorkbench);
+    /* 转发到原研报按钮（隐藏 main 里仍在，事件委托有效）——真复用，不重写 */
+    const relay = (selfId, origId) => {
+      const self = crumb.querySelector('#' + selfId);
+      if (self) self.addEventListener('click', () => {
+        const orig = document.getElementById(origId);
+        if (orig) orig.click();
+      });
+    };
+    relay('sReportRefresh', 'briefRefresh');
+    relay('sReportCopy', 'briefCopy');
+    /* 导出三格式：直接调原研报 doExportBrief（顶层函数，挂 window），菜单自建在可见的
+     * 专用页里——不转发到隐藏 main 内的菜单（转发了用户也看不见）。 */
+    crumb.querySelector('#sReportFmt').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      let m = document.getElementById('sReportFmtMenu');
+      if (m) { m.hidden = !m.hidden; return; }
+      m = el('div', 's-report__expmenu');
+      m.id = 'sReportFmtMenu';
+      m.innerHTML = [
+        ['html', '正式文档（HTML · 可直接打印）'],
+        ['md', 'Markdown（粘进知识库/文档）'],
+        ['txt', '纯文本（记事本/邮件）'],
+      ].map(([fmt, label]) => '<button type="button" data-fmt="' + fmt + '">' + label + '</button>').join('');
+      m.addEventListener('click', (e) => {
+        const it = e.target.closest('button[data-fmt]');
+        if (!it) return;
+        e.stopPropagation();
+        if (typeof window.doExportBrief === 'function') window.doExportBrief(it.dataset.fmt, ev.currentTarget);
+        m.hidden = true;
+      });
+      crumb.appendChild(m);
+    });
     /* 【重构前功能补回】研报专用页导出按钮接原研报 12 项导出引擎（真导出，非只有打印）。
      * 菜单 DOM 来自 window.renderExportMenu()（app.js 顶层函数），点击复用 doExportDataset。
      * 同时在菜单底部保留「打印」按钮——原 window.print() 能力不丢。 */
