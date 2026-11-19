@@ -94,6 +94,19 @@
       if (typeof S.onTabChange === 'function') { try { S.onTabChange(); } catch (_) {} } // 【16 册门禁⑤】切 tab 关抽屉
     }
     currentPage = name;
+    /* 【P1-5 切换反馈 2026-11-19】render 同步注入壳（含「加载中…」占位），但异步数据
+     * 要 6~8s 才到——期间无任何视觉反馈，像「点了没反应」。加顶部 2px 流动进度条：
+     * 内容（.s-card/.s-section）挂载后由 observer 自动移除；9s 兜底移除防残留。 */
+    try {
+      const bar = el('div', 's-tabload');
+      bar.style.position = 'sticky';
+      panel.prepend(bar);
+      const mo = new MutationObserver(() => {
+        if (panel.querySelector('.s-card, .s-table, .s-kpi')) { mo.disconnect(); bar.remove(); }
+      });
+      mo.observe(panel, { childList: true, subtree: true });
+      setTimeout(() => { try { mo.disconnect(); bar.remove(); } catch (_) {} }, 9000);
+    } catch (_) {}
     const rec = pages[name];
     if (rec && typeof rec.render === 'function') {
       try { rec.render(panel); } catch (e) { try { console.error('[s-root] 页面渲染失败', name, e); } catch (_) {} }
@@ -215,7 +228,7 @@
        * 用户未授权——现按原型一字不差补齐四个按钮及其交互。 */
       + '<div class="s-topbar__actions">'
       +   '<div class="s-tagrow hide-sm" role="group" aria-label="时间窗">'
-      +     [20, 30, 60, 90].map((n) => '<button type="button" class="s-chip" data-ev-range="' + n + '" aria-pressed="' + (n === 60) + '">' + n + '</button>').join('')
+      +     [20, 30, 60, 90].map((n) => '<button type="button" class="s-chip" data-ev-range="' + n + '" title="regime 序列回看 ' + n + ' 个交易日" aria-pressed="' + (n === 60) + '">' + n + '</button>').join('')
       +   '</div>'
       +   '<button type="button" class="s-btn s-btn--ghost hide-sm" id="sPhSkeleton">骨架态</button>'
       +   '<button type="button" class="s-btn s-btn--ghost hide-sm" id="sPhTheme">浅色</button>'

@@ -47,6 +47,13 @@ try {
   scored.note = 'v1 三独立信号（涨跌幅标记/竞价额占比/一字缩量），不合成总分；不注入主情绪引擎';
   const OUT = join(ROOT, 'data/auction_score.json');
   const outHist = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : [];
+  /* 【2026-11-19 后端评审意见落地】样本量随档披露：竞价档 11-10 才建（历史不可回查，
+   * 11 个交易日仅 2 次成功、11-11 档又被 reset 吃掉——详见 fetch_auction.mjs 根因链），
+   * 统计分布/分位阈值基本无样本支撑。任何消费方（未来引擎闸门/报表）拿到本档必须
+   * 先看 sampleNote——样本攒到 ≥30 个交易日前，打分只作方向参考、禁作阈值判断。 */
+  const nHist = Array.isArray(outHist) ? outHist.length : 0;
+  scored.sampleNote = `样本 ${nHist} 个交易日（采集链 2026-11-10 建立+push2 断链修复后重建），` +
+    (nHist >= 30 ? '已过 30 日门槛，可作统计参考' : '<30 日门槛：仅方向参考，禁作阈值/分位判断');
   const list = Array.isArray(outHist) ? outHist : [];
   const idx = list.findIndex((d) => d.trade_date === scored.trade_date);
   if (idx >= 0) list[idx] = scored; else list.push(scored);

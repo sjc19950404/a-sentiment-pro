@@ -79,7 +79,14 @@
       pct:     txt('#emPct') ?? (em.pct_rank != null ? String(em.pct_rank) : null), // 历史分位 %
       regime:  regLabel,                                                     // 市场状态
       regimeKey: sigReady ? reg.key : null,
-      pos:     (txt('#emTier') || '').replace(/^档位\s*/, '') || LOADING,      // 执行仓位（V5.2 档位）
+      /* 【2026-11-19 P0-1 口径修复】仓位主口径＝风控帽区间（POSITION_BANDS by regime key，
+       * app.js 暴露 window.__POSITION_BANDS__，唯一出处 src/position_policy.js）。此前直接
+       * 搬 #emTier（V5.2 绝对分档），而 app.js L1559 明示该档「降级为交叉验证、仓位结论以
+       * 历史分位/风控帽为主」——真冰点（分位 5.1%）日曾显示「建议压到半仓」并盖章
+       * 「分位优先 · 风控帽」，口径冒用。signals 未就绪时回退绝对分档（降级显示）。 */
+      band:    (() => { const B = window.__POSITION_BANDS__ || {}; const rk = sigReady ? reg.key : null; return (rk && B[rk]) || null; })(),
+      tierAbs: (txt('#emTier') || '').replace(/^档位\s*/, '') || null,          // V5.2 绝对分档（交叉验证披露）
+      pos:     (() => { const B = window.__POSITION_BANDS__ || {}; const rk = sigReady ? reg.key : null; const b = rk && B[rk]; return b ? `${b[0]}~${b[1]}%` : ((txt('#emTier') || '').replace(/^档位\s*/, '') || LOADING); })(),
       limit:   (sm.zt_count != null && sm.dt_count != null) ? `${sm.zt_count} / ${sm.dt_count}` : LOADING, // 涨停/跌停（唯一数源=summary，无异口径风险）
       breadth,                                                               // 涨/跌家数
       lhb:     txt('#emNet') ?? (em.lhb_daily_net != null ? `当日龙虎净买 ${em.lhb_daily_net} 亿` : LOADING), // 龙虎净买
@@ -139,12 +146,15 @@
         + `<span class="s-verdict__text" id="sVerdictText">市场处于冰点区间，宽度背离与亏钱效应同时触发，执行仓位建议压到 0–20%，不宜追高。</span>`
         + `<span class="s-verdict__sub" id="sVerdictSub">依据 6 项核心指标 · 2 项告警 · 数据日 —</span></div>`
         + `<div class="s-grid s-grid--kpi s-grid--kpi-tall" id="sKpiRow" style="margin-top:var(--s-space-3)">`
-        + kpiCard2('情绪分', 'sKpiScore', '历史分位 —', '近 60 日最低 12%', true, 'var(--s-font-kpi)')
-        + kpiCard2('市场状态', 'sKpiRegime', 'regime 连续 4 日', '防御口径生效中')
-        + kpiCard2('执行仓位', 'sKpiPos', '较上日 −10pt', 'risk_budget 约束')
-        + kpiCard2('涨停 / 跌停', 'sKpiLimit', '炸板率 28.6%', '最高板 5 板')
-        + kpiCard2('涨 / 跌家数', 'sKpiBreadth', '宽度 −3,717', '极寒分化扣分 10')
-        + kpiCard2('龙虎净买', 'sKpiLhb', '席位活跃度偏低', '买卖双侧已校验', true)
+        /* 【P1-8 去假占位 2026-11-19】delta/note 原是视觉稿示意值（历史分位—/60日最低12%/
+         * 连续4日/risk_budget/28.6%/5板/−3,717/极寒分化扣分10/席位活跃度），JS 失败或时序
+         * 竞态时用户会把假数字当真值。统一改「—」（无值不造假），真值由 sync()/evidence 填。 */
+        + kpiCard2('情绪分', 'sKpiScore', '历史分位 —', '近 60 日最低 —', true, 'var(--s-font-kpi)')
+        + kpiCard2('市场状态', 'sKpiRegime', 'regime 连续 — 日', '防御口径判定中')
+        + kpiCard2('执行仓位', 'sKpiPos', '分位优先 · 风控帽', '交叉验证 —')
+        + kpiCard2('涨停 / 跌停', 'sKpiLimit', '炸板率 —', '最高板 —')
+        + kpiCard2('涨 / 跌家数', 'sKpiBreadth', '宽度 —', '极寒分化判定中')
+        + kpiCard2('龙虎净买', 'sKpiLhb', '当日榜口径', '买卖双侧已校验', true)
         + `</div>`
         + `<details class="s-alertstrip s-details" style="margin-top:var(--s-space-3)">`
         + `<summary><span class="s-badge s-badge--info">13 项状态已归并为 1 条结论</span>`
@@ -201,14 +211,17 @@
     if (dScore && k.pct != null) dScore.textContent = `历史分位 ${k.pct}%`;
     const vsub = document.getElementById('sVerdictSub');
     if (vsub) vsub.textContent =
-      `依据 6 项核心指标 · 2 项告警 · 数据日 ${k.date || '—'}`;
+      /* 【P1-8 去硬编码】「2 项告警」是写死占位——告警真值在下方 alertstrip 逐项展示，
+       * 写死会在无告警日变假陈述。改为指向明细。 */
+      `依据 6 项核心指标 · 告警明细见下 · 数据日 ${k.date || '—'}`;
     /* 【原型字面 2026-11-18】结论句严格按视觉稿原文，只把「冰点/0–20%」随真值替换：
      * 原型：市场处于冰点区间，宽度背离与亏钱效应同时触发，执行仓位建议压到 0–20%，不宜追高。
-     * 此前简化成「市场处于X区间，执行仓位建议 Y，不宜追高。」丢掉「宽度背离与亏钱效应同时触发、
-     * 压到」——擅自改字面，用户未授权。现恢复原型句式，可变的仅 regime 与仓位两处真值。 */
+     * 【2026-11-19 P1-7 条件化】「宽度背离与亏钱效应同时触发」是写死陈述——11-19 恰好
+     * 吻合，但换个无告警日就是假陈述。删去该短语（告警明细由 alertstrip 真值承载），
+     * 保留原型句式骨架（…压到 … 不宜追高）。仓位真值＝风控帽区间（P0-1）。 */
     const vt = document.getElementById('sVerdictText');
     if (vt && k.regime && k.regime !== LOADING && k.score !== LOADING) {
-      vt.textContent = `市场处于${k.regime}区间，宽度背离与亏钱效应同时触发，执行仓位建议压到 ${k.pos || '—'}，不宜追高。`;
+      vt.textContent = `市场处于${k.regime}区间，执行仓位建议压到 ${k.pos || '—'}，不宜追高。`;
     }
   }
 

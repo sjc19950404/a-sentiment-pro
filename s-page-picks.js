@@ -52,6 +52,20 @@
       const sign = (v, suffix = '') => v == null ? '—' : (v > 0 ? '+' : '') + v + suffix;
       const cls = (v) => v == null ? '' : v > 0 ? 's-num--up' : v < 0 ? 's-num--down' : '';
 
+      /* 【P0-2 风控帽显式化 2026-11-19】引擎 suggestWeight 走 V5.2 绝对分档（半仓档→
+       * 单票均分），与风控帽（POSITION_BANDS by regime）不互通——真冰点日曾给 3 只
+       * 连板票合计 50% 敞口。帽子语义＝风控上限优先（position_policy 头注纪律）：
+       * 超帽时显式告警并给出按帽折算的单票上限。不改引擎数值（信号归信号、帽子归帽子，
+       * 引擎层闸门变更需重拍板）。 */
+      const bandArr = (() => { const rk = ((window.__signals || {}).regime || {}).latest && window.__signals.regime.latest.key; const B = window.__POSITION_BANDS__ || {}; return (rk && B[rk]) || null; })();
+      const openSum = picks.reduce((a, p) => a + (+p.suggestWeight || 0), 0) * 100;
+      const capAlert = (bandArr && openSum > bandArr[1])
+        ? '<div class="s-alert s-alert--warn" style="margin-bottom:var(--s-space-3)">'
+          + '<div class="s-alert__title">⚠ 风控帽约束（分位优先口径）</div>'
+          + '<div>当前 regime 风控帽 ' + bandArr[0] + '%~' + bandArr[1] + '%，下方引擎口径建议合计 '
+          + openSum.toFixed(1) + '%（已超帽）。帽子按设计优先生效：实际执行请按帽削减（单票 ≤'
+          + (bandArr[1] / Math.max(1, picks.length)).toFixed(1) + '%）或放弃新开仓。</div></div>'
+        : '';
       const meta = '<div class="s-verdict" style="margin-bottom:var(--s-space-3)">'
         + '<span class="s-verdict__sub">数据日 ' + esc(r.asOf || '—')
         + ' · 情绪分 <b class="s-num">' + num(r.score, 1) + '</b>'
@@ -89,7 +103,7 @@
       const table = picks.length
         ? '<div class="s-table-wrap"><div class="s-table__viewport"><table class="s-table s-table--compact">'
         + '<thead><tr><th>#</th><th>名称 / 代码</th><th>涨跌幅</th><th>上涨概率</th>'
-        + '<th>建议仓位</th><th>核心逻辑</th><th>操作</th></tr></thead><tbody>'
+        + '<th title="引擎 V5.2 绝对分档口径——与风控帽（分位优先）是两把尺子，超帽时见上方告警条">建议仓位（引擎口径）</th><th>核心逻辑</th><th>操作</th></tr></thead><tbody>'
         + rows + '</tbody></table></div></div>'
         : '<div class="s-empty"><div class="s-empty__title">今日无推荐标的</div>'
         + '<div class="s-empty__hint">' + esc((r.note && r.note.text) || '按当日口径无达标标的，不填充估算值。') + '</div></div>';
@@ -109,7 +123,7 @@
         : '';
 
       host.innerHTML = '<div class="s-card"><div class="s-card__body">'
-        + meta + warn + table + rejected + '</div></div>';
+        + capAlert + meta + warn + table + rejected + '</div></div>';
 
       /* 交互：行点击下钻（复用 paper_ui 的 pickDetail 若导出，否则用 S.openDrawer 展示真值） */
       host.querySelectorAll('tr[data-pick-code]').forEach((tr) => {

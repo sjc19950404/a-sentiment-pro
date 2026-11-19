@@ -1165,6 +1165,10 @@ function buildBrief(days, arc) {
   const rulerDiverge = (pctLvl != null && absLvl != null && pctLvl !== absLvl);
   // regime key → 仓位风控帽（数值镜像 src/position_policy.js::POSITION_BANDS，唯一出处在彼）
   const BANDS = { ice: [0, 20], ebb: [0, 20], recover: [30, 50], neutral: [30, 50], climax: [60, 100], shift: [0, 30] };
+  /* 【2026-11-19 P0-1 口径修复】把镜像暴露给工作台（s-page-overview / s-page-picks 是
+   * 普通脚本，拿不到本闭包）。唯一出处仍是 src/position_policy.js；本对象是前端唯一
+   * 镜像，工作台只读 window 不再复制字面量——防第三份漂移。赋值幂等。 */
+  window.__POSITION_BANDS__ = BANDS;
   const regKey = reg ? reg.key : null;
   const band = BANDS[regKey] || (pctLvl === 'high' ? [60, 100] : pctLvl === 'low' ? [0, 20] : [30, 50]);
   const bandTxt = `${band[0]}%~${band[1]}%`;

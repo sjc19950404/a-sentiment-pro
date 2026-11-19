@@ -84,18 +84,26 @@
     if (!Array.isArray(data) || !data.length) { setNote('暂无涨停池数据'); return; }
     const latest = data[data.length - 1]; // 最新交易日
     const pool = Array.isArray(latest.pool) ? latest.pool : [];
-    const zbc = pool.reduce((a, x) => a + (+x.zbc || 0), 0);
+    const zbc = pool.reduce((a, x) => a + (+x.zbc || 0), 0);   // 炸板次数累计（池口径：某股可多次炸板）
     const sealed = pool.length;
     const maxLbc = pool.reduce((m, x) => Math.max(m, +x.lbc || 1), 0);
     const setTxt = (id, v) => { const n = currentPanel && $('#' + id, currentPanel); if (n) n.textContent = v; };
     setTxt('sZtUp', String(sealed));
-    setTxt('sZtBroken', String(zbc));
-    const rate = sealed + zbc > 0 ? (sealed / (sealed + zbc) * 100).toFixed(0) : '—';
-    setTxt('sZtRate', `封板率 ${rate}%`);
+    /* 【P0-3 口径统一 2026-11-19】封板率主口径=signals.latest（zt/(zt+zb)＝触板只数口径：
+     * 收盘封住 23 / 触板 47 = 48.9%，引擎报告与 summary.zbl_pct 反推同源）。此前
+     * sealed/(sealed+Σzbc) 把「炸板次数累计」当「炸板只数」——量纲错（次数 38 > 只数 24，
+     * 同日 37.7% vs 48.9% 与总览/报告三处打架）。池内 zbc 累计降级为次数披露。 */
+    const sigL = (typeof window !== 'undefined' && window.__signals && window.__signals.latest) || {};
+    const ztN = +sigL.zt_count || sealed, zbN = (sigL.zb_count != null) ? +sigL.zb_count : null;
+    const rateTxt = (zbN != null && ztN + zbN > 0)
+      ? (ztN / (ztN + zbN) * 100).toFixed(1) + '% · 触板口径'
+      : '—（口径待 signals 就绪）';
+    setTxt('sZtBroken', zbN != null ? String(zbN) : String(zbc) + ' 次');
+    setTxt('sZtRate', `封板率 ${rateTxt}`);
     setTxt('sZtMaxLbc', maxLbc ? maxLbc + ' 板' : '—');
     setTxt('sZtDays', String(data.length));
-    setTxt('sZtVerdict', `涨停 ${sealed} / 炸板 ${zbc}`);
-    setTxt('sZtSub', `最新数据日 ${esc(String(latest.date || '').replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'))} · 封板率 ${rate}%`);
+    setTxt('sZtVerdict', `涨停 ${sealed} / 炸板 ${zbN != null ? zbN + ' 只' : zbc + ' 次'}`);
+    setTxt('sZtSub', `最新数据日 ${esc(String(latest.date || '').replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'))} · 封板率 ${rateTxt}（触板 ${zbN != null ? ztN + zbN : '—'} 只：封住 ${ztN} / 炸板 ${zbN != null ? zbN : '—'}）· 池内炸板次数累计 ${zbc} 次`);
     const host = currentPanel && $('#sZtTableHost', currentPanel);
     if (host) renderTable(host, pool);
   }

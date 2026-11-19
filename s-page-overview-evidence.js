@@ -324,7 +324,9 @@
     const ses = document.getElementById('sPhSession');
     if (ses) {
       let today = '';
-      try { today = new Date().toISOString().slice(0, 10); } catch (_) {}
+      /* 【时区修正 2026-11-19】toISOString 是 UTC——北京 22:00 后 UTC 日期已是次日，
+       * 「今日已更新」判定在晚间整体漂移成「已收盘」。改本地日期。 */
+      try { const n = new Date(); today = n.getFullYear() + '-' + ('0' + (n.getMonth() + 1)).slice(-2) + '-' + ('0' + n.getDate()).slice(-2); } catch (_) {}
       ses.textContent = m.stale ? '数据滞后' : (m.tradeDate === today ? '今日已更新' : '已收盘');
     }
     const hl = document.getElementById('sPhHealth');
@@ -357,8 +359,16 @@
       if (de && delta != null) de.textContent = delta;
       if (ne && note != null) ne.textContent = note;
     }
-    if (m.broken_rate != null) {
-      setKN('sKpiLimit', '炸板率 ' + (m.broken_rate * 100).toFixed(1) + '%',
+    /* 【P0-3 口径统一 2026-11-19】炸板率主口径=summary.zbl_pct（触板只数：炸板只数/触板
+     * 只数，引擎报告同源）。此前显示 metrics.broken_rate（涨停池内炸过板的股票占比
+     * 47.8%）——同日四口径并存（池次数累计 37.7% / metrics 只数占比 47.8% /
+     * summary 触板 51.1%）。metrics 降级为 fallback 且标注口径名，不再裸出数字。 */
+    const sZbl = (CACHE.latest && CACHE.latest.summary && CACHE.latest.summary.zbl_pct);
+    if (sZbl != null) {
+      setKN('sKpiLimit', '炸板率 ' + (+sZbl).toFixed(1) + '%（触板口径）',
+        '最高板 ' + (m.max_board != null ? m.max_board : '—') + ' 板');
+    } else if (m.broken_rate != null) {
+      setKN('sKpiLimit', '炸板率 ' + (m.broken_rate * 100).toFixed(1) + '%（池内炸板股占比）',
         '最高板 ' + (m.max_board != null ? m.max_board : '—') + ' 板');
     }
     const bwTxt = ((document.getElementById('sKpiBreadth') || {}).textContent || '').match(/([\d,]+)\s*\/\s*([\d,]+)/);
@@ -378,7 +388,11 @@
     }
     setKN('sKpiRegime', 'regime 连续 ' + streak + ' 日',
       /冰点|退潮|偏冷/.test(d.emotion || '') ? '防御口径生效中' : '常规口径');
-    setKN('sKpiPos', '分位优先 · 风控帽', null);
+    /* 【P0-1 配套 2026-11-19】delta「分位优先 · 风控帽」此前是冒用标签（value 实为
+     * V5.2 绝对分档）。总览 readKpis 已改为风控帽主口径，此处补交叉验证 note：
+     * 绝对分档降级披露，与 app.js 报告 §6「交叉验证（V5.2 绝对分信号档）」同语义。 */
+    const absTier = ((document.getElementById('emTier') || {}).textContent || '').replace(/^档位\s*/, '').trim();
+    setKN('sKpiPos', '分位优先 · 风控帽', absTier ? '交叉验证 · 绝对分档 ' + absTier : null);
     setKN('sKpiLhb', '当日净买', '当日榜口径');
     const pEl = document.getElementById('sAlPain');
     if (pEl && sig.pain && sig.pain.verdict) {

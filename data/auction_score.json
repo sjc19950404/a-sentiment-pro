@@ -10,9 +10,9 @@
    "strong": 18,
    "weak": 5,
    "neutral": 14,
-   "yiziShrink": 0,
-   "yiziHeavy": 3,
-   "amtRatioMissing": 29
+   "yiziShrink": 1,
+   "yiziHeavy": 1,
+   "amtRatioMissing": 30
   },
   "items": [
    {
@@ -43,10 +43,10 @@
     "prevClose": 6.7,
     "jjPct": 10,
     "chgLevel": "strong",
-    "amtRatio": 0.2701,
+    "amtRatio": null,
     "yizi": {
      "is": true,
-     "shrink": false
+     "shrink": null
     }
    },
    {
@@ -102,7 +102,7 @@
     "prevClose": 4.59,
     "jjPct": 4.79,
     "chgLevel": "strong",
-    "amtRatio": 0.0486,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -116,7 +116,7 @@
     "prevClose": 15.29,
     "jjPct": 4.58,
     "chgLevel": "strong",
-    "amtRatio": 0.0414,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -130,7 +130,7 @@
     "prevClose": 15.76,
     "jjPct": 4,
     "chgLevel": "strong",
-    "amtRatio": 0.0246,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -175,7 +175,7 @@
     "prevClose": 11.88,
     "jjPct": 9.34,
     "chgLevel": "strong",
-    "amtRatio": 0.2531,
+    "amtRatio": 0.7682,
     "yizi": null
    },
    {
@@ -234,10 +234,10 @@
     "prevClose": 20.82,
     "jjPct": 9.99,
     "chgLevel": "strong",
-    "amtRatio": 0.0971,
+    "amtRatio": 0.0179,
     "yizi": {
      "is": true,
-     "shrink": false
+     "shrink": true
     }
    },
    {
@@ -335,7 +335,7 @@
     "prevClose": 31.52,
     "jjPct": 3.11,
     "chgLevel": "strong",
-    "amtRatio": null,
+    "amtRatio": 0.042,
     "yizi": null
    },
    {
@@ -377,7 +377,7 @@
     "prevClose": 13.1,
     "jjPct": 3.05,
     "chgLevel": "strong",
-    "amtRatio": null,
+    "amtRatio": 0.0263,
     "yizi": null
    },
    {
@@ -391,7 +391,7 @@
     "prevClose": 24.54,
     "jjPct": 3.5,
     "chgLevel": "strong",
-    "amtRatio": null,
+    "amtRatio": 0.018,
     "yizi": null
    },
    {
@@ -433,7 +433,7 @@
     "prevClose": 27.97,
     "jjPct": 2.79,
     "chgLevel": "neutral",
-    "amtRatio": null,
+    "amtRatio": 0.0281,
     "yizi": null
    },
    {
@@ -517,7 +517,7 @@
     "prevClose": 38.88,
     "jjPct": 8.02,
     "chgLevel": "strong",
-    "amtRatio": 0.0248,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -545,14 +545,15 @@
     "prevClose": 1.94,
     "jjPct": 9.79,
     "chgLevel": "strong",
-    "amtRatio": 0.3563,
+    "amtRatio": 0.1772,
     "yizi": {
      "is": true,
      "shrink": false
     }
    }
   ],
-  "generatedAt": "2026-11-19T01:27:01.362Z",
-  "note": "v1 三独立信号（涨跌幅标记/竞价额占比/一字缩量），不合成总分；不注入主情绪引擎"
+  "generatedAt": "2026-11-19T13:00:37.554Z",
+  "note": "v1 三独立信号（涨跌幅标记/竞价额占比/一字缩量），不合成总分；不注入主情绪引擎",
+  "sampleNote": "样本 1 个交易日（采集链 2026-11-10 建立+push2 断链修复后重建），<30 日门槛：仅方向参考，禁作阈值/分位判断"
  }
 ]

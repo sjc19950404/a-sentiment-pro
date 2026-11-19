@@ -1518,3 +1518,13 @@ body[data-view="report"] .topbar .scope-switch { display: none !important; }
   background:var(--s-bg-1, #0f141c); box-shadow:var(--s-shadow-md, 0 8px 24px rgba(0,0,0,.4));
 }
 .s-report__expmenu[hidden] { display:none; }
+
+/* 【P1-5 切 tab 加载反馈 2026-11-19】顶部 2px 流动进度条——数据异步 6~8s 期间给
+ * 「正在加载」反馈；内容由 s-root.js 在 .s-card/.s-table/.s-kpi 挂载后移除。 */
+.s-tabload {
+  top: 0; left: 0; right: 0; height: 2px; z-index: 6; border-radius: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--s-accent) 45%, transparent 100%);
+  background-size: 45% 100%; background-repeat: no-repeat;
+  animation: s-tabload-slide 1.1s linear infinite; pointer-events: none;
+}
+@keyframes s-tabload-slide { from { background-position: -45% 0; } to { background-position: 145% 0; } }
