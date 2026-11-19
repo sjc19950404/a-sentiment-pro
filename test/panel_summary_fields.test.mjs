@@ -10,28 +10,37 @@
 // summary 字段 ⊆ trendPoint 输出字段」变成断言，第四次踩坑时 CI 直接红灯。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-// ── ① 运行时生成 recent，拿 trendPoint 真实输出键集 ──────────────────────────
-const raw = JSON.parse(readFileSync(path.join(ROOT, 'data/archive.json'), 'utf8'));
-const { decodeArchive, encodeArchive } = await import(
-  path.join(ROOT, 'src/lhb_codec.js')
-);
-const { buildRecent } = await import(path.join(ROOT, 'src/archive_split.js'));
-const arc = decodeArchive(raw);
-const packed = encodeArchive(arc, raw.meta.reasonCodes, { deflate: true, seats: false });
-const rec = buildRecent(packed, 30, { aggregateFn: () => [] });
-const tpKeys = new Set(Object.keys(rec.days[rec.days.length - 2] || {}));
-const tpSummaryKeys = new Set([
-  ...Object.keys(rec.days[rec.days.length - 2]?.summary || {}),
-  ...Object.keys(rec.latest?.summary || {}),
-]);
+/* 【CI 边界 2026-11-20】data/archive.json 按 .gitignore 不入库（10.4MB 本地独有
+ * 档）——CI 干净 checkout 无档。本守卫运行时生成 recent 必须读它，故三条断言
+ * 在无档环境带原因 skip（与项目既有范式一致：skip 名字写明「需本地档，CI 无档；
+ * 本地 hook 有档照跑」）。首版顶层直接 readFileSync → CI ENOENT 整进程炸红
+ * （test-gate run 44571841164，# fail 1），即此修复缘由。 */
+const HAS_LOCAL = existsSync(path.join(ROOT, 'data/archive.json'));
+const SKIP = !HAS_LOCAL && '需本地 data/archive.json（未入库），CI 无档；本地 hook 有档照跑';
 
-test('trendPoint 输出必须包含报告层已踩坑的三键（seats/industry_relative/main_theme）', () => {
+// ── ① 运行时生成 recent，拿 trendPoint 真实输出键集 ──────────────────────────
+let tpKeys = new Set(), tpSummaryKeys = new Set();
+if (HAS_LOCAL) {
+  const raw = JSON.parse(readFileSync(path.join(ROOT, 'data/archive.json'), 'utf8'));
+  const { decodeArchive, encodeArchive } = await import(path.join(ROOT, 'src/lhb_codec.js'));
+  const { buildRecent } = await import(path.join(ROOT, 'src/archive_split.js'));
+  const arc = decodeArchive(raw);
+  const packed = encodeArchive(arc, raw.meta.reasonCodes, { deflate: true, seats: false });
+  const rec = buildRecent(packed, 30, { aggregateFn: () => [] });
+  tpKeys = new Set(Object.keys(rec.days[rec.days.length - 2] || {}));
+  tpSummaryKeys = new Set([
+    ...Object.keys(rec.days[rec.days.length - 2]?.summary || {}),
+    ...Object.keys(rec.latest?.summary || {}),
+  ]);
+}
+
+test('trendPoint 输出必须包含报告层已踩坑的三键（seats/industry_relative/main_theme）', { skip: SKIP }, () => {
   // seats 走 summary 包装（trendPoint 的 summary 键），另两键为顶层
   assert.ok(tpKeys.has('industry_relative'), 'trendPoint 缺 industry_relative（② 教训复发）');
   assert.ok(tpKeys.has('main_theme'), 'trendPoint 缺 main_theme（③ 教训复发，规则 9b 会静默失效）');
@@ -41,7 +50,7 @@ test('trendPoint 输出必须包含报告层已踩坑的三键（seats/industry_
   );
 });
 
-test('trendPoint 输出必须覆盖报告层高频读取键（情绪/宽度/涨跌停/量能/龙虎）', () => {
+test('trendPoint 输出必须覆盖报告层高频读取键（情绪/宽度/涨跌停/量能/龙虎）', { skip: SKIP }, () => {
   for (const k of ['trade_date', 'value', 'pct_rank', 'zt_count', 'dt_count', 'zb_count',
     'up_count', 'down_count', 'amount_yi', 'lhb_daily_net', 'factors']) {
     assert.ok(tpKeys.has(k), `trendPoint 缺报告高频键 ${k}——若 app.js 新增读取此键，首屏会静默缺值`);
@@ -73,7 +82,7 @@ for (const f of ['app.js', 's-page-overview.js', 's-page-overview-evidence.js', 
   });
 }
 
-test('报告层读取的 summary 字段必须在 trendPoint / latest.summary 中存在', () => {
+test('报告层读取的 summary 字段必须在 trendPoint / latest.summary 中存在', { skip: SKIP }, () => {
   // 已知合法豁免：非「archive summary」语义的 summary 命名空间（情绪状态机 day.summary
   // 属 emotion_history 结构、人工复核档 manual_review 等运行时独立源）。新豁免须留原因。
   const EXEMPT = new Set([]);

@@ -3,7 +3,9 @@ on:
   push:
   pull_request:
   # 静止期兜底（豆包第九轮）：无 push 时也有体检。UTC 08:10 = 北京 16:10（工作日），
-  # 在本机 16:00 主 fetch 之后；本 workflow 的干净环境无档路径已处理（11 skip + 1 排除），定时跑不会红。
+  # 在本机 16:00 主 fetch 之后；本 workflow 的干净环境无档路径已处理（带原因 skip + 1 排除；
+  # 清单以 TAP # SKIP 行与下方 step 输出为准——2026-11-20 新增 panel_summary_fields 3 条
+  # CI 无档 skip，数量写死会漂移，改由输出列明）。定时跑不会红。
   schedule:
     - cron: '10 8 * * 1-5'
 jobs:
@@ -18,8 +20,9 @@ jobs:
       - run: npm install --no-audit --no-fund
       # CI 边界显式化（豆包：差额必须列明，skip 不得静默）：
       #   data/archive.json 与 ui/kline/ 分片按 .gitignore 决策不入库 → 干净 checkout 无档。
-      #   依赖它们的 11 个测试带原因 skip（名字见下），merge_ui.test.mjs 顶层即读档、整文件排除；
-      #   本地 pre-commit/pre-push 有档，这 12 个全部照跑（1963 全量）。
+      #   依赖它们的测试带原因 skip（含 2026-11-20 新增 panel_summary_fields 3 条），
+      #   merge_ui.test.mjs 顶层即读档、整文件排除；本地 pre-commit/pre-push 有档全部照跑。
+      #   新测试纪律：不得顶层假定本地档存在——必须带 existsSync + { skip: '需本地档…' }。
       - name: test（CI 逻辑套件 + skip 清单）
         run: |
           echo "CI 边界：merge_ui.test.mjs 需本地 archive.json（未入库）→ 本轮排除；本地 hook 全量覆盖"
