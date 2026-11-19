@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generatedAt": "2026-11-19T10:42:12.642Z",
+  "generatedAt": "2026-11-19T13:09:44.428Z",
   "formulaVersion": "v5.2-pro",
   "tradeDate": "2026-11-19",
   "days": 269,
@@ -624,7 +624,7 @@
    46.3,
    43.6,
    47.8,
-   35.3
+   32.6
   ],
   "navBase": [
    1,
@@ -4254,7 +4254,7 @@
    }
   ],
   "threshold": {
-   "up_count_threshold": 18.189190397775228,
+   "up_count_threshold": 16.189190397775228,
    "density_threshold": 0.13204665737050497,
    "mode": "dynamic",
    "samples": 60,
@@ -4266,9 +4266,9 @@
    }
   },
   "gating": {
-   "market_state": "weak",
+   "market_state": "normal",
    "sentiment_state": "stable",
-   "max_output": 1,
+   "max_output": 2,
    "base_up_count_threshold": 16.189190397775228,
    "base_density_threshold": 0.13204665737050497
   }
