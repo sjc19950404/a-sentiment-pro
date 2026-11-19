@@ -94,6 +94,43 @@ async function fetchQuoteSnapshot(codes) {
     if (!got) console.error(`[auction] 批量快照全部主机失败（secids ${i} 起）——该批缺席=宁缺毋假`);
     await sleep(300);
   }
+  /* 【2026-11-19 根治「11 个交易日仅 2 次成功」】真根因不是竞价时段抖动，而是本环境到
+   * push2.*.eastmoney.com 域名族的 TLS 长期被断（10-08 实录、11-19 node fetch 全挂验证）
+   * ——6 台镜像同域名族全军覆没是必然。补新浪镜像兜底（实测持续可达；9:25~9:30 竞价期
+   * 现价=竞价匹配价、量/额=竞价累计，昨收齐全），与东财输出字段完全对齐。 */
+  const missing = codes.filter((c) => !out[c]);
+  if (missing.length) {
+    try {
+      const list = missing.map((c) => (String(c)[0] === '6' ? 'sh' + c : 'sz' + c)).join(',');
+      const r = await fetch('https://hq.sinajs.cn/list=' + list, {
+        headers: { Referer: 'https://finance.sina.com.cn' },
+        signal: AbortSignal.timeout(12000),
+      });
+      const buf = new Uint8Array(await r.arrayBuffer());
+      let text;
+      try { text = new TextDecoder('gbk').decode(buf); }
+      catch { text = new TextDecoder('utf-8').decode(buf); }
+      const num = (v) => (v != null && v !== '' && Number.isFinite(+v) ? +v : null);
+      let got2 = 0;
+      for (const line of text.split('\n')) {
+        const m = line.match(/hq_str_(?:sh|sz)(\d{6})="([^"]*)"/);
+        if (!m) continue;
+        const f = m[2].split(',');
+        // 新浪格式：0名称 1今开 2昨收 3现价 8量(股) 9额(元)
+        if (!f[2] || +f[2] <= 0) continue;                 // 无昨收=停牌/无效，跳过
+        out[m[1]] = {
+          n: f[0] || null,
+          jjPrice: num(f[3]),
+          jjVol: num(f[8]) != null ? Math.round(+f[8] / 100) : null,  // 股→手，对齐东财口径
+          jjAmt: num(f[9]),
+          open: num(f[1]) || null,
+          prevClose: +f[2],
+        };
+        got2++;
+      }
+      if (got2) console.error(`[auction] 东财 push2 全挂 → 新浪镜像兜底 ${got2}/${missing.length} 只`);
+    } catch { /* 新浪也失败 → 维持 out 现状，主循环重试机制接管 */ }
+  }
   return out;
 }
 
@@ -102,7 +139,8 @@ async function main() {
   const now = new Date();
   const hhmm = bjHHMM(now);
   const date = bjDate(now);
-  const inWindow = hhmm >= '0925' && hhmm <= '0931';
+  /* 上界收紧到 0929：9:30 开盘后 f5/f6 即叠加盘中量，0930~0931 启动采到的已是污染数据 */
+  const inWindow = hhmm >= '0925' && hhmm <= '0929';
   if (!inWindow && !force) {
     console.error(`[auction] 当前北京时刻 ${hhmm} 不在 9:25~9:31 竞价窗口内——拒绝落库（防盘中量冒充竞价量）。--force 仅限形态验证。`);
     process.exit(2);
@@ -112,19 +150,48 @@ async function main() {
     console.error('[auction] 无采集对象（涨停池空/缺席）——不落空档，退出');
     process.exit(2);
   }
-  const snap = await fetchQuoteSnapshot(targets.map((t) => t.c));
-  const items = targets
-    .filter((t) => snap[t.c] && snap[t.c].prevClose > 0)
-    .map((t) => {
-      const q = snap[t.c];
-      const jjPct = q.jjPrice != null && q.prevClose > 0 ? +(((q.jjPrice / q.prevClose) - 1) * 100).toFixed(2) : null;
-      return { ...t, ...q, jjPct };
-    });
-  if (!items.length) {
-    console.error('[auction] 快照全缺席（全部镜像失败/停牌）——不落空档');
+  /* 【2026-11-19 根治「批量快照全部主机失败」】东财镜像在集合竞价时段存在分钟级
+   * 抖动/限流（11-12~11-19 多天单次尝试即全灭，11 个交易日仅 2 次成功）。单次=赌运气，
+   * 改为窗口内持续重试（30s 间隔）。竞价数据纯净窗口为 9:25(落定)~9:30(开盘)——
+   * 9:30 后 f5/f6 开始叠加盘中量即污染，重试硬上界 09:29:55，宁可缺档不落脏数据。
+   * --force（形态验证）保持单次不重试。 */
+  let items = [];
+  let attempt = 0;
+  while (true) {
+    attempt++;
+    const snap = await fetchQuoteSnapshot(targets.map((t) => t.c));
+    items = targets
+      .filter((t) => snap[t.c] && snap[t.c].prevClose > 0)
+      .map((t) => {
+        const q = snap[t.c];
+        const jjPct = q.jjPrice != null && q.prevClose > 0 ? +(((q.jjPrice / q.prevClose) - 1) * 100).toFixed(2) : null;
+        return { ...t, ...q, jjPct };
+      });
+    if (items.length) break;
+    if (force) {
+      /* --force（形态验证）保持单次，不进重试循环 */
+      console.error('[auction] --force 快照全缺席（全部镜像失败/停牌）——不落空档');
+      process.exit(2);
+    }
+    const n2 = new Date();
+    const h2 = bjHHMM(n2);
+    const windowClosed = !force && (h2 > '0929' || (h2 === '0929' && n2.getSeconds() >= 55));
+    if (windowClosed) {
+      console.error(`[auction] ${attempt} 次尝试快照全缺席（重试窗口至 09:29:55 已关闭，9:30 后量被盘中污染不采）——不落空档`);
+      process.exit(2);
+    }
+    console.error(`[auction] 第 ${attempt} 次快照全缺席（全部镜像失败/停牌）——30s 后重试，窗口余量至 09:29:55`);
+    await sleep(30000);
+  }
+  /* 落档窗口硬校验：抓取成功≠数据可用。非竞价窗口时刻（即使 --force 形态验证成功）
+   * 新浪/东财现价是盘中或收盘价、量是全天量——写档=假竞价数据。宁可缺档不落脏数据。 */
+  const capH = bjHHMM(new Date());
+  if (!(capH >= '0925' && capH <= '0929')) {
+    console.error(`[auction] 落档校验拒绝：当前时刻 ${capH} 不在 9:25~9:29 竞价窗口——此时刻的现价/量是盘中或收盘值，不是竞价数据（宁缺毋假）`);
     process.exit(2);
   }
-  const rec = { trade_date: date, window: force ? hhmm : '0926', capturedAt: new Date().toISOString(), ztDate, n: items.length, items };
+  /* window 用真实抓取时刻标注（重试成功可能晚于 0926，不冒充） */
+  const rec = { trade_date: date, window: capH, capturedAt: new Date().toISOString(), ztDate, n: items.length, items };
   // 幂等同日覆盖（照 factor_health / ztpool_history 先例）
   const hist = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : [];
   const list = Array.isArray(hist) ? hist : [];

@@ -91,6 +91,17 @@ case "$MODE" in
     node scripts/snapshot_intraday.mjs || log "盘中快照失败"
     bash scripts/pi_push.sh
     ;;
+  auction)
+    # 竞价窗口专用（cron 26,28 9 * * 1-5）：9:25 竞价落定、9:30 开盘前抓真值。
+    # 【2026-11-19 修复长期故障】此前 fetch_auction 无任何调度入口（体检期望 09:31 更新
+    #   但没人跑），历史 11 个交易日仅 2 次手动成功（11-11 93只/11-18 37只，11-11 的档
+    #   还被旧版 reset --hard 吃掉）；嵌在 intraday 的 09:30 整点又踩开盘洪峰——东财批量
+    #   快照在此时点反复"全部主机失败"。现专用 09:26 主跑 + 09:28 幂等重试（同日覆盖，
+    #   两跑均为窗口内真值），避开开盘点。
+    node scripts/fetch_auction.mjs 2>>"$LOG_FILE" || log "竞价采集失败（宁缺毋假不落空档，09:28 重试兜底）"
+    node scripts/auction_score.mjs 2>>"$LOG_FILE" || log "竞价打分失败（依赖采集档）"
+    bash scripts/pi_push.sh || log "竞价档推送失败（下个 tick 自动重试）"
+    ;;
   eod|supplement)
     node scripts/fetch_global.mjs 2>>"$LOG_FILE" || log "外围抓取失败（best-effort，继续）"
     if ! bash scripts/pi_build.sh "${@:2}"; then
