@@ -83,7 +83,34 @@
 
     document.body.appendChild(root);
     crumb.querySelector('#sReportBack').addEventListener('click', backToWorkbench);
-    crumb.querySelector('#sReportPrint').addEventListener('click', () => window.print());
+    /* 【重构前功能补回】研报专用页导出按钮接原研报 12 项导出引擎（真导出，非只有打印）。
+     * 菜单 DOM 来自 window.renderExportMenu()（app.js 顶层函数），点击复用 doExportDataset。
+     * 同时在菜单底部保留「打印」按钮——原 window.print() 能力不丢。 */
+    crumb.querySelector('#sReportPrint').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      let menu = document.getElementById('sReportExpMenu');
+      if (menu) { menu.hidden = !menu.hidden; return; }
+      menu = el('div', 's-report__expmenu');
+      menu.id = 'sReportExpMenu';
+      const src = document.getElementById('expMenu');
+      if (src && typeof window.renderExportMenu === 'function') {
+        window.renderExportMenu();
+        menu.innerHTML = src.innerHTML
+          + '<button type="button" class="s-btn s-btn--ghost" id="sReportPrintOnly">仅打印本页</button>';
+      } else {
+        menu.innerHTML = '<button type="button" class="s-btn s-btn--ghost" id="sReportPrintOnly">打印本页</button>';
+      }
+      menu.addEventListener('click', (e) => {
+        if (e.target.id === 'sReportPrintOnly') { window.print(); return; }
+        const it = e.target.closest('button[data-ds]');
+        if (!it || it.disabled) return;
+        e.stopPropagation();
+        if (typeof window.doExportDataset === 'function') {
+          window.doExportDataset(it.dataset.ds, ev.currentTarget);
+        }
+      });
+      crumb.appendChild(menu);
+    });
     return root;
   }
 

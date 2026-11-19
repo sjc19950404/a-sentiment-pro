@@ -574,7 +574,10 @@
     const pg = e.target && e.target.closest ? e.target.closest('[data-ev-page]') : null;
     if (pg) { hotPage = Math.max(0, hotPage + (+pg.dataset.evPage)); renderHot(); return; }
     const tab = e.target && e.target.closest ? e.target.closest('[data-ev-tab]') : null;
-    if (tab && typeof S.showPage === 'function') S.showPage(tab.dataset.evTab);
+    if (tab && typeof S.showPage === 'function') {
+      S.showPage(tab.dataset.evTab);
+      if (typeof S.closeDrawer === 'function') S.closeDrawer(); // 从抽屉跳转后关闭抽屉（K线/系统设置等更多抽屉出口）
+    }
   });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arm);

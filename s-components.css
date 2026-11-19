@@ -1495,3 +1495,26 @@ body[data-view="report"] .topbar #refreshBtn,
 body[data-view="report"] .topbar #refreshState,
 body[data-view="report"] .topbar .range,
 body[data-view="report"] .topbar .scope-switch { display: none !important; }
+
+/* 复用原研报 12 项导出菜单（工作台更多抽屉 + 研报专用页） */
+#sMoreExpPanel .exp-hint, .s-report__expmenu .exp-hint { padding:8px 4px; }
+#sMoreExpPanel button[data-ds], .s-report__expmenu button[data-ds] {
+  display:flex; justify-content:space-between; align-items:center; width:100%;
+  min-height:40px; padding:6px 10px; text-align:left;
+  border:1px solid var(--s-border-1, #30363d); border-radius:6px;
+  background:var(--s-bg-2, #161c26); color:var(--s-text-1, #e6edf3);
+  font:inherit; cursor:pointer; margin-bottom:4px;
+}
+#sMoreExpPanel button[data-ds]:hover:not(:disabled), .s-report__expmenu button[data-ds]:hover:not(:disabled) {
+  border-color:var(--s-accent, #22d3ee);
+}
+#sMoreExpPanel button[data-ds]:disabled, .s-report__expmenu button[data-ds]:disabled {
+  opacity:.5; cursor:not-allowed;
+}
+.s-report__expmenu {
+  position:absolute; top:48px; right:16px; z-index:calc(var(--s-z-sticky,100) + 1);
+  min-width:300px; max-height:70vh; overflow:auto; padding:12px;
+  border:1px solid var(--s-border-1, #30363d); border-radius:8px;
+  background:var(--s-bg-1, #0f141c); box-shadow:var(--s-shadow-md, 0 8px 24px rgba(0,0,0,.4));
+}
+.s-report__expmenu[hidden] { display:none; }

@@ -315,10 +315,36 @@
         render(body) {
           body.innerHTML = '<div class="s-tagrow">'
             + '<a class="s-btn s-btn--ghost" href="report.html" target="_blank">研报长文</a>'
-            + '<a class="s-btn s-btn--ghost" href="report.html?print=1" target="_blank">打印 / 导出 12 项</a>'
+            + '<button type="button" class="s-btn s-btn--ghost" id="sMoreExport">导出 12 项</button>'
             + '<button type="button" class="s-btn s-btn--ghost" data-ev-tab="回测">策略回测明细</button>'
             + '<button type="button" class="s-btn s-btn--ghost" data-ev-tab="模拟盘">模拟盘交易台</button>'
-            + '</div><p class="s-kpi__note">12 项导出菜单进入研报长文页；数据口径不变。</p>';
+            /* 【重构前功能补回】K线是旧终端完整能力（输入代码→664根日K/周期切换），
+             * 视觉稿 9 tab 不含 K线故导航不列，但入口必须保留——放这里，不占导航位。 */
+            + '<button type="button" class="s-btn s-btn--ghost" data-ev-tab="K线">K线查询</button>'
+            + '<button type="button" class="s-btn s-btn--ghost" data-ev-tab="系统设置">系统设置</button>'
+            + '</div><div id="sMoreExpPanel" hidden></div>'
+            + '<p class="s-kpi__note">12 项导出菜单与研报同源；K线/系统设置见旧终端能力收编。</p>';
+          const ex = body.querySelector('#sMoreExport');
+          const panel = body.querySelector('#sMoreExpPanel');
+          if (ex && panel) ex.addEventListener('click', () => {
+            if (!panel.hidden) { panel.hidden = false; return; }
+            const src = document.getElementById('expMenu');
+            if (src && typeof window.renderExportMenu === 'function') {
+              window.renderExportMenu();          // 真调原研报导出引擎渲染 12 项（含行数/空态标注）
+              panel.innerHTML = src.innerHTML;
+              panel.hidden = false;
+              /* 点击委托：复用 doExportDataset（真导出，非摆设） */
+              panel.addEventListener('click', (e) => {
+                const it = e.target.closest('button[data-ds]');
+                if (!it || it.disabled) return;
+                e.stopPropagation();
+                window.doExportDataset(it.dataset.ds, ex);
+              });
+            } else {
+              panel.innerHTML = '<p class="s-kpi__note">导出引擎未就绪。</p>';
+              panel.hidden = false;
+            }
+          });
         },
       });
     }
