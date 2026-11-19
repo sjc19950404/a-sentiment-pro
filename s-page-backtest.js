@@ -60,6 +60,12 @@
       + `<div class="s-card__tools"><span class="s-badge s-badge--muted" id="btRowCount">加载中…</span>`
       + `<span class="s-badge s-badge--muted" id="sBtMode">分页</span></div>`
       + `<div id="sBtTableHost" aria-busy="false"></div>`
+      + `</div>`
+      /* 【重构前功能补回】因子健康度仪表（原研报 #factorHealthCard，EOD 真值）：
+       * 搬运原 DOM 卡进工作台回测页，app.js 后台继续渲染，observer 跟随。 */
+      + `<div class="s-section"><h2 class="s-section__title">因子健康度</h2>`
+      + `<div id="sBtFactorHost"></div>`
+      + `<button type="button" class="s-btn s-btn--ghost" id="sBtMoreParams" style="margin-top:var(--s-space-2)">查看完整参数与口径</button>`
       + `</div>`;
     return host;
   }
@@ -245,6 +251,23 @@
     let host = panel.querySelector('.s-page-backtest');
     if (!host) { host = shell(); panel.innerHTML = ''; panel.appendChild(host); }
     currentPanel = panel;
+    /* 【重构前功能】因子健康卡搬运（原 #factorHealthCard）+ btMore 参数抽屉转发。 */
+    const fh = host.querySelector('#sBtFactorHost');
+    const src = document.getElementById('factorHealthCard');
+    if (fh && src && !fh.dataset.bound) {
+      fh.dataset.bound = '1';
+      const sync = () => { if (src.innerHTML.trim()) fh.innerHTML = src.innerHTML; };
+      sync();
+      if (typeof MutationObserver === 'function') new MutationObserver(sync).observe(src, { childList: true, subtree: true, characterData: true });
+    }
+    const more = host.querySelector('#sBtMoreParams');
+    if (more && !more.dataset.bound) {
+      more.dataset.bound = '1';
+      more.addEventListener('click', () => {
+        const orig = document.getElementById('btMore');
+        if (orig) orig.click();
+      });
+    }
     // 重试按钮（事件委托在 host 上，幂等由 shell 重建保证）
     host.addEventListener('click', (e) => {
       const b = e.target && e.target.closest ? e.target.closest('[data-act="retry"]') : null;

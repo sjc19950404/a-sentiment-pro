@@ -214,8 +214,28 @@
       + '<div class="s-empty__title">当日个股明细暂无数据</div>'
       + '<div class="s-empty__hint">数据为空是真实状态，不编造行</div></div>'
       + '</div></div><div class="s-table__pager" id="sEvPager"></div></div></div></div>'
+      /* 【重构前功能补回】外围市场卡（原研报 #zone-global，隔夜美股/中国资产/汇率/商品
+       * + glob/gmap 点品种下钻）。搬运原 DOM 节点进工作台，app.js 后台继续渲染，observer 跟随。 */
+      + '<div class="s-col-12"><div class="s-card"><div class="s-card__head">'
+      + '<h3 class="s-card__title">外围市场 · 节后预案</h3>'
+      + '<span class="s-badge s-badge--muted">隔夜真值</span></div>'
+      + '<div class="s-card__body" id="sEvGlobalHost"></div></div></div>'
       + '</div></div>';
     host.appendChild(sec);
+    /* 搬运 #zone-global 的两个 card 内容（原节点仍在隐藏 main，innerHTML 搬一份只读展示；
+     * app.js 更新时由下方 observer 同步，避免工作台看到旧数据）。 */
+    const gh = document.getElementById('sEvGlobalHost');
+    const zg = document.getElementById('zone-global');
+    if (gh && zg) {
+      const syncGlobal = () => {
+        const cards = zg.querySelectorAll('.card');
+        if (cards.length) gh.innerHTML = Array.from(cards).map((c) => c.outerHTML).join('');
+      };
+      syncGlobal();
+      if (typeof MutationObserver === 'function') {
+        new MutationObserver(syncGlobal).observe(zg, { childList: true, subtree: true, characterData: true });
+      }
+    }
     buildOps(host);
     built = true;
   }
@@ -267,6 +287,24 @@
       hl.textContent = items.length
         ? items.filter((x) => x && x.level === 'ok').length + '/' + items.length
         : (h.label || '—');
+    }
+    /* 【重构前功能】分档披露：同步原研报 #loadScope 的真实档位文本；
+     * 点击转发原「载入完整档」按钮（真触发 loadFullArchive，不做假 UI）。 */
+    const sc = document.getElementById('sPhScope');
+    if (sc) {
+      const orig = document.getElementById('loadScope');
+      sc.textContent = orig && orig.textContent.trim() ? orig.textContent.trim().slice(0, 40) : '分层加载 · 已载入最近档';
+      if (!sc.dataset.bound) {
+        sc.dataset.bound = '1';
+        sc.tabIndex = 0;
+        sc.title = '点击载入完整档（原研报同款）';
+        const fire = () => {
+          const b = document.querySelector('#loadScope [data-act="loadfull"]');
+          if (b) { b.click(); sc.textContent = '完整档载入中…'; }
+        };
+        sc.addEventListener('click', fire);
+        sc.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fire(); } });
+      }
     }
     const fr = document.getElementById('sPhFresh');
     if (fr && m.generatedAt) {
