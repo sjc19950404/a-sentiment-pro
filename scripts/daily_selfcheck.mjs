@@ -68,7 +68,10 @@ const REGISTRY = [
   { name: '竞价采集', file: 'data/auction_history.json', updateTime: '09:31', cronKey: 'fetch_auction', dateGet: (d) => Array.isArray(d) && d.length ? (d[d.length - 1].trade_date || d[d.length - 1].date) : null, deep: (d) => { const t = Array.isArray(d) && d.find((x) => (x.trade_date || '').replace(/-/g, '') === todayC); return t && (!t.items || !t.items.length) ? '今日档存在但 0 只（采集空跑）' : null; } },
   { name: '竞价打分', file: 'data/auction_score.json', updateTime: '09:32', cronKey: 'auction_score', dateGet: (d) => Array.isArray(d) && d.length ? d[d.length - 1].trade_date : null },
   { name: 'live 盯盘快照', file: 'data/first_board_live.json', updateTime: '15:30', cronKey: 'first_board_live', dateGet: (d) => d && d.at ? d.at.slice(0, 10) : null },
-  { name: 'signals 情绪主档', file: 'data/signals-latest.json', updateTime: '15:30', dateGet: (d) => d && d.latest && d.latest.trade_date },
+  /* updateTime=18:30（eod 产出时点，git 实证 signals 主档每天 18:48/21:17 两次提交、
+   * 从无 15:30 产出）。曾注册 15:30 → 体检 18:00 按「15:30≤18:00→期望今日」判定，而
+   * eod 18:30 未跑 → 每个正常交易日 18:00 误报「主档落后」（2026-11-19 告警即误报）。 */
+  { name: 'signals 情绪主档', file: 'data/signals-latest.json', updateTime: '18:30', dateGet: (d) => d && d.latest && d.latest.trade_date },
   { name: '涨停池档', file: 'data/ztpool_history.json', updateTime: '18:30', cronKey: 'pi_run.sh eod', dateGet: (d) => Array.isArray(d) && d.length ? d[d.length - 1].date : null },
   { name: '情绪历史档', file: 'data/emotion_history.json', updateTime: '18:30', dateGet: (d) => d && Array.isArray(d.history) && d.history.length ? d.history[d.history.length - 1].date : null },
   { name: '主线题材档', file: 'data/main_theme_history.json', updateTime: '18:30', dateGet: (d) => d && Array.isArray(d.days) && d.days.length ? (d.days[d.days.length - 1].trade_date || d.days[d.days.length - 1].date) : null },
