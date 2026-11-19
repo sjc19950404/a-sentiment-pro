@@ -2,6 +2,25 @@
  "schema_version": "1.0",
  "pushed": [
   {
+   "fingerprint": "6e110bdcc8dd693e_659",
+   "type": "post_market",
+   "date": "2026-11-19",
+   "pushed_at": "2026-11-19T10:50:50.464Z"
+  },
+  {
+   "fingerprint": "ff58a72e1ddd93a6_161",
+   "type": "post_market_ai",
+   "date": "2026-11-19",
+   "cfp": "0aac51ec800feaf2_ed",
+   "pushed_at": "2026-11-19T10:50:50.464Z"
+  },
+  {
+   "fingerprint": "bd1271d9e830bf73_109",
+   "type": "post_market_first_board",
+   "date": "2026-11-19",
+   "pushed_at": "2026-11-19T10:50:50.464Z"
+  },
+  {
    "fingerprint": "45e7c43da029fa4b_7dd",
    "type": "intraday",
    "date": "2026-11-19",
@@ -902,19 +921,6 @@
    "type": "post_market",
    "date": "2026-10-20",
    "pushed_at": "2026-10-20T21:04:56.868Z"
-  },
-  {
-   "fingerprint": "fa9eef4f260e5049_37a0",
-   "type": "intraday",
-   "date": "2026-10-20",
-   "verified": {
-    "checked_at": "14:18",
-    "snapshot_at": "2026-10-20 14:18",
-    "removed": 0,
-    "degraded": false,
-    "skipped": false
-   },
-   "pushed_at": "2026-10-20T06:18:17.470Z"
   }
  ]
 }

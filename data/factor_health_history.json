@@ -1,13 +1,13 @@
 {
-  "updatedAt": "2026-11-18T13:18:19.874Z",
+  "updatedAt": "2026-11-19T10:49:56.394Z",
   "status": "healthy",
   "headline": "✅ 健康：超额正向、胜率 88% ≥52%、无连续负超额",
   "attribution": null,
   "metrics": {
     "alphaWinRate8": 0.875,
     "negStreak": 0,
-    "ma4Pct": 0.9454545454545454,
-    "sharpe8": -2.774,
+    "ma4Pct": 0.9636363636363636,
+    "sharpe8": -2.785,
     "seatAlarm": false,
     "divAlarm": false
   },
@@ -16,7 +16,7 @@
       "regime": "ice",
       "label": "ice",
       "weeks": 25,
-      "avgAlpha": 0.003576,
+      "avgAlpha": 0.003754,
       "winRate": 0.56
     },
     {
@@ -1205,21 +1205,21 @@
     },
     {
       "week": "2026-11-16",
-      "end": "2026-11-18",
-      "days": 3,
-      "strat": -0.006566,
-      "mkt": -0.029336,
-      "alpha": 0.02277,
+      "end": "2026-11-19",
+      "days": 4,
+      "strat": -0.007884,
+      "mkt": -0.035096,
+      "alpha": 0.027211,
       "regime": "ice",
       "exposure": 0.25,
-      "seatAlpha": 0.3,
+      "seatAlpha": 0.1667,
       "seatPool": {
-        "passSeat": 2,
+        "passSeat": 3,
         "contSeat": 1,
-        "passBase": 5,
+        "passBase": 6,
         "contBase": 1,
-        "rateSeat": 0.5,
-        "rateBase": 0.2
+        "rateSeat": 0.3333,
+        "rateBase": 0.1667
       },
       "divergRate": 0
     }

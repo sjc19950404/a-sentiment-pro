@@ -3,8 +3,8 @@
     "created": "2026-11-07T13:53:17.263Z",
     "note": "妖股纯情绪标记历史（每日 EOD 留存，同日覆盖幂等）；验证脚本 scripts/dragon_purity_validation.mjs（T+1 续板率对照）",
     "source": "llm-dragon-logic-latest.json::dragons（连续连板口径 zt_lb）",
-    "updated": "2026-11-18T13:18:18.700Z",
-    "days": 9
+    "updated": "2026-11-19T10:49:55.236Z",
+    "days": 10
   },
   "days": [
     {
@@ -2405,6 +2405,173 @@
         }
       ],
       "savedAt": "2026-11-18T13:18:18.686Z"
+    },
+    {
+      "date": "20261119",
+      "marks": [
+        {
+          "code": "603030",
+          "name": "全筑股份",
+          "lb": 3,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪加速"
+        },
+        {
+          "code": "603324",
+          "name": "盛剑科技",
+          "lb": 3,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪加速"
+        },
+        {
+          "code": "002771",
+          "name": "真视通",
+          "lb": 3,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪加速"
+        },
+        {
+          "code": "600156",
+          "name": "华升股份",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪加速"
+        },
+        {
+          "code": "000711",
+          "name": "京蓝科技",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪加速"
+        },
+        {
+          "code": "301348",
+          "name": "蓝箭电子",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板，情绪待观察"
+        },
+        {
+          "code": "600520",
+          "name": "三佳科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板，情绪待观察"
+        },
+        {
+          "code": "600619",
+          "name": "海立股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板，情绪待观察"
+        },
+        {
+          "code": "601616",
+          "name": "广电电气",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板，情绪待观察"
+        },
+        {
+          "code": "603078",
+          "name": "江化微",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板，情绪待观察"
+        },
+        {
+          "code": "603813",
+          "name": "原尚股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "603928",
+          "name": "兴业股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "无题材支撑，高位换手，明日或跌停"
+        },
+        {
+          "code": "603931",
+          "name": "格林达",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，情绪炒作，风险较大"
+        },
+        {
+          "code": "605178",
+          "name": "时空科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，情绪炒作，明日或跌停"
+        },
+        {
+          "code": "002242",
+          "name": "九阳股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "无题材支撑，高位换手，明日或跌停"
+        },
+        {
+          "code": "002420",
+          "name": "毅昌科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，情绪炒作，风险较大"
+        },
+        {
+          "code": "002165",
+          "name": "红宝丽",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，情绪炒作，明日或跌停"
+        },
+        {
+          "code": "002418",
+          "name": "康盛股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，情绪炒作，风险较大"
+        },
+        {
+          "code": "002077",
+          "name": "大港股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，情绪炒作，明日或跌停"
+        },
+        {
+          "code": "000678",
+          "name": "襄阳轴承",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，情绪炒作，风险较大"
+        },
+        {
+          "code": "000656",
+          "name": "金科股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪炒作，小心冲高回落"
+        },
+        {
+          "code": "002579",
+          "name": "中京电子",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪炒作，小心冲高回落"
+        },
+        {
+          "code": "001358",
+          "name": "兴欣新材",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "首板无题材，纯情绪炒作，小心冲高回落"
+        }
+      ],
+      "savedAt": "2026-11-19T10:49:55.222Z"
     }
   ]
 }
