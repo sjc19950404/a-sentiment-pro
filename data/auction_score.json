@@ -11,8 +11,8 @@
    "weak": 5,
    "neutral": 14,
    "yiziShrink": 0,
-   "yiziHeavy": 6,
-   "amtRatioMissing": 0
+   "yiziHeavy": 3,
+   "amtRatioMissing": 29
   },
   "items": [
    {
@@ -26,10 +26,10 @@
     "prevClose": 7.13,
     "jjPct": 9.96,
     "chgLevel": "strong",
-    "amtRatio": 0.4564,
+    "amtRatio": null,
     "yizi": {
      "is": true,
-     "shrink": false
+     "shrink": null
     }
    },
    {
@@ -43,7 +43,7 @@
     "prevClose": 6.7,
     "jjPct": 10,
     "chgLevel": "strong",
-    "amtRatio": 0.1937,
+    "amtRatio": 0.2701,
     "yizi": {
      "is": true,
      "shrink": false
@@ -60,7 +60,7 @@
     "prevClose": 1.73,
     "jjPct": 2.89,
     "chgLevel": "neutral",
-    "amtRatio": 0.3465,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -74,7 +74,7 @@
     "prevClose": 10.8,
     "jjPct": -6.39,
     "chgLevel": "weak",
-    "amtRatio": 0.0421,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -88,7 +88,7 @@
     "prevClose": 2.86,
     "jjPct": -2.45,
     "chgLevel": "neutral",
-    "amtRatio": 0.0411,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -102,7 +102,7 @@
     "prevClose": 4.59,
     "jjPct": 4.79,
     "chgLevel": "strong",
-    "amtRatio": 0.1171,
+    "amtRatio": 0.0486,
     "yizi": null
    },
    {
@@ -116,7 +116,7 @@
     "prevClose": 15.29,
     "jjPct": 4.58,
     "chgLevel": "strong",
-    "amtRatio": 0.1006,
+    "amtRatio": 0.0414,
     "yizi": null
    },
    {
@@ -130,7 +130,7 @@
     "prevClose": 15.76,
     "jjPct": 4,
     "chgLevel": "strong",
-    "amtRatio": 0.0397,
+    "amtRatio": 0.0246,
     "yizi": null
    },
    {
@@ -144,10 +144,10 @@
     "prevClose": 4.74,
     "jjPct": 9.92,
     "chgLevel": "strong",
-    "amtRatio": 0.2175,
+    "amtRatio": null,
     "yizi": {
      "is": true,
-     "shrink": false
+     "shrink": null
     }
    },
    {
@@ -161,7 +161,7 @@
     "prevClose": 14.66,
     "jjPct": 2.59,
     "chgLevel": "neutral",
-    "amtRatio": 0.0939,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -175,7 +175,7 @@
     "prevClose": 11.88,
     "jjPct": 9.34,
     "chgLevel": "strong",
-    "amtRatio": 0.3371,
+    "amtRatio": 0.2531,
     "yizi": null
    },
    {
@@ -189,7 +189,7 @@
     "prevClose": 4.42,
     "jjPct": -6.33,
     "chgLevel": "weak",
-    "amtRatio": 0.0226,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -203,7 +203,7 @@
     "prevClose": 13.4,
     "jjPct": 11.12,
     "chgLevel": "strong",
-    "amtRatio": 0.0955,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -217,10 +217,10 @@
     "prevClose": 7.91,
     "jjPct": 9.99,
     "chgLevel": "strong",
-    "amtRatio": 0.3024,
+    "amtRatio": null,
     "yizi": {
      "is": true,
-     "shrink": false
+     "shrink": null
     }
    },
    {
@@ -234,7 +234,7 @@
     "prevClose": 20.82,
     "jjPct": 9.99,
     "chgLevel": "strong",
-    "amtRatio": 0.09,
+    "amtRatio": 0.0971,
     "yizi": {
      "is": true,
      "shrink": false
@@ -251,7 +251,7 @@
     "prevClose": 23.95,
     "jjPct": 2.3,
     "chgLevel": "neutral",
-    "amtRatio": 0.075,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -265,7 +265,7 @@
     "prevClose": 24.33,
     "jjPct": -1.97,
     "chgLevel": "neutral",
-    "amtRatio": 0.0378,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -279,7 +279,7 @@
     "prevClose": 14.96,
     "jjPct": -3.28,
     "chgLevel": "weak",
-    "amtRatio": 0.032,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -293,7 +293,7 @@
     "prevClose": 5.59,
     "jjPct": -0.89,
     "chgLevel": "neutral",
-    "amtRatio": 0.0556,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -307,7 +307,7 @@
     "prevClose": 2.75,
     "jjPct": -4,
     "chgLevel": "weak",
-    "amtRatio": 0.0525,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -321,7 +321,7 @@
     "prevClose": 39.33,
     "jjPct": 1.73,
     "chgLevel": "neutral",
-    "amtRatio": 0.0286,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -335,7 +335,7 @@
     "prevClose": 31.52,
     "jjPct": 3.11,
     "chgLevel": "strong",
-    "amtRatio": 0.0608,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -349,7 +349,7 @@
     "prevClose": 52.96,
     "jjPct": 19.43,
     "chgLevel": "strong",
-    "amtRatio": 0.0993,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -363,7 +363,7 @@
     "prevClose": 20.14,
     "jjPct": 3.87,
     "chgLevel": "strong",
-    "amtRatio": 0.0203,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -377,7 +377,7 @@
     "prevClose": 13.1,
     "jjPct": 3.05,
     "chgLevel": "strong",
-    "amtRatio": 0.0664,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -391,7 +391,7 @@
     "prevClose": 24.54,
     "jjPct": 3.5,
     "chgLevel": "strong",
-    "amtRatio": 0.0592,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -405,7 +405,7 @@
     "prevClose": 5.7,
     "jjPct": -9.82,
     "chgLevel": "weak",
-    "amtRatio": 0.0318,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -419,7 +419,7 @@
     "prevClose": 39.9,
     "jjPct": 0.25,
     "chgLevel": "neutral",
-    "amtRatio": 0.0482,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -433,7 +433,7 @@
     "prevClose": 27.97,
     "jjPct": 2.79,
     "chgLevel": "neutral",
-    "amtRatio": 0.0286,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -447,7 +447,7 @@
     "prevClose": 15.21,
     "jjPct": -1.97,
     "chgLevel": "neutral",
-    "amtRatio": 0.0366,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -461,7 +461,7 @@
     "prevClose": 12.54,
     "jjPct": 5.82,
     "chgLevel": "strong",
-    "amtRatio": 0.0433,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -475,7 +475,7 @@
     "prevClose": 4.4,
     "jjPct": 0,
     "chgLevel": "neutral",
-    "amtRatio": 0.0588,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -489,7 +489,7 @@
     "prevClose": 115.93,
     "jjPct": 0.13,
     "chgLevel": "neutral",
-    "amtRatio": 0.0128,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -503,7 +503,7 @@
     "prevClose": 11.29,
     "jjPct": 2.66,
     "chgLevel": "neutral",
-    "amtRatio": 0.0807,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -517,7 +517,7 @@
     "prevClose": 38.88,
     "jjPct": 8.02,
     "chgLevel": "strong",
-    "amtRatio": 0.0541,
+    "amtRatio": 0.0248,
     "yizi": null
    },
    {
@@ -531,7 +531,7 @@
     "prevClose": 5.45,
     "jjPct": -0.55,
     "chgLevel": "neutral",
-    "amtRatio": 0.027,
+    "amtRatio": null,
     "yizi": null
    },
    {
@@ -545,14 +545,14 @@
     "prevClose": 1.94,
     "jjPct": 9.79,
     "chgLevel": "strong",
-    "amtRatio": 0.0964,
+    "amtRatio": 0.3563,
     "yizi": {
      "is": true,
      "shrink": false
     }
    }
   ],
-  "generatedAt": "2026-11-18T01:27:01.881Z",
+  "generatedAt": "2026-11-19T01:27:01.362Z",
   "note": "v1 三独立信号（涨跌幅标记/竞价额占比/一字缩量），不合成总分；不注入主情绪引擎"
  }
 ]
