@@ -1,7 +1,7 @@
 {
  "meta": {
-  "generatedAt": "2026-11-18T13:15:41.073Z",
-  "days": 24,
+  "generatedAt": "2026-11-19T10:46:03.162Z",
+  "days": 25,
   "theme_days": 23,
   "strength_dist": {
    "强主线": 7,
@@ -539,6 +539,12 @@
      "is_continuous": false
     }
    ],
+   "rotation": false,
+   "prev_main_theme": "IT服务Ⅱ"
+  },
+  {
+   "date": "20261119",
+   "main_themes": [],
    "rotation": false,
    "prev_main_theme": "IT服务Ⅱ"
   }

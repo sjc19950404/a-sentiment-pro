@@ -1,68 +1,68 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-11-18",
- "generatedAt": "2026-11-18T21:02:37.834+08:00",
+ "asOfDate": "2026-11-19",
+ "generatedAt": "2026-11-19T18:33:02.446+08:00",
  "model": "glm-4-flash",
- "sentiment": 0,
+ "sentiment": -0.5,
  "confidence": 0.8,
- "reason": "市场情绪中性，多空拉锯，涨停与跌停家数相近，炸板率较高，强势股多与算力租赁、AI相关。",
+ "reason": "市场涨停家数远少于跌停家数，炸板率较高，亏钱效应明显，显示市场情绪偏负面。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "宏景科技",
+   "target": "兴业股份",
    "tone": "positive",
-   "note": "三季报增长推动股价上涨"
+   "note": "三季报增长带动股价上涨"
+  },
+  {
+   "type": "高管变动",
+   "target": "京蓝科技",
+   "tone": "positive",
+   "note": "资产出售可能带来业绩提升"
+  },
+  {
+   "type": "政策",
+   "target": "预重整",
+   "tone": "positive",
+   "note": "预重整题材持续活跃"
   },
   {
    "type": "行业催化",
-   "target": "算力租赁",
+   "target": "AI短剧",
    "tone": "positive",
-   "note": "算力租赁概念股表现强劲"
+   "note": "AI短剧题材新晋活跃"
+  },
+  {
+   "type": "行业催化",
+   "target": "机器人",
+   "tone": "positive",
+   "note": "机器人题材持续活跃"
   },
   {
    "type": "行业催化",
    "target": "AI算力",
    "tone": "positive",
-   "note": "AI算力相关股票活跃"
+   "note": "AI算力题材持续活跃"
   },
   {
-   "type": "行业催化",
-   "target": "半导体检测",
-   "tone": "positive",
-   "note": "半导体检测概念股表现突出"
+   "type": "退潮",
+   "target": "三季报扭亏",
+   "tone": "negative",
+   "note": "三季报扭亏题材退潮"
   },
   {
-   "type": "行业催化",
-   "target": "6G",
-   "tone": "positive",
-   "note": "6G概念股表现活跃"
-  },
-  {
-   "type": "高管变动",
-   "target": "ST椰岛",
-   "tone": "positive",
-   "note": "保健酒+东鹏代工+海口国资合作提升股价"
-  },
-  {
-   "type": "行业催化",
-   "target": "股份回购",
-   "tone": "positive",
-   "note": "股份回购政策推动股价上涨"
-  },
-  {
-   "type": "行业催化",
-   "target": "国企改革",
-   "tone": "positive",
-   "note": "国企改革概念股表现活跃"
+   "type": "退潮",
+   "target": "汽车零部件",
+   "tone": "negative",
+   "note": "汽车零部件题材退潮"
   }
  ],
  "inputDigest": {
-  "themes": 50,
+  "themes": 28,
   "hotListed": 15,
-  "ztCount": 41,
-  "emotionValue": 47.5,
-  "painVerdict": "多空拉锯（昨涨停今日翻绿 49%、高位板晋级失败 83%，追高盈亏各半）"
+  "ztCount": 23,
+  "emotionValue": 32.7,
+  "painVerdict": "多空拉锯（昨涨停今日翻绿 54%、高位板晋级失败 50%，追高盈亏各半）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }

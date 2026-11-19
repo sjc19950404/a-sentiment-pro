@@ -1,96 +1,112 @@
 {
- "date": "2026-11-17",
- "prevZtCount": 37,
+ "date": "2026-11-18",
+ "prevZtCount": 41,
  "perf": {
-  "n": 37,
-  "universe": 37,
+  "n": 41,
+  "universe": 41,
   "missing": 0,
   "reliable": true,
-  "avg": 1.57,
-  "median": 0.73,
-  "lossRatio": 0.49,
-  "worst": -10,
-  "best": 20.01,
-  "limitUpAgain": 9,
-  "limitDown": 4,
+  "avg": 0.12,
+  "median": -0.71,
+  "lossRatio": 0.54,
+  "worst": -10.04,
+  "best": 19.97,
+  "limitUpAgain": 6,
+  "limitDown": 3,
   "bigLoss": 5,
   "note": null
  },
  "advance": {
-  "n": 6,
-  "kept": 1,
-  "failed": 5,
-  "failRate": 0.83,
+  "n": 8,
+  "kept": 4,
+  "failed": 4,
+  "failRate": 0.5,
   "byTier": {
    "2": {
-    "n": 5,
-    "kept": 0,
-    "failed": 5,
-    "failRate": 1
+    "n": 7,
+    "kept": 4,
+    "failed": 3,
+    "failRate": 0.43
    },
    "3": {
-    "n": 1,
-    "kept": 1,
-    "failed": 0,
-    "failRate": 0
-   },
-   "4+": {
     "n": 0,
     "kept": 0,
     "failed": 0,
     "failRate": null
+   },
+   "4+": {
+    "n": 1,
+    "kept": 0,
+    "failed": 1,
+    "failRate": 1
    }
   },
   "reliable": true,
-  "maxLb": 3,
+  "maxLb": 4,
   "detail": [
    {
     "code": "002685",
-    "lb": 3,
-    "chg": 10,
-    "kept": true,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "002861",
-    "lb": 2,
-    "chg": -7.49,
+    "lb": 4,
+    "chg": 4.07,
     "kept": false,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
-    "code": "600936",
+    "code": "002843",
     "lb": 2,
-    "chg": -5.43,
+    "chg": -9.98,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "000707",
+    "lb": 2,
+    "chg": -9.9,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "600410",
+    "lb": 2,
+    "chg": -0.71,
     "kept": false,
     "board": "shb",
     "boardLabel": "沪市主板"
    },
    {
-    "code": "000533",
+    "code": "603030",
     "lb": 2,
-    "chg": -1.39,
-    "kept": false,
+    "chg": 9.86,
+    "kept": true,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "603324",
+    "lb": 2,
+    "chg": 10,
+    "kept": true,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "002771",
+    "lb": 2,
+    "chg": 10.02,
+    "kept": true,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
-    "code": "000521",
+    "code": "301391",
     "lb": 2,
-    "chg": -0.63,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "002959",
-    "lb": 2,
-    "chg": 4.06,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
+    "chg": 19.97,
+    "kept": true,
+    "board": "gem",
+    "boardLabel": "创业板"
    }
   ],
   "note": null
@@ -99,66 +115,41 @@
   "n": 5,
   "list": [
    {
-    "code": "600261",
-    "name": "阳光照明",
-    "chg": -10
+    "code": "002403",
+    "name": "爱仕达",
+    "chg": -10.04
    },
    {
-    "code": "002912",
-    "name": "中新赛克",
-    "chg": -9.99
+    "code": "002843",
+    "name": "泰嘉股份",
+    "chg": -9.98
    },
    {
-    "code": "002242",
-    "name": "九阳股份",
-    "chg": -9.99
+    "code": "000707",
+    "name": "双环科技",
+    "chg": -9.9
    },
    {
-    "code": "603297",
-    "name": "永新光学",
-    "chg": -9.82
+    "code": "002272",
+    "name": "川润股份",
+    "chg": -9.46
    },
    {
-    "code": "002861",
-    "name": "瀛通通讯",
-    "chg": -7.49
+    "code": "000980",
+    "name": "众泰汽车",
+    "chg": -7.19
    }
   ]
  },
  "skyFloor": {
-  "n": 4,
-  "list": [
-   {
-    "code": "002242",
-    "name": "九阳股份",
-    "chg": -9.99,
-    "amplitude": 20
-   },
-   {
-    "code": "920489",
-    "name": "佳先股份",
-    "chg": -6.06,
-    "amplitude": 19.1
-   },
-   {
-    "code": "300786",
-    "name": "国林科技",
-    "chg": -5.22,
-    "amplitude": 18.2
-   },
-   {
-    "code": "002861",
-    "name": "瀛通通讯",
-    "chg": -7.49,
-    "amplitude": 15.6
-   }
-  ]
+  "n": 0,
+  "list": []
  },
- "scanned": 37,
+ "scanned": 41,
  "verdict": {
   "level": "normal",
   "label": "多空拉锯",
-  "reason": "昨涨停今日翻绿 49%、高位板晋级失败 83%，追高盈亏各半"
+  "reason": "昨涨停今日翻绿 54%、高位板晋级失败 50%，追高盈亏各半"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -169,6 +160,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-11-18T13:00:32.738Z",
- "curDate": "2026-11-18"
+ "generatedAt": "2026-11-19T10:30:57.870Z",
+ "curDate": "2026-11-19"
 }
