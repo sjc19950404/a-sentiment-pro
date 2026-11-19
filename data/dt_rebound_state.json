@@ -1,7 +1,7 @@
 {
  "stocks": {
   "600261": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 1,
     "red": 0,
@@ -145,10 +145,10 @@
    }
   },
   "603381": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
-    "red": 0,
+    "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
@@ -343,6 +343,6 @@
    }
   }
  },
- "notified": 15,
+ "notified": 16,
  "date": "2026-11-19"
 }

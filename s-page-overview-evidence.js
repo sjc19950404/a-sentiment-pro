@@ -39,7 +39,7 @@
   const HOT_TABLE =
     '<table class="s-table" id="sEvHotTable">'
     + '<thead><tr><th data-priority="1">代码 / 名称</th><th data-priority="1">现价</th><th data-priority="1">涨跌幅</th>'
-    + '<th data-priority="2">连板</th><th data-priority="3">所属题材</th></tr></thead>'
+    + '<th data-priority="2">连板</th><th data-priority="3">所属题材</th><th data-priority="2">龙虎净买</th></tr></thead>'
     + '<tbody id="sEvHotBody"></tbody></table>';
 
   function enabled() { return S.getFlag('overview', true) !== false; }
@@ -55,6 +55,18 @@
         }).catch(() => {}),
       fetch('./data/signals-latest.json?_=' + Date.now(), { cache: 'no-store' })
         .then((r) => r.ok ? r.json() : null).then((d) => { if (d) out.signals = d; }).catch(() => {}),
+      /* 【个股明细真源】archive-recent.json 的 .latest 含当日 hot(43只:代码/名称/现价/
+       * 涨跌幅/题材reason) + _sub.lhb(82只净买) + lhb_aggr；此前取 sig.hot（signals 里
+       * 根本没有该字段）导致长期显示 0 行——不是数据缺失，是取错源。292KB 轻量切片。 */
+      fetch('./data/archive-recent.json?_=' + Date.now(), { cache: 'no-store' })
+        .then((r) => r.ok ? r.json() : null).then((d) => {
+          if (d && d.latest) {
+            out.latest = d.latest;           // 当日完整快照（hot/lhb/themes 全在这）
+            const dragons = (d.latest.dragonLogic && d.latest.dragonLogic.dragons)
+              || (d.dragonLogic && d.dragonLogic.dragons) || [];
+            out.dragons = Array.isArray(dragons) ? dragons : [];
+          }
+        }).catch(() => {}),
     ]);
     out.day = out.history[out.history.length - 1] || {};
     CACHE = out;
@@ -382,9 +394,27 @@
           + '<span class="s-verdict__sub">seats 序列为空，不填充估算值。</span></div>';
       }
     }
-    // 个股明细：从 signals 的 hot 列表（无则空状态，不编造 38 行）
-    const hot = sig.hot || sig.hot_list || sig.stocks || (sig.market && sig.market.hot);
-    hotRows = Array.isArray(hot) ? hot : [];
+    /* 个股明细（视觉稿六列真值）：archive-recent.latest.hot 43 只为业务主表，
+     * 按 code 关联 signals.dragonLogic.dragons 的连板 lb + latest._sub.lhb 的净买 net_buy_wan。
+     * 此前取 sig.hot（signals 无此字段）→ 长期 0 行，是把「取错源」误判成「数据缺失」。 */
+    const latest = CACHE.latest || {};
+    const hot = Array.isArray(latest.hot) ? latest.hot : [];
+    const dragons = (sig.dragonLogic && sig.dragonLogic.dragons) || d.dragons || [];
+    const lbByCode = {};
+    dragons.forEach((x) => { if (x && x.code) lbByCode[x.code] = x.lb; });
+    const lhbList = (latest._sub && latest._sub.lhb) || latest.lhb_aggr || [];
+    const netByCode = {};
+    lhbList.forEach((x) => { if (x && x.code && x.net_buy_wan != null) netByCode[x.code] = x.net_buy_wan; });
+    hotRows = hot.map((x) => ({
+      code: x.code, name: x.name,
+      price: x.close != null ? Number(x.close).toFixed(2) : '—',
+      pct: x.change_pct != null ? (x.change_pct >= 0 ? '+' : '') + Number(x.change_pct).toFixed(2) + '%' : '—',
+      lbc: lbByCode[x.code] != null ? lbByCode[x.code] + ' 板' : '—',
+      hybk: x.reason || ((dragons.find((z) => z.code === x.code) || {}).hybk) || '—',
+      net: netByCode[x.code] != null
+        ? (netByCode[x.code] >= 0 ? '+' : '') + (netByCode[x.code] / 10000).toFixed(2) + ' 亿' : '—',
+      netVal: netByCode[x.code] != null ? netByCode[x.code] : null,
+    }));
     renderHot();
     // ETF
     const etf = $('#sEvEtfText'); if (etf) etf.textContent = '主策略运作中，未触发对冲（真实业务态）';
@@ -470,7 +500,9 @@
       + '<td class="s-num">' + esc(r.price || r.p || '—') + '</td>'
       + '<td class="s-num">' + esc(r.pct || r.zdp || '—') + '</td>'
       + '<td data-priority="2">' + esc(r.lbc || '—') + '</td>'
-      + '<td data-priority="3">' + esc(r.hybk || r.theme || '—') + '</td></tr>').join('');
+      + '<td data-priority="3">' + esc(r.hybk || r.theme || '—') + '</td>'
+      + '<td class="s-num ' + (r.netVal == null ? '' : r.netVal >= 0 ? 's-num--up' : 's-num--down') + '" data-priority="2">'
+      + esc(r.net || '—') + '</td></tr>').join('');
     /* 【原型 L560】点任意明细行（或回车/空格）开小抽屉看详情——此前偷懒没接事件 */
     Array.from(body.querySelectorAll('tr')).forEach((tr, i) => {
       const row = rows[i];
@@ -482,7 +514,7 @@
           render(dbody) {
             dbody.innerHTML = '<div class="s-grid s-grid--kpi">'
               + [['现价', row.price || row.p], ['涨跌幅', row.pct || row.zdp],
-                ['连板', row.lbc], ['题材', row.hybk || row.theme]].map(([n, v]) =>
+                ['连板', row.lbc], ['题材', row.hybk || row.theme], ['龙虎净买', row.net]].map(([n, v]) =>
                 '<div><div class="s-kpi__label">' + n + '</div><div class="s-kpi__value" style="font-size:var(--s-font-lg)">' + esc(v || '—') + '</div></div>').join('')
               + '</div><p class="s-kpi__note">行下钻为当日快照，数据与明细表同源；不做跨源拼装。</p>';
           },
