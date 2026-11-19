@@ -14,7 +14,49 @@
  * @param {object} ctx { tradeDate: 档案最新交易日 }
  * @returns {object|null} null = 无有效证据；否则板块情绪块
  */
-export function macroSectorSentimentBlock(report, { tradeDate } = {}) {
+/* 【2026-11-20 红盘自检（拍板）】新闻面与盘面背离判据——冰点普跌日唯一当日可达的
+ * 硬判据：利好 TOP5（score>0.2 前 5）中当日红盘只数 <40% 且宏观 score ≥ +0.1 →
+ * 背离告警（本节读数降权，不参与任何参考修正）。
+ * 板块名→行业涨跌匹配：精确同名优先、子串互含次之；匹配不到的概念板块（CPO/6G
+ * 这类交易所无对应行业）**不计入分母**（无法核对≠红盘）；可核对板块 <2 不判定
+ * （判据无法成立时不误报）。
+ * 纯函数：sectors/macro 来自 sectorSentiment 注入档，industryRows=当日 day.industry
+ * （[{name,change_pct}]）。app.js/daily_report 两端渲染只读 deviation 字段。 */
+export function deviationCheck(sectors, macroSentiment, industryRows) {
+  const rows = Array.isArray(industryRows) ? industryRows : [];
+  const byName = new Map(rows.map((r) => [String(r.name || ''), Number(r.change_pct)]));
+  const bulls = (Array.isArray(sectors) ? sectors : [])
+    .filter((s) => (s.score || 0) > 0.2)
+    .sort((a, b) => (b.score || 0) - (a.score || 0))
+    .slice(0, 5);
+  const checked = [];   // {sector, changePct|null, red}
+  for (const s of bulls) {
+    const name = String(s.sector || '');
+    let pct = byName.has(name) ? byName.get(name) : undefined;
+    if (pct === undefined) {   // 子串互含（板块名 ⊂ 行业名 或反之）
+      for (const [n, v] of byName) {
+        if (n && (n.includes(name) || name.includes(n))) { pct = v; break; }
+      }
+    }
+    if (pct === undefined) continue;              // 概念板块无对应行业 → 不计入
+    checked.push({ sector: name, changePct: pct, red: pct > 0 });
+  }
+  const redCount = checked.filter((x) => x.red).length;
+  const flagged = checked.length >= 2
+    && redCount / checked.length < 0.4
+    && (Number(macroSentiment) || 0) >= 0.1;
+  return {
+    checkedCount: checked.length,
+    redCount,
+    detail: checked,
+    flagged,
+    note: flagged
+      ? `新闻面与盘面背离（利好板块当日红盘 ${redCount}/${checked.length}）——本节读数不参与任何参考修正，仅作舆情留痕`
+      : null,
+  };
+}
+
+export function macroSectorSentimentBlock(report, { tradeDate, industryRows } = {}) {
   if (!report || typeof report !== 'object') return null;
   // 新鲜度守卫（crosscheck/pain 先例）：落盘 asOfDate 必须等于目标交易日——
   // 板块情绪是「某一天」的快照，旧结论不得冒充今天的证据。
@@ -64,6 +106,9 @@ export function macroSectorSentimentBlock(report, { tradeDate } = {}) {
     blackTalk: report.blackTalk || null,
     source: report.source || null,
     scanned: (report.scanned != null) ? report.scanned : null,
+    /* 红盘自检（2026-11-20 拍板）：利好 TOP5 当日红盘率 <40% 且宏观偏多 → flagged，
+     * 消费端（daily_report §九 / app.js §九）读此字段标注背离并降权。 */
+    deviation: deviationCheck(sectors, macro && macro.sentiment, industryRows),
     note: '板块情绪因子（场景二）：新闻→GLM 映射板块/方向/强度→聚合；score∈[-1,1]，仅作参考，不独立生成买卖信号。',
   };
 }

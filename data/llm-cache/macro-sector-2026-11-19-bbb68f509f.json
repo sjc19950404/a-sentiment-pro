@@ -1,0 +1,839 @@
+{
+ "kind": "llm-cache",
+ "name": "macro-sector",
+ "asOfDate": "2026-11-19",
+ "hash": "bbb68f509f",
+ "cachedAt": "2026-11-19T16:44:01.509Z",
+ "events": [
+  {
+   "headline": "巴斯夫终止收购计划，赢创股价大幅下挫",
+   "date": "2026-11-20",
+   "sectors": [
+    "化工"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "收购终止影响化工行业投资预期"
+  },
+  {
+   "headline": "数千名Anthropic员工与投资者即将收获巨额财富",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "AI领域投资前景看好"
+  },
+  {
+   "headline": "Anthropic与特朗普政府关系紧张",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "政治关系影响尚不确定"
+  },
+  {
+   "headline": "AMD股价一度大跌11% Hunterbrook做空该公司股票",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "negative",
+   "intensity": 0.6,
+   "reason": "AMD股价下跌影响相关产业链"
+  },
+  {
+   "headline": "新市场交易者押注Anthropic IPO将大幅高开",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "AI领域投资前景看好"
+  },
+  {
+   "headline": "Plancorp的考克斯：Anthropic IPO将成为衡量投资者AI投资意愿的重要风向标",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "AI领域投资前景看好"
+  },
+  {
+   "headline": "特朗普多次邀约出席G20峰会 普京称“会考虑一下”",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "地缘政治影响尚不确定"
+  },
+  {
+   "headline": "沙通社：胡塞武装袭击导致利雅得金融区建筑物受损",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "地缘紧张提升军工需求"
+  },
+  {
+   "headline": "报道：伊朗称霍尔木兹海峡问题解决前不谈核问题",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "地缘紧张提升军工需求"
+  },
+  {
+   "headline": "SpaceX计划周四进行至少320亿美元AI芯片相关债务融资",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "AI芯片投资增加"
+  },
+  {
+   "headline": "摩根大通下调 Alphabet 债券评级",
+   "date": "2026-11-19",
+   "sectors": [
+    "苹果产业链",
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "Alphabet 债券评级下调，影响相关科技板块"
+  },
+  {
+   "headline": "深夜，美股大变脸",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子",
+    "苹果产业链",
+    "券商",
+    "保险",
+    "银行",
+    "地产",
+    "白酒",
+    "食品饮料",
+    "医药",
+    "CXO",
+    "创新药",
+    "中药",
+    "医疗器械",
+    "机器人",
+    "工业母机",
+    "低空经济",
+    "商业航天",
+    "卫星互联网",
+    "固态电池",
+    "锂电",
+    "储能",
+    "光伏",
+    "风电",
+    "氢能源",
+    "新能源汽车",
+    "汽车",
+    "智能驾驶",
+    "军工",
+    "航发",
+    "船舶",
+    "化工",
+    "化肥",
+    "农药",
+    "钢铁",
+    "煤炭",
+    "有色",
+    "铜",
+    "铝",
+    "黄金",
+    "稀土",
+    "石油",
+    "石化",
+    "燃气",
+    "电力",
+    "火电",
+    "水电",
+    "核电",
+    "绿电",
+    "基建",
+    "建材",
+    "水泥",
+    "工程机械",
+    "家电",
+    "纺织服装",
+    "农业",
+    "种业",
+    "猪周期",
+    "传媒",
+    "游戏",
+    "出版",
+    "教育",
+    "计算机",
+    "软件",
+    "信创",
+    "网络安全",
+    "通信",
+    "运营商",
+    "6G",
+    "物流",
+    "快递",
+    "港口",
+    "航空",
+    "航运",
+    "旅游",
+    "免税",
+    "零售",
+    "美容护理"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "美股整体波动，对A股影响尚不确定"
+  },
+  {
+   "headline": "如何布局Anthropic股票 —— 无需直接参与IPO",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "布局Anthropic股票，对A股相关板块影响有限"
+  },
+  {
+   "headline": "阿莫代伊拒评黄仁勋是否应当重返英伟达担任首席执行官",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "英伟达管理层变动，对A股相关板块影响有限"
+  },
+  {
+   "headline": "阿莫代伊：希望Anthropic未来能获得投资级信用评级",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "Anthropic信用评级，对A股相关板块影响有限"
+  },
+  {
+   "headline": "阿莫代伊称，9000 亿美元的投入承诺 “看起来并没有那么庞大”",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "投入承诺规模，对A股相关板块影响有限"
+  },
+  {
+   "headline": "华尔街也难撼动的“防篡改”设计：拆解Anthropic上市后的非常规治理结构",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "Anthropic治理结构，对A股相关板块影响有限"
+  },
+  {
+   "headline": "除了12315，正规的投诉途径还有哪些？六种渠道按场景对号入座",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.1,
+   "reason": "投诉途径，对A股无明确影响"
+  },
+  {
+   "headline": "阿里财报会释放对国产芯片信心",
+   "date": "2026-11-19",
+   "sectors": [
+    "芯片",
+    "半导体",
+    "消费电子",
+    "苹果产业链",
+    "AI",
+    "算力",
+    "机器人",
+    "工业母机",
+    "低空经济",
+    "商业航天",
+    "卫星互联网",
+    "固态电池",
+    "锂电",
+    "储能",
+    "光伏",
+    "风电",
+    "氢能源",
+    "新能源汽车",
+    "汽车",
+    "智能驾驶",
+    "军工",
+    "航发",
+    "船舶",
+    "化工",
+    "化肥",
+    "农药",
+    "钢铁",
+    "煤炭",
+    "有色",
+    "铜",
+    "铝",
+    "黄金",
+    "稀土",
+    "石油",
+    "石化",
+    "燃气",
+    "电力",
+    "火电",
+    "水电",
+    "核电",
+    "绿电",
+    "基建",
+    "建材",
+    "水泥",
+    "工程机械",
+    "家电",
+    "纺织服装",
+    "农业",
+    "种业",
+    "猪周期",
+    "传媒",
+    "游戏",
+    "出版",
+    "教育",
+    "计算机",
+    "软件",
+    "信创",
+    "网络安全",
+    "通信",
+    "运营商",
+    "6G",
+    "物流",
+    "快递",
+    "港口",
+    "航空",
+    "航运",
+    "旅游",
+    "免税",
+    "零售",
+    "美容护理"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "阿里财报释放对国产芯片信心，利好相关板块"
+  },
+  {
+   "headline": "超半数机构投资者据悉在Anthropic IPO中未获配股份",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "未获配股份对市场整体影响有限"
+  },
+  {
+   "headline": "Anthropic股票预示首日开盘价将较IPO价格高出20%",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "高开盘价可能带动相关科技股情绪"
+  },
+  {
+   "headline": "最高30亿元！巨头601899宣布，再斥巨资回购",
+   "date": "2026-11-19",
+   "sectors": [
+    "券商",
+    "银行",
+    "保险"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "回购行为可能提升投资者信心"
+  },
+  {
+   "headline": "中国资产深夜大涨，拼多多狂飙近13%，阿里巴巴涨超4%，美股芯片、光通信爆发，Coherent涨11%",
+   "date": "2026-11-19",
+   "sectors": [
+    "消费电子",
+    "半导体"
+   ],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "相关板块受益于市场情绪提升"
+  },
+  {
+   "headline": "华商基金张永志管理4只“固收+”近1、3、5年业绩均同类前5%",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "基金业绩表现对市场影响有限"
+  },
+  {
+   "headline": "美联储副主席杰斐逊：人工智能加剧短期通胀",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体"
+   ],
+   "direction": "negative",
+   "intensity": 0.6,
+   "reason": "通胀担忧可能抑制相关板块投资"
+  },
+  {
+   "headline": "因暗示推荐个股等问题 广东博众智能科技被暂停新增客户3个月",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "事件影响有限，对市场整体影响不大"
+  },
+  {
+   "headline": "地天板、天地板、地天板! “章盟主”常用席位频现龙虎榜",
+   "date": "2026-11-19",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "市场情绪波动对市场影响有限"
+  },
+  {
+   "headline": "布拉德・格斯特纳：Anthropic并非“暴富捷径”",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "言论对市场影响有限"
+  },
+  {
+   "headline": "“宁王”再出手！近2亿元回购，拟全部注销！",
+   "date": "2026-11-19",
+   "sectors": [
+    "消费电子",
+    "半导体"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "回购行为可能提升投资者信心"
+  },
+  {
+   "headline": "Anthropic有望迎来指数基金被动买入",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "AI领域投资增加，相关产业链受益"
+  },
+  {
+   "headline": "Anthropic首席执行官：AI是人类历史上具有里程碑意义的时刻",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "AI发展被高度评价，相关产业链受益"
+  },
+  {
+   "headline": "Anthropic IPO：AI造富催生精简新式家族办公室",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "AI公司IPO，相关产业链受益"
+  },
+  {
+   "headline": "Anthropic登陆纳斯达克！纽约纳斯达克举行IPO敲钟仪式，现场出现抗议者",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "AI公司上市，市场反应尚不确定"
+  },
+  {
+   "headline": "大手笔，紫金矿业年内再抛20亿~30亿元回购",
+   "date": "2026-11-19",
+   "sectors": [
+    "化工",
+    "化肥",
+    "农药"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "公司回购股票，提升市场信心"
+  },
+  {
+   "headline": "Anthropic首席执行官达里奥・阿莫代伊：AI或将把百年科学与医学进展压缩至十年",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "AI发展前景被看好，相关产业链受益"
+  },
+  {
+   "headline": "梵高人生最后岁月的一幅画作，拍卖出逾1.9亿美元天价",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.1,
+   "reason": "艺术品拍卖，对A股市场影响有限"
+  },
+  {
+   "headline": "最高能省800元！快来领“养老服务消费补贴电子券”",
+   "date": "2026-11-19",
+   "sectors": [
+    "家电",
+    "纺织服装",
+    "农业",
+    "种业",
+    "猪周期",
+    "传媒",
+    "游戏",
+    "出版",
+    "教育",
+    "计算机",
+    "软件",
+    "信创",
+    "网络安全",
+    "通信",
+    "运营商",
+    "6G",
+    "物流",
+    "快递",
+    "港口",
+    "航空",
+    "航运",
+    "旅游",
+    "免税",
+    "零售",
+    "美容护理"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "养老服务补贴，对相关行业有一定影响"
+  },
+  {
+   "headline": "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图",
+   "date": "2026-11-19",
+   "sectors": [
+    "卫星互联网",
+    "固态电池",
+    "锂电",
+    "储能",
+    "光伏",
+    "风电",
+    "氢能源",
+    "新能源汽车",
+    "汽车",
+    "智能驾驶",
+    "军工",
+    "航发",
+    "船舶",
+    "化工",
+    "化肥",
+    "农药",
+    "钢铁",
+    "煤炭",
+    "有色",
+    "铜",
+    "铝",
+    "黄金",
+    "稀土",
+    "石油",
+    "石化",
+    "燃气",
+    "电力",
+    "火电",
+    "水电",
+    "核电",
+    "绿电",
+    "基建",
+    "建材",
+    "水泥",
+    "工程机械",
+    "家电",
+    "纺织服装",
+    "农业",
+    "种业",
+    "猪周期",
+    "传媒",
+    "游戏",
+    "出版",
+    "教育",
+    "计算机",
+    "软件",
+    "信创",
+    "网络安全",
+    "通信",
+    "运营商",
+    "6G",
+    "物流",
+    "快递",
+    "港口",
+    "航空",
+    "航运",
+    "旅游",
+    "免税",
+    "零售",
+    "美容护理"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "技术蓝图发布，对相关行业有一定影响"
+  },
+  {
+   "headline": "Anthropic联合创始人美股开盘前于华尔街表态：这项技术需要你",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "AI领域技术发展预期提升"
+  },
+  {
+   "headline": "开盘：三大股指齐涨 Anthropic上市首日预计大幅冲高",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "市场对AI领域信心增强"
+  },
+  {
+   "headline": "Anthropic IPO：短线卖出新股的投资者或将面临券商处罚",
+   "date": "2026-11-19",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "短线交易处罚可能影响券商业务"
+  },
+  {
+   "headline": "国元证券业绩显著跑输华安证券背后：IPO保荐失败率高企 去年唯一上市项目当年“业绩大变脸”",
+   "date": "2026-11-19",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "IPO保荐失败影响券商业绩"
+  },
+  {
+   "headline": "房屋墙面惊现“骨灰房”字样，父母未落葬的骨灰盒被摆上桌，家具被砸稀烂，竟是哥哥报复妹妹：不满父亲23年前将房子过户给妹妹",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.1,
+   "reason": "社会新闻，对股市无直接影响"
+  },
+  {
+   "headline": "比亚迪发布折叠方向盘",
+   "date": "2026-11-19",
+   "sectors": [
+    "汽车",
+    "智能驾驶"
+   ],
+   "direction": "positive",
+   "intensity": 0.3,
+   "reason": "技术创新提升汽车行业预期"
+  },
+  {
+   "headline": "中信证券、中金公司、国元证券、财通证券、东方证券、浙商证券、申万宏源、华福证券、中信建投，参投DeepSeek",
+   "date": "2026-11-19",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "券商投资行为可能带来业绩增长"
+  },
+  {
+   "headline": "黄金今年本就表现惨淡，行情进一步恶化：金价为何持续下跌",
+   "date": "2026-11-19",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "金价下跌影响黄金板块"
+  },
+  {
+   "headline": "两大科技龙头，回购大消息",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "科技巨头回购行为提振市场信心"
+  },
+  {
+   "headline": "民生加银，亲生无疑了",
+   "date": "2026-11-19",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "新闻涉及银行，但具体影响不明"
+  },
+  {
+   "headline": "深市再掀一波密集回购增持 宁德时代回购近两亿",
+   "date": "2026-11-19",
+   "sectors": [
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "宁德时代回购增持，利好相关产业链"
+  },
+  {
+   "headline": "数据中心何以成为美国电网的增长引擎",
+   "date": "2026-11-19",
+   "sectors": [
+    "数据中心",
+    "服务器",
+    "光模块",
+    "PCB"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "数据中心发展，利好相关设备"
+  },
+  {
+   "headline": "中信证券、中金公司、国元证券、财通证券、东方证券、浙商证券、申万宏源、中信建投，参投DeepSeek",
+   "date": "2026-11-19",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "券商参投，利好券商板块"
+  },
+  {
+   "headline": "王毅送别美俄元首后举行记者会",
+   "date": "2026-11-19",
+   "sectors": [
+    "军工",
+    "石油"
+   ],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "地缘政治紧张，利好军工和石油"
+  },
+  {
+   "headline": "英伟达中国的 4000 多名员工，何去何从？",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "芯片",
+    "消费电子"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "英伟达员工变动，利空相关产业链"
+  },
+  {
+   "headline": "王菲、窦靖童、李嫣，母女三人合唱歌曲即将发布！由王菲填词，是嫣然天使基金主题曲",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "娱乐新闻，对A股无直接影响"
+  },
+  {
+   "headline": "张彤当选广安市委书记，曾任邛崃市市长、乐山市市长",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "政治新闻，对A股无直接影响"
+  },
+  {
+   "headline": "首批主动ETF偏爱银行股，六大行等18只个股被重仓",
+   "date": "2026-11-19",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "ETF重仓银行股，利好银行板块"
+  },
+  {
+   "headline": "章建平，减持601208超七成",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "减持行为，利空相关个股或板块"
+  }
+ ],
+ "blackTalk": "今儿多头热闹，数据中心、服务器这些龙头都嗨了，别追高，小心次日分歧，稳住别上头，仓位要控制好。😎",
+ "macro": {
+  "sentiment": 0.15,
+  "score100": 57,
+  "label": "中性",
+  "confidence": 0.49,
+  "reason": "利好板块：数据中心(+0.5)、服务器(+0.5)、光模块(+0.5)、PCB(+0.5)、军工(+0.3)；利空板块：无"
+ }
+}

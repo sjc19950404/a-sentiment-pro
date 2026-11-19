@@ -108,7 +108,17 @@ const user = `当日市场结构数据如下：\n${brief}\n\n请按要求输出 
 //   设计纪律：缺配置 → 下方已退出非 0 不落档（诚实「未生成」，不冒充中性）；
 //   已配置但请求失败/超时/返回非法 JSON/超界 → 兜底落「获取失败，默认中性」档并退出 0，
 //   绝不阻塞 EOD 主流程（pi_build 中本步骤即容错 step）。
+/* 【2026-11-20 缓存治根（拍板）】输入=当日档案素材（确定性），以「数据日+brief 哈希」
+ * 为键缓存 LLM 结论：同日重跑直接复读（可复现），--force 才真跑。degraded 不缓存。 */
+import { stableHash, loadCache, saveCache } from '../src/llm_cache.js';
+const briefHash = stableHash({ brief, asOfDate: day.trade_date });
+const FORCE = process.argv.includes('--force');
+const _cached = !FORCE ? loadCache('llm-sentiment', day.trade_date, briefHash) : null;
 let parsed;
+if (_cached && _cached.parsed) {
+  parsed = _cached.parsed;
+  console.log(`[llm-sent] 缓存命中（${day.trade_date}/${briefHash}，LLM 结论于 ${_cached.cachedAt} 生成）——复读跳过 LLM，输出可复现`);
+} else {
 try {
   const chat = await fetchWithRetry(`${API_URL.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
@@ -143,6 +153,8 @@ try {
   if (!Number.isFinite(sentiment) || sentiment < -1 || sentiment > 1) {
     throw new Error(`sentiment 超界（${parsed.sentiment}）`);
   }
+  saveCache('llm-sentiment', day.trade_date, briefHash, { parsed, model: MODEL });
+  console.log(`[llm-sent] LLM 结论已缓存（${day.trade_date}/${briefHash}）——同日重跑将复读`);
 } catch (e) {
   console.error(`[llm-sent] ⚠ LLM 调用失败/非法：${e && e.message ? e.message : e}`
     + '——兜底落「获取失败，默认中性」档（不阻塞 EOD）');
@@ -173,6 +185,7 @@ try {
     + '——下次写档自动进简报「八、舆情参考」节，标注获取失败');
   process.exit(0);
 }
+} /* else（非缓存命中路径）闭合 */
 
 // ── 3. 落盘（证据留痕：asOfDate 防伪 + 输入摘要供审计）────────────────────
 const payload = {
@@ -180,6 +193,7 @@ const payload = {
   version: 1,
   asOfDate: day.trade_date,           // 证据属于哪一天（与档案最新交易日严格相等）
   generatedAt: bjStamp(),
+  cachedFrom: _cached && _cached.parsed ? _cached.cachedAt : null,  // 缓存复用时=首次生成时刻
   model: MODEL,
   sentiment: Math.round(Number(parsed.sentiment) * 100) / 100,
   confidence: Number.isFinite(+parsed.confidence) ? Math.round(+parsed.confidence * 100) / 100 : null,

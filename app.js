@@ -3370,10 +3370,21 @@ function renderSectorSentimentSection(ss) {
     ? ss.blackTalk
     : (function () { const hyped = /机器人|算力|半导体|AI|低空/.test(bull); return '今日盘后' + ((ss.macro && ss.macro.label) || '情绪中性') + '。多头主线：' + bull + '；空头压制：' + bear + '。' + (hyped ? '题材高潮次日易分歧，谨记「买在分歧、卖在一致」，切勿盲目顶一字。' : '板块轮动加快，控制仓位，别上头。'); })();
   const blacktalk = `<div class="glm-blacktalk"><span class="glm-bt-h">🔥 游资复盘黑话：</span><span class="glm-bt-body" data-tw="${esc(btText)}">${esc(btText)}</span></div>`;
+  /* 红盘自检（2026-11-20 拍板）：deviation 由引擎注入（write.js→signals.sectorSentiment），
+   * 利好 TOP5 当日红盘 <40% 且宏观 ≥+0.1 → ⚠ 背离标注并降权。11-19 实测：
+   * 白酒 -1.88%/通信 -3.37% 红盘 0/2 + 宏观 0.2 → flagged 必报。 */
+  const dev = ss.deviation;
+  const devHtml = (dev && dev.flagged && dev.note)
+    ? li(`⚠ ${dev.note}`)
+      + li(`利好板块当日实况：${(dev.detail || []).map((x) => `${esc(x.sector)} ${x.red ? '红' : x.changePct + '%'}`).join('、') || '—'}`)
+    : (dev && dev.checkedCount > 0 && dev.checkedCount < 2
+      ? cal(`红盘自检：利好板块 ${dev.checkedCount} 个可核对（其余为概念板块无对应行业，不计入）——判据不可用，不判定背离`)
+      : '');
   return `<div class="glm-radar">${rows}</div>`
     + blacktalk
+    + devHtml
     + li(`宏观情绪：${(ss.macro && ss.macro.label) || '中性'}（score ${ss.macro && ss.macro.sentiment != null ? ss.macro.sentiment : 0}）｜利好：${bull}｜利空：${bear}`)
-    + li(`证据日期 ${ss.asOfDate || '—'}｜模型 ${ss.model || '未留痕'}｜新闻源 ${ss.source || 'sina-roll'}｜涉及板块 ${sectors.length} 个、事件 ${ss.events ? ss.events.length : 0} 条`)
+    + li(`证据日期 ${ss.asOfDate || '—'}｜模型 ${ss.model || '未留痕'}｜新闻源 ${ss.source || 'sina-roll'}${ss.cachedFrom ? `｜缓存复用（LLM 结论 ${ss.cachedFrom} 生成，可复现）` : ''}｜涉及板块 ${sectors.length} 个、事件 ${ss.events ? ss.events.length : 0} 条`)
     + cal('板块情绪因子 = 新浪滚动新闻 → 智谱映射板块/方向/强度 → 聚合；score∈[-1,1]，仅作参考，不独立生成买卖信号；证据日期不符或为空即视为缺数据。');
 }
 

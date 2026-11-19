@@ -2,2205 +2,1325 @@
  "kind": "macro-sector-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-19",
- "newsDate": "2026-11-19",
- "generatedAt": "2026-11-19T21:07:40.480+08:00",
+ "newsDate": "2026-11-20",
+ "generatedAt": "2026-11-20T00:44:02.274+08:00",
+ "cachedFrom": "2026-11-19T16:44:01.509Z",
  "model": "glm-4-flash",
  "macro": {
-  "sentiment": 0.2,
-  "score100": 60,
-  "label": "偏多",
-  "confidence": 0.51,
-  "reason": "利好板块：白酒(+0.7)、食品饮料(+0.7)、CPO(+0.63)、6G(+0.6)、通信(+0.6)；利空板块：无"
+  "sentiment": 0.15,
+  "score100": 57,
+  "label": "中性",
+  "confidence": 0.49,
+  "reason": "利好板块：数据中心(+0.5)、服务器(+0.5)、光模块(+0.5)、PCB(+0.5)、军工(+0.3)；利空板块：无"
  },
  "sectors": [
   {
-   "sector": "白酒",
-   "score": 0.7,
-   "score100": 85,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
-   ]
-  },
-  {
-   "sector": "食品饮料",
-   "score": 0.7,
-   "score100": 85,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
-   ]
-  },
-  {
-   "sector": "CPO",
-   "score": 0.63,
-   "score100": 82,
-   "newsCount": 3,
-   "bullish": 3,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台",
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
-   ]
-  },
-  {
-   "sector": "6G",
-   "score": 0.6,
-   "score100": 80,
-   "newsCount": 5,
-   "bullish": 5,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "8地入选6G创新发展试点，主攻哪些赛道",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "通信",
-   "score": 0.6,
-   "score100": 80,
-   "newsCount": 5,
-   "bullish": 5,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "8地入选6G创新发展试点，主攻哪些赛道",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "运营商",
-   "score": 0.6,
-   "score100": 80,
-   "newsCount": 5,
-   "bullish": 5,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "8地入选6G创新发展试点，主攻哪些赛道",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
    "sector": "数据中心",
-   "score": 0.57,
-   "score100": 78,
-   "newsCount": 6,
-   "bullish": 5,
+   "score": 0.5,
+   "score100": 75,
+   "newsCount": 1,
+   "bullish": 1,
    "bearish": 0,
-   "neutral": 1,
+   "neutral": 0,
    "headlines": [
-    "资深首席财务官比尔・泽雷拉助力Stord加速扩张",
-    "AI服务器储备订单达5300亿元，联想第一大业务要换了？",
-    "国际能源署：到2030年数据中心用电量或将翻倍",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万"
+    "数据中心何以成为美国电网的增长引擎"
    ]
   },
   {
    "sector": "服务器",
-   "score": 0.57,
-   "score100": 78,
-   "newsCount": 6,
-   "bullish": 5,
+   "score": 0.5,
+   "score100": 75,
+   "newsCount": 1,
+   "bullish": 1,
    "bearish": 0,
-   "neutral": 1,
+   "neutral": 0,
    "headlines": [
-    "资深首席财务官比尔・泽雷拉助力Stord加速扩张",
-    "AI服务器储备订单达5300亿元，联想第一大业务要换了？",
-    "国际能源署：到2030年数据中心用电量或将翻倍",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万"
+    "数据中心何以成为美国电网的增长引擎"
    ]
   },
   {
    "sector": "光模块",
-   "score": 0.54,
-   "score100": 77,
-   "newsCount": 7,
-   "bullish": 6,
+   "score": 0.5,
+   "score100": 75,
+   "newsCount": 1,
+   "bullish": 1,
    "bearish": 0,
-   "neutral": 1,
+   "neutral": 0,
    "headlines": [
-    "RWS集团首席执行官本杰明·法斯参加APEC会议，介绍在华发展核心引擎TrainAI业务",
-    "8地入选6G创新发展试点，主攻哪些赛道",
-    "燧原科技，紧急澄清",
-    "国际能源署：到2030年数据中心用电量或将翻倍"
+    "数据中心何以成为美国电网的增长引擎"
    ]
   },
   {
    "sector": "PCB",
-   "score": 0.54,
-   "score100": 77,
-   "newsCount": 7,
-   "bullish": 6,
+   "score": 0.5,
+   "score100": 75,
+   "newsCount": 1,
+   "bullish": 1,
    "bearish": 0,
-   "neutral": 1,
+   "neutral": 0,
    "headlines": [
-    "RWS集团首席执行官本杰明·法斯参加APEC会议，介绍在华发展核心引擎TrainAI业务",
-    "8地入选6G创新发展试点，主攻哪些赛道",
-    "燧原科技，紧急澄清",
-    "国际能源署：到2030年数据中心用电量或将翻倍"
+    "数据中心何以成为美国电网的增长引擎"
    ]
   },
   {
    "sector": "军工",
-   "score": 0.51,
-   "score100": 76,
-   "newsCount": 8,
-   "bullish": 7,
+   "score": 0.3,
+   "score100": 65,
+   "newsCount": 4,
+   "bullish": 2,
    "bearish": 0,
-   "neutral": 1,
+   "neutral": 2,
    "headlines": [
-    "胡塞武装袭击利雅得，沙特主权财富基金总部大楼受损",
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "数月外交紧张过后，丹麦批准特朗普的格陵兰安全协议"
-   ]
-  },
-  {
-   "sector": "光伏",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "风电",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "氢能源",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "新能源汽车",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "汽车",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "智能驾驶",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "航发",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "船舶",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "化工",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "化肥",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "农药",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "钢铁",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "煤炭",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "有色",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "铜",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "铝",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "稀土",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图",
+    "王毅送别美俄元首后举行记者会"
    ]
   },
   {
    "sector": "石油",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
+   "score": 0.3,
+   "score100": 65,
+   "newsCount": 4,
+   "bullish": 2,
    "bearish": 0,
-   "neutral": 1,
+   "neutral": 2,
    "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图",
+    "王毅送别美俄元首后举行记者会"
    ]
   },
   {
-   "sector": "石化",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
+   "sector": "化肥",
+   "score": 0.25,
+   "score100": 63,
+   "newsCount": 4,
+   "bullish": 2,
    "bearish": 0,
-   "neutral": 1,
+   "neutral": 2,
    "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "大手笔，紫金矿业年内再抛20亿~30亿元回购",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
    ]
   },
   {
-   "sector": "燃气",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
+   "sector": "农药",
+   "score": 0.25,
+   "score100": 63,
+   "newsCount": 4,
+   "bullish": 2,
    "bearish": 0,
-   "neutral": 1,
+   "neutral": 2,
    "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "电力",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "火电",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "水电",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "核电",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "绿电",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "建材",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "水泥",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "工程机械",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "纺织服装",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "农业",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "种业",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
-   ]
-  },
-  {
-   "sector": "猪周期",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "大手笔，紫金矿业年内再抛20亿~30亿元回购",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
    ]
   },
   {
    "sector": "机器人",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 4,
-   "bullish": 3,
+   "score": 0.25,
+   "score100": 63,
+   "newsCount": 2,
+   "bullish": 1,
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台",
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心"
    ]
   },
   {
    "sector": "工业母机",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 4,
-   "bullish": 3,
+   "score": 0.25,
+   "score100": 63,
+   "newsCount": 2,
+   "bullish": 1,
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台",
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心"
    ]
   },
   {
    "sector": "低空经济",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 4,
-   "bullish": 3,
+   "score": 0.25,
+   "score100": 63,
+   "newsCount": 2,
+   "bullish": 1,
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台",
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心"
    ]
   },
   {
    "sector": "商业航天",
-   "score": 0.48,
-   "score100": 74,
+   "score": 0.25,
+   "score100": 63,
+   "newsCount": 2,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心"
+   ]
+  },
+  {
+   "sector": "银行",
+   "score": 0.23,
+   "score100": 61,
    "newsCount": 4,
-   "bullish": 3,
+   "bullish": 2,
    "bearish": 0,
-   "neutral": 1,
+   "neutral": 2,
    "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台",
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
-   ]
-  },
-  {
-   "sector": "卫星互联网",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 4,
-   "bullish": 3,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台",
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
-   ]
-  },
-  {
-   "sector": "固态电池",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 4,
-   "bullish": 3,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台",
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
-   ]
-  },
-  {
-   "sector": "锂电",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 4,
-   "bullish": 3,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台",
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
-   ]
-  },
-  {
-   "sector": "储能",
-   "score": 0.48,
-   "score100": 74,
-   "newsCount": 4,
-   "bullish": 3,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-    "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台",
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
-   ]
-  },
-  {
-   "sector": "传媒",
-   "score": 0.47,
-   "score100": 74,
-   "newsCount": 7,
-   "bullish": 6,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "欢聚三季度收入6.246亿美元 全年三方广告增速指引上调至近60%",
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变"
-   ]
-  },
-  {
-   "sector": "游戏",
-   "score": 0.47,
-   "score100": 74,
-   "newsCount": 7,
-   "bullish": 6,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "欢聚三季度收入6.246亿美元 全年三方广告增速指引上调至近60%",
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变"
-   ]
-  },
-  {
-   "sector": "出版",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 5,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万"
-   ]
-  },
-  {
-   "sector": "教育",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 5,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万"
-   ]
-  },
-  {
-   "sector": "计算机",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 5,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万"
-   ]
-  },
-  {
-   "sector": "软件",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 5,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万"
-   ]
-  },
-  {
-   "sector": "信创",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 5,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万"
-   ]
-  },
-  {
-   "sector": "网络安全",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 5,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万"
-   ]
-  },
-  {
-   "sector": "美容护理",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 5,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万"
-   ]
-  },
-  {
-   "sector": "零售",
-   "score": 0.46,
-   "score100": 73,
-   "newsCount": 9,
-   "bullish": 8,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "沃尔玛季度营收及每股收益双双超出市场预期",
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "沃尔玛销售额上涨，电商业务功不可没"
-   ]
-  },
-  {
-   "sector": "航空",
-   "score": 0.46,
-   "score100": 73,
-   "newsCount": 7,
-   "bullish": 6,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变"
-   ]
-  },
-  {
-   "sector": "旅游",
-   "score": 0.46,
-   "score100": 73,
-   "newsCount": 7,
-   "bullish": 6,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变"
-   ]
-  },
-  {
-   "sector": "免税",
-   "score": 0.46,
-   "score100": 73,
-   "newsCount": 7,
-   "bullish": 6,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变"
+    "深夜，美股大变脸",
+    "最高30亿元！巨头601899宣布，再斥巨资回购",
+    "民生加银，亲生无疑了",
+    "首批主动ETF偏爱银行股，六大行等18只个股被重仓"
    ]
   },
   {
    "sector": "消费电子",
-   "score": 0.43,
-   "score100": 72,
-   "newsCount": 9,
-   "bullish": 7,
-   "bearish": 0,
-   "neutral": 2,
+   "score": 0.22,
+   "score100": 61,
+   "newsCount": 19,
+   "bullish": 10,
+   "bearish": 2,
+   "neutral": 7,
    "headlines": [
-    "影视飓风、Manus、影石、OPPO．．．．．．极客公园创新大会 2027 嘉宾阵容更新！",
-    "Anthropic创全球最大IPO纪录，全球半导体股集体上涨",
-    "Anthropic预计将于北京时间今晚23:00开始交易",
-    "媒体：不少投资者将Anthropic看作“必须配置”的标的"
+    "摩根大通下调 Alphabet 债券评级",
+    "深夜，美股大变脸",
+    "如何布局Anthropic股票 —— 无需直接参与IPO",
+    "阿莫代伊拒评黄仁勋是否应当重返英伟达担任首席执行官"
    ]
   },
   {
-   "sector": "芯片",
-   "score": 0.43,
-   "score100": 71,
+   "sector": "汽车",
+   "score": 0.2,
+   "score100": 60,
    "newsCount": 4,
-   "bullish": 3,
+   "bullish": 2,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图",
+    "比亚迪发布折叠方向盘"
+   ]
+  },
+  {
+   "sector": "智能驾驶",
+   "score": 0.2,
+   "score100": 60,
+   "newsCount": 4,
+   "bullish": 2,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图",
+    "比亚迪发布折叠方向盘"
+   ]
+  },
+  {
+   "sector": "保险",
+   "score": 0.2,
+   "score100": 60,
+   "newsCount": 2,
+   "bullish": 1,
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "Anthropic创全球最大IPO纪录，全球半导体股集体上涨",
-    "长鑫科技回购上限拟提至50亿元，最高40亿元股份注销减少注册资本",
-    "最多注销40亿元股份！长鑫科技，调整回购方案！",
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
+    "深夜，美股大变脸",
+    "最高30亿元！巨头601899宣布，再斥巨资回购"
    ]
   },
   {
-   "sector": "AI",
-   "score": 0.42,
-   "score100": 71,
-   "newsCount": 12,
-   "bullish": 9,
-   "bearish": 0,
-   "neutral": 3,
-   "headlines": [
-    "Anthropic预计将于北京时间今晚23:00开始交易",
-    "媒体：不少投资者将Anthropic看作“必须配置”的标的",
-    "分析师：美光估值已低至“令人难以置信”的水平，Anthropic上市有望重振AI投资热情",
-    "RWS集团首席执行官本杰明·法斯参加APEC会议，介绍在华发展核心引擎TrainAI业务"
-   ]
-  },
-  {
-   "sector": "算力",
-   "score": 0.42,
-   "score100": 71,
-   "newsCount": 12,
-   "bullish": 9,
-   "bearish": 0,
-   "neutral": 3,
-   "headlines": [
-    "Anthropic预计将于北京时间今晚23:00开始交易",
-    "媒体：不少投资者将Anthropic看作“必须配置”的标的",
-    "分析师：美光估值已低至“令人难以置信”的水平，Anthropic上市有望重振AI投资热情",
-    "RWS集团首席执行官本杰明·法斯参加APEC会议，介绍在华发展核心引擎TrainAI业务"
-   ]
-  },
-  {
-   "sector": "家电",
-   "score": 0.4,
-   "score100": 70,
-   "newsCount": 6,
-   "bullish": 4,
+   "sector": "卫星互联网",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
    "bearish": 0,
    "neutral": 2,
    "headlines": [
-    "地天板、天地板轮番上演，九阳股份暴涨逾2倍后多空极致拉锯",
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "阿里财报：全球电商AI工作台Accio付费企业数达到10万"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "固态电池",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "锂电",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "储能",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "光伏",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "风电",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "氢能源",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "新能源汽车",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "航发",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "船舶",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "钢铁",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "煤炭",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "有色",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "铜",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "铝",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "稀土",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "石化",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "燃气",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "电力",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "火电",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "水电",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "核电",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "绿电",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
    ]
   },
   {
    "sector": "基建",
-   "score": 0.38,
-   "score100": 69,
-   "newsCount": 8,
-   "bullish": 5,
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
    "bearish": 0,
-   "neutral": 3,
+   "neutral": 2,
    "headlines": [
-    "商业银行20天推迟发债900亿，堪比过去20年总和",
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "500位嘉宾聚雄安，三项重磅平台落地！财达证券联合主办2026投融资创新发展大会"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "建材",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "水泥",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "工程机械",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
    ]
   },
   {
    "sector": "半导体",
-   "score": 0.37,
-   "score100": 69,
-   "newsCount": 10,
-   "bullish": 7,
+   "score": 0.16,
+   "score100": 58,
+   "newsCount": 19,
+   "bullish": 9,
+   "bearish": 3,
+   "neutral": 7,
+   "headlines": [
+    "摩根大通下调 Alphabet 债券评级",
+    "深夜，美股大变脸",
+    "如何布局Anthropic股票 —— 无需直接参与IPO",
+    "阿莫代伊拒评黄仁勋是否应当重返英伟达担任首席执行官"
+   ]
+  },
+  {
+   "sector": "家电",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
    "bearish": 0,
    "neutral": 3,
    "headlines": [
-    "Anthropic创全球最大IPO纪录，全球半导体股集体上涨",
-    "Anthropic预计将于北京时间今晚23:00开始交易",
-    "媒体：不少投资者将Anthropic看作“必须配置”的标的",
-    "分析师：美光估值已低至“令人难以置信”的水平，Anthropic上市有望重振AI投资热情"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
    ]
   },
   {
-   "sector": "航运",
-   "score": 0.36,
-   "score100": 68,
-   "newsCount": 10,
-   "bullish": 8,
-   "bearish": 1,
-   "neutral": 1,
+   "sector": "纺织服装",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
    "headlines": [
-    "胡塞武装袭击利雅得，沙特主权财富基金总部大楼受损",
-    "洛杉矶与长滩港口罢工风险加剧",
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
    ]
   },
   {
-   "sector": "黄金",
-   "score": 0.36,
-   "score100": 68,
-   "newsCount": 7,
-   "bullish": 5,
-   "bearish": 1,
-   "neutral": 1,
+   "sector": "农业",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
    "headlines": [
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-    "金价失守3700美元！黄金避险神话破灭？",
-    "大摩闭门会2027年展望：全球两大超级周期都离不开中国，看多黄金看空油价，超配生物医药"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "种业",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "猪周期",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "传媒",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "游戏",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "出版",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "教育",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "计算机",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "软件",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "信创",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "网络安全",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "通信",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "运营商",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "6G",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
    ]
   },
   {
    "sector": "物流",
-   "score": 0.32,
-   "score100": 66,
-   "newsCount": 8,
-   "bullish": 6,
-   "bearish": 1,
-   "neutral": 1,
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
    "headlines": [
-    "洛杉矶与长滩港口罢工风险加剧",
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "沃尔玛销售额上涨，电商业务功不可没"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
    ]
   },
   {
    "sector": "快递",
-   "score": 0.32,
-   "score100": 66,
-   "newsCount": 8,
-   "bullish": 6,
-   "bearish": 1,
-   "neutral": 1,
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
    "headlines": [
-    "洛杉矶与长滩港口罢工风险加剧",
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "沃尔玛销售额上涨，电商业务功不可没"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
    ]
   },
   {
    "sector": "港口",
-   "score": 0.32,
-   "score100": 66,
-   "newsCount": 8,
-   "bullish": 6,
-   "bearish": 1,
-   "neutral": 1,
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
    "headlines": [
-    "洛杉矶与长滩港口罢工风险加剧",
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "沃尔玛销售额上涨，电商业务功不可没",
-    "沃尔玛销售额上涨，电商业务功不可没"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
    ]
   },
   {
-   "sector": "医疗器械",
-   "score": 0.3,
-   "score100": 65,
-   "newsCount": 3,
+   "sector": "航空",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "航运",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "旅游",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "免税",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "零售",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "美容护理",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "最高能省800元！快来领“养老服务消费补贴电子券”",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图"
+   ]
+  },
+  {
+   "sector": "AI",
+   "score": 0.11,
+   "score100": 56,
+   "newsCount": 17,
+   "bullish": 7,
+   "bearish": 3,
+   "neutral": 7,
+   "headlines": [
+    "摩根大通下调 Alphabet 债券评级",
+    "深夜，美股大变脸",
+    "如何布局Anthropic股票 —— 无需直接参与IPO",
+    "阿莫代伊拒评黄仁勋是否应当重返英伟达担任首席执行官"
+   ]
+  },
+  {
+   "sector": "算力",
+   "score": 0.11,
+   "score100": 56,
+   "newsCount": 17,
+   "bullish": 7,
+   "bearish": 3,
+   "neutral": 7,
+   "headlines": [
+    "摩根大通下调 Alphabet 债券评级",
+    "深夜，美股大变脸",
+    "如何布局Anthropic股票 —— 无需直接参与IPO",
+    "阿莫代伊拒评黄仁勋是否应当重返英伟达担任首席执行官"
+   ]
+  },
+  {
+   "sector": "化工",
+   "score": 0.1,
+   "score100": 55,
+   "newsCount": 5,
    "bullish": 2,
    "bearish": 1,
-   "neutral": 0,
+   "neutral": 2,
    "headlines": [
-    "巴克莱公布欧洲医疗科技行业首选股，看好依视路陆逊梯卡、飞利浦及费森尤斯",
-    "判例中的黑产链：叫停16年，有害“减肥神药”仍在售",
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
+    "巴斯夫终止收购计划，赢创股价大幅下挫",
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "大手笔，紫金矿业年内再抛20亿~30亿元回购"
+   ]
+  },
+  {
+   "sector": "券商",
+   "score": 0.09,
+   "score100": 54,
+   "newsCount": 7,
+   "bullish": 3,
+   "bearish": 2,
+   "neutral": 2,
+   "headlines": [
+    "深夜，美股大变脸",
+    "最高30亿元！巨头601899宣布，再斥巨资回购",
+    "地天板、天地板、地天板! “章盟主”常用席位频现龙虎榜",
+    "Anthropic IPO：短线卖出新股的投资者或将面临券商处罚"
    ]
   },
   {
    "sector": "苹果产业链",
-   "score": 0.28,
-   "score100": 64,
-   "newsCount": 4,
+   "score": 0.06,
+   "score100": 53,
+   "newsCount": 9,
    "bullish": 2,
-   "bearish": 0,
-   "neutral": 2,
+   "bearish": 1,
+   "neutral": 6,
    "headlines": [
-    "影视飓风、Manus、影石、OPPO．．．．．．极客公园创新大会 2027 嘉宾阵容更新！",
-    "沃尔玛季度营收及每股收益双双超出市场预期",
-    "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
+    "摩根大通下调 Alphabet 债券评级",
+    "深夜，美股大变脸",
+    "如何布局Anthropic股票 —— 无需直接参与IPO",
+    "阿莫代伊拒评黄仁勋是否应当重返英伟达担任首席执行官"
    ]
   },
   {
-   "sector": "医药",
-   "score": 0.22,
-   "score100": 61,
-   "newsCount": 5,
-   "bullish": 3,
-   "bearish": 2,
-   "neutral": 0,
-   "headlines": [
-    "巴克莱公布欧洲医疗科技行业首选股，看好依视路陆逊梯卡、飞利浦及费森尤斯",
-    "判例中的黑产链：叫停16年，有害“减肥神药”仍在售",
-    "汇丰削巨子生物目标价26%至20.7港元 可复美双十一GMV仅增5%逊预期",
-    "大摩闭门会2027年展望：全球两大超级周期都离不开中国，看多黄金看空油价，超配生物医药"
-   ]
-  },
-  {
-   "sector": "创新药",
-   "score": 0.22,
-   "score100": 61,
-   "newsCount": 5,
-   "bullish": 3,
-   "bearish": 2,
-   "neutral": 0,
-   "headlines": [
-    "巴克莱公布欧洲医疗科技行业首选股，看好依视路陆逊梯卡、飞利浦及费森尤斯",
-    "判例中的黑产链：叫停16年，有害“减肥神药”仍在售",
-    "汇丰削巨子生物目标价26%至20.7港元 可复美双十一GMV仅增5%逊预期",
-    "大摩闭门会2027年展望：全球两大超级周期都离不开中国，看多黄金看空油价，超配生物医药"
-   ]
-  },
-  {
-   "sector": "地产",
-   "score": 0.2,
-   "score100": 60,
-   "newsCount": 6,
-   "bullish": 3,
+   "sector": "黄金",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 4,
+   "bullish": 1,
    "bearish": 1,
    "neutral": 2,
    "headlines": [
-    "商业银行20天推迟发债900亿，堪比过去20年总和",
-    "19家机构组建的黔东南农商银行获批开业",
-    "500位嘉宾聚雄安，三项重磅平台落地！财达证券联合主办2026投融资创新发展大会",
-    "投资者评估美国经济现状，美债收益率小幅走高"
+    "深夜，美股大变脸",
+    "阿里财报会释放对国产芯片信心",
+    "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图",
+    "黄金今年本就表现惨淡，行情进一步恶化：金价为何持续下跌"
    ]
   },
   {
-   "sector": "中药",
-   "score": 0.2,
-   "score100": 60,
+   "sector": "芯片",
+   "score": 0,
+   "score100": 50,
    "newsCount": 2,
    "bullish": 1,
    "bearish": 1,
    "neutral": 0,
    "headlines": [
-    "判例中的黑产链：叫停16年，有害“减肥神药”仍在售",
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
+    "阿里财报会释放对国产芯片信心",
+    "英伟达中国的 4000 多名员工，何去何从？"
    ]
   },
   {
-   "sector": "券商",
-   "score": 0.13,
-   "score100": 56,
-   "newsCount": 7,
-   "bullish": 3,
-   "bearish": 1,
-   "neutral": 3,
-   "headlines": [
-    "摩根大通：预计美联储将加息三次，分别在12月、1月和3月，使联邦基金利率达到4.5%-4.75%",
-    "19家机构组建的黔东南农商银行获批开业",
-    "个人养老金四周年，开户之后还有多少功课要做？",
-    "500位嘉宾聚雄安，三项重磅平台落地！财达证券联合主办2026投融资创新发展大会"
-   ]
-  },
-  {
-   "sector": "银行",
-   "score": 0.08,
-   "score100": 54,
-   "newsCount": 11,
-   "bullish": 4,
-   "bearish": 1,
-   "neutral": 6,
-   "headlines": [
-    "摩根大通：预计美联储将加息三次，分别在12月、1月和3月，使联邦基金利率达到4.5%-4.75%",
-    "A股最年轻行长首秀，常熟银行：明年负债端降本仍有空间",
-    "商业银行20天推迟发债900亿，堪比过去20年总和",
-    "苏州银行公布2026年半年度权益分派方案：每10股派2.30元（含税）"
-   ]
-  },
-  {
-   "sector": "保险",
+   "sector": "地产",
    "score": 0,
    "score100": 50,
-   "newsCount": 5,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 3,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
    "headlines": [
-    "摩根大通：预计美联储将加息三次，分别在12月、1月和3月，使联邦基金利率达到4.5%-4.75%",
-    "锦泰保险：调整董事会专门委员会成员",
-    "个人养老金四周年，开户之后还有多少功课要做？",
-    "投资者评估美国经济现状，美债收益率小幅走高"
+    "深夜，美股大变脸"
+   ]
+  },
+  {
+   "sector": "白酒",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "深夜，美股大变脸"
+   ]
+  },
+  {
+   "sector": "食品饮料",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "深夜，美股大变脸"
+   ]
+  },
+  {
+   "sector": "医药",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "深夜，美股大变脸"
    ]
   },
   {
    "sector": "CXO",
    "score": 0,
    "score100": 50,
-   "newsCount": 3,
-   "bullish": 1,
-   "bearish": 2,
-   "neutral": 0,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
    "headlines": [
-    "判例中的黑产链：叫停16年，有害“减肥神药”仍在售",
-    "汇丰削巨子生物目标价26%至20.7港元 可复美双十一GMV仅增5%逊预期",
-    "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！"
+    "深夜，美股大变脸"
+   ]
+  },
+  {
+   "sector": "创新药",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "深夜，美股大变脸"
+   ]
+  },
+  {
+   "sector": "中药",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "深夜，美股大变脸"
+   ]
+  },
+  {
+   "sector": "医疗器械",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "深夜，美股大变脸"
    ]
   }
  ],
  "events": [
   {
-   "headline": "资深首席财务官比尔・泽雷拉助力Stord加速扩张",
-   "date": "2026-11-19",
+   "headline": "巴斯夫终止收购计划，赢创股价大幅下挫",
+   "date": "2026-11-20",
    "sectors": [
-    "数据中心",
-    "服务器"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "新闻涉及国外公司扩张，对A股影响有限"
-  },
-  {
-   "headline": "欢聚三季度收入6.246亿美元 全年三方广告增速指引上调至近60%",
-   "date": "2026-11-19",
-   "sectors": [
-    "传媒",
-    "游戏"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "广告收入增长，利好相关板块"
-  },
-  {
-   "headline": "章建平，退出601208前10大股东",
-   "date": "2026-11-19",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "股东变动，对A股影响有限"
-  },
-  {
-   "headline": "影视飓风、Manus、影石、OPPO．．．．．．极客公园创新大会 2027 嘉宾阵容更新！",
-   "date": "2026-11-19",
-   "sectors": [
-    "消费电子",
-    "苹果产业链"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "创新大会，对A股影响有限"
-  },
-  {
-   "headline": "超过10万名英国散户投资者争相认购Anthropic IPO股票",
-   "date": "2026-11-19",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "国外投资者行为，对A股影响有限"
-  },
-  {
-   "headline": "摩根大通：预计美联储将加息三次，分别在12月、1月和3月，使联邦基金利率达到4.5%-4.75%",
-   "date": "2026-11-19",
-   "sectors": [
-    "券商",
-    "保险",
-    "银行"
+    "化工"
    ],
    "direction": "negative",
-   "intensity": 0.7,
-   "reason": "加息预期，对金融板块利空"
-  },
-  {
-   "headline": "Anthropic创全球最大IPO纪录，全球半导体股集体上涨",
-   "date": "2026-11-19",
-   "sectors": [
-    "半导体",
-    "芯片",
-    "消费电子"
-   ],
-   "direction": "positive",
    "intensity": 0.5,
-   "reason": "全球半导体股上涨，利好A股相关板块"
+   "reason": "收购终止影响化工行业投资预期"
   },
   {
-   "headline": "章建平，减持601208！退出前十大股东行列",
-   "date": "2026-11-19",
+   "headline": "数千名Anthropic员工与投资者即将收获巨额财富",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "AI领域投资前景看好"
+  },
+  {
+   "headline": "Anthropic与特朗普政府关系紧张",
+   "date": "2026-11-20",
    "sectors": [],
    "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "股东减持，对A股影响有限"
+   "intensity": 0.3,
+   "reason": "政治关系影响尚不确定"
   },
   {
-   "headline": "胡塞武装袭击利雅得，沙特主权财富基金总部大楼受损",
-   "date": "2026-11-19",
-   "sectors": [
-    "军工",
-    "航运"
-   ],
+   "headline": "AMD股价一度大跌11% Hunterbrook做空该公司股票",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "negative",
+   "intensity": 0.6,
+   "reason": "AMD股价下跌影响相关产业链"
+  },
+  {
+   "headline": "新市场交易者押注Anthropic IPO将大幅高开",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "AI领域投资前景看好"
+  },
+  {
+   "headline": "Plancorp的考克斯：Anthropic IPO将成为衡量投资者AI投资意愿的重要风向标",
+   "date": "2026-11-20",
+   "sectors": [],
    "direction": "positive",
    "intensity": 0.5,
-   "reason": "地缘政治紧张，利好军工和石油板块"
+   "reason": "AI领域投资前景看好"
   },
   {
-   "headline": "巴克莱公布欧洲医疗科技行业首选股，看好依视路陆逊梯卡、飞利浦及费森尤斯",
-   "date": "2026-11-19",
-   "sectors": [
-    "医药",
-    "医疗器械",
-    "创新药"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "看好医疗科技行业，利好A股相关板块"
-  },
-  {
-   "headline": "Anthropic预计将于北京时间今晚23:00开始交易",
-   "date": "2026-11-19",
-   "sectors": [
-    "AI",
-    "算力",
-    "半导体",
-    "消费电子"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "Anthropic上市有望重振AI投资热情"
-  },
-  {
-   "headline": "锦泰保险：调整董事会专门委员会成员",
-   "date": "2026-11-19",
-   "sectors": [
-    "保险"
-   ],
+   "headline": "特朗普多次邀约出席G20峰会 普京称“会考虑一下”",
+   "date": "2026-11-20",
+   "sectors": [],
    "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "董事会调整对保险板块影响有限"
+   "intensity": 0.3,
+   "reason": "地缘政治影响尚不确定"
   },
   {
-   "headline": "媒体：不少投资者将Anthropic看作“必须配置”的标的",
+   "headline": "沙通社：胡塞武装袭击导致利雅得金融区建筑物受损",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "地缘紧张提升军工需求"
+  },
+  {
+   "headline": "报道：伊朗称霍尔木兹海峡问题解决前不谈核问题",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "地缘紧张提升军工需求"
+  },
+  {
+   "headline": "SpaceX计划周四进行至少320亿美元AI芯片相关债务融资",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "AI芯片投资增加"
+  },
+  {
+   "headline": "摩根大通下调 Alphabet 债券评级",
    "date": "2026-11-19",
    "sectors": [
+    "苹果产业链",
     "AI",
     "算力",
     "半导体",
     "消费电子"
    ],
-   "direction": "positive",
+   "direction": "negative",
    "intensity": 0.5,
-   "reason": "投资者看好Anthropic，提振AI板块"
+   "reason": "Alphabet 债券评级下调，影响相关科技板块"
   },
   {
-   "headline": "沃尔玛季度营收及每股收益双双超出市场预期",
+   "headline": "深夜，美股大变脸",
    "date": "2026-11-19",
    "sectors": [
+    "AI",
+    "算力",
+    "半导体",
     "消费电子",
     "苹果产业链",
-    "零售"
-   ],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "沃尔玛业绩超预期，利好相关消费电子和零售板块"
-  },
-  {
-   "headline": "Anthropic纳斯达克上市前，比特币ETF资金流出显示加密货币市场热情减退",
-   "date": "2026-11-19",
-   "sectors": [],
-   "direction": "negative",
-   "intensity": 0.3,
-   "reason": "加密货币市场降温，对相关板块不利"
-  },
-  {
-   "headline": "A股最年轻行长首秀，常熟银行：明年负债端降本仍有空间",
-   "date": "2026-11-19",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "positive",
-   "intensity": 0.3,
-   "reason": "常熟银行负债端降本，利好银行板块"
-  },
-  {
-   "headline": "分析师：美光估值已低至“令人难以置信”的水平，Anthropic上市有望重振AI投资热情",
-   "date": "2026-11-19",
-   "sectors": [
-    "AI",
-    "算力",
-    "半导体",
-    "消费电子"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "分析师看好美光和Anthropic，提振AI板块"
-  },
-  {
-   "headline": "商业银行20天推迟发债900亿，堪比过去20年总和",
-   "date": "2026-11-19",
-   "sectors": [
-    "银行",
-    "地产",
-    "基建"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "商业银行推迟发债，对相关板块影响有限"
-  },
-  {
-   "headline": "地天板、天地板轮番上演，九阳股份暴涨逾2倍后多空极致拉锯",
-   "date": "2026-11-19",
-   "sectors": [
-    "家电"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "九阳股份股价波动，对家电板块影响有限"
-  },
-  {
-   "headline": "苏州银行公布2026年半年度权益分派方案：每10股派2.30元（含税）",
-   "date": "2026-11-19",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "positive",
-   "intensity": 0.3,
-   "reason": "苏州银行分红方案，利好银行板块"
-  },
-  {
-   "headline": "长鑫科技回购上限拟提至50亿元，最高40亿元股份注销减少注册资本",
-   "date": "2026-11-19",
-   "sectors": [
-    "半导体",
-    "芯片"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "回购和注销股份可能提升公司股价，利好半导体行业"
-  },
-  {
-   "headline": "RWS集团首席执行官本杰明·法斯参加APEC会议，介绍在华发展核心引擎TrainAI业务",
-   "date": "2026-11-19",
-   "sectors": [
-    "AI",
-    "算力",
-    "光模块",
-    "PCB"
-   ],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "AI业务发展可能带动相关产业链增长"
-  },
-  {
-   "headline": "8地入选6G创新发展试点，主攻哪些赛道",
-   "date": "2026-11-19",
-   "sectors": [
-    "6G",
-    "通信",
-    "运营商",
-    "光模块",
-    "PCB"
-   ],
-   "direction": "positive",
-   "intensity": 0.7,
-   "reason": "6G试点可能推动相关技术及产业链发展"
-  },
-  {
-   "headline": "洛杉矶与长滩港口罢工风险加剧",
-   "date": "2026-11-19",
-   "sectors": [
-    "航运",
-    "物流",
-    "快递",
-    "港口"
-   ],
-   "direction": "negative",
-   "intensity": 0.6,
-   "reason": "港口罢工可能影响航运和物流行业"
-  },
-  {
-   "headline": "影石创新20亿科创债获批，与大疆10起专利官司交锋正酣",
-   "date": "2026-11-19",
-   "sectors": [
-    "消费电子",
-    "苹果产业链",
-    "机器人",
-    "工业母机",
-    "低空经济",
-    "商业航天",
-    "卫星互联网",
-    "固态电池",
-    "锂电",
-    "储能",
-    "光伏",
-    "风电",
-    "氢能源",
-    "新能源汽车",
-    "汽车",
-    "智能驾驶",
-    "军工",
-    "航发",
-    "船舶",
-    "化工",
-    "化肥",
-    "农药",
-    "钢铁",
-    "煤炭",
-    "有色",
-    "铜",
-    "铝",
-    "黄金",
-    "稀土",
-    "石油",
-    "石化",
-    "燃气",
-    "电力",
-    "火电",
-    "水电",
-    "核电",
-    "绿电",
-    "基建",
-    "建材",
-    "水泥",
-    "工程机械",
-    "家电",
-    "纺织服装",
-    "农业",
-    "种业",
-    "猪周期",
-    "传媒",
-    "游戏",
-    "出版",
-    "教育",
-    "计算机",
-    "软件",
-    "信创",
-    "网络安全",
-    "物流",
-    "快递",
-    "港口",
-    "航空",
-    "航运",
-    "旅游",
-    "免税",
-    "零售",
-    "美容护理"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "新闻涉及多个领域，影响尚不确定"
-  },
-  {
-   "headline": "燧原科技，紧急澄清",
-   "date": "2026-11-19",
-   "sectors": [
-    "AI",
-    "算力",
-    "光模块",
-    "PCB"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "紧急澄清可能涉及公司业绩或业务，影响尚不确定"
-  },
-  {
-   "headline": "判例中的黑产链：叫停16年，有害“减肥神药”仍在售",
-   "date": "2026-11-19",
-   "sectors": [
-    "医药",
-    "CXO",
-    "创新药",
-    "中药",
-    "医疗器械"
-   ],
-   "direction": "negative",
-   "intensity": 0.3,
-   "reason": "有害药品问题可能影响医药行业形象"
-  },
-  {
-   "headline": "沃尔玛销售额上涨，电商业务功不可没",
-   "date": "2026-11-19",
-   "sectors": [
-    "零售",
-    "物流",
-    "快递",
-    "港口",
-    "航空",
-    "航运",
-    "旅游",
-    "免税",
-    "传媒",
-    "游戏",
-    "出版",
-    "教育",
-    "计算机",
-    "软件",
-    "信创",
-    "网络安全",
-    "通信",
-    "运营商",
-    "6G",
-    "物流",
-    "快递",
-    "港口",
-    "航空",
-    "航运",
-    "旅游",
-    "免税",
-    "零售",
-    "美容护理"
-   ],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "沃尔玛销售额上涨可能带动零售和电商行业"
-  },
-  {
-   "headline": "东方日升杨伯川：能效标准重塑光伏格局，异质结长期价值不变",
-   "date": "2026-11-19",
-   "sectors": [
-    "光伏",
-    "风电",
-    "氢能源",
-    "新能源汽车",
-    "汽车",
-    "智能驾驶",
-    "军工",
-    "航发",
-    "船舶",
-    "化工",
-    "化肥",
-    "农药",
-    "钢铁",
-    "煤炭",
-    "有色",
-    "铜",
-    "铝",
-    "黄金",
-    "稀土",
-    "石油",
-    "石化",
-    "燃气",
-    "电力",
-    "火电",
-    "水电",
-    "核电",
-    "绿电",
-    "基建",
-    "建材",
-    "水泥",
-    "工程机械",
-    "家电",
-    "纺织服装",
-    "农业",
-    "种业",
-    "猪周期",
-    "传媒",
-    "游戏",
-    "出版",
-    "教育",
-    "计算机",
-    "软件",
-    "信创",
-    "网络安全",
-    "物流",
-    "快递",
-    "港口",
-    "航空",
-    "航运",
-    "旅游",
-    "免税",
-    "零售",
-    "美容护理"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "光伏行业长期价值看好"
-  },
-  {
-   "headline": "AI服务器储备订单达5300亿元，联想第一大业务要换了？",
-   "date": "2026-11-19",
-   "sectors": [
-    "AI",
-    "算力",
-    "服务器",
-    "数据中心"
-   ],
-   "direction": "positive",
-   "intensity": 0.7,
-   "reason": "AI服务器订单增加可能推动相关产业链增长"
-  },
-  {
-   "headline": "拼多多发布Q3财报：营收1083亿元，净利润295亿元",
-   "date": "2026-11-19",
-   "sectors": [
-    "零售"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "拼多多业绩增长，电商行业整体受益"
-  },
-  {
-   "headline": "撤销其他风险警示！ST汇洲，停牌一天！",
-   "date": "2026-11-19",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "ST公司停牌，对市场影响有限"
-  },
-  {
-   "headline": "终止赴港上市！百亿A股公司公告",
-   "date": "2026-11-19",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "公司上市计划变动，对市场影响有限"
-  },
-  {
-   "headline": "Anthropic七位联合创始人掌握多数投票权",
-   "date": "2026-11-19",
-   "sectors": [
-    "AI",
-    "算力",
-    "半导体"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "公司内部治理变动，对市场影响有限"
-  },
-  {
-   "headline": "Anthropic营收爆发式增长",
-   "date": "2026-11-19",
-   "sectors": [
-    "AI",
-    "算力",
-    "半导体"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "公司业绩增长，AI行业受益"
-  },
-  {
-   "headline": "女儿进董事会、老婆上原告席！高澜股份创始人有点烦",
-   "date": "2026-11-19",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "公司内部事件，对市场影响有限"
-  },
-  {
-   "headline": "朗特智能掏6.63亿“追光”，老板套现4亿",
-   "date": "2026-11-19",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "公司内部交易，对市场影响有限"
-  },
-  {
-   "headline": "19家机构组建的黔东南农商银行获批开业",
-   "date": "2026-11-19",
-   "sectors": [
-    "银行",
-    "券商",
-    "地产"
-   ],
-   "direction": "positive",
-   "intensity": 0.3,
-   "reason": "银行行业扩张，相关板块受益"
-  },
-  {
-   "headline": "上市前夕，学术界与行业专家发布《反 Anthropic 公开声明》",
-   "date": "2026-11-19",
-   "sectors": [
-    "AI",
-    "算力",
-    "半导体"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "行业争议，对市场影响有限"
-  },
-  {
-   "headline": "数月外交紧张过后，丹麦批准特朗普的格陵兰安全协议",
-   "date": "2026-11-19",
-   "sectors": [
-    "军工",
-    "航运"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "地缘政治缓和，军工和能源板块受益"
-  },
-  {
-   "headline": "个人养老金四周年，开户之后还有多少功课要做？",
-   "date": "2026-11-19",
-   "sectors": [
-    "券商",
-    "保险",
-    "银行"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "养老金政策变动对金融板块影响有限"
-  },
-  {
-   "headline": "习近平主持中俄美元首会晤",
-   "date": "2026-11-19",
-   "sectors": [
-    "军工"
-   ],
-   "direction": "positive",
-   "intensity": 0.7,
-   "reason": "地缘政治关系改善，利好相关板块"
-  },
-  {
-   "headline": "国际能源署：到2030年数据中心用电量或将翻倍",
-   "date": "2026-11-19",
-   "sectors": [
-    "数据中心",
-    "服务器",
-    "光模块",
-    "PCB"
-   ],
-   "direction": "positive",
-   "intensity": 0.8,
-   "reason": "数据中心用电量增长，利好相关设备制造"
-  },
-  {
-   "headline": "500位嘉宾聚雄安，三项重磅平台落地！财达证券联合主办2026投融资创新发展大会",
-   "date": "2026-11-19",
-   "sectors": [
-    "券商",
-    "地产",
-    "基建"
-   ],
-   "direction": "positive",
-   "intensity": 0.6,
-   "reason": "投融资创新发展大会，利好相关行业"
-  },
-  {
-   "headline": "深市公司声音在APEC：低碳等领域加速发展",
-   "date": "2026-11-19",
-   "sectors": [],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "低碳领域加速发展，利好相关行业"
-  },
-  {
-   "headline": "华夏银行：选举张守文、李晓慧、郭田勇、张跃文为第九届董事会独立董事",
-   "date": "2026-11-19",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "银行内部人事变动，影响有限"
-  },
-  {
-   "headline": "华夏银行：选举俞华军、张巍为第九届董事会非执行董事",
-   "date": "2026-11-19",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "银行内部人事变动，影响有限"
-  },
-  {
-   "headline": "投资者评估美国经济现状，美债收益率小幅走高",
-   "date": "2026-11-19",
-   "sectors": [
-    "券商",
-    "保险",
-    "银行",
-    "地产",
-    "基建"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "美债收益率变动对金融板块影响有限"
-  },
-  {
-   "headline": "法特迪IPO：申报前一年20名新股东接盘，老股东密集套现，净现比跌至三成，应收占营收八成",
-   "date": "2026-11-19",
-   "sectors": [
-    "券商"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "IPO消息对券商板块影响有限"
-  },
-  {
-   "headline": "金价失守3700美元！黄金避险神话破灭？",
-   "date": "2026-11-19",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "金价下跌对黄金板块利空"
-  },
-  {
-   "headline": "汇丰削巨子生物目标价26%至20.7港元 可复美双十一GMV仅增5%逊预期",
-   "date": "2026-11-19",
-   "sectors": [
-    "医药",
-    "创新药",
-    "CXO"
-   ],
-   "direction": "negative",
-   "intensity": 0.4,
-   "reason": "医药行业业绩不及预期，对相关板块利空"
-  },
-  {
-   "headline": "大摩闭门会2027年展望：全球两大超级周期都离不开中国，看多黄金看空油价，超配生物医药",
-   "date": "2026-11-19",
-   "sectors": [
-    "黄金",
-    "医药",
-    "创新药"
-   ],
-   "direction": "positive",
-   "intensity": 0.6,
-   "reason": "大摩看好黄金和生物医药，对相关板块利好"
-  },
-  {
-   "headline": "花旗削新世界发展(17.HK)目标价逾七成 降评级至“沽售”",
-   "date": "2026-11-19",
-   "sectors": [
-    "地产"
-   ],
-   "direction": "negative",
-   "intensity": 0.4,
-   "reason": "花旗看空新世界发展，对地产板块利空"
-  },
-  {
-   "headline": "阿里财报：全球电商AI工作台Accio付费企业数达到10万",
-   "date": "2026-11-19",
-   "sectors": [
-    "消费电子",
-    "AI",
-    "算力",
-    "CPO",
-    "光模块",
-    "PCB",
-    "数据中心",
-    "服务器",
-    "机器人",
-    "工业母机",
-    "低空经济",
-    "商业航天",
-    "卫星互联网",
-    "固态电池",
-    "锂电",
-    "储能",
-    "光伏",
-    "风电",
-    "氢能源",
-    "新能源汽车",
-    "汽车",
-    "智能驾驶",
-    "军工",
-    "航发",
-    "船舶",
-    "化工",
-    "化肥",
-    "农药",
-    "钢铁",
-    "煤炭",
-    "有色",
-    "铜",
-    "铝",
-    "黄金",
-    "稀土",
-    "石油",
-    "石化",
-    "燃气",
-    "电力",
-    "火电",
-    "水电",
-    "核电",
-    "绿电",
-    "基建",
-    "建材",
-    "水泥",
-    "工程机械",
-    "家电",
-    "纺织服装",
-    "农业",
-    "种业",
-    "猪周期",
-    "传媒",
-    "游戏",
-    "出版",
-    "教育",
-    "计算机",
-    "软件",
-    "信创",
-    "网络安全",
-    "通信",
-    "运营商",
-    "6G",
-    "物流",
-    "快递",
-    "港口",
-    "航空",
-    "航运",
-    "旅游",
-    "免税",
-    "零售",
-    "美容护理"
-   ],
-   "direction": "positive",
-   "intensity": 0.8,
-   "reason": "阿里财报利好，对多个板块利好"
-  },
-  {
-   "headline": "最多注销40亿元股份！长鑫科技，调整回购方案！",
-   "date": "2026-11-19",
-   "sectors": [
-    "半导体",
-    "芯片"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "长鑫科技回购方案调整，对板块影响有限"
-  },
-  {
-   "headline": "安谋科技解析Arm Cortex-M42处理器，发布“星辰100e”AIoT原型平台",
-   "date": "2026-11-19",
-   "sectors": [
-    "AI",
-    "算力",
-    "CPO",
-    "光模块",
-    "PCB",
-    "数据中心",
-    "服务器",
-    "机器人",
-    "工业母机",
-    "低空经济",
-    "商业航天",
-    "卫星互联网",
-    "固态电池",
-    "锂电",
-    "储能",
-    "光伏",
-    "风电",
-    "氢能源",
-    "新能源汽车",
-    "汽车",
-    "智能驾驶",
-    "军工",
-    "航发",
-    "船舶",
-    "化工",
-    "化肥",
-    "农药",
-    "钢铁",
-    "煤炭",
-    "有色",
-    "铜",
-    "铝",
-    "黄金",
-    "稀土",
-    "石油",
-    "石化",
-    "燃气",
-    "电力",
-    "火电",
-    "水电",
-    "核电",
-    "绿电",
-    "基建",
-    "建材",
-    "水泥",
-    "工程机械",
-    "家电",
-    "纺织服装",
-    "农业",
-    "种业",
-    "猪周期",
-    "传媒",
-    "游戏",
-    "出版",
-    "教育",
-    "计算机",
-    "软件",
-    "信创",
-    "网络安全",
-    "通信",
-    "运营商",
-    "6G",
-    "物流",
-    "快递",
-    "港口",
-    "航空",
-    "航运",
-    "旅游",
-    "免税",
-    "零售",
-    "美容护理"
-   ],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "安谋科技发布新品，对相关板块利好"
-  },
-  {
-   "headline": "乌鲁木齐银行副行长陈艳任职资格获核准",
-   "date": "2026-11-19",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "银行高管变动，对板块影响有限"
-  },
-  {
-   "headline": "为何越跌越买？超2000亿资金抢筹硬科技宽基！双创50ETF华宝（588330）逆市收红，持续受资金关注！",
-   "date": "2026-11-19",
-   "sectors": [
     "券商",
     "保险",
     "银行",
@@ -2212,17 +1332,163 @@
     "创新药",
     "中药",
     "医疗器械",
+    "机器人",
+    "工业母机",
+    "低空经济",
+    "商业航天",
+    "卫星互联网",
+    "固态电池",
+    "锂电",
+    "储能",
+    "光伏",
+    "风电",
+    "氢能源",
+    "新能源汽车",
+    "汽车",
+    "智能驾驶",
+    "军工",
+    "航发",
+    "船舶",
+    "化工",
+    "化肥",
+    "农药",
+    "钢铁",
+    "煤炭",
+    "有色",
+    "铜",
+    "铝",
+    "黄金",
+    "稀土",
+    "石油",
+    "石化",
+    "燃气",
+    "电力",
+    "火电",
+    "水电",
+    "核电",
+    "绿电",
+    "基建",
+    "建材",
+    "水泥",
+    "工程机械",
+    "家电",
+    "纺织服装",
+    "农业",
+    "种业",
+    "猪周期",
+    "传媒",
+    "游戏",
+    "出版",
+    "教育",
+    "计算机",
+    "软件",
+    "信创",
+    "网络安全",
+    "通信",
+    "运营商",
+    "6G",
+    "物流",
+    "快递",
+    "港口",
+    "航空",
+    "航运",
+    "旅游",
+    "免税",
+    "零售",
+    "美容护理"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "美股整体波动，对A股影响尚不确定"
+  },
+  {
+   "headline": "如何布局Anthropic股票 —— 无需直接参与IPO",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
     "半导体",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "布局Anthropic股票，对A股相关板块影响有限"
+  },
+  {
+   "headline": "阿莫代伊拒评黄仁勋是否应当重返英伟达担任首席执行官",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "英伟达管理层变动，对A股相关板块影响有限"
+  },
+  {
+   "headline": "阿莫代伊：希望Anthropic未来能获得投资级信用评级",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "Anthropic信用评级，对A股相关板块影响有限"
+  },
+  {
+   "headline": "阿莫代伊称，9000 亿美元的投入承诺 “看起来并没有那么庞大”",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "投入承诺规模，对A股相关板块影响有限"
+  },
+  {
+   "headline": "华尔街也难撼动的“防篡改”设计：拆解Anthropic上市后的非常规治理结构",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "Anthropic治理结构，对A股相关板块影响有限"
+  },
+  {
+   "headline": "除了12315，正规的投诉途径还有哪些？六种渠道按场景对号入座",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.1,
+   "reason": "投诉途径，对A股无明确影响"
+  },
+  {
+   "headline": "阿里财报会释放对国产芯片信心",
+   "date": "2026-11-19",
+   "sectors": [
     "芯片",
+    "半导体",
     "消费电子",
     "苹果产业链",
     "AI",
     "算力",
-    "CPO",
-    "光模块",
-    "PCB",
-    "数据中心",
-    "服务器",
     "机器人",
     "工业母机",
     "低空经济",
@@ -2289,13 +1555,493 @@
     "美容护理"
    ],
    "direction": "positive",
+   "intensity": 0.5,
+   "reason": "阿里财报释放对国产芯片信心，利好相关板块"
+  },
+  {
+   "headline": "超半数机构投资者据悉在Anthropic IPO中未获配股份",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "未获配股份对市场整体影响有限"
+  },
+  {
+   "headline": "Anthropic股票预示首日开盘价将较IPO价格高出20%",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "高开盘价可能带动相关科技股情绪"
+  },
+  {
+   "headline": "最高30亿元！巨头601899宣布，再斥巨资回购",
+   "date": "2026-11-19",
+   "sectors": [
+    "券商",
+    "银行",
+    "保险"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "回购行为可能提升投资者信心"
+  },
+  {
+   "headline": "中国资产深夜大涨，拼多多狂飙近13%，阿里巴巴涨超4%，美股芯片、光通信爆发，Coherent涨11%",
+   "date": "2026-11-19",
+   "sectors": [
+    "消费电子",
+    "半导体"
+   ],
+   "direction": "positive",
    "intensity": 0.7,
-   "reason": "资金流入硬科技板块，对多个板块利好"
+   "reason": "相关板块受益于市场情绪提升"
+  },
+  {
+   "headline": "华商基金张永志管理4只“固收+”近1、3、5年业绩均同类前5%",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "基金业绩表现对市场影响有限"
+  },
+  {
+   "headline": "美联储副主席杰斐逊：人工智能加剧短期通胀",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体"
+   ],
+   "direction": "negative",
+   "intensity": 0.6,
+   "reason": "通胀担忧可能抑制相关板块投资"
+  },
+  {
+   "headline": "因暗示推荐个股等问题 广东博众智能科技被暂停新增客户3个月",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "事件影响有限，对市场整体影响不大"
+  },
+  {
+   "headline": "地天板、天地板、地天板! “章盟主”常用席位频现龙虎榜",
+   "date": "2026-11-19",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "市场情绪波动对市场影响有限"
+  },
+  {
+   "headline": "布拉德・格斯特纳：Anthropic并非“暴富捷径”",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "言论对市场影响有限"
+  },
+  {
+   "headline": "“宁王”再出手！近2亿元回购，拟全部注销！",
+   "date": "2026-11-19",
+   "sectors": [
+    "消费电子",
+    "半导体"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "回购行为可能提升投资者信心"
+  },
+  {
+   "headline": "Anthropic有望迎来指数基金被动买入",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "AI领域投资增加，相关产业链受益"
+  },
+  {
+   "headline": "Anthropic首席执行官：AI是人类历史上具有里程碑意义的时刻",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "AI发展被高度评价，相关产业链受益"
+  },
+  {
+   "headline": "Anthropic IPO：AI造富催生精简新式家族办公室",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "AI公司IPO，相关产业链受益"
+  },
+  {
+   "headline": "Anthropic登陆纳斯达克！纽约纳斯达克举行IPO敲钟仪式，现场出现抗议者",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "AI公司上市，市场反应尚不确定"
+  },
+  {
+   "headline": "大手笔，紫金矿业年内再抛20亿~30亿元回购",
+   "date": "2026-11-19",
+   "sectors": [
+    "化工",
+    "化肥",
+    "农药"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "公司回购股票，提升市场信心"
+  },
+  {
+   "headline": "Anthropic首席执行官达里奥・阿莫代伊：AI或将把百年科学与医学进展压缩至十年",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "AI发展前景被看好，相关产业链受益"
+  },
+  {
+   "headline": "梵高人生最后岁月的一幅画作，拍卖出逾1.9亿美元天价",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.1,
+   "reason": "艺术品拍卖，对A股市场影响有限"
+  },
+  {
+   "headline": "最高能省800元！快来领“养老服务消费补贴电子券”",
+   "date": "2026-11-19",
+   "sectors": [
+    "家电",
+    "纺织服装",
+    "农业",
+    "种业",
+    "猪周期",
+    "传媒",
+    "游戏",
+    "出版",
+    "教育",
+    "计算机",
+    "软件",
+    "信创",
+    "网络安全",
+    "通信",
+    "运营商",
+    "6G",
+    "物流",
+    "快递",
+    "港口",
+    "航空",
+    "航运",
+    "旅游",
+    "免税",
+    "零售",
+    "美容护理"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "养老服务补贴，对相关行业有一定影响"
+  },
+  {
+   "headline": "马斯克最新访谈：从星舰、Grok、Optimus到Starmind，面向星际文明的技术蓝图",
+   "date": "2026-11-19",
+   "sectors": [
+    "卫星互联网",
+    "固态电池",
+    "锂电",
+    "储能",
+    "光伏",
+    "风电",
+    "氢能源",
+    "新能源汽车",
+    "汽车",
+    "智能驾驶",
+    "军工",
+    "航发",
+    "船舶",
+    "化工",
+    "化肥",
+    "农药",
+    "钢铁",
+    "煤炭",
+    "有色",
+    "铜",
+    "铝",
+    "黄金",
+    "稀土",
+    "石油",
+    "石化",
+    "燃气",
+    "电力",
+    "火电",
+    "水电",
+    "核电",
+    "绿电",
+    "基建",
+    "建材",
+    "水泥",
+    "工程机械",
+    "家电",
+    "纺织服装",
+    "农业",
+    "种业",
+    "猪周期",
+    "传媒",
+    "游戏",
+    "出版",
+    "教育",
+    "计算机",
+    "软件",
+    "信创",
+    "网络安全",
+    "通信",
+    "运营商",
+    "6G",
+    "物流",
+    "快递",
+    "港口",
+    "航空",
+    "航运",
+    "旅游",
+    "免税",
+    "零售",
+    "美容护理"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "技术蓝图发布，对相关行业有一定影响"
+  },
+  {
+   "headline": "Anthropic联合创始人美股开盘前于华尔街表态：这项技术需要你",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "AI领域技术发展预期提升"
+  },
+  {
+   "headline": "开盘：三大股指齐涨 Anthropic上市首日预计大幅冲高",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "市场对AI领域信心增强"
+  },
+  {
+   "headline": "Anthropic IPO：短线卖出新股的投资者或将面临券商处罚",
+   "date": "2026-11-19",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "短线交易处罚可能影响券商业务"
+  },
+  {
+   "headline": "国元证券业绩显著跑输华安证券背后：IPO保荐失败率高企 去年唯一上市项目当年“业绩大变脸”",
+   "date": "2026-11-19",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "IPO保荐失败影响券商业绩"
+  },
+  {
+   "headline": "房屋墙面惊现“骨灰房”字样，父母未落葬的骨灰盒被摆上桌，家具被砸稀烂，竟是哥哥报复妹妹：不满父亲23年前将房子过户给妹妹",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.1,
+   "reason": "社会新闻，对股市无直接影响"
+  },
+  {
+   "headline": "比亚迪发布折叠方向盘",
+   "date": "2026-11-19",
+   "sectors": [
+    "汽车",
+    "智能驾驶"
+   ],
+   "direction": "positive",
+   "intensity": 0.3,
+   "reason": "技术创新提升汽车行业预期"
+  },
+  {
+   "headline": "中信证券、中金公司、国元证券、财通证券、东方证券、浙商证券、申万宏源、华福证券、中信建投，参投DeepSeek",
+   "date": "2026-11-19",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "券商投资行为可能带来业绩增长"
+  },
+  {
+   "headline": "黄金今年本就表现惨淡，行情进一步恶化：金价为何持续下跌",
+   "date": "2026-11-19",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "金价下跌影响黄金板块"
+  },
+  {
+   "headline": "两大科技龙头，回购大消息",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "科技巨头回购行为提振市场信心"
+  },
+  {
+   "headline": "民生加银，亲生无疑了",
+   "date": "2026-11-19",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "新闻涉及银行，但具体影响不明"
+  },
+  {
+   "headline": "深市再掀一波密集回购增持 宁德时代回购近两亿",
+   "date": "2026-11-19",
+   "sectors": [
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "宁德时代回购增持，利好相关产业链"
+  },
+  {
+   "headline": "数据中心何以成为美国电网的增长引擎",
+   "date": "2026-11-19",
+   "sectors": [
+    "数据中心",
+    "服务器",
+    "光模块",
+    "PCB"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "数据中心发展，利好相关设备"
+  },
+  {
+   "headline": "中信证券、中金公司、国元证券、财通证券、东方证券、浙商证券、申万宏源、中信建投，参投DeepSeek",
+   "date": "2026-11-19",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "券商参投，利好券商板块"
+  },
+  {
+   "headline": "王毅送别美俄元首后举行记者会",
+   "date": "2026-11-19",
+   "sectors": [
+    "军工",
+    "石油"
+   ],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "地缘政治紧张，利好军工和石油"
+  },
+  {
+   "headline": "英伟达中国的 4000 多名员工，何去何从？",
+   "date": "2026-11-19",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "芯片",
+    "消费电子"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "英伟达员工变动，利空相关产业链"
+  },
+  {
+   "headline": "王菲、窦靖童、李嫣，母女三人合唱歌曲即将发布！由王菲填词，是嫣然天使基金主题曲",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "娱乐新闻，对A股无直接影响"
+  },
+  {
+   "headline": "张彤当选广安市委书记，曾任邛崃市市长、乐山市市长",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "政治新闻，对A股无直接影响"
+  },
+  {
+   "headline": "首批主动ETF偏爱银行股，六大行等18只个股被重仓",
+   "date": "2026-11-19",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "ETF重仓银行股，利好银行板块"
+  },
+  {
+   "headline": "章建平，减持601208超七成",
+   "date": "2026-11-19",
+   "sectors": [],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "减持行为，利空相关个股或板块"
   }
  ],
  "scanned": 60,
  "source": "sina-roll",
  "degraded": false,
- "blackTalk": "多头主线热闹非凡，别上头，控制仓位，高潮次日小心分歧哦！🤔️",
+ "blackTalk": "今儿多头热闹，数据中心、服务器这些龙头都嗨了，别追高，小心次日分歧，稳住别上头，仓位要控制好。😎",
  "note": "板块情绪因子：新闻→GLM 映射板块/方向/强度→聚合。消费端按 signals.sectorSentiment 注入；score∈[-1,1]，score100∈[0,100]，仅作参考，不独立生成买卖信号。"
 }

@@ -223,7 +223,7 @@ export function writeShards(archive, dir = DATA_DIR) {
         const raw = JSON.parse(readFileSync(p, 'utf8'));
         const all = archive.all_days || [];
         const last = all[all.length - 1] || null;
-        return macroSectorSentimentBlock(raw, { tradeDate: last?.trade_date ?? null });
+        return macroSectorSentimentBlock(raw, { tradeDate: last?.trade_date ?? null, industryRows: last?.industry ?? null });
       } catch { return null; }
     },
     // 妖股逻辑推演（方向 C）：只读已落盘的 llm-dragon-logic-latest.json

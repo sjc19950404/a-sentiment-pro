@@ -2,10 +2,10 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-19",
- "generatedAt": "2026-11-19T21:03:22.749+08:00",
+ "generatedAt": "2026-11-20T00:45:39.607+08:00",
  "model": "glm-4-flash",
  "sentiment": -0.5,
- "confidence": 0.7,
+ "confidence": 0.8,
  "reason": "市场涨停家数远少于跌停家数，炸板率较高，亏钱效应明显，市场情绪偏负面。",
  "events": [
   {
@@ -15,53 +15,53 @@
    "note": "三季报增长带动股价上涨"
   },
   {
-   "type": "资产出售",
+   "type": "高管变动",
    "target": "京蓝科技",
    "tone": "positive",
    "note": "资产出售可能带来业绩提升"
   },
   {
-   "type": "预重整",
-   "target": "*ST西旅",
+   "type": "政策",
+   "target": "预重整",
    "tone": "positive",
-   "note": "预重整可能改善公司财务状况"
+   "note": "预重整概念股表现活跃"
   },
   {
-   "type": "股份回购",
-   "target": "兴欣新材",
+   "type": "行业催化",
+   "target": "AI短剧",
    "tone": "positive",
-   "note": "股份回购可能提升股东价值"
+   "note": "AI短剧题材受到市场关注"
   },
   {
-   "type": "国资改革",
-   "target": "襄阳轴承",
+   "type": "行业催化",
+   "target": "机器人",
    "tone": "positive",
-   "note": "湖北国资改革可能带来公司业绩提升"
+   "note": "机器人概念股持续活跃"
   },
   {
-   "type": "机器人投资",
-   "target": "九阳股份",
+   "type": "行业催化",
+   "target": "AI算力",
    "tone": "positive",
-   "note": "机器人投资可能推动公司业务增长"
+   "note": "AI算力概念股受到市场追捧"
   },
   {
-   "type": "股份回购",
-   "target": "金科股份",
-   "tone": "positive",
-   "note": "股份回购可能提升股东价值"
+   "type": "退潮",
+   "target": "三季报扭亏",
+   "tone": "negative",
+   "note": "三季报扭亏概念股退潮"
   },
   {
-   "type": "氢能物流",
-   "target": "原尚股份",
-   "tone": "positive",
-   "note": "氢能物流可能推动公司业务转型"
+   "type": "退潮",
+   "target": "汽车零部件",
+   "tone": "negative",
+   "note": "汽车零部件概念股退潮"
   }
  ],
  "inputDigest": {
   "themes": 28,
   "hotListed": 15,
   "ztCount": 23,
-  "emotionValue": 32.7,
+  "emotionValue": 32.6,
   "painVerdict": "多空拉锯（昨涨停今日翻绿 54%、高位板晋级失败 50%，追高盈亏各半）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"

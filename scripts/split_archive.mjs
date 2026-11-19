@@ -183,7 +183,10 @@ const signals = buildSignals(packed, {
       const raw = JSON.parse(readFileSync(p, 'utf8'));
       const all = arc.all_days || [];
       const last = all[all.length - 1] || null;
-      return macroSectorSentimentBlock(raw, { tradeDate: last?.trade_date ?? null });
+      /* 【2026-11-20】industryRows 必须与 engine/write.js 同源传入——红盘自检
+       * （deviationCheck）需要当日行业涨跌明细；漏传 → deviation 0/0 永不判定，
+       * 两写盘路径产出形态分裂（--check 纪律）。 */
+      return macroSectorSentimentBlock(raw, { tradeDate: last?.trade_date ?? null, industryRows: last?.industry ?? null });
     } catch { return null; }
   },
   // 妖股逻辑推演（方向 C）：与 engine/write.js **同源同形态**——只读同一份

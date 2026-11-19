@@ -27,6 +27,7 @@ import { decodeArchive } from '../src/lhb_codec.js';
 import { bjStamp } from '../src/time.js';
 import { fetchWithRetry, todayBeijing } from '../src/util.js';
 import { loadEnv } from '../src/loadenv.js';
+import { stableHash, loadCache, saveCache, findSameDayOther } from '../src/llm_cache.js';
 loadEnv(); // 幂等加载 .env（standalone / EOD 均可直接拿到 LLM_API_*）
 
 const args = process.argv.slice(2);
@@ -259,13 +260,14 @@ function getAsOfDate() {
   return todayBeijing();
 }
 
-function writePayload({ asOfDate, newsDate, model, macro, sectors, events, scanned, source, degraded, blackTalk }) {
+function writePayload({ asOfDate, newsDate, model, macro, sectors, events, scanned, source, degraded, blackTalk, cachedFrom }) {
   const payload = {
     kind: 'macro-sector-sentiment-latest',
     version: 1,
     asOfDate,                 // 证据锚点 = 档案最近交易日（防伪）
     newsDate,                 // 新闻实际日期
     generatedAt: bjStamp(),
+    cachedFrom: cachedFrom || null,   // 缓存复用时=LLM 结论首次生成时刻（可复现审计）
     model: degraded ? null : model,
     macro,
     sectors,
@@ -305,6 +307,25 @@ async function main() {
     }
   }
   console.log(`[macro-sent] 新闻源=${source} 抓取 ${rawItems.length} 条 | 模式=${MOCK ? 'mock（预置事件）' : 'real（新浪滚动）'}`);
+
+  /* 【2026-11-20 缓存治根（拍板）】同日两次跑利好整个换血（11-19 实录：18:38 版
+   * AI/算力 0.3x → 21:07 版白酒/食品 0.7）的根因=输入不确定（sina-roll 窗口条数/
+   * 时点浮动）+LLM 无缓存——重跑即重新采样。以「数据日+新闻快照哈希」为键缓存
+   * LLM 结论：同日同快照直接复读（可复现），FORCE 才真重跑。diff 进构建日志。 */
+  const FORCE = process.argv.includes('--force');
+  const newsHash = stableHash(rawItems.map((x) => ({ d: x.date, h: x.headline })));
+  if (!MOCK && !FORCE) {
+    const cached = loadCache('macro-sector', asOfDate, newsHash);
+    if (cached && Array.isArray(cached.events) && cached.events.length) {
+      const other = findSameDayOther('macro-sector', asOfDate, newsHash);
+      if (other) console.log(`[macro-sent] ⚠ 同日已有异快照缓存（旧 ${other.hash} → 新 ${newsHash}）——新闻窗口漂移，本次以新快照缓存为准（diff 供排查）`);
+      console.log(`[macro-sent] 缓存命中（${asOfDate}/${newsHash}，LLM 结论于 ${cached.cachedAt} 生成）——复读跳过 GLM，输出可复现`);
+      const agg = aggregate(cached.events);
+      const payload = writePayload({ asOfDate, newsDate, model: MODEL, macro: agg.macro, sectors: agg.sectors, events: cached.events, scanned: rawItems.length, source, degraded: false, blackTalk: cached.blackTalk ?? null, cachedFrom: cached.cachedAt });
+      console.log(`[macro-sent] 宏观 ${payload.macro.label}(${payload.macro.sentiment}) | 板块 ${payload.sectors.length} 个 | 黑话=${payload.blackTalk ? '有' : '模板兜底'}（缓存复用）`);
+      return;
+    }
+  }
 
   let events;
   if (MOCK) {
@@ -364,6 +385,9 @@ async function main() {
     }
   }
   const payload = writePayload({ asOfDate, newsDate, model: MODEL, macro, sectors, events, scanned: rawItems.length, source, degraded: false, blackTalk });
+  /* 缓存 LLM 结论（同日同快照复读用；degraded 分支不缓存——失败兜底不可固化） */
+  saveCache('macro-sector', asOfDate, newsHash, { events, blackTalk, macro });
+  console.log(`[macro-sent] LLM 结论已缓存（${asOfDate}/${newsHash}）——同日重跑将复读`);
   console.log(`[macro-sent] 黑话：${blackTalk || '（模板兜底）'}`);
   console.log(`[macro-sent] ${asOfDate} 宏观情绪=${payload.macro.label}(${payload.macro.sentiment}) | 涉及板块 ${sectors.length} 个`);
   sectors.slice(0, 8).forEach((s) => console.log(`   ${s.sector}: ${s.score} (${s.newsCount}条, 多${s.bullish}/空${s.bearish})`));

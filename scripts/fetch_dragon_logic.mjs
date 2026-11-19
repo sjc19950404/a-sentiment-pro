@@ -34,6 +34,7 @@ import { decodeArchive } from '../src/lhb_codec.js';
 import { bjStamp } from '../src/time.js';
 import { fetchWithRetry, todayBeijing } from '../src/util.js';
 import { loadEnv } from '../src/loadenv.js';
+import { stableHash, loadCache, saveCache } from '../src/llm_cache.js';
 loadEnv();
 
 const args = process.argv.slice(2);
@@ -200,6 +201,25 @@ async function main() {
   console.log(`[dragon] 连板梯队 ${stocks.length} 只（limit=${LIMIT}）| 模式=${MOCK ? 'mock' : 'real'}`
     + `${mood ? ' | 板块情绪 grounding=有' : (MOCK ? '' : ' | 板块情绪 grounding=无（场景二未跑）')}`);
 
+  /* 【2026-11-20 缓存治根（拍板）】输入=连板梯队+板块情绪（确定性），以「数据日+
+   * 梯队快照哈希」为键缓存 LLM 结论：同日重跑直接复读（可复现），--force 才真跑。 */
+  const FORCE = process.argv.includes('--force');
+  const ladderHash = stableHash({ stocks, mood });
+  if (!MOCK && !FORCE) {
+    const cached = loadCache('dragon-logic', tradeDate, ladderHash);
+    if (cached && Array.isArray(cached.dragons) && cached.dragons.length) {
+      console.log(`[dragon] 缓存命中（${tradeDate}/${ladderHash}，LLM 结论于 ${cached.cachedAt} 生成）——复读跳过 GLM，输出可复现`);
+      const pureCount = cached.dragons.filter((d) => d.is_pure_sentiment).length;
+      const payload = { kind: 'llm-dragon-logic', version: 1, asOfDate: tradeDate, generatedAt: bjStamp(), cachedFrom: cached.cachedAt,
+        model: glmConfig().MODEL || null, source: mood ? 'ztpool+macro-sector-sentiment' : 'ztpool',
+        scanned: stocks.length, limit: LIMIT, dragons: cached.dragons, degraded: false,
+        note: '妖股逻辑推演（方向C）：连板股→GLM 推断涨停逻辑/是否纯情绪炒作。纯参考，绝不修改 regime/emotion 原始分数；由下游代码（如 paper.js）决定采不采纳（例：对纯情绪炒作且高连板的票谨慎追高）。' };
+      atomicWriteJSON(fileURLToPath(OUT), JSON.stringify(payload, null, 1));
+      console.log(`[dragon] 复读 ${cached.dragons.length} 只 | 纯情绪炒作 ${pureCount} 只（缓存复用）`);
+      return;
+    }
+  }
+
   if (!MOCK) {
     const { API_URL, API_KEY, MODEL } = glmConfig();
     if (!API_URL || !API_KEY || !MODEL) {
@@ -245,8 +265,10 @@ async function main() {
   }
 
   const pureCount = dragons.filter((d) => d.is_pure_sentiment).length;
+  if (!MOCK) saveCache('dragon-logic', tradeDate, ladderHash, { dragons });
   const payload = {
     kind: 'llm-dragon-logic', version: 1, asOfDate: tradeDate, generatedAt: bjStamp(),
+    cachedFrom: null,
     model: MOCK ? 'mock' : (glmConfig().MODEL || null),
     source: MOCK ? 'mock' : (mood ? 'ztpool+macro-sector-sentiment' : 'ztpool'),
     scanned: stocks.length, limit: LIMIT, dragons,

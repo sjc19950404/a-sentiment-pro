@@ -494,12 +494,22 @@ function buildSectorSentimentSection(ss) {
   pts.push({ text: `宏观情绪：${m.label || '中性'}（score ${m.sentiment != null ? m.sentiment : 0}，置信度 ${m.confidence != null ? m.confidence : 0}）`, kind: 'evidence' });
   pts.push({ text: `利好板块：${(ss.topBullish || []).map((x) => `${x.sector}+${x.score}`).join('、') || '无'}`, kind: 'evidence' });
   pts.push({ text: `利空板块：${(ss.topBearish || []).map((x) => `${x.sector}${x.score}`).join('、') || '无'}`, kind: 'evidence' });
+  /* 红盘自检（2026-11-20 拍板）：新闻面与盘面背离硬判据——利好 TOP5 当日红盘
+   * <40% 且宏观偏多 → ⚠ 标注并降权（不参与任何参考修正）。判据与 11-19 实测：
+   * 白酒 -1.88%/通信 -3.37% 红盘 0/2 + 宏观 0.2 → flagged=true 必报。 */
+  const dev = ss.deviation;
+  if (dev && dev.flagged && dev.note) {
+    pts.push({ text: `⚠ ${dev.note}`, kind: 'warn' });
+    pts.push({ text: `利好板块当日实况：${(dev.detail || []).map((x) => `${x.sector} ${x.red ? '红' : x.changePct + '%'}`).join('、') || '—'}`, kind: 'evidence' });
+  } else if (dev && dev.checkedCount < 2 && dev.checkedCount > 0) {
+    pts.push({ text: `口径：利好板块 ${dev.checkedCount} 个可核对（其余为概念板块无对应行业，不计入）——判据不可用，不判定背离`, kind: 'info' });
+  }
   pts.push({ text: `涉及板块 ${ss.sectors ? ss.sectors.length : 0} 个、事件 ${ss.events ? ss.events.length : 0} 条`, kind: 'info' });
   if (m.reason) pts.push({ text: `依据：${m.reason}`, kind: 'evidence' });
   if (ss.blackTalk) pts.push({ text: `🔥 游资复盘黑话：${ss.blackTalk}`, kind: 'quote' });
-  pts.push({ text: `证据日期 ${ss.asOfDate}｜模型 ${ss.model || '未留痕'}｜新闻源 ${ss.source || 'sina-roll'}`, kind: 'info' });
+  pts.push({ text: `证据日期 ${ss.asOfDate}｜模型 ${ss.model || '未留痕'}｜新闻源 ${ss.source || 'sina-roll'}${ss.cachedFrom ? `｜缓存复用（LLM 结论 ${ss.cachedFrom} 生成，可复现）` : ''}`, kind: 'info' });
   pts.push({ text: '口径：score∈[-1,1]、score100∈[0,100]，仅作参考，不独立生成买卖信号', kind: 'info' });
-  const level = (m.sentiment != null && m.sentiment < -0.2) ? 'warn' : 'info';
+  const level = dev && dev.flagged ? 'warn' : ((m.sentiment != null && m.sentiment < -0.2) ? 'warn' : 'info');
   return { id: 'sectorSentiment', title: '九、板块情绪因子（场景二）', level, missing: false, points: pts };
 }
 
