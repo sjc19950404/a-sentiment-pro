@@ -2,6 +2,19 @@
  "schema_version": "1.0",
  "pushed": [
   {
+   "fingerprint": "afbb7139fa17bceb_7de",
+   "type": "intraday",
+   "date": "2026-11-19",
+   "verified": {
+    "checked_at": "09:35",
+    "snapshot_at": "2026-11-19 09:35",
+    "removed": 0,
+    "degraded": false,
+    "skipped": true
+   },
+   "pushed_at": "2026-11-19T01:35:03.997Z"
+  },
+  {
    "fingerprint": "65d80d27da59cf1d_c14",
    "type": "pre_market",
    "date": "2026-11-19",
@@ -902,12 +915,6 @@
     "skipped": false
    },
    "pushed_at": "2026-10-20T02:03:36.657Z"
-  },
-  {
-   "fingerprint": "036c2ce4b8642b42_b53",
-   "type": "pre_market",
-   "date": "2026-10-20",
-   "pushed_at": "2026-10-20T01:25:52.653Z"
   }
  ]
 }
