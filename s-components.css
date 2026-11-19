@@ -532,6 +532,11 @@
   font-weight: var(--s-weight-medium);
   font-size: var(--s-font-xs);
 }
+/* 【2026-11-19 表头错位修复】页面中段表格（个股明细在 y≈470）用默认
+ * --s-sticky-offset(顶栏+nav≈100px) 会把 th 推到数据行下方 62px（实测），
+ * 视觉上表头插在第二行下面。这类表格 sticky 偏移应为 0：只在该表滚到视口顶部时吸住。
+ * 原型 .s-page 自带滚动上下文故未暴露，生产 .s-main 整页滚动才触发。 */
+.s-page .s-table { --s-sticky-offset: 0px; }
 .s-table tbody tr { height: var(--s-table-row-h); }
 .s-table tbody tr:hover { background: var(--s-surface-2); }
 .s-table tbody tr[aria-selected="true"] {
