@@ -1483,3 +1483,15 @@
   .s-report__crumb, .s-report__toc { display: none !important; }
   .s-report__body { padding: 0; max-width: none; }
 }
+
+/* ══ 研报专用页：隐藏原研报顶栏的操作控件 ═══════════════════════════════
+ * 这些按钮（分档加载/导出数据/刷新/时间窗）作用于被 hidden 的原 <main>，
+ * 在专用页里点击「毫无反应」（执行了但结果不可见）。
+ * 专用页自带面包屑「◀主视图 / 研报」+「打印/导出」，这些控件冗余且误导，故隐藏。
+ * 只读信息（数据日/来源/更新时间）保留。 */
+body[data-view="report"] .topbar #loadScope,
+body[data-view="report"] .topbar .exp-wrap,
+body[data-view="report"] .topbar #refreshBtn,
+body[data-view="report"] .topbar #refreshState,
+body[data-view="report"] .topbar .range,
+body[data-view="report"] .topbar .scope-switch { display: none !important; }
