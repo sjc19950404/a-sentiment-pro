@@ -328,6 +328,12 @@ export function trendPoint(d, { keepDetail = true } = {}) {
     // （同 seats 的教训：该带的字段裁掉，报告那段就静默不见了）。
     // 代价很小：有数据时约 2KB/日；无数据的日子就是 null，约 20 字节。
     industry_relative: s.industry_relative ?? null,
+    // 主线题材占比（2026-11-19 补）：报告规则 9b「主线占比断崖」需要**昨日**占比
+    //   （昨日 ≥60% → 今日 <40% 触发）。此前裁掉 → 首屏 30 天窗只有最新日
+    //   （latest.summary）有 main_theme，昨日恒 null → 断崖分支静默失效。
+    //   同 seats/industry_relative 的教训：该带的字段裁掉，报告那段就静默不见了。
+    //   代价 ~60 字节/日。
+    main_theme: s.main_theme ?? null,
     // 席位摘要（不含 detail —— 那是唯一的大块，留给需要时的完整档）
     ...(seatKeys.length ? { summary: { seats: pickKeys(s.seats, seatKeys) } } : {}),
   };
