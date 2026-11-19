@@ -70,17 +70,25 @@ const BATCH = 100;
 for (let i = 0; i < ztCodes.length; i += BATCH) {
   const batch = ztCodes.slice(i, i + BATCH);
   const secids = batch.map(secidOf).join(',');
-  // 结构校验进 read：data.diff 缺失/字段缺 → 抛错进重试（与 fetch_calendar 同模式）
-  const diff = await fetchWithRetry(LIST_URL(secids), {
-    headers: { 'User-Agent': UA, Referer: 'https://quote.eastmoney.com/' },
-    timeout: 15000,
-    read: async (r) => {
-      const j = await safeJson(r);
-      const d = j?.data?.diff;
-      if (!Array.isArray(d) || !d.length) throw new Error('返回结构异常：缺少 data.diff');
-      return d;
-    },
-  }, 3, 1200);
+  // 结构校验进 read：data.diff 缺失/字段缺 → 抛错进重试（与 fetch_calendar 同模式）。
+  // 【2026-11-19】批量失败不再崩进程：push2 TLS 断链时 fetchWithRetry 重试 3 次后
+  //   抛出会直接炸掉整个脚本（腾讯兜底根本执行不到）——改进 misses 交给兜底。
+  let diff = null;
+  try {
+    diff = await fetchWithRetry(LIST_URL(secids), {
+      headers: { 'User-Agent': UA, Referer: 'https://quote.eastmoney.com/' },
+      timeout: 15000,
+      read: async (r) => {
+        const j = await safeJson(r);
+        const d = j?.data?.diff;
+        if (!Array.isArray(d) || !d.length) throw new Error('返回结构异常：缺少 data.diff');
+        return d;
+      },
+    }, 3, 1200);
+  } catch (e) {
+    console.error(`[mcap] 东财批量失败（批 ${Math.floor(i / BATCH) + 1}）：${e && e.message}——交镜像兜底`);
+    continue;
+  }
   const byCode = new Map(diff.map((x) => [String(x.f12), x]));
   for (const c of batch) {
     const x = byCode.get(String(c));
@@ -95,6 +103,43 @@ for (let i = 0; i < ztCodes.length; i += BATCH) {
       lb: ztLb[c] ?? null,  // 连板数（档案直读，缺失即 null）
     });
   }
+}
+
+/* 【2026-11-19 兜底】东财 push2 域名族在本环境 TLS 长期被断（11-19 两次全挂：
+ * EOD 18:42 + supplement 21:10 均 fetch failed other side closed——与 fetch_auction
+ * 同根因，当日 freshness 门禁「市值 behind」即此）。补腾讯 qt.gtimg.cn 镜像
+ * （实测持续可达）：f44=流通市值(亿) f45=总市值(亿)——直接是亿，无需换算；
+ * 名称 f1、现价 f3。东财批量成功一只算一只，腾讯只补缺的，语义一致。 */
+if (rows.length < ztCodes.length) {
+  const missing = ztCodes.filter((c) => !rows.some((r) => r.code === String(c)));
+  try {
+    const list = missing.map((c) => (/^(6|9)/.test(c) ? 'sh' + c : 'sz' + c)).join(',');
+    const r = await fetch('https://qt.gtimg.cn/q=' + list, {
+      headers: { Referer: 'https://gu.qq.com' },
+      signal: AbortSignal.timeout(12000),
+    });
+    const buf = new Uint8Array(await r.arrayBuffer());
+    let text;
+    try { text = new TextDecoder('gbk').decode(buf); }
+    catch { text = new TextDecoder('utf-8').decode(buf); }
+    let got = 0;
+    for (const line of text.split(';')) {
+      const m = line.match(/v_(?:sh|sz)(\d{6})="([^"]*)"/);
+      if (!m) continue;
+      const f = m[2].split('~');
+      const circ = Number(f[44]), total = Number(f[45]);
+      if (!Number.isFinite(circ) || circ <= 0) continue;   // 无市值=停牌/无效
+      rows.push({
+        code: m[1],
+        name: f[1] || null,
+        circMvYi: Math.round(circ * 100) / 100,
+        totalMvYi: Number.isFinite(total) && total > 0 ? Math.round(total * 100) / 100 : null,
+        lb: ztLb[m[1]] ?? null,
+      });
+      got++;
+    }
+    if (got) console.error(`[mcap] 东财 push2 全挂 → 腾讯镜像兜底 ${got}/${missing.length} 只`);
+  } catch { /* 腾讯也失败 → 维持 rows 现状，下方显式失败分支接管 */ }
 }
 
 if (!rows.length) {
