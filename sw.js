@@ -55,6 +55,10 @@ const SHELL_ASSETS = [
   './src/validate_snapshot.js',
   // 2026-11-15：A 方案阶段 0 新增令牌/组件/桥/自检脚本（纯新增，.s-scope 未挂载前惰性；随外壳预缓存）
   './s-tokens.css',
+  /* 2026-11-19 体检观察项修复：manifest.webmanifest 进预缓存（PWA 元数据此前每次
+   * 网络获取，离线时 manifest 缺失会影响"添加到主屏"体验）。paths/cp 清单本就含它，
+   * 此处补齐第三处同源。同源纪律：必须与 src/offline.js 的 SHELL_ASSETS 副本同步。 */
+  './manifest.webmanifest',
   './s-components.css',
   './s-bridge.css',
   './s-selftest.js',

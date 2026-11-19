@@ -63,6 +63,9 @@ export const SHELL_ASSETS = Object.freeze([
   './src/validate_snapshot.js',
   // 2026-11-15：A 方案阶段 0 新增令牌/组件/桥/自检脚本（纯新增，.s-scope 未挂载前惰性；随外壳预缓存）
   './s-tokens.css',
+  /* 2026-11-19 体检观察项修复：与 sw.js SHELL_ASSETS 同步补 manifest.webmanifest
+   * （同源纪律：sw.js 与本副本必须逐项一致，deploy_manifest.test.mjs 校验）。 */
+  './manifest.webmanifest',
   './s-components.css',
   './s-bridge.css',
   './s-selftest.js',
