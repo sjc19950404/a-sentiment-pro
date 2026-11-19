@@ -87,7 +87,7 @@
        * 结算/单笔委托/批量下单/日志）。搬运原 DOM 节点（事件是元素直绑，跟节点走），
        * 节点在原研报隐藏 main 里，工作台与研报视图切换时双向归位。 */
       + `<div class="s-section"><h2 class="s-section__title">账户操作台（完整）</h2>`
-      + `<div id="sPpOpsHost"></div></div>`;
+      + `<div id="sPpOpsHost" class="s-reskin"></div></div>`;
     return host;
   }
 

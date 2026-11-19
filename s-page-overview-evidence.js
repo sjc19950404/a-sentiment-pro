@@ -219,7 +219,7 @@
       + '<div class="s-col-12"><div class="s-card"><div class="s-card__head">'
       + '<h3 class="s-card__title">外围市场 · 节后预案</h3>'
       + '<span class="s-badge s-badge--muted">隔夜真值</span></div>'
-      + '<div class="s-card__body" id="sEvGlobalHost"></div></div></div>'
+      + '<div class="s-card__body s-reskin" id="sEvGlobalHost"></div></div></div>'
       + '</div></div>';
     host.appendChild(sec);
     /* 搬运 #zone-global 的两个 card 内容（原节点仍在隐藏 main，innerHTML 搬一份只读展示；

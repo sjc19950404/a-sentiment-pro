@@ -64,7 +64,7 @@
       /* 【重构前功能补回】因子健康度仪表（原研报 #factorHealthCard，EOD 真值）：
        * 搬运原 DOM 卡进工作台回测页，app.js 后台继续渲染，observer 跟随。 */
       + `<div class="s-section"><h2 class="s-section__title">因子健康度</h2>`
-      + `<div id="sBtFactorHost"></div>`
+      + `<div id="sBtFactorHost" class="s-reskin"></div>`
       + `<button type="button" class="s-btn s-btn--ghost" id="sBtMoreParams" style="margin-top:var(--s-space-2)">查看完整参数与口径</button>`
       + `</div>`;
     return host;

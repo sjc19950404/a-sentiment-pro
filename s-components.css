@@ -1518,3 +1518,153 @@ body[data-view="report"] .topbar .scope-switch { display: none !important; }
   background:var(--s-bg-1, #0f141c); box-shadow:var(--s-shadow-md, 0 8px 24px rgba(0,0,0,.4));
 }
 .s-report__expmenu[hidden] { display:none; }
+
+/* ══ 缝合块换皮（s-reskin）════════════════════════════════════════════════
+ * 从原研报搬进工作台的旧节点（研判推荐/账户操作/外围市场/因子健康）保留原 DOM
+ * 与元素直绑事件（不重建），但在此作用域内把旧研报视觉逐项映射为工作台 s-* 语言：
+ * ① 旧 token→s-* token ② 旧组件 class→s-* 视觉 ③ 清 inline 间距。
+ * 只作用于 .s-reskin 内，原研报视图零影响。 */
+.s-reskin {
+  /* ① token 重映射：旧变量指向工作台值——一处覆盖所有用 var(--old) 的旧样式 */
+  --bg: var(--s-bg-1);
+  --card: var(--s-surface-1);
+  --card2: var(--s-surface-2);
+  --line: var(--s-border-1);
+  --txt: var(--s-text-1);
+  --muted: var(--s-text-2);
+  --faint: var(--s-text-3);
+  --up: var(--s-up);
+  --down: var(--s-down);
+  --warn: var(--s-warn);
+  --acc: var(--s-accent);
+  --fresh: var(--s-down);
+  --fade: var(--s-up);
+  font-family: var(--s-font-sans);
+  font-size: var(--s-font-sm);
+}
+/* ② 容器卡片：旧 .card → s-card 视觉 */
+.s-reskin .card {
+  background: var(--s-surface-1);
+  border: 1px solid var(--s-border-1);
+  border-radius: var(--s-radius-md);
+  padding: var(--s-space-4);
+  box-shadow: var(--s-shadow-1);
+}
+.s-reskin .card + .card { margin-top: var(--s-space-3); }
+.s-reskin .card h2, .s-reskin h2 {
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-space-2);
+  margin: 0 0 var(--s-space-3);
+  font-size: var(--s-font-md); font-weight: 600; color: var(--s-text-1);
+}
+/* ③ 说明徽标 / 脚注 → s-badge / s-kpi__note 视觉 */
+.s-reskin .bf-auto {
+  font-size: var(--s-font-xs); color: var(--s-text-3);
+  border: 1px solid var(--s-border-1); border-radius: var(--s-radius-sm);
+  padding: 2px 6px; margin-left: 0; font-weight: 400;
+}
+.s-reskin .bf-foot {
+  border-top: 1px solid var(--s-border-1); padding-top: var(--s-space-2);
+  margin-top: var(--s-space-2); font-size: var(--s-font-xs);
+  color: var(--s-text-3); line-height: 1.7;
+}
+.s-reskin .bf-warn {
+  background: var(--s-warn-soft); color: var(--s-warn);
+  border: 1px solid var(--s-warn); border-radius: var(--s-radius-sm);
+  padding: var(--s-space-2); font-size: var(--s-font-sm);
+}
+.s-reskin .muted { color: var(--s-text-3); }
+.s-reskin .hl { color: var(--s-up); font-weight: 600; }
+.s-reskin .hl-dn { color: var(--s-down); font-weight: 600; }
+/* ④ 按钮 .mini → s-btn--ghost */
+.s-reskin button.mini, .s-reskin .mini {
+  background: var(--s-surface-2); border: 1px solid var(--s-border-2);
+  color: var(--s-text-2); border-radius: var(--s-radius-sm);
+  padding: 5px 12px; min-height: 30px; font-size: var(--s-font-sm);
+  cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+.s-reskin button.mini:hover, .s-reskin .mini:hover {
+  color: var(--s-accent); border-color: var(--s-accent);
+}
+.s-reskin .mini.primary {
+  color: var(--s-accent); border-color: var(--s-accent);
+  background: var(--s-accent-soft);
+}
+/* ⑤ 研判推荐行 .pk-* → s-table 行视觉 */
+.s-reskin .picks-meta { font-size: var(--s-font-xs); color: var(--s-text-2); line-height: 1.7; }
+.s-reskin .picks-list { display: flex; flex-direction: column; gap: var(--s-space-2); }
+.s-reskin .pk-row {
+  display: flex; align-items: flex-start; flex-wrap: wrap; gap: var(--s-space-2);
+  padding: var(--s-space-2) var(--s-space-3);
+  background: var(--s-surface-2); border: 1px solid var(--s-border-1);
+  border-radius: var(--s-radius-sm); cursor: pointer;
+}
+.s-reskin .pk-row:hover, .s-reskin .pk-row:focus-visible { border-color: var(--s-accent); }
+.s-reskin .pk-row-top { border-left: 3px solid var(--s-up); }
+.s-reskin .pk-rank {
+  flex: 0 0 22px; height: 22px; line-height: 22px; text-align: center;
+  border-radius: var(--s-radius-sm); background: var(--s-surface-3);
+  color: var(--s-text-2); font-size: var(--s-font-xs); font-weight: 700;
+}
+.s-reskin .pk-tier {
+  padding: 2px 7px; border-radius: var(--s-radius-pill, 12px);
+  background: var(--s-surface-3); font-size: var(--s-font-xs); color: var(--s-text-1);
+}
+.s-reskin .pk-tier.warn { background: var(--s-warn-soft); color: var(--s-warn); }
+.s-reskin .pk-score {
+  font-size: var(--s-font-xs); color: var(--s-accent);
+  border: 1px solid var(--s-border-1); border-radius: var(--s-radius-sm); padding: 0 4px;
+}
+.s-reskin .pk-prob, .s-reskin .pk-streak {
+  font-size: var(--s-font-xs); font-weight: 700; padding: 2px 6px; border-radius: var(--s-radius-sm);
+}
+.s-reskin .pk-prob.pb-high { background: var(--s-up-soft); color: var(--s-up); }
+.s-reskin .pk-streak.pb-high { background: var(--s-up); color: var(--s-text-1); }
+.s-reskin .pk-outflow {
+  background: var(--s-warn-soft); color: var(--s-warn);
+  border: 1px solid var(--s-warn); border-radius: var(--s-radius-sm); padding: 2px 6px;
+}
+.s-reskin .picks-rejected { margin-top: var(--s-space-3); }
+.s-reskin .pk-rej-row {
+  padding: var(--s-space-2); background: var(--s-surface-2);
+  border: 1px dashed var(--s-border-2); border-radius: var(--s-radius-sm);
+}
+.s-reskin details summary {
+  cursor: pointer; color: var(--s-accent); padding: var(--s-space-2) 0;
+  font-size: var(--s-font-sm);
+}
+/* ⑥ 账户统计 .ps-* → s-kpi 视觉 */
+.s-reskin .ps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--s-space-2); }
+.s-reskin .ps-cell {
+  background: var(--s-surface-2); border: 1px solid var(--s-border-1);
+  border-radius: var(--s-radius-sm); padding: var(--s-space-3);
+}
+.s-reskin .ps-k { font-size: var(--s-font-xs); color: var(--s-text-3); }
+.s-reskin .ps-v { font-size: var(--s-font-lg); font-weight: 600; color: var(--s-text-1); }
+.s-reskin .ps-bar { display: flex; flex-wrap: wrap; gap: var(--s-space-2); align-items: center; margin: var(--s-space-3) 0; }
+.s-reskin .ps-init { font-size: var(--s-font-sm); color: var(--s-text-2); }
+.s-reskin .ps-init input, .s-reskin input[type="number"] {
+  background: var(--s-bg-1); border: 1px solid var(--s-border-2);
+  border-radius: var(--s-radius-sm); color: var(--s-text-1);
+  padding: 5px 8px; font-family: var(--s-font-num);
+}
+/* ⑦ 外围市场 .glob-* 表格 → s-table 视觉 */
+.s-reskin table { width: 100%; border-collapse: collapse; }
+.s-reskin th, .s-reskin td {
+  padding: var(--s-space-2); text-align: left;
+  border-bottom: 1px solid var(--s-border-1); font-size: var(--s-font-sm);
+}
+.s-reskin th { color: var(--s-text-3); font-weight: 600; }
+.s-reskin td { color: var(--s-text-1); }
+.s-reskin .table-wrap { max-height: none; overflow: visible; }
+/* ⑧ 因子健康 inline 间距清除（app.js 动态写 inline margin/font-size，用作用域覆盖） */
+.s-reskin .bf-foot[style] { margin: var(--s-space-2) 0 !important; }
+.s-reskin > .card > div[style*="font-size:15px"] { font-size: var(--s-font-lg) !important; margin-bottom: var(--s-space-2) !important; }
+.s-reskin div[style*="grid-template-columns"] { gap: var(--s-space-2) !important; }
+
+/* 缝合块内层旧标题与工作台外层 s-section__title 重复——隐藏内层旧 h2，
+ * 但把它里面的说明(bf-auto)保留：提到外层不易，直接隐藏整个旧 h2（说明在外层已有 s-section__note）。 */
+.s-reskin > .card > h2:first-child,
+.s-reskin .paper-picks > h2:first-child,
+.s-reskin .paper-acct > h2:first-child,
+.s-reskin .paper-exec > h2:first-child { display: none !important; }
+/* 因子健康卡没有外层标题，保留其内层标题（单独处理：只在有 s-section 兄弟时隐藏） */

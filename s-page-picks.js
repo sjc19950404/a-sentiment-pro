@@ -109,7 +109,7 @@
       + '<div class="s-section"><div class="s-section__head">'
       + '<h2 class="s-section__title">研判推荐</h2>'
       + '<p class="s-section__note">大概率连板置顶 · 剔除大概率亏 · 点个股看详情</p>'
-      + '</div><div id="sPkRecoHost"></div></div>'
+      + '</div><div id="sPkRecoHost" class="s-reskin"></div></div>'
       + '<div class="s-section"><div class="s-section__head">'
       + '<h2 class="s-section__title">选股 · 主线天梯</h2>'
       + '<p class="s-section__note">复用终端 render · 引擎原值 · AI 侧车仅参考不改分</p>'
