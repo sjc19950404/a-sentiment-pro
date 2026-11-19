@@ -1,39 +1,39 @@
 {
- "generatedAt": "2026-11-18T18:30:03.177Z",
- "days": 268,
- "seats": 8062,
+ "generatedAt": "2026-11-19T18:30:02.524Z",
+ "days": 269,
+ "seats": 8075,
  "clusters": [
   {
    "id": 0,
    "label": "偶发席位",
-   "size": 2105,
+   "size": 2119,
    "centroid": {
-    "activeDays": 2.12,
-    "buyWan": 1632.48,
+    "activeDays": 2.11,
+    "buyWan": 1633.99,
     "instShare": 0,
     "northShare": 0,
-    "avgBuyWan": 1059.81
+    "avgBuyWan": 1058.95
    }
   },
   {
    "id": 1,
    "label": "高频活跃席位",
-   "size": 3207,
+   "size": 3205,
    "centroid": {
-    "activeDays": 17.5,
-    "buyWan": 163146.32,
+    "activeDays": 17.56,
+    "buyWan": 163596.79,
     "instShare": 0,
     "northShare": 0,
-    "avgBuyWan": 2249.44
+    "avgBuyWan": 2247.8
    }
   },
   {
    "id": 2,
    "label": "偶发席位",
-   "size": 2745,
+   "size": 2746,
    "centroid": {
     "activeDays": 1.81,
-    "buyWan": 0.71,
+    "buyWan": 0.72,
     "instShare": 0,
     "northShare": 0,
     "avgBuyWan": 0.54
@@ -44,11 +44,11 @@
    "label": "北向通道",
    "size": 4,
    "centroid": {
-    "activeDays": 150.25,
-    "buyWan": 48075025,
+    "activeDays": 150.75,
+    "buyWan": 48167112.25,
     "instShare": 0,
     "northShare": 1,
-    "avgBuyWan": 115143
+    "avgBuyWan": 115116.2
    }
   },
   {
@@ -108,9 +108,9 @@
   "国泰海通证券股份有限公司深圳人民南路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 25,
+   "activeDays": 26,
    "buyWan": 47241,
-   "sellWan": 25778,
+   "sellWan": 25818,
    "broker": "国泰海通证券"
   },
   "华安证券股份有限公司合肥金石广场证券营业部": {
@@ -228,9 +228,9 @@
   "机构专用": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 268,
-   "buyWan": 141376973,
-   "sellWan": 138557613,
+   "activeDays": 269,
+   "buyWan": 141596828,
+   "sellWan": 138950257,
    "broker": ""
   },
   "英大证券有限责任公司深圳华侨城证券营业部": {
@@ -252,41 +252,41 @@
   "东方财富证券股份有限公司拉萨团结路第二证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 265,
-   "buyWan": 1497326,
-   "sellWan": 1286659,
+   "activeDays": 266,
+   "buyWan": 1498277,
+   "sellWan": 1287429,
    "broker": "东方财富证券"
   },
   "东方财富证券股份有限公司拉萨团结路第一证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 268,
-   "buyWan": 3684610,
-   "sellWan": 2944183,
+   "activeDays": 269,
+   "buyWan": 3687380,
+   "sellWan": 2948774,
    "broker": "东方财富证券"
   },
   "东方财富证券股份有限公司拉萨东环路第二证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 268,
-   "buyWan": 3949718,
-   "sellWan": 3148584,
+   "activeDays": 269,
+   "buyWan": 3951588,
+   "sellWan": 3153175,
    "broker": "东方财富证券"
   },
   "东方财富证券股份有限公司拉萨东环路第一证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 264,
-   "buyWan": 1781660,
-   "sellWan": 1344641,
+   "activeDays": 265,
+   "buyWan": 1788427,
+   "sellWan": 1346848,
    "broker": "东方财富证券"
   },
   "东方财富证券股份有限公司拉萨金融城南环路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 268,
-   "buyWan": 5287771,
-   "sellWan": 3540341,
+   "activeDays": 269,
+   "buyWan": 5322317,
+   "sellWan": 3553697,
    "broker": "东方财富证券"
   },
   "平安证券股份有限公司重庆分公司": {
@@ -332,9 +332,9 @@
   "中国中金财富证券有限公司广州番禺东兴路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 100,
+   "activeDays": 101,
    "buyWan": 76049,
-   "sellWan": 28713,
+   "sellWan": 28805,
    "broker": "中国中金财富证券"
   },
   "华泰证券股份有限公司镇江黄山南路证券营业部": {
@@ -356,17 +356,17 @@
   "平安证券股份有限公司浙江分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 165,
-   "buyWan": 949372,
-   "sellWan": 405223,
+   "activeDays": 166,
+   "buyWan": 976174,
+   "sellWan": 409945,
    "broker": "平安证券"
   },
   "国金证券股份有限公司上海互联网证券分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 64,
+   "activeDays": 65,
    "buyWan": 22416,
-   "sellWan": 43670,
+   "sellWan": 43788,
    "broker": "国金证券"
   },
   "华泰证券股份有限公司上海长宁区凯旋路证券营业部": {
@@ -396,9 +396,9 @@
   "开源证券股份有限公司西安西大街证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 209,
-   "buyWan": 8204067,
-   "sellWan": 5002738,
+   "activeDays": 210,
+   "buyWan": 8228251,
+   "sellWan": 5010722,
    "broker": "开源证券"
   },
   "国新证券股份有限公司北京中关村大街证券营业部": {
@@ -492,24 +492,24 @@
   "国金证券股份有限公司深圳分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 259,
-   "buyWan": 1470840,
+   "activeDays": 260,
+   "buyWan": 1471131,
    "sellWan": 1350270,
    "broker": "国金证券"
   },
   "深股通专用": {
    "cluster": 3,
    "label": "北向通道",
-   "activeDays": 268,
-   "buyWan": 109778954,
-   "sellWan": 97668498,
+   "activeDays": 269,
+   "buyWan": 109966853,
+   "sellWan": 97830166,
    "broker": ""
   },
   "浙商证券股份有限公司杭州杭大路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 23,
-   "buyWan": 10024,
+   "activeDays": 24,
+   "buyWan": 12286,
    "sellWan": 30270,
    "broker": "浙商证券"
   },
@@ -628,9 +628,9 @@
   "国泰海通证券股份有限公司上海长宁区江苏路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 258,
-   "buyWan": 4727541,
-   "sellWan": 2847121,
+   "activeDays": 259,
+   "buyWan": 4772390,
+   "sellWan": 2881898,
    "broker": "国泰海通证券"
   },
   "光大证券股份有限公司北京总部基地证券营业部": {
@@ -692,9 +692,9 @@
   "中信证券股份有限公司深圳深南中路中信大厦证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 176,
-   "buyWan": 1468288,
-   "sellWan": 1371827,
+   "activeDays": 177,
+   "buyWan": 1483072,
+   "sellWan": 1377422,
    "broker": "中信证券"
   },
   "国信证券股份有限公司上海分公司": {
@@ -724,24 +724,24 @@
   "沪股通专用": {
    "cluster": 3,
    "label": "北向通道",
-   "activeDays": 267,
-   "buyWan": 66306723,
-   "sellWan": 61547227,
+   "activeDays": 268,
+   "buyWan": 66487173,
+   "sellWan": 61716048,
    "broker": ""
   },
   "国泰海通证券股份有限公司总部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 268,
-   "buyWan": 23867792,
-   "sellWan": 21422283,
+   "activeDays": 269,
+   "buyWan": 23929422,
+   "sellWan": 21488101,
    "broker": "国泰海通证券"
   },
   "国泰海通证券股份有限公司北京中关村南大街证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 33,
-   "buyWan": 59285,
+   "activeDays": 34,
+   "buyWan": 60664,
    "sellWan": 67749,
    "broker": "国泰海通证券"
   },
@@ -796,9 +796,9 @@
   "中信证券股份有限公司上海分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 267,
-   "buyWan": 14202975,
-   "sellWan": 13969944,
+   "activeDays": 268,
+   "buyWan": 14258004,
+   "sellWan": 14019057,
    "broker": "中信证券"
   },
   "招商证券股份有限公司上海世纪大道证券营业部": {
@@ -844,25 +844,25 @@
   "国泰海通证券股份有限公司南京太平南路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 238,
+   "activeDays": 239,
    "buyWan": 3913257,
-   "sellWan": 2255076,
+   "sellWan": 2255999,
    "broker": "国泰海通证券"
   },
   "瑞银证券有限责任公司上海花园石桥路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 268,
-   "buyWan": 12990719,
-   "sellWan": 12260465,
+   "activeDays": 269,
+   "buyWan": 13059268,
+   "sellWan": 12285580,
    "broker": "瑞银证券"
   },
   "国投证券股份有限公司西安曲江池南路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 52,
+   "activeDays": 53,
    "buyWan": 230106,
-   "sellWan": 237207,
+   "sellWan": 239969,
    "broker": "国投证券"
   },
   "广发证券股份有限公司深圳深南大道证券营业部": {
@@ -876,17 +876,17 @@
   "中国国际金融股份有限公司上海分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 266,
-   "buyWan": 7023887,
-   "sellWan": 6985683,
+   "activeDays": 267,
+   "buyWan": 7085072,
+   "sellWan": 7036101,
    "broker": "中国国际金融"
   },
   "高盛(中国)证券有限责任公司上海浦东新区世纪大道证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 268,
-   "buyWan": 19482476,
-   "sellWan": 16376485,
+   "activeDays": 269,
+   "buyWan": 19531824,
+   "sellWan": 16391383,
    "broker": "高盛(中国)证券"
   },
   "招商证券股份有限公司深圳新湖路壹方中心证券营业部": {
@@ -900,9 +900,9 @@
   "摩根大通证券(中国)有限公司上海银城中路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 266,
-   "buyWan": 8550839,
-   "sellWan": 6872336,
+   "activeDays": 267,
+   "buyWan": 8590146,
+   "sellWan": 6893844,
    "broker": "摩根大通证券"
   },
   "中国银河证券股份有限公司绍兴证券营业部": {
@@ -1076,8 +1076,8 @@
   "中信证券股份有限公司东阳吴宁西路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 108,
-   "buyWan": 329474,
+   "activeDays": 109,
+   "buyWan": 336800,
    "sellWan": 317046,
    "broker": "中信证券"
   },
@@ -1148,9 +1148,9 @@
   "东方证券股份有限公司无锡梁清路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 107,
+   "activeDays": 108,
    "buyWan": 580607,
-   "sellWan": 347903,
+   "sellWan": 348779,
    "broker": "东方证券"
   },
   "华鑫证券有限责任公司上海莲花路证券营业部": {
@@ -1220,9 +1220,9 @@
   "国信证券股份有限公司浙江互联网分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 268,
-   "buyWan": 9563303,
-   "sellWan": 6677253,
+   "activeDays": 269,
+   "buyWan": 9621718,
+   "sellWan": 6724876,
    "broker": "国信证券"
   },
   "平安证券股份有限公司深圳金田路证券营业部": {
@@ -1276,8 +1276,8 @@
   "国金证券股份有限公司上海静安区南京西路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 108,
-   "buyWan": 143279,
+   "activeDays": 109,
+   "buyWan": 143473,
    "sellWan": 135468,
    "broker": "国金证券"
   },
@@ -1324,9 +1324,9 @@
   "华泰证券股份有限公司上海徐汇区龙启路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 41,
+   "activeDays": 42,
    "buyWan": 36054,
-   "sellWan": 18762,
+   "sellWan": 20001,
    "broker": "华泰证券"
   },
   "中国银河证券股份有限公司北京苏州街证券营业部": {
@@ -1396,8 +1396,8 @@
   "华泰证券股份有限公司总部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 252,
-   "buyWan": 2048105,
+   "activeDays": 253,
+   "buyWan": 2051239,
    "sellWan": 1312563,
    "broker": "华泰证券"
   },
@@ -1476,9 +1476,9 @@
   "华宝证券股份有限公司上海东大名路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 201,
-   "buyWan": 8727393,
-   "sellWan": 8573151,
+   "activeDays": 202,
+   "buyWan": 8739497,
+   "sellWan": 8585972,
    "broker": "华宝证券"
   },
   "沪股通": {
@@ -2028,9 +2028,9 @@
   "中信建投证券股份有限公司杭州庆春路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 93,
+   "activeDays": 94,
    "buyWan": 452719,
-   "sellWan": 318954,
+   "sellWan": 319388,
    "broker": "中信建投证券"
   },
   "中信建投证券股份有限公司北京青年路证券营业部": {
@@ -2108,9 +2108,9 @@
   "平安证券股份有限公司北京金融大街证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 18,
-   "buyWan": 5224,
-   "sellWan": 16696,
+   "activeDays": 19,
+   "buyWan": 7285,
+   "sellWan": 17987,
    "broker": "平安证券"
   },
   "国泰海通证券股份有限公司天门西湖路证券营业部": {
@@ -2140,8 +2140,8 @@
   "财通证券股份有限公司绍兴人民中路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 20,
-   "buyWan": 10233,
+   "activeDays": 21,
+   "buyWan": 11751,
    "sellWan": 27534,
    "broker": "财通证券"
   },
@@ -2172,8 +2172,8 @@
   "中信建投证券股份有限公司安徽分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 81,
-   "buyWan": 519821,
+   "activeDays": 82,
+   "buyWan": 524644,
    "sellWan": 351070,
    "broker": "中信建投证券"
   },
@@ -2260,9 +2260,9 @@
   "东吴证券股份有限公司苏州西北街证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 127,
-   "buyWan": 177074,
-   "sellWan": 99420,
+   "activeDays": 128,
+   "buyWan": 178799,
+   "sellWan": 100270,
    "broker": "东吴证券"
   },
   "财通证券股份有限公司杭州上塘路证券营业部": {
@@ -2276,9 +2276,9 @@
   "东方财富证券股份有限公司昌都两江大道证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 258,
-   "buyWan": 1832202,
-   "sellWan": 1253305,
+   "activeDays": 259,
+   "buyWan": 1838459,
+   "sellWan": 1261282,
    "broker": "东方财富证券"
   },
   "招商证券股份有限公司深圳益田路免税商务大厦证券营业部": {
@@ -2308,9 +2308,9 @@
   "华泰证券股份有限公司深圳彩田路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 62,
-   "buyWan": 413888,
-   "sellWan": 270076,
+   "activeDays": 63,
+   "buyWan": 421141,
+   "sellWan": 274679,
    "broker": "华泰证券"
   },
   "招商证券股份有限公司合肥望江西路证券营业部": {
@@ -2324,9 +2324,9 @@
   "国信证券股份有限公司北京分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 150,
-   "buyWan": 190787,
-   "sellWan": 206836,
+   "activeDays": 151,
+   "buyWan": 192347,
+   "sellWan": 207796,
    "broker": "国信证券"
   },
   "中信证券股份有限公司四川分公司": {
@@ -2380,9 +2380,9 @@
   "国泰海通证券股份有限公司武汉紫阳东路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 187,
-   "buyWan": 8205118,
-   "sellWan": 4096291,
+   "activeDays": 188,
+   "buyWan": 8223768,
+   "sellWan": 4108100,
    "broker": "国泰海通证券"
   },
   "长江证券股份有限公司郑州金水路证券营业部": {
@@ -2524,17 +2524,17 @@
   "东方证券股份有限公司上海松江区沪亭北路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 126,
-   "buyWan": 2528279,
-   "sellWan": 2519295,
+   "activeDays": 127,
+   "buyWan": 2530906,
+   "sellWan": 2521818,
    "broker": "东方证券"
   },
   "华鑫证券有限责任公司上海陆家嘴证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 197,
+   "activeDays": 198,
    "buyWan": 3392863,
-   "sellWan": 3025833,
+   "sellWan": 3031758,
    "broker": "华鑫证券"
   },
   "国泰海通证券股份有限公司成都双庆路证券营业部": {
@@ -2556,8 +2556,8 @@
   "中信建投证券股份有限公司南昌桃苑大街证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 38,
-   "buyWan": 44218,
+   "activeDays": 39,
+   "buyWan": 44714,
    "sellWan": 51407,
    "broker": "中信建投证券"
   },
@@ -2636,9 +2636,9 @@
   "中国中金财富证券有限公司广州分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 43,
+   "activeDays": 44,
    "buyWan": 18142,
-   "sellWan": 105406,
+   "sellWan": 108003,
    "broker": "中国中金财富证券"
   },
   "中国银河证券股份有限公司杭州丰潭路证券营业部": {
@@ -2660,9 +2660,9 @@
   "东亚前海证券有限责任公司苏州分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 206,
-   "buyWan": 1568071,
-   "sellWan": 1111631,
+   "activeDays": 207,
+   "buyWan": 1570594,
+   "sellWan": 1114064,
    "broker": "东亚前海证券"
   },
   "国泰海通证券股份有限公司上海松江区中山东路证券营业部": {
@@ -2756,8 +2756,8 @@
   "光大证券股份有限公司宁波湾头路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 13,
-   "buyWan": 5175,
+   "activeDays": 14,
+   "buyWan": 5587,
    "sellWan": 6463,
    "broker": "光大证券"
   },
@@ -2836,9 +2836,9 @@
   "中国银河证券股份有限公司北京学院南路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 152,
+   "activeDays": 153,
    "buyWan": 677832,
-   "sellWan": 442895,
+   "sellWan": 455249,
    "broker": "中国银河证券"
   },
   "华金证券股份有限公司浙江分公司": {
@@ -3324,8 +3324,8 @@
   "东方证券股份有限公司厦门仙岳路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 99,
-   "buyWan": 366113,
+   "activeDays": 100,
+   "buyWan": 367777,
    "sellWan": 228014,
    "broker": "东方证券"
   },
@@ -3356,9 +3356,9 @@
   "东方财富证券股份有限公司山南香曲东路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 255,
-   "buyWan": 2314366,
-   "sellWan": 1508142,
+   "activeDays": 256,
+   "buyWan": 2341008,
+   "sellWan": 1521391,
    "broker": "东方财富证券"
   },
   "山西证券股份有限公司浙江分公司": {
@@ -3564,9 +3564,9 @@
   "国泰海通证券股份有限公司深圳分公司华富路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 28,
+   "activeDays": 29,
    "buyWan": 47617,
-   "sellWan": 34067,
+   "sellWan": 35453,
    "broker": "国泰海通证券"
   },
   "国投证券股份有限公司重庆两江证券营业部": {
@@ -3628,9 +3628,9 @@
   "东莞证券股份有限公司南京分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 162,
-   "buyWan": 968496,
-   "sellWan": 891752,
+   "activeDays": 163,
+   "buyWan": 974193,
+   "sellWan": 895827,
    "broker": "东莞证券"
   },
   "国信证券股份有限公司北京国贸证券营业部": {
@@ -3828,8 +3828,8 @@
   "中信建投证券股份有限公司上海营口路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 233,
-   "buyWan": 663625,
+   "activeDays": 234,
+   "buyWan": 664120,
    "sellWan": 644595,
    "broker": "中信建投证券"
   },
@@ -3916,9 +3916,9 @@
   "国泰海通证券股份有限公司常州健身路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 39,
-   "buyWan": 123856,
-   "sellWan": 79916,
+   "activeDays": 40,
+   "buyWan": 133176,
+   "sellWan": 82298,
    "broker": "国泰海通证券"
   },
   "国金证券股份有限公司武汉积玉桥证券营业部": {
@@ -4036,9 +4036,9 @@
   "华鑫证券有限责任公司江苏分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 17,
+   "activeDays": 18,
    "buyWan": 141471,
-   "sellWan": 87185,
+   "sellWan": 87312,
    "broker": "华鑫证券"
   },
   "国元证券股份有限公司上海民生路证券营业部": {
@@ -4092,9 +4092,9 @@
   "麦高证券有限责任公司北京分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 132,
-   "buyWan": 169315,
-   "sellWan": 108392,
+   "activeDays": 133,
+   "buyWan": 170450,
+   "sellWan": 108674,
    "broker": "麦高证券"
   },
   "湘财证券股份有限公司北京分公司": {
@@ -4116,9 +4116,9 @@
   "华鑫证券有限责任公司上海分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 189,
+   "activeDays": 190,
    "buyWan": 3435268,
-   "sellWan": 3384796,
+   "sellWan": 3385312,
    "broker": "华鑫证券"
   },
   "德邦证券股份有限公司嘉兴分公司": {
@@ -4188,8 +4188,8 @@
   "中信证券股份有限公司上海徐汇区漕溪北路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 100,
-   "buyWan": 530268,
+   "activeDays": 101,
+   "buyWan": 532279,
    "sellWan": 344861,
    "broker": "中信证券"
   },
@@ -4300,8 +4300,8 @@
   "广发证券股份有限公司武汉京汉大道证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 42,
-   "buyWan": 8099,
+   "activeDays": 43,
+   "buyWan": 9127,
    "sellWan": 91410,
    "broker": "广发证券"
   },
@@ -4372,8 +4372,8 @@
   "中国银河证券股份有限公司大连黄河路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 59,
-   "buyWan": 1718805,
+   "activeDays": 60,
+   "buyWan": 1720713,
    "sellWan": 996382,
    "broker": "中国银河证券"
   },
@@ -4908,9 +4908,9 @@
   "国信证券股份有限公司深圳科技园分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 15,
+   "activeDays": 16,
    "buyWan": 4085,
-   "sellWan": 15151,
+   "sellWan": 15168,
    "broker": "国信证券"
   },
   "中信证券股份有限公司南京洪武北路证券营业部": {
@@ -5116,8 +5116,8 @@
   "东莞证券股份有限公司东莞分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 17,
-   "buyWan": 2819,
+   "activeDays": 18,
+   "buyWan": 3230,
    "sellWan": 25550,
    "broker": "东莞证券"
   },
@@ -5140,8 +5140,8 @@
   "东莞证券股份有限公司常熟东南大道证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 88,
-   "buyWan": 160251,
+   "activeDays": 89,
+   "buyWan": 166909,
    "sellWan": 90347,
    "broker": "东莞证券"
   },
@@ -5180,8 +5180,8 @@
   "东莞证券股份有限公司苏州聚茂街证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 26,
-   "buyWan": 74594,
+   "activeDays": 27,
+   "buyWan": 79708,
    "sellWan": 32627,
    "broker": "东莞证券"
   },
@@ -5444,9 +5444,9 @@
   "平安证券股份有限公司深圳香蜜湖证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 86,
-   "buyWan": 183503,
-   "sellWan": 129136,
+   "activeDays": 87,
+   "buyWan": 187026,
+   "sellWan": 131921,
    "broker": "平安证券"
   },
   "中银国际证券股份有限公司沈阳和平南大街证券营业部": {
@@ -5564,9 +5564,9 @@
   "渤海证券股份有限公司深圳分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 7,
+   "activeDays": 8,
    "buyWan": 3762,
-   "sellWan": 869,
+   "sellWan": 1360,
    "broker": "渤海证券"
   },
   "长江证券股份有限公司荆州北京西路证券营业部": {
@@ -6484,8 +6484,8 @@
   "东亚前海证券有限责任公司上海分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 161,
-   "buyWan": 544539,
+   "activeDays": 162,
+   "buyWan": 550743,
    "sellWan": 427475,
    "broker": "东亚前海证券"
   },
@@ -6588,9 +6588,9 @@
   "中信证券股份有限公司北京北三环中路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 34,
+   "activeDays": 35,
    "buyWan": 52202,
-   "sellWan": 109661,
+   "sellWan": 110675,
    "broker": "中信证券"
   },
   "中信证券股份有限公司启东公园南路证券营业部": {
@@ -6876,9 +6876,9 @@
   "开源证券股份有限公司西安高新成章路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 111,
+   "activeDays": 112,
    "buyWan": 1292518,
-   "sellWan": 537636,
+   "sellWan": 540619,
    "broker": "开源证券"
   },
   "国信证券股份有限公司达州金龙大道证券营业部": {
@@ -6972,9 +6972,9 @@
   "华源证券股份有限公司江苏分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 154,
-   "buyWan": 448598,
-   "sellWan": 473030,
+   "activeDays": 155,
+   "buyWan": 450078,
+   "sellWan": 480376,
    "broker": "华源证券"
   },
   "中信建投证券股份有限公司北京三元桥证券营业部": {
@@ -6996,9 +6996,9 @@
   "招商证券股份有限公司苏州华池街证券营业部": {
    "cluster": 2,
    "label": "偶发席位",
-   "activeDays": 2,
+   "activeDays": 3,
    "buyWan": 0,
-   "sellWan": 3382,
+   "sellWan": 5178,
    "broker": "招商证券"
   },
   "中山证券有限责任公司深圳民治街道证券营业部": {
@@ -7540,9 +7540,9 @@
   "东方财富证券股份有限公司拉萨东城区江苏大道证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 184,
-   "buyWan": 358737,
-   "sellWan": 217869,
+   "activeDays": 185,
+   "buyWan": 359979,
+   "sellWan": 219301,
    "broker": "东方财富证券"
   },
   "国信证券股份有限公司青岛银川东路证券营业部": {
@@ -7636,9 +7636,9 @@
   "东海证券股份有限公司福州长乐北路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 89,
+   "activeDays": 90,
    "buyWan": 282694,
-   "sellWan": 244488,
+   "sellWan": 246833,
    "broker": "东海证券"
   },
   "华宝证券股份有限公司深圳福华一路证券营业部": {
@@ -8012,9 +8012,9 @@
   "兴业证券股份有限公司福州工业路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 32,
+   "activeDays": 33,
    "buyWan": 77892,
-   "sellWan": 42117,
+   "sellWan": 47562,
    "broker": "兴业证券"
   },
   "中信建投证券股份有限公司武汉香港路证券营业部": {
@@ -8180,17 +8180,17 @@
   "浙商证券股份有限公司上海浦东杨高南路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 14,
+   "activeDays": 15,
    "buyWan": 126554,
-   "sellWan": 95009,
+   "sellWan": 95432,
    "broker": "浙商证券"
   },
   "华源证券股份有限公司深圳分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 69,
+   "activeDays": 70,
    "buyWan": 184107,
-   "sellWan": 146750,
+   "sellWan": 147293,
    "broker": "华源证券"
   },
   "东北证券股份有限公司上海局门路证券营业部": {
@@ -8420,8 +8420,8 @@
   "国投证券股份有限公司深圳深南大道华侨城大厦证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 53,
-   "buyWan": 144188,
+   "activeDays": 54,
+   "buyWan": 145391,
    "sellWan": 47013,
    "broker": "国投证券"
   },
@@ -8484,9 +8484,9 @@
   "招商证券交易单元(052300)": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 17,
+   "activeDays": 18,
    "buyWan": 12533,
-   "sellWan": 17781,
+   "sellWan": 20996,
    "broker": "招商证券交易"
   },
   "国泰海通证券股份有限公司南京双龙大道证券营业部": {
@@ -8508,9 +8508,9 @@
   "联储证券股份有限公司宁波分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 84,
+   "activeDays": 85,
    "buyWan": 193232,
-   "sellWan": 130069,
+   "sellWan": 131599,
    "broker": "联储证券"
   },
   "东兴证券股份有限公司沈阳青年大街证券营业部": {
@@ -9220,8 +9220,8 @@
   "国泰海通证券股份有限公司三亚迎宾路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 112,
-   "buyWan": 1144038,
+   "activeDays": 113,
+   "buyWan": 1148927,
    "sellWan": 862111,
    "broker": "国泰海通证券"
   },
@@ -9468,9 +9468,9 @@
   "招商证券股份有限公司广州天河君茂广场证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 21,
+   "activeDays": 22,
    "buyWan": 7477,
-   "sellWan": 12523,
+   "sellWan": 12617,
    "broker": "招商证券"
   },
   "中国银河证券股份有限公司深圳深南大道证券营业部": {
@@ -9636,9 +9636,9 @@
   "广发证券股份有限公司广州寺右新马路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 78,
+   "activeDays": 79,
    "buyWan": 108804,
-   "sellWan": 78575,
+   "sellWan": 82117,
    "broker": "广发证券"
   },
   "中信证券股份有限公司宁波北仑新碶证券营业部": {
@@ -9900,9 +9900,9 @@
   "招商证券股份有限公司佛山顺德东乐路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 3,
+   "activeDays": 4,
    "buyWan": 84,
-   "sellWan": 11623,
+   "sellWan": 11633,
    "broker": "招商证券"
   },
   "东北证券股份有限公司长春同志街第三证券营业部": {
@@ -9980,9 +9980,9 @@
   "开源证券股份有限公司西安太华路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 159,
-   "buyWan": 9030896,
-   "sellWan": 5352289,
+   "activeDays": 160,
+   "buyWan": 9049746,
+   "sellWan": 5380527,
    "broker": "开源证券"
   },
   "华创证券有限责任公司贵阳喀斯特广场证券营业部": {
@@ -10092,8 +10092,8 @@
   "中国中金财富证券有限公司南通如东青园北路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 16,
-   "buyWan": 5172,
+   "activeDays": 17,
+   "buyWan": 5316,
    "sellWan": 2183,
    "broker": "中国中金财富证券"
   },
@@ -10188,8 +10188,8 @@
   "东方证券股份有限公司深圳金田路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 67,
-   "buyWan": 691698,
+   "activeDays": 68,
+   "buyWan": 694073,
    "sellWan": 232106,
    "broker": "东方证券"
   },
@@ -10420,9 +10420,9 @@
   "东方证券股份有限公司汕头长平路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 39,
+   "activeDays": 40,
    "buyWan": 43120,
-   "sellWan": 59398,
+   "sellWan": 59966,
    "broker": "东方证券"
   },
   "东方证券股份有限公司上海黄浦区北京东路证券营业部": {
@@ -10564,9 +10564,9 @@
   "信达证券股份有限公司本溪曙光路证券营业部": {
    "cluster": 2,
    "label": "偶发席位",
-   "activeDays": 1,
+   "activeDays": 2,
    "buyWan": 0,
-   "sellWan": 556,
+   "sellWan": 2963,
    "broker": "信达证券"
   },
   "国泰海通证券股份有限公司广东揭阳黄岐山大道营业部": {
@@ -10828,9 +10828,9 @@
   "广发证券股份有限公司无锡太湖东大道证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 9,
+   "activeDays": 10,
    "buyWan": 4634,
-   "sellWan": 5286,
+   "sellWan": 6623,
    "broker": "广发证券"
   },
   "国泰海通证券股份有限公司上海宝山区牡丹江路证券营业部": {
@@ -11028,9 +11028,9 @@
   "中信建投证券股份有限公司福州东街证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 60,
+   "activeDays": 61,
    "buyWan": 121290,
-   "sellWan": 128225,
+   "sellWan": 129536,
    "broker": "中信建投证券"
   },
   "东方证券股份有限公司合肥梅山路证券营业部": {
@@ -11284,9 +11284,9 @@
   "长城证券股份有限公司深圳深南大道证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 17,
+   "activeDays": 18,
    "buyWan": 4414,
-   "sellWan": 34620,
+   "sellWan": 36885,
    "broker": "长城证券"
   },
   "方正证券股份有限公司成都高升桥路证券营业部": {
@@ -11348,8 +11348,8 @@
   "中信证券(山东)有限责任公司青岛连云港路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 12,
-   "buyWan": 1021,
+   "activeDays": 13,
+   "buyWan": 1277,
    "sellWan": 34102,
    "broker": "中信证券"
   },
@@ -11532,8 +11532,8 @@
   "中国中金财富证券有限公司绵阳市证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 18,
-   "buyWan": 650,
+   "activeDays": 19,
+   "buyWan": 799,
    "sellWan": 5160,
    "broker": "中国中金财富证券"
   },
@@ -11732,9 +11732,9 @@
   "中信证券股份有限公司北京京城大厦证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 28,
+   "activeDays": 29,
    "buyWan": 61445,
-   "sellWan": 51046,
+   "sellWan": 56298,
    "broker": "中信证券"
   },
   "开源证券股份有限公司西安永城路证券营业部": {
@@ -12060,8 +12060,8 @@
   "中国中金财富证券有限公司江门迎宾大道证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 6,
-   "buyWan": 1623,
+   "activeDays": 7,
+   "buyWan": 1643,
    "sellWan": 120,
    "broker": "中国中金财富证券"
   },
@@ -12084,9 +12084,9 @@
   "华泰证券股份有限公司北京雍和宫证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 17,
+   "activeDays": 18,
    "buyWan": 7506,
-   "sellWan": 19327,
+   "sellWan": 19335,
    "broker": "华泰证券"
   },
   "江海证券有限公司上海万航渡路证券营业部": {
@@ -12716,8 +12716,8 @@
   "国泰海通证券股份有限公司长沙五一大道第二证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 64,
-   "buyWan": 69000,
+   "activeDays": 65,
+   "buyWan": 72438,
    "sellWan": 97704,
    "broker": "国泰海通证券"
   },
@@ -12820,9 +12820,9 @@
   "国泰海通证券股份有限公司上海浦东新区浦东南路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 11,
+   "activeDays": 12,
    "buyWan": 6570,
-   "sellWan": 8824,
+   "sellWan": 11678,
    "broker": "国泰海通证券"
   },
   "华安证券股份有限公司黄山分公司": {
@@ -13108,8 +13108,8 @@
   "广发证券股份有限公司福州儒江西路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 6,
-   "buyWan": 30341,
+   "activeDays": 7,
+   "buyWan": 30695,
    "sellWan": 10585,
    "broker": "广发证券"
   },
@@ -13156,8 +13156,8 @@
   "东方财富证券股份有限公司上海徐汇区云锦路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 25,
-   "buyWan": 24111,
+   "activeDays": 26,
+   "buyWan": 24783,
    "sellWan": 21184,
    "broker": "东方财富证券"
   },
@@ -13300,9 +13300,9 @@
   "国泰海通证券股份有限公司深圳益田路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 12,
+   "activeDays": 13,
    "buyWan": 4699,
-   "sellWan": 31093,
+   "sellWan": 32511,
    "broker": "国泰海通证券"
   },
   "长城证券股份有限公司西安朱雀大街证券营业部": {
@@ -13316,8 +13316,8 @@
   "广发证券股份有限公司普宁流沙证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 22,
-   "buyWan": 23191,
+   "activeDays": 23,
+   "buyWan": 23512,
    "sellWan": 90096,
    "broker": "广发证券"
   },
@@ -13404,9 +13404,9 @@
   "国新证券股份有限公司北京分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 210,
-   "buyWan": 3267034,
-   "sellWan": 2332435,
+   "activeDays": 211,
+   "buyWan": 3293037,
+   "sellWan": 2351936,
    "broker": "国新证券"
   },
   "南京证券股份有限公司江西分公司": {
@@ -13572,8 +13572,8 @@
   "中泰证券股份有限公司厦门七星西路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 14,
-   "buyWan": 1467,
+   "activeDays": 15,
+   "buyWan": 2935,
    "sellWan": 43456,
    "broker": "中泰证券"
   },
@@ -13620,9 +13620,9 @@
   "中信证券股份有限公司绍兴分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 9,
+   "activeDays": 10,
    "buyWan": 10329,
-   "sellWan": 16922,
+   "sellWan": 17846,
    "broker": "中信证券"
   },
   "恒泰证券股份有限公司沈阳奉天街证券营业部": {
@@ -14140,8 +14140,8 @@
   "中信建投证券股份有限公司上海张杨北路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 8,
-   "buyWan": 3232,
+   "activeDays": 9,
+   "buyWan": 4550,
    "sellWan": 2255,
    "broker": "中信建投证券"
   },
@@ -14212,9 +14212,9 @@
   "中原证券股份有限公司新郑中华路证券营业部": {
    "cluster": 2,
    "label": "偶发席位",
-   "activeDays": 1,
+   "activeDays": 2,
    "buyWan": 0,
-   "sellWan": 831,
+   "sellWan": 8839,
    "broker": "中原证券"
   },
   "上海证券有限责任公司嘉定证券营业部": {
@@ -14244,8 +14244,8 @@
   "华鑫证券有限责任公司深圳分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 54,
-   "buyWan": 95552,
+   "activeDays": 55,
+   "buyWan": 96635,
    "sellWan": 84790,
    "broker": "华鑫证券"
   },
@@ -14332,9 +14332,9 @@
   "中山证券有限责任公司北京分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 8,
+   "activeDays": 9,
    "buyWan": 741,
-   "sellWan": 12580,
+   "sellWan": 13035,
    "broker": "中山证券"
   },
   "兴业证券股份有限公司上海锦康路证券营业部": {
@@ -14684,9 +14684,9 @@
   "国泰海通证券股份有限公司昆明人民中路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 48,
+   "activeDays": 49,
    "buyWan": 113097,
-   "sellWan": 96634,
+   "sellWan": 101639,
    "broker": "国泰海通证券"
   },
   "中航证券有限公司苏州星海街证券营业部": {
@@ -14836,9 +14836,9 @@
   "申万宏源证券有限公司石家庄中山西路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 3,
+   "activeDays": 4,
    "buyWan": 306,
-   "sellWan": 5447,
+   "sellWan": 5913,
    "broker": "申万宏源证券"
   },
   "湘财证券股份有限公司哈尔滨中山路证券营业部": {
@@ -15012,8 +15012,8 @@
   "开源证券股份有限公司苏州苏州大道东证券营业部": {
    "cluster": 0,
    "label": "偶发席位",
-   "activeDays": 8,
-   "buyWan": 2751,
+   "activeDays": 9,
+   "buyWan": 7516,
    "sellWan": 2401,
    "broker": "开源证券"
   },
@@ -15324,9 +15324,9 @@
   "华西证券股份有限公司遂宁遂州南路证券营业部": {
    "cluster": 2,
    "label": "偶发席位",
-   "activeDays": 2,
+   "activeDays": 3,
    "buyWan": 0,
-   "sellWan": 964,
+   "sellWan": 2233,
    "broker": "华西证券"
   },
   "渤海证券股份有限公司天津水上公园东路证券营业部": {
@@ -15988,9 +15988,9 @@
   "长江证券股份有限公司昆明白龙路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 21,
+   "activeDays": 22,
    "buyWan": 95395,
-   "sellWan": 34237,
+   "sellWan": 35490,
    "broker": "长江证券"
   },
   "华龙证券股份有限公司上海大渡河路证券业务部": {
@@ -16076,8 +16076,8 @@
   "国泰海通证券股份有限公司深圳红荔西路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 22,
-   "buyWan": 81044,
+   "activeDays": 23,
+   "buyWan": 81861,
    "sellWan": 77491,
    "broker": "国泰海通证券"
   },
@@ -16460,8 +16460,8 @@
   "国金证券股份有限公司上海浦东新区云鹃北路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 44,
-   "buyWan": 12404,
+   "activeDays": 45,
+   "buyWan": 13596,
    "sellWan": 45431,
    "broker": "国金证券"
   },
@@ -16932,8 +16932,8 @@
   "银泰证券有限责任公司无锡兴源北路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 11,
-   "buyWan": 15936,
+   "activeDays": 12,
+   "buyWan": 16787,
    "sellWan": 2624,
    "broker": "银泰证券"
   },
@@ -17436,8 +17436,8 @@
   "国金证券股份有限公司北京长椿街证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 13,
-   "buyWan": 6938,
+   "activeDays": 14,
+   "buyWan": 7288,
    "sellWan": 6213,
    "broker": "国金证券"
   },
@@ -18556,9 +18556,9 @@
   "东莞证券股份有限公司北京分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 26,
+   "activeDays": 27,
    "buyWan": 57021,
-   "sellWan": 17863,
+   "sellWan": 18142,
    "broker": "东莞证券"
   },
   "国泰海通证券股份有限公司河源越王大道证券营业部": {
@@ -18644,9 +18644,9 @@
   "国投证券股份有限公司揭阳普宁南华路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 7,
+   "activeDays": 8,
    "buyWan": 3260,
-   "sellWan": 2482,
+   "sellWan": 2819,
    "broker": "国投证券"
   },
   "国信证券股份有限公司铜陵义安大道证券营业部": {
@@ -19268,9 +19268,9 @@
   "广发证券股份有限公司安徽分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 11,
+   "activeDays": 12,
    "buyWan": 3169,
-   "sellWan": 7928,
+   "sellWan": 8204,
    "broker": "广发证券"
   },
   "财达证券股份有限公司沧州泊头裕华中路营业部": {
@@ -19740,9 +19740,9 @@
   "中信证券股份有限公司北京分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 70,
+   "activeDays": 71,
    "buyWan": 177481,
-   "sellWan": 152097,
+   "sellWan": 153199,
    "broker": "中信证券"
   },
   "中邮证券有限责任公司广东分公司": {
@@ -20084,8 +20084,8 @@
   "平安证券股份有限公司济南解放路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 48,
-   "buyWan": 83220,
+   "activeDays": 49,
+   "buyWan": 86542,
    "sellWan": 38734,
    "broker": "平安证券"
   },
@@ -20388,9 +20388,9 @@
   "国泰海通证券股份有限公司淄博通济街证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 4,
+   "activeDays": 5,
    "buyWan": 13,
-   "sellWan": 3218,
+   "sellWan": 3420,
    "broker": "国泰海通证券"
   },
   "中航证券有限公司深圳分公司": {
@@ -20756,8 +20756,8 @@
   "华泰证券股份有限公司上海分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 29,
-   "buyWan": 24062,
+   "activeDays": 30,
+   "buyWan": 25548,
    "sellWan": 82906,
    "broker": "华泰证券"
   },
@@ -20940,8 +20940,8 @@
   "国泰海通证券股份有限公司南昌站前路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 6,
-   "buyWan": 6952,
+   "activeDays": 7,
+   "buyWan": 6963,
    "sellWan": 78726,
    "broker": "国泰海通证券"
   },
@@ -21028,9 +21028,9 @@
   "金融街证券股份有限公司浙江分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 10,
-   "buyWan": 9124,
-   "sellWan": 12904,
+   "activeDays": 11,
+   "buyWan": 10003,
+   "sellWan": 17256,
    "broker": "金融街证券"
   },
   "金融街证券股份有限公司上海河南南路证券营业部": {
@@ -22068,9 +22068,9 @@
   "平安证券股份有限公司深圳金融科技证券分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 13,
+   "activeDays": 14,
    "buyWan": 7465,
-   "sellWan": 7295,
+   "sellWan": 7835,
    "broker": "平安证券"
   },
   "华福证券有限责任公司上海黄浦区马当路证券营业部": {
@@ -22564,9 +22564,9 @@
   "中信证券华南股份有限公司广州花都曙光路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 5,
+   "activeDays": 6,
    "buyWan": 53,
-   "sellWan": 6418,
+   "sellWan": 8204,
    "broker": "中信证券华南"
   },
   "广发证券股份有限公司广州万博二路营业部": {
@@ -22980,9 +22980,9 @@
   "国泰海通证券股份有限公司杭州金华南路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 12,
+   "activeDays": 13,
    "buyWan": 7095,
-   "sellWan": 7481,
+   "sellWan": 8913,
    "broker": "国泰海通证券"
   },
   "川财证券有限责任公司乐山五通桥文化街证券营业部": {
@@ -23268,8 +23268,8 @@
   "国投证券股份有限公司上海浦东新区樱花路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 29,
-   "buyWan": 44980,
+   "activeDays": 30,
+   "buyWan": 47143,
    "sellWan": 79361,
    "broker": "国投证券"
   },
@@ -23780,9 +23780,9 @@
   "长城证券股份有限公司深圳分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 15,
+   "activeDays": 16,
    "buyWan": 39905,
-   "sellWan": 24944,
+   "sellWan": 25486,
    "broker": "长城证券"
   },
   "华泰证券股份有限公司绥化肇东正阳大街证券营业部": {
@@ -24340,8 +24340,8 @@
   "平安证券股份有限公司金华李渔路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 47,
-   "buyWan": 46657,
+   "activeDays": 48,
+   "buyWan": 47506,
    "sellWan": 18826,
    "broker": "平安证券"
   },
@@ -24508,8 +24508,8 @@
   "财通证券股份有限公司余姚南雷路证券营业部": {
    "cluster": 0,
    "label": "偶发席位",
-   "activeDays": 2,
-   "buyWan": 2151,
+   "activeDays": 3,
+   "buyWan": 3340,
    "sellWan": 0,
    "broker": "财通证券"
   },
@@ -25052,8 +25052,8 @@
   "中国中金财富证券有限公司北京万寿路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 13,
-   "buyWan": 2588,
+   "activeDays": 14,
+   "buyWan": 2732,
    "sellWan": 10955,
    "broker": "中国中金财富证券"
   },
@@ -25604,9 +25604,9 @@
   "国投证券股份有限公司成都交子大道证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 15,
+   "activeDays": 16,
    "buyWan": 21431,
-   "sellWan": 31576,
+   "sellWan": 32404,
    "broker": "国投证券"
   },
   "东北证券股份有限公司南京中山北路证券营业部": {
@@ -26164,8 +26164,8 @@
   "甬兴证券有限公司天津解放北路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 29,
-   "buyWan": 96026,
+   "activeDays": 30,
+   "buyWan": 97582,
    "sellWan": 94852,
    "broker": "甬兴证券"
   },
@@ -26252,8 +26252,8 @@
   "平安证券股份有限公司嘉兴中环南路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 40,
-   "buyWan": 79454,
+   "activeDays": 41,
+   "buyWan": 81514,
    "sellWan": 58894,
    "broker": "平安证券"
   },
@@ -26748,9 +26748,9 @@
   "国泰海通证券股份有限公司上海普陀区大渡河路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 51,
-   "buyWan": 74833,
-   "sellWan": 37078,
+   "activeDays": 52,
+   "buyWan": 76573,
+   "sellWan": 40839,
    "broker": "国泰海通证券"
   },
   "江海证券有限公司深圳桃园路证券营业部": {
@@ -26844,8 +26844,8 @@
   "华泰证券股份有限公司南京止马营证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 4,
-   "buyWan": 1368,
+   "activeDays": 5,
+   "buyWan": 4377,
    "sellWan": 1464,
    "broker": "华泰证券"
   },
@@ -26964,8 +26964,8 @@
   "华泰证券股份有限公司深圳科苑路百度国际大厦证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 13,
-   "buyWan": 1542,
+   "activeDays": 14,
+   "buyWan": 1549,
    "sellWan": 32591,
    "broker": "华泰证券"
   },
@@ -27068,8 +27068,8 @@
   "中国银河证券股份有限公司南宁民族大道证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 5,
-   "buyWan": 544,
+   "activeDays": 6,
+   "buyWan": 3372,
    "sellWan": 14080,
    "broker": "中国银河证券"
   },
@@ -28324,9 +28324,9 @@
   "国泰海通证券股份有限公司湛江万豪世家证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 137,
-   "buyWan": 1758804,
-   "sellWan": 1028529,
+   "activeDays": 138,
+   "buyWan": 1764663,
+   "sellWan": 1043445,
    "broker": "国泰海通证券"
   },
   "中国中金财富证券有限公司北京科学院南路证券营业部": {
@@ -28756,9 +28756,9 @@
   "第一创业证券股份有限公司北京西城分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 12,
+   "activeDays": 13,
    "buyWan": 3324,
-   "sellWan": 20620,
+   "sellWan": 21559,
    "broker": "第一创业证券"
   },
   "平安证券股份有限公司武汉和平大道证券营业部": {
@@ -29628,9 +29628,9 @@
   "东亚前海证券有限责任公司浙江第二分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 22,
+   "activeDays": 23,
    "buyWan": 76881,
-   "sellWan": 65837,
+   "sellWan": 71742,
    "broker": "东亚前海证券"
   },
   "中国中金财富证券有限公司河南分公司": {
@@ -30316,9 +30316,9 @@
   "国泰海通证券股份有限公司天津高新区梅苑路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 43,
-   "buyWan": 543705,
-   "sellWan": 546502,
+   "activeDays": 44,
+   "buyWan": 546447,
+   "sellWan": 549246,
    "broker": "国泰海通证券"
   },
   "开源证券股份有限公司湖北分公司": {
@@ -33132,9 +33132,9 @@
   "华鑫证券有限责任公司上海徐汇区瑞平路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 137,
-   "buyWan": 521351,
-   "sellWan": 427322,
+   "activeDays": 138,
+   "buyWan": 523694,
+   "sellWan": 431985,
    "broker": "华鑫证券"
   },
   "中信建投证券股份有限公司宁波分公司": {
@@ -33396,9 +33396,9 @@
   "民生证券股份有限公司河南分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 18,
+   "activeDays": 19,
    "buyWan": 7103,
-   "sellWan": 14428,
+   "sellWan": 14456,
    "broker": "民生证券"
   },
   "中国银河证券股份有限公司佛山顺德大良证券营业部": {
@@ -34500,9 +34500,9 @@
   "东兴证券股份有限公司上海分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 5,
+   "activeDays": 6,
    "buyWan": 17511,
-   "sellWan": 0,
+   "sellWan": 3099,
    "broker": "东兴证券"
   },
   "西南证券股份有限公司温州汤家桥路证券营业部": {
@@ -35148,8 +35148,8 @@
   "山西证券股份有限公司临汾北洪家楼证券营业部": {
    "cluster": 2,
    "label": "偶发席位",
-   "activeDays": 3,
-   "buyWan": 12,
+   "activeDays": 4,
+   "buyWan": 46,
    "sellWan": 4097,
    "broker": "山西证券"
   },
@@ -35788,9 +35788,9 @@
   "国盛证券股份有限公司杭州建设三路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 72,
+   "activeDays": 73,
    "buyWan": 357320,
-   "sellWan": 268360,
+   "sellWan": 272352,
    "broker": "国盛证券"
   },
   "广发证券股份有限公司惠州文昌一路证券营业部": {
@@ -36300,8 +36300,8 @@
   "广发证券股份有限公司江门新会知政中路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 8,
-   "buyWan": 4312,
+   "activeDays": 9,
+   "buyWan": 4322,
    "sellWan": 2170,
    "broker": "广发证券"
   },
@@ -36660,8 +36660,8 @@
   "中国银河证券股份有限公司庄河世纪大街证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 31,
-   "buyWan": 118362,
+   "activeDays": 32,
+   "buyWan": 128988,
    "sellWan": 73546,
    "broker": "中国银河证券"
   },
@@ -37356,9 +37356,9 @@
   "开源证券股份有限公司西安柿园路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 11,
+   "activeDays": 12,
    "buyWan": 16937,
-   "sellWan": 15581,
+   "sellWan": 16888,
    "broker": "开源证券"
   },
   "中国银河证券股份有限公司武汉中南路证券营业部": {
@@ -37692,9 +37692,9 @@
   "国盛证券股份有限公司南昌桃花路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 15,
+   "activeDays": 16,
    "buyWan": 6937,
-   "sellWan": 21120,
+   "sellWan": 21440,
    "broker": "国盛证券"
   },
   "国元证券股份有限公司杭州体育馆路证券营业部": {
@@ -38060,8 +38060,8 @@
   "申万宏源证券有限公司吉林分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 7,
-   "buyWan": 1826,
+   "activeDays": 8,
+   "buyWan": 2262,
    "sellWan": 10718,
    "broker": "申万宏源证券"
   },
@@ -38836,9 +38836,9 @@
   "国泰海通证券股份有限公司北京安贞门证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 11,
-   "buyWan": 88972,
-   "sellWan": 100695,
+   "activeDays": 12,
+   "buyWan": 100940,
+   "sellWan": 108891,
    "broker": "国泰海通证券"
   },
   "中国中金财富证券有限公司肥东公园路证券营业部": {
@@ -38884,8 +38884,8 @@
   "国泰海通证券股份有限公司上海徐汇区宜山路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 44,
-   "buyWan": 541355,
+   "activeDays": 45,
+   "buyWan": 541648,
    "sellWan": 376678,
    "broker": "国泰海通证券"
   },
@@ -39532,9 +39532,9 @@
   "国信证券股份有限公司深圳南海大道证券营业部": {
    "cluster": 2,
    "label": "偶发席位",
-   "activeDays": 9,
+   "activeDays": 10,
    "buyWan": 0,
-   "sellWan": 13574,
+   "sellWan": 15388,
    "broker": "国信证券"
   },
   "国信证券股份有限公司新疆分公司": {
@@ -39860,8 +39860,8 @@
   "东方证券股份有限公司上海浦东新区北门大街证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 12,
-   "buyWan": 5183,
+   "activeDays": 13,
+   "buyWan": 5418,
    "sellWan": 3771,
    "broker": "东方证券"
   },
@@ -41036,16 +41036,16 @@
   "国泰海通证券股份有限公司沈阳黄河南大街证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 7,
+   "activeDays": 8,
    "buyWan": 900,
-   "sellWan": 25662,
+   "sellWan": 32683,
    "broker": "国泰海通证券"
   },
   "方正证券股份有限公司宁波中山西路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 3,
-   "buyWan": 3974,
+   "activeDays": 4,
+   "buyWan": 4006,
    "sellWan": 216,
    "broker": "方正证券"
   },
@@ -41204,8 +41204,8 @@
   "爱建证券有限责任公司宁波槐树路证券营业部": {
    "cluster": 2,
    "label": "偶发席位",
-   "activeDays": 2,
-   "buyWan": 0,
+   "activeDays": 3,
+   "buyWan": 9,
    "sellWan": 511,
    "broker": "爱建证券"
   },
@@ -41298,10 +41298,10 @@
    "broker": "中信证券"
   },
   "国泰海通证券股份有限公司江苏南京广州路营业部": {
-   "cluster": 2,
+   "cluster": 0,
    "label": "偶发席位",
-   "activeDays": 1,
-   "buyWan": 0,
+   "activeDays": 2,
+   "buyWan": 335,
    "sellWan": 1935,
    "broker": "国泰海通证券"
   },
@@ -41676,8 +41676,8 @@
   "国泰海通证券股份有限公司深圳分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 23,
-   "buyWan": 15577,
+   "activeDays": 24,
+   "buyWan": 15770,
    "sellWan": 6540,
    "broker": "国泰海通证券"
   },
@@ -44084,9 +44084,9 @@
   "华福证券股份有限公司龙岩解放南路证券营业部": {
    "cluster": 2,
    "label": "偶发席位",
-   "activeDays": 1,
+   "activeDays": 2,
    "buyWan": 0,
-   "sellWan": 764,
+   "sellWan": 1696,
    "broker": "华福证券"
   },
   "方正证券股份有限公司苏州金山东路证券营业部": {
@@ -44364,9 +44364,9 @@
   "中信建投证券股份有限公司杭州萧山市心中路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 5,
+   "activeDays": 6,
    "buyWan": 5860,
-   "sellWan": 26952,
+   "sellWan": 28632,
    "broker": "中信建投证券"
   },
   "中泰证券股份有限公司枣庄林运路证券营业部": {
@@ -45452,9 +45452,9 @@
   "国泰海通证券股份有限公司南京胜利路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 43,
+   "activeDays": 44,
    "buyWan": 157607,
-   "sellWan": 106687,
+   "sellWan": 107553,
    "broker": "国泰海通证券"
   },
   "第一创业证券股份有限公司佛山第二分公司": {
@@ -45692,9 +45692,9 @@
   "华西证券股份有限公司彭州牡丹东路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 5,
+   "activeDays": 6,
    "buyWan": 1054,
-   "sellWan": 3989,
+   "sellWan": 6733,
    "broker": "华西证券"
   },
   "中国银河证券股份有限公司上海浦东新区博华路证券营业部": {
@@ -45804,9 +45804,9 @@
   "国泰海通证券股份有限公司上海自贸试验区第二分公司": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 111,
-   "buyWan": 2020089,
-   "sellWan": 985284,
+   "activeDays": 112,
+   "buyWan": 2022487,
+   "sellWan": 990169,
    "broker": "国泰海通证券"
   },
   "渤海证券股份有限公司天津营口道分公司": {
@@ -46628,9 +46628,9 @@
   "广发证券股份有限公司秦皇岛和平大街证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 5,
+   "activeDays": 6,
    "buyWan": 10131,
-   "sellWan": 2571,
+   "sellWan": 3214,
    "broker": "广发证券"
   },
   "上海证券有限责任公司金山卫清西路证券营业部": {
@@ -46860,8 +46860,8 @@
   "华泰证券股份有限公司长沙湘江中路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 34,
-   "buyWan": 157360,
+   "activeDays": 35,
+   "buyWan": 159907,
    "sellWan": 69726,
    "broker": "华泰证券"
   },
@@ -47428,9 +47428,9 @@
   "华龙证券股份有限公司济南经十东路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 5,
+   "activeDays": 6,
    "buyWan": 537,
-   "sellWan": 22025,
+   "sellWan": 23365,
    "broker": "华龙证券"
   },
   "国投证券股份有限公司大连分公司": {
@@ -47500,8 +47500,8 @@
   "中国银河证券股份有限公司中山小榄升平东路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 4,
-   "buyWan": 6334,
+   "activeDays": 5,
+   "buyWan": 7670,
    "sellWan": 1804,
    "broker": "中国银河证券"
   },
@@ -49284,9 +49284,9 @@
   "国投证券股份有限公司绍兴延安东路营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 6,
+   "activeDays": 7,
    "buyWan": 4006,
-   "sellWan": 4568,
+   "sellWan": 6011,
    "broker": "国投证券"
   },
   "渤海证券股份有限公司天津滨海新区第一分公司": {
@@ -51074,7 +51074,7 @@
    "broker": "南京证券"
   },
   "长江证券股份有限公司武汉分公司": {
-   "cluster": 2,
+   "cluster": 0,
    "label": "偶发席位",
    "activeDays": 1,
    "buyWan": 8,
@@ -53018,11 +53018,11 @@
    "broker": "华金证券"
   },
   "中信证券股份有限公司浦江中山北路证券营业部": {
-   "cluster": 1,
-   "label": "高频活跃席位",
-   "activeDays": 4,
+   "cluster": 0,
+   "label": "偶发席位",
+   "activeDays": 5,
    "buyWan": 404,
-   "sellWan": 32,
+   "sellWan": 47,
    "broker": "中信证券"
   },
   "华金证券股份有限公司山东分公司": {
@@ -53092,9 +53092,9 @@
   "华林证券股份有限公司淮安淮海东路证券营业部": {
    "cluster": 0,
    "label": "偶发席位",
-   "activeDays": 1,
+   "activeDays": 2,
    "buyWan": 728,
-   "sellWan": 0,
+   "sellWan": 446,
    "broker": "华林证券"
   },
   "国新证券股份有限公司上海黄浦区黄陂南路证券营业部": {
@@ -55564,9 +55564,9 @@
   "上海证券有限责任公司虹口区新市路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 4,
-   "buyWan": 2225,
-   "sellWan": 14537,
+   "activeDays": 5,
+   "buyWan": 3064,
+   "sellWan": 20102,
    "broker": "上海证券"
   },
   "华福证券股份有限公司": {
@@ -56570,7 +56570,7 @@
    "broker": "国新证券"
   },
   "东方证券股份有限公司": {
-   "cluster": 2,
+   "cluster": 0,
    "label": "偶发席位",
    "activeDays": 1,
    "buyWan": 8,
@@ -56740,8 +56740,8 @@
   "中原证券股份有限公司浙江分公司": {
    "cluster": 0,
    "label": "偶发席位",
-   "activeDays": 1,
-   "buyWan": 1134,
+   "activeDays": 2,
+   "buyWan": 2048,
    "sellWan": 0,
    "broker": "中原证券"
   },
@@ -58460,8 +58460,8 @@
   "平安证券股份有限公司绍兴解放大道证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 46,
-   "buyWan": 150305,
+   "activeDays": 47,
+   "buyWan": 151266,
    "sellWan": 89458,
    "broker": "平安证券"
   },
@@ -58724,9 +58724,9 @@
   "广发证券股份有限公司南通工农南路证券营业部": {
    "cluster": 2,
    "label": "偶发席位",
-   "activeDays": 4,
+   "activeDays": 5,
    "buyWan": 37,
-   "sellWan": 356,
+   "sellWan": 3851,
    "broker": "广发证券"
   },
   "中航证券有限公司杭州营业部": {
@@ -59018,8 +59018,8 @@
    "broker": "华安证券"
   },
   "华福证券股份有限公司乌鲁木齐北京南路证券营业部": {
-   "cluster": 1,
-   "label": "高频活跃席位",
+   "cluster": 0,
+   "label": "偶发席位",
    "activeDays": 3,
    "buyWan": 290,
    "sellWan": 33,
@@ -60164,9 +60164,9 @@
   "国泰海通证券股份有限公司连云港巨龙南路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 26,
-   "buyWan": 196591,
-   "sellWan": 109878,
+   "activeDays": 27,
+   "buyWan": 220035,
+   "sellWan": 115318,
    "broker": "国泰海通证券"
   },
   "财达证券股份有限公司上海分公司": {
@@ -61132,9 +61132,9 @@
   "国泰海通证券股份有限公司成都天府大道证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 29,
-   "buyWan": 354850,
-   "sellWan": 208049,
+   "activeDays": 30,
+   "buyWan": 366357,
+   "sellWan": 213654,
    "broker": "国泰海通证券"
   },
   "中国银河证券股份有限公司银川北京中路证券营业部": {
@@ -61180,8 +61180,8 @@
   "中信证券股份有限公司上海虹口区溧阳路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 10,
-   "buyWan": 5496,
+   "activeDays": 11,
+   "buyWan": 6613,
    "sellWan": 42194,
    "broker": "中信证券"
   },
@@ -61324,8 +61324,8 @@
   "国投证券股份有限公司绍兴延安东路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 8,
-   "buyWan": 9245,
+   "activeDays": 9,
+   "buyWan": 10331,
    "sellWan": 5896,
    "broker": "国投证券"
   },
@@ -61812,9 +61812,9 @@
   "国泰海通证券股份有限公司长宁区江苏路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 27,
-   "buyWan": 444868,
-   "sellWan": 345437,
+   "activeDays": 28,
+   "buyWan": 466126,
+   "sellWan": 388309,
    "broker": "国泰海通证券"
   },
   "国投证券股份有限公司韶关分公司": {
@@ -62076,8 +62076,8 @@
   "华鑫证券有限责任公司上海金山证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 7,
-   "buyWan": 36508,
+   "activeDays": 8,
+   "buyWan": 43699,
    "sellWan": 40735,
    "broker": "华鑫证券"
   },
@@ -62804,9 +62804,9 @@
   "联储证券股份有限公司青岛香港中路证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 5,
+   "activeDays": 6,
    "buyWan": 8132,
-   "sellWan": 4808,
+   "sellWan": 8876,
    "broker": "联储证券"
   },
   "方正证券股份有限公司湖南分公司": {
@@ -63788,9 +63788,9 @@
   "国新证券股份有限公司北京亦庄证券营业部": {
    "cluster": 1,
    "label": "高频活跃席位",
-   "activeDays": 8,
-   "buyWan": 32557,
-   "sellWan": 15239,
+   "activeDays": 9,
+   "buyWan": 34515,
+   "sellWan": 19558,
    "broker": "国新证券"
   },
   "东兴证券股份有限公司山东分公司": {
@@ -64236,9 +64236,9 @@
   "中信证券股份有限公司徐州建国西路证券营业部": {
    "cluster": 2,
    "label": "偶发席位",
-   "activeDays": 2,
+   "activeDays": 3,
    "buyWan": 0,
-   "sellWan": 807,
+   "sellWan": 1090,
    "broker": "中信证券"
   },
   "国泰海通证券股份有限公司福建福州杨桥东路营业部": {
@@ -64540,9 +64540,9 @@
   "万联证券股份有限公司深圳海德三道证券营业部": {
    "cluster": 0,
    "label": "偶发席位",
-   "activeDays": 1,
+   "activeDays": 2,
    "buyWan": 812,
-   "sellWan": 0,
+   "sellWan": 340,
    "broker": "万联证券"
   },
   "申万宏源证券有限公司武汉江城大道证券营业部": {
@@ -64560,6 +64560,110 @@
    "buyWan": 0,
    "sellWan": 942,
    "broker": "五矿证券"
+  },
+  "东吴证券股份有限公司苏州县前街证券营业部": {
+   "cluster": 0,
+   "label": "偶发席位",
+   "activeDays": 1,
+   "buyWan": 559,
+   "sellWan": 2082,
+   "broker": "东吴证券"
+  },
+  "粤开证券股份有限公司惠州下埔路证券营业部": {
+   "cluster": 2,
+   "label": "偶发席位",
+   "activeDays": 1,
+   "buyWan": 0,
+   "sellWan": 1212,
+   "broker": "粤开证券"
+  },
+  "国元证券股份有限公司河南分公司": {
+   "cluster": 2,
+   "label": "偶发席位",
+   "activeDays": 1,
+   "buyWan": 0,
+   "sellWan": 123,
+   "broker": "国元证券"
+  },
+  "华福证券股份有限公司上海长宁区遵义路证券营业部": {
+   "cluster": 2,
+   "label": "偶发席位",
+   "activeDays": 1,
+   "buyWan": 0,
+   "sellWan": 455,
+   "broker": "华福证券"
+  },
+  "中航证券有限公司淮南淮河大道证券营业部": {
+   "cluster": 0,
+   "label": "偶发席位",
+   "activeDays": 1,
+   "buyWan": 12572,
+   "sellWan": 0,
+   "broker": "中航证券"
+  },
+  "广发证券股份有限公司成都麓山大道证券营业部": {
+   "cluster": 0,
+   "label": "偶发席位",
+   "activeDays": 1,
+   "buyWan": 874,
+   "sellWan": 0,
+   "broker": "广发证券"
+  },
+  "国投证券股份有限公司广州陆居路证券营业部": {
+   "cluster": 0,
+   "label": "偶发席位",
+   "activeDays": 1,
+   "buyWan": 235,
+   "sellWan": 0,
+   "broker": "国投证券"
+  },
+  "东方证券股份有限公司开封郑开大道证券营业部": {
+   "cluster": 0,
+   "label": "偶发席位",
+   "activeDays": 1,
+   "buyWan": 2128,
+   "sellWan": 0,
+   "broker": "东方证券"
+  },
+  "财达证券股份有限公司秦皇岛迎宾路营业部": {
+   "cluster": 0,
+   "label": "偶发席位",
+   "activeDays": 1,
+   "buyWan": 516,
+   "sellWan": 0,
+   "broker": "财达证券"
+  },
+  "民生证券股份有限公司无锡县前东街证券营业部": {
+   "cluster": 0,
+   "label": "偶发席位",
+   "activeDays": 1,
+   "buyWan": 386,
+   "sellWan": 0,
+   "broker": "民生证券"
+  },
+  "华福证券有限责任公司内蒙古分公司": {
+   "cluster": 0,
+   "label": "偶发席位",
+   "activeDays": 1,
+   "buyWan": 286,
+   "sellWan": 0,
+   "broker": "华福证券"
+  },
+  "国融证券股份有限公司重庆分公司": {
+   "cluster": 2,
+   "label": "偶发席位",
+   "activeDays": 1,
+   "buyWan": 0,
+   "sellWan": 4573,
+   "broker": "国融证券"
+  },
+  "中邮证券有限责任公司泉州九一街证券营业部": {
+   "cluster": 0,
+   "label": "偶发席位",
+   "activeDays": 1,
+   "buyWan": 598,
+   "sellWan": 0,
+   "broker": "中邮证券"
   }
  }
 }
