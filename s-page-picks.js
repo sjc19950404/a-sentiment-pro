@@ -27,21 +27,125 @@
       + '<div class="s-empty__hint">' + esc(hint) + '</div></div>';
   }
 
+  let recoTimer = null;
+  /* 【s-* 原生重写】研判推荐：读 paper_ui.js 的只读取数 __picks()（与研报同源），
+   * 用工作台 s-card/s-table/s-badge/s-btn 渲染——不搬旧 DOM、不换皮、不复制取数逻辑。 */
   function mountReco() {
-    if (!panelRef) return;
-    const host = $('#sPkRecoHost', panelRef);
-    if (!host) return;
-    let src = document.querySelector('main .paper-picks');
-    if (!src) src = document.querySelector('.paper-picks');   // 可能已被搬走
-    if (!src) return;
-    if (!host.contains(src)) {
-      /* 搬原节点（含 #picksMeta/#picksList/#picksRejected + 元素直绑事件），
-       * app.js 后续刷新按 id 找节点仍有效（同一节点，只是换了父容器）。 */
-      host.appendChild(src);
+    if (recoTimer) { clearInterval(recoTimer); recoTimer = null; }
+    let tries = 0;
+    const draw = () => {
+      const host = $('#sPkRecoHost', panelRef);
+      if (!host) return;
+      const getPicks = window.__picks;
+      if (typeof getPicks !== 'function' || !getPicks()) {
+        if (++tries <= 30) return;              // 等 paper_ui.js 异步加载（最多 15s）
+        clearInterval(recoTimer); recoTimer = null;
+        t1Empty(host, '研判推荐未就绪', '取数引擎未返回当日口径，不填充估算标的。');
+        return;
+      }
+      if (recoTimer) { clearInterval(recoTimer); recoTimer = null; }
+      const r = getPicks();
+      const picks = r.picks || [];
+      const pred = r.pred || {};
+      const tier = r.tier || {};
+      const num = (v, d = 2) => v == null ? '—' : (+v).toFixed(d);
+      const sign = (v, suffix = '') => v == null ? '—' : (v > 0 ? '+' : '') + v + suffix;
+      const cls = (v) => v == null ? '' : v > 0 ? 's-num--up' : v < 0 ? 's-num--down' : '';
+
+      const meta = '<div class="s-verdict" style="margin-bottom:var(--s-space-3)">'
+        + '<span class="s-verdict__sub">数据日 ' + esc(r.asOf || '—')
+        + ' · 情绪分 <b class="s-num">' + num(r.score, 1) + '</b>'
+        + ' · 档位 <span class="s-badge s-badge--muted">' + esc(tier.label || '—') + '</span>'
+        + ' · 候选池 <b class="s-num">' + (r.pool || 0) + '</b> 只'
+        + ' → 推荐 <b class="s-num s-num--up">' + picks.length + '</b> 只'
+        + ' · 剔除 <b class="s-num s-num--down">' + (pred.rejected == null ? '—' : pred.rejected) + '</b> 只'
+        + ' · 未达门槛 ' + (pred.below == null ? '—' : pred.below) + ' 只</span></div>';
+
+      const warn = (r.climaxWarnings || []).length
+        ? '<div class="s-alert s-alert--warn" style="margin-bottom:var(--s-space-3)">'
+        + '<div class="s-alert__title">情绪高潮预警</div>'
+        + '<div>⚠ ' + esc(r.climaxWarnings.map((w) => w.sector).join('、'))
+        + ' 板块次日谨防分歧——已禁推前排高标，仅留低位首板补涨。</div></div>'
+        : '';
+
+      const rows = picks.map((p, i) => {
+        const prob = p.prob || {}, band = prob.band || {};
+        const tags = (p.gateTags || []).map((t) =>
+          '<span class="s-badge s-badge--muted">' + esc(t) + '</span>').join('');
+        const reasons = (p.reasons || []).map((x) => esc(x.text)).join(' · ');
+        return '<tr data-pick-code="' + esc(p.code) + '" tabindex="0" role="button" title="点看个股详情">'
+          + '<td><span class="s-num">' + (i + 1) + '</span>'
+          + (p.streakTop ? ' <span class="s-badge s-badge--up">连板</span>' : '') + '</td>'
+          + '<td><b>' + esc(p.name || p.code) + '</b> <span class="s-num s-text-3">' + esc(p.code) + '</span></td>'
+          + '<td class="s-num ' + cls(p.changePct) + '">' + sign(p.changePct, '%') + '</td>'
+          + '<td class="s-num">' + (prob.score == null ? '—' : num(prob.score, 1)) + '</td>'
+          + '<td>' + (p.suggestWeight > 0 ? num(p.suggestWeight * 100, 1) + '%' : '观察') + '</td>'
+          + '<td>' + tags + (reasons ? '<div class="s-text-3" style="font-size:var(--s-font-xs);margin-top:2px">'
+            + esc(reasons.slice(0, 60)) + '</div>' : '') + '</td>'
+          + '<td><button type="button" class="s-btn s-btn--ghost s-btn--xs" data-fill-code="'
+          + esc(p.code) + '">填入下单</button></td></tr>';
+      }).join('');
+
+      const table = picks.length
+        ? '<div class="s-table-wrap"><div class="s-table__viewport"><table class="s-table s-table--compact">'
+        + '<thead><tr><th>#</th><th>名称 / 代码</th><th>涨跌幅</th><th>上涨概率</th>'
+        + '<th>建议仓位</th><th>核心逻辑</th><th>操作</th></tr></thead><tbody>'
+        + rows + '</tbody></table></div></div>'
+        : '<div class="s-empty"><div class="s-empty__title">今日无推荐标的</div>'
+        + '<div class="s-empty__hint">' + esc((r.note && r.note.text) || '按当日口径无达标标的，不填充估算值。') + '</div></div>';
+
+      const rj = r.rejected || [];
+      const blocked = r.climaxBlocked || [], trimmed = r.sectorTrimmed || [];
+      const rejDetail = rj.map((p) => '<div class="s-rej-row">'
+        + '<b>' + esc(p.name || p.code) + '</b> <span class="s-text-3 s-num">' + esc(p.code) + '</span>'
+        + ' <span class="s-badge s-badge--down">' + esc(p.reason || '大概率亏') + '</span></div>').join('')
+        + [...blocked, ...trimmed].map((x) => '<div class="s-rej-row">'
+          + '<b>' + esc(x.name) + '</b> <span class="s-badge s-badge--warn">'
+          + esc(x.reason || '情绪闸门拦截') + '</span></div>').join('');
+      const rejected = (rj.length || blocked.length || trimmed.length)
+        ? '<details class="s-rej"><summary>已剔除 ' + (rj.length + blocked.length + trimmed.length)
+        + ' 只「大概率亏 / 闸门拦截」（点开看原因）</summary><div class="s-rej-body">'
+        + rejDetail + '</div></details>'
+        : '';
+
+      host.innerHTML = '<div class="s-card"><div class="s-card__body">'
+        + meta + warn + table + rejected + '</div></div>';
+
+      /* 交互：行点击下钻（复用 paper_ui 的 pickDetail 若导出，否则用 S.openDrawer 展示真值） */
+      host.querySelectorAll('tr[data-pick-code]').forEach((tr) => {
+        const open = () => {
+          const p = picks.find((x) => x.code === tr.dataset.pickCode);
+          if (!p || typeof S.openDrawer !== 'function') return;
+          S.openDrawer({
+            size: 'sm', title: p.name || p.code, sub: p.code + ' · 研判推荐当日快照',
+            render(body) {
+              body.innerHTML = '<div class="s-grid s-grid--kpi">'
+                + [['涨跌幅', sign(p.changePct, '%')], ['上涨概率', prob(p)],
+                   ['建议仓位', p.suggestWeight > 0 ? num(p.suggestWeight * 100, 1) + '%' : '观察'],
+                   ['止损', p.stop ? num(p.stop.stopLossPct * 100, 0) + '%' : '—']]
+                .map(([n, v]) => '<div><div class="s-kpi__label">' + n
+                  + '</div><div class="s-kpi__value" style="font-size:var(--s-font-lg)">' + esc(v) + '</div></div>').join('')
+                + '</div>'
+                + (p.risks && p.risks.length ? '<p class="s-kpi__note">风险：' + esc(p.risks.join('；')) + '</p>' : '');
+            },
+          });
+        };
+        tr.addEventListener('click', open);
+        tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+      });
+      /* 填入下单：复用 paper_ui 的 fillPickToOrder 若导出，否则跳模拟盘页 */
+      host.querySelectorAll('[data-fill-code]').forEach((b) => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof window.__paperFill === 'function') window.__paperFill(b.dataset.fillCode);
+        else if (typeof S.showPage === 'function') S.showPage('模拟盘');
+      }));
+    };
+    draw();
+    if (!$('#sPkRecoHost', panelRef)?.innerHTML.trim()) {
+      recoTimer = setInterval(draw, 500);
     }
-    /* 数据异步：app.js 可能晚于 mount 才填 picksList，按 id 找节点仍写同一个（已搬入的）
-     * 节点，故无需 observer。此处仅防御性检查节点真在工作台 DOM 树里。 */
   }
+  function prob(p) { return p && p.prob && p.prob.score != null ? num(p.prob.score, 1) : '—'; }
 
   function mount() {
     if (!panelRef || !enabled()) return;
@@ -109,7 +213,7 @@
       + '<div class="s-section"><div class="s-section__head">'
       + '<h2 class="s-section__title">研判推荐</h2>'
       + '<p class="s-section__note">大概率连板置顶 · 剔除大概率亏 · 点个股看详情</p>'
-      + '</div><div id="sPkRecoHost" class="s-reskin"></div></div>'
+      + '</div><div id="sPkRecoHost"></div></div>'
       + '<div class="s-section"><div class="s-section__head">'
       + '<h2 class="s-section__title">选股 · 主线天梯</h2>'
       + '<p class="s-section__note">复用终端 render · 引擎原值 · AI 侧车仅参考不改分</p>'

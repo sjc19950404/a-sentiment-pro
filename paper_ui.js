@@ -868,6 +868,10 @@ function publishSnapshot() {
   // 故与 __paperSnapshot 同样的桥接方式挂一个最小只读句柄（仅供测试与报告端复用）。
   try {
     window.__paperCtx = { account: () => ACCT, lookup: (c) => lookup(c), stats: () => accountStats(ACCT) };
+    /* 【工作台 s-* 原生组件取数】只读取数导出：研判推荐数据来自同一 currentPicks()，
+     * 工作台据此渲染自己的 s-card/s-table，不搬旧 DOM、不复制取数逻辑（避免漂移）。
+     * 纯只读，不碰任何业务状态与渲染。 */
+    window.__picks = () => currentPicks();
     // 初始资金的读写与常量也要可测：越界拦截是**唯一**的口径防线，
     // 但输入框上可能挂多个 change 监听（如测试脚本重复 eval 本文件），
     // 靠 dispatch 事件验证会假绿/假红。直接暴露纯函数给断言用。

@@ -82,12 +82,7 @@
       + `<span class="s-badge s-badge--muted" id="sPpMode">分页</span></div>`
       + `<div id="sPpOrderHost" aria-busy="true"></div>`
       + `<p class="s-kpi__note" style="margin-top:var(--s-space-2)">委托由模拟盘引擎每日收盘批处理结算；网页端为只读展示，不做实时下单。</p>`
-      + `</div>`
-      /* 【重构前功能补回】账户操作台（原研报 paper 账户区：新建/重置/导出/导入/空仓/
-       * 结算/单笔委托/批量下单/日志）。搬运原 DOM 节点（事件是元素直绑，跟节点走），
-       * 节点在原研报隐藏 main 里，工作台与研报视图切换时双向归位。 */
-      + `<div class="s-section"><h2 class="s-section__title">账户操作台（完整）</h2>`
-      + `<div id="sPpOpsHost" class="s-reskin"></div></div>`;
+      + `</div>`;
     return host;
   }
 
@@ -285,20 +280,6 @@
     if (gate) gate.addEventListener('click', openGateDrawer);
     const prev = $('#sPpPreview', panel);
     if (prev) prev.addEventListener('click', previewOrder);
-    /* 【重构前功能补回】搬运原研报账户操作区（.paper-acct 新建/重置/导出/导入/空仓/结算
-     * + .paper-exec 执行层挂件）进工作台。paper_ui.js 用 $('id').addEventListener 直绑，
-     * 事件挂在节点上、随节点走——搬的是原节点（不是克隆），故交互真可用。 */
-    const opsHost = $('#sPpOpsHost', host);
-    if (opsHost && !opsHost.dataset.bound) {
-      opsHost.dataset.bound = '1';
-      ['.paper-acct', '.paper-exec'].forEach((sel) => {
-        const node = document.querySelector('main ' + sel);
-        if (node) {
-          node.dataset.paperOrigin = 'main';
-          opsHost.appendChild(node);
-        }
-      });
-    }
     load(panel);
   }
 

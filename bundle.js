@@ -7991,6 +7991,7 @@ function publishSnapshot() {
   }
   try {
     window.__paperCtx = { account: () => ACCT, lookup: (c) => lookup(c), stats: () => accountStats(ACCT) };
+    window.__picks = () => currentPicks();
     window.__paperInitTest = {
       saveInitCash,
       loadInitCash,

@@ -61,13 +61,47 @@
       + `<span class="s-badge s-badge--muted" id="sBtMode">分页</span></div>`
       + `<div id="sBtTableHost" aria-busy="false"></div>`
       + `</div>`
-      /* 【重构前功能补回】因子健康度仪表（原研报 #factorHealthCard，EOD 真值）：
-       * 搬运原 DOM 卡进工作台回测页，app.js 后台继续渲染，observer 跟随。 */
+      /* 因子健康度（s-* 原生，读 factor_health_history.json：胜率/超额/夏普/regime 检查） */
       + `<div class="s-section"><h2 class="s-section__title">因子健康度</h2>`
-      + `<div id="sBtFactorHost" class="s-reskin"></div>`
-      + `<button type="button" class="s-btn s-btn--ghost" id="sBtMoreParams" style="margin-top:var(--s-space-2)">查看完整参数与口径</button>`
+      + `<div class="s-card"><div class="s-card__body" id="sBtFactorHost">加载中…</div></div>`
       + `</div>`;
     return host;
+  }
+
+  /* 【s-* 原生重写】因子健康度：直读 factor_health_history.json，s-kpi/s-badge 渲染。
+   * 胜率 8 周 / 连续负超额 / 夏普 / 各 regime 分组——真值，不搬旧 DOM。 */
+  function renderFactor() {
+    const host = currentPanel && $('#sBtFactorHost', currentPanel);
+    if (!host) return;
+    fetch('./data/factor_health_history.json?_=' + Date.now(), { cache: 'no-store' })
+      .then((r) => r.ok ? r.json() : null).then((f) => {
+        if (!f) { host.textContent = '因子数据未就绪'; return; }
+        const m = f.metrics || {};
+        const pct = (v) => v == null ? '—' : (+v * 100).toFixed(1) + '%';
+        const items = [
+          ['状态', f.status === 'healthy' ? '✅ 健康' : esc(f.status || '—')],
+          ['8 周胜率', pct(m.alphaWinRate8)],
+          ['连续负超额', m.negStreak == null ? '—' : m.negStreak + ' 周'],
+          ['夏普(8)', m.sharpe8 == null ? '—' : (+m.sharpe8).toFixed(2)],
+          ['MA4 分位', pct(m.ma4Pct)],
+        ];
+        let html = '<div class="s-grid s-grid--kpi">'
+          + items.map(([n, v]) => '<div><div class="s-kpi__label">' + n
+            + '</div><div class="s-kpi__value" style="font-size:var(--s-font-lg)">' + v + '</div></div>').join('')
+          + '</div>';
+        if (f.headline) html += '<p class="s-kpi__note">' + esc(f.headline) + '</p>';
+        if (Array.isArray(f.regimeCheck) && f.regimeCheck.length) {
+          html += '<div class="s-table-wrap" style="margin-top:var(--s-space-3)">'
+            + '<table class="s-table s-table--compact"><thead><tr>'
+            + '<th>regime</th><th>周数</th><th>平均超额</th><th>胜率</th></tr></thead><tbody>'
+            + f.regimeCheck.map((x) => '<tr><td>' + esc(x.label || x.regime)
+              + '</td><td class="s-num">' + (x.weeks || 0)
+              + '</td><td class="s-num ' + ((x.avgAlpha || 0) >= 0 ? 's-num--up' : 's-num--down') + '">'
+              + pct(x.avgAlpha) + '</td><td class="s-num">' + pct(x.winRate) + '</td></tr>').join('')
+            + '</tbody></table></div>';
+        }
+        host.innerHTML = html;
+      }).catch(() => { host.textContent = '因子数据加载失败'; });
   }
 
   /* ---------- 净值 series 展示元数据（照 app.js:2286-2292，数值来自 JSON） ---------- */
@@ -227,6 +261,7 @@
 
     const tableHost = currentPanel && $('#sBtTableHost', currentPanel);
     if (tableHost) renderTable(tableHost, seriesSrc);
+    renderFactor();
   }
 
   /* ---------- 生命周期：切 tab / 回退时清理 chart + 定时器 ---------- */
@@ -251,23 +286,6 @@
     let host = panel.querySelector('.s-page-backtest');
     if (!host) { host = shell(); panel.innerHTML = ''; panel.appendChild(host); }
     currentPanel = panel;
-    /* 【重构前功能】因子健康卡搬运（原 #factorHealthCard）+ btMore 参数抽屉转发。 */
-    const fh = host.querySelector('#sBtFactorHost');
-    const src = document.getElementById('factorHealthCard');
-    if (fh && src && !fh.dataset.bound) {
-      fh.dataset.bound = '1';
-      const sync = () => { if (src.innerHTML.trim()) fh.innerHTML = src.innerHTML; };
-      sync();
-      if (typeof MutationObserver === 'function') new MutationObserver(sync).observe(src, { childList: true, subtree: true, characterData: true });
-    }
-    const more = host.querySelector('#sBtMoreParams');
-    if (more && !more.dataset.bound) {
-      more.dataset.bound = '1';
-      more.addEventListener('click', () => {
-        const orig = document.getElementById('btMore');
-        if (orig) orig.click();
-      });
-    }
     // 重试按钮（事件委托在 host 上，幂等由 shell 重建保证）
     host.addEventListener('click', (e) => {
       const b = e.target && e.target.closest ? e.target.closest('[data-act="retry"]') : null;

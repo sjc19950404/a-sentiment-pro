@@ -72,6 +72,10 @@
             out.dragons = Array.isArray(dragons) ? dragons : [];
           }
         }).catch(() => {}),
+      /* 外围市场真源（data/global.json，scripts/fetch_global.mjs 预生成）——隔夜美股/
+       * 中国资产/汇率/商品，A 股休市期间照常更新。用 s-* 原生卡渲染，不搬旧 DOM。 */
+      fetch('./data/global.json?_=' + Date.now(), { cache: 'no-store' })
+        .then((r) => r.ok ? r.json() : null).then((d) => { if (d) out.global = d; }).catch(() => {}),
     ]);
     out.day = out.history[out.history.length - 1] || {};
     CACHE = out;
@@ -214,30 +218,72 @@
       + '<div class="s-empty__title">当日个股明细暂无数据</div>'
       + '<div class="s-empty__hint">数据为空是真实状态，不编造行</div></div>'
       + '</div></div><div class="s-table__pager" id="sEvPager"></div></div></div></div>'
-      /* 【重构前功能补回】外围市场卡（原研报 #zone-global，隔夜美股/中国资产/汇率/商品
-       * + glob/gmap 点品种下钻）。搬运原 DOM 节点进工作台，app.js 后台继续渲染，observer 跟随。 */
+      /* 外围市场（s-* 原生卡，读 data/global.json）：隔夜美股/中国资产/汇率/商品真值 */
       + '<div class="s-col-12"><div class="s-card"><div class="s-card__head">'
-      + '<h3 class="s-card__title">外围市场 · 节后预案</h3>'
-      + '<span class="s-badge s-badge--muted">隔夜真值</span></div>'
-      + '<div class="s-card__body s-reskin" id="sEvGlobalHost"></div></div></div>'
+      + '<h3 class="s-card__title">外围市场 · 隔夜与节后预案</h3>'
+      + '<span class="s-badge s-badge--muted" id="sEvGlobMeta">载入中…</span></div>'
+      + '<div class="s-card__body" id="sEvGlobHost"></div></div></div>'
       + '</div></div>';
     host.appendChild(sec);
-    /* 搬运 #zone-global 的两个 card 内容（原节点仍在隐藏 main，innerHTML 搬一份只读展示；
-     * app.js 更新时由下方 observer 同步，避免工作台看到旧数据）。 */
-    const gh = document.getElementById('sEvGlobalHost');
-    const zg = document.getElementById('zone-global');
-    if (gh && zg) {
-      const syncGlobal = () => {
-        const cards = zg.querySelectorAll('.card');
-        if (cards.length) gh.innerHTML = Array.from(cards).map((c) => c.outerHTML).join('');
-      };
-      syncGlobal();
-      if (typeof MutationObserver === 'function') {
-        new MutationObserver(syncGlobal).observe(zg, { childList: true, subtree: true, characterData: true });
-      }
-    }
     buildOps(host);
     built = true;
+  }
+
+  /* 【s-* 原生重写】外围市场卡：读 data/global.json，用 s-table/s-badge 渲染。
+   * 隔夜真值；点品种下钻复用 openDrawer（工作台自己的抽屉，非旧研报 DOM）。 */
+  function renderGlobal() {
+    const host = $('#sEvGlobHost'), metaEl = $('#sEvGlobMeta');
+    const g = CACHE && CACHE.global;
+    if (!host) return;
+    if (!g || !Array.isArray(g.quotes) || !g.quotes.length) {
+      host.innerHTML = '<div class="s-empty"><div class="s-empty__title">外围数据未就绪</div>'
+        + '<div class="s-empty__hint">不编造行情值</div></div>';
+      if (metaEl) metaEl.textContent = '未就绪';
+      return;
+    }
+    const meta = g.meta || {};
+    if (metaEl) metaEl.textContent = '隔夜美股 ' + (meta.usSessionDate || '—') + ' 收盘';
+    const fmt = (v, pct) => v == null ? '—'
+      : (pct ? (v > 0 ? '+' : '') + (+v).toFixed(2) + '%' : (+v).toFixed(2));
+    const cls = (v) => v == null ? '' : v > 0 ? 's-num--up' : v < 0 ? 's-num--down' : '';
+    const rows = g.quotes.map((q) => {
+      const chg = q.changePct != null ? q.changePct : q.pct;
+      return '<tr data-glob-key="' + esc(q.key) + '" tabindex="0" role="button" title="点看传导逻辑">'
+        + '<td><b>' + esc(q.name) + '</b></td>'
+        + '<td class="s-num">' + fmt(q.price != null ? q.price : q.last) + '</td>'
+        + '<td class="s-num ' + cls(chg) + '">' + fmt(chg, true) + '</td>'
+        + '<td>' + esc(q.stateText || q.state || (q.ok ? '正常' : '—')) + '</td></tr>';
+    }).join('');
+    host.innerHTML = '<div class="s-table-wrap"><div class="s-table__viewport">'
+      + '<table class="s-table s-table--compact"><thead><tr>'
+      + '<th>品种</th><th>最新</th><th>涨跌幅</th><th>状态</th></tr></thead><tbody>'
+      + rows + '</tbody></table></div></div>'
+      + ((g.anchors || []).length
+        ? '<p class="s-kpi__note">传导锚点 ' + g.anchors.length
+          + ' 条 · 点品种看对 A 股哪个板块的传导逻辑与符号</p>' : '');
+    host.querySelectorAll('tr[data-glob-key]').forEach((tr) => {
+      const open = () => {
+        const q = g.quotes.find((x) => x.key === tr.dataset.globKey);
+        const a = (g.anchors || []).find((x) => x.from === tr.dataset.globKey);
+        if (!q) return;
+        if (typeof S.openDrawer === 'function') S.openDrawer({
+          size: 'sm', title: q.name, sub: '外围行情 · 隔夜真值',
+          render(body) {
+            body.innerHTML = '<div class="s-grid s-grid--kpi">'
+              + [['最新', fmt(q.price != null ? q.price : q.last)],
+                 ['涨跌幅', fmt(q.changePct != null ? q.changePct : q.pct, true)],
+                 ['报价时间', q.quoteTime || q.sessionDate || '—']]
+              .map(([n, v]) => '<div><div class="s-kpi__label">' + n
+                + '</div><div class="s-kpi__value" style="font-size:var(--s-font-lg)">' + esc(v) + '</div></div>').join('')
+              + '</div>'
+              + (a ? '<p class="s-kpi__note"><b>传导方向：</b>' + esc(a.aSectors ? a.aSectors.join(' / ') : '—')
+                + '（' + (a.sign > 0 ? '同向' : '反向') + '）<br>' + esc(a.why || '') + '</p>' : '');
+          },
+        });
+      };
+      tr.addEventListener('click', open);
+      tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    });
   }
 
   /* ---------- 操作层 L3（回测 / 模拟盘摘要卡，数字来自真实 backtest.json） ---------- */
@@ -287,24 +333,6 @@
       hl.textContent = items.length
         ? items.filter((x) => x && x.level === 'ok').length + '/' + items.length
         : (h.label || '—');
-    }
-    /* 【重构前功能】分档披露：同步原研报 #loadScope 的真实档位文本；
-     * 点击转发原「载入完整档」按钮（真触发 loadFullArchive，不做假 UI）。 */
-    const sc = document.getElementById('sPhScope');
-    if (sc) {
-      const orig = document.getElementById('loadScope');
-      sc.textContent = orig && orig.textContent.trim() ? orig.textContent.trim().slice(0, 40) : '分层加载 · 已载入最近档';
-      if (!sc.dataset.bound) {
-        sc.dataset.bound = '1';
-        sc.tabIndex = 0;
-        sc.title = '点击载入完整档（原研报同款）';
-        const fire = () => {
-          const b = document.querySelector('#loadScope [data-act="loadfull"]');
-          if (b) { b.click(); sc.textContent = '完整档载入中…'; }
-        };
-        sc.addEventListener('click', fire);
-        sc.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fire(); } });
-      }
     }
     const fr = document.getElementById('sPhFresh');
     if (fr && m.generatedAt) {
@@ -465,6 +493,7 @@
       netVal: netByCode[x.code] != null ? netByCode[x.code] : null,
     }));
     renderHot();
+    renderGlobal();
     // ETF
     const etf = $('#sEvEtfText'); if (etf) etf.textContent = '主策略运作中，未触发对冲（真实业务态）';
     // 回测 KPI（真实 backtest.json 的 base/v52/v53）

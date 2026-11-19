@@ -208,9 +208,6 @@
       +   '<span>数据日 <b class="s-num" id="sPhTradeDate" style="color:var(--s-text-2)">—</b></span>'
       +   '<span>源健康 <b class="s-num" id="sPhHealth" style="color:var(--s-down)">—</b></span>'
       +   '<span>regime 序列 90 日</span>'
-      /* 【重构前功能补回】分档披露（原研报 #loadScope）：只读展示当前档位 +
-       * 「载入完整档」按钮（转发原按钮，真触发 loadFullArchive，不改数据层）。 */
-      +   '<span id="sPhScope" class="s-badge s-badge--muted">分层加载 · —</span>'
       +   '<span id="sPhFresh" aria-live="polite">—</span>'
       + '</div>'
       /* actions（原型 L43-55）：时间窗 + 骨架态/浅色/刷新/导出/更多，逐字对齐原型。
