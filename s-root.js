@@ -514,5 +514,41 @@
     }
   });
 
+  /* 【原型 hotSearch 同语义】工作台搜索框真筛选个股明细表（代码/名称），防抖 150ms，
+   * 不请求网络。此前只有`/`聚焦却无绑定——能聚焦不能筛，是半吊子入口。 */
+  (function bindWorkbenchSearch() {
+    let timer = null;
+    document.addEventListener('input', (e) => {
+      if (!e.target || e.target.id !== 'sPhSearch') return;
+      const q = (e.target.value || '').trim().toLowerCase();
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        const body = document.getElementById('sEvHotBody');
+        if (!body) return;
+        let shown = 0, total = 0;
+        Array.from(body.querySelectorAll('tr')).forEach((tr) => {
+          total++;
+          const hit = !q || (tr.textContent || '').toLowerCase().includes(q);
+          tr.hidden = !hit;
+          if (hit) shown++;
+        });
+        /* 无匹配时给出如实提示（不伪造数据），挂在表格容器旁 */
+        const table = document.getElementById('sEvHotTable');
+        let tip = document.getElementById('sEvSearchTip');
+        if (q && table && table.parentElement) {
+          if (!tip) {
+            tip = document.createElement('div');
+            tip.id = 'sEvSearchTip';
+            tip.className = 's-kpi__note';
+            tip.style.cssText = 'padding:8px 4px;';
+            table.parentElement.appendChild(tip);
+          }
+          tip.textContent = shown ? `匹配 ${shown} / ${total} 行` : '无匹配个股（本地筛选，不请求网络）';
+          tip.hidden = false;
+        } else if (tip) { tip.hidden = true; }
+      }, 150);
+    });
+  })();
+
   S.routeWorkbench = route;
 })(window.S = window.S || {});
