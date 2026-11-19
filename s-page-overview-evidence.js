@@ -38,8 +38,13 @@
   /* 【25 册 P1-5】个股明细表结构常量：空态时 viewport 整体替换为 s-empty，有数据时重建 */
   const HOT_TABLE =
     '<table class="s-table" id="sEvHotTable">'
-    + '<thead><tr><th data-priority="1">代码 / 名称</th><th data-priority="1">现价</th><th data-priority="1">涨跌幅</th>'
-    + '<th data-priority="2">连板</th><th data-priority="3">所属题材</th><th data-priority="2">龙虎净买</th></tr></thead>'
+    + '<thead><tr>'
+    + '<th data-priority="1" data-sort="code" tabindex="0" role="button" title="点击排序">代码 / 名称</th>'
+    + '<th data-priority="1" data-sort="price" tabindex="0" role="button" title="点击排序">现价</th>'
+    + '<th data-priority="1" data-sort="pct" tabindex="0" role="button" title="点击排序">涨跌幅</th>'
+    + '<th data-priority="2" data-sort="lbc" tabindex="0" role="button" title="点击排序">连板</th>'
+    + '<th data-priority="3">所属题材</th>'
+    + '<th data-priority="2" data-sort="net" tabindex="0" role="button" title="点击排序">龙虎净买</th></tr></thead>'
     + '<tbody id="sEvHotBody"></tbody></table>';
 
   function enabled() { return S.getFlag('overview', true) !== false; }
@@ -196,7 +201,13 @@
       + '</div></div>'
       + '<div class="s-col-12"><div class="s-card">'
       + '<div class="s-card__head"><h3 class="s-card__title">个股明细 · <span id="sEvHotCount">—</span> 行</h3>'
-      + '<div class="s-card__tools"><span class="s-badge s-badge--muted">运行时行数 · 分页 50/页</span></div></div>'
+      + '<div class="s-card__tools">'
+      /* 【重构前功能】窄屏排序下拉+方向钮（原研报 #hotSortSel/#hotSortDir，卡片模式无表头可点） */
+      + '<select id="sEvHotSort" class="s-select only-sm" aria-label="排序字段" style="max-width:110px">'
+      + '<option value="code">代码</option><option value="price">现价</option>'
+      + '<option value="pct">涨跌幅</option><option value="lbc">连板</option><option value="net">净买</option></select>'
+      + '<button type="button" id="sEvHotSortDir" class="s-btn s-btn--ghost only-sm" title="切换升降序">⇅</button>'
+      + '<span class="s-badge s-badge--muted hide-sm">运行时行数 · 分页 50/页</span></div></div>'
       + '<div class="s-card__body s-card__body--flush"><div class="s-table-wrap"><div class="s-table__viewport" id="sEvHotView">' + HOT_TABLE
       + '<div id="sEvHotEmpty" class="s-empty" hidden>'
       + '<div style="font-size:24px;color:var(--s-text-3)">◇</div>'
@@ -474,9 +485,34 @@
         if (st) st.textContent = posN ? posN + ' 只持仓' : '空仓';
       }).catch(() => {});
   }
+  /* 【重构前功能补回】个股明细排序（表头点击 + 窄屏下拉共用同一状态）。
+   * 原研报 HOT_STATE.key/dir（A-JS:5449-5457），工作台此前表头是静态的、无排序。 */
+  let hotSort = { key: null, dir: -1 };
+  function applyHotSort() {
+    if (!hotSort.key) return;
+    const k = hotSort.key, dir = hotSort.dir;
+    /* 数值列必须按数值排，不能按显示字符串（'+10.00%' 字符串比较会小于 '+9.95%'）。
+     * code 列才用字符串（localeCompare），其余 price/pct/lbc/net 全部取数值。 */
+    const numOf = (row, key) => {
+      if (key === 'net') return row.netVal;
+      if (key === 'lbc') { const m = String(row.lbc || '').match(/[\d.]+/); return m ? +m[0] : null; }
+      if (key === 'pct') return parseFloat(String(row.pct || '').replace(/[+%]/g, ''));
+      if (key === 'price') return parseFloat(row.price);
+      return null;
+    };
+    hotRows.sort((a, b) => {
+      if (k === 'code') return dir * String(a.code || '').localeCompare(String(b.code || ''), 'zh');
+      let va = numOf(a, k), vb = numOf(b, k);
+      if (va == null || isNaN(va)) va = -Infinity;
+      if (vb == null || isNaN(vb)) vb = -Infinity;
+      return dir * (va - vb);
+    });
+  }
+
   function renderHot() {
     const view = $('#sEvHotView'), cnt = $('#sEvHotCount'), pager = $('#sEvPager');
     if (!view) return;
+    applyHotSort();
     const total = hotRows.length;
     if (cnt) cnt.textContent = total;
     if (!total) {
@@ -562,6 +598,11 @@
     const t = setInterval(() => { if (built || ++n > 100) clearInterval(t); else ensure(); }, 100);
   }
 
+  /* 表头排序键盘无障碍：tabindex=0 + Enter/Space（click 委托在主监听里） */
+  document.addEventListener('keydown', (e) => {
+    if ((e.key !== 'Enter' && e.key !== ' ') || !e.target || typeof e.target.closest !== 'function') return;
+    if (e.target.closest('#sEvHotTable th[data-sort]')) { e.preventDefault(); e.target.click(); }
+  });
   document.addEventListener('click', (e) => {
     const r = e.target && e.target.closest ? e.target.closest('[data-ev-range]') : null;
     if (r) {
@@ -573,6 +614,28 @@
     }
     const pg = e.target && e.target.closest ? e.target.closest('[data-ev-page]') : null;
     if (pg) { hotPage = Math.max(0, hotPage + (+pg.dataset.evPage)); renderHot(); return; }
+    /* 【重构前功能】表头点击排序：同列反向、异列降序；aria-sort 同步（无障碍） */
+    const th = e.target && e.target.closest ? e.target.closest('#sEvHotTable th[data-sort]') : null;
+    if (th && (e.type !== 'keydown' || e.key === 'Enter' || e.key === ' ')) {
+      const k = th.dataset.sort;
+      hotSort = { key: k, dir: hotSort.key === k ? -hotSort.dir : -1 };
+      document.querySelectorAll('#sEvHotTable th[data-sort]').forEach((x) => {
+        x.setAttribute('aria-sort', x === th ? (hotSort.dir === -1 ? 'descending' : 'ascending') : 'none');
+      });
+      hotPage = 0;
+      renderHot();
+      return;
+    }
+    /* 窄屏排序下拉（原研报 hotSortSel：卡片模式无表头可点） */
+    const ss = e.target && e.target.closest ? e.target.closest('#sEvHotSort') : null;
+    if (ss && ss.tagName === 'SELECT') {
+      hotSort = { key: ss.value, dir: -1 };
+      hotPage = 0;
+      renderHot();
+      return;
+    }
+    const sd = e.target && e.target.closest ? e.target.closest('#sEvHotSortDir') : null;
+    if (sd) { hotSort.dir = -hotSort.dir; renderHot(); return; }
     const tab = e.target && e.target.closest ? e.target.closest('[data-ev-tab]') : null;
     if (tab && typeof S.showPage === 'function') {
       S.showPage(tab.dataset.evTab);

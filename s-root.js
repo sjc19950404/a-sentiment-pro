@@ -507,6 +507,32 @@
       if (sf) { e.preventDefault(); sf.focus(); }
       return;
     }
+    /* 【重构前快捷键补回】0 平滑回顶（原研报 A-JS:5409）；- 完整档/精简档切换
+     * （原研报 A-JS:5411，转发到隐藏 main 里的 #loadScope 切换按钮，复用原逻辑）。 */
+    if (e.key === '0') {
+      e.preventDefault();
+      if (typeof window.scrollTo === 'function') window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (e.key === '-') {
+      const sw = document.querySelector('#loadScope [data-act="loadfull"], #loadScope [data-act="loadpartial"]');
+      if (sw) { e.preventDefault(); sw.click(); }
+      return;
+    }
+    /* K线页 ←/→ 切周期（旧终端 B-JS:1828，收编时漏绑）：转发到当前 K线面板的周期选择器 */
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && document.querySelector('.s-page-kline')) {
+      const sel = document.querySelector('#sKlHost select, #sKlHost [data-period]');
+      if (sel && sel.options) {
+        const dir = e.key === 'ArrowRight' ? 1 : -1;
+        const ni = Math.max(0, Math.min(sel.options.length - 1, sel.selectedIndex + dir));
+        if (ni !== sel.selectedIndex) {
+          e.preventDefault();
+          sel.selectedIndex = ni;
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+      return;
+    }
     if (/^[1-9]$/.test(e.key)) {
       const i = +e.key - 1;
       const link = document.querySelectorAll('nav.s-nav .s-nav__link')[i];
