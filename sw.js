@@ -71,6 +71,7 @@ const SHELL_ASSETS = [
   './s-page-picks.js',
   './s-page-kline.js',
   './s-page-settings.js',
+  './s-report.js',
   './report.html',
   './s-print.js',
 ];

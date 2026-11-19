@@ -348,7 +348,10 @@
       a.addEventListener('click', (ev) => {
         ev.preventDefault();
         if (TABS[+a.dataset.page] === '研报') {
-          location.href = location.pathname + '?view=research';
+          /* 【方案 §2.2】研报 tab → ?view=report 长文专用页（10章目录吸顶+面包屑返回），
+           * 不再是跳回原研报长页（后者 #briefBody 被 560px 盒锁，压缩到无法阅读）。 */
+          try { sessionStorage.setItem('sReportFromTab', TABS[+a.dataset.page]); } catch (_) {}
+          location.href = location.pathname + '?view=report';
           return;
         }
         links.forEach((b) => { b.classList.remove('is-active'); b.removeAttribute('aria-current'); });
@@ -428,8 +431,12 @@
       teardownCurrent(); // 【14 册门禁⑧】离开工作台 → 清理当前页 chart/tooltip，避免隐藏后残留
       delete document.body.dataset.view;
       if (sRoot) sRoot.hidden = true;
-      if (main) main.hidden = false;
-      if (pre) pre.hidden = false;
+      /* 【方案 §2.2】?view=report 长文专用页：原研报 main 隐藏（app.js 仍在后台渲染
+       * #briefBody/#briefNav，s-report.js 把这两节点搬进专用外壳）——避免原 8726px 长页
+       * 与专用页叠在一起、视口顶部仍是原研报顶栏（研报被"压缩到没办法看"的另一半原因）。 */
+      const isReport = view === 'report';
+      if (main) main.hidden = !!isReport;
+      if (pre) pre.hidden = !!isReport;
       // 只恢复「本次由我隐藏」的 tRoot，避免误放终端覆盖层
       if (hidTRoot && tRoot) { tRoot.hidden = false; hidTRoot = false; }
     }

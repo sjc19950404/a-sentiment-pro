@@ -79,6 +79,7 @@ export const SHELL_ASSETS = Object.freeze([
   './s-page-picks.js',
   './s-page-kline.js',
   './s-page-settings.js',
+  './s-report.js',
   './report.html',
   './s-print.js',
 ]);
