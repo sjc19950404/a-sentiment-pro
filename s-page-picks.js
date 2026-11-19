@@ -27,10 +27,27 @@
       + '<div class="s-empty__hint">' + esc(hint) + '</div></div>';
   }
 
+  function mountReco() {
+    if (!panelRef) return;
+    const host = $('#sPkRecoHost', panelRef);
+    if (!host) return;
+    let src = document.querySelector('main .paper-picks');
+    if (!src) src = document.querySelector('.paper-picks');   // 可能已被搬走
+    if (!src) return;
+    if (!host.contains(src)) {
+      /* 搬原节点（含 #picksMeta/#picksList/#picksRejected + 元素直绑事件），
+       * app.js 后续刷新按 id 找节点仍有效（同一节点，只是换了父容器）。 */
+      host.appendChild(src);
+    }
+    /* 数据异步：app.js 可能晚于 mount 才填 picksList，按 id 找节点仍写同一个（已搬入的）
+     * 节点，故无需 observer。此处仅防御性检查节点真在工作台 DOM 树里。 */
+  }
+
   function mount() {
     if (!panelRef || !enabled()) return;
     const host = $('#sPkHost', panelRef);
     if (!host) return;
+    mountReco();
     const tv = window.__TERMINAL_VIEWS__ || {};
     const sig = window.__SIGNALS__;
     if (typeof tv.picks !== 'function' || !sig || !Object.keys(sig).length) {
@@ -87,6 +104,12 @@
     panelRef = panel;
     panel.innerHTML = ''
       + '<div class="s-page-picks">'
+      /* 【重构前功能补回】研判推荐（原研报 .paper-picks：大概率连板置顶/剔除大概率亏/
+       * 买点预期/点个股看详情）。搬原节点（app.js/paper_ui.js 元素直绑，事件跟节点走）。 */
+      + '<div class="s-section"><div class="s-section__head">'
+      + '<h2 class="s-section__title">研判推荐</h2>'
+      + '<p class="s-section__note">大概率连板置顶 · 剔除大概率亏 · 点个股看详情</p>'
+      + '</div><div id="sPkRecoHost"></div></div>'
       + '<div class="s-section"><div class="s-section__head">'
       + '<h2 class="s-section__title">选股 · 主线天梯</h2>'
       + '<p class="s-section__note">复用终端 render · 引擎原值 · AI 侧车仅参考不改分</p>'
