@@ -1,9 +1,9 @@
 {
  "stocks": {
   "600202": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
-    "lift": 0,
+    "lift": 1,
     "red": 0,
     "seal": 0,
     "dtBreak": 0
@@ -343,9 +343,9 @@
    }
   },
   "002403": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
-    "lift": 0,
+    "lift": 1,
     "red": 0,
     "seal": 0,
     "dtBreak": 0
@@ -532,9 +532,9 @@
    }
   },
   "000707": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
-    "lift": 0,
+    "lift": 1,
     "red": 0,
     "seal": 0,
     "dtBreak": 0
@@ -550,9 +550,9 @@
    }
   },
   "002425": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
-    "lift": 0,
+    "lift": 1,
     "red": 0,
     "seal": 0,
     "dtBreak": 0
@@ -604,6 +604,6 @@
    }
   }
  },
- "notified": 0,
+ "notified": 4,
  "date": "2026-11-20"
 }
