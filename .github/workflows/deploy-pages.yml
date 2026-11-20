@@ -124,9 +124,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # R2_CHANGED_ONLY_FROM 需与 github.event.before 做 git diff，须全史
-        with:
           ref: main
+          # fetch-depth 0：R2_CHANGED_ONLY_FROM 需与 github.event.before 做 git diff，须全史
+          fetch-depth: 0
       - name: 构建浏览器 bundle（esbuild 打包 ESM 模块树，消除 github.io 模块瀑布）
         # continue-on-error：CI 构建偶发失败（如 npm 拉取 esbuild 抖动）不阻断部署，
         # 回退到已 commit 的 bundle.js（scripts/build_bundle.mjs 的本地产物）。
