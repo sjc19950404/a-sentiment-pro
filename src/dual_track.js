@@ -59,6 +59,33 @@ export function cumFromSummary(summary) {
   };
 }
 
+/* 【2026-11-20 A7 §七实证接入（用户拍板"触发模拟交易"）】手动模拟盘零成交不等于
+ * 系统没有实证——双轨自动账本 270 天日度净值在跑（v52 轨 maxDd 18.84% 已穿 15%
+ * 降仓线、trackC 降仓 episode 19 次）。此前 §七 只读手动账户，把这套实证全埋了。
+ * statsFromSummary 搬运渲染所需统计面（maxDd/sharpe/episodes/census）——
+ * check_contract.mjs 对 stats 做与 cum 同样的现算一致性比对，防止搬运失真。 */
+export function statsFromSummary(summary) {
+  const s = (summary && typeof summary === 'object') ? summary : {};
+  const trk = (o) => (o && typeof o === 'object') ? {
+    total: Number.isFinite(o.total) ? o.total : null,
+    maxDd: Number.isFinite(o.maxDd) ? o.maxDd : null,
+    sharpe: Number.isFinite(o.sharpe) ? o.sharpe : null,
+  } : null;
+  const tc = (s.trackC && typeof s.trackC === 'object') ? s.trackC : null;
+  return {
+    trackA: trk(s.trackA),
+    trackB: trk(s.trackB),
+    trackC: tc ? {
+      '0.3': trk(tc['0.3']) && { ...trk(tc['0.3']), episodes: tc['0.3'].episodes ?? null },
+      '0.4': trk(tc['0.4']) && { ...trk(tc['0.4']), episodes: tc['0.4'].episodes ?? null },
+      '0.5': trk(tc['0.5']) && { ...trk(tc['0.5']), episodes: tc['0.5'].episodes ?? null },
+    } : null,
+    regimeCensus: (s.regimeCensus && typeof s.regimeCensus === 'object') ? s.regimeCensus : null,
+    shiftEpisodes: Number.isFinite(s.shiftEpisodes) ? s.shiftEpisodes : null,
+    activeDays: Number.isFinite(s.activeDays) ? s.activeDays : null,
+  };
+}
+
 /**
  * 组装 signals-latest 的 dualTrack 披露块（纯搬运，不重算）。
  * @param {object} lt dual_track_latest.json 的解析结果（须含 day 段）
@@ -82,6 +109,9 @@ export function dualTrackBlock(lt) {
     //   只搬 total——maxDd/sharpe/ledgerEnd 不搬（渲染不用，ledgerEnd 与 day.ledger 纯
     //   重复；体积纪律，提取逻辑唯一出处 cumFromSummary）。
     cum: cumFromSummary(lt.summary),
+    /* 【A7 §七实证】统计面（maxDd/sharpe/降仓 episodes/regime census）——渲染端
+     * 不再只看手动账户"零成交"，自动轨 270 天实证直接上简报。契约守卫同法比对。 */
+    stats: statsFromSummary(lt.summary),
     // 轨道状态简版（渲染端要知道当前执行面是 A 还是 A_fallback；完整态唯一事实源
     // = data/paper/track_state.json，契约 schemas/track-state.schema.json）
     trackState: {

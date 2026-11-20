@@ -22,7 +22,7 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateContract, formatContractErrors } from '../src/contract.js';
-import { cumFromSummary } from '../src/dual_track.js';
+import { cumFromSummary, statsFromSummary } from '../src/dual_track.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -128,6 +128,11 @@ export function crossCheckDualTrack(latest, signalsLatest) {
     const expCum = cumFromSummary(lt.summary);
     if (JSON.stringify(dt.cum) !== JSON.stringify(expCum)) {
       fails.push('[contract] 一致性：signals.dualTrack.cum 与账本 summary.total 面不一致（累计收益搬运失真——含缺 cum 段的旧档；重跑写盘路径刷新披露块）');
+    }
+    // stats（统计面 maxDd/sharpe/episodes/census）：A7 §七实证接入，同法现算比对
+    const expStats = statsFromSummary(lt.summary);
+    if (JSON.stringify(dt.stats) !== JSON.stringify(expStats)) {
+      fails.push('[contract] 一致性：signals.dualTrack.stats 与账本 summary 统计面不一致（maxDd/episodes 搬运失真；重跑写盘路径刷新披露块）');
     }
     const ltTrack = (lt.trackState && lt.trackState.activeTrack) || 'A';
     if (!dt.trackState || dt.trackState.activeTrack !== ltTrack) {

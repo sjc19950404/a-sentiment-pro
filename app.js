@@ -1893,7 +1893,34 @@ function buildPaperReviewSection() {
   out.push(li2(`<b>结论</b>：${r.headline}`));
 
   if (!r.started) {
-    out.push(li2('<span class="muted">账户尚无成交记录，暂无收益归因可分析。建仓并产生成交后，本段会自动给出「为什么赚/为什么亏」的拆解与止损、优化建议。</span>'));
+    /* 【2026-11-20 A7 实证接入（用户拍板"触发模拟交易"）】手动账户零成交 ≠ 系统没有
+     * 实证——双轨自动账本 270 天日度净值一直在跑：v52 轨真实模拟"信号→仓位→止损→
+     * 回撤降仓"全链（maxDd 18.84% 已穿 15% 降仓线、降仓 episode 19 次、另有 0.3/0.4/0.5
+     * 三档降仓系数影子对照）。此前 §七 只读手动账户，把这套实证全埋了。改为：手动
+     * 账户零成交时以自动轨实证为主体（stats 由 signals.dualTrack 提供，契约守卫与
+     * 账本 summary 现算比对）；手动账户语义保留（手动下单后本段恢复逐笔归因）。 */
+    const dts = (window.__signals && window.__signals.dualTrack) || {};
+    const st = dts.stats || {};
+    const fmtTrk = (t, label) => (t && t.total != null)
+      ? `${label}: 累计 <b>${(t.total * 100).toFixed(2)}%</b>，最大回撤 <b>${t.maxDd != null ? (t.maxDd * 100).toFixed(2) + '%' : '—'}</b>${t.sharpe != null ? `，夏普 ${t.sharpe.toFixed(2)}` : ''}`
+      : `${label}: [未获取]`;
+    out.push(li2('手动模拟账户暂无成交——但<b>自动执行轨的实证一直在跑</b>（见下）；手动下单后本段恢复「为什么赚/为什么亏」逐笔归因。'));
+    if (st.trackA || st.trackB) {
+      const days = st.activeDays != null ? `（${st.activeDays} 个交易日）` : '';
+      out.push(li2(`自动执行轨（双轨账本${days}）: ${fmtTrk(st.trackA, 'v52 主轨')} ／ ${fmtTrk(st.trackB, 'v53 对照轨')}`));
+      const tc = st.trackC || {};
+      const ep = [tc['0.3'], tc['0.4'], tc['0.5']].filter((x) => x && x.episodes != null);
+      if (st.trackA && st.trackA.maxDd != null && st.trackA.maxDd >= 0.15) {
+        out.push(li2(`<span class="bf-warn">⚠ 回撤 ≥15% 降仓条款已实盘触发（v52 轨 maxDd ${(st.trackA.maxDd * 100).toFixed(2)}%）${ep.length ? `，降仓 episode 累计 ${ep.map((x) => x.episodes).join('/')} 次（0.3/0.4/0.5 三档系数影子对照）` : ''}——风控约束不是空转</span>`));
+      }
+      if (ep.length) out.push(li2(`<span class="muted">降仓系数敏感性: 0.3/0.4/0.5 三档 maxDd ${ep.map((x) => (x.maxDd != null ? (x.maxDd * 100).toFixed(1) : '—')).join('% / ')}%、累计 ${ep.map((x) => (x.total != null ? (x.total * 100).toFixed(1) : '—')).join('% / ')}%（影子对照——降仓系数越紧回撤越浅、收益弹性越低）</span>`));
+      if (st.regimeCensus && typeof st.regimeCensus === 'object') {
+        const rcTxt = Object.entries(st.regimeCensus).filter(([, v]) => v).map(([k, v]) => `${k} ${(v * 100).toFixed(0)}%`).join(' ／ ');
+        if (rcTxt) out.push(li2(`<span class="muted">regime 占比（账本期内）: ${rcTxt}——冰点/退潮期自动轨按风控帽主动空仓，是纪律执行不是无单可下</span>`));
+      }
+    } else {
+      out.push(li2('<span class="muted">自动执行轨统计面: [未获取]（双轨账本未跑或未接入——运行 tools/backtest/paper_dual_track.mjs）</span>'));
+    }
     out.push(paperCaliber(eng));
     return out.join('');
   }

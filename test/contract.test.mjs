@@ -12,7 +12,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateContract, formatContractErrors } from '../src/contract.js';
 import { crossCheckTrackMirror, crossCheckDualTrack } from '../scripts/check_contract.mjs';
-import { cumFromSummary, buildTrackNote } from '../src/dual_track.js';
+import { cumFromSummary, buildTrackNote, statsFromSummary } from '../src/dual_track.js';
 import { buildPushPayload } from '../scripts/alert_channel.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.meta ? fileURLToPath(import.meta.url) : import.meta.url)), '..');
@@ -318,6 +318,7 @@ test('P2-β渲染：跨档一致性守卫（crossCheckDualTrack 纯函数负向�
       asOf: DT_DAY_FIXTURE.date, generatedAt: 't',
       day: DT_DAY_FIXTURE,
       cum: cumFromSummary(DT_SUMMARY_FIXTURE),
+      stats: statsFromSummary(DT_SUMMARY_FIXTURE),
       trackState: { activeTrack: 'A', paramsSource: 'config.json params.train' },
       note: 'n',
     },
@@ -333,6 +334,9 @@ test('P2-β渲染：跨档一致性守卫（crossCheckDualTrack 纯函数负向�
   // cum 不一致（累计收益搬运失真——含缺 cum 段的旧档形态）
   assert.equal(crossCheckDualTrack(latest, { dualTrack: { ...okSig.dualTrack, cum: undefined } }).length, 1, '缺 cum 段必须红');
   assert.equal(crossCheckDualTrack(latest, { dualTrack: { ...okSig.dualTrack, cum: { ...okSig.dualTrack.cum, trackA: 0.99 } } }).length, 1, 'cum 数值漂移必须红');
+  // stats 不一致（maxDd/episodes 搬运失真——A7 §七实证统计面）
+  assert.equal(crossCheckDualTrack(latest, { dualTrack: { ...okSig.dualTrack, stats: undefined } }).length, 1, '缺 stats 段必须红');
+  assert.equal(crossCheckDualTrack(latest, { dualTrack: { ...okSig.dualTrack, stats: { ...okSig.dualTrack.stats, trackA: { ...okSig.dualTrack.stats.trackA, maxDd: 0.99 } } } }).length, 1, 'stats maxDd 漂移必须红');
   // asOf 与账本末日不符（伪装成"今日"的滞后披露）
   assert.equal(crossCheckDualTrack(latest, { dualTrack: { ...okSig.dualTrack, asOf: '2026-10-06' } }).length, 1);
   // trackState 分裂（披露块说 A、账本说 A_fallback）
@@ -343,8 +347,8 @@ test('P2-β渲染：跨档一致性守卫（crossCheckDualTrack 纯函数负向�
   assert.deepEqual(crossCheckDualTrack(null, {}), []);
   // summary 缺席（审计面 optional）→ cum 期望全 null：披露块 cum 非 null = 搬运失真
   const noSum = { ...latest, summary: null };
-  assert.equal(crossCheckDualTrack(noSum, okSig).length, 1, 'summary 缺席时 cum 必须全 null（未生成 ≠ 累计为零）');
-  assert.deepEqual(crossCheckDualTrack(noSum, { dualTrack: { ...okSig.dualTrack, cum: cumFromSummary(null) } }), []);
+  assert.equal(crossCheckDualTrack(noSum, okSig).length, 2, 'summary 缺席时 cum 与 stats 必须全 null（未生成 ≠ 累计为零——两段各红一条）');
+  assert.deepEqual(crossCheckDualTrack(noSum, { dualTrack: { ...okSig.dualTrack, cum: cumFromSummary(null), stats: statsFromSummary(null) } }), []);
 });
 
 test('P2-β渲染：磁盘态一致性锚定（账本在场 → 披露块必须在场且逐字段一致）', () => {
