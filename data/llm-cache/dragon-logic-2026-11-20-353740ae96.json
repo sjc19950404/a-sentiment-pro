@@ -1,0 +1,289 @@
+{
+ "kind": "llm-cache",
+ "name": "dragon-logic",
+ "asOfDate": "2026-11-20",
+ "hash": "353740ae96",
+ "cachedAt": "2026-11-20T10:42:22.074Z",
+ "dragons": [
+  {
+   "code": "603324",
+   "name": "盛剑科技",
+   "lb": 4,
+   "hybk": "环保设备",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.9,
+   "reason": "缩量硬板，情绪加速"
+  },
+  {
+   "code": "002771",
+   "name": "真视通",
+   "lb": 4,
+   "hybk": "IT服务Ⅱ",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.9,
+   "reason": "缩量硬板，情绪加速"
+  },
+  {
+   "code": "002579",
+   "name": "中京电子",
+   "lb": 2,
+   "hybk": "元件",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.8,
+   "reason": "缩量硬板，情绪加速"
+  },
+  {
+   "code": "300812",
+   "name": "易天股份",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.5,
+   "reason": "首板，需观察"
+  },
+  {
+   "code": "301132",
+   "name": "满坤科技",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.5,
+   "reason": "首板，需观察"
+  },
+  {
+   "code": "301313",
+   "name": "凡拓数创",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.5,
+   "reason": "首板，需观察"
+  },
+  {
+   "code": "600327",
+   "name": "大东方",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.5,
+   "reason": "首板，需观察"
+  },
+  {
+   "code": "600360",
+   "name": "华微电子",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.5,
+   "reason": "首板，需观察"
+  },
+  {
+   "code": "600371",
+   "name": "万向德农",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.5,
+   "reason": "首板，需观察"
+  },
+  {
+   "code": "600467",
+   "name": "好当家",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.5,
+   "reason": "首板，需观察"
+  },
+  {
+   "code": "603004",
+   "name": "603004",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.3,
+   "reason": "新连板，无题材，纯情绪游资试水"
+  },
+  {
+   "code": "603386",
+   "name": "骏亚科技",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.3,
+   "reason": "新连板，无题材，纯情绪游资试水"
+  },
+  {
+   "code": "603466",
+   "name": "风语筑",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.3,
+   "reason": "新连板，无题材，纯情绪游资试水"
+  },
+  {
+   "code": "603948",
+   "name": "建业股份",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.3,
+   "reason": "新连板，无题材，纯情绪游资试水"
+  },
+  {
+   "code": "603960",
+   "name": "克莱机电",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.3,
+   "reason": "新连板，无题材，纯情绪游资试水"
+  },
+  {
+   "code": "605018",
+   "name": "长华集团",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.3,
+   "reason": "新连板，无题材，纯情绪游资试水"
+  },
+  {
+   "code": "605058",
+   "name": "澳弘电子",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.3,
+   "reason": "新连板，无题材，纯情绪游资试水"
+  },
+  {
+   "code": "605577",
+   "name": "龙版传媒",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.3,
+   "reason": "新连板，无题材，纯情绪游资试水"
+  },
+  {
+   "code": "002642",
+   "name": "002642",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.3,
+   "reason": "新连板，无题材，纯情绪游资试水"
+  },
+  {
+   "code": "002741",
+   "name": "光华科技",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "未知",
+   "is_pure_sentiment": true,
+   "confidence": 0.3,
+   "reason": "新连板，无题材，纯情绪游资试水"
+  },
+  {
+   "code": "002199",
+   "name": "东晶电子",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.8,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+  },
+  {
+   "code": "002086",
+   "name": "东方海洋",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.8,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+  },
+  {
+   "code": "000823",
+   "name": "超声电子",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.8,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+  },
+  {
+   "code": "000530",
+   "name": "冰山冷热",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.8,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+  },
+  {
+   "code": "002749",
+   "name": "国光股份",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.8,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+  },
+  {
+   "code": "002548",
+   "name": "金新农",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.8,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+  },
+  {
+   "code": "000607",
+   "name": "华媒控股",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.8,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+  },
+  {
+   "code": "000593",
+   "name": "德龙汇能",
+   "lb": 1,
+   "hybk": "",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.8,
+   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+  }
+ ]
+}

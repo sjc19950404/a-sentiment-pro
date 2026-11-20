@@ -1,10 +1,10 @@
 {
  "meta": {
-  "generatedAt": "2026-11-19T13:13:39.020Z",
-  "days": 25,
-  "theme_days": 23,
+  "generatedAt": "2026-11-20T10:46:24.989Z",
+  "days": 26,
+  "theme_days": 24,
   "strength_dist": {
-   "强主线": 7,
+   "强主线": 8,
    "弱主线": 14,
    "绝对主线": 2
   },
@@ -547,6 +547,30 @@
    "main_themes": [],
    "rotation": false,
    "prev_main_theme": "IT服务Ⅱ"
+  },
+  {
+   "date": "20261120",
+   "main_themes": [
+    {
+     "name": "元件",
+     "zt_count": 6,
+     "lb_count": 1,
+     "avg_fund": 111568531,
+     "stocks": [
+      "002579",
+      "002199",
+      "000823",
+      "605058",
+      "603386",
+      "301132"
+     ],
+     "strength": "强主线",
+     "consecutive_days": 1,
+     "is_continuous": false
+    }
+   ],
+   "rotation": false,
+   "prev_main_theme": null
   }
  ]
 }

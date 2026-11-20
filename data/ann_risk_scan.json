@@ -183,5 +183,27 @@
     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000711&id=12713377"
    }
   ]
+ },
+ {
+  "date": "2026-11-20",
+  "scannedAt": "2026-11-20T10:46:56.463Z",
+  "scanned": 25,
+  "ok": 24,
+  "high": 0,
+  "mid": 1,
+  "low": 0,
+  "flagged": [
+   {
+    "code": "600327",
+    "name": "大东方",
+    "level": "mid",
+    "words": [
+     "质押"
+    ],
+    "title": "大东方：关于控股股东部分股份质押的公告",
+    "date": "2026-11-21",
+    "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600327&id=12715870"
+   }
+  ]
  }
 ]

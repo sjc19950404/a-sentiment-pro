@@ -1,68 +1,69 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-11-19",
- "generatedAt": "2026-11-20T00:45:39.607+08:00",
+ "asOfDate": "2026-11-20",
+ "generatedAt": "2026-11-20T18:38:29.305+08:00",
+ "cachedFrom": null,
  "model": "glm-4-flash",
  "sentiment": -0.5,
  "confidence": 0.8,
- "reason": "市场涨停家数远少于跌停家数，炸板率较高，亏钱效应明显，市场情绪偏负面。",
+ "reason": "市场涨停家数远低于跌停家数，炸板率较高，亏钱效应显著，表明市场情绪较为悲观。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "兴业股份",
+   "target": "冰山冷热",
    "tone": "positive",
-   "note": "三季报增长带动股价上涨"
-  },
-  {
-   "type": "高管变动",
-   "target": "京蓝科技",
-   "tone": "positive",
-   "note": "资产出售可能带来业绩提升"
-  },
-  {
-   "type": "政策",
-   "target": "预重整",
-   "tone": "positive",
-   "note": "预重整概念股表现活跃"
+   "note": "业绩预告推动股价上涨，但市场整体情绪不佳。"
   },
   {
    "type": "行业催化",
-   "target": "AI短剧",
+   "target": "功率半导体",
    "tone": "positive",
-   "note": "AI短剧题材受到市场关注"
+   "note": "新晋题材功率半导体受到市场关注。"
   },
   {
    "type": "行业催化",
-   "target": "机器人",
+   "target": "数据中心配电",
    "tone": "positive",
-   "note": "机器人概念股持续活跃"
+   "note": "新晋题材数据中心配电受到市场关注。"
+  },
+  {
+   "type": "行业催化",
+   "target": "核电",
+   "tone": "positive",
+   "note": "新晋题材核电受到市场关注。"
+  },
+  {
+   "type": "行业催化",
+   "target": "杭州国资",
+   "tone": "positive",
+   "note": "新晋题材杭州国资受到市场关注。"
+  },
+  {
+   "type": "行业催化",
+   "target": "跨境电商",
+   "tone": "positive",
+   "note": "新晋题材跨境电商受到市场关注。"
+  },
+  {
+   "type": "行业催化",
+   "target": "AI眼镜",
+   "tone": "positive",
+   "note": "延续题材AI眼镜受到市场关注。"
   },
   {
    "type": "行业催化",
    "target": "AI算力",
    "tone": "positive",
-   "note": "AI算力概念股受到市场追捧"
-  },
-  {
-   "type": "退潮",
-   "target": "三季报扭亏",
-   "tone": "negative",
-   "note": "三季报扭亏概念股退潮"
-  },
-  {
-   "type": "退潮",
-   "target": "汽车零部件",
-   "tone": "negative",
-   "note": "汽车零部件概念股退潮"
+   "note": "延续题材AI算力受到市场关注。"
   }
  ],
  "inputDigest": {
-  "themes": 28,
+  "themes": 42,
   "hotListed": 15,
-  "ztCount": 23,
-  "emotionValue": 32.6,
-  "painVerdict": "多空拉锯（昨涨停今日翻绿 54%、高位板晋级失败 50%，追高盈亏各半）"
+  "ztCount": 28,
+  "emotionValue": 41.9,
+  "painVerdict": "亏钱效应显著（昨涨停今日翻绿 70%、高位板晋级失败 60%，追高者整体受损）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }

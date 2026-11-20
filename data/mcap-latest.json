@@ -1,180 +1,215 @@
 {
- "date": "2026-11-19",
- "generatedAt": "2026-11-19T21:22:01.919+08:00",
+ "date": "2026-11-20",
+ "generatedAt": "2026-11-20T18:43:28.925+08:00",
  "source": "push2.eastmoney.com/api/qt/ulist.np（f20 总市值/f21 流通市值，元→亿）",
  "universe": {
   "kind": "涨停池（pools.zt_codes）",
-  "count": 23,
-  "fetched": 23,
+  "count": 28,
+  "fetched": 28,
   "misses": []
  },
  "stats": {
-  "circMvMedianYi": 45.68,
-  "circMvP25Yi": 31.93,
-  "circMvP75Yi": 76.94,
-  "smallCapPct": 56.5,
+  "circMvMedianYi": 47.61,
+  "circMvP25Yi": 33.01,
+  "circMvP75Yi": 71.96,
+  "smallCapPct": 64.3,
   "bigCapPct": 0
  },
  "stocks": [
   {
-   "code": "002242",
-   "name": "九阳股份",
-   "circMvYi": 237.75,
-   "totalMvYi": 238.14,
-   "lb": 1
-  },
-  {
-   "code": "002420",
-   "name": "毅昌科技",
-   "circMvYi": 25.93,
-   "totalMvYi": 26.38,
-   "lb": 1
+   "code": "603324",
+   "name": "盛剑科技",
+   "circMvYi": 40.42,
+   "totalMvYi": 41.84,
+   "lb": 4
   },
   {
    "code": "002771",
    "name": "真视通",
-   "circMvYi": 25.97,
-   "totalMvYi": 30.16,
-   "lb": 3
+   "circMvYi": 28.57,
+   "totalMvYi": 33.18,
+   "lb": 4
   },
   {
-   "code": "603030",
-   "name": "全筑股份",
-   "circMvYi": 30.82,
-   "totalMvYi": 30.82,
-   "lb": 3
-  },
-  {
-   "code": "600156",
-   "name": "华升股份",
-   "circMvYi": 35.79,
-   "totalMvYi": 35.79,
-   "lb": 2
-  },
-  {
-   "code": "603931",
-   "name": "格林达",
-   "circMvYi": 58.17,
-   "totalMvYi": 58.17,
+   "code": "002642",
+   "name": "荣联科技",
+   "circMvYi": 48.03,
+   "totalMvYi": 48.03,
    "lb": 1
   },
   {
-   "code": "002165",
-   "name": "红 宝 丽",
-   "circMvYi": 45.85,
-   "totalMvYi": 46.32,
-   "lb": 1
-  },
-  {
-   "code": "002418",
-   "name": "康盛股份",
-   "circMvYi": 45.68,
-   "totalMvYi": 45.68,
-   "lb": 1
-  },
-  {
-   "code": "603324",
-   "name": "盛剑科技",
-   "circMvYi": 36.75,
-   "totalMvYi": 38.03,
-   "lb": 3
-  },
-  {
-   "code": "002077",
-   "name": "大港股份",
-   "circMvYi": 70.28,
-   "totalMvYi": 70.28,
-   "lb": 1
-  },
-  {
-   "code": "600520",
-   "name": "三佳科技",
-   "circMvYi": 35.12,
-   "totalMvYi": 35.12,
-   "lb": 1
-  },
-  {
-   "code": "000678",
-   "name": "襄阳轴承",
-   "circMvYi": 76.94,
-   "totalMvYi": 76.94,
-   "lb": 1
-  },
-  {
-   "code": "601616",
-   "name": "广电电气",
-   "circMvYi": 31.93,
-   "totalMvYi": 31.93,
-   "lb": 1
-  },
-  {
-   "code": "301348",
-   "name": "蓝箭电子",
-   "circMvYi": 41.91,
-   "totalMvYi": 51.98,
-   "lb": 1
-  },
-  {
-   "code": "603813",
-   "name": "原尚股份",
-   "circMvYi": 24.05,
-   "totalMvYi": 24.05,
-   "lb": 1
-  },
-  {
-   "code": "000656",
-   "name": "金科股份",
-   "circMvYi": 95.73,
-   "totalMvYi": 108.01,
+   "code": "600360",
+   "name": "华微电子",
+   "circMvYi": 86.52,
+   "totalMvYi": 86.52,
    "lb": 1
   },
   {
    "code": "002579",
    "name": "中京电子",
-   "circMvYi": 71,
-   "totalMvYi": 80.28,
-   "lb": 1
-  },
-  {
-   "code": "600619",
-   "name": "海立股份",
-   "circMvYi": 118.93,
-   "totalMvYi": 161.75,
-   "lb": 1
-  },
-  {
-   "code": "605178",
-   "name": "时空科技",
-   "circMvYi": 52.76,
-   "totalMvYi": 54.45,
-   "lb": 1
-  },
-  {
-   "code": "603078",
-   "name": "江化微",
-   "circMvYi": 103.58,
-   "totalMvYi": 103.58,
-   "lb": 1
-  },
-  {
-   "code": "001358",
-   "name": "兴欣新材",
-   "circMvYi": 14.55,
-   "totalMvYi": 35.17,
-   "lb": 1
-  },
-  {
-   "code": "000711",
-   "name": "京蓝科技",
-   "circMvYi": 90.27,
-   "totalMvYi": 113.12,
+   "circMvYi": 78.12,
+   "totalMvYi": 88.32,
    "lb": 2
   },
   {
-   "code": "603928",
-   "name": "兴业股份",
-   "circMvYi": 42.18,
-   "totalMvYi": 42.18,
+   "code": "002741",
+   "name": "光华科技",
+   "circMvYi": 80.67,
+   "totalMvYi": 87.91,
+   "lb": 1
+  },
+  {
+   "code": "603948",
+   "name": "建业股份",
+   "circMvYi": 31.78,
+   "totalMvYi": 31.78,
+   "lb": 1
+  },
+  {
+   "code": "002199",
+   "name": "东晶电子",
+   "circMvYi": 21.82,
+   "totalMvYi": 23.01,
+   "lb": 1
+  },
+  {
+   "code": "002086",
+   "name": "东方海洋",
+   "circMvYi": 59.29,
+   "totalMvYi": 73.46,
+   "lb": 1
+  },
+  {
+   "code": "300812",
+   "name": "易天股份",
+   "circMvYi": 32.03,
+   "totalMvYi": 35.3,
+   "lb": 1
+  },
+  {
+   "code": "605577",
+   "name": "龙版传媒",
+   "circMvYi": 71.96,
+   "totalMvYi": 71.96,
+   "lb": 1
+  },
+  {
+   "code": "000823",
+   "name": "超声电子",
+   "circMvYi": 110.12,
+   "totalMvYi": 110.13,
+   "lb": 1
+  },
+  {
+   "code": "000530",
+   "name": "冰山冷热",
+   "circMvYi": 73.75,
+   "totalMvYi": 103.63,
+   "lb": 1
+  },
+  {
+   "code": "605058",
+   "name": "澳弘电子",
+   "circMvYi": 61.35,
+   "totalMvYi": 61.94,
+   "lb": 1
+  },
+  {
+   "code": "002749",
+   "name": "国光股份",
+   "circMvYi": 47.3,
+   "totalMvYi": 48.36,
+   "lb": 1
+  },
+  {
+   "code": "605018",
+   "name": "长华集团",
+   "circMvYi": 48.23,
+   "totalMvYi": 48.23,
+   "lb": 1
+  },
+  {
+   "code": "600371",
+   "name": "万向德农",
+   "circMvYi": 31.28,
+   "totalMvYi": 31.28,
+   "lb": 1
+  },
+  {
+   "code": "603004",
+   "name": "鼎龙科技",
+   "circMvYi": 10.73,
+   "totalMvYi": 42.91,
+   "lb": 1
+  },
+  {
+   "code": "603960",
+   "name": "克来机电",
+   "circMvYi": 36.63,
+   "totalMvYi": 36.63,
+   "lb": 1
+  },
+  {
+   "code": "603466",
+   "name": "风语筑",
+   "circMvYi": 85.06,
+   "totalMvYi": 85.06,
+   "lb": 1
+  },
+  {
+   "code": "301313",
+   "name": "凡拓数创",
+   "circMvYi": 46.57,
+   "totalMvYi": 60.54,
+   "lb": 1
+  },
+  {
+   "code": "002548",
+   "name": "金新农",
+   "circMvYi": 30.25,
+   "totalMvYi": 31.14,
+   "lb": 1
+  },
+  {
+   "code": "603386",
+   "name": "骏亚科技",
+   "circMvYi": 47.61,
+   "totalMvYi": 47.61,
+   "lb": 1
+  },
+  {
+   "code": "600327",
+   "name": "大东方",
+   "circMvYi": 42.73,
+   "totalMvYi": 42.73,
+   "lb": 1
+  },
+  {
+   "code": "000607",
+   "name": "华媒控股",
+   "circMvYi": 33.01,
+   "totalMvYi": 37.96,
+   "lb": 1
+  },
+  {
+   "code": "301132",
+   "name": "满坤科技",
+   "circMvYi": 48.38,
+   "totalMvYi": 75.63,
+   "lb": 1
+  },
+  {
+   "code": "600467",
+   "name": "好当家",
+   "circMvYi": 41.78,
+   "totalMvYi": 41.78,
+   "lb": 1
+  },
+  {
+   "code": "000593",
+   "name": "德龙汇能",
+   "circMvYi": 62.77,
+   "totalMvYi": 62.8,
    "lb": 1
   }
  ],

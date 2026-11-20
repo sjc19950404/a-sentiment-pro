@@ -1,0 +1,63 @@
+{
+ "kind": "llm-cache",
+ "name": "llm-sentiment",
+ "asOfDate": "2026-11-20",
+ "hash": "697184d59c",
+ "cachedAt": "2026-11-20T10:38:29.304Z",
+ "parsed": {
+  "sentiment": -0.5,
+  "confidence": 0.8,
+  "reason": "市场涨停家数远低于跌停家数，炸板率较高，亏钱效应显著，表明市场情绪较为悲观。",
+  "events": [
+   {
+    "type": "业绩预告",
+    "target": "冰山冷热",
+    "tone": "positive",
+    "note": "业绩预告推动股价上涨，但市场整体情绪不佳。"
+   },
+   {
+    "type": "行业催化",
+    "target": "功率半导体",
+    "tone": "positive",
+    "note": "新晋题材功率半导体受到市场关注。"
+   },
+   {
+    "type": "行业催化",
+    "target": "数据中心配电",
+    "tone": "positive",
+    "note": "新晋题材数据中心配电受到市场关注。"
+   },
+   {
+    "type": "行业催化",
+    "target": "核电",
+    "tone": "positive",
+    "note": "新晋题材核电受到市场关注。"
+   },
+   {
+    "type": "行业催化",
+    "target": "杭州国资",
+    "tone": "positive",
+    "note": "新晋题材杭州国资受到市场关注。"
+   },
+   {
+    "type": "行业催化",
+    "target": "跨境电商",
+    "tone": "positive",
+    "note": "新晋题材跨境电商受到市场关注。"
+   },
+   {
+    "type": "行业催化",
+    "target": "AI眼镜",
+    "tone": "positive",
+    "note": "延续题材AI眼镜受到市场关注。"
+   },
+   {
+    "type": "行业催化",
+    "target": "AI算力",
+    "tone": "positive",
+    "note": "延续题材AI算力受到市场关注。"
+   }
+  ]
+ },
+ "model": "glm-4-flash"
+}

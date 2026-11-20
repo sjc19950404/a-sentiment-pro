@@ -1,0 +1,640 @@
+{
+ "kind": "llm-cache",
+ "name": "macro-sector",
+ "asOfDate": "2026-11-20",
+ "hash": "ceb2b19374",
+ "cachedAt": "2026-11-20T10:41:01.551Z",
+ "events": [
+  {
+   "headline": "盛科通信-U扣非利润连年亏损 大基金年内多轮减持、产品以低端交换芯片为主",
+   "date": "2026-11-20",
+   "sectors": [
+    "芯片"
+   ],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "芯片行业业绩不佳，影响板块信心"
+  },
+  {
+   "headline": "一鸣食品定增2.2亿投建植乳基产线 区域乳企跨界拓展新增长曲线",
+   "date": "2026-11-20",
+   "sectors": [
+    "食品饮料"
+   ],
+   "direction": "positive",
+   "intensity": 0.3,
+   "reason": "食品饮料行业拓展新业务，利好板块"
+  },
+  {
+   "headline": "绝味食品转向存量深耕：万店扩张时代落幕，聚焦单店盈利修复",
+   "date": "2026-11-20",
+   "sectors": [
+    "食品饮料"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "食品饮料行业策略调整，影响有限"
+  },
+  {
+   "headline": "注销式回购加码+三季报业绩亮眼，长鑫科技多维发力，夯实存储龙头底气",
+   "date": "2026-11-20",
+   "sectors": [
+    "芯片"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "芯片行业龙头业绩良好，提振板块信心"
+  },
+  {
+   "headline": "Mega安汇:金银相对强弱值得持续追踪",
+   "date": "2026-11-20",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "金银价格波动，影响有限"
+  },
+  {
+   "headline": "司美格鲁肽类药物致眼疾？ 多专家回应来了！",
+   "date": "2026-11-20",
+   "sectors": [
+    "医药"
+   ],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "医药行业负面新闻，影响板块信心"
+  },
+  {
+   "headline": "Meta押注300美元Muse Charm，发力AI硬件业务",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "AI行业巨头投资硬件，利好相关板块"
+  },
+  {
+   "headline": "安琪酵母缩减投资项目 前三季度净利润增速落后营收增速",
+   "date": "2026-11-20",
+   "sectors": [
+    "食品饮料"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "食品饮料行业业绩不佳，影响板块信心"
+  },
+  {
+   "headline": "中影光峰亮相广州影博会：赋能影院放映升级",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.3,
+   "reason": "消费电子行业技术创新，利好板块"
+  },
+  {
+   "headline": "平安消费金融首席信息官任职资格获监管核准",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "金融行业人事变动，影响有限"
+  },
+  {
+   "headline": "NCE平台:金价修复仍受美元走势牵动",
+   "date": "2026-11-20",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "金价下跌，黄金板块利空"
+  },
+  {
+   "headline": "沪硅产业年内减持超30亿、扣非利润连亏三年多，硅片龙头深陷价格战泥潭",
+   "date": "2026-11-20",
+   "sectors": [
+    "半导体",
+    "芯片"
+   ],
+   "direction": "negative",
+   "intensity": 0.7,
+   "reason": "硅片价格战，半导体芯片板块利空"
+  },
+  {
+   "headline": "骏成科技7.65 亿元采购GPU意欲何为？账面现金仅4.96亿元 前三季度净利润大幅下滑现金流转负",
+   "date": "2026-11-20",
+   "sectors": [
+    "AI",
+    "算力",
+    "芯片"
+   ],
+   "direction": "negative",
+   "intensity": 0.6,
+   "reason": "公司财务状况恶化，AI算力芯片板块利空"
+  },
+  {
+   "headline": "OEXN:金银异动折射市场再定价",
+   "date": "2026-11-20",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "金银价格波动，黄金板块利空"
+  },
+  {
+   "headline": "建设银行江西省分行被罚503.48万元：违反金融科技管理规定等",
+   "date": "2026-11-20",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "银行违规被罚，银行板块利空"
+  },
+  {
+   "headline": "Anthropic推出新品、大幅降价，为高估值背书",
+   "date": "2026-11-20",
+   "sectors": [
+    "AI",
+    "算力",
+    "芯片"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "AI公司新品发布，AI算力芯片板块利好"
+  },
+  {
+   "headline": "尾盘集中放量！宽基ETF成市场焦点，资金持续借道入场布局",
+   "date": "2026-11-20",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "ETF资金流入，券商基金板块利好"
+  },
+  {
+   "headline": "昆明宜良融丰村镇银行被罚51.36万元：违反金融统计相关规定等",
+   "date": "2026-11-20",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "银行违规被罚，银行板块利空"
+  },
+  {
+   "headline": "史上最大IPO刷新 Anthropic七位创始人套现近20亿美元",
+   "date": "2026-11-20",
+   "sectors": [
+    "AI",
+    "算力",
+    "芯片"
+   ],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "AI公司IPO，AI算力芯片板块利好"
+  },
+  {
+   "headline": "英伟达拟斥资超5亿美元收购扩散式AI技术开发商",
+   "date": "2026-11-20",
+   "sectors": [
+    "AI",
+    "算力",
+    "芯片"
+   ],
+   "direction": "positive",
+   "intensity": 0.8,
+   "reason": "英伟达收购AI技术公司，AI算力芯片板块利好"
+  },
+  {
+   "headline": "Vatee万腾:黄金反抽关注机会成本变化",
+   "date": "2026-11-20",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "关注机会成本变化，对黄金板块影响中性"
+  },
+  {
+   "headline": "华为星芒首款产品售价5699元起，网友喊话余承东：定价太贵",
+   "date": "2026-11-20",
+   "sectors": [
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "neutral",
+   "intensity": 0.4,
+   "reason": "产品定价影响消费者购买意愿，对相关产业链影响中性"
+  },
+  {
+   "headline": "Anthropic的IPO大捷",
+   "date": "2026-11-20",
+   "sectors": [
+    "AI",
+    "算力",
+    "光模块",
+    "服务器"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "AI领域公司IPO成功，提振行业信心"
+  },
+  {
+   "headline": "知名投资人段永平：字节目前市场估值大概在6000亿美元",
+   "date": "2026-11-20",
+   "sectors": [
+    "传媒",
+    "游戏"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "市场估值变化，对相关板块影响中性"
+  },
+  {
+   "headline": "ZFX山海证券:白银高波动提示结构差异",
+   "date": "2026-11-20",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "白银波动提示市场结构差异，对黄金板块影响中性"
+  },
+  {
+   "headline": "002938，控股股东提议：未来三年每年股东回报不低于15亿元",
+   "date": "2026-11-20",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "股东回报提升，提振市场信心"
+  },
+  {
+   "headline": "为何Anthropic的风投投资者不愿减持",
+   "date": "2026-11-20",
+   "sectors": [
+    "AI",
+    "算力",
+    "光模块",
+    "服务器"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "风投投资者不愿减持，显示行业前景乐观"
+  },
+  {
+   "headline": "工商银行云南省分行被罚100万元：违反金融统计相关规定",
+   "date": "2026-11-20",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "银行违规被罚，对银行板块影响负面"
+  },
+  {
+   "headline": "金利宝环球:黄金反弹仍需关注外部定价",
+   "date": "2026-11-20",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "黄金反弹需关注外部定价，对黄金板块影响中性"
+  },
+  {
+   "headline": "九日八跌极端行情下，黄金跌向何方？",
+   "date": "2026-11-20",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "极端行情下黄金走势不确定，对黄金板块影响中性"
+  },
+  {
+   "headline": "白宫网络事务主管肖恩・凯恩克罗斯即将卸任",
+   "date": "2026-11-20",
+   "sectors": [
+    "网络安全"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "网络事务主管卸任对网络安全板块影响有限"
+  },
+  {
+   "headline": "建设银行云南省分行被罚50万元：违反金融统计相关规定",
+   "date": "2026-11-20",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "银行违规被罚对银行业板块产生负面影响"
+  },
+  {
+   "headline": "中天期货:白银加速下跌 沪锌跌跌不休",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "金属价格下跌对有色金属板块不利"
+  },
+  {
+   "headline": "曝两员大将离职，字节回应：不准确",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "高管变动对互联网传媒板块影响有限"
+  },
+  {
+   "headline": "海光信息、华虹宏力等芯片龙头股重挫，沐曦股份跌超12%，最新回应",
+   "date": "2026-11-20",
+   "sectors": [
+    "半导体",
+    "芯片",
+    "消费电子",
+    "苹果产业链",
+    "AI",
+    "算力",
+    "CPO",
+    "光模块",
+    "PCB",
+    "数据中心",
+    "服务器"
+   ],
+   "direction": "negative",
+   "intensity": 0.7,
+   "reason": "芯片股下跌对相关板块产生较大负面影响"
+  },
+  {
+   "headline": "沪指险守3500点关口，银行等权重股再度发力护盘| 华宝基金3A日报（2026.11.20）",
+   "date": "2026-11-20",
+   "sectors": [
+    "券商",
+    "保险",
+    "银行",
+    "地产",
+    "基建"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "银行股护盘对相关板块产生正面影响"
+  },
+  {
+   "headline": "野村：阿里巴巴第二财季盈利表现强劲且优於预期 予美股目标价178美元",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "阿里巴巴盈利表现良好对相关板块产生正面影响"
+  },
+  {
+   "headline": "金玉堂:黄金这轮下跌是否到达末期 晚间能否反弹上去",
+   "date": "2026-11-20",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "黄金价格波动对黄金板块影响有限"
+  },
+  {
+   "headline": "中国人寿随州分公司被罚32万元：财务业务数据不真实等",
+   "date": "2026-11-20",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "保险公司违规被罚对保险板块产生负面影响"
+  },
+  {
+   "headline": "张晶霖:伦敦金还有下跌空间吗 黄金走势分析及操作建议",
+   "date": "2026-11-20",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "黄金价格分析对黄金板块影响有限"
+  },
+  {
+   "headline": "许思敏已离职，娃哈哈集团新董事长人选未定",
+   "date": "2026-11-20",
+   "sectors": [
+    "食品饮料"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "公司内部人事变动，对板块影响有限"
+  },
+  {
+   "headline": "A股，下周的走势又将非常关键了！",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "市场走势预测，具体影响尚不确定"
+  },
+  {
+   "headline": "金玉堂:黄金四天走跌空头持续强劲 今天又会如何演绎",
+   "date": "2026-11-20",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "金价下跌，对黄金板块利空"
+  },
+  {
+   "headline": "农业银行黄冈分行被罚55万元：员工行为管理不到位、信贷管理不到位",
+   "date": "2026-11-20",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "银行被罚，对板块信心造成负面影响"
+  },
+  {
+   "headline": "湖北应城农村商业银行被罚30万元：贷款三查不到位导致形成不良",
+   "date": "2026-11-20",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.2,
+   "reason": "银行被罚，对板块信心造成负面影响"
+  },
+  {
+   "headline": "湖北安陆农村商业银行被罚50万元：重大关联交易审批程序不合规、存款冲时点",
+   "date": "2026-11-20",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.2,
+   "reason": "银行被罚，对板块信心造成负面影响"
+  },
+  {
+   "headline": "杨呈发:金价一路下探 空头力量临近衰竭",
+   "date": "2026-11-20",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "金价下跌趋势可能结束，对黄金板块利好"
+  },
+  {
+   "headline": "招银研究：赎回扰动加大债市波动，关注回调后机遇",
+   "date": "2026-11-20",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "债市波动，对券商板块影响有限"
+  },
+  {
+   "headline": "央行公布2026年10月金融市场运行情况",
+   "date": "2026-11-20",
+   "sectors": [
+    "券商",
+    "银行",
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "金融市场运行情况公布，对相关板块影响有限"
+  },
+  {
+   "headline": "最高20亿元！炼化龙头荣盛石化，控股股东抛出增持计划！前三季度净利暴增802%",
+   "date": "2026-11-20",
+   "sectors": [
+    "石化"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "控股股东增持，对石化板块利好"
+  },
+  {
+   "headline": "市政债市场行情低迷，Alphabet能源融资项目遭遇延期",
+   "date": "2026-11-20",
+   "sectors": [
+    "基建"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "市政债市场低迷，影响基建项目融资，利空基建板块。"
+  },
+  {
+   "headline": "张津镭:黄金加速下探 周五谨防空头获利回吐",
+   "date": "2026-11-20",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "黄金价格下跌，利空黄金板块。"
+  },
+  {
+   "headline": "通富微电董事长疑似在会议现场推介茶叶，今日股价跌停",
+   "date": "2026-11-20",
+   "sectors": [
+    "半导体"
+   ],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "通富微电股价跌停，可能影响半导体板块情绪。"
+  },
+  {
+   "headline": "Bending Spoons为何下一步可能选择发行可转换债券",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "新闻与A股板块关联性不强。"
+  },
+  {
+   "headline": "星石投资周评：外部压力导致快速调整 预计后续股市风格会逐步趋于均衡",
+   "date": "2026-11-20",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "股市风格调整，影响尚不确定。"
+  },
+  {
+   "headline": "苹果研发AI智能体，对标Meta与OpenAI",
+   "date": "2026-11-20",
+   "sectors": [
+    "AI",
+    "算力",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "苹果研发AI智能体，利好相关板块。"
+  },
+  {
+   "headline": "ServiceNow打造AI利器，瞄准抢夺Salesforce客户",
+   "date": "2026-11-20",
+   "sectors": [
+    "AI",
+    "算力",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "ServiceNow推出AI产品，利好相关板块。"
+  },
+  {
+   "headline": "谷歌选定贝索斯旗下蓝色起源开展卫星数据中心测试",
+   "date": "2026-11-20",
+   "sectors": [
+    "卫星互联网",
+    "数据中心",
+    "服务器"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "谷歌与蓝色起源合作，利好相关板块。"
+  },
+  {
+   "headline": "光大期货1120热点追踪：金银大跌，未来还能涨回来吗？",
+   "date": "2026-11-20",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "金银价格下跌，利空黄金板块。"
+  },
+  {
+   "headline": "陈峻齐:黄金跌势连绵不绝低点之下还有低点",
+   "date": "2026-11-20",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "黄金价格持续下跌，利空黄金板块。"
+  }
+ ],
+ "blackTalk": "{\"blackTalk\":\"今儿多头热闹，卫星、地产、AI都小涨，但别高兴太早，CPO、PCB半导体跌得厉害，稳住，别上头，仓位控制好！",
+ "macro": {
+  "sentiment": 0,
+  "score100": 50,
+  "label": "中性",
+  "confidence": 0.48,
+  "reason": "利好板块：卫星互联网(+0.6)、地产(+0.5)、石化(+0.5)、AI(+0.37)、算力(+0.37)；利空板块：CPO(-0.7)、PCB(-0.7)、半导体(-0.6)、医药(-0.4)"
+ }
+}
