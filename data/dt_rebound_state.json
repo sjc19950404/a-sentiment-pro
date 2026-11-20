@@ -46,7 +46,7 @@
    }
   },
   "600802": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -406,9 +406,9 @@
    }
   },
   "002959": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
-    "lift": 0,
+    "lift": 1,
     "red": 0,
     "seal": 0,
     "dtBreak": 0
@@ -532,7 +532,7 @@
    }
   },
   "000707": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 1,
     "red": 0,
@@ -604,6 +604,6 @@
    }
   }
  },
- "notified": 26,
+ "notified": 27,
  "date": "2026-11-20"
 }
