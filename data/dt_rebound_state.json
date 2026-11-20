@@ -19,7 +19,7 @@
    }
   },
   "600593": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -46,7 +46,7 @@
    }
   },
   "600802": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -226,7 +226,7 @@
    }
   },
   "603626": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -244,7 +244,7 @@
    }
   },
   "603666": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -271,7 +271,7 @@
    }
   },
   "603818": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -415,7 +415,7 @@
    }
   },
   "001282": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 1,
     "red": 0,
@@ -478,7 +478,7 @@
    }
   },
   "002045": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -505,7 +505,7 @@
    }
   },
   "002639": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -577,7 +577,7 @@
    }
   },
   "000530": {
-   "pos": "red",
+   "pos": "sealed",
    "counts": {
     "lift": 0,
     "red": 1,
