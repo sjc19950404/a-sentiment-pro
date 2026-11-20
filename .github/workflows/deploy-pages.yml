@@ -34,6 +34,9 @@ on:
   push:
     branches: [main]
     paths:
+      # 2026-11-21：workflow 自身也入白名单——改部署配置/workflow 必须重新部署生效，
+      # 否则 ci 修复 push 后（paths 外）不触发，改动当天无法端到端验证（ea76d65e 实证）。
+      - '.github/workflows/**'
       - 'index.html'
       - 'app.js'
       - 'style.css'
