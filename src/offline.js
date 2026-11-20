@@ -21,7 +21,7 @@
 /* 与 sw.js 的 CACHE_VERSION 同步（deploy_manifest 同源测试强制一致）。线上由
  * deploy-pages.yml sed 注入 GITHUB_SHA 覆盖；本地开发改 shell 资产必须 bump——
  * SW 更新检测是 sw.js 字节 diff，不 bump 则 install 不重跑、cache-first 给旧文件。 */
-export const CACHE_VERSION = 'v3-dev-20261120';
+export const CACHE_VERSION = 'v3-dev-20261121';
 export const SHELL_CACHE = `aspro-shell-${CACHE_VERSION}`;
 export const DATA_CACHE = `aspro-data-${CACHE_VERSION}`;
 

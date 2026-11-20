@@ -23,7 +23,7 @@
  * 不重新缓存资产 → cache-first 给旧文件（本地源码测试必撞；线上由 deploy-pages.yml
  * sed 注入 GITHUB_SHA 到本变量，部署版每次 commit 都变、天然免疫）。本地开发时
  * 改了资产必须 bump 此值（任何非 v2 旧值即可，线上会被覆盖）。 */
-const CACHE_VERSION = 'v3-dev-20261120';
+const CACHE_VERSION = 'v3-dev-20261121';
 const SHELL_CACHE = `aspro-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `aspro-data-${CACHE_VERSION}`;
 
@@ -196,9 +196,12 @@ self.addEventListener('fetch', (event) => {
       }
     }
 
-    // network-first（数据）：先要新的；拿不到才回退缓存
+    // network-first（数据）：先要新的；拿不到才回退缓存。
+    // 【2026-11-21 修复】fetch 必须带 { cache: 'reload' } 强制绕过浏览器 HTTP 缓存——
+    // github.io 静态资源有 max-age，裸 fetch 会命中 HTTP 缓存里的旧数据还当"网络成功"
+    // 写回 DATA_CACHE（§七实证/每日数据全部受累；shell SWR 分支早已用 reload，此处漏配）。
     try {
-      const res = await fetch(req);
+      const res = await fetch(req, { cache: 'reload' });
       if (res && res.ok) {
         await cache.put(key, res.clone());
         // 告知页面"这次是从网络拿的" —— 页面据此清掉离线标记
