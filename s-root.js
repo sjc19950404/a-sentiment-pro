@@ -553,39 +553,91 @@
     }
   });
 
-  /* 【原型 hotSearch 同语义】工作台搜索框真筛选个股明细表（代码/名称），防抖 150ms，
-   * 不请求网络。此前只有`/`聚焦却无绑定——能聚焦不能筛，是半吊子入口。 */
+  /* 【原型 hotSearch 同语义 + 2026-11-20 去鸡肋改造】工作台搜索框此前只在总览页筛
+   * 个股明细表——全局入口、局部作用，其它 tab 输入毫无反应（用户反馈「鸡肋」）。
+   * 改造后三层能力：
+   *  ① 总览页：保留原表格筛选（同语义不破坏）；
+   *  ② 任意 tab：三池检索（当日热点/龙虎榜/涨停池，app.js __stockSearch 引擎原值）
+   *     → 输入即出候选下拉；
+   *  ③ 回车/点选候选 → 打开既有个股详情抽屉（__stockOpen→stockDetail→openDrawer
+   *     全复用，不造第二个详情渲染）。检索纯本地，不请求网络。 */
   (function bindWorkbenchSearch() {
     let timer = null;
+    let drop = null;
+    const closeDrop = () => { if (drop) { drop.remove(); drop = null; } };
+    const openStock = (code) => {
+      closeDrop();
+      const sf = document.getElementById('sPhSearch');
+      if (sf) sf.blur();
+      if (typeof window.__stockOpen === 'function') window.__stockOpen(code);
+    };
+    const renderDrop = (sf, items) => {
+      closeDrop();
+      if (!items.length) return;
+      const r = sf.getBoundingClientRect();
+      drop = document.createElement('div');
+      drop.id = 'sSearchDrop';
+      drop.style.cssText = 'position:fixed;z-index:1200;top:' + (r.bottom + 4) + 'px;left:' + r.left
+        + 'px;min-width:' + Math.max(240, r.width) + 'px;background:var(--s-surface,#fff);'
+        + 'border:1px solid var(--s-border,#ddd);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.14);overflow:hidden;';
+      drop.innerHTML = items.map((p) =>
+        '<button type="button" data-code="' + p.code + '" style="display:flex;gap:10px;width:100%;text-align:left;'
+        + 'padding:9px 12px;border:0;background:none;cursor:pointer;font:inherit;">'
+        + '<span style="font-weight:600">' + p.code + '</span>'
+        + '<span style="flex:1">' + (p.name || '—') + '</span>'
+        + '<span style="opacity:.55;font-size:12px">' + p.src + '</span></button>').join('');
+      document.body.appendChild(drop);
+      drop.addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-code]');
+        if (b) openStock(b.dataset.code);
+      });
+    };
     document.addEventListener('input', (e) => {
       if (!e.target || e.target.id !== 'sPhSearch') return;
-      const q = (e.target.value || '').trim().toLowerCase();
+      const sf = e.target;
+      const q = (sf.value || '').trim().toLowerCase();
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
+        /* ① 总览页个股明细表筛选（原有语义保留） */
         const body = document.getElementById('sEvHotBody');
-        if (!body) return;
-        let shown = 0, total = 0;
-        Array.from(body.querySelectorAll('tr')).forEach((tr) => {
-          total++;
-          const hit = !q || (tr.textContent || '').toLowerCase().includes(q);
-          tr.hidden = !hit;
-          if (hit) shown++;
-        });
-        /* 无匹配时给出如实提示（不伪造数据），挂在表格容器旁 */
-        const table = document.getElementById('sEvHotTable');
-        let tip = document.getElementById('sEvSearchTip');
-        if (q && table && table.parentElement) {
-          if (!tip) {
-            tip = document.createElement('div');
-            tip.id = 'sEvSearchTip';
-            tip.className = 's-kpi__note';
-            tip.style.cssText = 'padding:8px 4px;';
-            table.parentElement.appendChild(tip);
-          }
-          tip.textContent = shown ? `匹配 ${shown} / ${total} 行` : '无匹配个股（本地筛选，不请求网络）';
-          tip.hidden = false;
-        } else if (tip) { tip.hidden = true; }
+        if (body) {
+          let shown = 0, total = 0;
+          Array.from(body.querySelectorAll('tr')).forEach((tr) => {
+            total++;
+            const hit = !q || (tr.textContent || '').toLowerCase().includes(q);
+            tr.hidden = !hit;
+            if (hit) shown++;
+          });
+          const table = document.getElementById('sEvHotTable');
+          let tip = document.getElementById('sEvSearchTip');
+          if (q && table && table.parentElement) {
+            if (!tip) {
+              tip = document.createElement('div');
+              tip.id = 'sEvSearchTip';
+              tip.className = 's-kpi__note';
+              tip.style.cssText = 'padding:8px 4px;';
+              table.parentElement.appendChild(tip);
+            }
+            tip.textContent = shown ? `匹配 ${shown} / ${total} 行` : '无匹配个股（本地筛选，不请求网络）';
+            tip.hidden = false;
+          } else if (tip) { tip.hidden = true; }
+        }
+        /* ② 任意 tab：三池候选下拉（引擎当日原值；无候选不显示空面板） */
+        if (typeof window.__stockSearch === 'function' && q) {
+          try { renderDrop(sf, window.__stockSearch(q)); } catch (_) { closeDrop(); }
+        } else closeDrop();
       }, 150);
+    });
+    /* ③ 回车：唯一/首个候选直接打开详情抽屉 */
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || !e.target || e.target.id !== 'sPhSearch') return;
+      const q = (e.target.value || '').trim();
+      if (!q || typeof window.__stockSearch !== 'function') return;
+      const items = window.__stockSearch(q);
+      if (items.length) { e.preventDefault(); openStock(items[0].code); }
+    });
+    document.addEventListener('click', (e) => {
+      if (drop && !drop.contains(e.target) && e.target.id !== 'sPhSearch') closeDrop();
     });
   })();
 

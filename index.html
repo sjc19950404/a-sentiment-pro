@@ -3432,6 +3432,12 @@
    * 新工作台「板块/选股」页直接复用这些 render 输出（01 册「数据层零改动·复用现有 render」）。 */
   window.__TERMINAL_VIEWS__ = {
     sector: viewSector, picks: viewPicks, kline: viewKline, settings: viewSettings,
+    /* 【2026-11-20 工作台板块页基准切换修复】viewSector 内的基准分段按钮点击回调
+     * 调 goView('sector')——那是**终端视图**自己的重渲染，在工作台容器里不生效
+     * （按钮点了没反应，用户反馈「无法切换上证指数/行业中位数」）。模块级
+     * sectorBase 本就是切换状态，这里导出 setter 供工作台写回后自行重渲染。 */
+    setSectorBase(k) { sectorBase = k; },
+    getSectorBase() { return sectorBase; },
   };
 
   /* 【工作台收编 + 方案阶段5】

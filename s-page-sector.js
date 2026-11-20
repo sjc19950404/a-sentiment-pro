@@ -42,6 +42,22 @@
       if (!(node instanceof Node)) throw new Error('render 未返回节点');
       host.innerHTML = '';
       host.appendChild(node);
+      /* 【2026-11-20 基准切换修复】终端 render 里的「对比基准」分段按钮点击回调调
+       * goView('sector')（终端自己的重渲染），在工作台容器里不生效——按钮点了没反应。
+       * 接管方式：克隆替换 .t-seg（去掉终端绑定的监听），写回 terminal 的模块级
+       * sectorBase（__TERMINAL_VIEWS__.setSectorBase），再由本文件 mount() 重渲染
+       * host——同一份引擎原值换基准重画，不新增计算。 */
+      const seg = host.querySelector('.t-seg');
+      if (seg && typeof tv.setSectorBase === 'function') {
+        const fresh = seg.cloneNode(true);            // 克隆=不带终端的 goView 监听
+        seg.replaceWith(fresh);
+        fresh.addEventListener('click', (e) => {
+          const b = e.target && e.target.closest('button[data-b]');
+          if (!b || b.dataset.b === (typeof tv.getSectorBase === 'function' ? tv.getSectorBase() : null)) return;
+          tv.setSectorBase(b.dataset.b);
+          mount();                                    // 换一组引擎原值重画（重挂接管）
+        });
+      }
       host.setAttribute('aria-busy', 'false');
     } catch (e) {
       console.error('[sector] 复用终端 render 失败', e);

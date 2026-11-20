@@ -18,7 +18,12 @@
 // src/offline.js 一致）。部署链（deploy-pages.yml）会在产物上注入 commit hash（如
 // 'v2-95a5fbc'）保证每次部署字节必变：install 必重跑、外壳全量重 add，activate 按
 // /^aspro-(?:shell|data)-/ 前缀清掉旧版本名（任意版本串兼容）。
-const CACHE_VERSION = 'v2';
+/* CACHE_VERSION 更新纪律（2026-11-20 实证）：SW 更新检测是 sw.js **字节 diff**——
+ * 只改 shell 资产（app.js/s-*.js）而不改 sw.js 时，浏览器不会重跑 install →
+ * 不重新缓存资产 → cache-first 给旧文件（本地源码测试必撞；线上由 deploy-pages.yml
+ * sed 注入 GITHUB_SHA 到本变量，部署版每次 commit 都变、天然免疫）。本地开发时
+ * 改了资产必须 bump 此值（任何非 v2 旧值即可，线上会被覆盖）。 */
+const CACHE_VERSION = 'v3-dev-20261120';
 const SHELL_CACHE = `aspro-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `aspro-data-${CACHE_VERSION}`;
 

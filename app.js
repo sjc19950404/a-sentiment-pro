@@ -5896,3 +5896,34 @@ window.addEventListener('scroll', onScroll, { passive: true });
 $('toTop')?.addEventListener('click', () => {
   if (typeof window.scrollTo === 'function') window.scrollTo({ top: 0, behavior: 'smooth' });
 });
+
+/* 【2026-11-20 工作台搜索框去鸡肋】此前 #sPhSearch 只筛总览页个股明细表——全局入口、
+ * 局部作用，其它 8 个 tab 输入毫无反应（用户反馈「鸡肋」）。这里暴露全局个股搜索 API
+ * 供 s-root.js 的搜索框任意 tab 使用：三池检索（当日热点 / 龙虎榜 / 涨停池——都是引擎
+ * 当日原值，无估算）+ 回车/点选直接打开既有个股详情抽屉（stockDetail→openDrawer 全
+ * 复用，不造第二个详情渲染）。ARC 用顶层 let，本脚本内函数可见。 */
+window.__stockSearch = function (q) {
+  const days = displayDays(ARC);
+  const last = days[days.length - 1] || {};
+  const query = String(q || '').trim().toLowerCase();
+  if (!query || !last) return [];
+  const pools = [
+    ...(Array.isArray(last.hot) ? last.hot.map((h) => ({ code: h.code, name: h.name, src: '热点' })) : []),
+    ...(Array.isArray(last.lhb_aggr || last.lhb) ? (last.lhb_aggr || last.lhb).map((l) => ({ code: l.code, name: l.name, src: '龙虎' })) : []),
+    ...(Array.isArray(last.zt_codes) ? last.zt_codes.map((c) => ({ code: String(c), name: null, src: '涨停池' })) : []),
+  ];
+  const seen = new Map();
+  for (const p of pools) {
+    if (!p.code) continue;
+    const hitCode = p.code.toLowerCase().includes(query);
+    const hitName = p.name && String(p.name).toLowerCase().includes(query);
+    if (!hitCode && !hitName) continue;
+    if (!seen.has(p.code)) seen.set(p.code, p);
+    else if (p.name && !seen.get(p.code).name) seen.get(p.code).name = p.name;
+  }
+  return [...seen.values()].slice(0, 8);
+};
+window.__stockOpen = function (code) {
+  if (typeof openStockDetail === 'function') { openStockDetail(code); return true; }
+  return false;
+};
