@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generatedAt": "2026-11-20T10:42:42.893Z",
+  "generatedAt": "2026-11-20T13:07:00.256Z",
   "formulaVersion": "v5.2-pro",
   "tradeDate": "2026-11-20",
   "days": 270,
@@ -626,7 +626,7 @@
    43.6,
    47.8,
    32.6,
-   42.6
+   42.8
   ],
   "navBase": [
    1,
@@ -4245,6 +4245,10 @@
     "change_pct": 0.39
    },
    {
+    "name": "银行",
+    "change_pct": 0.22
+   },
+   {
     "name": "港口航运",
     "change_pct": -1.12
    },
@@ -4255,10 +4259,6 @@
    {
     "name": "证券",
     "change_pct": -1.32
-   },
-   {
-    "name": "煤炭开采加工",
-    "change_pct": -1.39
    }
   ],
   "threshold": {

@@ -1,7 +1,7 @@
 {
  "kind": "version-regression",
  "version": "1.0",
- "generatedAt": "2026-11-20T10:43:27.389Z",
+ "generatedAt": "2026-11-20T13:07:44.733Z",
  "baseline": "v5.2-pro",
  "formulaVersion": "v5.2-pro",
  "sample": {
@@ -11477,10 +11477,10 @@
    "nextRet": null,
    "nextGapDays": null,
    "scores": {
-    "v4.5": 42.7,
-    "v5.0": 42.6,
-    "v5.2-pro": 42.6,
-    "v5.3-pro": 38
+    "v4.5": 42.9,
+    "v5.0": 42.8,
+    "v5.2-pro": 42.8,
+    "v5.3-pro": 38.2
    },
    "nets": {
     "v4.5": 15.29,

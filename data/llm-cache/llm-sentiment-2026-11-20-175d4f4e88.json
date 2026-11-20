@@ -1,0 +1,63 @@
+{
+ "kind": "llm-cache",
+ "name": "llm-sentiment",
+ "asOfDate": "2026-11-20",
+ "hash": "175d4f4e88",
+ "cachedAt": "2026-11-20T13:02:23.886Z",
+ "parsed": {
+  "sentiment": -0.6,
+  "confidence": 0.8,
+  "reason": "亏钱效应显著，涨停家数远少于跌停家数，炸板率较高，市场情绪偏负面。",
+  "events": [
+   {
+    "type": "业绩预告",
+    "target": "三季报扭亏",
+    "tone": "negative",
+    "note": "退潮题材中，三季报扭亏板块表现不佳，影响市场情绪。"
+   },
+   {
+    "type": "行业催化",
+    "target": "冰雪经济",
+    "tone": "negative",
+    "note": "冰雪经济板块退潮，对市场情绪产生负面影响。"
+   },
+   {
+    "type": "行业催化",
+    "target": "天然气",
+    "tone": "negative",
+    "note": "天然气板块退潮，对市场情绪产生负面影响。"
+   },
+   {
+    "type": "行业催化",
+    "target": "LED照明",
+    "tone": "negative",
+    "note": "LED照明板块退潮，对市场情绪产生负面影响。"
+   },
+   {
+    "type": "行业催化",
+    "target": "汽车零部件",
+    "tone": "negative",
+    "note": "汽车零部件板块退潮，对市场情绪产生负面影响。"
+   },
+   {
+    "type": "行业催化",
+    "target": "AI眼镜",
+    "tone": "positive",
+    "note": "AI眼镜板块延续上涨，对市场情绪产生正面影响。"
+   },
+   {
+    "type": "行业催化",
+    "target": "电子",
+    "tone": "positive",
+    "note": "电子板块延续上涨，对市场情绪产生正面影响。"
+   },
+   {
+    "type": "行业催化",
+    "target": "国企改革",
+    "tone": "positive",
+    "note": "国企改革板块延续上涨，对市场情绪产生正面影响。"
+   }
+  ]
+ },
+ "model": "glm-4-flash"
+}

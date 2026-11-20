@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-20",
- "generated_at": "2026-11-20T10:47:16.902Z",
+ "generated_at": "2026-11-20T13:11:44.738Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -140,7 +140,38 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "ice",
+   "label": "冰点",
+   "score": 42.85,
+   "cap": 0.2,
+   "position_range": "0%~20%",
+   "positionReconcile": {
+    "score": 42.9,
+    "base": {
+     "key": "base_defend",
+     "minPos": 0,
+     "maxPos": 0.3,
+     "label": "防守"
+    },
+    "baseRange": "0%~30%",
+    "cap": {
+     "key": "ice",
+     "minPos": 0,
+     "maxPos": 0.2,
+     "label": "冰点",
+     "advice": "优先空仓，仅极端错杀才值得试探",
+     "tone": "defend"
+    },
+    "capRange": "0%~20%",
+    "force": false,
+    "conflict": false,
+    "finalRange": "0%~20%"
+   },
+   "clustering_bubble": false,
+   "sentiment_penalty": 0,
+   "score_adjusted": 42.85
+  },
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -190,35 +221,47 @@
    {
     "date": "2026-11-19",
     "day_return": -0.001327,
-    "score": 32.64,
+    "score": 32.58,
+    "regime": "ice"
+   },
+   {
+    "date": "2026-11-20",
+    "day_return": -0.005855,
+    "score": 42.85,
     "regime": "ice"
    }
   ],
-  "week_return": -0.007884528523807388,
-  "max_drawdown_week": 0.007884528523807388,
+  "week_return": -0.013693364609300596,
+  "max_drawdown_week": 0.013693364609300596,
   "win_rate": null,
   "win_rate_note": "口径 = 模拟盘平仓胜率（reviewTrades，来自 data/paper/account.json 的 trades；P3 起绑定真实成交）；0 笔平仓 → null（样本不足，不降级为日收益口径）。原「剧本命中率」数据源 airpt_sim_bindings 仍缺席。（已平仓 0 笔）",
-  "profit_trade_ratio": 0.25,
+  "profit_trade_ratio": 0.2,
   "cost_ratio_week": null,
   "trend_switch_effect": {
    "turns": [],
-   "shadow_note": null
+   "shadow_note": "trackC 影子线（0.5 档）累计 -0.0511 vs 执行轨 -0.073297；episodes 19（晋升门禁 ≥10，仍须走 promote_params）"
   },
-  "param_suggestions": [],
+  "param_suggestions": [
+   {
+    "topic": "posGap 阈值",
+    "fact": "分歧 >0.02 达 254/270 天，0.02/0.03 告警阈值仍是 [待确认] 状态",
+    "action": "提议进入确认流程，非本模块职责"
+   }
+  ],
   "factor_health": {
    "status": "healthy",
    "headline": "✅ 健康：超额正向、胜率 88% ≥52%、无连续负超额",
-   "week_alpha": 0.027211,
+   "week_alpha": 0.046683,
    "alpha_win_rate_8w": 0.875,
-   "sharpe8_display": -2.785,
+   "sharpe8_display": -2.968,
    "seat_alpha": 0.1667,
-   "diverg_rate": 0,
+   "diverg_rate": 0.2,
    "regime_check": [
     {
      "regime": "ice",
      "label": "ice",
      "weeks": 25,
-     "avg_alpha": 0.003754,
+     "avg_alpha": 0.004533,
      "win_rate": 0.56
     },
     {
