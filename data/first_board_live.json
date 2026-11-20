@@ -1,7 +1,7 @@
 {
- "at": "2026-11-20T04:30:01.327Z",
- "bj": "12:30",
- "session": "offhours",
+ "at": "2026-11-20T05:00:01.467Z",
+ "bj": "13:00",
+ "session": "trading",
  "dataDate": "2026-11-20",
  "prevDate": "20261119",
  "pool": 17,
@@ -17,8 +17,8 @@
   {
    "code": "000656",
    "name": "金科股份",
-   "chg": 2.94,
-   "last": 1.05,
+   "chg": 3.92,
+   "last": 1.06,
    "high": 1.12,
    "limitPrice": 1.12,
    "status": "broken",
@@ -27,8 +27,8 @@
   {
    "code": "002420",
    "name": "毅昌科技",
-   "chg": -6.07,
-   "last": 6.03,
+   "chg": -5.3,
+   "last": 6.08,
    "high": 7.06,
    "limitPrice": 7.06,
    "status": "broken",
@@ -37,8 +37,8 @@
   {
    "code": "000678",
    "name": "襄阳轴承",
-   "chg": 5.97,
-   "last": 17.74,
+   "chg": 6.03,
+   "last": 17.75,
    "high": 18.1,
    "limitPrice": 18.41,
    "status": "approaching",
@@ -57,8 +57,8 @@
   {
    "code": "603931",
    "name": "格林达",
-   "chg": 1.68,
-   "last": 29.64,
+   "chg": 1.89,
+   "last": 29.7,
    "high": 32,
    "limitPrice": 32.07,
    "status": "idle",
@@ -67,8 +67,8 @@
   {
    "code": "603928",
    "name": "兴业股份",
-   "chg": 0.32,
-   "last": 12.42,
+   "chg": 0.65,
+   "last": 12.46,
    "high": 12.67,
    "limitPrice": 13.62,
    "status": "idle",
@@ -77,8 +77,8 @@
   {
    "code": "002077",
    "name": "大港股份",
-   "chg": -0.83,
-   "last": 12.01,
+   "chg": -0.74,
+   "last": 12.02,
    "high": 12.34,
    "limitPrice": 13.32,
    "status": "idle",
@@ -87,8 +87,8 @@
   {
    "code": "002165",
    "name": "红 宝 丽",
-   "chg": -1.75,
-   "last": 6.19,
+   "chg": -1.59,
+   "last": 6.2,
    "high": 6.54,
    "limitPrice": 6.93,
    "status": "idle",
@@ -117,8 +117,8 @@
   {
    "code": "001358",
    "name": "兴欣新材",
-   "chg": -4.1,
-   "last": 27.38,
+   "chg": -3.99,
+   "last": 27.41,
    "high": 28,
    "limitPrice": 31.41,
    "status": "idle",
@@ -145,6 +145,16 @@
    "qDate": "2026-11-20"
   },
   {
+   "code": "002242",
+   "name": "九阳股份",
+   "chg": -4.93,
+   "last": 29.67,
+   "high": 31.08,
+   "limitPrice": 34.33,
+   "status": "idle",
+   "qDate": "2026-11-20"
+  },
+  {
    "code": "601616",
    "name": "广电电气",
    "chg": -5.08,
@@ -155,20 +165,10 @@
    "qDate": "2026-11-20"
   },
   {
-   "code": "002242",
-   "name": "九阳股份",
-   "chg": -5.29,
-   "last": 29.56,
-   "high": 31.08,
-   "limitPrice": 34.33,
-   "status": "idle",
-   "qDate": "2026-11-20"
-  },
-  {
    "code": "600619",
    "name": "海立股份",
-   "chg": -5.64,
-   "last": 14.22,
+   "chg": -5.31,
+   "last": 14.27,
    "high": 14.85,
    "limitPrice": 16.58,
    "status": "idle",
