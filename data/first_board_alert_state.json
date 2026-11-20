@@ -10,7 +10,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3.92
+   "chg": -3.65
   },
   "600619": {
    "pos": "none",
@@ -22,7 +22,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -6.1
+   "chg": -5.04
   },
   "601616": {
    "pos": "none",
@@ -34,7 +34,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.88
+   "chg": -5.35
   },
   "603078": {
    "pos": "none",
@@ -58,7 +58,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -9
+   "chg": -7.86
   },
   "603928": {
    "pos": "none",
@@ -70,7 +70,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -0.65
+   "chg": 0.08
   },
   "603931": {
    "pos": "none",
@@ -82,7 +82,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 1.37
+   "chg": 1.17
   },
   "605178": {
    "pos": "none",
@@ -94,7 +94,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.11
+   "chg": -4.88
   },
   "002242": {
    "pos": "none",
@@ -106,7 +106,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -6.89
+   "chg": -4.01
   },
   "002420": {
    "pos": "touched",
@@ -118,7 +118,7 @@
     "accel": 0
    },
    "brokeToday": 1,
-   "chg": -6.39
+   "chg": -5.61
   },
   "002165": {
    "pos": "none",
@@ -130,7 +130,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -2.38
+   "chg": -1.59
   },
   "002418": {
    "pos": "none",
@@ -142,7 +142,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.47
+   "chg": -4.73
   },
   "002077": {
    "pos": "none",
@@ -154,7 +154,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -0.99
+   "chg": -1.16
   },
   "000678": {
    "pos": "none",
@@ -166,7 +166,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.27
+   "chg": 4.9
   },
   "000656": {
    "pos": "touched",
@@ -202,18 +202,18 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -7.67
+   "chg": -4.8
   }
  },
  "notified": 0,
  "threshold_adjust": {
   "enabled": false,
-  "state": "震荡",
+  "state": "复苏",
   "items": [
    {
     "key": "approachPct",
     "base": 7,
-    "regime": "震荡",
+    "regime": "复苏",
     "tier": "neutral",
     "multiplier": 1,
     "final": 7,
@@ -222,7 +222,7 @@
    {
     "key": "sectorMinChg",
     "base": 2,
-    "regime": "震荡",
+    "regime": "复苏",
     "tier": "neutral",
     "multiplier": 1,
     "final": 2,
