@@ -124,6 +124,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0   # R2_CHANGED_ONLY_FROM 需与 github.event.before 做 git diff，须全史
+        with:
           ref: main
       - name: 构建浏览器 bundle（esbuild 打包 ESM 模块树，消除 github.io 模块瀑布）
         # continue-on-error：CI 构建偶发失败（如 npm 拉取 esbuild 抖动）不阻断部署，
@@ -172,6 +174,21 @@ jobs:
       - name: 部署到 GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      # R2 快速 CDN 同步（2026-11-21 用户拍板 B）：前端 github.io 域名下 data/* 改道
+      # R2（ASENT_CONFIG.dataOrigin），此前 R2 只由 Pi EOD 增量同步——代码提交里的
+      # 数据档变更（如 signals 新字段）要等次日 EOD 才上 R2，页面当天读到旧档。
+      # 部署成功后立刻同步，与 Pages 同版。只传本次 push 真正变化的文件
+      # （R2_CHANGED_ONLY_FROM=github.event.before，脚本内 git diff 过滤）；diff 不可用
+      # 时脚本自动回落全量。同步失败不吞掉——job 红 → 走下方 failure 企微告警。
+      - name: R2 快速 CDN 同步（部署后增量）
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+          R2_CHANGED_ONLY_FROM: ${{ github.event.before }}
+        run: node scripts/sync_to_r2.mjs
       # 部署失败告警（仅失败触发）：复用 OPS_WEBHOOK（与 guard_notify 同源企微 text bot）。
       # if: failure() 保证「成功路径不打扰、失败才报」；continue-on-error 双保险——
       # 通知通道自身故障绝不把 CI 拖红。部署失败时 main 未变，latest.trade_date 即上次成功部署态。

@@ -21,6 +21,7 @@
 // 用法：node scripts/sync_to_r2.mjs [--force]   （仓库根执行；读 .env 的 R2_* 变量）
 
 import { readFileSync, writeFileSync, existsSync, statSync, readdirSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
@@ -133,7 +134,28 @@ function collectSources() {
   const files = [];
   for (const d of SRC_DIRS) files.push(...walk(d));
   for (const f of SRC_FILES) if (existsSync(join(ROOT, f))) files.push(f);
-  return [...new Set(files)];
+  const all = [...new Set(files)];
+  /* 【2026-11-21 部署后自动同步（用户拍板 B）】CI 干净 checkout 没有 .r2_sync_manifest
+   * 且 checkout 会刷新全部 mtime——manifest 的 size+mtimeMs 比对在 Actions 里必然全量
+   * 误判（163MB/5554 对象每次部署重传，不可接受）。设 R2_CHANGED_ONLY_FROM=<git ref>
+   * 时改用 git diff 过滤：只同步该 ref 到 HEAD 之间变化、且仍在 SRC_DIRS/SRC_FILES
+   * 白名单内的文件。diff 失败（force push/首推/before 全 0）回落全量——宁可多传不可
+   * 漏传。本地 EOD（pi_run.sh）不带此变量，仍走 manifest 增量，行为不变。 */
+  const from = process.env.R2_CHANGED_ONLY_FROM;
+  if (from && /^[0-9a-f]{6,40}$/.test(from) && !/^0+$/.test(from)) {
+    try {
+      const out = execSync(`git diff --name-only ${from} HEAD`, { cwd: ROOT, encoding: 'utf8', timeout: 30000 });
+      const changed = new Set(out.split(/\r?\n/).filter(Boolean));
+      const filtered = all.filter((f) => changed.has(f));
+      console.log(`[r2] R2_CHANGED_ONLY_FROM=${from.slice(0, 8)}：git diff 变化 ${changed.size} 文件 → 白名单交集 ${filtered.length} 个`);
+      return filtered;
+    } catch (e) {
+      console.log(`[r2] git diff 失败（${String(e.message).slice(0, 60)}）——回落全量比对`);
+    }
+  } else if (from) {
+    console.log(`[r2] R2_CHANGED_ONLY_FROM 非法（空/全0/非 sha）——回落全量比对`);
+  }
+  return all;
 }
 
 function loadManifest() {
