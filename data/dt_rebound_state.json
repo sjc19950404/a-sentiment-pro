@@ -46,7 +46,7 @@
    }
   },
   "600802": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -100,7 +100,7 @@
    }
   },
   "601188": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 1,
     "red": 1,
@@ -145,7 +145,7 @@
    }
   },
   "603103": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -406,7 +406,7 @@
    }
   },
   "002959": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 1,
     "red": 0,
