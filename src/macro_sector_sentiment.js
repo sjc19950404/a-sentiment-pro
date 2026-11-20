@@ -45,14 +45,27 @@ export function deviationCheck(sectors, macroSentiment, industryRows) {
   const flagged = checked.length >= 2
     && redCount / checked.length < 0.4
     && (Number(macroSentiment) || 0) >= 0.1;
+  /* 【2026-11-20 A5 权重归零（豆包评审，实战暴露）】11-20 利好 TOP5 全是概念板块
+   * （CPO/PCB/数据中心/服务器/商业航天），行业匹配 0 命中——此前 checked=0 时本函数
+   * 静默（>0 才提示），"没数据被渲染成了没问题"。改为三态：flagged（背离）/ unverifiable
+   * （0~1 个可核对，读数不可验证）/ pass（可核对且未背离）。unverifiable 时消费端必须
+   * 降权提示，且利好榜不得被当作"有盘面支撑"。 */
+  /* unverifiable 不设宏观方向条件——0 命中本身就是"读数无法与盘面对账"，中性日同样
+   * 误导（11-20 实证：宏观 0.04 中性，若等 ≥0.1 则三态静默，利好榜仍会被当盘面支撑读）。 */
+  /* unverifiable 不设宏观方向条件——0 命中本身就是"读数无法与盘面对账"，中性日同样
+   * 误导（11-20 实证：宏观 0.04 中性，若等 ≥0.1 则三态静默，利好榜仍会被当盘面支撑读）。 */
+  const unverifiable = checked.length < 2 && bulls.length > 0;
   return {
     checkedCount: checked.length,
     redCount,
     detail: checked,
     flagged,
+    unverifiable,
     note: flagged
       ? `新闻面与盘面背离（利好板块当日红盘 ${redCount}/${checked.length}）——本节读数不参与任何参考修正，仅作舆情留痕`
-      : null,
+      : unverifiable
+        ? `利好板块均为概念板块（仅 ${checked.length} 个可与行业涨跌核对），无法与当日盘面核对——本节读数不可验证，不参与任何参考修正`
+        : null,
   };
 }
 

@@ -61,6 +61,17 @@ const shards = buildShards(packed);
 // 注入 aggregateByCode：主档不再持久化 lhb_aggr（体积纪律），滚动窗「最新日」需现补。
 //   与 pipeline.writeShards 必须用**同一注入**，否则 --check 会报两路径形态分裂。
 const recent = buildRecent(packed, RECENT_DAYS, { aggregateFn: aggregateByCode });
+/* 【2026-11-20 B9 期号（豆包评审）】前端 ARC 只有 30 天 recent 窗，推不出"年内第 N 份"，
+ * 此前拿窗内序号当期号——不同数据日的简报同为「第 30 号」。全史在手时算当年交易日
+ * 序号写入 meta.issueNo，前端只读。 */
+{
+  const all = packed.all_days || [];
+  const dataDate = (all[all.length - 1] || {}).trade_date;
+  const y = String(dataDate || '').slice(0, 4);
+  const inYear = all.filter((x) => String(x.trade_date || '').slice(0, 4) === y);
+  const i = inYear.findIndex((x) => x.trade_date === dataDate);
+  if (recent.meta) recent.meta.issueNo = i >= 0 ? i + 1 : undefined;
+}
 const signals = buildSignals(packed, {
   assumedTotal: 100000,
   marketAlertsFn: marketAlerts,

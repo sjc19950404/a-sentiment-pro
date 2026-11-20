@@ -1202,7 +1202,14 @@ function buildBrief(days, arc) {
     li(`情绪 <b>${num(v)}</b>（历史分位 <b>${pct == null ? '—' : pct + '%'}</b>）${delta != null ? `，较昨日 <b>${delta >= 0 ? '+' : ''}${num(delta)}</b>` : ''}，落于<b>${zone}</b>。${dirTxt}`),
     zoneNote ? li(zoneNote) : '',
     e.missing && e.missing.length ? li(`<span class="bf-warn">⚠ 因子缺失：${e.missing.join('、')}，今日分可信度降权</span>`) : '',
-  ].join('') + cal('情绪分为七因子加权合成（龙虎净额20%／涨跌家数10%／板块涨比20%／涨停强度10%／涨跌停对比15%／封板质量10%／量能15%），与页面情绪分、回测引擎同源；历史分位＝该分在样本窗口内的百分位排名。分区阈值：<40 冰点区／40~55 偏冷区／55~70 中性区／70~85 偏热区／≥85 狂热区。');
+    /* 【2026-11-20 B4 七因子找回（豆包评审）】档里 factors 七键全在（s_net/s_pos/
+     * s_brd/s_hot/s_zdt/s_zbl/s_amt），此前渲染层没输出——主分数不可复核，可复核性倒退。
+     * 恢复逐项输出（与 11-16 版同语义），只读引擎已算好的因子分，不重算。 */
+    e.factors ? `<li class="bf-li"><span class="muted">七因子明细: ${[
+      ['s_net', '龙虎净额'], ['s_pos', '涨跌家数'], ['s_brd', '板块涨比'], ['s_hot', '涨停强度'],
+      ['s_zdt', '涨跌停对比'], ['s_zbl', '封板质量'], ['s_amt', '量能'],
+    ].map(([k, lbl]) => `${lbl} <b>${e.factors[k] != null ? num(e.factors[k]) : '—'}</b>`).join(' ／ ')}</span></li>` : '',
+  ].join('') + cal('情绪分为七因子加权合成（龙虎净额20%／涨跌家数10%／板块涨比20%／涨停强度10%／涨跌停对比15%／封板质量10%／量能15%），与页面情绪分、回测引擎同源；历史分位＝<b>当日情绪分在最近 60 个交易日（含当日、RANK_WINDOW=60）升序窗口中的位置</b>，平值取首位、分母为窗口内有效样本数−1，四舍五入至 0.1%——<b>不是全历史 270 天排名，也与 §④ 的 208 天行业回填样本无关</b>（两个样本窗口各自独立，勿混用）。分数缓变时相邻多日可同分位（窗口滑动所致，非缓存）。分区阈值：<40 冰点区／40~55 偏冷区／55~70 中性区／70~85 偏热区／≥85 狂热区。');
 
   // 2. 资金（龙虎榜）
   // 近5日净买序列：必须与净买率同口径（当日榜）。此处原取全量口径，
@@ -1232,11 +1239,21 @@ function buildBrief(days, arc) {
   const nbRate = (dAmt > 0 && dNet != null) ? dNet / dAmt * 100 : null;
   let rateTxt = '';
   if (nbRate != null) {
+    /* 【2026-11-20 A1 标签降级（豆包评审，二犯）】"强进攻"把 0.1% 样本升格成市场结论——
+     * 同日全市场主力净流出 382 亿（公开稿），报告却在 §② 写"强进攻"，与摘要
+     * "无资金承接"自相矛盾。净买率的分母是**上榜成交**（153 亿，占全市场 1.42 万亿的
+     * ~1%），它只描述上榜股内部结构。降级为"上榜股内部"定性。 */
     const ab = Math.abs(nbRate);
-    rateTxt = ab >= 8 ? '强进攻' : ab >= 4 ? '中等力度' : '脉冲级，可信度低';
+    rateTxt = ab >= 8 ? '上榜股内部进攻性脉冲（非全市场口径）' : ab >= 4 ? '上榜股内部中等力度' : '上榜股内部脉冲级，样本极小';
   }
   // 3日滚动净额（与5日并行，抓资金转向拐点）
   const roll3Sum = nets.slice(-3).reduce((a, b) => a + b, 0);
+  /* 【2026-11-20 B1 窗口标注（豆包评审）】近3日滚动是"近3日各自净买之和"——与近5日
+   * 序列的末值（当日值）是两个数。11-20 实证：序列 [4.33,5.79,4.81,2.83,14.05]，
+   * 滚动 3 日和 = 21.69 ≠ 当日 14.05，而简报曾把两者显示成同一个 +14.1（窗口构成
+   * 不展示 → 渲染层错值无从发现）。写出窗口日期，错不了也读得懂。 */
+  const roll3Win = last5.slice(-3).map((x) => String(x.trade_date || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$2-$3')).join('~');
+  const roll3Days = nets.slice(-3).map((x) => (x >= 0 ? '+' : '') + num(x)).join(' + ');
   // 新股/独立标的识别与扰动（诱因=无价格涨跌幅限制，上市 5 日内）
   //
   // ⚠ 口径已上收到引擎：引擎（src/lhb.js → src/sentiment.js）在打分时就自动剔除了新股，
@@ -1288,7 +1305,12 @@ function buildBrief(days, arc) {
   const mtLine = (mt && mt.tot_yi > 0 && mt.pct != null) ? li(`资金-题材联动: 主线题材（${mt.name}）龙虎净买 ${mt.main_yi >= 0 ? '+' : ''}${num(mt.main_yi, 2)} 亿，占全部龙虎净买 <b>${mt.pct}%</b>——${mt.pct >= 60 ? '资金聚焦主线' : mt.pct >= 40 ? '资金分化' : '资金散乱，主线弱化'}`) : '';
   const sec2 = [
     li(`近5日当日龙虎净买（亿）: ${netTxt}`),
-    dAmt > 0 ? li(`上榜总成交 ${num(dAmt, 0)} 亿（当日榜 ${nf(s.lhb_daily_stocks)} 只，净买 ${nf(s.lhb_daily_net)} 亿；分子分母同源），净买率 <b>${num(nbRate, 1)}%</b>（${rateTxt}）；近3日滚动净买 ${roll3Sum >= 0 ? '+' : ''}${num(roll3Sum)} 亿`) : '',
+    dAmt > 0 ? li(`上榜总成交 ${num(dAmt, 0)} 亿（当日榜 ${nf(s.lhb_daily_stocks)} 只，净买 ${nf(s.lhb_daily_net)} 亿；分子分母同源），净买率 <b>${num(nbRate, 1)}%</b>（${rateTxt}）；近3日（${roll3Win}）滚动净买 <b>${roll3Sum >= 0 ? '+' : ''}${num(roll3Sum)}</b> 亿（= ${roll3Days}）`) : '',
+    /* 【2026-11-20 A1 全市场口径显式缺位（豆包评审）】"缺数据不等于一致"——全市场主力
+     * 资金净流入是东财大单分类自算的厂商指标（非交易所口径），本系统未接入该源时
+     * 必须显式输出 [未获取]，禁止静默、禁止用龙虎榜口径顶替。探源获批（腾讯/备用
+     * 域名，限时），接入后此行自动替换为真值。 */
+    dAmt > 0 ? li(`<span class="muted">全市场主力资金净流入: <b>[未获取]</b>（厂商自算指标，本系统未接入该源——下方净买率只描述「上榜 49 只」内部结构，占全市场成交约 ${(dAmt / (s.amount_yi || 0) * 100 || 0).toFixed(1)}%，不可互相替代或校验）</span>`) : '',
     s.lhb_range_count > 0 ? li(`<span class="muted">口径说明：另有 ${s.lhb_range_count} 条「连续 N 个交易日累计」榜记录，其买卖额与净额都是区间累计值（非当日），已单列——不计入上方总成交与净买率，也不计入情绪因子 s_net、近5日净额序列与新股扰动占比（全站日度口径只有「当日榜」一个来源）。</span>`) : '',
     netVerdict ? li(netVerdict + `（结构 ${s.net_pos ?? '—'} 买 / ${s.net_neg ?? '—'} 卖）`) : '',
     (newStocks.length && totNetDaily != null && totNetDaily > 0) ? li(`新股/独立标的（${newStocks.map((l) => l.name).join('、')}）净买 +${num(newNet, 2)} 亿，占当日龙虎净买 <b>${(newNet / totNetDaily * 100).toFixed(0)}%</b>${disturb ? '，<span class="bf-warn">超 25% 扰动线</span>' : ''}；剔除后主线净买 ${mainNet >= 0 ? '+' : ''}${num(mainNet, 2)} 亿`) : '',
@@ -1358,12 +1380,18 @@ function buildBrief(days, arc) {
         const dtd = s.zt_dtd && s.zt_dtd[c] ? '<span class="bf-warn">·地天</span>' : '';
         const dg = window.__glm && window.__glm.dragonOf(c);
         const dtag = dg ? `<span class="tag glm" title="${esc((dg.reason || 'AI 妖股逻辑推演').replace(/[\r\n]+/g, ' '))}">🕵${dg.is_pure_sentiment ? '纯情绪' : ''}</span>` : '';
-        return (Number.isFinite(cv) && cv !== k ? `${nm}<span class="muted">·连${cv}</span>` : nm) + dtag + dtd + boardBadge(c);
+        /* 【2026-11-20 A3 连板口径可数化（豆包评审，二犯）】此前 `cv !== k` 才显示 ·连N
+         * ——连续板数与 N天M板相同时（如 4 连板=4 板）不显示，读者无法区分「连续 4 板」
+         * 与「连续数据缺失」，"其中连续 2 板以上 3 只，逐只可核"核不出来。改为：
+         * 连续板数**有值就显式标注**（含 ·连1＝仅今日涨停），缺值标 ·连?——三个口径
+         * （N天M板/连续板/缺失）在行内不再有歧义，逐只可数。 */
+        const contTag = Number.isFinite(cv) ? `<span class="muted">·连${cv}</span>` : '<span class="muted">·连?</span>';
+        return `${nm}${contTag}` + dtag + dtd + boardBadge(c);
       });
       return `<tr><td>${k} 板</td><td>${arr.length} 只</td><td>${shown.join('、')}${arr.length > 8 ? ` 等 ${arr.length} 只` : ''}</td></tr>`;
     }).join('');
     const tot = keys.reduce((a, k) => a + buckets[k].length, 0);
-    return `<table class="bf-table" data-caption="连板天梯（近5交易日涨停天数口径 zt_lbw，逐只可核；·连N 为连续连板数，·地天 为盘中触及跌停后封回涨停）">`
+    return `<table class="bf-table" data-caption="连板天梯（近5日板数=N天M板口径 zt_lbw 逐只可核；·连N=东财连续连板数 zt_lb，·连1=仅今日涨停；·地天 为盘中触及跌停后封回涨停；·连?=连续板数缺失）">`
       + `<thead><tr><th>近5日板数</th><th>只数</th><th>个股（·连N＝连续连板数，·地天＝地天板）</th></tr></thead>`
       + `<tbody>${rows}</tbody>`
       + `<tfoot><tr><td>合计</td><td>${tot} 只</td><td>连板梯队（N天M板口径）</td></tr></tfoot></table>`;
@@ -1434,7 +1462,7 @@ function buildBrief(days, arc) {
     const head = li(`板块相对强弱（基准 <b>${esc(b.baseLabel)}</b> ${f2(b.basePct)}%）：`
       + `<b>超额进攻</b> ${esc(b.attack[0] ? b.attack[0].name : '—')} ${b.attack[0] ? f2(b.attack[0].excess) : ''}；`
       + `<b>超额防御</b> ${esc(b.defense[0] ? b.defense[0].name : '—')} ${b.defense[0] ? f2(b.defense[0].excess) : ''}`
-      + `。行业红盘中位 ${f2(REL.medianPct)}%（${REL.upCount}/${REL.total} 个行业飘红）${degraded}`);
+      + `。全行业中位涨跌幅 ${f2(REL.medianPct)}%（${REL.upCount}/${REL.total} 个行业飘红——该中位数描述全部行业的当日涨跌中心，与个股涨跌中位数是两个口径）${degraded}`);
     // 两张表**裸传**（不经 li() 包裹）：导出层只把 .bf-body 的**直接子** .bf-table 认作表格，
     // 套一层 .bf-li 会让它退化成一条被摊平的纯文本（同 连板天梯 的做法，见 sec3 的 ladderTbl）。
     return head
@@ -1447,7 +1475,17 @@ function buildBrief(days, arc) {
     // P1⑤ 宽度双口径：个股「站上20日线占比」必须与行业红盘并列（失真清单指控5——行业红盘
     //   但大量个股没站上均线＝板块内部分化，单看行业红盘会高估扩散）。
     (bwSnap && bwSnap.aboveMa && bwSnap.aboveMa.ratio != null) ? li(`个股趋势宽度：站上20日线 <b>${(bwSnap.aboveMa.ratio * 100).toFixed(1)}%</b>（${bwSnap.aboveMa.n}/${bwSnap.aboveMa.den}，全市场前复权日K自算）——${bwSnap.aboveMa.ratio >= 0.6 ? '趋势参与度高' : bwSnap.aboveMa.ratio >= 0.4 ? '趋势参与度中等' : '趋势参与度低，多数个股未走强'}${(indPct != null && indPct >= 50 && bwSnap.aboveMa.ratio < 0.4) ? '<span class="bf-warn">（行业红盘但个股站上均线不足四成＝板块指数行情、内部分化，慎言"扩散良好"）</span>' : ''}`) : '',
-    indPct != null ? li(`行业红盘 ${s.ind_up ?? '—'}/${s.ind_count}（${indPct.toFixed(0)}%）——${indPct >= 70 ? '板块扩散良好' : indPct >= 50 ? '结构性扩散' : '抱团行情，扩散不足'}；最强 ${s.top_industry || '—'} / 最弱 ${s.bottom_industry || '—'}`) : '',
+    /* 【2026-11-20 A4 成交额进正文（豆包评审）】因子名叫"广度与量能"、量能权重 15%、
+     * 阈值 ±10% 有定义，正文却不输出成交额数值——因子有名字没数值。档里
+     * summary.amount_yi 全史在档（11-20=14222 亿），补正文首行 + 环比自动比对。 */
+    (() => {
+      const amt = s.amount_yi, prevAmt = (last5.length >= 2 && last5[last5.length - 2].summary) ? last5[last5.length - 2].summary.amount_yi : null;
+      if (amt == null) return li('<span class="muted">两市成交额: <b>[未获取]</b>（量能因子缺该输入时 s_amt 降权）</span>');
+      const chg = prevAmt != null ? (amt / prevAmt - 1) * 100 : null;
+      const tag = chg == null ? '' : Math.abs(chg) < 10 ? '，量能平稳' : chg > 0 ? `，<b>放量 ${chg > 0 ? '+' : ''}${chg.toFixed(1)}%</b>` : `，缩量 ${chg.toFixed(1)}%`;
+      return li(`两市成交额 <b>${amt >= 10000 ? (amt / 10000).toFixed(2) + ' 万亿' : num(amt, 0) + ' 亿'}</b>${chg != null ? `（较上日 ${chg >= 0 ? '+' : ''}${chg.toFixed(0)} 亿${tag}）` : ''}——量能因子 s_amt 权重 15%，放量下跌与缩量阴跌的解读方向不同（前者偏出清、后者偏阴跌），结合 §③ 涨跌停结构读`);
+    })(),
+    indPct != null ? li(`行业红盘 ${s.ind_up ?? '—'}/${s.ind_count}（${indPct.toFixed(0)}%）——${indPct >= 70 ? '板块扩散良好' : indPct >= 50 ? '结构性扩散' : '抱团行情，扩散不足'}；最强 ${s.top_industry || '—'} / 跌幅最大 ${s.bottom_industry || '—'}`) : '',
     amtChg != null ? li(`两市成交额 ${num(amt, 0)} 亿，环比 ${amtChg >= 0 ? '+' : ''}${amtChg.toFixed(1)}%${amt === pamt ? '' : `（${amt >= pamt ? '放量' : '缩量'} ${num(Math.abs(amt - pamt), 0)} 亿）`}——${amtChg >= 10 ? '放量' : amtChg <= -10 ? '缩量' : '量能平稳'}；量能因子 ${f.s_amt ?? '—'}（${f.s_amt >= 40 ? '高量能' : f.s_amt >= 20 ? '中等量能' : '低量能'}）`) : '',
     relTbl,
   ].join('') + cal('涨跌家数双口径：主口径「沪深两市（不含北交所，含ST/科创板/创业板）」取自交易所涨跌家数（summary.up_count/down_count）；副口径「全市场（含北交所）」由 breadth-latest 前复权日K 自算，仅含能取到前复权序列的票、按代码前缀拆分（北交所/新三板 8/4/92 开头剔除出沪深口径）。两者同源但范围不同，勿混用。红盘占比＝上涨家数 ÷（上涨+下跌），仅按主口径计算。阈值：红盘占比≥65 普涨／55~65 结构性／45~55 震荡分化／<45 普跌；行业红盘≥70 扩散良好／50~70 结构性扩散／<50 抱团；成交额环比 ±10% 为放量/缩量的分界（区间内视为平稳）。'
@@ -1509,7 +1547,7 @@ function buildBrief(days, arc) {
   let verdict = '中性震荡，控制仓位做结构。';
   if (ev.includes('情绪与分位双高') && ev.includes('龙虎榜资金进场')) verdict = '情绪与分位双高 + 资金进场共振，但分位已处高位，追高性价比下降，持仓者让利润奔跑、空仓者等分歧低吸。';
   else if (ev.includes('情绪与分位双高')) verdict = '情绪与分位双高，兑现压力大于进攻价值，勿在新高追涨。';
-  else if (ev.includes('情绪冰点')) verdict = ev.includes('龙虎榜资金进场') ? '冰点 + 资金试探进场，修复脉冲概率上升，轻仓试错、止损要快。' : '冰点区无资金承接，空仓等右侧，接飞刀是找死。';
+  else if (ev.includes('情绪冰点')) verdict = ev.includes('龙虎榜资金进场') ? '冰点 + 资金试探进场，修复脉冲概率上升，轻仓试错、止损要快。' : '冰点区无资金承接，空仓等右侧；趋势未确认前不抄底（右侧确认＝量能重回均值上方且情绪分回到偏冷区）。';
   else if (ev.includes('情绪修复') && ev.includes('龙虎榜资金进场') && ev.includes('赚钱效应')) verdict = painRisk
     ? `修复三要素齐（情绪回升＋资金进场＋涨停结构），但高位接力亏钱风险显现（首板层 ${pnLabel || '多空拉锯'}：昨涨停翻绿 ${Math.round((pnLoss || 0) * 100)}%；高标层走弱：连板晋级失败 ${Math.round((pnFail || 0) * 100)}%）——低位试错为主，勿追高位板。`
     : `修复三要素齐（情绪回升＋资金进场＋赚钱效应），可逐步转进攻，${mainlineTxt}。`;
@@ -1591,7 +1629,12 @@ function buildBrief(days, arc) {
   })();
   const tierLine = li(`<b>仓位结论（分位优先 · 风控帽）</b>：市场状态 <b>${regLabel}</b>（历史分位 ${pct == null ? '—' : pct + '%'}）→ 推荐仓位区间 <b>${bandTxt}</b>。${capWarn}${divergeNote}`
     + (tier ? `<br><span class="muted">交叉验证（V5.2 绝对分信号档）：七因子情绪分 ${num(mainScoreV)} → ${tier.label}／${tier.pos}；分布压缩下该绝对分档仅作辅助，不单独作为仓位依据。阈值：≥${num(thr.overheat, 0)} 过热只减仓不新建 / ≥${num(thr.lo, 0)} 满仓 / ${num(thr.panic, 0)}~${num(thr.lo, 0)} 半仓 / ≤${num(thr.panic, 0)} 清仓（收盘打分、T+1 生效）</span>` : ''));
-  const decompLine = total != null ? li(`因子分解（V5.0 五模块，仅供结构解释，不参与档位判定）: 情绪定位 ${scE} · 盈亏效应 ${scP} · 广度量能 ${scB} · 题材结构 ${scT} · 主线结构 ${scM} → 复合 ${total}。<span class="bf-warn">${riskHint}</span>`) : '';
+  /* 【2026-11-20 B3 复合分挪脚注（豆包评审，二提）】"复合 52.4"与主分数 42.8 同字号
+   * 并列（差 9.6 分），"仅供结构解释"四个字抵消不了锚定效应——读者第一眼拿到的是
+   * 52.4。复合分+五模块全部降级为 muted 脚注行（不与主分数并列），短板告警保留在
+   * 独立行（告警是给读者的真信息，不随复合分一起降级）。 */
+  const decompLine = total != null ? li(`<span class="muted">因子分解（V5.0 五模块脚注——仅供结构解释，不参与档位判定，勿与主分数并读）: 情绪定位 ${scE} · 盈亏效应 ${scP} · 广度量能 ${scB} · 题材结构 ${scT} · 主线结构 ${scM} → 复合 ${total}</span>`) : '';
+  const weakLine = weak.length ? li(`<span class="bf-warn">⚠ 结构短板: ${weak.join('与')}</span>${auxWarn ? `<span class="muted">${auxWarn.replace(/^；/, '（').replace(/$/, '）')}</span>` : ''}`) : '';
   const riskLine = li(`V5.2 实盘约束：单笔止损 <b>-${pctOf(v52p.stopLoss ?? -0.08, 0)}</b>（优先于信号）｜回撤 ≥<b>${pctOf(v52p.ddTrigger ?? -0.15, 0)}</b> 动态降仓至 40%（0.6 倍阈值处降至 70%）｜单日仓位变动 ≤<b>${num(v52p.maxPosChg ?? 0.2, 2)}</b>｜换仓成本 佣金 ${bpOf(v52p.comm, 0.0003)}‱（双边）+ 印花税 ${bpOf(v52p.stamp, 0.0005)}‱（卖出）+ 滑点 ${bpOf(v52p.slip, 0.0002)}‱，按仓位变动幅度计提`);
   // 模板④：风险提示带 ⚠（已有），并按三档配色标记给关键结论标注风险/积极/中性。
   // 档位语义直接来自引擎输出（tier），不额外自造判据：
@@ -1599,7 +1642,7 @@ function buildBrief(days, arc) {
   const tierKind = !band ? 'neutral'
     : (band[1] <= 30) ? 'risk'
     : (band[0] >= 60) ? 'pos' : 'neutral';
-  const sec6 = li(`<b>${verdict}</b>`) + tierLine + decompLine + riskLine +
+  const sec6 = li(`<b>${verdict}</b>`) + tierLine + weakLine + decompLine + riskLine +
     (watch.length
       // 模板④：明日跟踪项用复选框清单（屏幕可勾选，刷新后重置——刻意不做持久化，
       // 跟踪项是"当日看盘清单"，隔日勾选残留会比没勾更误导）
@@ -3336,7 +3379,16 @@ function renderLlmSection(llm) {
   return li(`舆情方向：${dirText}（LLM 读数 ${raw}，置信度 ${llm.confidence != null ? llm.confidence : '—'}）`)
     + li(`参考修正：${(llm.adj != null ? (llm.adj > 0 ? '+' : '') + llm.adj : 0)} 分（±5 软修正，原分不动，不进交易信号）`)
     + li((llm.effectNote || (llm.reason || '')).slice(0, 200))
-    + li(`证据日期 ${llm.asOfDate || '—'}｜模型 ${llm.model || '未留痕'}｜原分 ${llm.original != null ? llm.original : '—'}${llm.modified != null ? ' → 参考分 ' + llm.modified : ''}`)
+    + li(`证据日期 ${llm.asOfDate || '—'}｜模型 ${llm.model || '未留痕'}｜原分 ${llm.original != null ? llm.original : '—'}${llm.modified != null ? ' → 参考分 ' + llm.modified : ''}${(() => {
+      /* 【2026-11-20 B8 跨档提示（豆包评审）】参考分不进信号，但可能跨分区阈值——
+       * 原分偏冷（40~55）修正后 <40 落冰点区，读者若只看参考分会误判档位。跨档时
+       * 显式提示两分各属哪区（档位判定永远只认主分数）。 */
+      const o = llm.original, m = llm.modified;
+      if (o == null || m == null) return '';
+      const zoneOf = (x) => x < 40 ? '冰点区' : x < 55 ? '偏冷区' : x < 70 ? '中性区' : x < 85 ? '偏热区' : '狂热区';
+      const zo = zoneOf(+o), zm = zoneOf(+m);
+      return zo !== zm ? ` <span class="bf-warn">⚠ 跨档：原分 ${zo} → 参考分 ${zm}（档位判定只认主分数，参考分不改变 ${zo} 判定）</span>` : '';
+    })()}`)
     + cal('舆情参考 = 智谱读盘后舆情 → 给 ±5 参考修正；原分不动、不独立生成买卖信号；仅与原因子同向增强时生效，观望区/反向一律不生效（保守保持原分）；证据日期不符或为空即视为缺数据。');
 }
 
@@ -3374,16 +3426,18 @@ function renderSectorSentimentSection(ss) {
    * 利好 TOP5 当日红盘 <40% 且宏观 ≥+0.1 → ⚠ 背离标注并降权。11-19 实测：
    * 白酒 -1.88%/通信 -3.37% 红盘 0/2 + 宏观 0.2 → flagged 必报。 */
   const dev = ss.deviation;
+  /* 【2026-11-20 A5】标题改「新闻情绪（与资金面无关）」+ 三态处理：flagged=背离降权、
+   * unverifiable=0 命中权重归零提示（11-20 实战：利好 TOP5 全概念板块，此前静默）。 */
   const devHtml = (dev && dev.flagged && dev.note)
     ? li(`⚠ ${dev.note}`)
       + li(`利好板块当日实况：${(dev.detail || []).map((x) => `${esc(x.sector)} ${x.red ? '红' : x.changePct + '%'}`).join('、') || '—'}`)
-    : (dev && dev.checkedCount > 0 && dev.checkedCount < 2
-      ? cal(`红盘自检：利好板块 ${dev.checkedCount} 个可核对（其余为概念板块无对应行业，不计入）——判据不可用，不判定背离`)
+    : (dev && dev.unverifiable && dev.note
+      ? li(`<span class="bf-warn">⚠ ${dev.note}</span>`)
       : '');
   return `<div class="glm-radar">${rows}</div>`
     + blacktalk
     + devHtml
-    + li(`宏观情绪：${(ss.macro && ss.macro.label) || '中性'}（score ${ss.macro && ss.macro.sentiment != null ? ss.macro.sentiment : 0}）｜利好：${bull}｜利空：${bear}`)
+    + li(`<b>新闻情绪（来自新闻面，与当日资金面/盘面涨跌无必然对应）</b>：${(ss.macro && ss.macro.label) || '中性'}（score ${ss.macro && ss.macro.sentiment != null ? ss.macro.sentiment : 0}）｜利好：${bull}｜利空：${bear}`)
     + li(`证据日期 ${ss.asOfDate || '—'}｜模型 ${ss.model || '未留痕'}｜新闻源 ${ss.source || 'sina-roll'}${ss.cachedFrom ? `｜缓存复用（LLM 结论 ${ss.cachedFrom} 生成，可复现）` : ''}｜涉及板块 ${sectors.length} 个、事件 ${ss.events ? ss.events.length : 0} 条`)
     + cal('板块情绪因子 = 新浪滚动新闻 → 智谱映射板块/方向/强度 → 聚合；score∈[-1,1]，仅作参考，不独立生成买卖信号；证据日期不符或为空即视为缺数据。');
 }
@@ -5546,10 +5600,18 @@ function reportOpts() {
  *   宁可给一个明确的缺省值，也不要显示一个凭空编出来的期号。
  */
 function briefIssueNo() {
-  const days = displayDays(ARC);
-  const d = days[days.length - 1] || {};
+  /* 【2026-11-20 B9 期号（豆包评审）】期号=年内第 N 份，由数据层定案：split_archive
+   * 全史在手时算当年交易日序号写入 meta.issueNo（前端 ARC 只有 30 天窗，推不出
+   * 全年序号——此前拿窗内序号当期号，不同数据日的简报同为「第 30 号」）。
+   * 旧档无 meta.issueNo 时回退窗内序号（口径降级）。 */
+  const metaNo = ARC && ARC.meta && ARC.meta.issueNo;
+  if (Number.isFinite(+metaNo) && +metaNo > 0) return +metaNo;
+  const all = (ARC && ARC.all_days) || [];
+  const d = all[all.length - 1] || {};
   const dataDate = (ARC && ARC.meta && ARC.meta.tradeDate) || d.trade_date || '';
-  const i = days.findIndex((x) => x && x.trade_date === dataDate);
+  const y = String(dataDate).slice(0, 4);
+  const inYear = all.filter((x) => x && String(x.trade_date || '').slice(0, 4) === y);
+  const i = inYear.findIndex((x) => x && x.trade_date === dataDate);
   return i >= 0 ? i + 1 : undefined;
 }
 

@@ -495,15 +495,17 @@ function buildSectorSentimentSection(ss) {
   pts.push({ text: `利好板块：${(ss.topBullish || []).map((x) => `${x.sector}+${x.score}`).join('、') || '无'}`, kind: 'evidence' });
   pts.push({ text: `利空板块：${(ss.topBearish || []).map((x) => `${x.sector}${x.score}`).join('、') || '无'}`, kind: 'evidence' });
   /* 红盘自检（2026-11-20 拍板）：新闻面与盘面背离硬判据——利好 TOP5 当日红盘
-   * <40% 且宏观偏多 → ⚠ 标注并降权（不参与任何参考修正）。判据与 11-19 实测：
-   * 白酒 -1.88%/通信 -3.37% 红盘 0/2 + 宏观 0.2 → flagged=true 必报。 */
+   * <40% 且宏观偏多 → ⚠ 标注并降权（不参与任何参考修正）。
+   * 【A5 三态】unverifiable（0~1 个可核对）也必须提示——11-20 实战：利好 TOP5
+   * 全是概念板块（CPO/PCB/数据中心/服务器/商业航天），此前 0 命中静默。 */
   const dev = ss.deviation;
   if (dev && dev.flagged && dev.note) {
     pts.push({ text: `⚠ ${dev.note}`, kind: 'warn' });
     pts.push({ text: `利好板块当日实况：${(dev.detail || []).map((x) => `${x.sector} ${x.red ? '红' : x.changePct + '%'}`).join('、') || '—'}`, kind: 'evidence' });
-  } else if (dev && dev.checkedCount < 2 && dev.checkedCount > 0) {
-    pts.push({ text: `口径：利好板块 ${dev.checkedCount} 个可核对（其余为概念板块无对应行业，不计入）——判据不可用，不判定背离`, kind: 'info' });
+  } else if (dev && dev.unverifiable && dev.note) {
+    pts.push({ text: `⚠ ${dev.note}`, kind: 'warn' });
   }
+  pts.push({ text: `宏观情绪为新闻面读数（与当日资金面/盘面涨跌无必然对应，冰点日新闻偏多是常态）`, kind: 'info' });
   pts.push({ text: `涉及板块 ${ss.sectors ? ss.sectors.length : 0} 个、事件 ${ss.events ? ss.events.length : 0} 条`, kind: 'info' });
   if (m.reason) pts.push({ text: `依据：${m.reason}`, kind: 'evidence' });
   if (ss.blackTalk) pts.push({ text: `🔥 游资复盘黑话：${ss.blackTalk}`, kind: 'quote' });
