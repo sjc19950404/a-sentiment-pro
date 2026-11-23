@@ -35,7 +35,7 @@ const LIMIT = (() => { const i = process.argv.indexOf('--limit'); return i > 0 ?
 const REFRESH = (() => { const i = process.argv.indexOf('--refresh'); return i > 0 ? process.argv.slice(i + 1).map(String) : []; })();
 /* 【2026-11-24 限流实测】180ms 间隔连续请求 ~600 次后东财开始整批拒绝（HTTP 200 但
  * data=null / 连接重置）——串行改「多域名轮换 + 800ms 间隔 + 失败指数退避」。 */
-const DELAY_MS = Number(process.env.KT_DELAY) || 800;   // 解封后建议 KT_DELAY=2000 慢速拉全量
+const DELAY_MS = Number(process.env.KT_DELAY) || 1500;  // 用户拍板：单线程 1.5s 间隔（解封后照此跑）
 const HOSTS = ['push2his.eastmoney.com', '92.push2his.eastmoney.com', '45.push2his.eastmoney.com'];
 let hostIdx = 0;
 const SHARD_SIZE = 500;
@@ -48,7 +48,25 @@ const allCodes = new Set();
 for (const d of (archive.all_days || [])) {
   for (const c of ((d.summary || {}).zt_codes || [])) allCodes.add(String(c));
 }
-const universe = [...allCodes].filter((c) => /^[603]/.test(c)).sort();
+/* 【2026-11-24 用户拍板：样本域收窄到 ≥3 板历史票】全史 summary.zt_lb 连板≥3
+ * （632 只）+ 27 天 ztpool lbc≥3（56 只）并集 ≈636 只——采集量从 3655 降到 1/6。
+ * ⚠ 硬约束（用户原文）：1/2 板对照组绝不能从这 636 只里取（后验幸存者偏差）——
+ *   对照组须另抽全市场同期涨停样本、单独标 universe，两表分出，拐点只看 ≥3 板。 */
+const USE_LBC3 = process.argv.includes('--universe') && process.argv[process.argv.indexOf('--universe') + 1] === 'lbc3';
+let universe = [...allCodes].filter((c) => /^[603]/.test(c)).sort();
+if (USE_LBC3) {
+  const lbc3 = new Set();
+  for (const d of (archive.all_days || [])) {
+    const lb = (d.summary || {}).zt_lb || {};
+    for (const [c, v] of Object.entries(lb)) if (+v >= 3) lbc3.add(String(c));
+  }
+  try {
+    const ztH = JSON.parse(readFileSync(resolve(ROOT, 'data', 'ztpool_history.json'), 'utf8'));
+    for (const day of ztH) for (const it of (day.pool || [])) if (+it.lbc >= 3) lbc3.add(String(it.c));
+  } catch { /* 缺 27 天明细则只用全史 zt_lb */ }
+  universe = universe.filter((c) => lbc3.has(c));
+  console.log(`[kt] ≥3 板历史域：${universe.length} 只（1/2 板对照组禁用本域——后验偏差）`);
+}
 console.log(`[kt] 全史涨停股 ${allCodes.size} → 沪深子集 ${universe.length}（B股/其他已排除）`);
 
 // ── manifest（版本化） ──
@@ -103,6 +121,7 @@ for (let i = 0; i < todo.length; i++) {
   }
   if (rows) { results[code] = rows; ok++; }
   if ((i + 1) % 100 === 0) console.log(`[kt] 进度 ${i + 1}/${todo.length}（ok=${ok} empty=${empty} err=${errs.length}）`);
+  if ((i + 1) % 200 === 0) { console.log('[kt] 每 200 次休整 30s（用户拍板参数）'); await sleep(30000); }
   await sleep(DELAY_MS);
 }
 
