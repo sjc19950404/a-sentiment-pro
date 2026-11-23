@@ -37,7 +37,7 @@
    }
   },
   "600593": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -73,7 +73,7 @@
    }
   },
   "603030": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -91,9 +91,9 @@
    }
   },
   "603038": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
-    "lift": 0,
+    "lift": 1,
     "red": 0,
     "seal": 0,
     "dtBreak": 0
@@ -289,10 +289,10 @@
    }
   },
   "002517": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
-    "red": 0,
+    "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
@@ -316,7 +316,7 @@
    }
   },
   "002861": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -343,7 +343,7 @@
    }
   },
   "000766": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -514,6 +514,6 @@
    }
   }
  },
- "notified": 38,
+ "notified": 40,
  "date": "2026-11-23"
 }
