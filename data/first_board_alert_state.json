@@ -22,7 +22,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -2.11
+   "chg": -1.89
   },
   "600371": {
    "pos": "none",
@@ -34,7 +34,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.37
+   "chg": 3.27
   },
   "600467": {
    "pos": "none",
@@ -46,7 +46,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 4.9
+   "chg": 4.2
   },
   "603004": {
    "pos": "sealed",
@@ -70,7 +70,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 0.89
+   "chg": 0.69
   },
   "603466": {
    "pos": "approaching",
@@ -82,7 +82,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 8.04
+   "chg": 8.11
   },
   "603948": {
    "pos": "none",
@@ -94,7 +94,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3.99
+   "chg": -4.04
   },
   "603960": {
    "pos": "sealed",
@@ -130,7 +130,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 1.35
+   "chg": 1.47
   },
   "605577": {
    "pos": "sealed",
@@ -166,7 +166,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.61
+   "chg": 2.56
   },
   "002199": {
    "pos": "sealed",
@@ -202,19 +202,19 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 4.38
+   "chg": 4.43
   },
   "000530": {
-   "pos": "touched",
+   "pos": "sealed",
    "counts": {
-    "seal": 0,
+    "seal": 1,
     "break": 0,
     "touch": 0,
     "approach": 0,
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 9.76
+   "chg": 10.01
   },
   "002749": {
    "pos": "touched",
@@ -226,7 +226,7 @@
     "accel": 0
    },
    "brokeToday": 1,
-   "chg": 5.98
+   "chg": 6.56
   },
   "002548": {
    "pos": "none",
@@ -250,7 +250,7 @@
     "accel": 1
    },
    "brokeToday": 0,
-   "chg": 0.27
+   "chg": 0
   },
   "000593": {
    "pos": "sealed",
@@ -265,7 +265,7 @@
    "chg": 9.99
   }
  },
- "notified": 7,
+ "notified": 8,
  "threshold_adjust": {
   "enabled": false,
   "state": "震荡",
