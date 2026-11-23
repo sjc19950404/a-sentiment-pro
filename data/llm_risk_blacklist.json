@@ -1,14 +1,25 @@
 {
  "kind": "llm-risk-blacklist",
  "version": 1,
- "asOfDate": "2026-11-20",
- "generatedAt": "2026-11-20T21:11:36.985+08:00",
+ "asOfDate": "2026-11-23",
+ "generatedAt": "2026-11-23T18:46:45.333+08:00",
  "model": "glm-4-flash",
  "source": "announcements-latest.json",
- "scanned": 12,
+ "scanned": 9,
  "universe": "ladder",
  "limit": 40,
- "blacklist": [],
+ "blacklist": [
+  {
+   "code": "603324",
+   "name": "盛剑科技",
+   "riskLevel": "medium",
+   "reasons": [
+    "股票交易风险提示公告",
+    "监管工作函"
+   ],
+   "evidence": "盛剑科技：关于股票交易风险提示公告；盛剑科技：关于上海盛剑科技股份有限公司有关股价波动事项的监管工作函"
+  }
+ ],
  "degraded": false,
  "note": "正向封禁黑名单：paper.js 建仓前查此表，命中即拒绝买入；空表 = 不封禁（fail-open，未跑/无源绝不误伤正常交易）。风险等级 high/medium 入列。结构性 ST 强制 high。"
 }

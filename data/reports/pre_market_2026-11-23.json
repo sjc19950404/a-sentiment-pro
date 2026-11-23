@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-23",
- "generated_at": "2026-11-23T00:55:03.468Z",
+ "generated_at": "2026-11-23T10:46:53.380Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "fresh",
+   "dual_track": "stale",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -81,12 +81,12 @@
    "confidence": "measured"
   },
   "prev_nav": {
-   "source": "derived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "positions": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "overnight_exposure": {
    "source": "archived",
@@ -122,62 +122,30 @@
   }
  },
  "payload": {
-  "date": "2026-11-20",
+  "date": "2026-11-23",
   "grid_triggers": null,
   "counter_trend_losses": null,
   "pnl_daily": 0,
   "pnl_cumulative": 0,
   "max_drawdown_daily": null,
-  "trend_switch_hits": 0,
+  "trend_switch_hits": 1,
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": {
-   "key": "ice",
-   "label": "冰点",
-   "score": 42.85,
-   "cap": 0.2,
-   "position_range": "0%~20%",
-   "positionReconcile": {
-    "score": 42.9,
-    "base": {
-     "key": "base_defend",
-     "minPos": 0,
-     "maxPos": 0.3,
-     "label": "防守"
-    },
-    "baseRange": "0%~30%",
-    "cap": {
-     "key": "ice",
-     "minPos": 0,
-     "maxPos": 0.2,
-     "label": "冰点",
-     "advice": "优先空仓，仅极端错杀才值得试探",
-     "tone": "defend"
-    },
-    "capRange": "0%~20%",
-    "force": false,
-    "conflict": false,
-    "finalRange": "0%~20%"
-   },
-   "clustering_bubble": false,
-   "sentiment_penalty": 0,
-   "score_adjusted": 42.85
-  },
+  "regime": null,
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
-   "risk_events": 5,
+   "risk_events": 6,
    "note": "即时轨：运行回撤 0.00%，距档位边界见 drawdown_vs_threshold；单笔止损/风控拦截当日 无"
   },
   "overseas": [
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": -0.008532,
-    "state": "ok",
-    "stale": false,
-    "cacheNote": null
+    "chgPct": null,
+    "state": "night-open",
+    "nightOpen": true
    },
    {
     "key": "sox",
@@ -189,31 +157,21 @@
    }
   ],
   "externalStale": [
+   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空",
    "外围「道琼斯」已陈旧 2 天（未刷新），已置空",
    "外围「标普500」已陈旧 2 天（未刷新），已置空",
    "外围「纳斯达克」已陈旧 2 天（未刷新），已置空",
    "外围「纳斯达克100」已陈旧 2 天（未刷新），已置空",
    "外围「费城半导体指数」已陈旧 2 天（未刷新），已置空",
-   "外围「纳斯达克中国金龙指数」已陈旧 2 天（未刷新），已置空",
-   "外围「富时中国ETF（FXI）」已陈旧 2 天（未刷新），已置空",
-   "外围「恒生指数」（外围未刷新到最新会话），已置空",
-   "外围「恒生科技」（外围未刷新到最新会话），已置空"
+   "外围「纳斯达克中国金龙指数」已陈旧 2 天（未刷新），已置空"
   ],
   "nav_realtime": 1000000,
-  "prev_nav": 0.93216080149274,
-  "positions": {
-   "targetPos": {
-    "上证指数": 0.35,
-    "深证成指": 0.2,
-    "创业板指": 0.2
-   },
-   "poolPos": 0.25,
-   "executed": true
-  },
+  "prev_nav": null,
+  "positions": null,
   "overnight_exposure": {
-   "a50_chgPct": -0.008532,
-   "a50NightOpen": false,
-   "posGap": 0.15,
+   "a50_chgPct": null,
+   "a50NightOpen": true,
+   "posGap": null,
    "us_close": {
     "dji": null,
     "spx": null,
@@ -221,12 +179,12 @@
    },
    "cn_overnight": {
     "hxc": null,
-    "fxi": null
+    "fxi": -0.017616
    },
-   "cnh_chgPct": -0.00003,
-   "usReady": true,
-   "usReason": "美东 19:55 ET 已收盘（≥16:30 ET），可采信当日收盘",
-   "usPrevSessionClose": false
+   "cnh_chgPct": -0.001034,
+   "usReady": false,
+   "usReason": "美东 05:41 ET 盘前（09:30 才开盘）——源给的是上一交易日收盘，可作「上一交易日收盘」用；今日收盘需等 16:30 ET",
+   "usPrevSessionClose": true
   },
   "key_levels": null,
   "events_today": null,
@@ -236,49 +194,33 @@
    "basis": "pain.advance.detail 昨收口径连板梯队（封板质量以晋级结果+近期上榜频次代理，个股级封单额无档案）；不含操作建议",
    "ladder": [
     {
-     "code": "603030",
-     "name": "全筑股份",
-     "lb": 3,
-     "kept": false,
-     "chg": -9.83,
-     "appearances": 4
+     "code": "002771",
+     "name": "真视通",
+     "lb": 4,
+     "kept": true,
+     "chg": 9.99,
+     "appearances": 9
     },
     {
      "code": "603324",
      "name": "盛剑科技",
-     "lb": 3,
+     "lb": 4,
      "kept": true,
      "chg": 10,
-     "appearances": 11
+     "appearances": 12
     },
     {
-     "code": "002771",
-     "name": "真视通",
-     "lb": 3,
+     "code": "002579",
+     "name": "中京电子",
+     "lb": 2,
      "kept": true,
      "chg": 10.01,
-     "appearances": 8
-    },
-    {
-     "code": "600156",
-     "name": "华升股份",
-     "lb": 2,
-     "kept": false,
-     "chg": -9.89,
-     "appearances": 22
-    },
-    {
-     "code": "000711",
-     "name": "京蓝科技",
-     "lb": 2,
-     "kept": false,
-     "chg": 0.78,
-     "appearances": 20
+     "appearances": 28
     }
    ],
    "overnight_sectors": null,
-   "max_lb": 3,
-   "broken_limit_ratio": 0.2
+   "max_lb": 4,
+   "broken_limit_ratio": 0.1411764705882353
   },
   "simulation_stock": null,
   "ma20_degraded": false,

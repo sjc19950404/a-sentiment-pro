@@ -1,86 +1,70 @@
 {
- "date": "2026-11-19",
- "prevZtCount": 23,
+ "date": "2026-11-20",
+ "prevZtCount": 28,
  "perf": {
-  "n": 23,
-  "universe": 23,
+  "n": 28,
+  "universe": 28,
   "missing": 0,
   "reliable": true,
-  "avg": -3.4,
-  "median": -5.08,
-  "lossRatio": 0.7,
-  "worst": -10,
-  "best": 10.02,
-  "limitUpAgain": 3,
-  "limitDown": 6,
-  "bigLoss": 11,
+  "avg": 7.69,
+  "median": 9.99,
+  "lossRatio": 0.07,
+  "worst": -1.94,
+  "best": 20,
+  "limitUpAgain": 16,
+  "limitDown": 0,
+  "bigLoss": 0,
   "note": null
  },
  "advance": {
-  "n": 5,
-  "kept": 2,
-  "failed": 3,
-  "failRate": 0.6,
+  "n": 3,
+  "kept": 3,
+  "failed": 0,
+  "failRate": 0,
   "byTier": {
    "2": {
-    "n": 2,
-    "kept": 0,
-    "failed": 2,
-    "failRate": 1
+    "n": 1,
+    "kept": 1,
+    "failed": 0,
+    "failRate": 0
    },
    "3": {
-    "n": 3,
-    "kept": 2,
-    "failed": 1,
-    "failRate": 0.33
-   },
-   "4+": {
     "n": 0,
     "kept": 0,
     "failed": 0,
     "failRate": null
+   },
+   "4+": {
+    "n": 2,
+    "kept": 2,
+    "failed": 0,
+    "failRate": 0
    }
   },
-  "reliable": true,
-  "maxLb": 3,
+  "reliable": false,
+  "maxLb": 4,
   "detail": [
    {
-    "code": "603030",
-    "lb": 3,
-    "chg": -9.83,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
+    "code": "002771",
+    "lb": 4,
+    "chg": 9.99,
+    "kept": true,
+    "board": "szb",
+    "boardLabel": "深市主板"
    },
    {
     "code": "603324",
-    "lb": 3,
+    "lb": 4,
     "chg": 10,
     "kept": true,
     "board": "shb",
     "boardLabel": "沪市主板"
    },
    {
-    "code": "002771",
-    "lb": 3,
+    "code": "002579",
+    "lb": 2,
     "chg": 10.01,
     "kept": true,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "600156",
-    "lb": 2,
-    "chg": -9.89,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "000711",
-    "lb": 2,
-    "chg": 0.78,
-    "kept": false,
     "board": "szb",
     "boardLabel": "深市主板"
    }
@@ -88,82 +72,18 @@
   "note": null
  },
  "bigLoss": {
-  "n": 11,
-  "list": [
-   {
-    "code": "603813",
-    "name": "原尚股份",
-    "chg": -10
-   },
-   {
-    "code": "605178",
-    "name": "时空科技",
-    "chg": -9.95
-   },
-   {
-    "code": "002418",
-    "name": "康盛股份",
-    "chg": -9.95
-   },
-   {
-    "code": "600156",
-    "name": "华升股份",
-    "chg": -9.89
-   },
-   {
-    "code": "603030",
-    "name": "全筑股份",
-    "chg": -9.83
-   },
-   {
-    "code": "002420",
-    "name": "毅昌科技",
-    "chg": -9.81
-   },
-   {
-    "code": "600619",
-    "name": "海立股份",
-    "chg": -8.36
-   },
-   {
-    "code": "001358",
-    "name": "兴欣新材",
-    "chg": -8.06
-   },
-   {
-    "code": "603078",
-    "name": "江化微",
-    "chg": -7.74
-   },
-   {
-    "code": "002242",
-    "name": "九阳股份",
-    "chg": -7.21
-   }
-  ]
+  "n": 0,
+  "list": []
  },
  "skyFloor": {
-  "n": 2,
-  "list": [
-   {
-    "code": "002420",
-    "name": "毅昌科技",
-    "chg": -9.81,
-    "amplitude": 19.9
-   },
-   {
-    "code": "600156",
-    "name": "华升股份",
-    "chg": -9.89,
-    "amplitude": 17.8
-   }
-  ]
+  "n": 0,
+  "list": []
  },
- "scanned": 23,
+ "scanned": 28,
  "verdict": {
-  "level": "severe",
-  "label": "亏钱效应显著",
-  "reason": "昨涨停今日翻绿 70%、高位板晋级失败 60%，追高者整体受损"
+  "level": "strong",
+  "label": "接力顺畅",
+  "reason": "昨涨停今日翻绿仅 7%，赚钱效应占优"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -174,6 +94,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-11-20T13:00:26.612Z",
- "curDate": "2026-11-20"
+ "generatedAt": "2026-11-23T10:32:44.093Z",
+ "curDate": "2026-11-23"
 }

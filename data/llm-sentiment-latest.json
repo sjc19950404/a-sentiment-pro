@@ -1,69 +1,69 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-11-20",
- "generatedAt": "2026-11-20T21:02:23.887+08:00",
+ "asOfDate": "2026-11-23",
+ "generatedAt": "2026-11-23T18:34:48.577+08:00",
  "cachedFrom": null,
  "model": "glm-4-flash",
- "sentiment": -0.6,
+ "sentiment": 0.9,
  "confidence": 0.8,
- "reason": "亏钱效应显著，涨停家数远少于跌停家数，炸板率较高，市场情绪偏负面。",
+ "reason": "市场整体情绪积极，涨停家数远超跌停家数，成交额放大，亏钱效应低，强势股多来自新晋和延续题材，且涨幅较大。",
  "events": [
   {
    "type": "业绩预告",
-   "target": "三季报扭亏",
-   "tone": "negative",
-   "note": "退潮题材中，三季报扭亏板块表现不佳，影响市场情绪。"
-  },
-  {
-   "type": "行业催化",
-   "target": "冰雪经济",
-   "tone": "negative",
-   "note": "冰雪经济板块退潮，对市场情绪产生负面影响。"
-  },
-  {
-   "type": "行业催化",
-   "target": "天然气",
-   "tone": "negative",
-   "note": "天然气板块退潮，对市场情绪产生负面影响。"
-  },
-  {
-   "type": "行业催化",
-   "target": "LED照明",
-   "tone": "negative",
-   "note": "LED照明板块退潮，对市场情绪产生负面影响。"
-  },
-  {
-   "type": "行业催化",
-   "target": "汽车零部件",
-   "tone": "negative",
-   "note": "汽车零部件板块退潮，对市场情绪产生负面影响。"
-  },
-  {
-   "type": "行业催化",
-   "target": "AI眼镜",
+   "target": "铁流股份",
    "tone": "positive",
-   "note": "AI眼镜板块延续上涨，对市场情绪产生正面影响。"
+   "note": "三季报净利增长带动股价上涨"
+  },
+  {
+   "type": "政策",
+   "target": "华为昇腾",
+   "tone": "positive",
+   "note": "新晋题材带动相关板块活跃"
+  },
+  {
+   "type": "行业催化",
+   "target": "半导体",
+   "tone": "positive",
+   "note": "延续题材，半导体订单增加"
   },
   {
    "type": "行业催化",
    "target": "电子",
    "tone": "positive",
-   "note": "电子板块延续上涨，对市场情绪产生正面影响。"
+   "note": "延续题材，电子行业表现强劲"
   },
   {
    "type": "行业催化",
-   "target": "国企改革",
+   "target": "机器人",
    "tone": "positive",
-   "note": "国企改革板块延续上涨，对市场情绪产生正面影响。"
+   "note": "机器人相关题材表现活跃，带动相关个股上涨"
+  },
+  {
+   "type": "行业催化",
+   "target": "冰雪经济",
+   "tone": "positive",
+   "note": "冰雪经济题材带动相关个股上涨"
+  },
+  {
+   "type": "行业催化",
+   "target": "国资改革",
+   "tone": "positive",
+   "note": "国企改革和股份回购题材持续活跃"
+  },
+  {
+   "type": "行业催化",
+   "target": "新能源汽车",
+   "tone": "positive",
+   "note": "特斯拉概念和汽车轻量化题材带动相关个股上涨"
   }
  ],
  "inputDigest": {
-  "themes": 42,
+  "themes": 132,
   "hotListed": 15,
-  "ztCount": 28,
-  "emotionValue": 42.8,
-  "painVerdict": "亏钱效应显著（昨涨停今日翻绿 70%、高位板晋级失败 60%，追高者整体受损）"
+  "ztCount": 146,
+  "emotionValue": 82.4,
+  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 7%，赚钱效应占优）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }

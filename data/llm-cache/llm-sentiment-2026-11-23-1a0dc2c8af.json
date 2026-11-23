@@ -1,0 +1,63 @@
+{
+ "kind": "llm-cache",
+ "name": "llm-sentiment",
+ "asOfDate": "2026-11-23",
+ "hash": "1a0dc2c8af",
+ "cachedAt": "2026-11-23T10:34:48.576Z",
+ "parsed": {
+  "sentiment": 0.9,
+  "confidence": 0.8,
+  "reason": "市场整体情绪积极，涨停家数远超跌停家数，成交额放大，亏钱效应低，强势股多来自新晋和延续题材，且涨幅较大。",
+  "events": [
+   {
+    "type": "业绩预告",
+    "target": "铁流股份",
+    "tone": "positive",
+    "note": "三季报净利增长带动股价上涨"
+   },
+   {
+    "type": "政策",
+    "target": "华为昇腾",
+    "tone": "positive",
+    "note": "新晋题材带动相关板块活跃"
+   },
+   {
+    "type": "行业催化",
+    "target": "半导体",
+    "tone": "positive",
+    "note": "延续题材，半导体订单增加"
+   },
+   {
+    "type": "行业催化",
+    "target": "电子",
+    "tone": "positive",
+    "note": "延续题材，电子行业表现强劲"
+   },
+   {
+    "type": "行业催化",
+    "target": "机器人",
+    "tone": "positive",
+    "note": "机器人相关题材表现活跃，带动相关个股上涨"
+   },
+   {
+    "type": "行业催化",
+    "target": "冰雪经济",
+    "tone": "positive",
+    "note": "冰雪经济题材带动相关个股上涨"
+   },
+   {
+    "type": "行业催化",
+    "target": "国资改革",
+    "tone": "positive",
+    "note": "国企改革和股份回购题材持续活跃"
+   },
+   {
+    "type": "行业催化",
+    "target": "新能源汽车",
+    "tone": "positive",
+    "note": "特斯拉概念和汽车轻量化题材带动相关个股上涨"
+   }
+  ]
+ },
+ "model": "glm-4-flash"
+}

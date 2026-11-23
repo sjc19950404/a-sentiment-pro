@@ -1,6 +1,6 @@
 {
-  "updatedAt": "2026-11-20T13:07:01.454Z",
-  "count": 5,
+  "updatedAt": "2026-11-23T10:41:39.530Z",
+  "count": 6,
   "events": [
     {
       "at": "2026-11-04T02:27:12.844Z",
@@ -36,6 +36,13 @@
       "kind": "factors-missing",
       "source": "sentiment",
       "detail": "最新交易日（2026-11-19）缺失因子：s_amt15（已按缺失策略处理并留痕）"
+    },
+    {
+      "at": "2026-11-23T10:41:39.530Z",
+      "severity": "info",
+      "kind": "factors-missing",
+      "source": "sentiment",
+      "detail": "最新交易日（2026-11-23）缺失因子：s_amt15（已按缺失策略处理并留痕）"
     }
   ]
 }
