@@ -9,6 +9,7 @@
 //   与 scripts/report_etf_hedge.mjs 同构（只读计算 + 写 JSON，零交易）。
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { decodeArchive } from '../src/lhb_codec.js';   // v5.3：席位码→席位名（seatCode 校验、seatName 匹配）
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { recommendPicks } from '../src/picks.js';
@@ -43,7 +44,11 @@ function readJsonSafe(p) {
 function latestDay() {
   const arch = readJsonSafe(ARCHIVE);
   if (!arch) return null;
-  const days = (arch.all_days || []).filter((d) => d && d.trade_date);
+  /* 【2026-11-24 v5.3】档案落盘时 lhb_codec 把席位名压成 meta.seatCodes 下标（数字）。
+   * 游资挂件按名称匹配——数字码永不命中（因子从上线起在 Pi 侧从未生效）。读档侧
+   * decodeArchive 还原 seatName；seatCode 只在 codec 内做校验/去重，不参与匹配。 */
+  const decoded = decodeArchive(arch);
+  const days = (decoded.all_days || []).filter((d) => d && d.trade_date);
   return days.length ? days[days.length - 1] : null;
 }
 
@@ -70,7 +75,10 @@ function main() {
   // 情绪分扣分（仅本次推演；原始 day 不动）：仅 applyPenalty 时扣分
   const effEmotionScore = emotionScore != null ? emotionScore - (_applyPenalty ? penalty : 0) : emotionScore;
 
-  const res = recommendPicks(day, { topN: TOP_N, emotionScore: effEmotionScore, ztpool, isClusteringBubble, mainLine, fullBelow: true });
+  /* v5.3：挂件复活——显式传标准化前的席位明细（picks.js 内部 seat_norm 标准化后匹配），
+   * 加分固定 +5 上限（旧版 ×2 是主导因子，九阳 47→65 的失控来源之一）。 */
+  const seatsDetail = (day.summary && day.summary.seats && day.summary.seats.detail) || null;
+  const res = recommendPicks(day, { topN: TOP_N, emotionScore: effEmotionScore, ztpool, isClusteringBubble, mainLine, fullBelow: true, seatsDetail });
 
   const picks = (res.picks || []).map((p) => ({
     code: String(p.code),

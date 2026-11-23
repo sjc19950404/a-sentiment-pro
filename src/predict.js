@@ -64,7 +64,7 @@
 //   既消除环，也让它能在任何环境下独立求值。
 
 /** 预测引擎版本（UI 与报告引用此常量，避免文案与引擎漂移） */
-export const PREDICT_VERSION = 'predict-v2';
+export const PREDICT_VERSION = 'v5.3';   // 2026-11-24 游资挂件复活+权重上限；v5.2 及之前全部冻结为'缺挂件口径'
 
 const r2less = null; // 占位：本文件不需要 r2，保留结构清晰
 

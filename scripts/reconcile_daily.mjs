@@ -25,7 +25,8 @@ const args = process.argv.slice(2);
 const dateArg = args.includes('--date') ? args[args.indexOf('--date') + 1] : null;
 
 // ── 数据源 ──
-const archive = JSON.parse(readFileSync(resolve(ROOT, 'data', 'archive.json'), 'utf8'));
+import { decodeArchive } from '../src/lhb_codec.js';
+const archive = decodeArchive(JSON.parse(readFileSync(resolve(ROOT, 'data', 'archive.json'), 'utf8')));   // v5.3：席位码还原
 const allDays = (archive.all_days || []).filter(Boolean);
 const R2 = 'https://pub-5a2d9fd0ca4547c5b9e561c4c50f6448.r2.dev';
 let recent = null;
@@ -63,6 +64,7 @@ function runFront(day) {
   const score = (day.emotion && day.emotion.value != null) ? day.emotion.value : null;
   return recommendPicks(day, {
     emotionScore: score, topN: 5, ztpool: ztPoolOf(day),
+    seatsDetail: (day.summary && day.summary.seats && day.summary.seats.detail) || null,
   });
 }
 
@@ -78,7 +80,8 @@ function runPi(day, signalsTag) {
     : null;
   let mainLine = null;
   try { const mlInput = buildMainLineInput(day, day?.summary?.main_theme); mainLine = mlInput ? selectMainLine([mlInput]) : null; } catch { mainLine = null; }
-  return recommendPicks(day, { topN: 5, emotionScore: eff, ztpool: ztPoolOf(day), isClusteringBubble, mainLine });
+  return recommendPicks(day, { topN: 5, emotionScore: eff, ztpool: ztPoolOf(day), isClusteringBubble, mainLine, fullBelow: true,
+    seatsDetail: (day.summary && day.summary.seats && day.summary.seats.detail) || null });
 }
 
 let signalsTag = null;
@@ -120,8 +123,12 @@ if (asOf) {
     const sd2 = ((dayPi.summary || {}).seats || {}).detail || null;
     const fmt = (d) => { if (!d) return 'null'; const k = Object.keys(d)[0]; const v = k && d[k] && d[k].b && d[k].b[0] && d[k].b[0][0]; return typeof v === 'string' ? 'name' : (typeof v === 'number' ? 'code' : 'unknown'); };
     const f1 = fmt(sd1), f2 = fmt(sd2);
-    if (f1 !== f2) addDiff('seats_detail_format', f1, f2,
-      'serialization_drift（同一字段双形态：latest=席位名 / archive=席位编号——游资挂件按名匹配，只在 name 形态生效；待拍板统一写入形态）');
+    if (f1 !== f2) {
+      addDiff('seats_detail_format', f1, f2, 'serialization_drift（硬门禁：decode 后仍形态不一致——游资挂件会单边失效，禁止出档）');
+      console.error('[reconcile] ❌ HARD FAIL：decode 后 seats.detail 形态仍不一致（front=' + f1 + ' pi=' + f2 + '）——挂件单边失效，禁止出档');
+      process.exitCode = 1;
+      process.exit(1);
+    }
   }
 
   // 4) prob 分漂移（同票 kept 双侧都有时比分数——日内数据更新会漂，归因 daily_data_refresh）

@@ -23,7 +23,11 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const archive = JSON.parse(readFileSync(join(ROOT, 'data', 'archive.json'), 'utf8'));
+/* 【2026-11-24 v5.3 重标定】先 decodeArchive 还原 lhb/席位名——裸档是 codec 打包态，
+ * 缺 lhb 明细会让 prob 分整体偏低（旧 v5.2 校准是"缺挂件/缺 lhb 明细"口径，已冻结，
+ * 不得与本轮混比）。 */
+const { decodeArchive } = await import('file://' + join(ROOT, 'src', 'lhb_codec.js'));
+const archive = decodeArchive(JSON.parse(readFileSync(join(ROOT, 'data', 'archive.json'), 'utf8')));
 const days = (archive.all_days || []).filter((x) => x && x.trade_date);
 
 // 日 K 缓存（前复权收盘）
@@ -63,7 +67,8 @@ for (let i = 0; i < days.length - 1; i++) {
   if (!Number.isFinite(+emotion)) { daysNoCandidates++; continue; }
   let r;
   try {
-    r = recommendPicks(day, { emotionScore: +emotion, topN: 5 });
+    r = recommendPicks(day, { emotionScore: +emotion, topN: 5,
+      seatsDetail: (day.summary && day.summary.seats && day.summary.seats.detail) || null });
   } catch { daysNoCandidates++; continue; }
   const scored = [...(r.picks || []), ...(r.belowThreshold || [])];
   if (!scored.length) { daysNoCandidates++; continue; }

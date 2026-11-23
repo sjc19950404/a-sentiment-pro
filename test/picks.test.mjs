@@ -675,7 +675,9 @@ test('recommendPicks 集成：爆量烂板候选保留且 weakToStrong/buyPoint 
 });
 
 // ───────── 挂件二·游资席位追踪因子 ─────────
-test('挂件二·游资席位追踪：买方席位命中顶级游资清单 → 标记 hotMoney 且排序分放大', () => {
+/* 【2026-11-24 v5.3】挂件单因子增量检验 IC=-0.0056、命中组次日收益低于未命中组——
+ * 按用户拍板"增量为负就不该留在主线打分里"：默认只标记不改分；显式 bonus 上限 5。 */
+test('挂件二·游资席位追踪：命中 → 标记 hotMoney；默认不分（显式 bonus 上限 5）', () => {
   const code = '600031';
   const d = day({
     hot: [{ code, name: '爆量烂板', close: 12, change_pct: 10, huanshou: 18, reason: 'Y' }],
@@ -692,9 +694,16 @@ test('挂件二·游资席位追踪：买方席位命中顶级游资清单 → �
   assert.equal(wp.hotMoney, true, '命中顶级游资营业部的标的应标记 hotMoney');
   assert.equal(wp.hotMoneyNetWan, 5000, '游资净买额应取自买方席位命中行的万元值');
   assert.ok(Array.isArray(wp.tags) && wp.tags.includes('游资净买'), '应打上游资净买标签');
-  // 排序分放大：基线分(prob.score 或 score)的 2 倍，封顶 100
-  const baseScore = Number.isFinite(wp.prob?.score) ? wp.prob.score : (Number.isFinite(wp.score) ? wp.score : 0);
-  assert.equal(wp.score, Math.round(Math.min(100, baseScore * 2) * 100) / 100, '命中游资后排序分应放大为基线的 2 倍（封顶 100）');
+  // 默认下线：命中只打标记，排序分等于基线分（不变）
+  const bp = base.picks[0];
+  assert.equal(wp.score, bp.score, 'v5.3 默认 bonus=0：命中游资只标记、不改排序分');
+  // 显式开启时固定 +5 上限（不按席位数累加、不按比例放大）
+  const withBonus = recommendPicks(d, {
+    topN: 5, emotionScore: 80, minProb: 0, ztpool,
+    seatsDetail: d.summary.seats.detail, hotmoney: { seatPatterns: ['华鑫'], bonus: 99 },
+  });
+  const scoreBase = Number.isFinite(withBonus.picks[0].prob?.score) ? withBonus.picks[0].prob.score : 0;
+  assert.equal(withBonus.picks[0].score, Math.round(Math.min(100, scoreBase + 5) * 100) / 100, '显式 bonus = 概率分 +5（硬上限）');
   // 零回归：未提供 seatsDetail → 不得标记 hotMoney
   const noSeats = recommendPicks(d, { topN: 5, emotionScore: 80, minProb: 0, ztpool });
   assert.equal(noSeats.picks[0].hotMoney, undefined, '无席位数据时不得标记 hotMoney（零回归）');

@@ -1,13 +1,49 @@
 {
   "date": "2026-11-23",
-  "generated_at": "2026-11-23T16:57:59.774Z",
+  "generated_at": "2026-11-23T17:18:56.310Z",
   "ok": false,
   "diffs": [
     {
-      "field": "seats_detail_format",
-      "front": "name",
-      "pi": "code",
-      "diff_reason": "serialization_drift（同一字段双形态：latest=席位名 / archive=席位编号——游资挂件按名匹配，只在 name 形态生效；待拍板统一写入形态）"
+      "field": "universe",
+      "front": 117,
+      "pi": 118,
+      "diff_reason": "universe_missing_in_recent_window 或 day 明细差异（recent.days+latest vs 全史 day）"
+    },
+    {
+      "field": "kept_only_pi",
+      "front": null,
+      "pi": "002242",
+      "diff_reason": "universe_or_day_detail_diff"
+    },
+    {
+      "field": "kept_only_pi",
+      "front": null,
+      "pi": "000636",
+      "diff_reason": "universe_or_day_detail_diff"
+    },
+    {
+      "field": "kept_only_pi",
+      "front": null,
+      "pi": "000766",
+      "diff_reason": "universe_or_day_detail_diff"
+    },
+    {
+      "field": "rejected_only_pi",
+      "front": null,
+      "pi": "600814:undefined",
+      "diff_reason": "universe_missing_in_recent_window"
+    },
+    {
+      "field": "rejected_only_pi",
+      "front": null,
+      "pi": "600715:换手过高",
+      "diff_reason": "universe_missing_in_recent_window"
+    },
+    {
+      "field": "rejected_only_pi",
+      "front": null,
+      "pi": "600327:换手过高",
+      "diff_reason": "universe_missing_in_recent_window"
     }
   ],
   "note": "字段级对账：universe/剔除原因/推荐差集/分数漂移。无归因差异（diff_reason 缺失）即为告警条件——本脚本所有差异必须带归因。"

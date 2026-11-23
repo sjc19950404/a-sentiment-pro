@@ -1,10 +1,95 @@
 {
   "date": "2026-11-23",
-  "generated_at": "2026-11-23T16:54:41.767Z",
+  "generated_at": "2026-11-23T17:18:08.315Z",
   "emotionScore": 85.2,
   "ztpoolLoaded": true,
-  "picks": [],
+  "picks": [
+    {
+      "code": "002242",
+      "name": "九阳股份",
+      "buyPoint": "正常换手涨停，竞价/开盘分歧转一致可参与",
+      "weakToStrong": false,
+      "probText": "中等（历史同特征组上涨占比 57%~65%）",
+      "probScore": 65,
+      "changePct": 10.01,
+      "streakText": "大概率连板 18.2%",
+      "streakTop": false,
+      "gateTags": [
+        "核心龙头"
+      ],
+      "suggestWeight": 0
+    },
+    {
+      "code": "000636",
+      "name": "风华高科",
+      "buyPoint": "⚠ 偏缩量硬板，次日易一字/秒板，实盘买点苛刻，谨慎",
+      "weakToStrong": false,
+      "probText": "中等（历史同特征组上涨占比 57%~65%）",
+      "probScore": 59,
+      "changePct": 10.02,
+      "streakText": "大概率连板 18.2%",
+      "streakTop": false,
+      "gateTags": [
+        "后排补涨"
+      ],
+      "suggestWeight": 0
+    },
+    {
+      "code": "000766",
+      "name": "通化金马",
+      "buyPoint": "⚠ 偏缩量硬板，次日易一字/秒板，实盘买点苛刻，谨慎",
+      "weakToStrong": false,
+      "probText": "中等（历史同特征组上涨占比 57%~65%）",
+      "probScore": 59,
+      "changePct": 10.04,
+      "streakText": "大概率连板 18.2%",
+      "streakTop": false,
+      "gateTags": [
+        "核心龙头"
+      ],
+      "suggestWeight": 0
+    }
+  ],
   "observe": [
+    {
+      "code": "002242",
+      "name": "九阳股份",
+      "changePct": 10.01,
+      "probScore": 65,
+      "streakText": "大概率连板 18.2%",
+      "gateTags": [
+        "核心龙头"
+      ],
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "kept_no_weight"
+    },
+    {
+      "code": "000636",
+      "name": "风华高科",
+      "changePct": 10.02,
+      "probScore": 59,
+      "streakText": "大概率连板 18.2%",
+      "gateTags": [
+        "后排补涨"
+      ],
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "kept_no_weight"
+    },
+    {
+      "code": "000766",
+      "name": "通化金马",
+      "changePct": 10.04,
+      "probScore": 59,
+      "streakText": "大概率连板 18.2%",
+      "gateTags": [
+        "核心龙头"
+      ],
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "kept_no_weight"
+    },
     {
       "code": "000593",
       "name": "德龙汇能",
@@ -83,6 +168,17 @@
       "observeTier": "below_zt"
     },
     {
+      "code": "600156",
+      "name": "华升股份",
+      "changePct": 9.98,
+      "probScore": 55,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
       "code": "000026",
       "name": "飞亚达",
       "changePct": 10.01,
@@ -105,17 +201,6 @@
       "observeTier": "below_zt"
     },
     {
-      "code": "000636",
-      "name": "风华高科",
-      "changePct": 10.02,
-      "probScore": 51,
-      "streakText": null,
-      "gateTags": null,
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "below_zt"
-    },
-    {
       "code": "000700",
       "name": "模塑科技",
       "changePct": 9.99,
@@ -127,9 +212,9 @@
       "observeTier": "below_zt"
     },
     {
-      "code": "000766",
-      "name": "通化金马",
-      "changePct": 10.04,
+      "code": "001229",
+      "name": "魅视科技",
+      "changePct": 10,
       "probScore": 51,
       "streakText": null,
       "gateTags": null,
@@ -139,41 +224,35 @@
     }
   ],
   "stats": {
-    "universe": 117,
+    "universe": 118,
     "removed": 12,
-    "kept": 0,
-    "below": 104,
+    "kept": 7,
+    "below": 97,
     "minProb": 57,
-    "observeCount": 12
+    "observeCount": 15
   },
   "rejected": [
     {
-      "code": "002771",
-      "name": "真视通",
-      "reasons": [
-        "换手过高",
-        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
-      ]
+      "code": "600814",
+      "name": "杭州解百",
+      "reasons": []
     },
     {
-      "code": "002579",
-      "name": "中京电子",
-      "reasons": [
-        "换手过高",
-        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
-      ]
-    },
-    {
-      "code": "002086",
-      "name": "东方海洋",
-      "reasons": [
-        "换手过高",
-        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
-      ]
+      "code": "603151",
+      "name": "邦基科技",
+      "reasons": []
     },
     {
       "code": "601188",
       "name": "龙江交通",
+      "reasons": [
+        "换手过高",
+        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
+      ]
+    },
+    {
+      "code": "002771",
+      "name": "真视通",
       "reasons": [
         "换手过高",
         "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
@@ -188,8 +267,16 @@
       ]
     },
     {
-      "code": "002584",
-      "name": "西陇科学",
+      "code": "600715",
+      "name": "文投控股",
+      "reasons": [
+        "换手过高",
+        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
+      ]
+    },
+    {
+      "code": "002579",
+      "name": "中京电子",
       "reasons": [
         "换手过高",
         "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
@@ -204,24 +291,8 @@
       ]
     },
     {
-      "code": "603324",
-      "name": "盛剑科技",
-      "reasons": [
-        "连板过高",
-        "5 连板及以上样本极少（全档仅 10 例）且离散度极大，T+1 表现无法与「随机」区分；高位断板当日回撤可达 −20%，单笔止损 −8% 无法覆盖跳空缺口。样本不足即不可依赖。"
-      ]
-    },
-    {
-      "code": "002343",
-      "name": "慈文传媒",
-      "reasons": [
-        "换手过高",
-        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
-      ]
-    },
-    {
-      "code": "000530",
-      "name": "冰山冷热",
+      "code": "600327",
+      "name": "大东方",
       "reasons": [
         "换手过高",
         "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
@@ -242,10 +313,18 @@
         "换手过高",
         "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
       ]
+    },
+    {
+      "code": "000530",
+      "name": "冰山冷热",
+      "reasons": [
+        "换手过高",
+        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
+      ]
     }
   ],
   "note": {
-    "level": "empty",
-    "text": "当日候选池 117 只，但按预测规则全部未达推荐门槛（剔除 13 只、概率分不足 57 的 104 只）。宁可不推荐，也不推大概率亏的票。"
+    "level": "blocked",
+    "text": "当前市场档位为「过热（只减仓不新建）」，系统建议总仓位 40%、不新建仓。下列标的仅供观察，不建议此时建仓。"
   }
 }

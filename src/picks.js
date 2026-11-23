@@ -1,4 +1,5 @@
 import { seatsOf } from './seats.js';
+import { seatMatchesPatterns } from './seat_norm.js';   // 2026-11-24 v5.3：席位名标准化匹配（seatCode 只做校验，不参与匹配）
 import { isLimitUp as isLimitUpOf, LIMIT_CALIBER } from './limit_caliber.js'; // C12 新口径（v5.2-pro-fix-limit）
 
 // 挂件二（2026-10-30·进攻）：游资席位追踪默认清单（顶级游资营业部关键词；speculative——seats.js 明确点名归属不可核验，仅作增强信号，绝不污染核心打分）
@@ -13,7 +14,7 @@ function hotMoneyNetWanOf(detailMap, code, patterns) {
   for (const row of b) {
     const name = String(row && row[0] != null ? row[0] : '');
     const wan = Number(row && row[1] != null ? row[1] : 0) || 0;
-    if (patterns.some((pat) => name.includes(pat))) net += wan;
+    if (seatMatchesPatterns(name, patterns)) net += wan;   // v5.3：标准化名称匹配（去后缀/括号/简称统一）
   }
   return net;
 }
@@ -797,9 +798,16 @@ export function recommendPicks(day, ctx = {}) {
   //   若 ctx.seatsDetail（day.summary.seats.detail）提供席位数据、且 ctx.hotmoney 提供营业部清单，
   //   对「买方席位净买命中顶级游资营业部」的标的，标记 hotMoney 并放大其排序分（默认翻倍）。
   //   ⚠ seats.js 明确「点名归属不可核验」，故仅作可选增强信号；ctx 未提供 seatsDetail/hotmoney → 零回归。
-  const hmCfg = (ctx && ctx.hotmoney) || { seatPatterns: DEFAULT_HOTMONEY_SEAT_PATTERNS, doubleWeight: 2.0 };
+  /* 【2026-11-24 v5.3 权重修复（用户拍板）】旧实现 p.score=base*doubleWeight（默认 ×2）
+   * ——九阳 47→65 全靠这一下，一个席位把票从 below#89 拉进 kept，不是挂件是主导因子。
+   * 改固定加分：默认 +5、硬上限 5（不按席位数累加、不按比例放大），ctx 只可下调。 */
+  /* 【2026-11-24 单因子增量检验后下线（用户拍板判据）】hotmoney_incremental 120 日：
+   * IC=-0.0056、命中组次日 1.50% vs 未命中 1.65%、kept 集合变化 0——增量为负且
+   * 不可解释，按拍板"不该留在主线打分里"：默认 bonus=0（只打 hotMoney 标记供审计，
+   * 不改分）。ctx.hotmoney.bonus 可显式开启（硬上限仍 5）——机制保留、默认下线。 */
+  const hmCfg = (ctx && ctx.hotmoney) || { seatPatterns: DEFAULT_HOTMONEY_SEAT_PATTERNS, bonus: 0 };
   const hmPatterns = Array.isArray(hmCfg.seatPatterns) && hmCfg.seatPatterns.length ? hmCfg.seatPatterns : DEFAULT_HOTMONEY_SEAT_PATTERNS;
-  const hmDbl = Number.isFinite(+hmCfg.doubleWeight) && +hmCfg.doubleWeight > 0 ? +hmCfg.doubleWeight : 2.0;
+  const hmBonus = Math.min(5, Number.isFinite(+hmCfg.bonus) && +hmCfg.bonus > 0 ? +hmCfg.bonus : 0);
   if (ctx && ctx.seatsDetail) {
     for (const p of picks) {
       const net = hotMoneyNetWanOf(ctx.seatsDetail, p.code, hmPatterns);
@@ -807,7 +815,7 @@ export function recommendPicks(day, ctx = {}) {
         p.hotMoney = true;
         p.hotMoneyNetWan = net;
         const base = Number.isFinite(p.prob?.score) ? p.prob.score : (Number.isFinite(p.score) ? p.score : 0);
-        p.score = Math.round(Math.min(100, base * hmDbl) * 100) / 100;   // 游资净买 → 排序分翻倍（增强信号，不改模型概率）
+        if (hmBonus > 0) p.score = Math.round(Math.min(100, base + hmBonus) * 100) / 100;  // 默认 0：只标记不改分；显式开启固定 +5 上限
         if (!Array.isArray(p.tags)) p.tags = [];
         if (!p.tags.includes('游资净买')) p.tags.push('游资净买');
       }

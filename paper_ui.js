@@ -1796,8 +1796,12 @@ function currentPicks() {
     const ztpool = (ZT_POOL_MAP && day.trade_date)
       ? (ZT_POOL_MAP.get(String(day.trade_date).replace(/\D/g, '')) || [])
       : [];
+    /* 【2026-11-24 v5.3】席位明细显式传参（挂件复活）：recent.latest 的 seats.detail
+     * 本就是席位名形态（无需 decode），picks.js 内部 seat_norm 标准化后匹配，加分固定
+     * +5 上限。选股卡已切落档不自算，此处供其它页面保持同参同口径。 */
+    const seatsDetail = (day.summary && day.summary.seats && day.summary.seats.detail) || null;
     PICKS = recommendPicks(day, {
-      emotionScore: score, topN: PICK_TOP_N, stopLossPct: POS_CFG.stopLoss, ztpool,
+      emotionScore: score, topN: PICK_TOP_N, stopLossPct: POS_CFG.stopLoss, ztpool, seatsDetail,
     });
   }
   return PICKS;
