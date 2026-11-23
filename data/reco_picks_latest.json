@@ -1,7 +1,7 @@
 {
   "date": "2026-11-23",
-  "marketTierVersion": "marketTier/v5.2-absolute-80_65_24",
-  "generated_at": "2026-11-23T18:24:12.822Z",
+  "marketTierVersion": "marketTier/v5.3-alert_only",
+  "generated_at": "2026-11-23T18:33:21.695Z",
   "emotionScore": 85.2,
   "ztpoolLoaded": true,
   "picks": [
@@ -18,7 +18,7 @@
       "gateTags": [
         "核心龙头"
       ],
-      "suggestWeight": 0
+      "suggestWeight": 0.2
     },
     {
       "code": "000636",
@@ -33,7 +33,7 @@
       "gateTags": [
         "后排补涨"
       ],
-      "suggestWeight": 0
+      "suggestWeight": 0.2
     },
     {
       "code": "000766",
@@ -48,49 +48,10 @@
       "gateTags": [
         "核心龙头"
       ],
-      "suggestWeight": 0
+      "suggestWeight": 0.2
     }
   ],
   "observe": [
-    {
-      "code": "002242",
-      "name": "九阳股份",
-      "changePct": 10.01,
-      "probScore": 65,
-      "streakText": "大概率连板 18.2%",
-      "gateTags": [
-        "核心龙头"
-      ],
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "kept_no_weight"
-    },
-    {
-      "code": "000636",
-      "name": "风华高科",
-      "changePct": 10.02,
-      "probScore": 59,
-      "streakText": "大概率连板 18.2%",
-      "gateTags": [
-        "后排补涨"
-      ],
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "kept_no_weight"
-    },
-    {
-      "code": "000766",
-      "name": "通化金马",
-      "changePct": 10.04,
-      "probScore": 59,
-      "streakText": "大概率连板 18.2%",
-      "gateTags": [
-        "核心龙头"
-      ],
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "kept_no_weight"
-    },
     {
       "code": "000593",
       "name": "德龙汇能",
@@ -230,7 +191,7 @@
     "kept": 7,
     "below": 97,
     "minProb": 57,
-    "observeCount": 15
+    "observeCount": 12
   },
   "rejected": [
     {
@@ -326,6 +287,6 @@
   ],
   "note": {
     "level": "blocked",
-    "text": "当前市场档位为「过热（只减仓不新建）」，系统建议总仓位 40%、不新建仓。下列标的仅供观察，不建议此时建仓。"
+    "text": "【来源已停用·仅告警】情绪分「过热（只减仓不新建）」不再限制新建仓；历史文案曾建议总仓位 0%、不新建仓。下列标的仅供观察，不建议此时建仓。"
   }
 }

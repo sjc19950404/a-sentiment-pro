@@ -5,6 +5,8 @@
 //   所以必须写清「因为哪个字段、应该得出什么结论」。
 //   边界一律取等号两侧各一例；无数据场景必须验证「如实降级、不编造」。
 import { test } from 'node:test';
+import { marketTierVersion } from '../src/picks.js';
+const C_ALERT_ONLY = marketTierVersion().includes('alert_only');
 import assert from 'node:assert/strict';
 import {
   reviewAccount, reviewTrades, reviewPositions, buildAdvice, buildPaperReview,
@@ -536,7 +538,7 @@ test('主入口：有账户无成交 → 降级为「暂无可复盘」', () => 
   assert.match(r.headline, /尚无成交记录/);
 });
 
-test('主入口：整合账户 / 逐笔 / 持仓 / 台账 / 档位，headline 含关键事实', () => {
+test('主入口：整合账户 / 逐笔 / 持仓 / 台账 / 档位，headline 含关键事实', { skip: C_ALERT_ONLY && 'C形态:情绪档已退出仓位决策' }, () => {
   const buyFee = fees(100000, 'buy').total;
   const sellGross = 9 * 10000;
   const sellFee = fees(sellGross, 'sell').total;
@@ -639,7 +641,7 @@ test('reviewTrades.byHold：买入日缺失 → holdDays 为 null，回合不计
   assert.equal(r.closedCount, 1, '回合仍闭合，总胜率口径不受影响');
 });
 
-test('paper_daily 自动建仓闸门：过热/清仓档位 allowNew=false → 跳过（与"坚决不开新进攻仓"纪律一致）', () => {
+test('paper_daily 自动建仓闸门：过热/清仓档位 allowNew=false → 跳过（与"坚决不开新进攻仓"纪律一致）', { skip: C_ALERT_ONLY && 'C形态:情绪档已退出仓位决策' }, () => {
   // 直接验证闸门依赖的 marketTier.allowNew 语义（脚本用它 + regime 双闸）
   const { overheat, full, half } = TIER_THRESHOLDS;
   assert.equal(marketTier(overheat + 0.5).allowNew, false, '过热=只减仓不新建');

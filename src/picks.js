@@ -1,5 +1,6 @@
 import { seatsOf } from './seats.js';
-import { seatMatchesPatterns } from './seat_norm.js';   // 2026-11-24 v5.3：席位名标准化匹配（seatCode 只做校验，不参与匹配）
+import { seatMatchesPatterns } from './seat_norm.js';
+import { TIER_MODE_FLAG } from './tier_policy.js';   // C 形态：alert_only 只告警不调仓   // 2026-11-24 v5.3：席位名标准化匹配（seatCode 只做校验，不参与匹配）
 import { isLimitUp as isLimitUpOf, LIMIT_CALIBER } from './limit_caliber.js'; // C12 新口径（v5.2-pro-fix-limit）
 
 // 挂件二（2026-10-30·进攻）：游资席位追踪默认清单（顶级游资营业部关键词；speculative——seats.js 明确点名归属不可核验，仅作增强信号，绝不污染核心打分）
@@ -107,7 +108,7 @@ export const STREAK_MAX = 4;
 /** 情绪分（七因子主分数，与研判报告/回测引擎同源）→ 市场档位。
  *  阈值与 V5.2 引擎一致：≥80 过热只减不新建 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓。 */
 export const TIER_THRESHOLDS = { overheat: 80, full: 65, half: 24 };
-export { marketTierVersion, TIER_MODE_FLAG } from './tier_policy.js';   // 产物版本戳单一出处
+export { marketTierVersion, TIER_MODE_FLAG, tierAlert } from './tier_policy.js';   // 产物版本戳/告警标签单一出处
 
 /** 档位 → { 标签、建议总仓位（占总资产比例）、是否允许新建仓 } */
 export const POSITION_TIERS = [
@@ -139,10 +140,18 @@ export function marketTier(score, _researchThresholds) {
    * tools/backtest 研究脚本使用，严禁出现在报告/paper/复盘等产物链路。
    * feature flag 在 src/tier_policy.js::TIER_MODE_FLAG（当前 absolute=零行为改动）。 */
   const t = _researchThresholds || TIER_THRESHOLDS;
-  if (s >= t.overheat) return POSITION_TIERS[0];
-  if (s >= t.full) return POSITION_TIERS[1];
-  if (s > t.half) return POSITION_TIERS[2];
-  return POSITION_TIERS[3];
+  const tier = s >= t.overheat ? POSITION_TIERS[0] : s >= t.full ? POSITION_TIERS[1]
+    : s > t.half ? POSITION_TIERS[2] : POSITION_TIERS[3];
+  /* 【2026-11-24 拍板 C】alert_only：保留 tier 标签供报告/告警，仓位字段一律 null——
+   * 版本戳写 alert_only 却按旧档分仓=污染审计链，从源头杜绝。key/label 顶层镜像
+   * 供现有调用方兼容（不碰 7 处判档入口）。 */
+  if (TIER_MODE_FLAG.mode === 'alert_only') {
+    return { tier, key: tier.key, label: tier.label, pos: null, allowNew: null,
+      alert: { level: tier.key === 'overheat' || tier.key === 'clear' ? 'high' : 'low',
+        text: '情绪' + ({ overheat: '过热', full: '满仓', half: '半仓', clear: '冰点' }[tier.key] || tier.key)
+          + '提示——仅告警，不参与仓位决策' } };
+  }
+  return tier;
 }
 
 // ────────────────────────── 二、候选池构建（含去噪） ──────────────────────────
@@ -409,8 +418,16 @@ export function risksOf(c) {
  * 假装能给出差异化的个股权重是过度自信。宁可知乎其分。
  */
 export function suggestWeight(tier, n, opts = {}) {
-  if (!tier || !tier.allowNew || !(n > 0)) return 0;
-  const cap = finite(opts.perStockCap) ? +opts.perStockCap : 0.20; // 单只上限，避免全押一只
+  /* 【拍板 C：硬风控 > 满仓 beta > 择时】alert_only 下等权满仓 1/n（受单票上限约束）；
+   * opts.riskWeight（回撤≥15% 降仓 / -8% 止损触发）可覆盖——两条纯风控不动。
+   * 无候选返回 0。 */
+  if (!(n > 0)) return 0;
+  const cap = finite(opts.perStockCap) ? +opts.perStockCap : 0.20;
+  if (TIER_MODE_FLAG.mode === 'alert_only') {
+    const target = Number.isFinite(+opts.riskWeight) ? Math.max(0, Math.min(1, +opts.riskWeight)) : 1;
+    return Math.round(Math.min(cap, target / n) * 1e4) / 1e4;
+  }
+  if (!tier || !tier.allowNew) return 0;
   const avg = tier.pos / n;
   return Math.round(Math.min(cap, avg) * 1e4) / 1e4;
 }
@@ -874,13 +891,13 @@ export function recommendPicks(day, ctx = {}) {
   } else if (tier && !tier.allowNew) {
     note = {
       level: 'blocked',
-      text: `当前市场档位为「${tier.label}」，系统建议总仓位 ${Math.round(tier.pos * 100)}%、不新建仓。`
+      text: `【来源已停用·仅告警】情绪分「${tier.label}」不再限制新建仓；历史文案曾建议总仓位 ${Math.round(tier.pos * 100)}%、不新建仓。`
         + `下列标的仅供观察，不建议此时建仓。`,
     };
   } else if (tier) {
     note = {
       level: 'ok',
-      text: `当前市场档位「${tier.label}」，建议总仓位 ${Math.round(tier.pos * 100)}%，`
+      text: `【来源已停用·仅告警】情绪分「${tier.label}」不参与仓位决策；历史文案曾建议总仓位 ${Math.round(tier.pos * 100)}%，`
         + `按 ${picks.length} 只均分即每只约 ${(weight * 100).toFixed(1)}%（单只上限 20%）。`
         + (pred.stats.streakTop
           ? `其中 ${pred.stats.streakTop} 只 T+1 连板概率 ≥${pred.stats.streakTopMin}%，已置顶并打标签。`

@@ -77,13 +77,27 @@ export function tierKey(score, thresholds) {
  * 参数签名后只改这一行 mode → 'p82_confirm3_band3'，7 处调用点无需改动。
  * 每个产物落 marketTierVersion 字段，事后可核对"这一天的档是哪套口径判的"。
  */
+/* 【2026-11-24 拍板 C：不签参数、归档择时，立即止损】
+ * mode='alert_only'：marketTier 只输出告警标签（过热/冰点提示），**不输出仓位档**——
+ * 仓位消费者（suggestWeight）回满仓 beta；-8% 单笔止损 / ≥15% 回撤动态降仓两条
+ * 纯风控保持不变（实测基准 maxDD 28.33% vs 策略择时 13~19%，有效的是风控不是择时）。
+ * 第三值 alert_only 仍可一键回滚到 absolute；p82_confirm3_band3 已归档不启用。 */
 export const TIER_MODE_FLAG = Object.freeze({
-  mode: 'absolute',   // 唯一开关：'absolute' | 'p82_confirm3_band3'（签名后启用）
-  switchedAt: null,   // 切换生效日（YYYY-MM-DD），报告文案隔日切换时填
+  mode: 'alert_only',   // 唯一开关：'alert_only' | 'absolute' | 'p82_confirm3_band3'(归档禁用)
+  switchedAt: '2026-11-24',
+  archived: Object.freeze({ mode: 'p82_confirm3_band3', reason: '前段第61-130天超额 -0.42%（符号负）——三段判据不通过，停止调参' }),
 });
 
 export function marketTierVersion(flag = TIER_MODE_FLAG) {
   return 'marketTier/' + (flag.mode === 'absolute'
     ? 'v5.2-absolute-80_65_24'
     : 'v5.3-' + flag.mode);
+}
+
+/** C 形态：判档标签 → 告警文案（无仓位字段）。供报告/paper/复盘共用。 */
+export function tierAlert(tier) {
+  if (!tier) return null;
+  return { key: tier.key, label: tier.label, alertOnly: true,
+    text: tier.key === 'overheat' ? '情绪过热提示（不干预仓位）'
+      : tier.key === 'clear' ? '情绪冰点提示（不干预仓位）' : '情绪档位提示（不干预仓位）' };
 }
