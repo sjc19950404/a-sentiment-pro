@@ -13,10 +13,20 @@
  */
 export const ABSOLUTE_FALLBACK = Object.freeze({ overheat: 80, full: 65, half: 24 });
 
+/* 【2026-11-24 用户拍板 B：锚点=旧口径档位天数占比，不是旧分位值】
+ * 旧绝对档 80 分在**旧分布（s_net 死）**是 P98.2，但在**新分布（s_net 活）**只对应
+ * P81.5——同一个绝对分在两个口径下差 17pp。拿 P98 当锚=锚在一张已作废的分布图上。
+ * 正确锚是旧档位天数占比，反解到新分布的构造分位：
+ *   过热 旧占比 18.15% → 100-18.15 = P81.85 ≈ P82（高分尾）
+ *   满仓 旧占比 32.50% → 18.15+32.50 = P50.65；按"≥full"口径反解 P49（经回放校准）
+ *   半仓 旧占比 47.60% → P2（高分尾 2% 以下判清仓，旧清仓占比 1.5%）
+ *   清仓 旧占比 1.50% → 阈值 P2 下方，构造性对齐
+ * ⚠ 下次任何因子/权重口径变动：重新按"旧占比 → 新分布反解分位"推导，
+ *   不得再照抄 P98/P60/P1（那是作废分布的产物）。 */
 export const BASELINE_TIER_POLICY = Object.freeze({
   id: 'scale-baseline', window: 250,
-  quantiles: Object.freeze({ overheat: 0.98, full: 0.60, half: 0.01 }),
-  note: 'P98/P60/P1 trailing250——尺度修正基线，单变量实验，不作长期参数',
+  quantiles: Object.freeze({ overheat: 0.82, full: 0.49, half: 0.02 }),
+  note: 'P82/P49/P2 expanding250——锚点=旧档位天数占比（非旧分位值），尺度修正基线，单变量实验',
 });
 
 export const SHADOW_TIER_POLICY = Object.freeze({

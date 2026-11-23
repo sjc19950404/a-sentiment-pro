@@ -76,8 +76,8 @@ function trailingTh(i, policy) {
 const POS = { overheat: 0.40, full: 1.0, half: 0.50, clear: 0 };
 const variants = [
   { id: 'old_absolute', mode: null },
-  { id: 'expanding_baseline_P98_60_1', mode: 'expanding', policy: BASELINE_TIER_POLICY },
-  { id: 'trailing_shadow_P98_60_1', mode: 'trailing', policy: BASELINE_TIER_POLICY },
+  { id: 'expanding_baseline_P82_49_2', mode: 'expanding', policy: BASELINE_TIER_POLICY },
+  { id: 'trailing_baseline_P82_49_2', mode: 'trailing', policy: BASELINE_TIER_POLICY },
   { id: 'expanding_shadow_P90_75_10', mode: 'expanding', policy: SHADOW_TIER_POLICY },
 ];
 const out = {};
@@ -115,7 +115,7 @@ for (const v of variants) {
   const o = out[v.id];
   console.log(`${v.id}: overheat ${o.tiers.filter((x) => x === 'overheat').length}d / full ${o.tiers.filter((x) => x === 'full').length}d / half ${o.tiers.filter((x) => x === 'half').length}d / clear ${o.tiers.filter((x) => x === 'clear').length}d | warmup ${o.warmup}d | 累计 ${pct(o.nav - 1)} | maxDD ${pct(o.maxDd)}`);
 }
-const base = out.old_absolute, b = out.expanding_baseline_P98_60_1;
+const base = out.old_absolute, b = out.expanding_baseline_P82_49_2;
 console.log('\n═══ 基线验收（vs 旧绝对档，用户验收线：档位偏差≤2pp、收益/回撤无显著恶化）═══');
 for (const k of ['overheat', 'full', 'half', 'clear']) {
   const a = base.tiers.filter((x) => x === k).length / base.tiers.length;
@@ -131,4 +131,29 @@ for (const [age, arr] of Object.entries(b.byAge)) {
   const th0 = arr[0].th, th1 = arr[arr.length - 1].th;
   console.log(`  ${age}: n=${arr.length}d 过热门槛 ${th0.overheat.toFixed(1)} → ${th1.overheat.toFixed(1)} | 过热占比 ${pct(ex)}`);
 }
-console.log('\n注：影子轨 P90/P75/P10 与 trailing250 均只出对比表，不切。阈值随 n 收敛，早期 n<120 段仅供稳定性诊断。');
+/* ── 用户验收线①：构造性验证——逐日档位一致率 ≥95%（占比构造相等不等于逐日等价） ── */
+let agree = 0, total = 0;
+for (let i = 0; i < base.tiers.length; i++) {
+  if (b.tiers[i] && base.tiers[i]) { total++; if (b.tiers[i] === base.tiers[i]) agree++; }
+}
+const agreeRate = total ? agree / total : 0;
+console.log(`\n═══ 验收线①：构造性验证 ═══`);
+console.log(`  逐日档位一致率: ${agree}/${total} = ${pct(agreeRate)} ${agreeRate >= 0.95 ? '✓ ≥95%' : '✗ <95%——不构成等价，禁止切生产'}`);
+/* ── 用户验收线②：收敛固化 + regime 切换滞后天数 ── */
+const young = b.byAge.young, mature = b.byAge.mature;
+const span = (arr) => arr.length ? Math.max(...arr.map((x) => x.th.overheat)) - Math.min(...arr.map((x) => x.th.overheat)) : NaN;
+const ySpan = span(young), mSpan = span(mature);
+const mDrift = mature.length > 1 ? Math.abs(mature.at(-1).th.overheat - mature[0].th.overheat) : NaN;
+console.log(`\n═══ 验收线②：收敛与滞后 ═══`);
+console.log(`  段内波动 n<120 ${ySpan.toFixed(2)} 分 | n≥120 ${mSpan.toFixed(2)} 分（诊断，不作门禁——用户口径是首→末漂移）`);
+console.log(`  成熟段首→末门槛 ${mature[0]?.th.overheat.toFixed(1)} → ${mature.at(-1)?.th.overheat.toFixed(1)} | 漂移 ${mDrift.toFixed(2)} 分 ${mDrift <= 1.5 ? '✓ ≤1.5 分门禁' : '✗ 未收敛'}`);
+let lagSum = 0, lagN = 0;
+for (let i = 1; i < b.tiers.length; i++) {
+  if (base.tiers[i] !== base.tiers[i - 1]) {   // 旧档发生 regime 切换
+    let j = i; while (j < b.tiers.length && b.tiers[j] === b.tiers[i - 1]) j++;
+    lagSum += Math.max(0, j - i + 1); lagN++;
+  }
+}
+console.log(`  旧档 regime 切换 ${lagN} 次 | 分位档平均跟随滞后 ${lagN ? (lagSum / lagN).toFixed(2) : '—'} 天`);
+if (agreeRate < 0.95 || !(mDrift <= 1.5)) { console.error('[tier] ❌ HARD FAIL：构造性/收敛验收未过——禁止切 7 处'); process.exit(1); }
+console.log('\n注：影子轨 P90/P75/P10 与 trailing250 均只出对比表，不切。');
