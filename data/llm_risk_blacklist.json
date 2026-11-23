@@ -2,10 +2,10 @@
  "kind": "llm-risk-blacklist",
  "version": 1,
  "asOfDate": "2026-11-23",
- "generatedAt": "2026-11-23T18:46:45.333+08:00",
+ "generatedAt": "2026-11-23T21:17:17.988+08:00",
  "model": "glm-4-flash",
  "source": "announcements-latest.json",
- "scanned": 9,
+ "scanned": 16,
  "universe": "ladder",
  "limit": 40,
  "blacklist": [
@@ -14,8 +14,7 @@
    "name": "盛剑科技",
    "riskLevel": "medium",
    "reasons": [
-    "股票交易风险提示公告",
-    "监管工作函"
+    "股票交易风险提示公告"
    ],
    "evidence": "盛剑科技：关于股票交易风险提示公告；盛剑科技：关于上海盛剑科技股份有限公司有关股价波动事项的监管工作函"
   }

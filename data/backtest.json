@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generatedAt": "2026-11-23T10:41:38.398Z",
+  "generatedAt": "2026-11-23T13:12:13.714Z",
   "formulaVersion": "v5.2-pro",
   "tradeDate": "2026-11-23",
   "days": 271,
@@ -628,7 +628,7 @@
    47.8,
    32.6,
    42.8,
-   82.9
+   85.2
   ],
   "navBase": [
    1,
@@ -4250,8 +4250,8 @@
    {
     "theme": "机器人",
     "themeCount": 49,
-    "density": 0.1744,
-    "mainScore": 8.54,
+    "density": 0.1738,
+    "mainScore": 8.51,
     "stocks": [
      {
       "code": "920690",
@@ -4371,16 +4371,16 @@
     "change_pct": 6.22
    },
    {
-    "name": "医疗服务",
-    "change_pct": 5.9
-   },
-   {
     "name": "元件",
     "change_pct": 5.22
+   },
+   {
+    "name": "通用设备",
+    "change_pct": 4.96
    }
   ],
   "threshold": {
-   "up_count_threshold": 17.99317227787456,
+   "up_count_threshold": 15.99317227787456,
    "density_threshold": 0.13103421700397327,
    "mode": "dynamic",
    "samples": 60,
@@ -4392,9 +4392,9 @@
    }
   },
   "gating": {
-   "market_state": "weak",
+   "market_state": "normal",
    "sentiment_state": "stable",
-   "max_output": 1,
+   "max_output": 2,
    "base_up_count_threshold": 15.99317227787456,
    "base_density_threshold": 0.13103421700397327
   }

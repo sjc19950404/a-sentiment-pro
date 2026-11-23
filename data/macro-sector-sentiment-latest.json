@@ -3,1288 +3,1161 @@
  "version": 1,
  "asOfDate": "2026-11-23",
  "newsDate": "2026-11-23",
- "generatedAt": "2026-11-23T18:37:37.235+08:00",
+ "generatedAt": "2026-11-23T21:09:06.244+08:00",
  "cachedFrom": null,
  "model": "glm-4-flash",
  "macro": {
-  "sentiment": 0.06,
-  "score100": 53,
+  "sentiment": 0.08,
+  "score100": 54,
   "label": "中性",
-  "confidence": 0.52,
-  "reason": "利好板块：地产(+0.7)、CPO(+0.7)、光模块(+0.7)、PCB(+0.7)、数据中心(+0.7)；利空板块：无"
+  "confidence": 0.45,
+  "reason": "利好板块：AI(+0.35)、消费电子(+0.33)、基建(+0.3)、算力(+0.3)、地产(+0.28)；利空板块：无"
  },
  "sectors": [
   {
-   "sector": "地产",
-   "score": 0.7,
-   "score100": 85,
+   "sector": "AI",
+   "score": 0.35,
+   "score100": 68,
    "newsCount": 4,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "“三箭齐发”！A股稳市政策加力",
-    "金信基金评市场：低开高走深V修复，政策组合拳提振成长主线",
-    "華夏基金(香港)推出全球唯一一隻追蹤離岸人民幣債券ETF助力香港離岸人民幣市場建設",
-    "人社部：基本养老保险基金可以委托国务院授权的机构实行市场化投资运营"
-   ]
-  },
-  {
-   "sector": "CPO",
-   "score": 0.7,
-   "score100": 85,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复"
-   ]
-  },
-  {
-   "sector": "光模块",
-   "score": 0.7,
-   "score100": 85,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复"
-   ]
-  },
-  {
-   "sector": "PCB",
-   "score": 0.7,
-   "score100": 85,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复"
-   ]
-  },
-  {
-   "sector": "数据中心",
-   "score": 0.7,
-   "score100": 85,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复"
-   ]
-  },
-  {
-   "sector": "服务器",
-   "score": 0.7,
-   "score100": 85,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复"
-   ]
-  },
-  {
-   "sector": "医药",
-   "score": 0.7,
-   "score100": 85,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "公募11月“火力”集中！434只个股获调研，电子、机械、医药占比过半，傅鹏博等知名基金经理调研图谱出炉→"
-   ]
-  },
-  {
-   "sector": "保险",
-   "score": 0.64,
-   "score100": 82,
-   "newsCount": 5,
-   "bullish": 5,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "从“万亿规模”到绿色金融，平安养老险入围两项21世纪金融竞争力年度案例",
-    "“三箭齐发”！A股稳市政策加力",
-    "金信基金评市场：低开高走深V修复，政策组合拳提振成长主线",
-    "華夏基金(香港)推出全球唯一一隻追蹤離岸人民幣債券ETF助力香港離岸人民幣市場建設"
-   ]
-  },
-  {
-   "sector": "券商",
-   "score": 0.64,
-   "score100": 82,
-   "newsCount": 5,
-   "bullish": 5,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "“三箭齐发”！A股稳市政策加力",
-    "金信基金评市场：低开高走深V修复，政策组合拳提振成长主线",
-    "華夏基金(香港)推出全球唯一一隻追蹤離岸人民幣債券ETF助力香港離岸人民幣市場建設",
-    "建设银行牵头承销新开发银行熊猫债"
-   ]
-  },
-  {
-   "sector": "基建",
-   "score": 0.58,
-   "score100": 79,
-   "newsCount": 6,
-   "bullish": 5,
+   "bullish": 3,
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业",
-    "金信基金评市场：低开高走深V修复，政策组合拳提振成长主线"
-   ]
-  },
-  {
-   "sector": "建材",
-   "score": 0.56,
-   "score100": 78,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业",
-    "金信基金评市场：低开高走深V修复，政策组合拳提振成长主线"
-   ]
-  },
-  {
-   "sector": "水泥",
-   "score": 0.56,
-   "score100": 78,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业",
-    "金信基金评市场：低开高走深V修复，政策组合拳提振成长主线"
-   ]
-  },
-  {
-   "sector": "工程机械",
-   "score": 0.56,
-   "score100": 78,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业",
-    "金信基金评市场：低开高走深V修复，政策组合拳提振成长主线"
-   ]
-  },
-  {
-   "sector": "家电",
-   "score": 0.56,
-   "score100": 78,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业",
-    "金信基金评市场：低开高走深V修复，政策组合拳提振成长主线"
-   ]
-  },
-  {
-   "sector": "纺织服装",
-   "score": 0.56,
-   "score100": 78,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业",
-    "金信基金评市场：低开高走深V修复，政策组合拳提振成长主线"
-   ]
-  },
-  {
-   "sector": "农业",
-   "score": 0.56,
-   "score100": 78,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业",
-    "金信基金评市场：低开高走深V修复，政策组合拳提振成长主线"
-   ]
-  },
-  {
-   "sector": "种业",
-   "score": 0.56,
-   "score100": 78,
-   "newsCount": 5,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业",
-    "金信基金评市场：低开高走深V修复，政策组合拳提振成长主线"
-   ]
-  },
-  {
-   "sector": "软件",
-   "score": 0.47,
-   "score100": 74,
-   "newsCount": 7,
-   "bullish": 5,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "Anthropic如何赚钱？AI企业商业模式拆解",
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力"
-   ]
-  },
-  {
-   "sector": "出版",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "教育",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "计算机",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "信创",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "网络安全",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "通信",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "运营商",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "6G",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "物流",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "快递",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "港口",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "旅游",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "免税",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "零售",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "美容护理",
-   "score": 0.47,
-   "score100": 73,
-   "newsCount": 6,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "机器人",
-   "score": 0.4,
-   "score100": 70,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业",
-    "ABB将以22.2亿美元收购德国Ziehl‑Abegg"
-   ]
-  },
-  {
-   "sector": "工业母机",
-   "score": 0.4,
-   "score100": 70,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业",
-    "ABB将以22.2亿美元收购德国Ziehl‑Abegg"
-   ]
-  },
-  {
-   "sector": "石油",
-   "score": 0.4,
-   "score100": 70,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业",
-    "康菲石油以39亿美元将挪威业务出售给Var Energi"
-   ]
-  },
-  {
-   "sector": "石化",
-   "score": 0.4,
-   "score100": 70,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业",
-    "康菲石油以39亿美元将挪威业务出售给Var Energi"
-   ]
-  },
-  {
-   "sector": "燃气",
-   "score": 0.37,
-   "score100": 68,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业",
-    "欧洲TTF天然气因降温、储气偏低而上涨"
-   ]
-  },
-  {
-   "sector": "银行",
-   "score": 0.36,
-   "score100": 68,
-   "newsCount": 9,
-   "bullish": 5,
-   "bearish": 0,
-   "neutral": 4,
-   "headlines": [
-    "瑞银资本要求之争进入关键阶段 瑞士议会将权衡多项方案",
-    "工资发不出、押金退不了……美国最大银行宕机的一天，用户们经历了什么？",
-    "“三箭齐发”！A股稳市政策加力",
-    "金信基金评市场：低开高走深V修复，政策组合拳提振成长主线"
-   ]
-  },
-  {
-   "sector": "传媒",
-   "score": 0.36,
-   "score100": 68,
-   "newsCount": 7,
-   "bullish": 4,
-   "bearish": 1,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "游戏",
-   "score": 0.36,
-   "score100": 68,
-   "newsCount": 7,
-   "bullish": 4,
-   "bearish": 1,
-   "neutral": 2,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "低空经济",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "商业航天",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "卫星互联网",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "固态电池",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "锂电",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "储能",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "光伏",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "风电",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "氢能源",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "军工",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "航发",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "船舶",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "化工",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "化肥",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "农药",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "钢铁",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "煤炭",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "稀土",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "电力",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "火电",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "水电",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "核电",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "绿电",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "猪周期",
-   "score": 0.35,
-   "score100": 68,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "智能驾驶",
-   "score": 0.32,
-   "score100": 66,
-   "newsCount": 4,
-   "bullish": 2,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业",
-    "一万元买车送外卖？张雪给外卖员做万元电摩托劝退小哥，直呼“回本困难”，路权成最大门槛",
-    "荣耀：700系列开售30分钟销量同比增长超300%"
-   ]
-  },
-  {
-   "sector": "航空",
-   "score": 0.3,
-   "score100": 65,
-   "newsCount": 8,
-   "bullish": 4,
-   "bearish": 1,
-   "neutral": 3,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "航运",
-   "score": 0.3,
-   "score100": 65,
-   "newsCount": 8,
-   "bullish": 4,
-   "bearish": 1,
-   "neutral": 3,
-   "headlines": [
-    "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "“三箭齐发”！A股稳市政策加力",
-    "报告发现AI正冲击初级岗位就业"
-   ]
-  },
-  {
-   "sector": "芯片",
-   "score": 0.3,
-   "score100": 65,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "32.77亿元工程转固落地 2026年斯达半导制造规模效应进入验证期",
-    "士兰微16亿元募资转向股权收购 晶圆制造投资重心改变"
-   ]
-  },
-  {
-   "sector": "新能源汽车",
-   "score": 0.23,
-   "score100": 62,
-   "newsCount": 3,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业",
-    "一万元买车送外卖？张雪给外卖员做万元电摩托劝退小哥，直呼“回本困难”，路权成最大门槛"
-   ]
-  },
-  {
-   "sector": "汽车",
-   "score": 0.23,
-   "score100": 62,
-   "newsCount": 3,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 2,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业",
-    "一万元买车送外卖？张雪给外卖员做万元电摩托劝退小哥，直呼“回本困难”，路权成最大门槛"
-   ]
-  },
-  {
-   "sector": "黄金",
-   "score": -0.16,
-   "score100": 42,
-   "newsCount": 20,
-   "bullish": 1,
-   "bearish": 8,
-   "neutral": 11,
-   "headlines": [
-    "CBCX:白银日度上行仍需风控",
-    "CPT Markets:黄金回升不改审慎观察",
-    "EasyMarkets易信:白银反弹检验供需韧性",
-    "FPG财盛国际:金银相对表现回归基本面"
-   ]
-  },
-  {
-   "sector": "半导体",
-   "score": -0.12,
-   "score100": 44,
-   "newsCount": 5,
-   "bullish": 1,
-   "bearish": 2,
-   "neutral": 2,
-   "headlines": [
-    "32.77亿元工程转固落地 2026年斯达半导制造规模效应进入验证期",
-    "摩根资产管理称AI举债潮限制债市上涨空间",
-    "陶冬：美国AI牛市丧钟响起？",
-    "媒体：黄仁勋夫妇已积累巨额财富"
-   ]
-  },
-  {
-   "sector": "苹果产业链",
-   "score": 0.07,
-   "score100": 53,
-   "newsCount": 6,
-   "bullish": 2,
-   "bearish": 1,
-   "neutral": 3,
-   "headlines": [
-    "迈克尔・伯里点名苹果、好市多、沃尔玛为崩盘初期避险标的",
-    "荣耀：700系列开售30分钟销量同比增长超300%",
-    "李健回应华为推出子品牌：对荣耀不用有任何担心，荣耀已经走出了自己的道路",
-    "陶冬：美国AI牛市丧钟响起？"
-   ]
-  },
-  {
-   "sector": "有色",
-   "score": 0.07,
-   "score100": 53,
-   "newsCount": 3,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业",
-    "白银大跌后休整 沪锌跌跌不休"
-   ]
-  },
-  {
-   "sector": "铜",
-   "score": 0.07,
-   "score100": 53,
-   "newsCount": 3,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业",
-    "白银大跌后休整 沪锌跌跌不休"
-   ]
-  },
-  {
-   "sector": "铝",
-   "score": 0.07,
-   "score100": 53,
-   "newsCount": 3,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 1,
-   "headlines": [
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业",
-    "白银大跌后休整 沪锌跌跌不休"
+    "科技股遭遇大幅抛售后，Anthropic与英伟达盘前股价上涨",
+    "影石宣布云台相机涨价：将于12月15日调整Luna云台系列产品价格",
+    "逾30家A股公司，集体发布回购公告",
+    "老牌白酒经销商，拟砸8.48亿跨界算力"
    ]
   },
   {
    "sector": "消费电子",
-   "score": -0.01,
-   "score100": 49,
-   "newsCount": 8,
+   "score": 0.33,
+   "score100": 67,
+   "newsCount": 3,
    "bullish": 2,
-   "bearish": 2,
-   "neutral": 4,
+   "bearish": 0,
+   "neutral": 1,
    "headlines": [
-    "迈克尔・伯里点名苹果、好市多、沃尔玛为崩盘初期避险标的",
-    "荣耀：700系列开售30分钟销量同比增长超300%",
-    "摩根资产管理称AI举债潮限制债市上涨空间",
-    "李健回应华为推出子品牌：对荣耀不用有任何担心，荣耀已经走出了自己的道路"
+    "科技股遭遇大幅抛售后，Anthropic与英伟达盘前股价上涨",
+    "影石宣布云台相机涨价：将于12月15日调整Luna云台系列产品价格",
+    "逾30家A股公司，集体发布回购公告"
    ]
   },
   {
-   "sector": "AI",
-   "score": 0,
-   "score100": 50,
-   "newsCount": 6,
-   "bullish": 2,
-   "bearish": 2,
+   "sector": "基建",
+   "score": 0.3,
+   "score100": 65,
+   "newsCount": 7,
+   "bullish": 5,
+   "bearish": 0,
    "neutral": 2,
    "headlines": [
-    "Anthropic如何赚钱？AI企业商业模式拆解",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业",
-    "摩根资产管理称AI举债潮限制债市上涨空间"
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "利好！000792，拟回购不超20亿元，全部注销！A股公司，最新公告",
+    "最高4亿元！千亿巨头宏桥控股，抛出回购方案！前三季度净利润大涨近七成",
+    "中国人民银行行长潘功胜会见欧洲中央银行、欧盟委员会和欧元集团相关负责人"
    ]
   },
   {
    "sector": "算力",
-   "score": 0,
-   "score100": 50,
-   "newsCount": 6,
+   "score": 0.3,
+   "score100": 65,
+   "newsCount": 3,
    "bullish": 2,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "科技股遭遇大幅抛售后，Anthropic与英伟达盘前股价上涨",
+    "逾30家A股公司，集体发布回购公告",
+    "老牌白酒经销商，拟砸8.48亿跨界算力"
+   ]
+  },
+  {
+   "sector": "地产",
+   "score": 0.28,
+   "score100": 64,
+   "newsCount": 8,
+   "bullish": 5,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "利好！000792，拟回购不超20亿元，全部注销！A股公司，最新公告",
+    "最高4亿元！千亿巨头宏桥控股，抛出回购方案！前三季度净利润大涨近七成",
+    "中国人民银行行长潘功胜会见欧洲中央银行、欧盟委员会和欧元集团相关负责人"
+   ]
+  },
+  {
+   "sector": "苹果产业链",
+   "score": 0.25,
+   "score100": 63,
+   "newsCount": 2,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "影石宣布云台相机涨价：将于12月15日调整Luna云台系列产品价格",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "券商",
+   "score": 0.24,
+   "score100": 62,
+   "newsCount": 9,
+   "bullish": 6,
+   "bearish": 1,
+   "neutral": 2,
+   "headlines": [
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "利好！000792，拟回购不超20亿元，全部注销！A股公司，最新公告",
+    "最高4亿元！千亿巨头宏桥控股，抛出回购方案！前三季度净利润大涨近七成",
+    "中国人民银行行长潘功胜会见欧洲中央银行、欧盟委员会和欧元集团相关负责人"
+   ]
+  },
+  {
+   "sector": "航空",
+   "score": -0.2,
+   "score100": 40,
+   "newsCount": 6,
+   "bullish": 0,
+   "bearish": 2,
+   "neutral": 4,
+   "headlines": [
+    "西南航空、塔吉特、美国电话电报公司CFO如何看待“人在回路”机制",
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "白酒",
+   "score": 0.2,
+   "score100": 60,
+   "newsCount": 2,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告",
+    "老牌白酒经销商，拟砸8.48亿跨界算力"
+   ]
+  },
+  {
+   "sector": "光伏",
+   "score": -0.2,
+   "score100": 40,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 1,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告",
+    "隆基绿能：控股股东及一致行动人累计减持隆22转债10.48%"
+   ]
+  },
+  {
+   "sector": "银行",
+   "score": 0.14,
+   "score100": 57,
+   "newsCount": 10,
+   "bullish": 5,
+   "bearish": 3,
+   "neutral": 2,
+   "headlines": [
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "利好！000792，拟回购不超20亿元，全部注销！A股公司，最新公告",
+    "最高4亿元！千亿巨头宏桥控股，抛出回购方案！前三季度净利润大涨近七成",
+    "中国人民银行行长潘功胜会见欧洲中央银行、欧盟委员会和欧元集团相关负责人"
+   ]
+  },
+  {
+   "sector": "保险",
+   "score": 0.13,
+   "score100": 56,
+   "newsCount": 7,
+   "bullish": 3,
    "bearish": 2,
    "neutral": 2,
    "headlines": [
-    "Anthropic如何赚钱？AI企业商业模式拆解",
-    "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
-    "报告发现AI正冲击初级岗位就业",
-    "摩根资产管理称AI举债潮限制债市上涨空间"
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "平安产险托克逊支公司被罚5.2万元：套取费用、代理人管理不到位",
+    "逾30家A股公司，集体发布回购公告",
+    "央行行长潘功胜会见欧洲中央银行、欧盟委员会和欧元集团相关负责人"
+   ]
+  },
+  {
+   "sector": "航运",
+   "score": -0.1,
+   "score100": 45,
+   "newsCount": 7,
+   "bullish": 1,
+   "bearish": 2,
+   "neutral": 4,
+   "headlines": [
+    "西南航空、塔吉特、美国电话电报公司CFO如何看待“人在回路”机制",
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "劳资协议化解洛杉矶‑长滩港口罢工威胁",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大"
+   ]
+  },
+  {
+   "sector": "食品饮料",
+   "score": 0.1,
+   "score100": 55,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告",
+    "搭乘APEC东风 深化燕窝产业合作 小仙炖与印尼签署合作备忘共推品质燕窝输华",
+    "涪陵榨菜：拟约5亿元投建乌江涪陵榨菜绿色智能化生产基地（二期）项目"
+   ]
+  },
+  {
+   "sector": "机器人",
+   "score": 0.08,
+   "score100": 54,
+   "newsCount": 5,
+   "bullish": 2,
+   "bearish": 2,
+   "neutral": 1,
+   "headlines": [
+    "5连板热门股，澄清传闻！人形机器人板块爆火，主力资金加仓多只概念股",
+    "逾30家A股公司，集体发布回购公告",
+    "极智嘉宣布获 LPP Logistics 复购：超1600台机器人波兰“上岗”",
+    "长华集团：澄清人形机器人业务收入仅8.8万元"
+   ]
+  },
+  {
+   "sector": "工业母机",
+   "score": 0.08,
+   "score100": 54,
+   "newsCount": 5,
+   "bullish": 2,
+   "bearish": 2,
+   "neutral": 1,
+   "headlines": [
+    "5连板热门股，澄清传闻！人形机器人板块爆火，主力资金加仓多只概念股",
+    "逾30家A股公司，集体发布回购公告",
+    "极智嘉宣布获 LPP Logistics 复购：超1600台机器人波兰“上岗”",
+    "长华集团：澄清人形机器人业务收入仅8.8万元"
+   ]
+  },
+  {
+   "sector": "低空经济",
+   "score": 0.08,
+   "score100": 54,
+   "newsCount": 5,
+   "bullish": 2,
+   "bearish": 2,
+   "neutral": 1,
+   "headlines": [
+    "5连板热门股，澄清传闻！人形机器人板块爆火，主力资金加仓多只概念股",
+    "逾30家A股公司，集体发布回购公告",
+    "极智嘉宣布获 LPP Logistics 复购：超1600台机器人波兰“上岗”",
+    "长华集团：澄清人形机器人业务收入仅8.8万元"
+   ]
+  },
+  {
+   "sector": "农业",
+   "score": 0.08,
+   "score100": 54,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告",
+    "搭乘APEC东风 深化燕窝产业合作 小仙炖与印尼签署合作备忘共推品质燕窝输华",
+    "涪陵榨菜：拟约5亿元投建乌江涪陵榨菜绿色智能化生产基地（二期）项目"
+   ]
+  },
+  {
+   "sector": "半导体",
+   "score": 0.03,
+   "score100": 52,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 1,
+   "neutral": 1,
+   "headlines": [
+    "科技股遭遇大幅抛售后，Anthropic与英伟达盘前股价上涨",
+    "逾30家A股公司，集体发布回购公告",
+    "隆基绿能：控股股东及一致行动人累计减持隆22转债10.48%"
+   ]
+  },
+  {
+   "sector": "传媒",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "游戏",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "出版",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "教育",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "计算机",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "软件",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "信创",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "网络安全",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "通信",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "运营商",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "6G",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "物流",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "快递",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "港口",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "旅游",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "免税",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "零售",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "美容护理",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "迪士尼豪押流媒体，代价却不愿细说",
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "黄金",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 1,
+   "neutral": 1,
+   "headlines": [
+    "瑞银：黄金跌向3500美元主要受期货抛售推动，ETF持仓暂未明显流失",
+    "高盛：黄金上周暴跌8%源于流动性冲击，预计去杠杆结束后金价将反弹",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "建材",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 3,
+   "headlines": [
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告",
+    "广田集团：拟3000万元—6000万元回购公司股份"
+   ]
+  },
+  {
+   "sector": "智能驾驶",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "反复泊车刷数据？曝车主参加华为乾崑智驾大赛作弊，客服回应：会对数据进行审核",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "水泥",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "工程机械",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "家电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "纺织服装",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "种业",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "猪周期",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "信托公司年内密集“补血”超160亿，增资含金量差异大",
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "锂电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告",
+    "盐湖股份：拟以15亿元-20亿元回购公司股份"
+   ]
+  },
+  {
+   "sector": "储能",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告",
+    "盐湖股份：拟以15亿元-20亿元回购公司股份"
+   ]
+  },
+  {
+   "sector": "化工",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告",
+    "盐湖股份：拟以15亿元-20亿元回购公司股份"
+   ]
+  },
+  {
+   "sector": "医药",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "CXO",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "创新药",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "中药",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "医疗器械",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "芯片",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "CPO",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "光模块",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "PCB",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "数据中心",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "服务器",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "商业航天",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "卫星互联网",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "固态电池",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "风电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "氢能源",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "新能源汽车",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "汽车",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "军工",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "航发",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "船舶",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "化肥",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "农药",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "钢铁",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "煤炭",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "有色",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "铜",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "铝",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "稀土",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "石油",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "石化",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "燃气",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "电力",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "火电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "水电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "核电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
+   ]
+  },
+  {
+   "sector": "绿电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "逾30家A股公司，集体发布回购公告"
    ]
   }
  ],
  "events": [
   {
-   "headline": "迈克尔・伯里点名苹果、好市多、沃尔玛为崩盘初期避险标的",
+   "headline": "西南航空、塔吉特、美国电话电报公司CFO如何看待“人在回路”机制",
    "date": "2026-11-23",
    "sectors": [
-    "苹果产业链",
-    "消费电子"
+    "航空",
+    "航运"
    ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "苹果等公司被视作避险标的，提振相关板块信心"
-  },
-  {
-   "headline": "CBCX:白银日度上行仍需风控",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "白银价格上行，但需风控，影响有限"
-  },
-  {
-   "headline": "巴克莱：2027年法国10年期国债风险溢价可能升至225个基点",
-   "date": "2026-11-23",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.1,
-   "reason": "国债风险溢价上升，对A股影响尚不确定"
-  },
-  {
-   "headline": "美联储主席沃什与FOMC有了新顾虑，和“特朗普通胀”无关",
-   "date": "2026-11-23",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.1,
-   "reason": "美联储新顾虑，对A股影响尚不确定"
-  },
-  {
-   "headline": "CPT Markets:黄金回升不改审慎观察",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "黄金价格回升，但需审慎观察"
-  },
-  {
-   "headline": "从“万亿规模”到绿色金融，平安养老险入围两项21世纪金融竞争力年度案例",
-   "date": "2026-11-23",
-   "sectors": [
-    "保险"
-   ],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "平安养老险获奖，提振保险板块信心"
-  },
-  {
-   "headline": "EasyMarkets易信:白银反弹检验供需韧性",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "白银反弹，但需检验供需韧性"
-  },
-  {
-   "headline": "长城基金：弱势震荡，反弹需待三个条件",
-   "date": "2026-11-23",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.1,
-   "reason": "市场分析，对A股影响尚不确定"
-  },
-  {
-   "headline": "Anthropic如何赚钱？AI企业商业模式拆解",
-   "date": "2026-11-23",
-   "sectors": [
-    "AI",
-    "算力",
-    "软件"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "AI企业商业模式分析，利好AI相关板块"
-  },
-  {
-   "headline": "FPG财盛国际:金银相对表现回归基本面",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "金银表现回归基本面，影响有限"
-  },
-  {
-   "headline": "瑞银资本要求之争进入关键阶段 瑞士议会将权衡多项方案",
-   "date": "2026-11-23",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "瑞士议会方案对A股银行板块影响尚不确定"
-  },
-  {
-   "headline": "GTC泽汇资本:金价反弹仍需利率验证",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "金价反弹需利率验证，对A股黄金板块影响尚不确定"
-  },
-  {
-   "headline": "M4Markets:白银双重属性放大波动",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "白银波动对A股黄金板块影响尚不确定"
-  },
-  {
-   "headline": "超级牛散章建平再买进！和王孝安共同看好这一赛道！",
-   "date": "2026-11-23",
-   "sectors": [],
    "direction": "neutral",
    "intensity": 0.2,
-   "reason": "具体赛道未知，对A股无明确影响"
+   "reason": "新闻涉及美股公司，对A股板块影响有限"
   },
   {
-   "headline": "Mhmarkets迈汇:黄金相对强弱关注配置",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "黄金相对强弱对A股黄金板块影响尚不确定"
-  },
-  {
-   "headline": "测试内容大调整？懂车帝：信息多处失实，部分内容为AI撰写",
+   "headline": "迪士尼豪押流媒体，代价却不愿细说",
    "date": "2026-11-23",
    "sectors": [
     "传媒",
@@ -1309,13 +1182,248 @@
     "美容护理"
    ],
    "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "AI撰写内容对相关板块影响尚不确定"
+   "intensity": 0.2,
+   "reason": "新闻涉及流媒体业务，对相关板块影响有限"
   },
   {
-   "headline": "金鹰基金：海外AI监管语境边际缓和 科技恐慌情绪有所平复",
+   "headline": "不停牌！301321，筹划重大资产重组！",
+   "date": "2026-11-23",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "新闻涉及个股，对A股板块影响有限"
+  },
+  {
+   "headline": "瑞银：黄金跌向3500美元主要受期货抛售推动，ETF持仓暂未明显流失",
    "date": "2026-11-23",
    "sectors": [
+    "黄金"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "黄金价格下跌，对黄金板块利空"
+  },
+  {
+   "headline": "劳资协议化解洛杉矶‑长滩港口罢工威胁",
+   "date": "2026-11-23",
+   "sectors": [
+    "航运"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "罢工威胁解除，航运板块受益"
+  },
+  {
+   "headline": "反复泊车刷数据？曝车主参加华为乾崑智驾大赛作弊，客服回应：会对数据进行审核",
+   "date": "2026-11-23",
+   "sectors": [
+    "智能驾驶"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "新闻涉及智能驾驶领域，但影响有限"
+  },
+  {
+   "headline": "信托公司年内密集“补血”超160亿，增资含金量差异大",
+   "date": "2026-11-23",
+   "sectors": [
+    "券商",
+    "保险",
+    "银行",
+    "地产",
+    "基建",
+    "建材",
+    "水泥",
+    "工程机械",
+    "家电",
+    "纺织服装",
+    "农业",
+    "种业",
+    "猪周期",
+    "传媒",
+    "游戏",
+    "出版",
+    "教育",
+    "计算机",
+    "软件",
+    "信创",
+    "网络安全",
+    "通信",
+    "运营商",
+    "6G",
+    "物流",
+    "快递",
+    "港口",
+    "航空",
+    "航运",
+    "旅游",
+    "免税",
+    "零售",
+    "美容护理"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "信托公司增资，对相关板块影响有限"
+  },
+  {
+   "headline": "高盛：黄金上周暴跌8%源于流动性冲击，预计去杠杆结束后金价将反弹",
+   "date": "2026-11-23",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "预计金价将反弹，对黄金板块利好"
+  },
+  {
+   "headline": "中际旭创：拟20亿元至40亿元回购股份，回购价格不超过600元/股",
+   "date": "2026-11-23",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "新闻涉及个股回购，对A股板块影响有限"
+  },
+  {
+   "headline": "斩获5天3板！妖股九阳股份“虚火”！",
+   "date": "2026-11-23",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "新闻涉及个股，对A股板块影响有限"
+  },
+  {
+   "headline": "科技股遭遇大幅抛售后，Anthropic与英伟达盘前股价上涨",
+   "date": "2026-11-23",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "AI和半导体相关股票受利好消息提振"
+  },
+  {
+   "headline": "利好！000792，拟回购不超20亿元，全部注销！A股公司，最新公告",
+   "date": "2026-11-23",
+   "sectors": [
+    "券商",
+    "银行",
+    "地产",
+    "基建"
+   ],
+   "direction": "positive",
+   "intensity": 0.3,
+   "reason": "回购行为可能提振市场信心，利好相关板块"
+  },
+  {
+   "headline": "高盛：标普500指数已从高点下跌12%，市场反弹需要满足三大条件",
+   "date": "2026-11-23",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "市场分析，对A股板块影响不确定"
+  },
+  {
+   "headline": "最高4亿元！千亿巨头宏桥控股，抛出回购方案！前三季度净利润大涨近七成",
+   "date": "2026-11-23",
+   "sectors": [
+    "券商",
+    "银行",
+    "地产",
+    "基建"
+   ],
+   "direction": "positive",
+   "intensity": 0.3,
+   "reason": "回购行为可能提振市场信心，利好相关板块"
+  },
+  {
+   "headline": "5连板热门股，澄清传闻！人形机器人板块爆火，主力资金加仓多只概念股",
+   "date": "2026-11-23",
+   "sectors": [
+    "机器人",
+    "工业母机",
+    "低空经济"
+   ],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "机器人板块受资金关注，利好相关板块"
+  },
+  {
+   "headline": "中国人民银行行长潘功胜会见欧洲中央银行、欧盟委员会和欧元集团相关负责人",
+   "date": "2026-11-23",
+   "sectors": [
+    "券商",
+    "银行",
+    "地产",
+    "基建"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "国际金融合作可能带来政策利好"
+  },
+  {
+   "headline": "平安产险托克逊支公司被罚5.2万元：套取费用、代理人管理不到位",
+   "date": "2026-11-23",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "negative",
+   "intensity": 0.2,
+   "reason": "保险行业监管处罚，对板块影响有限"
+  },
+  {
+   "headline": "原吐鲁番市农村信用合作联社被罚180万元：信贷业务管理不到位",
+   "date": "2026-11-23",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.2,
+   "reason": "银行业监管处罚，对板块影响有限"
+  },
+  {
+   "headline": "原托克逊县农村信用合作联社被罚20万元：高管未经任职核准实际履职",
+   "date": "2026-11-23",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.2,
+   "reason": "银行业监管处罚，对板块影响有限"
+  },
+  {
+   "headline": "影石宣布云台相机涨价：将于12月15日调整Luna云台系列产品价格",
+   "date": "2026-11-23",
+   "sectors": [
+    "消费电子",
+    "苹果产业链",
+    "AI"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "相机涨价可能提升相关产业链公司业绩预期"
+  },
+  {
+   "headline": "逾30家A股公司，集体发布回购公告",
+   "date": "2026-11-23",
+   "sectors": [
+    "券商",
+    "保险",
+    "银行",
+    "地产",
+    "白酒",
+    "食品饮料",
+    "医药",
+    "CXO",
+    "创新药",
+    "中药",
+    "医疗器械",
+    "半导体",
+    "芯片",
+    "消费电子",
+    "苹果产业链",
     "AI",
     "算力",
     "CPO",
@@ -1388,530 +1496,12 @@
     "零售",
     "美容护理"
    ],
-   "direction": "positive",
-   "intensity": 0.7,
-   "reason": "AI监管语境缓和，利好相关板块"
-  },
-  {
-   "headline": "工资发不出、押金退不了……美国最大银行宕机的一天，用户们经历了什么？",
-   "date": "2026-11-23",
-   "sectors": [
-    "银行"
-   ],
    "direction": "neutral",
    "intensity": 0.3,
-   "reason": "美国银行宕机对A股银行板块影响尚不确定"
+   "reason": "回购公告对市场整体影响中性"
   },
   {
-   "headline": "Moneta Markets外汇:金银结构差异映照需求",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "金银结构差异对A股黄金板块影响尚不确定"
-  },
-  {
-   "headline": "NCE平台:黄金低位回升重看风险",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "金价下跌，对黄金板块利空"
-  },
-  {
-   "headline": "“三箭齐发”！A股稳市政策加力",
-   "date": "2026-11-23",
-   "sectors": [
-    "券商",
-    "保险",
-    "银行",
-    "地产",
-    "基建",
-    "建材",
-    "水泥",
-    "工程机械",
-    "家电",
-    "纺织服装",
-    "农业",
-    "种业",
-    "传媒",
-    "游戏",
-    "出版",
-    "教育",
-    "计算机",
-    "软件",
-    "信创",
-    "网络安全",
-    "通信",
-    "运营商",
-    "6G",
-    "物流",
-    "快递",
-    "港口",
-    "航空",
-    "航运",
-    "旅游",
-    "免税",
-    "零售",
-    "美容护理"
-   ],
-   "direction": "positive",
-   "intensity": 0.8,
-   "reason": "稳市政策加力，利好多个板块"
-  },
-  {
-   "headline": "报告发现AI正冲击初级岗位就业",
-   "date": "2026-11-23",
-   "sectors": [
-    "AI",
-    "算力",
-    "机器人",
-    "工业母机",
-    "低空经济",
-    "商业航天",
-    "卫星互联网",
-    "固态电池",
-    "锂电",
-    "储能",
-    "光伏",
-    "风电",
-    "氢能源",
-    "新能源汽车",
-    "汽车",
-    "智能驾驶",
-    "军工",
-    "航发",
-    "船舶",
-    "化工",
-    "化肥",
-    "农药",
-    "钢铁",
-    "煤炭",
-    "有色",
-    "铜",
-    "铝",
-    "黄金",
-    "稀土",
-    "石油",
-    "石化",
-    "燃气",
-    "电力",
-    "火电",
-    "水电",
-    "核电",
-    "绿电",
-    "基建",
-    "建材",
-    "水泥",
-    "工程机械",
-    "家电",
-    "纺织服装",
-    "农业",
-    "种业",
-    "猪周期",
-    "传媒",
-    "游戏",
-    "出版",
-    "教育",
-    "计算机",
-    "软件",
-    "信创",
-    "网络安全",
-    "通信",
-    "运营商",
-    "6G",
-    "物流",
-    "快递",
-    "港口",
-    "航空",
-    "航运",
-    "旅游",
-    "免税",
-    "零售",
-    "美容护理"
-   ],
-   "direction": "neutral",
-   "intensity": 0.5,
-   "reason": "AI对就业影响尚不确定"
-  },
-  {
-   "headline": "“反馈问题就被禁言？” 咪咕游戏突然变更权益惹怒玩家：畅玩时长直接缩水九成，官方回应称恢复权益",
-   "date": "2026-11-23",
-   "sectors": [
-    "传媒",
-    "游戏"
-   ],
-   "direction": "negative",
-   "intensity": 0.3,
-   "reason": "游戏公司负面事件，对游戏板块利空"
-  },
-  {
-   "headline": "Vatee万腾:利率预期仍牵动黄金定价",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "利率预期影响金价，对黄金板块利空"
-  },
-  {
-   "headline": "一万元买车送外卖？张雪给外卖员做万元电摩托劝退小哥，直呼“回本困难”，路权成最大门槛",
-   "date": "2026-11-23",
-   "sectors": [
-    "新能源汽车",
-    "汽车",
-    "智能驾驶"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "新能源汽车市场动态，影响尚不确定"
-  },
-  {
-   "headline": "ZFX山海证券:日度银价修复仍看确认",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "银价修复，对黄金板块利空"
-  },
-  {
-   "headline": "AXPM:黄金低位修复关注资金节奏",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "黄金低位修复，对黄金板块利空"
-  },
-  {
-   "headline": "金信基金评市场：低开高走深V修复，政策组合拳提振成长主线",
-   "date": "2026-11-23",
-   "sectors": [
-    "券商",
-    "保险",
-    "银行",
-    "地产",
-    "基建",
-    "建材",
-    "水泥",
-    "工程机械",
-    "家电",
-    "纺织服装",
-    "农业",
-    "种业",
-    "传媒",
-    "游戏",
-    "出版",
-    "教育",
-    "计算机",
-    "软件",
-    "信创",
-    "网络安全",
-    "通信",
-    "运营商",
-    "6G",
-    "物流",
-    "快递",
-    "港口",
-    "航空",
-    "航运",
-    "旅游",
-    "免税",
-    "零售",
-    "美容护理"
-   ],
-   "direction": "positive",
-   "intensity": 0.8,
-   "reason": "市场低开高走，政策提振成长主线，利好多个板块"
-  },
-  {
-   "headline": "華夏基金(香港)推出全球唯一一隻追蹤離岸人民幣債券ETF助力香港離岸人民幣市場建設",
-   "date": "2026-11-23",
-   "sectors": [
-    "券商",
-    "保险",
-    "银行",
-    "地产",
-    "基建",
-    "建材",
-    "水泥",
-    "工程机械",
-    "家电",
-    "纺织服装",
-    "农业",
-    "种业",
-    "传媒",
-    "游戏",
-    "出版",
-    "教育",
-    "计算机",
-    "软件",
-    "信创",
-    "网络安全",
-    "通信",
-    "运营商",
-    "6G",
-    "物流",
-    "快递",
-    "港口",
-    "航空",
-    "航运",
-    "旅游",
-    "免税",
-    "零售",
-    "美容护理"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "推出ETF助力离岸人民币市场建设，利好相关板块"
-  },
-  {
-   "headline": "白银大跌后休整 沪锌跌跌不休",
-   "date": "2026-11-23",
-   "sectors": [
-    "有色",
-    "铜",
-    "铝"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "金属价格下跌，影响相关行业盈利预期"
-  },
-  {
-   "headline": "公募11月“火力”集中！434只个股获调研，电子、机械、医药占比过半，傅鹏博等知名基金经理调研图谱出炉→",
-   "date": "2026-11-23",
-   "sectors": [
-    "医药"
-   ],
-   "direction": "positive",
-   "intensity": 0.7,
-   "reason": "知名基金经理调研，显示行业关注度提升"
-  },
-  {
-   "headline": "锡耶纳牧山银行董事会对意大利联合圣保罗银行370亿美元收购要约释放矛盾信号",
-   "date": "2026-11-23",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "银行收购事件，影响有限"
-  },
-  {
-   "headline": "32.77亿元工程转固落地 2026年斯达半导制造规模效应进入验证期",
-   "date": "2026-11-23",
-   "sectors": [
-    "半导体",
-    "芯片"
-   ],
-   "direction": "positive",
-   "intensity": 0.6,
-   "reason": "半导体行业规模效应验证，利好行业"
-  },
-  {
-   "headline": "华夏基金（香港）推出全球唯一一只追踪离岸人民币债券ETF助力香港离岸人民币市场建设",
-   "date": "2026-11-23",
-   "sectors": [],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "推动离岸人民币市场建设，利好相关金融产品"
-  },
-  {
-   "headline": "康菲石油以39亿美元将挪威业务出售给Var Energi",
-   "date": "2026-11-23",
-   "sectors": [
-    "石油",
-    "石化"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "石油行业并购活动，利好相关板块"
-  },
-  {
-   "headline": "迪拜据悉考虑合并Dubai Islamic Bank和Emirates Islamic Bank",
-   "date": "2026-11-23",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "银行合并事件，影响有限"
-  },
-  {
-   "headline": "宝盛银行利润走高，资金流入推升管理资产规模",
-   "date": "2026-11-23",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "银行盈利能力提升，利好板块"
-  },
-  {
-   "headline": "荣耀：700系列开售30分钟销量同比增长超300%",
-   "date": "2026-11-23",
-   "sectors": [
-    "消费电子",
-    "苹果产业链",
-    "智能驾驶"
-   ],
-   "direction": "positive",
-   "intensity": 0.6,
-   "reason": "销量增长，显示市场需求旺盛"
-  },
-  {
-   "headline": "华夏基金(香港)推出全球唯一一只追踪离岸人民币债券ETF 助力香港离岸人民币市场建设",
-   "date": "2026-11-23",
-   "sectors": [],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "推动离岸人民币市场建设，利好相关金融产品"
-  },
-  {
-   "headline": "农业银行发布贵金属市场风险防范提示",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "风险提示对黄金板块影响有限"
-  },
-  {
-   "headline": "摩根资产管理称AI举债潮限制债市上涨空间",
-   "date": "2026-11-23",
-   "sectors": [
-    "AI",
-    "算力",
-    "半导体",
-    "消费电子"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "AI举债潮限制债市上涨，对相关板块构成压力"
-  },
-  {
-   "headline": "油价小幅走低，交易员权衡供应过剩与海湾袭击风险",
-   "date": "2026-11-23",
-   "sectors": [
-    "航运",
-    "航空"
-   ],
-   "direction": "negative",
-   "intensity": 0.4,
-   "reason": "油价走低对石油石化板块利空，航空板块受影响"
-  },
-  {
-   "headline": "洪灝最新展望：价值股还能走一两个月，逆向这几个市场共识",
-   "date": "2026-11-23",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "市场展望对具体板块影响不确定"
-  },
-  {
-   "headline": "欧洲TTF天然气因降温、储气偏低而上涨",
-   "date": "2026-11-23",
-   "sectors": [
-    "燃气"
-   ],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "天然气价格上涨对燃气板块利好"
-  },
-  {
-   "headline": "李健回应华为推出子品牌：对荣耀不用有任何担心，荣耀已经走出了自己的道路",
-   "date": "2026-11-23",
-   "sectors": [
-    "苹果产业链",
-    "消费电子"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "华为子品牌对相关板块影响有限"
-  },
-  {
-   "headline": "建设银行牵头承销新开发银行熊猫债",
-   "date": "2026-11-23",
-   "sectors": [
-    "券商"
-   ],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "承销业务对券商板块构成利好"
-  },
-  {
-   "headline": "王锦轩:国际黄金价格下跌解读及后市行情走势分析",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "黄金价格下跌对黄金板块构成利空"
-  },
-  {
-   "headline": "李健：明年3月推出阔折叠，折叠屏技术做的最好的是荣耀",
-   "date": "2026-11-23",
-   "sectors": [
-    "消费电子"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "折叠屏技术发展对消费电子板块影响有限"
-  },
-  {
-   "headline": "ABB将以22.2亿美元收购德国Ziehl‑Abegg",
-   "date": "2026-11-23",
-   "sectors": [
-    "机器人",
-    "工业母机"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "机器人行业收购活动对相关板块构成利好"
-  },
-  {
-   "headline": "龚关铭:黄金前半周反弹修正 后半周维持看跌思路不变！",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "黄金价格看跌，影响黄金板块"
-  },
-  {
-   "headline": "达美航空修复自动化系统故障，该故障曾造成逾千架次航班延误",
-   "date": "2026-11-23",
-   "sectors": [
-    "航空",
-    "航运"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "航空业故障修复，对航空和航运板块影响有限"
-  },
-  {
-   "headline": "张晶霖:伦敦金短线并未转强 黄金走势分析操作建议",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "黄金短线未转强，影响黄金板块"
-  },
-  {
-   "headline": "人社部：基本养老保险基金可以委托国务院授权的机构实行市场化投资运营",
+   "headline": "央行行长潘功胜会见欧洲中央银行、欧盟委员会和欧元集团相关负责人",
    "date": "2026-11-23",
    "sectors": [
     "券商",
@@ -1922,73 +1512,200 @@
    ],
    "direction": "positive",
    "intensity": 0.7,
-   "reason": "养老金市场化投资，利好相关板块"
+   "reason": "央行与国际机构交流可能促进政策合作，利好相关板块"
   },
   {
-   "headline": "陶冬：美国AI牛市丧钟响起？",
+   "headline": "极智嘉宣布获 LPP Logistics 复购：超1600台机器人波兰“上岗”",
    "date": "2026-11-23",
    "sectors": [
-    "AI",
-    "算力",
-    "半导体",
-    "消费电子",
-    "苹果产业链"
+    "机器人",
+    "工业母机",
+    "低空经济"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "机器人订单增加，利好相关产业链"
+  },
+  {
+   "headline": "粤桂股份：关于公司副总经理辞职的公告",
+   "date": "2026-11-23",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "公司高管变动，对市场影响有限"
+  },
+  {
+   "headline": "长华集团：澄清人形机器人业务收入仅8.8万元",
+   "date": "2026-11-23",
+   "sectors": [
+    "机器人",
+    "工业母机",
+    "低空经济"
+   ],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "业务收入低可能影响市场对该板块的预期"
+  },
+  {
+   "headline": "长华集团：控股股东一致行动人合计减持0.5%股份",
+   "date": "2026-11-23",
+   "sectors": [
+    "机器人",
+    "工业母机",
+    "低空经济"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "减持可能引发市场对该板块的担忧"
+  },
+  {
+   "headline": "宇树科技王兴兴已任杭州市新生代企业家联谊会会长",
+   "date": "2026-11-23",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "企业家个人变动，对市场影响有限"
+  },
+  {
+   "headline": "荣盛发展：核心骨干人员拟增持公司股份，金额不低于925万元且不超过1850万元",
+   "date": "2026-11-23",
+   "sectors": [
+    "地产"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "增持股份可能提升市场对公司业绩的信心"
+  },
+  {
+   "headline": "WTI原油期货失守82美元/桶",
+   "date": "2026-11-23",
+   "sectors": [
+    "航运",
+    "航空"
    ],
    "direction": "negative",
    "intensity": 0.7,
-   "reason": "美国AI牛市预期下降，影响相关板块"
+   "reason": "油价下跌对石油石化、航运、航空板块构成利空"
   },
   {
-   "headline": "金玉堂:黄金新的一周有好的迹象 但能否反弹还是个谜！",
+   "headline": "受负反馈冲击，理财规模单周缩水5067亿元，多家机构发信安抚",
    "date": "2026-11-23",
    "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.5,
-   "reason": "黄金未来走势不确定，影响黄金板块"
-  },
-  {
-   "headline": "张津镭:加息压住反弹 黄金关注上方阻力",
-   "date": "2026-11-23",
-   "sectors": [
-    "黄金"
+    "券商",
+    "银行",
+    "保险"
    ],
    "direction": "negative",
    "intensity": 0.5,
-   "reason": "加息影响黄金反弹，影响黄金板块"
+   "reason": "理财规模缩水，金融机构压力增加"
   },
   {
-   "headline": "媒体：黄仁勋夫妇已积累巨额财富",
+   "headline": "老牌白酒经销商，拟砸8.48亿跨界算力",
    "date": "2026-11-23",
    "sectors": [
+    "白酒",
     "AI",
-    "算力",
-    "半导体",
-    "消费电子",
-    "苹果产业链"
+    "算力"
    ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "个人财富积累，对相关板块影响有限"
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "白酒企业跨界投资算力，利好相关板块"
   },
   {
-   "headline": "士兰微16亿元募资转向股权收购 晶圆制造投资重心改变",
+   "headline": "盐湖股份：拟以15亿元-20亿元回购公司股份",
    "date": "2026-11-23",
    "sectors": [
-    "半导体",
-    "芯片",
-    "消费电子",
-    "苹果产业链"
+    "化工",
+    "锂电",
+    "储能"
    ],
    "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "公司回购股份，对板块影响有限"
+  },
+  {
+   "headline": "中国期货监控：保险机构在期货市场资金规模年内增幅超过100%",
+   "date": "2026-11-23",
+   "sectors": [
+    "保险",
+    "券商"
+   ],
+   "direction": "positive",
    "intensity": 0.4,
-   "reason": "晶圆制造投资重心改变，影响相关板块"
+   "reason": "保险机构资金规模增加，利好相关板块"
+  },
+  {
+   "headline": "搭乘APEC东风 深化燕窝产业合作 小仙炖与印尼签署合作备忘共推品质燕窝输华",
+   "date": "2026-11-23",
+   "sectors": [
+    "食品饮料",
+    "农业"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "燕窝产业合作，对相关板块影响有限"
+  },
+  {
+   "headline": "稳市措施“对症下药”，科创资产引领A股探底回升",
+   "date": "2026-11-23",
+   "sectors": [
+    "券商",
+    "保险",
+    "银行"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "稳市措施利好，金融机构受益"
+  },
+  {
+   "headline": "WTI原油期货失守82美元/桶",
+   "date": "2026-11-23",
+   "sectors": [
+    "航运",
+    "航空"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "原油价格下跌，相关板块承压"
+  },
+  {
+   "headline": "涪陵榨菜：拟约5亿元投建乌江涪陵榨菜绿色智能化生产基地（二期）项目",
+   "date": "2026-11-23",
+   "sectors": [
+    "食品饮料",
+    "农业",
+    "基建"
+   ],
+   "direction": "positive",
+   "intensity": 0.3,
+   "reason": "投资建设新项目，利好相关板块"
+  },
+  {
+   "headline": "广田集团：拟3000万元—6000万元回购公司股份",
+   "date": "2026-11-23",
+   "sectors": [
+    "建材",
+    "地产"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "公司回购股份，对板块影响有限"
+  },
+  {
+   "headline": "隆基绿能：控股股东及一致行动人累计减持隆22转债10.48%",
+   "date": "2026-11-23",
+   "sectors": [
+    "光伏",
+    "半导体"
+   ],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "控股股东减持，对板块信心产生负面影响"
   }
  ],
  "scanned": 60,
  "source": "sina-roll",
  "degraded": false,
- "blackTalk": "今天地产、CPO、光模块都嗨了，别光顾着兴奋，高潮次日易分歧，小心点，仓位悠着点~😉",
+ "blackTalk": "今儿多头挺活跃，AI和消费电子嗨了，但别上头，题材高潮次日易分歧，控制仓位啊，老铁们！😉",
  "note": "板块情绪因子：新闻→GLM 映射板块/方向/强度→聚合。消费端按 signals.sectorSentiment 注入；score∈[-1,1]，score100∈[0,100]，仅作参考，不独立生成买卖信号。"
 }

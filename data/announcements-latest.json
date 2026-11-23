@@ -1,19 +1,26 @@
 {
  "date": "2026-11-23",
  "source": "sina-bulletin",
- "fetchedAt": "2026-11-23T18:46:27.275+08:00",
+ "fetchedAt": "2026-11-23T21:16:56.605+08:00",
  "codes": 40,
- "count": 9,
+ "count": 16,
  "announcements": {
   "301052": "果麦文化：关于公司股票交易异常波动的公告",
+  "301252": "同星科技：浙江天册律师事务所关于浙江同星科技股份有限公司2024年限制性股票激励计划授予价格调整、部分已授予但尚未归属的限制性股票作废及首次授予部分第二个归属期及预留授予部分第一个归属期归属条件成就事；同星科技：董事会薪酬与考核委员会关于2024年限制性股票激励计划首次授予部分第二个归属期及预留授予部分第一个归属期归属激励对象的核查意见；同星科技：董事会薪酬与考核委员会关于调整2024年限制性股票激励计划授予价格的核查意见；同星科技：关于第三届董事会第二十八次会议决议的公告；同星科技：关于2024年限制性股票激励计划部分已授予但尚未归属的限制性股票作废的公告；同星科技：关于调整2024年限制性股票激励计划授予价格的公告；同星科技：关于2024年限制性股票激励计划首次授予部分第二个归属期及预留授予部分第一个归属期归属条件成就的公告",
+  "301313": "凡拓数创：关于公司股票交易异常波动的公告",
   "600327": "大东方：股票交易异常波动公告",
   "600467": "好当家：关于股票交易异常波动的公告",
   "603004": "鼎龙科技：股票交易异常波动公告",
   "603324": "盛剑科技：关于股票交易风险提示公告；盛剑科技：关于上海盛剑科技股份有限公司有关股价波动事项的监管工作函",
   "603960": "克来机电：股票交易异常波动公告",
+  "605018": "长华集团：关于持股5%以上股东权益变动触及1%刻度的提示性公告；长华集团：股票交易异常波动公告",
   "605577": "龙版传媒：关于股票交易异常波动公告",
+  "000593": "德龙汇能：北京金杜(成都)律师事务所关于德龙汇能2026年第三次临时股东会的法律意见书；德龙汇能：章程(2026年11月)；德龙汇能：董事会议事规则(2026年11月)；德龙汇能：关于董事会完成换届、选举董事长及专门委员会委员、聘任高级管理人员及证券事务代表的公告；德龙汇能：董事、高级管理人员薪酬及绩效考核管理制度(2026年11月)；德龙汇能：第十四届董事会第一次会议决议公告；德龙汇能：股票交易异常波动公告；德龙汇能：关于子公司诉讼的进展公告；德龙汇能：2026年第三次临时股东会决议公告",
+  "002642": "荣联科技：股票交易异常波动公告",
+  "002086": "东方海洋：股票交易异常波动暨风险提示公告",
   "002199": "东晶电子：股票交易异常波动公告",
-  "000530": "冰山冷热：股票交易异常波动暨风险提示公告"
+  "000530": "冰山冷热：股票交易异常波动暨风险提示公告",
+  "002548": "金新农：关于选举职工代表董事的公告；金新农：股票交易异常波动暨风险提示公告"
  },
  "details": [
   {
@@ -24,6 +31,58 @@
      "title": "果麦文化：关于公司股票交易异常波动的公告",
      "date": "2026-11-23",
      "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=301052&id=12718690"
+    }
+   ]
+  },
+  {
+   "code": "301252",
+   "name": "同星科技",
+   "announcements": [
+    {
+     "title": "同星科技：浙江天册律师事务所关于浙江同星科技股份有限公司2024年限制性股票激励计划授予价格调整、部分已授予但尚未归属的限制性股票作废及首次授予部分第二个归属期及预留授予部分第一个归属期归属条件成就事",
+     "date": "2026-11-23",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=301252&id=12719851"
+    },
+    {
+     "title": "同星科技：董事会薪酬与考核委员会关于2024年限制性股票激励计划首次授予部分第二个归属期及预留授予部分第一个归属期归属激励对象的核查意见",
+     "date": "2026-11-23",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=301252&id=12719850"
+    },
+    {
+     "title": "同星科技：董事会薪酬与考核委员会关于调整2024年限制性股票激励计划授予价格的核查意见",
+     "date": "2026-11-23",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=301252&id=12719849"
+    },
+    {
+     "title": "同星科技：关于第三届董事会第二十八次会议决议的公告",
+     "date": "2026-11-23",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=301252&id=12719848"
+    },
+    {
+     "title": "同星科技：关于2024年限制性股票激励计划部分已授予但尚未归属的限制性股票作废的公告",
+     "date": "2026-11-23",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=301252&id=12719830"
+    },
+    {
+     "title": "同星科技：关于调整2024年限制性股票激励计划授予价格的公告",
+     "date": "2026-11-23",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=301252&id=12719829"
+    },
+    {
+     "title": "同星科技：关于2024年限制性股票激励计划首次授予部分第二个归属期及预留授予部分第一个归属期归属条件成就的公告",
+     "date": "2026-11-23",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=301252&id=12719828"
+    }
+   ]
+  },
+  {
+   "code": "301313",
+   "name": "凡拓数创",
+   "announcements": [
+    {
+     "title": "凡拓数创：关于公司股票交易异常波动的公告",
+     "date": "2026-11-23",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=301313&id=12720261"
     }
    ]
   },
@@ -88,6 +147,22 @@
    ]
   },
   {
+   "code": "605018",
+   "name": "长华集团",
+   "announcements": [
+    {
+     "title": "长华集团：关于持股5%以上股东权益变动触及1%刻度的提示性公告",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605018&id=12720269"
+    },
+    {
+     "title": "长华集团：股票交易异常波动公告",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605018&id=12720268"
+    }
+   ]
+  },
+  {
    "code": "605577",
    "name": "龙版传媒",
    "announcements": [
@@ -95,6 +170,79 @@
      "title": "龙版传媒：关于股票交易异常波动公告",
      "date": "2026-11-24",
      "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605577&id=12719228"
+    }
+   ]
+  },
+  {
+   "code": "000593",
+   "name": "德龙汇能",
+   "announcements": [
+    {
+     "title": "德龙汇能：北京金杜(成都)律师事务所关于德龙汇能2026年第三次临时股东会的法律意见书",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000593&id=12720312"
+    },
+    {
+     "title": "德龙汇能：章程(2026年11月)",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000593&id=12720311"
+    },
+    {
+     "title": "德龙汇能：董事会议事规则(2026年11月)",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000593&id=12720310"
+    },
+    {
+     "title": "德龙汇能：关于董事会完成换届、选举董事长及专门委员会委员、聘任高级管理人员及证券事务代表的公告",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000593&id=12720309"
+    },
+    {
+     "title": "德龙汇能：董事、高级管理人员薪酬及绩效考核管理制度(2026年11月)",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000593&id=12720308"
+    },
+    {
+     "title": "德龙汇能：第十四届董事会第一次会议决议公告",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000593&id=12720307"
+    },
+    {
+     "title": "德龙汇能：股票交易异常波动公告",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000593&id=12720306"
+    },
+    {
+     "title": "德龙汇能：关于子公司诉讼的进展公告",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000593&id=12720305"
+    },
+    {
+     "title": "德龙汇能：2026年第三次临时股东会决议公告",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000593&id=12720304"
+    }
+   ]
+  },
+  {
+   "code": "002642",
+   "name": "荣联科技",
+   "announcements": [
+    {
+     "title": "荣联科技：股票交易异常波动公告",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002642&id=12720214"
+    }
+   ]
+  },
+  {
+   "code": "002086",
+   "name": "东方海洋",
+   "announcements": [
+    {
+     "title": "东方海洋：股票交易异常波动暨风险提示公告",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002086&id=12719861"
     }
    ]
   },
@@ -117,6 +265,22 @@
      "title": "冰山冷热：股票交易异常波动暨风险提示公告",
      "date": "2026-11-24",
      "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000530&id=12719739"
+    }
+   ]
+  },
+  {
+   "code": "002548",
+   "name": "金新农",
+   "announcements": [
+    {
+     "title": "金新农：关于选举职工代表董事的公告",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002548&id=12720302"
+    },
+    {
+     "title": "金新农：股票交易异常波动暨风险提示公告",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002548&id=12720301"
     }
    ]
   }

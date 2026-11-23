@@ -3,8 +3,8 @@
     "created": "2026-11-07T13:53:17.263Z",
     "note": "妖股纯情绪标记历史（每日 EOD 留存，同日覆盖幂等）；验证脚本 scripts/dragon_purity_validation.mjs（T+1 续板率对照）",
     "source": "llm-dragon-logic-latest.json::dragons（连续连板口径 zt_lb）",
-    "updated": "2026-11-20T13:13:08.660Z",
-    "days": 11
+    "updated": "2026-11-23T10:49:42.827Z",
+    "days": 12
   },
   "days": [
     {
@@ -2774,6 +2774,292 @@
         }
       ],
       "savedAt": "2026-11-20T13:13:08.647Z"
+    },
+    {
+      "date": "20261123",
+      "marks": [
+        {
+          "code": "603324",
+          "name": "盛剑科技",
+          "lb": 5,
+          "is_pure": true,
+          "reason": "高位爆量分歧，情绪退潮"
+        },
+        {
+          "code": "002771",
+          "name": "真视通",
+          "lb": 5,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪加速"
+        },
+        {
+          "code": "002579",
+          "name": "中京电子",
+          "lb": 3,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪加速"
+        },
+        {
+          "code": "301313",
+          "name": "凡拓数创",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板多，情绪退潮"
+        },
+        {
+          "code": "600327",
+          "name": "大东方",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板多，情绪退潮"
+        },
+        {
+          "code": "600467",
+          "name": "好当家",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板多，情绪退潮"
+        },
+        {
+          "code": "603004",
+          "name": "鼎龙科技",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪加速"
+        },
+        {
+          "code": "603960",
+          "name": "克莱机电",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪加速"
+        },
+        {
+          "code": "605018",
+          "name": "长华集团",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "缩量硬板，情绪加速"
+        },
+        {
+          "code": "605577",
+          "name": "龙版传媒",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "炸板少，情绪稳定"
+        },
+        {
+          "code": "000593",
+          "name": "德龙汇能",
+          "lb": 2,
+          "is_pure": false,
+          "reason": "缩量硬板，情绪稳定"
+        },
+        {
+          "code": "002642",
+          "name": "荣联科技",
+          "lb": 2,
+          "is_pure": false,
+          "reason": "缩量硬板，情绪稳定"
+        },
+        {
+          "code": "002086",
+          "name": "东方海洋",
+          "lb": 2,
+          "is_pure": false,
+          "reason": "缩量硬板，情绪稳定"
+        },
+        {
+          "code": "002199",
+          "name": "东晶电子",
+          "lb": 2,
+          "is_pure": false,
+          "reason": "缩量硬板，情绪稳定"
+        },
+        {
+          "code": "000530",
+          "name": "冰山冷热",
+          "lb": 2,
+          "is_pure": false,
+          "reason": "炸板2次，筹码松动"
+        },
+        {
+          "code": "002548",
+          "name": "金新农",
+          "lb": 2,
+          "is_pure": false,
+          "reason": "缩量硬板，情绪稳定"
+        },
+        {
+          "code": "300006",
+          "name": "莱美药业",
+          "lb": 1,
+          "is_pure": false,
+          "reason": "一板无信息，需观察"
+        },
+        {
+          "code": "300007",
+          "name": "汉威科技",
+          "lb": 1,
+          "is_pure": false,
+          "reason": "一板无信息，需观察"
+        },
+        {
+          "code": "300243",
+          "name": "瑞丰高材",
+          "lb": 1,
+          "is_pure": false,
+          "reason": "一板无信息，需观察"
+        },
+        {
+          "code": "300508",
+          "name": "维宏股份",
+          "lb": 1,
+          "is_pure": false,
+          "reason": "一板无信息，需观察"
+        },
+        {
+          "code": "300703",
+          "name": "创源股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "300721",
+          "name": "怡达股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "300829",
+          "name": "金丹科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "301000",
+          "name": "肇民科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "301010",
+          "name": "晶雪节能",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "301052",
+          "name": "果麦文化",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "301218",
+          "name": "华是科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "301252",
+          "name": "同星科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "301261",
+          "name": "恒工精密",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "301265",
+          "name": "华新科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+        },
+        {
+          "code": "301318",
+          "name": "301318",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新连板，无题材，纯情绪炒作"
+        },
+        {
+          "code": "301413",
+          "name": "安培龙",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新连板，无题材，纯情绪炒作"
+        },
+        {
+          "code": "301502",
+          "name": "华阳智能",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新连板，无题材，纯情绪炒作"
+        },
+        {
+          "code": "301529",
+          "name": "福赛科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新连板，无题材，纯情绪炒作"
+        },
+        {
+          "code": "301575",
+          "name": "艾芬达",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新连板，无题材，纯情绪炒作"
+        },
+        {
+          "code": "600103",
+          "name": "青山纸业",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新连板，无题材，纯情绪炒作"
+        },
+        {
+          "code": "600156",
+          "name": "华升股份",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新连板，无题材，纯情绪炒作"
+        },
+        {
+          "code": "600814",
+          "name": "杭州解百",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新连板，无题材，纯情绪炒作"
+        },
+        {
+          "code": "600838",
+          "name": "上海九百",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新连板，无题材，纯情绪炒作"
+        },
+        {
+          "code": "600980",
+          "name": "北矿科技",
+          "lb": 1,
+          "is_pure": true,
+          "reason": "新连板，无题材，纯情绪炒作"
+        }
+      ],
+      "savedAt": "2026-11-23T10:49:42.813Z"
     }
   ]
 }
