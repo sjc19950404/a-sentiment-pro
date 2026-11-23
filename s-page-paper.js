@@ -76,6 +76,9 @@
       + `<div class="s-kpi"><span class="s-kpi__label">最近净值</span><span class="s-kpi__value" id="sPpEquity" style="font-size:var(--s-font-lg)">—</span><span class="s-kpi__delta" id="sPpEquityDate">—</span></div>`
       + `<div class="s-kpi"><span class="s-kpi__label">运行天数</span><span class="s-kpi__value" id="sPpDays">—</span><span class="s-kpi__delta" id="sPpSettle">—</span></div>`
       + `</div></div>`
+      /* 【2026-11-23 预算占用行（拍板③）】直接占位元素：renderAccount 从风险预算台账
+       * （与决策闸同口径镜像）填占用/剩余/槽位；台账未就绪 fail-open 只写提示。 */
+      + `<div class="s-kpi__note" style="margin:0 0 var(--s-space-2);padding:0 4px" id="sPpBudget">风险预算：台账加载中…</div>`
       /* ---- 生产延伸：委托记录（真实 orders） ---- */
       + `<div class="s-section"><h2 class="s-section__title">委托记录</h2>`
       + `<div class="s-card__tools"><span class="s-badge s-badge--muted" id="sPpOrderCount">加载中…</span>`
@@ -177,6 +180,28 @@
       set('sPpDays', String(nav.length));
     }
     set('sPpSettle', ACCOUNT.lastSettle ? '结算至 ' + ACCOUNT.lastSettle : '—');
+    /* 【2026-11-23 预算占用行（拍板③）】账户卡直接展示预算占用（抽屉里的预算卡保留）。
+     * 数据=风险预算台账最新日（risk_budget_preview.json，2026-11-23 接线后与决策链
+     * riskGuard 同口径镜像：同 allocateBudget + config.paper.budgetSlots）。占用/剩余
+     * 是 pct 口径（占净值），零信号日如实显示"无信号分配"，不伪造占用数；equity=0
+     * 显式标异常（接线前对账发现的取数 bug 已修，此处兜底提示）。 */
+    const bg = window.__sPpBudget;
+    const bEl = $('#sPpBudget', currentPanel);
+    if (bEl) {
+      if (!bg || !bg.slots) {
+        bEl.textContent = '风险预算：台账未就绪（fail-open，不拦截展示）';
+      } else {
+        const sigIn = Number.isFinite(+bg.signalsIn) ? +bg.signalsIn : 0;
+        const pct = (x) => Number.isFinite(+x) ? ((+x) * 100).toFixed(1) + '%' : '—';
+        const slotTxt = bg.slots.map((s2) => `${s2.id}（pct ${Math.round((s2.pct || 0) * 100)}%）`).join('、');
+        const eq0 = Number(bg.equity) === 0;
+        bEl.textContent = `风险预算（${bg.date || '—'}·与决策闸同口径）：${
+          sigIn > 0
+            ? `信号 ${sigIn} 条｜已用 ${pct(bg.usedPct)}｜剩余 ${pct(bg.remainingPct)}`
+            : '当日无信号分配（冰点期，预算闸未触发）'
+        }｜槽位: ${slotTxt}｜净值 ${bg.equity != null ? Number(bg.equity).toLocaleString() : '—'}${eq0 ? ' ⚠equity=0异常' : ''}`;
+      }
+    }
     /* 委托表：真实 orders */
     const orders = Array.isArray(ACCOUNT.orders) ? ACCOUNT.orders : [];
     const oc = $('#sPpOrderCount', currentPanel);

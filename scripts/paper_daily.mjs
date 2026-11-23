@@ -273,7 +273,10 @@ if (!tier) {
     //   缺失/不匹配 → fail-open 退化为 1.0（不额外限仓），不阻塞建仓。
     // 冰点试错仓：强制把总仓帽压到 iceTrialPos（极小仓位），与「绝不超 10%」一致；其余档用 regime 帽。
     const regimeCap = iceTrialMode ? (+config.params.live.stops.iceTrialPos || 0.10) : ((regimeKey && bandFor(regimeKey)?.cap != null) ? bandFor(regimeKey).cap : 1);
-    const res = batchSubmit(acct, safeItems, day, { date, exec, regimeCap });
+    // 2026-11-23 预算接线（拍板 A）：系统信号链传 config.paper.budgetSlots——buy 先过
+    // allocateBudget 分发（riskGuard ①p 执行）。手动台（paper_ui）不传 → 手动单不受
+    // 子策略预算约束（预算=子策略分发语义；手动属自由裁量，仍受全局风控闸）。
+    const res = batchSubmit(acct, safeItems, day, { date, exec, regimeCap, budgetSlots: config.paper && config.paper.budgetSlots });
     acct = res.next;
     if (bypassed) {
       for (const s of res.submitted) { const pos = acct.positions && acct.positions[String(s.code)]; if (pos) pos.stress = true; }

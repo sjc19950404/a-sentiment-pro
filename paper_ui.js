@@ -507,11 +507,20 @@ function loadUniverseStaged() {
 // localStorage 手动账本完全独立。纪律：只展示落盘原值 + 最小算术（市值/当日盈亏），
 // 与手动区同款口径；引擎零持仓时如实显示"空仓等待"。加载失败 fail-open。
 let SYS = null;
+let BUDGET_LEDGER = null;   // data/risk_budget_preview.json 最新日（2026-11-23 接线后=预算台账）
 async function loadSysAccount() {
   try {
     const r = await dget('./data/paper/account.json?_=' + Date.now(), { cache: 'no-store' });
     SYS = r.ok ? await r.json() : null;
   } catch { SYS = null; }
+  /* 【2026-11-23 预算占用展示（拍板③）】预算台账与决策链 riskGuard 同口径镜像
+   * （同 allocateBudget + config.paper.budgetSlots）——读最新日的占用/剩余展示。
+   * 加载失败 fail-open：预算行整体省略，不造假数据。 */
+  try {
+    const rb = await dget('./data/risk_budget_preview.json?_=' + Date.now(), { cache: 'no-store' });
+    const list = rb.ok ? await rb.json() : [];
+    BUDGET_LEDGER = Array.isArray(list) && list.length ? list[list.length - 1] : null;
+  } catch { BUDGET_LEDGER = null; }
   renderSysPanel();
 }
 function renderSysPanel() {
@@ -559,7 +568,25 @@ function renderSysPanel() {
       <td class="num">${num(t.price, 3)}</td><td class="num">${num(t.net)}</td></tr>`).join('')}
     </tbody></table></div>` : ''}
     ${logs.length ? `<div class="bf-foot" style="margin-top:8px">引擎日志（末 3 条）：</div>${logs.map((l) => `<div class="dw-note">${esc(l.date || '')} ${esc(l.text || '')}</div>`).join('')}` : ''}
+    ${budgetLine()}
   `;
+}
+
+/* 【2026-11-23 预算占用行（拍板③）】槽位占用=当日预算分配占净值比例（pct 口径），
+ * 数据=预算台账最新日（与决策链 riskGuard 同 allocateBudget 同口径）。空档/冰点
+ * 零信号日如实显示"当日无信号分配（零成交/冰点期）"，不伪造占用数。 */
+function budgetLine() {
+  const b = BUDGET_LEDGER;
+  if (!b || !b.slots || !b.slots.length) return '';
+  const eq = Number.isFinite(+b.equity) ? (+b.equity).toLocaleString() : '—';
+  const slotTxt = b.slots.map((s) => `${esc(s.id)}（pct ${((s.pct || 0) * 100).toFixed(0)}%）`).join(' ／ ');
+  const sigIn = Number.isFinite(+b.signalsIn) ? +b.signalsIn : 0;
+  const pct = (x) => Number.isFinite(+x) ? (+x * 100).toFixed(1) + '%' : '—';
+  const state = sigIn > 0
+    ? `当日信号 <b>${sigIn}</b> 条 ｜ 已用 <b>${pct(b.usedPct)}</b> ｜ 剩余 <b>${pct(b.remainingPct)}</b>（全局日额度 20% 口径）`
+    : '当日无信号分配（零成交/冰点期，预算闸未触发）';
+  const dateTxt = esc(b.date || b.trade_date || '');
+  return `<div class="bf-foot" style="margin-top:8px">风险预算（${dateTxt} 台账·与决策闸同口径）：${state}｜槽位: ${slotTxt}｜净值 ${esc(eq)}${b.equity === 0 ? ' <span class="warn">⚠ 台账 equity=0（取数异常）</span>' : ''}</div>`;
 }
 
 async function boot() {

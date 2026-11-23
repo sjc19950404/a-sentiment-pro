@@ -986,6 +986,66 @@ test('Step4 板块暴露限制：未超上限时放行（且默认关闭不影�
   assert.equal(res2.submitted.length, 1, '默认关闭板块限制时照常放行');
 });
 
+// ────────────────────── 风险预算闸（2026-11-23 拍板接线） ──────────────────────
+// 链路：batchSubmit 分发侧先跑 allocateBudget（slots=opts.budgetSlots）→ riskGuard ①p
+// 执行侧逐票查预算结论。拦截仍从 riskGuard 单口出（stage='risk'，reason=RISK_REJECT.BUDGET）。
+// 语义：预算=子策略分发——手动台不传 budgetSlots 时不受预算约束（全局闸兜底不变）。
+
+test('预算闸：槽位 pct 不足以覆盖第二笔时，首笔截短、次笔 riskGuard 拦截（BUDGET）', () => {
+  // 槽位只给 5% 净值，两笔各要 10% → 首笔 capped 到 5%、次笔 slot 耗尽被拒
+  const a = fresh(1000000);
+  const res = batchSubmit(a, [
+    { code: '600519', pct: 0.10, hybk: '机器人', sector: '机器人' },
+    { code: '600111', pct: 0.10, hybk: '机器人', sector: '机器人' },
+  ],
+    { trade_date: '2026-10-23', hot: [{ code: '600519', name: 'A', close: 100 }, { code: '600111', name: 'B', close: 100 }], summary: {} },
+    { date: '2026-10-23', exec: {}, applyLhbFilter: false, budgetSlots: [{ id: 'mainline', pct: 0.05, priority: 10 }] });
+  const bGate = res.blocked.find((x) => x.code === '600111' && x.stage === 'risk');
+  assert.ok(bGate, '槽位耗尽的次笔应被 riskGuard 拦截');
+  assert.ok(String(bGate.reason).includes('风险预算'), '拦截原因应为预算闸：' + bGate.reason);
+  // 首笔获批但被槽位截短到 5%：5% 净值 / 价格 100（含名义滑点）≈ 400~500 股 ≤ 5 万
+  const first = res.submitted.find((x) => x.code === '600519');
+  assert.ok(first, '首笔应获批提交');
+  assert.ok(first.qty <= 500, '首笔股数应被截短到槽位 5%（≤500 股/5 万）：' + first.qty);
+});
+
+test('预算闸：不传 budgetSlots 时行为与旧版恒等（手动台自由裁量不受子策略预算约束）', () => {
+  const res = batchSubmit(fresh(1000000), [
+    { code: '600519', pct: 0.10, hybk: '机器人', sector: '机器人' },
+    { code: '600111', pct: 0.10, hybk: '机器人', sector: '机器人' },
+  ],
+    { trade_date: '2026-10-23', hot: [{ code: '600519', name: 'A', close: 100 }, { code: '600111', name: 'B', close: 100 }], summary: {} },
+    { date: '2026-10-23', exec: {}, applyLhbFilter: false });
+  assert.equal(res.submitted.length, 2, '不启用预算时两笔照常提交');
+});
+
+test('riskGuard 直测：ctx.budget.ok=false 直接拒（BUDGET 原因）', () => {
+  const a = fresh(1000000);
+  const g = riskGuard(a, { side: 'buy', code: '600519', amount: 100000 }, { todayBuyAmount: 0 },
+    { todayBuyAmount: 0, budget: { ok: false, slotId: 'mainline', detail: '槽位预算已用尽' } });
+  assert.equal(g.ok, false);
+  assert.equal(g.reason, RISK_REJECT.BUDGET);
+  assert.match(g.detail, /预算闸/);
+});
+
+test('预算闸：买入获批后占用计入当日额度，与全局闸兜底共存（同批 20% 上限仍生效）', () => {
+  // 槽位 100%（v1 正式表）——预算闸放行一切，但全局 20% 日额度闸仍兜底：
+  // 三笔各 10% → 第三笔推 totalChange 超过 20% 应被全局闸拦（而非预算闸）
+  const res = batchSubmit(fresh(1000000), [
+    { code: '600519', pct: 0.10, hybk: 'A', sector: '机器人' },
+    { code: '600111', pct: 0.10, hybk: 'A', sector: '机器人' },
+    { code: '600031', pct: 0.10, hybk: 'A', sector: '机器人' },
+  ],
+    { trade_date: '2026-10-23', hot: [{ code: '600519', name: 'A', close: 100 }, { code: '600111', name: 'B', close: 100 }, { code: '600031', name: 'C', close: 100 }], summary: {} },
+    { date: '2026-10-23', exec: {}, applyLhbFilter: false, budgetSlots: [{ id: 'mainline', pct: 1.0, priority: 10 }] });
+  const third = res.blocked.find((x) => x.code === '600031');
+  assert.ok(third, '第三笔应被拦（总仓位变动超 20%）');
+  // 分发侧 allocateBudget 的全局日闸（≤20%）先于全局金额闸生效——拦截从预算闸通道出
+  // （cappedBy='daily'→riskGuard ①p），detail 标明"全局单日额度"：单一闸口语义（所有
+  // 拦截都从 riskGuard 一个口出，预算层负责标注层级）。
+  assert.match(third.detail, /全局单日额度/, '应标明全局日额度层：' + third.detail);
+});
+
 // ────────────────────── 出场纪律 v1：跌停逃生（最后一道保险） ──────────────────────
 // 背景：连板票次日常一字跌停「卖不掉」，硬扛数日瀑布下挫是 v1 之前的头号死法。
 // 逃生 = 带 escape 标记的紧急卖单，在触及跌停时改以跌停价挂单排队（等同 9:25 前抢排队），

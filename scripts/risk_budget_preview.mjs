@@ -26,11 +26,17 @@ try {
     if (d !== today || o.side !== 'buy' || (o.status && o.status !== 'pending')) continue;
     signals.push({ slotId: 'mainline', code: String(o.code), targetPct: BUDGET_GATES.DEFAULT_SINGLE_PCT });
   }
-  const r = allocateBudget({ totalEquity: acc.equity || acc.total || 0, usedTodayPct: 0, slots, signals });
+  /* 【2026-11-23 equity 取数修复（接线前对账发现）】account.json 无 equity/total 顶层键
+   * （真实净值在 nav[-1].equity）——预演 10 天 equity=0，接线后首个信号日 usedPct=分配额/0
+   * 直接算错。改接 nav[-1].equity（降级 cash 兜底）。 */
+  const navArr = Array.isArray(acc.nav) ? acc.nav : [];
+  const equity = navArr.length && Number.isFinite(+navArr[navArr.length - 1].equity)
+    ? +navArr[navArr.length - 1].equity : (Number.isFinite(+acc.cash) ? +acc.cash : 0);
+  const r = allocateBudget({ totalEquity: equity, usedTodayPct: 0, slots, signals });
   const rec = {
     date: today, generatedAt: new Date().toISOString(),
-    note: '预演档：仅供人工对照，决策链不读取本档；预算表见 config.paper.budgetSlots',
-    equity: acc.equity || acc.total || 0, slots, signalsIn: signals.length,
+    note: '预算台账（2026-11-23 接线后与决策链 riskGuard 同口径镜像：同 allocateBudget + config.paper.budgetSlots）；决策链实时闸在 riskGuard，本档供 UI 展示与人工对账',
+    equity, slots, signalsIn: signals.length,
     ...r,
   };
   const hist = existsSync(join(ROOT, 'data/risk_budget_preview.json'))

@@ -29,6 +29,7 @@
 // 引入方向是单向的（paper → lhbfilter → lhb/seats），lhbfilter 不反过来引 paper，无循环依赖。
 
 import { filterOne } from './lhbfilter.js';
+import { allocateBudget, BUDGET_GATES } from './risk_budget.js';   // 2026-11-23 接线：预算分发（分发侧在 batchSubmit，执行侧在 riskGuard ①p）
 
 export const PAPER_VERSION = 'paper-v1';
 
@@ -587,6 +588,7 @@ export const RISK_REJECT = {
   DD_CAP: '账户回撤触发动态降仓，本次委托将突破当前仓位上限',
   SECTOR_LIMIT: '板块暴露超过上限，强行拒绝买入（系统性风险）',
   SINGLE_STOCK_CAP: '单票持仓占比超过硬上限（同票多单/跨日合并不得突破）',
+  BUDGET: '风险预算闸：本票未获槽位预算批准（槽位耗尽/被更高优先级槽位挤占/全局日额度用尽）',
 };
 
 /**
@@ -615,6 +617,20 @@ export function riskGuard(acct, order, quote, ctx = {}) {
   // 否则回撤触发降仓后会连「减仓」都被拦，账户被锁死在高仓位，这是最坏的结果）。
   if (order?.side === 'sell') {
     return { ok: true, cap: 1, drawdown: stats.drawdown, note: '卖出方向不受仓位变动与降仓上限约束' };
+  }
+
+  // ①p 风险预算闸（2026-11-23 拍板接线，单一闸口的执行侧）：ctx.budget 由 batchSubmit
+  //    侧 allocateBudget 分发（slots=config.paper.budgetSlots，同票冲突 priority 高者得）。
+  //    本票未获批准（槽位耗尽/被挤占/全局日额度用尽）直接拒——预算分发在前、全局闸在后，
+  //    与 risk_budget.js 预演 10 日验证的口径完全一致；零信号日 budget 为空 → 恒放行
+  //    （与冰点期现行为恒等）。卖出方向永远不受预算约束（见上）。
+  const budget = ctx.budget;
+  if (budget && budget.ok === false) {
+    return {
+      ok: false, reason: RISK_REJECT.BUDGET,
+      detail: `预算闸（槽位 ${budget.slotId || 'mainline'}）：${budget.detail || '未获槽位预算批准'}`,
+      drawdown: stats.drawdown, budget,
+    };
   }
 
   const px = fillPrice(+((quote || {}).price), 'buy', order?.slip ?? DEFAULT_SLIP);
@@ -962,6 +978,56 @@ export function batchSubmit(acct, items, day, opts = {}) {
   // 本批次内已被过滤拦截的票，不再重复尝试（同票在 items 里重复出现时）
   const doneCodes = new Set();
 
+  // ── 预算分发（2026-11-23 拍板接线，单一闸口的分发侧）────────────────
+  // 对本批全部 buy 信号先跑一次 allocateBudget（slots=opts.budgetSlots，来自
+  // config.paper.budgetSlots；同票跨槽冲突 priority 高者得），得到逐票预算结论：
+  // allocations=批准（cappedBy 标注被哪层截短）/ gated=拦截（slot/daily/no-slot）。
+  // 逐票执行时 riskGuard ①p 只查本票结论——拦截/批准仍从 riskGuard 一个口出（单一
+  // 闸口），日志/台面语义统一。零信号或未传 slots → budgetByCode 为空 → 与旧行为恒等。
+  // allocateBudget 的全局日闸（≤20%）与 riskGuard ① 闸口径同源（BUDGET_GATES 与
+  // MAX_DAILY_POSITION_CHANGE 同值），双层不冲突：预算先拦、金额口径闸兜底。
+  let budgetByCode = null;
+  if (Array.isArray(opts.budgetSlots) && opts.budgetSlots.length) {
+    const stats0 = accountStats(cur);
+    if (stats0.total > 0) {
+      const sigs = [];
+      const seenSig = new Set();
+      for (const raw of (Array.isArray(items) ? items : [])) {
+        const c = String(raw?.code || raw?.symbol || '').trim();
+        if (!c || seenSig.has(c)) continue;
+        seenSig.add(c);
+        sigs.push({
+          slotId: raw?.slotId || 'mainline',
+          code: c,
+          targetPct: Number.isFinite(+raw?.pct) ? +raw.pct : BUDGET_GATES.DEFAULT_SINGLE_PCT,
+        });
+      }
+      const plan = allocateBudget({ totalEquity: stats0.total, usedTodayPct: 0, slots: opts.budgetSlots, signals: sigs });
+      const byCode = new Map();
+      for (const a of plan.allocations) {
+        byCode.set(String(a.code), {
+          ok: true, slotId: a.slotId, approvedPct: a.approvedPct, cappedBy: a.cappedBy || null,
+          detail: `预算批准 ${(a.approvedPct * 100).toFixed(1)}% 净值${a.cappedBy ? `（被 ${a.cappedBy} 层截短）` : ''}`,
+        });
+      }
+      for (const g of plan.gated) {
+        byCode.set(String(g.code), {
+          ok: false, slotId: g.slotId, cappedBy: g.cappedBy,
+          detail: { slot: '槽位预算已用尽', daily: '全局单日额度（20%）已用尽', 'no-slot': '无对应预算槽位（槽位未配置）' }[g.cappedBy] || '未获槽位预算批准',
+        });
+      }
+      for (const c of plan.conflicts) {
+        if (!byCode.has(String(c.code))) {
+          byCode.set(String(c.code), {
+            ok: false, slotId: c.loser, cappedBy: 'conflict',
+            detail: `同票跨槽冲突：被更高优先级槽位「${c.winner}」占用（本槽 ${c.loser} 让位）`,
+          });
+        }
+      }
+      budgetByCode = byCode;
+    }
+  }
+
   const lhbCache = new Map();
 
   for (const raw of (Array.isArray(items) ? items : [])) {
@@ -1012,9 +1078,14 @@ export function batchSubmit(acct, items, day, opts = {}) {
       // 真实滑点只作用在成交价（submitOrder 的 raw.slip），仅影响 P&L，不扰动选股/仓位/笔数。
       const sizingSlip = (exec.mode === 'strict') ? exec.slipNonLimit : DEFAULT_SLIP;
       const px = fillPrice(+quote.price, 'buy', sizingSlip);
-      const r = qtyByAssetPct(stats.total, +raw.pct, px, { cash: cur.cash });
+      /* 【2026-11-23 预算接线】分配侧批准的 targetPct（allocateBudget 可对单笔截短到槽位
+       * 剩余 approvedPct）优先于 raw.pct 参与换算——预算截短发生在股数层而非事后冻结层，
+       * 否则 budget.approvedPct 只是标签、仓位照旧（首版回归测试抓到：槽位 5% 仍下 10% 单）。 */
+      const bPct = budgetByCode ? budgetByCode.get(code) : null;
+      const effPct = (bPct && bPct.ok && Number.isFinite(+bPct.approvedPct)) ? Math.min(+raw.pct, +bPct.approvedPct) : +raw.pct;
+      const r = qtyByAssetPct(stats.total, effPct, px, { cash: cur.cash });
       qty = r.qty;
-      row.capped = r.capped;
+      row.capped = r.capped || (bPct && bPct.ok && bPct.cappedBy ? `slot:${bPct.cappedBy}` : null);
     }
     // 单笔成交量上限（仅 --slip-model profile 生效；flat 基线不触发，保基线）：大单买不进——
     //   超「有效参考成交额 × volCapRatio」或兜底 maxOrderNotional 的部分直接砍掉（超额拒单）；分母走三层降级。
@@ -1045,7 +1116,7 @@ export function batchSubmit(acct, items, day, opts = {}) {
     // ② 账户全局风控 —— 用「当日累计」口径（同样用基线名义滑点，资本口径与基线一致）
     if (checkRisk) {
       const sizingSlip = (exec.mode === 'strict') ? exec.slipNonLimit : DEFAULT_SLIP;
-      const g = riskGuard(cur, { side: 'buy', qty, slip: sizingSlip, sector: raw?.sector || raw?.hybk || null }, quote, { todayBuyAmount: todayBuy, exec, regimeCap: opts.regimeCap, singleStockCap: opts.singleStockCap != null ? opts.singleStockCap : (opts.perStockCap != null ? opts.perStockCap : 0.20) });
+      const g = riskGuard(cur, { side: 'buy', qty, slip: sizingSlip, sector: raw?.sector || raw?.hybk || null }, quote, { todayBuyAmount: todayBuy, exec, regimeCap: opts.regimeCap, singleStockCap: opts.singleStockCap != null ? opts.singleStockCap : (opts.perStockCap != null ? opts.perStockCap : 0.20), budget: budgetByCode ? budgetByCode.get(code) : undefined });
       if (!g.ok) {
         row.status = 'blocked'; row.stage = 'risk'; row.reason = g.reason; row.detail = g.detail; row.risk = g;
         cur = { ...cur, logs: appendLog(cur, { date, code, name: row.name, side: 'buy', qty, stage: 'risk', result: 'rejected', reason: g.reason, text: g.detail }) };

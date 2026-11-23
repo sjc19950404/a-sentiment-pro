@@ -368,6 +368,8 @@
  ],
  "paper": {
   "autoSinglePct": 0.1,
+  "budgetSlots": [{"id": "mainline", "pct": 1.0, "priority": 10}],
+  "_budgetNote": "v1 预算表（2026-11-23 拍板）：仅主线选股一槽 100%；上第二子策略时按此结构拆槽（槽位预算=净值×pct，同票冲突 priority 高者得）。预演 10 日（data/risk_budget_preview.json，2026-11-10 起）后接线 riskGuard 单一闸口。",
   "_note": "实盘自动建仓单票目标仓位（2026-11-09 新增）：paper_daily 曾误读 backtest.maxPos(=1 满仓语义) 导致每笔 99.98% 被风控全拒、13 日零持仓；env PAPER_AUTO_PCT 可覆盖。不属 params.live 冻结区。",
   "auctionScore": {
    "chgThreshold": 0.03,
