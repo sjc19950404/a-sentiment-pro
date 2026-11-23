@@ -886,7 +886,10 @@ export function recommendPicks(day, ctx = {}) {
     //   overflow       —— 达门槛但被 topN 截断（够格，只是名额有限）
     // 可交易性剔除（买不进的票）优先透出，再接预测引擎的剔除（总计 ≤12）
     rejected: trad.rejected.concat(pred.rejected).concat(clusterFilterNote ? [clusterFilterNote] : []).slice(0, 12),
-    belowThreshold: pred.belowThreshold.slice(0, 8),
+    /* belowThreshold 默认截断 8（前端卡不需要更多）；ctx.fullBelow=true（Pi 落档侧
+     * report_reco_picks）返回全量——观察档要"当日涨停但引擎不推"的票（可能在 below
+     * 100 名开外），截断会让它们从卡上消失（2026-11-24 B3 验收线）。 */
+    belowThreshold: ctx.fullBelow ? pred.belowThreshold : pred.belowThreshold.slice(0, 8),
     overflow: pred.overflow.slice(0, 8),
     note, pool: candidates.length, asOf: d.trade_date || null,
     pred: pred.stats, version: PREDICT_VERSION, baseline: BASELINE_UP,

@@ -70,7 +70,7 @@ function main() {
   // 情绪分扣分（仅本次推演；原始 day 不动）：仅 applyPenalty 时扣分
   const effEmotionScore = emotionScore != null ? emotionScore - (_applyPenalty ? penalty : 0) : emotionScore;
 
-  const res = recommendPicks(day, { topN: TOP_N, emotionScore: effEmotionScore, ztpool, isClusteringBubble, mainLine });
+  const res = recommendPicks(day, { topN: TOP_N, emotionScore: effEmotionScore, ztpool, isClusteringBubble, mainLine, fullBelow: true });
 
   const picks = (res.picks || []).map((p) => ({
     code: String(p.code),
@@ -79,7 +79,9 @@ function main() {
     weakToStrong: !!p.weakToStrong,
     probText: p.probText || null,
     probScore: (p.prob && Number.isFinite(+p.prob.score)) ? Math.round(+p.prob.score) : null,
+    changePct: Number.isFinite(+p.changePct) ? +p.changePct : null,
     streakText: p.streakText || null,
+    streakTop: !!p.streakTop,
     gateTags: p.gateTags || null,
     suggestWeight: p.suggestWeight != null ? p.suggestWeight : null,
   }));
@@ -90,7 +92,12 @@ function main() {
    * 本档新增 observe（观察档=kept 里 suggestWeight=0 或未过买入门槛的票）与 stats
    * （候选池/剔除/未达门槛计数），前端改为直读本档渲染，不再自算。 */
   /* 观察档 = kept 里未获仓位（suggestWeight=0，如狂热/冰点帽）+ belowThreshold（未过
-   * 买入门槛 57 的次品格）——同参数同数据源，只换门槛（拍板原文）。 */
+   * 买入门槛 57 的次品格）——同参数同数据源，只换门槛（拍板原文）。
+   * 【2026-11-24 observe 选取规则扩充（B3 验收线）】below 全量 ~104 只只取前 8 时，
+   * "当日涨停但引擎不推"的次品格（最有盘面信息量的观察对象，如 11-23 九阳/风华/通化，
+   * 分数 47/51 排 #89/#9/#11）会被高分非涨停票挤出——切档后三票从卡上消失=用户明令
+   * 的失败形态。改为：kept 无仓位 + below 里「当日涨停」的全部（上限 12，按分降序）
+   * + below 非涨停的前 4——涨停观察票优先展示。 */
   const toObserve = (p, tier) => ({
     code: String(p.code),
     name: p.name || null,
@@ -98,11 +105,15 @@ function main() {
     probScore: (p.prob && Number.isFinite(+p.prob.score)) ? Math.round(+p.prob.score) : null,
     streakText: p.streakText || null,
     gateTags: p.gateTags || null,
+    isZt: !!p.isZt,
     suggestWeight: p.suggestWeight != null ? p.suggestWeight : 0,
     observeTier: tier,
   });
-  const observe = (res.picks || []).filter((p) => !(p.suggestWeight > 0)).map((p) => toObserve(p, 'kept_no_weight'))
-    .concat((res.belowThreshold || []).slice(0, 8).map((p) => toObserve(p, 'below_threshold')));
+  const keptNoWeight = (res.picks || []).filter((p) => !(p.suggestWeight > 0)).map((p) => toObserve(p, 'kept_no_weight'));
+  const belowAll = (res.belowAll || res.belowThreshold || []);
+  const belowZt = belowAll.filter((p) => p && p.isZt).slice(0, 12).map((p) => toObserve(p, 'below_zt'));
+  const belowOther = belowAll.filter((p) => p && !p.isZt).slice(0, 4).map((p) => toObserve(p, 'below_threshold'));
+  const observe = keptNoWeight.concat(belowZt, belowOther);
 
   const out = {
     date,

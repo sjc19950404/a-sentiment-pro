@@ -1,7 +1,14 @@
 {
   "date": "2026-11-23",
-  "generated_at": "2026-11-23T16:35:53.339Z",
-  "ok": true,
-  "diffs": [],
+  "generated_at": "2026-11-23T16:57:59.774Z",
+  "ok": false,
+  "diffs": [
+    {
+      "field": "seats_detail_format",
+      "front": "name",
+      "pi": "code",
+      "diff_reason": "serialization_drift（同一字段双形态：latest=席位名 / archive=席位编号——游资挂件按名匹配，只在 name 形态生效；待拍板统一写入形态）"
+    }
+  ],
   "note": "字段级对账：universe/剔除原因/推荐差集/分数漂移。无归因差异（diff_reason 缺失）即为告警条件——本脚本所有差异必须带归因。"
 }

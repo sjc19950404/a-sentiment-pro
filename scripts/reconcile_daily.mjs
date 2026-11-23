@@ -109,6 +109,21 @@ if (asOf) {
   for (const [c, r] of fr) if (pr.has(c) && pr.get(c) !== r) addDiff('rejected_reason', r, pr.get(c), 'universe_or_day_detail_diff');
   for (const [c, r] of pr) if (!fr.has(c)) addDiff('rejected_only_pi', null, `${c}:${r}`, 'universe_missing_in_recent_window');
 
+  // 3.5) seats.detail 序列化形态对账（2026-11-24 根因发现）：
+  //   archive.json 存席位「编号」（4167），archive-recent.latest 存席位「名」（国投证券…）——
+  //   同一字段两种形态 → 游资席位挂件（hotMoneyNetWanOf 按"名"匹配顶级游资清单）只在
+  //   latest 形态生效 → 前端 kept=3（九阳 65）vs Pi 重放 kept=0（九阳 47）。这是"同引擎
+  //   同日三个结果"的完整根因。修复方向（待拍板）：写入端统一为席位名形态（历史回放
+  //   影响需评估——编号形态下 hotMoney 因子在全史回测中从未生效过）。
+  if (dayFront && dayPi) {
+    const sd1 = ((dayFront.summary || {}).seats || {}).detail || null;
+    const sd2 = ((dayPi.summary || {}).seats || {}).detail || null;
+    const fmt = (d) => { if (!d) return 'null'; const k = Object.keys(d)[0]; const v = k && d[k] && d[k].b && d[k].b[0] && d[k].b[0][0]; return typeof v === 'string' ? 'name' : (typeof v === 'number' ? 'code' : 'unknown'); };
+    const f1 = fmt(sd1), f2 = fmt(sd2);
+    if (f1 !== f2) addDiff('seats_detail_format', f1, f2,
+      'serialization_drift（同一字段双形态：latest=席位名 / archive=席位编号——游资挂件按名匹配，只在 name 形态生效；待拍板统一写入形态）');
+  }
+
   // 4) prob 分漂移（同票 kept 双侧都有时比分数——日内数据更新会漂，归因 daily_data_refresh）
   for (const p of (f.picks || [])) {
     const q = (pi.picks || []).find((x) => String(x.code) === String(p.code));

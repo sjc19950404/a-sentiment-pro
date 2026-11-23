@@ -1,6 +1,6 @@
 {
   "date": "2026-11-23",
-  "generated_at": "2026-11-23T16:34:36.447Z",
+  "generated_at": "2026-11-23T16:54:41.767Z",
   "emotionScore": 85.2,
   "ztpoolLoaded": true,
   "picks": [],
@@ -12,8 +12,9 @@
       "probScore": 55,
       "streakText": null,
       "gateTags": null,
+      "isZt": true,
       "suggestWeight": 0,
-      "observeTier": "below_threshold"
+      "observeTier": "below_zt"
     },
     {
       "code": "002199",
@@ -22,8 +23,9 @@
       "probScore": 55,
       "streakText": null,
       "gateTags": null,
+      "isZt": true,
       "suggestWeight": 0,
-      "observeTier": "below_threshold"
+      "observeTier": "below_zt"
     },
     {
       "code": "002642",
@@ -32,8 +34,9 @@
       "probScore": 55,
       "streakText": null,
       "gateTags": null,
+      "isZt": true,
       "suggestWeight": 0,
-      "observeTier": "below_threshold"
+      "observeTier": "below_zt"
     },
     {
       "code": "603960",
@@ -42,8 +45,9 @@
       "probScore": 55,
       "streakText": null,
       "gateTags": null,
+      "isZt": true,
       "suggestWeight": 0,
-      "observeTier": "below_threshold"
+      "observeTier": "below_zt"
     },
     {
       "code": "605018",
@@ -52,8 +56,9 @@
       "probScore": 55,
       "streakText": null,
       "gateTags": null,
+      "isZt": true,
       "suggestWeight": 0,
-      "observeTier": "below_threshold"
+      "observeTier": "below_zt"
     },
     {
       "code": "605577",
@@ -62,8 +67,9 @@
       "probScore": 51,
       "streakText": null,
       "gateTags": null,
+      "isZt": true,
       "suggestWeight": 0,
-      "observeTier": "below_threshold"
+      "observeTier": "below_zt"
     },
     {
       "code": "002548",
@@ -72,8 +78,9 @@
       "probScore": 51,
       "streakText": null,
       "gateTags": null,
+      "isZt": true,
       "suggestWeight": 0,
-      "observeTier": "below_threshold"
+      "observeTier": "below_zt"
     },
     {
       "code": "000026",
@@ -82,8 +89,53 @@
       "probScore": 51,
       "streakText": null,
       "gateTags": null,
+      "isZt": true,
       "suggestWeight": 0,
-      "observeTier": "below_threshold"
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "000559",
+      "name": "万向钱潮",
+      "changePct": 10.03,
+      "probScore": 51,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "000636",
+      "name": "风华高科",
+      "changePct": 10.02,
+      "probScore": 51,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "000700",
+      "name": "模塑科技",
+      "changePct": 9.99,
+      "probScore": 51,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "000766",
+      "name": "通化金马",
+      "changePct": 10.04,
+      "probScore": 51,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
     }
   ],
   "stats": {
@@ -92,7 +144,7 @@
     "kept": 0,
     "below": 104,
     "minProb": 57,
-    "observeCount": 8
+    "observeCount": 12
   },
   "rejected": [
     {

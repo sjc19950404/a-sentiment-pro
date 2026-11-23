@@ -28,26 +28,56 @@
   }
 
   let recoTimer = null;
-  /* 【s-* 原生重写】研判推荐：读 paper_ui.js 的只读取数 __picks()（与研报同源），
-   * 用工作台 s-card/s-table/s-badge/s-btn 渲染——不搬旧 DOM、不换皮、不复制取数逻辑。 */
+  /* 【2026-11-24 拍板二落地：前端只渲染不自算】此前 mountReco 读 __picks()（浏览器里
+   * 用 recent.latest 数据实时重跑 recommendPicks）——与 Pi 落档 reco_picks_latest.json
+   * 是同一引擎两套结论（11-23 实测：页面 kept=65/59/59、Pi 落档 kept=0；根因是
+   * summary.seats.detail 双序列化形态——archive 存席位编号、latest 存席位名，游资
+   * 席位挂件按名匹配只在 latest 生效。待拍板统一）。拍板：计算收敛到落档一处，
+   * 本页改为读 reco_picks_latest.json 渲染（推荐档 picks + 观察档 observe），不再自算。
+   * 【禁静默回退（拍板三条验收线之三）】落档缺失 / 落档数据日滞后于页面数据日 →
+   * 显式"数据未就绪"提示，绝不回落浏览器自算——回退一次等于把口径漂移装回去。
+   * （11-20 recent 停更实例已证明静默回退的害处。） */
   function mountReco() {
     if (recoTimer) { clearInterval(recoTimer); recoTimer = null; }
     let tries = 0;
-    const draw = () => {
+    const notReady = (host, why, hint) => {
+      t1Empty(host, '选股落档未就绪',
+        why + '（' + hint + '）——按「前端只渲染不自算」纪律，本卡不回落浏览器估算，不填充标的。');
+    };
+    const draw = async () => {
       const host = $('#sPkRecoHost', panelRef);
       if (!host) return;
+      /* 页面数据日取 paper_ui 已加载的当日（asOf），用于落档滞后判定 */
       const getPicks = window.__picks;
-      if (typeof getPicks !== 'function' || !getPicks()) {
-        if (++tries <= 30) return;              // 等 paper_ui.js 异步加载（最多 15s）
-        clearInterval(recoTimer); recoTimer = null;
-        t1Empty(host, '研判推荐未就绪', '取数引擎未返回当日口径，不填充估算标的。');
+      const pageAsOf = (typeof getPicks === 'function' && getPicks() && getPicks().asOf) || null;
+      let arc = null;
+      try {
+        const res = await fetch(S.durl ? S.durl('./data/reco_picks_latest.json') : './data/reco_picks_latest.json', { cache: 'no-store' });
+        if (res.ok) arc = await res.json();
+      } catch { /* 落档缺失走未就绪 */ }
+      if (recoTimer) { clearInterval(recoTimer); recoTimer = null; }
+      if (!arc || !arc.date) {
+        notReady(host, 'reco_picks_latest.json 缺失或为空', 'Pi 落档管道未产出当日档');
         return;
       }
-      if (recoTimer) { clearInterval(recoTimer); recoTimer = null; }
-      const r = getPicks();
-      const picks = r.picks || [];
-      const pred = r.pred || {};
-      const tier = r.tier || {};
+      if (pageAsOf && arc.date !== pageAsOf) {
+        notReady(host, '落档数据日 ' + arc.date + ' 落后于页面数据日 ' + pageAsOf,
+          'Pi 落档管道滞后——等当日 EOD 落档后刷新');
+        return;
+      }
+      renderFromArchive(host, arc);
+    };
+    draw().catch((e) => {
+      const host = $('#sPkRecoHost', panelRef);
+      if (host) notReady(host, '落档加载异常 ' + String(e && e.message || e).slice(0, 40), 'fail-visible，不回退自算');
+    });
+  }
+
+  /* 落档渲染：reco_picks_latest.json 的 picks/observe/stats/rejected → 工作台卡 */
+  function renderFromArchive(host, arc) {
+      const picks = arc.picks || [];
+      const observe = arc.observe || [];
+      const stats = arc.stats || {};
       const num = (v, d = 2) => v == null ? '—' : (+v).toFixed(d);
       const sign = (v, suffix = '') => v == null ? '—' : (v > 0 ? '+' : '') + v + suffix;
       const cls = (v) => v == null ? '' : v > 0 ? 's-num--up' : v < 0 ? 's-num--down' : '';
@@ -77,104 +107,97 @@
           + '</div>'
         : '';
       const meta = '<div class="s-verdict" style="margin-bottom:var(--s-space-3)">'
-        + '<span class="s-verdict__sub">数据日 ' + esc(r.asOf || '—')
-        + ' · 情绪分 <b class="s-num">' + num(r.score, 1) + '</b>'
-        + ' · 档位 <span class="s-badge s-badge--muted">' + esc(tier.label || '—') + '</span>'
-        + ' · 候选池 <b class="s-num">' + (r.pool || 0) + '</b> 只'
+        + '<span class="s-verdict__sub">数据日 ' + esc(arc.date || '—') + '（Pi 落档·前端不自算）'
+        + ' · 情绪分 <b class="s-num">' + num(arc.emotionScore, 1) + '</b>'
+        + ' · 候选池 <b class="s-num">' + (stats.universe == null ? '—' : stats.universe) + '</b> 只'
         + ' → 推荐 <b class="s-num s-num--up">' + picks.length + '</b> 只'
-        + ' · 剔除 <b class="s-num s-num--down">' + (pred.rejected == null ? '—' : pred.rejected) + '</b> 只'
-        + ' · 未达门槛 ' + (pred.below == null ? '—' : pred.below) + ' 只</span></div>';
+        + ' · 剔除 <b class="s-num s-num--down">' + (stats.removed == null ? '—' : stats.removed) + '</b> 只'
+        + ' · 未达门槛 ' + (stats.below == null ? '—' : stats.below) + ' 只'
+        + (stats.observeCount != null ? ' · 观察档 ' + stats.observeCount + ' 只' : '') + '</span></div>';
 
-      const warn = (r.climaxWarnings || []).length
-        ? '<div class="s-alert s-alert--warn" style="margin-bottom:var(--s-space-3)">'
-        + '<div class="s-alert__title">情绪高潮预警</div>'
-        + '<div>⚠ ' + esc(r.climaxWarnings.map((w) => w.sector).join('、'))
-        + ' 板块次日谨防分歧——已禁推前排高标，仅留低位首板补涨。</div></div>'
-        : '';
-
-      const rows = picks.map((p, i) => {
-        const prob = p.prob || {}, band = prob.band || {};
+      /* 行渲染（推荐档 + 观察档共用）：落档字段 probScore/gateTags/streakTop/changePct。
+       * 性质 badge：推荐档=引擎给出建议仓位；观察档=同引擎同数据、只换门槛后仍未达标——
+       * 观察档·非买入信号（2026-11-24 拍板二，去序号防操作暗示）。 */
+      const pickRow = (p, tier) => {
         const tags = (p.gateTags || []).map((t) =>
           '<span class="s-badge s-badge--muted">' + esc(t) + '</span>').join('');
-        const reasons = (p.reasons || []).map((x) => esc(x.text)).join(' · ');
+        const badge = tier === 'pick'
+          ? '<span class="s-badge s-badge--up">推荐档</span>'
+          : '<span class="s-badge s-badge--warn">' + esc(tier === 'below_zt' ? '观察档·涨停未过门槛'
+            : tier === 'kept_no_weight' ? '观察档·未获仓位' : '观察档·未达买入门槛') + '</span>';
         return '<tr data-pick-code="' + esc(p.code) + '" tabindex="0" role="button" title="点看个股详情">'
-          + '<td>' + (p.suggestWeight > 0
-            ? '<span class="s-badge s-badge--up">推荐档</span>'
-            : '<span class="s-badge s-badge--warn">观察档·未达买入门槛</span>')
-          + (p.streakTop ? ' <span class="s-badge s-badge--up">连板</span>' : '') + '</td>'
+          + '<td>' + badge + (p.streakTop ? ' <span class="s-badge s-badge--up">连板</span>' : '') + '</td>'
           + '<td><b>' + esc(p.name || p.code) + '</b> <span class="s-num s-text-3">' + esc(p.code) + '</span></td>'
           + '<td class="s-num ' + cls(p.changePct) + '">' + sign(p.changePct, '%') + '</td>'
-          + '<td class="s-num">' + (prob.score == null ? '—' : String(Math.round(+prob.score))) + '</td>'
+          + '<td class="s-num">' + (p.probScore == null ? '—' : String(p.probScore)) + '</td>'
           + '<td>' + (p.suggestWeight > 0 ? num(p.suggestWeight * 100, 1) + '%' : '观察档') + '</td>'
-          + '<td>' + tags + (reasons ? '<div class="s-text-3" style="font-size:var(--s-font-xs);margin-top:2px">'
-            + esc(reasons.slice(0, 60)) + '</div>' : '') + '</td>'
+          + '<td>' + tags + '</td>'
           + '<td><button type="button" class="s-btn s-btn--ghost s-btn--xs" data-fill-code="'
           + esc(p.code) + '">填入下单</button></td></tr>';
-      }).join('');
+      };
+      const rows = picks.map((p) => pickRow(p, 'pick')).join('');
+      const obsRows = observe.map((p) => pickRow(p, p.observeTier || 'below_threshold')).join('');
 
-      const table = picks.length
+      const table = (picks.length || obsRows.length)
         ? '<div class="s-table-wrap"><div class="s-table__viewport"><table class="s-table s-table--compact">'
         + '<thead><tr><th>性质</th><th>名称 / 代码</th><th>涨跌幅</th><th>相对强度（校准见注）</th>'
         + '<th title="引擎 V5.2 绝对分档口径——与风控帽（分位优先）是两把尺子，超帽时见上方告警条">建议仓位（引擎口径）</th><th>核心逻辑</th><th>操作</th></tr></thead><tbody>'
-        + rows + '</tbody></table></div></div>'
-        : '<div class="s-empty"><div class="s-empty__title">今日无推荐标的</div>'
-        + '<div class="s-empty__hint">' + esc((r.note && r.note.text) || '按当日口径无达标标的，不填充估算值。') + '</div></div>';
+        + rows + obsRows + '</tbody></table></div></div>'
+        : '<div class="s-empty"><div class="s-empty__title">今日无推荐与观察标的</div>'
+        + '<div class="s-empty__hint">' + esc(String(arc.note || '').slice(0, 120) || '按当日口径无达标标的，不填充估算值。') + '</div></div>';
 
-      const rj = r.rejected || [];
-      const blocked = r.climaxBlocked || [], trimmed = r.sectorTrimmed || [];
+      /* 已剔除：落档 rejected（规则剔除，reasons 数组） */
+      const rj = arc.rejected || [];
       const rejDetail = rj.map((p) => '<div class="s-rej-row">'
-        + '<b>' + esc(p.name || p.code) + '</b> <span class="s-text-3 s-num">' + esc(p.code) + '</span>'
-        + ' <span class="s-badge s-badge--down">' + esc(p.reason || '大概率亏') + '</span></div>').join('')
-        + [...blocked, ...trimmed].map((x) => '<div class="s-rej-row">'
-          + '<b>' + esc(x.name) + '</b> <span class="s-badge s-badge--warn">'
-          + esc(x.reason || '情绪闸门拦截') + '</span></div>').join('');
-      const rejected = (rj.length || blocked.length || trimmed.length)
-        ? '<details class="s-rej"><summary>已剔除 ' + (rj.length + blocked.length + trimmed.length)
-        + ' 只「大概率亏 / 闸门拦截」（点开看原因）</summary><div class="s-rej-body">'
-        + rejDetail + '</div></details>'
+        + '<b>' + esc(p.name || p.code) + '</b> <span class="s-text-3 s-num">' + esc(p.code || '') + '</span>'
+        + ' <span class="s-badge s-badge--down">' + esc((p.reasons || []).join('；') || '大概率亏') + '</span></div>').join('');
+      const rejected = rj.length
+        ? '<details class="s-rej"><summary>已剔除 ' + rj.length + ' 只「大概率亏 / 闸门拦截」（点开看原因）</summary>'
+        + '<div class="s-rej-body">' + rejDetail + '</div></details>'
         : '';
 
       host.innerHTML = '<div class="s-card"><div class="s-card__body">'
-        + capAlert + meta + warn + table + rejected + '</div></div>';
+        + capAlert + meta + table + rejected + '</div></div>';
 
-      /* 交互：行点击下钻（复用 paper_ui 的 pickDetail 若导出，否则用 S.openDrawer 展示真值） */
+      /* 交互：行下钻抽屉（落档字段裁剪版） */
+      const allRows = picks.concat(observe);
       host.querySelectorAll('tr[data-pick-code]').forEach((tr) => {
         const open = () => {
-          const p = picks.find((x) => x.code === tr.dataset.pickCode);
+          const p = allRows.find((x) => x.code === tr.dataset.pickCode);
           if (!p || typeof S.openDrawer !== 'function') return;
           S.openDrawer({
-            size: 'sm', title: p.name || p.code, sub: p.code + ' · 研判推荐当日快照',
+            size: 'sm', title: p.name || p.code, sub: p.code + ' · 选股落档当日快照',
             render(body) {
               body.innerHTML = '<div class="s-grid s-grid--kpi">'
-                + [['涨跌幅', sign(p.changePct, '%')], ['相对强度', prob(p)],
+                + [['涨跌幅', sign(p.changePct, '%')], ['相对强度', p.probScore == null ? '—' : String(p.probScore)],
                    ['建议仓位', p.suggestWeight > 0 ? num(p.suggestWeight * 100, 1) + '%' : '观察档'],
-                   ['止损', p.stop ? num(p.stop.stopLossPct * 100, 0) + '%' : '—']]
+                   ['来源档', p.observeTier ? '观察档(' + p.observeTier + ')' : '推荐档']]
                 .map(([n, v]) => '<div><div class="s-kpi__label">' + n
                   + '</div><div class="s-kpi__value" style="font-size:var(--s-font-lg)">' + esc(v) + '</div></div>').join('')
                 + '</div>'
-                + (p.risks && p.risks.length ? '<p class="s-kpi__note">风险：' + esc(p.risks.join('；')) + '</p>' : '');
+                + (p.buyPoint ? '<p class="s-kpi__note">买点：' + esc(p.buyPoint) + '</p>' : '');
             },
           });
         };
         tr.addEventListener('click', open);
         tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
       });
-      /* 填入下单：复用 paper_ui 的 fillPickToOrder 若导出，否则跳模拟盘页 */
       host.querySelectorAll('[data-fill-code]').forEach((b) => b.addEventListener('click', (e) => {
         e.stopPropagation();
         if (typeof window.__paperFill === 'function') window.__paperFill(b.dataset.fillCode);
         else if (typeof S.showPage === 'function') S.showPage('模拟盘');
       }));
-    };
-    draw();
-    if (!$('#sPkRecoHost', panelRef)?.innerHTML.trim()) {
-      recoTimer = setInterval(draw, 500);
-    }
   }
-  /* 【2026-11-24 校准回测后改名】prob.score 经 270 交易日分层校准：60–65 档实际次日
-   * 上涨率 47.1%（<48% 负价值线）且单调性破坏——"上涨概率"标签不成立，改"相对强度"
-   * 并取整去小数点（小数位是伪精度）。校准脚本 tools/backtest/prob_calibration.mjs。 */
-  function prob(p) { return p && p.prob && p.prob.score != null ? String(Math.round(+p.prob.score)) : '—'; }
+  /* 【2026-11-24 校准回测后改名——理由修正（用户拍板）】270 交易日分层校准
+   * （tools/backtest/prob_calibration.mjs）显示该刻度单调性破坏（55–60 档命中率 64.5%
+   * 反高于 60–65 档 47.1%，后者单档置信区间 ±14pp 不足以单独证伪）——刻度没有单调性
+   * 就不配叫概率，与单档负价值与否无关。改"相对强度"并取整去小数点（小数位是伪精度）。
+   * 下一步方向（待拍板）：0–100 伪刻度换当日候选池内分位（rank/percentile，天然单调）。 */
+  function prob(p) {
+    if (p && p.probScore != null) return String(p.probScore);
+    if (p && p.prob && p.prob.score != null) return String(Math.round(+p.prob.score));
+    return '—';
+  }
 
   function mount() {
     if (!panelRef || !enabled()) return;
