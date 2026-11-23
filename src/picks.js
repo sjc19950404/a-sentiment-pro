@@ -122,18 +122,19 @@ const finite = (v) => Number.isFinite(+v);
 // ────────────────────────── 一、市场档位 ──────────────────────────
 
 /**
- * 情绪分 → 市场档位（与 V5.2 引擎阈值同源）。
- * 独立导出便于单测直接锁阈值边界，不必构造整份存档。
+ * 情绪分 → 市场档位。不传 thresholds 时用绝对档（旧行为，向后兼容）；
+ * v5.3 分位档调用方传 tier_policy.js 算出的 trailing 阈值（基线/影子轨同源）。
  * @param {number|null} score 七因子加权情绪分（0~100）
+ * @param {{overheat:number,full:number,half:number}} [thresholds] 外部阈值（可选）
  * @returns {{key:string,label:string,pos:number,allowNew:boolean}|null}
  */
-export function marketTier(score) {
+export function marketTier(score, thresholds) {
   // 注意：不能用 Number.isFinite(score)——空字符串 +'' 会得到 0，被当成「情绪分=0」→ 误判清仓。
   // 情绪分缺失必须返回 null（UI 据此显示「档位未知」），绝不默认任何档位。
   if (score == null || score === '' || typeof score === 'boolean') return null;
   if (!finite(score)) return null;
   const s = +score;
-  const t = TIER_THRESHOLDS;
+  const t = thresholds || TIER_THRESHOLDS;
   if (s >= t.overheat) return POSITION_TIERS[0];
   if (s >= t.full) return POSITION_TIERS[1];
   if (s > t.half) return POSITION_TIERS[2];
