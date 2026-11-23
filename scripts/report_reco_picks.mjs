@@ -78,10 +78,31 @@ function main() {
     buyPoint: p.buyPoint || null,
     weakToStrong: !!p.weakToStrong,
     probText: p.probText || null,
+    probScore: (p.prob && Number.isFinite(+p.prob.score)) ? Math.round(+p.prob.score) : null,
     streakText: p.streakText || null,
     gateTags: p.gateTags || null,
     suggestWeight: p.suggestWeight != null ? p.suggestWeight : null,
   }));
+
+  /* 【2026-11-24 拍板二：前端只渲染不自算】此前前端 mountReco 用 archive-recent.json
+   * 自己重跑 recommendPicks（参数不同：无 isClusteringBubble/mainLine/情绪扣分）——
+   * 同日两套结论（实测 11-23：前端 118/14/推荐3 vs 本档 117/13/推荐0），口径漂移源头。
+   * 本档新增 observe（观察档=kept 里 suggestWeight=0 或未过买入门槛的票）与 stats
+   * （候选池/剔除/未达门槛计数），前端改为直读本档渲染，不再自算。 */
+  /* 观察档 = kept 里未获仓位（suggestWeight=0，如狂热/冰点帽）+ belowThreshold（未过
+   * 买入门槛 57 的次品格）——同参数同数据源，只换门槛（拍板原文）。 */
+  const toObserve = (p, tier) => ({
+    code: String(p.code),
+    name: p.name || null,
+    changePct: Number.isFinite(+p.changePct) ? +p.changePct : null,
+    probScore: (p.prob && Number.isFinite(+p.prob.score)) ? Math.round(+p.prob.score) : null,
+    streakText: p.streakText || null,
+    gateTags: p.gateTags || null,
+    suggestWeight: p.suggestWeight != null ? p.suggestWeight : 0,
+    observeTier: tier,
+  });
+  const observe = (res.picks || []).filter((p) => !(p.suggestWeight > 0)).map((p) => toObserve(p, 'kept_no_weight'))
+    .concat((res.belowThreshold || []).slice(0, 8).map((p) => toObserve(p, 'below_threshold')));
 
   const out = {
     date,
@@ -89,6 +110,15 @@ function main() {
     emotionScore,
     ztpoolLoaded: !!ztpool,
     picks,
+    observe,
+    stats: {
+      universe: Number.isFinite(+res.pool) ? +res.pool : null,
+      removed: (res.rejected || []).length,
+      kept: (res.pred && Number.isFinite(+res.pred.kept)) ? +res.pred.kept : (res.picks || []).length,
+      below: (res.pred && Number.isFinite(+res.pred.below)) ? +res.pred.below : null,
+      minProb: (res.pred && Number.isFinite(+res.pred.minProb)) ? +res.pred.minProb : null,
+      observeCount: null,  // 落档后回填
+    },
     rejected: (res.rejected || []).map((r) => ({
       code: r.code != null ? String(r.code) : null,
       name: r.name || null,
@@ -96,6 +126,7 @@ function main() {
     })),
     note: res.note || null,
   };
+  out.stats.observeCount = out.observe.length;
 
   writeFileSync(OUT, JSON.stringify(out, null, 2));
   const untradable = (res.rejected || []).filter((r) => (r.reasons || []).some((x) => /买不进/.test(x))).length;

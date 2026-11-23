@@ -1,9 +1,99 @@
 {
   "date": "2026-11-23",
-  "generated_at": "2026-11-23T13:17:27.623Z",
+  "generated_at": "2026-11-23T16:34:36.447Z",
   "emotionScore": 85.2,
   "ztpoolLoaded": true,
   "picks": [],
+  "observe": [
+    {
+      "code": "000593",
+      "name": "德龙汇能",
+      "changePct": 9.99,
+      "probScore": 55,
+      "streakText": null,
+      "gateTags": null,
+      "suggestWeight": 0,
+      "observeTier": "below_threshold"
+    },
+    {
+      "code": "002199",
+      "name": "东晶电子",
+      "changePct": 10.05,
+      "probScore": 55,
+      "streakText": null,
+      "gateTags": null,
+      "suggestWeight": 0,
+      "observeTier": "below_threshold"
+    },
+    {
+      "code": "002642",
+      "name": "荣联科技",
+      "changePct": 10.06,
+      "probScore": 55,
+      "streakText": null,
+      "gateTags": null,
+      "suggestWeight": 0,
+      "observeTier": "below_threshold"
+    },
+    {
+      "code": "603960",
+      "name": "克来机电",
+      "changePct": 10.02,
+      "probScore": 55,
+      "streakText": null,
+      "gateTags": null,
+      "suggestWeight": 0,
+      "observeTier": "below_threshold"
+    },
+    {
+      "code": "605018",
+      "name": "长华集团",
+      "changePct": 10.04,
+      "probScore": 55,
+      "streakText": null,
+      "gateTags": null,
+      "suggestWeight": 0,
+      "observeTier": "below_threshold"
+    },
+    {
+      "code": "605577",
+      "name": "龙版传媒",
+      "changePct": 10.01,
+      "probScore": 51,
+      "streakText": null,
+      "gateTags": null,
+      "suggestWeight": 0,
+      "observeTier": "below_threshold"
+    },
+    {
+      "code": "002548",
+      "name": "金新农",
+      "changePct": 10.11,
+      "probScore": 51,
+      "streakText": null,
+      "gateTags": null,
+      "suggestWeight": 0,
+      "observeTier": "below_threshold"
+    },
+    {
+      "code": "000026",
+      "name": "飞亚达",
+      "changePct": 10.01,
+      "probScore": 51,
+      "streakText": null,
+      "gateTags": null,
+      "suggestWeight": 0,
+      "observeTier": "below_threshold"
+    }
+  ],
+  "stats": {
+    "universe": 117,
+    "removed": 12,
+    "kept": 0,
+    "below": 104,
+    "minProb": 57,
+    "observeCount": 8
+  },
   "rejected": [
     {
       "code": "002771",

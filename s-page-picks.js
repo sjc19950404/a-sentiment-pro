@@ -59,12 +59,22 @@
        * 引擎层闸门变更需重拍板）。 */
       const bandArr = (() => { const rk = ((window.__signals || {}).regime || {}).latest && window.__signals.regime.latest.key; const B = window.__POSITION_BANDS__ || {}; return (rk && B[rk]) || null; })();
       const openSum = picks.reduce((a, p) => a + (+p.suggestWeight || 0), 0) * 100;
-      const capAlert = (bandArr && openSum > bandArr[1])
+      /* 【2026-11-24 拍板二】旧条件 openSum>帽上限在"全观察档"（suggestWeight 全 0）时
+       * 永不触发——狂热日（只减仓不新建）卡上列 3 只观察档却零告警，读者会误读为可买。
+       * 补分支：禁新建档（帽上限 ≤20%）有票即警，与数值超帽同级别提示。 */
+      const capOver = bandArr && openSum > bandArr[1];
+      const capNoNew = bandArr && !(openSum > bandArr[1]) && picks.length > 0 && bandArr[1] <= 20;
+      const capAlert = (capOver || capNoNew)
         ? '<div class="s-alert s-alert--warn" style="margin-bottom:var(--s-space-3)">'
           + '<div class="s-alert__title">⚠ 风控帽约束（分位优先口径）</div>'
-          + '<div>当前 regime 风控帽 ' + bandArr[0] + '%~' + bandArr[1] + '%，下方引擎口径建议合计 '
-          + openSum.toFixed(1) + '%（已超帽）。帽子按设计优先生效：实际执行请按帽削减（单票 ≤'
-          + (bandArr[1] / Math.max(1, picks.length)).toFixed(1) + '%）或放弃新开仓。</div></div>'
+          + (capOver
+            ? '<div>当前 regime 风控帽 ' + bandArr[0] + '%~' + bandArr[1] + '%，下方引擎口径建议合计 '
+              + openSum.toFixed(1) + '%（已超帽）。帽子按设计优先生效：实际执行请按帽削减（单票 ≤'
+              + (bandArr[1] / Math.max(1, picks.length)).toFixed(1) + '%）或放弃新开仓。</div>'
+            : '<div>当前 regime 风控帽 ' + bandArr[0] + '%~' + bandArr[1] + '%（只减仓不新建档）——'
+              + '下方 ' + picks.length + ' 只均为<b>观察档·未达买入门槛</b>（引擎建议合计 0%），非买入信号；'
+              + '新建仓在当前档位下违背风控帽，本卡仅作盘面结构观察用。</div>')
+          + '</div>'
         : '';
       const meta = '<div class="s-verdict" style="margin-bottom:var(--s-space-3)">'
         + '<span class="s-verdict__sub">数据日 ' + esc(r.asOf || '—')
@@ -88,12 +98,14 @@
           '<span class="s-badge s-badge--muted">' + esc(t) + '</span>').join('');
         const reasons = (p.reasons || []).map((x) => esc(x.text)).join(' · ');
         return '<tr data-pick-code="' + esc(p.code) + '" tabindex="0" role="button" title="点看个股详情">'
-          + '<td><span class="s-num">' + (i + 1) + '</span>'
+          + '<td>' + (p.suggestWeight > 0
+            ? '<span class="s-badge s-badge--up">推荐档</span>'
+            : '<span class="s-badge s-badge--warn">观察档·未达买入门槛</span>')
           + (p.streakTop ? ' <span class="s-badge s-badge--up">连板</span>' : '') + '</td>'
           + '<td><b>' + esc(p.name || p.code) + '</b> <span class="s-num s-text-3">' + esc(p.code) + '</span></td>'
           + '<td class="s-num ' + cls(p.changePct) + '">' + sign(p.changePct, '%') + '</td>'
-          + '<td class="s-num">' + (prob.score == null ? '—' : num(prob.score, 1)) + '</td>'
-          + '<td>' + (p.suggestWeight > 0 ? num(p.suggestWeight * 100, 1) + '%' : '观察') + '</td>'
+          + '<td class="s-num">' + (prob.score == null ? '—' : String(Math.round(+prob.score))) + '</td>'
+          + '<td>' + (p.suggestWeight > 0 ? num(p.suggestWeight * 100, 1) + '%' : '观察档') + '</td>'
           + '<td>' + tags + (reasons ? '<div class="s-text-3" style="font-size:var(--s-font-xs);margin-top:2px">'
             + esc(reasons.slice(0, 60)) + '</div>' : '') + '</td>'
           + '<td><button type="button" class="s-btn s-btn--ghost s-btn--xs" data-fill-code="'
@@ -102,7 +114,7 @@
 
       const table = picks.length
         ? '<div class="s-table-wrap"><div class="s-table__viewport"><table class="s-table s-table--compact">'
-        + '<thead><tr><th>#</th><th>名称 / 代码</th><th>涨跌幅</th><th>上涨概率</th>'
+        + '<thead><tr><th>性质</th><th>名称 / 代码</th><th>涨跌幅</th><th>相对强度（校准见注）</th>'
         + '<th title="引擎 V5.2 绝对分档口径——与风控帽（分位优先）是两把尺子，超帽时见上方告警条">建议仓位（引擎口径）</th><th>核心逻辑</th><th>操作</th></tr></thead><tbody>'
         + rows + '</tbody></table></div></div>'
         : '<div class="s-empty"><div class="s-empty__title">今日无推荐标的</div>'
@@ -134,8 +146,8 @@
             size: 'sm', title: p.name || p.code, sub: p.code + ' · 研判推荐当日快照',
             render(body) {
               body.innerHTML = '<div class="s-grid s-grid--kpi">'
-                + [['涨跌幅', sign(p.changePct, '%')], ['上涨概率', prob(p)],
-                   ['建议仓位', p.suggestWeight > 0 ? num(p.suggestWeight * 100, 1) + '%' : '观察'],
+                + [['涨跌幅', sign(p.changePct, '%')], ['相对强度', prob(p)],
+                   ['建议仓位', p.suggestWeight > 0 ? num(p.suggestWeight * 100, 1) + '%' : '观察档'],
                    ['止损', p.stop ? num(p.stop.stopLossPct * 100, 0) + '%' : '—']]
                 .map(([n, v]) => '<div><div class="s-kpi__label">' + n
                   + '</div><div class="s-kpi__value" style="font-size:var(--s-font-lg)">' + esc(v) + '</div></div>').join('')
@@ -159,7 +171,10 @@
       recoTimer = setInterval(draw, 500);
     }
   }
-  function prob(p) { return p && p.prob && p.prob.score != null ? num(p.prob.score, 1) : '—'; }
+  /* 【2026-11-24 校准回测后改名】prob.score 经 270 交易日分层校准：60–65 档实际次日
+   * 上涨率 47.1%（<48% 负价值线）且单调性破坏——"上涨概率"标签不成立，改"相对强度"
+   * 并取整去小数点（小数位是伪精度）。校准脚本 tools/backtest/prob_calibration.mjs。 */
+  function prob(p) { return p && p.prob && p.prob.score != null ? String(Math.round(+p.prob.score)) : '—'; }
 
   function mount() {
     if (!panelRef || !enabled()) return;
