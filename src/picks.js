@@ -124,8 +124,9 @@ const finite = (v) => Number.isFinite(+v);
 // ────────────────────────── 一、市场档位 ──────────────────────────
 
 /**
- * 情绪分 → 市场档位。不传 thresholds 时用绝对档（旧行为，向后兼容）；
- * v5.3 分位档调用方传 tier_policy.js 算出的 trailing 阈值（基线/影子轨同源）。
+ * 情绪分 → 告警标签（终态 alert_only）：tier 字段保留供报告/告警，pos/allowNew
+ * 恒为 null。_researchThresholds 仅供 tools/backtest 研究脚本，严禁进入产线产物。
+ * 择时模式已永久归档（data/tier_archive.json），不存在"签参数后切回仓位档"的路径。
  * @param {number|null} score 七因子加权情绪分（0~100）
  * @param {{overheat:number,full:number,half:number}} [thresholds] 外部阈值（可选）
  * @returns {{key:string,label:string,pos:number,allowNew:boolean}|null}

@@ -1,0 +1,34 @@
+{
+  "archived_at": "2026-11-24",
+  "status": "PERMANENTLY_ARCHIVED",
+  "terminal_mode": "alert_only",
+  "terminal_spec": {
+    "position": "满仓 beta 1/n（单票上限 20%）",
+    "hard_risk": ["-8% 单笔止损", "回撤 ≥15% 动态降仓"],
+    "emotion_score_role": "仅输出告警标签（过热/冰点提示），不参与仓位决策",
+    "note": "这是最终形态，不是临时止血——不存在'策略有正超额后回 A'的路径"
+  },
+  "reason": "三种形态（分位档+confirm3、门控择时、九格曲面）全部在中段或前段失败，没有任何一次在全区间稳定为正；每次'看起来很好'的版本收益集中在末段（+28.65%），中段一律为负；九格超额跨度 27pp（+16.87%~+44.09%）说明收益由少数几笔决定，不可复现。停止参数搜索。",
+  "three_records": {
+    "1_failure_mode": "情绪分做方向决策时，超额集中在单一 regime（最后一段下跌），中段系统性为负——不是参数没调对，是策略只在样本期内唯一一次下跌里赚到钱",
+    "2_falsified_parameter_domain": {
+      "prob_tiers": ["P82", "P49", "P2"],
+      "confirm": [1, 2, 3],
+      "band": [2, 3, 5],
+      "regime": {
+        "MA": [20, 60, 120],
+        "breadth_pct": [40, 50, 60]
+      },
+      "note": "这些格子已证伪，不必再试；P98/P60/P1 是作废分布（s_net 死）的产物，同样不要用"
+    },
+    "3_only_valid_form": "下跌段减仓 = 保险。衡量标准应是'每 1pp 回撤改善让渡多少收益'（效率前沿），不是三段超额符号。若将来真要重启，从这个目标函数出发，不是从仓位档出发"
+  },
+  "key_evidence": {
+    "prob_calibration_v52": "60-65 档 47.1%（n=51）——作废口径；v5.3 重标定 58.4%（n=308），单调性破坏仍在，改名'相对强度'",
+    "p82_confirm3_band3": "前段(61-130) -0.42%（符号负），三段判据不通过",
+    "regime_gated_nine_grid": "九格新三段判据全不过（中段 -5.71%~-11.23%、前段 -1.2~-2.1%）",
+    "strategy_verdict": "相对全市场等权基准超额 -10.04%（成本0.15%）、Calmar -0.52、三段符号不一致——策略不成立",
+    "direction_diagnosis": "Δ(overheat-half)=+0.45pp 但 permutation p=0.0561 > 0.0125（m≈4）——方向中性、无 edge"
+  },
+  "probe_guard": "端到端门禁 test/tier_alert_gate.test.mjs：产物 marketTierVersion 含 alert_only ⇔ 无非 null 仓位档字段——防止版本戳说假话（曾发生 flag=alert_only 但 marketTier 仍返回 pos=0.4）"
+}

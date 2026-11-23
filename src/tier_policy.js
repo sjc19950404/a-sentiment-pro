@@ -72,20 +72,23 @@ export function tierKey(score, thresholds) {
 }
 
 
-/* ── 【2026-11-24 纯 instrumentation：feature flag + 版本戳 + 单一入口】 ──
- * 行为零改动：当前 mode='absolute'，marketTier() 判档与旧版逐位相同。
- * 参数签名后只改这一行 mode → 'p82_confirm3_band3'，7 处调用点无需改动。
- * 每个产物落 marketTierVersion 字段，事后可核对"这一天的档是哪套口径判的"。
- */
-/* 【2026-11-24 拍板 C：不签参数、归档择时，立即止损】
- * mode='alert_only'：marketTier 只输出告警标签（过热/冰点提示），**不输出仓位档**——
- * 仓位消费者（suggestWeight）回满仓 beta；-8% 单笔止损 / ≥15% 回撤动态降仓两条
- * 纯风控保持不变（实测基准 maxDD 28.33% vs 策略择时 13~19%，有效的是风控不是择时）。
- * 第三值 alert_only 仍可一键回滚到 absolute；p82_confirm3_band3 已归档不启用。 */
+/* ── 【2026-11-24 终态拍板：C = 本系统最终形态，不再有"回 A"选项】 ──
+ * mode='alert_only' 是终态：满仓 beta + -8% 单笔止损 + 回撤≥15% 降仓，
+ * 情绪分只输出告警标签（过热/冰点提示），不输出仓位档。
+ * 三种择时形态（分位档+confirm3 / 门控择时 / 九格曲面）全部在中期或前段失败，
+ * 已永久归档（data/tier_archive.json）——不存在"参数签了再切回仓位档"的路径。
+ * absolute 仅为版本戳回滚用（回到旧口径审计），不是策略备选；p82_confirm3_band3
+ * 与 regime_gated 永不启用。feature flag 保留是为了审计回滚，不是为策略切换。
+ * 所有产物落 marketTierVersion 字段，核对"这一天的档是哪套口径判的"。 */
 export const TIER_MODE_FLAG = Object.freeze({
-  mode: 'alert_only',   // 唯一开关：'alert_only' | 'absolute' | 'p82_confirm3_band3'(归档禁用)
+  mode: 'alert_only',   // 终态；'absolute' 仅版本审计回滚，择时模式永久禁用
   switchedAt: '2026-11-24',
-  archived: Object.freeze({ mode: 'p82_confirm3_band3', reason: '前段第61-130天超额 -0.42%（符号负）——三段判据不通过，停止调参' }),
+  terminal: true,
+  archived: Object.freeze({
+    modes: ['p82_confirm3_band3', 'regime_gated'],
+    detail: 'data/tier_archive.json',
+    reason: '三种形态在中期/前段均失败——停止参数搜索，见归档档三条件',
+  }),
 });
 
 export function marketTierVersion(flag = TIER_MODE_FLAG) {
