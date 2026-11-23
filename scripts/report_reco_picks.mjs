@@ -9,7 +9,8 @@
 //   与 scripts/report_etf_hedge.mjs 同构（只读计算 + 写 JSON，零交易）。
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { decodeArchive } from '../src/lhb_codec.js';   // v5.3：席位码→席位名（seatCode 校验、seatName 匹配）
+import { decodeArchive } from '../src/lhb_codec.js';
+import { marketTierVersion } from '../src/tier_policy.js';   // 产物档位口径版本戳   // v5.3：席位码→席位名（seatCode 校验、seatName 匹配）
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { recommendPicks } from '../src/picks.js';
@@ -125,6 +126,7 @@ function main() {
 
   const out = {
     date,
+    marketTierVersion: marketTierVersion(),
     generated_at: new Date().toISOString(),
     emotionScore,
     ztpoolLoaded: !!ztpool,

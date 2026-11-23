@@ -56,6 +56,9 @@ const pct = (x) => x == null ? '—' : (x * 100).toFixed(2) + '%';
 
 function run(confirm, band) {
   let nav = 1, bh = 1, peak = 1, maxDd = 0, lastKey = null, pending = null, pendingN = 0, lastPos = 0;
+  /* 【2026-11-24 用户纠错：分段起点后移到第 61 天】前 60 天走 warmup 绝对兜底——
+   * 分位档变量根本没在那里运行过，把它混进"前段90天"再否分位参数=测错变量。
+   * 剔除 warmup 后 211 天，三段 70/70/71（判据文字不变，只修正"前段"定义）。 */
   const seg = [[], [], []];
   panel.forEach((x, i) => {
     let key = marketTier(x.s, { overheat: x.th.overheat + band, full: x.th.full + band, half: x.th.half + band })?.key;
@@ -69,7 +72,7 @@ function run(confirm, band) {
     nav *= (1 + pos * x.r) - Math.abs(pos - lastPos) * COST;
     lastPos = pos; bh *= (1 + x.r);
     peak = Math.max(peak, nav); maxDd = Math.max(maxDd, (peak - nav) / peak);
-    seg[i < 90 ? 0 : i < 180 ? 1 : 2].push({ nav, bh });
+    if (i >= 60) seg[i < 130 ? 0 : i < 200 ? 1 : 2].push({ nav, bh });
   });
   const years = panel.length / 244;
   const ann = Math.pow(nav, 1 / years) - 1;
@@ -86,7 +89,7 @@ console.log(`\n═══ 基准风险（全市场等权 buy&hold，同 breadth �
 console.log(`  收益 ${pct(bh - 1)} | 年化 ${pct(bhAnn)} | maxDD ${pct(bhDd)} | Calmar ${(bhAnn / bhDd).toFixed(2)}`);
 
 console.log(`\n═══ 九格参数曲面：confirm{1,2,3} × band{2,3,5}（成本0.15%，P82映射不动）═══`);
-console.log('confirm | band | 超额 | 策略收益 | maxDD | Calmar | 前/中/后段超额');
+console.log('confirm | band | 超额 | 策略收益 | maxDD | Calmar | 前/中/后段超额(第61天起70/70/71)');
 const cells = new Map();
 for (const c of [1, 2, 3]) for (const b of [2, 3, 5]) {
   const o = run(c, b); cells.set(`${c}|${b}`, o);
@@ -96,10 +99,10 @@ const c2 = [2, 3, 5].map((b) => cells.get(`2|${b}`));
 const neigh = [cells.get(`1|3`), cells.get(`3|3`)];
 const peakSign = c2.some((x) => x.excess > 0);
 const notLonePeak = neigh.some((x) => x.excess > 0) && peakSign;
-const c23 = c2[1]; // confirm2 + band3（用户原始 confirm2 对应的邻域中心）
+const c23 = cells.get(`3|3`); // 用户改选候选：confirm3|band3（平台非峰值）
 const segConsistent = c23.segEx.every((x) => x > 0) || c23.segEx.every((x) => x < 0);
 console.log(`\n═══ 验收判定（缺一不上线）═══`);
 console.log(`① 非孤峰：confirm2 同号为正 ${c2.filter((x) => x.excess > 0).length}/3 格 | 邻域 conf1(band3) ${pct(neigh[0].excess)}、conf3(band3) ${pct(neigh[1].excess)} → ${notLonePeak ? '✓' : '✗ 尖峰，不上线'}`);
-console.log(`② 分段(中心格 2|3)：${c23.segEx.map(pct).join(' / ')} → ${segConsistent ? '✓ 三段同号' : '✗ 符号不一致'}`);
-console.log(`③ 基准风险已补：基准 maxDD ${pct(bhDd)} / Calmar ${(bhAnn / bhDd).toFixed(2)} vs 中心格 maxDD ${pct(c23.maxDd)} / Calmar ${c23.calmar?.toFixed(2)}`);
-console.log(`\n总结：${notLonePeak && segConsistent ? '三条全过——可签 confirm2 上线（feature flag + 单入口 + 逐字对照）' : '未全过——confirm2 不上线，按用户判据改走 C 或继续找参数'}`);
+console.log(`② 分段(候选格 confirm3|band3)：${c23.segEx.map(pct).join(' / ')} → ${segConsistent ? '✓ 三段同号' : '✗ 符号不一致'}`);
+console.log(`③ 基准风险已补：基准 maxDD ${pct(bhDd)} / Calmar ${(bhAnn / bhDd).toFixed(2)} vs 候选格 maxDD ${pct(c23.maxDd)} / Calmar ${c23.calmar?.toFixed(2)}`);
+console.log(`\n总结：${notLonePeak && segConsistent ? '三条全过——可签 confirm3|band3 上线（feature flag + 单入口 + 逐字对照）' : '未全过——confirm3|band3 不上线，按用户判据改走 C 或继续找参数'}`);

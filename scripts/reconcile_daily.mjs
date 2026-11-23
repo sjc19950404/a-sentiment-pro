@@ -26,6 +26,7 @@ const dateArg = args.includes('--date') ? args[args.indexOf('--date') + 1] : nul
 
 // ── 数据源 ──
 import { decodeArchive } from '../src/lhb_codec.js';
+import { marketTierVersion } from '../src/tier_policy.js';   // 产物档位口径版本戳
 const archive = decodeArchive(JSON.parse(readFileSync(resolve(ROOT, 'data', 'archive.json'), 'utf8')));   // v5.3：席位码还原
 const allDays = (archive.all_days || []).filter(Boolean);
 const R2 = 'https://pub-5a2d9fd0ca4547c5b9e561c4c50f6448.r2.dev';
@@ -143,6 +144,7 @@ if (asOf) {
 
 const out = {
   date: asOf,
+  marketTierVersion: marketTierVersion(),
   generated_at: new Date().toISOString(),
   ok: diffs.length === 0,
   diffs,

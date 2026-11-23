@@ -107,6 +107,7 @@ export const STREAK_MAX = 4;
 /** 情绪分（七因子主分数，与研判报告/回测引擎同源）→ 市场档位。
  *  阈值与 V5.2 引擎一致：≥80 过热只减不新建 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓。 */
 export const TIER_THRESHOLDS = { overheat: 80, full: 65, half: 24 };
+export { marketTierVersion, TIER_MODE_FLAG } from './tier_policy.js';   // 产物版本戳单一出处
 
 /** 档位 → { 标签、建议总仓位（占总资产比例）、是否允许新建仓 } */
 export const POSITION_TIERS = [
@@ -128,13 +129,16 @@ const finite = (v) => Number.isFinite(+v);
  * @param {{overheat:number,full:number,half:number}} [thresholds] 外部阈值（可选）
  * @returns {{key:string,label:string,pos:number,allowNew:boolean}|null}
  */
-export function marketTier(score, thresholds) {
+export function marketTier(score, _researchThresholds) {
   // 注意：不能用 Number.isFinite(score)——空字符串 +'' 会得到 0，被当成「情绪分=0」→ 误判清仓。
   // 情绪分缺失必须返回 null（UI 据此显示「档位未知」），绝不默认任何档位。
   if (score == null || score === '' || typeof score === 'boolean') return null;
   if (!finite(score)) return null;
   const s = +score;
-  const t = thresholds || TIER_THRESHOLDS;
+  /* 【单一入口】生产 7 处调用一律走本函数、不传阈值；_researchThresholds 仅供
+   * tools/backtest 研究脚本使用，严禁出现在报告/paper/复盘等产物链路。
+   * feature flag 在 src/tier_policy.js::TIER_MODE_FLAG（当前 absolute=零行为改动）。 */
+  const t = _researchThresholds || TIER_THRESHOLDS;
   if (s >= t.overheat) return POSITION_TIERS[0];
   if (s >= t.full) return POSITION_TIERS[1];
   if (s > t.half) return POSITION_TIERS[2];

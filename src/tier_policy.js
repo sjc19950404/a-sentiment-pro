@@ -70,3 +70,20 @@ export function tierKey(score, thresholds) {
   if (s > t.half) return 'half';
   return 'clear';
 }
+
+
+/* ── 【2026-11-24 纯 instrumentation：feature flag + 版本戳 + 单一入口】 ──
+ * 行为零改动：当前 mode='absolute'，marketTier() 判档与旧版逐位相同。
+ * 参数签名后只改这一行 mode → 'p82_confirm3_band3'，7 处调用点无需改动。
+ * 每个产物落 marketTierVersion 字段，事后可核对"这一天的档是哪套口径判的"。
+ */
+export const TIER_MODE_FLAG = Object.freeze({
+  mode: 'absolute',   // 唯一开关：'absolute' | 'p82_confirm3_band3'（签名后启用）
+  switchedAt: null,   // 切换生效日（YYYY-MM-DD），报告文案隔日切换时填
+});
+
+export function marketTierVersion(flag = TIER_MODE_FLAG) {
+  return 'marketTier/' + (flag.mode === 'absolute'
+    ? 'v5.2-absolute-80_65_24'
+    : 'v5.3-' + flag.mode);
+}
