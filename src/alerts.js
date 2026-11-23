@@ -154,7 +154,9 @@ export function marketAlerts({ emotionScore, total, marketValue } = {}) {
     out.push({
       ...base, level: 'tip', type: 'market-unknown', action: 'watch',
       text: '市场情绪分缺失，无法判定档位，本日不给大盘仓位建议（不猜档）。',
-      why: '档位由七因子情绪分按 ≥80 过热 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓 划档；情绪分未算出时任何仓位建议都是无依据的。',
+      why: '档位由七因子情绪分按 ≥80 过热 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓 划档；情绪分未算出时任何仓位建议都是无依据的。'
+        + '【v5.3 口径注】过热 80 分在当前 s_net 复活后的分布下等价 P81.5（对应 18.15% 天数），'
+        + '80 不是绝对硬阈值——下次口径变动须按"旧档位天数占比→新分布分位"重新反解（见 src/tier_policy.js）。',
     });
     return out;
   }
