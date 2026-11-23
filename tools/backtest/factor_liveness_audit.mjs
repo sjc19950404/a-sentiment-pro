@@ -168,6 +168,7 @@ console.log('因子 | 裸档非零率 | decode后非零率 | 差值 | 影响kept
 for (const r of rows) {
   console.log(`${r.name} | ${pc(r.rRate)} | ${pc(r.dRate)} | ${(r.diff >= 0 ? '+' : '') + pc(r.diff)} | ${r.keptDelta} | ${r.keptImpact}`);
 }
+console.log('\n【影响幅度口径定义】分母 = 最近 ' + KEEP_N + ' 个交易日基线 kept 数量累计（裸档逐日跑 recommendPicks 的 picks 条数求和）；分子 = 同一批日子里「只替换该因子为 decode 版」后新进入 kept 的票次累计（逐日集合差并集求和，重复进入按不同日计次）。即「单因子复活带来的 kept 增量 / 基线 kept 总量」，不是分数变化率、不是进出次数比。例：143.2% = 30 日内 lhb 明细复活新增 63 个 kept 票次 / 基线 44 个 kept 票次。');
 console.log('\n═══ 判据标记 ═══');
 for (const r of rows) {
   const tags = [r.silent && '沉默因子(裸档<5%)', r.unusable && '历史结论不可用(decode>2x)', r.zombie && '僵尸(方差≈0&相关≈0)'].filter(Boolean);
@@ -181,6 +182,9 @@ console.log(' §②机构/北向/游资净额：顶层聚合数，裸档未打�
 console.log(' 席位集中度：买方金额结构裸档可见 → 数值可用；但席位身份（谁）不可用');
 console.log(' 锁仓/新进占比：卖侧有无结构裸档可见 → 数值可用；席位身份不可用');
 console.log(' 游资席位命中(hotMoney)：纯身份匹配 → 裸档 0%，历史结论全部不可用');
+console.log(' ⚠ 题材与换手非零率同为 23.2%（63/271）非巧合：两者日期集合完全一致，均为 2026-08-14 起连续 63 天——');
+console.log('   同一写入路径从 8-14 才落 hot/themes，前 208 天字段缺失（非 0 写成缺失）。题材因子(20%权重)');
+console.log('   全史实证仅 63 天；线 A 对账窗口实际可用 ~63 天——27 天对账合理，但原因是 archive hot 只有 63 天。');
 console.log(`\n═══ 结论：v5.2 里活着的因子 ${alive}/${rows.length} ═══`);
 if (alive < rows.length / 2) console.log('⚠ 活着少于一半——19 日双轨账本的 -7.00% 只能评价"半个引擎"，不得作为策略整体表现。');
 else console.log('多数因子在历史上有效——双轨账本仍需按单因子标记逐项复核。');
