@@ -2,6 +2,19 @@
  "schema_version": "1.0",
  "pushed": [
   {
+   "fingerprint": "d7d82605175344bb_8cb",
+   "type": "intraday",
+   "date": "2026-11-23",
+   "verified": {
+    "checked_at": "10:35",
+    "snapshot_at": "2026-11-23 10:35",
+    "removed": 0,
+    "degraded": false,
+    "skipped": true
+   },
+   "pushed_at": "2026-11-23T02:35:04.130Z"
+  },
+  {
    "fingerprint": "dc18b846529984a0_8bf",
    "type": "intraday",
    "date": "2026-11-23",
