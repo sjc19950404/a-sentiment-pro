@@ -19,7 +19,7 @@
    }
   },
   "600316": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -91,7 +91,7 @@
    }
   },
   "603038": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -190,12 +190,12 @@
    }
   },
   "603666": {
-   "pos": "sealed",
+   "pos": "red",
    "counts": {
     "lift": 0,
     "red": 1,
     "seal": 1,
-    "dtBreak": 0
+    "dtBreak": 1
    }
   },
   "603687": {
@@ -514,6 +514,6 @@
    }
   }
  },
- "notified": 35,
+ "notified": 36,
  "date": "2026-11-23"
 }
