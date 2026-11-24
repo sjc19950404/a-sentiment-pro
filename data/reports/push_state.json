@@ -2,6 +2,19 @@
  "schema_version": "1.0",
  "pushed": [
   {
+   "fingerprint": "4199683af9ca3782_b30",
+   "type": "pre_market",
+   "date": "2026-11-24",
+   "pushed_at": "2026-11-24T00:55:02.924Z"
+  },
+  {
+   "fingerprint": "e7311597a2359e97_ec",
+   "type": "pre_market_mine",
+   "date": "2026-11-24",
+   "cfp": "344e66792138e3df_77",
+   "pushed_at": "2026-11-24T00:55:02.924Z"
+  },
+  {
    "fingerprint": "d5fd31373d436d77_939",
    "type": "post_market",
    "date": "2026-11-23",
