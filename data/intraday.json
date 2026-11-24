@@ -2,8 +2,8 @@
   "version": 4,
   "kind": "intraday",
   "tradeDate": "2026-11-24",
-  "capturedAt": "2026-11-24T04:00:03.563Z",
-  "capturedAtBJ": "2026-11-24 12:00",
+  "capturedAt": "2026-11-24T04:30:03.816Z",
+  "capturedAtBJ": "2026-11-24 12:30",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
@@ -1651,7 +1651,7 @@
         "c": "002199",
         "lbc": 3,
         "lbw": 3,
-        "zbc": 1,
+        "zbc": 2,
         "hybk": "元件",
         "fbt": "093009",
         "fund": 51243192
@@ -3467,15 +3467,15 @@
     "degradations": []
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-11-24 11:30",
+  "prevCapturedAtBJ": "2026-11-24 12:00",
   "prevPools": {
     "zt": 64,
     "zb": 42,
     "seal_pct": 60.4
   },
   "rolling": {
-    "generatedAtBJ": "2026-11-24 12:00",
-    "minutes_to_close": 180,
+    "generatedAtBJ": "2026-11-24 12:30",
+    "minutes_to_close": 150,
     "trend_pool_mode": "trend",
     "streak_pool": [
       {
