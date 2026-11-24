@@ -24,6 +24,7 @@ import { bjDate, bjTime, bjInstant } from './time.js';
 import { validateExternal } from './validate_snapshot.js';
 import { QUOTE_STATE } from './global.js';
 import { reconcilePosition } from './position_policy.js';
+import { TIER_MODE_FLAG, marketTierVersion } from './tier_policy.js';   // C终态：报告不输出仓位档
 import { reviewTrades } from './paper_review.js';
 // V5.3 核心引擎调优（2026-10-28）：极寒分化惩罚 / 主线降权过滤的共享纯函数。
 //   浏览器/Node 双端安全（零 IO、不 import fs/backtest/paper），供报告层与选股引擎共用。
@@ -184,16 +185,20 @@ function buildRegime(input) {
   //   消除"研判简报读 dual_track.day.regime / 日报用 classifyRegime"两套源打架；
   //   基础仓位由情绪分翻译，最终执行以帽为准。纸面 A/B/C 剧本仍用 day.regime（执行轨纪律）。
   const capKey = pick(input, 'signals.dailyReport.tag.key') || day.regime?.key || null;
-  const posRec = reconcilePosition({ score: day.score, regimeKey: capKey });
+  /* 【C 终态】alert_only：帽/仓位区间属择时残留，不进任何报告产物。 */
+  const ALERT_ONLY = TIER_MODE_FLAG.mode === 'alert_only';
+  const posRec = ALERT_ONLY ? null : reconcilePosition({ score: day.score, regimeKey: capKey });
   // 展示层合并落地：长文版 regime 的 key/label/range 一律以「合并后的 cap（日报权威 regime）」为准，
   // 不再透出 dualTrack.day.regime 的裸 climax（高潮/60%~100%）——否则长文简报会与前端日报打架。
   const regime = {
     key: capKey ?? day.regime?.key ?? null,
     label: (posRec && posRec.cap && posRec.cap.label) || day.regime?.label || null,
     score: (day && Number.isFinite(day.score)) ? day.score : null, // 大盘情绪分（0-100，任务一·盘中温度计播报用）
-    cap: (posRec && posRec.cap && Number.isFinite(posRec.cap.maxPos)) ? posRec.cap.maxPos : (Number.isFinite(day.regime?.cap) ? day.regime.cap : null),
-    position_range: posRec ? posRec.finalRange : (range ? range.position.range : null),
-    positionReconcile: posRec,
+    cap: ALERT_ONLY ? null : ((posRec && posRec.cap && Number.isFinite(posRec.cap.maxPos)) ? posRec.cap.maxPos : (Number.isFinite(day.regime?.cap) ? day.regime.cap : null)),
+    position_range: ALERT_ONLY ? null : (posRec ? posRec.finalRange : (range ? range.position.range : null)),
+    positionReconcile: ALERT_ONLY ? null : posRec,
+    marketTierVersion: marketTierVersion(),
+    alertOnly: ALERT_ONLY,
   };
   // 补丁一（V5.3·2026-10-28）：极寒分化惩罚的「报告侧」落地——只改写本函数当场新建的 regime 对象，
   //   绝不修改 day / 任何原始归档。引擎七态无「震荡」key，最接近等价的降级目标是 neutral(中性)。

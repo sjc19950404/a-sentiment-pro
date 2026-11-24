@@ -1,6 +1,8 @@
 // 产出闸门回归测试（2026-11-13）：断掉「改代码时测试全过 → 盘后产出脏档 → 次日体检才发现」的循环。
 // 覆盖两道闸：①渲染出口不变量 ②落盘前契约校验。重点是「反例能被造出来」。
 import { test } from 'node:test';
+import { TIER_MODE_FLAG } from '../src/tier_policy.js';
+const C_ALERT_ONLY = TIER_MODE_FLAG.mode === 'alert_only';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

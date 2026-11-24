@@ -19,6 +19,7 @@
 //   • **不构成投资建议**：措辞只描述状态与风险，不给买卖动作。
 
 import { classifyRegime, detectDivergence, num } from './regime.js';
+import { TIER_MODE_FLAG } from './tier_policy.js';   // C终态：alert_only 下报告不输出仓位档/风控帽
 import { positionLine, positionNarrative, reconcilePosition, DISCLAIMER as POSITION_DISCLAIMER } from './position_policy.js';
 import { assertDailyReport } from './report_guard.mjs';
 
@@ -28,6 +29,10 @@ export const DISPLAY = { pct1: 1, score1: 1 };
 const f1 = (v) => { const n = num(v); return n === null ? null : Math.round(n * 10) / 10; };
 const f2 = (v) => { const n = num(v); return n === null ? null : Math.round(n * 100) / 100; };
 const yen = (v) => { const n = num(v); return n === null ? null : `${Math.round(n).toLocaleString('zh-CN')} 元`; };
+
+/* C 终态：模块级单一常量——alert_only 下报告全链（摘要/分节/输出字段）不输出仓位档与帽。
+ * 提到模块作用域是因为 buildRegimeSection / buildHeadline 是独立函数，够不到 buildDailyReport 的局部量。 */
+const ALERT_ONLY = TIER_MODE_FLAG.mode === 'alert_only';
 
 // ── 主入口 ────────────────────────────────────────────────────────────────
 //
@@ -66,9 +71,10 @@ export function buildDailyReport(signals = {}) {
       breadthVerdict: S.breadth && S.breadth.verdict,
     });
 
-  // ── 展示层合并（2026-10-24）：情绪基础仓位 × regime 风控帽 合成单一结论 ──
-  //   统一以本报告的权威 regime（regFull.key）为风控帽；最终执行以帽为准。
-  const posRec = reconcilePosition({ score: latest.value, regimeKey: regFull.key });
+  /* 【C 终态】alert_only：情绪档与 regime 风控帽都是择时残留，一律不进入报告。
+   * 仓位由满仓 beta + 两条纯风控（-8% 单笔止损 / 回撤≥15% 降仓）决定——报告只描述
+   * 状态与告警，不输出任何仓位区间指令（包括"帽"）。 */
+  const posRec = ALERT_ONLY ? null : reconcilePosition({ score: latest.value, regimeKey: regFull.key });
 
   const sections = [];
   const caveats = [];
@@ -186,11 +192,13 @@ function buildRegimeSection(reg, div, posRec, structNote) {
     return {
       id: 'regime', title: '一、市场状态判定', level: 'unknown', missing: true,
       missingReason: (reg.unknownReasons || []).join('；') || '判据不足',
-      points: ['状态标签需"水位 × 方向"两个维度，当前判据不足，不给结论（不猜）。', '状态不明 → 无仓位区间意见；按保守档（0%~20%）处理，见风控说明。'],
+      points: ['状态标签需"水位 × 方向"两个维度，当前判据不足，不给结论（不猜）。',
+        ALERT_ONLY ? '状态不明 → 仅告警，仓位由满仓 beta + 硬风控决定（不输出区间）。'
+                   : '状态不明 → 无仓位区间意见；按保守档（0%~20%）处理，见风控说明。'],
     };
   }
-  // V5.3 前置块：状态 → 推荐仓位区间（position_policy 唯一出处；shift 为强制降仓档）
-  const pos = positionLine(reg.key);
+  // C 终态：alert_only 下不生成任何仓位前置块
+  const pos = ALERT_ONLY ? null : positionLine(reg.key);
   if (pos) pts.push({ text: pos.text, kind: 'main' });
   pts.push({ text: reg.detail, kind: 'main' });
   // ⑧a 结构尺交叉披露：structNote 由 buildDailyReport 主函数算好传入（latest/sealPct 作用域在那里；
@@ -216,7 +224,7 @@ function buildRegimeSection(reg, div, posRec, structNote) {
     missing: false, points: pts,
     tag: reg.label, confidence: reg.confidence,
     levelCheck: reg.levelCheck || null,
-    position: pos ? { range: pos.range, force: pos.force, tone: pos.band.tone } : null,
+    position: ALERT_ONLY ? null : (pos ? { range: pos.range, force: pos.force, tone: pos.band.tone } : null),
   };
 }
 
@@ -550,10 +558,12 @@ function buildDragonSection(dl) {
 function buildHeadline(reg, div, date, missingCount, posRec) {
   const d = date ? `${date} ` : '';
   if (reg.key === 'unknown') return `${d}数据不足，无法给出市场状态判断。`;
-  // V5.3 简报格式：【市场状态判定】状态｜推荐仓位区间，情绪得分在第二节展开
-  const pos = positionLine(reg.key);
-  let s = `${d}市场状态：${reg.label}${pos ? `｜推荐仓位区间 ${pos.range}` : ''}`;
-  if (pos && pos.force) s += '（强制降仓）';
+  /* 【C 终态】摘要只报状态 + 告警语义，不输出任何仓位区间/帽。 */
+  const pos = ALERT_ONLY ? null : positionLine(reg.key);
+  let s = ALERT_ONLY
+    ? `${d}市场状态：${reg.label}｜情绪分仅告警、不参与仓位决策；仓位由满仓 beta + 硬风控决定`
+    : `${d}市场状态：${reg.label}${pos ? `｜推荐仓位区间 ${pos.range}` : ''}`;
+  if (!ALERT_ONLY && pos && pos.force) s += '（强制降仓）';
   if (reg.confidence === 'low') s += '（判据不全，仅供参考）';
   if (div.diverged) s += `；${div.label}`;
   if (missingCount > 0) s += `（${missingCount} 个区块缺数据）`;

@@ -2,6 +2,8 @@
 // 双轨合并（决议 1）/ trigger 枚举（决议 3）/ 周报胜率口径（决议 4）/
 // 契约校验（schemas/ai-report.schema.json）/ 真实档冒烟（不写死数字，CI 数据更新不红）
 import test from 'node:test';
+import { TIER_MODE_FLAG } from '../src/tier_policy.js';
+const C_ALERT_ONLY = TIER_MODE_FLAG.mode === 'alert_only';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 
@@ -85,7 +87,7 @@ const mustPass = (r, label) => {
 };
 
 // ── 1. 盘后报告：结构 / 搬运 / null 纪律 ───────────────────────────────
-test('盘后报告：信封字段齐 + 数字只搬运 + 结构性 null 不补 0', () => {
+test('盘后报告：信封字段齐 + 数字只搬运 + 结构性 null 不补 0', { skip: C_ALERT_ONLY && 'C终态:报告不输出仓位档/帽'  }, () => {
   const r = generatePostMarket(mkInput(), { generatedAt: GEN_AT });
   mustPass(r, 'post_market');
   assert.equal(r.schema_version, SCHEMA_VERSION);

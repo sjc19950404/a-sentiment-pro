@@ -1,5 +1,7 @@
 // #4 日报生成器 daily_report.js —— 真调用断言
 import { test } from 'node:test';
+import { TIER_MODE_FLAG } from '../src/tier_policy.js';
+const C_ALERT_ONLY = TIER_MODE_FLAG.mode === 'alert_only';
 import assert from 'node:assert/strict';
 import { buildDailyReport, DISPLAY } from '../src/daily_report.js';
 
@@ -61,7 +63,7 @@ test(`buildDailyReport: ${10} 个分节标题齐全且顺序固定`, () => {
   assert.deepEqual(ids, SEC_IDS);
 });
 
-test('buildDailyReport: 高潮日 + 宽度窄 → ★ 切换期（V5.3 矛盾覆盖），headline 含"切换期"与"假繁荣"', () => {
+test('buildDailyReport: 高潮日 + 宽度窄 → ★ 切换期（V5.3 矛盾覆盖），headline 含"切换期"与"假繁荣"', { skip: C_ALERT_ONLY && 'C终态:报告不输出仓位档/帽' }, () => {
   const R = buildDailyReport(fullSignals());
   // fixture：分位 76.3（high）+ 方向 flat → 主标签 climax；但宽度收窄 → 假繁荣背离
   // → V5.3 矛盾覆盖为切换期（保守档），背离线索仍完整披露
@@ -72,7 +74,7 @@ test('buildDailyReport: 高潮日 + 宽度窄 → ★ 切换期（V5.3 矛盾覆
   assert.equal(R.divergence.diverged, true);
 });
 
-test('buildDailyReport: ★ V5.3 节一带仓位区间（neutral → 30%~50%），unknown 不给区间', () => {
+test('buildDailyReport: ★ V5.3 节一带仓位区间（neutral → 30%~50%），unknown 不给区间', { skip: C_ALERT_ONLY && 'C终态:报告不输出仓位档/帽'  }, () => {
   const S = fullSignals();
   // 无背离 + 无末段特征 → neutral 主标签（value 55 / pct 50 / 方向 flat）
   // 2026-11-06 B1：分位差口径下 flat 需等值序列（[54,55,55,55] 的 +25pp 会判 up→recover）
@@ -408,7 +410,7 @@ test('buildDailyReport: llm 反向不生效块 → level=info 且只给原因不
 });
 
 // ── 展示层合并（2026-10-24）：基础仓位 × 风控帽 合成 ──────────────────────
-test('buildDailyReport: ★ 展示层合并 —— 情绪喊冲(88.5)遇 regime=shift 风控帽 → 冲突，headline/regime 区块合成"最终执行仓位"', () => {
+test('buildDailyReport: ★ 展示层合并 —— 情绪喊冲(88.5)遇 regime=shift 风控帽 → 冲突，headline/regime 区块合成"最终执行仓位"', { skip: C_ALERT_ONLY && 'C终态:报告不输出仓位档/帽' }, () => {
   const S = fullSignals();
   // 把素材抬到"情绪绝对高位 + 宽度仍窄"：基础仓位=进攻(60~100)，但 regime 帽=shift(0~30) 强制降仓
   S.latest.value = 88.5; S.latest.pct_rank = 100;
@@ -427,7 +429,7 @@ test('buildDailyReport: ★ 展示层合并 —— 情绪喊冲(88.5)遇 regime=
   assert.match(regPts, /最终执行：0%~30%（强制）/, 'regime 区块摆出最终执行仓位');
 });
 
-test('buildDailyReport: ★ 展示层合并 —— 无冲突（中性情绪 × neutral 帽）不误报、不告警', () => {
+test('buildDailyReport: ★ 展示层合并 —— 无冲突（中性情绪 × neutral 帽）不误报、不告警', { skip: C_ALERT_ONLY && 'C终态:报告不输出仓位档/帽'  }, () => {
   const S = fullSignals();
   S.latest.value = 55; S.latest.pct_rank = 50; // 中性
   S.breadth = { verdict: { level: 'mid', label: '宽度中性' } };

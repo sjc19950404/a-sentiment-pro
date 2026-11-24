@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-24",
- "generated_at": "2026-11-24T10:47:32.327Z",
+ "generated_at": "2026-11-24T11:31:02.398Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -130,32 +130,13 @@
   "slippage_source": "assumed_constant",
   "regime": {
    "key": "recover",
-   "label": "复苏/酝酿期",
+   "label": "回暖",
    "score": 50.38,
-   "cap": 0.5,
-   "position_range": "30%~50%",
-   "positionReconcile": {
-    "score": 50.4,
-    "base": {
-     "key": "base_neutral",
-     "minPos": 0.3,
-     "maxPos": 0.5,
-     "label": "中性"
-    },
-    "baseRange": "30%~50%",
-    "cap": {
-     "key": "recover",
-     "minPos": 0.3,
-     "maxPos": 0.5,
-     "label": "复苏/酝酿期",
-     "advice": "中性震荡试仓，跟随确认再加",
-     "tone": "balanced"
-    },
-    "capRange": "30%~50%",
-    "force": false,
-    "conflict": false,
-    "finalRange": "30%~50%"
-   },
+   "cap": null,
+   "position_range": null,
+   "positionReconcile": null,
+   "marketTierVersion": "marketTier/v5.3-alert_only",
+   "alertOnly": true,
    "clustering_bubble": false,
    "sentiment_penalty": 0,
    "score_adjusted": 50.38
@@ -254,5 +235,6 @@
   "cost_ratio": "即时轨当日 trades 费用合计 / 成交额合计；归档轨无成交明细 → null",
   "win_rate": "口径 = 模拟盘平仓胜率（reviewTrades，来自 data/paper/account.json 的 trades；P3 起绑定真实成交）；0 笔平仓 → null（样本不足，不降级为日收益口径）。原「剧本命中率」数据源 airpt_sim_bindings 仍缺席。"
  },
- "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。"
+ "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
+ "marketTierVersion": "marketTier/v5.3-alert_only"
 }

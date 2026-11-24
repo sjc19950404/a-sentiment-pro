@@ -1,0 +1,44 @@
+{
+  "kind": "alert-quality-backlog",
+  "version": 1,
+  "createdAt": "2026-11-24",
+  "status": "open",
+  "priority": "high",
+  "title": "涨停强度/涨跌停对比因子与封板质量对冲——退潮首日告警系统性高估",
+  "owner_note": "C 终态下告警是本系统唯一输出产品——错误告警≠无害残留，这是告警可信度债，不是已归档策略线。",
+  "evidence": {
+    "source": "212号简报（2026-11-24）",
+    "facts": {
+      "limitUp": 55,
+      "limitDown": 2,
+      "touchedLimit": 123,
+      "brokenBoard": 68,
+      "sealRatePct": 44.7,
+      "brokenRatePct": 55.3
+    },
+    "factorScores": {
+      "s_hot10_涨停强度": 96.5,
+      "s_zdt15_涨跌停对比": 96.5,
+      "s_zbl10_封板质量": 44.7
+    },
+    "root_cause": "s_hot10=limitUp/(limitUp+limitDown)*100 与 s_zdt15=((limitUp-limitDown)/ldDen)*50+50 都是'数量'口径——55 家涨停 ≥50 阈值即近满分；s_zbl10=limitUp/(limitUp+brokenCount)*100 才是'质量'口径。25% 权重（数量）压过 10% 权重（质量），同一批涨停股三个因子方向相反时，情绪分被数量拉住——退潮首日高估约 15 分（212号实证：情绪 49.5 若按封板率重算应约 34~35）。",
+    "impact": "alert_only 终态下情绪分只输出告警标签（过热/冰点提示）——高估 15 分意味着退潮首日的'偏冷'告警被稀释成'中性'，这是错误告警，直接影响系统唯一产品的可信度。"
+  },
+  "fix_proposal": {
+    "name": "涨停强度因子改为 数量 × 封板率 复合口径",
+    "formula": "s_hot10_new = (limitUp / ldDen) * 100 * (limitUp / (limitUp + brokenCount)) = 数量分 × 封板率（0~1）",
+    "alternative": "或直接将 s_hot10 并入封板质量因子、删除 s_hot10，权重 10% 移到 s_zbl10（封板质量权重 10%→20%）——两个方案须回测对比后二选一，不拍脑袋。",
+    "s_zdt15_note": "涨跌停对比同源问题（96.5 与涨停强度同分），但它的语义是'涨跌停力量对比'，保留原义即可——关键是把权重从'纯数量'搬到'质量×数量'，不是两个因子都改。",
+    "acceptance": [
+      "271 日回测：退潮首日（次日涨停维持率<40% 且炸板率>50%）的情绪分高估幅度从 ~15 分降到 <5 分",
+      "分层命中率：封板率 30-50% 档与 >80% 档的情绪分差 ≥10 分（当前几乎无差）",
+      "改后情绪分与 s_zbl10 的 Spearman 相关 ≥0.6（当前数量因子主导下显著低于）",
+      "改后重跑 prob 校准与告警标签分布，不混用旧口径结论"
+    ],
+    "priority_note": "排在 3 日 regime 窗口稳健性之前——后者是口径稳健性诊断，前者是错误告警，直接影响唯一输出产品。"
+  },
+  "not_in_scope": [
+    "仓位档/帽（C 已永久删除）",
+    "择时策略重启（三种形态已归档，data/tier_archive.json）"
+  ]
+}

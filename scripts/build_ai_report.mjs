@@ -18,6 +18,7 @@
 //   闸门跳过 = 正常退出（exit 0），不是错误——CI 步骤不因"今天不该出报告"变红。
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { atomicWriteJSON } from '../src/fsutil.js';
+import { marketTierVersion } from '../src/tier_policy.js';   // 报告产物版本戳单一出处
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateContract } from '../src/contract.js';
@@ -157,6 +158,8 @@ if (TYPE === 'pre_market') report.missing_notes.push(WATCHLIST_MISSING_NOTE);
 else if (WITH_SIM && TYPE === 'intraday') report.missing_notes.push(INTRADAY_SIM_MISSING_NOTE);
 else if (WITH_SIM) report.missing_notes.push(SIM_MISSING_NOTE);
 
+/* 【C 终态】每份报告产物落 marketTierVersion——事后可核对"这份报告的档是哪套口径判的"。 */
+report.marketTierVersion = marketTierVersion();
 const file = `${TYPE}_${report.date}.json`;
 mkdirSync(OUT_DIR, { recursive: true });
 atomicWriteJSON(join(OUT_DIR, file), JSON.stringify(report, null, 1) + '\n');
