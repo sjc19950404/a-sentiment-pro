@@ -1149,6 +1149,8 @@ escClose();
   const engineNoExport = readFileSync(join(ROOT, 'src/paper.js'), 'utf8')
     .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhbfilter\.js';/m,
       'const { filterOne } = window.__lhbfilter__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/risk_budget\.js';/m,
+        'const { allocateBudget, BUDGET_GATES } = window.__riskbudget__;')
     .replace(/^export\s+/gm, '');
   // src/quote.js 也是 ESM：剥掉 import/export 后与引擎/前端拼到同一作用域。
   // 它 import 的 quoteSymbol 来自 sources.js，这里剥掉 import 即可（该函数在下方内联补齐）。
@@ -1234,6 +1236,17 @@ escClose();
   const mainThemeBundle = `window.__maintheme__ = (function(){\n`
     + readFileSync(join(ROOT, 'src/main_theme.js'), 'utf8').replace(/^export\s+/gm, '')
     + '\nreturn { clusterThemes, classifyThemeStrength };\n})();';
+  /* 【2026-11-24 补】picks.js 依赖的三个零依赖模块此前无 bundle——import 残留导致
+   * jsdom 加载必失败（"Unexpected string" 实为 re-export 残骸 + import 未剥）。 */
+  const seatNormBundle = `window.__seatnorm__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/seat_norm.js'), 'utf8').replace(/^export\s+/gm, '')
+    + '\nreturn { normalizeSeatName, seatMatchesPatterns };\n})();';
+  const limitCaliberBundle = `window.__limitcaliber__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/limit_caliber.js'), 'utf8').replace(/^export\s+/gm, '')
+    + '\nreturn { LIMIT_CALIBER, limitUpPct, isLimitUp, isLimitUpOld };\n})();';
+  const tierPolicyBundle = `window.__tierpolicy__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/tier_policy.js'), 'utf8').replace(/^export\s+/gm, '')
+    + '\nreturn { ABSOLUTE_FALLBACK, BASELINE_TIER_POLICY, SHADOW_TIER_POLICY, tierThresholds, tierKey, TIER_MODE_FLAG, marketTierVersion, tierAlert };\n})();';
   const picksBundle = `window.__picks__ = (function(){\n`
     + readFileSync(join(ROOT, 'src/picks.js'), 'utf8')
       // 报错时把「残留 import」这个坑显性暴露出来，而不是抛一句「Unexpected token import」
@@ -1248,6 +1261,14 @@ escClose();
         'const { clusterThemes, classifyThemeStrength } = window.__maintheme__;')
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/admission\.js';/m,
         'const { isAdmissible, isRiskName, filterAdmissible } = window.__admission__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/seats\.js';/m,
+        'const { seatsOf } = window.__seats__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/seat_norm\.js';/m,
+        'const { seatMatchesPatterns } = window.__seatnorm__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/tier_policy\.js';/m,
+        'const { TIER_MODE_FLAG } = window.__tierpolicy__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/limit_caliber\.js';/m,
+        'const { isLimitUp: isLimitUpOf, LIMIT_CALIBER } = window.__limitcaliber__;')
       .replace(/^export\s+/gm, '')
     + '\nreturn { marketTier, TIER_THRESHOLDS, POSITION_TIERS, recommendPicks, PICK_TOP_N, SCORE_WEIGHTS, suggestWeight, NET_OUTFLOW_TAG };\n})();';
   // paper_ui.js 直接调用 recommendPicks / PICK_TOP_N / SCORE_WEIGHTS，故从 window.__picks__ 解构回作用域
@@ -1271,6 +1292,9 @@ escClose();
   const configNoExport = 'var backtestCfg = ' + readFileSync(join(ROOT, 'config.json'), 'utf8') + ';';
   // paper_ui.js 用到的预警导出
   const alertsFlat = `const { buildAlerts, MARKET_CFG, POS_CFG, LEVELS } = window.__alerts__;`;
+  const riskBudgetBundle = `window.__riskbudget__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/risk_budget.js'), 'utf8').replace(/^export\s+/gm, '')
+    + '\nreturn { BUDGET_GATES, allocateBudget };\n})();';
   const alertsBundle = `window.__alerts__ = (function(){\n`
     + readFileSync(join(ROOT, 'src/alerts.js'), 'utf8')
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/picks\.js';/m,
@@ -1278,6 +1302,8 @@ escClose();
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhbfilter\.js';/m,
         'const { isNetOutflow, FLAG_LHB } = window.__lhbfilter__;')
       .replace(/^import\s+backtestCfg\s+from\s*'\.\/config\.js';/m, '')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/risk_budget\.js';/m,
+        'const { allocateBudget, BUDGET_GATES } = window.__riskbudget__;')
       .replace(/^export\s+/gm, '')
     + '\nreturn { buildAlerts, marketAlerts, positionAlerts, MARKET_CFG, POS_CFG, LEVELS, ACTIONS };\n})();';
   // src/alert_log.js（预警台账与收益归因）：纯函数 ESM，import 了
@@ -1332,7 +1358,8 @@ escClose();
     return null;
   }`;
   try {
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${admissionBundle}\n${lhbFilterBundle}\n${predictBundle}\n${mainThemeBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n})();`);
+    { const fsx = await import('fs'); fsx.writeFileSync('/tmp/eval_bundle.js', `${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${admissionBundle}\n${lhbFilterBundle}\n${predictBundle}\n${seatNormBundle}\n${limitCaliberBundle}\n${tierPolicyBundle}\n${mainThemeBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n})();`); }   // TEMP
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${admissionBundle}\n${lhbFilterBundle}\n${predictBundle}\n${seatNormBundle}\n${limitCaliberBundle}\n${tierPolicyBundle}\n${mainThemeBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${riskBudgetBundle}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n})();`);
   } catch (e) {
     check('模拟交易引擎模块在 jsdom 中可加载（台面 UI 已下线，引擎守卫保留）', false, e.message);
   }

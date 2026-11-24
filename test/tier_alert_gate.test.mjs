@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { marketTier, suggestWeight, marketTierVersion, TIER_MODE_FLAG } from '../src/picks.js';
+import { marketTier, suggestWeight } from '../src/picks.js';
+import { marketTierVersion, TIER_MODE_FLAG } from '../src/tier_policy.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

@@ -19,6 +19,11 @@
  * ══════════════════════════════════════════════════════════════════════════ */
 (function (S) {
   'use strict';
+  /* 【C 终态 2026-11-24】情绪分只告警、不参与仓位。flag 由 scripts/inject_config.mjs
+   * 从 src/tier_policy.js::TIER_MODE_FLAG 注入 window.ASENT_CONFIG.marketTierMode；
+   * 本地未注入时缺省 alert_only（与终态一致，防倒退）。 */
+  const ALERT_ONLY = (window.ASENT_CONFIG && window.ASENT_CONFIG.marketTierMode
+    ? window.ASENT_CONFIG.marketTierMode === 'alert_only' : true);
   S = S || (window.S = window.S || {});
 
   const $ = (sel, root) => (root || document).querySelector(sel);
@@ -143,7 +148,7 @@
         + `<p class="s-section__note">结论层 · 目标 3 秒内回答「今天盘面有什么风险」</p></div>`
         + `<div class="s-verdict s-verdict--warn" id="sVerdict" role="status">`
         + `<span class="s-badge s-badge--warn">风险提示</span>`
-        + `<span class="s-verdict__text" id="sVerdictText">市场处于冰点区间，宽度背离与亏钱效应同时触发，执行仓位建议压到 0–20%，不宜追高。</span>`
+        + `<span class="s-verdict__text" id="sVerdictText">${ALERT_ONLY ? '情绪分仅作告警，不参与仓位决策；仓位由满仓 beta + 硬风控（-8% 止损 / 回撤≥15% 降仓）决定。' : '市场处于冰点区间，宽度背离与亏钱效应同时触发，执行仓位建议压到 0–20%，不宜追高。'}</span>`
         + `<span class="s-verdict__sub" id="sVerdictSub">依据 6 项核心指标 · 2 项告警 · 数据日 —</span></div>`
         + `<div class="s-grid s-grid--kpi s-grid--kpi-tall" id="sKpiRow" style="margin-top:var(--s-space-3)">`
         /* 【P1-8 去假占位 2026-11-19】delta/note 原是视觉稿示意值（历史分位—/60日最低12%/
@@ -151,7 +156,7 @@
          * 竞态时用户会把假数字当真值。统一改「—」（无值不造假），真值由 sync()/evidence 填。 */
         + kpiCard2('情绪分', 'sKpiScore', '历史分位 —', '近 60 日最低 —', true, 'var(--s-font-kpi)')
         + kpiCard2('市场状态', 'sKpiRegime', 'regime 连续 — 日', '防御口径判定中')
-        + kpiCard2('执行仓位', 'sKpiPos', '分位优先 · 风控帽', '交叉验证 —')
+        + (ALERT_ONLY ? '' : kpiCard2('执行仓位', 'sKpiPos', '分位优先 · 风控帽', '交叉验证 —'))
         + kpiCard2('涨停 / 跌停', 'sKpiLimit', '炸板率 —', '最高板 —')
         + kpiCard2('涨 / 跌家数', 'sKpiBreadth', '宽度 —', '极寒分化判定中')
         + kpiCard2('龙虎净买', 'sKpiLhb', '当日榜口径', '买卖双侧已校验', true)
@@ -202,7 +207,7 @@
     const k = readKpis();
     setVal('sKpiScore', k.score, true);
     setVal('sKpiRegime', k.regime, !!REGIME_DOWN[k.regimeKey]);
-    setVal('sKpiPos', k.pos, /冰点|清仓|0~20/.test(k.pos || ''));
+    setVal('sKpiPos', k.pos, /冰点|清仓|0~20/.test(k.pos || ''));   // alert_only 下卡未生成，setVal 对缺失元素安全跳过
     setPair('sKpiLimit', k.limit);
     setPair('sKpiBreadth', k.breadth);
     setVal('sKpiLhb', (k.lhb || '').replace(/^当日龙虎净买\s*/, '').replace(/\s*亿$/, ' 亿') || k.lhb, /^-/.test(k.lhb || '') || /-\d/.test(k.lhb || ''));
@@ -221,7 +226,9 @@
      * 保留原型句式骨架（…压到 … 不宜追高）。仓位真值＝风控帽区间（P0-1）。 */
     const vt = document.getElementById('sVerdictText');
     if (vt && k.regime && k.regime !== LOADING && k.score !== LOADING) {
-      vt.textContent = `市场处于${k.regime}区间，执行仓位建议压到 ${k.pos || '—'}，不宜追高。`;
+      vt.textContent = ALERT_ONLY
+        ? `市场处于${k.regime}区间——情绪分仅告警、不参与仓位；仓位由满仓 beta + 硬风控（-8% 止损 / 回撤≥15% 降仓）决定。`
+        : `市场处于${k.regime}区间，执行仓位建议压到 ${k.pos || '—'}，不宜追高。`;
     }
   }
 

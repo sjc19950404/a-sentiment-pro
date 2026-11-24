@@ -141,7 +141,7 @@
       const table = (picks.length || obsRows.length)
         ? '<div class="s-table-wrap"><div class="s-table__viewport"><table class="s-table s-table--compact">'
         + '<thead><tr><th>性质</th><th>名称 / 代码</th><th>涨跌幅</th><th>相对强度（校准见注）</th>'
-        + '<th title="引擎 V5.2 绝对分档口径——与风控帽（分位优先）是两把尺子，超帽时见上方告警条">建议仓位（引擎口径）</th><th>核心逻辑</th><th>操作</th></tr></thead><tbody>'
+        + '<th title="C 终态：情绪分仅告警不参与仓位——此列为满仓 beta 等权 1/n（受单票 20% 上限约束）；旧 V5.2 档位/风控帽口径已停用">建议仓位（等权）</th><th>核心逻辑</th><th>操作</th></tr></thead><tbody>'
         + rows + obsRows + '</tbody></table></div></div>'
         : '<div class="s-empty"><div class="s-empty__title">今日无推荐与观察标的</div>'
         + '<div class="s-empty__hint">' + esc(String(arc.note || '').slice(0, 120) || '按当日口径无达标标的，不填充估算值。') + '</div></div>';

@@ -3,7 +3,7 @@
 // 纪律：这里测的是「规则本身」，不是实现细节。每个用例都对应一条会被用户照着操作的建议，
 // 所以断言必须写清「因为哪个字段、应该给出什么档位/动作」。边界一律取等号两侧各一例。
 import { test } from 'node:test';
-import { marketTierVersion } from '../src/picks.js';
+import { marketTierVersion } from '../src/tier_policy.js';
 const C_ALERT_ONLY = marketTierVersion().includes('alert_only');
 import assert from 'node:assert/strict';
 import {

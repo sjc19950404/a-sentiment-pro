@@ -4,7 +4,7 @@
 // 例如把区间累计榜放回候选池（净买额变成三天累计值）、让没有资金证据的票进推荐、
 // 或者在清仓档位依然给出建仓建议（逆着市场档位推荐重仓是自相矛盾）。
 import { test } from 'node:test';
-import { marketTierVersion } from '../src/picks.js';
+import { marketTierVersion } from '../src/tier_policy.js';
 const C_ALERT_ONLY = marketTierVersion().includes('alert_only');
 import assert from 'node:assert/strict';
 import {

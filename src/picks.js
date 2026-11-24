@@ -108,7 +108,6 @@ export const STREAK_MAX = 4;
 /** 情绪分（七因子主分数，与研判报告/回测引擎同源）→ 市场档位。
  *  阈值与 V5.2 引擎一致：≥80 过热只减不新建 / ≥65 满仓 / 24~65 半仓 / ≤24 清仓。 */
 export const TIER_THRESHOLDS = { overheat: 80, full: 65, half: 24 };
-export { marketTierVersion, TIER_MODE_FLAG, tierAlert } from './tier_policy.js';   // 产物版本戳/告警标签单一出处
 
 /** 档位 → { 标签、建议总仓位（占总资产比例）、是否允许新建仓 } */
 export const POSITION_TIERS = [

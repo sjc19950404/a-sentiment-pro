@@ -5,7 +5,7 @@
 //   所以必须写清「因为哪个字段、应该得出什么结论」。
 //   边界一律取等号两侧各一例；无数据场景必须验证「如实降级、不编造」。
 import { test } from 'node:test';
-import { marketTierVersion } from '../src/picks.js';
+import { marketTierVersion } from '../src/tier_policy.js';
 const C_ALERT_ONLY = marketTierVersion().includes('alert_only');
 import assert from 'node:assert/strict';
 import {
