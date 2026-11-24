@@ -2,7 +2,7 @@
  "kind": "llm-dragon-logic",
  "version": 1,
  "asOfDate": "2026-11-24",
- "generatedAt": "2026-11-24T18:39:42.108+08:00",
+ "generatedAt": "2026-11-24T21:10:39.882+08:00",
  "cachedFrom": null,
  "model": "glm-4-flash",
  "source": "ztpool+macro-sector-sentiment",
@@ -14,40 +14,40 @@
    "name": "中京电子",
    "lb": 4,
    "hybk": "元件",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
    "confidence": 0.8,
-   "reason": "高位爆量分歧，纯情绪炒作，明日或跌停"
+   "reason": "缩量硬板，机构锁仓，预期加速"
   },
   {
    "code": "603960",
    "name": "克莱机电",
    "lb": 3,
    "hybk": "汽车零部",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
-   "confidence": 0.7,
-   "reason": "缩量硬板，情绪稳定，预期续板"
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.8,
+   "reason": "缩量一字，游资接力，预期冲高"
   },
   {
    "code": "605018",
    "name": "长华集团",
    "lb": 3,
    "hybk": "汽车零部",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
-   "confidence": 0.6,
-   "reason": "炸板次数多，筹码松动，明日或调整"
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.8,
+   "reason": "缩量硬板，游资主导，预期冲高"
   },
   {
    "code": "002548",
    "name": "金新农",
    "lb": 3,
    "hybk": "饲料",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
-   "confidence": 0.7,
-   "reason": "无炸板，缩量封板，预期续板"
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.8,
+   "reason": "缩量硬板，游资接力，预期冲高"
   },
   {
    "code": "002086",
@@ -56,18 +56,18 @@
    "hybk": "农产品加",
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.5,
-   "reason": "炸板严重，筹码松动，明日或跌停"
+   "confidence": 0.6,
+   "reason": "高位爆量，筹码松动，明日或核按钮"
   },
   {
    "code": "300703",
    "name": "创源股份",
    "lb": 2,
    "hybk": "文娱用品",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
-   "confidence": 0.7,
-   "reason": "炸板，筹码松动，明日或调整"
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.8,
+   "reason": "缩量硬板，游资接力，预期冲高"
   },
   {
    "code": "301252",
@@ -77,7 +77,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.6,
-   "reason": "炸板次数多，筹码松动，明日或跌停"
+   "reason": "炸板多次，抛压重，谨慎对待"
   },
   {
    "code": "301413",
@@ -86,28 +86,28 @@
    "hybk": "通用设备",
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.7,
-   "reason": "炸板，筹码松动，明日或调整"
+   "confidence": 0.6,
+   "reason": "炸板严重，筹码松动，明日或跌停"
   },
   {
    "code": "301575",
    "name": "艾芬达",
    "lb": 2,
    "hybk": "家居用品",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
-   "confidence": 0.6,
-   "reason": "炸板次数多，筹码松动，明日或跌停"
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.8,
+   "reason": "缩量硬板，游资接力，预期冲高"
   },
   {
    "code": "600814",
    "name": "杭州解百",
    "lb": 2,
    "hybk": "一般零售",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
    "confidence": 0.8,
-   "reason": "无炸板，缩量封板，预期续板"
+   "reason": "缩量硬板，游资接力，预期冲高"
   },
   {
    "code": "601599",
@@ -117,7 +117,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "低位连板，情绪炒作，明日或冲高回落"
+   "reason": "纺织利空，高位爆量，筹码松动"
   },
   {
    "code": "603040",
@@ -127,7 +127,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "炸板后反包，情绪波动大，谨慎追高"
+   "reason": "汽车板块无利好，炸板多，预期分化"
   },
   {
    "code": "603103",
@@ -137,7 +137,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "炸板次数多，筹码松动，预期分化"
+   "reason": "影视板块无利好，炸板多，预期分化"
   },
   {
    "code": "603516",
@@ -147,7 +147,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "缩量硬板，预期加速，但需防炸板"
+   "reason": "计算机板块无利好，缩量硬板，预期加速"
   },
   {
    "code": "603626",
@@ -157,7 +157,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "成交额大，但炸板少，预期稳定"
+   "reason": "消费电子板块无利好，炸板多，预期分化"
   },
   {
    "code": "603662",
@@ -167,7 +167,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "无炸板，筹码紧，预期持续"
+   "reason": "通用设备板块无利好，炸板多，预期分化"
   },
   {
    "code": "603666",
@@ -177,7 +177,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "炸板后反包，情绪波动大，谨慎追高"
+   "reason": "自动化设备板块无利好，缩量硬板，预期加速"
   },
   {
    "code": "603926",
@@ -187,7 +187,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "炸板多，筹码松动，明日或跌"
+   "reason": "汽车板块无利好，缩量硬板，预期加速"
   },
   {
    "code": "605488",
@@ -197,7 +197,7 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "炸板后反包，情绪波动大，谨慎追高"
+   "reason": "塑料板块无利好，炸板少，预期稳定"
   },
   {
    "code": "001229",
@@ -207,207 +207,207 @@
    "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "一字独食，无换手，通道党游戏，散户别凑热闹"
+   "reason": "计算机板块无利好，缩量硬板，预期加速"
   },
   {
    "code": "001278",
    "name": "一彬科技",
    "lb": 2,
    "hybk": "汽车零部",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
    "confidence": 0.8,
-   "reason": "低位连板，缩量加速，情绪炒作，小心冲高回落"
+   "reason": "缩量硬板，游资锁仓"
   },
   {
    "code": "002036",
    "name": "联创电子",
    "lb": 2,
    "hybk": "光学光电",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
    "confidence": 0.8,
-   "reason": "无炸板，缩量硬板，预期加速"
+   "reason": "缩量硬板，游资锁仓"
   },
   {
    "code": "002122",
    "name": "汇洲智能",
    "lb": 2,
    "hybk": "通用设备",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
    "confidence": 0.8,
-   "reason": "无炸板，缩量硬板，预期加速"
+   "reason": "缩量硬板，游资锁仓"
   },
   {
    "code": "002164",
    "name": "宁波东力",
    "lb": 2,
    "hybk": "通用设备",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
-   "confidence": 0.7,
-   "reason": "炸板一次，高位分歧，谨慎追高"
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.8,
+   "reason": "缩量硬板，游资锁仓"
   },
   {
    "code": "002708",
    "name": "光洋股份",
    "lb": 2,
    "hybk": "汽车零部",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
-   "confidence": 0.6,
-   "reason": "炸板三次，高位放量，筹码松动，明日或跌"
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.8,
+   "reason": "缩量硬板，游资锁仓"
   },
   {
    "code": "002931",
    "name": "锋龙股份",
    "lb": 2,
    "hybk": "通用设备",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
    "confidence": 0.7,
-   "reason": "炸板一次，高位分歧，谨慎追高"
+   "reason": "炸板一次，游资分歧"
   },
   {
    "code": "002242",
    "name": "九阳股份",
    "lb": 2,
    "hybk": "小家电",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
-   "confidence": 0.8,
-   "reason": "无炸板，缩量硬板，预期加速"
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.7,
+   "reason": "炸板一次，游资分歧"
   },
   {
    "code": "002685",
    "name": "华东重机",
    "lb": 2,
    "hybk": "工程机械",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
-   "confidence": 0.7,
-   "reason": "炸板一次，高位分歧，谨慎追高"
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.6,
+   "reason": "炸板多次，筹码松动"
   },
   {
    "code": "001358",
    "name": "兴欣新材",
    "lb": 2,
    "hybk": "化学制品",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
-   "confidence": 0.7,
-   "reason": "炸板一次，高位分歧，谨慎追高"
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.6,
+   "reason": "炸板多次，筹码松动"
   },
   {
    "code": "002724",
    "name": "海洋王",
    "lb": 2,
    "hybk": "照明设备",
-   "logic_type": "情绪驱动",
-   "is_pure_sentiment": true,
-   "confidence": 0.8,
-   "reason": "无炸板，缩量硬板，预期加速"
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.7,
+   "reason": "炸板一次，游资分歧"
   },
   {
    "code": "300539",
    "name": "横河精密",
    "lb": 1,
-   "hybk": "",
-   "logic_type": "未知",
+   "hybk": "塑料",
+   "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
    "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "reason": "爆量分歧，筹码松动，明日或跌"
   },
   {
    "code": "300652",
-   "name": "300652",
+   "name": "雷迪克",
    "lb": 1,
-   "hybk": "",
-   "logic_type": "未知",
+   "hybk": "汽车零部",
+   "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "confidence": 0.7,
+   "reason": "缩量硬板，预期加速"
   },
   {
    "code": "301189",
    "name": "奥尼电子",
    "lb": 1,
-   "hybk": "",
-   "logic_type": "未知",
+   "hybk": "消费电子",
+   "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "confidence": 0.7,
+   "reason": "缩量无分歧，明日有望冲高"
   },
   {
    "code": "600189",
    "name": "泉阳泉",
    "lb": 1,
-   "hybk": "",
-   "logic_type": "未知",
+   "hybk": "饮料乳品",
+   "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "confidence": 0.6,
+   "reason": "炸板多，筹码松动，谨慎"
   },
   {
    "code": "600261",
    "name": "阳光照明",
    "lb": 1,
-   "hybk": "",
-   "logic_type": "未知",
+   "hybk": "照明设备",
+   "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "confidence": 0.6,
+   "reason": "炸板，筹码松动，明日或跌"
   },
   {
    "code": "600400",
    "name": "红豆股份",
    "lb": 1,
-   "hybk": "",
-   "logic_type": "未知",
+   "hybk": "服装家纺",
+   "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "confidence": 0.5,
+   "reason": "无炸板，但板块无利好，谨慎"
   },
   {
    "code": "600715",
    "name": "文投控股",
    "lb": 1,
-   "hybk": "",
-   "logic_type": "未知",
+   "hybk": "游戏Ⅱ",
+   "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "confidence": 0.5,
+   "reason": "炸板，筹码松动，明日或跌"
   },
   {
    "code": "600722",
    "name": "金牛化工",
    "lb": 1,
-   "hybk": "",
-   "logic_type": "未知",
+   "hybk": "化学原料",
+   "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "confidence": 0.5,
+   "reason": "无炸板，板块无利好，谨慎"
   },
   {
    "code": "603001",
    "name": "奥康国际",
    "lb": 1,
-   "hybk": "",
-   "logic_type": "未知",
+   "hybk": "服装家纺",
+   "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "confidence": 0.5,
+   "reason": "无炸板，板块无利好，谨慎"
   },
   {
    "code": "603030",
    "name": "全筑股份",
    "lb": 1,
-   "hybk": "",
-   "logic_type": "未知",
+   "hybk": "装修装饰",
+   "logic_type": "情绪驱动",
    "is_pure_sentiment": true,
-   "confidence": 0.8,
-   "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+   "confidence": 0.5,
+   "reason": "无炸板，板块无利好，谨慎"
   }
  ],
  "degraded": false,

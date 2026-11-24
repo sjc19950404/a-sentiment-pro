@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-24",
- "generated_at": "2026-11-24T11:31:02.398Z",
+ "generated_at": "2026-11-24T13:18:40.901Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -131,7 +131,7 @@
   "regime": {
    "key": "recover",
    "label": "回暖",
-   "score": 50.38,
+   "score": 50.83,
    "cap": null,
    "position_range": null,
    "positionReconcile": null,
@@ -139,7 +139,7 @@
    "alertOnly": true,
    "clustering_bubble": false,
    "sentiment_penalty": 0,
-   "score_adjusted": 50.38
+   "score_adjusted": 50.83
   },
   "circuit_breaker": {
    "dd_tier": 0,
@@ -179,8 +179,8 @@
    "note": "执行轨 vs 回测 v52 锚点（零偏差为设计约束）"
   },
   "market_context": {
-   "emotion": 49.5,
-   "pct_rank": 28.8,
+   "emotion": 50,
+   "pct_rank": 30.5,
    "indexes": {
     "上证指数": 0.27,
     "深证成指": -0.29,

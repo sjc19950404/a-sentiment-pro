@@ -1,0 +1,63 @@
+{
+ "kind": "llm-cache",
+ "name": "llm-sentiment",
+ "asOfDate": "2026-11-24",
+ "hash": "278d25fb97",
+ "cachedAt": "2026-11-24T13:04:56.648Z",
+ "parsed": {
+  "sentiment": 0.5,
+  "confidence": 0.8,
+  "reason": "市场整体情绪中性，涨停家数较多，炸板率较高，赚钱效应占优。",
+  "events": [
+   {
+    "type": "业绩预告",
+    "target": "商业航天",
+    "tone": "positive",
+    "note": "商业航天板块表现活跃，阳光照明等多股涨停。"
+   },
+   {
+    "type": "政策",
+    "target": "数字人民币",
+    "tone": "positive",
+    "note": "*ST天喻因撤销退市风险申请及数字人民币概念涨停。"
+   },
+   {
+    "type": "行业催化",
+    "target": "AI算力",
+    "tone": "positive",
+    "note": "AI算力板块持续活跃，文投控股等多股涨停。"
+   },
+   {
+    "type": "高管变动",
+    "target": "退市风险",
+    "tone": "negative",
+    "note": "*ST东珠因退市风险及生态修复概念表现不佳。"
+   },
+   {
+    "type": "减持",
+    "target": "芯片测试",
+    "tone": "negative",
+    "note": "芯片测试板块退潮，相关个股表现不佳。"
+   },
+   {
+    "type": "行业催化",
+    "target": "甲醇",
+    "tone": "positive",
+    "note": "金牛化工因甲醇及风电项目概念涨停。"
+   },
+   {
+    "type": "行业催化",
+    "target": "光刻胶剥离液",
+    "tone": "positive",
+    "note": "兴欣新材因光刻胶剥离液及电子化学品项目概念涨停。"
+   },
+   {
+    "type": "行业催化",
+    "target": "保健品",
+    "tone": "positive",
+    "note": "ST交昂因保健品及宠物经济概念涨停。"
+   }
+  ]
+ },
+ "model": "glm-4-flash"
+}

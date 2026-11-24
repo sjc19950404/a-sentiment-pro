@@ -3,206 +3,274 @@
  "version": 1,
  "asOfDate": "2026-11-24",
  "newsDate": "2026-11-24",
- "generatedAt": "2026-11-24T18:37:41.882+08:00",
+ "generatedAt": "2026-11-24T21:08:44.916+08:00",
  "cachedFrom": null,
  "model": "glm-4-flash",
  "macro": {
-  "sentiment": 0.13,
-  "score100": 56,
+  "sentiment": 0.15,
+  "score100": 57,
   "label": "中性",
   "confidence": 0.5,
-  "reason": "利好板块：基建(+0.75)、半导体(+0.7)、服务器(+0.7)、芯片(+0.63)、算力(+0.6)；利空板块：无"
+  "reason": "利好板块：航发(+0.6)、机器人(+0.6)、工业母机(+0.6)、中药(+0.6)、军工(+0.57)；利空板块：纺织服装(-0.4)"
  },
  "sectors": [
   {
-   "sector": "基建",
-   "score": 0.75,
-   "score100": 88,
-   "newsCount": 2,
-   "bullish": 2,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "央行：11月25日将开展8000亿元MLF操作",
-    "央行：11月25日开展8000亿元MLF操作，期限为1年期"
-   ]
-  },
-  {
-   "sector": "半导体",
-   "score": 0.7,
-   "score100": 85,
-   "newsCount": 2,
-   "bullish": 2,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "富士通Monaka服务器芯片需求超预期 正与台积电协商扩产",
-    "头部公募调研热情高 AI算力链包揽调研热股前十"
-   ]
-  },
-  {
-   "sector": "服务器",
-   "score": 0.7,
-   "score100": 85,
+   "sector": "航发",
+   "score": 0.6,
+   "score100": 80,
    "newsCount": 1,
    "bullish": 1,
    "bearish": 0,
    "neutral": 0,
    "headlines": [
-    "富士通Monaka服务器芯片需求超预期 正与台积电协商扩产"
+    "五角大楼与通用、福特洽谈合作生产军用无人机"
    ]
   },
   {
-   "sector": "芯片",
-   "score": 0.63,
-   "score100": 81,
-   "newsCount": 4,
-   "bullish": 4,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "富士通Monaka服务器芯片需求超预期 正与台积电协商扩产",
-    "亚马逊收购AI初创公司Decart的芯片软件业务",
-    "黄仁勋回归引燃AI交易 韩股涨超6%收复5000点大关",
-    "为何Anthropic的数学突破意义重大"
-   ]
-  },
-  {
-   "sector": "算力",
+   "sector": "机器人",
    "score": 0.6,
    "score100": 80,
-   "newsCount": 6,
-   "bullish": 6,
+   "newsCount": 1,
+   "bullish": 1,
    "bearish": 0,
    "neutral": 0,
    "headlines": [
-    "[2026-11-24] 迅合科技完成数千万元种子轮融资，创始人何理：企业AI落地的卡点在于老板认知",
-    "亚马逊收购AI初创公司Decart的芯片软件业务",
-    "黄仁勋回归引燃AI交易 韩股涨超6%收复5000点大关",
-    "为何Anthropic的数学突破意义重大"
+    "小鹏发布图灵世界模型WorldGPT，可在水、陆、空三栖六类本体完成预测与行动规划"
+   ]
+  },
+  {
+   "sector": "工业母机",
+   "score": 0.6,
+   "score100": 80,
+   "newsCount": 1,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 0,
+   "headlines": [
+    "小鹏发布图灵世界模型WorldGPT，可在水、陆、空三栖六类本体完成预测与行动规划"
+   ]
+  },
+  {
+   "sector": "中药",
+   "score": 0.6,
+   "score100": 80,
+   "newsCount": 1,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 0,
+   "headlines": [
+    "制药行业迎来三年来最大并购 赛诺菲豪掷410亿美元收购Insmed"
    ]
   },
   {
    "sector": "军工",
-   "score": 0.6,
-   "score100": 80,
+   "score": 0.57,
+   "score100": 78,
+   "newsCount": 3,
+   "bullish": 3,
+   "bearish": 0,
+   "neutral": 0,
+   "headlines": [
+    "五角大楼与通用、福特洽谈合作生产军用无人机",
+    "胡塞武装袭击不断 沙特向美国等盟友求援补充储备",
+    "中船科技：拟挂牌转让锡林郭勒公司100%股权及相关债权"
+   ]
+  },
+  {
+   "sector": "算力",
+   "score": 0.46,
+   "score100": 73,
+   "newsCount": 11,
+   "bullish": 10,
+   "bearish": 1,
+   "neutral": 0,
+   "headlines": [
+    "商汤发布SenseNova U1.6：美学得分较上一代提升约10%，实现原生图像自修正",
+    "高盛策略师：AI投资回报比英伟达风波更重要",
+    "无论好坏，AI未来繁荣的命运掌握在英伟达手中",
+    "高盛：黄仁勋回归尚不足以推动芯片股基本面反转，警惕空头回补驱动的短期反弹"
+   ]
+  },
+  {
+   "sector": "网络安全",
+   "score": 0.45,
+   "score100": 73,
+   "newsCount": 2,
+   "bullish": 2,
+   "bearish": 0,
+   "neutral": 0,
+   "headlines": [
+    "DXC与Anthropic推出AI代码安全服务，利用Claude Mythos识别企业软件漏洞",
+    "软通动力子公司鸿湖万联与南京双京达成战略合作"
+   ]
+  },
+  {
+   "sector": "AI",
+   "score": 0.44,
+   "score100": 72,
+   "newsCount": 12,
+   "bullish": 10,
+   "bearish": 1,
+   "neutral": 1,
+   "headlines": [
+    "商汤发布SenseNova U1.6：美学得分较上一代提升约10%，实现原生图像自修正",
+    "荣耀李健：好产品不是算计出来的妥协，以真诚和创新对抗行业寒冬",
+    "高盛策略师：AI投资回报比英伟达风波更重要",
+    "无论好坏，AI未来繁荣的命运掌握在英伟达手中"
+   ]
+  },
+  {
+   "sector": "纺织服装",
+   "score": -0.4,
+   "score100": 30,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 1,
+   "neutral": 0,
+   "headlines": [
+    "刚披露被证监会立案就跌停！*ST美丽再次跌破面值，退市倒计时重启"
+   ]
+  },
+  {
+   "sector": "船舶",
+   "score": 0.4,
+   "score100": 70,
    "newsCount": 1,
    "bullish": 1,
    "bearish": 0,
    "neutral": 0,
    "headlines": [
-    "伊朗海军称两艘油轮周二在霍尔木兹海峡触雷"
+    "中船科技：拟挂牌转让锡林郭勒公司100%股权及相关债权"
    ]
   },
   {
-   "sector": "AI",
-   "score": 0.57,
-   "score100": 79,
-   "newsCount": 7,
-   "bullish": 7,
+   "sector": "数据中心",
+   "score": 0.4,
+   "score100": 70,
+   "newsCount": 1,
+   "bullish": 1,
    "bearish": 0,
    "neutral": 0,
    "headlines": [
-    "[2026-11-24] 迅合科技完成数千万元种子轮融资，创始人何理：企业AI落地的卡点在于老板认知",
-    "亚马逊收购AI初创公司Decart的芯片软件业务",
-    "原招行高管王兴海履新招商金控，日前赴清华招揽AI人才",
-    "黄仁勋回归引燃AI交易 韩股涨超6%收复5000点大关"
+    "首都在线：全资子公司拟1.08亿元采购算力设备"
    ]
   },
   {
-   "sector": "地产",
-   "score": 0.45,
-   "score100": 73,
+   "sector": "服务器",
+   "score": 0.4,
+   "score100": 70,
+   "newsCount": 1,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 0,
+   "headlines": [
+    "首都在线：全资子公司拟1.08亿元采购算力设备"
+   ]
+  },
+  {
+   "sector": "医疗器械",
+   "score": 0.37,
+   "score100": 68,
+   "newsCount": 3,
+   "bullish": 2,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "制药行业迎来三年来最大并购 赛诺菲豪掷410亿美元收购Insmed",
+    "阿里健康2027财年中期总收入182.28亿元，同比增长9.2%",
+    "微创医疗的分拆梦与租赁的枷锁"
+   ]
+  },
+  {
+   "sector": "软件",
+   "score": 0.35,
+   "score100": 68,
    "newsCount": 4,
    "bullish": 3,
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "[2026-11-24] Compass集团计划将主要上市地迁至美国",
-    "央行：11月25日将开展8000亿元MLF操作",
-    "已发放补贴金1516.77万元，广州住房“卖旧买新”扩大范围",
-    "央行：11月25日开展8000亿元MLF操作，期限为1年期"
+    "猎奇智能：发行价97.53元/股，发行股份占发行后总股本25.00%",
+    "大手笔分红！AI服务器龙头工业富联，拟10派6.7元，派现超132亿元",
+    "DXC与Anthropic推出AI代码安全服务，利用Claude Mythos识别企业软件漏洞",
+    "软通动力子公司鸿湖万联与南京双京达成战略合作"
    ]
   },
   {
-   "sector": "医药",
-   "score": 0.4,
-   "score100": 70,
+   "sector": "信创",
+   "score": 0.35,
+   "score100": 68,
+   "newsCount": 4,
+   "bullish": 3,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "猎奇智能：发行价97.53元/股，发行股份占发行后总股本25.00%",
+    "大手笔分红！AI服务器龙头工业富联，拟10派6.7元，派现超132亿元",
+    "DXC与Anthropic推出AI代码安全服务，利用Claude Mythos识别企业软件漏洞",
+    "软通动力子公司鸿湖万联与南京双京达成战略合作"
+   ]
+  },
+  {
+   "sector": "航运",
+   "score": 0.33,
+   "score100": 67,
    "newsCount": 3,
    "bullish": 2,
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "订单回暖，但齐涨的日子结束：CRO龙头的定价权分化与利润成色",
-    "赛诺菲斥资410亿美元收购美国药企Insmed",
-    "恒瑞医药回购10.19万股A股用于员工持股计划，耗资483.55万元"
+    "油价调整通知",
+    "英国海事机构：三艘船只在霍尔木兹海峡遇袭",
+    "英国海事机构：三艘船只在霍尔木兹海峡遇袭"
    ]
   },
   {
-   "sector": "创新药",
-   "score": 0.4,
-   "score100": 70,
+   "sector": "半导体",
+   "score": 0.29,
+   "score100": 64,
+   "newsCount": 8,
+   "bullish": 6,
+   "bearish": 2,
+   "neutral": 0,
+   "headlines": [
+    "高盛加入看空阵营 下调三星、SK海力士目标价",
+    "无论好坏，AI未来繁荣的命运掌握在英伟达手中",
+    "单日涨7%后，ST东尼电子宣布：上交所同意撤销其他风险警示",
+    "高盛：黄仁勋回归尚不足以推动芯片股基本面反转，警惕空头回补驱动的短期反弹"
+   ]
+  },
+  {
+   "sector": "苹果产业链",
+   "score": 0.28,
+   "score100": 64,
+   "newsCount": 4,
+   "bullish": 2,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "荣耀李健：好产品不是算计出来的妥协，以真诚和创新对抗行业寒冬",
+    "单台成本上涨2000元，华为大折叠“加量不加价”图什么？",
+    "时隔11天“杀回”英伟达，黄仁勋成AI叙事“暴风眼”",
+    "小米，最新业绩出炉！卢伟冰谈内存涨价"
+   ]
+  },
+  {
+   "sector": "银行",
+   "score": 0.27,
+   "score100": 63,
    "newsCount": 3,
    "bullish": 2,
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "订单回暖，但齐涨的日子结束：CRO龙头的定价权分化与利润成色",
-    "赛诺菲斥资410亿美元收购美国药企Insmed",
-    "恒瑞医药回购10.19万股A股用于员工持股计划，耗资483.55万元"
+    "今夜回购潮！多家A股公司公告：全部注销！",
+    "接入千问、小微，银行开放拥抱AI智能体",
+    "甩逾期、优结构！哈尔滨银行近930亿元资产的“腾挪”细账"
    ]
   },
   {
-   "sector": "机器人",
-   "score": 0.4,
-   "score100": 70,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "[2026-11-24] 迅合科技完成数千万元种子轮融资，创始人何理：企业AI落地的卡点在于老板认知"
-   ]
-  },
-  {
-   "sector": "CXO",
-   "score": 0.3,
-   "score100": 65,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "订单回暖，但齐涨的日子结束：CRO龙头的定价权分化与利润成色",
-    "赛诺菲斥资410亿美元收购美国药企Insmed"
-   ]
-  },
-  {
-   "sector": "零售",
-   "score": 0.3,
-   "score100": 65,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "[2026-11-24] 唯品会2026年第三季度净营收204亿元，公司宣布派发特别现金股息"
-   ]
-  },
-  {
-   "sector": "物流",
-   "score": 0.3,
-   "score100": 65,
-   "newsCount": 1,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 0,
-   "headlines": [
-    "[2026-11-24] 唯品会2026年第三季度净营收204亿元，公司宣布派发特别现金股息"
-   ]
-  },
-  {
-   "sector": "化工",
+   "sector": "计算机",
    "score": 0.25,
    "score100": 63,
    "newsCount": 2,
@@ -210,138 +278,167 @@
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "从退市风险警示到市值突破80亿元，艾艾精工上演资本市场逆袭，45岁广西商人入主即获近18亿元账面浮盈",
-    "玻璃地位震荡 棕榈偏弱震荡"
-   ]
-  },
-  {
-   "sector": "银行",
-   "score": -0.2,
-   "score100": 40,
-   "newsCount": 5,
-   "bullish": 1,
-   "bearish": 3,
-   "neutral": 1,
-   "headlines": [
-    "[2026-11-24] 江苏银行：“苏银优1”优先股拟于11月30日起终止挂牌",
-    "原招行高管王兴海履新招商金控，日前赴清华招揽AI人才",
-    "江西银行要以8倍市价增发9.3亿股 近五年净利润出现腰斩",
-    "江西省金融控股集团有限公司副总经理吴晓接受纪律审查和监察调查"
-   ]
-  },
-  {
-   "sector": "传媒",
-   "score": 0.2,
-   "score100": 60,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "[2026-11-24] B站三季度总营收83.2亿元 调整后净利润8.3亿元",
-    "红果短剧上线“时间锁”功能 客服回应：陆续开放中，为了帮用户养成更健康的使用习惯"
-   ]
-  },
-  {
-   "sector": "游戏",
-   "score": 0.2,
-   "score100": 60,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 0,
-   "neutral": 1,
-   "headlines": [
-    "[2026-11-24] B站三季度总营收83.2亿元 调整后净利润8.3亿元",
-    "红果短剧上线“时间锁”功能 客服回应：陆续开放中，为了帮用户养成更健康的使用习惯"
-   ]
-  },
-  {
-   "sector": "保险",
-   "score": -0.17,
-   "score100": 41,
-   "newsCount": 8,
-   "bullish": 2,
-   "bearish": 5,
-   "neutral": 1,
-   "headlines": [
-    "[2026-11-24] Compass集团计划将主要上市地迁至美国",
-    "原招行高管王兴海履新招商金控，日前赴清华招揽AI人才",
-    "人保寿险宝鸡市分公司被罚12万元：给予或承诺给予投保人保险合同外利益、欺骗投保人",
-    "个人养老金四周年考：货架扩容至1230款、险企从“卖产品”走向“做养老”"
-   ]
-  },
-  {
-   "sector": "券商",
-   "score": 0.13,
-   "score100": 56,
-   "newsCount": 8,
-   "bullish": 4,
-   "bearish": 3,
-   "neutral": 1,
-   "headlines": [
-    "[2026-11-24] Compass集团计划将主要上市地迁至美国",
-    "[2026-11-24] 恒生科技指数将迎重磅扩容：新增20只成份股 逾1300亿恒科ETF迎来“换仓大考”",
-    "原招行高管王兴海履新招商金控，日前赴清华招揽AI人才",
-    "央行：11月25日将开展8000亿元MLF操作"
-   ]
-  },
-  {
-   "sector": "航运",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 3,
-   "bullish": 1,
-   "bearish": 2,
-   "neutral": 0,
-   "headlines": [
-    "[2026-11-24] 油价下跌：交易员权衡供应前景与航运风险",
-    "ATFX午评:EIA原油库存连续三周回升 美国原油产量创纪录",
-    "伊朗海军称两艘油轮周二在霍尔木兹海峡触雷"
-   ]
-  },
-  {
-   "sector": "黄金",
-   "score": 0.01,
-   "score100": 50,
-   "newsCount": 11,
-   "bullish": 2,
-   "bearish": 2,
-   "neutral": 7,
-   "headlines": [
-    "AXPM:黄金区间运行关注量能变化",
-    "CBCX:金市修复需跨越需求检验",
-    "CPT Markets:黄金支撑位观察资金回流",
-    "FPG财盛国际:黄金承压于收益率变量"
+    "猎奇智能：发行价97.53元/股，发行股份占发行后总股本25.00%",
+    "大手笔分红！AI服务器龙头工业富联，拟10派6.7元，派现超132亿元"
    ]
   },
   {
    "sector": "消费电子",
-   "score": 0,
-   "score100": 50,
+   "score": 0.23,
+   "score100": 62,
+   "newsCount": 10,
+   "bullish": 6,
+   "bearish": 2,
+   "neutral": 2,
+   "headlines": [
+    "荣耀李健：好产品不是算计出来的妥协，以真诚和创新对抗行业寒冬",
+    "高盛加入看空阵营 下调三星、SK海力士目标价",
+    "无论好坏，AI未来繁荣的命运掌握在英伟达手中",
+    "单日涨7%后，ST东尼电子宣布：上交所同意撤销其他风险警示"
+   ]
+  },
+  {
+   "sector": "医药",
+   "score": 0.2,
+   "score100": 60,
+   "newsCount": 5,
+   "bullish": 3,
+   "bearish": 1,
+   "neutral": 1,
+   "headlines": [
+    "阿里健康中期业绩：收入182.28亿元 同比增长9.2%",
+    "阿里健康2027财年中期总收入182.28亿元，同比增长9.2%",
+    "阿里健康：上半年营收182.28亿元 净利同比降12.2%",
+    "赛诺菲拟收购Insmed，后者股价大涨14%，达成三年来医药行业最大并购交易"
+   ]
+  },
+  {
+   "sector": "芯片",
+   "score": 0.19,
+   "score100": 59,
+   "newsCount": 7,
+   "bullish": 5,
+   "bearish": 2,
+   "neutral": 0,
+   "headlines": [
+    "商汤发布SenseNova U1.6：美学得分较上一代提升约10%，实现原生图像自修正",
+    "高盛加入看空阵营 下调三星、SK海力士目标价",
+    "高盛策略师：AI投资回报比英伟达风波更重要",
+    "单日涨7%后，ST东尼电子宣布：上交所同意撤销其他风险警示"
+   ]
+  },
+  {
+   "sector": "创新药",
+   "score": 0.14,
+   "score100": 57,
+   "newsCount": 5,
+   "bullish": 3,
+   "bearish": 2,
+   "neutral": 0,
+   "headlines": [
+    "单日跌超23%，“核药第一股”上市首日破发",
+    "制药行业迎来三年来最大并购 赛诺菲豪掷410亿美元收购Insmed",
+    "阿里健康2027财年中期总收入182.28亿元，同比增长9.2%",
+    "阿里健康：上半年营收182.28亿元 净利同比降12.2%"
+   ]
+  },
+  {
+   "sector": "CXO",
+   "score": 0.14,
+   "score100": 57,
+   "newsCount": 5,
+   "bullish": 3,
+   "bearish": 2,
+   "neutral": 0,
+   "headlines": [
+    "单日跌超23%，“核药第一股”上市首日破发",
+    "制药行业迎来三年来最大并购 赛诺菲豪掷410亿美元收购Insmed",
+    "阿里健康2027财年中期总收入182.28亿元，同比增长9.2%",
+    "阿里健康：上半年营收182.28亿元 净利同比降12.2%"
+   ]
+  },
+  {
+   "sector": "券商",
+   "score": -0.13,
+   "score100": 43,
+   "newsCount": 3,
+   "bullish": 0,
+   "bearish": 1,
+   "neutral": 2,
+   "headlines": [
+    "今夜回购潮！多家A股公司公告：全部注销！",
+    "关键时刻，头部基金公司又出手！",
+    "国盛证券排雷：国资接盘易、破局难"
+   ]
+  },
+  {
+   "sector": "保险",
+   "score": 0.1,
+   "score100": 55,
    "newsCount": 2,
    "bullish": 1,
    "bearish": 1,
    "neutral": 0,
    "headlines": [
-    "[2026-11-24] “亏了4600元！” 首批iPhone Duo尝鲜用户亏麻了，囤货黄牛哀嚎“亏20万”，折叠屏供应或遭卡脖子",
-    "美团闪购：华为旗舰大折叠Mate X8将同步首发，最快30分钟送达"
+    "巴克莱下调合众集团评级及目标价，资产出售延迟与赎回压力拖累盈利前景",
+    "居民风险偏好回落，2027年保险“开门红”有望超预期"
    ]
   },
   {
-   "sector": "苹果产业链",
-   "score": 0,
-   "score100": 50,
+   "sector": "CPO",
+   "score": -0.05,
+   "score100": 48,
    "newsCount": 2,
    "bullish": 1,
    "bearish": 1,
    "neutral": 0,
    "headlines": [
-    "[2026-11-24] “亏了4600元！” 首批iPhone Duo尝鲜用户亏麻了，囤货黄牛哀嚎“亏20万”，折叠屏供应或遭卡脖子",
-    "美团闪购：华为旗舰大折叠Mate X8将同步首发，最快30分钟送达"
+    "高盛：黄仁勋回归尚不足以推动芯片股基本面反转，警惕空头回补驱动的短期反弹",
+    "破亿！华为的鸿蒙涅槃为中国科技的鸿蒙｜商业快评"
    ]
   },
   {
-   "sector": "建材",
+   "sector": "光模块",
+   "score": -0.05,
+   "score100": 48,
+   "newsCount": 2,
+   "bullish": 1,
+   "bearish": 1,
+   "neutral": 0,
+   "headlines": [
+    "高盛：黄仁勋回归尚不足以推动芯片股基本面反转，警惕空头回补驱动的短期反弹",
+    "破亿！华为的鸿蒙涅槃为中国科技的鸿蒙｜商业快评"
+   ]
+  },
+  {
+   "sector": "PCB",
+   "score": -0.05,
+   "score100": 48,
+   "newsCount": 2,
+   "bullish": 1,
+   "bearish": 1,
+   "neutral": 0,
+   "headlines": [
+    "高盛：黄仁勋回归尚不足以推动芯片股基本面反转，警惕空头回补驱动的短期反弹",
+    "破亿！华为的鸿蒙涅槃为中国科技的鸿蒙｜商业快评"
+   ]
+  },
+  {
+   "sector": "黄金",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 1,
+   "neutral": 1,
+   "headlines": [
+    "摩根大通、汇丰首次在伦敦交易数字黄金，实物黄金有望成为更广泛使用的金融抵押品",
+    "黄金连续跌破多个整数关口，上金所预警贵金属高波动风险，接下来怎么看？",
+    "德商银行预计到2027年底金价将达到每盎司4100美元"
+   ]
+  },
+  {
+   "sector": "物流",
    "score": 0,
    "score100": 50,
    "newsCount": 1,
@@ -349,11 +446,11 @@
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "玻璃地位震荡 棕榈偏弱震荡"
+    "滴滴在全国14个城市举办司机节，升级司机保障计划3.0"
    ]
   },
   {
-   "sector": "商业航天",
+   "sector": "快递",
    "score": 0,
    "score100": 50,
    "newsCount": 1,
@@ -361,11 +458,11 @@
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "亚马逊星链竞品为何难以追上SpaceX"
+    "滴滴在全国14个城市举办司机节，升级司机保障计划3.0"
    ]
   },
   {
-   "sector": "卫星互联网",
+   "sector": "地产",
    "score": 0,
    "score100": 50,
    "newsCount": 1,
@@ -373,620 +470,714 @@
    "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "亚马逊星链竞品为何难以追上SpaceX"
+    "今夜回购潮！多家A股公司公告：全部注销！"
+   ]
+  },
+  {
+   "sector": "航空",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "油价调整通知"
+   ]
+  },
+  {
+   "sector": "食品饮料",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "天邦食品：控股股东张邦辉拟以1.9元/股非交易过户8000万股偿还质押融资本息"
+   ]
+  },
+  {
+   "sector": "固态电池",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "高盛上调ITM Power评级至中性，称股价半年暴跌61%后风险回报趋于平衡"
+   ]
+  },
+  {
+   "sector": "锂电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "高盛上调ITM Power评级至中性，称股价半年暴跌61%后风险回报趋于平衡"
+   ]
+  },
+  {
+   "sector": "储能",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "高盛上调ITM Power评级至中性，称股价半年暴跌61%后风险回报趋于平衡"
    ]
   }
  ],
  "events": [
   {
-   "headline": "[2026-11-24] 油价下跌：交易员权衡供应前景与航运风险",
+   "headline": "滴滴在全国14个城市举办司机节，升级司机保障计划3.0",
    "date": "2026-11-24",
    "sectors": [
-    "航运"
+    "物流",
+    "快递"
    ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "油价下跌对石油石化和航运板块构成利空"
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "新闻涉及滴滴公司，对相关板块影响有限"
   },
   {
-   "headline": "[2026-11-24] 迅合科技完成数千万元种子轮融资，创始人何理：企业AI落地的卡点在于老板认知",
+   "headline": "商汤发布SenseNova U1.6：美学得分较上一代提升约10%，实现原生图像自修正",
    "date": "2026-11-24",
    "sectors": [
     "AI",
     "算力",
-    "机器人"
+    "芯片"
    ],
    "direction": "positive",
-   "intensity": 0.4,
-   "reason": "AI领域融资增加，利好相关板块"
+   "intensity": 0.5,
+   "reason": "商汤发布新技术，利好AI相关板块"
   },
   {
-   "headline": "[2026-11-24] Compass集团计划将主要上市地迁至美国",
+   "headline": "荣耀李健：好产品不是算计出来的妥协，以真诚和创新对抗行业寒冬",
    "date": "2026-11-24",
    "sectors": [
-    "券商",
-    "地产",
-    "保险"
+    "消费电子",
+    "苹果产业链",
+    "AI"
    ],
    "direction": "neutral",
    "intensity": 0.3,
-   "reason": "上市地迁移对相关板块影响尚不确定"
+   "reason": "荣耀公司言论，对相关板块影响有限"
   },
   {
-   "headline": "[2026-11-24] B站三季度总营收83.2亿元 调整后净利润8.3亿元",
+   "headline": "五角大楼与通用、福特洽谈合作生产军用无人机",
    "date": "2026-11-24",
    "sectors": [
-    "传媒",
-    "游戏"
+    "军工",
+    "航发"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "军用无人机合作，利好军工板块"
+  },
+  {
+   "headline": "今夜回购潮！多家A股公司公告：全部注销！",
+   "date": "2026-11-24",
+   "sectors": [
+    "券商",
+    "银行",
+    "地产"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "回购潮对相关板块影响有限"
+  },
+  {
+   "headline": "高盛加入看空阵营 下调三星、SK海力士目标价",
+   "date": "2026-11-24",
+   "sectors": [
+    "半导体",
+    "芯片",
+    "消费电子"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "高盛看空，利空半导体相关板块"
+  },
+  {
+   "headline": "高盛策略师：AI投资回报比英伟达风波更重要",
+   "date": "2026-11-24",
+   "sectors": [
+    "AI",
+    "算力",
+    "芯片"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "高盛看好AI投资，利好相关板块"
+  },
+  {
+   "headline": "猎奇智能：发行价97.53元/股，发行股份占发行后总股本25.00%",
+   "date": "2026-11-24",
+   "sectors": [
+    "计算机",
+    "软件",
+    "信创"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "公司发行，对相关板块影响有限"
+  },
+  {
+   "headline": "摩根大通、汇丰首次在伦敦交易数字黄金，实物黄金有望成为更广泛使用的金融抵押品",
+   "date": "2026-11-24",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "数字黄金交易，对黄金板块影响有限"
+  },
+  {
+   "headline": "胡塞武装袭击不断 沙特向美国等盟友求援补充储备",
+   "date": "2026-11-24",
+   "sectors": [
+    "军工"
+   ],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "地缘紧张，石油需求增加，军工需求可能上升"
+  },
+  {
+   "headline": "单日跌超23%，“核药第一股”上市首日破发",
+   "date": "2026-11-24",
+   "sectors": [
+    "创新药",
+    "CXO"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "核药行业首日破发，影响行业信心"
+  },
+  {
+   "headline": "无论好坏，AI未来繁荣的命运掌握在英伟达手中",
+   "date": "2026-11-24",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.8,
+   "reason": "英伟达对AI行业影响巨大，利好相关板块"
+  },
+  {
+   "headline": "小鹏发布图灵世界模型WorldGPT，可在水、陆、空三栖六类本体完成预测与行动规划",
+   "date": "2026-11-24",
+   "sectors": [
+    "AI",
+    "机器人",
+    "工业母机"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "AI技术进步，利好相关应用领域"
+  },
+  {
+   "headline": "刚披露被证监会立案就跌停！*ST美丽再次跌破面值，退市倒计时重启",
+   "date": "2026-11-24",
+   "sectors": [
+    "纺织服装"
+   ],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "公司退市风险，影响相关板块"
+  },
+  {
+   "headline": "制药行业迎来三年来最大并购 赛诺菲豪掷410亿美元收购Insmed",
+   "date": "2026-11-24",
+   "sectors": [
+    "创新药",
+    "CXO",
+    "中药",
+    "医疗器械"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "行业并购，利好相关板块"
+  },
+  {
+   "headline": "油价调整通知",
+   "date": "2026-11-24",
+   "sectors": [
+    "航运",
+    "航空"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "油价调整，影响相关行业成本和需求"
+  },
+  {
+   "headline": "单日涨7%后，ST东尼电子宣布：上交所同意撤销其他风险警示",
+   "date": "2026-11-24",
+   "sectors": [
+    "半导体",
+    "芯片",
+    "消费电子"
    ],
    "direction": "positive",
    "intensity": 0.4,
-   "reason": "B站业绩良好，利好相关板块"
+   "reason": "公司风险警示解除，股价上涨"
   },
   {
-   "headline": "[2026-11-24] “亏了4600元！” 首批iPhone Duo尝鲜用户亏麻了，囤货黄牛哀嚎“亏20万”，折叠屏供应或遭卡脖子",
+   "headline": "大手笔分红！AI服务器龙头工业富联，拟10派6.7元，派现超132亿元",
+   "date": "2026-11-24",
+   "sectors": [
+    "计算机",
+    "软件",
+    "信创"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "公司分红，利好相关板块"
+  },
+  {
+   "headline": "单台成本上涨2000元，华为大折叠“加量不加价”图什么？",
    "date": "2026-11-24",
    "sectors": [
     "消费电子",
     "苹果产业链"
    ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "iPhone折叠屏供应问题，对相关板块构成利空"
-  },
-  {
-   "headline": "[2026-11-24] 突然涨停！50亿市值龙头低位2连板！这一只强势翻倍！下一只是谁？",
-   "date": "2026-11-24",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "个股涨停，对A股整体影响有限"
-  },
-  {
-   "headline": "[2026-11-24] 唯品会2026年第三季度净营收204亿元，公司宣布派发特别现金股息",
-   "date": "2026-11-24",
-   "sectors": [
-    "零售",
-    "物流"
-   ],
-   "direction": "positive",
-   "intensity": 0.3,
-   "reason": "唯品会业绩良好，利好相关板块"
-  },
-  {
-   "headline": "[2026-11-24] 江苏银行：“苏银优1”优先股拟于11月30日起终止挂牌",
-   "date": "2026-11-24",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "银行优先股终止挂牌，对板块影响有限"
-  },
-  {
-   "headline": "[2026-11-24] 特朗普过去24小时都忙了什么？",
-   "date": "2026-11-24",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.1,
-   "reason": "新闻与A股板块关系不大"
-  },
-  {
-   "headline": "[2026-11-24] 恒生科技指数将迎重磅扩容：新增20只成份股 逾1300亿恒科ETF迎来“换仓大考”",
-   "date": "2026-11-24",
-   "sectors": [
-    "券商"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "恒生科技指数扩容，利好相关板块"
-  },
-  {
-   "headline": "何超欣携多国青年亮相COP31，以时尚为媒，传递可持续理念",
-   "date": "2026-11-24",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "传递可持续理念，但具体影响尚不确定"
-  },
-  {
-   "headline": "ATFX午评:美元指数升破104.5 十年期美债收益率跌破5%",
-   "date": "2026-11-24",
-   "sectors": [],
    "direction": "neutral",
    "intensity": 0.3,
-   "reason": "美元指数和美债收益率变动对A股影响有限"
+   "reason": "成本上涨，影响产品定价策略"
   },
   {
-   "headline": "从退市风险警示到市值突破80亿元，艾艾精工上演资本市场逆袭，45岁广西商人入主即获近18亿元账面浮盈",
+   "headline": "天邦食品：控股股东张邦辉拟以1.9元/股非交易过户8000万股偿还质押融资本息",
    "date": "2026-11-24",
    "sectors": [
-    "化工"
+    "食品饮料"
    ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "公司逆袭，可能带动同板块个股表现"
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "公司内部股权变动，对板块影响有限"
   },
   {
-   "headline": "ATFX午评:EIA原油库存连续三周回升 美国原油产量创纪录",
+   "headline": "英国海事机构：三艘船只在霍尔木兹海峡遇袭",
    "date": "2026-11-24",
    "sectors": [
     "航运"
    ],
-   "direction": "negative",
-   "intensity": 0.4,
-   "reason": "原油库存回升，可能导致油价下跌，影响相关板块"
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "地缘紧张事件可能提升航运需求"
   },
   {
-   "headline": "订单回暖，但齐涨的日子结束：CRO龙头的定价权分化与利润成色",
+   "headline": "巴克莱下调合众集团评级及目标价，资产出售延迟与赎回压力拖累盈利前景",
+   "date": "2026-11-24",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "评级下调及盈利前景不佳，对保险板块构成利空"
+  },
+  {
+   "headline": "高盛：黄仁勋回归尚不足以推动芯片股基本面反转，警惕空头回补驱动的短期反弹",
+   "date": "2026-11-24",
+   "sectors": [
+    "半导体",
+    "芯片",
+    "消费电子",
+    "AI",
+    "算力",
+    "CPO",
+    "光模块",
+    "PCB"
+   ],
+   "direction": "negative",
+   "intensity": 0.7,
+   "reason": "对芯片行业前景持谨慎态度，可能影响相关板块"
+  },
+  {
+   "headline": "破亿！华为的鸿蒙涅槃为中国科技的鸿蒙｜商业快评",
+   "date": "2026-11-24",
+   "sectors": [
+    "AI",
+    "算力",
+    "CPO",
+    "光模块",
+    "PCB"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "华为鸿蒙系统发展，利好相关产业链"
+  },
+  {
+   "headline": "关键时刻，头部基金公司又出手！",
+   "date": "2026-11-24",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "基金公司操作，对板块影响有限"
+  },
+  {
+   "headline": "接入千问、小微，银行开放拥抱AI智能体",
+   "date": "2026-11-24",
+   "sectors": [
+    "银行",
+    "AI",
+    "算力"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "银行拥抱AI技术，利好相关板块"
+  },
+  {
+   "headline": "英国海事机构：三艘船只在霍尔木兹海峡遇袭",
+   "date": "2026-11-24",
+   "sectors": [
+    "航运"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "地缘紧张事件可能提升航运需求"
+  },
+  {
+   "headline": "阿里健康中期业绩：收入182.28亿元 同比增长9.2%",
+   "date": "2026-11-24",
+   "sectors": [
+    "医药"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "业绩增长，利好相关板块"
+  },
+  {
+   "headline": "陈吉宁涉嫌严重违纪违法正接受中央纪委国家监委审查调查！",
+   "date": "2026-11-24",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.1,
+   "reason": "个人事件，对板块影响有限"
+  },
+  {
+   "headline": "高盛上调ITM Power评级至中性，称股价半年暴跌61%后风险回报趋于平衡",
+   "date": "2026-11-24",
+   "sectors": [
+    "固态电池",
+    "锂电",
+    "储能"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "ITM Power评级上调，但股价波动对相关板块影响有限"
+  },
+  {
+   "headline": "时隔11天“杀回”英伟达，黄仁勋成AI叙事“暴风眼”",
+   "date": "2026-11-24",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "芯片",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "英伟达回归，AI产业链相关板块受益"
+  },
+  {
+   "headline": "黄金连续跌破多个整数关口，上金所预警贵金属高波动风险，接下来怎么看？",
+   "date": "2026-11-24",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "黄金价格下跌，对黄金板块构成利空"
+  },
+  {
+   "headline": "居民风险偏好回落，2027年保险“开门红”有望超预期",
+   "date": "2026-11-24",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "保险行业展望乐观，利好保险板块"
+  },
+  {
+   "headline": "姜诚要去华安基金？连中泰资管投决会都退了",
+   "date": "2026-11-24",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "个人变动，对市场影响有限"
+  },
+  {
+   "headline": "DXC与Anthropic推出AI代码安全服务，利用Claude Mythos识别企业软件漏洞",
+   "date": "2026-11-24",
+   "sectors": [
+    "AI",
+    "算力",
+    "软件",
+    "信创",
+    "网络安全"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "AI代码安全服务推出，利好相关板块"
+  },
+  {
+   "headline": "构建社保基金刚性监督体系",
+   "date": "2026-11-24",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "社保基金监督体系构建，对市场影响有限"
+  },
+  {
+   "headline": "000010，退市风险悬顶！被证监会立案+股价跌破面值",
+   "date": "2026-11-24",
+   "sectors": [],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "个股退市风险，对相关个股或板块构成利空"
+  },
+  {
+   "headline": "中船科技：拟挂牌转让锡林郭勒公司100%股权及相关债权",
+   "date": "2026-11-24",
+   "sectors": [
+    "军工",
+    "船舶"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "中船科技股权转让，利好军工和船舶板块"
+  },
+  {
+   "headline": "阿里健康2027财年中期总收入182.28亿元，同比增长9.2%",
+   "date": "2026-11-24",
+   "sectors": [
+    "医药",
+    "CXO",
+    "创新药",
+    "医疗器械"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "阿里健康业绩增长，利好相关板块"
+  },
+  {
+   "headline": "新华社：黄仁勋复职意味着什么",
+   "date": "2026-11-24",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "黄仁勋复职可能对英伟达业务有积极影响，利好相关产业链"
+  },
+  {
+   "headline": "软通动力子公司鸿湖万联与南京双京达成战略合作",
+   "date": "2026-11-24",
+   "sectors": [
+    "软件",
+    "信创",
+    "网络安全"
+   ],
+   "direction": "positive",
+   "intensity": 0.3,
+   "reason": "战略合作可能带来业务增长，利好相关板块"
+  },
+  {
+   "headline": "阿里健康：上半年营收182.28亿元 净利同比降12.2%",
    "date": "2026-11-24",
    "sectors": [
     "医药",
     "CXO",
     "创新药"
    ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "订单回暖，但具体影响尚不确定"
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "净利润下降，对医药板块构成利空"
   },
   {
-   "headline": "赛诺菲斥资410亿美元收购美国药企Insmed",
+   "headline": "财务造假！大烨智能将被ST，明日停牌",
+   "date": "2026-11-24",
+   "sectors": [],
+   "direction": "negative",
+   "intensity": 0.6,
+   "reason": "财务造假事件，对相关个股或板块构成利空"
+  },
+  {
+   "headline": "一路生花！洱海边来了个爱“暴走”的老教授",
+   "date": "2026-11-24",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.1,
+   "reason": "新闻与股市无直接关联"
+  },
+  {
+   "headline": "甩逾期、优结构！哈尔滨银行近930亿元资产的“腾挪”细账",
+   "date": "2026-11-24",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "positive",
+   "intensity": 0.3,
+   "reason": "银行资产优化，对银行板块构成利好"
+  },
+  {
+   "headline": "陈吉宁涉嫌严重违纪违法正接受中央纪委国家监委审查调查",
+   "date": "2026-11-24",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.1,
+   "reason": "新闻与股市无直接关联"
+  },
+  {
+   "headline": "恒通股份：截至11月24日公司累计回购股份8224500股",
+   "date": "2026-11-24",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.3,
+   "reason": "公司回购股份，对相关个股构成利好"
+  },
+  {
+   "headline": "赛诺菲拟收购Insmed，后者股价大涨14%，达成三年来医药行业最大并购交易",
    "date": "2026-11-24",
    "sectors": [
     "医药",
-    "创新药",
-    "CXO"
+    "CXO",
+    "创新药"
    ],
    "direction": "positive",
-   "intensity": 0.6,
-   "reason": "大型药企收购，可能带动行业整体发展"
+   "intensity": 0.5,
+   "reason": "医药行业并购，利好相关板块"
   },
   {
-   "headline": "玻璃地位震荡 棕榈偏弱震荡",
+   "headline": "将被实施其他风险警示，大烨智能11月25日停牌一天",
    "date": "2026-11-24",
-   "sectors": [
-    "建材",
-    "化工"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "玻璃和棕榈价格波动，对A股影响有限"
+   "sectors": [],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "风险警示，对相关个股或板块构成利空"
   },
   {
-   "headline": "红果短剧上线“时间锁”功能 客服回应：陆续开放中，为了帮用户养成更健康的使用习惯",
+   "headline": "黄仁勋回来了，英伟达暂时赢回“确定性”",
    "date": "2026-11-24",
    "sectors": [
-    "传媒",
-    "游戏"
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
    ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "功能上线，具体影响尚不确定"
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "英伟达业绩好转，相关产业链受益"
   },
   {
-   "headline": "亚马逊星链竞品为何难以追上SpaceX",
+   "headline": "德商银行预计到2027年底金价将达到每盎司4100美元",
    "date": "2026-11-24",
    "sectors": [
-    "商业航天",
-    "卫星互联网"
+    "黄金"
    ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "金价预期上涨，黄金板块受益"
+  },
+  {
+   "headline": "纽约联储威廉姆斯发出通胀警示，美债收益率走低，投资者静待5年期国债拍卖",
+   "date": "2026-11-24",
+   "sectors": [],
    "direction": "neutral",
    "intensity": 0.3,
-   "reason": "行业竞争，具体影响尚不确定"
+   "reason": "通胀警示，但具体影响尚不确定"
   },
   {
-   "headline": "美团闪购：华为旗舰大折叠Mate X8将同步首发，最快30分钟送达",
+   "headline": "大幅溢价，明日停牌一小时",
+   "date": "2026-11-24",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.1,
+   "reason": "停牌信息，对市场影响有限"
+  },
+  {
+   "headline": "小米，最新业绩出炉！卢伟冰谈内存涨价",
    "date": "2026-11-24",
    "sectors": [
     "消费电子",
-    "苹果产业链"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "华为新品发布，带动相关产业链销量预期提升"
-  },
-  {
-   "headline": "富士通Monaka服务器芯片需求超预期 正与台积电协商扩产",
-   "date": "2026-11-24",
-   "sectors": [
-    "芯片",
+    "苹果产业链",
     "半导体",
-    "服务器"
-   ],
-   "direction": "positive",
-   "intensity": 0.7,
-   "reason": "芯片需求增长，利好相关产业链"
-  },
-  {
-   "headline": "AXPM:黄金区间运行关注量能变化",
-   "date": "2026-11-24",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "黄金价格波动，对相关板块影响有限"
-  },
-  {
-   "headline": "CBCX:金市修复需跨越需求检验",
-   "date": "2026-11-24",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "黄金市场修复，尚不确定对板块影响"
-  },
-  {
-   "headline": "亚马逊收购AI初创公司Decart的芯片软件业务",
-   "date": "2026-11-24",
-   "sectors": [
-    "AI",
-    "算力",
     "芯片"
    ],
    "direction": "positive",
-   "intensity": 0.6,
-   "reason": "AI行业并购，利好相关板块"
-  },
-  {
-   "headline": "CPT Markets:黄金支撑位观察资金回流",
-   "date": "2026-11-24",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "黄金市场资金流动，对板块影响不确定"
-  },
-  {
-   "headline": "伊朗海军称两艘油轮周二在霍尔木兹海峡触雷",
-   "date": "2026-11-24",
-   "sectors": [
-    "航运",
-    "军工"
-   ],
-   "direction": "positive",
-   "intensity": 0.6,
-   "reason": "地缘政治紧张，利好石油和军工板块"
-  },
-  {
-   "headline": "原招行高管王兴海履新招商金控，日前赴清华招揽AI人才",
-   "date": "2026-11-24",
-   "sectors": [
-    "券商",
-    "保险",
-    "银行",
-    "AI"
-   ],
-   "direction": "positive",
    "intensity": 0.4,
-   "reason": "高管变动，关注AI领域布局"
+   "reason": "小米业绩好转，相关产业链受益"
   },
   {
-   "headline": "黄仁勋回归引燃AI交易 韩股涨超6%收复5000点大关",
+   "headline": "微创医疗的分拆梦与租赁的枷锁",
    "date": "2026-11-24",
    "sectors": [
-    "AI",
-    "算力",
-    "芯片"
-   ],
-   "direction": "positive",
-   "intensity": 0.7,
-   "reason": "AI行业领袖回归，利好相关板块"
-  },
-  {
-   "headline": "为何Anthropic的数学突破意义重大",
-   "date": "2026-11-24",
-   "sectors": [
-    "AI",
-    "算力",
-    "芯片"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "AI领域技术突破，利好相关板块"
-  },
-  {
-   "headline": "ST东尼：撤销其他风险警示 股票停牌一天",
-   "date": "2026-11-24",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "个股停牌对板块影响中性"
-  },
-  {
-   "headline": "EasyMarkets易信:低位买盘回应数据降温",
-   "date": "2026-11-24",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "市场情绪对板块影响中性"
-  },
-  {
-   "headline": "“民主党向黄仁勋和英伟达宣战”",
-   "date": "2026-11-24",
-   "sectors": [],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "政治因素可能影响相关板块"
-  },
-  {
-   "headline": "FPG财盛国际:黄金承压于收益率变量",
-   "date": "2026-11-24",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "金价下跌对黄金板块利空"
-  },
-  {
-   "headline": "人保寿险宝鸡市分公司被罚12万元：给予或承诺给予投保人保险合同外利益、欺骗投保人",
-   "date": "2026-11-24",
-   "sectors": [
-    "保险"
-   ],
-   "direction": "negative",
-   "intensity": 0.3,
-   "reason": "保险行业负面事件对板块利空"
-  },
-  {
-   "headline": "鸿海拟发行最高15亿美元2031年到期零息可转债",
-   "date": "2026-11-24",
-   "sectors": [],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "鸿海业务涉及消费电子，融资可能带来正面影响"
-  },
-  {
-   "headline": "AI算力荒，让长期停滞的地热能源重获生机",
-   "date": "2026-11-24",
-   "sectors": [],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "AI算力需求增加对相关板块利好"
-  },
-  {
-   "headline": "个人养老金四周年考：货架扩容至1230款、险企从“卖产品”走向“做养老”",
-   "date": "2026-11-24",
-   "sectors": [
-    "保险"
-   ],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "养老金政策对保险板块利好"
-  },
-  {
-   "headline": "多位科技大佬庆祝黄仁勋回归 部分议员持怀疑态度",
-   "date": "2026-11-24",
-   "sectors": [],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "黄仁勋回归可能提振相关板块"
-  },
-  {
-   "headline": "江西银行要以8倍市价增发9.3亿股 近五年净利润出现腰斩",
-   "date": "2026-11-24",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "negative",
-   "intensity": 0.4,
-   "reason": "银行增发股票可能对板块利空"
-  },
-  {
-   "headline": "GO Markets:白银波幅放大市场分歧",
-   "date": "2026-11-24",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "白银波幅放大，市场分歧，对黄金板块影响中性"
-  },
-  {
-   "headline": "GTCFX:黄金反弹考验关键阻力",
-   "date": "2026-11-24",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "黄金反弹，考验关键阻力，利好黄金板块"
-  },
-  {
-   "headline": "恒瑞医药回购10.19万股A股用于员工持股计划，耗资483.55万元",
-   "date": "2026-11-24",
-   "sectors": [
-    "创新药",
+    "医疗器械",
     "医药"
    ],
-   "direction": "positive",
-   "intensity": 0.6,
-   "reason": "恒瑞医药回购股票，用于员工持股计划，利好创新药和医药板块"
-  },
-  {
-   "headline": "Mhmarkets迈汇:白银修复仍看流动性",
-   "date": "2026-11-24",
-   "sectors": [
-    "黄金"
-   ],
    "direction": "neutral",
    "intensity": 0.3,
-   "reason": "白银修复，关注流动性，对黄金板块影响中性"
+   "reason": "公司内部事件，影响有限"
   },
   {
-   "headline": "哲学家罗布・朗：人工智能“未来几年有可能产生意识”",
-   "date": "2026-11-24",
-   "sectors": [
-    "AI",
-    "算力"
-   ],
-   "direction": "positive",
-   "intensity": 0.7,
-   "reason": "AI可能产生意识，利好AI和算力板块"
-  },
-  {
-   "headline": "Moneta Markets外汇:贵金属反弹并非单线",
-   "date": "2026-11-24",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "贵金属反弹，但非单线，对黄金板块影响中性"
-  },
-  {
-   "headline": "央行：11月25日将开展8000亿元MLF操作",
-   "date": "2026-11-24",
-   "sectors": [
-    "券商",
-    "地产",
-    "基建"
-   ],
-   "direction": "positive",
-   "intensity": 0.8,
-   "reason": "央行开展MLF操作，利好券商、地产和基建板块"
-  },
-  {
-   "headline": "OEXN:金价回升背后的仓位调整",
-   "date": "2026-11-24",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "金价回升，背后是仓位调整，利好黄金板块"
-  },
-  {
-   "headline": "破产清算一年后，安邦保险集团仍被指未按规定缴纳社保费",
-   "date": "2026-11-24",
-   "sectors": [
-    "保险"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "安邦保险未按规定缴纳社保费，利空保险板块"
-  },
-  {
-   "headline": "维权两月！结清保单贷款发现保单莫名失效，和谐健康确认系系统失误",
-   "date": "2026-11-24",
-   "sectors": [
-    "保险"
-   ],
-   "direction": "negative",
-   "intensity": 0.4,
-   "reason": "和谐健康保单失效，系统失误，利空保险板块"
-  },
-  {
-   "headline": "头部公募调研热情高 AI算力链包揽调研热股前十",
-   "date": "2026-11-24",
-   "sectors": [
-    "AI",
-    "算力",
-    "半导体"
-   ],
-   "direction": "positive",
-   "intensity": 0.7,
-   "reason": "公募调研热情高，AI算力链受关注，板块受益"
-  },
-  {
-   "headline": "三大指数冲高回落！成交放大超千亿，机构：反弹或为“进二退一”式修复",
-   "date": "2026-11-24",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.5,
-   "reason": "市场波动，尚不确定具体影响"
-  },
-  {
-   "headline": "Vatee外汇:景气数据重塑黄金节奏",
-   "date": "2026-11-24",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "negative",
-   "intensity": 0.4,
-   "reason": "景气数据影响黄金价格，利空黄金板块"
-  },
-  {
-   "headline": "板块涨幅居首，这只个股午后突发涨停！",
-   "date": "2026-11-24",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "个股涨停，板块影响不确定"
-  },
-  {
-   "headline": "已发放补贴金1516.77万元，广州住房“卖旧买新”扩大范围",
-   "date": "2026-11-24",
-   "sectors": [
-    "地产"
-   ],
-   "direction": "positive",
-   "intensity": 0.3,
-   "reason": "扩大补贴范围，利好地产板块"
-  },
-  {
-   "headline": "江西省金融控股集团有限公司副总经理吴晓接受纪律审查和监察调查",
-   "date": "2026-11-24",
-   "sectors": [
-    "券商",
-    "保险",
-    "银行"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "金融控股集团高管被调查，利空相关板块"
-  },
-  {
-   "headline": "ZFX山海证券:超卖信号等待基本面确认",
+   "headline": "国盛证券排雷：国资接盘易、破局难",
    "date": "2026-11-24",
    "sectors": [
     "券商"
    ],
    "direction": "negative",
    "intensity": 0.4,
-   "reason": "超卖信号，券商板块利空"
+   "reason": "券商板块面临挑战"
   },
   {
-   "headline": "央行：11月25日开展8000亿元MLF操作，期限为1年期",
+   "headline": "财务造假！300670，将被ST，明日停牌",
+   "date": "2026-11-24",
+   "sectors": [],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "个股财务造假，影响市场信心"
+  },
+  {
+   "headline": "关键时刻，头部基金公司又出手！",
+   "date": "2026-11-24",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "基金公司操作，对市场影响有限"
+  },
+  {
+   "headline": "首都在线：全资子公司拟1.08亿元采购算力设备",
    "date": "2026-11-24",
    "sectors": [
-    "券商",
-    "地产",
-    "基建"
+    "算力",
+    "数据中心",
+    "服务器"
    ],
    "direction": "positive",
-   "intensity": 0.7,
-   "reason": "央行MLF操作，利好相关板块"
-  },
-  {
-   "headline": "金利宝环球:金价反弹转看持仓结构",
-   "date": "2026-11-24",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "金价反弹，影响不确定"
-  },
-  {
-   "headline": "江西金融控股集团副总经理吴晓被查",
-   "date": "2026-11-24",
-   "sectors": [
-    "券商",
-    "保险",
-    "银行"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "金融控股集团高管被查，利空相关板块"
+   "intensity": 0.4,
+   "reason": "算力需求增加，相关产业链受益"
   }
  ],
  "scanned": 60,
  "source": "sina-roll",
  "degraded": false,
- "blackTalk": "今天基建、芯片嗨翻天，别上头，明天分化是常态，稳住别浪~",
+ "blackTalk": "多头热闹，纺织冷清，别被AI带跑偏，小心机器人不回头！",
  "note": "板块情绪因子：新闻→GLM 映射板块/方向/强度→聚合。消费端按 signals.sectorSentiment 注入；score∈[-1,1]，score100∈[0,100]，仅作参考，不独立生成买卖信号。"
 }

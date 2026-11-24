@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generatedAt": "2026-11-24T10:42:16.410Z",
+  "generatedAt": "2026-11-24T13:13:21.960Z",
   "formulaVersion": "v5.2-pro",
   "tradeDate": "2026-11-24",
   "days": 272,
@@ -630,7 +630,7 @@
    32.6,
    42.8,
    85.2,
-   49.5
+   50
   ],
   "navBase": [
    1,
@@ -4293,12 +4293,16 @@
   "mains": [],
   "topIndustries": [
    {
-    "name": "电机",
-    "change_pct": 2.36
-   },
-   {
     "name": "能源金属",
     "change_pct": 2.23
+   },
+   {
+    "name": "橡胶制品",
+    "change_pct": 2.17
+   },
+   {
+    "name": "保险",
+    "change_pct": 2.08
    },
    {
     "name": "消费电子",
@@ -4307,10 +4311,6 @@
    {
     "name": "小家电",
     "change_pct": 1.44
-   },
-   {
-    "name": "影视院线",
-    "change_pct": 1.38
    }
   ],
   "threshold": {

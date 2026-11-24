@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-24",
- "generated_at": "2026-11-24T11:30:54.823Z",
+ "generated_at": "2026-11-24T13:18:41.090Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -135,7 +135,7 @@
   "regime": {
    "key": "recover",
    "label": "回暖",
-   "score": 50.38,
+   "score": 50.83,
    "cap": null,
    "position_range": null,
    "positionReconcile": null,
@@ -143,7 +143,7 @@
    "alertOnly": true,
    "clustering_bubble": false,
    "sentiment_penalty": 0,
-   "score_adjusted": 50.38
+   "score_adjusted": 50.83
   },
   "circuit_breaker": {
    "dd_tier": 0,
@@ -195,9 +195,9 @@
     "hxc": 0.024392999999999998,
     "fxi": 0.012808
    },
-   "cnh_chgPct": -0.000495,
+   "cnh_chgPct": 0.00024,
    "usReady": false,
-   "usReason": "美东 05:42 ET 盘前（09:30 才开盘）——源给的是上一交易日收盘，可作「上一交易日收盘」用；今日收盘需等 16:30 ET",
+   "usReason": "美东 08:13 ET 盘前（09:30 才开盘）——源给的是上一交易日收盘，可作「上一交易日收盘」用；今日收盘需等 16:30 ET",
    "usPrevSessionClose": true
   },
   "key_levels": null,

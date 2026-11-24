@@ -2,67 +2,67 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-24",
- "generatedAt": "2026-11-24T18:34:39.038+08:00",
+ "generatedAt": "2026-11-24T21:04:56.649+08:00",
  "cachedFrom": null,
  "model": "glm-4-flash",
  "sentiment": 0.5,
  "confidence": 0.8,
- "reason": "市场整体情绪稳定，涨停数量多于跌停，炸板率较高，但亏钱效应不明显，赚钱效应占优。",
+ "reason": "市场整体情绪中性，涨停家数较多，炸板率较高，赚钱效应占优。",
  "events": [
   {
-   "type": "行业催化",
-   "target": "6G",
+   "type": "业绩预告",
+   "target": "商业航天",
    "tone": "positive",
-   "note": "新晋题材带动市场情绪"
+   "note": "商业航天板块表现活跃，阳光照明等多股涨停。"
+  },
+  {
+   "type": "政策",
+   "target": "数字人民币",
+   "tone": "positive",
+   "note": "*ST天喻因撤销退市风险申请及数字人民币概念涨停。"
   },
   {
    "type": "行业催化",
-   "target": "英伟达概念",
+   "target": "AI算力",
    "tone": "positive",
-   "note": "新晋题材带动市场情绪"
+   "note": "AI算力板块持续活跃，文投控股等多股涨停。"
   },
   {
-   "type": "公司事件",
-   "target": "文投控股",
-   "tone": "positive",
-   "note": "AI漫剧和剧集发行提升公司业绩预期"
+   "type": "高管变动",
+   "target": "退市风险",
+   "tone": "negative",
+   "note": "*ST东珠因退市风险及生态修复概念表现不佳。"
   },
   {
-   "type": "公司事件",
-   "target": "*ST天喻",
-   "tone": "positive",
-   "note": "撤销退市风险申请和数字人民币概念提升公司股价"
+   "type": "减持",
+   "target": "芯片测试",
+   "tone": "negative",
+   "note": "芯片测试板块退潮，相关个股表现不佳。"
   },
   {
-   "type": "公司事件",
-   "target": "维信诺",
+   "type": "行业催化",
+   "target": "甲醇",
    "tone": "positive",
-   "note": "新产品发布和技术升级提升公司业绩"
+   "note": "金牛化工因甲醇及风电项目概念涨停。"
   },
   {
-   "type": "公司事件",
-   "target": "阳光照明",
+   "type": "行业催化",
+   "target": "光刻胶剥离液",
    "tone": "positive",
-   "note": "商业航天和激光通信概念带动公司股价"
+   "note": "兴欣新材因光刻胶剥离液及电子化学品项目概念涨停。"
   },
   {
-   "type": "公司事件",
-   "target": "*ST瑞茂",
+   "type": "行业催化",
+   "target": "保健品",
    "tone": "positive",
-   "note": "面值退市博弈和煤炭供应链提升公司股价"
-  },
-  {
-   "type": "公司事件",
-   "target": "金牛化工",
-   "tone": "positive",
-   "note": "甲醇和风电项目提升公司业绩预期"
+   "note": "ST交昂因保健品及宠物经济概念涨停。"
   }
  ],
  "inputDigest": {
   "themes": 68,
   "hotListed": 15,
   "ztCount": 55,
-  "emotionValue": 50.4,
+  "emotionValue": 50.8,
   "painVerdict": "接力顺畅（昨涨停今日翻绿仅 25%、高位板晋级失败 63%，赚钱效应占优）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
