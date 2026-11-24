@@ -1,7 +1,7 @@
 {
  "stocks": {
-  "600327": {
-   "pos": "sealed",
+  "600103": {
+   "pos": "touched",
    "counts": {
     "seal": 0,
     "break": 0,
@@ -10,9 +10,9 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 9.94
+   "chg": 4.53
   },
-  "600360": {
+  "600156": {
    "pos": "none",
    "counts": {
     "seal": 0,
@@ -22,9 +22,69 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 0.78
+   "chg": 2.61
   },
-  "600371": {
+  "600814": {
+   "pos": "sealed",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 10
+  },
+  "600838": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3
+  },
+  "600980": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 0.06
+  },
+  "601177": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 4.22
+  },
+  "601188": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 2.6
+  },
+  "601595": {
    "pos": "approaching",
    "counts": {
     "seal": 0,
@@ -34,21 +94,9 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 7.58
+   "chg": 7.84
   },
-  "600467": {
-   "pos": "sealed",
-   "counts": {
-    "seal": 1,
-    "break": 0,
-    "touch": 0,
-    "approach": 0,
-    "accel": 0
-   },
-   "brokeToday": 0,
-   "chg": 10.14
-  },
-  "603004": {
+  "601599": {
    "pos": "sealed",
    "counts": {
     "seal": 0,
@@ -58,9 +106,129 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 9.99
+   "chg": 10.14
   },
-  "603386": {
+  "601689": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 4.44
+  },
+  "603009": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 4.84
+  },
+  "603037": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 4.18
+  },
+  "603040": {
+   "pos": "sealed",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 10.01
+  },
+  "603048": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.86
+  },
+  "603051": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 6.12
+  },
+  "603103": {
+   "pos": "sealed",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 10
+  },
+  "603119": {
+   "pos": "approaching",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 8.89
+  },
+  "603127": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.56
+  },
+  "603131": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.31
+  },
+  "603151": {
    "pos": "none",
    "counts": {
     "seal": 0,
@@ -72,19 +240,7 @@
    "brokeToday": 0,
    "chg": 3.08
   },
-  "603466": {
-   "pos": "approaching",
-   "counts": {
-    "seal": 0,
-    "break": 0,
-    "touch": 0,
-    "approach": 1,
-    "accel": 0
-   },
-   "brokeToday": 0,
-   "chg": 8.32
-  },
-  "603948": {
+  "603166": {
    "pos": "none",
    "counts": {
     "seal": 0,
@@ -94,9 +250,177 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.94
+   "chg": 4.28
   },
-  "603960": {
+  "603175": {
+   "pos": "sealed",
+   "counts": {
+    "seal": 1,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 10
+  },
+  "603179": {
+   "pos": "approaching",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 8.22
+  },
+  "603236": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 2.45
+  },
+  "603278": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.17
+  },
+  "603283": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 4.2
+  },
+  "603286": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 6.66
+  },
+  "603305": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 2.55
+  },
+  "603337": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 2.88
+  },
+  "603516": {
+   "pos": "sealed",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 10
+  },
+  "603528": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 2.58
+  },
+  "603533": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 4.41
+  },
+  "603598": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 4.22
+  },
+  "603626": {
+   "pos": "sealed",
+   "counts": {
+    "seal": 1,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 9.98
+  },
+  "603662": {
+   "pos": "approaching",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 1,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 8.65
+  },
+  "603666": {
    "pos": "sealed",
    "counts": {
     "seal": 0,
@@ -108,19 +432,7 @@
    "brokeToday": 0,
    "chg": 10.02
   },
-  "605018": {
-   "pos": "sealed",
-   "counts": {
-    "seal": 0,
-    "break": 0,
-    "touch": 0,
-    "approach": 0,
-    "accel": 0
-   },
-   "brokeToday": 0,
-   "chg": 10.04
-  },
-  "605058": {
+  "603667": {
    "pos": "none",
    "counts": {
     "seal": 0,
@@ -130,9 +442,117 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.7
+   "chg": 6.01
   },
-  "605577": {
+  "603706": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": -0.72
+  },
+  "603728": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 6.53
+  },
+  "603893": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.91
+  },
+  "603901": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 4.55
+  },
+  "603920": {
+   "pos": "approaching",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 1,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 8.17
+  },
+  "603926": {
+   "pos": "sealed",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 10.03
+  },
+  "605287": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 5.86
+  },
+  "605288": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 6.61
+  },
+  "605398": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 6.12
+  },
+  "605488": {
    "pos": "sealed",
    "counts": {
     "seal": 1,
@@ -144,7 +564,7 @@
    "brokeToday": 0,
    "chg": 10.01
   },
-  "002642": {
+  "002036": {
    "pos": "sealed",
    "counts": {
     "seal": 0,
@@ -156,7 +576,19 @@
    "brokeToday": 0,
    "chg": 10.06
   },
-  "002741": {
+  "001229": {
+   "pos": "sealed",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 10
+  },
+  "002685": {
    "pos": "none",
    "counts": {
     "seal": 0,
@@ -166,21 +598,21 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 6.34
+   "chg": 4.05
   },
-  "002199": {
+  "002164": {
    "pos": "sealed",
    "counts": {
-    "seal": 2,
-    "break": 1,
-    "touch": 1,
+    "seal": 1,
+    "break": 0,
+    "touch": 0,
     "approach": 0,
     "accel": 0
    },
-   "brokeToday": 1,
-   "chg": 10.05
+   "brokeToday": 0,
+   "chg": 9.98
   },
-  "002086": {
+  "002708": {
    "pos": "sealed",
    "counts": {
     "seal": 0,
@@ -190,21 +622,21 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 10.13
+   "chg": 10
   },
-  "000823": {
-   "pos": "approaching",
+  "002983": {
+   "pos": "none",
    "counts": {
     "seal": 0,
     "break": 0,
     "touch": 0,
-    "approach": 1,
+    "approach": 0,
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 7.46
+   "chg": 3.04
   },
-  "000530": {
+  "002931": {
    "pos": "sealed",
    "counts": {
     "seal": 1,
@@ -216,43 +648,31 @@
    "brokeToday": 0,
    "chg": 10.01
   },
-  "002749": {
-   "pos": "touched",
-   "counts": {
-    "seal": 0,
-    "break": 0,
-    "touch": 0,
-    "approach": 0,
-    "accel": 0
-   },
-   "brokeToday": 1,
-   "chg": 6.44
-  },
-  "002548": {
+  "002122": {
    "pos": "sealed",
    "counts": {
-    "seal": 0,
+    "seal": 1,
     "break": 0,
     "touch": 0,
     "approach": 0,
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 10.11
+   "chg": 10.14
   },
-  "000607": {
+  "002815": {
    "pos": "none",
    "counts": {
     "seal": 0,
     "break": 0,
     "touch": 0,
     "approach": 0,
-    "accel": 1
+    "accel": 0
    },
    "brokeToday": 0,
-   "chg": 0.8
+   "chg": 4.28
   },
-  "000593": {
+  "001278": {
    "pos": "sealed",
    "counts": {
     "seal": 0,
@@ -262,7 +682,547 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 9.99
+   "chg": 9.98
+  },
+  "002242": {
+   "pos": "sealed",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 10.01
+  },
+  "002703": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 0.14
+  },
+  "000026": {
+   "pos": "approaching",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 9.1
+  },
+  "002009": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 5.55
+  },
+  "002045": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 1.36
+  },
+  "000819": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 6.82
+  },
+  "002172": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.9
+  },
+  "001283": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 5
+  },
+  "002414": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.55
+  },
+  "002724": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 1.35
+  },
+  "002655": {
+   "pos": "sealed",
+   "counts": {
+    "seal": 1,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 10.01
+  },
+  "000711": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 5.65
+  },
+  "002289": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 6.85
+  },
+  "002913": {
+   "pos": "touched",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 1,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 5.73
+  },
+  "001358": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.19
+  },
+  "002584": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 0.59
+  },
+  "002148": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 4.16
+  },
+  "003032": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 4.51
+  },
+  "000700": {
+   "pos": "approaching",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 7.98
+  },
+  "002623": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 4.36
+  },
+  "001360": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 5.55
+  },
+  "002343": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 5.56
+  },
+  "002696": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 1.91
+  },
+  "002687": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 1.42
+  },
+  "002173": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 1.25
+  },
+  "003021": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 6.98
+  },
+  "002896": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 6.02
+  },
+  "001330": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 2.95
+  },
+  "001266": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 5.7
+  },
+  "002248": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.08
+  },
+  "000559": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.99
+  },
+  "001400": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.27
+  },
+  "002747": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.37
+  },
+  "003028": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.32
+  },
+  "001331": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.64
+  },
+  "002565": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.46
+  },
+  "002249": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 2.3
+  },
+  "000766": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 2.37
+  },
+  "003033": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 6.99
+  },
+  "002046": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 5.56
+  },
+  "001326": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 6.1
+  },
+  "003041": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 3.54
+  },
+  "002527": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 4.44
+  },
+  "000636": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 4.45
+  },
+  "000678": {
+   "pos": "none",
+   "counts": {
+    "seal": 0,
+    "break": 0,
+    "touch": 0,
+    "approach": 0,
+    "accel": 0
+   },
+   "brokeToday": 0,
+   "chg": 2.84
   }
  },
  "notified": 10,
@@ -290,5 +1250,5 @@
    }
   ]
  },
- "date": "2026-11-23"
+ "date": "2026-11-24"
 }

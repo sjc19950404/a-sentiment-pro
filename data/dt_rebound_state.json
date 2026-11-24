@@ -10,10 +10,10 @@
    }
   },
   "603358": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
-    "red": 0,
+    "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
@@ -28,6 +28,6 @@
    }
   }
  },
- "notified": 2,
+ "notified": 3,
  "date": "2026-11-24"
 }
