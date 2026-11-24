@@ -270,9 +270,22 @@
       + (i === 0 ? ' aria-current="page"' : '') + '><span class="s-mobilebar__icon">' + icon + '</span>' + label + '</button>'
     ).join('') + '<button type="button" class="s-mobilebar__item" id="sPhMoreMobile"><span class="s-mobilebar__icon">⋯</span>更多</button>';
     root.appendChild(mbar);
+    /* 【2026-11-25 修复】底栏按钮的 data-tab 是英文标识（overview/zt/picks/backtest），
+     * 旧转发却拿它跟 TABS[+a.dataset.page]（中文名 '总览'/'涨跌停'…）比较——两边恒不
+     * 相等、link 恒 null，底栏四个 tab 从来点不动。补显式中英映射；同时点击后同步底栏
+     * 高亮（旧逻辑只更新顶部 nav 的 is-active，底栏永远停在"总览"）。 */
+    const MOBILE_TAB_TO_NAME = Object.freeze({
+      overview: '总览', zt: '涨跌停', picks: '选股', backtest: '回测',
+    });
+    /* 挂 window 供回归测试读取（源码守卫 test/s_root_mobilebar.test.mjs）。 */
+    try { window.__sRootMobileTabMap__ = MOBILE_TAB_TO_NAME; } catch (e) { /* 非浏览器环境静默 */ }
     mbar.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => {
+      const targetName = MOBILE_TAB_TO_NAME[b.dataset.tab];
+      if (!targetName) return;
       const link = [...navEl.querySelectorAll('.s-nav__link')].find((a) => a.dataset.page != null
-        && TABS[+a.dataset.page] === b.dataset.tab);
+        && TABS[+a.dataset.page] === targetName);
+      mbar.querySelectorAll('[data-tab]').forEach((x) => x.removeAttribute('aria-current'));
+      b.setAttribute('aria-current', 'page');
       if (link) link.click();
     }));
     mbar.querySelector('#sPhMoreMobile').addEventListener('click', () => {
