@@ -2,8 +2,8 @@
   "version": 4,
   "kind": "intraday",
   "tradeDate": "2026-11-24",
-  "capturedAt": "2026-11-24T03:30:03.961Z",
-  "capturedAtBJ": "2026-11-24 11:30",
+  "capturedAt": "2026-11-24T04:00:03.563Z",
+  "capturedAtBJ": "2026-11-24 12:00",
   "phase": "live",
   "caliberNote": "盘中快照：数值为抓取时刻的实时值，未定盘；禁止用于情绪因子/分位/回测（那些一律用收盘口径的 archive.json）。",
   "hot": {
@@ -1165,7 +1165,7 @@
         "pb": 2.14,
         "liangbi": 2.54,
         "avg_price": null,
-        "main_net": 414007177
+        "main_net": 414007178
       },
       {
         "code": "002548",
@@ -2404,7 +2404,7 @@
         "liangbi": 2.54,
         "pe_ttm": -29.15,
         "pb": 2.14,
-        "main_net": 414007177,
+        "main_net": 414007178,
         "industry": "通用设备"
       },
       {
@@ -2932,7 +2932,7 @@
         "liangbi": 2.36,
         "pe_ttm": 15.19,
         "pb": 1.91,
-        "main_net": 114996793,
+        "main_net": 114996792,
         "industry": "电池"
       },
       {
@@ -3112,7 +3112,7 @@
         "liangbi": 1.99,
         "pe_ttm": -167.91,
         "pb": 6.15,
-        "main_net": 100559649,
+        "main_net": 100559650,
         "industry": "半导体"
       },
       {
@@ -3467,15 +3467,15 @@
     "degradations": []
   },
   "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-11-24 10:35",
+  "prevCapturedAtBJ": "2026-11-24 11:30",
   "prevPools": {
-    "zt": 76,
-    "zb": 29,
-    "seal_pct": 72.4
+    "zt": 64,
+    "zb": 42,
+    "seal_pct": 60.4
   },
   "rolling": {
-    "generatedAtBJ": "2026-11-24 11:30",
-    "minutes_to_close": 210,
+    "generatedAtBJ": "2026-11-24 12:00",
+    "minutes_to_close": 180,
     "trend_pool_mode": "trend",
     "streak_pool": [
       {
