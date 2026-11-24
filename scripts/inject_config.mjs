@@ -19,6 +19,7 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { TIER_MODE_FLAG } from '../src/tier_policy.js';   // C终态：前端 flag 单一出处（Node侧）
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -26,6 +27,10 @@ const cfgPath = path.join(ROOT, 'config.json');
 const outPath = path.resolve(process.argv[2] || path.join(ROOT, 'index.html'));
 
 const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
+/* 【C 终态】把 Node 侧 TIER_MODE_FLAG 注入前端配置桥——app.js 是经典脚本拿不到 import，
+ * 从 window.ASENT_CONFIG.marketTierMode 读。单一事实源仍是 src/tier_policy.js，这里只做
+ * 构建期投影，不写回 config.json 源文件（本地 Pi 走 index.html 哨兵 null → app.js 缺省 alert_only）。 */
+cfg.marketTierMode = TIER_MODE_FLAG.mode;
 const html = readFileSync(outPath, 'utf8');
 
 // 防漂移：config.json 必须带 dataOrigin，否则注入后 durl() 依旧不改道（静默失败）。

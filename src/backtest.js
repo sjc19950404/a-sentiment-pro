@@ -331,7 +331,8 @@ export function rollingTest(factorsByDay, retsByAsset, baseWeights, p = BASE_PAR
  *
  * @param {{date: string, theme_up_count: number, theme_density: number}[]} historyData
  *   历史样本（升序，尾端最新；调用方负责剔除当日——用过去分布定今日门槛）。
- *   theme_up_count = 当日题材榜第一名的涨停家数；theme_density = 其涨停数 ÷ 当日全题材涨停数
+ *   theme_up_count = 当日题材榜第一名的涨停家数；theme_density = 其覆盖数 ÷ Σ题材覆盖次数
+ *   （与 selectMainLine 同式；一股可挂多题材，分母≠全市场涨停数 55——2026-11-24 口径修正）
  *   （与 selectMainLine 的 density 同式）。
  * @param {{lookback_days: number, sigma_multiplier: number, min_sample_days: number,
  *          fixedFallback?: {up_count_threshold: number, density_threshold: number}}} config

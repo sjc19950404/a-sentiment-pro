@@ -11,6 +11,7 @@
 // 哨兵存在且为 null、位于 CSP meta 之后、部署会注入、注入产物与 config.json 逐位一致。
 
 import { test } from 'node:test';
+import { TIER_MODE_FLAG } from '../src/tier_policy.js';   // C终态：注入flag同源校验
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -89,8 +90,14 @@ test('config: 注入产物合法且与 config.json 逐位一致（含 </script> 
     vm.runInNewContext(injected[1].trim(), sandbox);
     // vm 是独立 realm，对象原型与主 realm 不同；先 JSON 往返归一化再逐位比对。
     const actual = JSON.parse(JSON.stringify(sandbox.window.ASENT_CONFIG));
-    assert.deepEqual(actual, cfg,
-      '注入的 ASENT_CONFIG 必须与 config.json 逐位一致（单一事实源）');
+    /* 【2026-11-24 C 终态】注入脚本会投影一个 marketTierMode（来自
+     * src/tier_policy.js::TIER_MODE_FLAG 单一出处），它不在 config.json 源文件里——
+     * 允许这一个额外字段，其余必须逐位一致；并核对 flag 值同源。 */
+    const { marketTierMode, ...rest } = actual;
+    assert.deepEqual(rest, cfg,
+      '注入的 ASENT_CONFIG 除 marketTierMode 外必须与 config.json 逐位一致（单一事实源）');
+    assert.equal(marketTierMode, TIER_MODE_FLAG.mode,
+      '注入的 marketTierMode 必须与 Node 侧 TIER_MODE_FLAG 同源');
     assert.equal(actual.dataOrigin, cfg.dataOrigin);
   } finally {
     rmSync(dir, { recursive: true, force: true });

@@ -1,6 +1,11 @@
 // 前端：分层加载 data/archive-index.json（10KB）+ archive-recent.json（124KB）后渲染
 // （纯 vanilla，无构建步骤）。完整档 data/archive.json 仅由脚本/审计/回测读取，前端不拉。
 // 分层规则与切片生成见 src/archive_split.js（唯一出处）；惰性字段见 src/lhb_codec.js。
+/* 【C 终态】情绪分只告警、不参与仓位。flag 由 scripts/inject_config.mjs 从
+ * src/tier_policy.js::TIER_MODE_FLAG 注入 window.ASENT_CONFIG.marketTierMode；
+ * 本地未注入时缺省 alert_only（与终态一致）。 */
+const ALERT_ONLY = (window.ASENT_CONFIG && window.ASENT_CONFIG.marketTierMode
+  ? window.ASENT_CONFIG.marketTierMode === 'alert_only' : true);
 const $ = (id) => document.getElementById(id);
 // 数据档起源感知改道：仅 github.io 域名 + 配置了 dataOrigin 时，把 data/* 改道到 R2 快 CDN
 //   （绕开国内直连 github.io 慢链），Pi 本机/localhost 返回原相对路径。api/review 等不走此道。
@@ -1171,10 +1176,10 @@ function buildBrief(days, arc) {
   window.__POSITION_BANDS__ = BANDS;
   const regKey = reg ? reg.key : null;
   const band = BANDS[regKey] || (pctLvl === 'high' ? [60, 100] : pctLvl === 'low' ? [0, 20] : [30, 50]);
-  const bandTxt = `${band[0]}%~${band[1]}%`;
+  const bandTxt = ALERT_ONLY ? '' : `${band[0]}%~${band[1]}%`;
   const regLabel = reg ? reg.label : (pctLvl === 'high' ? '历史高位' : pctLvl === 'low' ? '历史低位' : '中位震荡');
   const lvlCn = (l) => (l === 'high' ? '高' : l === 'low' ? '低' : '中');
-  const divergeNote = rulerDiverge
+  const divergeNote = rulerDiverge && !ALERT_ONLY
     // 2026-11-05：原文案引用「实测 89% 天数落在 40-65」——该实测基于 clamp 窄带时代的
     // 旧档案；席位/K线回填重算历史情绪分后分布已展宽（2026-11-05 实测 40-65 仅占 40.9%），
     // 断言失实。裁决规则本身（分位优先）是既定设计，未经重拍板不动，文案改为中性披露。
@@ -1188,7 +1193,7 @@ function buildBrief(days, arc) {
     else if (pct <= 30) zoneNote = '历史低位区，赔率占优、胜率一般，右侧确认前不抢跑';
     else if (pct >= 90) zoneNote = '历史极端高位，兑现压力大于进攻价值';
     else if (pct >= 70) zoneNote = '历史高位区，持仓友好但追高性价比下降';
-    else zoneNote = '中位震荡区，结构机会为主';
+    else zoneNote = '分位居中，结构机会为主';   // 2026-11-24：去掉"中位震荡区"，避免与绝对分"偏冷区"措辞打架
   }
   const emo5 = last5.map((x) => x.emotion?.value).filter((x) => x != null);
   let dirTxt = '';
@@ -1214,7 +1219,11 @@ function buildBrief(days, arc) {
   // 2. 资金（龙虎榜）
   // 近5日净买序列：必须与净买率同口径（当日榜）。此处原取全量口径，
   // 导致同一句话里「净买率 5.7%」是当日榜、而紧挨着的「近3日滚动净买」是全量，读者会当成同一口径。
-  const nets = last5.map((x) => x.summary?.lhb_daily_net).filter((x) => x != null);
+  /* 【2026-11-24 修复】archive-recent.days 把 lhb_daily_net 放**顶层**（src/archive_split.js
+   * buildRecent 的 slim 日形态），而 latest 完整日放在 summary 下。旧代码只读 summary?. →
+   * 近5日里前4天全丢、只剩 latest 当日值——于是"近5日序列"只有1个数、"近3日滚动净买"
+   * 恰等于当日值（212号 -10.3 的真相，豆包质疑成立）。两种层级都读，days 优先顶层。 */
+  const nets = last5.map((x) => (x.lhb_daily_net != null ? x.lhb_daily_net : x.summary?.lhb_daily_net)).filter((x) => x != null);
   const netTxt = nets.length ? nets.map((x) => (x > 0 ? `<span class="bf-up">+${num(x)}</span>` : `<span class="bf-dn">${num(x)}</span>`)).join(' → ') : '—';
   let netVerdict = '';
   if (nets.length >= 2) {
@@ -1294,7 +1303,15 @@ function buildBrief(days, arc) {
       else opp += `；对手盘分歧中等，无大规模机构砸盘`;
     }
     const seatN = seats.universe_n != null ? seats.universe_n : (seats.detail ? Object.keys(seats.detail).length : '—');
-    seatLines = li(`席位拆分: 机构${dirTxt2(instN)} / 北向${dirTxt2(northN)} / 游资${dirTxt2(hotN)} 亿（席位覆盖 ${seats.cover}%）${b3Txt}${conc}${opp}`)
+    /* 【2026-11-24 修复】原"席位覆盖 100%"会被误读成"当日榜46只全有明细"，而分项样本是
+   * 62只（含区间累计榜）。显式写清"62只有明细 / 其中当日榜X只"——覆盖率语义不外推。 */
+  const seatCoverTxt = (() => {
+    const c = seats.cover;
+    if (c == null) return '席位覆盖未知';
+    const n = seatN != null && seatN !== '—' ? `其中当日榜 ${nf(s.lhb_daily_stocks)} 只` : '';
+    return `${n}只上榜股有席位明细（覆盖 ${c}%${n ? '，' + n : ''}）`;
+  })();
+  seatLines = li(`席位拆分: 机构${dirTxt2(instN)} / 北向${dirTxt2(northN)} / 游资${dirTxt2(hotN)} 亿（${seatCoverTxt}）${b3Txt}${conc}${opp}`)
       + li(`　<span class="muted">口径：上述分项为<b>逐只上榜股买卖双侧席位明细的加总</b>，样本 ${seatN} 只（＝有席位明细的全部上榜个股，含区间累计榜个股）；与「当日榜 ${s.lhb_daily_stocks ?? '—'} 只」不是同一集合，故分项之和 ≠ 当日榜净买，两者不可互相校验。分项为<b>成交额</b>口径（买卖各自加总），净额=买−卖。此处为「榜上席位」口径，覆盖不足 100% 时拆分为部分样本。</span>`);
   }
   // 锁仓/新进资金占比 + 主线题材龙虎资金占比（规格阈值）
@@ -1497,6 +1514,10 @@ function buildBrief(days, arc) {
   const th = d.themes || {};
   const topTheme = Object.entries(th).sort((a, b) => b[1] - a[1])[0];
   const mainZt = topTheme ? topTheme[1] : null;
+  /* 【2026-11-24 口径注】密集度分母 = Σ 题材覆盖次数（一股可挂多题材，当日实测 97），
+   * 不是"全题材涨停数"(55)——与引擎 selectMainLine 同式。16/97=16.5% 是"题材归属占比"，
+   * 分子16为机器人题材覆盖个股数（恰好等于该题材涨停数）。豆包按 16/55 复算得 29.1%
+   * 是另一口径；两口径并存不算错，但注释此前写"全题材涨停数"是描述错误，此处修正。 */
   // 主线强度分/密集度：与引擎 selectMainLine 同式（强度分 = 涨停家数 × 密集度），
   // 让报告 §5 与「主线自动选股」卡说同一件事，而不是各报一个数。
   const themeTotal = Object.values(th).reduce((a, b) => a + b, 0) || 1;
@@ -1620,20 +1641,22 @@ function buildBrief(days, arc) {
   //   提示（如 72.8 → 档位「满仓 100%」vs 帽 0%~20%）。帽子语义＝风控上限、按设计优先生效，
   //   告警目的是把「主信号被帽压制」这件事显式亮给读者，而不是埋在口径说明里。
   const capWarn = (() => {
-    if (!tier || !band) return '';
+    if (ALERT_ONLY || !tier || !band) return '';
     const upper = (tier.key === 'hold' || tier.key === 'overheat') ? 100 : tier.key === 'half' ? 50 : 0;
     const diff = Math.abs(upper - band[1]);
     return diff >= 40
       ? `<span class="bf-warn">⚠ 两档背离：V5.2 绝对分档判「${tier.label}／${tier.pos}」而风控帽为 ${bandTxt}（差 ${diff} 个百分点）。帽子语义＝风控上限、按设计优先生效，此差异非计算错误；若与你的判断不符请人工复核。</span>`
       : '';
   })();
-  const tierLine = li(`<b>仓位结论（分位优先 · 风控帽）</b>：市场状态 <b>${regLabel}</b>（历史分位 ${pct == null ? '—' : pct + '%'}）→ 推荐仓位区间 <b>${bandTxt}</b>。${capWarn}${divergeNote}`
+  const tierLine = ALERT_ONLY
+    ? li(`<b>情绪定位（仅告警）</b>：市场状态 <b>${regLabel}</b>（历史分位 ${pct == null ? '—' : pct + '%'}）——情绪分只输出告警标签、不参与仓位决策；仓位由满仓 beta + 硬风控（-8% 止损 / 回撤≥15% 降仓）决定。`)
+    : li(`<b>仓位结论（分位优先 · 风控帽）</b>：市场状态 <b>${regLabel}</b>（历史分位 ${pct == null ? '—' : pct + '%'}）→ 推荐仓位区间 <b>${bandTxt}</b>。${capWarn}${divergeNote}`
     + (tier ? `<br><span class="muted">交叉验证（V5.2 绝对分信号档）：七因子情绪分 ${num(mainScoreV)} → ${tier.label}／${tier.pos}；分布压缩下该绝对分档仅作辅助，不单独作为仓位依据。阈值：≥${num(thr.overheat, 0)} 过热只减仓不新建 / ≥${num(thr.lo, 0)} 满仓 / ${num(thr.panic, 0)}~${num(thr.lo, 0)} 半仓 / ≤${num(thr.panic, 0)} 清仓（收盘打分、T+1 生效）</span>` : ''));
   /* 【2026-11-20 B3 复合分挪脚注（豆包评审，二提）】"复合 52.4"与主分数 42.8 同字号
    * 并列（差 9.6 分），"仅供结构解释"四个字抵消不了锚定效应——读者第一眼拿到的是
    * 52.4。复合分+五模块全部降级为 muted 脚注行（不与主分数并列），短板告警保留在
    * 独立行（告警是给读者的真信息，不随复合分一起降级）。 */
-  const decompLine = total != null ? li(`<span class="muted">因子分解（V5.0 五模块脚注——仅供结构解释，不参与档位判定，勿与主分数并读）: 情绪定位 ${scE} · 盈亏效应 ${scP} · 广度量能 ${scB} · 题材结构 ${scT} · 主线结构 ${scM} → 复合 ${total}</span>`) : '';
+  const decompLine = total != null ? li(`<span class="muted">因子分解（V5.0 五模块脚注——仅供结构解释，不参与档位判定，勿与主分数并读；权重 25/25/20/20/10 非等权）: 情绪定位 ${scE} · 盈亏效应 ${scP} · 广度量能 ${scB} · 题材结构 ${scT} · 主线结构 ${scM} → 复合 ${total}</span>`) : '';
   const weakLine = weak.length ? li(`<span class="bf-warn">⚠ 结构短板: ${weak.join('与')}</span>${auxWarn ? `<span class="muted">${auxWarn.replace(/^；/, '（').replace(/$/, '）')}</span>` : ''}`) : '';
   const riskLine = li(`V5.2 实盘约束：单笔止损 <b>-${pctOf(v52p.stopLoss ?? -0.08, 0)}</b>（优先于信号）｜回撤 ≥<b>${pctOf(v52p.ddTrigger ?? -0.15, 0)}</b> 动态降仓至 40%（0.6 倍阈值处降至 70%）｜单日仓位变动 ≤<b>${num(v52p.maxPosChg ?? 0.2, 2)}</b>｜换仓成本 佣金 ${bpOf(v52p.comm, 0.0003)}‱（双边）+ 印花税 ${bpOf(v52p.stamp, 0.0005)}‱（卖出）+ 滑点 ${bpOf(v52p.slip, 0.0002)}‱，按仓位变动幅度计提`);
   // 模板④：风险提示带 ⚠（已有），并按三档配色标记给关键结论标注风险/积极/中性。
@@ -1648,15 +1671,16 @@ function buildBrief(days, arc) {
       // 跟踪项是"当日看盘清单"，隔日勾选残留会比没勾更误导）
       ? `<div class="bf-h2">明日跟踪项（引擎动态生成）</div>` + watch.map((w) => todo(w)).join('')
       : '')
-    + li(ico(tierKind, `仓位 ${bandTxt}（市场状态 ${regLabel} · 历史分位 ${pct == null ? '—' : pct + '%'}）`))
-    + cal(`仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额 20%／涨跌家数 10%／板块涨比 20%／涨停强度 10%／涨跌停对比 15%／封板质量 10%／量能 15%，与页面情绪分、回测引擎同源），阈值 过热 ${num(thr.overheat, 0)}／满仓 ${num(thr.lo, 0)}／半仓 ${num(thr.panic, 0)}~${num(thr.lo, 0)}／清仓 ${num(thr.panic, 0)}，收盘打分、T+1 生效，并叠加止损 -8%、回撤 ≥15% 动态降仓、单日仓位变动 ≤20%、佣金万 3 + 印花税万 5 + 滑点万 2 的实盘约束。因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定（该五模块口径<b>不含资金面</b>，切勿据此误判资金面在整体打分中的地位）；<b>资金面（龙虎榜净额）是 V5.2 主分数 s_net 的组成部分，权重 20%</b>，与 §② 的资金面观测同为一股数据、同一口径，二者不冲突。明日跟踪项由九条触发规则动态生成（触发才输出，非固定列表）。`);
+    + (ALERT_ONLY ? li(ico('neutral', `情绪档位 ${regLabel}（仅告警，不干预仓位）`))
+                  : li(ico(tierKind, `仓位 ${bandTxt}（市场状态 ${regLabel} · 历史分位 ${pct == null ? '—' : pct + '%'}）`)))
+    + (ALERT_ONLY ? cal(`情绪分档位仅作告警标签，不参与仓位决策、不输出仓位区间；仓位由满仓 beta + 硬风控（-8% 单笔止损、回撤≥15% 动态降仓）决定。历史 V5.2 择时档位口径已永久停用。`) : + cal(`仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额 20%／涨跌家数 10%／板块涨比 20%／涨停强度 10%／涨跌停对比 15%／封板质量 10%／量能 15%，与页面情绪分、回测引擎同源），阈值 过热 ${num(thr.overheat, 0)}／满仓 ${num(thr.lo, 0)}／半仓 ${num(thr.panic, 0)}~${num(thr.lo, 0)}／清仓 ${num(thr.panic, 0)}，收盘打分、T+1 生效，并叠加止损 -8%、回撤 ≥15% 动态降仓、单日仓位变动 ≤20%、佣金万 3 + 印花税万 5 + 滑点万 2 的实盘约束。因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定（该五模块口径<b>不含资金面</b>，切勿据此误判资金面在整体打分中的地位）；<b>资金面（龙虎榜净额）是 V5.2 主分数 s_net 的组成部分，权重 20%</b>，与 §② 的资金面观测同为一股数据、同一口径，二者不冲突。明日跟踪项由九条触发规则动态生成（触发才输出，非固定列表）。`))
 
   // 口径正文（**文字一字未改**，只是从"包在 .bf-foot 里的独立段落"改为"折叠附录的正文"）：
   //   · 屏幕：收进文末 <details class="bf-appendix" open> 折叠附录（模板③：文末独立折叠附录汇总全部口径）
   //   · 导出：同样渲染为 <details>（纯文本形态平铺 + [口径] 前缀）
   // 之所以摘掉外层 <div class="bf-foot">：它会被 parseReport 当成一个"独立段落"参与编号，
   // 而模板要求口径属附录、不占章节号。
-  const footBody = `口径备注：涨跌家数为沪深两市（不含北交所）；<b>封板率</b>=收盘涨停 ÷ 盘中触板个股（＝涨停+炸板），与各行情软件通用算法一致；炸板率＝100−封板率，二者同一分母互补；<b>席位分项（机构/北向/游资买卖总额）与锁仓统计覆盖的是「当日有席位明细的全部上榜个股」</b>，其只数多于「当日榜」家数（区间累计榜个股当日无独立榜、但其席位明细仍在披露名单内），故席位分项之和与「当日榜净买」不必相等，二者不可相互校验；上榜总成交、净买率、日度因子 s_net、近5日净额序列、新股扰动占比、主线题材资金占比全部只取「当日榜」口径（剔除"连续N个交易日累计"类区间榜——其买卖额与净额都是区间累计值，混入会把总成交放大数倍、净买率稀释至失真，并让日度因子把三天累计当成一天），分子分母一律同源；全量口径（含区间累计榜）仅在「完整参数」中单列作诊断，禁止与当日值混用；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入（分子分母均已剔除「自然人/中小投资者/机构/其他自然人」这类投资者结构汇总行——它们非席位，混入会虚增买方总额并稀释集中度）；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股当日榜净买÷当日榜全榜净买；主线强度分=涨停家数×密集度（该题材涨停数÷当日全题材涨停数），与引擎 selectMainLine 同式；昨日新晋题材存活率=昨日视角新晋名单（引擎用截至昨日数据重算动量所得）中今日仍存在的只数÷该名单只数，两侧同一口径；<b>题材标签（新晋/延续/退潮、主线归属、涨停题材归类）为引擎自定义分类，沪深交易所无官方题材标准，标签由「近N日覆盖个股数≥2」的存在性比对自动生成，不同平台的题材划分会影响该口径下的数字，仅供参考</b>；连板高度/梯队取自当日涨停股连板数映射（zt_lb），可与公开连板天梯逐只核对；仓位档位采用 V5.2 引擎口径——主分数为七因子加权情绪分（龙虎净额20%／涨跌家数10%／板块涨比20%／涨停强度10%／涨跌停对比15%／封板质量10%／量能15%，与页面情绪分、回测引擎同源），阈值 过热80／满仓65／半仓24~65／清仓24，收盘打分、T+1 生效，并叠加止损-8%、回撤≥15%动态降仓、单日仓位变动≤20%、佣金万3+印花税万5+滑点万2 的实盘约束；因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定（该五模块口径**不含资金面**，切勿据此误判资金面在整体打分中的地位）；<b>资金面（龙虎榜净额）是 V5.2 主分数 s_net 的组成部分，权重 20%</b>，与 §② 的资金面观测同为一股数据、同一口径，二者不冲突。席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。`;
+  const footBody = `口径备注：涨跌家数为沪深两市（不含北交所）；<b>封板率</b>=收盘涨停 ÷ 盘中触板个股（＝涨停+炸板），与各行情软件通用算法一致；炸板率＝100−封板率，二者同一分母互补；<b>席位分项（机构/北向/游资买卖总额）与锁仓统计覆盖的是「当日有席位明细的全部上榜个股」</b>，其只数多于「当日榜」家数（区间累计榜个股当日无独立榜、但其席位明细仍在披露名单内），故席位分项之和与「当日榜净买」不必相等，二者不可相互校验；上榜总成交、净买率、日度因子 s_net、近5日净额序列、新股扰动占比、主线题材资金占比全部只取「当日榜」口径（剔除"连续N个交易日累计"类区间榜——其买卖额与净额都是区间累计值，混入会把总成交放大数倍、净买率稀释至失真，并让日度因子把三天累计当成一天），分子分母一律同源；全量口径（含区间累计榜）仅在「完整参数」中单列作诊断，禁止与当日值混用；新股/独立标的=上市首5日无涨跌幅限制个股，其净买单独列示不计入主线；买方头部3席位集中度=全市场前3席位买入÷全部买方买入（分子分母均已剔除「自然人/中小投资者/机构/其他自然人」这类投资者结构汇总行——它们非席位，混入会虚增买方总额并稀释集中度）；锁仓统计=当日买方席位与近2日同票买方席位比对，未重复出现计为新进，样本为有席位明细的连续上榜股；主线题材龙虎资金占比=主线题材个股当日榜净买÷当日榜全榜净买；主线强度分=涨停家数×密集度（该题材涨停数÷当日全题材涨停数），与引擎 selectMainLine 同式；昨日新晋题材存活率=昨日视角新晋名单（引擎用截至昨日数据重算动量所得）中今日仍存在的只数÷该名单只数，两侧同一口径；<b>题材标签（新晋/延续/退潮、主线归属、涨停题材归类）为引擎自定义分类，沪深交易所无官方题材标准，标签由「近N日覆盖个股数≥2」的存在性比对自动生成，不同平台的题材划分会影响该口径下的数字，仅供参考</b>；连板高度/梯队取自当日涨停股连板数映射（zt_lb），可与公开连板天梯逐只核对；历史 V5.2 仓位档位口径已停用——主分数为七因子加权情绪分（龙虎净额20%／涨跌家数10%／板块涨比20%／涨停强度10%／涨跌停对比15%／封板质量10%／量能15%，与页面情绪分、回测引擎同源），阈值 过热80／满仓65／半仓24~65／清仓24，收盘打分、T+1 生效，并叠加止损-8%、回撤≥15%动态降仓、单日仓位变动≤20%、佣金万3+印花税万5+滑点万2 的实盘约束；因子分解中的 V5.0 五模块分仅用于结构解释，不参与档位判定（该五模块口径**不含资金面**，切勿据此误判资金面在整体打分中的地位）；<b>资金面（龙虎榜净额）是 V5.2 主分数 s_net 的组成部分，权重 20%</b>，与 §② 的资金面观测同为一股数据、同一口径，二者不冲突。席位数据来自东财买卖榜明细（榜上席位口径），覆盖不足100%时拆分为部分样本。本报告由规则引擎根据当档数据自动生成，非投资建议。`;
 
   // ── 模板①：极简摘要（报告开头一句话核心）──
   // 组成（全部来自上面已经算好的结论变量，不新增任何指标/阈值）：
@@ -1666,8 +1690,9 @@ function buildBrief(days, arc) {
   //   ④ 最强/最弱环节（风险方向，来自 weak 与 riskHint 的同一份判据）
   const abParts = [];
   abParts.push(String(verdict || '').split('，')[0].replace(/[。；]$/, ''));
-  abParts.push(`建议仓位 ${bandTxt}（${regLabel}）`);
-  if (v != null) abParts.push(`情绪 ${num(v)} 落于${zone}`);
+  if (!ALERT_ONLY) abParts.push(`建议仓位 ${bandTxt}（${regLabel}）`);
+  if (ALERT_ONLY) abParts.push(`情绪 ${num(v)} 仅告警、不参与仓位`);
+  else if (v != null) abParts.push(`情绪 ${num(v)} 落于${zone}`);
   if (weak.length) abParts.push(`${ico('risk', '短板')}在${weak.join('、')}`);
   else if (total != null) abParts.push(`${ico('pos', '五模块均衡')}`);
   const abstract = abParts.filter(Boolean).join('｜');
@@ -1915,8 +1940,14 @@ function buildPaperReviewSection() {
       }
       if (ep.length) out.push(li2(`<span class="muted">降仓系数敏感性: 0.3/0.4/0.5 三档 maxDd ${ep.map((x) => (x.maxDd != null ? (x.maxDd * 100).toFixed(1) : '—')).join('% / ')}%、累计 ${ep.map((x) => (x.total != null ? (x.total * 100).toFixed(1) : '—')).join('% / ')}%（影子对照——降仓系数越紧回撤越浅、收益弹性越低）</span>`));
       if (st.regimeCensus && typeof st.regimeCensus === 'object') {
-        const rcTxt = Object.entries(st.regimeCensus).filter(([, v]) => v).map(([k, v]) => `${k} ${(v * 100).toFixed(0)}%`).join(' ／ ');
-        if (rcTxt) out.push(li2(`<span class="muted">regime 占比（账本期内）: ${rcTxt}——冰点/退潮期自动轨按风控帽主动空仓，是纪律执行不是无单可下</span>`));
+        /* 【2026-11-24 修复】regimeCensus 的值是"轨-日计数"（paper_dual_track.mjs::regimeKeys
+         * 按天累加，同一天多轨可各记一次），**不是百分数**——旧代码 ×100 显示成 6300%。
+         * 合计可能 >100%（实测 272/19 天）——改成按 total(计数和) 归一化为构成比，
+         * 并显式标注"轨-日"口径，避免读者误当成交易日占比。 */
+        const censusTotal = Object.values(st.regimeCensus).reduce((a, b) => a + (+b || 0), 0);
+        const rcTxt = Object.entries(st.regimeCensus).filter(([, v]) => v)
+          .map(([k, v]) => `${k} ${(v / censusTotal * 100).toFixed(0)}%`).join(' ／ ');
+        if (rcTxt) out.push(li2(`<span class="muted">regime 构成（账本期内，按轨-日计数 ${censusTotal} 次归一，非交易日占比）: ${rcTxt}——冰点/退潮期自动轨按纯风控（回撤降仓/止损）主动空仓，是纪律执行不是无单可下</span>`));
       }
     } else {
       out.push(li2('<span class="muted">自动执行轨统计面: [未获取]（双轨账本未跑或未接入——运行 tools/backtest/paper_dual_track.mjs）</span>'));
@@ -3577,7 +3608,7 @@ function renderDailyReport(rep, errMsg) {
   box.className = `report-panel rp-${tagTone}`;
   // 展示层合并（2026-10-24）：基础仓位 × 风控帽 冲突时，顶部红字横幅"最终执行仓位"，一眼知今天不能买
   const rec = rep.positionReconcile;
-  const recBanner = (rec && rec.conflict)
+  const recBanner = (ALERT_ONLY ? null : rec && rec.conflict)
     ? `<div class="rp-reconcile">⚠ 最终执行仓位：<b>${esc(rec.finalRange)}</b>${rec.force ? '（强制降仓）' : ''}`
       + ` — 情绪分 ${esc(String(rec.score))} 基础建议 ${esc(rec.baseRange)}，但触发 regime=${esc(rec.cap.key)} 风控帽，系统强制降仓。只减仓不新建。</div>`
     : '';

@@ -225,33 +225,27 @@ const expectTier = lastEmo == null ? null
     : lastEmo >= th.lo ? '满仓持有'
       : lastEmo > th.panic ? '半仓' : '清仓';
 const brief = txt('briefBody');
-// ── P0① 修复（2026-10-14 失真清单指控1）：简报仓位改「分位优先·风控帽」──────────
-// 旧断言要求简报仓位 == 绝对情绪分档（75.5→满仓持有），而那正是 bug：情绪分分布高度压缩
-//   （regime.js 实测 89% 天数落 40-65），绝对刻度与冷热脱节，regime.levelOf 早已定稿
-//   「分位为唯一主判据、绝对分仅交叉验证」。修正后期望值从引擎 regime（signals-latest.json）
-//   + position_policy 风控帽推导，不再用绝对分档。
+/* ── 【2026-11-24 C 终态】简报只告警、不输出仓位档 ──
+ * 旧断言要求简报含「仓位结论（分位优先）→ 风控帽 30%~50%」——那正是被废弃的择时余烬。
+ * 212 号事故：JSON 档清干净了，但 app.js 浏览器端现拼的正文仍写着「建议仓位 30%~50%」
+ * 发给读者。这里改成**反向断言**：渲染后的简报正文不得出现任何仓位指令文本。 */
 const sigLatest = JSON.parse(readFileSync(join(ROOT, 'data/signals-latest.json'), 'utf8'));
 const regL = (sigLatest.regime && sigLatest.regime.latest) ? sigLatest.regime.latest : null;
-// regime key → 风控帽区间（数值 = src/position_policy.js::POSITION_BANDS，唯一出处在彼）
-const BAND_TXT = { ice: '0%~20%', ebb: '0%~20%', recover: '30%~50%', neutral: '30%~50%', climax: '60%~100%', shift: '0%~30%' };
-const expBand = regL ? (BAND_TXT[regL.key] || null) : null;
-const tierSeg = (() => {
-  const i = brief.indexOf('仓位结论（分位优先');
-  const j = brief.indexOf('因子分解');
-  return (i >= 0 && j > i) ? brief.slice(i, j) : '';
-})();
 check('研判报告·数据日期与抓取状态落款', brief.includes('数据日期') && brief.includes('抓取状态'), '');
-check(`研判报告·仓位分位优先（regime ${regL ? regL.key : '?'} → 风控帽 ${expBand}）`,
-  expBand != null && tierSeg.includes(expBand) && (regL ? tierSeg.includes(regL.label) : true),
-  tierSeg.slice(0, 120) || '缺「仓位结论（分位优先）」段');
+const POS_TEXT_PATTERNS = [/推荐仓位区间/, /建议仓位\s*\d/, /风控帽/, /最终执行仓位/,
+  /仓位\s*\d{1,3}\s*%\s*~\s*\d{1,3}\s*%/];
+const posHits = POS_TEXT_PATTERNS.filter((re) => re.test(brief)).map((re) => re.source);
+check('C终态·简报正文无仓位指令（含摘要/§六/口径附录）', posHits.length === 0,
+  posHits.length ? '命中: ' + posHits.join(' | ') : '');
+check('C终态·简报§六写「仅告警不参与仓位」',
+  brief.includes('仅告警') && (brief.includes('不参与仓位') || brief.includes('不干预仓位')),
+  brief.slice(brief.indexOf('综合研判'), brief.indexOf('综合研判') + 160));
 // 失真清单指控1 核心断言：绝对分档与分位分歧时，简报必须显式告警，不得把绝对分档当主结论
 const _absLvl = (regL && regL.value != null) ? (regL.value >= 65 ? 'high' : regL.value < 40 ? 'low' : 'mid') : null;
 const _pctLvl = (regL && regL.pct_rank != null) ? (regL.pct_rank >= 70 ? 'high' : regL.pct_rank < 30 ? 'low' : 'mid') : null;
 const rulerDiverge = (_absLvl != null && _pctLvl != null && _absLvl !== _pctLvl);
-check('研判报告·两把尺子分歧时显式告警（分布压缩，以分位为准）',
-  !rulerDiverge || tierSeg.includes('水位判据分歧'), (rulerDiverge && !tierSeg.includes('水位判据分歧')) ? '分歧未显式告警' : '');
-check('研判报告·档位阈值与引擎阈值同源',
-  tierSeg.includes(`≥${th.overheat}`) && tierSeg.includes(`≥${th.lo}`) && tierSeg.includes(`≤${th.panic}`), '');
+// C 终态：旧「档位阈值同源 / 两把尺子分歧」断言依赖已删除的 tierSeg——择时档已停，
+// 等价断言由上方「仅告警不参与仓位 + 无仓位指令文本」替代，此处不再验仓位阈值。
 
 // 龙虎榜口径：上榜总成交与净买率必须是同一个口径（当日榜 + 同票去重），
 // 不能把「连续N个交易日涨跌幅偏离值累计」这类区间累计榜混进来。
