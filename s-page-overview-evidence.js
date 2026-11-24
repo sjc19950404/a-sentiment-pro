@@ -674,7 +674,14 @@
   }
   function arm() {
     if (observer) return;
-    observer = new MutationObserver(() => { if (!built) ensure(); });
+    /* 【2026-11-25 修复】旧回调 if (!built) ensure() 用模块级标记短路——首次构建后
+     * built 恒 true，切到选股/涨跌停时其 render 清空 panel（evidence 卡 DOM 被删），
+     * 切回总览时壳重建（今日结论+KPI）但 evidence 卡没人重建——用户实测"回总览后
+     * 卡片不自动刷新"。改为按 DOM 存在性判定：卡片不在就重建（ensure 内部有
+     * $('#sEvEvidence') 幂等守卫，重复调用安全）。 */
+    observer = new MutationObserver(() => {
+      if (!document.getElementById('sEvEvidence')) ensure();
+    });
     observer.observe(document.body, { childList: true, subtree: true });
     ensure();
     // 兜底轮询（host 出现较晚的场景）
