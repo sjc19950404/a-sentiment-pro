@@ -247,7 +247,10 @@
       : (pct ? (v > 0 ? '+' : '') + (+v).toFixed(2) + '%' : (+v).toFixed(2));
     const cls = (v) => v == null ? '' : v > 0 ? 's-num--up' : v < 0 ? 's-num--down' : '';
     const rows = g.quotes.map((q) => {
-      const chg = q.changePct != null ? q.changePct : q.pct;
+      /* 【2026-11-24 修复】global.json 生产者（fetch_global.mjs）写的字段是 chgPct
+       * （百分数值，如 1.036 = +1.04%），旧渲染只读 changePct/pct——两个都不存在，
+       * 于是整列涨跌幅全显示「—」。按生产者字段修，兼容旧形态备用。 */
+      const chg = q.chgPct != null ? q.chgPct : (q.changePct != null ? q.changePct : q.pct);
       return '<tr data-glob-key="' + esc(q.key) + '" tabindex="0" role="button" title="点看传导逻辑">'
         + '<td><b>' + esc(q.name) + '</b></td>'
         + '<td class="s-num">' + fmt(q.price != null ? q.price : q.last) + '</td>'
@@ -271,7 +274,7 @@
           render(body) {
             body.innerHTML = '<div class="s-grid s-grid--kpi">'
               + [['最新', fmt(q.price != null ? q.price : q.last)],
-                 ['涨跌幅', fmt(q.changePct != null ? q.changePct : q.pct, true)],
+                 ['涨跌幅', fmt(q.chgPct != null ? q.chgPct : (q.changePct != null ? q.changePct : q.pct), true)],
                  ['报价时间', q.quoteTime || q.sessionDate || '—']]
               .map(([n, v]) => '<div><div class="s-kpi__label">' + n
                 + '</div><div class="s-kpi__value" style="font-size:var(--s-font-lg)">' + esc(v) + '</div></div>').join('')

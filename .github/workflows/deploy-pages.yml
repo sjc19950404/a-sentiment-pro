@@ -112,6 +112,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: read   # 2026-11-24：deploy-pages@v4 需列 artifact 元数据，缺此权限曾导致 Found 0 artifact(s)
 
 concurrency:
   group: "pages"
@@ -174,6 +175,10 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
+      # 2026-11-24：upload 完成与 deploy 查元数据之间有 API 最终一致性窗口（实测
+      # 0.4s 后查返回 Found 0 artifact(s)——artifact 其实已上传成功）——等 10s 再部署。
+      - name: 等待 artifact 元数据可见
+        run: sleep 10
       - name: 部署到 GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
