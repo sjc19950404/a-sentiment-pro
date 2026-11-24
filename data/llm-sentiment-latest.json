@@ -1,69 +1,69 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-11-23",
- "generatedAt": "2026-11-23T21:04:27.599+08:00",
- "cachedFrom": "2026-11-23T10:34:48.576Z",
+ "asOfDate": "2026-11-24",
+ "generatedAt": "2026-11-24T18:34:39.038+08:00",
+ "cachedFrom": null,
  "model": "glm-4-flash",
- "sentiment": 0.9,
+ "sentiment": 0.5,
  "confidence": 0.8,
- "reason": "市场整体情绪积极，涨停家数远超跌停家数，成交额放大，亏钱效应低，强势股多来自新晋和延续题材，且涨幅较大。",
+ "reason": "市场整体情绪稳定，涨停数量多于跌停，炸板率较高，但亏钱效应不明显，赚钱效应占优。",
  "events": [
   {
-   "type": "业绩预告",
-   "target": "铁流股份",
+   "type": "行业催化",
+   "target": "6G",
    "tone": "positive",
-   "note": "三季报净利增长带动股价上涨"
-  },
-  {
-   "type": "政策",
-   "target": "华为昇腾",
-   "tone": "positive",
-   "note": "新晋题材带动相关板块活跃"
+   "note": "新晋题材带动市场情绪"
   },
   {
    "type": "行业催化",
-   "target": "半导体",
+   "target": "英伟达概念",
    "tone": "positive",
-   "note": "延续题材，半导体订单增加"
+   "note": "新晋题材带动市场情绪"
   },
   {
-   "type": "行业催化",
-   "target": "电子",
+   "type": "公司事件",
+   "target": "文投控股",
    "tone": "positive",
-   "note": "延续题材，电子行业表现强劲"
+   "note": "AI漫剧和剧集发行提升公司业绩预期"
   },
   {
-   "type": "行业催化",
-   "target": "机器人",
+   "type": "公司事件",
+   "target": "*ST天喻",
    "tone": "positive",
-   "note": "机器人相关题材表现活跃，带动相关个股上涨"
+   "note": "撤销退市风险申请和数字人民币概念提升公司股价"
   },
   {
-   "type": "行业催化",
-   "target": "冰雪经济",
+   "type": "公司事件",
+   "target": "维信诺",
    "tone": "positive",
-   "note": "冰雪经济题材带动相关个股上涨"
+   "note": "新产品发布和技术升级提升公司业绩"
   },
   {
-   "type": "行业催化",
-   "target": "国资改革",
+   "type": "公司事件",
+   "target": "阳光照明",
    "tone": "positive",
-   "note": "国企改革和股份回购题材持续活跃"
+   "note": "商业航天和激光通信概念带动公司股价"
   },
   {
-   "type": "行业催化",
-   "target": "新能源汽车",
+   "type": "公司事件",
+   "target": "*ST瑞茂",
    "tone": "positive",
-   "note": "特斯拉概念和汽车轻量化题材带动相关个股上涨"
+   "note": "面值退市博弈和煤炭供应链提升公司股价"
+  },
+  {
+   "type": "公司事件",
+   "target": "金牛化工",
+   "tone": "positive",
+   "note": "甲醇和风电项目提升公司业绩预期"
   }
  ],
  "inputDigest": {
-  "themes": 132,
+  "themes": 68,
   "hotListed": 15,
-  "ztCount": 146,
-  "emotionValue": 82.4,
-  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 7%，赚钱效应占优）"
+  "ztCount": 55,
+  "emotionValue": 50.4,
+  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 25%、高位板晋级失败 63%，赚钱效应占优）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }

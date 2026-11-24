@@ -1,89 +1,223 @@
 {
- "date": "2026-11-20",
- "prevZtCount": 28,
+ "date": "2026-11-23",
+ "prevZtCount": 146,
  "perf": {
-  "n": 28,
-  "universe": 28,
+  "n": 146,
+  "universe": 146,
   "missing": 0,
   "reliable": true,
-  "avg": 7.69,
-  "median": 9.99,
-  "lossRatio": 0.07,
-  "worst": -1.94,
-  "best": 20,
-  "limitUpAgain": 16,
-  "limitDown": 0,
-  "bigLoss": 0,
+  "avg": 4.11,
+  "median": 3.26,
+  "lossRatio": 0.25,
+  "worst": -10.18,
+  "best": 20.01,
+  "limitUpAgain": 34,
+  "limitDown": 1,
+  "bigLoss": 2,
   "note": null
  },
  "advance": {
-  "n": 3,
-  "kept": 3,
-  "failed": 0,
-  "failRate": 0,
+  "n": 16,
+  "kept": 6,
+  "failed": 10,
+  "failRate": 0.63,
   "byTier": {
    "2": {
+    "n": 13,
+    "kept": 5,
+    "failed": 8,
+    "failRate": 0.62
+   },
+   "3": {
     "n": 1,
     "kept": 1,
     "failed": 0,
     "failRate": 0
    },
-   "3": {
-    "n": 0,
-    "kept": 0,
-    "failed": 0,
-    "failRate": null
-   },
    "4+": {
     "n": 2,
-    "kept": 2,
-    "failed": 0,
-    "failRate": 0
+    "kept": 0,
+    "failed": 2,
+    "failRate": 1
    }
   },
-  "reliable": false,
-  "maxLb": 4,
+  "reliable": true,
+  "maxLb": 5,
   "detail": [
    {
+    "code": "603324",
+    "lb": 5,
+    "chg": -3.74,
+    "kept": false,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
     "code": "002771",
-    "lb": 4,
-    "chg": 9.99,
+    "lb": 5,
+    "chg": -0.4,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002579",
+    "lb": 3,
+    "chg": 9.98,
     "kept": true,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
-    "code": "603324",
-    "lb": 4,
-    "chg": 10,
+    "code": "000593",
+    "lb": 2,
+    "chg": -3.06,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002642",
+    "lb": 2,
+    "chg": -2.88,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "603004",
+    "lb": 2,
+    "chg": -0.95,
+    "kept": false,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "000530",
+    "lb": 2,
+    "chg": -0.74,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "600327",
+    "lb": 2,
+    "chg": -0.19,
+    "kept": false,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "605577",
+    "lb": 2,
+    "chg": 2.25,
+    "kept": false,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "600467",
+    "lb": 2,
+    "chg": 3.81,
+    "kept": false,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "002199",
+    "lb": 2,
+    "chg": 9.62,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002548",
+    "lb": 2,
+    "chg": 9.9,
+    "kept": true,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002086",
+    "lb": 2,
+    "chg": 9.93,
+    "kept": true,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "605018",
+    "lb": 2,
+    "chg": 10.01,
     "kept": true,
     "board": "shb",
     "boardLabel": "沪市主板"
    },
    {
-    "code": "002579",
+    "code": "603960",
     "lb": 2,
-    "chg": 10.01,
+    "chg": 10.02,
     "kept": true,
-    "board": "szb",
-    "boardLabel": "深市主板"
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "301313",
+    "lb": 2,
+    "chg": 16.64,
+    "kept": true,
+    "board": "gem",
+    "boardLabel": "创业板"
    }
   ],
   "note": null
  },
  "bigLoss": {
-  "n": 0,
-  "list": []
+  "n": 2,
+  "list": [
+   {
+    "code": "688069",
+    "name": "德林海",
+    "chg": -10.18
+   },
+   {
+    "code": "920690",
+    "name": "捷众科技",
+    "chg": -8.34
+   }
+  ]
  },
  "skyFloor": {
-  "n": 0,
-  "list": []
+  "n": 3,
+  "list": [
+   {
+    "code": "920690",
+    "name": "捷众科技",
+    "chg": -8.34,
+    "amplitude": 20.1
+   },
+   {
+    "code": "688069",
+    "name": "德林海",
+    "chg": -10.18,
+    "amplitude": 18.3
+   },
+   {
+    "code": "603324",
+    "name": "盛剑科技",
+    "chg": -3.74,
+    "amplitude": 16.3
+   }
+  ]
  },
- "scanned": 28,
+ "scanned": 146,
  "verdict": {
   "level": "strong",
   "label": "接力顺畅",
-  "reason": "昨涨停今日翻绿仅 7%，赚钱效应占优"
+  "reason": "昨涨停今日翻绿仅 25%、高位板晋级失败 63%，赚钱效应占优"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -94,6 +228,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-11-23T13:02:43.323Z",
- "curDate": "2026-11-23"
+ "generatedAt": "2026-11-24T10:32:39.880Z",
+ "curDate": "2026-11-24"
 }

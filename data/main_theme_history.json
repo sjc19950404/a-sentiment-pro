@@ -1,11 +1,11 @@
 {
  "meta": {
-  "generatedAt": "2026-11-23T13:16:24.217Z",
-  "days": 27,
-  "theme_days": 27,
+  "generatedAt": "2026-11-24T10:46:22.628Z",
+  "days": 28,
+  "theme_days": 29,
   "strength_dist": {
-   "强主线": 9,
-   "弱主线": 14,
+   "强主线": 10,
+   "弱主线": 15,
    "绝对主线": 4
   },
   "rotation_days": 6,
@@ -656,6 +656,48 @@
    ],
    "rotation": false,
    "prev_main_theme": "元件"
+  },
+  {
+   "date": "20261124",
+   "main_themes": [
+    {
+     "name": "汽车零部",
+     "zt_count": 8,
+     "lb_count": 6,
+     "avg_fund": 143976503,
+     "stocks": [
+      "001278",
+      "002708",
+      "603960",
+      "605018",
+      "603926",
+      "603040",
+      "300652",
+      "603266"
+     ],
+     "strength": "强主线",
+     "consecutive_days": 2,
+     "is_continuous": false
+    },
+    {
+     "name": "通用设备",
+     "zt_count": 5,
+     "lb_count": 5,
+     "avg_fund": 125057315,
+     "stocks": [
+      "002122",
+      "002164",
+      "002931",
+      "603662",
+      "301413"
+     ],
+     "strength": "弱主线",
+     "consecutive_days": 2,
+     "is_continuous": false
+    }
+   ],
+   "rotation": false,
+   "prev_main_theme": "汽车零部"
   }
  ]
 }

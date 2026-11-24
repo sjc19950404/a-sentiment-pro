@@ -1,0 +1,63 @@
+{
+ "kind": "llm-cache",
+ "name": "llm-sentiment",
+ "asOfDate": "2026-11-24",
+ "hash": "29e4ca0a03",
+ "cachedAt": "2026-11-24T10:34:39.037Z",
+ "parsed": {
+  "sentiment": 0.5,
+  "confidence": 0.8,
+  "reason": "市场整体情绪稳定，涨停数量多于跌停，炸板率较高，但亏钱效应不明显，赚钱效应占优。",
+  "events": [
+   {
+    "type": "行业催化",
+    "target": "6G",
+    "tone": "positive",
+    "note": "新晋题材带动市场情绪"
+   },
+   {
+    "type": "行业催化",
+    "target": "英伟达概念",
+    "tone": "positive",
+    "note": "新晋题材带动市场情绪"
+   },
+   {
+    "type": "公司事件",
+    "target": "文投控股",
+    "tone": "positive",
+    "note": "AI漫剧和剧集发行提升公司业绩预期"
+   },
+   {
+    "type": "公司事件",
+    "target": "*ST天喻",
+    "tone": "positive",
+    "note": "撤销退市风险申请和数字人民币概念提升公司股价"
+   },
+   {
+    "type": "公司事件",
+    "target": "维信诺",
+    "tone": "positive",
+    "note": "新产品发布和技术升级提升公司业绩"
+   },
+   {
+    "type": "公司事件",
+    "target": "阳光照明",
+    "tone": "positive",
+    "note": "商业航天和激光通信概念带动公司股价"
+   },
+   {
+    "type": "公司事件",
+    "target": "*ST瑞茂",
+    "tone": "positive",
+    "note": "面值退市博弈和煤炭供应链提升公司股价"
+   },
+   {
+    "type": "公司事件",
+    "target": "金牛化工",
+    "tone": "positive",
+    "note": "甲醇和风电项目提升公司业绩预期"
+   }
+  ]
+ },
+ "model": "glm-4-flash"
+}

@@ -1,44 +1,44 @@
 {
-  "date": "2026-11-23",
+  "date": "2026-11-24",
   "marketTierVersion": "marketTier/v5.3-alert_only",
-  "generated_at": "2026-11-23T18:33:21.695Z",
-  "emotionScore": 85.2,
+  "generated_at": "2026-11-24T10:47:33.732Z",
+  "emotionScore": 49.5,
   "ztpoolLoaded": true,
   "picks": [
     {
-      "code": "002242",
-      "name": "九阳股份",
+      "code": "002548",
+      "name": "金新农",
       "buyPoint": "正常换手涨停，竞价/开盘分歧转一致可参与",
       "weakToStrong": false,
       "probText": "中等（历史同特征组上涨占比 57%~65%）",
-      "probScore": 65,
-      "changePct": 10.01,
-      "streakText": "大概率连板 18.2%",
-      "streakTop": false,
+      "probScore": 60,
+      "changePct": 9.9,
+      "streakText": "大概率连板 54.2%",
+      "streakTop": true,
       "gateTags": [
         "核心龙头"
       ],
       "suggestWeight": 0.2
     },
     {
-      "code": "000636",
-      "name": "风华高科",
-      "buyPoint": "⚠ 偏缩量硬板，次日易一字/秒板，实盘买点苛刻，谨慎",
+      "code": "002579",
+      "name": "中京电子",
+      "buyPoint": "正常换手涨停，竞价/开盘分歧转一致可参与",
       "weakToStrong": false,
       "probText": "中等（历史同特征组上涨占比 57%~65%）",
-      "probScore": 59,
-      "changePct": 10.02,
-      "streakText": "大概率连板 18.2%",
-      "streakTop": false,
+      "probScore": 60,
+      "changePct": 9.98,
+      "streakText": "大概率连板 50%",
+      "streakTop": true,
       "gateTags": [
-        "后排补涨"
+        "核心龙头"
       ],
       "suggestWeight": 0.2
     },
     {
-      "code": "000766",
-      "name": "通化金马",
-      "buyPoint": "⚠ 偏缩量硬板，次日易一字/秒板，实盘买点苛刻，谨慎",
+      "code": "002611",
+      "name": "东方精工",
+      "buyPoint": "弱转强：今日放量烂板，明日早盘低开/回踩均线可低吸",
       "weakToStrong": false,
       "probText": "中等（历史同特征组上涨占比 57%~65%）",
       "probScore": 59,
@@ -53,9 +53,9 @@
   ],
   "observe": [
     {
-      "code": "000593",
-      "name": "德龙汇能",
-      "changePct": 9.99,
+      "code": "001229",
+      "name": "魅视科技",
+      "changePct": 10,
       "probScore": 55,
       "streakText": null,
       "gateTags": null,
@@ -64,74 +64,8 @@
       "observeTier": "below_zt"
     },
     {
-      "code": "002199",
-      "name": "东晶电子",
-      "changePct": 10.05,
-      "probScore": 55,
-      "streakText": null,
-      "gateTags": null,
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "below_zt"
-    },
-    {
-      "code": "002642",
-      "name": "荣联科技",
-      "changePct": 10.06,
-      "probScore": 55,
-      "streakText": null,
-      "gateTags": null,
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "below_zt"
-    },
-    {
-      "code": "603960",
-      "name": "克来机电",
-      "changePct": 10.02,
-      "probScore": 55,
-      "streakText": null,
-      "gateTags": null,
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "below_zt"
-    },
-    {
-      "code": "605018",
-      "name": "长华集团",
-      "changePct": 10.04,
-      "probScore": 55,
-      "streakText": null,
-      "gateTags": null,
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "below_zt"
-    },
-    {
-      "code": "605577",
-      "name": "龙版传媒",
-      "changePct": 10.01,
-      "probScore": 51,
-      "streakText": null,
-      "gateTags": null,
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "below_zt"
-    },
-    {
-      "code": "002548",
-      "name": "金新农",
-      "changePct": 10.11,
-      "probScore": 51,
-      "streakText": null,
-      "gateTags": null,
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "below_zt"
-    },
-    {
-      "code": "600156",
-      "name": "华升股份",
+      "code": "001278",
+      "name": "一彬科技",
       "changePct": 9.98,
       "probScore": 55,
       "streakText": null,
@@ -141,10 +75,10 @@
       "observeTier": "below_zt"
     },
     {
-      "code": "000026",
-      "name": "飞亚达",
-      "changePct": 10.01,
-      "probScore": 51,
+      "code": "002036",
+      "name": "联创电子",
+      "changePct": 10.06,
+      "probScore": 55,
       "streakText": null,
       "gateTags": null,
       "isZt": true,
@@ -152,10 +86,10 @@
       "observeTier": "below_zt"
     },
     {
-      "code": "000559",
-      "name": "万向钱潮",
-      "changePct": 10.03,
-      "probScore": 51,
+      "code": "002122",
+      "name": "汇洲智能",
+      "changePct": 10.14,
+      "probScore": 55,
       "streakText": null,
       "gateTags": null,
       "isZt": true,
@@ -163,10 +97,10 @@
       "observeTier": "below_zt"
     },
     {
-      "code": "000700",
-      "name": "模塑科技",
-      "changePct": 9.99,
-      "probScore": 51,
+      "code": "002164",
+      "name": "宁波东力",
+      "changePct": 9.98,
+      "probScore": 55,
       "streakText": null,
       "gateTags": null,
       "isZt": true,
@@ -174,10 +108,76 @@
       "observeTier": "below_zt"
     },
     {
-      "code": "001229",
-      "name": "魅视科技",
+      "code": "002708",
+      "name": "光洋股份",
       "changePct": 10,
-      "probScore": 51,
+      "probScore": 55,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "002931",
+      "name": "锋龙股份",
+      "changePct": 10.01,
+      "probScore": 55,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "600814",
+      "name": "杭州解百",
+      "changePct": 10,
+      "probScore": 55,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "603040",
+      "name": "新坐标",
+      "changePct": 10.01,
+      "probScore": 55,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "603103",
+      "name": "横店影视",
+      "changePct": 10,
+      "probScore": 55,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "603516",
+      "name": "淳中科技",
+      "changePct": 10,
+      "probScore": 55,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "603626",
+      "name": "科森科技",
+      "changePct": 9.98,
+      "probScore": 55,
       "streakText": null,
       "gateTags": null,
       "isZt": true,
@@ -186,35 +186,38 @@
     }
   ],
   "stats": {
-    "universe": 118,
-    "removed": 12,
+    "universe": 47,
+    "removed": 5,
     "kept": 7,
-    "below": 97,
+    "below": 36,
     "minProb": 57,
     "observeCount": 12
   },
   "rejected": [
     {
-      "code": "600814",
-      "name": "杭州解百",
+      "code": "002242",
+      "name": "九阳股份",
       "reasons": []
     },
     {
-      "code": "603151",
-      "name": "邦基科技",
-      "reasons": []
-    },
-    {
-      "code": "601188",
-      "name": "龙江交通",
+      "code": "600715",
+      "name": "文投控股",
       "reasons": [
         "换手过高",
         "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
       ]
     },
     {
-      "code": "002771",
-      "name": "真视通",
+      "code": "002086",
+      "name": "东方海洋",
+      "reasons": [
+        "换手过高",
+        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
+      ]
+    },
+    {
+      "code": "002685",
+      "name": "华东重机",
       "reasons": [
         "换手过高",
         "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
@@ -227,66 +230,10 @@
         "换手过高",
         "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
       ]
-    },
-    {
-      "code": "600715",
-      "name": "文投控股",
-      "reasons": [
-        "换手过高",
-        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
-      ]
-    },
-    {
-      "code": "002579",
-      "name": "中京电子",
-      "reasons": [
-        "换手过高",
-        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
-      ]
-    },
-    {
-      "code": "002148",
-      "name": "北纬科技",
-      "reasons": [
-        "换手过高",
-        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
-      ]
-    },
-    {
-      "code": "600327",
-      "name": "大东方",
-      "reasons": [
-        "换手过高",
-        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
-      ]
-    },
-    {
-      "code": "000678",
-      "name": "襄阳轴承",
-      "reasons": [
-        "换手过高",
-        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
-      ]
-    },
-    {
-      "code": "600467",
-      "name": "好当家",
-      "reasons": [
-        "换手过高",
-        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
-      ]
-    },
-    {
-      "code": "000530",
-      "name": "冰山冷热",
-      "reasons": [
-        "换手过高",
-        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
-      ]
     }
   ],
   "note": {
     "level": "blocked",
-    "text": "【来源已停用·仅告警】情绪分「过热（只减仓不新建）」不再限制新建仓；历史文案曾建议总仓位 0%、不新建仓。下列标的仅供观察，不建议此时建仓。"
+    "text": "【来源已停用·仅告警】情绪分「半仓」不再限制新建仓；历史文案曾建议总仓位 0%、不新建仓。下列标的仅供观察，不建议此时建仓。"
   }
 }
