@@ -1,17 +1,17 @@
 {
-  "updatedAt": "2026-11-23T13:18:51.311Z",
+  "updatedAt": "2026-11-24T10:48:56.239Z",
   "status": "watch",
   "headline": "⚠️ 观察：单周超额转负",
   "attribution": {
     "type": "beta",
     "label": "beta 下行（非因子衰减）",
-    "note": "最近 4 周市场基准均值 -0.83% 为负、策略超额均值仍为正（0.47%）——劣化主要是市场 beta 下行，非因子衰减（避险价值仍在工作）。"
+    "note": "最近 4 周市场基准均值 -0.84% 为负、策略超额均值仍为正（0.47%）——劣化主要是市场 beta 下行，非因子衰减（避险价值仍在工作）。"
   },
   "metrics": {
     "alphaWinRate8": 0.75,
     "negStreak": 1,
     "ma4Pct": 0.75,
-    "sharpe8": -2.557,
+    "sharpe8": -2.514,
     "seatAlarm": false,
     "divAlarm": false
   },
@@ -27,7 +27,7 @@
       "regime": "climax",
       "label": "climax",
       "weeks": 14,
-      "avgAlpha": -0.004706,
+      "avgAlpha": -0.004693,
       "winRate": 0.286
     },
     {
@@ -1229,13 +1229,13 @@
     },
     {
       "week": "2026-11-23",
-      "end": "2026-11-23",
-      "days": 1,
-      "strat": 0.003515,
-      "mkt": 0.0172,
-      "alpha": -0.013685,
+      "end": "2026-11-24",
+      "days": 2,
+      "strat": 0.003456,
+      "mkt": 0.016963,
+      "alpha": -0.013506,
       "regime": "climax",
-      "exposure": 0.25,
+      "exposure": 0.35,
       "seatAlpha": null,
       "seatPool": null,
       "divergRate": 0
