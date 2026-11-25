@@ -1,33 +1,24 @@
 {
  "stocks": {
-  "603073": {
-   "pos": "red",
-   "counts": {
-    "lift": 0,
-    "red": 1,
-    "seal": 0,
-    "dtBreak": 0
-   }
-  },
-  "603358": {
+  "003038": {
    "pos": "lifted",
    "counts": {
-    "lift": 1,
-    "red": 1,
+    "lift": 0,
+    "red": 0,
     "seal": 0,
     "dtBreak": 0
    }
   },
-  "603976": {
-   "pos": "red",
+  "000635": {
+   "pos": "dt",
    "counts": {
     "lift": 0,
-    "red": 1,
+    "red": 0,
     "seal": 0,
     "dtBreak": 0
    }
   }
  },
- "notified": 4,
- "date": "2026-11-24"
+ "notified": 0,
+ "date": "2026-11-25"
 }
