@@ -22,6 +22,16 @@
   </header>
   <div class="s-ticker" id="rptTicker" aria-hidden="true"></div>
 
+  <!-- 【2026-11-25 修复】本页是 2026-11-13 的静态原型，十章数值全为写死示意值，
+       从未接真实数据——用户从"更多→研报长文"进来看到滞后且与实际研判报告不符。
+       现统一重定向到 ?view=report（s-report.js 搬运 app.js 正式 #briefBody：真实
+       10 章数据 + 复制/打印/12 项导出，单一数据源）。保留兜底文案防 JS 被禁时误读。 -->
+  <script>
+    (function () {
+      var q = location.search.indexOf('noredirect=1') < 0;
+      if (q) { location.replace('./?view=report'); return; }
+    })();
+  </script>
   <main class="s-main">
     <section class="s-page" id="page-report" role="region" aria-label="研报长文" tabindex="0" data-page="report">
 
@@ -52,6 +62,10 @@
       <article class="s-card">
         <div class="s-card__body">
           <div class="s-prose" id="briefBody">
+            <p style="padding:10px 14px;border:2px solid #e05555;border-radius:6px;background:#3a1818;color:#ffd9d9;font-weight:600">
+              ⚠ 本页为 2026-11-13 静态设计原型，以下十章数值均为写死示意值、非当日研判结论。
+              真实报告在 <a href="./?view=report" style="color:#7ee8ff">研判报告 · 长文阅读页（当日数据）</a>。
+            </p>
             <p class="s-prose__meta">数据日 2026-11-13 · 情绪分 38.4 · regime 冰点 · 生成时间见页脚 · 口径默认收起（下方数值为快照示意，运行时以当日数据为准）</p>
 
             <h2 id="ch1">一、情绪定位</h2>

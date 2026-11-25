@@ -305,7 +305,7 @@
     if (btnExport) btnExport.addEventListener('click', () => {
       btnExport.textContent = '导出 12 项';
       setTimeout(() => { btnExport.textContent = '导出'; }, 1600);
-      window.open('report.html', '_blank');
+      window.open('./?view=report', '_blank');   // C终态：report.html 是 11-13 静态示意页，真实长文在 ?view=report
     });
     /* 【原型 L576】骨架态：KPI 行临时换 6 张骨架卡 1.8s */
     const btnSkel = top.querySelector('#sPhSkeleton');
@@ -340,7 +340,11 @@
         size: 'lg', title: '更多', sub: '导出 / 打印 / 视图出口',
         render(body) {
           body.innerHTML = '<div class="s-tagrow">'
-            + '<a class="s-btn s-btn--ghost" href="report.html" target="_blank">研报长文</a>'
+            /* 【2026-11-25 修复】旧入口指 report.html——那是 103 行静态原型，数据日
+             * 2026-11-13 写死、十章数字全是编造示意值（用户实测"内容滞后且与实际
+             * 研判报告不一样"）。改指 ?view=report：s-report.js 搬运 app.js 生成的
+             * 正式 #briefBody（10 章真实数据 + 复制/打印/12 项导出），单一数据源。 */
+            + '<a class="s-btn s-btn--ghost" href="./?view=report" target="_blank">研报长文</a>'
             + '<button type="button" class="s-btn s-btn--ghost" id="sMoreExport">导出 12 项</button>'
             + '<button type="button" class="s-btn s-btn--ghost" data-ev-tab="回测">策略回测明细</button>'
             + '<button type="button" class="s-btn s-btn--ghost" data-ev-tab="模拟盘">模拟盘交易台</button>'
