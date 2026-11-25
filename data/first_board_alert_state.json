@@ -10,7 +10,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.35
+   "chg": -1.58
   },
   "600261": {
    "pos": "none",
@@ -22,7 +22,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.65
+   "chg": -2.06
   },
   "600400": {
    "pos": "none",
@@ -34,7 +34,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 1.38
+   "chg": -0.28
   },
   "600715": {
    "pos": "none",
@@ -46,7 +46,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -4.78
+   "chg": -7.64
   },
   "600722": {
    "pos": "sealed",
@@ -94,7 +94,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.15
+   "chg": 4.92
   },
   "603266": {
    "pos": "none",
@@ -106,7 +106,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3.05
+   "chg": -3.59
   },
   "603360": {
    "pos": "none",
@@ -118,7 +118,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 4.79
+   "chg": 5.1
   },
   "603608": {
    "pos": "none",
@@ -130,7 +130,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -6.5
+   "chg": -6.96
   },
   "603725": {
    "pos": "none",
@@ -142,7 +142,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -7.83
+   "chg": -8.33
   },
   "603813": {
    "pos": "none",
@@ -154,7 +154,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.44
+   "chg": -1.02
   },
   "603956": {
    "pos": "none",
@@ -178,7 +178,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -4.54
+   "chg": -5.15
   },
   "002872": {
    "pos": "sealed",
@@ -202,7 +202,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -8.19
+   "chg": -8.77
   },
   "002651": {
    "pos": "sealed",
@@ -226,7 +226,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.83
+   "chg": -6.28
   },
   "002827": {
    "pos": "none",
@@ -238,7 +238,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -7.36
+   "chg": -7.99
   },
   "002387": {
    "pos": "none",
@@ -250,18 +250,18 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 4.24
+   "chg": 5.02
   }
  },
  "notified": 0,
  "threshold_adjust": {
   "enabled": false,
-  "state": "复苏",
+  "state": "震荡",
   "items": [
    {
     "key": "approachPct",
     "base": 7,
-    "regime": "复苏",
+    "regime": "震荡",
     "tier": "neutral",
     "multiplier": 1,
     "final": 7,
@@ -270,7 +270,7 @@
    {
     "key": "sectorMinChg",
     "base": 2,
-    "regime": "复苏",
+    "regime": "震荡",
     "tier": "neutral",
     "multiplier": 1,
     "final": 2,
