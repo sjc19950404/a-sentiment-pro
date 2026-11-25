@@ -1,13 +1,13 @@
 {
  "meta": {
-  "generatedAt": "2026-11-24T13:18:41.665Z",
-  "days": 272,
-  "exact_days": 24,
+  "generatedAt": "2026-11-25T10:49:09.316Z",
+  "days": 273,
+  "exact_days": 25,
   "approx_days": 248,
   "rules": "src/emotion_cycle.js（冰点>退潮>高潮>主升>复苏>震荡；score 六项加权 0-100）",
   "caliber_note": "approx=true 日子来自 archive.json 汇总字段：broken_rate/hard_board_rate 为触板口径（≠池内 zbc 口径）、theme_concentration 为 null（主升不触发）；精确数据自 ztpool_history.json 积累之日起覆盖（接口只能取最近交易日）",
   "emotion_dist": {
-   "震荡": 163,
+   "震荡": 164,
    "复苏": 62,
    "冰点": 3,
    "退潮": 13,
@@ -4340,6 +4340,21 @@
     "theme_concentration": 0.1455,
     "theme_top": "汽车零部",
     "hard_board_rate": 0.5273,
+    "zbc_unknown": 0
+   }
+  },
+  {
+   "date": "20261125",
+   "emotion": "震荡",
+   "score": 46,
+   "metrics": {
+    "limit_up_count": 51,
+    "continuous_count": 14,
+    "broken_rate": 0.451,
+    "max_board": 5,
+    "theme_concentration": 0.1569,
+    "theme_top": "化学制药",
+    "hard_board_rate": 0.549,
     "zbc_unknown": 0
    }
   }
