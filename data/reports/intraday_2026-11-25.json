@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-25",
- "generated_at": "2026-11-25T02:36:01.139Z",
+ "generated_at": "2026-11-25T06:05:05.300Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -135,7 +135,7 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": -0.01284,
+    "chgPct": -0.012201,
     "state": "ok",
     "stale": false,
     "cacheNote": null
@@ -159,18 +159,14 @@
     "深证成指": -0.29,
     "创业板指": -0.05
    },
-   "up_down": null,
+   "up_down": "647/4539/107",
    "amount_yi": 16550.9,
-   "zt_dt": null,
+   "zt_dt": "47/9",
    "breadth": "站上20日线仅 9.5%",
    "pain": "接力顺畅",
    "seats": "机构专用主导",
    "highest_chain": 5,
-   "breadth_stale": true,
-   "fallbackUsed": [
-    "hot"
-   ],
-   "fallbackFromAt": "2026-11-25T01:35:03.433Z"
+   "breadth_stale": false
   },
   "approx": false,
   "drawdown_vs_threshold": {
@@ -196,11 +192,6 @@
    "field": "counter_trend_losses / counter_trend_loss_ratio",
    "reason": "无逆势加仓/亏损记账；参考 divergence.posGap（保费敞口）",
    "ref": "data/paper/dual_track_latest.json"
-  },
-  {
-   "field": "market_context.up_down",
-   "reason": "盘中实时涨跌家数快照缺失/跨交易日/采集滞后/源失败——已隐藏陈旧 EOD 值，宁可不报也不糊弄",
-   "ref": "src/ai_report.js::generateIntraday"
   },
   {
    "field": "max_drawdown_daily",
@@ -231,8 +222,8 @@
  "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
  "marketTierVersion": "marketTier/v5.3-alert_only",
  "push_verification": {
-  "checkedAtBJ": "10:36",
-  "snapshotAtBJ": "2026-11-25 09:35",
+  "checkedAtBJ": "14:05",
+  "snapshotAtBJ": "2026-11-25 14:05",
   "tradeDate": "2026-11-25",
   "trend_pool_mode": "trend",
   "minutes_to_close": null,
