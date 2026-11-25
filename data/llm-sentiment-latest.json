@@ -2,18 +2,18 @@
  "kind": "llm-sentiment-latest",
  "version": 1,
  "asOfDate": "2026-11-25",
- "generatedAt": "2026-11-25T18:34:50.997+08:00",
+ "generatedAt": "2026-11-25T21:05:01.504+08:00",
  "cachedFrom": null,
  "model": "glm-4-flash",
- "sentiment": -0.6,
+ "sentiment": -0.5,
  "confidence": 0.8,
- "reason": "亏钱效应显著，涨停股数量少于跌停股，炸板率高，市场整体情绪偏弱。",
+ "reason": "亏钱效应显著，涨停家数与跌停家数接近，炸板率较高，市场情绪偏向负面。",
  "events": [
   {
    "type": "业绩预告",
    "target": "三季报增长",
    "tone": "positive",
-   "note": "三季报增长题材持续活跃，但整体市场情绪受挫。"
+   "note": "三季报增长题材持续活跃，但部分个股出现退潮迹象。"
   },
   {
    "type": "政策",
@@ -25,25 +25,25 @@
    "type": "行业催化",
    "target": "PCB",
    "tone": "positive",
-   "note": "PCB行业新晋，可能受到行业催化。"
+   "note": "PCB行业新晋，可能受到行业需求增长推动。"
   },
   {
    "type": "行业催化",
    "target": "机器人投资",
    "tone": "positive",
-   "note": "机器人投资题材新晋，可能受到行业催化。"
+   "note": "机器人投资题材新晋，可能受到技术进步和市场需求的推动。"
   },
   {
    "type": "行业催化",
    "target": "液冷",
    "tone": "positive",
-   "note": "液冷题材新晋，可能受到行业催化。"
+   "note": "液冷题材新晋，可能受到数据中心需求增长推动。"
   },
   {
    "type": "行业催化",
    "target": "数据中心液冷",
    "tone": "positive",
-   "note": "数据中心液冷题材新晋，可能受到行业催化。"
+   "note": "数据中心液冷题材新晋，可能受到数据中心建设加速推动。"
   },
   {
    "type": "高管变动",
@@ -55,14 +55,14 @@
    "type": "行业催化",
    "target": "流感",
    "tone": "positive",
-   "note": "流感题材活跃，相关股票如桂林三金等表现强势。"
+   "note": "流感题材活跃，相关个股如桂林三金等表现强势。"
   }
  ],
  "inputDigest": {
   "themes": 73,
   "hotListed": 15,
   "ztCount": 51,
-  "emotionValue": 33.8,
+  "emotionValue": 33.7,
   "painVerdict": "亏钱效应显著（昨涨停今日翻绿 64%、高位板晋级失败 70%，追高者整体受损）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"

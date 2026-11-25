@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-25",
- "generated_at": "2026-11-25T10:49:08.495Z",
+ "generated_at": "2026-11-25T13:23:59.259Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -97,8 +97,8 @@
    "confidence": "missing"
   },
   "backtest_deviation": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "derived",
+   "confidence": "measured"
   },
   "market_context": {
    "source": "archived",
@@ -128,7 +128,19 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "ice",
+   "label": "冰点",
+   "score": 33.75,
+   "cap": null,
+   "position_range": null,
+   "positionReconcile": null,
+   "marketTierVersion": "marketTier/v5.3-alert_only",
+   "alertOnly": true,
+   "clustering_bubble": false,
+   "sentiment_penalty": 0,
+   "score_adjusted": 33.75
+  },
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -160,19 +172,24 @@
   "max_drawdown_intraday": null,
   "grid_trigger_detail": null,
   "counter_trend_loss_ratio": null,
-  "backtest_deviation": null,
+  "backtest_deviation": {
+   "live_cum": -0.077088,
+   "backtest_v52": -0.0771,
+   "delta": 0.000012,
+   "note": "执行轨 vs 回测 v52 锚点（零偏差为设计约束）"
+  },
   "market_context": {
-   "emotion": 33.8,
-   "pct_rank": 6.8,
+   "emotion": 30.9,
+   "pct_rank": 1.7,
    "indexes": {
     "上证指数": -2.03,
     "深证成指": -3.24,
     "创业板指": -4.19
    },
-   "up_down": null,
+   "up_down": "578/4645/70",
    "amount_yi": 13831,
    "zt_dt": "51/43",
-   "breadth": "站上20日线仅 6.2%",
+   "breadth": "站上20日线仅 6.3%",
    "pain": "亏钱效应显著",
    "seats": "游资/其他（营业部·分公司·自营）主导"
   },

@@ -1,9 +1,9 @@
 {
  "date": "2026-11-25",
  "source": "sina-bulletin",
- "fetchedAt": "2026-11-25T18:48:25.758+08:00",
+ "fetchedAt": "2026-11-25T21:22:55.452+08:00",
  "codes": 40,
- "count": 24,
+ "count": 26,
  "announcements": {
   "300703": "创源股份：2026年11月24日投资者关系活动记录表；创源股份：关于公司股票交易异常波动的公告",
   "301066": "万事利：关于股票交易异常波动的公告；万事利：关于回购公司股份实施完毕的公告",
@@ -22,13 +22,15 @@
   "603960": "克来机电：股票交易异常波动暨风险提示公告；克来机电：关于股票交易的风险提示性公告；克来机电：股票交易异常波动公告",
   "605136": "丽人丽妆：关于公司参与投资基金的公告",
   "605577": "龙版传媒：关于股票交易异常波动公告",
-  "002579": "中京电子：股票交易异常波动公告",
   "002548": "金新农：股票交易异常波动暨风险提示公告；金新农：关于完成工商变更登记的公告；金新农：关于选举职工代表董事的公告；金新农：股票交易异常波动暨风险提示公告",
+  "002579": "中京电子：股票交易异常波动公告",
   "002242": "九阳股份：股票交易异常波动暨第二次风险提示公告",
-  "002122": "汇洲智能：关于为子公司提供担保的进展公告(四)",
+  "002122": "汇洲智能：关于股票交易异常波动公告；汇洲智能：关于为子公司提供担保的进展公告(四)",
+  "002164": "宁波东力：股票交易异常波动公告",
   "002651": "利君股份：股票交易异常波动公告",
-  "002145": "钛能化学：第八届董事会第十九次(临时)会议决议公告；钛能化学：关于回购公司股份方案的公告；钛能化学：北京市嘉源律师事务所关于钛能化学集团股份有限公司2026年第四次临时股东会的法律意见书；钛能化学：2026年第四次临时股东会决议公告",
-  "000593": "德龙汇能：北京金杜(成都)律师事务所关于德龙汇能2026年第三次临时股东会的法律意见书；德龙汇能：章程(2026年11月)；德龙汇能：董事会议事规则(2026年11月)；德龙汇能：关于董事会完成换届、选举董事长及专门委员会委员、聘任高级管理人员及证券事务代表的公告；德龙汇能：董事、高级管理人员薪酬及绩效考核管理制度(2026年11月)；德龙汇能：第十四届董事会第一次会议决议公告；德龙汇能：股票交易异常波动公告；德龙汇能：关于子公司诉讼的进展公告；德龙汇能：2026年第三次临时股东会决议公告"
+  "002872": "天圣制药：股票交易异常波动公告",
+  "000593": "德龙汇能：北京金杜(成都)律师事务所关于德龙汇能2026年第三次临时股东会的法律意见书；德龙汇能：章程(2026年11月)；德龙汇能：董事会议事规则(2026年11月)；德龙汇能：关于董事会完成换届、选举董事长及专门委员会委员、聘任高级管理人员及证券事务代表的公告；德龙汇能：董事、高级管理人员薪酬及绩效考核管理制度(2026年11月)；德龙汇能：第十四届董事会第一次会议决议公告；德龙汇能：股票交易异常波动公告；德龙汇能：关于子公司诉讼的进展公告；德龙汇能：2026年第三次临时股东会决议公告",
+  "002145": "钛能化学：第八届董事会第十九次(临时)会议决议公告；钛能化学：关于回购公司股份方案的公告；钛能化学：北京市嘉源律师事务所关于钛能化学集团股份有限公司2026年第四次临时股东会的法律意见书；钛能化学：2026年第四次临时股东会决议公告"
  },
  "details": [
   {
@@ -299,17 +301,6 @@
    ]
   },
   {
-   "code": "002579",
-   "name": "中京电子",
-   "announcements": [
-    {
-     "title": "中京电子：股票交易异常波动公告",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002579&id=12724010"
-    }
-   ]
-  },
-  {
    "code": "002548",
    "name": "金新农",
    "announcements": [
@@ -336,6 +327,17 @@
    ]
   },
   {
+   "code": "002579",
+   "name": "中京电子",
+   "announcements": [
+    {
+     "title": "中京电子：股票交易异常波动公告",
+     "date": "2026-11-26",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002579&id=12724010"
+    }
+   ]
+  },
+  {
    "code": "002242",
    "name": "九阳股份",
    "announcements": [
@@ -351,9 +353,25 @@
    "name": "汇洲智能",
    "announcements": [
     {
+     "title": "汇洲智能：关于股票交易异常波动公告",
+     "date": "2026-11-26",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002122&id=12724688"
+    },
+    {
      "title": "汇洲智能：关于为子公司提供担保的进展公告(四)",
      "date": "2026-11-24",
      "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002122&id=12718995"
+    }
+   ]
+  },
+  {
+   "code": "002164",
+   "name": "宁波东力",
+   "announcements": [
+    {
+     "title": "宁波东力：股票交易异常波动公告",
+     "date": "2026-11-26",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002164&id=12724203"
     }
    ]
   },
@@ -369,28 +387,13 @@
    ]
   },
   {
-   "code": "002145",
-   "name": "钛能化学",
+   "code": "002872",
+   "name": "天圣制药",
    "announcements": [
     {
-     "title": "钛能化学：第八届董事会第十九次(临时)会议决议公告",
-     "date": "2026-11-25",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002145&id=12721302"
-    },
-    {
-     "title": "钛能化学：关于回购公司股份方案的公告",
-     "date": "2026-11-25",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002145&id=12721283"
-    },
-    {
-     "title": "钛能化学：北京市嘉源律师事务所关于钛能化学集团股份有限公司2026年第四次临时股东会的法律意见书",
-     "date": "2026-11-24",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002145&id=12719438"
-    },
-    {
-     "title": "钛能化学：2026年第四次临时股东会决议公告",
-     "date": "2026-11-24",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002145&id=12719437"
+     "title": "天圣制药：股票交易异常波动公告",
+     "date": "2026-11-26",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002872&id=12724689"
     }
    ]
   },
@@ -442,6 +445,32 @@
      "title": "德龙汇能：2026年第三次临时股东会决议公告",
      "date": "2026-11-24",
      "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000593&id=12720304"
+    }
+   ]
+  },
+  {
+   "code": "002145",
+   "name": "钛能化学",
+   "announcements": [
+    {
+     "title": "钛能化学：第八届董事会第十九次(临时)会议决议公告",
+     "date": "2026-11-25",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002145&id=12721302"
+    },
+    {
+     "title": "钛能化学：关于回购公司股份方案的公告",
+     "date": "2026-11-25",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002145&id=12721283"
+    },
+    {
+     "title": "钛能化学：北京市嘉源律师事务所关于钛能化学集团股份有限公司2026年第四次临时股东会的法律意见书",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002145&id=12719438"
+    },
+    {
+     "title": "钛能化学：2026年第四次临时股东会决议公告",
+     "date": "2026-11-24",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002145&id=12719437"
     }
    ]
   }

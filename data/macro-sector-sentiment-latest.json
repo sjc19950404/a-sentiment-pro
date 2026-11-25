@@ -3,1709 +3,1166 @@
  "version": 1,
  "asOfDate": "2026-11-25",
  "newsDate": "2026-11-25",
- "generatedAt": "2026-11-25T18:39:28.322+08:00",
+ "generatedAt": "2026-11-25T21:14:26.272+08:00",
  "cachedFrom": null,
  "model": "glm-4-flash",
  "macro": {
-  "sentiment": 0,
-  "score100": 50,
+  "sentiment": -0.02,
+  "score100": 49,
   "label": "中性",
-  "confidence": 0.47,
-  "reason": "利好板块：无；利空板块：白酒(-0.28)、新能源汽车(-0.23)、汽车(-0.23)、消费电子(-0.21)"
+  "confidence": 0.51,
+  "reason": "利好板块：地产(+0.37)、汽车(+0.35)、券商(+0.33)、新能源汽车(+0.33)、智能驾驶(+0.33)；利空板块：半导体(-0.36)、CPO(-0.35)、光模块(-0.35)、PCB(-0.35)、AI(-0.31)"
  },
  "sectors": [
   {
-   "sector": "白酒",
-   "score": -0.28,
-   "score100": 36,
-   "newsCount": 5,
-   "bullish": 1,
-   "bearish": 4,
-   "neutral": 0,
-   "headlines": [
-    "A股昔日股王总市值缩水近80%，A股千元股仅剩贵州茅台",
-    "【11.25 ETF综述】费城半导拖累中证半导，钱躲进白酒和红利，小盘双星再迎抄底资金",
-    "因26.54万元合同纠纷，老白干酒董事长被限高 |酒业内参",
-    "德银策略师：标普500到2027年底有25%上行空间"
-   ]
-  },
-  {
-   "sector": "新能源汽车",
-   "score": -0.23,
-   "score100": 38,
+   "sector": "地产",
+   "score": 0.37,
+   "score100": 68,
    "newsCount": 3,
-   "bullish": 1,
-   "bearish": 2,
-   "neutral": 0,
-   "headlines": [
-    "零跑汽车Q3碳积分贡献5亿利润毛利率连降三季度 新车D19/D99交付后销量快速回落",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "汽车",
-   "score": -0.23,
-   "score100": 38,
-   "newsCount": 3,
-   "bullish": 1,
-   "bearish": 2,
-   "neutral": 0,
-   "headlines": [
-    "零跑汽车Q3碳积分贡献5亿利润毛利率连降三季度 新车D19/D99交付后销量快速回落",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "消费电子",
-   "score": -0.21,
-   "score100": 39,
-   "newsCount": 7,
    "bullish": 2,
-   "bearish": 5,
-   "neutral": 0,
+   "bearish": 0,
+   "neutral": 1,
    "headlines": [
-    "黄仁勋回归48小时：股价冲高回落，董事会遭质疑",
-    "知名服装品牌实控人，近9亿元押注长鑫科技",
-    "黄仁勋现在的处境或许更加艰难",
-    "【11.25 ETF综述】费城半导拖累中证半导，钱躲进白酒和红利，小盘双星再迎抄底资金"
+    "超60亿元！市场低迷，基金公司集体“掏腰包”",
+    "四季度，私募调研热股曝光",
+    "多个新盘触发积分摇号 年末上海楼市热度持续"
    ]
   },
   {
    "sector": "半导体",
-   "score": -0.2,
-   "score100": 40,
-   "newsCount": 6,
-   "bullish": 2,
-   "bearish": 4,
-   "neutral": 0,
+   "score": -0.36,
+   "score100": 32,
+   "newsCount": 7,
+   "bullish": 1,
+   "bearish": 5,
+   "neutral": 1,
    "headlines": [
-    "黄仁勋回归48小时：股价冲高回落，董事会遭质疑",
-    "知名服装品牌实控人，近9亿元押注长鑫科技",
-    "黄仁勋现在的处境或许更加艰难",
-    "【11.25 ETF综述】费城半导拖累中证半导，钱躲进白酒和红利，小盘双星再迎抄底资金"
+    "四季度，私募调研热股曝光",
+    "壁仞科技大跌25%：市值跌破400亿 今年累计募资超170亿港元 风险在公司业务之外",
+    "特朗普插手黄仁勋风波，再度激起选民对科技巨头政治权力过大的不满",
+    "蒸发近3万亿，全球最大IPO给AI狂欢泼了盆冷水"
    ]
   },
   {
-   "sector": "纺织服装",
-   "score": 0.2,
-   "score100": 60,
+   "sector": "汽车",
+   "score": 0.35,
+   "score100": 68,
    "newsCount": 4,
    "bullish": 3,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "希音公布三季报：净收入102.71亿美元，调整后净利润7.9亿美元同比增长近27%",
-    "希音公布三季报：调整后净利润增长近27%",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "航运",
-   "score": -0.2,
-   "score100": 40,
-   "newsCount": 3,
-   "bullish": 1,
-   "bearish": 2,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→",
-    "供应增加对冲霍尔木兹袭击升级风险 油价下跌"
-   ]
-  },
-  {
-   "sector": "银行",
-   "score": 0.17,
-   "score100": 58,
-   "newsCount": 6,
-   "bullish": 3,
-   "bearish": 1,
-   "neutral": 2,
-   "headlines": [
-    "山东城商行港股“双雄”，差距为什么是2.6倍？",
-    "快速行动！建设银行加力推动股票回购增持贷款投放",
-    "韩国拟扩容证券市场稳定基金，当局正对25家机构开展出资能力评估",
-    "天津银行：选举杨毅为董事长"
-   ]
-  },
-  {
-   "sector": "券商",
-   "score": 0.17,
-   "score100": 58,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "韩国拟扩容证券市场稳定基金，当局正对25家机构开展出资能力评估",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "保险",
-   "score": 0.17,
-   "score100": 58,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "韩国拟扩容证券市场稳定基金，当局正对25家机构开展出资能力评估",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "医药",
-   "score": -0.17,
-   "score100": 42,
-   "newsCount": 3,
-   "bullish": 1,
-   "bearish": 2,
-   "neutral": 0,
-   "headlines": [
-    "历时不足四个月！通化金马终止收购八加一控股权意向，标的身背多项失信记录",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "CXO",
-   "score": -0.17,
-   "score100": 42,
-   "newsCount": 3,
-   "bullish": 1,
-   "bearish": 2,
-   "neutral": 0,
-   "headlines": [
-    "历时不足四个月！通化金马终止收购八加一控股权意向，标的身背多项失信记录",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "创新药",
-   "score": -0.17,
-   "score100": 42,
-   "newsCount": 3,
-   "bullish": 1,
-   "bearish": 2,
-   "neutral": 0,
-   "headlines": [
-    "历时不足四个月！通化金马终止收购八加一控股权意向，标的身背多项失信记录",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "AI",
-   "score": -0.13,
-   "score100": 44,
-   "newsCount": 7,
-   "bullish": 2,
-   "bearish": 4,
+   "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "报道：AI行业领袖就人类是否应当交出自主决策权产生激烈分歧",
-    "黄仁勋回归48小时：股价冲高回落，董事会遭质疑",
-    "黄仁勋现在的处境或许更加艰难",
-    "领益智造高溢价“加码”液冷标的 频频跨界背后净利率承压"
-   ]
-  },
-  {
-   "sector": "算力",
-   "score": -0.13,
-   "score100": 44,
-   "newsCount": 7,
-   "bullish": 2,
-   "bearish": 4,
-   "neutral": 1,
-   "headlines": [
-    "报道：AI行业领袖就人类是否应当交出自主决策权产生激烈分歧",
-    "黄仁勋回归48小时：股价冲高回落，董事会遭质疑",
-    "黄仁勋现在的处境或许更加艰难",
-    "领益智造高溢价“加码”液冷标的 频频跨界背后净利率承压"
-   ]
-  },
-  {
-   "sector": "数据中心",
-   "score": 0.13,
-   "score100": 57,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→",
-    "AI数据中心热潮持续，戴尔上调全年业绩预期"
-   ]
-  },
-  {
-   "sector": "服务器",
-   "score": 0.13,
-   "score100": 57,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→",
-    "AI数据中心热潮持续，戴尔上调全年业绩预期"
-   ]
-  },
-  {
-   "sector": "锂电",
-   "score": 0.1,
-   "score100": 55,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "广期所：关于氢氧化锂期货合约挂牌基准价的通知",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "固态电池",
-   "score": 0.1,
-   "score100": 55,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "广期所：关于氢氧化锂期货合约挂牌基准价的通知",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "储能",
-   "score": 0.1,
-   "score100": 55,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "广期所：关于氢氧化锂期货合约挂牌基准价的通知",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "地产",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "中药",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "医疗器械",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "苹果产业链",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
+    "四季度，私募调研热股曝光",
+    "蔚来总裁秦力洪：当价格战打不动时，长期价值会重新回到舞台中心",
+    "理想汽车季报图解：营收288亿 净亏3亿同比收窄 自由现金流20亿",
+    "蔚来李斌谈算力：现在卡很贵也买不到，租卡更符合经营模式"
    ]
   },
   {
    "sector": "CPO",
-   "score": -0.1,
-   "score100": 45,
+   "score": -0.35,
+   "score100": 33,
    "newsCount": 2,
-   "bullish": 1,
+   "bullish": 0,
    "bearish": 1,
-   "neutral": 0,
+   "neutral": 1,
    "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
+    "四季度，私募调研热股曝光",
+    "壁仞科技大跌25%：市值跌破400亿 今年累计募资超170亿港元 风险在公司业务之外"
    ]
   },
   {
    "sector": "光模块",
-   "score": -0.1,
-   "score100": 45,
+   "score": -0.35,
+   "score100": 33,
    "newsCount": 2,
-   "bullish": 1,
+   "bullish": 0,
    "bearish": 1,
-   "neutral": 0,
+   "neutral": 1,
    "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
+    "四季度，私募调研热股曝光",
+    "壁仞科技大跌25%：市值跌破400亿 今年累计募资超170亿港元 风险在公司业务之外"
    ]
   },
   {
    "sector": "PCB",
-   "score": -0.1,
-   "score100": 45,
+   "score": -0.35,
+   "score100": 33,
    "newsCount": 2,
-   "bullish": 1,
+   "bullish": 0,
    "bearish": 1,
-   "neutral": 0,
+   "neutral": 1,
    "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
+    "四季度，私募调研热股曝光",
+    "壁仞科技大跌25%：市值跌破400亿 今年累计募资超170亿港元 风险在公司业务之外"
    ]
   },
   {
-   "sector": "机器人",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
+   "sector": "券商",
+   "score": 0.33,
+   "score100": 67,
+   "newsCount": 3,
+   "bullish": 2,
+   "bearish": 0,
+   "neutral": 1,
    "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
+    "超60亿元！市场低迷，基金公司集体“掏腰包”",
+    "四季度，私募调研热股曝光",
+    "资管机构加码期货衍生品，前三季度资金规模增超四成，险资增幅超100%"
    ]
   },
   {
-   "sector": "工业母机",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
+   "sector": "新能源汽车",
+   "score": 0.33,
+   "score100": 67,
+   "newsCount": 3,
+   "bullish": 2,
+   "bearish": 0,
+   "neutral": 1,
    "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "低空经济",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "商业航天",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "卫星互联网",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "光伏",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "风电",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "氢能源",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
+    "四季度，私募调研热股曝光",
+    "蔚来总裁秦力洪：当价格战打不动时，长期价值会重新回到舞台中心",
+    "理想汽车季报图解：营收288亿 净亏3亿同比收窄 自由现金流20亿"
    ]
   },
   {
    "sector": "智能驾驶",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "军工",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "航发",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "船舶",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "钢铁",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "煤炭",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "有色",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "铜",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "铝",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "稀土",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "石油",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "石化",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "燃气",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "电力",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "火电",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "水电",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "核电",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "绿电",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "建材",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "水泥",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "家电",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "农业",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "种业",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "猪周期",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "传媒",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "游戏",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "出版",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "计算机",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "信创",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "网络安全",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "通信",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "运营商",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "6G",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "物流",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "快递",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "港口",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "航空",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "旅游",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "免税",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "零售",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "美容护理",
-   "score": -0.1,
-   "score100": 45,
-   "newsCount": 2,
-   "bullish": 1,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "食品饮料",
-   "score": -0.07,
-   "score100": 47,
+   "score": 0.33,
+   "score100": 67,
    "newsCount": 3,
-   "bullish": 1,
-   "bearish": 1,
+   "bullish": 2,
+   "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "英国监管机构称，味好美出售科尔曼品牌或可消除联合利华食品业务并购的竞争顾虑",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
+    "四季度，私募调研热股曝光",
+    "蔚来总裁秦力洪：当价格战打不动时，长期价值会重新回到舞台中心",
+    "理想汽车季报图解：营收288亿 净亏3亿同比收窄 自由现金流20亿"
+   ]
+  },
+  {
+   "sector": "AI",
+   "score": -0.31,
+   "score100": 34,
+   "newsCount": 8,
+   "bullish": 1,
+   "bearish": 5,
+   "neutral": 2,
+   "headlines": [
+    "AI电力热潮回归理性，哪里能找到估值洼地",
+    "四季度，私募调研热股曝光",
+    "蔚来高管：AI相对来说还有不确定性，总体成本压力主要在AI方面",
+    "特朗普插手黄仁勋风波，再度激起选民对科技巨头政治权力过大的不满"
+   ]
+  },
+  {
+   "sector": "消费电子",
+   "score": -0.3,
+   "score100": 35,
+   "newsCount": 6,
+   "bullish": 1,
+   "bearish": 4,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光",
+    "蔚来高管：AI相对来说还有不确定性，总体成本压力主要在AI方面",
+    "特朗普插手黄仁勋风波，再度激起选民对科技巨头政治权力过大的不满",
+    "全球科技股抛售潮进一步加剧 软银大跌15% 英伟达盘前下跌4.9%"
    ]
   },
   {
    "sector": "软件",
-   "score": -0.07,
-   "score100": 47,
-   "newsCount": 3,
+   "score": 0.25,
+   "score100": 63,
+   "newsCount": 2,
    "bullish": 1,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "BOSS直聘：2026年第三季度营收24.16亿元，同比上涨11.7%",
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "信创",
+   "score": 0.25,
+   "score100": 63,
+   "newsCount": 2,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "BOSS直聘：2026年第三季度营收24.16亿元，同比上涨11.7%",
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "机器人",
+   "score": 0.25,
+   "score100": 63,
+   "newsCount": 2,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "拓竹发布第三代3D打印机P3C，七头闪切支持装下叠色、柔性、多工艺全套能力",
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "工业母机",
+   "score": 0.25,
+   "score100": 63,
+   "newsCount": 2,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "拓竹发布第三代3D打印机P3C，七头闪切支持装下叠色、柔性、多工艺全套能力",
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "低空经济",
+   "score": 0.25,
+   "score100": 63,
+   "newsCount": 2,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "拓竹发布第三代3D打印机P3C，七头闪切支持装下叠色、柔性、多工艺全套能力",
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "医药",
+   "score": -0.25,
+   "score100": 38,
+   "newsCount": 2,
+   "bullish": 0,
    "bearish": 1,
    "neutral": 1,
    "headlines": [
-    "报道：AI行业领袖就人类是否应当交出自主决策权产生激烈分歧",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
+    "四季度，私募调研热股曝光",
+    "天圣制药：股票交易异常波动 前三季度业绩亏损"
    ]
   },
   {
-   "sector": "芯片",
-   "score": 0.07,
-   "score100": 53,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "知名服装品牌实控人，近9亿元押注长鑫科技",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "化工",
-   "score": -0.07,
-   "score100": 47,
-   "newsCount": 3,
-   "bullish": 1,
+   "sector": "CXO",
+   "score": -0.25,
+   "score100": 38,
+   "newsCount": 2,
+   "bullish": 0,
    "bearish": 1,
    "neutral": 1,
    "headlines": [
-    "热点评论：中期选举之后，化工板块分析及策略探讨",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
+    "四季度，私募调研热股曝光",
+    "天圣制药：股票交易异常波动 前三季度业绩亏损"
    ]
   },
   {
-   "sector": "化肥",
-   "score": -0.07,
-   "score100": 47,
-   "newsCount": 3,
-   "bullish": 1,
+   "sector": "创新药",
+   "score": -0.25,
+   "score100": 38,
+   "newsCount": 2,
+   "bullish": 0,
    "bearish": 1,
    "neutral": 1,
    "headlines": [
-    "热点评论：中期选举之后，化工板块分析及策略探讨",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
+    "四季度，私募调研热股曝光",
+    "天圣制药：股票交易异常波动 前三季度业绩亏损"
    ]
   },
   {
-   "sector": "农药",
-   "score": -0.07,
-   "score100": 47,
-   "newsCount": 3,
-   "bullish": 1,
+   "sector": "苹果产业链",
+   "score": -0.25,
+   "score100": 38,
+   "newsCount": 2,
+   "bullish": 0,
    "bearish": 1,
    "neutral": 1,
    "headlines": [
-    "热点评论：中期选举之后，化工板块分析及策略探讨",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
+    "四季度，私募调研热股曝光",
+    "蔚来高管：AI相对来说还有不确定性，总体成本压力主要在AI方面"
    ]
   },
   {
-   "sector": "基建",
-   "score": 0.07,
-   "score100": 53,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "预计明年投用，成都火车北站改造有新进展",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "工程机械",
-   "score": 0.07,
-   "score100": 53,
-   "newsCount": 3,
-   "bullish": 2,
-   "bearish": 1,
-   "neutral": 0,
-   "headlines": [
-    "预计明年投用，成都火车北站改造有新进展",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
-   ]
-  },
-  {
-   "sector": "教育",
-   "score": -0.07,
-   "score100": 47,
-   "newsCount": 3,
+   "sector": "军工",
+   "score": 0.25,
+   "score100": 63,
+   "newsCount": 2,
    "bullish": 1,
-   "bearish": 1,
+   "bearish": 0,
    "neutral": 1,
    "headlines": [
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "一所名为“天理”的高校，到底有什么硬核实力？  | 教育强国看天津·攻坚",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
+    "四季度，私募调研热股曝光",
+    "王毅同荷兰外交大臣贝伦德森会谈"
+   ]
+  },
+  {
+   "sector": "算力",
+   "score": -0.22,
+   "score100": 39,
+   "newsCount": 6,
+   "bullish": 1,
+   "bearish": 3,
+   "neutral": 2,
+   "headlines": [
+    "AI电力热潮回归理性，哪里能找到估值洼地",
+    "四季度，私募调研热股曝光",
+    "蔚来高管：AI相对来说还有不确定性，总体成本压力主要在AI方面",
+    "蔚来李斌谈算力：现在卡很贵也买不到，租卡更符合经营模式"
    ]
   },
   {
    "sector": "黄金",
-   "score": -0.05,
-   "score100": 48,
+   "score": -0.22,
+   "score100": 39,
    "newsCount": 4,
    "bullish": 1,
-   "bearish": 1,
+   "bearish": 2,
+   "neutral": 1,
+   "headlines": [
+    "黄金、白银！一度大跳水！",
+    "实物金价看哪个APP？5款工具4类价格对比",
+    "黄金，跌破3500美元",
+    "老铺黄金大手笔中期分红，创始人徐高明个人或分得近13亿元"
+   ]
+  },
+  {
+   "sector": "基建",
+   "score": 0.2,
+   "score100": 60,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
    "neutral": 2,
    "headlines": [
-    "张津镭:感恩节前波动收敛 金价关注PCE数据",
-    "张尧浠:金价反弹遇阻 周初高开缺口静待回补",
-    "德银策略师：标普500到2027年底有25%上行空间",
-    "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→"
+    "超60亿元！市场低迷，基金公司集体“掏腰包”",
+    "四季度，私募调研热股曝光",
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "农业",
+   "score": -0.2,
+   "score100": 40,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 1,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光",
+    "大型农机销量下滑，迪尔公司季度利润走低"
+   ]
+  },
+  {
+   "sector": "航运",
+   "score": -0.17,
+   "score100": 41,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 2,
+   "neutral": 1,
+   "headlines": [
+    "交易员权衡供应前景、中东局势再度紧张，国际油价下行",
+    "四季度，私募调研热股曝光",
+    "11月26日24时，油价或下调",
+    "伊朗副总统称不惧美国封锁，将采取措施稳物价"
+   ]
+  },
+  {
+   "sector": "航空",
+   "score": -0.17,
+   "score100": 41,
+   "newsCount": 4,
+   "bullish": 1,
+   "bearish": 2,
+   "neutral": 1,
+   "headlines": [
+    "交易员权衡供应前景、中东局势再度紧张，国际油价下行",
+    "四季度，私募调研热股曝光",
+    "11月26日24时，油价或下调",
+    "伊朗副总统称不惧美国封锁，将采取措施稳物价"
+   ]
+  },
+  {
+   "sector": "石油",
+   "score": 0.17,
+   "score100": 58,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "四季度，私募调研热股曝光",
+    "郑笑慰获批担任中石油专属财产保险公司董事",
+    "王毅同荷兰外交大臣贝伦德森会谈"
+   ]
+  },
+  {
+   "sector": "保险",
+   "score": 0.06,
+   "score100": 53,
+   "newsCount": 11,
+   "bullish": 2,
+   "bearish": 1,
+   "neutral": 8,
+   "headlines": [
+    "前海再保险公开招聘董事会秘书",
+    "君龙人寿：选举游兴泉担任公司第七届董事会董事长",
+    "超60亿元！市场低迷，基金公司集体“掏腰包”",
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "芯片",
+   "score": -0.03,
+   "score100": 48,
+   "newsCount": 3,
+   "bullish": 1,
+   "bearish": 1,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光",
+    "壁仞科技大跌25%：市值跌破400亿 今年累计募资超170亿港元 风险在公司业务之外",
+    "壁仞科技：新一代旗舰产品BR20X已向头部客户送测"
+   ]
+  },
+  {
+   "sector": "银行",
+   "score": 0.01,
+   "score100": 51,
+   "newsCount": 7,
+   "bullish": 2,
+   "bearish": 2,
+   "neutral": 3,
+   "headlines": [
+    "超60亿元！市场低迷，基金公司集体“掏腰包”",
+    "四季度，私募调研热股曝光",
+    "银行理财破净率升至10.59％，20余家银行和理财公司安抚投资者",
+    "高赛昂获批担任乌鲁木齐银行副行长"
+   ]
+  },
+  {
+   "sector": "传媒",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "多张图表揭示：美国民众对流媒体高昂资费不堪其扰",
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "游戏",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "多张图表揭示：美国民众对流媒体高昂资费不堪其扰",
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "出版",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "多张图表揭示：美国民众对流媒体高昂资费不堪其扰",
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "教育",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "多张图表揭示：美国民众对流媒体高昂资费不堪其扰",
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "数据中心",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "AI电力热潮回归理性，哪里能找到估值洼地",
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "服务器",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "AI电力热潮回归理性，哪里能找到估值洼地",
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "石化",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "四季度，私募调研热股曝光",
+    "郑笑慰获批担任中石油专属财产保险公司董事"
+   ]
+  },
+  {
+   "sector": "燃气",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "四季度，私募调研热股曝光",
+    "郑笑慰获批担任中石油专属财产保险公司董事"
+   ]
+  },
+  {
+   "sector": "家电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "四季度，私募调研热股曝光",
+    "假日季二手购物走向主流，消费者更加看重商品性价比"
+   ]
+  },
+  {
+   "sector": "纺织服装",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "四季度，私募调研热股曝光",
+    "假日季二手购物走向主流，消费者更加看重商品性价比"
+   ]
+  },
+  {
+   "sector": "零售",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "四季度，私募调研热股曝光",
+    "假日季二手购物走向主流，消费者更加看重商品性价比"
+   ]
+  },
+  {
+   "sector": "美容护理",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 2,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 2,
+   "headlines": [
+    "四季度，私募调研热股曝光",
+    "假日季二手购物走向主流，消费者更加看重商品性价比"
+   ]
+  },
+  {
+   "sector": "中药",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "医疗器械",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "商业航天",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "卫星互联网",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "固态电池",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "锂电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "储能",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "光伏",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "风电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "氢能源",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "航发",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "船舶",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "化工",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "化肥",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "农药",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "钢铁",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "煤炭",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "有色",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "铜",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "铝",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "稀土",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "电力",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "火电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "水电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "核电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "绿电",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "建材",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "水泥",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "工程机械",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "种业",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "猪周期",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "计算机",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "网络安全",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "通信",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "运营商",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "6G",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "物流",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "快递",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "港口",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "旅游",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
+   ]
+  },
+  {
+   "sector": "免税",
+   "score": 0,
+   "score100": 50,
+   "newsCount": 1,
+   "bullish": 0,
+   "bearish": 0,
+   "neutral": 1,
+   "headlines": [
+    "四季度，私募调研热股曝光"
    ]
   }
  ],
  "events": [
   {
-   "headline": "英国监管机构称，味好美出售科尔曼品牌或可消除联合利华食品业务并购的竞争顾虑",
+   "headline": "BOSS直聘：2026年第三季度营收24.16亿元，同比上涨11.7%",
    "date": "2026-11-25",
    "sectors": [
-    "食品饮料"
+    "软件",
+    "信创"
    ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "涉及国外食品企业并购，对A股食品饮料板块影响有限"
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "公司业绩增长，提振相关板块信心"
   },
   {
-   "headline": "张津镭:感恩节前波动收敛 金价关注PCE数据",
+   "headline": "交易员权衡供应前景、中东局势再度紧张，国际油价下行",
    "date": "2026-11-25",
    "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "金价波动对A股黄金板块影响有限"
-  },
-  {
-   "headline": "张尧浠:金价反弹遇阻 周初高开缺口静待回补",
-   "date": "2026-11-25",
-   "sectors": [
-    "黄金"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "金价波动对A股黄金板块影响有限"
-  },
-  {
-   "headline": "A股昔日股王总市值缩水近80%，A股千元股仅剩贵州茅台",
-   "date": "2026-11-25",
-   "sectors": [
-    "白酒"
+    "航运",
+    "航空"
    ],
    "direction": "negative",
-   "intensity": 0.5,
-   "reason": "股王市值缩水，对白酒板块信心可能产生负面影响"
-  },
-  {
-   "headline": "希音公布三季报：净收入102.71亿美元，调整后净利润7.9亿美元同比增长近27%",
-   "date": "2026-11-25",
-   "sectors": [
-    "纺织服装"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "业绩增长，利好纺织服装行业"
-  },
-  {
-   "headline": "希音公布三季报：调整后净利润增长近27%",
-   "date": "2026-11-25",
-   "sectors": [
-    "纺织服装"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "业绩增长，利好纺织服装行业"
-  },
-  {
-   "headline": "山东城商行港股“双雄”，差距为什么是2.6倍？",
-   "date": "2026-11-25",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "城商行港股表现，对A股银行板块影响有限"
-  },
-  {
-   "headline": "报道：AI行业领袖就人类是否应当交出自主决策权产生激烈分歧",
-   "date": "2026-11-25",
-   "sectors": [
-    "AI",
-    "算力",
-    "软件"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "AI行业讨论，对相关板块影响有限"
-  },
-  {
-   "headline": "快速行动！建设银行加力推动股票回购增持贷款投放",
-   "date": "2026-11-25",
-   "sectors": [
-    "银行"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "银行增持贷款，利好银行板块"
-  },
-  {
-   "headline": "零跑汽车Q3碳积分贡献5亿利润毛利率连降三季度 新车D19/D99交付后销量快速回落",
-   "date": "2026-11-25",
-   "sectors": [
-    "新能源汽车",
-    "汽车"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "汽车销量下滑，对新能源汽车和汽车板块产生负面影响"
-  },
-  {
-   "headline": "黄仁勋回归48小时：股价冲高回落，董事会遭质疑",
-   "date": "2026-11-25",
-   "sectors": [
-    "AI",
-    "算力",
-    "半导体",
-    "消费电子"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "黄仁勋回归后股价波动，可能影响相关板块信心"
-  },
-  {
-   "headline": "韩国拟扩容证券市场稳定基金，当局正对25家机构开展出资能力评估",
-   "date": "2026-11-25",
-   "sectors": [
-    "券商",
-    "保险",
-    "银行"
-   ],
-   "direction": "positive",
    "intensity": 0.7,
-   "reason": "扩容稳定基金可能提振市场信心，利好金融板块"
+   "reason": "油价下行，相关板块承压"
   },
   {
-   "headline": "今天的这一刻，成为了全天的情绪拐点",
-   "date": "2026-11-25",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "情绪拐点对A股板块影响不确定"
-  },
-  {
-   "headline": "天津银行：选举杨毅为董事长",
+   "headline": "前海再保险公开招聘董事会秘书",
    "date": "2026-11-25",
    "sectors": [
-    "银行"
+    "保险"
    ],
    "direction": "neutral",
    "intensity": 0.2,
-   "reason": "银行内部人事变动对板块影响有限"
+   "reason": "公司人事变动，对板块影响有限"
   },
   {
-   "headline": "大涨！印度股市，成最大赢家！",
-   "date": "2026-11-25",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "印度股市大涨对A股板块影响不确定"
-  },
-  {
-   "headline": "历时不足四个月！通化金马终止收购八加一控股权意向，标的身背多项失信记录",
+   "headline": "多张图表揭示：美国民众对流媒体高昂资费不堪其扰",
    "date": "2026-11-25",
    "sectors": [
-    "医药",
-    "CXO",
-    "创新药"
-   ],
-   "direction": "negative",
-   "intensity": 0.3,
-   "reason": "终止收购可能影响相关板块投资信心"
-  },
-  {
-   "headline": "知名服装品牌实控人，近9亿元押注长鑫科技",
-   "date": "2026-11-25",
-   "sectors": [
-    "半导体",
-    "芯片",
-    "消费电子"
-   ],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "知名企业投资可能提振相关板块信心"
-  },
-  {
-   "headline": "两家A股公司明日将被“ST”，皆因财务造假！其中一家四个月前刚刚摘掉“*ST”",
-   "date": "2026-11-25",
-   "sectors": [],
-   "direction": "negative",
-   "intensity": 0.3,
-   "reason": "财务造假事件可能影响市场情绪"
-  },
-  {
-   "headline": "黄仁勋现在的处境或许更加艰难",
-   "date": "2026-11-25",
-   "sectors": [
-    "AI",
-    "算力",
-    "半导体",
-    "消费电子"
-   ],
-   "direction": "negative",
-   "intensity": 0.5,
-   "reason": "黄仁勋处境艰难可能影响相关板块发展"
-  },
-  {
-   "headline": "热点评论：中期选举之后，化工板块分析及策略探讨",
-   "date": "2026-11-25",
-   "sectors": [
-    "化工",
-    "化肥",
-    "农药"
-   ],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "化工板块分析对相关板块影响不确定"
-  },
-  {
-   "headline": "广期所：关于氢氧化锂期货合约挂牌基准价的通知",
-   "date": "2026-11-25",
-   "sectors": [
-    "锂电",
-    "固态电池",
-    "储能"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "氢氧化锂期货合约挂牌，利好相关产业链"
-  },
-  {
-   "headline": "三大股指同步刷阶段性新低！A股为何跌跌不休？",
-   "date": "2026-11-25",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "市场整体下跌，影响不确定"
-  },
-  {
-   "headline": "【11.25 ETF综述】费城半导拖累中证半导，钱躲进白酒和红利，小盘双星再迎抄底资金",
-   "date": "2026-11-25",
-   "sectors": [
-    "半导体",
-    "白酒",
-    "消费电子"
-   ],
-   "direction": "negative",
-   "intensity": 0.4,
-   "reason": "半导体板块受费城半导体影响下跌，白酒板块受资金流入利好"
-  },
-  {
-   "headline": "因26.54万元合同纠纷，老白干酒董事长被限高 |酒业内参",
-   "date": "2026-11-25",
-   "sectors": [
-    "白酒"
-   ],
-   "direction": "negative",
-   "intensity": 0.3,
-   "reason": "白酒行业负面事件，利空白酒板块"
-  },
-  {
-   "headline": "交银金融科技有限公司原副总裁王浩被开除党籍和公职",
-   "date": "2026-11-25",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "公司高管事件，影响不确定"
-  },
-  {
-   "headline": "中恒集团半年内两收警示函：收入确认与资产核算双线失守 财务数据承压净资产三年蒸发17亿",
-   "date": "2026-11-25",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "公司财务问题，影响不确定"
-  },
-  {
-   "headline": "预计明年投用，成都火车北站改造有新进展",
-   "date": "2026-11-25",
-   "sectors": [
-    "基建",
-    "工程机械"
-   ],
-   "direction": "positive",
-   "intensity": 0.4,
-   "reason": "基建项目进展，利好相关板块"
-  },
-  {
-   "headline": "私募融资市场与IPO市场相似：头部企业占据主导地位",
-   "date": "2026-11-25",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "市场分析，影响不确定"
-  },
-  {
-   "headline": "领益智造高溢价“加码”液冷标的 频频跨界背后净利率承压",
-   "date": "2026-11-25",
-   "sectors": [
-    "消费电子",
-    "AI",
-    "算力"
-   ],
-   "direction": "negative",
-   "intensity": 0.3,
-   "reason": "公司跨界投资，净利率承压，利空相关板块"
-  },
-  {
-   "headline": "超40%换手！002579，尾盘拉涨停，“五连板”",
-   "date": "2026-11-25",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "个股异动，影响不确定"
-  },
-  {
-   "headline": "德银策略师：标普500到2027年底有25%上行空间",
-   "date": "2026-11-25",
-   "sectors": [
-    "券商",
-    "保险",
-    "银行",
-    "地产",
-    "白酒",
-    "食品饮料",
-    "医药",
-    "CXO",
-    "创新药",
-    "中药",
-    "医疗器械",
-    "半导体",
-    "芯片",
-    "消费电子",
-    "苹果产业链",
-    "AI",
-    "算力",
-    "CPO",
-    "光模块",
-    "PCB",
-    "数据中心",
-    "服务器",
-    "机器人",
-    "工业母机",
-    "低空经济",
-    "商业航天",
-    "卫星互联网",
-    "固态电池",
-    "锂电",
-    "储能",
-    "光伏",
-    "风电",
-    "氢能源",
-    "新能源汽车",
-    "汽车",
-    "智能驾驶",
-    "军工",
-    "航发",
-    "船舶",
-    "化工",
-    "化肥",
-    "农药",
-    "钢铁",
-    "煤炭",
-    "有色",
-    "铜",
-    "铝",
-    "黄金",
-    "稀土",
-    "石油",
-    "石化",
-    "燃气",
-    "电力",
-    "火电",
-    "水电",
-    "核电",
-    "绿电",
-    "基建",
-    "建材",
-    "水泥",
-    "工程机械",
-    "家电",
-    "纺织服装",
-    "农业",
-    "种业",
-    "猪周期",
     "传媒",
     "游戏",
     "出版",
-    "教育",
-    "计算机",
-    "软件",
-    "信创",
-    "网络安全",
-    "通信",
-    "运营商",
-    "6G",
-    "物流",
-    "快递",
-    "港口",
-    "航空",
-    "航运",
-    "旅游",
-    "免税",
-    "零售",
-    "美容护理"
-   ],
-   "direction": "positive",
-   "intensity": 0.5,
-   "reason": "美股上涨预期提升市场信心"
-  },
-  {
-   "headline": "002579，最后5分钟涨停！股民：“偷袭不讲武德”",
-   "date": "2026-11-25",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "个股异动，对市场整体影响有限"
-  },
-  {
-   "headline": "金信基金评市场：市场调整 修复仍需等待更多信号验证",
-   "date": "2026-11-25",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.3,
-   "reason": "市场观点，尚不确定具体影响"
-  },
-  {
-   "headline": "一所名为“天理”的高校，到底有什么硬核实力？  | 教育强国看天津·攻坚",
-   "date": "2026-11-25",
-   "sectors": [
     "教育"
    ],
    "direction": "neutral",
-   "intensity": 0.1,
-   "reason": "教育领域新闻，对市场影响较小"
+   "intensity": 0.3,
+   "reason": "行业外部因素，影响不确定"
   },
   {
-   "headline": "A股神秘牛散“夫妻档”突然出手！9亿拿下硬科技龙头，全靠高端女装“输血”",
-   "date": "2026-11-25",
-   "sectors": [],
-   "direction": "neutral",
-   "intensity": 0.2,
-   "reason": "个股投资行为，对市场整体影响有限"
-  },
-  {
-   "headline": "12月加息概率100%？美联储重磅来袭，“华尔街之狼”警告→",
+   "headline": "君龙人寿：选举游兴泉担任公司第七届董事会董事长",
    "date": "2026-11-25",
    "sectors": [
-    "券商",
-    "保险",
-    "银行",
-    "地产",
-    "白酒",
-    "食品饮料",
-    "医药",
-    "CXO",
-    "创新药",
-    "中药",
-    "医疗器械",
-    "半导体",
-    "芯片",
-    "消费电子",
-    "苹果产业链",
-    "AI",
-    "算力",
-    "CPO",
-    "光模块",
-    "PCB",
-    "数据中心",
-    "服务器",
-    "机器人",
-    "工业母机",
-    "低空经济",
-    "商业航天",
-    "卫星互联网",
-    "固态电池",
-    "锂电",
-    "储能",
-    "光伏",
-    "风电",
-    "氢能源",
-    "新能源汽车",
-    "汽车",
-    "智能驾驶",
-    "军工",
-    "航发",
-    "船舶",
-    "化工",
-    "化肥",
-    "农药",
-    "钢铁",
-    "煤炭",
-    "有色",
-    "铜",
-    "铝",
-    "黄金",
-    "稀土",
-    "石油",
-    "石化",
-    "燃气",
-    "电力",
-    "火电",
-    "水电",
-    "核电",
-    "绿电",
-    "基建",
-    "建材",
-    "水泥",
-    "工程机械",
-    "家电",
-    "纺织服装",
-    "农业",
-    "种业",
-    "猪周期",
-    "传媒",
-    "游戏",
-    "出版",
-    "教育",
-    "计算机",
-    "软件",
-    "信创",
-    "网络安全",
-    "通信",
-    "运营商",
-    "6G",
-    "物流",
-    "快递",
-    "港口",
-    "航空",
-    "航运",
-    "旅游",
-    "免税",
-    "零售",
-    "美容护理"
+    "保险"
    ],
-   "direction": "negative",
-   "intensity": 0.7,
-   "reason": "加息预期增加市场资金压力"
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "公司人事变动，对板块影响有限"
   },
   {
-   "headline": "AI数据中心热潮持续，戴尔上调全年业绩预期",
+   "headline": "拓竹发布第三代3D打印机P3C，七头闪切支持装下叠色、柔性、多工艺全套能力",
+   "date": "2026-11-25",
+   "sectors": [
+    "机器人",
+    "工业母机",
+    "低空经济"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "新技术发布，利好相关板块"
+  },
+  {
+   "headline": "AI电力热潮回归理性，哪里能找到估值洼地",
    "date": "2026-11-25",
    "sectors": [
     "AI",
@@ -1713,40 +1170,552 @@
     "数据中心",
     "服务器"
    ],
-   "direction": "positive",
-   "intensity": 0.6,
-   "reason": "AI行业增长预期提升"
-  },
-  {
-   "headline": "盐津县县城黑臭水体排查情况公示",
-   "date": "2026-11-25",
-   "sectors": [],
    "direction": "neutral",
-   "intensity": 0.1,
-   "reason": "地方环保新闻，对市场影响较小"
+   "intensity": 0.4,
+   "reason": "行业回归理性，影响尚不确定"
   },
   {
-   "headline": "供应增加对冲霍尔木兹袭击升级风险 油价下跌",
+   "headline": "超60亿元！市场低迷，基金公司集体“掏腰包”",
    "date": "2026-11-25",
    "sectors": [
-    "航运"
+    "券商",
+    "保险",
+    "银行",
+    "地产",
+    "基建"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "基金公司投资，提振市场信心"
+  },
+  {
+   "headline": "黄金、白银！一度大跳水！",
+   "date": "2026-11-25",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "negative",
+   "intensity": 0.7,
+   "reason": "金价大跌，相关板块承压"
+  },
+  {
+   "headline": "四季度，私募调研热股曝光",
+   "date": "2026-11-25",
+   "sectors": [
+    "券商",
+    "保险",
+    "银行",
+    "地产",
+    "基建",
+    "医药",
+    "CXO",
+    "创新药",
+    "中药",
+    "医疗器械",
+    "半导体",
+    "芯片",
+    "消费电子",
+    "苹果产业链",
+    "AI",
+    "算力",
+    "CPO",
+    "光模块",
+    "PCB",
+    "数据中心",
+    "服务器",
+    "机器人",
+    "工业母机",
+    "低空经济",
+    "商业航天",
+    "卫星互联网",
+    "固态电池",
+    "锂电",
+    "储能",
+    "光伏",
+    "风电",
+    "氢能源",
+    "新能源汽车",
+    "汽车",
+    "智能驾驶",
+    "军工",
+    "航发",
+    "船舶",
+    "化工",
+    "化肥",
+    "农药",
+    "钢铁",
+    "煤炭",
+    "有色",
+    "铜",
+    "铝",
+    "稀土",
+    "石油",
+    "石化",
+    "燃气",
+    "电力",
+    "火电",
+    "水电",
+    "核电",
+    "绿电",
+    "基建",
+    "建材",
+    "水泥",
+    "工程机械",
+    "家电",
+    "纺织服装",
+    "农业",
+    "种业",
+    "猪周期",
+    "传媒",
+    "游戏",
+    "出版",
+    "教育",
+    "计算机",
+    "软件",
+    "信创",
+    "网络安全",
+    "通信",
+    "运营商",
+    "6G",
+    "物流",
+    "快递",
+    "港口",
+    "航空",
+    "航运",
+    "旅游",
+    "免税",
+    "零售",
+    "美容护理"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "私募调研热股，影响尚不确定"
+  },
+  {
+   "headline": "君龙人寿新董事长落定：游兴泉接棒，前三季度净利骤降九成待解",
+   "date": "2026-11-25",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "新董事长上任，对公司短期影响有限"
+  },
+  {
+   "headline": "银行理财破净率升至10.59％，20余家银行和理财公司安抚投资者",
+   "date": "2026-11-25",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "理财破净率上升，投资者信心受影响"
+  },
+  {
+   "headline": "实物金价看哪个APP？5款工具4类价格对比",
+   "date": "2026-11-25",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "金价对比，对市场影响有限"
+  },
+  {
+   "headline": "大型农机销量下滑，迪尔公司季度利润走低",
+   "date": "2026-11-25",
+   "sectors": [
+    "农业"
    ],
    "direction": "negative",
    "intensity": 0.4,
-   "reason": "油价下跌对相关板块产生负面影响"
+   "reason": "农机销量下滑，影响相关企业利润"
   },
   {
-   "headline": "你已被移出“相亲相爱一家人”群聊",
+   "headline": "600567找到“白衣骑士”，明天复牌",
    "date": "2026-11-25",
    "sectors": [],
    "direction": "neutral",
-   "intensity": 0.1,
-   "reason": "社交新闻，对市场影响较小"
+   "intensity": 0.2,
+   "reason": "个股事件，对市场影响有限"
+  },
+  {
+   "headline": "沙特财政大臣：沙特有能力为“长期战争”提供资金",
+   "date": "2026-11-25",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "长期战争资金支持，利好相关板块"
+  },
+  {
+   "headline": "英伟达股价剧烈震荡，考验凯文·沃什依赖市场信号制定政策的主张",
+   "date": "2026-11-25",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "股价波动，对市场影响有限"
+  },
+  {
+   "headline": "翻倍牛股华东重机，提示风险",
+   "date": "2026-11-25",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "个股风险提示，对市场影响有限"
+  },
+  {
+   "headline": "范劼、吴立群获批担任中石油专属财产保险公司董事",
+   "date": "2026-11-25",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "董事任命，对公司短期影响有限"
+  },
+  {
+   "headline": "高赛昂获批担任乌鲁木齐银行副行长",
+   "date": "2026-11-25",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "银行高管变动，对公司短期影响有限"
+  },
+  {
+   "headline": "假日季二手购物走向主流，消费者更加看重商品性价比",
+   "date": "2026-11-25",
+   "sectors": [
+    "纺织服装",
+    "家电",
+    "零售",
+    "美容护理"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "二手购物趋势对相关零售行业影响有限"
+  },
+  {
+   "headline": "蔚来总裁秦力洪：当价格战打不动时，长期价值会重新回到舞台中心",
+   "date": "2026-11-25",
+   "sectors": [
+    "新能源汽车",
+    "智能驾驶",
+    "汽车"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "强调长期价值有利于新能源汽车行业稳定发展"
+  },
+  {
+   "headline": "理想汽车季报图解：营收288亿 净亏3亿同比收窄 自由现金流20亿",
+   "date": "2026-11-25",
+   "sectors": [
+    "新能源汽车",
+    "智能驾驶",
+    "汽车"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "理想汽车业绩改善，提振新能源汽车板块信心"
+  },
+  {
+   "headline": "壁仞科技大跌25%：市值跌破400亿 今年累计募资超170亿港元 风险在公司业务之外",
+   "date": "2026-11-25",
+   "sectors": [
+    "半导体",
+    "芯片",
+    "CPO",
+    "光模块",
+    "PCB"
+   ],
+   "direction": "negative",
+   "intensity": 0.7,
+   "reason": "公司业务外风险导致股价大跌，影响相关板块"
+  },
+  {
+   "headline": "中国平安财产保险克拉玛依中心支公司被罚30万元：套取费用等",
+   "date": "2026-11-25",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "保险行业负面事件，影响保险板块信心"
+  },
+  {
+   "headline": "600185，披露重大资产重组预案，明起复牌！",
+   "date": "2026-11-25",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "个股重组事件，对板块影响有限"
+  },
+  {
+   "headline": "黄金，跌破3500美元",
+   "date": "2026-11-25",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "negative",
+   "intensity": 0.6,
+   "reason": "金价下跌，影响黄金板块"
+  },
+  {
+   "headline": "郑笑慰获批担任中石油专属财产保险公司董事",
+   "date": "2026-11-25",
+   "sectors": [
+    "石油",
+    "石化",
+    "燃气"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "人事变动，对板块影响有限"
+  },
+  {
+   "headline": "YIN ZHAO NAN获批担任苏黎世保险董事",
+   "date": "2026-11-25",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "人事变动，对板块影响有限"
+  },
+  {
+   "headline": "蔚来高管：AI相对来说还有不确定性，总体成本压力主要在AI方面",
+   "date": "2026-11-25",
+   "sectors": [
+    "AI",
+    "算力",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "AI成本压力增加，对相关板块构成利空"
+  },
+  {
+   "headline": "特朗普插手黄仁勋风波，再度激起选民对科技巨头政治权力过大的不满",
+   "date": "2026-11-25",
+   "sectors": [
+    "AI",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "科技巨头政治权力过大引发不满，可能影响相关板块投资信心。"
+  },
+  {
+   "headline": "明天复牌！600185，重大资产重组方案出炉",
+   "date": "2026-11-25",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "具体重组方案不明，影响尚不确定。"
+  },
+  {
+   "headline": "民生银行获批收购上海嘉定民生村镇银行并设立分支机构",
+   "date": "2026-11-25",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "positive",
+   "intensity": 0.3,
+   "reason": "银行扩张业务，利好银行板块。"
+  },
+  {
+   "headline": "蔚来李斌谈算力：现在卡很贵也买不到，租卡更符合经营模式",
+   "date": "2026-11-25",
+   "sectors": [
+    "AI",
+    "算力",
+    "汽车"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "蔚来强调算力重要性，利好相关板块。"
+  },
+  {
+   "headline": "资管机构加码期货衍生品，前三季度资金规模增超四成，险资增幅超100%",
+   "date": "2026-11-25",
+   "sectors": [
+    "券商",
+    "保险"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "资管机构加码期货，利好相关金融板块。"
+  },
+  {
+   "headline": "田春芽获批担任上海科创银行内审负责人",
+   "date": "2026-11-25",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "银行人事变动，影响尚不确定。"
+  },
+  {
+   "headline": "前董事长投案，厦门银行的包袱还有多重？",
+   "date": "2026-11-25",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "银行负面新闻，利空银行板块。"
+  },
+  {
+   "headline": "蒸发近3万亿，全球最大IPO给AI狂欢泼了盆冷水",
+   "date": "2026-11-25",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "AI板块最大IPO蒸发，利空相关板块。"
+  },
+  {
+   "headline": "叶泽维获批担任荷全资管首席风险管理执行官",
+   "date": "2026-11-25",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "保险行业人事变动，影响尚不确定。"
+  },
+  {
+   "headline": "全球科技股抛售潮进一步加剧 软银大跌15% 英伟达盘前下跌4.9%",
+   "date": "2026-11-25",
+   "sectors": [
+    "AI",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "negative",
+   "intensity": 0.7,
+   "reason": "全球科技股抛售，利空相关板块。"
+  },
+  {
+   "headline": "王锦华获批担任史带财险财务负责人",
+   "date": "2026-11-25",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "人事变动，对板块影响有限"
+  },
+  {
+   "headline": "多个新盘触发积分摇号 年末上海楼市热度持续",
+   "date": "2026-11-25",
+   "sectors": [
+    "地产"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "楼市热度上升，利好地产板块"
+  },
+  {
+   "headline": "老铺黄金大手笔中期分红，创始人徐高明个人或分得近13亿元",
+   "date": "2026-11-25",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "黄金分红增加，利好黄金板块"
+  },
+  {
+   "headline": "壁仞科技：新一代旗舰产品BR20X已向头部客户送测",
+   "date": "2026-11-25",
+   "sectors": [
+    "半导体",
+    "芯片",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "新产品送测，利好相关芯片和消费电子板块"
+  },
+  {
+   "headline": "英伟达股价反弹掩盖大型科技企业开支承压，人工智能领域债务风险加剧",
+   "date": "2026-11-25",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "negative",
+   "intensity": 0.7,
+   "reason": "债务风险加剧，利空AI和半导体板块"
+  },
+  {
+   "headline": "天圣制药：股票交易异常波动 前三季度业绩亏损",
+   "date": "2026-11-25",
+   "sectors": [
+    "医药",
+    "CXO",
+    "创新药"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "业绩亏损，利空医药板块"
+  },
+  {
+   "headline": "11月26日24时，油价或下调",
+   "date": "2026-11-25",
+   "sectors": [
+    "航运",
+    "航空"
+   ],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "油价下调，利空石油石化、航运和航空板块"
+  },
+  {
+   "headline": "王毅同荷兰外交大臣贝伦德森会谈",
+   "date": "2026-11-25",
+   "sectors": [
+    "军工",
+    "石油"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "外交会谈，利好军工和石油板块"
+  },
+  {
+   "headline": "*ST开元：公司称经营正常无应披露未披露事项",
+   "date": "2026-11-25",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "公司经营正常，对板块影响有限"
+  },
+  {
+   "headline": "伊朗副总统称不惧美国封锁，将采取措施稳物价",
+   "date": "2026-11-25",
+   "sectors": [
+    "航运",
+    "航空"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "稳物价措施，利好石油石化、航运和航空板块"
   }
  ],
  "scanned": 60,
  "source": "sina-roll",
  "degraded": false,
- "blackTalk": "老铁们，白酒这波压制得太狠了，小心题材高潮次日分歧，别上头，仓位稳点啊！👍😰",
+ "blackTalk": "老铁们，今天多头唱主角，但别太嗨，半导体那帮家伙又来搅局了，悠着点，仓位别太满啊！🤔",
  "note": "板块情绪因子：新闻→GLM 映射板块/方向/强度→聚合。消费端按 signals.sectorSentiment 注入；score∈[-1,1]，score100∈[0,100]，仅作参考，不独立生成买卖信号。"
 }

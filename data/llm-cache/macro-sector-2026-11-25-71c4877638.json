@@ -1,0 +1,635 @@
+{
+ "kind": "llm-cache",
+ "name": "macro-sector",
+ "asOfDate": "2026-11-25",
+ "hash": "71c4877638",
+ "cachedAt": "2026-11-25T13:14:26.273Z",
+ "events": [
+  {
+   "headline": "BOSS直聘：2026年第三季度营收24.16亿元，同比上涨11.7%",
+   "date": "2026-11-25",
+   "sectors": [
+    "软件",
+    "信创"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "公司业绩增长，提振相关板块信心"
+  },
+  {
+   "headline": "交易员权衡供应前景、中东局势再度紧张，国际油价下行",
+   "date": "2026-11-25",
+   "sectors": [
+    "航运",
+    "航空"
+   ],
+   "direction": "negative",
+   "intensity": 0.7,
+   "reason": "油价下行，相关板块承压"
+  },
+  {
+   "headline": "前海再保险公开招聘董事会秘书",
+   "date": "2026-11-25",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "公司人事变动，对板块影响有限"
+  },
+  {
+   "headline": "多张图表揭示：美国民众对流媒体高昂资费不堪其扰",
+   "date": "2026-11-25",
+   "sectors": [
+    "传媒",
+    "游戏",
+    "出版",
+    "教育"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "行业外部因素，影响不确定"
+  },
+  {
+   "headline": "君龙人寿：选举游兴泉担任公司第七届董事会董事长",
+   "date": "2026-11-25",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "公司人事变动，对板块影响有限"
+  },
+  {
+   "headline": "拓竹发布第三代3D打印机P3C，七头闪切支持装下叠色、柔性、多工艺全套能力",
+   "date": "2026-11-25",
+   "sectors": [
+    "机器人",
+    "工业母机",
+    "低空经济"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "新技术发布，利好相关板块"
+  },
+  {
+   "headline": "AI电力热潮回归理性，哪里能找到估值洼地",
+   "date": "2026-11-25",
+   "sectors": [
+    "AI",
+    "算力",
+    "数据中心",
+    "服务器"
+   ],
+   "direction": "neutral",
+   "intensity": 0.4,
+   "reason": "行业回归理性，影响尚不确定"
+  },
+  {
+   "headline": "超60亿元！市场低迷，基金公司集体“掏腰包”",
+   "date": "2026-11-25",
+   "sectors": [
+    "券商",
+    "保险",
+    "银行",
+    "地产",
+    "基建"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "基金公司投资，提振市场信心"
+  },
+  {
+   "headline": "黄金、白银！一度大跳水！",
+   "date": "2026-11-25",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "negative",
+   "intensity": 0.7,
+   "reason": "金价大跌，相关板块承压"
+  },
+  {
+   "headline": "四季度，私募调研热股曝光",
+   "date": "2026-11-25",
+   "sectors": [
+    "券商",
+    "保险",
+    "银行",
+    "地产",
+    "基建",
+    "医药",
+    "CXO",
+    "创新药",
+    "中药",
+    "医疗器械",
+    "半导体",
+    "芯片",
+    "消费电子",
+    "苹果产业链",
+    "AI",
+    "算力",
+    "CPO",
+    "光模块",
+    "PCB",
+    "数据中心",
+    "服务器",
+    "机器人",
+    "工业母机",
+    "低空经济",
+    "商业航天",
+    "卫星互联网",
+    "固态电池",
+    "锂电",
+    "储能",
+    "光伏",
+    "风电",
+    "氢能源",
+    "新能源汽车",
+    "汽车",
+    "智能驾驶",
+    "军工",
+    "航发",
+    "船舶",
+    "化工",
+    "化肥",
+    "农药",
+    "钢铁",
+    "煤炭",
+    "有色",
+    "铜",
+    "铝",
+    "稀土",
+    "石油",
+    "石化",
+    "燃气",
+    "电力",
+    "火电",
+    "水电",
+    "核电",
+    "绿电",
+    "基建",
+    "建材",
+    "水泥",
+    "工程机械",
+    "家电",
+    "纺织服装",
+    "农业",
+    "种业",
+    "猪周期",
+    "传媒",
+    "游戏",
+    "出版",
+    "教育",
+    "计算机",
+    "软件",
+    "信创",
+    "网络安全",
+    "通信",
+    "运营商",
+    "6G",
+    "物流",
+    "快递",
+    "港口",
+    "航空",
+    "航运",
+    "旅游",
+    "免税",
+    "零售",
+    "美容护理"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "私募调研热股，影响尚不确定"
+  },
+  {
+   "headline": "君龙人寿新董事长落定：游兴泉接棒，前三季度净利骤降九成待解",
+   "date": "2026-11-25",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "新董事长上任，对公司短期影响有限"
+  },
+  {
+   "headline": "银行理财破净率升至10.59％，20余家银行和理财公司安抚投资者",
+   "date": "2026-11-25",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "理财破净率上升，投资者信心受影响"
+  },
+  {
+   "headline": "实物金价看哪个APP？5款工具4类价格对比",
+   "date": "2026-11-25",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "金价对比，对市场影响有限"
+  },
+  {
+   "headline": "大型农机销量下滑，迪尔公司季度利润走低",
+   "date": "2026-11-25",
+   "sectors": [
+    "农业"
+   ],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "农机销量下滑，影响相关企业利润"
+  },
+  {
+   "headline": "600567找到“白衣骑士”，明天复牌",
+   "date": "2026-11-25",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "个股事件，对市场影响有限"
+  },
+  {
+   "headline": "沙特财政大臣：沙特有能力为“长期战争”提供资金",
+   "date": "2026-11-25",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "长期战争资金支持，利好相关板块"
+  },
+  {
+   "headline": "英伟达股价剧烈震荡，考验凯文·沃什依赖市场信号制定政策的主张",
+   "date": "2026-11-25",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "股价波动，对市场影响有限"
+  },
+  {
+   "headline": "翻倍牛股华东重机，提示风险",
+   "date": "2026-11-25",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "个股风险提示，对市场影响有限"
+  },
+  {
+   "headline": "范劼、吴立群获批担任中石油专属财产保险公司董事",
+   "date": "2026-11-25",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "董事任命，对公司短期影响有限"
+  },
+  {
+   "headline": "高赛昂获批担任乌鲁木齐银行副行长",
+   "date": "2026-11-25",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "银行高管变动，对公司短期影响有限"
+  },
+  {
+   "headline": "假日季二手购物走向主流，消费者更加看重商品性价比",
+   "date": "2026-11-25",
+   "sectors": [
+    "纺织服装",
+    "家电",
+    "零售",
+    "美容护理"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "二手购物趋势对相关零售行业影响有限"
+  },
+  {
+   "headline": "蔚来总裁秦力洪：当价格战打不动时，长期价值会重新回到舞台中心",
+   "date": "2026-11-25",
+   "sectors": [
+    "新能源汽车",
+    "智能驾驶",
+    "汽车"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "强调长期价值有利于新能源汽车行业稳定发展"
+  },
+  {
+   "headline": "理想汽车季报图解：营收288亿 净亏3亿同比收窄 自由现金流20亿",
+   "date": "2026-11-25",
+   "sectors": [
+    "新能源汽车",
+    "智能驾驶",
+    "汽车"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "理想汽车业绩改善，提振新能源汽车板块信心"
+  },
+  {
+   "headline": "壁仞科技大跌25%：市值跌破400亿 今年累计募资超170亿港元 风险在公司业务之外",
+   "date": "2026-11-25",
+   "sectors": [
+    "半导体",
+    "芯片",
+    "CPO",
+    "光模块",
+    "PCB"
+   ],
+   "direction": "negative",
+   "intensity": 0.7,
+   "reason": "公司业务外风险导致股价大跌，影响相关板块"
+  },
+  {
+   "headline": "中国平安财产保险克拉玛依中心支公司被罚30万元：套取费用等",
+   "date": "2026-11-25",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "保险行业负面事件，影响保险板块信心"
+  },
+  {
+   "headline": "600185，披露重大资产重组预案，明起复牌！",
+   "date": "2026-11-25",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "个股重组事件，对板块影响有限"
+  },
+  {
+   "headline": "黄金，跌破3500美元",
+   "date": "2026-11-25",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "negative",
+   "intensity": 0.6,
+   "reason": "金价下跌，影响黄金板块"
+  },
+  {
+   "headline": "郑笑慰获批担任中石油专属财产保险公司董事",
+   "date": "2026-11-25",
+   "sectors": [
+    "石油",
+    "石化",
+    "燃气"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "人事变动，对板块影响有限"
+  },
+  {
+   "headline": "YIN ZHAO NAN获批担任苏黎世保险董事",
+   "date": "2026-11-25",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "人事变动，对板块影响有限"
+  },
+  {
+   "headline": "蔚来高管：AI相对来说还有不确定性，总体成本压力主要在AI方面",
+   "date": "2026-11-25",
+   "sectors": [
+    "AI",
+    "算力",
+    "消费电子",
+    "苹果产业链"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "AI成本压力增加，对相关板块构成利空"
+  },
+  {
+   "headline": "特朗普插手黄仁勋风波，再度激起选民对科技巨头政治权力过大的不满",
+   "date": "2026-11-25",
+   "sectors": [
+    "AI",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "科技巨头政治权力过大引发不满，可能影响相关板块投资信心。"
+  },
+  {
+   "headline": "明天复牌！600185，重大资产重组方案出炉",
+   "date": "2026-11-25",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "具体重组方案不明，影响尚不确定。"
+  },
+  {
+   "headline": "民生银行获批收购上海嘉定民生村镇银行并设立分支机构",
+   "date": "2026-11-25",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "positive",
+   "intensity": 0.3,
+   "reason": "银行扩张业务，利好银行板块。"
+  },
+  {
+   "headline": "蔚来李斌谈算力：现在卡很贵也买不到，租卡更符合经营模式",
+   "date": "2026-11-25",
+   "sectors": [
+    "AI",
+    "算力",
+    "汽车"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "蔚来强调算力重要性，利好相关板块。"
+  },
+  {
+   "headline": "资管机构加码期货衍生品，前三季度资金规模增超四成，险资增幅超100%",
+   "date": "2026-11-25",
+   "sectors": [
+    "券商",
+    "保险"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "资管机构加码期货，利好相关金融板块。"
+  },
+  {
+   "headline": "田春芽获批担任上海科创银行内审负责人",
+   "date": "2026-11-25",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "银行人事变动，影响尚不确定。"
+  },
+  {
+   "headline": "前董事长投案，厦门银行的包袱还有多重？",
+   "date": "2026-11-25",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "银行负面新闻，利空银行板块。"
+  },
+  {
+   "headline": "蒸发近3万亿，全球最大IPO给AI狂欢泼了盆冷水",
+   "date": "2026-11-25",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "AI板块最大IPO蒸发，利空相关板块。"
+  },
+  {
+   "headline": "叶泽维获批担任荷全资管首席风险管理执行官",
+   "date": "2026-11-25",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "保险行业人事变动，影响尚不确定。"
+  },
+  {
+   "headline": "全球科技股抛售潮进一步加剧 软银大跌15% 英伟达盘前下跌4.9%",
+   "date": "2026-11-25",
+   "sectors": [
+    "AI",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "negative",
+   "intensity": 0.7,
+   "reason": "全球科技股抛售，利空相关板块。"
+  },
+  {
+   "headline": "王锦华获批担任史带财险财务负责人",
+   "date": "2026-11-25",
+   "sectors": [
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "人事变动，对板块影响有限"
+  },
+  {
+   "headline": "多个新盘触发积分摇号 年末上海楼市热度持续",
+   "date": "2026-11-25",
+   "sectors": [
+    "地产"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "楼市热度上升，利好地产板块"
+  },
+  {
+   "headline": "老铺黄金大手笔中期分红，创始人徐高明个人或分得近13亿元",
+   "date": "2026-11-25",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "黄金分红增加，利好黄金板块"
+  },
+  {
+   "headline": "壁仞科技：新一代旗舰产品BR20X已向头部客户送测",
+   "date": "2026-11-25",
+   "sectors": [
+    "半导体",
+    "芯片",
+    "消费电子"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "新产品送测，利好相关芯片和消费电子板块"
+  },
+  {
+   "headline": "英伟达股价反弹掩盖大型科技企业开支承压，人工智能领域债务风险加剧",
+   "date": "2026-11-25",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "negative",
+   "intensity": 0.7,
+   "reason": "债务风险加剧，利空AI和半导体板块"
+  },
+  {
+   "headline": "天圣制药：股票交易异常波动 前三季度业绩亏损",
+   "date": "2026-11-25",
+   "sectors": [
+    "医药",
+    "CXO",
+    "创新药"
+   ],
+   "direction": "negative",
+   "intensity": 0.5,
+   "reason": "业绩亏损，利空医药板块"
+  },
+  {
+   "headline": "11月26日24时，油价或下调",
+   "date": "2026-11-25",
+   "sectors": [
+    "航运",
+    "航空"
+   ],
+   "direction": "negative",
+   "intensity": 0.4,
+   "reason": "油价下调，利空石油石化、航运和航空板块"
+  },
+  {
+   "headline": "王毅同荷兰外交大臣贝伦德森会谈",
+   "date": "2026-11-25",
+   "sectors": [
+    "军工",
+    "石油"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "外交会谈，利好军工和石油板块"
+  },
+  {
+   "headline": "*ST开元：公司称经营正常无应披露未披露事项",
+   "date": "2026-11-25",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "公司经营正常，对板块影响有限"
+  },
+  {
+   "headline": "伊朗副总统称不惧美国封锁，将采取措施稳物价",
+   "date": "2026-11-25",
+   "sectors": [
+    "航运",
+    "航空"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "稳物价措施，利好石油石化、航运和航空板块"
+  }
+ ],
+ "blackTalk": "老铁们，今天多头唱主角，但别太嗨，半导体那帮家伙又来搅局了，悠着点，仓位别太满啊！🤔",
+ "macro": {
+  "sentiment": -0.02,
+  "score100": 49,
+  "label": "中性",
+  "confidence": 0.51,
+  "reason": "利好板块：地产(+0.37)、汽车(+0.35)、券商(+0.33)、新能源汽车(+0.33)、智能驾驶(+0.33)；利空板块：半导体(-0.36)、CPO(-0.35)、光模块(-0.35)、PCB(-0.35)、AI(-0.31)"
+ }
+}
