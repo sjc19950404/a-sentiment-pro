@@ -10,7 +10,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.35
+   "chg": -1.58
   },
   "600261": {
    "pos": "none",
@@ -34,7 +34,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 4.14
+   "chg": 4.42
   },
   "600715": {
    "pos": "none",
@@ -46,10 +46,10 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.27
+   "chg": -1.91
   },
   "600722": {
-   "pos": "approaching",
+   "pos": "none",
    "counts": {
     "seal": 0,
     "break": 0,
@@ -58,7 +58,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 7.03
+   "chg": 6.95
   },
   "603001": {
    "pos": "none",
@@ -70,7 +70,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.43
+   "chg": -5.68
   },
   "603030": {
    "pos": "sealed",
@@ -94,7 +94,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.4
+   "chg": 3.81
   },
   "603266": {
    "pos": "none",
@@ -106,7 +106,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -0.07
+   "chg": -0.61
   },
   "603360": {
    "pos": "none",
@@ -118,7 +118,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.54
+   "chg": 3.44
   },
   "603608": {
    "pos": "none",
@@ -130,7 +130,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.64
+   "chg": -1.97
   },
   "603725": {
    "pos": "none",
@@ -166,7 +166,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.76
+   "chg": -2.08
   },
   "605222": {
    "pos": "none",
@@ -178,7 +178,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.8
+   "chg": -2.32
   },
   "002872": {
    "pos": "sealed",
@@ -202,7 +202,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3.11
+   "chg": -3
   },
   "002651": {
    "pos": "sealed",
@@ -226,7 +226,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3.37
+   "chg": -3.96
   },
   "002827": {
    "pos": "none",
@@ -238,7 +238,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -4.93
+   "chg": -5.16
   },
   "002387": {
    "pos": "none",
@@ -250,7 +250,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.41
+   "chg": -1.1
   }
  },
  "notified": 0,
