@@ -22,7 +22,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -4.33
+   "chg": -5.98
   },
   "600400": {
    "pos": "none",
@@ -46,10 +46,10 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.91
+   "chg": -1.27
   },
   "600722": {
-   "pos": "none",
+   "pos": "approaching",
    "counts": {
     "seal": 0,
     "break": 0,
@@ -58,7 +58,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 6.95
+   "chg": 7.87
   },
   "603001": {
    "pos": "none",
@@ -70,7 +70,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.68
+   "chg": -5.93
   },
   "603030": {
    "pos": "sealed",
@@ -94,7 +94,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.81
+   "chg": 3.95
   },
   "603266": {
    "pos": "none",
@@ -106,7 +106,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -0.61
+   "chg": -2.1
   },
   "603360": {
    "pos": "none",
@@ -118,7 +118,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.44
+   "chg": 3.02
   },
   "603608": {
    "pos": "none",
@@ -130,7 +130,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.97
+   "chg": -2.3
   },
   "603725": {
    "pos": "none",
@@ -142,7 +142,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.49
+   "chg": -3.17
   },
   "603813": {
    "pos": "none",
@@ -154,7 +154,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 1.91
+   "chg": 1.06
   },
   "603956": {
    "pos": "none",
@@ -166,7 +166,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -2.08
+   "chg": -2.24
   },
   "605222": {
    "pos": "none",
@@ -178,7 +178,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -2.32
+   "chg": -2.58
   },
   "002872": {
    "pos": "sealed",
@@ -202,7 +202,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3
+   "chg": -3.58
   },
   "002651": {
    "pos": "sealed",
@@ -226,7 +226,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3.96
+   "chg": -4.04
   },
   "002827": {
    "pos": "none",
@@ -238,7 +238,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.16
+   "chg": -6.01
   },
   "002387": {
    "pos": "none",
@@ -250,18 +250,18 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -1.1
+   "chg": -1.73
   }
  },
  "notified": 0,
  "threshold_adjust": {
   "enabled": false,
-  "state": "震荡",
+  "state": "复苏",
   "items": [
    {
     "key": "approachPct",
     "base": 7,
-    "regime": "震荡",
+    "regime": "复苏",
     "tier": "neutral",
     "multiplier": 1,
     "final": 7,
@@ -270,7 +270,7 @@
    {
     "key": "sectorMinChg",
     "base": 2,
-    "regime": "震荡",
+    "regime": "复苏",
     "tier": "neutral",
     "multiplier": 1,
     "final": 2,
