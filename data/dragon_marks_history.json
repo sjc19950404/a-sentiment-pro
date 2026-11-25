@@ -3,7 +3,7 @@
     "created": "2026-11-07T13:53:17.263Z",
     "note": "妖股纯情绪标记历史（每日 EOD 留存，同日覆盖幂等）；验证脚本 scripts/dragon_purity_validation.mjs（T+1 续板率对照）",
     "source": "llm-dragon-logic-latest.json::dragons（连续连板口径 zt_lb）",
-    "updated": "2026-11-25T10:50:31.516Z",
+    "updated": "2026-11-25T13:25:20.987Z",
     "days": 14
   },
   "days": [
@@ -3362,276 +3362,276 @@
           "name": "克莱机电",
           "lb": 4,
           "is_pure": true,
-          "reason": "一字独食，无换手，散户勿入"
+          "reason": "一字独食，无换手，通道党游戏"
         },
         {
           "code": "002548",
           "name": "金新农",
           "lb": 4,
           "is_pure": true,
-          "reason": "缩量硬板，预期加速"
+          "reason": "炸板2次，筹码松动，明日或跌"
         },
         {
           "code": "300703",
           "name": "创源股份",
           "lb": 3,
           "is_pure": true,
-          "reason": "爆量分歧，明日或跌"
+          "reason": "炸板1次，抛压重，谨慎追高"
         },
         {
           "code": "600814",
           "name": "杭州解百",
           "lb": 3,
           "is_pure": true,
-          "reason": "炸板一次，谨慎对待"
+          "reason": "无炸板，缩量板，预期加速"
         },
         {
           "code": "603926",
           "name": "铁流股份",
           "lb": 3,
           "is_pure": true,
-          "reason": "缩量硬板，情绪加速"
+          "reason": "炸板12次，筹码极度松动，风险大"
         },
         {
           "code": "002122",
           "name": "汇洲智能",
           "lb": 3,
           "is_pure": true,
-          "reason": "缩量硬板，情绪加速"
+          "reason": "无炸板，缩量板，情绪加速"
         },
         {
           "code": "002164",
           "name": "宁波东力",
           "lb": 3,
           "is_pure": true,
-          "reason": "缩量硬板，情绪加速"
+          "reason": "炸板2次，筹码松动，明日或跌"
         },
         {
           "code": "002242",
           "name": "九阳股份",
           "lb": 3,
           "is_pure": true,
-          "reason": "炸板一次，谨慎对待"
+          "reason": "炸板7次，筹码松动，谨慎追高"
         },
         {
           "code": "600722",
           "name": "金牛化工",
           "lb": 2,
           "is_pure": true,
-          "reason": "缩量硬板，预期加速"
+          "reason": "无炸板，缩量板，情绪加速"
         },
         {
           "code": "603030",
           "name": "全筑股份",
           "lb": 2,
           "is_pure": true,
-          "reason": "缩量硬板，情绪稳定，预期续板"
+          "reason": "高位爆量分歧，情绪退潮"
         },
         {
           "code": "603360",
           "name": "百傲化学",
           "lb": 2,
           "is_pure": true,
-          "reason": "无炸板，筹码集中，明日或加速"
+          "reason": "缩量硬板，情绪加速"
         },
         {
           "code": "002872",
           "name": "天圣制药",
           "lb": 2,
           "is_pure": true,
-          "reason": "低位无分歧，情绪炒作，小心追高"
+          "reason": "缩量一字，情绪炒作"
         },
         {
           "code": "002651",
           "name": "利君股份",
           "lb": 2,
           "is_pure": true,
-          "reason": "炸板两次，筹码松动，明日或调整"
+          "reason": "炸板多，筹码松动"
         },
         {
           "code": "300086",
           "name": "康芝药业",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，谨慎参与"
+          "reason": "炸板多，情绪退潮"
         },
         {
           "code": "301066",
           "name": "万事利",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，谨慎参与"
+          "reason": "炸板多，情绪退潮"
         },
         {
           "code": "301089",
-          "name": "301089",
+          "name": "拓新药业",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，谨慎参与"
+          "reason": "缩量一字，情绪加速"
         },
         {
           "code": "301211",
           "name": "亨迪药业",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，谨慎参与"
+          "reason": "缩量一字，情绪加速"
         },
         {
           "code": "600088",
           "name": "中视传媒",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，谨慎参与"
+          "reason": "缩量一字，情绪加速"
         },
         {
           "code": "600103",
           "name": "青山纸业",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，谨慎参与"
+          "reason": "炸板多，筹码松动"
         },
         {
           "code": "600223",
-          "name": "600223",
+          "name": "福瑞达",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈"
+          "reason": "首板无量，情绪炒作，明日冲高回落"
         },
         {
           "code": "600227",
           "name": "赤天化",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈"
+          "reason": "高位炸板多，筹码松动，明日恐跌"
         },
         {
           "code": "600229",
           "name": "城市传媒",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈"
+          "reason": "高位换手，情绪分歧，明日或调整"
         },
         {
           "code": "600280",
           "name": "中央商场",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈"
+          "reason": "低位首板，无题材，明日难持续"
         },
         {
           "code": "600467",
           "name": "好当家",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈"
+          "reason": "高位换手，情绪分歧，明日或调整"
         },
         {
           "code": "600829",
           "name": "人民同泰",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈"
+          "reason": "高位炸板，筹码松动，明日恐跌"
         },
         {
           "code": "601086",
           "name": "国芳集团",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈"
+          "reason": "低位首板，无题材，明日难持续"
         },
         {
           "code": "603069",
           "name": "海汽集团",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈"
+          "reason": "低位首板，无题材，明日难持续"
         },
         {
           "code": "603122",
           "name": "合富中国",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈"
+          "reason": "高位换手，情绪分歧，明日或调整"
         },
         {
           "code": "603324",
           "name": "盛剑科技",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈"
+          "reason": "高位炸板多，筹码松动，明日恐跌"
         },
         {
           "code": "603708",
           "name": "家家悦",
           "lb": 1,
           "is_pure": true,
-          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "低位首板，缩量加速，情绪博弈"
         },
         {
           "code": "603887",
           "name": "城地香江",
           "lb": 1,
           "is_pure": true,
-          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "炸板一次，高位分歧，情绪退潮"
         },
         {
           "code": "605136",
           "name": "丽人丽妆",
           "lb": 1,
           "is_pure": true,
-          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "首板无量，情绪炒作，谨慎参与"
         },
         {
           "code": "605577",
           "name": "龙版传媒",
           "lb": 1,
           "is_pure": true,
-          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "炸板后加速，情绪博弈，注意风险"
         },
         {
           "code": "002145",
-          "name": "002145",
+          "name": "钛能化学",
           "lb": 1,
           "is_pure": true,
-          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "低位首板，缩量加速，情绪博弈"
         },
         {
           "code": "000593",
           "name": "德龙汇能",
           "lb": 1,
           "is_pure": true,
-          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "低位首板，缩量加速，情绪博弈"
         },
         {
           "code": "000702",
           "name": "正虹科技",
           "lb": 1,
           "is_pure": true,
-          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "低位首板，缩量加速，情绪博弈"
         },
         {
           "code": "002728",
           "name": "特一药业",
           "lb": 1,
           "is_pure": true,
-          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "低位首板，缩量加速，情绪博弈"
         },
         {
           "code": "000908",
           "name": "石药景峰",
           "lb": 1,
           "is_pure": true,
-          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "低位首板，缩量加速，情绪博弈"
         },
         {
           "code": "002861",
           "name": "瀛通通讯",
           "lb": 1,
           "is_pure": true,
-          "reason": "新板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "低位首板，缩量加速，情绪博弈"
         }
       ],
-      "savedAt": "2026-11-25T10:50:31.503Z"
+      "savedAt": "2026-11-25T13:25:20.973Z"
     }
   ]
 }
