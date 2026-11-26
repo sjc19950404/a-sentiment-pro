@@ -10,19 +10,19 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.62
+   "chg": -5.93
   },
   "600103": {
-   "pos": "sealed",
+   "pos": "touched",
    "counts": {
     "seal": 0,
-    "break": 0,
+    "break": 1,
     "touch": 0,
     "approach": 0,
     "accel": 0
    },
-   "brokeToday": 1,
-   "chg": 10.05
+   "brokeToday": 2,
+   "chg": 9.52
   },
   "600223": {
    "pos": "none",
@@ -34,7 +34,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.37
+   "chg": 2.19
   },
   "600227": {
    "pos": "none",
@@ -46,7 +46,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 6.81
+   "chg": 5.88
   },
   "600229": {
    "pos": "sealed",
@@ -94,7 +94,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.36
+   "chg": -5.24
   },
   "601086": {
    "pos": "none",
@@ -106,7 +106,7 @@
     "accel": 1
    },
    "brokeToday": 0,
-   "chg": 1.95
+   "chg": 2.42
   },
   "603069": {
    "pos": "none",
@@ -118,7 +118,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -4.54
+   "chg": -4.99
   },
   "603122": {
    "pos": "none",
@@ -130,7 +130,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -6.24
+   "chg": -6.84
   },
   "603324": {
    "pos": "none",
@@ -142,7 +142,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 4.77
+   "chg": 5.95
   },
   "603708": {
    "pos": "touched",
@@ -154,7 +154,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.27
+   "chg": 0.52
   },
   "603887": {
    "pos": "none",
@@ -166,7 +166,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 5.9
+   "chg": 4.6
   },
   "605136": {
    "pos": "none",
@@ -178,7 +178,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -2.93
+   "chg": -3.57
   },
   "605577": {
    "pos": "none",
@@ -190,7 +190,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 4.24
+   "chg": 4.09
   },
   "002145": {
    "pos": "none",
@@ -202,7 +202,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.96
+   "chg": 2.42
   },
   "000593": {
    "pos": "none",
@@ -214,7 +214,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 1.31
+   "chg": 5.36
   },
   "000702": {
    "pos": "none",
@@ -226,7 +226,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -6.56
+   "chg": -7.58
   },
   "002728": {
    "pos": "touched",
@@ -238,7 +238,7 @@
     "accel": 0
    },
    "brokeToday": 1,
-   "chg": 1.56
+   "chg": 1.08
   },
   "000908": {
    "pos": "none",
@@ -250,7 +250,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -6.65
+   "chg": -7.07
   },
   "002861": {
    "pos": "none",
@@ -262,7 +262,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -2.35
+   "chg": -2.51
   },
   "002480": {
    "pos": "none",
@@ -274,7 +274,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -4.62
+   "chg": -4.81
   },
   "002900": {
    "pos": "none",
@@ -286,7 +286,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -4.24
+   "chg": -4.44
   },
   "002864": {
    "pos": "none",
@@ -298,7 +298,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -4.63
+   "chg": -4.83
   },
   "002038": {
    "pos": "none",
@@ -310,7 +310,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.04
+   "chg": 1.84
   },
   "002275": {
    "pos": "none",
@@ -322,7 +322,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.64
+   "chg": -6.01
   },
   "002197": {
    "pos": "sealed",
@@ -346,7 +346,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -2.46
+   "chg": -2.58
   },
   "002069": {
    "pos": "none",
@@ -358,7 +358,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -0.28
+   "chg": -1.13
   },
   "000756": {
    "pos": "none",
@@ -370,7 +370,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3.54
+   "chg": -3.95
   },
   "002820": {
    "pos": "none",
@@ -382,7 +382,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.3
+   "chg": -5.87
   },
   "002144": {
    "pos": "sealed",
@@ -397,7 +397,7 @@
    "chg": 10.02
   }
  },
- "notified": 6,
+ "notified": 7,
  "threshold_adjust": {
   "enabled": false,
   "state": "复苏",
