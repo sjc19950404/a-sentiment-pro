@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-11-26T21:20:02.885Z",
+    "generatedAt": "2026-11-26T22:00:03.399Z",
     "source": "sina",
     "sourceUrl": "https://hq.sinajs.cn/list=",
     "usSessionDate": "2026-11-25",
@@ -9,10 +9,10 @@
     "okCount": 16,
     "failed": [],
     "usReadiness": {
-      "ready": false,
+      "ready": true,
       "prevSessionClose": false,
-      "etText": "16:20 ET",
-      "reason": "美东 16:20 ET 刚收盘（30 分钟结算缓冲内），收盘价可能尚未稳定",
+      "etText": "17:00 ET",
+      "reason": "美东 17:00 ET 已收盘（≥16:30 ET），可采信当日收盘",
       "readyAfterEt": "16:30 ET（收盘 + 30 分钟结算缓冲）= 北京次日 04:30（夏令时）/ 05:30（冬令时）"
     },
     "usNoSession": [],
@@ -22,7 +22,7 @@
     "usSessionDates": [],
     "usSessionsBeforeOpen": 0,
     "lastAttempt": {
-      "at": "2026-11-26T21:20:02.885Z",
+      "at": "2026-11-26T22:00:03.399Z",
       "outcome": "ok",
       "reason": null
     }
@@ -308,22 +308,22 @@
       "ok": true,
       "state": "ok",
       "stateText": "",
-      "last": 103.7771,
+      "last": 103.7834,
       "prevClose": 103.701,
-      "chg": 0.0761,
-      "chgPct": 0.0734,
+      "chg": 0.0824,
+      "chgPct": 0.0795,
       "chgPctReported": null,
       "chgReported": null,
       "hi52": null,
       "lo52": null,
-      "quoteTime": "05:19:44",
+      "quoteTime": "05:59:01",
       "sessionDate": "2026-11-27",
       "open": 103.7189,
       "high": 103.8405,
       "low": 103.6257,
       "dp": 3,
-      "lastText": "103.777",
-      "chgPctText": "+0.07%"
+      "lastText": "103.783",
+      "chgPctText": "+0.08%"
     },
     {
       "key": "cnh",
@@ -335,22 +335,22 @@
       "ok": true,
       "state": "ok",
       "stateText": "",
-      "last": 6.6619,
+      "last": 6.661,
       "prevClose": 6.6678,
-      "chg": -0.0059,
-      "chgPct": -0.0885,
+      "chg": -0.0068,
+      "chgPct": -0.102,
       "chgPctReported": null,
       "chgReported": null,
       "hi52": 6.9957,
       "lo52": 6.6427,
-      "quoteTime": "05:19:56",
+      "quoteTime": "05:59:57",
       "sessionDate": "2026-11-27",
       "open": 6.6687,
       "high": 6.6699,
       "low": 6.658,
       "dp": 4,
-      "lastText": "6.6619",
-      "chgPctText": "-0.09%"
+      "lastText": "6.6610",
+      "chgPctText": "-0.10%"
     },
     {
       "key": "cny",
@@ -462,9 +462,9 @@
     }
   ],
   "rmb": {
-    "usdcnh_last": 6.6619,
-    "usdcnh_chg_pct": -0.0885,
-    "rmb_up_pct": 0.0885,
+    "usdcnh_last": 6.661,
+    "usdcnh_chg_pct": -0.102,
+    "rmb_up_pct": 0.102,
     "usdcny_last": 6.66
   },
   "anchors": [
