@@ -1,8 +1,8 @@
 {
   "date": "2026-11-26",
   "marketTierVersion": "marketTier/v5.3-alert_only",
-  "generated_at": "2026-11-26T10:49:57.173Z",
-  "emotionScore": 64.7,
+  "generated_at": "2026-11-26T13:19:06.782Z",
+  "emotionScore": 65.3,
   "ztpoolLoaded": true,
   "picks": [
     {
@@ -267,6 +267,6 @@
   ],
   "note": {
     "level": "blocked",
-    "text": "【来源已停用·仅告警】情绪分「半仓」不再限制新建仓；历史文案曾建议总仓位 0%、不新建仓。下列标的仅供观察，不建议此时建仓。"
+    "text": "【来源已停用·仅告警】情绪分「满仓」不再限制新建仓；历史文案曾建议总仓位 0%、不新建仓。下列标的仅供观察，不建议此时建仓。"
   }
 }

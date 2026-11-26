@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-26",
- "generated_at": "2026-11-26T10:49:55.706Z",
+ "generated_at": "2026-11-26T13:19:03.279Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -131,7 +131,7 @@
   "regime": {
    "key": "ebb",
    "label": "退潮",
-   "score": 66.06,
+   "score": 65.02,
    "cap": null,
    "position_range": null,
    "positionReconcile": null,
@@ -139,7 +139,7 @@
    "alertOnly": true,
    "clustering_bubble": false,
    "sentiment_penalty": 0,
-   "score_adjusted": 66.06
+   "score_adjusted": 65.02
   },
   "circuit_breaker": {
    "dd_tier": 0,
@@ -179,7 +179,7 @@
    "note": "执行轨 vs 回测 v52 锚点（零偏差为设计约束）"
   },
   "market_context": {
-   "emotion": 64.7,
+   "emotion": 65.3,
    "pct_rank": 54.2,
    "indexes": {
     "上证指数": 0.01,

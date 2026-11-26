@@ -1,0 +1,63 @@
+{
+ "kind": "llm-cache",
+ "name": "llm-sentiment",
+ "asOfDate": "2026-11-26",
+ "hash": "73e7a4d914",
+ "cachedAt": "2026-11-26T13:04:53.898Z",
+ "parsed": {
+  "sentiment": 0.5,
+  "confidence": 0.8,
+  "reason": "市场整体情绪稳定，涨停家数较多，题材活跃，但炸板率较高，显示市场情绪波动。",
+  "events": [
+   {
+    "type": "业绩预告",
+    "target": "业绩线",
+    "tone": "negative",
+    "note": "业绩线题材退潮，影响市场情绪"
+   },
+   {
+    "type": "高管变动",
+    "target": "*ST建艺",
+    "tone": "positive",
+    "note": "庭外重组消息提振股价"
+   },
+   {
+    "type": "减持",
+    "target": "无",
+    "tone": "neutral",
+    "note": "无重要减持事件"
+   },
+   {
+    "type": "政策",
+    "target": "无",
+    "tone": "neutral",
+    "note": "无重大政策影响"
+   },
+   {
+    "type": "行业催化",
+    "target": "数据中心液冷",
+    "tone": "positive",
+    "note": "数据中心液冷题材新晋活跃"
+   },
+   {
+    "type": "行业催化",
+    "target": "天然气",
+    "tone": "positive",
+    "note": "天然气题材新晋活跃"
+   },
+   {
+    "type": "行业催化",
+    "target": "水产养殖",
+    "tone": "positive",
+    "note": "水产养殖题材新晋活跃"
+   },
+   {
+    "type": "行业催化",
+    "target": "AI漫剧",
+    "tone": "positive",
+    "note": "AI漫剧题材新晋活跃"
+   }
+  ]
+ },
+ "model": "glm-4-flash"
+}

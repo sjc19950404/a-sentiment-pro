@@ -2,8 +2,8 @@
   "kind": "crosscheck-latest",
   "version": 1,
   "asOfDate": "2026-11-26",
-  "fetchedAt": "2026-11-26T10:46:23.355Z",
-  "primaryCount": 81,
+  "fetchedAt": "2026-11-26T13:15:38.881Z",
+  "primaryCount": 79,
   "secondaryCount": 120,
   "rules": {
     "ABS_DIVERGE": 2.5,
@@ -14,33 +14,19 @@
     "CONFLICT_ALARM_COUNT": 3
   },
   "date": "2026-11-26",
-  "status": "diverge",
+  "status": "ok",
   "primaryName": "同花顺行业(881xxx)",
   "secondaryName": "申万二级(腾讯)",
-  "comparable": 63,
-  "coverage": 0.7778,
+  "comparable": 59,
+  "coverage": 0.7468,
   "offset": -0.12,
   "offsetRaw": -0.12,
   "debiased": true,
-  "divergeCount": 1,
+  "divergeCount": 0,
   "conflictCount": 0,
-  "maxAbsDiff": 2.72,
-  "medianAbsDiff": 0.3,
-  "flagged": [
-    {
-      "industry": "养殖业",
-      "primaryRaw": "养殖业",
-      "primary": -0.45,
-      "secondary": 2.39,
-      "secondarySamples": 2,
-      "diff": -2.84,
-      "dev": -2.72,
-      "absDiff": 2.72,
-      "rel": 6.04,
-      "relMeasurable": false,
-      "level": "diverge"
-    }
-  ],
+  "maxAbsDiff": 2.45,
+  "medianAbsDiff": 0.28,
+  "flagged": [],
   "rows": [
     {
       "industry": "贵金属",
@@ -71,13 +57,26 @@
     {
       "industry": "油气开采及服务",
       "primaryRaw": "油气开采及服务",
-      "primary": 2.24,
+      "primary": 2.29,
       "secondary": 2.83,
       "secondarySamples": 1,
-      "diff": -0.59,
-      "dev": -0.47,
-      "absDiff": 0.47,
-      "rel": 0.21,
+      "diff": -0.54,
+      "dev": -0.42,
+      "absDiff": 0.42,
+      "rel": 0.18,
+      "relMeasurable": true,
+      "level": "ok"
+    },
+    {
+      "industry": "造纸",
+      "primaryRaw": "造纸",
+      "primary": 1.73,
+      "secondary": 2.41,
+      "secondarySamples": 1,
+      "diff": -0.68,
+      "dev": -0.56,
+      "absDiff": 0.56,
+      "rel": 0.32,
       "relMeasurable": true,
       "level": "ok"
     },
@@ -108,19 +107,6 @@
       "level": "ok"
     },
     {
-      "industry": "种植业与林业",
-      "primaryRaw": "种植业与林业",
-      "primary": 1.22,
-      "secondary": 0.89,
-      "secondarySamples": 1,
-      "diff": 0.33,
-      "dev": 0.45,
-      "absDiff": 0.45,
-      "rel": 0.51,
-      "relMeasurable": false,
-      "level": "ok"
-    },
-    {
       "industry": "零售",
       "primaryRaw": "零售",
       "primary": 1.03,
@@ -147,6 +133,32 @@
       "level": "ok"
     },
     {
+      "industry": "银行",
+      "primaryRaw": "银行",
+      "primary": 0.97,
+      "secondary": 0.89,
+      "secondarySamples": 4,
+      "diff": 0.08,
+      "dev": 0.2,
+      "absDiff": 0.2,
+      "rel": 0.22,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
+      "industry": "通信设备",
+      "primaryRaw": "通信设备",
+      "primary": 0.75,
+      "secondary": 2.74,
+      "secondarySamples": 1,
+      "diff": -1.99,
+      "dev": -1.87,
+      "absDiff": 1.87,
+      "rel": 2.49,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
       "industry": "港口航运",
       "primaryRaw": "港口航运",
       "primary": 0.71,
@@ -169,6 +181,19 @@
       "dev": -1.38,
       "absDiff": 1.38,
       "rel": 1.94,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
+      "industry": "包装印刷",
+      "primaryRaw": "包装印刷",
+      "primary": 0.69,
+      "secondary": 1.1,
+      "secondarySamples": 1,
+      "diff": -0.41,
+      "dev": -0.29,
+      "absDiff": 0.29,
+      "rel": 0.42,
       "relMeasurable": false,
       "level": "ok"
     },
@@ -277,15 +302,15 @@
       "level": "ok"
     },
     {
-      "industry": "包装印刷",
-      "primaryRaw": "包装印刷",
-      "primary": -0.11,
-      "secondary": 1.1,
-      "secondarySamples": 1,
-      "diff": -1.21,
-      "dev": -1.09,
-      "absDiff": 1.09,
-      "rel": 9.91,
+      "industry": "养殖业",
+      "primaryRaw": "养殖业",
+      "primary": -0.18,
+      "secondary": 2.39,
+      "secondarySamples": 2,
+      "diff": -2.57,
+      "dev": -2.45,
+      "absDiff": 2.45,
+      "rel": 13.61,
       "relMeasurable": false,
       "level": "ok"
     },
@@ -342,19 +367,6 @@
       "level": "ok"
     },
     {
-      "industry": "物流",
-      "primaryRaw": "物流",
-      "primary": -0.26,
-      "secondary": -0.44,
-      "secondarySamples": 1,
-      "diff": 0.18,
-      "dev": 0.3,
-      "absDiff": 0.3,
-      "rel": 1.15,
-      "relMeasurable": false,
-      "level": "ok"
-    },
-    {
       "industry": "电网设备",
       "primaryRaw": "电网设备",
       "primary": -0.31,
@@ -368,6 +380,19 @@
       "level": "ok"
     },
     {
+      "industry": "医疗服务",
+      "primaryRaw": "医疗服务",
+      "primary": -0.32,
+      "secondary": 0.98,
+      "secondarySamples": 1,
+      "diff": -1.3,
+      "dev": -1.18,
+      "absDiff": 1.18,
+      "rel": 3.69,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
       "industry": "其他社会服务",
       "primaryRaw": "其他社会服务",
       "primary": -0.36,
@@ -377,32 +402,6 @@
       "dev": -0.03,
       "absDiff": 0.03,
       "rel": 0.14,
-      "relMeasurable": false,
-      "level": "ok"
-    },
-    {
-      "industry": "养殖业",
-      "primaryRaw": "养殖业",
-      "primary": -0.45,
-      "secondary": 2.39,
-      "secondarySamples": 2,
-      "diff": -2.84,
-      "dev": -2.72,
-      "absDiff": 2.72,
-      "rel": 6.04,
-      "relMeasurable": false,
-      "level": "diverge"
-    },
-    {
-      "industry": "保险",
-      "primaryRaw": "保险",
-      "primary": -0.47,
-      "secondary": -0.61,
-      "secondarySamples": 1,
-      "diff": 0.14,
-      "dev": 0.26,
-      "absDiff": 0.26,
-      "rel": 0.55,
       "relMeasurable": false,
       "level": "ok"
     },
@@ -446,19 +445,6 @@
       "level": "ok"
     },
     {
-      "industry": "能源金属",
-      "primaryRaw": "能源金属",
-      "primary": -0.54,
-      "secondary": 0.43,
-      "secondarySamples": 1,
-      "diff": -0.97,
-      "dev": -0.85,
-      "absDiff": 0.85,
-      "rel": 1.98,
-      "relMeasurable": false,
-      "level": "ok"
-    },
-    {
       "industry": "白色家电",
       "primaryRaw": "白色家电",
       "primary": -0.57,
@@ -468,19 +454,6 @@
       "dev": 0.26,
       "absDiff": 0.26,
       "rel": 0.46,
-      "relMeasurable": false,
-      "level": "ok"
-    },
-    {
-      "industry": "汽车整车",
-      "primaryRaw": "汽车整车",
-      "primary": -0.6,
-      "secondary": -1.04,
-      "secondarySamples": 2,
-      "diff": 0.44,
-      "dev": 0.56,
-      "absDiff": 0.56,
-      "rel": 0.93,
       "relMeasurable": false,
       "level": "ok"
     },
@@ -511,32 +484,6 @@
       "level": "ok"
     },
     {
-      "industry": "光学光电子",
-      "primaryRaw": "光学光电子",
-      "primary": -0.67,
-      "secondary": -0.12,
-      "secondarySamples": 1,
-      "diff": -0.55,
-      "dev": -0.43,
-      "absDiff": 0.43,
-      "rel": 3.58,
-      "relMeasurable": false,
-      "level": "ok"
-    },
-    {
-      "industry": "纺织制造",
-      "primaryRaw": "纺织制造",
-      "primary": -0.7,
-      "secondary": -0.55,
-      "secondarySamples": 1,
-      "diff": -0.15,
-      "dev": -0.03,
-      "absDiff": 0.03,
-      "rel": 0.05,
-      "relMeasurable": false,
-      "level": "ok"
-    },
-    {
       "industry": "饮料制造",
       "primaryRaw": "饮料制造",
       "primary": -0.7,
@@ -546,6 +493,19 @@
       "dev": -0.02,
       "absDiff": 0.02,
       "rel": 0.04,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
+      "industry": "化学制药",
+      "primaryRaw": "化学制药",
+      "primary": -0.74,
+      "secondary": -0.69,
+      "secondarySamples": 2,
+      "diff": -0.04,
+      "dev": 0.08,
+      "absDiff": 0.08,
+      "rel": 0.12,
       "relMeasurable": false,
       "level": "ok"
     },
@@ -572,6 +532,32 @@
       "dev": -0.72,
       "absDiff": 0.72,
       "rel": 72,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
+      "industry": "汽车整车",
+      "primaryRaw": "汽车整车",
+      "primary": -0.88,
+      "secondary": -1.04,
+      "secondarySamples": 2,
+      "diff": 0.16,
+      "dev": 0.28,
+      "absDiff": 0.28,
+      "rel": 0.32,
+      "relMeasurable": false,
+      "level": "ok"
+    },
+    {
+      "industry": "保险",
+      "primaryRaw": "保险",
+      "primary": -0.93,
+      "secondary": -0.61,
+      "secondarySamples": 1,
+      "diff": -0.32,
+      "dev": -0.2,
+      "absDiff": 0.2,
+      "rel": 0.33,
       "relMeasurable": false,
       "level": "ok"
     },
@@ -654,19 +640,6 @@
       "level": "ok"
     },
     {
-      "industry": "汽车零部件",
-      "primaryRaw": "汽车零部件",
-      "primary": -1.19,
-      "secondary": -1.38,
-      "secondarySamples": 1,
-      "diff": 0.19,
-      "dev": 0.31,
-      "absDiff": 0.31,
-      "rel": 0.26,
-      "relMeasurable": true,
-      "level": "ok"
-    },
-    {
       "industry": "家居用品",
       "primaryRaw": "家居用品",
       "primary": -1.2,
@@ -677,19 +650,6 @@
       "absDiff": 0.07,
       "rel": 0.06,
       "relMeasurable": true,
-      "level": "ok"
-    },
-    {
-      "industry": "医疗服务",
-      "primaryRaw": "医疗服务",
-      "primary": -1.27,
-      "secondary": 0.98,
-      "secondarySamples": 1,
-      "diff": -2.25,
-      "dev": -2.13,
-      "absDiff": 2.13,
-      "rel": 2.17,
-      "relMeasurable": false,
       "level": "ok"
     },
     {
@@ -745,32 +705,6 @@
       "level": "ok"
     },
     {
-      "industry": "化学制药",
-      "primaryRaw": "化学制药",
-      "primary": -1.36,
-      "secondary": -0.69,
-      "secondarySamples": 2,
-      "diff": -0.66,
-      "dev": -0.55,
-      "absDiff": 0.55,
-      "rel": 0.79,
-      "relMeasurable": false,
-      "level": "ok"
-    },
-    {
-      "industry": "自动化设备",
-      "primaryRaw": "自动化设备",
-      "primary": -1.41,
-      "secondary": -1.08,
-      "secondarySamples": 1,
-      "diff": -0.33,
-      "dev": -0.21,
-      "absDiff": 0.21,
-      "rel": 0.19,
-      "relMeasurable": true,
-      "level": "ok"
-    },
-    {
       "industry": "美容护理",
       "primaryRaw": "美容护理",
       "primary": -1.43,
@@ -784,15 +718,15 @@
       "level": "ok"
     },
     {
-      "industry": "影视院线",
-      "primaryRaw": "影视院线",
-      "primary": -1.45,
-      "secondary": -0.89,
+      "industry": "白酒",
+      "primaryRaw": "白酒",
+      "primary": -1.47,
+      "secondary": -0.66,
       "secondarySamples": 1,
-      "diff": -0.56,
-      "dev": -0.44,
-      "absDiff": 0.44,
-      "rel": 0.49,
+      "diff": -0.81,
+      "dev": -0.69,
+      "absDiff": 0.69,
+      "rel": 1.05,
       "relMeasurable": false,
       "level": "ok"
     },
@@ -862,6 +796,6 @@
       "level": "ok"
     }
   ],
-  "staleReason": "cross-source: 1 条超阈值差异（养殖业(-0.45% vs 2.39%)）",
-  "note": "可比的 63 个行业中发现偏离常态关系的离群（覆盖率 77.8%；当日两源常态偏移 -0.12pp（已扣除））——需人工复核是否源侧失真"
+  "staleReason": null,
+  "note": "可比的 59 个行业两源一致（覆盖率 74.7%；当日两源常态偏移 -0.12pp（已扣除）；未覆盖部分**未核对**，不等于没问题）"
 }
