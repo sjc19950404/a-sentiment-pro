@@ -1,0 +1,342 @@
+{
+ "schema_version": "1.0",
+ "report_type": "pre_market",
+ "trigger": "schedule",
+ "urgent": false,
+ "date": "2026-11-26",
+ "generated_at": "2026-11-26T00:55:03.011Z",
+ "generated_by": "ci",
+ "status": "degraded",
+ "track": "A",
+ "data_health": {
+  "sources": {
+   "dual_track": "fresh",
+   "signals": "fresh",
+   "global": "fresh",
+   "backtest": "fresh",
+   "ops_alerts": "fresh",
+   "intraday": "fresh",
+   "paper_account": "live"
+  }
+ },
+ "data_completeness": {
+  "date": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "grid_triggers": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "counter_trend_losses": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "pnl_daily": {
+   "source": "live",
+   "confidence": "measured"
+  },
+  "pnl_cumulative": {
+   "source": "live",
+   "confidence": "measured"
+  },
+  "max_drawdown_daily": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "trend_switch_hits": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "cost_ratio": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "slippage_avg": {
+   "source": "assumed",
+   "confidence": "assumed"
+  },
+  "slippage_source": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "regime": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "circuit_breaker": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "overseas": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "externalStale": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "nav_realtime": {
+   "source": "live",
+   "confidence": "measured"
+  },
+  "prev_nav": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "positions": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "overnight_exposure": {
+   "source": "archived",
+   "confidence": "measured"
+  },
+  "key_levels": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "events_today": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "atr": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "suggested_step": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "watchlist": {
+   "source": "derived",
+   "confidence": "measured"
+  },
+  "simulation_stock": {
+   "source": "missing",
+   "confidence": "missing"
+  },
+  "ma20_degraded": {
+   "source": "derived",
+   "confidence": "measured"
+  }
+ },
+ "payload": {
+  "date": "2026-11-25",
+  "grid_triggers": null,
+  "counter_trend_losses": null,
+  "pnl_daily": 0,
+  "pnl_cumulative": 0,
+  "max_drawdown_daily": null,
+  "trend_switch_hits": 1,
+  "cost_ratio": null,
+  "slippage_avg": 0.0002,
+  "slippage_source": "assumed_constant",
+  "regime": {
+   "key": "ice",
+   "label": "冰点",
+   "score": 33.75,
+   "cap": null,
+   "position_range": null,
+   "positionReconcile": null,
+   "marketTierVersion": "marketTier/v5.3-alert_only",
+   "alertOnly": true,
+   "clustering_bubble": false,
+   "sentiment_penalty": 0,
+   "score_adjusted": 33.75
+  },
+  "circuit_breaker": {
+   "dd_tier": 0,
+   "hard_stop_triggered": false,
+   "risk_events": 6,
+   "note": "即时轨：运行回撤 0.00%，距档位边界见 drawdown_vs_threshold；单笔止损/风控拦截当日 无"
+  },
+  "overseas": [
+   {
+    "key": "a50",
+    "name": "富时中国A50期货",
+    "chgPct": 0.005449000000000001,
+    "state": "ok",
+    "stale": false,
+    "cacheNote": null
+   },
+   {
+    "key": "sox",
+    "name": "费城半导体指数",
+    "chgPct": -0.006526,
+    "state": "ok",
+    "stale": false,
+    "cacheNote": null
+   }
+  ],
+  "externalStale": [],
+  "nav_realtime": 1000000,
+  "prev_nav": 0.9299067586384786,
+  "positions": {
+   "targetPos": {
+    "上证指数": 0.35,
+    "深证成指": 0.2,
+    "创业板指": 0.2
+   },
+   "poolPos": 0.25,
+   "executed": true
+  },
+  "overnight_exposure": {
+   "a50_chgPct": 0.005449000000000001,
+   "a50NightOpen": false,
+   "posGap": 0.0167,
+   "us_close": {
+    "dji": 0.0032840000000000005,
+    "spx": -0.002543,
+    "ixic": -0.0062250000000000005
+   },
+   "cn_overnight": {
+    "hxc": 0.018715,
+    "fxi": -0.004136
+   },
+   "cnh_chgPct": -0.000375,
+   "usReady": true,
+   "usReason": "美东 19:55 ET 已收盘（≥16:30 ET），可采信当日收盘",
+   "usPrevSessionClose": false
+  },
+  "key_levels": null,
+  "events_today": null,
+  "atr": null,
+  "suggested_step": null,
+  "watchlist": {
+   "basis": "pain.advance.detail 昨收口径连板梯队（封板质量以晋级结果+近期上榜频次代理，个股级封单额无档案）；不含操作建议",
+   "ladder": [
+    {
+     "code": "002579",
+     "name": "中京电子",
+     "lb": 4,
+     "kept": true,
+     "chg": 10,
+     "appearances": 30
+    },
+    {
+     "code": "002086",
+     "name": "东方海洋",
+     "lb": 3,
+     "kept": false,
+     "chg": -4.41,
+     "appearances": 22
+    },
+    {
+     "code": "605018",
+     "name": "长华集团",
+     "lb": 3,
+     "kept": false,
+     "chg": 4.91,
+     "appearances": 8
+    },
+    {
+     "code": "603960",
+     "name": "克来机电",
+     "lb": 3,
+     "kept": true,
+     "chg": 9.99,
+     "appearances": 6
+    },
+    {
+     "code": "002548",
+     "name": "金新农",
+     "lb": 3,
+     "kept": true,
+     "chg": 10.11,
+     "appearances": 6
+    },
+    {
+     "code": "301575",
+     "name": "艾芬达",
+     "lb": 2,
+     "kept": false,
+     "chg": -10.26,
+     "appearances": 4
+    },
+    {
+     "code": "001229",
+     "name": "魅视科技",
+     "lb": 2,
+     "kept": false,
+     "chg": -10.01,
+     "appearances": 12
+    },
+    {
+     "code": "603040",
+     "name": "新坐标",
+     "lb": 2,
+     "kept": false,
+     "chg": -10,
+     "appearances": 6
+    },
+    {
+     "code": "603516",
+     "name": "淳中科技",
+     "lb": 2,
+     "kept": false,
+     "chg": -10,
+     "appearances": 15
+    },
+    {
+     "code": "002724",
+     "name": "海洋王",
+     "lb": 2,
+     "kept": false,
+     "chg": -9.66,
+     "appearances": 19
+    }
+   ],
+   "overnight_sectors": null,
+   "max_lb": 4,
+   "broken_limit_ratio": 0.37037037037037035
+  },
+  "simulation_stock": null,
+  "ma20_degraded": false,
+  "status": "degraded"
+ },
+ "missing_notes": [
+  {
+   "field": "grid_triggers / grid_trigger_detail",
+   "reason": "系统无网格交易引擎（grid_parallel 是参数寻优并行器，非交易网格）",
+   "ref": "src/grid_parallel.js"
+  },
+  {
+   "field": "counter_trend_losses / counter_trend_loss_ratio",
+   "reason": "无逆势加仓/亏损记账；参考 divergence.posGap（保费敞口）",
+   "ref": "data/paper/dual_track_latest.json"
+  },
+  {
+   "field": "key_levels / events_today / atr / suggested_step",
+   "reason": "指标服务未提供 ATR 与关键价位；事件日历无数据源",
+   "ref": "docs/ai_report_module_design.md#2.3"
+  },
+  {
+   "field": "watchlist.overnight_sectors + watchlist.ladder[].封板质量（个股级封单额）",
+   "reason": "系统无隔夜资讯数据源（消息面→板块映射无法核验，恒 null 不造数）；封单额个股级无档案（pools 落档仅计数），以晋级结果+上榜频次代理",
+   "ref": "docs/ai_report_module_design.md#9.3"
+  }
+ ],
+ "concepts": {
+  "trend_switch": "regime 状态机（src/regime.js）",
+  "circuit_breaker": "DD_TIERS + HARD_STOP_LOSS + ops-alerts（src/paper.js / src/opsalerts.js）"
+ },
+ "sources": {
+  "date": "data/paper/dual_track_latest.json::day.date",
+  "pnl_daily": "data/paper/dual_track_latest.json::day.dayReturns.A（即时轨覆盖为账本 nav 当日变化）",
+  "pnl_cumulative": "data/paper/dual_track_latest.json::summary.trackA.total（即时轨覆盖为 accountStats.ret）",
+  "close_drawdown": "live 实时账户当前回撤 accountStats.drawdown（决议 A：禁混双轨 trackA.maxDd）；空仓→null；归档轨回退 dual_track trackA.maxDd",
+  "max_drawdown_daily": "即时轨当日 equity 序列峰谷（S3-1 注入：opts.drawdownDaily ← window.__intradayLive.drawdownDaily ← src/intraday_live.js::dailyDrawdown）",
+  "trend_switch_hits": "data/signals-latest.json::regime.turns",
+  "overseas": "data/global.json::quotes（A50 + 费半；美股仅美东 16:30 后可信）",
+  "backtest_deviation": "data/backtest.json::v52 vs dual_track summary.trackA",
+  "market_context": "data/signals-latest.json::latest / breadth / pain / seats",
+  "circuit_breaker": "data/ops-alerts-latest.json::events + src/paper.js::DD_TIERS",
+  "regime": "data/paper/dual_track_latest.json::day.regime + signals.dailyReport（仓位区间）",
+  "slippage_avg": "src/paper.js::DEFAULT_SLIP（归档轨假设常量）/ orders×trades 逐笔实测（即时轨）",
+  "cost_ratio": "即时轨当日 trades 费用合计 / 成交额合计；归档轨无成交明细 → null",
+  "win_rate": "口径 = 模拟盘平仓胜率（reviewTrades，来自 data/paper/account.json 的 trades；P3 起绑定真实成交）；0 笔平仓 → null（样本不足，不降级为日收益口径）。原「剧本命中率」数据源 airpt_sim_bindings 仍缺席。"
+ },
+ "disclaimer": "本报告只描述系统状态与风险特征，不构成投资建议；缺失项标注未知而非补 0。",
+ "marketTierVersion": "marketTier/v5.3-alert_only"
+}
