@@ -1,10 +1,10 @@
 {
  "stocks": {
   "600327": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
-    "red": 0,
+    "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
@@ -82,7 +82,7 @@
    }
   },
   "603040": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -109,7 +109,7 @@
    }
   },
   "603130": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -154,7 +154,7 @@
    }
   },
   "603660": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -172,7 +172,7 @@
    }
   },
   "603725": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -208,7 +208,7 @@
    }
   },
   "603976": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 1,
     "red": 0,
@@ -226,7 +226,7 @@
    }
   },
   "605118": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -307,11 +307,11 @@
    }
   },
   "002199": {
-   "pos": "red",
+   "pos": "sealed",
    "counts": {
     "lift": 0,
     "red": 1,
-    "seal": 0,
+    "seal": 1,
     "dtBreak": 0
    }
   },
@@ -361,7 +361,7 @@
    }
   },
   "000635": {
-   "pos": "lifted",
+   "pos": "dt",
    "counts": {
     "lift": 1,
     "red": 0,
@@ -379,6 +379,6 @@
    }
   }
  },
- "notified": 22,
+ "notified": 24,
  "date": "2026-11-26"
 }
