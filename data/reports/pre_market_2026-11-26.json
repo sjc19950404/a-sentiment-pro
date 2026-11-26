@@ -4,7 +4,7 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-26",
- "generated_at": "2026-11-26T00:55:03.011Z",
+ "generated_at": "2026-11-26T10:49:55.889Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
@@ -122,7 +122,7 @@
   }
  },
  "payload": {
-  "date": "2026-11-25",
+  "date": "2026-11-26",
   "grid_triggers": null,
   "counter_trend_losses": null,
   "pnl_daily": 0,
@@ -133,9 +133,9 @@
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
   "regime": {
-   "key": "ice",
-   "label": "冰点",
-   "score": 33.75,
+   "key": "ebb",
+   "label": "退潮",
+   "score": 66.06,
    "cap": null,
    "position_range": null,
    "positionReconcile": null,
@@ -143,7 +143,7 @@
    "alertOnly": true,
    "clustering_bubble": false,
    "sentiment_penalty": 0,
-   "score_adjusted": 33.75
+   "score_adjusted": 66.06
   },
   "circuit_breaker": {
    "dd_tier": 0,
@@ -155,10 +155,9 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": 0.005449000000000001,
-    "state": "ok",
-    "stale": false,
-    "cacheNote": null
+    "chgPct": null,
+    "state": "night-open",
+    "nightOpen": true
    },
    {
     "key": "sox",
@@ -169,9 +168,11 @@
     "cacheNote": null
    }
   ],
-  "externalStale": [],
+  "externalStale": [
+   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空"
+  ],
   "nav_realtime": 1000000,
-  "prev_nav": 0.9299067586384786,
+  "prev_nav": 0.9229118009342208,
   "positions": {
    "targetPos": {
     "上证指数": 0.35,
@@ -182,9 +183,9 @@
    "executed": true
   },
   "overnight_exposure": {
-   "a50_chgPct": 0.005449000000000001,
-   "a50NightOpen": false,
-   "posGap": 0.0167,
+   "a50_chgPct": null,
+   "a50NightOpen": true,
+   "posGap": 0.15,
    "us_close": {
     "dji": 0.0032840000000000005,
     "spx": -0.002543,
@@ -194,10 +195,10 @@
     "hxc": 0.018715,
     "fxi": -0.004136
    },
-   "cnh_chgPct": -0.000375,
-   "usReady": true,
-   "usReason": "美东 19:55 ET 已收盘（≥16:30 ET），可采信当日收盘",
-   "usPrevSessionClose": false
+   "cnh_chgPct": -0.00096,
+   "usReady": false,
+   "usReason": "美东 05:44 ET 盘前（09:30 才开盘）——源给的是上一交易日收盘，可作「上一交易日收盘」用；今日收盘需等 16:30 ET",
+   "usPrevSessionClose": true
   },
   "key_levels": null,
   "events_today": null,
@@ -209,87 +210,87 @@
     {
      "code": "002579",
      "name": "中京电子",
-     "lb": 4,
-     "kept": true,
-     "chg": 10,
-     "appearances": 30
-    },
-    {
-     "code": "002086",
-     "name": "东方海洋",
-     "lb": 3,
+     "lb": 5,
      "kept": false,
-     "chg": -4.41,
-     "appearances": 22
-    },
-    {
-     "code": "605018",
-     "name": "长华集团",
-     "lb": 3,
-     "kept": false,
-     "chg": 4.91,
-     "appearances": 8
-    },
-    {
-     "code": "603960",
-     "name": "克来机电",
-     "lb": 3,
-     "kept": true,
-     "chg": 9.99,
-     "appearances": 6
+     "chg": 7.91,
+     "appearances": 31
     },
     {
      "code": "002548",
      "name": "金新农",
-     "lb": 3,
-     "kept": true,
-     "chg": 10.11,
-     "appearances": 6
+     "lb": 4,
+     "kept": false,
+     "chg": 6.39,
+     "appearances": 7
     },
     {
-     "code": "301575",
-     "name": "艾芬达",
-     "lb": 2,
+     "code": "603960",
+     "name": "克来机电",
+     "lb": 4,
+     "kept": true,
+     "chg": 10,
+     "appearances": 7
+    },
+    {
+     "code": "300703",
+     "name": "创源股份",
+     "lb": 3,
      "kept": false,
-     "chg": -10.26,
+     "chg": -8.43,
      "appearances": 4
     },
     {
-     "code": "001229",
-     "name": "魅视科技",
-     "lb": 2,
+     "code": "002164",
+     "name": "宁波东力",
+     "lb": 3,
      "kept": false,
-     "chg": -10.01,
-     "appearances": 12
-    },
-    {
-     "code": "603040",
-     "name": "新坐标",
-     "lb": 2,
-     "kept": false,
-     "chg": -10,
-     "appearances": 6
-    },
-    {
-     "code": "603516",
-     "name": "淳中科技",
-     "lb": 2,
-     "kept": false,
-     "chg": -10,
+     "chg": -2.95,
      "appearances": 15
     },
     {
-     "code": "002724",
-     "name": "海洋王",
+     "code": "603926",
+     "name": "铁流股份",
+     "lb": 3,
+     "kept": false,
+     "chg": 2.67,
+     "appearances": 7
+    },
+    {
+     "code": "002122",
+     "name": "汇洲智能",
+     "lb": 3,
+     "kept": false,
+     "chg": 5.85,
+     "appearances": 6
+    },
+    {
+     "code": "002242",
+     "name": "九阳股份",
+     "lb": 3,
+     "kept": false,
+     "chg": 8.66,
+     "appearances": 17
+    },
+    {
+     "code": "600814",
+     "name": "杭州解百",
+     "lb": 3,
+     "kept": true,
+     "chg": 10.06,
+     "appearances": 6
+    },
+    {
+     "code": "603360",
+     "name": "百傲化学",
      "lb": 2,
      "kept": false,
-     "chg": -9.66,
-     "appearances": 19
+     "chg": 6.53,
+     "appearances": 6
     }
    ],
    "overnight_sectors": null,
-   "max_lb": 4,
-   "broken_limit_ratio": 0.37037037037037035
+   "max_lb": 5,
+   "broken_limit_ratio": 0.30851063829787234
   },
   "simulation_stock": null,
   "ma20_degraded": false,

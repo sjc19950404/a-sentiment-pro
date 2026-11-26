@@ -1,381 +1,198 @@
 {
- "date": "2026-11-24",
- "prevZtCount": 55,
+ "date": "2026-11-25",
+ "prevZtCount": 51,
  "perf": {
-  "n": 55,
-  "universe": 55,
+  "n": 51,
+  "universe": 51,
   "missing": 0,
   "reliable": true,
-  "avg": -1.37,
-  "median": -4.47,
-  "lossRatio": 0.64,
-  "worst": -12.79,
-  "best": 20.03,
-  "limitUpAgain": 14,
-  "limitDown": 10,
-  "bigLoss": 16,
+  "avg": 3.22,
+  "median": 5.07,
+  "lossRatio": 0.33,
+  "worst": -10.6,
+  "best": 13.4,
+  "limitUpAgain": 16,
+  "limitDown": 1,
+  "bigLoss": 4,
   "note": null
  },
  "advance": {
-  "n": 30,
-  "kept": 9,
-  "failed": 21,
-  "failRate": 0.7,
+  "n": 14,
+  "kept": 6,
+  "failed": 8,
+  "failRate": 0.57,
   "byTier": {
    "2": {
-    "n": 25,
-    "kept": 6,
-    "failed": 19,
-    "failRate": 0.76
+    "n": 5,
+    "kept": 4,
+    "failed": 1,
+    "failRate": 0.2
    },
    "3": {
-    "n": 4,
-    "kept": 2,
-    "failed": 2,
-    "failRate": 0.5
+    "n": 6,
+    "kept": 1,
+    "failed": 5,
+    "failRate": 0.83
    },
    "4+": {
-    "n": 1,
+    "n": 3,
     "kept": 1,
-    "failed": 0,
-    "failRate": 0
+    "failed": 2,
+    "failRate": 0.67
    }
   },
   "reliable": true,
-  "maxLb": 4,
+  "maxLb": 5,
   "detail": [
    {
     "code": "002579",
-    "lb": 4,
-    "chg": 10,
-    "kept": true,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "002086",
-    "lb": 3,
-    "chg": -4.41,
+    "lb": 5,
+    "chg": 7.91,
     "kept": false,
     "board": "szb",
     "boardLabel": "深市主板"
-   },
-   {
-    "code": "605018",
-    "lb": 3,
-    "chg": 4.91,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "603960",
-    "lb": 3,
-    "chg": 9.99,
-    "kept": true,
-    "board": "shb",
-    "boardLabel": "沪市主板"
    },
    {
     "code": "002548",
-    "lb": 3,
-    "chg": 10.11,
+    "lb": 4,
+    "chg": 6.39,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "603960",
+    "lb": 4,
+    "chg": 10,
     "kept": true,
-    "board": "szb",
-    "boardLabel": "深市主板"
+    "board": "shb",
+    "boardLabel": "沪市主板"
    },
    {
-    "code": "301575",
-    "lb": 2,
-    "chg": -10.26,
+    "code": "300703",
+    "lb": 3,
+    "chg": -8.43,
     "kept": false,
     "board": "gem",
     "boardLabel": "创业板"
    },
    {
-    "code": "001229",
-    "lb": 2,
-    "chg": -10.01,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "603040",
-    "lb": 2,
-    "chg": -10,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "603516",
-    "lb": 2,
-    "chg": -10,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "002724",
-    "lb": 2,
-    "chg": -9.66,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "603103",
-    "lb": 2,
-    "chg": -8.6,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "301413",
-    "lb": 2,
-    "chg": -8.59,
-    "kept": false,
-    "board": "gem",
-    "boardLabel": "创业板"
-   },
-   {
-    "code": "601599",
-    "lb": 2,
-    "chg": -6.47,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "002931",
-    "lb": 2,
-    "chg": -6.02,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "603666",
-    "lb": 2,
-    "chg": -5.99,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "603626",
-    "lb": 2,
-    "chg": -5.68,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "002036",
-    "lb": 2,
-    "chg": -4.85,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "603662",
-    "lb": 2,
-    "chg": -4.72,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "001278",
-    "lb": 2,
-    "chg": -3.99,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "605488",
-    "lb": 2,
-    "chg": -3.58,
-    "kept": false,
-    "board": "shb",
-    "boardLabel": "沪市主板"
-   },
-   {
-    "code": "002708",
-    "lb": 2,
-    "chg": -1.26,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "301252",
-    "lb": 2,
-    "chg": -0.85,
-    "kept": false,
-    "board": "gem",
-    "boardLabel": "创业板"
-   },
-   {
-    "code": "002685",
-    "lb": 2,
-    "chg": 0.45,
-    "kept": false,
-    "board": "szb",
-    "boardLabel": "深市主板"
-   },
-   {
-    "code": "001358",
-    "lb": 2,
-    "chg": 5.57,
+    "code": "002164",
+    "lb": 3,
+    "chg": -2.95,
     "kept": false,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
     "code": "603926",
-    "lb": 2,
-    "chg": 9.98,
-    "kept": true,
+    "lb": 3,
+    "chg": 2.67,
+    "kept": false,
     "board": "shb",
     "boardLabel": "沪市主板"
    },
    {
-    "code": "002164",
-    "lb": 2,
-    "chg": 9.98,
-    "kept": true,
+    "code": "002122",
+    "lb": 3,
+    "chg": 5.85,
+    "kept": false,
+    "board": "szb",
+    "boardLabel": "深市主板"
+   },
+   {
+    "code": "002242",
+    "lb": 3,
+    "chg": 8.66,
+    "kept": false,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
     "code": "600814",
-    "lb": 2,
-    "chg": 10.01,
+    "lb": 3,
+    "chg": 10.06,
     "kept": true,
     "board": "shb",
     "boardLabel": "沪市主板"
    },
    {
-    "code": "002242",
+    "code": "603360",
     "lb": 2,
-    "chg": 10.01,
+    "chg": 6.53,
+    "kept": false,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "603030",
+    "lb": 2,
+    "chg": 9.96,
+    "kept": true,
+    "board": "shb",
+    "boardLabel": "沪市主板"
+   },
+   {
+    "code": "002872",
+    "lb": 2,
+    "chg": 10,
     "kept": true,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
-    "code": "002122",
+    "code": "002651",
     "lb": 2,
-    "chg": 10.12,
+    "chg": 10,
     "kept": true,
     "board": "szb",
     "boardLabel": "深市主板"
    },
    {
-    "code": "300703",
+    "code": "600722",
     "lb": 2,
-    "chg": 20.03,
+    "chg": 10.04,
     "kept": true,
-    "board": "gem",
-    "boardLabel": "创业板"
+    "board": "shb",
+    "boardLabel": "沪市主板"
    }
   ],
   "note": null
  },
  "bigLoss": {
-  "n": 16,
+  "n": 4,
   "list": [
    {
-    "code": "301189",
-    "name": "奥尼电子",
-    "chg": -12.79
+    "code": "301066",
+    "name": "万事利",
+    "chg": -10.6
    },
    {
-    "code": "301575",
-    "name": "艾芬达",
-    "chg": -10.26
+    "code": "000702",
+    "name": "正虹科技",
+    "chg": -9.02
    },
    {
-    "code": "603725",
-    "name": "天安新材",
-    "chg": -10.01
+    "code": "300703",
+    "name": "创源股份",
+    "chg": -8.43
    },
    {
-    "code": "001229",
-    "name": "魅视科技",
-    "chg": -10.01
-   },
-   {
-    "code": "603001",
-    "name": "奥康国际",
-    "chg": -10
-   },
-   {
-    "code": "603040",
-    "name": "新坐标",
-    "chg": -10
-   },
-   {
-    "code": "603516",
-    "name": "淳中科技",
-    "chg": -10
-   },
-   {
-    "code": "300652",
-    "name": "雷迪克",
-    "chg": -9.91
-   },
-   {
-    "code": "600261",
-    "name": "阳光照明",
-    "chg": -9.9
-   },
-   {
-    "code": "600715",
-    "name": "文投控股",
-    "chg": -9.87
+    "code": "000908",
+    "name": "石药景峰",
+    "chg": -7.9
    }
   ]
  },
  "skyFloor": {
-  "n": 4,
-  "list": [
-   {
-    "code": "001278",
-    "name": "一彬科技",
-    "chg": -3.99,
-    "amplitude": 19.4
-   },
-   {
-    "code": "301575",
-    "name": "艾芬达",
-    "chg": -10.26,
-    "amplitude": 16.8
-   },
-   {
-    "code": "002036",
-    "name": "联创电子",
-    "chg": -4.85,
-    "amplitude": 16.6
-   },
-   {
-    "code": "301252",
-    "name": "同星科技",
-    "chg": -0.85,
-    "amplitude": 15
-   }
-  ]
+  "n": 0,
+  "list": []
  },
- "scanned": 55,
+ "scanned": 51,
  "verdict": {
-  "level": "severe",
-  "label": "亏钱效应显著",
-  "reason": "昨涨停今日翻绿 64%、高位板晋级失败 70%，追高者整体受损"
+  "level": "strong",
+  "label": "接力顺畅",
+  "reason": "昨涨停今日翻绿仅 33%、高位板晋级失败 57%，赚钱效应占优"
  },
  "thresholds": {
   "BIG_LOSS_PCT": -7,
@@ -386,6 +203,6 @@
   "NEUTRAL_BAND": 0.1,
   "MIN_SAMPLE": 5
  },
- "generatedAt": "2026-11-25T13:02:50.714Z",
- "curDate": "2026-11-25"
+ "generatedAt": "2026-11-26T10:32:44.191Z",
+ "curDate": "2026-11-26"
 }

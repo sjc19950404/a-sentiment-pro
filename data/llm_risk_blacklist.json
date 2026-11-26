@@ -1,14 +1,24 @@
 {
  "kind": "llm-risk-blacklist",
  "version": 1,
- "asOfDate": "2026-11-25",
- "generatedAt": "2026-11-25T21:23:51.467+08:00",
+ "asOfDate": "2026-11-26",
+ "generatedAt": "2026-11-26T18:49:47.939+08:00",
  "model": "glm-4-flash",
  "source": "announcements-latest.json",
- "scanned": 26,
+ "scanned": 25,
  "universe": "ladder",
  "limit": 40,
- "blacklist": [],
+ "blacklist": [
+  {
+   "code": "603960",
+   "name": "克来机电",
+   "riskLevel": "medium",
+   "reasons": [
+    "监管工作函"
+   ],
+   "evidence": "克来机电：关于股票交易的风险提示性公告；克来机电：关于上海克来机电自动化工程股份有限公司有关股价波动事项的监管工作函；克来机电：股票交易异常波动暨风险提示公告；克来机电：关于股票交易的风险提示性公告"
+  }
+ ],
  "degraded": false,
  "note": "正向封禁黑名单：paper.js 建仓前查此表，命中即拒绝买入；空表 = 不封禁（fail-open，未跑/无源绝不误伤正常交易）。风险等级 high/medium 入列。结构性 ST 强制 high。"
 }

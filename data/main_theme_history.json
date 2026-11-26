@@ -1,11 +1,11 @@
 {
  "meta": {
-  "generatedAt": "2026-11-25T13:22:11.687Z",
-  "days": 29,
-  "theme_days": 30,
+  "generatedAt": "2026-11-26T10:48:25.101Z",
+  "days": 30,
+  "theme_days": 31,
   "strength_dist": {
    "强主线": 10,
-   "弱主线": 16,
+   "弱主线": 17,
    "绝对主线": 4
   },
   "rotation_days": 7,
@@ -720,6 +720,27 @@
    ],
    "rotation": true,
    "prev_main_theme": "汽车零部"
+  },
+  {
+   "date": "20261126",
+   "main_themes": [
+    {
+     "name": "造纸",
+     "zt_count": 3,
+     "lb_count": 1,
+     "avg_fund": 78768354,
+     "stocks": [
+      "600567",
+      "600103",
+      "600963"
+     ],
+     "strength": "弱主线",
+     "consecutive_days": 1,
+     "is_continuous": false
+    }
+   ],
+   "rotation": false,
+   "prev_main_theme": "一般零售"
   }
  ]
 }

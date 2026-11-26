@@ -1,19 +1,19 @@
 {
-  "date": "2026-11-25",
+  "date": "2026-11-26",
   "marketTierVersion": "marketTier/v5.3-alert_only",
-  "generated_at": "2026-11-25T13:24:00.757Z",
-  "emotionScore": 30.9,
+  "generated_at": "2026-11-26T10:49:57.173Z",
+  "emotionScore": 64.7,
   "ztpoolLoaded": true,
   "picks": [
     {
-      "code": "002548",
-      "name": "金新农",
-      "buyPoint": "烂板弱转强：今日爆量换手(23%) 尾盘封板 → 明日早盘极大概率给低吸买点",
+      "code": "600127",
+      "name": "金健米业",
+      "buyPoint": "烂板弱转强：今日爆量换手(22%) 尾盘封板 → 明日早盘极大概率给低吸买点",
       "weakToStrong": true,
       "probText": "中等（历史同特征组上涨占比 57%~65%）",
-      "probScore": 64,
-      "changePct": 10.11,
-      "streakText": "大概率连板 25%",
+      "probScore": 65,
+      "changePct": 10.06,
+      "streakText": "大概率连板 15.1%",
       "streakTop": false,
       "gateTags": [
         "核心龙头",
@@ -22,60 +22,15 @@
       "suggestWeight": 0.2
     },
     {
-      "code": "002122",
-      "name": "汇洲智能",
-      "buyPoint": "正常换手涨停，竞价/开盘分歧转一致可参与",
-      "weakToStrong": false,
-      "probText": "中等（历史同特征组上涨占比 57%~65%）",
-      "probScore": 64,
-      "changePct": 10.12,
-      "streakText": "大概率连板 54.2%",
-      "streakTop": true,
-      "gateTags": [
-        "核心龙头"
-      ],
-      "suggestWeight": 0.2
-    },
-    {
-      "code": "002164",
-      "name": "宁波东力",
-      "buyPoint": "⚠ 偏缩量硬板，次日易一字/秒板，实盘买点苛刻，谨慎",
-      "weakToStrong": false,
-      "probText": "中等（历史同特征组上涨占比 57%~65%）",
-      "probScore": 60,
-      "changePct": 9.98,
-      "streakText": "大概率连板 54.2%",
-      "streakTop": true,
-      "gateTags": [
-        "核心龙头"
-      ],
-      "suggestWeight": 0.2
-    },
-    {
-      "code": "600814",
-      "name": "杭州解百",
-      "buyPoint": "⚠ 偏缩量硬板，次日易一字/秒板，实盘买点苛刻，谨慎",
-      "weakToStrong": false,
-      "probText": "中等（历史同特征组上涨占比 57%~65%）",
-      "probScore": 60,
-      "changePct": 10.01,
-      "streakText": "大概率连板 54.2%",
-      "streakTop": true,
-      "gateTags": [
-        "核心龙头"
-      ],
-      "suggestWeight": 0.2
-    },
-    {
-      "code": "002242",
-      "name": "九阳股份",
+      "code": "002261",
+      "name": "拓维信息",
       "buyPoint": "弱转强：今日放量烂板，明日早盘低开/回踩均线可低吸",
       "weakToStrong": false,
       "probText": "中等（历史同特征组上涨占比 57%~65%）",
-      "probScore": 64,
-      "changePct": 10.01,
-      "streakText": "大概率连板 30.8%",
-      "streakTop": true,
+      "probScore": 65,
+      "changePct": 10.03,
+      "streakText": "大概率连板 18.2%",
+      "streakTop": false,
       "gateTags": [
         "核心龙头"
       ],
@@ -84,42 +39,9 @@
   ],
   "observe": [
     {
-      "code": "603926",
-      "name": "铁流股份",
+      "code": "600229",
+      "name": "城市传媒",
       "changePct": 9.98,
-      "probScore": 56,
-      "streakText": null,
-      "gateTags": null,
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "below_zt"
-    },
-    {
-      "code": "002651",
-      "name": "利君股份",
-      "changePct": 10.03,
-      "probScore": 55,
-      "streakText": null,
-      "gateTags": null,
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "below_zt"
-    },
-    {
-      "code": "002872",
-      "name": "天圣制药",
-      "changePct": 10.08,
-      "probScore": 55,
-      "streakText": null,
-      "gateTags": null,
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "below_zt"
-    },
-    {
-      "code": "603360",
-      "name": "百傲化学",
-      "changePct": 10,
       "probScore": 55,
       "streakText": null,
       "gateTags": null,
@@ -130,8 +52,8 @@
     {
       "code": "603030",
       "name": "全筑股份",
-      "changePct": 10.13,
-      "probScore": 51,
+      "changePct": 9.96,
+      "probScore": 56,
       "streakText": null,
       "gateTags": null,
       "isZt": true,
@@ -139,19 +61,8 @@
       "observeTier": "below_zt"
     },
     {
-      "code": "600467",
-      "name": "好当家",
-      "changePct": 10.09,
-      "probScore": 55,
-      "streakText": null,
-      "gateTags": null,
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "below_zt"
-    },
-    {
-      "code": "000593",
-      "name": "德龙汇能",
+      "code": "002144",
+      "name": "宏达高科",
       "changePct": 10.02,
       "probScore": 51,
       "streakText": null,
@@ -161,9 +72,9 @@
       "observeTier": "below_zt"
     },
     {
-      "code": "000702",
-      "name": "正虹科技",
-      "changePct": 9.91,
+      "code": "002197",
+      "name": "证通电子",
+      "changePct": 9.98,
       "probScore": 51,
       "streakText": null,
       "gateTags": null,
@@ -172,8 +83,63 @@
       "observeTier": "below_zt"
     },
     {
-      "code": "000756",
-      "name": "新华制药",
+      "code": "600280",
+      "name": "中央商场",
+      "changePct": 9.93,
+      "probScore": 51,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "600722",
+      "name": "金牛化工",
+      "changePct": 10.04,
+      "probScore": 56,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "600814",
+      "name": "杭州解百",
+      "changePct": 10.06,
+      "probScore": 56,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "000158",
+      "name": "常山北明",
+      "changePct": 9.98,
+      "probScore": 51,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "000603",
+      "name": "盛达资源",
+      "changePct": 10,
+      "probScore": 51,
+      "streakText": null,
+      "gateTags": null,
+      "isZt": true,
+      "suggestWeight": 0,
+      "observeTier": "below_zt"
+    },
+    {
+      "code": "000798",
+      "name": "中水渔业",
       "changePct": 10.05,
       "probScore": 51,
       "streakText": null,
@@ -183,9 +149,9 @@
       "observeTier": "below_zt"
     },
     {
-      "code": "000908",
-      "name": "石药景峰",
-      "changePct": 10.07,
+      "code": "000912",
+      "name": "泸天化",
+      "changePct": 10.1,
       "probScore": 51,
       "streakText": null,
       "gateTags": null,
@@ -194,20 +160,9 @@
       "observeTier": "below_zt"
     },
     {
-      "code": "002038",
-      "name": "双鹭药业",
-      "changePct": 10.11,
-      "probScore": 51,
-      "streakText": null,
-      "gateTags": null,
-      "isZt": true,
-      "suggestWeight": 0,
-      "observeTier": "below_zt"
-    },
-    {
-      "code": "002069",
-      "name": "獐子岛",
-      "changePct": 9.94,
+      "code": "000993",
+      "name": "闽东电力",
+      "changePct": 10.01,
       "probScore": 51,
       "streakText": null,
       "gateTags": null,
@@ -217,18 +172,73 @@
     }
   ],
   "stats": {
-    "universe": 51,
-    "removed": 9,
-    "kept": 7,
-    "below": 36,
+    "universe": 69,
+    "removed": 12,
+    "kept": 6,
+    "below": 48,
     "minProb": 57,
     "observeCount": 12
   },
   "rejected": [
     {
-      "code": "603960",
-      "name": "克来机电",
+      "code": "002651",
+      "name": "利君股份",
       "reasons": []
+    },
+    {
+      "code": "002872",
+      "name": "天圣制药",
+      "reasons": []
+    },
+    {
+      "code": "600963",
+      "name": "岳阳林纸",
+      "reasons": []
+    },
+    {
+      "code": "603166",
+      "name": "福达股份",
+      "reasons": []
+    },
+    {
+      "code": "000678",
+      "name": "襄阳轴承",
+      "reasons": [
+        "换手过高",
+        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
+      ]
+    },
+    {
+      "code": "000530",
+      "name": "冰山冷热",
+      "reasons": [
+        "换手过高",
+        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
+      ]
+    },
+    {
+      "code": "002086",
+      "name": "东方海洋",
+      "reasons": [
+        "换手过高",
+        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
+      ]
+    },
+    {
+      "code": "603078",
+      "name": "江化微",
+      "reasons": [
+        "仅小额外资金、无涨停",
+        "龙虎榜净买为正但不足 2 亿（且当日未涨停）：实测净买>0 组 T+1 仅 +0.81%、T+3 −0.41%，弱于「全部涨停股」基准（+1.59% / +0.69%）。净买金额不够大时，上榜本身不构成买入理由。"
+      ]
+    },
+    {
+      "code": "002122",
+      "name": "汇洲智能",
+      "reasons": [
+        "仅小额外资金、无涨停",
+        "龙虎榜净买为正但不足 2 亿（且当日未涨停）：实测净买>0 组 T+1 仅 +0.81%、T+3 −0.41%，弱于「全部涨停股」基准（+1.59% / +0.69%）。净买金额不够大时，上榜本身不构成买入理由。"
+      ]
     },
     {
       "code": "600103",
@@ -239,48 +249,8 @@
       ]
     },
     {
-      "code": "600410",
-      "name": "华胜天成",
-      "reasons": [
-        "换手过高",
-        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
-      ]
-    },
-    {
-      "code": "002642",
-      "name": "荣联科技",
-      "reasons": [
-        "换手过高",
-        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
-      ]
-    },
-    {
-      "code": "000819",
-      "name": "岳阳兴长",
-      "reasons": [
-        "仅小额外资金、无涨停",
-        "龙虎榜净买为正但不足 2 亿（且当日未涨停）：实测净买>0 组 T+1 仅 +0.81%、T+3 −0.41%，弱于「全部涨停股」基准（+1.59% / +0.69%）。净买金额不够大时，上榜本身不构成买入理由。"
-      ]
-    },
-    {
-      "code": "002036",
-      "name": "联创电子",
-      "reasons": [
-        "仅小额外资金、无涨停",
-        "龙虎榜净买为正但不足 2 亿（且当日未涨停）：实测净买>0 组 T+1 仅 +0.81%、T+3 −0.41%，弱于「全部涨停股」基准（+1.59% / +0.69%）。净买金额不够大时，上榜本身不构成买入理由。"
-      ]
-    },
-    {
-      "code": "601091",
-      "name": "沈鼓集团",
-      "reasons": [
-        "换手过高",
-        "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
-      ]
-    },
-    {
-      "code": "601599",
-      "name": "浙文影业",
+      "code": "002771",
+      "name": "真视通",
       "reasons": [
         "换手过高",
         "换手 ≥25% 的涨停股 T+1 均收益仅 +0.65%、上涨占比 46.2%，T+3 转为 −2.65%；3 日内平均最大回撤 −8.40%（是低换手组的 2 倍）。筹码高度涣散，兑现压力大。"
