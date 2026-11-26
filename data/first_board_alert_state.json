@@ -10,7 +10,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -6.72
+   "chg": -5.93
   },
   "600103": {
    "pos": "touched",
@@ -22,7 +22,7 @@
     "accel": 0
    },
    "brokeToday": 2,
-   "chg": 7.67
+   "chg": 8.47
   },
   "600223": {
    "pos": "none",
@@ -34,10 +34,10 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 1.64
+   "chg": 0.91
   },
   "600227": {
-   "pos": "none",
+   "pos": "approaching",
    "counts": {
     "seal": 0,
     "break": 0,
@@ -46,10 +46,10 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 6.81
+   "chg": 7.74
   },
   "600229": {
-   "pos": "sealed",
+   "pos": "touched",
    "counts": {
     "seal": 0,
     "break": 0,
@@ -57,8 +57,8 @@
     "approach": 0,
     "accel": 0
    },
-   "brokeToday": 0,
-   "chg": 9.98
+   "brokeToday": 1,
+   "chg": 7.21
   },
   "600280": {
    "pos": "sealed",
@@ -94,7 +94,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.13
+   "chg": -5.48
   },
   "601086": {
    "pos": "none",
@@ -106,7 +106,7 @@
     "accel": 1
    },
    "brokeToday": 0,
-   "chg": 3.81
+   "chg": 4.09
   },
   "603069": {
    "pos": "none",
@@ -118,7 +118,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.99
+   "chg": -5.81
   },
   "603122": {
    "pos": "none",
@@ -130,7 +130,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -6.64
+   "chg": -6.84
   },
   "603324": {
    "pos": "none",
@@ -142,7 +142,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 4.28
+   "chg": 5.83
   },
   "603708": {
    "pos": "touched",
@@ -154,7 +154,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 2.17
+   "chg": 1.55
   },
   "603887": {
    "pos": "none",
@@ -166,7 +166,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 3.54
+   "chg": 3.77
   },
   "605136": {
    "pos": "none",
@@ -178,7 +178,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -4.71
+   "chg": -3.57
   },
   "605577": {
    "pos": "none",
@@ -190,7 +190,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 6.54
+   "chg": 6.19
   },
   "002145": {
    "pos": "none",
@@ -202,10 +202,10 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 1.61
+   "chg": 1.34
   },
   "000593": {
-   "pos": "approaching",
+   "pos": "none",
    "counts": {
     "seal": 0,
     "break": 0,
@@ -214,7 +214,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 7.5
+   "chg": 5.99
   },
   "000702": {
    "pos": "none",
@@ -226,7 +226,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -8.2
+   "chg": -8.81
   },
   "002728": {
    "pos": "touched",
@@ -238,7 +238,7 @@
     "accel": 0
    },
    "brokeToday": 1,
-   "chg": 0.84
+   "chg": 0.96
   },
   "000908": {
    "pos": "none",
@@ -250,7 +250,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -7.07
+   "chg": -7.28
   },
   "002861": {
    "pos": "none",
@@ -262,7 +262,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3.42
+   "chg": -1.82
   },
   "002480": {
    "pos": "none",
@@ -274,7 +274,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.58
+   "chg": -5.19
   },
   "002900": {
    "pos": "none",
@@ -286,7 +286,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -4.96
+   "chg": -5.17
   },
   "002864": {
    "pos": "none",
@@ -298,7 +298,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -4.98
+   "chg": -4.33
   },
   "002038": {
    "pos": "none",
@@ -310,7 +310,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": 0.82
+   "chg": 1.02
   },
   "002275": {
    "pos": "none",
@@ -322,7 +322,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -4.92
+   "chg": -5.43
   },
   "002197": {
    "pos": "sealed",
@@ -346,7 +346,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -3.75
+   "chg": -2.58
   },
   "002069": {
    "pos": "none",
@@ -358,7 +358,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -0.28
+   "chg": -1.13
   },
   "000756": {
    "pos": "none",
@@ -382,7 +382,7 @@
     "accel": 0
    },
    "brokeToday": 0,
-   "chg": -5.87
+   "chg": -5.76
   },
   "002144": {
    "pos": "sealed",
