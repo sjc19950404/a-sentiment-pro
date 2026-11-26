@@ -1,7 +1,358 @@
 {
  "stocks": {
-  "003038": {
+  "600327": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "600520": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "600619": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "600641": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "601133": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "601595": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603001": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603009": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603037": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603040": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603051": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603078": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603130": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603283": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603366": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603391": {
    "pos": "dt",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603516": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603660": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603706": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603725": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603838": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603928": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603955": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603976": {
+   "pos": "dt",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "603985": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "605118": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "605288": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "605588": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002652": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002549": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002947": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "000026": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "001229": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "001301": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002199": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002119": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002929": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "003038": {
+   "pos": "lifted",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002811": {
+   "pos": "red",
+   "counts": {
+    "lift": 0,
+    "red": 1,
+    "seal": 0,
+    "dtBreak": 0
+   }
+  },
+  "002425": {
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 0,
@@ -17,8 +368,17 @@
     "seal": 0,
     "dtBreak": 0
    }
+  },
+  "002148": {
+   "pos": "dt",
+   "counts": {
+    "lift": 0,
+    "red": 0,
+    "seal": 0,
+    "dtBreak": 0
+   }
   }
  },
- "notified": 0,
- "date": "2026-11-25"
+ "notified": 18,
+ "date": "2026-11-26"
 }
