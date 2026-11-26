@@ -118,7 +118,7 @@
    }
   },
   "603283": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -253,7 +253,7 @@
    }
   },
   "002652": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -325,10 +325,10 @@
    }
   },
   "002929": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
-    "red": 0,
+    "red": 1,
     "seal": 0,
     "dtBreak": 0
    }
@@ -361,7 +361,7 @@
    }
   },
   "000635": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
     "lift": 1,
     "red": 0,
@@ -379,6 +379,6 @@
    }
   }
  },
- "notified": 27,
+ "notified": 28,
  "date": "2026-11-26"
 }
