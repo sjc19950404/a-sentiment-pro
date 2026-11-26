@@ -1,7 +1,7 @@
 {
  "stocks": {
   "600327": {
-   "pos": "lifted",
+   "pos": "red",
    "counts": {
     "lift": 0,
     "red": 1,
@@ -208,7 +208,7 @@
    }
   },
   "603976": {
-   "pos": "dt",
+   "pos": "lifted",
    "counts": {
     "lift": 1,
     "red": 0,
@@ -217,7 +217,7 @@
    }
   },
   "603985": {
-   "pos": "red",
+   "pos": "lifted",
    "counts": {
     "lift": 0,
     "red": 1,
