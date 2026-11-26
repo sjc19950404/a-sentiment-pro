@@ -3222,21 +3222,32 @@
   "breadthCross": null,
   "ztDerived": null,
   "dataHealth": {
-    "snapshotSource": "node-eastmoney",
-    "snapshotRows": 100,
-    "errors": [],
-    "degradations": []
+    "snapshotSource": "node-gtimg-backup",
+    "snapshotRows": 0,
+    "errors": [
+      "universe(hot/quotes)[em]: universe 全主机失败: push2.eastmoney.com#0: fetch failed | push2.eastmoney.com#1: fetch failed | 1.push2.eastmoney.com#0: fetch failed | 1.push2.eastmoney.com#1: fetch failed | 2.push2.eastmoney.com#0: fetch failed | 2.push2.eastmoney.com#1: fetch failed | 7.push2.eastmoney.com#0: fetch failed | 7.push2.eastmoney.com#1: fetch failed | 82.push2.eastmoney.com#0: fetch failed | 82.push2.eastmoney.com#1: fetch failed | 84.push2.eastmoney.com#0: fetch failed | 84.push2.eastmoney.com#1: fetch failed | push2delay.eastmoney.com#0: fetch failed | push2delay.eastmoney.com#1: fetch failed | hqdigi2.eastmoney.com#0: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON | hqdigi2.eastmoney.com#1: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON",
+      "universe(hot/quotes)[gtimg]: 返回空"
+    ],
+    "degradations": [],
+    "fallbackUsed": [
+      "hot",
+      "screener",
+      "breadth"
+    ]
   },
-  "sourcesFailed": [],
-  "prevCapturedAtBJ": "2026-11-26 10:35",
+  "sourcesFailed": [
+    "universe(hot/quotes)[em]: universe 全主机失败: push2.eastmoney.com#0: fetch failed | push2.eastmoney.com#1: fetch failed | 1.push2.eastmoney.com#0: fetch failed | 1.push2.eastmoney.com#1: fetch failed | 2.push2.eastmoney.com#0: fetch failed | 2.push2.eastmoney.com#1: fetch failed | 7.push2.eastmoney.com#0: fetch failed | 7.push2.eastmoney.com#1: fetch failed | 82.push2.eastmoney.com#0: fetch failed | 82.push2.eastmoney.com#1: fetch failed | 84.push2.eastmoney.com#0: fetch failed | 84.push2.eastmoney.com#1: fetch failed | push2delay.eastmoney.com#0: fetch failed | push2delay.eastmoney.com#1: fetch failed | hqdigi2.eastmoney.com#0: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON | hqdigi2.eastmoney.com#1: Unexpected token '<', \"\r\n\r\n<!DOCTYPE \"... is not valid JSON",
+    "universe(hot/quotes)[gtimg]: 返回空"
+  ],
+  "prevCapturedAtBJ": "2026-11-26 12:00",
   "prevPools": {
     "zt": 52,
     "zb": 24,
     "seal_pct": 68.4
   },
   "rolling": {
-    "generatedAtBJ": "2026-11-26 12:00",
-    "minutes_to_close": 180,
+    "generatedAtBJ": "2026-11-26 12:30",
+    "minutes_to_close": 150,
     "trend_pool_mode": "trend",
     "streak_pool": [
       {
