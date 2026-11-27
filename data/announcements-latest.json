@@ -1,189 +1,67 @@
 {
- "date": "2026-11-26",
+ "date": "2026-11-27",
  "source": "sina-bulletin",
- "fetchedAt": "2026-11-26T21:18:29.331+08:00",
+ "fetchedAt": "2026-11-27T18:48:29.334+08:00",
  "codes": 40,
- "count": 25,
+ "count": 16,
  "announcements": {
-  "301059": "金三江：关于三江转债交易异常波动的公告",
-  "600103": "青山纸业：关于股票交易异常波动的公告",
-  "600185": "珠免集团：关于注销子公司的公告；珠免集团：董事会关于本次交易不存在《上市公司证券发行注册管理办法》第十一条规定的不得向特定对象发行股票的情形的说明；珠免集团：董事会关于本次交易符合《上市公司监管指引第9号——上市公司筹划和实施重大资产重组的监管要求》第四条规定的说明；珠免集团：董事会决议公告；珠免集团：发行股份及支付现金购买资产并募集配套资金暨关联交易预案；珠免集团：董事会关于本次交易履行法定程序的完备性、合规性及提交法律文件的有效性的说明；珠免集团：第九届董事会第四次独立董事专门会议决议；珠免集团：董事会关于本次交易相关主体不存在《上市公司监管指引第7号》第十二条及《上海证券交易所上市公司自律监管指引第6号》第三十条不得参与任何上市公司重大资产重组情形的说明；珠免集团：董事会关于本次交易采取的保密措施及保密制度的说明；珠免集团：董事会关于本次交易是否构成重大资产重组、关联交易及重组上市的说明；珠免集团：董事会关于本次交易符合《上市公司重大资产重组管理办法》第十一条、第四十三条和第四十四条规定的说明；珠免集团：董事会关于本次交易前12个月内购买、出售资产的说明；珠免集团：董事会关于公司股票价格在本次交易首次公告日前20个交易日内波动情况的说明；珠免集团：发行股份及支付现金购买资产并募集配套资金暨关联交易预案摘要；珠免集团：关于子公司挂牌出租部分闲置资产的公告；珠免集团：关于本次交易相关事项暂不提交股东会审议的公告；珠免集团：关于筹划重大资产重组事项停牌前一个交易日前十大股东和前十大流通股股东持股情况的公告；珠免集团：关于披露重大资产重组预案暨复牌的提示性公告；珠免集团：北京市嘉源律师事务所关于《珠海珠免集团股份有限公司收购报告书》之法律意见书；珠免集团：北京市嘉源律师事务所关于珠海市湾区资本投资运营有限公司免于发出要约事宜之法律意见书；珠免集团：收购报告书",
-  "600227": "赤天化：股票交易异常波动公告",
-  "600229": "城市传媒：股票交易异常波动公告",
+  "300085": "银之杰：关于为子公司提供担保的公告",
+  "300192": "科德教育：2026年第三次临时股东会决议公告；科德教育：关于放弃参股公司优先认购权暨关联交易的公告；科德教育：关于“跃迁者”第一期员工持股计划实施进展的公告；科德教育：北京德恒律师事务所关于苏州科德教育科技股份有限公司2026年第三次临时股东会的法律意见；科德教育：第七届董事会第九次(临时)会议决议公告",
   "600280": "中央商场：股票交易异常波动公告；中央商场：子公司破产进展公告",
-  "600467": "好当家：关于股票交易异常波动的公告",
-  "600499": "科达制造：北京市竞天公诚律师事务所关于森大集团有限公司对科达制造股份有限公司实施外国投资者战略投资之专项核查报告；科达制造：简式权益变动报告书(沈延昌及其一致行动人)；科达制造：关于公司持股5%以上股东协议转让部分股份暨权益变动的提示性公告；科达制造：关于子公司股权结构调整暨关联交易的公告；科达制造：简式权益变动报告书(梁桐灿及其一致行动人)",
   "600567": "山鹰国际：关于筹划重大事项进展暨复牌的公告；山鹰国际：北京博星证券投资顾问有限公司关于《山鹰国际控股股份公司要约收购报告书摘要》之财务顾问意见；山鹰国际：要约收购报告书摘要；山鹰国际：关于收到要约收购报告书摘要的提示性公告",
-  "600691": "潞化科技：北京大成(太原)律师事务所关于山西潞安化工科技股份有限公司2026年第四次临时股东会的法律意见书；潞化科技：2026年第四次临时股东会决议公告；潞化科技：2026年第三季度业绩说明会问答总结",
-  "600722": "金牛化工：股票交易风险提示公告；金牛化工：股票交易异常波动公告",
-  "600814": "杭州解百：股票交易异常波动公告；杭州解百：股票交易风险提示公告；杭州解百：股票交易异常波动公告",
-  "603030": "全筑股份：股票交易风险提示公告；全筑股份：关于股票交易异常波动的公告",
-  "603118": "共进股份：第五届董事会第二十九次会议决议公告；共进股份：关于以集中竞价方式回购股份方案的公告",
-  "603166": "福达股份：关于召开2026年第三季度业绩说明会的公告；福达股份：北京德恒律师事务所关于桂林福达股份有限公司回购注销2024年限制性股票激励计划首次授予部分股票的法律意见；福达股份：第七届董事会第九次会议决议公告；福达股份：关于回购注销2024年限制性股票激励计划首次授予部分股票的公告；福达股份：关于退出合伙企业投资的公告",
-  "603203": "快克智能：关于变更签字注册会计师的公告",
-  "603278": "大业股份：关于向全资子公司增资公告",
-  "603324": "盛剑科技：关于股票交易异常波动暨风险提示公告",
-  "603396": "金辰股份：关于召开2026年第三季度业绩说明会的公告",
-  "603960": "克来机电：关于股票交易的风险提示性公告；克来机电：关于上海克来机电自动化工程股份有限公司有关股价波动事项的监管工作函；克来机电：股票交易异常波动暨风险提示公告；克来机电：关于股票交易的风险提示性公告",
-  "605058": "澳弘电子：国金证券股份有限公司关于常州澳弘电子股份有限公司使用自有资金、外汇及信用证等方式支付募投项目款项并以募集资金等额置换的核查意见；澳弘电子：关于使用自有资金、外汇及信用证等方式支付募投项目款项并以募集资金等额置换的公告；澳弘电子：国金证券股份有限公司关于常州澳弘电子股份有限公司使用闲置募集资金进行现金管理的核查意见；澳弘电子：关于使用闲置募集资金进行现金管理的公告；澳弘电子：第三届董事会第二十次会议决议公告；澳弘电子：关于召开2026年第三次临时股东会的通知；澳弘电子：关于开展外汇衍生品交易业务的公告",
+  "603030": "全筑股份：股票交易风险提示公告；全筑股份：股票交易风险提示公告；全筑股份：关于股票交易异常波动的公告",
+  "603051": "鹿山新材：关于为子公司提供担保的公告",
+  "603960": "克来机电：关于股票交易的风险提示性公告；克来机电：关于上海克来机电自动化工程股份有限公司有关股价波动事项的监管工作函；克来机电：股票交易异常波动暨风险提示公告",
+  "002197": "证通电子：股票交易异常波动公告",
   "002651": "利君股份：股票交易异常波动公告",
   "002872": "天圣制药：股票交易异常波动公告",
   "002144": "宏达高科：股票交易异常波动公告",
-  "002197": "证通电子：股票交易异常波动公告"
+  "000889": "中嘉博创：关于召开2026年第三次临时股东会的提示性公告",
+  "000158": "常山北明：重大诉讼公告",
+  "002713": "东易日盛：第七届董事会第九次(临时)会议决议公告；东易日盛：关于控股股东无偿捐赠股权资产及现金资产暨关联交易的公告",
+  "000603": "盛达资源：关于股东部分股份质押的公告；盛达资源：投资者关系管理信息20261126",
+  "002815": "崇达技术：2026年11月26日投资者关系活动记录表；崇达技术：关于为子公司提供担保的进展公告"
  },
  "details": [
   {
-   "code": "301059",
-   "name": "金三江",
+   "code": "300085",
+   "name": "银之杰",
    "announcements": [
     {
-     "title": "金三江：关于三江转债交易异常波动的公告",
-     "date": "2026-11-25",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=301059&id=12723140"
-    }
-   ]
-  },
-  {
-   "code": "600103",
-   "name": "青山纸业",
-   "announcements": [
-    {
-     "title": "青山纸业：关于股票交易异常波动的公告",
+     "title": "银之杰：关于为子公司提供担保的公告",
      "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600103&id=12725992"
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=300085&id=12725897"
     }
    ]
   },
   {
-   "code": "600185",
-   "name": "珠免集团",
+   "code": "300192",
+   "name": "科德教育",
    "announcements": [
     {
-     "title": "珠免集团：关于注销子公司的公告",
+     "title": "科德教育：2026年第三次临时股东会决议公告",
      "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724617"
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=300192&id=12726966"
     },
     {
-     "title": "珠免集团：董事会关于本次交易不存在《上市公司证券发行注册管理办法》第十一条规定的不得向特定对象发行股票的情形的说明",
+     "title": "科德教育：关于放弃参股公司优先认购权暨关联交易的公告",
      "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724616"
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=300192&id=12726965"
     },
     {
-     "title": "珠免集团：董事会关于本次交易符合《上市公司监管指引第9号——上市公司筹划和实施重大资产重组的监管要求》第四条规定的说明",
+     "title": "科德教育：关于“跃迁者”第一期员工持股计划实施进展的公告",
      "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724615"
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=300192&id=12726964"
     },
     {
-     "title": "珠免集团：董事会决议公告",
+     "title": "科德教育：北京德恒律师事务所关于苏州科德教育科技股份有限公司2026年第三次临时股东会的法律意见",
      "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724614"
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=300192&id=12726963"
     },
     {
-     "title": "珠免集团：发行股份及支付现金购买资产并募集配套资金暨关联交易预案",
+     "title": "科德教育：第七届董事会第九次(临时)会议决议公告",
      "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724613"
-    },
-    {
-     "title": "珠免集团：董事会关于本次交易履行法定程序的完备性、合规性及提交法律文件的有效性的说明",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724612"
-    },
-    {
-     "title": "珠免集团：第九届董事会第四次独立董事专门会议决议",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724611"
-    },
-    {
-     "title": "珠免集团：董事会关于本次交易相关主体不存在《上市公司监管指引第7号》第十二条及《上海证券交易所上市公司自律监管指引第6号》第三十条不得参与任何上市公司重大资产重组情形的说明",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724610"
-    },
-    {
-     "title": "珠免集团：董事会关于本次交易采取的保密措施及保密制度的说明",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724609"
-    },
-    {
-     "title": "珠免集团：董事会关于本次交易是否构成重大资产重组、关联交易及重组上市的说明",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724608"
-    },
-    {
-     "title": "珠免集团：董事会关于本次交易符合《上市公司重大资产重组管理办法》第十一条、第四十三条和第四十四条规定的说明",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724607"
-    },
-    {
-     "title": "珠免集团：董事会关于本次交易前12个月内购买、出售资产的说明",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724606"
-    },
-    {
-     "title": "珠免集团：董事会关于公司股票价格在本次交易首次公告日前20个交易日内波动情况的说明",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724605"
-    },
-    {
-     "title": "珠免集团：发行股份及支付现金购买资产并募集配套资金暨关联交易预案摘要",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724604"
-    },
-    {
-     "title": "珠免集团：关于子公司挂牌出租部分闲置资产的公告",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724603"
-    },
-    {
-     "title": "珠免集团：关于本次交易相关事项暂不提交股东会审议的公告",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724602"
-    },
-    {
-     "title": "珠免集团：关于筹划重大资产重组事项停牌前一个交易日前十大股东和前十大流通股股东持股情况的公告",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724601"
-    },
-    {
-     "title": "珠免集团：关于披露重大资产重组预案暨复牌的提示性公告",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12724590"
-    },
-    {
-     "title": "珠免集团：北京市嘉源律师事务所关于《珠海珠免集团股份有限公司收购报告书》之法律意见书",
-     "date": "2026-11-25",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12722374"
-    },
-    {
-     "title": "珠免集团：北京市嘉源律师事务所关于珠海市湾区资本投资运营有限公司免于发出要约事宜之法律意见书",
-     "date": "2026-11-25",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12722373"
-    },
-    {
-     "title": "珠免集团：收购报告书",
-     "date": "2026-11-25",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600185&id=12722372"
-    }
-   ]
-  },
-  {
-   "code": "600227",
-   "name": "赤天化",
-   "announcements": [
-    {
-     "title": "赤天化：股票交易异常波动公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600227&id=12725749"
-    }
-   ]
-  },
-  {
-   "code": "600229",
-   "name": "城市传媒",
-   "announcements": [
-    {
-     "title": "城市传媒：股票交易异常波动公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600229&id=12726457"
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=300192&id=12726960"
     }
    ]
   },
@@ -200,48 +78,6 @@
      "title": "中央商场：子公司破产进展公告",
      "date": "2026-11-26",
      "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600280&id=12723802"
-    }
-   ]
-  },
-  {
-   "code": "600467",
-   "name": "好当家",
-   "announcements": [
-    {
-     "title": "好当家：关于股票交易异常波动的公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600467&id=12726276"
-    }
-   ]
-  },
-  {
-   "code": "600499",
-   "name": "科达制造",
-   "announcements": [
-    {
-     "title": "科达制造：北京市竞天公诚律师事务所关于森大集团有限公司对科达制造股份有限公司实施外国投资者战略投资之专项核查报告",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600499&id=12724449"
-    },
-    {
-     "title": "科达制造：简式权益变动报告书(沈延昌及其一致行动人)",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600499&id=12724448"
-    },
-    {
-     "title": "科达制造：关于公司持股5%以上股东协议转让部分股份暨权益变动的提示性公告",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600499&id=12724447"
-    },
-    {
-     "title": "科达制造：关于子公司股权结构调整暨关联交易的公告",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600499&id=12724446"
-    },
-    {
-     "title": "科达制造：简式权益变动报告书(梁桐灿及其一致行动人)",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600499&id=12724445"
     }
    ]
   },
@@ -272,67 +108,14 @@
    ]
   },
   {
-   "code": "600691",
-   "name": "潞化科技",
-   "announcements": [
-    {
-     "title": "潞化科技：北京大成(太原)律师事务所关于山西潞安化工科技股份有限公司2026年第四次临时股东会的法律意见书",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600691&id=12726420"
-    },
-    {
-     "title": "潞化科技：2026年第四次临时股东会决议公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600691&id=12726418"
-    },
-    {
-     "title": "潞化科技：2026年第三季度业绩说明会问答总结",
-     "date": "2026-11-25",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600691&id=12723663"
-    }
-   ]
-  },
-  {
-   "code": "600722",
-   "name": "金牛化工",
-   "announcements": [
-    {
-     "title": "金牛化工：股票交易风险提示公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600722&id=12725417"
-    },
-    {
-     "title": "金牛化工：股票交易异常波动公告",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600722&id=12723685"
-    }
-   ]
-  },
-  {
-   "code": "600814",
-   "name": "杭州解百",
-   "announcements": [
-    {
-     "title": "杭州解百：股票交易异常波动公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600814&id=12726008"
-    },
-    {
-     "title": "杭州解百：股票交易风险提示公告",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600814&id=12723811"
-    },
-    {
-     "title": "杭州解百：股票交易异常波动公告",
-     "date": "2026-11-25",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=600814&id=12722537"
-    }
-   ]
-  },
-  {
    "code": "603030",
    "name": "全筑股份",
    "announcements": [
+    {
+     "title": "全筑股份：股票交易风险提示公告",
+     "date": "2026-11-28",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603030&id=12727932"
+    },
     {
      "title": "全筑股份：股票交易风险提示公告",
      "date": "2026-11-27",
@@ -346,93 +129,13 @@
    ]
   },
   {
-   "code": "603118",
-   "name": "共进股份",
+   "code": "603051",
+   "name": "鹿山新材",
    "announcements": [
     {
-     "title": "共进股份：第五届董事会第二十九次会议决议公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603118&id=12725867"
-    },
-    {
-     "title": "共进股份：关于以集中竞价方式回购股份方案的公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603118&id=12725866"
-    }
-   ]
-  },
-  {
-   "code": "603166",
-   "name": "福达股份",
-   "announcements": [
-    {
-     "title": "福达股份：关于召开2026年第三季度业绩说明会的公告",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603166&id=12722806"
-    },
-    {
-     "title": "福达股份：北京德恒律师事务所关于桂林福达股份有限公司回购注销2024年限制性股票激励计划首次授予部分股票的法律意见",
-     "date": "2026-11-25",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603166&id=12720860"
-    },
-    {
-     "title": "福达股份：第七届董事会第九次会议决议公告",
-     "date": "2026-11-25",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603166&id=12720858"
-    },
-    {
-     "title": "福达股份：关于回购注销2024年限制性股票激励计划首次授予部分股票的公告",
-     "date": "2026-11-25",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603166&id=12720857"
-    },
-    {
-     "title": "福达股份：关于退出合伙企业投资的公告",
-     "date": "2026-11-25",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603166&id=12720856"
-    }
-   ]
-  },
-  {
-   "code": "603203",
-   "name": "快克智能",
-   "announcements": [
-    {
-     "title": "快克智能：关于变更签字注册会计师的公告",
-     "date": "2026-11-25",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603203&id=12720773"
-    }
-   ]
-  },
-  {
-   "code": "603278",
-   "name": "大业股份",
-   "announcements": [
-    {
-     "title": "大业股份：关于向全资子公司增资公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603278&id=12726183"
-    }
-   ]
-  },
-  {
-   "code": "603324",
-   "name": "盛剑科技",
-   "announcements": [
-    {
-     "title": "盛剑科技：关于股票交易异常波动暨风险提示公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603324&id=12726019"
-    }
-   ]
-  },
-  {
-   "code": "603396",
-   "name": "金辰股份",
-   "announcements": [
-    {
-     "title": "金辰股份：关于召开2026年第三季度业绩说明会的公告",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603396&id=12723761"
+     "title": "鹿山新材：关于为子公司提供担保的公告",
+     "date": "2026-11-28",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603051&id=12727941"
     }
    ]
   },
@@ -454,52 +157,17 @@
      "title": "克来机电：股票交易异常波动暨风险提示公告",
      "date": "2026-11-26",
      "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603960&id=12724200"
-    },
-    {
-     "title": "克来机电：关于股票交易的风险提示性公告",
-     "date": "2026-11-25",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=603960&id=12721770"
     }
    ]
   },
   {
-   "code": "605058",
-   "name": "澳弘电子",
+   "code": "002197",
+   "name": "证通电子",
    "announcements": [
     {
-     "title": "澳弘电子：国金证券股份有限公司关于常州澳弘电子股份有限公司使用自有资金、外汇及信用证等方式支付募投项目款项并以募集资金等额置换的核查意见",
+     "title": "证通电子：股票交易异常波动公告",
      "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605058&id=12726337"
-    },
-    {
-     "title": "澳弘电子：关于使用自有资金、外汇及信用证等方式支付募投项目款项并以募集资金等额置换的公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605058&id=12726336"
-    },
-    {
-     "title": "澳弘电子：国金证券股份有限公司关于常州澳弘电子股份有限公司使用闲置募集资金进行现金管理的核查意见",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605058&id=12726335"
-    },
-    {
-     "title": "澳弘电子：关于使用闲置募集资金进行现金管理的公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605058&id=12726334"
-    },
-    {
-     "title": "澳弘电子：第三届董事会第二十次会议决议公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605058&id=12726333"
-    },
-    {
-     "title": "澳弘电子：关于召开2026年第三次临时股东会的通知",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605058&id=12726332"
-    },
-    {
-     "title": "澳弘电子：关于开展外汇衍生品交易业务的公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=605058&id=12726331"
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002197&id=12726324"
     }
    ]
   },
@@ -537,13 +205,72 @@
    ]
   },
   {
-   "code": "002197",
-   "name": "证通电子",
+   "code": "000889",
+   "name": "中嘉博创",
    "announcements": [
     {
-     "title": "证通电子：股票交易异常波动公告",
+     "title": "中嘉博创：关于召开2026年第三次临时股东会的提示性公告",
+     "date": "2026-11-28",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000889&id=12728328"
+    }
+   ]
+  },
+  {
+   "code": "000158",
+   "name": "常山北明",
+   "announcements": [
+    {
+     "title": "常山北明：重大诉讼公告",
+     "date": "2026-11-28",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000158&id=12728665"
+    }
+   ]
+  },
+  {
+   "code": "002713",
+   "name": "东易日盛",
+   "announcements": [
+    {
+     "title": "东易日盛：第七届董事会第九次(临时)会议决议公告",
+     "date": "2026-11-26",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002713&id=12724233"
+    },
+    {
+     "title": "东易日盛：关于控股股东无偿捐赠股权资产及现金资产暨关联交易的公告",
+     "date": "2026-11-26",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002713&id=12724226"
+    }
+   ]
+  },
+  {
+   "code": "000603",
+   "name": "盛达资源",
+   "announcements": [
+    {
+     "title": "盛达资源：关于股东部分股份质押的公告",
      "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002197&id=12726324"
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000603&id=12726172"
+    },
+    {
+     "title": "盛达资源：投资者关系管理信息20261126",
+     "date": "2026-11-26",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000603&id=12726106"
+    }
+   ]
+  },
+  {
+   "code": "002815",
+   "name": "崇达技术",
+   "announcements": [
+    {
+     "title": "崇达技术：2026年11月26日投资者关系活动记录表",
+     "date": "2026-11-26",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002815&id=12726017"
+    },
+    {
+     "title": "崇达技术：关于为子公司提供担保的进展公告",
+     "date": "2026-11-26",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002815&id=12723026"
     }
    ]
   }

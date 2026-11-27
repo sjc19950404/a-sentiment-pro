@@ -1,22 +1,31 @@
 {
  "kind": "llm-risk-blacklist",
  "version": 1,
- "asOfDate": "2026-11-26",
- "generatedAt": "2026-11-26T21:18:55.526+08:00",
+ "asOfDate": "2026-11-27",
+ "generatedAt": "2026-11-27T18:48:53.354+08:00",
  "model": "glm-4-flash",
  "source": "announcements-latest.json",
- "scanned": 25,
+ "scanned": 16,
  "universe": "ladder",
  "limit": 40,
  "blacklist": [
   {
    "code": "603960",
-   "name": "克莱机电",
+   "name": "克来机电",
    "riskLevel": "medium",
    "reasons": [
     "监管工作函"
    ],
-   "evidence": "克来机电：关于股票交易的风险提示性公告；克来机电：关于上海克来机电自动化工程股份有限公司有关股价波动事项的监管工作函；克来机电：股票交易异常波动暨风险提示公告；克来机电：关于股票交易的风险提示性公告"
+   "evidence": "克来机电：关于股票交易的风险提示性公告；克来机电：关于上海克来机电自动化工程股份有限公司有关股价波动事项的监管工作函；克来机电：股票交易异常波动暨风险提示公告"
+  },
+  {
+   "code": "000158",
+   "name": "常山北明",
+   "riskLevel": "high",
+   "reasons": [
+    "重大诉讼公告"
+   ],
+   "evidence": "常山北明：重大诉讼公告"
   }
  ],
  "degraded": false,

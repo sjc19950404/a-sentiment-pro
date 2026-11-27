@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-27",
- "generated_at": "2026-11-27T00:55:03.405Z",
+ "generated_at": "2026-11-27T10:49:01.436Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "fresh",
+   "dual_track": "stale",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -81,12 +81,12 @@
    "confidence": "measured"
   },
   "prev_nav": {
-   "source": "derived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "positions": {
-   "source": "archived",
-   "confidence": "measured"
+   "source": "missing",
+   "confidence": "missing"
   },
   "overnight_exposure": {
    "source": "archived",
@@ -122,7 +122,7 @@
   }
  },
  "payload": {
-  "date": "2026-11-26",
+  "date": "2026-11-27",
   "grid_triggers": null,
   "counter_trend_losses": null,
   "pnl_daily": 0,
@@ -132,19 +132,7 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": {
-   "key": "ebb",
-   "label": "退潮",
-   "score": 65.02,
-   "cap": null,
-   "position_range": null,
-   "positionReconcile": null,
-   "marketTierVersion": "marketTier/v5.3-alert_only",
-   "alertOnly": true,
-   "clustering_bubble": false,
-   "sentiment_penalty": 0,
-   "score_adjusted": 65.02
-  },
+  "regime": null,
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -155,10 +143,9 @@
    {
     "key": "a50",
     "name": "富时中国A50期货",
-    "chgPct": -0.000051000000000000006,
-    "state": "ok",
-    "stale": false,
-    "cacheNote": null
+    "chgPct": null,
+    "state": "night-open",
+    "nightOpen": true
    },
    {
     "key": "sox",
@@ -170,24 +157,15 @@
    }
   ],
   "externalStale": [
-   "外围「恒生指数」（外围未刷新到最新会话），已置空",
-   "外围「恒生科技」（外围未刷新到最新会话），已置空"
+   "外围「富时中国A50期货」（外围未刷新到最新会话），已置空"
   ],
   "nav_realtime": 1000000,
-  "prev_nav": 0.9229118009342208,
-  "positions": {
-   "targetPos": {
-    "上证指数": 0.35,
-    "深证成指": 0.2,
-    "创业板指": 0.2
-   },
-   "poolPos": 0.25,
-   "executed": true
-  },
+  "prev_nav": null,
+  "positions": null,
   "overnight_exposure": {
-   "a50_chgPct": -0.000051000000000000006,
-   "a50NightOpen": false,
-   "posGap": 0.15,
+   "a50_chgPct": null,
+   "a50NightOpen": true,
+   "posGap": null,
    "us_close": {
     "dji": 0.0032840000000000005,
     "spx": -0.002543,
@@ -197,10 +175,10 @@
     "hxc": 0.018715,
     "fxi": -0.004136
    },
-   "cnh_chgPct": 0.000135,
-   "usReady": true,
-   "usReason": "美东 19:55 ET 已收盘（≥16:30 ET），可采信当日收盘",
-   "usPrevSessionClose": false
+   "cnh_chgPct": -0.001021,
+   "usReady": false,
+   "usReason": "美东 05:44 ET 盘前（09:30 才开盘）——源给的是上一交易日收盘，可作「上一交易日收盘」用；今日收盘需等 16:30 ET",
+   "usPrevSessionClose": true
   },
   "key_levels": null,
   "events_today": null,
@@ -210,89 +188,89 @@
    "basis": "pain.advance.detail 昨收口径连板梯队（封板质量以晋级结果+近期上榜频次代理，个股级封单额无档案）；不含操作建议",
    "ladder": [
     {
-     "code": "002579",
-     "name": "中京电子",
-     "lb": 5,
-     "kept": false,
-     "chg": 7.91,
-     "appearances": 31
-    },
-    {
-     "code": "002548",
-     "name": "金新农",
-     "lb": 4,
-     "kept": false,
-     "chg": 6.39,
-     "appearances": 7
-    },
-    {
      "code": "603960",
      "name": "克来机电",
-     "lb": 4,
+     "lb": 5,
      "kept": true,
-     "chg": 10,
-     "appearances": 7
-    },
-    {
-     "code": "300703",
-     "name": "创源股份",
-     "lb": 3,
-     "kept": false,
-     "chg": -8.43,
-     "appearances": 4
-    },
-    {
-     "code": "002164",
-     "name": "宁波东力",
-     "lb": 3,
-     "kept": false,
-     "chg": -2.95,
-     "appearances": 15
-    },
-    {
-     "code": "603926",
-     "name": "铁流股份",
-     "lb": 3,
-     "kept": false,
-     "chg": 2.67,
-     "appearances": 7
-    },
-    {
-     "code": "002122",
-     "name": "汇洲智能",
-     "lb": 3,
-     "kept": false,
-     "chg": 5.85,
-     "appearances": 6
-    },
-    {
-     "code": "002242",
-     "name": "九阳股份",
-     "lb": 3,
-     "kept": false,
-     "chg": 8.66,
-     "appearances": 17
+     "chg": 10.02,
+     "appearances": 8
     },
     {
      "code": "600814",
      "name": "杭州解百",
-     "lb": 3,
-     "kept": true,
-     "chg": 10.06,
+     "lb": 4,
+     "kept": false,
+     "chg": 3.7,
      "appearances": 6
     },
     {
-     "code": "603360",
-     "name": "百傲化学",
+     "code": "600722",
+     "name": "金牛化工",
+     "lb": 3,
+     "kept": false,
+     "chg": 4.77,
+     "appearances": 36
+    },
+    {
+     "code": "002872",
+     "name": "天圣制药",
+     "lb": 3,
+     "kept": true,
+     "chg": 9.99,
+     "appearances": 5
+    },
+    {
+     "code": "002651",
+     "name": "利君股份",
+     "lb": 3,
+     "kept": true,
+     "chg": 10.01,
+     "appearances": 7
+    },
+    {
+     "code": "603030",
+     "name": "全筑股份",
+     "lb": 3,
+     "kept": true,
+     "chg": 10.1,
+     "appearances": 8
+    },
+    {
+     "code": "600467",
+     "name": "好当家",
      "lb": 2,
      "kept": false,
-     "chg": 6.53,
+     "chg": -4.04,
+     "appearances": 13
+    },
+    {
+     "code": "600103",
+     "name": "青山纸业",
+     "lb": 2,
+     "kept": false,
+     "chg": -2.17,
+     "appearances": 20
+    },
+    {
+     "code": "600227",
+     "name": "赤天化",
+     "lb": 2,
+     "kept": false,
+     "chg": -1.41,
+     "appearances": 41
+    },
+    {
+     "code": "600229",
+     "name": "城市传媒",
+     "lb": 2,
+     "kept": false,
+     "chg": 1.51,
      "appearances": 6
     }
    ],
    "overnight_sectors": null,
    "max_lb": 5,
-   "broken_limit_ratio": 0.30851063829787234
+   "broken_limit_ratio": 0.0915032679738562
   },
   "simulation_stock": null,
   "ma20_degraded": false,

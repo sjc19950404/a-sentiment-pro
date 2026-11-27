@@ -1,27 +1,27 @@
 {
  "kind": "version-regression",
  "version": "1.0",
- "generatedAt": "2026-11-26T13:14:19.787Z",
+ "generatedAt": "2026-11-27T10:44:58.076Z",
  "baseline": "v5.2-pro",
  "formulaVersion": "v5.2-pro",
  "sample": {
-  "archiveDays": 274,
-  "mainDays": 274,
-  "withNextRet": 273,
+  "archiveDays": 275,
+  "mainDays": 275,
+  "withNextRet": 274,
   "dateRange": [
    "2025-10-09",
-   "2026-11-26"
+   "2026-11-27"
   ],
   "partialDays": 0,
   "noneDays": 0,
   "breadthProxyDays": 9
  },
  "cautions": [
-  "主样本 273 个交易日（含次日收益），相关系数的 95% 置信区间约 ±0.12——足以暴露量级差异与方向性异常，但版本间小幅差异仍不足以判定优劣，需样本外证据佐证。",
-  "本样本中有 9/274 天缺少涨跌家数真值（up_count/down_count），s_pos 因子走 posRatio 代理——版本间差异会被代理值稀释，真实差异应大于本表所示。",
+  "主样本 274 个交易日（含次日收益），相关系数的 95% 置信区间约 ±0.12——足以暴露量级差异与方向性异常，但版本间小幅差异仍不足以判定优劣，需样本外证据佐证。",
+  "本样本中有 9/275 天缺少涨跌家数真值（up_count/down_count），s_pos 因子走 posRatio 代理——版本间差异会被代理值稀释，真实差异应大于本表所示。",
   "版本差异可归因于「净买原料口径」（v4.5 全量 / v5.0 当日 / v5.2 当日剔新股）与「s_net 归一方式」（v5.3 分位映射 vs 其余 tanh5）两个维度；其余因子在各版本中完全相同。",
-  "v5.3-pro 的均分相对基线偏移 -3.71 分（63.7 → 60.0），这是**分位归一转 positive 作用的必然结果**：tanh(x/5) 把中位数交易日顶到 97 分以上，分位映射把中位数拉回 50 分——即\"削掉了虚高\"。⚠ 因此切换基线**必须同步重标定档位阈值（24/65/80）**，否则大量原本判\"满仓\"的日子会掉到\"半仓\"档，这是口径变更而非市场变化。",
-  "饱和改善：s_net ≥99.9 的天数 82/273 → 0/273（候选版 vs 基线）。这是 v5.3 存在的**唯一设计目标**，已达成；但它不能被解读为\"预测力更强\"——Pearson 差异在 n=273 下不显著。"
+  "v5.3-pro 的均分相对基线偏移 -3.72 分（63.7 → 60.0），这是**分位归一转 positive 作用的必然结果**：tanh(x/5) 把中位数交易日顶到 97 分以上，分位映射把中位数拉回 50 分——即\"削掉了虚高\"。⚠ 因此切换基线**必须同步重标定档位阈值（24/65/80）**，否则大量原本判\"满仓\"的日子会掉到\"半仓\"档，这是口径变更而非市场变化。",
+  "饱和改善：s_net ≥99.9 的天数 82/274 → 0/274（候选版 vs 基线）。这是 v5.3 存在的**唯一设计目标**，已达成；但它不能被解读为\"预测力更强\"——Pearson 差异在 n=274 下不显著。"
  ],
  "versions": [
   {
@@ -63,113 +63,113 @@
    "version": "v4.5",
    "name": "v4.5",
    "desc": "七个因子加权，净买取全量聚合（未滤区间累计榜、未剔新股）",
-   "scoreMean": 65.71391941391946,
-   "scoreStdev": 15.442498548484721,
+   "scoreMean": 65.71240875912413,
+   "scoreStdev": 15.414209919314688,
    "scoreMin": 17.9,
    "scoreMax": 92.5,
    "sNetSaturated": 130,
    "sNetMissing": 0,
-   "sNetOk": 273,
-   "pearson": 0.0006814454392688445,
-   "spearman": -0.005038174850319607,
+   "sNetOk": 274,
+   "pearson": 0.00026775257213004853,
+   "spearman": -0.0055076675502936205,
    "direction": {
-    "acc": 0.4870848708487085,
-    "hit": 132,
-    "total": 271,
-    "median": 67.6
+    "acc": 0.4854014598540146,
+    "hit": 133,
+    "total": 274,
+    "median": 67.55
    },
-   "netPearson": 0.010824909129182547,
-   "n": 273,
+   "netPearson": 0.006331551964765671,
+   "n": 274,
    "normalizer": "tanh5"
   },
   "v5.0": {
    "version": "v5.0",
    "name": "v5.0",
    "desc": "七个因子加权，净买取当日榜（滤掉区间累计榜），仍含新股",
-   "scoreMean": 63.89230769230769,
-   "scoreStdev": 16.136389484976483,
+   "scoreMean": 63.897445255474445,
+   "scoreStdev": 16.107033047581826,
    "scoreMin": 17.9,
    "scoreMax": 92.5,
    "sNetSaturated": 82,
    "sNetMissing": 0,
-   "sNetOk": 273,
-   "pearson": 0.014572504714230102,
-   "spearman": 0.010140487279448274,
+   "sNetOk": 274,
+   "pearson": 0.015417647478586262,
+   "spearman": 0.01000740014161111,
    "direction": {
-    "acc": 0.5,
+    "acc": 0.4981549815498155,
     "hit": 135,
-    "total": 270,
+    "total": 271,
     "median": 66.1
    },
-   "netPearson": 0.05906637366833975,
-   "n": 273,
+   "netPearson": 0.058554582068539654,
+   "n": 274,
    "normalizer": "tanh5"
   },
   "v5.2-pro": {
    "version": "v5.2-pro",
    "name": "v5.2-pro",
    "desc": "七个因子加权，净买取当日榜并剔除新股/无涨跌幅限制标的（当前基线）",
-   "scoreMean": 63.66483516483514,
-   "scoreStdev": 16.197587694575535,
+   "scoreMean": 63.670802919708,
+   "scoreStdev": 16.16819634280003,
    "scoreMin": 17.9,
    "scoreMax": 92.4,
    "sNetSaturated": 82,
    "sNetMissing": 0,
-   "sNetOk": 273,
-   "pearson": 0.01669851867432994,
-   "spearman": 0.013027348156731124,
+   "sNetOk": 274,
+   "pearson": 0.01768135885330138,
+   "spearman": 0.013045947474171517,
    "direction": {
-    "acc": 0.5037037037037037,
-    "hit": 136,
-    "total": 270,
-    "median": 66.1
+    "acc": 0.5,
+    "hit": 137,
+    "total": 274,
+    "median": 65.85
    },
-   "netPearson": 0.05906637366833975,
-   "n": 273,
+   "netPearson": 0.058554582068539654,
+   "n": 274,
    "normalizer": "tanh5"
   },
   "v5.3-pro": {
    "version": "v5.3-pro",
    "name": "v5.3-pro",
    "desc": "七个因子加权，净买口径同 v5.2，但 s_net 归一改为滚动分位映射（缓解 tanh 饱和）",
-   "scoreMean": 59.954212454212445,
-   "scoreStdev": 14.848174978922396,
+   "scoreMean": 59.95145985401459,
+   "scoreStdev": 14.821025607521975,
    "scoreMin": 21.5,
    "scoreMax": 89.6,
    "sNetSaturated": 0,
    "sNetMissing": 0,
-   "sNetOk": 273,
-   "pearson": 0.020103911329174225,
-   "spearman": -0.007734193357088992,
+   "sNetOk": 274,
+   "pearson": 0.018758442320977176,
+   "spearman": -0.008187399240421542,
    "direction": {
-    "acc": 0.4870848708487085,
-    "hit": 132,
-    "total": 271,
-    "median": 60.6
+    "acc": 0.4854014598540146,
+    "hit": 133,
+    "total": 274,
+    "median": 60.5
    },
-   "netPearson": 0.05906637366833975,
-   "n": 273,
+   "netPearson": 0.058554582068539654,
+   "n": 274,
    "normalizer": "percentile"
   }
  },
  "shifts": {
   "v4.5": {
    "vs": "v5.2-pro",
-   "meanDiff": 2.0490842490842494,
+   "meanDiff": 2.0416058394160586,
    "maxAbsDiff": 19.500000000000007,
    "changedDays": 178
   },
   "v5.0": {
    "vs": "v5.2-pro",
-   "meanDiff": 0.2274725274725273,
+   "meanDiff": 0.22664233576642318,
    "maxAbsDiff": 9.399999999999991,
    "changedDays": 32
   },
   "v5.3-pro": {
    "vs": "v5.2-pro",
-   "meanDiff": -3.71062271062271,
+   "meanDiff": -3.71934306569343,
    "maxAbsDiff": 15,
-   "changedDays": 273
+   "changedDays": 274
   }
  },
  "daily": [
@@ -11641,9 +11641,9 @@
   },
   {
    "trade_date": "2026-11-26",
-   "nextDate": null,
-   "nextRet": null,
-   "nextGapDays": null,
+   "nextDate": "2026-11-27",
+   "nextRet": 3.73,
+   "nextGapDays": 1,
    "scores": {
     "v4.5": 65.3,
     "v5.0": 65.3,
@@ -11661,6 +11661,48 @@
     "v5.0": 98.9,
     "v5.2-pro": 98.9,
     "v5.3-pro": 68.3
+   },
+   "sNetCaliber": {
+    "v4.5": {
+     "normalizer": "tanh5",
+     "histLen": 60
+    },
+    "v5.0": {
+     "normalizer": "tanh5",
+     "histLen": 60
+    },
+    "v5.2-pro": {
+     "normalizer": "tanh5",
+     "histLen": 60
+    },
+    "v5.3-pro": {
+     "normalizer": "percentile",
+     "histLen": 60
+    }
+   }
+  },
+  {
+   "trade_date": "2026-11-27",
+   "nextDate": null,
+   "nextRet": null,
+   "nextGapDays": null,
+   "scores": {
+    "v4.5": 94.4,
+    "v5.0": 94.3,
+    "v5.2-pro": 94.3,
+    "v5.3-pro": 89.4
+   },
+   "nets": {
+    "v4.5": 13.67,
+    "v5.0": 11.67,
+    "v5.2-pro": 11.67,
+    "v5.3-pro": 11.67
+   },
+   "sNet": {
+    "v4.5": 99.6,
+    "v5.0": 99.1,
+    "v5.2-pro": 99.1,
+    "v5.3-pro": 75
    },
    "sNetCaliber": {
     "v4.5": {

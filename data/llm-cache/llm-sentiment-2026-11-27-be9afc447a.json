@@ -1,0 +1,63 @@
+{
+ "kind": "llm-cache",
+ "name": "llm-sentiment",
+ "asOfDate": "2026-11-27",
+ "hash": "be9afc447a",
+ "cachedAt": "2026-11-27T10:38:04.706Z",
+ "parsed": {
+  "sentiment": 1,
+  "confidence": 0.9,
+  "reason": "市场涨停家数远超跌停家数，强势股多数受益于行业催化和政策支持，市场情绪极度正面。",
+  "events": [
+   {
+    "type": "行业催化",
+    "target": "机器人零部件",
+    "tone": "positive",
+    "note": "新晋题材带动市场情绪"
+   },
+   {
+    "type": "行业催化",
+    "target": "重组推进",
+    "tone": "positive",
+    "note": "重组题材活跃，提升市场活力"
+   },
+   {
+    "type": "行业催化",
+    "target": "湖南国资",
+    "tone": "positive",
+    "note": "地方国资改革题材受到关注"
+   },
+   {
+    "type": "行业催化",
+    "target": "猪饲料",
+    "tone": "positive",
+    "note": "农业相关题材受到市场关注"
+   },
+   {
+    "type": "行业催化",
+    "target": "生猪养殖",
+    "tone": "positive",
+    "note": "养殖行业受益于市场情绪"
+   },
+   {
+    "type": "行业催化",
+    "target": "AI算力",
+    "tone": "positive",
+    "note": "AI算力持续受到市场追捧"
+   },
+   {
+    "type": "行业催化",
+    "target": "百货零售",
+    "tone": "positive",
+    "note": "零售行业受益于消费复苏"
+   },
+   {
+    "type": "行业催化",
+    "target": "机器人",
+    "tone": "positive",
+    "note": "机器人概念持续活跃"
+   }
+  ]
+ },
+ "model": "glm-4-flash"
+}

@@ -1,14 +1,14 @@
 {
   "active": false,
   "forced_close": false,
-  "is_friday": false,
+  "is_friday": true,
   "cap": 0.2,
   "regimeKey": "ebb",
   "momentum_missing": false,
-  "reason": "未触发（强制空仓=false｜周五=false）",
+  "reason": "未触发（强制空仓=false｜周五=true）",
   "recommendation": null,
-  "date": "2026-11-26",
-  "generated_at": "2026-11-26T13:19:06.207+08:00",
+  "date": "2026-11-27",
+  "generated_at": "2026-11-27T10:49:02.103+08:00",
   "source": {
     "dual_track": "data/paper/dual_track_latest.json",
     "kline": [

@@ -1,69 +1,69 @@
 {
  "kind": "llm-sentiment-latest",
  "version": 1,
- "asOfDate": "2026-11-26",
- "generatedAt": "2026-11-26T21:04:53.899+08:00",
+ "asOfDate": "2026-11-27",
+ "generatedAt": "2026-11-27T18:38:04.707+08:00",
  "cachedFrom": null,
  "model": "glm-4-flash",
- "sentiment": 0.5,
- "confidence": 0.8,
- "reason": "市场整体情绪稳定，涨停家数较多，题材活跃，但炸板率较高，显示市场情绪波动。",
+ "sentiment": 1,
+ "confidence": 0.9,
+ "reason": "市场涨停家数远超跌停家数，强势股多数受益于行业催化和政策支持，市场情绪极度正面。",
  "events": [
   {
-   "type": "业绩预告",
-   "target": "业绩线",
-   "tone": "negative",
-   "note": "业绩线题材退潮，影响市场情绪"
-  },
-  {
-   "type": "高管变动",
-   "target": "*ST建艺",
+   "type": "行业催化",
+   "target": "机器人零部件",
    "tone": "positive",
-   "note": "庭外重组消息提振股价"
-  },
-  {
-   "type": "减持",
-   "target": "无",
-   "tone": "neutral",
-   "note": "无重要减持事件"
-  },
-  {
-   "type": "政策",
-   "target": "无",
-   "tone": "neutral",
-   "note": "无重大政策影响"
+   "note": "新晋题材带动市场情绪"
   },
   {
    "type": "行业催化",
-   "target": "数据中心液冷",
+   "target": "重组推进",
    "tone": "positive",
-   "note": "数据中心液冷题材新晋活跃"
+   "note": "重组题材活跃，提升市场活力"
   },
   {
    "type": "行业催化",
-   "target": "天然气",
+   "target": "湖南国资",
    "tone": "positive",
-   "note": "天然气题材新晋活跃"
+   "note": "地方国资改革题材受到关注"
   },
   {
    "type": "行业催化",
-   "target": "水产养殖",
+   "target": "猪饲料",
    "tone": "positive",
-   "note": "水产养殖题材新晋活跃"
+   "note": "农业相关题材受到市场关注"
   },
   {
    "type": "行业催化",
-   "target": "AI漫剧",
+   "target": "生猪养殖",
    "tone": "positive",
-   "note": "AI漫剧题材新晋活跃"
+   "note": "养殖行业受益于市场情绪"
+  },
+  {
+   "type": "行业催化",
+   "target": "AI算力",
+   "tone": "positive",
+   "note": "AI算力持续受到市场追捧"
+  },
+  {
+   "type": "行业催化",
+   "target": "百货零售",
+   "tone": "positive",
+   "note": "零售行业受益于消费复苏"
+  },
+  {
+   "type": "行业催化",
+   "target": "机器人",
+   "tone": "positive",
+   "note": "机器人概念持续活跃"
   }
  ],
  "inputDigest": {
-  "themes": 85,
+  "themes": 278,
   "hotListed": 15,
-  "ztCount": 65,
-  "emotionValue": 65,
-  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 33%、高位板晋级失败 57%，赚钱效应占优）"
+  "ztCount": 417,
+  "emotionValue": 93.9,
+  "painVerdict": "接力顺畅（昨涨停今日翻绿仅 15%、高位板晋级失败 50%，赚钱效应占优）"
  },
  "note": "消费端（src/llm_sentiment.js）执行 ±5 上限/原分不动/观望区与反向不生效；本文件只是证据留痕，sentiment 原始值不经截断。"
 }
