@@ -2,6 +2,19 @@
  "schema_version": "1.0",
  "pushed": [
   {
+   "fingerprint": "738ed81fc4a72913_720",
+   "type": "intraday",
+   "date": "2026-11-27",
+   "verified": {
+    "checked_at": "09:35",
+    "snapshot_at": "2026-11-27 09:35",
+    "removed": 0,
+    "degraded": false,
+    "skipped": true
+   },
+   "pushed_at": "2026-11-27T01:35:07.043Z"
+  },
+  {
    "fingerprint": "3603839f9a9c01df_caa",
    "type": "pre_market",
    "date": "2026-11-27",
@@ -1181,19 +1194,6 @@
     "skipped": true
    },
    "pushed_at": "2026-10-28T06:05:04.171Z"
-  },
-  {
-   "fingerprint": "733954eb7a57b2f9_7b4",
-   "type": "intraday",
-   "date": "2026-10-28",
-   "verified": {
-    "checked_at": "09:35",
-    "snapshot_at": "2026-10-28 09:30",
-    "removed": 0,
-    "degraded": false,
-    "skipped": true
-   },
-   "pushed_at": "2026-10-28T01:35:04.625Z"
   }
  ]
 }
