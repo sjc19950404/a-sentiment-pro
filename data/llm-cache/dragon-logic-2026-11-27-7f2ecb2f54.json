@@ -1,0 +1,409 @@
+{
+ "kind": "llm-cache",
+ "name": "dragon-logic",
+ "asOfDate": "2026-11-27",
+ "hash": "7f2ecb2f54",
+ "cachedAt": "2026-11-27T13:12:00.126Z",
+ "dragons": [
+  {
+   "code": "603960",
+   "name": "克来机电",
+   "lb": 6,
+   "hybk": "汽车零部",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 1,
+   "reason": "高位硬板，无利好，纯情绪炒作"
+  },
+  {
+   "code": "603030",
+   "name": "全筑股份",
+   "lb": 4,
+   "hybk": "装修装饰",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 1,
+   "reason": "缩量硬板，无利好，情绪加速"
+  },
+  {
+   "code": "002651",
+   "name": "利君股份",
+   "lb": 4,
+   "hybk": "航空装备",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.8,
+   "reason": "炸板多，筹码松动，情绪分歧"
+  },
+  {
+   "code": "002872",
+   "name": "天圣制药",
+   "lb": 4,
+   "hybk": "化学制药",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.7,
+   "reason": "炸板多，筹码松动，情绪退潮"
+  },
+  {
+   "code": "600280",
+   "name": "中央商场",
+   "lb": 3,
+   "hybk": "一般零售",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.6,
+   "reason": "炸板多，筹码松动，情绪退潮"
+  },
+  {
+   "code": "002197",
+   "name": "证通电子",
+   "lb": 3,
+   "hybk": "计算机设",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 1,
+   "reason": "一字独食，无换手，机构游戏"
+  },
+  {
+   "code": "002144",
+   "name": "宏达高科",
+   "lb": 3,
+   "hybk": "纺织制造",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.7,
+   "reason": "炸板，筹码松动，情绪退潮"
+  },
+  {
+   "code": "300324",
+   "name": "旋极信息",
+   "lb": 2,
+   "hybk": "计算机设",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 1,
+   "reason": "爆量分歧，筹码松动，情绪退潮"
+  },
+  {
+   "code": "600567",
+   "name": "山鹰国际",
+   "lb": 2,
+   "hybk": "造纸",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.7,
+   "reason": "炸板，筹码松动，情绪退潮"
+  },
+  {
+   "code": "600520",
+   "name": "三佳科技",
+   "lb": 2,
+   "hybk": "半导体",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 1,
+   "reason": "板块利空，高位硬板，情绪加速"
+  },
+  {
+   "code": "603051",
+   "name": "鹿山新材",
+   "lb": 2,
+   "hybk": "化学制品",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.8,
+   "reason": "缩量硬板，机构锁仓"
+  },
+  {
+   "code": "603203",
+   "name": "快克智能",
+   "lb": 2,
+   "hybk": "自动化设",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.8,
+   "reason": "缩量硬板，机构锁仓"
+  },
+  {
+   "code": "603373",
+   "name": "安邦护卫",
+   "lb": 2,
+   "hybk": "专业服务",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.8,
+   "reason": "缩量硬板，机构锁仓"
+  },
+  {
+   "code": "603386",
+   "name": "骏亚科技",
+   "lb": 2,
+   "hybk": "元件",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.6,
+   "reason": "炸板3次，筹码松动"
+  },
+  {
+   "code": "603687",
+   "name": "大胜达",
+   "lb": 2,
+   "hybk": "包装印刷",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.6,
+   "reason": "炸板3次，筹码松动"
+  },
+  {
+   "code": "000158",
+   "name": "常山北明",
+   "lb": 2,
+   "hybk": "IT服务Ⅱ",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.8,
+   "reason": "缩量硬板，机构锁仓"
+  },
+  {
+   "code": "002199",
+   "name": "东晶电子",
+   "lb": 2,
+   "hybk": "元件",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.7,
+   "reason": "缩量硬板，机构锁仓"
+  },
+  {
+   "code": "000889",
+   "name": "中嘉博创",
+   "lb": 2,
+   "hybk": "通信服务",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.8,
+   "reason": "缩量硬板，机构锁仓"
+  },
+  {
+   "code": "002298",
+   "name": "中电鑫龙",
+   "lb": 2,
+   "hybk": "电网设备",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.7,
+   "reason": "缩量硬板，机构锁仓"
+  },
+  {
+   "code": "002261",
+   "name": "拓维信息",
+   "lb": 2,
+   "hybk": "软件开发",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.6,
+   "reason": "炸板2次，筹码松动"
+  },
+  {
+   "code": "003040",
+   "name": "楚天龙",
+   "lb": 2,
+   "hybk": "通信设备",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.8,
+   "reason": "缩量硬板，题材驱动，预期续板"
+  },
+  {
+   "code": "002077",
+   "name": "大港股份",
+   "lb": 2,
+   "hybk": "半导体",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.5,
+   "reason": "炸板多，筹码松动，纯情绪炒作，谨慎"
+  },
+  {
+   "code": "002843",
+   "name": "泰嘉股份",
+   "lb": 2,
+   "hybk": "通用设备",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.7,
+   "reason": "无炸板，缩量硬板，题材驱动，预期续板"
+  },
+  {
+   "code": "002713",
+   "name": "东易日盛",
+   "lb": 2,
+   "hybk": "装修装饰",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.6,
+   "reason": "炸板，但缩量，题材驱动，谨慎"
+  },
+  {
+   "code": "002081",
+   "name": "金螳螂",
+   "lb": 2,
+   "hybk": "装修装饰",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.4,
+   "reason": "炸板多，筹码松动，纯情绪炒作，风险大"
+  },
+  {
+   "code": "002815",
+   "name": "崇达技术",
+   "lb": 2,
+   "hybk": "元件",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.5,
+   "reason": "炸板多，筹码松动，纯情绪炒作，谨慎"
+  },
+  {
+   "code": "000603",
+   "name": "盛达资源",
+   "lb": 2,
+   "hybk": "贵金属",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.8,
+   "reason": "无炸板，缩量硬板，题材驱动，预期续板"
+  },
+  {
+   "code": "002565",
+   "name": "顺灏股份",
+   "lb": 2,
+   "hybk": "包装印刷",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.7,
+   "reason": "无炸板，缩量硬板，题材驱动，预期续板"
+  },
+  {
+   "code": "002453",
+   "name": "华软科技",
+   "lb": 2,
+   "hybk": "化学制品",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": false,
+   "confidence": 0.6,
+   "reason": "炸板，但缩量，题材驱动，谨慎"
+  },
+  {
+   "code": "300047",
+   "name": "天源迪科",
+   "lb": 1,
+   "hybk": "软件开发",
+   "logic_type": "题材驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.6,
+   "reason": "炸板多，筹码松动，纯情绪炒作，谨慎"
+  },
+  {
+   "code": "300085",
+   "name": "银之杰",
+   "lb": 1,
+   "hybk": "软件开发",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.8,
+   "reason": "炸板多，筹码松动，情绪化炒作"
+  },
+  {
+   "code": "300192",
+   "name": "科德教育",
+   "lb": 1,
+   "hybk": "教育",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.8,
+   "reason": "炸板频繁，情绪波动大，风险高"
+  },
+  {
+   "code": "300339",
+   "name": "润和软件",
+   "lb": 1,
+   "hybk": "IT服务Ⅱ",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.7,
+   "reason": "缩量硬板，情绪稳定，预期看涨"
+  },
+  {
+   "code": "300363",
+   "name": "博腾股份",
+   "lb": 1,
+   "hybk": "医疗服务",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.9,
+   "reason": "炸板多，筹码不稳，情绪化风险"
+  },
+  {
+   "code": "300377",
+   "name": "赢时胜",
+   "lb": 1,
+   "hybk": "软件开发",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.9,
+   "reason": "炸板多，筹码松动，情绪化风险"
+  },
+  {
+   "code": "300461",
+   "name": "田中精机",
+   "lb": 1,
+   "hybk": "自动化设",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.7,
+   "reason": "炸板少，筹码稳定，情绪预期看涨"
+  },
+  {
+   "code": "300473",
+   "name": "德尔股份",
+   "lb": 1,
+   "hybk": "汽车零部",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.9,
+   "reason": "炸板多，筹码松动，情绪化风险"
+  },
+  {
+   "code": "300480",
+   "name": "光力科技",
+   "lb": 1,
+   "hybk": "专用设备",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.7,
+   "reason": "炸板少，筹码稳定，情绪预期看涨"
+  },
+  {
+   "code": "300502",
+   "name": "新易盛",
+   "lb": 1,
+   "hybk": "通信设备",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.9,
+   "reason": "缩量硬板，筹码稳定，情绪预期看涨"
+  },
+  {
+   "code": "300508",
+   "name": "维宏股份",
+   "lb": 1,
+   "hybk": "计算机设",
+   "logic_type": "情绪驱动",
+   "is_pure_sentiment": true,
+   "confidence": 0.8,
+   "reason": "炸板多，筹码松动，情绪化风险"
+  }
+ ]
+}

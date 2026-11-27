@@ -1,26 +1,28 @@
 {
  "date": "2026-11-27",
  "source": "sina-bulletin",
- "fetchedAt": "2026-11-27T18:48:29.334+08:00",
+ "fetchedAt": "2026-11-27T21:16:42.229+08:00",
  "codes": 40,
- "count": 16,
+ "count": 18,
  "announcements": {
   "300085": "银之杰：关于为子公司提供担保的公告",
   "300192": "科德教育：2026年第三次临时股东会决议公告；科德教育：关于放弃参股公司优先认购权暨关联交易的公告；科德教育：关于“跃迁者”第一期员工持股计划实施进展的公告；科德教育：北京德恒律师事务所关于苏州科德教育科技股份有限公司2026年第三次临时股东会的法律意见；科德教育：第七届董事会第九次(临时)会议决议公告",
+  "300324": "旋极信息：股票交易异常波动的公告",
+  "300339": "润和软件：关于控股股东部分股份质押的公告；润和软件：关于全资子公司参与竞拍购置房产的进展公告",
   "600280": "中央商场：股票交易异常波动公告；中央商场：子公司破产进展公告",
   "600567": "山鹰国际：关于筹划重大事项进展暨复牌的公告；山鹰国际：北京博星证券投资顾问有限公司关于《山鹰国际控股股份公司要约收购报告书摘要》之财务顾问意见；山鹰国际：要约收购报告书摘要；山鹰国际：关于收到要约收购报告书摘要的提示性公告",
   "603030": "全筑股份：股票交易风险提示公告；全筑股份：股票交易风险提示公告；全筑股份：关于股票交易异常波动的公告",
   "603051": "鹿山新材：关于为子公司提供担保的公告",
   "603960": "克来机电：关于股票交易的风险提示性公告；克来机电：关于上海克来机电自动化工程股份有限公司有关股价波动事项的监管工作函；克来机电：股票交易异常波动暨风险提示公告",
-  "002197": "证通电子：股票交易异常波动公告",
   "002651": "利君股份：股票交易异常波动公告",
   "002872": "天圣制药：股票交易异常波动公告",
+  "002197": "证通电子：股票交易异常波动公告",
   "002144": "宏达高科：股票交易异常波动公告",
-  "000889": "中嘉博创：关于召开2026年第三次临时股东会的提示性公告",
   "000158": "常山北明：重大诉讼公告",
-  "002713": "东易日盛：第七届董事会第九次(临时)会议决议公告；东易日盛：关于控股股东无偿捐赠股权资产及现金资产暨关联交易的公告",
-  "000603": "盛达资源：关于股东部分股份质押的公告；盛达资源：投资者关系管理信息20261126",
-  "002815": "崇达技术：2026年11月26日投资者关系活动记录表；崇达技术：关于为子公司提供担保的进展公告"
+  "000889": "中嘉博创：关于召开2026年第三次临时股东会的提示性公告",
+  "002713": "东易日盛：股票交易异常波动暨风险提示公告；东易日盛：第七届董事会第九次(临时)会议决议公告；东易日盛：关于控股股东无偿捐赠股权资产及现金资产暨关联交易的公告",
+  "002815": "崇达技术：2026年11月26日投资者关系活动记录表；崇达技术：关于为子公司提供担保的进展公告",
+  "000603": "盛达资源：关于股东部分股份质押的公告；盛达资源：投资者关系管理信息20261126"
  },
  "details": [
   {
@@ -62,6 +64,33 @@
      "title": "科德教育：第七届董事会第九次(临时)会议决议公告",
      "date": "2026-11-26",
      "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=300192&id=12726960"
+    }
+   ]
+  },
+  {
+   "code": "300324",
+   "name": "旋极信息",
+   "announcements": [
+    {
+     "title": "旋极信息：股票交易异常波动的公告",
+     "date": "2026-11-27",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=300324&id=12729326"
+    }
+   ]
+  },
+  {
+   "code": "300339",
+   "name": "润和软件",
+   "announcements": [
+    {
+     "title": "润和软件：关于控股股东部分股份质押的公告",
+     "date": "2026-11-27",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=300339&id=12730003"
+    },
+    {
+     "title": "润和软件：关于全资子公司参与竞拍购置房产的进展公告",
+     "date": "2026-11-27",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=300339&id=12730002"
     }
    ]
   },
@@ -161,17 +190,6 @@
    ]
   },
   {
-   "code": "002197",
-   "name": "证通电子",
-   "announcements": [
-    {
-     "title": "证通电子：股票交易异常波动公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002197&id=12726324"
-    }
-   ]
-  },
-  {
    "code": "002651",
    "name": "利君股份",
    "announcements": [
@@ -194,6 +212,17 @@
    ]
   },
   {
+   "code": "002197",
+   "name": "证通电子",
+   "announcements": [
+    {
+     "title": "证通电子：股票交易异常波动公告",
+     "date": "2026-11-27",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002197&id=12726324"
+    }
+   ]
+  },
+  {
    "code": "002144",
    "name": "宏达高科",
    "announcements": [
@@ -201,17 +230,6 @@
      "title": "宏达高科：股票交易异常波动公告",
      "date": "2026-11-27",
      "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002144&id=12726388"
-    }
-   ]
-  },
-  {
-   "code": "000889",
-   "name": "中嘉博创",
-   "announcements": [
-    {
-     "title": "中嘉博创：关于召开2026年第三次临时股东会的提示性公告",
-     "date": "2026-11-28",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000889&id=12728328"
     }
    ]
   },
@@ -227,9 +245,25 @@
    ]
   },
   {
+   "code": "000889",
+   "name": "中嘉博创",
+   "announcements": [
+    {
+     "title": "中嘉博创：关于召开2026年第三次临时股东会的提示性公告",
+     "date": "2026-11-28",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000889&id=12728328"
+    }
+   ]
+  },
+  {
    "code": "002713",
    "name": "东易日盛",
    "announcements": [
+    {
+     "title": "东易日盛：股票交易异常波动暨风险提示公告",
+     "date": "2026-11-28",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002713&id=12729967"
+    },
     {
      "title": "东易日盛：第七届董事会第九次(临时)会议决议公告",
      "date": "2026-11-26",
@@ -239,22 +273,6 @@
      "title": "东易日盛：关于控股股东无偿捐赠股权资产及现金资产暨关联交易的公告",
      "date": "2026-11-26",
      "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002713&id=12724226"
-    }
-   ]
-  },
-  {
-   "code": "000603",
-   "name": "盛达资源",
-   "announcements": [
-    {
-     "title": "盛达资源：关于股东部分股份质押的公告",
-     "date": "2026-11-27",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000603&id=12726172"
-    },
-    {
-     "title": "盛达资源：投资者关系管理信息20261126",
-     "date": "2026-11-26",
-     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000603&id=12726106"
     }
    ]
   },
@@ -271,6 +289,22 @@
      "title": "崇达技术：关于为子公司提供担保的进展公告",
      "date": "2026-11-26",
      "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=002815&id=12723026"
+    }
+   ]
+  },
+  {
+   "code": "000603",
+   "name": "盛达资源",
+   "announcements": [
+    {
+     "title": "盛达资源：关于股东部分股份质押的公告",
+     "date": "2026-11-27",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000603&id=12726172"
+    },
+    {
+     "title": "盛达资源：投资者关系管理信息20261126",
+     "date": "2026-11-26",
+     "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=000603&id=12726106"
     }
    ]
   }

@@ -2,10 +2,10 @@
  "kind": "llm-risk-blacklist",
  "version": 1,
  "asOfDate": "2026-11-27",
- "generatedAt": "2026-11-27T18:48:53.354+08:00",
+ "generatedAt": "2026-11-27T21:17:04.877+08:00",
  "model": "glm-4-flash",
  "source": "announcements-latest.json",
- "scanned": 16,
+ "scanned": 18,
  "universe": "ladder",
  "limit": 40,
  "blacklist": [
@@ -21,7 +21,7 @@
   {
    "code": "000158",
    "name": "常山北明",
-   "riskLevel": "high",
+   "riskLevel": "medium",
    "reasons": [
     "重大诉讼公告"
    ],

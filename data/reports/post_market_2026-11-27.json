@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-27",
- "generated_at": "2026-11-27T10:49:01.243Z",
+ "generated_at": "2026-11-27T13:17:12.655Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -97,8 +97,8 @@
    "confidence": "missing"
   },
   "backtest_deviation": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "derived",
+   "confidence": "measured"
   },
   "market_context": {
    "source": "archived",
@@ -128,7 +128,19 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "shift",
+   "label": "高潮",
+   "score": 93.95,
+   "cap": null,
+   "position_range": null,
+   "positionReconcile": null,
+   "marketTierVersion": "marketTier/v5.3-alert_only",
+   "alertOnly": true,
+   "clustering_bubble": false,
+   "sentiment_penalty": 0,
+   "score_adjusted": 93.95
+  },
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -160,9 +172,14 @@
   "max_drawdown_intraday": null,
   "grid_trigger_detail": null,
   "counter_trend_loss_ratio": null,
-  "backtest_deviation": null,
+  "backtest_deviation": {
+   "live_cum": -0.047491,
+   "backtest_v52": -0.0475,
+   "delta": 0.000009,
+   "note": "执行轨 vs 回测 v52 锚点（零偏差为设计约束）"
+  },
   "market_context": {
-   "emotion": 94.3,
+   "emotion": 94,
    "pct_rank": 100,
    "indexes": {
     "上证指数": 3.73,

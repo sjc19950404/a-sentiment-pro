@@ -283,13 +283,24 @@
  },
  {
   "date": "2026-11-27",
-  "scannedAt": "2026-11-27T10:48:29.394Z",
-  "scanned": 24,
-  "ok": 22,
+  "scannedAt": "2026-11-27T13:16:42.309Z",
+  "scanned": 26,
+  "ok": 23,
   "high": 0,
-  "mid": 2,
+  "mid": 3,
   "low": 0,
   "flagged": [
+   {
+    "code": "300339",
+    "name": "润和软件",
+    "level": "mid",
+    "words": [
+     "质押"
+    ],
+    "title": "润和软件：关于控股股东部分股份质押的公告",
+    "date": "2026-11-27",
+    "url": "https://vip.stock.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?stockid=300339&id=12730003"
+   },
    {
     "code": "000158",
     "name": "常山北明",

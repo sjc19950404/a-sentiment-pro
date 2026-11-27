@@ -1,0 +1,640 @@
+{
+ "kind": "llm-cache",
+ "name": "macro-sector",
+ "asOfDate": "2026-11-27",
+ "hash": "e749af61a4",
+ "cachedAt": "2026-11-27T13:10:41.964Z",
+ "events": [
+  {
+   "headline": "中航证券董忠云：A股有望吸引更多长期资金主动配置、长期持有",
+   "date": "2026-11-27",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "长期资金流入有望提振市场信心"
+  },
+  {
+   "headline": "工商银行江西省分行被罚50万元：违反金融统计相关规定",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "银行违规受罚，影响行业形象"
+  },
+  {
+   "headline": "美国加大经济施压之际 土耳其续签伊朗长期天然气进口合同",
+   "date": "2026-11-27",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "天然气进口合同续签，利好相关行业"
+  },
+  {
+   "headline": "工商银行鹤壁分行被罚34.1万元：违反金融统计相关规定等",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "银行违规受罚，影响行业形象"
+  },
+  {
+   "headline": "卡塔尔经霍尔木兹海峡加大LNG出口 降低东南亚成本",
+   "date": "2026-11-27",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "LNG出口增加，利好相关行业"
+  },
+  {
+   "headline": "郑州银行平顶山分行被罚102.2万元：违反金融统计相关规定等",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "银行违规受罚，影响行业形象"
+  },
+  {
+   "headline": "最新银行业压力测试结果出炉：整体上对资产质量恶化具有一定的抵御能力",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "neutral",
+   "intensity": 0.4,
+   "reason": "银行业压力测试结果稳定，影响中性"
+  },
+  {
+   "headline": "世界黄金协会深度报告：中国不同经济周期下的黄金配置比例",
+   "date": "2026-11-27",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "黄金配置比例分析，影响中性"
+  },
+  {
+   "headline": "济南市医疗保障局发布通报：解除与该主播的劳动关系，责令直播团队停播整顿",
+   "date": "2026-11-27",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "主播违规事件，影响有限"
+  },
+  {
+   "headline": "央行新规调整大额存单业务规则、规范存贷款计结息管理 业内：预计罚息利率总体将有所下行",
+   "date": "2026-11-27",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "新规有利于降低金融成本，利好相关板块"
+  },
+  {
+   "headline": "沪银日内暴涨12%，一日上涨1151元",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "银价上涨，银行板块受益"
+  },
+  {
+   "headline": "数字黄金实盘交易落地，对黄金市场影响几何？",
+   "date": "2026-11-27",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "neutral",
+   "intensity": 0.5,
+   "reason": "数字黄金交易落地，对黄金市场影响尚不确定"
+  },
+  {
+   "headline": "新世代BMW i3正式上市：售价24.99万元起，未来一年近20款新车将陆续登陆中国市场",
+   "date": "2026-11-27",
+   "sectors": [
+    "汽车",
+    "新能源汽车",
+    "智能驾驶"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "新车上市，新能源汽车和智能驾驶板块受益"
+  },
+  {
+   "headline": "进出口银行董事长陈怀宇与万华化学董事长廖增太举行会谈",
+   "date": "2026-11-27",
+   "sectors": [
+    "化工",
+    "化肥",
+    "农药"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "会谈内容不明，对相关板块影响尚不确定"
+  },
+  {
+   "headline": "央行发布存贷款利率新规，罚息不再默认“顶格上浮50%”，机构计息系统面临改造压力",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行",
+    "券商",
+    "地产",
+    "基建"
+   ],
+   "direction": "neutral",
+   "intensity": 0.5,
+   "reason": "新规对银行、券商、地产、基建板块影响尚不确定"
+  },
+  {
+   "headline": "中国太保：坚定看好资本市场平稳健康发展的广阔前景",
+   "date": "2026-11-27",
+   "sectors": [
+    "券商",
+    "保险",
+    "银行",
+    "地产",
+    "基建"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "看好资本市场，相关板块受益"
+  },
+  {
+   "headline": "特朗普救不了美股，但削减AI支出或许可以",
+   "date": "2026-11-27",
+   "sectors": [
+    "AI",
+    "算力",
+    "半导体",
+    "消费电子"
+   ],
+   "direction": "negative",
+   "intensity": 0.7,
+   "reason": "AI支出削减，相关板块利空"
+  },
+  {
+   "headline": "存贷款利率新规取消罚息“一刀切”，首次明确界定高息揽储",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行",
+    "券商",
+    "地产",
+    "基建"
+   ],
+   "direction": "neutral",
+   "intensity": 0.5,
+   "reason": "新规对银行、券商、地产、基建板块影响尚不确定"
+  },
+  {
+   "headline": "央行：个人投资人认购大额存单起点金额不低于10万元人民币",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行",
+    "券商",
+    "地产",
+    "基建"
+   ],
+   "direction": "neutral",
+   "intensity": 0.4,
+   "reason": "新规对银行、券商、地产、基建板块影响尚不确定"
+  },
+  {
+   "headline": "后市怎么看？公募最新研判",
+   "date": "2026-11-27",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "公募最新研判，对A股板块影响尚不确定"
+  },
+  {
+   "headline": "本周牛熊股，名单来了",
+   "date": "2026-11-27",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "牛熊股名单对板块影响不确定"
+  },
+  {
+   "headline": "打造院线消费新业态 儒意电影启动“城市舒压计划”",
+   "date": "2026-11-27",
+   "sectors": [
+    "传媒"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "院线消费新业态利好相关板块"
+  },
+  {
+   "headline": "AI数据中心开发商LIAN选定伦敦上市 IPO拟募资5亿美元",
+   "date": "2026-11-27",
+   "sectors": [
+    "AI",
+    "数据中心",
+    "算力"
+   ],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "AI数据中心上市利好相关板块"
+  },
+  {
+   "headline": "央行：促进票据市场、黄金市场规范健康发展",
+   "date": "2026-11-27",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "央行促进黄金市场健康发展利好黄金板块"
+  },
+  {
+   "headline": "央行：综合运用在线修复、兼并重组、市场退出等方式，推动中小银行改革化险",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "央行推动中小银行改革利好银行板块"
+  },
+  {
+   "headline": "盘前：纳指100期货上涨2.8% 三大指数本周有望收涨",
+   "date": "2026-11-27",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "指数上涨对板块影响不确定"
+  },
+  {
+   "headline": "特拉布科获任巴西财长后，巴西雷亚尔大涨，互换利率大幅下跌",
+   "date": "2026-11-27",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "巴西经济变化对板块影响不确定"
+  },
+  {
+   "headline": "50万亿存款没搬家",
+   "date": "2026-11-27",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "存款变化对板块影响不确定"
+  },
+  {
+   "headline": "世界黄金协会推动黄金权益池首次实际交易落地",
+   "date": "2026-11-27",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "黄金权益池交易落地利好黄金板块"
+  },
+  {
+   "headline": "美国股指期货走强 科技股反弹积聚势头",
+   "date": "2026-11-27",
+   "sectors": [],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "美国科技股走强利好相关板块"
+  },
+  {
+   "headline": "央行：研究建立在特定情景下向非银机构提供流动性的机制性安排 发挥好两项支持资本市场的货币政策工具作用",
+   "date": "2026-11-27",
+   "sectors": [
+    "券商",
+    "银行",
+    "保险"
+   ],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "央行支持资本市场，利好金融板块"
+  },
+  {
+   "headline": "民生银行：以530万元受让新希望集团所持彭州民生村镇银行200万股",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "银行间股权变动，影响有限"
+  },
+  {
+   "headline": "大额存单门槛下调，个人起存降至10万元",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行",
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "存单门槛下调，影响有限"
+  },
+  {
+   "headline": "金融监管总局：截至10月末我国银行业金融机构总资产4958394亿元，较上年同期增长6.3%",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行",
+    "保险"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "银行业总资产增长，利好金融板块"
+  },
+  {
+   "headline": "临高惠丰村镇银行被吊销金融许可证：股东超比例持股、关联方授信不合规等",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "村镇银行问题，利空银行板块"
+  },
+  {
+   "headline": "东方惠丰村镇银行被吊销金融许可证：监管发现问题整改不到位、入股资金审查不严等",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "村镇银行问题，利空银行板块"
+  },
+  {
+   "headline": "乐东惠丰村镇银行被吊销金融许可证：监管发现问题未整改等",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "村镇银行问题，利空银行板块"
+  },
+  {
+   "headline": "央行：支持保障性住房建设、城中村改造和“平急两用”公共基础设施建设",
+   "date": "2026-11-27",
+   "sectors": [
+    "地产",
+    "基建"
+   ],
+   "direction": "positive",
+   "intensity": 0.6,
+   "reason": "支持住房建设和基础设施建设，利好相关板块"
+  },
+  {
+   "headline": "央行：优化两项支持资本市场的货币政策工具 支持资本市场稳健发展",
+   "date": "2026-11-27",
+   "sectors": [
+    "券商",
+    "银行",
+    "保险"
+   ],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "央行支持资本市场，利好金融板块"
+  },
+  {
+   "headline": "字节澄清与三人行合作：并非首例，MaaS代售未实质启动",
+   "date": "2026-11-27",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.1,
+   "reason": "公司合作消息，影响有限"
+  },
+  {
+   "headline": "招商银行：金融科技创新项目基金拟更名为智能银行创新基金",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行",
+    "AI",
+    "算力"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "智能银行创新基金暗示金融科技发展，利好相关板块"
+  },
+  {
+   "headline": "中国人民银行发布《中国金融稳定报告（2026）》",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行",
+    "券商",
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.4,
+   "reason": "金融稳定报告发布，对金融板块影响中性"
+  },
+  {
+   "headline": "世界黄金协会重磅发布：中国投资者应该配置多少黄金？",
+   "date": "2026-11-27",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "黄金配置建议发布，对黄金板块影响中性"
+  },
+  {
+   "headline": "世界黄金协会，最新建议",
+   "date": "2026-11-27",
+   "sectors": [
+    "黄金"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "最新黄金建议发布，对黄金板块影响中性"
+  },
+  {
+   "headline": "央行发布《中国金融稳定报告（2026）》（附全文）",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行",
+    "券商",
+    "保险"
+   ],
+   "direction": "neutral",
+   "intensity": 0.4,
+   "reason": "金融稳定报告发布，对金融板块影响中性"
+  },
+  {
+   "headline": "中国建设银行青岛市分行原行长郝子建被开除党籍",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "高管被开除，对银行板块影响负面"
+  },
+  {
+   "headline": "百年同仁堂24亿收购：历史旧账与战略新局",
+   "date": "2026-11-27",
+   "sectors": [
+    "医药",
+    "中药",
+    "食品饮料"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "收购动作，利好相关板块"
+  },
+  {
+   "headline": "北京市市长殷勇会见德国拜耳集团处方药事业部全球总裁",
+   "date": "2026-11-27",
+   "sectors": [
+    "医药",
+    "创新药",
+    "CXO"
+   ],
+   "direction": "positive",
+   "intensity": 0.4,
+   "reason": "会见拜耳集团，利好医药板块"
+  },
+  {
+   "headline": "英国电力供应紧张，被迫高价采购备用电力",
+   "date": "2026-11-27",
+   "sectors": [
+    "电力",
+    "火电",
+    "水电"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "电力供应紧张，对电力板块影响负面"
+  },
+  {
+   "headline": "摩根大通看多A股：沪深300指数明年有望站上4800点",
+   "date": "2026-11-27",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "positive",
+   "intensity": 0.7,
+   "reason": "摩根大通看好A股，利好券商和指数股"
+  },
+  {
+   "headline": "沪深交易所，重要调整",
+   "date": "2026-11-27",
+   "sectors": [
+    "券商"
+   ],
+   "direction": "neutral",
+   "intensity": 0.5,
+   "reason": "交易所调整对券商板块影响中性"
+  },
+  {
+   "headline": "大额存单迎新规：参与门槛降低，转让渠道进一步拓宽",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行",
+    "券商",
+    "保险"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "降低门槛和拓宽渠道有利于银行、券商和保险业务"
+  },
+  {
+   "headline": "震荡市“固收+权益”成绩单出炉：平安理财多只产品跻身前十",
+   "date": "2026-11-27",
+   "sectors": [
+    "券商",
+    "保险"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "理财成绩单好，利好相关金融机构"
+  },
+  {
+   "headline": "首单以储架形式实现常态化扩募——“建信长租”开启机构间REITs平台化发展新阶段",
+   "date": "2026-11-27",
+   "sectors": [
+    "地产",
+    "券商"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "REITs平台化发展利好地产和金融板块"
+  },
+  {
+   "headline": "渤海银行以2341万元出售位于天津开发区物业 买方为主要股东泰达控股",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行",
+    "地产"
+   ],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "银行出售物业对板块影响中性"
+  },
+  {
+   "headline": "联合国气候变化执行秘书西蒙·斯蒂尔：COP31谈判受挫令人失望，但全球气候行动不会停步",
+   "date": "2026-11-27",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.3,
+   "reason": "气候谈判受挫对新能源和环保板块影响中性"
+  },
+  {
+   "headline": "邮储银行威海市分行被罚74.3万元：违反金融统计相关规定等",
+   "date": "2026-11-27",
+   "sectors": [
+    "银行"
+   ],
+   "direction": "negative",
+   "intensity": 0.3,
+   "reason": "银行违规被罚，利空银行板块"
+  },
+  {
+   "headline": "德国劳资协议为梅赛德斯延长工时打开大门 涉及约170万名工人",
+   "date": "2026-11-27",
+   "sectors": [
+    "汽车",
+    "化工"
+   ],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "劳资协议对汽车和化工板块影响中性"
+  },
+  {
+   "headline": "波兰军方与Palantir签署人工智能软件合作协议",
+   "date": "2026-11-27",
+   "sectors": [
+    "军工",
+    "AI",
+    "软件"
+   ],
+   "direction": "positive",
+   "intensity": 0.5,
+   "reason": "AI合作协议利好军工、AI和软件板块"
+  },
+  {
+   "headline": "摩根大通撤回对土耳其央行12月和明年1月降息的预测",
+   "date": "2026-11-27",
+   "sectors": [],
+   "direction": "neutral",
+   "intensity": 0.2,
+   "reason": "撤回预测对金融板块影响中性"
+  }
+ ],
+ "blackTalk": "今天多头热闹，别光顾着冲高，半导体跌得挺惨，控制点仓位，别上头，盘后得悠着点。",
+ "macro": {
+  "sentiment": 0.18,
+  "score100": 59,
+  "label": "偏多",
+  "confidence": 0.5,
+  "reason": "利好板块：数据中心(+0.7)、新能源汽车(+0.6)、智能驾驶(+0.6)、传媒(+0.5)、中药(+0.5)；利空板块：半导体(-0.7)、消费电子(-0.7)、电力(-0.3)、火电(-0.3)、水电(-0.3)"
+ }
+}

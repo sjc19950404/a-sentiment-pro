@@ -1,13 +1,17 @@
 {
-  "updatedAt": "2026-11-26T13:20:28.829Z",
-  "status": "healthy",
-  "headline": "✅ 健康：超额正向、胜率 88% ≥52%、无连续负超额",
-  "attribution": null,
+  "updatedAt": "2026-11-27T10:50:25.566Z",
+  "status": "watch",
+  "headline": "⚠️ 观察：单周超额转负",
+  "attribution": {
+    "type": "unclassified",
+    "label": "未归类",
+    "note": "劣化信号存在但不足以归入三分类——样本不足或形态混合，继续观察积累（如实标注，不强行归类）。"
+  },
   "metrics": {
-    "alphaWinRate8": 0.875,
-    "negStreak": 0,
-    "ma4Pct": 0.9285714285714286,
-    "sharpe8": -2.694,
+    "alphaWinRate8": 0.75,
+    "negStreak": 1,
+    "ma4Pct": 0.5535714285714286,
+    "sharpe8": -0.897,
     "seatAlarm": false,
     "divAlarm": false
   },
@@ -23,8 +27,8 @@
       "regime": "climax",
       "label": "climax",
       "weeks": 14,
-      "avgAlpha": -0.002994,
-      "winRate": 0.357
+      "avgAlpha": -0.006026,
+      "winRate": 0.286
     },
     {
       "regime": "ebb",
@@ -1225,13 +1229,13 @@
     },
     {
       "week": "2026-11-23",
-      "end": "2026-11-26",
-      "days": 4,
-      "strat": -0.0039,
-      "mkt": -0.014186,
-      "alpha": 0.010286,
+      "end": "2026-11-27",
+      "days": 5,
+      "strat": 0.027847,
+      "mkt": 0.060013,
+      "alpha": -0.032166,
       "regime": "climax",
-      "exposure": 0.3,
+      "exposure": 0.33,
       "seatAlpha": 0,
       "seatPool": {
         "passSeat": 5,
@@ -1241,7 +1245,7 @@
         "rateSeat": 0.4,
         "rateBase": 0.4
       },
-      "divergRate": 0.25
+      "divergRate": 0.2
     }
   ]
 }

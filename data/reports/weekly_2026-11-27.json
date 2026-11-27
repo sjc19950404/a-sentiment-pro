@@ -4,13 +4,13 @@
  "trigger": "schedule",
  "urgent": false,
  "date": "2026-11-27",
- "generated_at": "2026-11-27T10:49:01.339Z",
+ "generated_at": "2026-11-27T13:17:12.753Z",
  "generated_by": "ci",
  "status": "degraded",
  "track": "A",
  "data_health": {
   "sources": {
-   "dual_track": "stale",
+   "dual_track": "fresh",
    "signals": "fresh",
    "global": "fresh",
    "backtest": "fresh",
@@ -61,8 +61,8 @@
    "confidence": "measured"
   },
   "regime": {
-   "source": "missing",
-   "confidence": "missing"
+   "source": "archived",
+   "confidence": "measured"
   },
   "circuit_breaker": {
    "source": "archived",
@@ -140,7 +140,19 @@
   "cost_ratio": null,
   "slippage_avg": 0.0002,
   "slippage_source": "assumed_constant",
-  "regime": null,
+  "regime": {
+   "key": "shift",
+   "label": "高潮",
+   "score": 93.95,
+   "cap": null,
+   "position_range": null,
+   "positionReconcile": null,
+   "marketTierVersion": "marketTier/v5.3-alert_only",
+   "alertOnly": true,
+   "clustering_bubble": false,
+   "sentiment_penalty": 0,
+   "score_adjusted": 93.95
+  },
   "circuit_breaker": {
    "dd_tier": 0,
    "hard_stop_triggered": false,
@@ -190,15 +202,21 @@
    {
     "date": "2026-11-26",
     "day_return": 0.000192,
-    "score": 65.02,
+    "score": 65.28,
     "regime": "ebb"
+   },
+   {
+    "date": "2026-11-27",
+    "day_return": 0.031872,
+    "score": 93.95,
+    "regime": "climax"
    }
   ],
-  "week_return": -0.003899991402021019,
+  "week_return": 0.027847708072013644,
   "max_drawdown_week": 0.0075795637240001325,
   "win_rate": null,
   "win_rate_note": "口径 = 模拟盘平仓胜率（reviewTrades，来自 data/paper/account.json 的 trades；P3 起绑定真实成交）；0 笔平仓 → null（样本不足，不降级为日收益口径）。原「剧本命中率」数据源 airpt_sim_bindings 仍缺席。（已平仓 0 笔）",
-  "profit_trade_ratio": 0.5,
+  "profit_trade_ratio": 0.6,
   "cost_ratio_week": null,
   "trend_switch_effect": {
    "turns": [
@@ -230,20 +248,26 @@
      "date": "2026-11-27",
      "from": "退潮",
      "to": "高潮",
-     "value": 94.3
+     "value": 94
     }
    ],
-   "shadow_note": null
+   "shadow_note": "trackC 影子线（0.5 档）累计 -0.024676 vs 执行轨 -0.047491；episodes 19（晋升门禁 ≥10，仍须走 promote_params）"
   },
-  "param_suggestions": [],
+  "param_suggestions": [
+   {
+    "topic": "posGap 阈值",
+    "fact": "分歧 >0.02 达 258/275 天，0.02/0.03 告警阈值仍是 [待确认] 状态",
+    "action": "提议进入确认流程，非本模块职责"
+   }
+  ],
   "factor_health": {
-   "status": "healthy",
-   "headline": "✅ 健康：超额正向、胜率 88% ≥52%、无连续负超额",
-   "week_alpha": 0.010286,
-   "alpha_win_rate_8w": 0.875,
-   "sharpe8_display": -2.694,
+   "status": "watch",
+   "headline": "⚠️ 观察：单周超额转负",
+   "week_alpha": -0.032166,
+   "alpha_win_rate_8w": 0.75,
+   "sharpe8_display": -0.897,
    "seat_alpha": 0,
-   "diverg_rate": 0.25,
+   "diverg_rate": 0.2,
    "regime_check": [
     {
      "regime": "ice",
@@ -256,8 +280,8 @@
      "regime": "climax",
      "label": "climax",
      "weeks": 14,
-     "avg_alpha": -0.002994,
-     "win_rate": 0.357
+     "avg_alpha": -0.006026,
+     "win_rate": 0.286
     },
     {
      "regime": "ebb",

@@ -1,6 +1,6 @@
 {
  "date": "2026-11-27",
- "generatedAt": "2026-11-27T18:44:59.882+08:00",
+ "generatedAt": "2026-11-27T21:13:14.426+08:00",
  "source": "push2.eastmoney.com/api/qt/ulist.np（f20 总市值/f21 流通市值，元→亿）",
  "universe": {
   "kind": "涨停池（pools.zt_codes）",
@@ -1390,7 +1390,7 @@
    "code": "002825",
    "name": "纳尔股份",
    "circMvYi": 23.24,
-   "totalMvYi": 30.84,
+   "totalMvYi": 30.8,
    "lb": 1
   },
   {
