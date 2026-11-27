@@ -2,6 +2,19 @@
  "schema_version": "1.0",
  "pushed": [
   {
+   "fingerprint": "db38d8025238076e_71f",
+   "type": "intraday",
+   "date": "2026-11-27",
+   "verified": {
+    "checked_at": "14:05",
+    "snapshot_at": "2026-11-27 14:05",
+    "removed": 0,
+    "degraded": false,
+    "skipped": true
+   },
+   "pushed_at": "2026-11-27T06:05:06.699Z"
+  },
+  {
    "fingerprint": "9e9d5448b1830232_720",
    "type": "intraday",
    "date": "2026-11-27",
@@ -1194,19 +1207,6 @@
     "skipped": true
    },
    "pushed_at": "2026-10-29T01:35:08.492Z"
-  },
-  {
-   "fingerprint": "10720b397d047a69_7ee",
-   "type": "intraday",
-   "date": "2026-10-28",
-   "verified": {
-    "checked_at": "14:05",
-    "snapshot_at": "2026-10-28 14:00",
-    "removed": 0,
-    "degraded": false,
-    "skipped": true
-   },
-   "pushed_at": "2026-10-28T06:05:04.171Z"
   }
  ]
 }
