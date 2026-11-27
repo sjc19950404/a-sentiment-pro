@@ -36,6 +36,20 @@ function loadZtpoolForDay(dateStr) {
     return hit && Array.isArray(hit.pool) ? hit.pool : null;
   } catch { return null; }
 }
+/* 【2026-11-27 拍板 B】当日 9:25 竞价额（data/auction_score.json，sidecar 只读档）。
+ * 按 trade_date 精确匹配；文件/当日缺失 → 返回空 Map（auctionSlip 自动降级到旧口径，零造数）。 */
+function loadAuctionForDay(dateStr) {
+  const out = new Map();
+  try {
+    const days = JSON.parse(readFileSync('data/auction_score.json', 'utf8'));
+    const key = String(dateStr == null ? '' : dateStr);
+    const hit = (Array.isArray(days) ? days : []).find((d) => d && String(d.trade_date) === key);
+    for (const it of ((hit && hit.items) || [])) {
+      if (it && it.c && Number.isFinite(+it.jjAmt) && +it.jjAmt > 0) out.set(String(it.c), +it.jjAmt);
+    }
+  } catch { /* 档缺失 → 空 Map */ }
+  return out;
+}
 import { decodeArchive } from '../src/lhb_codec.js';
 import {
   emptyAccount, importAccount, exportAccount, settleDay, batchSubmit, batchSell,
@@ -85,6 +99,9 @@ const EXEC_ENV = process.env.PAPER_EXEC || '';
 let EXEC_CFG = {};
 try { EXEC_CFG = EXEC_ENV.trim().startsWith('{') ? JSON.parse(EXEC_ENV) : (EXEC_ENV ? { mode: EXEC_ENV } : {}); } catch { EXEC_CFG = {}; }
 if (process.env.PAPER_SECTOR_LIMIT) EXEC_CFG.sectorLimitRatio = Number(process.env.PAPER_SECTOR_LIMIT) || 0;
+/* 竞价额动态滑点 v2（拍板 B）：默认关=线上行为零变动；PAPER_AUCTION_SLIP=1 显式开启。
+ * 注意 impactSlip 仅在 slipModel='profile' 下调用——开启时需同时设 PAPER_EXEC='{"slipModel":"profile"}'。 */
+if (process.env.PAPER_AUCTION_SLIP === '1') EXEC_CFG.auctionSlip = true;
 const exec = normalizeExec(EXEC_CFG);
 // 实盘跟单「建议买入价」的含滑点缓冲：strict 模式用其悲观滑点，否则用固定万五（万5）作保守挂单参考
 const BUY_SLIP = exec.mode === 'strict' ? exec.slipNonLimit : 0.0005;
@@ -144,6 +161,14 @@ if (existsSync(fileURLToPath(ACCOUNT_FILE))) {
 // ── 3. 每日结算：盯市 + T+1 解冻 + 扫描 -8% 硬止损 ──
 step(`结算 ${date}`);
 const quotes = quotesFromDay(day);
+if (exec.auctionSlip) {
+  const auctionMap = loadAuctionForDay(date);   // 按当日 9:25 快照注入；缺失票不造数
+  let n = 0;
+  for (const [code, q] of Object.entries(quotes)) {
+    if (auctionMap.has(code)) { q.jjAmt = auctionMap.get(code); n++; }
+  }
+  console.log(`[paper-daily] 竞价额滑点 v2 开启（r0=0.25）：注入 ${n}/${Object.keys(quotes).length} 只竞价额快照`);
+}
 const sd = settleDay(acct, date, quotes, { exec, trailingStopPct: config.backtest?.trailingStopPct ?? 0.025, trailingTriggerPct: config.backtest?.trailingTriggerPct ?? 0.06, ...(EXIT_MODE ? { exitMode: EXIT_MODE } : {}) });
 acct = sd.account;
 { // 实盘跟单：收集本日系统触发的卖出信号（v1 出场纪律 + 跌停逃生 + 断板清仓）

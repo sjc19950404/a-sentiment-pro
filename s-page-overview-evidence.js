@@ -76,6 +76,10 @@
        * 中国资产/汇率/商品，A 股休市期间照常更新。用 s-* 原生卡渲染，不搬旧 DOM。 */
       fetch('./data/global.json?_=' + Date.now(), { cache: 'no-store' })
         .then((r) => r.ok ? r.json() : null).then((d) => { if (d) out.global = d; }).catch(() => {}),
+      /* 【2026-11-27 竞价 sidecar】data/auction_score.json（v1 三独立信号，11-10 拍板）。
+       * 只做展示——不注入主情绪引擎、不影响仓位打分（拍板硬边界）。 */
+      fetch('./data/auction_score.json?_=' + Date.now(), { cache: 'no-store' })
+        .then((r) => r.ok ? r.json() : null).then((d) => { if (Array.isArray(d)) out.auction = d; }).catch(() => {}),
     ]);
     out.day = out.history[out.history.length - 1] || {};
     CACHE = out;
@@ -223,6 +227,11 @@
       + '<h3 class="s-card__title">外围市场 · 隔夜与节后预案</h3>'
       + '<span class="s-badge s-badge--muted" id="sEvGlobMeta">载入中…</span></div>'
       + '<div class="s-card__body" id="sEvGlobHost"></div></div></div>'
+      /* 【2026-11-27 竞价 sidecar】v1 三独立信号，只读展示；不进主引擎/不改仓位。 */
+      + '<div class="s-col-12"><div class="s-card"><div class="s-card__head">'
+      + '<h3 class="s-card__title">竞价观察 · 9:25 定格（sidecar）</h3>'
+      + '<span class="s-badge s-badge--muted" id="sEvAuctionMeta">载入中…</span></div>'
+      + '<div class="s-card__body" id="sEvAuctionHost"></div></div></div>'
       + '</div></div>';
     host.appendChild(sec);
     buildOps(host);
@@ -347,6 +356,43 @@
       } catch (_) { fr.textContent = '—'; }
     }
   }
+  /* 【2026-11-27 竞价 sidecar 卡】v1 三独立信号（11-10 拍板口径，阈值参数化）：
+   *   ① 竞价涨跌幅标记（±3%）strong/weak/neutral 计数
+   *   ② 竞价额占昨日成交比（中位 + 缺失数，缺失如实标 null 不造数）
+   *   ③ 一字缩量/放量（占昨日额 <2% 为缩量强封，否则放量分歧）
+   * 硬边界：只读展示，不注入主情绪引擎、不影响仓位打分；9:15~9:20 可撤单段不入计算。 */
+  function drawAuction() {
+    const host = $('#sEvAuctionHost'), metaEl = $('#sEvAuctionMeta');
+    if (!host) return;
+    const days = CACHE && CACHE.auction;
+    if (!days || !days.length) {
+      metaEl.textContent = '无竞价档';
+      host.innerHTML = '<div class="s-empty"><div class="s-empty__title">竞价数据未就绪</div>'
+        + '<div class="s-empty__hint">9:25 定格快照 sidecar · 缺失如实留空，不编造</div></div>';
+      return;
+    }
+    const last = days[days.length - 1];
+    const sig = last.signals || {};
+    const items = Array.isArray(last.items) ? last.items : [];
+    const ratios = items.map((x) => x.amtRatio).filter((v) => Number.isFinite(+v) && +v > 0).sort((a, b) => a - b);
+    const med = ratios.length ? (ratios[Math.floor((ratios.length - 1) / 2)] + ratios[Math.floor(ratios.length / 2)]) / 2 : null;
+    const pctFmt = (v) => v == null ? '—' : (v * 100).toFixed(1) + '%';
+    metaEl.textContent = `${last.trade_date} · 样本 ${items.length} 只 · ${days.length} 日`;
+    host.innerHTML = '<div class="s-tagrow">'
+      + '<span class="s-chip">竞价强势 ' + (sig.strong || 0) + '</span>'
+      + '<span class="s-chip">竞价走弱 ' + (sig.weak || 0) + '</span>'
+      + '<span class="s-chip">中性 ' + (sig.neutral || 0) + '</span>'
+      + '<span class="s-chip">一字缩量 ' + (sig.yiziShrink || 0) + '</span>'
+      + '<span class="s-chip">一字放量 ' + (sig.yiziHeavy || 0) + '</span>'
+      + '</div>'
+      + '<p class="s-kpi__note" style="margin:var(--s-space-3) 0 0">'
+      + '竞价额/昨日成交额 中位 <b>' + pctFmt(med) + '</b> · 缺失 ' + (sig.amtRatioMissing || 0) + ' 只（如实留空）'
+      + ' · 阈值 ' + pctFmt((last.params || {}).chgThreshold) + ' / 一字 ' + pctFmt((last.params || {}).yiziRatioMax)
+      + '</p>'
+      + '<p class="s-kpi__note">口径：9:25 定格快照 · 三独立信号不合成总分 · sidecar 只读，'
+      + '不注入情绪引擎、不参与仓位决策（2026-11-10 拍板）。</p>';
+  }
+
   function fillData() {
     if (!CACHE) return;
     const d = CACHE.day, sig = CACHE.signals;
@@ -659,7 +705,7 @@
     // KPI 数值由 s-page-overview.js 的 sync() 异步填（MutationObserver），首跑时可能还是占位，
     // 故 1.2s/2.8s 各幂等重试一次（全部为 textContent/innerHTML 重设，无副作用）。
     load().then(() => {
-      drawTrend(); fillData(); drawFactors();
+      drawTrend(); fillData(); drawFactors(); drawAuction();
       // KPI 真值依赖 sync() + signals 到达（时序不定），轮询到宽度真值出现（或 10s 超时）
       let tries = 0;
       const timer = setInterval(() => {
@@ -667,7 +713,7 @@
          * 曾用 /亿|—/ 作附加条件，占位符号「—」会立即命中导致早退，宽度 delta 保留写死值。 */
         const t = (document.getElementById('sKpiBreadth') || {}).textContent || '';
         if (/[\d,]+\s*\/\s*[\d,]+/.test(t) || ++tries > 40) {
-          clearInterval(timer); fillData(); drawFactors();
+          clearInterval(timer); fillData(); drawFactors(); drawAuction();
         }
       }, 500);
     });

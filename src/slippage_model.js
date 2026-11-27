@@ -26,21 +26,28 @@ export const SLIP_PRESETS = {
  * 动态滑点（paper/实盘层用；回测层 v1 不接——无成交额数据）。
  *   slip = clamp(base + capacityImpact, cap) × sealMul × reopenMul
  *   · base            万2（V52 锚点）
- *   · capacityImpact  容量冲击 = 0.001 × √(r / 0.05)，r=买入金额/当日成交额
- *                     （r=5% → +0.001；r=0.1% → ≈+0.00014，当前规模可忽略）
+ *   · capacityImpact  容量冲击 = 0.001 × √(r / r0)，r=买入金额/成交额
+ *                     · 旧口径（分母=昨日全天额）：r0=0.05（历史值与测试基线，显式传 r0:0.05）
+ *                     · 【2026-11-27 拍板 B】分母=9:25 真实竞价额 jjAmt：r0=0.25（默认值）
+ *                       依据 scripts/slippage_auction_sensitivity.mjs 7天/1125样本对照：
+ *                       r_new/r_old 中位 29.6×，r0=0.25 时 P50 3.08bp / P99 14.36bp / 触顶0，
+ *                       相对旧口径 P50 1.39bp / P99 6.79bp 适度放大（竞价流动性更紧的预期行为）。
  *   · sealWeak        封单薄弱（封单额/流通市值 低于阈值）→ ×1.5
  *   · reopen          当日曾有炸板（zbc>0）→ ×1.2
  *   · cap             0.005（千5 封顶，防极端输入）
  * 任何输入缺失（null/undefined）→ 该项按中性处理，绝不造数。
  * @returns {number|null} slip；成交额/买入金额缺失且无乘数依据时返回 null（调用方回落固定档）
  */
-export function dynamicSlip({ buyAmt, turnover, sealWeak = false, reopen = false } = {}) {
+export function dynamicSlip({ buyAmt, turnover, sealWeak = false, reopen = false, r0 = 0.25 } = {}) {
+  /* 【2026-11-27 拍板 B】r0 参数化：默认 0.25 = 竞价额口径（敏感性对照选定）；
+   * 显式传 r0:0.05 复现旧「全天额分母」口径（历史基线/测试零改动）。 */
+  const r0v = Number.isFinite(+r0) && +r0 > 0 ? +r0 : 0.25;
   const base = 0.0002;
   let hasCapacity = false;
   let slip = base;
   if (Number.isFinite(+buyAmt) && +buyAmt > 0 && Number.isFinite(+turnover) && +turnover > 0) {
     const r = +buyAmt / +turnover;
-    if (r > 0) { slip += 0.001 * Math.sqrt(r / 0.05); hasCapacity = true; }
+    if (r > 0) { slip += 0.001 * Math.sqrt(r / r0v); hasCapacity = true; }
   }
   if (sealWeak) slip *= 1.5;
   if (reopen) slip *= 1.2;

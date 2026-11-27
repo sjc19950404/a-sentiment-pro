@@ -30,6 +30,7 @@
 
 import { filterOne } from './lhbfilter.js';
 import { allocateBudget, BUDGET_GATES } from './risk_budget.js';   // 2026-11-23 接线：预算分发（分发侧在 batchSubmit，执行侧在 riskGuard ①p）
+import { dynamicSlip } from './slippage_model.js';   // 2026-11-27 拍板 B：竞价额容量项（默认 r0=0.25）
 
 export const PAPER_VERSION = 'paper-v1';
 
@@ -92,6 +93,9 @@ export const EXEC_DEFAULTS = {
   limitDownFillProb: 0.5,    // 跌停卖出成交概率（0~1）
   // ── 动态成交量冲击滑点 + 单笔成交量上限（执行层·随 --slip-model profile 生效）──
   volImpactCoef: 0.02,       // 冲击系数：名义额达到参考成交额时附加的滑点比例
+  /* 【2026-11-27 拍板 B】竞价额动态滑点开关：默认关（flat 基线零变动）；显式开 +
+   * quote.jjAmt 到位时，impactSlip 改用 dynamicSlip（分母=9:25 竞价额，r0=0.25）。 */
+  auctionSlip: false,
   volCapRatio: 0.03,         // 单笔上限=当日成交额的该比例（有 amount 时硬拒超量）
   maxOrderNotional: 2000000, // 无 amount 时的单笔名义额上限（元）兜底拒超量
   refAmountSmall: 5e7,       // 小票代理参考日成交额（元）
@@ -159,7 +163,15 @@ export function effectiveRefAmount(exec, { amount = null, huanshou = null, freeF
 
 // 动态成交量冲击滑点（执行层插件，仅 profile 模式调用）：下单名义额相对有效参考成交额越大，冲击成本越高。
 //   impact = coef * min(1, notional / 有效参考成交额)（线性饱和）；coef=volImpactCoef，分母走三层降级（见 effectiveRefAmount）。
-export function impactSlip(exec, { side, notional = 0, amount = null, huanshou = null, freeFloatCap = null, profile = 'trend' } = {}) {
+export function impactSlip(exec, { side, notional = 0, amount = null, huanshou = null, freeFloatCap = null, profile = 'trend', auctionAmt = null } = {}) {
+  /* 【2026-11-27 拍板 B】有真实竞价额且显式开启时，容量冲击走 dynamicSlip
+   * （分母=9:25 竞价额，r0=0.25，7天/1125样本敏感性对照选定）。返回**纯容量增量**
+   * （dynamicSlip 结果 - base 0.0002），因为 base 已由 pickSlip/fillPrice 承担，
+   * 不能重复计入。无竞价额/未开启 → 完全保留旧线性 coef×ratio 逻辑（基线零变动）。 */
+  if (exec.auctionSlip === true && Number.isFinite(+auctionAmt) && +auctionAmt > 0 && side === 'buy') {
+    const dyn = dynamicSlip({ buyAmt: notional, turnover: auctionAmt });  // 默认 r0=0.25
+    if (dyn != null) return Math.max(0, dyn - 0.0002);
+  }
   const coef = exec.volImpactCoef || 0;
   if (!(coef > 0)) return 0;
   const { amt } = effectiveRefAmount(exec, { amount, huanshou, freeFloatCap, profile });
@@ -829,7 +841,7 @@ export function submitOrder(acct, order, quote, ctx = {}) {
   }
   let slipImpact = 0;
   if (profileMode) {
-    slipImpact = impactSlip(_execCtx, { side: order.side, notional: v.gross, amount: quote && quote.amount != null ? +quote.amount : null, huanshou: quote && quote.huanshou != null ? +quote.huanshou : null, freeFloatCap: quote && quote.freeFloatCap != null ? +quote.freeFloatCap : null, profile: prof });
+    slipImpact = impactSlip(_execCtx, { side: order.side, notional: v.gross, amount: quote && quote.amount != null ? +quote.amount : null, huanshou: quote && quote.huanshou != null ? +quote.huanshou : null, freeFloatCap: quote && quote.freeFloatCap != null ? +quote.freeFloatCap : null, profile: prof, auctionAmt: quote && quote.jjAmt != null ? +quote.jjAmt : null });
   }
   const baseSlip = slipBase != null ? slipBase : (order.slip ?? null);   // 基础滑点：profileMode 取 pickSlip；回放预置 slip 则取预置值
   const slip = Math.min(EXEC_SLIP_MAX, (baseSlip != null ? baseSlip : DEFAULT_SLIP) + slipImpact);
@@ -1954,7 +1966,7 @@ export function quotesFromDay(day) {
   const out = {};
   for (const h of day?.hot || []) {
     if (h?.code && h.close != null && Number.isFinite(+h.close)) {
-      out[h.code] = { code: h.code, name: h.name || '', price: +h.close, changePct: h.change_pct ?? null, huanshou: h.huanshou ?? null, src: 'hot' };
+      out[h.code] = { code: h.code, name: h.name || '', price: +h.close, changePct: h.change_pct ?? null, huanshou: h.huanshou ?? null, jjAmt: h.jjAmt ?? null, src: 'hot' };
     }
   }
   for (const l of day?.lhb || []) {
@@ -1972,6 +1984,7 @@ export function quotesFromDay(day) {
     out[code] = {
       code, name: q.name || (out[code] && out[code].name) || '',
       price: +q.price, changePct: q.changePct ?? null, prevClose: q.prevClose ?? null,
+      jjAmt: q.jjAmt ?? null,   // 2026-11-27 竞价额（auctionSlip 容量项分母）
       src: q.src || 'live',
     };
   }

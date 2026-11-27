@@ -1146,11 +1146,17 @@ escClose();
   // src/paper.js 现在 import 了 src/lhbfilter.js 的 filterOne（买入前置过滤）。
   // 平铺时该 import 行必须剥掉，并改为从 window.__lhbfilter__ 解构——
   // 否则残留的 import 语句会让整段被 window.eval 的脚本语法报错（整块区六全挂）。
+  /* 【2026-11-27】paper.js 新增 slippage_model import——补 bundle 避免 jsdom 加载失败。 */
+  const slippageModelBundle = `window.__slipmodel__ = (function(){\n`
+    + readFileSync(join(ROOT, 'src/slippage_model.js'), 'utf8').replace(/^export\s+/gm, '')
+    + '\nreturn { dynamicSlip, SLIP_PRESETS };\n})();';
   const engineNoExport = readFileSync(join(ROOT, 'src/paper.js'), 'utf8')
     .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/lhbfilter\.js';/m,
       'const { filterOne } = window.__lhbfilter__;')
       .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/risk_budget\.js';/m,
         'const { allocateBudget, BUDGET_GATES } = window.__riskbudget__;')
+      .replace(/^import\s*\{[\s\S]*?\}\s*from\s*'\.\/slippage_model\.js';/m,
+        'const { dynamicSlip } = window.__slipmodel__;')
     .replace(/^export\s+/gm, '');
   // src/quote.js 也是 ESM：剥掉 import/export 后与引擎/前端拼到同一作用域。
   // 它 import 的 quoteSymbol 来自 sources.js，这里剥掉 import 即可（该函数在下方内联补齐）。
@@ -1359,7 +1365,7 @@ escClose();
   }`;
   try {
     { const fsx = await import('fs'); fsx.writeFileSync('/tmp/eval_bundle.js', `${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${admissionBundle}\n${lhbFilterBundle}\n${predictBundle}\n${seatNormBundle}\n${limitCaliberBundle}\n${tierPolicyBundle}\n${mainThemeBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n})();`); }   // TEMP
-    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${admissionBundle}\n${lhbFilterBundle}\n${predictBundle}\n${seatNormBundle}\n${limitCaliberBundle}\n${tierPolicyBundle}\n${mainThemeBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${riskBudgetBundle}\n${alertsBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n})();`);
+    window.eval(`${quoteSymbolShim}\n${quoteNoExport}\n${lhbBundle}\n${seatsBundle}\n${admissionBundle}\n${lhbFilterBundle}\n${predictBundle}\n${seatNormBundle}\n${limitCaliberBundle}\n${tierPolicyBundle}\n${mainThemeBundle}\n${picksBundle}\n${picksFlat}\n${configNoExport}\n${riskBudgetBundle}\n${alertsBundle}\n${slippageModelBundle}\n${engineNoExport}\n${engineBundle}\n${alertLogBundle}\n${reviewBundle}\n${lhbCodecBundle}\n;(function(){\n${lhbFilterFlat}\n${alertsFlat}\n${alertLogFlat}\n${reviewFlat}\n})();`);
   } catch (e) {
     check('模拟交易引擎模块在 jsdom 中可加载（台面 UI 已下线，引擎守卫保留）', false, e.message);
   }
