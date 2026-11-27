@@ -99,6 +99,9 @@ const SRC_FILES = [
   'data/theme_graph.json',
   'data/first_board_live.json',
   'data/first_board_watch.json',
+  // 2026-11-27：竞价 sidecar + paper 层动态滑点 v2 启用的真源——paper_ui.js 的
+  // durl() 会把 data/* 改道 R2，漏进清单则线上 404（r2_sync 守卫已抓到）。
+  'data/auction_score.json',
   'data/breadth-latest.json',
   'data/etf_hedge_signal.json',
   'data/reco_picks_latest.json',

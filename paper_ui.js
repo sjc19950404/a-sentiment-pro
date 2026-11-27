@@ -90,6 +90,7 @@ function readExecSettings() {
   const trancheCapLimit = (capRaw != null && String(capRaw).trim() !== '') ? Math.max(1, Math.floor(rd('execTrancheCapLimit', 12))) : null;
   const exec = {
     slipModel: profile ? 'profile' : 'flat',
+    auctionSlip: !!profile,   // 2026-11-27 拍板启用：profile 剖面开启即启用竞价额容量项（r0=0.25）
     limitFillProb: !!limitFill,
     limitUpFillRatio: Math.min(1, Math.max(0, rd('execUpRatio', 0.5))),
     limitDownFillProb: Math.min(1, Math.max(0, rd('execDownProb', 0.5))),
@@ -165,6 +166,9 @@ let UNI = null;           // 标的池（仅作「参考/快速选择」，不�
 let UNI_META = {};
 let QMAP = {};            // 存档当日行情 code → quote（降级用）
 let LIVEQ = {};           // 实时行情 code → quote（腾讯源，优先）
+/* 【2026-11-27 拍板"启用"】当日 9:25 竞价额 code → 元（data/auction_score.json sidecar）。
+ * 仅在 slipModel=profile + auctionSlip 下作为容量项分母；缺档/缺票 → 不造数、引擎自动降级旧口径。 */
+let AUCTION_AMT = new Map();
 let LIVE_AT = null;       // 最近一次实时抓取时刻
 let LIVE_FAIL = [];       // 最近一次抓取失败的代码
 let LIVE_BUSY = false;    // 抓取中（防重复请求）
@@ -629,6 +633,18 @@ async function boot() {
     const last = days[days.length - 1] || {};
     LAST_DATE = last.trade_date || null;
     QMAP = quotesFromDay(last);
+    /* 竞价额 sidecar（拍板启用）：按 LAST_DATE 精确匹配，缺失不阻断 boot。 */
+    try {
+      const aRes = await dget('./data/auction_score.json?_=' + Date.now(), { cache: 'no-store' });
+      if (aRes.ok) {
+        const aDays = await aRes.json();
+        const hit = (Array.isArray(aDays) ? aDays : []).find((x) => x && x.trade_date === LAST_DATE);
+        AUCTION_AMT = new Map();
+        for (const it of ((hit && hit.items) || [])) {
+          if (it && it.c && Number.isFinite(+it.jjAmt) && +it.jjAmt > 0) AUCTION_AMT.set(String(it.c), +it.jjAmt);
+        }
+      }
+    } catch { AUCTION_AMT = new Map(); }
     // 情绪闸门所需的涨停池（板块聚类/强度分级），与 ARC_DAYS 同源的当日收盘档（缺失不阻断，闸门自动跳过）
     try {
       const ztRes = await dget('./data/ztpool_history.json?_=' + Date.now(), { cache: 'no-store' });
@@ -2389,7 +2405,7 @@ function batchDay() {
   for (const code of Object.keys(LIVEQ)) {
     const q = LIVEQ[code];
     if (!q || !Number.isFinite(+q.price)) continue;
-    quotes[code] = { code, name: q.name, price: +q.price, changePct: q.changePct ?? null, prevClose: q.prevClose ?? null, src: 'live' };
+    quotes[code] = { code, name: q.name, price: +q.price, changePct: q.changePct ?? null, prevClose: q.prevClose ?? null, jjAmt: AUCTION_AMT.get(String(code)) ?? null, src: 'live' };
   }
   return { ...day, quotes: { ...(day.quotes || {}), ...quotes } };
 }
@@ -2994,7 +3010,7 @@ async function settleByLive(date) {
   const quotes = {};
   for (const c of codes) {
     const q = LIVEQ[c];
-    if (q && Number.isFinite(+q.price)) quotes[c] = { code: c, name: q.name, price: +q.price, changePct: q.changePct ?? null, prevClose: q.prevClose ?? null, tickDate: q.tickDate ?? null, src: 'live' };
+    if (q && Number.isFinite(+q.price)) quotes[c] = { code: c, name: q.name, price: +q.price, changePct: q.changePct ?? null, jjAmt: AUCTION_AMT.get(String(c)) ?? null, prevClose: q.prevClose ?? null, tickDate: q.tickDate ?? null, src: 'live' };
   }
   // ── 门禁二：结算价必须属于结算日当天 ──
   //   行情自带成交日期（tickDate）：交易日的开盘前，腾讯返回的还是昨收——
