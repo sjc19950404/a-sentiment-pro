@@ -115,12 +115,17 @@ for (const r of REGISTRY) {
 }
 
 // ── A. 通用自动层（零注册：data/ 全部 JSON 可解析 + 非空 + 内联标记）──
+/* 【2026-11-27 体检误报修复】合法空对象白名单——这些档的"空"是设计终态，不是损坏：
+ *   anchor_watch.json = 账本漂移观察计数器。健康时 gateAnchor() 删除对应 label，
+ *   全部 label 健康即为 {}（含义：零观察项、账本健康）；有偏差才写 {"轨道名": 次数}。
+ *   旧规则"空对象=损坏"每天误报一次，掩盖真问题。白名单外仍严格判空。 */
+const EMPTY_OK = new Set(['data/anchor_watch.json']);
 try {
   const scan = (dir, acc) => { for (const f of readdirSync(dir, { withFileTypes: true })) { if (f.name.startsWith('.') || f.name === 'node_modules') continue; const p = join(dir, f.name); if (f.isDirectory()) scan(p, acc); else if (extname(f.name) === '.json') acc.push(p); } return acc; };
   const files = scan(join(ROOT, 'data'), []);
   let broken = [];
   for (const f of files) {
-    try { const j = JSON.parse(readFileSync(f, 'utf8')); if (j == null || (typeof j === 'object' && !Object.keys(j).length && !Array.isArray(j))) broken.push(f.replace(ROOT + '/', '') + '（空对象）'); }
+    try { const j = JSON.parse(readFileSync(f, 'utf8')); if (j == null || (typeof j === 'object' && !Object.keys(j).length && !Array.isArray(j) && !EMPTY_OK.has(f.replace(ROOT + '/', '')))) broken.push(f.replace(ROOT + '/', '') + '（空对象）'); }
     catch (e) { broken.push(f.replace(ROOT + '/', '') + `（解析失败: ${(e && e.message || '').slice(0, 40)}）`); }
   }
   if (broken.length) bad(`data/ 存在损坏/空档 ${broken.length} 个`, broken.slice(0, 5).join('、'));
