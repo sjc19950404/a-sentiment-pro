@@ -1,7 +1,7 @@
 {
- "at": "2026-11-27T07:00:01.710Z",
- "bj": "15:00",
- "session": "trading",
+ "at": "2026-11-27T07:30:01.311Z",
+ "bj": "15:30",
+ "session": "offhours",
  "dataDate": "2026-11-27",
  "prevDate": "20261126",
  "pool": 48,
@@ -55,22 +55,22 @@
    "qDate": "2026-11-27"
   },
   {
-   "code": "002141",
-   "name": "贤丰控股",
-   "chg": 5.82,
-   "last": 4.91,
-   "high": 4.92,
-   "limitPrice": 5.1,
+   "code": "603703",
+   "name": "盛洋科技",
+   "chg": 5.6,
+   "last": 8.87,
+   "high": 9.04,
+   "limitPrice": 9.24,
    "status": "approaching",
    "qDate": "2026-11-27"
   },
   {
-   "code": "603703",
-   "name": "盛洋科技",
-   "chg": 5.48,
-   "last": 8.86,
-   "high": 9.04,
-   "limitPrice": 9.24,
+   "code": "002141",
+   "name": "贤丰控股",
+   "chg": 5.6,
+   "last": 4.9,
+   "high": 4.92,
+   "limitPrice": 5.1,
    "status": "approaching",
    "qDate": "2026-11-27"
   },
@@ -405,22 +405,22 @@
    "qDate": "2026-11-27"
   },
   {
-   "code": "002949",
-   "name": "华阳国际",
-   "chg": 1.33,
-   "last": 10.68,
-   "high": 11.2,
-   "limitPrice": 11.59,
-   "status": "idle",
-   "qDate": "2026-11-27"
-  },
-  {
    "code": "600963",
    "name": "岳阳林纸",
    "chg": 1.15,
    "last": 3.53,
    "high": 3.57,
    "limitPrice": 3.84,
+   "status": "idle",
+   "qDate": "2026-11-27"
+  },
+  {
+   "code": "002949",
+   "name": "华阳国际",
+   "chg": 1.04,
+   "last": 10.65,
+   "high": 11.2,
+   "limitPrice": 11.59,
    "status": "idle",
    "qDate": "2026-11-27"
   },
@@ -447,8 +447,8 @@
   {
    "code": "000798",
    "name": "中水渔业",
-   "chg": -2.43,
-   "last": 8.44,
+   "chg": -2.2,
+   "last": 8.46,
    "high": 8.98,
    "limitPrice": 9.52,
    "status": "idle",
@@ -467,8 +467,8 @@
   {
    "code": "000530",
    "name": "冰山冷热",
-   "chg": -4.76,
-   "last": 15.4,
+   "chg": -4.45,
+   "last": 15.45,
    "high": 16.88,
    "limitPrice": 17.79,
    "status": "idle",
@@ -477,8 +477,8 @@
   {
    "code": "000678",
    "name": "襄阳轴承",
-   "chg": -6.1,
-   "last": 20.62,
+   "chg": -6.06,
+   "last": 20.63,
    "high": 23.31,
    "limitPrice": 24.16,
    "status": "idle",
