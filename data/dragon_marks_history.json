@@ -3,7 +3,7 @@
     "created": "2026-11-07T13:53:17.263Z",
     "note": "妖股纯情绪标记历史（每日 EOD 留存，同日覆盖幂等）；验证脚本 scripts/dragon_purity_validation.mjs（T+1 续板率对照）",
     "source": "llm-dragon-logic-latest.json::dragons（连续连板口径 zt_lb）",
-    "updated": "2026-11-27T10:50:24.450Z",
+    "updated": "2026-11-27T13:18:36.222Z",
     "days": 16
   },
   "days": [
@@ -3924,73 +3924,73 @@
       "marks": [
         {
           "code": "603960",
-          "name": "克莱机电",
+          "name": "克来机电",
           "lb": 6,
           "is_pure": true,
-          "reason": "高位爆量分歧，纯情绪炒作，明日或跌停"
+          "reason": "高位硬板，无利好，纯情绪炒作"
         },
         {
           "code": "603030",
           "name": "全筑股份",
           "lb": 4,
           "is_pure": true,
-          "reason": "炸板多，筹码松动，预期大跌"
+          "reason": "缩量硬板，无利好，情绪加速"
         },
         {
           "code": "002651",
           "name": "利君股份",
           "lb": 4,
           "is_pure": true,
-          "reason": "无炸板，缩量硬板，预期加速"
+          "reason": "炸板多，筹码松动，情绪分歧"
         },
         {
           "code": "002872",
           "name": "天圣制药",
           "lb": 4,
           "is_pure": true,
-          "reason": "无炸板，缩量硬板，预期加速"
+          "reason": "炸板多，筹码松动，情绪退潮"
         },
         {
           "code": "600280",
           "name": "中央商场",
           "lb": 3,
           "is_pure": true,
-          "reason": "炸板多，筹码松动，明日大跌"
+          "reason": "炸板多，筹码松动，情绪退潮"
         },
         {
           "code": "002197",
           "name": "证通电子",
           "lb": 3,
           "is_pure": true,
-          "reason": "炸板，筹码松动，预期大跌"
+          "reason": "一字独食，无换手，机构游戏"
         },
         {
           "code": "002144",
           "name": "宏达高科",
           "lb": 3,
           "is_pure": true,
-          "reason": "炸板，筹码松动，预期大跌"
+          "reason": "炸板，筹码松动，情绪退潮"
         },
         {
           "code": "300324",
           "name": "旋极信息",
           "lb": 2,
           "is_pure": true,
-          "reason": "炸板多，筹码松动，明日大跌"
-        },
-        {
-          "code": "600520",
-          "name": "三佳科技",
-          "lb": 2,
-          "is_pure": true,
-          "reason": "无炸板，缩量硬板，预期加速"
+          "reason": "爆量分歧，筹码松动，情绪退潮"
         },
         {
           "code": "600567",
           "name": "山鹰国际",
           "lb": 2,
           "is_pure": true,
-          "reason": "无炸板，缩量硬板，预期加速"
+          "reason": "炸板，筹码松动，情绪退潮"
+        },
+        {
+          "code": "600520",
+          "name": "三佳科技",
+          "lb": 2,
+          "is_pure": true,
+          "reason": "板块利空，高位硬板，情绪加速"
         },
         {
           "code": "603051",
@@ -4011,21 +4011,21 @@
           "name": "安邦护卫",
           "lb": 2,
           "is_pure": false,
-          "reason": "炸板一次，情绪稳定"
+          "reason": "缩量硬板，机构锁仓"
         },
         {
           "code": "603386",
           "name": "骏亚科技",
           "lb": 2,
           "is_pure": false,
-          "reason": "缩量硬板，机构锁仓"
+          "reason": "炸板3次，筹码松动"
         },
         {
           "code": "603687",
           "name": "大胜达",
           "lb": 2,
           "is_pure": false,
-          "reason": "炸板五次，筹码松动"
+          "reason": "炸板3次，筹码松动"
         },
         {
           "code": "000158",
@@ -4039,171 +4039,171 @@
           "name": "东晶电子",
           "lb": 2,
           "is_pure": false,
-          "reason": "炸板两次，情绪稳定"
+          "reason": "缩量硬板，机构锁仓"
         },
         {
           "code": "000889",
           "name": "中嘉博创",
           "lb": 2,
           "is_pure": false,
-          "reason": "炸板四次，筹码松动"
+          "reason": "缩量硬板，机构锁仓"
         },
         {
           "code": "002298",
           "name": "中电鑫龙",
           "lb": 2,
           "is_pure": false,
-          "reason": "炸板一次，情绪稳定"
+          "reason": "缩量硬板，机构锁仓"
         },
         {
           "code": "002261",
           "name": "拓维信息",
           "lb": 2,
           "is_pure": false,
-          "reason": "炸板五次，筹码松动"
+          "reason": "炸板2次，筹码松动"
         },
         {
           "code": "003040",
           "name": "楚天龙",
           "lb": 2,
           "is_pure": false,
-          "reason": "缩量硬板，题材驱动，预期持续"
+          "reason": "缩量硬板，题材驱动，预期续板"
         },
         {
           "code": "002077",
           "name": "大港股份",
           "lb": 2,
-          "is_pure": false,
-          "reason": "炸板一次，筹码松动，预期分歧"
+          "is_pure": true,
+          "reason": "炸板多，筹码松动，纯情绪炒作，谨慎"
         },
         {
           "code": "002843",
           "name": "泰嘉股份",
           "lb": 2,
           "is_pure": false,
-          "reason": "炸板一次，筹码松动，预期分歧"
+          "reason": "无炸板，缩量硬板，题材驱动，预期续板"
         },
         {
           "code": "002713",
           "name": "东易日盛",
           "lb": 2,
           "is_pure": false,
-          "reason": "炸板三次，筹码松动，预期回调"
+          "reason": "炸板，但缩量，题材驱动，谨慎"
         },
         {
           "code": "002081",
           "name": "金螳螂",
           "lb": 2,
-          "is_pure": false,
-          "reason": "缩量硬板，题材驱动，预期持续"
+          "is_pure": true,
+          "reason": "炸板多，筹码松动，纯情绪炒作，风险大"
         },
         {
           "code": "002815",
           "name": "崇达技术",
           "lb": 2,
-          "is_pure": false,
-          "reason": "缩量硬板，题材驱动，预期持续"
+          "is_pure": true,
+          "reason": "炸板多，筹码松动，纯情绪炒作，谨慎"
         },
         {
           "code": "000603",
           "name": "盛达资源",
           "lb": 2,
           "is_pure": false,
-          "reason": "炸板三次，筹码松动，预期回调"
+          "reason": "无炸板，缩量硬板，题材驱动，预期续板"
         },
         {
           "code": "002565",
           "name": "顺灏股份",
           "lb": 2,
           "is_pure": false,
-          "reason": "无炸板，题材驱动，预期持续"
+          "reason": "无炸板，缩量硬板，题材驱动，预期续板"
         },
         {
           "code": "002453",
           "name": "华软科技",
           "lb": 2,
           "is_pure": false,
-          "reason": "无炸板，题材驱动，预期持续"
+          "reason": "炸板，但缩量，题材驱动，谨慎"
         },
         {
           "code": "300047",
-          "name": "300047",
+          "name": "天源迪科",
           "lb": 1,
-          "is_pure": false,
-          "reason": "信息不足，无法判断"
+          "is_pure": true,
+          "reason": "炸板多，筹码松动，纯情绪炒作，谨慎"
         },
         {
           "code": "300085",
           "name": "银之杰",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "炸板多，筹码松动，情绪化炒作"
         },
         {
           "code": "300192",
           "name": "科德教育",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "炸板频繁，情绪波动大，风险高"
         },
         {
           "code": "300339",
-          "name": "300339",
+          "name": "润和软件",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "缩量硬板，情绪稳定，预期看涨"
         },
         {
           "code": "300363",
           "name": "博腾股份",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "炸板多，筹码不稳，情绪化风险"
         },
         {
           "code": "300377",
           "name": "赢时胜",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "炸板多，筹码松动，情绪化风险"
         },
         {
           "code": "300461",
           "name": "田中精机",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "炸板少，筹码稳定，情绪预期看涨"
         },
         {
           "code": "300473",
           "name": "德尔股份",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "炸板多，筹码松动，情绪化风险"
         },
         {
           "code": "300480",
           "name": "光力科技",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "炸板少，筹码稳定，情绪预期看涨"
         },
         {
           "code": "300502",
           "name": "新易盛",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "缩量硬板，筹码稳定，情绪预期看涨"
         },
         {
           "code": "300508",
           "name": "维宏股份",
           "lb": 1,
           "is_pure": true,
-          "reason": "首板无题材，纯情绪博弈，小心冲高回落"
+          "reason": "炸板多，筹码松动，情绪化风险"
         }
       ],
-      "savedAt": "2026-11-27T10:50:24.436Z"
+      "savedAt": "2026-11-27T13:18:36.208Z"
     }
   ]
 }
