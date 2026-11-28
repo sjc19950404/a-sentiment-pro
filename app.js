@@ -666,6 +666,9 @@ function renderTrendSvgFallback(host, win, tip) {
 
 function renderTrend(days) {
   const host = $('trendSvg');
+  // 异步回调（loadBacktest 完成后重刷）可能在视图切换、#trendSvg 已被移除后才到达。
+  // 此时 host=null，LW.createChart(null) 内部读 getBoundingClientRect 会抛 TypeError。
+  if (!host) return;
   // 保留原始索引 i，供「点数据点 → 当日盘面详情」定位到 all_days。
   // 2026-11-06 字段兼容修复：分层加载的首屏序列是 mergeArc 拼的——29 个曲线点带
   // **顶层 value**（recent.days 形态）+ 1 个 emotion.value 完整日（recent.latest）。
@@ -2331,6 +2334,9 @@ function drawNavSvgFallback(svg, series, dates) {
 }
 
 function drawNav(svg, series, dates = []) {
+  // 异步回调可能在旧视图元素被移除后才到达（如切到回测工作台时 #btNavSvg 已不存在）。
+  // 此时 $() 返回 null，LW.createChart(null) 内部读 getBoundingClientRect 会抛 TypeError。
+  if (!svg) return;
   const all = series.flatMap((s) => s.values).filter((v) => Number.isFinite(v));
   if (!all.length) { svg.innerHTML = ''; return; }
   const LW = window.LightweightCharts;

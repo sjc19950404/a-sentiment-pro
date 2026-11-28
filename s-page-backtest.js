@@ -116,7 +116,11 @@
   }
 
   function cssColor(varName) {
-    const v = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    // buildSeries 传的是完整 var() 字符串（图例 HTML 直接复用），
+    // 而 getPropertyValue 只认裸 token 名——必须先剥掉 var( ) 包装，
+    // 否则四根线全部取空、回退成同一个蓝色（旧 bug）。
+    const name = String(varName).trim().replace(/^var\(\s*/, '').replace(/\s*\)$/, '');
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     return v || '#58a6ff';
   }
 

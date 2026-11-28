@@ -13,8 +13,20 @@ import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 
+// 平台+文件判定之外，还要实际探测 crontab 可读：沙箱/CI 里 pi_run.sh 存在、
+// 平台也是 linux，但 /var/spool/cron 无权限（crontab -l 报 fopen 权限不够），
+// 此时这三条守卫无法读取真实调度表，应跳过而非误报 FAIL。
+function crontabReadable() {
+  try {
+    execSync('crontab -l 2>/dev/null', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    return true;
+  } catch {
+    return false;
+  }
+}
 const ON_PI = process.platform === 'linux'
-  && existsSync('/opt/a-sentiment-pro/pi_run.sh');
+  && existsSync('/opt/a-sentiment-pro/pi_run.sh')
+  && crontabReadable();
 
 // 交易日业务档（必须 1-5 限定）。research_monthly 每月 1 号天然含周末，豁免。
 const WEEKDAY_JOBS = ['us_close', 'a50', 'smoke', 'pre_open', 'candidates', 'intraday', 'eod', 'supplement'];
